@@ -43,10 +43,13 @@ This task is step 1 of three that the owner agreed on 2026-10-11:
 5. CI scope selection (`tests/ci_scope.py`) treats record files like the
    frozen log: a change of only records and Markdown documentation selects
    the `docs` scope. Other files under `reviews/` still select `test`.
-6. `just review-log-frozen` reports, for `main` and every bookmark, remote
-   bookmark and workspace working copy that is not already merged into
-   `main`, whether its `reviews/log.jsonl` equals the one on `main`. It
-   exits 0 only when all are equal. This is the signal that starts step 3.
+6. `just review-log-frozen` reports, for every bookmark, remote bookmark and
+   workspace working copy that `main` does not contain, how its
+   `reviews/log.jsonl` compares with `main`'s: the same, older (only lines that
+   `main` has), or with lines that `main` lacks. It exits 0 only when no head
+   has lines that `main` lacks. This is the signal that starts step 3.
+   (Refined 2026-10-11 from "equal everywhere": stale remote branches, such as
+   squash-merged ones, keep older logs forever but lose nothing in step 3.)
 7. `AGENTS.md` and `docs/ci.md` describe the record files, the frozen log
    and the check.
 
@@ -70,8 +73,9 @@ This task is step 1 of three that the owner agreed on 2026-10-11:
 - CI scope: record-file paths select `docs`; unknown files under `reviews/`
   select `test`.
 - Frozen report: a jj fixture repository with `main`, a merged bookmark with
-  an older log, and an unmerged bookmark; exit 1 while the unmerged bookmark's
-  log differs, exit 0 after it matches; merged bookmarks are ignored.
+  an older log, and an unmerged bookmark; exit 1 while the unmerged bookmark
+  has a line that `main` lacks, exit 0 after `main` has it; merged bookmarks
+  are ignored.
 - All tests have timeouts; the review-log suites stay well under 10 s.
 - A real `just review` and `just review-resolve` run in this repository after
   the change produce record files and leave `log.jsonl` unchanged.

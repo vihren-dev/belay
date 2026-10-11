@@ -25,3 +25,7 @@ Task: [20261011-review-log-per-record-files.task.md](20261011-review-log-per-rec
   `reviews/20261011T105958Z-d6909b37/review.json` and left `log.jsonl`
   unchanged. Finding 1 (reject new frozen-log lines) rejected: the owner's
   step 2 needs them. Findings 2 and 3 (docstring purpose) fixed.
+- 2026-10-11: `just review-log-frozen` (`tools/review_log_frozen.py`). First
+  real run: 19 unmerged branches and workspaces, 9 with frozen-log lines that
+  `main` lacks (they need step 2). Task outcome 6 refined: older logs on stale
+  branches do not block step 3.
