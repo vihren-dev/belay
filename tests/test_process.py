@@ -65,9 +65,14 @@ def test_exit_is_seen_without_reaping(tmp_path: Path) -> None:
 
     The deadline kill relies on this: the group ID of an unreaped child cannot be reused.
     """
-    with subprocess.Popen([sys.executable, '-I', '-c', 'pass'], cwd=tmp_path) as process:
+    process = subprocess.Popen([sys.executable, '-I', '-c', 'pass'], cwd=tmp_path)
+    try:
         assert exited_before(process.pid, 30) is True
         assert process.returncode is None and os.waitpid(process.pid, os.WNOHANG)[0] == process.pid
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait(timeout=5)
 
 
 def test_deadline_kills_the_process_group(tmp_path: Path) -> None:
