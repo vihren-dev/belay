@@ -29,3 +29,5 @@ Task: [20261011-review-log-per-record-files.task.md](20261011-review-log-per-rec
   real run: 19 unmerged branches and workspaces, 9 with frozen-log lines that
   `main` lacks (they need step 2). Task outcome 6 refined: older logs on stale
   branches do not block step 3.
+- 2026-10-11: review of the frozen report: two "should" findings (test
+  docstrings name their subject; error actions match the failure) fixed.

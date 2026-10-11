@@ -85,8 +85,13 @@ def main(arguments: Sequence[str]) -> int:
     try:
         reference = log_lines(options.root, options.main)
         found = heads(options.root, options.main)
-    except (OSError, subprocess.TimeoutExpired, RuntimeError) as error:
-        print(f"review-log-frozen: {error}. Run `jj git fetch` and try again.", file=sys.stderr)
+    except (OSError, subprocess.TimeoutExpired) as error:
+        print(f"review-log-frozen: cannot run jj: {error}. Install jj, or run the command in the "
+              f"development shell.", file=sys.stderr)
+        return 2
+    except RuntimeError as error:
+        print(f"review-log-frozen: {error}. Check that --root names a jj repository and that "
+              f"--main names a revision in it.", file=sys.stderr)
         return 2
     for head in found:
         print(describe(reference, head))

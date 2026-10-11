@@ -26,7 +26,8 @@ MAIN = frozenset({"a", "b"})
     ({"c", "d"}, 2, "2 lines that main lacks"),
 ])
 def test_compare_with_main(lines: set[str], missing: int, state: str) -> None:
-    """Only lines that main lacks block the conversion; an older log does not."""
+    """`missing_lines` and `describe`: only lines that main lacks block the conversion; an older
+    log does not."""
     head = Head("0" * 40, "feature", frozenset(lines))
     assert missing_lines(MAIN, head) == missing
     assert describe(MAIN, head) == f"000000000000 feature: {state}"
@@ -43,8 +44,8 @@ def jj(repository: Path, *arguments: str) -> None:
 @pytest.mark.integration
 @pytest.mark.skipif(shutil.which("jj") is None, reason="jj is not installed")
 def test_command_on_a_jj_repository(tmp_path: Path) -> None:
-    """A merged bookmark with an older log is ignored; an unmerged bookmark with a new line
-    blocks until main has the line."""
+    """`tools.review_log_frozen.main` on a real jj repository: a merged bookmark with an older log
+    is ignored; an unmerged bookmark with a new line blocks until main has the line."""
     (tmp_path / "config.toml").write_text("")
     repository = tmp_path / "repository"
     repository.mkdir()
