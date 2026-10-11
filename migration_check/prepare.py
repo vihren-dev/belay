@@ -83,8 +83,8 @@ def export_bundle(*, runtime: Runtime, trusted: Path, candidate: Path, trusted_i
 
 def prepare(options: argparse.Namespace) -> dict[str, object]:
     """Build the candidate against the approved contract and export a bundle to `--output`."""
-    runtime = Runtime.locate()
-    inputs = generated_inputs(options, runtime)
+    inputs = generated_inputs(options)
+    runtime = inputs.runtime
     if not runtime.exporter.is_file():
         raise Rejection("INPUT_ERROR", f"Proof exporter is missing: {runtime.exporter}; run just build or reinstall")
     agent = options.workspace.resolve()

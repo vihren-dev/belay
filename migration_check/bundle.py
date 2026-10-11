@@ -17,15 +17,14 @@ from .contract import compile_contract
 from .diagnostics import Rejection
 from .inputs import generated_inputs
 from .process import run_process
-from .runtime import Runtime
 from .source_closure import CompileError
 from .stage_store import StageStore
 
 
 def verify_bundle(options: argparse.Namespace) -> dict[str, object]:
     """Compile the trusted side, then run the bundle checker on a private copy of the bundle."""
-    runtime = Runtime.locate()
-    inputs = generated_inputs(options, runtime)
+    inputs = generated_inputs(options)
+    runtime = inputs.runtime
     if not runtime.bundle_checker.is_file():
         raise Rejection("INPUT_ERROR", "This runtime has no bundle checker; rebuild with ADR 0003 support")
     bundle_bytes = options.bundle.read_bytes()
