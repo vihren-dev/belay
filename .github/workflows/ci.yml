@@ -49,13 +49,13 @@ jobs:
       - name: Select complete checks for the changed inputs
         if: env.PLATFORM_RUNS == 'true'
         id: scope
-        run: python3 tests/ci_scope.py
+        run: python3 -m tests.ci_scope
       - name: Check that the review log only grows
         if: env.PLATFORM_RUNS == 'true'
         env:
           # Passed as data; tools/review_log_check.py validates it as a full commit hash.
           REVIEW_LOG_BASE: ${{ github.event.pull_request.base.sha || github.event.before || '' }}
-        run: python3 tools/review_log_check.py
+        run: python3 -m tools.review_log_check
       - name: Check documentation and CI routing
         if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'docs'
         run: |

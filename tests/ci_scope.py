@@ -2,7 +2,7 @@
 
 Scopes, from smallest to largest:
 
-- `docs`: Markdown documentation and the review log only; link checks without a build.
+- `docs`: Markdown documentation and review records only; link checks without a build.
 - `test`: every Nix test target and the host source tests.
 - `infrastructure`: `test`, plus the host Nix tests (`just test-nix`), for changes to
   build definitions or shared test infrastructure.
@@ -19,6 +19,8 @@ from pathlib import Path
 import re
 import subprocess
 from collections.abc import Sequence
+
+from tools.review_records import is_record_path
 
 FULL_EVENTS = {"workflow_dispatch", "schedule"}
 """Events that always run every check on both platforms."""
@@ -54,9 +56,6 @@ def is_shared_test_helper(path: str) -> bool:
             and not name.startswith("test_") and not name.endswith("_test.py"))
 
 
-RECORD_FILES = frozenset({"reviews/log.jsonl"})
-"""Records that no build or test reads. CI checks the review log in every scope
-(`tools/review_log_check.py`), so a change to it alone needs no build."""
 
 
 def is_documentation(path: str) -> bool:
@@ -73,7 +72,7 @@ def scope(paths: Sequence[str], event: str, ref: str) -> str:
     """Select the scope for the changed paths; the module docstring describes each scope."""
     if event in FULL_EVENTS or ref.startswith("refs/tags/") or not paths:
         return "package"
-    if all(is_documentation(path) or path in RECORD_FILES for path in paths):
+    if all(is_documentation(path) or is_record_path(path) for path in paths):
         return "docs"
     if event == "push":
         return "package"

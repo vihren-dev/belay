@@ -1,8 +1,8 @@
-"""The review log: one JSON line per review and per finding outcome.
+"""The review log: one record per review and per finding outcome.
 
 `tools/review_stats.py` reads this log to find checklist conditions that never fire,
 that are mostly rejected, or that nobody acts on. The log lives in the repository,
-so every agent and workspace adds to one history.
+so every agent and workspace adds to one history. `tools/review_records.py` stores it.
 """
 
 import argparse
@@ -11,17 +11,17 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 import fnmatch
 import hashlib
-import json
 import os
 from pathlib import Path
 import re
 import sys
 
+from tools.review_records import DIRECTORY, read_records, write_record
+
 ROOT = Path(__file__).resolve().parents[1]
 CHECKLIST = ROOT / "docs" / "review-checklist.md"
-#: The log file; tests point the variable at a temporary file.
+#: The reviews directory; tests point the variable at a temporary directory.
 LOG_VARIABLE = "SQLITE_VERIFIER_REVIEW_LOG"
-DEFAULT_LOG = ROOT / "reviews" / "log.jsonl"
 #: What can happen to a finding. "rejected" and "deferred" need a reason.
 OUTCOMES = ("fixed", "rejected", "deferred")
 
@@ -84,7 +84,7 @@ def in_scope(rule: Rule, files: Iterable[str]) -> bool:
 
 def review_record(*, commit: str, revision: str, reviewer: str, caller: str, files: Sequence[str],
                   checklist: str, exit_code: int, output: str, when: datetime) -> dict[str, object]:
-    """The log line of one review; each finding gets an id for its later outcome."""
+    """The record of one review; each finding gets an id for its later outcome."""
     findings, well_formed = parse_findings(output)
     identifier = f"{when.strftime('%Y%m%dT%H%M%SZ')}-{commit[:8]}"
     return {"kind": "review", "id": identifier, "date": when.isoformat(timespec="seconds"),
@@ -96,25 +96,9 @@ def review_record(*, commit: str, revision: str, reviewer: str, caller: str, fil
 
 
 def log_path() -> Path:
-    """The log file in use: `reviews/log.jsonl`, or the file that `SQLITE_VERIFIER_REVIEW_LOG`
+    """The reviews directory in use: `reviews/`, or the directory that `SQLITE_VERIFIER_REVIEW_LOG`
     names, so that tests never write to the repository's log."""
-    return Path(os.environ.get(LOG_VARIABLE, str(DEFAULT_LOG)))
-
-
-def append(record: Mapping[str, object], path: Path) -> None:
-    """Add one record as one line. Records are only added, never changed, so the log is a
-    complete history for the statistics, and concurrent workspaces merge by joining lines."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as stream:
-        stream.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
-
-
-def read(path: Path) -> list[dict[str, object]]:
-    """All records, oldest first, as the statistics and `review-resolve` need them; an absent
-    log has none."""
-    if not path.exists():
-        return []
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return Path(os.environ.get(LOG_VARIABLE, str(ROOT / DIRECTORY)))
 
 
 def record_findings(record: Mapping[str, object]) -> list[dict[str, object]]:
@@ -130,7 +114,7 @@ def finding_ids(records: Sequence[Mapping[str, object]]) -> set[str]:
 
 def resolution(records: Sequence[Mapping[str, object]], finding: str, outcome: str, reason: str,
                when: datetime) -> dict[str, object]:
-    """The log line of one finding's outcome, after checking that the finding exists."""
+    """The record of one finding's outcome, after checking that the finding exists."""
     if outcome not in OUTCOMES:
         raise ValueError(f"unknown outcome {outcome!r}; use one of {', '.join(OUTCOMES)}")
     if outcome != "fixed" and not reason.strip():
@@ -151,12 +135,12 @@ def main(arguments: Sequence[str]) -> int:
     options = parser.parse_args(arguments)
     path = log_path()
     try:
-        record = resolution(read(path), options.finding, options.outcome, options.reason,
+        record = resolution(read_records(path), options.finding, options.outcome, options.reason,
                             datetime.now(timezone.utc))
+        write_record(record, path)
     except ValueError as error:
         print(f"review-resolve: {error}", file=sys.stderr)
         return 2
-    append(record, path)
     return 0
 
 

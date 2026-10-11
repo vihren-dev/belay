@@ -16,7 +16,8 @@ import re
 import subprocess
 import sys
 
-from tools.review_log import CHECKLIST, ROOT, append, log_path, parse_findings, record_findings, review_record
+from tools.review_log import CHECKLIST, ROOT, log_path, parse_findings, record_findings, review_record
+from tools.review_records import write_record
 from tools.review_select import (GUARD, Reviewer, UsageError, caller_tool, instructions, reviewer_command,
                                  reviewer_environment, select_reviewer)
 
@@ -112,7 +113,11 @@ def main(arguments: Sequence[str]) -> int:
                            caller=caller_tool(os.environ), files=changed_files(commit), checklist=checklist,
                            exit_code=code, output=output if review.well_formed else "",
                            when=datetime.now(timezone.utc))
-    append(record, log_path())
+    try:
+        write_record(record, log_path())
+    except ValueError as error:
+        print(f"review: {error}", file=sys.stderr)
+        return 3
     for finding in record_findings(record):
         print(f"review: finding {finding['id']} {finding['rule']} {finding['severity']} "
               f"{finding['path']}:{finding['line']}", file=sys.stderr)
