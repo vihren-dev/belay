@@ -9,6 +9,7 @@ import sys
 
 import pytest
 
+from tools import review_log_frozen
 from tools.review_log_frozen import Head, describe, missing_lines
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -97,3 +98,17 @@ def test_command_outside_a_repository(tmp_path: Path) -> None:
     check `--root` and `--main`."""
     result = run_command(["--root", str(tmp_path)], os.environ["PATH"])
     assert result.returncode == 2 and "Check that --root names a jj repository" in result.stderr
+
+
+@pytest.mark.unit
+def test_command_when_jj_times_out(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+                                   tmp_path: Path) -> None:
+    """`tools.review_log_frozen.main` exits 2 and says to stop other jj commands when a jj query
+    times out."""
+    def time_out(*arguments: object, **options: object) -> None:
+        """Stand in for `subprocess.run` that reached its time limit."""
+        raise subprocess.TimeoutExpired("jj", review_log_frozen.JJ_TIMEOUT_SECONDS)
+
+    monkeypatch.setattr(review_log_frozen.subprocess, "run", time_out)
+    assert review_log_frozen.main(["--root", str(tmp_path)]) == 2
+    assert "Stop other jj commands" in capsys.readouterr().err
