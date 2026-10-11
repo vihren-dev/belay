@@ -31,3 +31,6 @@ CI suite times before this task (the last run that executed each suite):
 ## Progress
 
 - 2026-10-11: task and status files created.
+- 2026-10-11: `run_process` waits with a blocking wait and a deadline timer
+  (`wait_with_deadline`). Tests check the blocking wait, the stopped timer and
+  the kill of the whole process group.
