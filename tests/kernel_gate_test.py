@@ -17,8 +17,8 @@ def test_missing_sysroot(kernel: KernelCase) -> None:
 
 
 def test_relative_library_path(kernel: KernelCase) -> None:
-    """A relative library path cannot redirect the checker's trusted imports."""
-    result = kernel.check(library=".")
+    """A relative application library path cannot redirect the checker's trusted imports."""
+    result = kernel.check(application_library=".")
     assert result.returncode != 0 and "absolute existing directory" in result.stderr, result.diagnostic()
 
 

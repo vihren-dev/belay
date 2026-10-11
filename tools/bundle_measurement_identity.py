@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 import platform
 
-from migration_check.structural import Json
+from belay.sqlite.structural import Json
 
 MEASUREMENT_SOURCE_PATTERN = "bundle_measurement*.py"
 """Source modules that implement this measurement policy, acquisition and report pipeline."""

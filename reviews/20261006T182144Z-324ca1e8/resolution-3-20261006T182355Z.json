@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-06T18:23:55+00:00",
+  "finding": "20261006T182144Z-324ca1e8#3",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "Campaign output diagnostic is deferred with the held campaign validation. Own task/status explicitly prevent this draft from being used as acceptance evidence."
+}

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from migration_check.structural import Json
+from belay.sqlite.structural import Json
 import tools.bundle_measurement_campaign as campaign
 from tools.bundle_measurement_paths import Flow, PathObservation, TrialSpec
 

@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from dataclasses import asdict
 from fractions import Fraction
 
-from migration_check.structural import Json
+from belay.sqlite.structural import Json
 from tools.bundle_measurement_protocol import PairObservation, next_pair_count
 from tools.bundle_measurement_statistics import EXTENDED_PAIRS, INITIAL_PAIRS, median_interval
 

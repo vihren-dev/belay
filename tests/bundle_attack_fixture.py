@@ -34,7 +34,7 @@ class BundleCase:
     def export(self) -> Path:
         """Retain the actual pinned export, including its raw metadata and table records."""
         case = self.kernel
-        roots = (case.sysroot / "lib/lean", case.library, case.root / "trusted", case.root / "candidate")
+        roots = (case.sysroot / "lib/lean", *case.libraries, case.root / "trusted", case.root / "candidate")
         with merged_search_path(roots, case.root) as paths:
             environment = {**case.environment, "LEAN_PATH": os.pathsep.join(map(str, paths))}
             trusted_imports = {PROTECTED_BASE_MODULE}
@@ -48,10 +48,10 @@ class BundleCase:
         return bundle
 
     def check(self, bundle: Path, *, environment: dict[str, str] | None = None,
-              library: str | None = None) -> CommandResult:
+              application_library: str | None = None) -> CommandResult:
         """Run only the checker on retained data, with the same 60-second test deadline."""
         case = self.kernel
-        result = case.runner([str(self.checker), library or str(case.library),
+        result = case.runner([str(self.checker), application_library or str(case.libraries[0]), str(case.libraries[1]),
                               str(case.root / "trusted"), str(bundle), str(self.generated)],
                              cwd=case.root, timeout=60,
                              environment=case.environment if environment is None else environment)

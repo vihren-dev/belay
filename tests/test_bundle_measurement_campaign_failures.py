@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from migration_check.structural import Json
+from belay.sqlite.structural import Json
 from tests.bundle_measurement_fixture import launcher
 from tests.bundle_measurement_path_fixture import trial_spec
 from tests.bundle_measurement_campaign_fixture import synthetic_paths

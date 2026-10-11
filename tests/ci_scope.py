@@ -2,7 +2,7 @@
 
 Scopes, from smallest to largest:
 
-- `docs`: Markdown documentation only; link checks without a build.
+- `docs`: Markdown documentation and review records only; link checks without a build.
 - `test`: every Nix test target and the host source tests.
 - `infrastructure`: `test`, plus the host Nix tests (`just test-nix`), for changes to
   build definitions or shared test infrastructure.
@@ -20,6 +20,8 @@ import re
 import subprocess
 from collections.abc import Sequence
 
+from tools.review_records import is_record_path
+
 FULL_EVENTS = {"workflow_dispatch", "schedule"}
 """Events that always run every check on both platforms."""
 
@@ -33,7 +35,7 @@ INFRASTRUCTURE_FILES = {"justfile", ".envrc", "flake.nix", "flake.lock", "lean-t
                         "tests/test_test_ownership.py"}
 """Build definitions and shared test infrastructure, which `just test-nix` checks."""
 
-PACKAGING_PREFIXES = ("packaging/", "bin/", "parser/", "nix/", ".github/")
+PACKAGING_PREFIXES = ("belay/", "packages/", "packaging/", "bin/", "parser/", "nix/", ".github/")
 PACKAGING_FILES = {"build-support/runtime.nix", "build-support/default.nix", "build-support/sources.nix",
                    "build-support/lean-toolchain.nix", "build-support/lean4export.nix",
                    "lean-toolchain", "lakefile.toml", "lake-manifest.json", "justfile",
@@ -54,6 +56,8 @@ def is_shared_test_helper(path: str) -> bool:
             and not name.startswith("test_") and not name.endswith("_test.py"))
 
 
+
+
 def is_documentation(path: str) -> bool:
     """Markdown at the top level or under docs/, plans/ or examples/, except installation docs.
 
@@ -68,7 +72,7 @@ def scope(paths: Sequence[str], event: str, ref: str) -> str:
     """Select the scope for the changed paths; the module docstring describes each scope."""
     if event in FULL_EVENTS or ref.startswith("refs/tags/") or not paths:
         return "package"
-    if all(is_documentation(path) for path in paths):
+    if all(is_documentation(path) or is_record_path(path) for path in paths):
         return "docs"
     if event == "push":
         return "package"

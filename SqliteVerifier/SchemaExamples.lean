@@ -1,9 +1,11 @@
-import SqliteVerifier.SchemaPreservation
+import Belay.Sqlite.SchemaPreservation
 
 set_option doc.verso true
 
 /-! Bounded structural regressions for the reusable schema model. Native SQL
 comparisons and complete application examples are checked separately. -/
+
+open Belay.Sqlite
 
 namespace SqliteVerifier.SchemaExamples
 
@@ -28,7 +30,7 @@ def properties : TableProperties := {
 /-- A one-row table with a negative physical rowid and NULL text key, retaining
 {name}`properties`. It illustrates ordinary nullable keys;
 {assert}`table.rows.length = 1`. An empty row list represents an empty table. -/
-def table : Table := { columns := [textKey], rows := [⟨-9, [.null]⟩], properties := properties }
+def table : Table := { shape.columns := [textKey], rows := [⟨-9, [.null]⟩], shape.properties := properties }
 
 #guard supportedProperties [textKey] properties
 #guard supportedProperties [version] { primaryKey := ["version"] }
@@ -37,13 +39,13 @@ def table : Table := { columns := [textKey], rows := [⟨-9, [.null]⟩], proper
 #guard !timestamp.plain
 #guard !supportedColumn { version with affinity := .text }
 #guard !supportedProperties [textKey] { uniqueKeys := [["missing"]] }
-#guard supportedExistingTable { name := "sqlite_stat1", columns := statisticsColumns ["tbl", "idx", "stat"] }
-#guard !supportedExistingTable { name := "sqlite_stat1", columns := [textKey] }
+#guard supportedExistingTable { name := "sqlite_stat1", shape.columns := statisticsColumns ["tbl", "idx", "stat"] }
+#guard !supportedExistingTable { name := "sqlite_stat1", shape.columns := [textKey] }
 #guard !supportedTableName "sqlite_stat1"
 
 /-- This concrete schema fails {name}`Schema.Valid` because its table and index
 share {lit}`key_index`; the proof reduces the global-name duplicate check. -/
-example : ¬Schema.Valid [{ name := "key_index", columns := [textKey], properties := properties }] := by
+example : ¬Schema.Valid [{ name := "key_index", shape.columns := [textKey], shape.properties := properties }] := by
   simp [Schema.Valid, properties]
 
 /-- The concrete {name}`table` satisfies {name}`Table.Valid`, including its

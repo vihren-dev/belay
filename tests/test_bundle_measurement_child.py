@@ -57,10 +57,11 @@ def test_nonisolated_process_is_refused(launcher: Path, tmp_path: Path) -> None:
 
 def test_selected_stages_follow_current_driver_callers() -> None:
     """A removed or renamed caller cannot silently disappear from stage evidence."""
-    from tools.bundle_measurement_child import STAGES
-    root = OBSERVER.parents[1] / "migration_check"
+    from tools.bundle_measurement_child import STAGE_ROOTS, STAGES
     for module, function in STAGES:
-        tree = ast.parse((root / f"{module}.py").read_text())
+        [path] = [OBSERVER.parents[1] / root / f"{module}.py" for root in STAGE_ROOTS
+                  if (OBSERVER.parents[1] / root / f"{module}.py").is_file()]
+        tree = ast.parse(path.read_text())
         assert function in {node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)}, (module, function)
 
 

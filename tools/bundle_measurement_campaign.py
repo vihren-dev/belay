@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from migration_check.structural import Json
+from belay.sqlite.structural import Json
 from tools.bundle_measurement_identity import host_identity
 from tools.bundle_measurement_paths import PathObservation, TrialSpec, execute_path, retain_identity
 from tools.bundle_measurement_protocol import PairObservation, next_pair_count, observed_pair, pair_order

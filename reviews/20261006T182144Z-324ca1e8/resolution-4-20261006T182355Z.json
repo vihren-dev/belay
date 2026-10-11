@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-06T18:23:55+00:00",
+  "finding": "20261006T182144Z-324ca1e8#4",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "Named checker-policy mapping cleanup is deferred while the harness is held. Focused tests currently verify observed checker0/2 distinctly from public CLI0/1; no benchmark or cutover is claimed."
+}

@@ -15,18 +15,31 @@ request base:
 
 | Scope | Selected when | Recipes |
 | --- | --- | --- |
-| `docs` | only Markdown documentation changed, including on a `main` push | link checks, no build |
+| `docs` | only Markdown documentation and review records changed, including on a `main` push | link checks, no build |
 | `test` | any other change | `just test-full` |
 | `infrastructure` | build definitions or shared test infrastructure changed | `just test-full test-nix` |
 | `packaging` | archive contents, installation or runtime discovery changed | `just test-full runtime-package` |
 | `package` | both of the above, other `main` pushes, tags, manual and nightly runs | `just package` |
 
+Every scope checks the review log with `tools/review_log_check.py`. Each review
+and each resolution is one file, `reviews/ID/review.json` or
+`reviews/ID/resolution-N-SECOND.json`, so parallel branches never change the
+same file. Each file must hold a valid record at the path that its record
+determines, and each record file of the base commit must be present with the
+same bytes. Other files under `reviews/` fail the check. The frozen
+`reviews/log.jsonl` holds older records: each line must be a record, and each
+line of the base commit must be present and unchanged. Merges may reorder
+lines; the review statistics use the date of a resolution, not its position.
+
 Linux builds the [checked API reference](api-reference.md) for pull requests.
 Main, tags, manual and nightly runs build it on both native platforms for
 non-documentation scopes. They use the
 pinned Nix environment with the checkout's full commit hash for source links.
+Only the last, cheap step uses that hash. The expensive base build does not, and
+`tools/ci_store_gc.py` keeps it in the saved cache, so a run whose Lean sources
+match the cache reuses it.
 CI retains `api-reference-SYSTEM` for 14 days, including when a later check
-fails. The reference checks authored Verso coverage and retains its inventory.
+fails. `just documentation-inventory` checks authored Verso coverage.
 Documentation dependencies stay outside the installed proof runtime.
 The complete job has a 75-minute limit. The reference phase keeps its
 30-minute limit. Individual compiler, suite and installer deadlines remain
@@ -45,7 +58,7 @@ their per-test limits, described below. The
 [dated evidence](../reports/20261007-darwin-bundle-scheduling/README.md)
 distinguishes the earlier hosted failures from the isolated local pass.
 
-`just test-full` builds nine independent Nix test targets
+`just test-full` builds eleven independent Nix test targets
 with `nix-build -A tests`; the flake exposes the same derivations as
 `checks.<system>`:
 
@@ -54,6 +67,7 @@ with `nix-build -A tests`; the flake exposes the same derivations as
   compared with pinned native SQLite on authored and generated cases.
 - `tests.frozen`: replay and classification of the frozen corpora (v1 to v5)
   and checks of the retained evidence reports.
+- `tests.pinned`: complete validation of each pinned frozen corpus.
 - `tests.harness`: fast acquisition, storage, profile and workload checks of the
   conformance harness.
 - `tests.sample`: all frozen v4 authored and synthetic cases plus a stable
@@ -63,6 +77,10 @@ with `nix-build -A tests`; the flake exposes the same derivations as
 - `tests.atuin`: the Atuin application CLI scenarios.
 - `tests.cli`: public-entrypoint acceptance and adversarial input scenarios.
 - `tests.bundle`: the data path (`prepare`/`verify-bundle`) and opt-in stage reuse.
+- `tests.parserLibrary`: the in-process parser library: one process with all
+  grammars, and, on Linux, the sanitizer job over every parser test input and
+  corpus text. Its runtime root holds the built library and inputs, so a model,
+  harness or documentation change reuses the result.
 
 Each target runs ordinary pytest on a cache miss. Its explicit source files,
 Python/pytest, native tools, Lean artifacts and command determine its Nix identity.
@@ -74,8 +92,21 @@ Each target declares only the inputs that its tests read. The conformance target
 modules listed in `tests/conformance_frontend.json`, so a change to the verification
 application, for example `migration_check/prepare.py`, keeps their results.
 `tests/test_conformance_frontend.py` checks that list against the actual imports.
-Only `tests.frozen` (and the `sample` and `upstream` targets that read them) depend on
+Only `tests.frozen` (and the `pinned`, `sample` and `upstream` targets that read them) depend on
 the large frozen corpora and retained reports.
+
+`conformance/pinned-corpora.json` pins each frozen corpus (v1 to v5 and the
+synthetic workload corpus) by the SHA-256 digest of its complete directory tree.
+`conformance.corpus.load` decodes a pinned corpus without validating it again.
+Any other corpus, including a frozen corpus with a changed, added or removed
+file, gets the complete validation (`conformance.corpus.validated_load`).
+`tests.pinned` (`tests/conformance_pinned_corpora_test.py`) runs the complete
+validation on each pinned corpus. Its inputs are only the pins
+(`conformance/pinned-corpora.json`), the pinned corpora, the SQL frontend and
+the conformance modules that the validation imports. It runs again only when
+one of them changes, so the current validator accepted each pinned corpus. A
+module missing from its input list fails it with an import error. To freeze or
+change a corpus, validate it and update its pin.
 
 Each test has a 300-second limit (`pytest-timeout`), so a hung test fails with its
 own name. Nix runs several targets at the same time, so a target's total time
@@ -91,7 +122,7 @@ sandbox is supplied or tested. Nix daemon and installation tests run on the host
 Cheap unit tests rerun normally. Direct `just test-cases FILE` always executes
 pytest, even if the corresponding Nix target is already cached.
 Development `just test` selects `developmentTests`, the same targets except
-`tests.model` and `tests.frozen`. `tests/nix_suites.json` assigns test files to Nix and supplies the
+`tests.model`, `tests.frozen` and `tests.pinned`. `tests/nix_suites.json` assigns test files to Nix and supplies the
 host `--source-checks` exclusion list. Source-owned conformance checks remain
 fresh. Every scope from `test` up runs all Nix targets.
 
@@ -106,7 +137,7 @@ different test derivation.
 
 The check job also substitutes from the publicly readable Vihren Attic cache,
 `https://cache.vihren.dev/sqlite-verifier`, trusting only its signing key
-`sqlite-verifier:tbKquH1YWJZFbMzT6Z14DmJ5yeVMnHSYobIDGdkWGis=` in addition to
+`sqlite-verifier:XgeRqTIGBEw3VP8GPrzSvdU+5t1lJz7uEMhIG1lh7QE=` in addition to
 cache.nixos.org. Reads need no credentials, so fork pull requests use it too.
 `connect-timeout = 5` and `fallback = true` make an unreachable cache or a failed
 download fall back to a local build; substitution fallback is unrelated to
@@ -125,8 +156,10 @@ server operation are maintained in the devops repository
 job and was rolled back ([record](../plans/20260929-attic-ci.status.md)).
 
 Before the save, `tools/ci_store_gc.py` registers garbage-collector roots for the
-test targets, runtimes, parsers, development shell and flake inputs of the current
-commit, and removes every other store path. Nix keeps the outputs of rooted
+test targets, runtimes, base API reference (`apiReferenceBase`),
+development shell and flake inputs of the current commit, and removes every other
+store path. The base API reference and its doc-gen4 build input add about 53 MB
+compressed for each platform. Nix keeps the outputs of rooted
 derivations' build inputs (`keep-outputs`). Without this step the store kept every
 older commit's outputs and grew to 5.8 GB for Linux, while one commit needs about
 1.4 GB compressed; GitHub keeps at most 10 GB of caches for a repository, so the
@@ -171,8 +204,10 @@ is overwritten. The download-artifact v5 commit was resolved from the official
 repository tag on 2026-09-24. Tag creation remains a coordinated release action.
 A passing engineering workflow does not mean roadmap Step 1 is complete.
 
-The separate target-owned `Protected approved baseline` workflow is unchanged.
-Documentation routing does not authorize changed approved sources or manifests.
+The main ruleset requires `Check (x86_64-linux)` and `Check (aarch64-darwin)`
+and requires a branch to be up to date before it merges. Changes to approved
+example requirements are ordinary test-fixture changes and get the same
+review as other changes.
 
 ## Maintainer release
 

@@ -13,6 +13,9 @@ import sys
 from time import monotonic_ns
 from types import FrameType
 
+# Installed source directories whose driver functions can become spans. The SQL parser moved
+# from migration_check to the belay.sqlite frontend; each stage module name exists in only one.
+STAGE_ROOTS = ("migration_check", "belay/sqlite")
 # Driver functions whose calls become spans; the current-caller test detects renamed or removed stages.
 STAGES = {
     ("cli", "verify"), ("bundle", "verify_bundle"), ("prepare", "prepare"),
@@ -69,8 +72,7 @@ class StageObserver:
 
     def __init__(self, runtime: Path, process_journal: Path) -> None:
         """Bind observable frames to this runtime's source modules before the launcher executes."""
-        self.modules = runtime.resolve() / "migration_check"
-        self.prefix = str(self.modules) + os.sep
+        self.prefixes = tuple(str(runtime.resolve() / root) + os.sep for root in STAGE_ROOTS)
         self.active: dict[FrameType, tuple[int, int | None, str, int, str]] = {}
         self.spans: list[Span] = []
         self.hashes: dict[str, str] = {}
@@ -82,7 +84,7 @@ class StageObserver:
     def label(self, frame: FrameType) -> str | None:
         """Name only stages in the installed runtime; record bounded external process roles."""
         filename = frame.f_code.co_filename
-        if not filename.startswith(self.prefix):
+        if not filename.startswith(self.prefixes):
             return None
         module, function = Path(filename).stem, frame.f_code.co_name
         if (module, function) not in STAGES:

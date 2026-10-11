@@ -11,12 +11,12 @@ pytestmark = [pytest.mark.integration, pytest.mark.requires_lean("compiler")]
 
 KEY_CHECKS = """
 import SqliteVerifier.ApplicationKeys
-open SqliteVerifier
+open Belay.Sqlite SqliteVerifier
 
 def columns : List Column := [
   { name := "id", affinity := .integer },
   { name := "payload", affinity := .text }]
-def first : Table := { columns := columns, rows := [
+def first : Table := { shape.columns := columns, rows := [
   ⟨4, [.integer 1, .text [65]]⟩, ⟨8, [.integer 2, .text [66]]⟩] }
 def reordered : Table := { first with rows := [
   ⟨900, [.integer 2, .text [66]]⟩, ⟨-5, [.integer 1, .text [65]]⟩] }
@@ -66,10 +66,10 @@ example : ¬ applicationKeyPreservation.change (readRecords first)
 
 
 def test_application_keys_preserve_records_and_reject_invalid_domains(
-        tmp_path: Path, lean_sysroot: Path, lean_library: Path) -> None:
+        tmp_path: Path, lean_sysroot: Path, lean_libraries: tuple[Path, Path]) -> None:
     """Compile actual permutation proofs and refusal checks with the current library."""
     source = tmp_path / "ApplicationKeyChecks.lean"
     source.write_text(KEY_CHECKS)
     result = run_command([str(lean_sysroot / "bin/lean"), str(source)], cwd=tmp_path,
-        timeout=15, environment={**os.environ, "LEAN_PATH": str(lean_library)})
+        timeout=15, environment={**os.environ, "LEAN_PATH": os.pathsep.join(map(str, lean_libraries))})
     assert result.returncode == 0, result.diagnostic()

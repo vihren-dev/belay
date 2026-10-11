@@ -7,6 +7,8 @@ through reordered storage. The permutation convenience is built over the
 general {name}`SqliteVerifier.Interpretation` and
 {name}`SqliteVerifier.LogicalContract` constructors. -/
 
+open Belay.Sqlite
+
 namespace SqliteVerifier
 
 /-- Rowid-free records: each pair contains an ordered application-key tuple
@@ -35,7 +37,7 @@ SQL affinity and collation are not evaluated by this logical projection. -/
 def projectApplicationRows (table : Table) (keyNames fields : List String) :
     Option ApplicationKeyRows := do
   if keyNames.isEmpty || keyNames.eraseDups.length != keyNames.length ||
-      !(keyNames ++ fields).all (fun name => table.columns.any (fun column => column.name == name))
+      !(keyNames ++ fields).all (fun name => table.shape.columns.any (fun column => column.name == name))
     then none
     else
       let records : ApplicationKeyRows ← (table.project (keyNames ++ fields)).mapM fun (_, cells) => do

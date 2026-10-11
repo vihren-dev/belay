@@ -9,8 +9,8 @@ import sys
 
 import pytest
 
-from tools.review_log import (Finding, in_scope, parse_findings, parse_rules, read, resolution,
-                              review_record)
+from tools.review_log import Finding, in_scope, parse_findings, parse_rules, resolution, review_record
+from tools.review_records import read_records
 
 ROOT = Path(__file__).resolve().parents[1]
 WHEN = datetime(2026, 10, 6, 12, 0, tzinfo=timezone.utc)
@@ -41,7 +41,7 @@ def test_parse_rules_and_scope() -> None:
     """Each condition has a scope; a changed text gives a new version, an unchanged one keeps it."""
     rules = parse_rules(CHECKLIST)
     assert rules["R1"].scope == ("*",) and rules["R2"].scope == ("*.lean", "tools/*.py")
-    assert in_scope(rules["R2"], ["SqliteVerifier/Model.lean"]) and not in_scope(rules["R2"], ["README.md"])
+    assert in_scope(rules["R2"], ["packages/belay-sqlite/Belay/Sqlite/Model.lean"]) and not in_scope(rules["R2"], ["README.md"])
     changed = parse_rules(CHECKLIST.replace("Text two.", "Text two, clearer."))
     assert changed["R1"].version == rules["R1"].version and changed["R2"].version != rules["R2"].version
 
@@ -71,13 +71,20 @@ def test_resolution_rejects(finding: str, outcome: str, reason: str, message: st
 
 
 @pytest.mark.integration
-def test_resolve_command_appends(tmp_path: Path) -> None:
-    """`just review-resolve` adds one resolution line for a known finding."""
-    log = tmp_path / "log.jsonl"
-    log.write_text(json.dumps({"kind": "review", "findings": [{"id": "r#1"}]}) + "\n")
-    environment = {**os.environ, "SQLITE_VERIFIER_REVIEW_LOG": str(log)}
-    result = subprocess.run([sys.executable, "-m", "tools.review_log", "r#1", "rejected", "a test fixture"],
+def test_resolve_command_adds_one_file(tmp_path: Path) -> None:
+    """`just review-resolve` resolves a finding of the frozen log with one new record file next to
+    the finding's review, and leaves the frozen log unchanged."""
+    review = "20261006T120000Z-abababab"
+    frozen = tmp_path / "log.jsonl"
+    frozen.write_text(json.dumps({"kind": "review", "id": review, "findings": [{"id": f"{review}#1"}]}) + "\n")
+    before = frozen.read_bytes()
+    environment = {**os.environ, "SQLITE_VERIFIER_REVIEW_LOG": str(tmp_path)}
+    result = subprocess.run([sys.executable, "-m", "tools.review_log", f"{review}#1", "rejected", "a test fixture"],
                             cwd=ROOT, env=environment, capture_output=True, text=True, timeout=15, check=False)
     assert result.returncode == 0, result.stderr
-    assert read(log)[-1] | {"date": None} == {"kind": "resolution", "finding": "r#1", "outcome": "rejected",
-                                              "reason": "a test fixture", "date": None}
+    [stored] = list(tmp_path.glob(f"{review}/resolution-1-*.json"))
+    assert frozen.read_bytes() == before
+    assert read_records(tmp_path)[-1] == json.loads(stored.read_text())
+    assert json.loads(stored.read_text()) | {"date": None} == {
+        "kind": "resolution", "finding": f"{review}#1", "outcome": "rejected", "reason": "a test fixture",
+        "date": None}

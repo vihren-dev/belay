@@ -23,7 +23,7 @@ def test_missing_sysroot(bundle_case: BundleCase) -> None:
 
 def test_relative_library_path(bundle_case: BundleCase) -> None:
     """Header imports cannot redirect protected library resolution through the working directory."""
-    result = bundle_case.check(bundle_case.export(), library=".")
+    result = bundle_case.check(bundle_case.export(), application_library=".")
     assert result.returncode == 1 and "absolute existing directory" in result.stderr, result.diagnostic()
 
 

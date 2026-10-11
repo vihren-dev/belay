@@ -10,11 +10,12 @@ from conformance.corpus import load, native_replay
 from conformance.measure_coverage import gcov_counts
 from conformance.native_connection import Connection, library_path, load_library
 from conformance.native_replay import schema_sql
-from conformance.progress import progress
+from conformance.progress import loaded_progress, progress
+from conformance.record_parser import runtime_library
 
 ROOT = Path(__file__).resolve().parents[1]
 pytestmark = [pytest.mark.integration, pytest.mark.conformance,
-              pytest.mark.requires_lean, pytest.mark.requires_native("sqlite-parser", "sqlite3")]
+              pytest.mark.requires_lean, pytest.mark.requires_native("parser-library", "sqlite3")]
 
 
 def test_release_requirement_ids() -> None:
@@ -62,19 +63,24 @@ def test_gcov_reached_function_denominator() -> None:
 
 
 def test_parser_failure_is_not_subset_exclusion(runtime_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """A timed-out or broken parser cannot turn a frozen native case into an unsupported verdict."""
+    """A broken parser cannot turn a frozen native case into an unsupported verdict."""
     from conformance.native_replay import prepare
-    from migration_check.diagnostics import Rejection
+    from belay.sqlite.errors import SqlError
     record = load(ROOT / "conformance/corpus-v2")[1][-1]
     def failed(*args: object, **kwargs: object) -> None:
-        """Inject the real parser's resource-failure category."""
-        raise Rejection("UNVERIFIED", "SQL parser exceeded its time limit", source="case.sql")
+        """Inject the real parser's failure category for an unusable library result."""
+        raise SqlError("UNVERIFIED", "Parser output is unusable: injected", source="case.sql")
     monkeypatch.setattr("conformance.native_replay.parse", failed)
-    assert prepare(record, runtime_root / "build/sqlite-parser")[1]["verdict"] == "HARNESS_ERROR"
+    assert prepare(record, runtime_library(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
 
 
 def test_review_corpus_extends_and_replays(runtime_root: Path) -> None:
-    """V3 retains v2, adds scoped requirement evidence, and separates query-only blockers."""
+    """`conformance.progress.loaded_progress` on corpus v3, which extends v2.
+
+    V3 keeps the v2 records, its new cases replay natively, and the report has
+    no disagreement or harness error, covers more than 40 requirement rows, and
+    counts query-only blockers separately.
+    """
     import gzip
     _, previous = load(ROOT / "conformance/corpus-v2")
     manifest, records = load(ROOT / "conformance/corpus-v3")
@@ -86,7 +92,8 @@ def test_review_corpus_extends_and_replays(runtime_root: Path) -> None:
     extraction = gzip.decompress((ROOT / "conformance/corpus-v3/extraction.json.gz").read_bytes())
     assert hashlib.sha256(extraction).hexdigest() == manifest["upstreamManifestSha256"]
     assert any(record.get("upstream", {}).get("file", "").startswith("e_") and record["requirements"] for record in additions)
-    report = progress(ROOT / "conformance/corpus-v3", ROOT / "conformance/requirements-3.51.0.json", runtime_root)
+    report = loaded_progress(ROOT / "conformance/corpus-v3", manifest, records,
+                             ROOT / "conformance/requirements-3.51.0.json", runtime_root)
     assert report["counts"].get("HARNESS_ERROR", 0) == report["counts"].get("DISAGREE", 0) == 0
     assert sum(report["counts"].values()) == len(records)
     assert sum(any(row["counts"].values()) for row in report["requirementMatrix"]) > 40
@@ -95,3 +102,26 @@ def test_review_corpus_extends_and_replays(runtime_root: Path) -> None:
     assert authored["numeric-text-integer"]["trace"][0]["visible"]["tables"][0]["rows"][0]["values"] == [{"integer": {"value": 1}}]
     assert authored["text-numeric-conversion"]["trace"][0]["visible"]["tables"][0]["rows"][0]["values"] == [{"text": {"bytes": [52, 50]}}]
     assert authored["create-unique-duplicate"]["trace"][0]["primaryCode"] == 19
+
+
+def test_parser_limit_on_a_natively_refused_migration_is_unsupported(runtime_root: Path,
+                                                                     monkeypatch: pytest.MonkeyPatch) -> None:
+    """`native_replay.prepare` counts a migration over the parser's size limits as outside the
+    model only when native SQLite refused it too; after a native success it is a harness error."""
+    import copy
+    from conformance.native_replay import parse, prepare
+    from belay.sqlite.sql_tree import ParserResourceLimit
+    record = load(ROOT / "conformance/corpus-v2")[1][-1]
+
+    def limited(parser: object, sql: bytes, source: str) -> object:
+        """Stop at the parser's size limit for the migration only."""
+        if source == "corpus-migration.sql":
+            raise ParserResourceLimit(source, 0)
+        return parse(parser, sql, source)  # type: ignore[arg-type]
+    monkeypatch.setattr("conformance.native_replay.parse", limited)
+    library = runtime_library(runtime_root)
+    assert record["trace"][-1]["primaryCode"] == 0
+    assert prepare(record, library)[1]["verdict"] == "HARNESS_ERROR"
+    refused = copy.deepcopy(record)
+    refused["trace"][-1]["primaryCode"] = 1
+    assert prepare(refused, library)[1]["verdict"] == "MODEL_UNSUPPORTED"

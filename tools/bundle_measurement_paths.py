@@ -8,7 +8,7 @@ from pathlib import Path
 from time import monotonic_ns
 from typing import Literal
 
-from migration_check.structural import Json
+from belay.sqlite.structural import Json
 from tools.bundle_measurement_identity import empty_cache_directory, evidence_identity, file_sha256, host_conditions, tree_identity
 from tools.bundle_measurement_inputs import require_recorded_role_roots
 from tools.bundle_measurement_process import Invocation, invoke

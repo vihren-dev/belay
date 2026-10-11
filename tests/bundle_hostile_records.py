@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import cast
 
-from migration_check.structural import Json
+from belay.sqlite.structural import Json
 
 
 class HostileBundle:
@@ -80,8 +80,8 @@ class HostileBundle:
 
     def changed_profile(self) -> None:
         """Use the real profile type and other constructor against the frontend's sealed sqlite351 input."""
-        type_index = self.constant("SqliteVerifier.ExecutionProfile")
-        value_index = self.constant("SqliteVerifier.ExecutionProfile.sqlite346")
+        type_index = self.constant("Belay.Sqlite.ExecutionProfile")
+        value_index = self.constant("Belay.Sqlite.ExecutionProfile.sqlite346")
         name = self.name("Generated.profile")
         self.records.append({"def": {"name": name, "levelParams": [], "type": type_index,
             "value": value_index, "hints": "opaque", "safety": "safe", "all": [name]}})

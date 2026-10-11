@@ -8,7 +8,7 @@ import subprocess
 import sys
 import unittest
 
-from tests.baseline_ci import git
+from tests.git_commands import git
 from tests.ci_scope import scope
 
 
@@ -19,10 +19,23 @@ class CiScopeTest(unittest.TestCase):
         """Unknown paths run the Nix targets; host checks run only for their own subjects."""
         examples = [(["README.md", "docs/ci.md"], "docs"), (["plans/20261007-task.md"], "docs"),
                     (["docs/nested/guide.md"], "docs"), (["unknown/file.md"], "test"),
+                    (["reviews/log.jsonl"], "docs"), (["docs/adr.md", "reviews/log.jsonl"], "docs"),
+                    (["reviews/log.jsonl", "tools/review.py"], "test"),
+                    (["reviews/log.jsonl", "parser/library.c"], "package"),
+                    (["reviews/other.jsonl"], "test"), (["reviews/notes.md"], "test"),
+                    (["reviews/20261011T085534Z-6bb34bbf/review.json"], "docs"),
+                    (["reviews/20261011T085534Z-6bb34bbf/resolution-2-20261011T091200Z.json",
+                      "docs/ci.md"], "docs"),
+                    (["reviews/20261011T085534Z-6bb34bbf/review.json", "tools/review.py"], "test"),
+                    (["reviews/20261011T085534Z-6bb34bbf/notes.json"], "test"),
+                    (["reviews/review.json"], "test"),
+                    (["log.jsonl"], "test"),
                     (["parser/upstream/README.md"], "package"),
-                    (["SqliteVerifier/Preservation.lean"], "test"),
+                    (["packages/belay-sqlite/Belay/Sqlite/Preservation.lean"], "packaging"),
                     (["tests/coverage_test.py"], "test"), (["unknown/file"], "test"),
                     (["migration_check/prepare.py"], "test"), (["tools/review.py"], "test"),
+                    (["belay/sqlite/sql_model.py"], "packaging"),
+                    (["packages/belay-sqlite/Belay/Sqlite/Model.lean"], "packaging"),
                     (["packaging/install.py"], "packaging"), (["nix/flake.lock"], "package"),
                     (["tools/check_resources.py"], "infrastructure"),
                     (["build-support/default.nix"], "package"),
@@ -40,7 +53,7 @@ class CiScopeTest(unittest.TestCase):
                     (["tests/runtime_installation.py"], "package"),
                     (["tests/test_translation.py"], "test"),
                     (["docs/install.md"], "packaging"),
-                    (["README.md", "parser/main.c"], "package"),
+                    (["README.md", "parser/library.c"], "package"),
                     (["migration_check/runtime.py"], "packaging"),
                     (["examples/atuin/Proofs.lean"], "test"),
                     (["migration_check/runtime.py", "tests/nix_suites.json"], "package"),
@@ -63,7 +76,7 @@ class CiScopeTest(unittest.TestCase):
             root = Path(directory)
             git(root, "init", "-q")
             (root / "parser").mkdir()
-            source = root / "parser/main.c"
+            source = root / "parser/library.c"
             source.write_text("fixture")
 
             def commit() -> str:
@@ -80,8 +93,9 @@ class CiScopeTest(unittest.TestCase):
             event, output = root / "event.json", root / "output"
             event.write_text(json.dumps({"pull_request": {"base": {"sha": base}}}))
             environment = {**os.environ, "GITHUB_EVENT_NAME": "pull_request", "GITHUB_REF": "refs/pull/2/merge",
-                           "GITHUB_EVENT_PATH": str(event), "GITHUB_OUTPUT": str(output)}
-            subprocess.run([sys.executable, str(Path(__file__).with_name("ci_scope.py"))], cwd=root,
+                           "GITHUB_EVENT_PATH": str(event), "GITHUB_OUTPUT": str(output),
+                           "PYTHONPATH": str(Path(__file__).resolve().parents[1])}
+            subprocess.run([sys.executable, "-m", "tests.ci_scope"], cwd=root,
                            env=environment, check=True, capture_output=True, timeout=10)
             self.assertEqual(output.read_text(), "scope=package\n")
 
