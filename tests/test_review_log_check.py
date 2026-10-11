@@ -61,6 +61,13 @@ class RecordFileTest(unittest.TestCase):
                          [f"{RESOLUTION_FILE}: base record file is changed or removed",
                           f"{REVIEW_FILE}: base record file is changed or removed"])
 
+    def test_refuses_any_deleted_base_file(self) -> None:
+        """A deleted base file fails even when it was not a record file and its content is kept
+        elsewhere: no base path under `reviews/` is exempt."""
+        base = {"reviews/notes.jsonl": blob_hash(FILE_REVIEW + b"\n")}
+        self.assertEqual(file_problems(base, {REVIEW_FILE: FILE_REVIEW}),
+                         ["reviews/notes.jsonl: base record file is changed or removed"])
+
     def test_refuses_bad_files(self) -> None:
         """Unknown files, invalid records and records at another record's path fail."""
         other = "reviews/20261011T085535Z-6bb34bbf/review.json"
