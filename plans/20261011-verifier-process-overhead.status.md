@@ -43,3 +43,16 @@ CI suite times before this task (the last run that executed each suite):
   source file. `tests/test_lean_headers.py` compares with the pinned Lean.
   Fixed an order regression: an invalid profile is again checked before the
   runtime is located (found by `tests/test_latency_frontend.py`).
+- 2026-10-11: sandboxed `bundle` (69), `atuin` (12), `cli` (16) and `kernel`
+  suites pass. Local benchmark (5 interleaved runs, medians, quiet host),
+  runtime of main against this branch:
+
+  | Command | Before | After |
+  | --- | --- | --- |
+  | small `prepare` | 3.14 s | 2.03 s |
+  | small `verify-bundle` | 1.93 s | 1.35 s |
+  | Atuin `prepare` | 11.71 s | 9.64 s |
+  | Atuin `verify-bundle` | 6.63 s | 5.47 s |
+
+  Review findings R8 (owner review of `prepare.py` and `bundle.py`) are
+  deferred to the owner in the pull request. Next: PR and CI times.
