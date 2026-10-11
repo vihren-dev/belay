@@ -16,3 +16,12 @@ Task: [20261011-review-log-per-record-files.task.md](20261011-review-log-per-rec
 ## Progress
 
 - 2026-10-11: task and status files created.
+- 2026-10-11: `tools/review_records.py` stores each review and resolution in
+  its own file; `review`, `review-resolve`, `review-stats`, the CI check and CI
+  scope use it. `AGENTS.md` and `docs/ci.md` updated. Review-tool tests pass
+  (51). The source suite has 6 Lean compilation failures that also fail on
+  unchanged `main` in this checkout.
+- 2026-10-11: real `just review` of that commit wrote
+  `reviews/20261011T105958Z-d6909b37/review.json` and left `log.jsonl`
+  unchanged. Finding 1 (reject new frozen-log lines) rejected: the owner's
+  step 2 needs them. Findings 2 and 3 (docstring purpose) fixed.

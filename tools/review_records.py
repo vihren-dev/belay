@@ -89,7 +89,8 @@ def write_record(record: Mapping[str, object], directory: Path) -> Path:
 
 
 def record_files(directory: Path) -> list[Path]:
-    """All record files in the reviews directory, in path order."""
+    """All record files in the reviews directory, in path order. Readers skip other files, so a
+    stray file cannot add a record; the CI check reports such files instead."""
     return sorted(path for path in directory.glob("*/*.json")
                   if path.is_file() and is_record_path(f"{DIRECTORY}/{path.relative_to(directory).as_posix()}"))
 

@@ -95,13 +95,15 @@ def file_problems(base: Mapping[str, str], head: Mapping[str, bytes]) -> list[st
 
 
 def git(root: Path, *arguments: str) -> str:
-    """The output of one Git command that reads the local repository."""
+    """The output of one Git command that reads the local repository. CI has Git but no jj, so
+    the check reads the base commit with Git."""
     return subprocess.run(["git", *arguments], cwd=root, check=True, capture_output=True, text=True,
                           timeout=GIT_TIMEOUT_SECONDS).stdout
 
 
 def base_files(root: Path, base: str) -> dict[str, str]:
-    """The blob hash of each file under `reviews/` in the base commit; a commit without it has none."""
+    """The blob hash of each file under `reviews/` in the base commit; a commit without it has none.
+    Comparing blob hashes finds a changed record file without reading each base file."""
     if re.fullmatch(r"[0-9a-f]{40}", base) is None:
         raise ValueError(f"{BASE_VARIABLE} must be a full commit hash, not {base!r}")
     if base == NO_BASE:
@@ -114,7 +116,8 @@ def base_files(root: Path, base: str) -> dict[str, str]:
 
 
 def head_files(root: Path) -> dict[str, bytes]:
-    """The bytes of each file under `reviews/` in the working tree."""
+    """The bytes of each file under `reviews/` in the working tree, which is the change under check.
+    Every file is listed, so the check also finds files that are not records."""
     directory = root / DIRECTORY
     return {path.relative_to(root).as_posix(): path.read_bytes()
             for path in sorted(directory.rglob("*")) if path.is_file()} if directory.is_dir() else {}
