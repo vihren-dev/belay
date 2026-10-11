@@ -1,6 +1,6 @@
 # Verifier process overhead status
 
-Created 2026-10-11. Status: IN PROGRESS.
+Created 2026-10-11. Status: DONE ([PR #86](https://github.com/vihren-dev/sqlite-verifier/pull/86); owner review of R8 pending).
 Task: [20261011-verifier-process-overhead.task.md](20261011-verifier-process-overhead.task.md).
 
 ## References
@@ -56,3 +56,8 @@ CI suite times before this task (the last run that executed each suite):
 
   Review findings R8 (owner review of `prepare.py` and `bundle.py`) are
   deferred to the owner in the pull request. Next: PR and CI times.
+- 2026-10-11: PR #86 CI run 38137233545 passes on Linux. `atuin` 164.6 s to
+  90.2 s, `cli` 83.5 s to 41.8 s, `bundle` 170.8 s to 163.3 s, installed host
+  tests 127.0 s to 103.8 s. The baselines come from runs with other parallel
+  suites, so the local benchmark above is the controlled comparison. The task
+  is DONE; owner review of the R8 findings is pending.

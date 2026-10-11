@@ -1,6 +1,6 @@
 # Remove process overhead from prepare and verify-bundle
 
-Created 2026-10-11. Status: IN PROGRESS.
+Created 2026-10-11. Status: DONE ([PR #86](https://github.com/vihren-dev/sqlite-verifier/pull/86); owner review of R8 pending).
 Owner request: apply the orchestration fixes from the `prepare` latency
 experiment that do not depend on ADR 0010 (PR #76,
 `experiments/prepare-latency/README.md` on branch `adr/0010-lake-cache`).
