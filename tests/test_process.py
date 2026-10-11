@@ -1,14 +1,14 @@
 """Check bounded execution independently of any OS isolation mechanism."""
 
+import os
 from pathlib import Path
 import subprocess
 import sys
-import threading
 import time
 
 import pytest
 
-from migration_check.process import run_process
+from migration_check.process import exited_before, run_process
 
 pytestmark = [pytest.mark.integration, pytest.mark.environment]
 
@@ -38,11 +38,12 @@ def test_explicit_environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     assert result.stdout.splitlines() == [str(tmp_path.resolve()), 'selected-path']
 
 
+@pytest.mark.skipif(not hasattr(os, 'pidfd_open'), reason='the polling wait remains without pidfd support')
 def test_wait_does_not_poll(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """`run_process` waits for the child with a blocking wait.
+    """`run_process` reaps the child only after it exits, with no polling wait.
 
-    `Popen.wait(timeout=...)` polls with sleeps of up to 50 ms; the deadline is a
-    timer in `migration_check.process.wait_with_deadline` instead.
+    `Popen.wait(timeout=...)` polls with sleeps of up to 50 ms;
+    `migration_check.process.exited_before` waits for the exit instead.
     """
     timeouts: list[float | None] = []
     original = subprocess.Popen.wait
@@ -58,10 +59,15 @@ def test_wait_does_not_poll(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     assert timeouts and all(timeout is None for timeout in timeouts)
 
 
-def test_finished_child_leaves_no_deadline_timer(tmp_path: Path) -> None:
-    """After a child finishes, `run_process` stops its deadline timer, so no thread remains."""
-    run_process([sys.executable, '-I', '-c', 'pass'], write_root=tmp_path, environment={}, timeout=60)
-    assert not [thread for thread in threading.enumerate() if isinstance(thread, threading.Timer)]
+@pytest.mark.skipif(not hasattr(os, 'pidfd_open'), reason='the polling wait remains without pidfd support')
+def test_exit_is_seen_without_reaping(tmp_path: Path) -> None:
+    """`exited_before` reports the exit and leaves the child for `Popen.wait` to reap.
+
+    The deadline kill relies on this: the group ID of an unreaped child cannot be reused.
+    """
+    with subprocess.Popen([sys.executable, '-I', '-c', 'pass'], cwd=tmp_path) as process:
+        assert exited_before(process.pid, 30) is True
+        assert process.returncode is None and os.waitpid(process.pid, os.WNOHANG)[0] == process.pid
 
 
 def test_deadline_kills_the_process_group(tmp_path: Path) -> None:
