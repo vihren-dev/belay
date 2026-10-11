@@ -96,13 +96,17 @@ def lean_process(sysroot: Path, libraries: tuple[Path, Path], search: Sequence[P
     return result.stdout
 
 
+HEADER_TIMEOUT_SECONDS = 5
+"""Deadline of one `lean --deps-json` process; it reads only import headers, also in a batch."""
+
+
 def header_reader(sysroot: Path, libraries: tuple[Path, Path], workspace: Path) -> ReadHeaders:
     """Run the pinned `lean --deps-json` on one or more files with a private output directory."""
     def run(files: list[Path]) -> str:
         """Read the headers of `files` in one process; Lean returns them in argument order."""
         with TemporaryDirectory(prefix="header-", dir=workspace) as temporary:
             return lean_process(sysroot, libraries, [], files[-1], Path(temporary).resolve(),
-                                ["--deps-json", *map(str, files[:-1])], "dependencies", timeout=5)
+                                ["--deps-json", *map(str, files[:-1])], "dependencies", timeout=HEADER_TIMEOUT_SECONDS)
     return run
 
 

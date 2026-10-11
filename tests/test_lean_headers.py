@@ -53,7 +53,7 @@ def sources(tmp_path: Path) -> list[Path]:
 
 
 def test_batch_reads_all_new_headers_in_one_process(tmp_path: Path, calls: list[list[Path]]) -> None:
-    """One process reads all new headers; later lookups of the same bytes start no process."""
+    """`read_headers` reads all new headers in one process; `known_imports` then starts none."""
     files = sources(tmp_path)
     read_headers([path.read_bytes() for path in files], SYSROOT, LIBRARIES, tmp_path, runner(calls))
     assert len(calls) == 1 and len(calls[0]) == len(files)
@@ -63,7 +63,7 @@ def test_batch_reads_all_new_headers_in_one_process(tmp_path: Path, calls: list[
 
 
 def test_header_error_names_the_source_file(tmp_path: Path, calls: list[list[Path]]) -> None:
-    """An error that Lean reported for a temporary copy names the real source file."""
+    """`known_imports` names the real source file in an error that Lean reported for a batch copy."""
     files = sources(tmp_path)
     read_headers([path.read_bytes() for path in files], SYSROOT, LIBRARIES, tmp_path, runner(calls))
     with pytest.raises(ValueError) as batched:
@@ -76,7 +76,7 @@ def test_header_error_names_the_source_file(tmp_path: Path, calls: list[list[Pat
 
 
 def test_changed_bytes_are_read_again(tmp_path: Path, calls: list[list[Path]]) -> None:
-    """The cache key is the content: changed bytes at the same path start a new process."""
+    """`known_imports` keys results by content: changed bytes at the same path start a new process."""
     path = tmp_path / "Module.lean"
     path.write_bytes(b"def x := 1\n")
     assert known_imports(path, SYSROOT, LIBRARIES, runner(calls)) == ()
@@ -86,7 +86,7 @@ def test_changed_bytes_are_read_again(tmp_path: Path, calls: list[list[Path]]) -
 
 
 def test_failed_batch_stores_nothing(tmp_path: Path, calls: list[list[Path]]) -> None:
-    """When the batch process fails, each file is read alone later, with its own error."""
+    """`read_headers` stores nothing when its process fails; `known_imports` then reads each file alone."""
     def failed(files: list[Path]) -> str:
         """Simulate a failed Lean process."""
         calls.append(list(files))
@@ -101,7 +101,7 @@ def test_failed_batch_stores_nothing(tmp_path: Path, calls: list[list[Path]]) ->
 @pytest.mark.requires_lean
 def test_batch_matches_one_process_per_file_with_pinned_lean(tmp_path: Path, lean_sysroot: Path,
         lean_libraries: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch) -> None:
-    """With the pinned Lean, batched and separate reads give equal imports and equal errors."""
+    """With the pinned Lean, `read_headers` batches and single `known_imports` reads give equal results."""
     files = sources(tmp_path)
     run = header_reader(lean_sysroot, lean_libraries, tmp_path)
 
