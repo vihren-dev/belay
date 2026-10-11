@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-09T15:39:56+00:00",
+  "finding": "20261009T153949Z-ce3c5cde#1",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "Offline experiment report script; input is the harness's own output and decoding is already validated and tested. Revisit if the script becomes a maintained tool."
+}

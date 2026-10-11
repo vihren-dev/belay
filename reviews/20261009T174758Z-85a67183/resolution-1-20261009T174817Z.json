@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-09T17:48:17+00:00",
+  "finding": "20261009T174758Z-85a67183#1",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "Same request as 20261009T174612Z-835d849b#5: fixed and checked by running setup twice; an automated test needs the built runtime and Lake."
+}
