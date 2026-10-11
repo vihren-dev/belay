@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-11T11:49:18+00:00",
+  "finding": "20261011T114809Z-0ed8deb3#1",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "Owner review requested in the pull request: verify-bundle uses the runtime that generated_inputs located"
+}

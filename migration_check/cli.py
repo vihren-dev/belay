@@ -10,7 +10,6 @@ from collections.abc import Sequence
 from .diagnostics import Rejection
 from belay.sqlite.errors import SqlError
 from .inputs import generated_inputs, read_sql
-from .runtime import Runtime
 from .process import run_process
 from .stage_store import StageStore
 
@@ -80,7 +79,7 @@ def arguments(values: Sequence[str]) -> argparse.Namespace:
 def verify(options: argparse.Namespace) -> dict[str, object]:
     """Seal SQL and approved sources, compile in isolation, and invoke the independent gate."""
     inputs = generated_inputs(options)
-    runtime = Runtime.locate()
+    runtime = inputs.runtime
     from .compile import CompileError, EXPECTED_SOURCE, compile_project
 
     schema_hash, starting, generated = inputs.schema_hash, inputs.schema_source, inputs.sql_source
