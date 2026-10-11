@@ -1,6 +1,6 @@
 # Store review records as one file each
 
-Created 2026-10-11. Status: OPEN.
+Created 2026-10-11. Status: DONE (step 1; steps 2 and 3 are separate).
 Owner request: `reviews/log.jsonl` causes merge conflicts. Every `just review`
 and `just review-resolve` appends to the end of the same file, so two
 workspaces that each record a review always conflict in Git and in jj, even

@@ -1,6 +1,6 @@
 # Review log per-record files status
 
-Created 2026-10-11. Status: OPEN.
+Created 2026-10-11. Status: DONE (step 1; steps 2 and 3 are separate).
 Task: [20261011-review-log-per-record-files.task.md](20261011-review-log-per-record-files.task.md).
 
 ## References
@@ -35,3 +35,6 @@ Task: [20261011-review-log-per-record-files.task.md](20261011-review-log-per-rec
   findings fixed (a separate message for a jj timeout; tests for the missing-jj
   and outside-a-repository errors). Third round: a test for the timeout
   message, with `subprocess.run` patched in-process.
+- 2026-10-11: last review clean. Step 1 DONE. Next: step 2 (merge to `main`,
+  rebase open branches and workspaces), then step 3 when
+  `just review-log-frozen` exits 0.

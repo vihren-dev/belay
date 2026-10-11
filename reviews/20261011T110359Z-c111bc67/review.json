@@ -1,0 +1,34 @@
+{
+  "caller": "claude",
+  "commit": "c111bc671ddff0b81c9b107383b20c709b02e4d8",
+  "date": "2026-10-11T11:03:59+00:00",
+  "exit": 0,
+  "files": [
+    "plans/20261011-review-log-per-record-files.status.md",
+    "reviews/20261011T110327Z-aa4a4b01/resolution-1-20261011T110341Z.json",
+    "reviews/20261011T110327Z-aa4a4b01/review.json",
+    "tests/test_review_log_frozen.py"
+  ],
+  "findings": [],
+  "id": "20261011T110359Z-c111bc67",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "b9509029f9c1",
+    "R7": "1d1132b164f1",
+    "R8": "46eec5fecbaf",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
