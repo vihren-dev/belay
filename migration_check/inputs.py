@@ -39,12 +39,19 @@ class GeneratedInputs:
     hashes: dict[str, str]
     structural: dict[str, Json]
     """The same request as `sql_source`, as the structural record the bundle checker decodes."""
+    runtime: Runtime
+    """The installation that parsed the SQL; the command uses it for all later stages."""
 
 
 def generated_inputs(options: argparse.Namespace) -> GeneratedInputs:
-    """Parse schema and migration with the pinned frontend and emit the generated inputs."""
+    """Parse schema and migration with the pinned frontend and emit the generated inputs.
+
+    The profile is checked before the runtime is located. The located runtime is
+    part of the result, so a command checks the installation only once.
+    """
     selected = profile(options.profile)
-    parser = Runtime.locate().sql_parser(selected)
+    runtime = Runtime.locate()
+    parser = runtime.sql_parser(selected)
     schema_bytes, migration_bytes = read_sql(options.schema), read_sql(options.migration)
     schema = starting_schema(parse(parser, schema_bytes, str(options.schema)))
     script = statements(parse(parser, migration_bytes, str(options.migration)))
@@ -56,4 +63,4 @@ def generated_inputs(options: argparse.Namespace) -> GeneratedInputs:
     # Lean emission calls the same frontend admission as native and model consumers.
     sql_source = sql_inputs(schema, script, selected)
     return GeneratedInputs(selected, schema_inputs(schema), sql_source, schema_hash, len(script), hashes,
-                           generated_inputs_wire(schema, script, selected))
+                           generated_inputs_wire(schema, script, selected), runtime)
