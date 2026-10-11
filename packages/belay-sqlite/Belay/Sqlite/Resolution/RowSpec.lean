@@ -1,4 +1,4 @@
-import Belay.Sqlite.ResolveSpec
+import Belay.Sqlite.Resolution.ColumnSpec
 
 set_option doc.verso true
 

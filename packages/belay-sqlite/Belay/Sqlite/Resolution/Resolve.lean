@@ -1,4 +1,4 @@
-import Belay.Sqlite.ResolveWrites
+import Belay.Sqlite.Resolution.Writes
 
 set_option doc.verso true
 

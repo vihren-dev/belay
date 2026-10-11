@@ -1,5 +1,5 @@
 import Belay.Sqlite.Model
-import Belay.Sqlite.Syntax
+import Belay.Sqlite.Resolution.Syntax
 
 set_option doc.verso true
 

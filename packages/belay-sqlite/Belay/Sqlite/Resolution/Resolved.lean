@@ -1,4 +1,4 @@
-import Belay.Sqlite.Catalog
+import Belay.Sqlite.Resolution.Catalog
 
 set_option doc.verso true
 

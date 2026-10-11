@@ -62,6 +62,15 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/`,
 - 2026-10-10: checks. `just test-source`: 461 passed; all ten Nix test suites
   pass (284 s wall); `apiReferenceBase` and `publicDocumentation` build.
 
+- 2026-10-11: owner comment on PR #81 (`Belay/Sqlite.lean` line 30, the long
+  list of resolution imports): "Isn't there a better way?". The 20 modules move
+  to `Belay/Sqlite/Resolution/` without the `Resolve` prefix (for example
+  `ResolvePrepareSpec` is now `Resolution/PrepareSpec`). `Belay.Sqlite.Resolution`
+  imports them; the root imports only it, and the package lakefile builds them
+  with the one glob `Belay.Sqlite.Resolution.*`, so a new resolution module
+  needs no lakefile or root change. All 20 modules compile, including the
+  examples, which no module imports. Rebased onto `main` (`60f71de`) first.
+
 ## CI time (Linux amd64, forced rebuild with `nix-build --check`, one run each)
 
 | Target | `main` (`5a813d20`) | This branch | Change |

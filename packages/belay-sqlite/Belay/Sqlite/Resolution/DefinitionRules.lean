@@ -1,9 +1,9 @@
-import Belay.Sqlite.ResolvePrepareSpec
+import Belay.Sqlite.Resolution.PrepareSpec
 
 set_option doc.verso true
 
 /-! The prepare-error rule for ADD COLUMN and CREATE INDEX, and the transaction rule.
-See {lit}`Belay.Sqlite.ResolvePrepareSpec` for the prepare-error rule. -/
+See {lit}`Belay.Sqlite.Resolution.PrepareSpec` for the prepare-error rule. -/
 
 namespace Belay.Sqlite
 

@@ -1,4 +1,4 @@
-import Belay.Sqlite.ResolveErrorKinds
+import Belay.Sqlite.Resolution.ErrorKinds
 
 set_option doc.verso true
 

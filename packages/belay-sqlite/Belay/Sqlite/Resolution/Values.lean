@@ -1,6 +1,6 @@
 import Belay.Sqlite.LiteralData
-import Belay.Sqlite.Profile
-import Belay.Sqlite.Resolved
+import Belay.Sqlite.Resolution.Profile
+import Belay.Sqlite.Resolution.Resolved
 
 set_option doc.verso true
 

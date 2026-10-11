@@ -1,4 +1,4 @@
-import Belay.Sqlite.Resolve
+import Belay.Sqlite.Resolution.Resolve
 
 set_option doc.verso true
 
@@ -8,7 +8,7 @@ for each statement, each prepare error, the limits under a lowered profile limit
 the affinity and rowid-alias rules, ASCII-only folding, the shared namespace and
 the transactions. The conformance suite compares the same rules with SQLite. -/
 
-namespace Belay.Sqlite.ResolveExamples
+namespace Belay.Sqlite.Resolution.Examples
 
 open Belay.Sqlite Syntax
 
@@ -138,4 +138,4 @@ def tableT : Catalog := catalogOf (migration [] [.createTable "t" [column "a", c
 #guard reason (migration tableT [.insert "t" (some ["b"]) [[.string [49]]]])
   == "the column affinity would convert this value; write NULL, a blob, or a value that the affinity keeps unchanged"
 
-end Belay.Sqlite.ResolveExamples
+end Belay.Sqlite.Resolution.Examples

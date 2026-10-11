@@ -1,8 +1,8 @@
-import Belay.Sqlite.ResolvePrepareSpec
+import Belay.Sqlite.Resolution.PrepareSpec
 
 set_option doc.verso true
 
-/-! The prepare-error rule for UPDATE. See {lit}`Belay.Sqlite.ResolvePrepareSpec` for
+/-! The prepare-error rule for UPDATE. See {lit}`Belay.Sqlite.Resolution.PrepareSpec` for
 the rule and its references. -/
 
 namespace Belay.Sqlite
