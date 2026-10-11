@@ -74,3 +74,9 @@ commands; 4,867 are distinct, and 160,731 contain no `$`, `:` or `@`.
   (v5 50.5 s, v4 10.2 s, v3 9.8 s). `frozen` suite: 83.2 s (baseline
   210.7 s). The local Nix invalidation tests show that model, progress and
   requirement changes keep the `pinned` result. The task is DONE.
+- 2026-10-11: after the merge, main run 38125466607 failed on macOS:
+  `shared_table_shape_test::test_flat_codec_golden` (model suite) hit its
+  15 s Lean compile limit; it took 1.87 s on the earlier main run. All six
+  conformance suites ran at the same time on the 3-core, 7 GB runner, and the
+  v5 pin test used four loading processes and 4.75 GB. The pin test now
+  validates serially and compares one shard at a time: 3.09 GB peak locally.

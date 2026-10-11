@@ -6,10 +6,9 @@ the current validator. They form the `pinned` Nix suite, which runs again only
 when a pinned corpus or a module that the validation imports changes.
 """
 
-from concurrent.futures import Executor, ProcessPoolExecutor
+from concurrent.futures import Executor
 import gzip
 import json
-from multiprocessing import get_context
 from pathlib import Path
 import shutil
 
@@ -18,9 +17,8 @@ import pytest
 from conformance import corpus
 from conformance.case_format import Json
 from conformance.native_storage import serialized
-from conformance.native_workers import NATIVE_WORKER_LIMIT
 from conformance.corpus import load, validated_load
-from conformance.pinned_corpora import PINNED_TREES, is_pinned, tree_digest
+from conformance.pinned_corpora import PINNED_TREES, is_pinned, pinned_file_records, tree_digest
 
 ROOT = Path(__file__).resolve().parents[1]
 SMALL = "conformance/synthetic-workload/corpus"
@@ -32,25 +30,29 @@ pytestmark = [pytest.mark.integration, pytest.mark.conformance]
 def test_pinned_corpus_passes_complete_validation(digest: str, label: str) -> None:
     """Each pin is the actual tree, the corpus passes complete validation, and both paths agree.
 
-    Shards are validated in at most four spawned processes, as in
-    `conformance.native_workers.load_development_corpus`. A corpus without
-    shards has no shared snapshots: both paths then return the parsed lines
-    unchanged, so the test does not decode it twice. For a sharded corpus,
+    A corpus without shards has no shared snapshots: both paths then return the
+    parsed lines unchanged, so the test does not decode it twice. For a sharded
+    corpus, the test compares the fast path one shard at a time, so only one
+    shard of decoded records is in memory with the validated records.
     `decoded_record` copies each stored snapshot with its stored key order and
     `expanded_record` copies it in sorted key order. The two orders agree when
     each stored line is canonical JSON, which the test also checks.
     """
     directory = ROOT / label
     assert tree_digest(directory) == digest, f"Pin of {label} differs from its files; validate it and update the pin"
-    with ProcessPoolExecutor(max_workers=NATIVE_WORKER_LIMIT, mp_context=get_context("spawn")) as executor:
-        manifest, validated = validated_load(directory, executor=executor)
+    assert is_pinned(directory)
+    manifest, validated = validated_load(directory)
     if "shards" not in manifest:
         assert not any("snapshots" in record for record in validated)
         return
-    assert load(directory) == (manifest, validated)
+    offset = 0
     for shard in manifest["shards"]:
+        decoded = pinned_file_records(directory, shard["path"])
+        assert decoded == validated[offset:offset + len(decoded)], f"{label}/{shard['path']} decodes differently"
+        offset += len(decoded)
         for line in gzip.decompress((directory / shard["path"]).read_bytes()).splitlines():
             assert serialized(json.loads(line)) == line, f"{label}/{shard['path']} has a non-canonical line"
+    assert offset == len(validated)
 
 
 def copied(tmp_path: Path, label: str) -> Path:
