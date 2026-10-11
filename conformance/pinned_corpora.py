@@ -57,6 +57,12 @@ def pinned_records(directory: Path, manifest: dict[str, Json]) -> list[dict[str,
     Use this only after `is_pinned` is true for the same unchanged directory.
     """
     paths = [shard["path"] for shard in manifest["shards"]] if "shards" in manifest else ["cases.jsonl.gz"]
-    return [decoded_record(json.loads(line))
-            for relative in paths
-            for line in gzip.decompress((directory / relative).read_bytes()).splitlines()]
+    return [record for relative in paths for record in pinned_file_records(directory, relative)]
+
+
+def pinned_file_records(directory: Path, relative: str) -> list[dict[str, Json]]:
+    """Decode the cases of one shard or case file of a pinned corpus.
+
+    A caller can process a large corpus one file at a time with this function.
+    """
+    return [decoded_record(json.loads(line)) for line in gzip.decompress((directory / relative).read_bytes()).splitlines()]
