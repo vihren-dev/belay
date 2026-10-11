@@ -23,6 +23,12 @@ class CiScopeTest(unittest.TestCase):
                     (["reviews/log.jsonl", "tools/review.py"], "test"),
                     (["reviews/log.jsonl", "parser/library.c"], "package"),
                     (["reviews/other.jsonl"], "test"), (["reviews/notes.md"], "test"),
+                    (["reviews/20261011T085534Z-6bb34bbf/review.json"], "docs"),
+                    (["reviews/20261011T085534Z-6bb34bbf/resolution-2-20261011T091200Z.json",
+                      "docs/ci.md"], "docs"),
+                    (["reviews/20261011T085534Z-6bb34bbf/review.json", "tools/review.py"], "test"),
+                    (["reviews/20261011T085534Z-6bb34bbf/notes.json"], "test"),
+                    (["reviews/review.json"], "test"),
                     (["log.jsonl"], "test"),
                     (["parser/upstream/README.md"], "package"),
                     (["packages/belay-sqlite/Belay/Sqlite/Preservation.lean"], "packaging"),
@@ -87,8 +93,9 @@ class CiScopeTest(unittest.TestCase):
             event, output = root / "event.json", root / "output"
             event.write_text(json.dumps({"pull_request": {"base": {"sha": base}}}))
             environment = {**os.environ, "GITHUB_EVENT_NAME": "pull_request", "GITHUB_REF": "refs/pull/2/merge",
-                           "GITHUB_EVENT_PATH": str(event), "GITHUB_OUTPUT": str(output)}
-            subprocess.run([sys.executable, str(Path(__file__).with_name("ci_scope.py"))], cwd=root,
+                           "GITHUB_EVENT_PATH": str(event), "GITHUB_OUTPUT": str(output),
+                           "PYTHONPATH": str(Path(__file__).resolve().parents[1])}
+            subprocess.run([sys.executable, "-m", "tests.ci_scope"], cwd=root,
                            env=environment, check=True, capture_output=True, timeout=10)
             self.assertEqual(output.read_text(), "scope=package\n")
 

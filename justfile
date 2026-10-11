@@ -77,6 +77,11 @@ review *args:
 review-resolve *args:
     python3 -m tools.review_log "$@"
 
+# Report whether any unmerged branch or workspace still has reviews/log.jsonl lines that main lacks.
+[positional-arguments]
+review-log-frozen *args:
+    python3 -m tools.review_log_frozen "$@"
+
 # Report per checklist condition how often it fired and what happened to its findings.
 [positional-arguments]
 review-stats *args:

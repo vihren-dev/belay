@@ -125,11 +125,11 @@ def stub_tools(directory: Path, review_output: str, exit_status: int = 0) -> Pat
 
 def run_review(stubs: Path, extra: dict[str, str]) -> subprocess.CompletedProcess[str]:
     """Run the real command with the stubs first on PATH, only the given session markers,
-    and a review log next to the stubs."""
+    and a reviews directory next to the stubs."""
     environment = {name: value for name, value in os.environ.items()
                    if not name.startswith(("CLAUDE", "CODEX_", "AI_AGENT", "REVIEWER", "SQLITE_VERIFIER_REVIEW"))}
     environment.update(extra, PATH=f"{stubs}{os.pathsep}{os.environ['PATH']}",
-                       SQLITE_VERIFIER_REVIEW_LOG=str(stubs / "log.jsonl"))
+                       SQLITE_VERIFIER_REVIEW_LOG=str(stubs / "reviews"))
     return subprocess.run([sys.executable, "-m", "tools.review"], cwd=ROOT, env=environment, capture_output=True,
                           text=True, timeout=15, check=False)
 
@@ -144,7 +144,9 @@ def test_claude_caller_gets_isolated_codex_review(tmp_path: Path) -> None:
     assert Path(call["argv"][0]).name == "codex" and call["argv"][1:4] == ["exec", "--sandbox", "read-only"]
     assert "CLAUDECODE" not in call["environ"] and "AI_AGENT" not in call["environ"]
     assert call["environ"][GUARD] == "1" and "Output format" in call["stdin"] and COMMIT in call["stdin"]
-    record = json.loads((stubs / "log.jsonl").read_text())
+    [stored] = list((stubs / "reviews").glob("*/review.json"))
+    record = json.loads(stored.read_text())
+    assert stored.parent.name == record["id"] and f"logged={record['id']}" in result.stderr
     assert (record["reviewer"], record["caller"], record["files"]) == ("codex", "claude", ["tools/review.py"])
     assert [finding["rule"] for finding in record["findings"]] == ["R2"]
     assert f"finding {record['findings'][0]['id']} R2 must" in result.stderr
@@ -171,7 +173,7 @@ def test_review_refuses(tmp_path: Path, markers: dict[str, str], message: str) -
     stubs = stub_tools(tmp_path / "bin", "No findings.")
     result = run_review(stubs, markers)
     assert result.returncode == 2 and message in result.stderr, result.stderr
-    assert not (stubs / "call.json").exists() and not (stubs / "log.jsonl").exists()
+    assert not (stubs / "call.json").exists() and not (stubs / "reviews").exists()
 
 
 @pytest.mark.integration
@@ -181,6 +183,8 @@ def test_failed_or_malformed_review_is_logged(tmp_path: Path, output: str, statu
     that is not well formed and has no findings."""
     stubs = stub_tools(tmp_path / "bin", output, status)
     result = run_review(stubs, {"CLAUDECODE": "1"})
-    record = json.loads((stubs / "log.jsonl").read_text())
+    [stored] = list((stubs / "reviews").glob("*/review.json"))
+    record = json.loads(stored.read_text())
+    assert stored.parent.name == record["id"] and f"logged={record['id']}" in result.stderr
     assert result.returncode == 3, result.stderr
     assert (record["exit"], record["well_formed"], record["findings"]) == (3, False, [])
