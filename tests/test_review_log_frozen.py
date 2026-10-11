@@ -74,3 +74,26 @@ def test_command_on_a_jj_repository(tmp_path: Path) -> None:
     converted = report()
     assert converted.returncode == 0, converted.stderr
     assert "The frozen log can be converted." in converted.stdout
+
+
+def run_command(arguments: list[str], path: str) -> subprocess.CompletedProcess[str]:
+    """Run `tools.review_log_frozen` with the given search path for executables."""
+    return subprocess.run([sys.executable, "-m", "tools.review_log_frozen", *arguments], cwd=ROOT,
+                          env={**os.environ, "PATH": path}, capture_output=True, text=True,
+                          timeout=JJ_TIMEOUT_SECONDS)
+
+
+@pytest.mark.integration
+def test_command_without_jj(tmp_path: Path) -> None:
+    """`tools.review_log_frozen.main` without a jj executable exits 2 and says to install jj."""
+    result = run_command([], str(tmp_path))
+    assert result.returncode == 2 and "cannot run jj" in result.stderr and "Install jj" in result.stderr
+
+
+@pytest.mark.integration
+@pytest.mark.skipif(shutil.which("jj") is None, reason="jj is not installed")
+def test_command_outside_a_repository(tmp_path: Path) -> None:
+    """`tools.review_log_frozen.main` with `--root` outside a jj repository exits 2 and says to
+    check `--root` and `--main`."""
+    result = run_command(["--root", str(tmp_path)], os.environ["PATH"])
+    assert result.returncode == 2 and "Check that --root names a jj repository" in result.stderr

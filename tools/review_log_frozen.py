@@ -85,9 +85,13 @@ def main(arguments: Sequence[str]) -> int:
     try:
         reference = log_lines(options.root, options.main)
         found = heads(options.root, options.main)
-    except (OSError, subprocess.TimeoutExpired) as error:
+    except OSError as error:
         print(f"review-log-frozen: cannot run jj: {error}. Install jj, or run the command in the "
               f"development shell.", file=sys.stderr)
+        return 2
+    except subprocess.TimeoutExpired:
+        print(f"review-log-frozen: jj did not answer within {JJ_TIMEOUT_SECONDS} s in {options.root}. "
+              f"Stop other jj commands in that repository and try again.", file=sys.stderr)
         return 2
     except RuntimeError as error:
         print(f"review-log-frozen: {error}. Check that --root names a jj repository and that "

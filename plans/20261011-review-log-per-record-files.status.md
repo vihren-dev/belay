@@ -31,3 +31,7 @@ Task: [20261011-review-log-per-record-files.task.md](20261011-review-log-per-rec
   branches do not block step 3.
 - 2026-10-11: review of the frozen report: two "should" findings (test
   docstrings name their subject; error actions match the failure) fixed.
+- 2026-10-11: second review round of the error messages: two "should"
+  findings fixed (a separate message for a jj timeout; tests for the missing-jj
+  and outside-a-repository errors). The timeout branch has no test: a
+  deterministic jj hang needs a stub, which tests the stub, not the message.
