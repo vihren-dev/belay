@@ -12,7 +12,7 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from tests.git_commands import git
-from tools.review_log_check import NO_BASE, blob_hash, conversion_problems, file_problems, record_problem
+from tools.review_log_check import NO_BASE, blob_hash, file_problems, record_problem
 
 REVIEW = json.dumps({"kind": "review", "id": "r1", "commit": "a" * 40, "date": "2026-10-08",
                      "findings": [], "well_formed": True})
@@ -44,30 +44,12 @@ class RecordTest(unittest.TestCase):
                 self.assertEqual(record_problem(line), problem)
 
 
-class ConversionTest(unittest.TestCase):
-    """The change that deletes the one-line-per-record log keeps each of its records as a file."""
-
-    def test_accepts_each_record_as_a_file(self) -> None:
-        """A line passes when a record file holds the same record, whatever its key order."""
-        line = json.dumps(json.loads(FILE_REVIEW), sort_keys=False)
-        self.assertEqual(conversion_problems([line, ""], {REVIEW_FILE: FILE_REVIEW}), [])
-
-    def test_names_each_record_without_a_file(self) -> None:
-        """A record that no file holds, or that only an invalid file or another path holds, fails."""
-        line = FILE_REVIEW.decode()
-        expected = ["reviews/log.jsonl line 1: no record file holds this record"]
-        self.assertEqual(conversion_problems([line], {}), expected)
-        self.assertEqual(conversion_problems([line], {"reviews/notes.json": FILE_REVIEW}), expected)
-        self.assertEqual(conversion_problems([line], {RESOLUTION_FILE: FILE_RESOLUTION}), expected)
-
-
 class RecordFileTest(unittest.TestCase):
     """Base record files stay byte-identical; each file holds a valid record at its own path."""
 
     def test_accepts_new_and_kept_files(self) -> None:
-        """New record files pass next to kept base files; a deleted base log is left to
-        `conversion_problems`."""
-        base = {REVIEW_FILE: blob_hash(FILE_REVIEW), "reviews/log.jsonl": "f" * 40}
+        """New record files pass next to kept base files."""
+        base = {REVIEW_FILE: blob_hash(FILE_REVIEW)}
         head = {REVIEW_FILE: FILE_REVIEW, RESOLUTION_FILE: FILE_RESOLUTION}
         self.assertEqual(file_problems(base, head), [])
 
@@ -83,11 +65,11 @@ class RecordFileTest(unittest.TestCase):
         """Unknown files, invalid records and records at another record's path fail."""
         other = "reviews/20261011T085535Z-6bb34bbf/review.json"
         wrong_finding = RESOLUTION_FILE.replace("resolution-1-", "resolution-2-")
-        cases = {"reviews/notes.md": "not a record file", "reviews/log.jsonl": "not a record file",
+        cases = {"reviews/notes.md": "not a record file", "reviews/notes.jsonl": "not a record file",
                  REVIEW_FILE: "not JSON",
                  other: "review id '20261011T085534Z-6bb34bbf' does not match the path",
                  wrong_finding: f"finding '{REVIEW_ID}#1' does not match the path"}
-        contents = {"reviews/notes.md": b"", "reviews/log.jsonl": FILE_REVIEW + b"\n", REVIEW_FILE: b"{", other: FILE_REVIEW, wrong_finding: FILE_RESOLUTION}
+        contents = {"reviews/notes.md": b"", "reviews/notes.jsonl": FILE_REVIEW + b"\n", REVIEW_FILE: b"{", other: FILE_REVIEW, wrong_finding: FILE_RESOLUTION}
         for path, problem in cases.items():
             with self.subTest(path=path):
                 found = file_problems({}, {path: contents[path]})
@@ -110,8 +92,8 @@ class CommandTest(unittest.TestCase):
                               capture_output=True, text=True, timeout=CHECK_TIMEOUT_SECONDS)
 
     def test_git_base(self) -> None:
-        """A converted log passes only with its records as files; a changed base file fails; a base
-        without reviews or a new branch has no base records."""
+        """Added record files pass, a changed base file fails, and a base without reviews or a new
+        branch has no base records."""
         with TemporaryDirectory() as directory:
             root = Path(directory)
             git(root, "init", "-q")
@@ -125,18 +107,10 @@ class CommandTest(unittest.TestCase):
                 return git(root, "rev-parse", "HEAD").decode().strip()
 
             without_reviews = commit()
-            log = root / "reviews/log.jsonl"
-            log.parent.mkdir()
-            log.write_bytes(FILE_REVIEW + b"\n")
-            with_log = commit()
-            log.unlink()
-            failed = self.run_check(root, with_log)
-            self.assertEqual(failed.returncode, 1)
-            self.assertIn("reviews/log.jsonl line 1: no record file holds this record", failed.stderr)
             record = root / REVIEW_FILE
-            record.parent.mkdir()
+            record.parent.mkdir(parents=True)
             record.write_bytes(FILE_REVIEW)
-            for base in (with_log, without_reviews, NO_BASE, None):
+            for base in (without_reviews, NO_BASE, None):
                 with self.subTest(base=base):
                     self.assertEqual(self.run_check(root, base).returncode, 0)
             with_file = commit()

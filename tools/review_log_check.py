@@ -5,10 +5,6 @@ so a pull request that changes only documentation and records can skip the build
 cannot change or remove a review record. Each record is one file (`tools/review_records.py`):
 each base file must be present with the same bytes, and each file must hold a valid record at
 the path that its record determines.
-
-`reviews/log.jsonl` held the records written before record files. The change that converts it
-deletes it; for that change only, the check accepts the deletion when each of its records exists
-as a record file (`plans/20261011-review-log-conversion.task.md`). A follow-up removes the rule.
 """
 
 import argparse
@@ -23,8 +19,6 @@ import sys
 
 from tools.review_records import DIRECTORY, is_record_path, path_problem
 
-CONVERTED_LOG = f"{DIRECTORY}/log.jsonl"
-"""The converted one-line-per-record log, relative to the repository root."""
 REQUIRED_FIELDS = {"review": frozenset({"kind", "id", "commit", "date", "findings", "well_formed"}),
                    "resolution": frozenset({"kind", "finding", "outcome", "date"})}
 """The fields of each record kind, as `tools/review.py` and `tools/review_log.py` write them."""
@@ -52,23 +46,6 @@ def record_problem(text: str) -> str | None:
     return f"missing fields {', '.join(missing)}" if missing else None
 
 
-def canonical(record: object) -> str:
-    """One record as text that does not depend on key order or spacing, to compare records."""
-    return json.dumps(record, ensure_ascii=False, sort_keys=True)
-
-
-def conversion_problems(base_log: Sequence[str], head: Mapping[str, bytes]) -> list[str]:
-    """The records of the base commit's converted log that no head record file holds.
-
-    `head` maps each path under `reviews/` to its working-tree bytes.
-    """
-    stored = {canonical(json.loads(content)) for path, content in head.items()
-              if is_record_path(path) and record_problem(content.decode("utf-8", errors="replace")) is None}
-    return [f"{CONVERTED_LOG} line {number}: no record file holds this record"
-            for number, line in enumerate(base_log, start=1)
-            if line.strip() and canonical(json.loads(line)) not in stored]
-
-
 def blob_hash(content: bytes) -> str:
     """Git's object id of a file's content, to compare a working-tree file with a base blob."""
     return hashlib.sha1(b"blob %d\0" % len(content) + content).hexdigest()
@@ -78,8 +55,7 @@ def file_problems(base: Mapping[str, str], head: Mapping[str, bytes]) -> list[st
     """The violations of the append-only rule for record files.
 
     `base` maps each repository path under `reviews/` to its blob hash in the base commit;
-    `head` maps each path under `reviews/` to its working-tree bytes. A base converted log is
-    checked by `conversion_problems` instead.
+    `head` maps each path under `reviews/` to its working-tree bytes.
     """
     found: list[str] = []
     for path, content in sorted(head.items()):
@@ -91,7 +67,7 @@ def file_problems(base: Mapping[str, str], head: Mapping[str, bytes]) -> list[st
         if problem is not None:
             found.append(f"{path}: {problem}")
     found += [f"{path}: base record file is changed or removed" for path, blob in sorted(base.items())
-              if path != CONVERTED_LOG and (path not in head or blob_hash(head[path]) != blob)]
+              if path not in head or blob_hash(head[path]) != blob]
     return found
 
 
@@ -132,9 +108,7 @@ def main(arguments: Sequence[str]) -> int:
     base = os.environ.get(BASE_VARIABLE, "")
     base_blobs = base_files(options.root, base) if base else {}
     head = head_files(options.root)
-    base_log = (git(options.root, "show", f"{base}:{CONVERTED_LOG}").splitlines()
-                if CONVERTED_LOG in base_blobs else [])
-    found = conversion_problems(base_log, head) + file_problems(base_blobs, head)
+    found = file_problems(base_blobs, head)
     for problem in found:
         print(f"review log: {problem}; restore the original record files and add each new record "
               f"with `just review` or `just review-resolve`", file=sys.stderr)

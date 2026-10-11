@@ -19,7 +19,6 @@ class CiScopeTest(unittest.TestCase):
         """Unknown paths run the Nix targets; host checks run only for their own subjects."""
         examples = [(["README.md", "docs/ci.md"], "docs"), (["plans/20261007-task.md"], "docs"),
                     (["docs/nested/guide.md"], "docs"), (["unknown/file.md"], "test"),
-                    (["reviews/log.jsonl"], "test"),
                     (["reviews/other.jsonl"], "test"), (["reviews/notes.md"], "test"),
                     (["reviews/20261011T085534Z-6bb34bbf/review.json"], "docs"),
                     (["reviews/20261011T085534Z-6bb34bbf/resolution-2-20261011T091200Z.json",
@@ -28,7 +27,6 @@ class CiScopeTest(unittest.TestCase):
                     (["reviews/20261011T085534Z-6bb34bbf/review.json", "parser/library.c"], "package"),
                     (["reviews/20261011T085534Z-6bb34bbf/notes.json"], "test"),
                     (["reviews/review.json"], "test"),
-                    (["log.jsonl"], "test"),
                     (["parser/upstream/README.md"], "package"),
                     (["packages/belay-sqlite/Belay/Sqlite/Preservation.lean"], "packaging"),
                     (["tests/coverage_test.py"], "test"), (["unknown/file"], "test"),
