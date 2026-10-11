@@ -1,6 +1,6 @@
 # Convert the frozen review log to record files
 
-Created 2026-10-11. Status: OPEN.
+Created 2026-10-11. Status: DONE (a follow-up removes the conversion rule from the check after merge).
 Step 3 of the review-log change agreed with the owner on 2026-10-11 (see
 [20261011-review-log-per-record-files.task.md](20261011-review-log-per-record-files.task.md)).
 Step 2 is done: `just review-log-frozen` reported on 2026-10-11 that no

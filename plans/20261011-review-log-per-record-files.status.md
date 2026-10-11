@@ -1,6 +1,6 @@
 # Review log per-record files status
 
-Created 2026-10-11. Status: DONE (step 1; steps 2 and 3 are separate).
+Created 2026-10-11. Status: DONE (all three steps).
 Task: [20261011-review-log-per-record-files.task.md](20261011-review-log-per-record-files.task.md).
 
 ## References

@@ -1,6 +1,6 @@
 # Review log conversion status
 
-Created 2026-10-11. Status: OPEN.
+Created 2026-10-11. Status: DONE (a follow-up removes the conversion rule from the check after merge).
 Task: [20261011-review-log-conversion.task.md](20261011-review-log-conversion.task.md).
 
 ## References
@@ -23,3 +23,4 @@ Task: [20261011-review-log-conversion.task.md](20261011-review-log-conversion.ta
   table equals the table of the deduplicated old log plus the existing record
   files; it now counts 325 reviews instead of 346 (21 duplicates). The CI
   check passes against `main`.
+- 2026-10-11: last review clean. DONE.
