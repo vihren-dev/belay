@@ -41,10 +41,14 @@ class GeneratedInputs:
     """The same request as `sql_source`, as the structural record the bundle checker decodes."""
 
 
-def generated_inputs(options: argparse.Namespace) -> GeneratedInputs:
-    """Parse schema and migration with the pinned frontend and emit the generated inputs."""
+def generated_inputs(options: argparse.Namespace, runtime: Runtime) -> GeneratedInputs:
+    """Parse schema and migration with the runtime's pinned frontend and emit the generated inputs.
+
+    The caller locates the runtime once and passes it here, so a command checks
+    the installation once.
+    """
     selected = profile(options.profile)
-    parser = Runtime.locate().sql_parser(selected)
+    parser = runtime.sql_parser(selected)
     schema_bytes, migration_bytes = read_sql(options.schema), read_sql(options.migration)
     schema = starting_schema(parse(parser, schema_bytes, str(options.schema)))
     script = statements(parse(parser, migration_bytes, str(options.migration)))
