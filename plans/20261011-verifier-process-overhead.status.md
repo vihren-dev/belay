@@ -37,3 +37,9 @@ CI suite times before this task (the last run that executed each suite):
 - 2026-10-11: commands locate the runtime once and pass it to
   `generated_inputs`; `validate_libraries` remembers successfully scanned
   resolved roots (`VALIDATED_LIBRARY_ROOTS`).
+- 2026-10-11: header reads: `migration_check/lean_headers.py` reads all new
+  headers of a discovery step in one `lean --deps-json` process and keeps
+  each result per toolchain, libraries and source bytes. Errors name the real
+  source file. `tests/test_lean_headers.py` compares with the pinned Lean.
+  Fixed an order regression: an invalid profile is again checked before the
+  runtime is located (found by `tests/test_latency_frontend.py`).
