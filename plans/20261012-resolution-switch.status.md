@@ -57,6 +57,18 @@ Relevant files: `belay/sqlite/`, `migration_check/`,
   into a key column. Without them, such a script would fail its proof instead
   of being unsupported.
 
+- 2026-10-12: the Python mapping from the parser tree to `Syntax`
+  (`belay/sqlite/syntax.py`, `syntax_definitions.py`, `syntax_writes.py`,
+  `syntax_expressions.py`, `located.py`), next to the old translation, which
+  the switch deletes. `Located` keeps the byte range of each node in the same
+  path order as Lean's restriction paths. Declared types follow
+  `sqlite3AddColumn`: the raw `typetoken` span after `sqlite3Dequote`. Lean's
+  `decodeScriptRecord` reads the Python record (checked by hand with a sample;
+  the switch adds the automatic check through the resolver).
+- Finding: the old schema translation accepted an index before its table
+  (`tests/sql_fixtures.py` `RICH_BASELINE`). SQLite refuses that schema, and
+  so does `resolveSchemaAndScript`; the switch reorders the fixture.
+
 ## Remaining
 
 - All outcome items of the task.
