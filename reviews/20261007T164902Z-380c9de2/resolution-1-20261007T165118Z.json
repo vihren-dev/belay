@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-07T16:51:18+00:00",
+  "finding": "20261007T164902Z-380c9de2#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "This correction changes only comments, docstrings and a test override name; it changes no trusted-root selection, imported artifact or verification behavior. The actual BundleChecker and GateCore import changes already retain mandatory final owner flags in review 20261007T164606Z-e38bc101. The comments are included in that final review; this adds no new trust-relevant change."
+}

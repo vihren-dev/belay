@@ -77,17 +77,12 @@ review *args:
 review-resolve *args:
     python3 -m tools.review_log "$@"
 
-# Report whether any unmerged branch or workspace still has reviews/log.jsonl lines that main lacks.
-[positional-arguments]
-review-log-frozen *args:
-    python3 -m tools.review_log_frozen "$@"
-
 # Report per checklist condition how often it fired and what happened to its findings.
 [positional-arguments]
 review-stats *args:
     python3 -m tools.review_stats "$@"
 
-# Check Nix source identities, test-target invalidation, environment snapshots and the installer cache.
+# Check Nix source identities, test-target commands, environment snapshots and the installer cache.
 test-nix:
     timeout --foreground 600 python3 -u -m pytest -v tests -m requires_nix --ignore=tests/runtime_package_test.py --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD}" --junitxml build/test-results/nix.xml
 

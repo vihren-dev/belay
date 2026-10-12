@@ -89,3 +89,24 @@ how the builds overlap. Single runs on a shared machine vary by a few seconds.
 ## Remaining
 
 - Owner review of the pull request, then step 1b.
+
+- 2026-10-12: Prepared a local integration of original PR head `805c37ca`
+  with accepted main `ee6185ce`, in the reused completed `ci-time`
+  workspace. Its previous checkout is retained by an archive bookmark.
+  The integration has no conflict. All 596 main review records retain
+  their bytes; 26 branch review records are added. Trust-boundary files
+  are unchanged against main. The model package, Lean runtime and complete
+  runtime build successfully on macOS. The documentation inventory checks
+  all 482 authored declarations. Source acceptance passes 492 tests and
+  58 subtests in 72.00 seconds, with two expected Linux-only pidfd skips.
+  The initial run used an unbuilt checkout root and failed fixture setup;
+  its XML is retained separately and is not counted as acceptance.
+  The corrected run selects the built complete runtime. Build identities,
+  logs and source XML remain local under `build/20261012-syntax-integration/`
+  and `build/test-results/`. Original PR #81 remains at its reviewed head;
+  this local integration has not been pushed or merged.
+
+Decisions waiting for the owner:
+
+- Final review of PR #81 before step 1b. The local integration is prepared
+  for that review and still needs its independent integration review.

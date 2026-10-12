@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-06T09:32:03+00:00",
+  "finding": "20261006T092610Z-9d024378#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The declared development environment requires at least MIN_FREE_BYTES (10 GiB) before expensive work. This real CLI check deliberately exercises that resource guard; insufficient space is a prerequisite failure that AGENTS requires us to report, rather than hide through a skip or mocked successful capacity. The small test does not materially consume the required budget."
+}

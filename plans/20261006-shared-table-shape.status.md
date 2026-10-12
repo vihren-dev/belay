@@ -1,6 +1,6 @@
 # Shared table shape implementation status
 
-Created 2026-10-06. Status: IN PROGRESS. Resumed 2026-10-09 after T10 delivery.
+Created 2026-10-06. Status: DONE. Resumed 2026-10-09 after T10 delivery.
 Task: [observable outcomes](20261006-shared-table-shape.task.md).
 Sources: public issue #15 and approved product T07 outcome.
 
@@ -16,7 +16,7 @@ version-one transport. Application proofs, generated terms, conformance and
 Atuin callers have been adapted to the current package boundary.
 Both platforms pass complete native, source, infrastructure and offline installed
 acceptance. Both public inventories check all 244 authored declarations.
-Draft PR #79 waits for hosted CI and final owner review.
+PR #79 merged on 2026-10-10 as `5a813d20`. The task is delivered.
 The dated progress entries below retain the original paused work's history.
 
 ## Original source audit, 2026-10-06
@@ -90,9 +90,8 @@ approved model package name or the existing verification vocabulary.
 
 ## Open gates
 
-Hosted CI and final R8 owner review of the codec and whole-shape conformance
-formula remain open. All local acceptance and independent code reviews pass.
-This task is not DONE.
+None. The owner merged PR #79 after its integrated head and hosted checks.
+All local acceptance and independent code reviews are recorded below.
 
 ## Resumed checkpoint, 2026-10-09
 
@@ -170,3 +169,13 @@ integration changes only plan records and the review journal.
 PR #79 remains draft pending hosted CI and final owner review of the codec
 and whole-shape conformance formula. No acceptance timeout or failure is
 counted as a pass. The implementation task remains IN PROGRESS.
+
+Reconciled remote delivery on 2026-10-12. GitHub records PR #79 merged from
+`d68fd27e` as `5a813d20`. Hosted CI for `50e20686` passed in run `37982544196`;
+the remote head then integrated the accepted model build-link fix. The code
+is now on main. T07 is DONE, and its former review gates are superseded by
+the completed owner merge. Earlier dated entries retain their original state.
+
+Decisions waiting for the owner:
+
+- None for T07.

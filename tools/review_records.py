@@ -1,9 +1,8 @@
-"""Review records stored as one file each under `reviews/`, plus the frozen `reviews/log.jsonl`.
+"""Review records stored as one file each under `reviews/`.
 
 Each `just review` and `just review-resolve` creates one new file, at a path that its record
 determines. Two workspaces therefore never change the same file, and their records merge
-without conflicts. `reviews/log.jsonl` holds the records written before this layout; it is
-read and never written. See `plans/20261011-review-log-per-record-files.task.md`.
+without conflicts. See `plans/20261011-review-log-per-record-files.task.md`.
 
 The module uses only the standard library: CI runs the log check on the host without Nix.
 """
@@ -16,8 +15,6 @@ import re
 
 DIRECTORY = "reviews"
 """The reviews directory, relative to the repository root."""
-FROZEN_LOG = "log.jsonl"
-"""The frozen log, relative to the reviews directory."""
 REVIEW_ID = r"\d{8}T\d{6}Z-[0-9a-f]{8}"
 """A review id: the UTC second of the review and the first 8 hex digits of the commit."""
 STAMP_FORMAT = "%Y%m%dT%H%M%SZ"
@@ -61,13 +58,12 @@ def path_problem(relative: str, record: Mapping[str, object]) -> str | None:
 
 
 def is_record_path(repository_path: str) -> bool:
-    """Whether a repository path is the frozen log or a record file, so CI can skip the build."""
+    """Whether a repository path is a record file, so CI can skip the build for records alone."""
     prefix = f"{DIRECTORY}/"
     if not repository_path.startswith(prefix):
         return False
     relative = repository_path.removeprefix(prefix)
-    return (relative == FROZEN_LOG or REVIEW_FILE.fullmatch(relative) is not None
-            or RESOLUTION_FILE.fullmatch(relative) is not None)
+    return REVIEW_FILE.fullmatch(relative) is not None or RESOLUTION_FILE.fullmatch(relative) is not None
 
 
 def encode(record: Mapping[str, object]) -> str:
@@ -96,16 +92,12 @@ def record_files(directory: Path) -> list[Path]:
 
 
 def read_records(directory: Path) -> list[dict[str, object]]:
-    """All records: the frozen log in its line order, then the record files by date, reviews
-    before resolutions of the same second, then path.
+    """All records, by date, reviews before resolutions of the same second, then path.
 
     The order is the same on every file system, so statistics that break date ties by
     position give the same result everywhere. An absent directory has no records.
     """
-    frozen = directory / FROZEN_LOG
-    records = ([json.loads(line) for line in frozen.read_text(encoding="utf-8").splitlines() if line.strip()]
-               if frozen.exists() else [])
     stored = [(json.loads(path.read_text(encoding="utf-8")), path.relative_to(directory).as_posix())
               for path in record_files(directory)]
     stored.sort(key=lambda item: (str(item[0].get("date", "")), item[0].get("kind") != "review", item[1]))
-    return records + [record for record, _ in stored]
+    return [record for record, _ in stored]
