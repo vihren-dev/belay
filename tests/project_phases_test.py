@@ -94,3 +94,17 @@ def test_prepare_audits_before_it_exports(small: ProjectConfig, phase: Callable[
     report = phase("prepare", *small.contract_arguments(), "--project", str(small.proofs), "--output", str(bundle))
     assert report["status"] == "UNVERIFIED" and "sorryAx" in str(report["message"]), report
     assert not bundle.exists()
+
+
+def test_export_builds_the_current_sources(small: ProjectConfig, phase: Callable[..., dict[str, object]],
+                                           tmp_path: Path) -> None:
+    """`export` builds before it exports: after a proof edit without `check`, the bundle holds the edited proof,
+    so `verify-bundle` judges what the author wrote, not a stale build."""
+    project = [*small.contract_arguments(), "--project", str(small.proofs)]
+    assert phase("generate", *project)["status"] == "GENERATED"
+    assert phase("check", "--project", str(small.proofs))["status"] == "CHECKED"
+    (small.proofs / "Proofs.lean").write_text("import Generated\ntheorem Proofs.migrationCorrect : True := trivial\n")
+    bundle = tmp_path / "proof.bundle"
+    assert phase("export", *project, "--output", str(bundle))["status"] == "PREPARED"
+    report = phase("verify-bundle", *small.contract_arguments(), "--bundle", str(bundle))
+    assert report["status"] == "UNVERIFIED" and "reconstructed verification target" in str(report["message"]), report
