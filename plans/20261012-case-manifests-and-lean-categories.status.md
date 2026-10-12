@@ -19,3 +19,5 @@ Relevant files: `conftest.py`, `tests/cli_test.py`, `tests/bundle_test.py`, `tes
   layout of a user's project.
 - 2026-10-12: ADR 0010 accepted with the owner's decisions; the task is
   ready. CI times are recorded from the first pull request (section 11).
+- 2026-10-12: the case file is `belay.toml`, the tool's project configuration
+  file, with test-only data in a `[test]` table (owner decision).

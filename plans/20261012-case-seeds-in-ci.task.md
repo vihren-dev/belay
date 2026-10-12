@@ -9,7 +9,7 @@ and [Lake builds in the verifier](20261012-lake-builds-in-the-verifier.task.md).
 ## Outcome
 
 1. Nix has one seed derivation for each case folder, found from the folders
-   and their `case.toml` files, not from a list in a Nix file. A seed runs
+   and their `belay.toml` files, not from a list in a Nix file. A seed runs
    `prepare` and then `verify-bundle` on its case with one cache in a temporary
    directory, then `lake cache stage` into its output, so it holds the outputs
    of both the proofs project and `verify-bundle`'s workspace.

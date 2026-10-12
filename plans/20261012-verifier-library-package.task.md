@@ -20,7 +20,7 @@ and [Lake builds in the verifier](20261012-lake-builds-in-the-verifier.task.md).
 2. Each package is built by its own Nix derivation, which depends on the
    derivations of the packages it requires. Its output is the package's Lake
    workspace, which Lake replays without compiling.
-3. The category test of the case-manifest task no longer lists package sources
+3. The category test of the case-folder task no longer lists package sources
    outside `packages/`.
 4. The shipped runtime, the API reference, the documentation inventory and all
    test targets build from the new locations. Public module names do not

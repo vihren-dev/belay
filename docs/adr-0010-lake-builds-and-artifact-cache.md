@@ -223,19 +223,19 @@ and its outputs are in the cache that the tests use:
    workspace: sources, lakefile, and `.lake/build` with `.olean`, `.trace` and
    `ir` files. Lake replays such a workspace instead of compiling it (section 3).
 2. **Cases.** A verification case has the layout of a user's project, so the
-   tests use the input format that users use. A case folder contains a
-   manifest, `case.toml`, and a proofs project (section 1). The manifest names
-   the schema, the contract directory, the migration and the profile, and, for
-   tests only, the expected status. When the product's project configuration
-   file is decided, it replaces the first part of the manifest. Checked-in cases
+   tests use the input format that users use. A case folder contains the
+   project configuration file of the command line tool, `belay.toml`, and a
+   proofs project (section 1). `belay.toml` names the schema, the contract
+   folder, the migration and the profile. Tests keep the expected status in a
+   `[test]` table of the same file, which the tool ignores. Checked-in cases
    are in `examples/<case>/`; cases used only by tests are in
    `tests/cases/<case>/`. A plain `lake build` cannot build a case: its
    generated modules exist only after the verifier writes them, and the keys of
    `verify-bundle`'s workspace contain the package and module names that the
    verifier chooses. So a case is built by running `prepare` and then
    `verify-bundle` on it with one cache, followed by `lake cache stage`.
-3. **Tests.** Tests take their cases from the manifests, not from paths in the
-   test code, and use the cache from stage 2.
+3. **Tests.** Tests take their cases from `belay.toml` files, not from paths
+   in the test code, and use the cache from stage 2.
 
 The folder decides how a Lean file is built. A unit test puts every `.lean`
 file of the repository in exactly one category, by its path:
@@ -243,7 +243,7 @@ file of the repository in exactly one category, by its path:
 | Category | Path rule | Built in |
 | --- | --- | --- |
 | Package | under `packages/<name>/` | stage 1 |
-| Case | under a case folder (with a `case.toml`) | stage 2 |
+| Case | under a case folder (with a `belay.toml`) | stage 2 |
 | Direct fixture | listed in the test, for example `tests/kernel_gate/` | by its test |
 | Excluded | listed in the test, for example `experiments/` | not built by CI |
 
@@ -423,7 +423,7 @@ on CI time, so that a regression is found when it is introduced:
   of about 2 s.
 - The verifier no longer runs `lean --deps-json` before each compile.
 - Tests name cases through their folders. Adding a case means adding a folder
-  with a `case.toml` and a proofs project; adding any other Lean file means
+  with a `belay.toml` and a proofs project; adding any other Lean file means
   placing it in a category of section 7.
 - Lake becomes part of the trusted implementation. Its cache format and
   behavior can change with each Lean release, and the project follows each
@@ -484,7 +484,7 @@ dependencies:
 Each task records CI times as section 11 describes.
 
 1. [Case folders and the Lean file categories](../plans/20261012-case-manifests-and-lean-categories.task.md):
-   each case gets a `case.toml`, tests read them, and the coverage test of
+   each case gets a `belay.toml`, tests read them, and the coverage test of
    section 7. The candidate files move into a proofs folder only in step 2,
    when `prepare` can build it.
 2. [Lake builds in the verifier](../plans/20261012-lake-builds-in-the-verifier.task.md):
