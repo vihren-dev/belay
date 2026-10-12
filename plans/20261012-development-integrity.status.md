@@ -78,3 +78,4 @@ Decision: [ADR 0011](../docs/adr-0011-product-trust-and-development-integrity.md
   `AGENTS.md` describes the two-pull-request flow for a claim change.
   Waiting for: the owner adds "Verdict" as a required check of ruleset
   23934665 after this is on `main`.
+- 2026-10-12: PR #91 merged; the new `CODEOWNERS` is enforced. R8 removed from the review checklist (outcome 2).
