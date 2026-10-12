@@ -1,6 +1,6 @@
 # Review log per-record files status
 
-Created 2026-10-11. Status: DONE (step 1; steps 2 and 3 are separate).
+Created 2026-10-11. Status: DONE (all three steps).
 Task: [20261011-review-log-per-record-files.task.md](20261011-review-log-per-record-files.task.md).
 
 ## References
@@ -38,3 +38,8 @@ Task: [20261011-review-log-per-record-files.task.md](20261011-review-log-per-rec
 - 2026-10-11: last review clean. Step 1 DONE. Next: step 2 (merge to `main`,
   rebase open branches and workspaces), then step 3 when
   `just review-log-frozen` exits 0.
+- 2026-10-11: step 2 done. #85 merged. Branches #81, #76, #80 and #74 were
+  rebased onto `main` and their frozen-log lines moved to record files; #60
+  (`t06-bundle-readiness`) got a merge of `main` with a port to the two
+  trusted Lean roots. `just review-log-frozen` then exited 0. Step 3:
+  `plans/20261011-review-log-conversion.task.md`.

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-08T10:41:10+00:00",
+  "finding": "20261008T103804Z-a630a4fb#1",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "Owner requested this fix and will review trusted package selection at the final integrated PR #56 head; merge remains gated."
+}

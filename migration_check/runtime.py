@@ -81,9 +81,23 @@ class Runtime:
         return runtime
 
 
+VALIDATED_LIBRARY_ROOTS: set[tuple[Path, ...]] = set()
+"""Resolved library roots that passed `validate_libraries` in this process.
+
+An installation does not change while a command runs, and one command checks
+the same roots up to three times. Only a successful check is remembered.
+"""
+
+
 def validate_libraries(sysroot: Path, libraries: tuple[Path, Path]) -> None:
-    """Refuse missing roots and colliding installed modules before compiling caller source."""
+    """Refuse missing roots and colliding installed modules before compiling caller source.
+
+    Each set of roots is scanned once per process (`VALIDATED_LIBRARY_ROOTS`).
+    """
     roots = (sysroot / 'lib/lean', *libraries)
+    identity = tuple(directory.resolve() for directory in roots)
+    if identity in VALIDATED_LIBRARY_ROOTS:
+        return
     modules: dict[str, Path] = {}
     for directory in roots:
         if not directory.is_absolute() or not directory.is_dir():
@@ -93,3 +107,4 @@ def validate_libraries(sysroot: Path, libraries: tuple[Path, Path]) -> None:
             if name in modules:
                 raise ValueError(f'Installed module {path} conflicts with {modules[name]}; rebuild or reinstall')
             modules[name] = path
+    VALIDATED_LIBRARY_ROOTS.add(identity)

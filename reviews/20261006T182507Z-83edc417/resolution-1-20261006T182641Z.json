@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-06T18:26:41+00:00",
+  "finding": "20261006T182507Z-83edc417#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Name def step, end SqliteVerifier and Execution.lean explicitly, and state that step must remain the final declaration. The extraction body is unchanged."
+}

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-09T15:01:32+00:00",
+  "finding": "20261009T145904Z-ee5bde65#2",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "R8 marker for owner review: the only change is that Runtime.locate() lost its parser-version argument; raised to the owner in the step 2 PR"
+}
