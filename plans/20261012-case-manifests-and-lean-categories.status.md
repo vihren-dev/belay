@@ -46,3 +46,13 @@ Relevant files: `conftest.py`, `tests/cli_test.py`, `tests/bundle_test.py`, `tes
   - Review: two rounds with "must" findings in the reader (a list status
     raised `TypeError`; path-like module names escaped the root; then tests
     that passed without the fix), all fixed; the third round had none.
+- 2026-10-12: CI baseline (ADR 0010 section 11), successful `main` runs, scope
+  `package`, Nix cache restored:
+
+  | Run | Commit | Linux | macOS |
+  | --- | --- | --- | --- |
+  | 38243172224 | `0adb73dc` | 467 s | 1366 s |
+  | 38238221252 | `de61b7c5` | 885 s | 1679 s |
+
+  The reference for this task's pull request is `0adb73dc`. The `docs`
+  scope takes about 10 s and is not compared.
