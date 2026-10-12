@@ -79,10 +79,10 @@ run_cmd do
   let elaboration ← elaborationError "BrokenType" "def broken : Nat := \"text\""
   unless parse.contains "generated module BrokenSyntax does not parse" && parse.contains "unexpected end of input" &&
       parse.contains "fix the source printer" do
-    throwError "unexpected parse diagnostic: {parse}"
+    throwError "elaborateModule gave an unexpected parse diagnostic; make it name the module, keep Lean's message and give the fix:\n{parse}"
   unless elaboration.contains "generated module BrokenType does not elaborate" &&
       elaboration.contains "Type mismatch" && elaboration.contains "fix the source printer" do
-    throwError "unexpected elaboration diagnostic: {elaboration}"
+    throwError "elaborateModule gave an unexpected elaboration diagnostic; make it name the module, keep Lean's message and give the fix:\n{elaboration}"
 
 run_cmd do
   let some resolution := sample | throwError "the sample does not resolve"
