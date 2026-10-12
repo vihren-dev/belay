@@ -1,7 +1,7 @@
 # Independent pytest targets: Nix owns isolation, dependency identity and reuse.
 { pkgs, leanToolchain, leanRuntime, runtime, seedRuntime, modelPackage, parserLibrary, conformance ? runtime, root ? ../.
 # Lean package outputs by their folder in the repository layout (default.nix); the `packages` suite replays them.
-, leanPackages ? { }
+, leanPackages
 , native ? import ../nix/sqlite.nix { inherit pkgs; }
 , conformanceNative ? import ./conformance-native.nix { inherit pkgs; }
 }:
@@ -41,6 +41,12 @@ let
       mkdir -p "$out/${path}"
       for entry in $(ls -A ${package}); do ln -s "${package}/$entry" "$out/${path}/$entry"; done
     '') leanPackages)}
+  '';
+  # The compiler and the built documentation tool, for the inventory's fixture tests.
+  documentationRoot = pkgs.runCommand "sqlite-verifier-test-documentation" {} ''
+    mkdir -p "$out/packages"
+    ln -s ${leanToolchain} "$out/lean"
+    ln -s ${leanPackages."packages/public-doc-tools"} "$out/packages/public-doc-tools"
   '';
   # `seeds`: Lake cache seeds (case-seeds.nix) copied into one writable cache that the tests use (ADR 0010).
   suite = name: { inputs, runtime, tools ? [], environment ? {}, seeds ? [] }:
@@ -230,6 +236,11 @@ in {
   packages = suite "packages" {
     inputs = [ ];
     runtime = packageRoot;
+  };
+  documentation = suite "documentation" {
+    inputs = [ (root + /tools/__init__.py) (root + /tools/public_doc_inventory.py) (root + /tools/public_doc_coverage.py)
+               (root + /tests/public_doc_inventory) ];
+    runtime = documentationRoot;
   };
   kernel = suite "kernel" {
     inputs = [ (fs.fileFilter (file: file.hasExt "lean") (root + /tests/kernel_gate)) ];

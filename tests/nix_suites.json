@@ -98,5 +98,8 @@
   ],
   "packages": [
     "tests/lean_packages_test.py"
+  ],
+  "documentation": [
+    "tests/test_public_doc_inventory.py"
   ]
 }

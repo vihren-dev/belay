@@ -44,7 +44,7 @@ PRELUDE = f'''let
 def expression(root: Path) -> str:
     """Reuse the actual test definitions with a private source tree and unchanged runtime dependencies."""
     return f'''{PRELUDE} {import_file("tests.nix")} {{
-      inherit pkgs; inherit (builds) leanToolchain leanRuntime conformance modelPackage;
+      inherit pkgs; inherit (builds) leanToolchain leanRuntime conformance modelPackage leanPackages;
       parserLibrary = builds.parserLibrary.testRoot;
       runtime = {runtime_expression(root, "runtime")};
       seedRuntime = {runtime_expression(root, "runtimeWithoutExamples")};
@@ -61,7 +61,8 @@ def test_bounded_commands_keep_complete_suite_ownership() -> None:
     scripts = json.loads(result.stdout)
     ownership = json.loads((ROOT / 'tests/nix_suites.json').read_text())
     assert set(scripts) == set(ownership) == {'atuin', 'bundle', 'cli', 'kernel', 'model', 'frozen', 'corpora',
-                                               'harness', 'sample', 'upstream', 'parserLibrary', 'packages'}
+                                               'harness', 'sample', 'upstream', 'parserLibrary', 'packages',
+                                               'documentation'}
     for name, script in scripts.items():
         command = shlex.split(next(line for line in script.replace('\\\n', ' ').splitlines()
                                   if line.strip().startswith('timeout ')))

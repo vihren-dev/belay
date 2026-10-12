@@ -54,7 +54,8 @@ requires an output compiles nothing. The packages are `modelPackage`
 inputs), `verifierLibrary` (`packages/sqlite-verifier`: the library, the
 engineering examples, `GatePaths` and `GateCore`), `verifierGate`
 (`packages/verifier-gate`: the three executables) and `verifierConformance`
-(`packages/verifier-conformance`: the test-only conformance library and runner).
+(`packages/verifier-conformance`: the test-only conformance library and runner)
+and `docTools` (`packages/public-doc-tools`: the documentation inventory).
 `lean4exportPackage` builds the exporter library in the same way.
 `EngineeringExamples` is a separate library for the shipped examples; the
 production application root excludes demonstrations. `leanRuntime/.lake/build/`
@@ -109,7 +110,9 @@ source parser and original compiler references. Every authored public
 declaration, constructor and field must have direct checked Verso documentation.
 Missing, ordinary and unclassified documentation fail this development target.
 `just test`, `just test-full` and reference generation run this gate. Its
-inventory tools stay outside the installed proof runtime.
+inventory tool is the `docTools` package (`packages/public-doc-tools`) with the
+Python driver `tools/public_doc_inventory.py`; neither is in the installed
+proof runtime. `tests.documentation` runs the inventory on small fixtures.
 
 `lean4export.nix` fetches unpatched lean4export at tag `v4.34.0` as a fixed-output source.
 `lean4exportPackage` builds its `Export` library at `build/lean4export`, where

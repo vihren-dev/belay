@@ -34,11 +34,7 @@ class Rules:
 
 
 REPOSITORY_RULES = Rules(
-    package=(
-        "packages/",
-        # The documentation tool's sources, until they move under packages/.
-        "tools/PublicDocInventory.lean", "tools/PublicDocSyntax.lean",
-    ),
+    package=("packages/",),
     direct_fixture=("tests/kernel_gate/", "tests/public_doc_inventory/", "conformance/regressions/"),
     excluded=("experiments/",),
     case_roots=("examples", "tests/cases"),

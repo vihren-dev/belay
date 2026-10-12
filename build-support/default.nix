@@ -11,10 +11,7 @@ let
   lean4export = import ./lean4export.nix { inherit pkgs; };
   inventoryTools = pkgs.lib.fileset.toSource {
     root = ../.;
-    fileset = pkgs.lib.fileset.unions [
-      ../tools/PublicDocSyntax.lean ../tools/PublicDocInventory.lean
-      ../tools/public_doc_coverage.py ../tools/public_doc_inventory.py
-    ];
+    fileset = pkgs.lib.fileset.unions [ ../tools/public_doc_coverage.py ../tools/public_doc_inventory.py ];
   };
   # One Nix derivation for each Lean package under packages/ (ADR 0010 section 7).
   leanPackage = arguments: import ./lean-package.nix ({ inherit pkgs leanToolchain; } // arguments);
@@ -40,7 +37,7 @@ in rec {
     revision = referenceRevision;
   };
   publicDocumentation = import ./public-documentation.nix {
-    inherit pkgs leanToolchain verifierLibrary inventoryTools modelPackage;
+    inherit pkgs leanToolchain verifierLibrary inventoryTools docTools modelPackage;
   };
   conformanceNative = import ./conformance-native.nix { inherit pkgs; };
   conformanceDocs = import ./conformance-docs.nix {
@@ -49,11 +46,7 @@ in rec {
   tests = import ./tests.nix {
     inherit pkgs leanToolchain leanRuntime runtime seedRuntime native conformance modelPackage root;
     parserLibrary = parserLibrary.testRoot;
-    leanPackages = {
-      "packages/belay-sqlite" = modelPackage; "packages/sqlite-verifier" = verifierLibrary;
-      "packages/verifier-gate" = verifierGate; "packages/verifier-conformance" = verifierConformance;
-      "build/lean4export" = lean4exportPackage;
-    };
+    inherit leanPackages;
   };
   # `just test` skips the slow model comparisons, the frozen evidence and the locked-corpus validation;
   # `just test-full` runs them.
@@ -101,6 +94,19 @@ in rec {
     targets = [ "VerifierConformance" "conformance-runner" ];
     requires."packages/belay-sqlite" = modelPackage;
     executables = true;
+  };
+  # The built Lean packages by their folder in the repository layout; tests.packages replays them.
+  leanPackages = {
+    "packages/belay-sqlite" = modelPackage; "packages/sqlite-verifier" = verifierLibrary;
+    "packages/verifier-gate" = verifierGate; "packages/verifier-conformance" = verifierConformance;
+    "packages/public-doc-tools" = docTools; "build/lean4export" = lean4exportPackage;
+  };
+  # The documentation inventory's Lean part; publicDocumentation and tests.documentation use it.
+  docTools = leanPackage {
+    pname = "sqlite-verifier-doc-tools";
+    directory = "packages/public-doc-tools";
+    source = sources.docTools;
+    targets = [ "PublicDocSyntax" "PublicDocInventory" ];
   };
   # The library outputs and the gate's binaries in the layout that the installed runtime ships.
   leanRuntime = pkgs.runCommand "sqlite-verifier-lean-runtime" { } ''

@@ -41,4 +41,5 @@ in {
   verifierLibrary = package "sqlite-verifier";
   verifierGate = package "verifier-gate";
   verifierConformance = package "verifier-conformance";
+  docTools = package "public-doc-tools";
 }

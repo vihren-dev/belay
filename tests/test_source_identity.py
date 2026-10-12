@@ -11,7 +11,7 @@ from tests.runtime_support import run_command
 ROOT = Path(__file__).resolve().parents[1]
 pytestmark = [pytest.mark.integration, pytest.mark.environment, pytest.mark.requires_nix]
 PACKAGES: dict[str, str] = {"sqlite-verifier": "verifierLibrary", "verifier-gate": "verifierGate",
-                            "verifier-conformance": "verifierConformance"}
+                            "verifier-conformance": "verifierConformance", "public-doc-tools": "docTools"}
 """The Lean package folders under packages/ that `sources.nix` selects one by one, to their attributes."""
 COMPONENTS: set[str] = {"runtime", "runtimeWithoutExamples", "model", *PACKAGES.values()}
 DYNAMIC: dict[str, set[str]] = {
@@ -25,6 +25,7 @@ DYNAMIC: dict[str, set[str]] = {
     "packages/verifier-gate/ProofChecker.lean": {"verifierGate"},
     "packages/verifier-conformance/VerifierConformance/Trace.lean": {"verifierConformance"},
     "packages/verifier-conformance/ConformanceRunner.lean": {"verifierConformance"},
+    "packages/public-doc-tools/PublicDocSyntax.lean": {"docTools"},
     "belay/sqlite/sql_model.py": {"runtime", "runtimeWithoutExamples"},
     "migration_check/runtime.py": {"runtime", "runtimeWithoutExamples"}, "tests/test_input.py": set(),
     "packaging/helper.py": set(), "tools/helper.py": set(), "Loose.lean": set(),

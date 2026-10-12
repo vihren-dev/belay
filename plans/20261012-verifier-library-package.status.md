@@ -55,4 +55,12 @@ Relevant files: `lakefile.toml`, `SqliteVerifier/`, `SqliteVerifier.lean`, `Gate
     Lake package); use `SQLITE_VERIFIER_RUNTIME_ROOT=build/runtime`.
   - Next: the documentation tool package, then the category test without
     exceptions.
+- 2026-10-12: documentation tool in `packages/public-doc-tools` (`docTools`).
+  `tools/public_doc_inventory.py` takes the built package (`--tools`) instead
+  of compiling `PublicDocSyntax` itself, so its fixture test moved from the
+  host checks to the new Nix suite `documentation`. The inventory of the
+  public library is the same as before, apart from source paths (482
+  authored, all checked). The category test now has `packages/` as its only
+  package rule. Checks: suites `documentation` 12 and `packages` 5 passed,
+  `just test-source` 533 (12 tests moved), host Nix tests 84.
 
