@@ -1,6 +1,7 @@
-# ADR 0011: the verdict of the development claims. Ruleset 23934665 requires the "Verdict"
-# check. This job runs no pull-request code on its host: it evaluates the code-owned
-# nix/judge.nix, which checks nix/judge.lock.json, and every build runs in the Nix sandbox.
+# ADR 0011: the verdict of the development claims; the owner adds the "Verdict" check to
+# the required checks of ruleset 23934665. This job runs no pull-request code on its host: it
+# evaluates the code-owned integrity/judge.nix, which checks integrity/judge.lock.json, and
+# every build runs in the Nix sandbox.
 # It restores no GitHub Actions cache; Nix substitutes only from signed caches that main
 # runs publish.
 name: Verdict
@@ -39,7 +40,7 @@ jobs:
             connect-timeout = 5
             fallback = true
       - name: Check the judge lock and build the verdict
-        run: nix-build nix/judge.nix -A verdict --out-link verdict --extra-experimental-features 'nix-command flakes'
+        run: nix-build integrity/judge.nix -A verdict --out-link verdict --extra-experimental-features 'nix-command flakes'
       - name: Retain the verdict report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

@@ -26,7 +26,7 @@ nothing merges unless the judge passes it.
 | Subject | The work that is graded | the SQLite model | an agent, without approval |
 | Claim | A statement that the owner wants to be true | "the model agrees with SQLite on corpus v5" | the owner |
 | Judge | All that decides whether a claim is true: reference data, the oracle that produced it, comparison code, threshold | corpus v5, the native SQLite build, the verdict code, "all v5 cases agree" | an agent proposes; the owner approves |
-| Lock | A fingerprint of the judge in one small file | `nix/judge.lock.json` | the owner approves each change |
+| Lock | A fingerprint of the judge in one small file | `integrity/judge.lock.json` | the owner approves each change |
 | Gate | The files that enforce these rules | the Nix file that checks the lock, `.github/workflows/`, `.github/CODEOWNERS`, and the ruleset | the owner approves each change |
 | Verdict | The result of the locked judge on the subject | the required check "verdict" | nobody; it is computed |
 
@@ -191,14 +191,14 @@ not part of the product and is not shipped.
 
 The judge is the code that turns the subject's outputs into a verdict, the
 acceptance threshold of each claim, the frozen corpora, and the native SQLite
-build that produced the expected outputs. A lock file (`nix/judge.lock.json`)
+build that produced the expected outputs. A lock file (`integrity/judge.lock.json`)
 records one content-derived store path for each part: the judge code with its
 claims (`judge/`), each claimed corpus, and the oracle (`nix/sqlite.nix` with
 `nix/flake.lock`, which also pins the nixpkgs that the verdict uses). A change
 to any file of a part changes its path. Source paths do not depend on the
 system, so one lock serves both systems.
 
-`nix/judge.nix` reads the lock, compares it with the paths that it evaluates,
+`integrity/judge.nix` reads the lock, compares it with the paths that it evaluates,
 and stops with an error that names each changed part. It imports nothing that
 the lock does not cover, except the subject's build. Sources enter the store
 as content-derived paths, not as fixed-output paths with a declared hash, so
@@ -224,7 +224,7 @@ claim.
 
 A change to these files needs the owner's approval before it can merge:
 
-- `nix/judge.lock.json`: the judge lock.
+- `integrity/judge.lock.json`: the judge lock.
 - The Nix file that enforces the lock and defines the verdict.
 - `.github/workflows/`: a pull request runs workflows from its own branch, and
   a new workflow could report a check with the verdict's name.

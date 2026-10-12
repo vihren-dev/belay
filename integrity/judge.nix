@@ -1,5 +1,5 @@
 # ADR 0011: the locked judge and the verdict. `.github/CODEOWNERS` protects this file and
-# nix/judge.lock.json; the verdict job runs `nix-build nix/judge.nix -A verdict`.
+# integrity/judge.lock.json; the verdict job runs `nix-build integrity/judge.nix -A verdict`.
 #
 # Each lock entry is the content-derived store path of one part of the judge: the judge code
 # with its claims, each claimed corpus, and the native SQLite oracle with its pinned inputs,
@@ -11,7 +11,7 @@
 # subject is what the judge grades, and it runs where the recorded observations are absent.
 { system ? builtins.currentSystem }:
 let
-  flake = builtins.fromJSON (builtins.readFile ./flake.lock);
+  flake = builtins.fromJSON (builtins.readFile ../nix/flake.lock);
   nixpkgs = flake.nodes.${flake.nodes.${flake.root}.inputs.nixpkgs}.locked;
   pkgs = import (builtins.fetchTree {
     inherit (nixpkgs) type owner repo rev narHash;
@@ -22,8 +22,8 @@ let
   claims = builtins.fromJSON (builtins.readFile ../judge/claims.json);
   part = files: "${fs.toSource { inherit root; fileset = fs.unions files; }}";
   parts = {
-    judge = part [ ../judge ];
-    oracle = part [ ./sqlite.nix ./flake.lock ];
+    judge = part [ (fs.fileFilter (file: file.hasExt "py" || file.hasExt "json") ../judge) ];
+    oracle = part [ ../nix/sqlite.nix ../nix/flake.lock ];
   } // pkgs.lib.mapAttrs' (corpus: entry: {
     name = "corpus ${corpus}";
     value = part [ (root + "/${entry.path}") ];
@@ -33,11 +33,11 @@ let
   checked = value:
     if changed == [] && extra == [] then value
     else throw ("the judge changed: ${pkgs.lib.concatStringsSep ", " (changed ++ extra)}"
-      + " differs from nix/judge.lock.json. A change to the judge, the claims, a corpus or the"
-      + " oracle needs the owner's approval: update nix/judge.lock.json in its own pull request"
+      + " differs from integrity/judge.lock.json. A change to the judge, the claims, a corpus or the"
+      + " oracle needs the owner's approval: update integrity/judge.lock.json in its own pull request"
       + " (just judge-lock prints the new values).");
   judgeSources = fs.toSource { inherit root; fileset = fs.unions
-    ([ ../judge ] ++ map (entry: root + "/${entry.path}") (builtins.attrValues claims.corpora)); };
+    ([ (fs.fileFilter (file: file.hasExt "py" || file.hasExt "json") ../judge) ] ++ map (entry: root + "/${entry.path}") (builtins.attrValues claims.corpora)); };
   # The judge runs with only the standard library and its own package on the import path.
   judge = mode: arguments: ''
     cd ${judgeSources}

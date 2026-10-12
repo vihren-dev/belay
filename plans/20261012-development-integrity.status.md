@@ -61,21 +61,22 @@ Decision: [ADR 0011](../docs/adr-0011-product-trust-and-development-integrity.md
   DISAGREE or HARNESS_ERROR on v1 to v5 and the synthetic workload. Full run on
   all six corpora: claims hold, 18 s on Linux. v4: 1264 and v5: 4376
   MODEL_UNSUPPORTED, as before.
-- 2026-10-12: `nix/judge.nix` and `nix/judge.lock.json`. Refinement of
+- 2026-10-12: `integrity/judge.nix` and `integrity/judge.lock.json`. Refinement of
   outcome 6: the lock holds one content-derived store path per part (judge
   code with claims, each claimed corpus, the oracle `nix/sqlite.nix` with
   `nix/flake.lock`), not one derivation path per system: source paths do not
   depend on the system, and a mismatch names the part. The verdict
-  (`nix-build nix/judge.nix -A verdict`, `just verdict`) runs the judge on the
+  (`nix-build integrity/judge.nix -A verdict`, `just verdict`) runs the judge on the
   subject in the Nix sandbox; all claims hold. `tests/test_judge_lock.py`
   changes one byte of each part in a copy. Review finding
   20261012T090907Z-7c09b6c6#1 was only partly fixed: the runner-failure
   message has no test (it needs a broken runtime).
 - 2026-10-12: owner chose: document memorized answers as a known limit in ADR 0011, add review condition R17 (advisory), and consider a hidden holdout corpus later.
 - 2026-10-12: `.github/workflows/verdict.yml` (job "Verdict"): checkout, Nix
-  with the signed Attic substituter, `nix-build nix/judge.nix -A verdict`, the
+  with the signed Attic substituter, `nix-build integrity/judge.nix -A verdict`, the
   report as an artifact; no GitHub Actions cache. `docs/ci.md` describes it;
   `AGENTS.md` describes the two-pull-request flow for a claim change.
   Waiting for: the owner adds "Verdict" as a required check of ruleset
   23934665 after this is on `main`.
 - 2026-10-12: PR #91 merged; the new `CODEOWNERS` is enforced. R8 removed from the review checklist (outcome 2).
+- 2026-10-12: first CI run of #92: the Verdict lock check failed because the local lock counted `judge/__pycache__`, and the Check job failed because `tools/check_resources.py` allows only the development environment files in `nix/`. The judge files moved to `integrity/` (CODEOWNERS updated); the judge part covers only `.py` and `.json` files.

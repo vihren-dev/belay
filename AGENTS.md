@@ -129,7 +129,7 @@ The verdict job checks the claims in `judge/claims.json` against the frozen
 corpora (ADR 0011). A task that changes a claim, a corpus, the judge or the
 native SQLite oracle has two pull requests:
 
-1. The judge change with its new `nix/judge.lock.json` (`just judge-lock`).
+1. The judge change with its new `integrity/judge.lock.json` (`just judge-lock`).
    It needs the owner's approval.
 2. The work, for example model changes, which does not change the lock.
 

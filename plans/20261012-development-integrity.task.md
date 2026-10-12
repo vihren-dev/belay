@@ -9,7 +9,7 @@ in ruleset 23934665 (`require_code_owner_review: true`, one approval).
 ## Outcome
 
 1. `.github/CODEOWNERS` has two labeled sections and nothing else:
-   - Development integrity: `nix/judge.lock.json`, the Nix file that checks
+   - Development integrity: `integrity/judge.lock.json`, the Nix file that checks
      the lock and defines the verdict, `.github/workflows/` and
      `.github/CODEOWNERS`.
    - Product trust base: the files of ADR 0011 decision 6.
@@ -49,7 +49,7 @@ in ruleset 23934665 (`require_code_owner_review: true`, one approval).
    SQLite records, so they stay ordinary model tests outside the judge.
 6. The judge is a Nix derivation whose inputs are the judge, the claims, the
    frozen corpora and the native SQLite build (`nix/sqlite.nix`, with
-   `nix/flake.lock`). `nix/judge.lock.json` records its derivation path for
+   `nix/flake.lock`). `integrity/judge.lock.json` records its derivation path for
    `x86_64-linux` and `aarch64-darwin`. A Nix file checks the lock during
    evaluation, with content-derived store paths, and stops with an error that
    names the changed input. The same file defines the verdict: the locked

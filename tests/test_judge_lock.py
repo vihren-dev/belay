@@ -1,4 +1,4 @@
-"""The judge lock (`nix/judge.nix`, `nix/judge.lock.json`), ADR 0011.
+"""The judge lock (`integrity/judge.nix`, `integrity/judge.lock.json`), ADR 0011.
 
 The lock makes a change to the judge, its claims, a claimed corpus or the native SQLite
 oracle impossible without a change to the code-owned lock file. These tests change one byte
@@ -16,7 +16,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 NIX_TIMEOUT_SECONDS = 120
 """One evaluation of the lock over a small copy."""
-COPIED = ["nix/judge.nix", "nix/sqlite.nix", "nix/flake.lock", "judge",
+COPIED = ["integrity/judge.nix", "nix/sqlite.nix", "nix/flake.lock", "judge",
           "conformance/corpus-v1"]
 """The files that the lock check reads."""
 
@@ -24,8 +24,8 @@ pytestmark = [pytest.mark.integration, pytest.mark.requires_nix]
 
 
 def evaluate(tree: Path, attribute: str) -> subprocess.CompletedProcess[str]:
-    """Evaluate one attribute of the copied `nix/judge.nix`."""
-    return subprocess.run(["nix-instantiate", "--eval", "--strict", "--json", str(tree / "nix/judge.nix"), "-A", attribute],
+    """Evaluate one attribute of the copied `integrity/judge.nix`."""
+    return subprocess.run(["nix-instantiate", "--eval", "--strict", "--json", str(tree / "integrity/judge.nix"), "-A", attribute],
                           capture_output=True, text=True, timeout=NIX_TIMEOUT_SECONDS, check=False)
 
 
@@ -40,10 +40,10 @@ def tree(tmp_path_factory: pytest.TempPathFactory) -> Path:
     claims = {"corpora": {"corpus-v1": {"path": "conformance/corpus-v1", "mustAgree": [],
                                          "forbidden": ["DISAGREE", "HARNESS_ERROR"]}}}
     (copy / "judge/claims.json").write_text(json.dumps(claims))
-    (copy / "nix/judge.lock.json").write_text("{}")
+    (copy / "integrity/judge.lock.json").write_text("{}")
     current = evaluate(copy, "current")
     assert current.returncode == 0, current.stderr
-    (copy / "nix/judge.lock.json").write_text(current.stdout)
+    (copy / "integrity/judge.lock.json").write_text(current.stdout)
     return copy
 
 
@@ -54,7 +54,7 @@ def tree(tmp_path_factory: pytest.TempPathFactory) -> Path:
     ("nix/sqlite.nix", "oracle"),
 ])
 def test_a_changed_part_stops_evaluation(tree: Path, relative: str, part: str) -> None:
-    """`nix/judge.nix` `locked`: one changed byte in a part stops evaluation and names the part;
+    """`integrity/judge.nix` `locked`: one changed byte in a part stops evaluation and names the part;
     the restored part passes again."""
     assert evaluate(tree, "locked").returncode == 0
     path = tree / relative
@@ -63,15 +63,15 @@ def test_a_changed_part_stops_evaluation(tree: Path, relative: str, part: str) -
     try:
         changed = evaluate(tree, "locked")
         assert changed.returncode != 0
-        assert f"the judge changed: {part} differs from nix/judge.lock.json" in changed.stderr
+        assert f"the judge changed: {part} differs from integrity/judge.lock.json" in changed.stderr
     finally:
         path.write_bytes(original)
     assert evaluate(tree, "locked").returncode == 0
 
 
 def test_an_unknown_lock_entry_stops_evaluation(tree: Path) -> None:
-    """`nix/judge.nix` `locked`: a lock entry for a part that the claims no longer name is a change."""
-    lock = tree / "nix/judge.lock.json"
+    """`integrity/judge.nix` `locked`: a lock entry for a part that the claims no longer name is a change."""
+    lock = tree / "integrity/judge.lock.json"
     original = lock.read_text()
     lock.write_text(json.dumps({**json.loads(original), "corpus removed": "/nix/store/x"}))
     try:
