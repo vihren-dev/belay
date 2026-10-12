@@ -60,6 +60,30 @@ def elaborateModule (name source : String) : CommandElabM Unit := do
       throwError "generated module {name} does not elaborate; {advice}:\n{"\n".intercalate texts}"
     state := next
 
+/-- The error text of elaborating a module, or the empty text when it succeeds. The
+command state is restored afterwards, so the messages of a failure stay out of
+this file's result. -/
+def elaborationError (name source : String) : CommandElabM String := do
+  let saved ← get
+  let text ← try
+      elaborateModule name source
+      pure ""
+    catch error => error.toMessageData.toString
+  set saved
+  return text
+
+-- A module that does not parse, and one that does not elaborate, name the module,
+-- keep Lean's diagnostic and say what to fix.
+run_cmd do
+  let parse ← elaborationError "BrokenSyntax" "import SqliteVerifier\ndef broken : Nat := ("
+  let elaboration ← elaborationError "BrokenType" "def broken : Nat := \"text\""
+  unless parse.contains "generated module BrokenSyntax does not parse" && parse.contains "unexpected end of input" &&
+      parse.contains "fix the source printer" do
+    throwError "unexpected parse diagnostic: {parse}"
+  unless elaboration.contains "generated module BrokenType does not elaborate" &&
+      elaboration.contains "Type mismatch" && elaboration.contains "fix the source printer" do
+    throwError "unexpected elaboration diagnostic: {elaboration}"
+
 run_cmd do
   let some resolution := sample | throwError "the sample does not resolve"
   elaborateModule "SchemaInputs" (schemaInputsSource resolution)
