@@ -13,15 +13,13 @@ import os
 
 import pytest
 
+from tests.example_cases import CASES, case_inputs, file_digest, input_digests
 from tests.runtime_support import CommandResult
 from migration_check.import_path import merged_search_path
-from migration_check.project_config import load
 from migration_check.source_closure import lean_process
 from belay.sqlite.parser_library import library_name
 
 pytestmark = [pytest.mark.e2e, pytest.mark.kernel, pytest.mark.requires_lean, pytest.mark.requires_native]
-CASES = {"small": "add_column_then_table", "refutation": "missing_required_column", "atuin": "atuin"}
-"""Current shipped positive, refutation and Atuin cases, by their names in recorded results."""
 EXPECTED_IMPORTS = {"small": ["Init", "SqliteVerifier.Demonstration", "SqliteVerifier.Library"],
                     "refutation": ["Init", "SqliteVerifier.Library"], "atuin": ["Init", "SqliteVerifier"]}
 """Exact trusted-import expectations for the shipped examples; their statuses are in `belay.toml`."""
@@ -31,31 +29,6 @@ REPEATED_CASES = frozenset({"small"})
 The exporter code is the same for every example, so one small example shows determinism; the
 others are prepared once, for their status, imports and input bindings.
 """
-
-
-def case_inputs(examples: Path, folder: str) -> tuple[str, str, str, str, str]:
-    """Contract, candidate and schema paths relative to `examples`, profile and expected status of one case.
-
-    They come from the case's `belay.toml`, so the test runs the case that users see.
-    """
-    config = load(examples / folder / "belay.toml", examples)
-    assert config.test_status is not None, config.file
-    root = examples.resolve()
-    return (config.contract.relative_to(root).as_posix(), config.proofs.relative_to(root).as_posix(),
-            config.schema.relative_to(root).as_posix(), config.profile, config.test_status)
-
-
-def file_digest(path: Path) -> str:
-    """Bind the actual bytes consumed by the current native acceptance check."""
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def input_digests(examples: Path, approved: str, candidate: str, schema: str) -> dict[str, str]:
-    """Bind SQL and all local Lean sources available to the selected contract and candidate."""
-    files = {examples / schema, examples / candidate / "migration.sql"}
-    for directory in (examples / approved, examples / candidate):
-        files.update(directory.rglob("*.lean"))
-    return {path.relative_to(examples).as_posix(): file_digest(path) for path in sorted(files)}
 
 
 @pytest.fixture(scope="session")

@@ -191,6 +191,7 @@ in {
       (fs.fileFilter (file: file.hasExt "py") (root + /belay/sqlite))
       (fs.fileFilter (file: file.hasExt "json") (root + /conformance/cases))
       (root + /tests/sql_fixtures.py)
+      (root + /tests/example_cases.py)
       (root + /experiments/adr-0003-latency/cases.py)
       # cases.py reads the examples' belay.toml files; the runtime under test contains them too.
       (fs.difference (root + /examples) (fs.fileFilter (file: file.name == ".DS_Store") (root + /examples)))

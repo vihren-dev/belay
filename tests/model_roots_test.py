@@ -9,7 +9,8 @@ import pytest
 from migration_check.runtime import validate_libraries
 from migration_check.stage_store import runtime_identity
 from tests.runtime_support import run_command, CommandResult
-from tests.proof_exporter_test import prepare_check, CASES, case_inputs
+from tests.example_cases import CASES, case_inputs
+from tests.proof_exporter_test import prepare_check
 
 pytestmark = [pytest.mark.integration, pytest.mark.kernel, pytest.mark.requires_lean]
 

@@ -9,7 +9,8 @@ import pytest
 
 from migration_check.project_config import ProjectConfig, load
 from tests.runtime_support import CommandResult
-from tests.proof_exporter_test import exporter_runtime_identity, input_digests
+from tests.example_cases import input_digests
+from tests.proof_exporter_test import exporter_runtime_identity
 
 pytestmark = [pytest.mark.e2e, pytest.mark.kernel, pytest.mark.requires_lean, pytest.mark.requires_native]
 APPLICATION_KEY_HEADER = {"bundle": 1, "trusted_imports": ["Init", "SqliteVerifier.ApplicationKeyDemonstration"]}
