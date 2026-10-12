@@ -167,3 +167,16 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final PR #81 approval after the current documentation-only CI run.
+
+- 2026-10-12: A read-only check finds stale core ownership inventory in
+  `tests/test_model_package.py`: it still expects 14 modules, while the
+  current public root reaches 34. The import closure retains only allowed
+  external roots. Corrected the named inventory and its explanation. The
+  actual pure import-closure test passes under a 30-second bound. This
+  correction changes no model or gate implementation. Its XML remains
+  local at `build/test-results/20261012-syntax-core-inventory.xml`. T14
+  native validation remains held by the resource guard.
+
+Decisions waiting for the owner:
+
+- Final PR #81 review after this inventory correction and its checks.
