@@ -456,3 +456,26 @@ Decisions waiting for the owner:
 - Whether to repair the exact Linux Python store path through Nix.
 - Disposition of both measured regressions before cutover, after the
   remaining comparisons are available.
+
+- 2026-10-12: The Atuin macOS campaign completes nine valid pairs.
+  Median verify time is 11.475020 seconds; preparation plus bundle checking
+  is 12.891038 seconds. The median paired difference is 1.486935 seconds,
+  with an approved interval of 1.134325 to 1.569590 seconds. This result is
+  REGRESSION. All three macOS campaigns are complete: 27 pairs and 81
+  fresh invocations, with no exclusions or invalid observations. Author
+  checks recompute every interval and verify recorded baseline identities,
+  raw-output hashes, trace source bindings, empty initial caches, alternating
+  order, common whole-path limits and actual checker results. The distinct
+  checker refutation exit 2 and public VIOLATED exit 1 are preserved.
+  Raw records remain local under `build/20261012-t06-installed/`; the
+  combined author verification is `darwin-verification.json`. The existing
+  draft PR #60 contains reviewed integration `f7fe7434`; hosted CI
+  `38220318884` remains running at the last check. Linux installed
+  acceptance and all Linux campaigns remain held at the Python integrity
+  failure. No T06 delivery or cutover is claimed.
+
+Decisions waiting for the owner:
+
+- Whether to repair the exact Linux Python store path through Nix.
+- Disposition of the measured regressions before cutover, after the Linux
+  comparisons can also be completed.
