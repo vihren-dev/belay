@@ -1,6 +1,6 @@
 # ADR 0010: Compile all Lean code with Lake and reuse outputs from its artifact cache
 
-Date: 2026-10-09. Status: PROPOSED.
+Date: 2026-10-09. Status: ACCEPTED on 2026-10-12 (PR #76).
 Audience: designers and reviewers.
 Related: [ADR 0002](adr-0002-compile-project-cache.md),
 [ADR 0003](adr-0003-agent-proof-preparation.md),
@@ -167,7 +167,13 @@ cache is only as trusted as every process that can write to it.
   verifier's cache still makes repeated checks fast: after the first run for a
   contract, it compiles nothing for that contract.
 
-The cache location is a caller setting (`--cache DIR`, with a per-user default).
+The cache location is a caller setting: `--cache DIR`, or the environment
+variable `BELAY_CACHE_DIR`, with a per-user default under the product's name
+(`$XDG_CACHE_HOME/belay/`, or `~/Library/Caches/belay/` on macOS) and one
+subfolder for each verifier version. The names follow the product, so they do
+not change when the command line tool is renamed. `prepare` and
+`verify-bundle` on one machine share the default, because one user is one
+trust domain; a separate `verify-bundle` environment has its own.
 The caller protects it in the same way as the installation and the approved
 sources; the [trust boundary](trust-boundary.md) adds the cache to that list.
 A `--no-cache` option compiles everything with an empty, private cache.
@@ -187,6 +193,10 @@ reads state outside its key during elaboration: time, randomness, environment or
 undeclared files. Lake makes the same assumption for every Lean project. People
 review approved code, and such code is easy to see in a review. If the risk is
 not acceptable for a contract, the caller uses `--no-cache`.
+
+`prepare` warns, without failing, when an approved module contains commands
+that run code during elaboration (`#eval`, `run_cmd`, `initialize`, or `elab`
+and `macro` definitions), so the person who reviews the contract sees them.
 
 ### 6. Process bounds
 
@@ -381,6 +391,23 @@ The local check decides nothing. A verified result comes only from
 The audit command is a convenience for the proof author, not part of the
 product trust base; the kernel gates stay the only judges.
 
+### 11. CI times are tracked during the implementation
+
+The tasks of this ADR change how CI compiles. Each change must show its effect
+on CI time, so that a regression is found when it is introduced:
+
+- Before the first task starts, the times of the latest successful `main` runs
+  are recorded as the baseline: each CI job on Linux and macOS, for each scope
+  that ran, with the cache state.
+- Each pull request of these tasks records the times of its CI jobs in the
+  task's status file, next to the latest `main` run with the same scope and
+  cache state.
+- A big increase is investigated before the merge, and the pull request
+  explains it: what became slower, why, and whether it is fixed or accepted.
+  The starting threshold is a job that is 20 % or 2 minutes slower, whichever
+  is larger; runner noise of hosted CI is about that size.
+- After each task, `docs/ci-performance.md` gets one line with the job times.
+
 ## Consequences
 
 - `prepare` and `verify-bundle` stop compiling unchanged modules. CI compiles
@@ -402,7 +429,10 @@ product trust base; the kernel gates stay the only judges.
   behavior can change with each Lean release, and the project follows each
   stable release (see "Lean maintenance" in [CLAUDE.md](../CLAUDE.md)). An
   upgrade must run the cache tests.
-- Caches grow. The decision needs a size limit or a cleanup command.
+- Caches grow mostly across upgrades: each Lean release makes the entries of
+  the previous one useless. The default cache keeps one subfolder for each
+  verifier version, and a clean command deletes all subfolders except the
+  current one. There is no size limit; a contract adds about 0.25–3 MB.
 - The trust milestone ([ADR 0003 trust extension](adr-0003-trust-extension.md))
   is compatible: hostile agents run `prepare` in their own trust domain, and
   `verify-bundle` keeps a cache that agents cannot write.
@@ -425,25 +455,33 @@ part of this decision on Linux x86_64:
 
 These are left to the implementation tasks, because they carry no design risk:
 mapping Lake failures to per-module diagnostics; macOS, which the tasks' tests
-cover on the macOS CI runner; and the cleanup of caches (see "Decisions
-requested").
+cover on the macOS CI runner; and the cleanup of caches (see "Decisions").
 
-## Decisions requested
+## Decisions
 
-1. **Reuse within a trust domain (section 5).** This replaces ADR 0003's
-   per-closure review. The remaining risk: approved Lean code that reads the
-   clock, the environment or undeclared files while it compiles can make a
-   cached output differ from a fresh one; `--no-cache` avoids it.
-2. **Cache options.** `--cache DIR`, `--no-cache` and a per-user default
-   location, under today's command name, or left to the rename of the command
-   line tool.
-3. **Cache cleanup.** A contract adds about 0.25–3 MB to a cache. Proposed: no
-   automatic limit; the documentation names `lake cache clean`.
+The owner decided on 2026-10-12:
+
+1. **Reuse within a trust domain (section 5)** replaces ADR 0003's per-closure
+   review. The owner accepts the remaining risk: approved Lean code that reads
+   the clock, the environment or undeclared files during elaboration can make
+   a cached output differ from a fresh one. Such code makes the meaning of the
+   contract unstable also without a cache; `prepare` warns about it, and
+   `--no-cache` avoids the cache.
+2. **Cache options (section 4)** are implemented now: `--cache DIR`,
+   `--no-cache`, `BELAY_CACHE_DIR`, and a per-user default named after the
+   product.
+3. **Cache cleanup (Consequences):** no size limit; one subfolder for each
+   verifier version in the default cache, and a clean command that removes
+   the subfolders of other versions. The documentation also names
+   `lake cache clean`.
+4. **CI times are tracked during the implementation (section 11).**
 
 ## Plan
 
 Each step is a separate task with its own tests; the order follows the
 dependencies:
+
+Each task records CI times as section 11 describes.
 
 1. [Case folders and the Lean file categories](../plans/20261012-case-manifests-and-lean-categories.task.md):
    each case gets a `case.toml`, tests read them, and the coverage test of

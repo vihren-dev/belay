@@ -1,8 +1,8 @@
 # Verifier library as a package
 
-Created 2026-10-12. Status: NOT STARTED.
+Created 2026-10-12. Status: READY.
 Decision: [ADR 0010](../docs/adr-0010-lake-builds-and-artifact-cache.md),
-section 7, stage 1. Proposed; this task starts after the owner accepts the ADR.
+section 7, stage 1. Accepted on 2026-10-12.
 Depends on: [case folders](20261012-case-manifests-and-lean-categories.task.md)
 and [Lake builds in the verifier](20261012-lake-builds-in-the-verifier.task.md).
 
@@ -51,3 +51,6 @@ and [Lake builds in the verifier](20261012-lake-builds-in-the-verifier.task.md).
   (`build-support/model-package.nix`).
 - `docs/`, `README.md` and `AGENTS.md` name source paths; they change in the
   same commit as the code (CLAUDE.md, "Replaced code").
+- CI times: record the baseline and each pull request's job times in the
+  status file, and investigate a big increase before the merge (ADR 0010
+  section 11).

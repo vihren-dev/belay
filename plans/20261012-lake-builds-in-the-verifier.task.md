@@ -1,8 +1,8 @@
 # Lake builds in the verifier
 
-Created 2026-10-12. Status: NOT STARTED.
+Created 2026-10-12. Status: READY.
 Decision: [ADR 0010](../docs/adr-0010-lake-builds-and-artifact-cache.md),
-sections 1–6 and 10. Proposed; this task starts after the owner accepts the ADR.
+sections 1–6 and 10. Accepted on 2026-10-12.
 Evidence: [Lake cache experiment](../experiments/lake-cache/README.md),
 [latency experiment](../experiments/prepare-latency/README.md).
 
@@ -46,16 +46,22 @@ Evidence: [Lake cache experiment](../experiments/lake-cache/README.md),
    approved or library module. `prepare` reports a violation before Lake runs;
    `verify-bundle` enforces the rules. Headers are read with one
    `lean --deps-json` call for each discovery round.
-7. `prepare` and `verify-bundle` accept `--cache DIR` and `--no-cache`. Without
-   either, they use a per-user default cache directory. `--no-cache` compiles
-   everything in a private, empty cache.
-8. `lake build` runs with one deadline, a minimal environment, bounded captured
+7. `prepare` and `verify-bundle` accept `--cache DIR` and `--no-cache`, and
+   read `BELAY_CACHE_DIR`. Without either, they use the per-user default
+   (`$XDG_CACHE_HOME/belay/`, `~/Library/Caches/belay/` on macOS) with one
+   subfolder for each verifier version. A clean command removes the
+   subfolders of other versions. `--no-cache` compiles everything in a
+   private, empty cache.
+8. `prepare` warns, without failing, when an approved module contains commands
+   that run code during elaboration (`#eval`, `run_cmd`, `initialize`, `elab`
+   or `macro` definitions).
+9. `lake build` runs with one deadline, a minimal environment, bounded captured
    output and a bounded number of parallel jobs. A compile failure gives the
    same status and the same kind of per-module diagnostic as today.
-9. `StageStore`, `MIGRATION_CHECK_STAGE_STORE`, the measurement override,
+10. `StageStore`, `MIGRATION_CHECK_STAGE_STORE`, the measurement override,
    `cache_eligibility.py` and their tests and documentation are removed.
    ADR 0003 and the trust boundary document describe the new cache rule.
-10. Statuses and exit codes of `prepare` and `verify-bundle` are unchanged for
+11. Statuses and exit codes of `prepare` and `verify-bundle` are unchanged for
    every existing test case. `verify` keeps its current compile path; it is
    deprecated and removed in a separate change.
 
@@ -83,6 +89,11 @@ Evidence: [Lake cache experiment](../experiments/lake-cache/README.md),
 - Reuse: a second run of each command on the same inputs, in a new temporary
   directory with the same cache, compiles no module; after a proof edit,
   `prepare` compiles only the changed candidate modules.
+- Cache options: `--cache DIR`, `BELAY_CACHE_DIR` and the default each select
+  the expected folder, with a subfolder for the verifier version; the clean
+  command removes other versions' subfolders and keeps the current one.
+- Elaboration warning: `prepare` on a contract with `#eval` in an approved
+  module warns and still prepares; without such commands it does not warn.
 - Trust domains: `verify-bundle` with its own empty cache verifies a bundle
   that `prepare` made with a different cache.
 - Equivalence: for each checked-in case, the result with a warm cache equals
@@ -149,3 +160,6 @@ Evidence: [Lake cache experiment](../experiments/lake-cache/README.md),
   experiment measured this cost per child process.
 - The trust milestone forbids accepting candidate `.olean` files on the data
   path; `verify-bundle` must never build candidate modules.
+- CI times: record the baseline and each pull request's job times in the
+  status file, and investigate a big increase before the merge (ADR 0010
+  section 11).

@@ -1,8 +1,8 @@
 # Case folders and Lean file categories
 
-Created 2026-10-12. Status: NOT STARTED.
+Created 2026-10-12. Status: READY.
 Decision: [ADR 0010](../docs/adr-0010-lake-builds-and-artifact-cache.md),
-section 7. Proposed; this task starts after the owner accepts the ADR.
+section 7. Accepted on 2026-10-12.
 
 ## Outcome
 
@@ -78,3 +78,6 @@ section 7. Proposed; this task starts after the owner accepts the ADR.
 - `verify` is deprecated in favour of `prepare` and `verify-bundle` (owner
   decision, 2026-10-12). Tests of `verify` still read the manifests until they
   move to the two commands, in a separate change.
+- CI times: record the baseline and each pull request's job times in the
+  status file, and investigate a big increase before the merge (ADR 0010
+  section 11).

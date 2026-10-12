@@ -1,8 +1,8 @@
 # Status: Lake builds in the verifier
 
-Created 2026-10-12. Status: NOT STARTED.
+Created 2026-10-12. Status: READY.
 Task: [task](20261012-lake-builds-in-the-verifier.task.md).
-ADR: [ADR 0010](../docs/adr-0010-lake-builds-and-artifact-cache.md), proposed.
+ADR: [ADR 0010](../docs/adr-0010-lake-builds-and-artifact-cache.md), accepted.
 
 Relevant files: `migration_check/compile.py`, `migration_check/contract.py`,
 `migration_check/prepare.py`, `migration_check/bundle.py`,
@@ -25,3 +25,5 @@ Relevant files: `migration_check/compile.py`, `migration_check/contract.py`,
 - 2026-10-12: experiment round two (`experiments/lake-cache/`, findings 11–16)
   confirmed the design; the task records the prototypes and the measured
   numbers.
+- 2026-10-12: ADR 0010 accepted with the owner's decisions; the task is
+  ready. CI times are recorded from the first pull request (section 11).
