@@ -27,11 +27,17 @@ prefixes, or when this module is compiled with `debug.skipKernelTC`. Prototype f
 ADR 0010 section 10; the gate's allowlist is inline in `GateCore.lean`. -/
 syntax (name := belayAudit) "#belay_audit " ident " allowing " "[" str,* "]" : command
 
+/-- The axioms the kernel gate accepts; a copy of the inline list in `GateCore.lean`. -/
+def gateAllowedAxioms : List Name := [``propext, ``Classical.choice, ``Quot.sound]
+
+/-- Check one theorem the way the gate would, so the proof author sees a rejection in
+the build instead of in `verify-bundle`: its axioms against `gateAllowedAxioms`, the
+environment's imports against the allowed prefixes, and this module's own options. -/
 @[command_elab belayAudit] def elabBelayAudit : CommandElab := fun stx => do
   let name ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo stx[1]
   let prefixes := stx[4].getSepArgs.filterMap (·.isStrLit?) |>.map String.toName
   let axioms ← collectAxioms name
-  let rejected := axioms.filter fun a => !([``propext, ``Classical.choice, ``Quot.sound].contains a)
+  let rejected := axioms.filter fun a => !gateAllowedAxioms.contains a
   unless rejected.isEmpty do
     throwError "{name} depends on axioms outside the allowlist: {rejected}"
   let outside := (← getEnv).header.moduleNames.filter fun m => !prefixes.any (·.isPrefixOf m)
@@ -92,7 +98,9 @@ def loop(case: str, work: Path, installation: Path, edits: int) -> dict[str, obj
     cache = work / "cache-agent"
     seconds, first = lake(proofs, installation, cache, "Candidate", "Check")
     if first.returncode:
-        raise SystemExit(f"{case}: the audit fails on the correct proof:\n{first.stdout[-2000:]}")
+        raise SystemExit(f"{case}: the audit fails on the correct proof:\n{first.stdout[-2000:]}\n"
+                         "Correct the reported build error (run data_path.py first if the project is missing), "
+                         "then run the script again.")
     samples: dict[str, list[float]] = {"candidate_only_s": [], "candidate_and_check_s": []}
     for _ in range(edits):
         edit(proofs / "Proofs.lean")

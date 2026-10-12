@@ -163,8 +163,8 @@ Linux x86_64, 2026-10-12. Raw results: `results-round2-Linux-x86_64.jsonl`.
 
 ## Not covered
 
-- The exporter and the bundle checker were not run on Lake's output. They need
-  the workspace's `.lake/build/lib/lean` on their search path.
+After the second round:
+
 - Error reporting: today each compile failure becomes a `CompileError` for one
   module. Lake reports failures in its own output format.
 - Process bounds: today every `lean` process has its own deadline, output limit
