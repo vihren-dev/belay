@@ -61,7 +61,8 @@
     "tests/conformance_context_test.py",
     "tests/conformance_requirement_coverage_test.py",
     "tests/conformance_frontend_boundary_test.py",
-    "tests/conformance_authored_transactions_test.py"
+    "tests/conformance_authored_transactions_test.py",
+    "tests/conformance_predict_test.py"
   ],
   "sample": [
     "tests/conformance_tiers_test.py",
@@ -89,7 +90,7 @@
   "parserLibrary": [
     "tests/parser_library_test.py"
   ],
-  "pinned": [
-    "tests/conformance_pinned_corpora_test.py"
+  "corpora": [
+    "tests/conformance_locked_corpora_test.py"
   ]
 }

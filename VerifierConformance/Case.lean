@@ -45,6 +45,11 @@ def resolveStates (context : ResolveContext) (index : Nat) (state : ResolveState
     | .ok (_, next) => state :: resolveStates context (index + 1) next rest
     | .error _ => [state]
 
+/-- The number of catalog positions that any of the states uses, in its catalog or in
+its saved catalog: the bound up to which a trace observes tables. -/
+def stateBound (states : List ResolveState) : Nat :=
+  states.foldl (fun bound state => max bound (max state.catalog.length ((state.saved.map List.length).getD 0))) 0
+
 /-- The starting database: each catalog table holds the rows of the native table with
 its folded name; a catalog table without a native table holds nothing. -/
 def databaseOf (catalog : Catalog) (natives : List NativeTable) : Database :=
@@ -103,8 +108,7 @@ def classifyCase (c : Case) : Verdict :=
   | .error (.schemaPrepareError ..) => .disagree none
   | .ok resolution =>
     let states := resolveStates { profile, mode := .execution } 0 { catalog := resolution.startCatalog } c.script
-    let count := states.foldl (fun bound state =>
-      max bound (max state.catalog.length ((state.saved.map List.length).getD 0))) 0
+    let count := stateBound states
     let initial := databaseOf resolution.startCatalog c.initial
     let observed := trace count resolution.resolved initial
     let outputs := outputTraceFrom 0 resolution.resolved { database := initial }

@@ -71,14 +71,6 @@ would predict an error where SQLite succeeds. It belongs in the supported-subset
 check instead.
 *Applies to:* `packages/belay-sqlite/Belay/Sqlite/*.lean`, `SqliteVerifier/*.lean`, `belay/sqlite/*.py`, `migration_check/*.py`.
 
-**R8. Trust-relevant change.** A change to the verification target
-(`VerificationConditions` and its parts), the kernel gates (`GatePaths.lean`, `GateCore.lean`,
-`ProofChecker.lean`, `BundleChecker.lean`), the axiom policy, the export path,
-`packages/belay-sqlite/Belay/Sqlite/Codec.lean`, or the approval and baseline checks is reported as a
-**must** finding with the text "owner review required", even if it looks
-correct. This marks the change for the owner; it is not a claim of a defect.
-*Applies to:* `SqliteVerifier/Contract.lean`, `GatePaths.lean`, `GateCore.lean`, `ProofChecker.lean`, `BundleChecker.lean`, `packages/belay-sqlite/Belay/Sqlite/Codec.lean`, `migration_check/baseline.py`, `migration_check/bundle.py`, `migration_check/prepare.py`.
-
 **R9. Docstrings.** Each new class, structure, function and module has a
 docstring that gives the reason for the object. Text follows "Writing style" in
 `AGENTS.md`: what the code does and why, in short active sentences, with a
@@ -122,6 +114,12 @@ not added as a tampering defense; it stays only if it finds honest mistakes,
 and its docstring says so. See ADR 0011.
 *Example of a violation:* a test that refuses a changed corpus by comparing it
 with a digest that is written in the same test file.
+*Applies to:* all files.
+
+**R17. No recorded answers in the subject.** Code outside `judge/` and the
+corpora does not contain or derive recorded SQLite observations, outputs or
+verdicts of corpus cases in order to predict them, for example as a table
+keyed by case name or SQL text. ADR 0011 names this limit of the judge lock.
 *Applies to:* all files.
 
 ## Output format

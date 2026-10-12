@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-09T17:47:26+00:00",
+  "finding": "20261009T174612Z-835d849b#5",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "Read-only cleanup bug fixed (root directory made writable before deletion) and checked by running setup twice; an automated test needs the built runtime and Lake, a heavy Nix test for a one-off experiment script."
+}

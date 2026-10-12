@@ -49,7 +49,7 @@ root = "Resolver"
 
 [[lean_lib]]
 name = "VerifierConformance"
-roots = ["VerifierConformance.Trace", "VerifierConformance.Outputs", "VerifierConformance.Native", "VerifierConformance.Case", "VerifierConformance.Json"]
+roots = ["VerifierConformance.Trace", "VerifierConformance.Outputs", "VerifierConformance.Native", "VerifierConformance.Case", "VerifierConformance.Json", "VerifierConformance.Predict"]
 
 [[lean_exe]]
 name = "conformance-runner"

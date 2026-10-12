@@ -65,7 +65,7 @@ with `nix-build -A tests`; the flake exposes the same derivations as
   compared with pinned native SQLite on authored and generated cases.
 - `tests.frozen`: replay and classification of the frozen corpora (v1 to v5)
   and checks of the retained evidence reports.
-- `tests.pinned`: complete validation of each pinned frozen corpus.
+- `tests.corpora`: complete validation of each locked frozen corpus.
 - `tests.harness`: fast acquisition, storage, profile and workload checks of the
   conformance harness.
 - `tests.sample`: all frozen v4 authored and synthetic cases plus a stable
@@ -90,21 +90,20 @@ Each target declares only the inputs that its tests read. The conformance target
 modules listed in `tests/conformance_frontend.json`, so a change to the verification
 application, for example `migration_check/prepare.py`, keeps their results.
 `tests/test_conformance_frontend.py` checks that list against the actual imports.
-Only `tests.frozen` (and the `pinned`, `sample` and `upstream` targets that read them) depend on
+Only `tests.frozen` (and the `corpora`, `sample` and `upstream` targets that read them) depend on
 the large frozen corpora and retained reports.
 
-`conformance/pinned-corpora.json` pins each frozen corpus (v1 to v5 and the
-synthetic workload corpus) by the SHA-256 digest of its complete directory tree.
-`conformance.corpus.load` decodes a pinned corpus without validating it again.
-Any other corpus, including a frozen corpus with a changed, added or removed
-file, gets the complete validation (`conformance.corpus.validated_load`).
-`tests.pinned` (`tests/conformance_pinned_corpora_test.py`) runs the complete
-validation on each pinned corpus. Its inputs are only the pins
-(`conformance/pinned-corpora.json`), the pinned corpora, the SQL frontend and
-the conformance modules that the validation imports. It runs again only when
-one of them changes, so the current validator accepted each pinned corpus. A
-module missing from its input list fails it with an import error. To freeze or
-change a corpus, validate it and update its pin.
+The frozen corpora (v1 to v5 and the synthetic workload corpus) are the corpora
+that `judge/claims.json` claims, and the judge lock protects their bytes
+(ADR 0011, "Verdict of the development claims" below).
+`conformance.corpus.load` decodes a locked corpus without validating it again.
+Any other directory, such as a copy, a capture or a new freeze, gets the
+complete validation (`conformance.corpus.validated_load`). `tests.corpora`
+(`tests/conformance_locked_corpora_test.py`) runs the complete validation on
+each locked corpus. Its inputs are only the claims, the corpora, the SQL
+frontend and the conformance modules that the validation imports, so it runs
+again when a corpus changes, which is in the pull request that changes the
+judge lock. A module missing from its input list fails it with an import error.
 
 Each test has a 300-second limit (`pytest-timeout`), so a hung test fails with its
 own name. Nix runs several targets at the same time, so a target's total time
@@ -120,7 +119,7 @@ sandbox is supplied or tested. Nix daemon and installation tests run on the host
 Cheap unit tests rerun normally. Direct `just test-cases FILE` always executes
 pytest, even if the corresponding Nix target is already cached.
 Development `just test` selects `developmentTests`, the same targets except
-`tests.model`, `tests.frozen` and `tests.pinned`. `tests/nix_suites.json` assigns test files to Nix and supplies the
+`tests.model`, `tests.frozen` and `tests.corpora`. `tests/nix_suites.json` assigns test files to Nix and supplies the
 host `--source-checks` exclusion list. Source-owned conformance checks remain
 fresh. Every scope from `test` up runs all Nix targets.
 
@@ -206,6 +205,29 @@ The main ruleset requires `Check (x86_64-linux)` and `Check (aarch64-darwin)`
 and requires a branch to be up to date before it merges. Changes to approved
 example requirements are ordinary test-fixture changes and get the same
 review as other changes.
+
+## Verdict of the development claims
+
+The `Verdict` workflow (`.github/workflows/verdict.yml`) runs on every pull
+request, including documentation-only ones (ADR 0011). It becomes a required
+check of ruleset 23934665 when the owner adds it there after this workflow is
+on `main`. It runs
+`nix-build integrity/judge.nix -A verdict` and nothing else on its host, and it
+restores no GitHub Actions cache.
+
+`integrity/judge.nix` first compares each part of the judge with
+`integrity/judge.lock.json`: the judge code and `judge/claims.json`, each claimed
+corpus, and the native SQLite oracle (`nix/sqlite.nix` with `nix/flake.lock`).
+A changed part stops the job with its name. Then three Nix builds run: the judge
+writes the subject's inputs, the subject (`conformance.predict`) predicts from
+those inputs in a build without the corpora, and the judge checks the claims.
+`verdict-report` keeps the counts and every verdict for 14 days.
+
+`just verdict` builds the same verdict locally. `just judge-lock` prints the
+current lock values. A change to the judge, the claims, a corpus or the oracle
+updates `integrity/judge.lock.json` in its own pull request, which the owner
+approves; `.github/CODEOWNERS` lists the lock, `integrity/judge.nix` and the
+workflows.
 
 ## Maintainer release
 

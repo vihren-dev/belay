@@ -26,7 +26,7 @@ nothing merges unless the judge passes it.
 | Subject | The work that is graded | the SQLite model | an agent, without approval |
 | Claim | A statement that the owner wants to be true | "the model agrees with SQLite on corpus v5" | the owner |
 | Judge | All that decides whether a claim is true: reference data, the oracle that produced it, comparison code, threshold | corpus v5, the native SQLite build, the verdict code, "all v5 cases agree" | an agent proposes; the owner approves |
-| Lock | A fingerprint of the judge in one small file | `nix/judge.lock.json` | the owner approves each change |
+| Lock | A fingerprint of the judge in one small file | `integrity/judge.lock.json` | the owner approves each change |
 | Gate | The files that enforce these rules | the Nix file that checks the lock, `.github/workflows/`, `.github/CODEOWNERS`, and the ruleset | the owner approves each change |
 | Verdict | The result of the locked judge on the subject | the required check "verdict" | nobody; it is computed |
 
@@ -189,23 +189,29 @@ not part of the product and is not shipped.
 
 ### 2. Lock the judge with Nix
 
-The judge is a Nix derivation: the code that turns the subject's outputs into
-a verdict, the acceptance threshold of each claim, the frozen corpora, and the
-native SQLite build that produced the expected outputs. A lock file
-(`nix/judge.lock.json`) records the judge's derivation path for each system.
-Nix computes the derivation path from all inputs: sources, `nix/flake.lock`,
-`nix/sqlite.nix` and the build commands. A change to any of them changes the
-path, so the lock covers the judge's dependencies without a list of files.
+The judge is the code that turns the subject's outputs into a verdict, the
+acceptance threshold of each claim, the frozen corpora, and the native SQLite
+build that produced the expected outputs. A lock file (`integrity/judge.lock.json`)
+records one content-derived store path for each part: the judge code with its
+claims (`judge/`), each claimed corpus, and the oracle (`nix/sqlite.nix` with
+`nix/flake.lock`, which also pins the nixpkgs that the verdict uses). A change
+to any source file of a part changes its path; the judge part counts only its
+`.py` and `.json` files, so files that running the judge leaves behind, such
+as `__pycache__`, do not. Source paths do not depend on the
+system, so one lock serves both systems.
 
-A small Nix file reads the lock, compares it with the derivation path that it
-evaluates, and stops with an error that names the changed part when they
-differ. Sources enter the store as content-derived paths, not as fixed-output
-paths with a declared hash, so that the comparison does not depend on what the
-store already holds. The same file defines the verdict: it runs the locked
-judge on the subject, for example the model, in the Nix sandbox.
+`integrity/judge.nix` reads the lock, compares it with the paths that it evaluates,
+and stops with an error that names each changed part. It imports nothing that
+the lock does not cover, except the subject's build. Sources enter the store
+as content-derived paths, not as fixed-output paths with a declared hash, so
+that the comparison does not depend on what the store already holds. The same
+file defines the verdict in three Nix builds: the judge writes the subject's
+inputs; the subject predicts from those inputs alone, in a build that has no
+corpus as an input; the judge compares the predictions with the corpora.
 
-The judge calls the subject only through a fixed interface. The subject cannot
-define or change its own verdict.
+The judge talks to the subject only through a fixed data interface (one
+input and one prediction per JSON line). The subject cannot define or change
+its own verdict.
 
 ### 3. Run the verdict in its own CI job
 
@@ -220,7 +226,7 @@ claim.
 
 A change to these files needs the owner's approval before it can merge:
 
-- `nix/judge.lock.json`: the judge lock.
+- `integrity/judge.lock.json`: the judge lock.
 - The Nix file that enforces the lock and defines the verdict.
 - `.github/workflows/`: a pull request runs workflows from its own branch, and
   a new workflow could report a check with the verdict's name.
@@ -309,11 +315,22 @@ review condition R8 has no remaining purpose and is removed.
 - **Keep R8 as a review finding.** Rejected: a finding is advisory, and the
   review process cannot close "owner review required".
 
+## Known limit: memorized answers
+
+The lock makes it impossible to change the corpora, the claims or the judge
+without the owner. It does not make it impossible for the subject to contain
+the recorded answers. The corpora are in this repository, so an agent can
+write recorded results into the subject's code, for example as a table keyed
+by SQL text, and the verdict passes. The verdict's separate subject build only
+stops the subject from reading the corpora while it runs. Review condition
+R17 asks reviewers to report such code; it is advisory, so it makes this
+harder but not impossible. The owner accepted this limit on 2026-10-12, while
+the claims cover only 21 agreeing cases of corpora v1 to v3.
+
 ## Open points
 
-- The extracted judge, its interface to the subject, and how a claim states
-  its threshold.
-- The time to hash the frozen corpora during evaluation, measured before the
-  corpora move into the lock.
+- A hidden holdout corpus: claims on cases that agents never see, kept outside
+  this repository and fetched only by the verdict job. This makes memorized
+  answers useless. Consider it before agents work on making corpus v5 agree.
 - Whether workflow changes become rare enough for the budget of decision 4.
   If not, the verdict check from a separate GitHub App is the next option.

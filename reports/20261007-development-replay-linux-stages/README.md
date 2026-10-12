@@ -74,16 +74,10 @@ retrieval manifest. All 13 retrieved original hashes match that remote
 inventory, which also observed cleaned storage. The prior fresh receipts,
 diagnostic evidence and frozen inputs remain unchanged.
 
-Run the bounded checks without native replay or builds:
+At delivery, a validator, without native replay or builds, recomputed every
+stage's wall and CPU totals and verified the complete unchanged binding, helper,
+timestamp, fixture and transport evidence. Mutation checks refused a missing
+worker-stage observation and an altered child CPU counter. No check assumed
+that summed parallel CPU is below wall time.
 
-```sh
-nix develop path:./nix --command timeout 15 python3 -B \
-  reports/20261007-development-replay-linux-stages/validate.py
-nix develop path:./nix --command timeout 15 python3 -B \
-  reports/20261007-development-replay-linux-stages/check_mutations.py
-```
-
-The validator recomputes every stage's wall and CPU totals and verifies the
-complete unchanged binding, helper, timestamp, fixture and transport evidence.
-The mutation checks refuse a missing worker-stage observation and an altered
-child CPU counter. No test assumes that summed parallel CPU is below wall time.
+The scripts that checked these files against each other (`validate.py`, `check_mutations.py`) were removed on 2026-10-12 under ADR 0011: their reference values were in this directory, so they could not detect a deliberate change. The retained files are unchanged.

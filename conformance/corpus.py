@@ -16,20 +16,20 @@ from conformance.native_replay import prepare, without_trailing_queries
 from conformance.execution_profile import ExecutionProfile, recorded_profile, validate_manifest_profiles
 from conformance.native_storage import expanded_record
 from conformance.native_call_recording import replay_arguments, validate_recording
-from conformance.pinned_corpora import is_pinned, pinned_records
+from conformance.locked_corpora import is_locked, locked_records
 from conformance.record_parser import NO_PARSER_REASON, runtime_library
 
 
 def load(directory: Path, *, executor: Executor | None = None) -> tuple[dict[str, Json], list[dict[str, Json]]]:
     """Give the manifest and cases of a corpus that passed complete validation.
 
-    A pinned frozen corpus (`conformance.pinned_corpora`) passed complete
-    validation for its exact bytes, so its cases are only decoded. Any other
-    corpus gets `validated_load`, with the optional executor.
+    A corpus that the judge lock protects (`conformance.locked_corpora`) passed
+    complete validation in the `corpora` suite, so its cases are only decoded.
+    Any other corpus gets `validated_load`, with the optional executor.
     """
-    if is_pinned(directory):
+    if is_locked(directory):
         manifest = json.loads((directory / "manifest.json").read_text())
-        return manifest, pinned_records(directory, manifest)
+        return manifest, locked_records(directory, manifest)
     return validated_load(directory, executor=executor)
 
 
@@ -37,7 +37,7 @@ def validated_load(directory: Path, *, executor: Executor | None = None
                    ) -> tuple[dict[str, Json], list[dict[str, Json]]]:
     """Bind every case to exact content, serially by default or with a caller-owned shard executor.
 
-    This always runs the complete validation, also for a pinned corpus.
+    This always runs the complete validation, also for a locked corpus.
     """
     manifest = json.loads((directory / "manifest.json").read_text())
     if isinstance(manifest, dict) and ("shards" in manifest or "shardStorageVersion" in manifest):

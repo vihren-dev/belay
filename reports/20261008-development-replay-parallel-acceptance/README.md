@@ -51,14 +51,9 @@ read-only validator checks original bytes,
 complete source and helper bindings, historical results, paths and limits.
 Four independent mutations are refused after their file digests are
 rebound: duplicate fixture paths, a false target flag, a changed library
-identity and a changed selected name. The retained `check_mutations.py` reproduces these four refusals and a
-changed-summary refusal. No replay runs during these checks.
+identity and a changed selected name. At delivery, a mutation script, since removed, reproduced these four refusals
+and a changed-summary refusal. No replay runs during these checks.
 Independent evidence review and normal delivery remain required. T04c is
 IN PROGRESS.
 
-Run the bounded read-only check:
-
-```sh
-python3 -B reports/20261008-development-replay-parallel-acceptance/validate.py
-python3 -B reports/20261008-development-replay-parallel-acceptance/check_mutations.py
-```
+The scripts that checked these files against each other (`validate.py`, `check_mutations.py`) were removed on 2026-10-12 under ADR 0011: their reference values were in this directory, so they could not detect a deliberate change. The retained files are unchanged.

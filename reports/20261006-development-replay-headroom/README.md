@@ -92,10 +92,12 @@ and its original helper, report, text profile and raw profiler data; those
 instrumented timings are not acceptance measurements. The archived helpers
 are the exact executed versions, including the macOS serialization defect.
 
-From this directory, `python3 validate.py` checks retained hashes, historical
+At delivery, a validator, since removed, checked retained hashes, historical
 identity/verdict comparisons, Linux source checks, exact timestamps and
-fixture-path counts, and the macOS missing-field qualification. It does not
+fixture-path counts, and the macOS missing-field qualification. It did not
 run replay or build a runtime. The receipt checks passed. Frozen v1–v5 had
 no diff from the reviewed source. Integrated ordinary and Nix checks remain
 pending. Both host slots were released; no further optimization or
 measurement is authorized in this turn.
+
+The scripts that checked these files against each other (`validate.py`, `check_mutations.py`) were removed on 2026-10-12 under ADR 0011: their reference values were in this directory, so they could not detect a deliberate change. The retained files are unchanged.
