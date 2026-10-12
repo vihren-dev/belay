@@ -55,3 +55,11 @@ Relevant files: `build-support/tests.nix`, `tests/nix_suites.json`,
   - Fix: `tests/test_source_identity.py` checks the exact attributes of
     `sources.nix`; it now includes `runtimeWithoutExamples`. `just test-nix`
     68 passed.
+- 2026-10-12: PR #99 (base `tasks/adr10-lake-builds`). CI at `3a1763d7`:
+  Linux 900 s, macOS 6 s (checks skipped on pull requests). Baseline `main`
+  `0adb73dc`: Linux 467 s; PR #96: 928 s. The CI cache is saved only on
+  `main`, so this run rebuilt what PRs #95 and #96 change (the Lean runtime,
+  the conformance runtime and every test target); the time is the same as PR
+  #96's, not a new increase. The `bundle` suite took 182 s for 94 tests, after
+  the six seeds. The first run (`35e97c9e`) was cancelled by the push of the
+  source identity fix. Compare again after #95 and #96 merge.
