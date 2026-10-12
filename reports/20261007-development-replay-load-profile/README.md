@@ -72,11 +72,10 @@ outside load timing. The records identify ext4 `/dev/md127` with `rw,noatime`
 and retain full host/load/memory/capacity observations. File caches were not
 flushed, and residency was not observed.
 
-Run the bounded read-only check:
-
-It verifies original artifact hashes, unchanged inputs, all 4,376 case/profile
-bindings, one profiled `corpus.load` invocation, absence of native/model replay
-functions, and every retained derived caller counter. The check passes.
+At delivery, a read-only check verified original artifact hashes, unchanged
+inputs, all 4,376 case/profile bindings, one profiled `corpus.load` invocation,
+absence of native/model replay functions, and every retained derived caller
+counter. The check passed.
 
 ## Conditional next snapshot unit
 

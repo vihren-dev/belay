@@ -1,0 +1,83 @@
+{
+  "caller": "claude",
+  "commit": "a7280b52721714747d1c67313e1298471658c86b",
+  "date": "2026-10-12T11:07:47+00:00",
+  "exit": 0,
+  "files": [
+    "build-support/tests.nix",
+    "plans/20261012-development-integrity.status.md",
+    "reports/20261006-development-replay-headroom/README.md",
+    "reports/20261006-development-replay-headroom/validate.py",
+    "reports/20261006-development-replay-linux-profile/README.md",
+    "reports/20261006-development-replay-linux-profile/validate.py",
+    "reports/20261007-darwin-bundle-scheduling/README.md",
+    "reports/20261007-darwin-bundle-scheduling/validate.py",
+    "reports/20261007-development-replay-headroom-acceptance/README.md",
+    "reports/20261007-development-replay-headroom-acceptance/check_mutations.py",
+    "reports/20261007-development-replay-headroom-acceptance/validate.py",
+    "reports/20261007-development-replay-linux-cap4/README.md",
+    "reports/20261007-development-replay-linux-cap4/check_mutations.py",
+    "reports/20261007-development-replay-linux-cap4/validate.py",
+    "reports/20261007-development-replay-linux-stages/README.md",
+    "reports/20261007-development-replay-linux-stages/check_mutations.py",
+    "reports/20261007-development-replay-linux-stages/validate.py",
+    "reports/20261007-development-replay-load-profile/README.md",
+    "reports/20261007-development-replay-load-profile/validate.py",
+    "reports/20261008-development-replay-parallel-acceptance/README.md",
+    "reports/20261008-development-replay-parallel-acceptance/check_mutations.py",
+    "reports/20261008-development-replay-parallel-acceptance/validate.py",
+    "reviews/20261012T110458Z-d5eb281d/review.json",
+    "tests/conformance_authored_test.py",
+    "tests/conformance_fidelity_test.py",
+    "tests/test_ci_bundle_scheduling.py",
+    "tests/test_native_storage_evidence.py"
+  ],
+  "findings": [
+    {
+      "id": "20261012T110747Z-a7280b52#1",
+      "line": 107,
+      "path": "reports/20261007-development-replay-headroom-acceptance/README.md",
+      "rule": "R13",
+      "severity": "should",
+      "text": "The README still instructs readers to run the validator and describes both checks as available after their deletion. Fix: Remove the run instruction and describe the checks as historical."
+    },
+    {
+      "id": "20261012T110747Z-a7280b52#2",
+      "line": 77,
+      "path": "reports/20261007-development-replay-linux-stages/README.md",
+      "rule": "R13",
+      "severity": "should",
+      "text": "The README still instructs readers to run checks that this commit deletes. Fix: Remove the run instruction and describe the validator and mutation checks in the past tense."
+    },
+    {
+      "id": "20261012T110747Z-a7280b52#3",
+      "line": 75,
+      "path": "reports/20261007-development-replay-load-profile/README.md",
+      "rule": "R13",
+      "severity": "should",
+      "text": "The README still instructs readers to run the deleted check and describes its behavior in the present tense. Fix: Remove the run instruction and state what the check verified at delivery."
+    }
+  ],
+  "id": "20261012T110747Z-a7280b52",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "b9509029f9c1",
+    "R7": "1d1132b164f1",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
