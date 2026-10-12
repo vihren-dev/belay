@@ -26,8 +26,9 @@ def test_model_mutation(runtime_root: Path, tmp_path: Path) -> None:
     result = compiled(case, runtime_root, emit_lean=True)
     assert result["verdict"] == "AGREE"
     sources = []
-    for filename in ("packages/belay-sqlite/Belay/Sqlite/SqlExecution.lean", "VerifierConformance/Trace.lean",
-                     "VerifierConformance/Outputs.lean", "VerifierConformance/Case.lean"):
+    for filename in ("packages/belay-sqlite/Belay/Sqlite/SqlExecution.lean",
+                     *(f"packages/verifier-conformance/VerifierConformance/{name}.lean"
+                       for name in ("Trace", "Outputs", "Case"))):
         source = (ROOT / filename).read_text()
         source = "\n".join(line for line in source.splitlines() if not line.startswith("import "))
         source = source.replace("namespace Belay.Sqlite", "namespace Belay.Sqlite.Mutant")

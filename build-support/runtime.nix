@@ -1,6 +1,6 @@
 # Assemble immutable runtime artifacts for trusted source execution.
 # `src` defaults to the runtime sources; case seeds give the sources without examples.
-{ pkgs, sources, leanToolchain, parserLibrary, leanRuntime, modelPackage, src ? sources.runtime }:
+{ pkgs, sources, leanToolchain, parserLibrary, verifierLibrary, leanRuntime, modelPackage, src ? sources.runtime }:
 let
   python = pkgs.python3;
   runtimePath = pkgs.lib.makeBinPath [ python ];
@@ -16,7 +16,10 @@ in pkgs.stdenv.mkDerivation {
   installPhase = ''
     mkdir -p "$out"
     cp -R . "$out/"
-    cp -R ${sources.lean}/. "$out/"
+    # The library package's sources and Lake files; its outputs and the gate's binaries come with leanRuntime.
+    cp -R ${verifierLibrary}/. "$out/"
+    chmod -R u+w "$out"
+    rm -rf "$out/.lake"
     mkdir -p "$out/lib"
     cp ${parserLibrary}/lib/* "$out/lib/"
     cp -R ${leanRuntime}/.lake "$out/"
@@ -24,8 +27,7 @@ in pkgs.stdenv.mkDerivation {
     cp -R ${modelPackage} "$out/packages/belay-sqlite"
     chmod -R u+w "$out"
     # The runtime is a Lake package that proofs projects and verifier workspaces require (ADR 0010).
-    python3 ${./library_lakefile.py} ${sources.lean}/lakefile.toml \
-      SqliteVerifier EngineeringExamples GatePaths GateCore > "$out/lakefile.toml"
+    python3 ${./library_lakefile.py} ${verifierLibrary}/lakefile.toml > "$out/lakefile.toml"
     rm -f "$out/lake-manifest.json"
     sed -i '/^version = /a enableArtifactCache = false' "$out/packages/belay-sqlite/lakefile.toml"
     ln -s ${leanToolchain} "$out/lean"

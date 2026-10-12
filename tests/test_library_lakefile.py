@@ -1,4 +1,4 @@
-"""`build-support/library_lakefile.py`: the installed runtime's library-only lakefile (ADR 0010 section 3)."""
+"""`build-support/library_lakefile.py`: the installed runtime's lakefile (ADR 0010 section 3)."""
 
 import importlib.util
 from pathlib import Path
@@ -10,8 +10,8 @@ import pytest
 pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[1]
-LIBRARIES = ["SqliteVerifier", "EngineeringExamples", "GatePaths", "GateCore"]
-"""The libraries that the runtime build names."""
+PACKAGE = ROOT / "packages/sqlite-verifier/lakefile.toml"
+"""The verifier library package's lakefile, which the runtime build reads."""
 
 
 def generator() -> ModuleType:
@@ -23,22 +23,22 @@ def generator() -> ModuleType:
     return module
 
 
-def test_runtime_lakefile_keeps_libraries_and_drops_build_only_parts() -> None:
-    """`library_lakefile` keeps the root lakefile's library declarations exactly, keeps the model package,
-    drops `lean4export` and the executables, and turns the artifact cache off for read-only outputs."""
-    root = tomllib.loads((ROOT / "lakefile.toml").read_text())
-    result = tomllib.loads(generator().library_lakefile(root, LIBRARIES))
-    declared = {entry["name"]: entry for entry in root["lean_lib"]}
-    assert [entry["name"] for entry in result["lean_lib"]] == LIBRARIES
-    for entry in result["lean_lib"]:
-        assert entry == {key: value for key, value in declared[entry["name"]].items() if key in ("name", "roots", "globs")}
-    assert [requirement["name"] for requirement in result["require"]] == ["belaySqlite"]
-    assert result["enableArtifactCache"] is False and "lean_exe" not in result
-    assert (result["name"], result["version"]) == (root["name"], root["version"])
+def test_runtime_lakefile_keeps_libraries_and_moves_requirements() -> None:
+    """`library_lakefile` keeps the package's library declarations exactly, points the model package to its
+    folder in the runtime, and turns the artifact cache off for read-only outputs."""
+    package = tomllib.loads(PACKAGE.read_text())
+    result = tomllib.loads(generator().library_lakefile(package))
+    assert result["lean_lib"] == package["lean_lib"]
+    assert result["require"] == [{"name": "belaySqlite", "path": "packages/belay-sqlite"}]
+    assert result["enableArtifactCache"] is False
+    assert (result["name"], result["version"]) == (package["name"], package["version"])
 
 
-def test_unknown_library_is_refused() -> None:
-    """`library_lakefile` refuses a library that the root lakefile does not declare, naming it."""
-    root = tomllib.loads((ROOT / "lakefile.toml").read_text())
-    with pytest.raises(SystemExit, match="Absent"):
-        generator().library_lakefile(root, ["SqliteVerifier", "Absent"])
+@pytest.mark.parametrize("addition", ['[[require]]\nname = "lean4export"\npath = "../x"\n',
+                                      '[[lean_exe]]\nname = "tool"\nroot = "Tool"\n'])
+def test_part_the_runtime_does_not_ship_is_refused(addition: str) -> None:
+    """`library_lakefile` refuses a requirement or an executable that the runtime does not ship, because the
+    runtime's lakefile would then name a missing folder or target."""
+    package = tomllib.loads(PACKAGE.read_text() + "\n" + addition)
+    with pytest.raises(SystemExit, match="installed runtime does not ship"):
+        generator().library_lakefile(package)

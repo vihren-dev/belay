@@ -83,7 +83,7 @@ def test_forbidden_application_import_fails_lake_build(
     """A real application checkout beside the isolated package cannot satisfy a model dependency."""
     package = tmp_path / "model"
     shutil.copytree(PACKAGE, package, ignore=shutil.ignore_patterns(".lake", "build"))
-    shutil.copytree(ROOT / "SqliteVerifier", tmp_path / "application/SqliteVerifier")
+    shutil.copytree(ROOT / "packages/sqlite-verifier/SqliteVerifier", tmp_path / "application/SqliteVerifier")
     source = package / "Belay/Sqlite/Model.lean"
     source.write_text("import SqliteVerifier.Contract\n" + source.read_text())
     result = run_command([str(lean_sysroot / "bin/lake"), "build", "Belay.Sqlite"], cwd=package,

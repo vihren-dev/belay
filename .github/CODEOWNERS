@@ -9,11 +9,11 @@
 /.github/CODEOWNERS @tzanko-matev
 
 # Product trust base (ADR 0011 decision 6): the code that gives the product guarantee.
-/SqliteVerifier/Contract.lean @tzanko-matev
-/GatePaths.lean @tzanko-matev
-/GateCore.lean @tzanko-matev
-/ProofChecker.lean @tzanko-matev
-/BundleChecker.lean @tzanko-matev
+/packages/sqlite-verifier/SqliteVerifier/Contract.lean @tzanko-matev
+/packages/sqlite-verifier/GatePaths.lean @tzanko-matev
+/packages/sqlite-verifier/GateCore.lean @tzanko-matev
+/packages/verifier-gate/ProofChecker.lean @tzanko-matev
+/packages/verifier-gate/BundleChecker.lean @tzanko-matev
 /packages/belay-sqlite/Belay/Sqlite/Codec.lean @tzanko-matev
 /migration_check/prepare.py @tzanko-matev
 /migration_check/bundle.py @tzanko-matev
@@ -21,7 +21,7 @@
 /migration_check/import_path.py @tzanko-matev
 # Moved or added by ADR 0010: the gate's axiom allowlist, verify-bundle's trusted Lake build,
 # and the bundle export that left prepare.py.
-/SqliteVerifier/AxiomPolicy.lean @tzanko-matev
+/packages/sqlite-verifier/SqliteVerifier/AxiomPolicy.lean @tzanko-matev
 /migration_check/contract_build.py @tzanko-matev
 /migration_check/lake_workspace.py @tzanko-matev
 /migration_check/project_phases.py @tzanko-matev

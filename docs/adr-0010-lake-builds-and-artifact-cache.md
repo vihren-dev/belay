@@ -222,6 +222,13 @@ and its outputs are in the cache that the tests use:
    derivations of the packages it requires. The output is the package's Lake
    workspace: sources, lakefile, and `.lake/build` with `.olean`, `.trace` and
    `ir` files. Lake replays such a workspace instead of compiling it (section 3).
+   (Implemented 2026-10-12: `packages/sqlite-verifier` holds the library with
+   `GatePaths` and `GateCore`, `packages/verifier-gate` the three executables,
+   `packages/verifier-conformance` the conformance library and runner, and
+   `packages/public-doc-tools` the documentation tool; `lean4export` is built
+   once in the same way. Consumers link executables
+   from the C objects of the packages they import, which only the consuming
+   build makes. The installed runtime keeps its layout.)
 2. **Cases.** A verification case has the layout of a user's project, so the
    tests use the input format that users use. A case folder contains the
    project configuration file of the command line tool, `belay.toml`, and a

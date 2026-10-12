@@ -1,6 +1,6 @@
 # Checked Lean API reference
 
-The public library starts at `SqliteVerifier.lean`. Lean checks Verso names,
+The public library starts at `packages/sqlite-verifier/SqliteVerifier.lean`. Lean checks Verso names,
 terms and computed assertions when it compiles declarations with
 `set_option doc.verso true`. The generated HTML includes declaration
 documentation, module documentation, types and links to their source lines.

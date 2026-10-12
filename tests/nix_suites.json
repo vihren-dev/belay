@@ -95,5 +95,11 @@
   ],
   "corpora": [
     "tests/conformance_locked_corpora_test.py"
+  ],
+  "packages": [
+    "tests/lean_packages_test.py"
+  ],
+  "documentation": [
+    "tests/test_public_doc_inventory.py"
   ]
 }
