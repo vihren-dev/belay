@@ -150,8 +150,8 @@ def decoded_record(value: dict[str, Json]) -> dict[str, Json]:
 
     The result equals the `expanded_record` result, and each snapshot reference
     gets an independent mutable tree. This function does no digest, size or
-    shape checks: use it only for pinned frozen corpora
-    (`conformance.pinned_corpora`), whose exact bytes passed those checks.
+    shape checks: use it only for locked frozen corpora
+    (`conformance.locked_corpora`), whose exact bytes passed those checks.
     """
     if "snapshots" not in value:
         return value

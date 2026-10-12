@@ -81,3 +81,14 @@ Decision: [ADR 0011](../docs/adr-0011-product-trust-and-development-integrity.md
 - 2026-10-12: PR #91 merged; the new `CODEOWNERS` is enforced. R8 removed from the review checklist (outcome 2).
 - 2026-10-12: first CI run of #92: the Verdict lock check failed because the local lock counted `judge/__pycache__`, and the Check job failed because `tools/check_resources.py` allows only the development environment files in `nix/`. The judge files moved to `integrity/` (CODEOWNERS updated); the judge part covers only `.py` and `.json` files.
 - 2026-10-12: second CI run: `test_flake_checks_reuse_existing_targets` failed because the conformance suites took all of `judge/` as input, including `__pycache__` that the host tests leave; the suites now take only its `.py` and `.json` files (reproduced and fixed locally).
+- 2026-10-12: PR #92 merged; the owner added "Verdict" to the required
+  checks of ruleset 23934665 (confirmed through the rules API).
+- 2026-10-12: step 8, part 1: the corpus pins are gone. `conformance.corpus.load`
+  decodes a corpus only when `judge/claims.json` claims its path
+  (`conformance/locked_corpora.py`); every other directory gets
+  `validated_load`, as before. The `pinned` suite is now `corpora`: complete
+  validation of each locked corpus (82 s locally), rerun when a corpus or the
+  validator changes. Removed: `conformance/pinned_corpora.py`,
+  `conformance/pinned-corpora.json`, the pin-digest tests. Baseline (nightly
+  run 38126119856, Linux, uncached): pinned 95 s, frozen 129 s, model 112 s,
+  sample 60 s; Verdict job 2 to 4.5 min, in parallel.
