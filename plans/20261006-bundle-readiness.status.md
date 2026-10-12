@@ -359,3 +359,20 @@ No new campaign, launcher, benchmark or task was started after the hold.
   attached to this chat. Hosted Linux CI `37746829608` is queued.
   No hosted pass, installed execution, cold campaign, cutover or task
   completion is claimed. T06 remains IN PROGRESS.
+
+- 2026-10-12: Integrated remote T06 head `5fe856cb` with accepted main
+  `ee6185ce`. The Nix test-table conflict keeps main's removal of the
+  duplicate invalidation table. T06's separate attack inventory remains.
+  The preserved pending review now uses its original record file. All 141
+  focused measurement, attack-inventory and Nix-target checks pass in
+  35.01 seconds under a 60-second command limit. JUnit remains local at
+  `build/test-results/20261012-t06-integration-focused.xml`. The subsequent
+  main integration changes only four plans files. The current observer still
+  follows the dependency process and source-discovery callers after main's
+  batched header optimization. A fresh macOS runtime build is running;
+  installed correctness and the cold campaigns have not passed yet.
+
+Decisions waiting for the owner:
+
+- None for this integration. Campaign results will require the disposition
+  specified by the approved confidence policy.

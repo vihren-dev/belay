@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-07T12:29:43+00:00",
+  "finding": "20261007T122348Z-5ed3797d#1",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "Covered by tests/test_ci_workflow.py, added on main in the CI split follow-up; it applies to this branch when the branch next merges main."
+}

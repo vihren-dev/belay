@@ -4,11 +4,11 @@ from collections.abc import Sequence
 from contextlib import nullcontext
 from dataclasses import dataclass
 from graphlib import TopologicalSorter
-import json
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from .lean_headers import ReadHeaders, known_imports, read_headers
 from .process import run_process
 from .import_path import merged_search_path
 
@@ -96,29 +96,26 @@ def lean_process(sysroot: Path, libraries: tuple[Path, Path], search: Sequence[P
     return result.stdout
 
 
+HEADER_TIMEOUT_SECONDS = 5
+"""Deadline of one `lean --deps-json` process; it reads only import headers, also in a batch."""
+
+
+def header_reader(sysroot: Path, libraries: tuple[Path, Path], workspace: Path) -> ReadHeaders:
+    """Run the pinned `lean --deps-json` on one or more files with a private output directory."""
+    def run(files: list[Path]) -> str:
+        """Read the headers of `files` in one process; Lean returns them in argument order."""
+        with TemporaryDirectory(prefix="header-", dir=workspace) as temporary:
+            return lean_process(sysroot, libraries, [], files[-1], Path(temporary).resolve(),
+                                ["--deps-json", *map(str, files[:-1])], "dependencies", timeout=HEADER_TIMEOUT_SECONDS)
+    return run
+
+
 def imports(source: Path, sysroot: Path, libraries: tuple[Path, Path], workspace: Path) -> tuple[str, ...]:
-    """Read official dependency JSON without importing modules or executing their code."""
-    with TemporaryDirectory(prefix="header-", dir=workspace) as temporary:
-        text = lean_process(sysroot, libraries, [], source, Path(temporary).resolve(),
-                            ["--deps-json"], "dependencies", timeout=5)
-    parsed: object = json.loads(text)
-    if not isinstance(parsed, dict) or not isinstance(parsed.get("imports"), list):
-        raise ValueError("Invalid dependency JSON from pinned Lean")
-    records = parsed["imports"]
-    if len(records) != 1 or not isinstance(records[0], dict):
-        raise ValueError("Expected exactly one Lean dependency result")
-    record = records[0]
-    if record.get("errors"):
-        raise ValueError(f"Invalid Lean import header: {record['errors']}")
-    result = record.get("result")
-    if not isinstance(result, dict) or not isinstance(result.get("imports"), list):
-        raise ValueError("Missing Lean import list")
-    names: list[str] = []
-    for entry in result["imports"]:
-        if not isinstance(entry, dict) or not isinstance(entry.get("module"), str):
-            raise ValueError("Invalid Lean import name")
-        names.append(entry["module"])
-    return tuple(dict.fromkeys(names))
+    """Read official dependency JSON without importing modules or executing their code.
+
+    Each distinct source text is read once per process (`lean_headers`).
+    """
+    return known_imports(source, sysroot, libraries, header_reader(sysroot, libraries, workspace))
 
 
 def discover_sources(*, initial: dict[str, Source], roots: Sequence[Path],
@@ -150,6 +147,8 @@ def discover_sources(*, initial: dict[str, Source], roots: Sequence[Path],
         snapshot = directory / relative.with_suffix(relative.suffix + ".lean")
         snapshot.parent.mkdir(parents=True, exist_ok=True)
         snapshot.write_bytes(sources[name].contents)
+        read_headers([sources[other].contents for other in (name, *pending) if other not in graph],
+                     sysroot, libraries, workspace, header_reader(sysroot, libraries, workspace))
         dependencies = imports(snapshot, sysroot, libraries, workspace)
         if imports_out is not None:
             imports_out[name] = dependencies

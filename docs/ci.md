@@ -26,10 +26,8 @@ and each resolution is one file, `reviews/ID/review.json` or
 `reviews/ID/resolution-N-SECOND.json`, so parallel branches never change the
 same file. Each file must hold a valid record at the path that its record
 determines, and each record file of the base commit must be present with the
-same bytes. Other files under `reviews/` fail the check. The frozen
-`reviews/log.jsonl` holds older records: each line must be a record, and each
-line of the base commit must be present and unchanged. Merges may reorder
-lines; the review statistics use the date of a resolution, not its position.
+same bytes. Other files under `reviews/` fail the check. The review statistics
+use the date of a resolution to find its latest outcome.
 
 Linux builds the [checked API reference](api-reference.md) for pull requests.
 Main, tags, manual and nightly runs build it on both native platforms for
@@ -114,7 +112,7 @@ depends on the other targets; its 1200-second limit only guards against a hang
 outside a test.
 
 The remaining cheap source cases run in one pytest invocation. Cases marked
-`requires_nix` (source identities, test-target invalidation, environment snapshots,
+`requires_nix` (source identities, test-target commands, environment snapshots,
 installer cache paths) run in `just test-nix`; CI selects it for changes to build
 definitions and shared test infrastructure. `just test-atuin` selects
 only the cached Atuin target. Tests use trusted repository fixtures; no production

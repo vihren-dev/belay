@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-11T12:20:04+00:00",
+  "finding": "20261011T121954Z-ee7e6e63#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "reviews/log.jsonl no longer exists in any base; CLAUDE.md forbids keeping replaced paths in code and tests. The general test fails for any deleted base file under reviews/, which covers an exemption of any one path."
+}

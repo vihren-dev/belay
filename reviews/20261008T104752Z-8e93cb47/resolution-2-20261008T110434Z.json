@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-08T11:04:34+00:00",
+  "finding": "20261008T104752Z-8e93cb47#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Added six deterministic original-root case-mode combinations, matching and different spellings, both root orders, alias-link checks and first-root byte checks; all 24 affected checks pass on a fresh macOS runtime."
+}

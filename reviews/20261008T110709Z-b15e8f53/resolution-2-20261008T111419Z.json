@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-08T11:14:19+00:00",
+  "finding": "20261008T110709Z-b15e8f53#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Documented the all-root agreement rule for different spellings and preserved exact-spelling sibling merging across mixed modes."
+}

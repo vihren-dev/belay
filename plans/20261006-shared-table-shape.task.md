@@ -1,6 +1,6 @@
 # Shared table shape
 
-Created 2026-10-06. Status: IN PROGRESS. Resumed 2026-10-09 after T10 delivery.
+Created 2026-10-06. Status: DONE. Resumed 2026-10-09 after T10 delivery.
 
 T10 is delivered in PR #56. Resume from accepted main with the independent
 Belay.Sqlite package and the in-process parser. The original partial
@@ -102,3 +102,6 @@ Frozen corpus bytes remain unchanged, and final model/codec owner review remains
 required. Follow current AGENTS.md and ADR 0009: tests check our code and use
 dependencies as oracles; do not restore removed dependency-output checks or
 committed copies of validation result folders.
+
+Completed through PR #79, merged on 2026-10-10 as `5a813d20`. The local
+two-platform acceptance and hosted CI records are in the task status.

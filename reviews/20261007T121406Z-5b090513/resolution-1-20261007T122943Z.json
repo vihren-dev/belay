@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-07T12:29:43+00:00",
+  "finding": "20261007T121406Z-5b090513#1",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "One-time migration: without the v1 fallback the first run on each platform starts from an empty store, which may exceed the 30-minute job limit on macOS. Remove the line after both platforms have saved v2 caches."
+}
