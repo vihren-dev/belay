@@ -479,3 +479,13 @@ Decisions waiting for the owner:
 - Whether to repair the exact Linux Python store path through Nix.
 - Disposition of the measured regressions before cutover, after the Linux
   comparisons can also be completed.
+
+- 2026-10-12: Added the [partial comparison report](20261012-bundle-cold-comparison.md).
+  It gives all macOS medians, full ranges, paired intervals, inclusive stage
+  medians and observation limits. Raw records remain local. Linux remains
+  held, and the report does not accept a slowdown or authorize cutover.
+
+Decisions waiting for the owner:
+
+- The Linux Python repair decision and subsequent regression disposition
+  listed in the report.
