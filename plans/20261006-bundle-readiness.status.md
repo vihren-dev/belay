@@ -376,3 +376,33 @@ Decisions waiting for the owner:
 
 - None for this integration. Campaign results will require the disposition
   specified by the approved confidence policy.
+
+- 2026-10-12: Integration `5019ddef` passes independent review
+  `20261012T073655Z-5019ddef` with no findings. All 629 source checks and
+  58 subtests pass in 80.74 seconds. Two Linux-only pidfd checks are
+  explicitly skipped on macOS. The immutable macOS runtime builds
+  successfully, and its complete content-addressed offline archive passes
+  closure export and verification. Installed acceptance and the native
+  bundle/kernel suites are running. Their results are pending. The cold
+  campaigns have not started. Original XML and raw archive remain local.
+
+Decisions waiting for the owner:
+
+- None for these checks.
+
+- 2026-10-12: macOS installed acceptance passes all 26 tests in
+  92.23 seconds. Fresh native bundle acceptance passes 92 tests in
+  172.53 seconds, and kernel acceptance passes 28 in 36.04 seconds.
+  The verified offline archive is installed into a separate campaign
+  directory. All three named cases pass input-selection preflight.
+  The first small-success cold campaign is running with a common
+  300-second whole-path limit; its result is pending. The owner approved
+  the exact 50,311,839-byte T06 source archive transfer to Linux. Its
+  SHA-256 is verified remotely before extraction, and the pinned Nix
+  development environment is building the runtime and native gates.
+  Linux results and the remaining cold campaigns are pending.
+
+Decisions waiting for the owner:
+
+- None for acquisition. The approved campaign policy controls disposition
+  after valid results exist.
