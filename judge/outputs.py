@@ -47,7 +47,7 @@ def matches_output(expected: dict[str, Json], actual: dict[str, Json], groups: J
         return False
     if groups is None:
         return len(expected_rows) == len(actual_rows) and submultiset(actual_rows, expected_rows)
-    if not isinstance(groups, list) or not groups:
+    if not isinstance(groups, list):
         return False
     if any(group["count"] != len(rows_of(group["rows"])) for group in groups[1:-1]):
         return False  # Only the first and last group can be cut by a window.

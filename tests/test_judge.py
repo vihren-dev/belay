@@ -77,7 +77,8 @@ def run_judge(root: Path, mode: str, must_agree: list[str] | None = None) -> sub
 
 @pytest.mark.integration
 def test_honest_subject_meets_the_claim(corpus: Path) -> None:
-    """Predicting exactly what SQLite recorded agrees on every case."""
+    """`judge.__main__.main` with `judge.compare.case_verdict`: predicting exactly what SQLite
+    recorded agrees on every case."""
     result = run_judge(corpus, "honest")
     assert result.returncode == 0, result.stderr
     assert json.loads(result.stdout) == {"fixture": {"AGREE": CASES}}
@@ -85,7 +86,8 @@ def test_honest_subject_meets_the_claim(corpus: Path) -> None:
 
 @pytest.mark.integration
 def test_wrong_prediction_disagrees_at_its_statement(corpus: Path) -> None:
-    """One wrong transaction state in the first statement is DISAGREE at statement 0."""
+    """`judge.compare.case_verdict`: one wrong transaction state in the first statement is
+    DISAGREE at statement 0."""
     result = run_judge(corpus, "wrong")
     assert result.returncode == 1
     assert json.loads(result.stdout) == {"fixture": {"DISAGREE": CASES}}
@@ -94,8 +96,8 @@ def test_wrong_prediction_disagrees_at_its_statement(corpus: Path) -> None:
 
 @pytest.mark.integration
 def test_unsupported_everything_fails_the_agreement_floor(corpus: Path) -> None:
-    """A subject that declares every case out of scope breaks the agreement floor, though
-    nothing disagrees; without a floor the same subject passes."""
+    """`judge.claims.claim_failures`: a subject that declares every case out of scope breaks
+    the agreement floor, though nothing disagrees; without a floor the same subject passes."""
     result = run_judge(corpus, "unsupported")
     assert result.returncode == 1 and "the claim requires AGREE" in result.stderr
     assert json.loads(result.stdout) == {"fixture": {"MODEL_UNSUPPORTED": CASES}}
@@ -104,7 +106,8 @@ def test_unsupported_everything_fails_the_agreement_floor(corpus: Path) -> None:
 
 @pytest.mark.integration
 def test_broken_subject_is_a_failure(corpus: Path) -> None:
-    """A subject that crashes stops the judge (exit 2); malformed predictions are HARNESS_ERROR."""
+    """`judge.__main__.predictions` and `judge.compare.case_verdict`: a subject that crashes
+    stops the judge (exit 2); malformed predictions are HARNESS_ERROR."""
     crashed = run_judge(corpus, "crash")
     assert crashed.returncode == 2 and "the subject exited with 3" in crashed.stderr
     malformed = run_judge(corpus, "malformed")

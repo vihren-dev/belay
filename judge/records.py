@@ -14,6 +14,8 @@ from judge.cells import Json, text
 
 CASES_FILE = "cases.jsonl.gz"
 """Corpora v1 to v3 store one record per line in this file."""
+WITH_OUTPUTS = (3, 4)
+"""Native record versions that carry statement parameters and outputs."""
 
 
 def corpus_records(directory: Path) -> Iterator[dict[str, Json]]:
@@ -61,7 +63,7 @@ def subject_input(record: dict[str, Json]) -> dict[str, Json]:
     given: dict[str, Json] = {"name": record["name"], "nativeVersion": record.get("nativeVersion"),
                               "profile": record.get("profile"), "initialSchemaSql": schema_sql(initial),
                               "initialRows": initial_rows(initial), "migrationSql": record["migrationSql"]}
-    if record.get("nativeVersion") in (3, 4):
+    if record.get("nativeVersion") in WITH_OUTPUTS:
         # Bound parameters are statement inputs. Their list has one entry per executed statement,
         # which tells the subject how far SQLite got; records before version 3 have none.
         given["parameters"] = [event["parameters"] for event in trace]

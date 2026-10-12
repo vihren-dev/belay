@@ -49,3 +49,4 @@ Decision: [ADR 0011](../docs/adr-0011-product-trust-and-development-integrity.md
   subject writes predictions in the raw recorded form; the judge reduces both
   sides. Statement alignment uses SQLite's consumed byte ranges, as before.
   The live model cases stay outside the judge (task file updated).
+- 2026-10-12: review fixes: empty tie groups agree when both results are empty (as in `Outputs.lean`), `tests/test_judge_outputs.py`; one constant for versions with outputs.

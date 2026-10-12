@@ -10,12 +10,10 @@ from dataclasses import dataclass
 from judge.catalog import step_form
 from judge.cells import Json
 from judge.outputs import matches_output
-from judge.records import recorded_steps
+from judge.records import WITH_OUTPUTS, recorded_steps
 
 VERDICTS = ("AGREE", "DISAGREE", "MODEL_UNSUPPORTED", "HARNESS_ERROR")
 """Every verdict that the judge gives."""
-WITH_OUTPUTS = (3, 4)
-"""Native record versions that carry statement outputs, which are compared too."""
 SQLITE_ERROR = 1
 """SQLite's primary result code for an SQL error, such as a syntax error."""
 

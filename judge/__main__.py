@@ -30,7 +30,8 @@ def predictions(subject: Sequence[str], inputs: list[dict[str, object]]) -> list
         raise RuntimeError(f"the subject exited with {result.returncode}: {result.stderr.strip()[-2000:]}")
     lines = [line for line in result.stdout.splitlines() if line.strip()]
     if len(lines) != len(inputs):
-        raise RuntimeError(f"the subject wrote {len(lines)} predictions for {len(inputs)} inputs")
+        raise RuntimeError(f"the subject `{' '.join(subject)}` wrote {len(lines)} predictions for "
+                           f"{len(inputs)} inputs; it must write exactly one prediction line per input line")
     return [json.loads(line) for line in lines]
 
 

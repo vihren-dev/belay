@@ -24,7 +24,8 @@ class Claim:
 
 
 def load_claims(path: Path) -> list[Claim]:
-    """Read and check the claims file."""
+    """Read the claims file, and refuse a claim that forbids AGREE or names an unknown verdict:
+    such a claim could never hold, or would hold for a reason that nobody intended."""
     document = json.loads(path.read_text(encoding="utf-8"))
     claims = []
     for corpus, entry in sorted(document["corpora"].items()):
