@@ -19,3 +19,6 @@ Relevant files: `migration_check/compile.py`, `migration_check/contract.py`,
 - 2026-10-12: updated with ADR 0010: `verify` is deprecated (owner decision)
   and out of scope; `prepare` builds the user's proofs project; cases take the
   layout of a user's project.
+- 2026-10-12: ADR 0010 section 10 added: generate, check and export phases;
+  the check is `lake build` with a generated `Check` module and an audit
+  command. Outcome item 4 and the audit and loop-speed tests added.
