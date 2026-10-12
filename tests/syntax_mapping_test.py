@@ -97,6 +97,7 @@ def test_node_paths_select_source_ranges(parse_sql: Callable[..., Tree]) -> None
     text = sql.encode()
 
     def at(located: Located, path: list[int]) -> str:
+        """Return the source text of the range that `Located.span` selects for the path."""
         start, end = located.span(path)
         return text[start:end].decode()
     assert at(create, [1, 1]) == "rowid TEXT"

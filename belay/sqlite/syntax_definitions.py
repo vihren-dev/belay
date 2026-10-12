@@ -9,12 +9,16 @@ from .located import Located, constructor, leaf, sequence, structure
 from .sql_tree import Node, Tree
 from .syntax_expressions import dequote, expression, identifier, name, term
 
+MODELED_FORMS = ("rewrite it with the modeled forms: CREATE TABLE, CREATE [UNIQUE] INDEX, ALTER TABLE ADD COLUMN, "
+                 "BEGIN, COMMIT, ROLLBACK, INSERT ... VALUES and UPDATE ... SET ... [WHERE column = value]")
+"""The corrective action for a production that has no syntax constructor."""
+
 
 def require(tree: Tree, node: Node, symbols: list[str]) -> list[Node]:
     """Return the children of a production with exactly these symbols, or refuse it."""
     children = tree.children(node)
     if [child.symbol for child in children] != symbols:
-        raise tree.unsupported(node, f"Unsupported SQL form: {node.symbol}; this syntax is not modeled")
+        raise tree.unsupported(node, f"Unsupported SQL form: {node.symbol}; {MODELED_FORMS}")
     return children
 
 
@@ -35,7 +39,7 @@ def left_list(tree: Tree, node: Node, shapes: dict[int, list[str]]) -> list[list
         children = tree.children(node)
         expected = shapes.get(len(children))
         if expected is None or [child.symbol for child in children] != expected:
-            raise tree.unsupported(node, f"Unsupported SQL form: {node.symbol}; this syntax is not modeled")
+            raise tree.unsupported(node, f"Unsupported SQL form: {node.symbol}; {MODELED_FORMS}")
         if children[0].symbol != node.symbol:
             items.append(children)
             break
