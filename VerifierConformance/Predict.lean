@@ -34,7 +34,9 @@ def nativeColumn (column : CatalogColumn) : NativeColumn :=
   { name := column.name, declaredType := column.declaredType.getD "", notNull := column.notNull,
     defaultValue := match column.defaultValue with
       | some (.currentTime keyword) => some keyword
-      | _ => none }
+      | none => none
+      | some .null | some (.numeric _) | some (.string _) | some (.blob _) | some (.identifier ..)
+      | some (.negate _) | some (.positive _) | some (.equals ..) => none }
 
 /-- The table at a catalog position, under its catalog object name, as native metadata. -/
 def nativeTableOf (catalog : Catalog) (position : Nat) (name : String) (table : Table) : NativeTable where
