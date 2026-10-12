@@ -22,17 +22,29 @@ in ruleset 23934665 (`require_code_owner_review: true`, one approval).
    and that no case is DISAGREE or HARNESS_ERROR on any frozen corpus. A claim
    that only says "nothing disagrees" is not enough: a subject that calls
    every case unsupported must fail a claim with an agreement floor.
-4. The subject has a predict command. Its input is one frozen record (profile,
-   setup and migration SQL); its output is the predicted observations per
-   statement (result or error code, visible and persisted tables, transaction
-   state, outputs) as JSON, or "unsupported" with a reason. The frontend and
-   the model implement it. The subject never sees the recorded observations.
+4. The subject has a predict command. Its input is what the judge takes from a
+   frozen record before execution: the profile, the initial schema SQL and
+   rows, the migration SQL and the statement parameters. It never sees an
+   observation after the initial state. Its output, per case, is one of: the
+   predicted observations (per statement: its SQL text, primary result code,
+   visible and persisted tables, transaction state, and output), "unsupported"
+   with a reason, or "input error" when the frontend refuses the migration
+   SQL. Tables are predicted in SQLite's catalog terms (owner decision,
+   2026-10-12): per column the `PRAGMA table_xinfo` fields (name, declared
+   type, not-null, default, primary-key position, hidden), per index the
+   `PRAGMA index_list` and `index_xinfo` fields, and the rows with their row
+   ids and typed cells. The frontend and the model implement it, including a
+   renderer from the model's tables to this form.
 5. The judge is a small program that compares recorded observations with
    predictions and applies the claims. It uses only the Python standard
    library and its own files. It does not import `belay`, `conformance` or any
-   model code, and it does not share types with the model. On corpora v1 to
-   v3 and the live model cases it gives the same verdicts as the current
-   `classifyCase`.
+   model code, and it does not share types with the model. It derives the
+   recorded catalog only from the recorded PRAGMA rows, never by translating
+   recorded SQL. An "input error" is MODEL_UNSUPPORTED when native SQLite also
+   refused the statement, and DISAGREE otherwise. On corpora v1 to v3 and the
+   live model cases it gives the same verdicts as the current `classifyCase`,
+   except for cases where the catalog comparison is stricter; each such case
+   is listed in the status file with its cause.
 6. The judge is a Nix derivation whose inputs are the judge, the claims, the
    frozen corpora and the native SQLite build (`nix/sqlite.nix`, with
    `nix/flake.lock`). `nix/judge.lock.json` records its derivation path for
@@ -63,7 +75,10 @@ in ruleset 23934665 (`require_code_owner_review: true`, one approval).
   floor; a subject that crashes or writes malformed output fails with
   HARNESS_ERROR.
 - Parity: the judge and the current `classifyCase` give equal verdicts on
-  corpora v1 to v3 and the live model cases, until the old path is removed.
+  corpora v1 to v3 and the live model cases, until the old path is removed;
+  each difference is a listed, explained catalog difference.
+- Renderer: for each table shape the model supports, the rendered catalog
+  equals what native SQLite reports for the same declaration.
 - Lock: unchanged inputs evaluate; a change to one byte of a corpus, to the
   claims, to the judge code, or to `nix/sqlite.nix` stops evaluation with an
   error that names the input; restoring the input passes again. These run

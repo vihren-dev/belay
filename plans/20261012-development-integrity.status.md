@@ -38,3 +38,7 @@ Decision: [ADR 0011](../docs/adr-0011-product-trust-and-development-integrity.md
 - 2026-10-12: step 1. `.github/CODEOWNERS` has the two sections of ADR 0011;
   the review checklist has R16 (anchored integrity checks); ADR 0011 is
   ACCEPTED. R8 stays until the new `CODEOWNERS` is on `main` with enforcement.
+- 2026-10-12: owner chose comparison in SQLite's catalog terms (option 1),
+  after the finding that `native_replay.model_case` builds the reference
+  tables with the frontend's translation of recorded schema SQL. The task file
+  now names the renderer from model tables to PRAGMA rows (outcome 4).
