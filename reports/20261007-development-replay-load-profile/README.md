@@ -74,11 +74,6 @@ flushed, and residency was not observed.
 
 Run the bounded read-only check:
 
-```sh
-nix develop path:./nix --command timeout 15 python3 -B \
-  reports/20261007-development-replay-load-profile/validate.py
-```
-
 It verifies original artifact hashes, unchanged inputs, all 4,376 case/profile
 bindings, one profiled `corpus.load` invocation, absence of native/model replay
 functions, and every retained derived caller counter. The check passes.
@@ -106,3 +101,5 @@ add lifetime and memory policy, while its directly measured decode/encode
 cost is 1.341838 seconds before any unknown duplicate ratio. This evidence
 does not justify a cache framework or an estimate that a snapshot change
 alone will meet acceptance. The coordinator selects the next authorized unit.
+
+The scripts that checked these files against each other (`validate.py`, `check_mutations.py`) were removed on 2026-10-12 under ADR 0011: their reference values were in this directory, so they could not detect a deliberate change. The retained files are unchanged.

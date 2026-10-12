@@ -93,3 +93,13 @@ Decision: [ADR 0011](../docs/adr-0011-product-trust-and-development-integrity.md
   run 38126119856, Linux, uncached): pinned 95 s, frozen 129 s, model 112 s,
   sample 60 s; Verdict job 2 to 4.5 min, in parallel.
 - 2026-10-12: step 8, part 2: removed the test assertions that `judge/claims.json` now states (v1 AGREE floor, v2 baseline subset and floor, no DISAGREE or HARNESS_ERROR on v1 to v5 and the sample tiers, and the v4 MODEL_UNSUPPORTED count, which would also forbid future agreement). The rest of each test stays. The v2 progress report left the frozen suite inputs.
+- 2026-10-12: step 8, part 3: removed checks whose reference is in the same
+  unprotected directory: 8 `validate.py` and 4 `check_mutations.py` scripts
+  in `reports/` (their READMEs say why), `tests/test_native_storage_evidence.py`,
+  the bundle-scheduling receipt test, the c4 fidelity ledger test, and the
+  digest and fixed-count lines of the authored-evidence test. Kept as
+  provenance: `reports/20261006-native-replay-storage/validate.py` (its digest
+  is in retained receipts), `reports/20261007-development-replay-executor-runtime/`
+  `validate.py` and `check_mutations.py` (named in a recorded run), and the
+  adr5 execution helpers. Kept as honest-mistake checks: the validator and
+  freeze tests that run on copies, captures and new freezes.

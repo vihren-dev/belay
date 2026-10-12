@@ -1,11 +1,6 @@
-"""Fidelity triage binds every historical refusal and preserves independent truth."""
+"""Fidelity triage separates narrow mismatch causes and preserves independent truth."""
 
-from collections import Counter
 from copy import deepcopy
-import gzip
-import hashlib
-import json
-from pathlib import Path
 
 import pytest
 
@@ -17,45 +12,6 @@ from conformance.upstream_selection import candidate_reasons
 from conformance.upstream_assertions import assertions
 
 pytestmark = [pytest.mark.conformance]
-
-
-@pytest.mark.unit
-def test_ledger_covers_every_historical_fidelity_refusal() -> None:
-    """Cause labels cover the exact frozen denominator and bind their original observations."""
-    root = Path(__file__).resolve().parents[1]
-    summary = json.loads((root / "reports/20261001-adr5-c4-fidelity.json").read_text())
-    historical = gzip.decompress((root / summary["historicalExtraction"]).read_bytes())
-    assert hashlib.sha256(historical).hexdigest() == summary["historicalExtractionSha256"]
-    frozen = json.loads(historical)
-    artifacts = {}
-    for name, field in (("causes", "ledgerSha256"), ("traces", "tracesSha256"),
-                        ("mechanical", "mechanicalProofSha256"), ("bindings", "bindingProofSha256")):
-        payload = gzip.decompress((root / f"reports/20261001-adr5-c4-{name}.json.gz").read_bytes())
-        assert hashlib.sha256(payload).hexdigest() == summary[field]
-        artifacts[name] = json.loads(payload)
-    rows = artifacts["causes"]
-    expected = {(file["file"], row["id"], row["occurrence"]): row["result"]
-                for file in frozen["files"] for row in file.get("instances", []) if "differ" in row["result"]}
-    actual = {(row["file"], row["id"], row["occurrence"]): row["result"] for row in rows}
-    assert len(rows) == len(actual) == len(expected) == summary["differingCandidates"] == 143
-    assert actual == expected
-    assert all(row["cause"] for row in rows)
-    assert Counter(row["cause"] for row in rows) == summary["causes"]
-    assert summary["unmappedCandidates"] == 0
-    for name, trace in artifacts["traces"].items():
-        source = next(file for file in frozen["files"] if file["file"] == name)
-        assert trace["sourceSha256"] == source["sha256"]
-        assert trace["events"]
-    for row in rows:
-        if row["cause"] == "filesystem path observation: PRAGMA database_list":
-            assert row["actual"][::3] == row["expected"][::3]
-            assert row["actual"][1::3] == row["expected"][1::3]
-            assert row["actual"][2::3] != row["expected"][2::3]
-    assert len(artifacts["mechanical"]["experiments"]) == 3
-    binding = artifacts["bindings"]
-    assert binding["historical-unbound"]["rows"] == [["null"]]
-    assert binding["typed-bound-before-BLOB"]["tclValues"] == [binding["bindingEvidence"]["TclValue"]]
-    assert binding["typed-bound-before-BLOB"]["tclValues"] != binding["TclExpectedAfterBlobWrite"]
 
 
 @pytest.mark.integration

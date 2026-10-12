@@ -106,16 +106,11 @@ transfer checks, build logs and failures are retained.
 
 Run the bounded read-only validator from the repository:
 
-```sh
-nix develop path:./nix --command timeout 15 python3 -B \
-  reports/20261007-development-replay-headroom-acceptance/validate.py
-nix develop path:./nix --command timeout 15 python3 -B \
-  reports/20261007-development-replay-headroom-acceptance/check_mutations.py
-```
-
 It checks retained bytes, public source and helper bindings, runtime identity,
 all historical selected identities/profiles/verdicts, timestamps, actual paths,
 cleanup and the separate target fields. A valid Linux miss remains a miss.
 The mutation check refuses four independent corrupt identity, native-library,
 fixture-path and target observations. Both bounded checks pass.
 The prior receipts and all frozen corpus bytes remain unchanged.
+
+The scripts that checked these files against each other (`validate.py`, `check_mutations.py`) were removed on 2026-10-12 under ADR 0011: their reference values were in this directory, so they could not detect a deliberate change. The retained files are unchanged.

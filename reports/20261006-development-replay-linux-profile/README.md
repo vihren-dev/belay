@@ -84,7 +84,9 @@ No completed diagnostic was rerun.
 
 `raw-sha256.json` binds all 27 raw compressed files and their exact original
 bytes. `receipt.json` records provenance, process handles, costs and limits.
-`python3 validate.py` checks retained evidence without replaying or building.
+At delivery, a validator, since removed, checked the retained evidence without replaying or building.
 The bounded checks passed. All 22 earlier raw measurement/diagnostic artifacts
 and the append-only review journal remain preserved. Integrated ordinary/Nix
 checks and Linux performance acceptance remain pending.
+
+The scripts that checked these files against each other (`validate.py`, `check_mutations.py`) were removed on 2026-10-12 under ADR 0011: their reference values were in this directory, so they could not detect a deliberate change. The retained files are unchanged.
