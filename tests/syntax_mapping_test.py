@@ -13,9 +13,10 @@ import pytest
 from belay.sqlite.errors import SqlError
 from belay.sqlite.located import Located
 from belay.sqlite.profiles import DEFAULT_PROFILE
-from belay.sqlite.sql_tree import Tree
+from belay.sqlite.sql_tree import Node, Tree
 from belay.sqlite.syntax import script_record, statements
 from belay.sqlite.syntax_expressions import dequote
+from belay.sqlite.syntax_writes import value_rows
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_native]
 
@@ -103,6 +104,16 @@ def test_refusals_say_which_form_to_use(parse_sql: Callable[..., Tree], sql: str
     with pytest.raises(SqlError) as raised:
         statements(parse_sql(sql))
     assert advice in str(raised.value)
+
+
+def test_malformed_values_list_names_the_modeled_forms() -> None:
+    """`value_rows` refuses a VALUES list node with a shape that the grammar does not produce."""
+    nodes = (Node("COMMA", 0, 1, ()), Node("mvalues", 0, 1, (0,)), Node("oneselect", 0, 1, (1,)),
+             Node("selectnowith", 0, 1, (2,)), Node("select", 0, 1, (3,)))
+    with pytest.raises(SqlError) as raised:
+        value_rows(Tree("fixture.sql", b",", nodes, 4), nodes[4])
+    assert raised.value.status == "UNSUPPORTED"
+    assert "rewrite it with the modeled forms" in str(raised.value)
 
 
 def test_node_paths_select_source_ranges(parse_sql: Callable[..., Tree]) -> None:
