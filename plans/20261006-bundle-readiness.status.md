@@ -406,3 +406,35 @@ Decisions waiting for the owner:
 
 - None for acquisition. The approved campaign policy controls disposition
   after valid results exist.
+
+- 2026-10-12: The macOS small-success campaign completes nine valid
+  pairs. Median verify time is 2.721716 seconds, and preparation plus
+  bundle checking is 4.150043 seconds. The median paired difference is
+  1.459504 seconds. The approved simultaneous interval is 1.365225 to
+  1.489479 seconds, so this result is REGRESSION. All raw invocations,
+  unchanged before/after identities and complete stage traces are checked
+  and retained locally in `build/20261012-t06-installed/darwin-small-success`.
+  No invalid pair is excluded. The checked-refutation campaign is running.
+  Linux runtime and gate builds complete successfully. Linux source
+  acceptance and offline packaging remain running.
+
+Decisions waiting for the owner:
+
+- Disposition of the measured regression before cutover. The remaining
+  cases will be presented with this result after acquisition.
+
+- 2026-10-12: Linux source acceptance passes 629 tests and 58 subtests
+  in 64.77 seconds. Two optional reviewer-tool checks skip because Codex
+  and Claude are absent on that host. Offline packaging then fails its
+  unchanged Nix integrity check: the pinned Python store path
+  `/nix/store/id2vdjw5jisfg9xfqx32pjcycwwr0j89-python3-3.14.7` has changed
+  bytes. No failed archive is used for installed acceptance or timing.
+  Linux acquisition is held for owner feedback under the workspace
+  environment-blocker rule. The macOS checked-refutation campaign uses its
+  separate verified installed runtime and continues.
+
+Decisions waiting for the owner:
+
+- Whether to verify and repair the exact Linux Python store path through
+  Nix, then retry unchanged packaging, or hold Linux validation.
+- Disposition of the macOS small-success regression before cutover.
