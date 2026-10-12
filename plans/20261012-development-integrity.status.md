@@ -72,3 +72,9 @@ Decision: [ADR 0011](../docs/adr-0011-product-trust-and-development-integrity.md
   20261012T090907Z-7c09b6c6#1 was only partly fixed: the runner-failure
   message has no test (it needs a broken runtime).
 - 2026-10-12: owner chose: document memorized answers as a known limit in ADR 0011, add review condition R17 (advisory), and consider a hidden holdout corpus later.
+- 2026-10-12: `.github/workflows/verdict.yml` (job "Verdict"): checkout, Nix
+  with the signed Attic substituter, `nix-build nix/judge.nix -A verdict`, the
+  report as an artifact; no GitHub Actions cache. `docs/ci.md` describes it;
+  `AGENTS.md` describes the two-pull-request flow for a claim change.
+  Waiting for: the owner adds "Verdict" as a required check of ruleset
+  23934665 after this is on `main`.

@@ -207,6 +207,27 @@ and requires a branch to be up to date before it merges. Changes to approved
 example requirements are ordinary test-fixture changes and get the same
 review as other changes.
 
+## Verdict of the development claims
+
+The `Verdict` workflow (`.github/workflows/verdict.yml`) is a required check of
+every pull request, including documentation-only ones (ADR 0011). It runs
+`nix-build nix/judge.nix -A verdict` and nothing else on its host, and it
+restores no GitHub Actions cache.
+
+`nix/judge.nix` first compares each part of the judge with
+`nix/judge.lock.json`: the judge code and `judge/claims.json`, each claimed
+corpus, and the native SQLite oracle (`nix/sqlite.nix` with `nix/flake.lock`).
+A changed part stops the job with its name. Then three Nix builds run: the judge
+writes the subject's inputs, the subject (`conformance.predict`) predicts from
+those inputs in a build without the corpora, and the judge checks the claims.
+`verdict-report` keeps the counts and every verdict for 14 days.
+
+`just verdict` builds the same verdict locally. `just judge-lock` prints the
+current lock values. A change to the judge, the claims, a corpus or the oracle
+updates `nix/judge.lock.json` in its own pull request, which the owner
+approves; `.github/CODEOWNERS` lists the lock, `nix/judge.nix` and the
+workflows.
+
 ## Maintainer release
 
 From the primary checkout, after reviewed `main` CI is green and release notes

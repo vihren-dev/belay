@@ -1,0 +1,50 @@
+# ADR 0011: the verdict of the development claims. Ruleset 23934665 requires the "Verdict"
+# check. This job runs no pull-request code on its host: it evaluates the code-owned
+# nix/judge.nix, which checks nix/judge.lock.json, and every build runs in the Nix sandbox.
+# It restores no GitHub Actions cache; Nix substitutes only from signed caches that main
+# runs publish.
+name: Verdict
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verdict-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verdict:
+    name: Verdict
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31
+        with:
+          enable_kvm: false
+          set_as_trusted_user: false
+          extra_nix_config: |
+            sandbox = true
+            sandbox-fallback = false
+            extra-substituters = https://cache.vihren.dev/sqlite-verifier
+            extra-trusted-public-keys = sqlite-verifier:XgeRqTIGBEw3VP8GPrzSvdU+5t1lJz7uEMhIG1lh7QE=
+            connect-timeout = 5
+            fallback = true
+      - name: Check the judge lock and build the verdict
+        run: nix-build nix/judge.nix -A verdict --out-link verdict --extra-experimental-features 'nix-command flakes'
+      - name: Retain the verdict report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: verdict-report
+          path: verdict/
+          if-no-files-found: ignore
+          retention-days: 14
