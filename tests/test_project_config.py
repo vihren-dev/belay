@@ -56,8 +56,6 @@ def test_valid_config_resolves_shared_contract(tmp_path: Path) -> None:
     ('status = "VERIFIED"', 'status = "PASSED"', "test.status"),
     ('status = "VERIFIED"', 'status = "VERIFIED"\nsuite = 1', "test.suite"),
     ('status = "VERIFIED"', 'status = ["VERIFIED"]', "test.status"),
-    ('"Helper"', '"../../approved/Requirements"', "project.proof_modules"),
-    ('"Helper"', '"/etc/passwd"', "project.proof_modules"),
     ('[test]', 'colour = "red"\n[test]', "project.colour"),
     ('[test]', '[extra]\n[test]', "(tables)"),
     ('[project]', '[project', "(file)"),
@@ -76,6 +74,26 @@ def test_path_outside_root_is_refused(tmp_path: Path) -> None:
     file = case_tree(root, VALID.replace('migration = "migration.sql"', 'migration = "../../outside.sql"'))
     with pytest.raises(ConfigError, match="field project.migration: .* is outside"):
         load(file, root)
+
+
+@pytest.mark.parametrize("name", ["../../outside/Evil", "ABSOLUTE"])
+def test_path_like_module_name_is_refused(tmp_path: Path, name: str) -> None:
+    """A module name that is a path to an existing Lean file outside the root is refused as a name."""
+    (tmp_path / "outside").mkdir()
+    (tmp_path / "outside" / "Evil.lean").write_text("")
+    module = str(tmp_path / "outside" / "Evil") if name == "ABSOLUTE" else name
+    root = tmp_path / "cases"
+    file = case_tree(root, VALID.replace('"Helper"', f'"{module}"'))
+    with pytest.raises(ConfigError, match="field project.proof_modules: .* is not a Lean module name"):
+        load(file, root)
+
+
+def test_dotted_module_name_names_a_nested_file(tmp_path: Path) -> None:
+    """`Helpers.Facts` is the module in `Helpers/Facts.lean` of the proofs folder."""
+    file = case_tree(tmp_path, VALID.replace('"Helper"', '"Helpers.Facts"'))
+    (file.parent / "Helpers").mkdir()
+    (file.parent / "Helpers" / "Facts.lean").write_text("")
+    assert load(file, tmp_path).proof_modules[-1] == "Helpers.Facts"
 
 
 def test_discover_finds_nested_cases_in_order(tmp_path: Path) -> None:
