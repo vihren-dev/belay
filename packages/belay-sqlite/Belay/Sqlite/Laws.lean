@@ -57,11 +57,9 @@ theorem literal_cases (statement : Resolved.Statement) (database : Database) (po
     (∃ reason, literalStep statement database position = .failure position reason database) := by
   cases statement with
   | createTable at_ name table =>
-    cases h : database at_ <;> simp only [literalStep, step, h]
-    all_goals split <;> simp_all
+    cases h : database at_ <;> simp [literalStep, step, h]
   | addColumn at_ column =>
-    cases h : database at_ <;> simp only [literalStep, step, h]
-    all_goals split <;> simp_all
+    cases h : database at_ <;> simp [literalStep, step, h]
   | insert at_ rows keys =>
     cases h : database at_ <;> simp only [literalStep, checkedWrite, h]
     all_goals try (split <;> simp_all)

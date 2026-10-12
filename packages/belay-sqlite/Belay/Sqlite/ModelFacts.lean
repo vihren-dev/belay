@@ -7,7 +7,9 @@ set_option doc.verso true
 namespace Belay.Sqlite
 
 /-- For every test, list and found position: if {name}`findPosition` finds the
-position, it is below the list length. -/
+position, it is below the list length. The proof inducts over the list: the
+head gives position zero, and a later match adds one to a position that is below
+the tail length. -/
 theorem findPosition_lt {test : α → Bool} {items : List α} (found : findPosition test items = some (index, item)) :
     index < items.length := by
   induction items generalizing index with
@@ -21,7 +23,8 @@ theorem findPosition_lt {test : α → Bool} {items : List α} (found : findPosi
       simpa using ih innerFound
 
 /-- For every test, list, suffix and found position: appending a suffix keeps the
-position that {name}`findPosition` finds in the list. -/
+position that {name}`findPosition` finds in the list. The proof inducts over the
+list: the search stops at the same item before it reaches the suffix. -/
 theorem findPosition_append {test : α → Bool} {items : List α} (more : List α)
     (found : findPosition test items = some (index, item)) :
     findPosition test (items ++ more) = some (index, item) := by
@@ -43,7 +46,8 @@ def Covers (table : Table) (names : List String) : Prop :=
 
 /-- For every table and two limits, if the table is supported under the first and
 the second allows at least as many columns, it is supported under the second. Only
-the column limit enters {name}`CatalogTable.supported`. -/
+the column limit enters {name}`CatalogTable.supported`. The proof splits the
+conjunction, keeps each check, and weakens the width bound by transitivity. -/
 theorem CatalogTable.supported_mono {table : CatalogTable} (supported : table.supported limits = true)
     (more : limits.columns ≤ other.columns) : table.supported other = true := by
   simp only [CatalogTable.supported, Bool.and_eq_true, decide_eq_true_eq] at supported ⊢

@@ -63,12 +63,11 @@ example : (step (.addColumn 0 { name := "shell", declaredType := some "TEXT" })
     some (table.appendColumns [{ name := "shell", declaredType := some "TEXT" }]) := by
   decide +kernel
 
-/-- Adding {name}`timestamp` returns an unchanged database and
-{lean}`ExecutionError.unmodeled` at position zero: the plain-column check rejects
-the definition before the table lookup, as resolution never gives it for a
-statement that runs. The proof unfolds that check. -/
-example : step (.addColumn 0 timestamp) (fun _ => none) =
-    .failure 0 .unmodeled (fun _ => none) := by
-  simp [step, timestamp, CatalogColumn.plain]
+/-- The supported-subset check refuses ADD COLUMN of {name}`timestamp`, a model
+restriction, because SQLite accepts the column but the model does not describe its
+default. Resolution never gives such a statement for a statement that runs. The
+proof unfolds the check. -/
+example : statementReady (.addColumn 0 timestamp) (fun _ => none) = false := by
+  simp [statementReady, timestamp, CatalogColumn.plain]
 
 end SqliteVerifier.SchemaExamples

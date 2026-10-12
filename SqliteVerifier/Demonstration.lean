@@ -84,6 +84,7 @@ theorem migrationCorrect (profile : Profile) (columns : 2 ≤ profile.limits.col
       exact ⟨0, by rw [shape]; decide +kernel⟩⟩
   · intro database _
     exact supportedSqlFrom_schemaOnly (by simp [SchemaOnly, script])
+      (by simp [ModeledDefinitions, script, CatalogTable.plain, CatalogColumn.plain, note, message])
   · intro database admitted
     obtain ⟨table, present, shape, valid, absent⟩ := admitted_invoices admitted
     have middleConforms : Conforms profile middleCatalog (database.set 0 (table.appendColumns [note])) :=
@@ -105,7 +106,7 @@ theorem migrationCorrect (profile : Profile) (columns : 2 ≤ profile.limits.col
         { shape := { columns := [message] }, rows := [] }) := by
       simp only [note, message] at readAudit ⊢
       simp [runSql, runSqlFrom, advance, literalStep, SqlState.finish, script, step, present, readAudit,
-        CatalogTable.plain, CatalogColumn.plain, note, message]
+        note, message]
     rw [executed]
     refine ⟨trivial, ?_⟩
     intro original originalRead

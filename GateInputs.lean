@@ -37,19 +37,25 @@ def sqlValues (resolution : ResolvedScript) : List (Name × Expr × Expr) :=
      toExpr resolution.resolved),
    (`Generated.nextCatalog, mkConst ``Catalog, toExpr resolution.nextCatalog)]
 
+/-- The next step for a user after a generated declaration fails a check. Only the
+verifier writes these declarations, so a candidate must not define or change them. -/
+def regenerateAdvice : String :=
+  "run `migration-check verify` or `migration-check prepare` again so that it writes " ++
+    "the generated inputs; do not define or edit declarations in the `Generated` namespace"
+
 /-- Require each declaration to be a closed definition whose type and value are
 definitionally equal to the given type and computed value. -/
 def requireValues (env : Environment) (values : List (Name × Expr × Expr)) : IO Unit := do
   for (name, type, value) in values do
     let some info := env.toKernelEnv.find? name
-      | throw <| IO.userError s!"missing generated declaration: {name}"
+      | throw <| IO.userError s!"missing generated declaration: {name}; {regenerateAdvice}"
     let some body := info.value?
-      | throw <| IO.userError s!"generated declaration is not a definition: {name}"
+      | throw <| IO.userError s!"generated declaration is not a definition: {name}; {regenerateAdvice}"
     unless info.levelParams.isEmpty do
-      throw <| IO.userError s!"generated declaration has universe parameters: {name}"
+      throw <| IO.userError s!"generated declaration has universe parameters: {name}; {regenerateAdvice}"
     unless ← kernelResult (Kernel.isDefEq env {} info.type type) do
-      throw <| IO.userError s!"generated declaration has another type: {name}"
+      throw <| IO.userError s!"generated declaration has another type: {name}; {regenerateAdvice}"
     unless ← kernelResult (Kernel.isDefEq env {} body value) do
-      throw <| IO.userError s!"generated declaration differs from the resolution of the script record: {name}"
+      throw <| IO.userError s!"generated declaration differs from the resolution of the script record: {name}; {regenerateAdvice}"
 
 end ProofChecker

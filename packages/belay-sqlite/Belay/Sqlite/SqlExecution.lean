@@ -58,15 +58,21 @@ def literalStep (statement : Resolved.Statement) (database : Database) (position
   | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ =>
     step statement database position
 
-/-- Check INSERT/UPDATE admission against the current table. A position without a
-table passes this domain check and fails during execution instead. Other
-statement forms pass. Use it through the reached-statement script support check. -/
+/-- Check that the model describes the statement against the current table.
+INSERT/UPDATE must pass the data domain of the table; a position without a table
+passes and fails during execution instead. CREATE TABLE and ADD COLUMN must be
+plain, and CREATE INDEX fails: these are model restrictions, because SQLite
+accepts such statements. Other statement forms pass. Use it through the
+reached-statement script support check. -/
 def statementReady (statement : Resolved.Statement) (database : Database) : Bool :=
   match statement with
   | .insert at_ rows keys => (database at_).all fun table => LiteralData.insertReady keys table rows
   | .update at_ assignments filter keys => (database at_).all fun table =>
       LiteralData.updateReady keys table assignments filter
-  | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ => true
+  | .createTable _ _ table => table.plain
+  | .addColumn _ column => column.plain
+  | .createIndex .. => false
+  | .begin | .commit | .rollback | .prepareError _ => true
 
 /-- Evaluate one statement at its supplied zero-based position. BEGIN records a
 snapshot; COMMIT clears it; ROLLBACK restores it. Repeated BEGIN or transaction
@@ -87,7 +93,8 @@ def advance (position : Nat) (statement : Resolved.Statement) (state : SqlState)
   | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .update .. | .prepareError _ =>
     match literalStep statement state.database position with
     | .success database => .next { state with database := database }
-    | outcome => .halt (state.finish outcome)
+    | .failure failed reason database => .halt (state.finish (.failure failed reason database))
+    | .pending persisted visible error => .halt (state.finish (.pending persisted visible error))
 
 /-- Execute the script from a supplied position and connection state. A halt stops
 the script; a continuing transition advances the position. EOF finishes the

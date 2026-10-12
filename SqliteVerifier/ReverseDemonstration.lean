@@ -30,11 +30,11 @@ theorem reverse_runs (database : Database) (admitted : Admitted profile startCat
   have reversed : runSql reverseScript database = .success ((database.set 1
       { shape := { columns := [message] }, rows := [] }).set 0 (table.appendColumns [note])) := by
     simp [runSql, runSqlFrom, advance, literalStep, SqlState.finish, reverseScript, step, absent, readInvoice,
-      CatalogTable.plain, CatalogColumn.plain, note, message]
+      note, message]
   have forward : runSql script database = .success ((database.set 0 (table.appendColumns [note])).set 1
       { shape := { columns := [message] }, rows := [] }) := by
     simp [runSql, runSqlFrom, advance, literalStep, SqlState.finish, script, step, present, readAudit,
-      CatalogTable.plain, CatalogColumn.plain, note, message]
+      note, message]
   rw [reversed, forward, database.set_comm 1 0 _ _ (by decide)]
 
 /-- The complete {name}`VerificationConditions` hold for {name}`reverseScript` with
@@ -46,7 +46,8 @@ theorem reverseMigrationCorrect (profile : Profile) (columns : 2 ≤ profile.lim
     VerificationConditions startCatalog nextCatalog reverseScript (fun _ => True)
       requirements (current profile) (next profile) unreachableFailures profile :=
   (migrationCorrect profile columns).congr_runSql
-    (fun _ _ => supportedSqlFrom_schemaOnly (by simp [SchemaOnly, reverseScript]))
+    (fun _ _ => supportedSqlFrom_schemaOnly (by simp [SchemaOnly, reverseScript])
+      (by simp [ModeledDefinitions, reverseScript, CatalogTable.plain, CatalogColumn.plain, note, message]))
     reverse_runs
 
 #print axioms reverseMigrationCorrect

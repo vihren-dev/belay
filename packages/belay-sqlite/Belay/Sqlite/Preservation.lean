@@ -97,18 +97,14 @@ theorem step_extends (statement : Resolved.Statement) (database : Database) (pos
   cases statement with
   | createTable at_ name table =>
     simp only [step]
-    split
-    · exact DatabaseExtends.refl database
-    · cases h : database at_ with
-      | none => exact DatabaseExtends.create database at_ { shape := table, rows := [] } h
-      | some table => exact DatabaseExtends.refl database
+    cases h : database at_ with
+    | none => exact DatabaseExtends.create database at_ { shape := table, rows := [] } h
+    | some table => exact DatabaseExtends.refl database
   | addColumn at_ column =>
     simp only [step]
-    split
-    · exact DatabaseExtends.refl database
-    · cases h : database at_ with
-      | none => exact DatabaseExtends.refl database
-      | some table => exact DatabaseExtends.add database at_ table [column] h
+    cases h : database at_ with
+    | none => exact DatabaseExtends.refl database
+    | some table => exact DatabaseExtends.add database at_ table [column] h
   | createIndex _ _ _ => exact DatabaseExtends.refl database
   | begin => exact DatabaseExtends.refl database
   | commit => exact DatabaseExtends.refl database

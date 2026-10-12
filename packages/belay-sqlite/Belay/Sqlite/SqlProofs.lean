@@ -30,39 +30,46 @@ def NoWrites (script : List Resolved.Statement) : Prop :=
     | .update .. => False
     | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ => True
 
-/-- For every position and connection state, a {name}`NoWrites` script passes the
-reached-statement data-domain check, because only writes have a data check. The
-proof inducts over the script and follows each actual transition. -/
-theorem supportedSqlFrom_noWrites (guard : NoWrites script) :
-    supportedSqlFrom position script state = true := by
-  induction script generalizing position state with
-  | nil => rfl
-  | cons statement rest ih =>
-    have first := guard statement (by simp)
-    have tail : NoWrites rest := fun item member => guard item (by simp [member])
-    have ready : statementReady statement state.database = true := by
-      cases statement <;> simp_all [statementReady]
-    simp only [supportedSqlFrom, ready, Bool.true_and]
-    cases advance position statement state with
-    | halt outcome => rfl
-    | next next => exact ih tail
+/-- Each definition in the script is one that the model describes: each CREATE
+TABLE creates a {name}`CatalogTable.plain` table, each ADD COLUMN adds a
+{name}`CatalogColumn.plain` column, and no statement is CREATE INDEX. Other
+statements are unrestricted; the empty script satisfies it. -/
+def ModeledDefinitions (script : List Resolved.Statement) : Prop :=
+  ∀ statement ∈ script, match statement with
+    | .createTable _ _ table => table.plain = true
+    | .addColumn _ column => column.plain = true
+    | .createIndex .. => False
+    | .insert .. | .update .. | .begin | .commit | .rollback | .prepareError _ => True
 
-/-- For every position and connection state, a {name}`SchemaOnly` script passes
-the reached-statement data-domain check. The proof inducts over the script and
-follows each actual transition. -/
-theorem supportedSqlFrom_schemaOnly (guard : SchemaOnly script) :
+/-- For every position and connection state, a {name}`NoWrites` script with
+{name}`ModeledDefinitions` passes the reached-statement support check, because
+only writes have a data check. The proof inducts over the script and follows
+each actual transition. -/
+theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDefinitions script) :
     supportedSqlFrom position script state = true := by
   induction script generalizing position state with
   | nil => rfl
   | cons statement rest ih =>
     have first := guard statement (by simp)
-    have tail : SchemaOnly rest := fun item member => guard item (by simp [member])
+    have firstModeled := modeled statement (by simp)
+    have tail : NoWrites rest := fun item member => guard item (by simp [member])
+    have tailModeled : ModeledDefinitions rest := fun item member => modeled item (by simp [member])
     have ready : statementReady statement state.database = true := by
       cases statement <;> simp_all [statementReady]
     simp only [supportedSqlFrom, ready, Bool.true_and]
     cases advance position statement state with
     | halt outcome => rfl
-    | next next => exact ih tail
+    | next next => exact ih tail tailModeled
+
+/-- For every position and connection state, a {name}`SchemaOnly` script with
+{name}`ModeledDefinitions` passes the reached-statement support check. It
+follows from {name}`supportedSqlFrom_noWrites`, because a schema-only script has
+no writes. -/
+theorem supportedSqlFrom_schemaOnly (guard : SchemaOnly script) (modeled : ModeledDefinitions script) :
+    supportedSqlFrom position script state = true :=
+  supportedSqlFrom_noWrites (fun statement member => by
+    have first := guard statement member
+    cases statement <;> simp_all) modeled
 
 /-- For every position and idle database, a guarded schema statement uses the
 primitive transition. The proof splits on the statement and uses the guard to
@@ -72,7 +79,8 @@ theorem advance_schemaOnly
     advance position statement { database := database } =
       match step statement database position with
       | .success result => .next { database := result }
-      | outcome => .halt outcome := by
+      | .failure index reason result => .halt (.failure index reason result)
+      | .pending persisted visible error => .halt (.pending persisted visible error) := by
   have first := guard statement (by simp)
   cases statement <;> simp_all [advance, literalStep, SqlState.finish]
   all_goals rfl

@@ -13,7 +13,9 @@ def nullExtension (rows : List (Int × List (Option Value))) : List (Int × List
   rows.map fun row => (row.1, [some .null])
 
 /-- For every test, list and item: if {name}`findPosition` finds nothing in the
-list and the test accepts the item, it finds the item after the list. -/
+list and the test accepts the item, it finds the item after the list. The proof
+inducts over the list: the test rejects each head, so each step adds one to the
+position, and the empty prefix finds the item at position zero. -/
 theorem findPosition_append_none {test : α → Bool} {items : List α} (absent : findPosition test items = none)
     (accepted : test item = true) : findPosition test (items ++ [item]) = some (items.length, item) := by
   induction items with
@@ -51,5 +53,17 @@ theorem Table.project_newNullable {table : Table} {column : CatalogColumn}
   apply List.map_congr_left
   intro row member
   simp [found, Row.appendNulls, ← width row member]
+
+
+/-- For every table and name list, {name}`Covers` implies that
+{name}`columnPosition` finds every requested name. An empty list satisfies both
+conditions vacuously. Use it where code checks the lookup of each name. The
+proof turns each successful lookup into its Boolean test. -/
+theorem Covers.columnsPresent (covered : Covers table names) :
+    names.all (fun name => (columnPosition table.shape.columns name).isSome) = true := by
+  apply List.all_eq_true.mpr
+  intro name member
+  obtain ⟨index, found⟩ := covered name member
+  simp [found]
 
 end Belay.Sqlite

@@ -1,3 +1,4 @@
+import Belay.Sqlite.ModelProjection
 import SqliteVerifier.ApplicationKeys
 
 set_option doc.verso true
@@ -84,17 +85,6 @@ theorem applicationKeyPreservation_sound (profile : Profile) (catalog : Catalog)
   intro table _ records read
   exact projectApplicationRows_valid read
 
-/-- For every table and name list, {name}`Covers` implies that
-{name}`columnPosition` finds every requested name. An empty list satisfies both
-conditions vacuously. Use this to establish the reader's metadata check. The
-proof turns each successful lookup into its Boolean test. -/
-theorem Covers.columnsPresent (covered : Covers table names) :
-    names.all (fun name => (columnPosition table.shape.columns name).isSome) = true := by
-  apply List.all_eq_true.mpr
-  intro name member
-  obtain ⟨index, found⟩ := covered name member
-  simp [found]
-
 /-- For every before/after table and requested key/field lists, assume
 {name}`TableExtends`, correct old row widths, and coverage of every requested
 name in the old table. Then {name}`projectApplicationRows` is unchanged,
@@ -105,8 +95,8 @@ theorem TableExtends.projectApplicationRows (extension : TableExtends before aft
     (width : ∀ row ∈ before.rows, row.values.length = before.shape.columns.length)
     (covered : Covers before (keyNames ++ fields)) :
     projectApplicationRows after keyNames fields = projectApplicationRows before keyNames fields := by
-  have oldColumns := SqliteVerifier.Covers.columnsPresent covered
-  have newColumns := SqliteVerifier.Covers.columnsPresent (extension.covers covered)
+  have oldColumns := Covers.columnsPresent covered
+  have newColumns := Covers.columnsPresent (extension.covers covered)
   simp only [SqliteVerifier.projectApplicationRows, oldColumns, newColumns, Bool.not_true, Bool.or_false]
   rw [extension.project width covered]
 

@@ -48,7 +48,7 @@ theorem payload {database : Database} (conforms : Conforms Generated.profile Sch
     (by decide +kernel)
   refine ⟨table, present, shape, valid, ?_, ?_⟩
   · simp [runSql, runSqlFrom, advance, literalStep, SqlState.finish, script_bound, step, present,
-      CatalogColumn.plain, added]
+      added]
   · rw [next_bound]
     exact conforms.appendAt present (next_bound ▸ next_valid)
 

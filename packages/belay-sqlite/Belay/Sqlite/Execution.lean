@@ -48,11 +48,16 @@ def Outcome.persistedDatabase : Outcome → Database
   | .pending persisted _ _ => persisted
   | outcome => outcome.database
 
-/-- Whether the model runs a definition of this column: no NOT NULL and no default. -/
+/-- Whether the model describes a definition of this column: no NOT NULL and no
+default. This is a model restriction, not a SQLite rule: SQLite accepts such
+columns, so the supported-subset check {lit}`statementReady` excludes them and
+{lit}`step` never fails because of them. -/
 def CatalogColumn.plain (column : CatalogColumn) : Bool := !column.notNull && column.defaultValue.isNone
 
-/-- Whether the model runs a CREATE TABLE of this table: plain columns, no keys and
-no rowid alias. {lit}`resolve` refuses other tables in statements that run. -/
+/-- Whether the model describes a CREATE TABLE of this table: plain columns, no
+keys and no rowid alias. This is a model restriction, which the supported-subset
+check {lit}`statementReady` applies; {lit}`resolve` also refuses other tables in
+statements that run. -/
 def CatalogTable.plain (table : CatalogTable) : Bool :=
   table.columns.all CatalogColumn.plain && table.primaryKey.isEmpty && table.uniqueKeys.isEmpty &&
     table.rowidAlias.isNone
@@ -60,21 +65,19 @@ def CatalogTable.plain (table : CatalogTable) : Bool :=
 /-- Perform CREATE TABLE or ADD COLUMN at the supplied position, or fail with the
 prepare error of a statement that SQLite refuses. CREATE TABLE stores an empty
 table at its catalog position; ADD COLUMN appends NULL to each existing row.
-Other constructors, and a definition outside the modeled subset, fail with
-{lean}`ExecutionError.unmodeled`; SQL execution handles transaction control and
-writes separately. The default position is zero. -/
+CREATE TABLE at an occupied position, ADD COLUMN at a position without a table,
+and CREATE INDEX fail with {lean}`ExecutionError.unmodeled`: {lit}`resolve` gives
+no such statement for a conforming database, and the supported-subset check
+excludes CREATE INDEX. SQL execution handles transaction control and writes
+separately. The default position is zero. -/
 def step (statement : Resolved.Statement) (database : Database) (position : Nat := 0) : Outcome :=
   match statement with
-  | .createTable at_ _ table =>
-    if !table.plain then .failure position .unmodeled database
-    else match database at_ with
-      | some _ => .failure position .unmodeled database
-      | none => .success (database.set at_ { shape := table, rows := [] })
-  | .addColumn at_ column =>
-    if !column.plain then .failure position .unmodeled database
-    else match database at_ with
-      | none => .failure position .unmodeled database
-      | some table => .success (database.set at_ (table.appendColumns [column]))
+  | .createTable at_ _ table => match database at_ with
+    | some _ => .failure position .unmodeled database
+    | none => .success (database.set at_ { shape := table, rows := [] })
+  | .addColumn at_ column => match database at_ with
+    | none => .failure position .unmodeled database
+    | some table => .success (database.set at_ (table.appendColumns [column]))
   | .prepareError error => .failure position (.prepare error) database
   | .createIndex .. | .begin | .commit | .rollback | .insert .. | .update .. =>
     .failure position .unmodeled database
