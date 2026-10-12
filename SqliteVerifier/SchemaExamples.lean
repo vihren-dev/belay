@@ -70,4 +70,22 @@ proof unfolds the check. -/
 example : statementReady (.addColumn 0 timestamp) (fun _ => none) = false := by
   simp [statementReady, timestamp, CatalogColumn.plain]
 
+/-- {name}`step` runs a CREATE TABLE of a keyed table, which is not plain: it
+stores an empty table with that shape at the new position, as SQLite does. The
+supported-subset check {name}`statementReady` refuses the statement instead,
+because the model restricts such tables. The proof computes both in the kernel. -/
+example : (step (.createTable 0 "items" { columns := [textKey], primaryKey := [0] }) (fun _ => none)).database 0 =
+      some { shape := { columns := [textKey], primaryKey := [0] }, rows := [] } ∧
+    statementReady (.createTable 0 "items" { columns := [textKey], primaryKey := [0] }) (fun _ => none) = false := by
+  decide +kernel
+
+/-- {name}`step` runs an ADD COLUMN of {name}`timestamp`, which is not plain: it
+appends the column to the table at position 0. The supported-subset check
+{name}`statementReady` refuses the statement instead. The proof computes both in
+the kernel. -/
+example : (step (.addColumn 0 timestamp) (fun position => if position = 0 then some table else none)).database 0 =
+      some (table.appendColumns [timestamp]) ∧
+    statementReady (.addColumn 0 timestamp) (fun position => if position = 0 then some table else none) = false := by
+  decide +kernel
+
 end SqliteVerifier.SchemaExamples
