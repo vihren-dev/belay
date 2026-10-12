@@ -42,23 +42,28 @@ def sample : Option ResolvedScript := sampleRecord.resolve.toOption
 #guard (decodeScriptRecord (toJson { sampleRecord with version := 1 })) matches .error _
 
 /-- Elaborate the commands of a generated module after its {lit}`import` lines, and
-stop at the first parse or elaboration error. -/
-def elaborateModule (source : String) : CommandElabM Unit := do
+stop at the first parse or elaboration error with Lean's messages. -/
+def elaborateModule (name source : String) : CommandElabM Unit := do
   let body := "\n".intercalate ((source.splitOn "\n").filter (!·.startsWith "import "))
-  let input := Parser.mkInputContext body "<generated>"
+  let input := Parser.mkInputContext body s!"<generated {name}>"
+  let advice := "fix the source printer in Belay/Sqlite/Codec/Source.lean"
   let mut state : Parser.ModuleParserState := {}
   repeat
     let (command, next, messages) := Parser.parseCommand input { env := ← getEnv, options := {} } state {}
-    if messages.hasErrors then throwError "the generated module does not parse"
+    if messages.hasErrors then
+      let texts ← messages.toList.mapM (·.toString)
+      throwError "generated module {name} does not parse; {advice}:\n{"\n".intercalate texts}"
     if Parser.isTerminalCommand command then break
     elabCommand command
-    if (← get).messages.hasErrors then throwError "the generated module does not elaborate"
+    if (← get).messages.hasErrors then
+      let texts ← (← get).messages.toList.mapM (·.toString)
+      throwError "generated module {name} does not elaborate; {advice}:\n{"\n".intercalate texts}"
     state := next
 
 run_cmd do
   let some resolution := sample | throwError "the sample does not resolve"
-  elaborateModule (schemaInputsSource resolution)
-  elaborateModule (sqlInputsSource resolution)
+  elaborateModule "SchemaInputs" (schemaInputsSource resolution)
+  elaborateModule "SqlInputs" (sqlInputsSource resolution)
 
 #guard sample.map (·.profile) == some Generated.profile
 #guard sample.map (·.schema) == some Generated.schema
