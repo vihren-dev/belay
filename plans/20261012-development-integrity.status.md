@@ -92,3 +92,4 @@ Decision: [ADR 0011](../docs/adr-0011-product-trust-and-development-integrity.md
   `conformance/pinned-corpora.json`, the pin-digest tests. Baseline (nightly
   run 38126119856, Linux, uncached): pinned 95 s, frozen 129 s, model 112 s,
   sample 60 s; Verdict job 2 to 4.5 min, in parallel.
+- 2026-10-12: step 8, part 2: removed the test assertions that `judge/claims.json` now states (v1 AGREE floor, v2 baseline subset and floor, no DISAGREE or HARNESS_ERROR on v1 to v5 and the sample tiers, and the v4 MODEL_UNSUPPORTED count, which would also forbid future agreement). The rest of each test stays. The v2 progress report left the frozen suite inputs.

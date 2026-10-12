@@ -93,7 +93,6 @@ let
   # Frozen corpora and retained reports: large, rarely changed, read only by the frozen suite.
   frozenData = [
     (root + /conformance/corpus-v1)
-    (root + /reports/20260929-adr4-corpus-v2-progress.json)
     (root + /reports/20261001-adr5-c4-fidelity.json)
     (root + /reports/20261001-adr5-c4-causes.json.gz)
     (root + /reports/20261001-adr5-c4-traces.json.gz)
