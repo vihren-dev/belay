@@ -195,7 +195,8 @@ in {
       (root + /tests/example_cases.py)
       (root + /experiments/adr-0003-latency/cases.py)
       # cases.py reads the examples' belay.toml files; the runtime under test contains them too.
-      (fs.difference (root + /examples) (fs.fileFilter (file: file.name == ".DS_Store") (root + /examples)))
+      # Regular files only: no `.belay` links of local proofs-project builds (ADR 0010).
+      (fs.fileFilter (file: file.type == "regular" && file.name != ".DS_Store") (root + /examples))
       (root + /experiments/adr-0003-latency/stage_timing.py)
     ];
     inherit runtime;

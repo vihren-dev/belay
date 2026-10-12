@@ -130,9 +130,13 @@ def test_installed_gc_roots(runtime_root: Path, tmp_path: Path,
     ("add_column_then_table", "table_then_column", "UNVERIFIED"),
 ], ids=["verified", "refuted", "wrong_sql_rejected"])
 def test_installed_data_path(runtime_root: Path, tmp_path: Path, command_runner: Callable[..., CommandResult],
-                             candidate: str, checked_migration: str | None, status: str) -> None:
-    """The installed `prepare` and `verify-bundle` reproduce the source statuses under poisoned imports."""
-    examples = runtime_root / "examples"
+                             example_factory: Callable[[str], Path], candidate: str, checked_migration: str | None,
+                             status: str) -> None:
+    """The installed `prepare` and `verify-bundle` reproduce the source statuses under poisoned imports.
+
+    `prepare` builds the case's proofs project, so it runs on a private copy of the installed examples.
+    """
+    examples = example_factory(".")
     launcher = str(runtime_root / "bin/migration-check")
 
     def common(migration: str) -> list[str]:
@@ -143,11 +147,8 @@ def test_installed_data_path(runtime_root: Path, tmp_path: Path, command_runner:
                 "--migration", str(examples / migration / "migration.sql")]
 
     bundle = tmp_path / "proof.bundle"
-    prepared = command_runner([launcher, "prepare", *common(candidate),
-                               "--next-interpretation", str(examples / candidate / "NextInterpretation.lean"),
-                               "--proofs", str(examples / candidate / "Proofs.lean"),
-                               "--workspace", str(tmp_path / "agent"), "--output", str(bundle)],
-                              cwd=tmp_path, timeout=180)
+    prepared = command_runner([launcher, "prepare", *common(candidate), "--project", str(examples / candidate),
+                               "--output", str(bundle)], cwd=tmp_path, timeout=180)
     assert prepared.returncode == 0 and prepared.json_object()["status"] == "PREPARED", prepared.diagnostic()
     checked = command_runner([launcher, "verify-bundle", *common(checked_migration or candidate),
                               "--bundle", str(bundle)], cwd=tmp_path, timeout=120)

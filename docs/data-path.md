@@ -7,29 +7,57 @@ under the same [trusted-execution assumption](trust-boundary.md) as `verify`.
 ## Commands
 
 ```sh
+migration-check init --project candidate \
+  --requirements approved/Requirements.lean --interpretation approved/Interpretation.lean
+
 migration-check prepare --profile 3.51.0 \
   --schema schema.sql --requirements approved/Requirements.lean \
-  --interpretation approved/Interpretation.lean --migration migration.sql \
-  --next-interpretation NextInterpretation.lean --proofs Proofs.lean \
-  --workspace agent-build --output proof.bundle [--format json]
+  --interpretation approved/Interpretation.lean --migration candidate/migration.sql \
+  --project candidate --output proof.bundle [--cache DIR | --no-cache] [--format json]
 
 migration-check verify-bundle --profile 3.51.0 \
   --schema schema.sql --requirements approved/Requirements.lean \
-  --interpretation approved/Interpretation.lean --migration migration.sql \
-  --bundle proof.bundle [--approved-baseline approved/baseline.json] [--format json]
+  --interpretation approved/Interpretation.lean --migration candidate/migration.sql \
+  --bundle proof.bundle [--approved-baseline approved/baseline.json] \
+  [--cache DIR | --no-cache] [--format json]
+
+migration-check clean-cache
+
+# The phases that prepare runs, one at a time (ADR 0010 section 10):
+migration-check generate CONTRACT-AND-SQL-OPTIONS --project candidate   # after a SQL change
+migration-check check --project candidate                              # after each proof edit
+migration-check audit --project candidate                              # before export
+migration-check export CONTRACT-AND-SQL-OPTIONS --project candidate --output proof.bundle
 ```
 
-**`prepare`** compiles the approved contract and the candidate modules in the
-persistent `--workspace`, then writes the bundle to `--output`. It rebuilds a
-candidate module only when its source or something it imports changed: a proof
-edit recompiles the proof, while a migration edit recompiles only the modules that
-import the generated SQL inputs. The workspace is an agent-side cache. Deleting it
-is always safe, and `verify-bundle` never reads it. `prepare` is a convenience: an
-agent may produce the bundle with its own tools instead.
+`check` is the same as `lake build` in the project, and the editor's Lean server
+gives the same result for one file. `audit` builds the generated module `Check`, whose
+command fails on an axiom outside the gate's allowlist (including `sorryAx`) or an
+import that the verifier does not have; it is not part of the per-edit loop because
+it loads `Lean`, about 0.5 s. `generate` refuses a lakefile that turns off kernel
+checking (`debug.skipKernelTC`). `prepare` audits before it exports; `export` alone
+builds and exports without the audit, so bundles from any tool reach `verify-bundle`.
+The audit decides nothing; `verify-bundle` does.
 
-**`verify-bundle`** parses the actual schema and migration SQL itself, compiles (or
-reuses from the opt-in stage store) the starting schema and approved contract,
-and runs `migration-bundle-checker` with the frontend's
+**`init`** turns a folder with `NextInterpretation.lean` and `Proofs.lean` into a
+*proofs project* ([ADR 0010](adr-0010-lake-builds-and-artifact-cache.md)): it writes
+a `lakefile.toml` that reads the approved contract in place and lists the
+contract, generated and candidate modules, a `lean-toolchain`, and the link
+`.belay/runtime` to the installation, which the lakefile requires. From then on
+the lakefile belongs to the user. After `prepare` has written the generated
+modules once, `lake build` and the editor's Lean server work on the project
+without the verifier.
+
+**`prepare`** writes the generated modules into the project's `Generated/`
+folder (only files whose content changed), checks that the lakefile reads the
+given approved folder and lists every module, builds the project with Lake and
+writes the bundle to `--output`. Lake compiles only changed modules and reuses
+outputs from the artifact cache. `prepare` runs in the agent's trust domain and is
+a convenience: an agent may produce the bundle with its own tools instead.
+
+**`verify-bundle`** parses the actual schema and migration SQL itself, builds the
+starting schema and the approved contract with Lake in its own workspace (it never
+reads the user's lakefile), and runs `migration-bundle-checker` with the frontend's
 [generated-inputs record](#generated-inputs-record). The checker never compiles candidate source.
 It imports the pinned library and trusted modules only from the verifier
 installation, rejects any exported declaration that differs from a trusted one,
@@ -42,10 +70,25 @@ With `--format json` each command prints one JSON object.
 
 | Command | Result | Report | Exit code |
 | --- | --- | --- | --- |
-| `prepare` | Bundle written | `{"status": "PREPARED", "bundle": PATH, "compiled_modules": N, "reused_modules": M}` | 0 |
-| `verify-bundle` | Proof checked | `{"status": "VERIFIED", "profile": ..., "statements": N, "inputs": {...}}`; `inputs` holds the same hashes as `verify` plus `"bundle"`, the SHA-256 of the bundle file | 0 |
+| `init` | Project written | `{"status": "INITIALIZED", "project": PATH, "lakefile": PATH}` | 0 |
+| `prepare` | Bundle written | `{"status": "PREPARED", "bundle": PATH, "compiled_modules": [...], "warnings": [...]}`; a warning names approved code that runs during elaboration (`#eval`, `run_cmd`, `initialize`, syntax extensions), whose cached outputs can differ from fresh ones | 0 |
+| `verify-bundle` | Proof checked | `{"status": "VERIFIED", "profile": ..., "statements": N, "inputs": {...}, "compiled_modules": [...]}`; `inputs` holds the same hashes as `verify` plus `"bundle"`, the SHA-256 of the bundle file | 0 |
+| `clean-cache` | Other builds' folders removed | `{"status": "CLEANED", "root": PATH, "removed": [...]}` | 0 |
 | `verify-bundle` | Refutation checked | `{"status": "VIOLATED", "message": ...}` | 1 |
 | either | Anything else | `{"status": "INPUT_ERROR" \| "UNSUPPORTED" \| "UNVERIFIED", "message": ...}` | 1 |
+
+`compiled_modules` lists the modules that Lake compiled in this run; modules that
+came from the cache are not listed.
+
+**The cache.** `--cache DIR`, else the variable `BELAY_CACHE_DIR`, else a per-user
+folder (`$XDG_CACHE_HOME/belay/` or `~/.cache/belay/`, `~/Library/Caches/belay/` on
+macOS) with one subfolder for each verifier build; `clean-cache` removes the other
+builds' subfolders. `--no-cache` uses a private, empty artifact cache; `prepare`
+still reuses the outputs in the project's own `.lake` folder.
+Any process that can write to the cache can put outputs into it that later builds
+use without compiling, so the caller protects it like the installation. When the
+same person or job runs `prepare` and `verify-bundle`, they may share one cache; a
+separate verifier environment keeps its own.
 
 Statuses mean what they mean for `verify`. A malformed, incompatible or incomplete
 bundle, a failed export or a failed candidate compile is `UNVERIFIED`. A bundle
@@ -143,11 +186,14 @@ the public launcher from the source runtime (Nix target `tests.bundle`);
 | `sorry`, a forbidden axiom and a proof of another statement are `UNVERIFIED` | End to end | `tests/bundle_test.py::test_invalid_proof_rejected` |
 | A bundle built against an altered approved contract is rejected | End to end | `tests/bundle_test.py::test_bundle_from_altered_contract_rejected` |
 | A bundle is bound to the SQL it was prepared for | End to end | `tests/bundle_test.py::test_bundle_bound_to_prepared_sql` |
-| One file may supply two roles, as for `verify` | End to end | `tests/bundle_test.py::test_shared_interpretation_file` |
-| `prepare` keys: an edit invalidates only the edited module and its importers | Unit | `tests/test_module_keys.py` |
-| `prepare` reuses modules after a SQL edit and the bundle still verifies | End to end | `tests/bundle_test.py::test_sql_edit_reuses_modules_without_sql_inputs` |
-| Stage store: verified restore, damaged or malformed entries miss, unwritable store tolerated, identity follows the runtime | Unit | `tests/test_stage_store.py` |
-| `verify` with a stage store: same results, fresh fallback, approved closures excluded unless eligible | End to end | `tests/stage_reuse_test.py` |
+| One file may supply both interpretations: the project's `NextInterpretation` imports the approved one | End to end | `tests/bundle_test.py::test_shared_interpretation_file` |
+| `prepare` compiles only modules affected by a SQL edit, and the bundle still verifies | End to end | `tests/bundle_cache_test.py::test_sql_edit_reuses_modules_without_sql_inputs` |
+| `verify-bundle` compiles nothing on a second run with the same cache | End to end | `tests/bundle_cache_test.py::test_verify_bundle_reuses_its_lake_cache` |
+| The installed runtime is a Lake package that Lake replays; the bounded Lake build reuses its cache and names a failed module | End to end | `tests/lake_runtime_package_test.py` |
+| Proofs projects: runtime link, generation only of changed files, starting lakefile, contract folder and module-list checks | Unit | `tests/test_proofs_project.py` |
+| Workspace lakefile and Lake output reading; cache location and cleanup | Unit | `tests/test_lake_workspace.py`, `tests/test_cache_location.py` |
+| `audit` rejects `sorry`, an own axiom and an outside import, naming each; `generate` is stable and refuses `debug.skipKernelTC` | End to end | `tests/project_phases_test.py` |
+| `prepare` warns about approved code that runs during elaboration | End to end | `tests/prepare_warning_test.py` |
 | The installed commands give `VERIFIED`, `VIOLATED` and a wrong-SQL rejection | Installed | `tests/runtime_package_test.py::test_installed_data_path` |
 | Constructed generated declarations match the Lean emitter; tampered records are rejected | Checker | `tests/generated_inputs_test.py` |
 | Narrowed gate imports keep every existing gate rejection | End to end | `tests/kernel_gate_test.py` (Nix target `tests.kernel`) |

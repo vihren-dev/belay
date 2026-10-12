@@ -7,18 +7,19 @@ import shutil
 import pytest
 
 from migration_check.runtime import validate_libraries
-from migration_check.stage_store import runtime_identity
+from migration_check.cache_location import runtime_version
 from tests.runtime_support import run_command, CommandResult
-from tests.example_cases import CASES, case_inputs
+from tests.example_cases import CASES, case_inputs, list_candidate_module
 from tests.proof_exporter_test import prepare_check
 
 pytestmark = [pytest.mark.integration, pytest.mark.kernel, pytest.mark.requires_lean]
 
 
-def test_model_change_invalidates_runtime_identity(tmp_path: Path) -> None:
-    """A different model artifact changes stage identity even when the compiler and application stay fixed."""
+def test_model_change_gives_a_new_cache_folder(tmp_path: Path) -> None:
+    """`runtime_version` changes with the model artifact even when the compiler and application stay fixed, so a
+    rebuilt model package never reuses the previous build's Lake cache folder."""
     application, first, second = (tmp_path / name for name in ('application', 'first', 'second'))
-    assert runtime_identity(tmp_path, (application, first)) != runtime_identity(tmp_path, (application, second))
+    assert runtime_version(tmp_path, (application, first)) != runtime_version(tmp_path, (application, second))
 
 
 def test_missing_model_root_is_refused(lean_sysroot: Path, lean_libraries: tuple[Path, Path],
@@ -61,6 +62,7 @@ def test_candidate_model_namespace_is_exported(runtime_root: Path, example_facto
     candidate = examples / 'add_column_then_table'
     helper = candidate / 'Belay/Sqlite/Candidate.lean'
     helper.parent.mkdir(parents=True)
+    list_candidate_module(candidate, 'Belay.Sqlite.Candidate')
     helper.write_text("import Generated\nimport SqliteVerifier.Demonstration\n"
         "theorem Belay.Sqlite.callerProof : Generated.expected := SqliteVerifier.Demonstration.migrationCorrect\n")
     (candidate / 'Proofs.lean').write_text("import Belay.Sqlite.Candidate\n"

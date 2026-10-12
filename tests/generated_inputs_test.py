@@ -86,7 +86,7 @@ def parity(runtime_root: Path, lean_sysroot: Path, lean_libraries: tuple[Path, P
         compile_trusted(contract=Contract({}, (), frozenset()), approved_sources=approved,
                         schema_inputs=schema_inputs(schema), sql_inputs=sql_inputs(schema, script, selected),
                         trusted=trusted, sysroot=lean_sysroot, libraries=tuple(path.resolve() for path in lean_libraries),
-                        workspace=workspace, store=None)
+                        workspace=workspace)
         record = generated_inputs_wire(schema, script, selected)
         if mutate is not None:
             mutate(record)

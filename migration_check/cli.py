@@ -9,9 +9,9 @@ from collections.abc import Sequence
 
 from .diagnostics import Rejection
 from belay.sqlite.errors import SqlError
+from .cli_project import COMMANDS, SUCCESS, add_project_commands, human_lines, run_project_command
 from .inputs import generated_inputs, read_sql
 from .process import run_process
-from .stage_store import StageStore
 
 __all__ = ["arguments", "main", "read_sql", "verify"]
 
@@ -52,6 +52,14 @@ def common_arguments(command: argparse.ArgumentParser, candidate: tuple[str, ...
     command.add_argument("--format", choices=("human", "json"), default="human")
 
 
+def cache_arguments(command: argparse.ArgumentParser) -> None:
+    """Lake's artifact cache: a folder the caller protects, or none (ADR 0010 section 4)."""
+    choice = command.add_mutually_exclusive_group()
+    choice.add_argument("--cache", type=Path, help="Lake artifact cache folder (default: BELAY_CACHE_DIR, "
+                        "else a per-user folder with one subfolder for each verifier build)")
+    choice.add_argument("--no-cache", action="store_true", help="Compile everything in a private, empty cache")
+
+
 def arguments(values: Sequence[str]) -> argparse.Namespace:
     """Expose `verify` and the ADR 0003 data path: `prepare` (agent side) and `verify-bundle`."""
     guide = f"Lean API walkthrough and reference guide:\n{API_REFERENCE_GUIDE}"
@@ -63,16 +71,13 @@ def arguments(values: Sequence[str]) -> argparse.Namespace:
     common_arguments(verify, ("next-interpretation", "proofs"))
     verify.add_argument("--artifacts", type=Path, help="Create a directory with generated SQL and input hashes")
     verify.add_argument("--approved-baseline", type=Path, help="Require unchanged approved source/dependency hashes")
-    prepare = commands.add_parser("prepare", help="Build the candidate and export a proof bundle (agent side)",
-        description="Write a candidate proof bundle for later verification. PREPARED records that the bundle was written.",
-        epilog=guide, formatter_class=argparse.RawDescriptionHelpFormatter)
-    common_arguments(prepare, ("next-interpretation", "proofs"))
-    prepare.add_argument("--workspace", required=True, type=Path, help="Persistent agent build directory")
-    prepare.add_argument("--output", required=True, type=Path, help="Bundle file to write")
+    add_project_commands(commands, guide, lambda command: common_arguments(command, ()), cache_arguments,
+                         INPUT_HELP)
     bundle = commands.add_parser("verify-bundle", help="Check a proof bundle without compiling candidate source",
         description=VERIFICATION_SCOPE, epilog=guide, formatter_class=argparse.RawDescriptionHelpFormatter)
     common_arguments(bundle, ("bundle",))
     bundle.add_argument("--approved-baseline", type=Path, help="Require unchanged approved source/dependency hashes")
+    cache_arguments(bundle)
     return parser.parse_args(values)
 
 
@@ -95,8 +100,7 @@ def verify(options: argparse.Namespace) -> dict[str, object]:
                 sysroot=runtime.sysroot, libraries=runtime.libraries, requirements=options.requirements,
                 interpretation=options.interpretation, next_interpretation=options.next_interpretation,
                 proofs=options.proofs, schema_inputs=starting, sql_inputs=generated, workspace=workspace,
-                approved_baseline=options.approved_baseline, schema_hash=schema_hash,
-                store=StageStore.configured())
+                approved_baseline=options.approved_baseline, schema_hash=schema_hash)
         except CompileError as error:
             raise Rejection("UNVERIFIED", str(error)) from error
         hashes = {**compiled.hashes, **inputs.hashes}
@@ -120,9 +124,8 @@ def main(values: Sequence[str]) -> int:
     json_output = json_output or "--format=json" in values
     try:
         options = arguments(values)
-        if options.command == "prepare":
-            from .prepare import prepare
-            result = prepare(options)
+        if options.command in COMMANDS:
+            result = run_project_command(options)
         elif options.command == "verify-bundle":
             from .bundle import verify_bundle
             result = verify_bundle(options)
@@ -136,8 +139,8 @@ def main(values: Sequence[str]) -> int:
         result = Rejection("UNVERIFIED", str(error)).diagnostic()
     if json_output:
         print(json.dumps(result, ensure_ascii=False))
-    elif result["status"] == "PREPARED":
-        print(f"PREPARED: {result['bundle']}")
+    elif result["status"] in SUCCESS:
+        print("\n".join(human_lines(result)))
     elif result["status"] != "VERIFIED":
         print(f"{result['status']}: {result['message']}")
-    return 0 if result["status"] in ("VERIFIED", "PREPARED") else 1
+    return 0 if result["status"] == "VERIFIED" or result["status"] in SUCCESS else 1

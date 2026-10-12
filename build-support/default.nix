@@ -83,6 +83,8 @@ in rec {
     installPhase = ''
       mkdir -p "$out/.lake/build/bin" "$out/.lake/build/lib"
       cp -R .lake/build/lib/lean "$out/.lake/build/lib/"
+      # Lake replays the library only when the outputs each trace lists exist, including `ir` (ADR 0010).
+      cp -R .lake/build/ir "$out/.lake/build/"
       cp .lake/build/bin/migration-proof-checker .lake/build/bin/migration-bundle-checker \
         .lake/build/bin/migration-proof-exporter "$out/.lake/build/bin/"
     '';

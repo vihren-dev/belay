@@ -335,8 +335,8 @@ audit command from the verifier library. The command fails the build, with a
 message that names the cause, when:
 
 - the theorem depends on `sorryAx` or on an axiom outside the allowlist of the
-  [kernel gate](kernel-gate.md); the command and the gate use one shared
-  allowlist, which today is written inline in `GateCore.lean`;
+  [kernel gate](kernel-gate.md); the command and the gate read one shared
+  allowlist, `SqliteVerifier.allowedAxioms`;
 - the proofs import a module that is not in the verifier library, the approved
   contract, the generated modules or the proofs project, because
   `verify-bundle` would not have it.

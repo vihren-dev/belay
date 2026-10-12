@@ -22,6 +22,11 @@ in pkgs.stdenv.mkDerivation {
     mkdir -p "$out/packages"
     cp -R ${modelPackage} "$out/packages/belay-sqlite"
     chmod -R u+w "$out"
+    # The runtime is a Lake package that proofs projects and verifier workspaces require (ADR 0010).
+    python3 ${./library_lakefile.py} ${sources.lean}/lakefile.toml \
+      SqliteVerifier EngineeringExamples GatePaths GateCore > "$out/lakefile.toml"
+    rm -f "$out/lake-manifest.json"
+    sed -i '/^version = /a enableArtifactCache = false' "$out/packages/belay-sqlite/lakefile.toml"
     ln -s ${leanToolchain} "$out/lean"
     echo '${python}/bin/python3' > "$out/python-path"
     echo '${pkgs.stdenv.hostPlatform.system}' > "$out/platform"

@@ -64,15 +64,20 @@ def example_factory(runtime_root: Path, tmp_path: Path) -> Callable[[str], Path]
 
 @pytest.fixture
 def runtime_environment(pytestconfig: pytest.Config, tmp_path: Path) -> dict[str, str]:
-    """Poison only installed children, leaving the dev pytest interpreter and parent untouched."""
+    """Poison only installed children, leaving the dev pytest interpreter and parent untouched.
+
+    Each case gets its own Lake artifact cache, so tests never write to the user's cache
+    and do not depend on each other's outputs.
+    """
+    cache = {"BELAY_CACHE_DIR": str(tmp_path / "lake-cache")}
     if pytestconfig.getoption("runtime_variant") == "source":
-        return dict(os.environ)
+        return {**os.environ, **cache}
     poison = tmp_path / "ambient imports"
     poison.mkdir()
     (poison / "json.py").write_text('raise RuntimeError("ambient Python imported")\n')
     return {"HOME": str(tmp_path), "LANG": "C.UTF-8", "PATH": "/usr/bin:/bin",
             "PYTHONPATH": str(poison), "LEAN_PATH": str(poison),
-            "MIGRATION_CHECK_LEAN_SYSROOT": str(poison)}
+            "MIGRATION_CHECK_LEAN_SYSROOT": str(poison), **cache}
 
 
 @pytest.fixture

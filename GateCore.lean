@@ -1,4 +1,5 @@
 import GatePaths
+import SqliteVerifier.AxiomPolicy
 import Lean.Replay
 import Lean.Util.FoldConsts
 
@@ -36,7 +37,7 @@ partial def audit (env : Environment) (pending : List Name)
         | throw <| IO.userError s!"missing proof dependency: {name}"
       if info.isUnsafe || info.isPartial then
         throw <| IO.userError s!"unsafe or partial dependency: {name}"
-      if info.isAxiom && !([`propext, `Classical.choice, `Quot.sound].contains name) then
+      if info.isAxiom && !(SqliteVerifier.allowedAxioms.contains name) then
         throw <| IO.userError s!"unapproved axiom: {name}"
       audit env (info.getUsedConstantsAsSet.toList ++ rest) (seen.insert name)
 

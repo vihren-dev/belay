@@ -29,6 +29,8 @@ def test_public_help_links_the_reference_and_explains_input_roles(command: str |
         assert "every model-conforming starting database" in output
     if command == "verify-bundle":
         assert "resulting/failure interpretations and proofs" in output
+    elif command == "prepare":
+        assert "Proofs project" in output and "NextInterpretation.lean and Proofs.lean" in output
     elif command is not None:
         assert "proof or refutation" in output
 
@@ -38,8 +40,7 @@ def test_help_prose_preserves_required_paths_and_defaults(command: str) -> None:
     """Documentation changes preserve the argument contract used by verification and preparation callers."""
     values = [command, "--profile", "3.51.0"]
     names = ["schema", "requirements", "interpretation", "migration"]
-    names += ["bundle"] if command == "verify-bundle" else ["next-interpretation", "proofs"]
-    names += ["workspace", "output"] if command == "prepare" else []
+    names += {"verify-bundle": ["bundle"], "prepare": ["project", "output"]}.get(command, ["next-interpretation", "proofs"])
     for name in names:
         values += ["--" + name, name + ".input"]
     parsed = arguments(values)
@@ -48,3 +49,12 @@ def test_help_prose_preserves_required_paths_and_defaults(command: str) -> None:
     assert all(getattr(parsed, name.replace("-", "_")) == Path(name + ".input") for name in names)
     if command != "prepare":
         assert parsed.approved_baseline is None
+
+
+def test_init_help_names_the_project_and_the_contract() -> None:
+    """`init` explains that it writes the proofs project's lakefile, toolchain file and runtime link (ADR 0010)."""
+    result = subprocess.run([sys.executable, str(ROOT / "bin/migration-check"), "init", "--help"],
+                            cwd=ROOT, capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stderr
+    output = " ".join(result.stdout.split())
+    assert "lakefile.toml" in output and ".belay/runtime" in output and "Approved Lean logical contract" in output
