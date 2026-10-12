@@ -21,8 +21,10 @@ let
   lock = builtins.fromJSON (builtins.readFile ./judge.lock.json);
   claims = builtins.fromJSON (builtins.readFile ../judge/claims.json);
   part = files: "${fs.toSource { inherit root; fileset = fs.unions files; }}";
+  # The judge's sources: its code and claims, without files that running it leaves behind.
+  judgeFiles = fs.fileFilter (file: file.hasExt "py" || file.hasExt "json") ../judge;
   parts = {
-    judge = part [ (fs.fileFilter (file: file.hasExt "py" || file.hasExt "json") ../judge) ];
+    judge = part [ judgeFiles ];
     oracle = part [ ../nix/sqlite.nix ../nix/flake.lock ];
   } // pkgs.lib.mapAttrs' (corpus: entry: {
     name = "corpus ${corpus}";
@@ -37,7 +39,7 @@ let
       + " oracle needs the owner's approval: update integrity/judge.lock.json in its own pull request"
       + " (just judge-lock prints the new values).");
   judgeSources = fs.toSource { inherit root; fileset = fs.unions
-    ([ (fs.fileFilter (file: file.hasExt "py" || file.hasExt "json") ../judge) ] ++ map (entry: root + "/${entry.path}") (builtins.attrValues claims.corpora)); };
+    ([ judgeFiles ] ++ map (entry: root + "/${entry.path}") (builtins.attrValues claims.corpora)); };
   # The judge runs with only the standard library and its own package on the import path.
   judge = mode: arguments: ''
     cd ${judgeSources}

@@ -195,7 +195,9 @@ build that produced the expected outputs. A lock file (`integrity/judge.lock.jso
 records one content-derived store path for each part: the judge code with its
 claims (`judge/`), each claimed corpus, and the oracle (`nix/sqlite.nix` with
 `nix/flake.lock`, which also pins the nixpkgs that the verdict uses). A change
-to any file of a part changes its path. Source paths do not depend on the
+to any source file of a part changes its path; the judge part counts only its
+`.py` and `.json` files, so files that running the judge leaves behind, such
+as `__pycache__`, do not. Source paths do not depend on the
 system, so one lock serves both systems.
 
 `integrity/judge.nix` reads the lock, compares it with the paths that it evaluates,

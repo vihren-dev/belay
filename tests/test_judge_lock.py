@@ -78,3 +78,15 @@ def test_an_unknown_lock_entry_stops_evaluation(tree: Path) -> None:
         assert "corpus removed differs" in evaluate(tree, "locked").stderr
     finally:
         lock.write_text(original)
+
+
+def test_files_left_by_running_the_judge_do_not_change_the_lock(tree: Path) -> None:
+    """`integrity/judge.nix` `locked`: a `__pycache__` file, as running the judge leaves it, does
+    not change the judge part, so a working copy and a fresh checkout have one lock."""
+    cache = tree / "judge/__pycache__/compare.cpython-314.pyc"
+    cache.parent.mkdir(exist_ok=True)
+    cache.write_bytes(b"compiled")
+    try:
+        assert evaluate(tree, "locked").returncode == 0
+    finally:
+        shutil.rmtree(cache.parent)
