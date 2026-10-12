@@ -6,6 +6,96 @@ Related: [ADR 0003](adr-0003-agent-proof-preparation.md),
 [ADR 0005](adr-0005-conformance-corpus-scale.md), [kernel gate](kernel-gate.md),
 [review checklist](review-checklist.md), [CI](ci.md), `.github/CODEOWNERS`.
 
+## Overview
+
+This section gives the model of the decision. The sections after it give the
+evidence and the details.
+
+The owner approves a **judge** once. A **lock** makes each later change to the
+judge visible, and each such change needs the owner's approval. A CI job that
+pull-request code cannot reach runs the locked judge on the agents' work, and
+nothing merges unless the judge passes it.
+
+### Entities
+
+| Entity | Meaning | Example | Who changes it |
+| --- | --- | --- | --- |
+| Owner | The only party trusted to approve | the product owner | not applicable |
+| Agent | Does the work; not trusted to grade it | Claude Code or Codex, as `vihren-agents` | not applicable |
+| Subject | The work that is graded | the SQLite model | an agent, without approval |
+| Claim | A statement that the owner wants to be true | "the model agrees with SQLite on corpus v5" | the owner |
+| Judge | All that decides whether a claim is true: reference data, the oracle that produced it, comparison code, threshold | corpus v5, the native SQLite build, the verdict code, "all v5 cases agree" | an agent proposes; the owner approves |
+| Lock | A fingerprint of the judge in one small file | `nix/judge.lock.json` | the owner approves each change |
+| Gate | The files that enforce these rules | the Nix file that checks the lock, `.github/workflows/`, `.github/CODEOWNERS`, and the ruleset | the owner approves each change |
+| Verdict | The result of the locked judge on the subject | the required check "verdict" | nobody; it is computed |
+
+### Relationships
+
+```
+            approves                      approves
+  Owner ───────────────► Lock ◄──────── Gate files
+                           │ fingerprints       │ enforce
+                           ▼                    ▼
+  Claim ───defines───►  Judge ───grades───► Subject ◄─── changes ─── Agent
+                           │                    │
+                           └─────► Verdict ◄────┘
+                                      │ required for
+                                      ▼
+                               merge into main (the owner merges)
+```
+
+- The judge grades the subject. The subject never grades itself: the judge
+  gives it inputs and reads its outputs, as the product's checker treats a
+  proof as data.
+- The lock is computed from all inputs of the judge. A change to any input
+  changes the lock, so no list of judge files is necessary.
+- The gate makes the owner's approval necessary for the lock and the gate
+  files, and makes a passing verdict necessary for a merge.
+
+### Workflows
+
+**Set or change a claim** (rare; the owner reviews):
+
+1. An agent prepares a change to the judge, for example a new corpus or a new
+   threshold.
+2. The lock changes. The lock file needs a code-owner review, so the pull
+   request cannot merge without the owner.
+3. The owner reviews the change behind the lock (corpus, threshold, comparison
+   code), approves and merges. From then on, that judge grades all work.
+
+**Do the work** (frequent; no owner review):
+
+1. An agent changes the subject and opens a pull request. The judge and the
+   lock do not change.
+2. The verdict job starts on a clean runner and runs only gate steps. It
+   compares the judge's fingerprint with the lock, runs the locked judge on the
+   subject in the Nix sandbox, and reports the verdict.
+3. The ordinary test job runs separately and makes no integrity claim.
+4. With a passing verdict, the pull request can merge without an owner review.
+
+### Attempts and what stops them
+
+| An agent tries to | What stops it |
+| --- | --- |
+| Change corpus v5 so that the outputs agree | The lock changes, and the lock needs the owner |
+| Change the lock in the same pull request | The lock file needs a code-owner review |
+| Weaken the comparison code or a module that it imports | The module is an input of the judge, so the lock changes |
+| Change the SQLite build that produced the expected outputs | The build is an input of the judge, so the lock changes |
+| Change the Nix store or the result files from a test | Test code does not run in the verdict job |
+| Put changed content into the CI cache | Pull requests cannot save the cache; only `main` and scheduled runs can |
+| Add a workflow that reports a passing "verdict" | `.github/workflows/` needs a code-owner review |
+| Change `.github/CODEOWNERS` or the lock check | Both need a code-owner review |
+| Merge without these checks | The ruleset requires the verdict and the owner's approval; agents cannot merge or bypass |
+
+A passing verdict means: the subject passes the judge that the owner
+approved. It does not mean that the judge is good; that depends on the owner's
+review when the claim is set.
+
+Product trust is a different chain: an untrusted author gives a proof bundle
+to the verifier, which replays it in the kernel against the trusted library.
+The verifier rejects a forged proof whoever developed the verifier. Decision 1
+keeps the two chains apart.
+
 ## Context
 
 Agents write most of the code in this repository. An agent that has a task
@@ -208,8 +298,9 @@ review condition R8 has no remaining purpose and is removed.
   helper module is a hole. The derivation path covers all inputs.
 - **Required workflows from a protected repository** (organization rulesets).
   This removes `.github/workflows/` from the protected set and lowers the review
-  load to about 21%. GitHub documents it for Enterprise Cloud only; adopt it if
-  the organization's plan includes it.
+  load to about 21%. GitHub documents it for Enterprise Cloud only, and the
+  organization has a paid plan without Enterprise Cloud (2026-10-12), so it is
+  not available.
 - **A verdict check from a separate GitHub App.** Required checks are bound to
   the app that reports them, so an Actions job cannot report the verdict. This
   also removes `.github/workflows/` from the protected set, but needs a hosted
@@ -223,4 +314,5 @@ review condition R8 has no remaining purpose and is removed.
   its threshold.
 - The time to hash the frozen corpora during evaluation, measured before the
   corpora move into the lock.
-- The organization's GitHub plan (see the alternatives).
+- Whether workflow changes become rare enough for the budget of decision 4.
+  If not, the verdict check from a separate GitHub App is the next option.
