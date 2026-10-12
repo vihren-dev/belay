@@ -1,4 +1,5 @@
-import Belay.Sqlite.Resolution.Resolve
+import Belay.Sqlite.Resolution.Request
+import Belay.Sqlite.Resolution.Messages
 
 set_option doc.verso true
 
@@ -141,6 +142,18 @@ def tableT : Catalog := catalogOf (migration [] [.createTable "t" [column "a", c
 #guard restricted (migration tableT [.createIndex "i" false "t" ["a"]])
 #guard statements (migration [] [.createTable "sqlite_x" [column "a"] []]) == [.prepareError (.reservedName "sqlite_x")]
 #guard !restricted (schema [.createTable "sqlite_stat1" [column "tbl" none, column "idx" none, column "stat" none] []])
+
+-- A request: the schema describes the starting catalog, then the migration resolves against it.
+#guard (resolveRequest defaults [.createTable "t" [column "a"] []] [.insert "t" none [[.null]]]).toOption.map
+    (fun request => (request.startCatalog.length, request.resolved, request.nextCatalog.length))
+  == some (1, [.insert 0 [[.null]] []], 1)
+#guard resolveRequest defaults [.createTable "t" [column "a"] [], .insert "t" none [[.null]]] []
+  matches .error (.schemaRestricted { statement := 1, path := [], .. })
+#guard resolveRequest defaults [.createTable "t" [column "a"] [], .createTable "T" [column "a"] []] []
+  matches .error (.schemaPrepareError 1 (.tableExists "T"))
+#guard resolveRequest defaults [] [.createTable "t" [column "rowid"] []]
+  matches .error (.migrationRestricted { statement := 0, path := [1], .. })
+#guard (PrepareError.valueCount "t" 2 1).message == "table t has 2 columns but 1 values were supplied"
 
 -- Restriction messages say what to do next.
 #guard reason (schema [.createTable "t" [{ name := "x", declaredType := some "INTEGER", constraints := [.primaryKey false] }] []])

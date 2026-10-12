@@ -25,6 +25,22 @@ Relevant files: `belay/sqlite/`, `migration_check/`,
 - 2026-10-12: task and status files created in the jj workspace `adr8-step1`,
   from `main` `5feb549e`.
 
+- 2026-10-12: baseline build times on `main` `5feb549e`, forced rebuild with
+  `nix-build --check` in the sandbox, no other load: `modelPackage` 14 s,
+  `leanRuntime` 15 s, `conformanceRuntime` 19 s, `publicDocumentation` 5 s,
+  development test suites 146 s (all suites rebuilt in parallel, with
+  `--keep-going`, because test logs are not bit-for-bit reproducible).
+- 2026-10-12: commit `0ff6b34c`: `Resolved.createTable` and `createIndex`
+  carry their catalog position; `Resolved.insert` and `update` carry the
+  table's unique keys (`Catalog.uniqueKeys`: primary key, UNIQUE constraints,
+  unique indexes). Review `20261012T104153Z-0ff6b34c`: no findings.
+- 2026-10-12: `resolveRequest` (schema in description mode, then migration in
+  execution mode; a schema holds only CREATE TABLE and CREATE INDEX),
+  `PrepareError.message`, the codec for syntax, catalogs and resolved
+  statements, the version 2 `RequestRecord`, and the Lean source of the
+  generated modules (`leanTerm`, derived `Repr`). A build-time check
+  elaborates the printed terms of a sample and compares them with the values.
+
 ## Remaining
 
 - All outcome items of the task.

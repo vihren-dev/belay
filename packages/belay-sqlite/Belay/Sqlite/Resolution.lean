@@ -17,8 +17,10 @@ import Belay.Sqlite.Resolution.PrepareRules
 import Belay.Sqlite.Resolution.UpdateRules
 import Belay.Sqlite.Resolution.DefinitionRules
 import Belay.Sqlite.Resolution.TransactionSpec
+import Belay.Sqlite.Resolution.Messages
+import Belay.Sqlite.Resolution.Request
 
 /-! Name resolution: statement syntax, the execution profile, the catalog, the resolved
-statements and {lit}`resolve`, with the declarative specification of resolution and the
+statements and {lit}`resolve`, the resolution of a whole request, with the declarative specification of resolution and the
 theorems that {lit}`resolve` meets it. Each module of {lit}`Belay/Sqlite/Resolution/`
 is one part; the package builds them all, and the examples run when it builds. -/
