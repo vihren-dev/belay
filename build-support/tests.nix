@@ -8,9 +8,10 @@ let
   common = map (name: root + "/${name}") [
     "pytest.ini" "conftest.py" "tests/__init__.py" "tests/runtime_support.py" "tests/runtime_fixtures.py"
     "tests/runtime_installation.py"
-    # The belay.toml reader: tests take the checked-in cases from their belay.toml (ADR 0010).
-    "migration_check/__init__.py" "migration_check/project_config.py"
   ];
+  # The belay.toml reader, for targets whose tests take the checked-in cases from belay.toml (ADR 0010).
+  # Only these targets list it, so a change to the reader does not rerun the conformance targets.
+  caseReader = map (name: root + "/${name}") [ "migration_check/__init__.py" "migration_check/project_config.py" ];
   python = name: pkgs.python3.withPackages (ps: [ ps.pytest ps.pytest-timeout ]
     ++ pkgs.lib.optional (name == "model") ps.hypothesis);
   # Each test has its own limit, so a hang fails with the name of the test. Nix runs suites
@@ -182,7 +183,7 @@ in {
     runtime = parserLibrary;
   };
   atuin = suite "atuin" {
-    inputs = [];
+    inputs = caseReader;
     inherit runtime;
   };
   bundle = suite "bundle" {
@@ -200,7 +201,7 @@ in {
     inherit runtime;
   };
   cli = suite "cli" {
-    inputs = [];
+    inputs = caseReader;
     inherit runtime;
   };
   kernel = suite "kernel" {

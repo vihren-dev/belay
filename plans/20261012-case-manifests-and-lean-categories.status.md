@@ -56,3 +56,16 @@ Relevant files: `conftest.py`, `tests/cli_test.py`, `tests/bundle_test.py`, `tes
 
   The reference for this task's pull request is `0adb73dc`. The `docs`
   scope takes about 10 s and is not compared.
+- 2026-10-12: CI of PR #95 (run 38246125888, scope `package`, Nix cache
+  restored): Linux 707 s against the 467 s baseline (+240 s, +51 %); the
+  macOS job skips its checks on pull requests (4 s). Investigated (ADR 0010
+  section 11): the step "Run checks in one pinned environment" took 551 s
+  against 273 s. Both runs rebuilt the six conformance targets; this pull
+  request also reran `atuin`, `bundle`, `cli`, `kernel` and
+  `parserLibrary`. Three of them run changed tests; `kernel` and
+  `parserLibrary` reran because `conftest.py` and the reader were in every
+  target's common inputs. The increase is the cost of one run that changes
+  shared test inputs, not slower tests. Fixed for later changes: the reader is
+  now an input only of the `cli` and `atuin` targets (and `bundle`, which has
+  all of `migration_check`), so a change to it no longer reruns the
+  conformance targets.
