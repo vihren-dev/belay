@@ -35,7 +35,7 @@ def test_record_paths() -> None:
         assert path_problem(record_path(record).as_posix(), record) is None
         assert is_record_path(f"reviews/{record_path(record)}")
     assert path_problem(record_path(resolved).as_posix(), reviewed) is not None
-    assert not is_record_path("reviews/log.jsonl") and not is_record_path("reviews/notes.md")
+    assert not is_record_path("reviews/notes.jsonl") and not is_record_path("reviews/notes.md")
     assert not is_record_path("other/20261011T085534Z-6bb34bbf/review.json")
 
 
@@ -67,6 +67,6 @@ def test_read_orders_files_by_date(tmp_path: Path) -> None:
     for record in (later, earlier, reviewed):
         write_record(record, tmp_path)
     (tmp_path / "notes.md").write_text("not a record")
-    (tmp_path / "log.jsonl").write_text(json.dumps(reviewed) + "\n")
+    (tmp_path / "notes.jsonl").write_text(json.dumps(reviewed) + "\n")
     assert read_records(tmp_path) == [reviewed, earlier, later]
     assert read_records(tmp_path / "absent") == []

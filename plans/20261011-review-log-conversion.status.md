@@ -1,6 +1,6 @@
 # Review log conversion status
 
-Created 2026-10-11. Status: DONE (a follow-up removes the conversion rule from the check after merge).
+Created 2026-10-11. Status: DONE ([PR #87](https://github.com/vihren-dev/sqlite-verifier/pull/87) and the conversion-rule removal).
 Task: [20261011-review-log-conversion.task.md](20261011-review-log-conversion.task.md).
 
 ## References
@@ -24,3 +24,4 @@ Task: [20261011-review-log-conversion.task.md](20261011-review-log-conversion.ta
   files; it now counts 325 reviews instead of 346 (21 duplicates). The CI
   check passes against `main`.
 - 2026-10-11: last review clean. DONE.
+- 2026-10-11: #87 merged. Follow-up: the check no longer has the conversion rule; no code or test names `reviews/log.jsonl`.
