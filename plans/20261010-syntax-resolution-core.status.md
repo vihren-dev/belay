@@ -151,3 +151,19 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final PR #81 approval at the previously checked head `04832712`.
+
+
+- 2026-10-12: Merge `2ab3f2fb` brings `main` at `6441fc14` (ADR 0011
+  proposal, #90) into the branch without conflicts. It adds one document and
+  three review records and changes no source or test file. Review
+  `20261012T090836Z-2ab3f2fb` has no findings.
+
+- 2026-10-12: Synced remote head `a2190282` with the retained local
+  checkpoint. The only overlap is the status log; both original appended
+  records remain unchanged. Implementation matches checked head `04832712`.
+  Hosted CI `38228347970` is live at the new documentation-only head.
+  T14 remains held by its separately requested disk cleanup.
+
+Decisions waiting for the owner:
+
+- Final PR #81 approval after the current documentation-only CI run.
