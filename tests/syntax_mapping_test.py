@@ -62,7 +62,8 @@ def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., 
         {"insert": {"table": "t", "columns": ["a"], "rows": [
             [{"positive": {"operand": {"numeric": {"text": "1_000"}}}}]]}},
         {"update": {"table": "t", "assignments": [
-            ["a", {"negate": {"operand": {"numeric": {"text": "2.5"}}}}], ["b", {"string": {"bytes": list("é".encode())}}]],
+            ["a", {"negate": {"operand": {"numeric": {"text": "2.5"}}}}],
+            ["b", {"string": {"bytes": list("é".encode())}}]],
             "filter": {"equals": {"left": {"identifier": {"name": "id", "doubleQuoted": False}},
                                   "right": {"numeric": {"text": "3"}}}}}},
         {"update": {"table": "t", "assignments": [["a", {"numeric": {"text": "1"}}]], "filter": None}},
@@ -88,6 +89,20 @@ def test_syntax_without_a_constructor_is_unsupported_at_its_range(
         statements(parse_sql(sql))
     assert raised.value.status == "UNSUPPORTED"
     assert sql.encode()[raised.value.start:raised.value.end].decode() == refused
+
+
+@pytest.mark.parametrize(("sql", "advice"), [
+    ("ALTER TABLE t RENAME TO u;", "rewrite it with the modeled forms: CREATE TABLE"),
+    ("UPDATE t SET (a, b) = (1, 2);", "rewrite it with the modeled forms: CREATE TABLE"),
+    ("INSERT INTO t SELECT 1;", "write INSERT ... VALUES (...)"),
+    ("CREATE TABLE t(a COLLATE NOCASE);", "use NOT NULL, PRIMARY KEY, UNIQUE or DEFAULT with a literal"),
+    ("SELECT 1;", "the model runs CREATE TABLE"),
+])
+def test_refusals_say_which_form_to_use(parse_sql: Callable[..., Tree], sql: str, advice: str) -> None:
+    """Refusals from `require`, `left_list`, `value_rows` and the dispatch name the modeled forms."""
+    with pytest.raises(SqlError) as raised:
+        statements(parse_sql(sql))
+    assert advice in str(raised.value)
 
 
 def test_node_paths_select_source_ranges(parse_sql: Callable[..., Tree]) -> None:

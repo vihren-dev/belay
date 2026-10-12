@@ -35,12 +35,12 @@ def value_rows(tree: Tree, node: Node) -> Located:
         (current,) = require(tree, current, [symbol])
     children = tree.children(current)
     if [child.symbol for child in children] not in (["values"], ["mvalues"]):
-        raise tree.unsupported(current, "Only VALUES rows are modeled as an INSERT source; write INSERT ... VALUES (...)")
+        raise tree.unsupported(current, "Only VALUES rows are modeled as an INSERT source; "
+                               "write INSERT ... VALUES (...)")
     current, listed = children[0], []
     while current.symbol == "mvalues":
-        parts = tree.children(current)
-        if [part.symbol for part in parts][1:] != ["COMMA", "LP", "nexprlist", "RP"]:
-            raise tree.unsupported(current, "Unsupported VALUES list; write the rows as VALUES (...), (...)")
+        earlier = tree.children(current)[0].symbol if current.children else ""
+        parts = require(tree, current, [earlier, "COMMA", "LP", "nexprlist", "RP"])
         listed.append(parts[3])
         current = parts[0]
     listed.append(require(tree, current, ["VALUES", "LP", "nexprlist", "RP"])[2])
