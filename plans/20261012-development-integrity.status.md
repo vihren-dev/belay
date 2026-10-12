@@ -103,3 +103,9 @@ Decision: [ADR 0011](../docs/adr-0011-product-trust-and-development-integrity.md
   `validate.py` and `check_mutations.py` (named in a recorded run), and the
   adr5 execution helpers. Kept as honest-mistake checks: the validator and
   freeze tests that run on copies, captures and new freezes.
+- 2026-10-12: CI of PR #94 (Linux, uncached suites): corpora 81 s (pinned
+  was 95 s), frozen 87 s (129 s), sample 51 s (60 s), model 70 s (112 s; this
+  suite did not change, so part of the differences is runner variance), host
+  Nix tests 29 s (190 s before #74 removed the invalidation table). Verdict
+  passed. Remaining before DONE: record a model-only pull request that merges
+  with a passing verdict and no owner review.
