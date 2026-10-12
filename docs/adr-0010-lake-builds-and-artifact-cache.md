@@ -1,4 +1,4 @@
-# ADR 0010: Compile verification workspaces with Lake and its artifact cache
+# ADR 0010: Compile all Lean code with Lake and reuse outputs from its artifact cache
 
 Date: 2026-10-09. Status: PROPOSED.
 Audience: designers and reviewers.
@@ -11,7 +11,7 @@ Related: [ADR 0002](adr-0002-compile-project-cache.md),
 
 ## Context
 
-`prepare` and `verify-bundle` compile Lean modules themselves. For each module,
+`verify`, `prepare` and `verify-bundle` compile Lean modules themselves. For each module,
 the verifier starts one `lean` process. It also runs `lean --deps-json` two
 times for each module: once to discover sources and once more before each
 compile. Modules compile one after another, also when they do not import each
@@ -21,8 +21,22 @@ Each command starts with an empty temporary workspace. The opt-in stage store
 (`MIGRATION_CHECK_STAGE_STORE`) can restore generated stages. ADR 0003 allows
 reuse of an approved contract only for closures listed in
 `cache_eligibility.py`, after a review of that closure. The list is empty. So
-`verify-bundle` compiles the same approved contract again on every run, and CI
-compiles the same example contracts again in every test.
+every command compiles the same approved contract again on every run, and CI
+compiles the same example contracts again in every test. Most of these CI
+compiles come from tests of source `verify` (`cli_test.py`, `atuin_cli_test.py`
+and others); fewer tests call `prepare` and `verify-bundle`.
+
+The repository has Lean code of different kinds, and each kind compiles in its
+own way today:
+
+| Location | Kind |
+| --- | --- |
+| `packages/belay-sqlite` | model library, a Lake package |
+| `SqliteVerifier/` and the root `.lean` files | verifier library, checker, exporter, conformance runner |
+| `VerifierConformance/`, `tools/PublicDoc*.lean` | test-only library, documentation tool |
+| `examples/*` | verification cases: contract, candidate and SQL |
+| `tests/kernel_gate`, `tests/public_doc_inventory`, `conformance/regressions/*` | fixtures that tests compile directly |
+| `experiments/*` | experiment code |
 
 Measured on Linux x86_64 (see the two experiments above). Compile and import
 scan time only; export, checker and Python start do not change:
@@ -55,13 +69,13 @@ there, so Lake decides that every `SqliteVerifier` module is not built.
 
 ## Decision
 
-### 1. Lake compiles the verification workspace
+### 1. Lake compiles every verification workspace
 
-`prepare` and `verify-bundle` write a workspace and run `lake build` in it. The
-workspace contains:
+`verify`, `prepare` and `verify-bundle` write a workspace and run `lake build`
+in it. The workspace contains:
 
-- copies of the snapshotted approved, generated and (for `prepare` only)
-  candidate sources;
+- copies of the snapshotted approved, generated and (for `verify` and
+  `prepare`) candidate sources;
 - a `lean-toolchain` file with the pinned toolchain;
 - a `lakefile.toml` that the verifier generates. It declares one library with
   the workspace modules as roots, enables the artifact cache, sets
@@ -75,8 +89,11 @@ user. TOML is data; Lake does not execute it.
 compiles candidate source; this keeps the ADR 0003 rule that acceptance does not
 accept candidate `.olean` files.
 
-Source `verify` is out of scope. It keeps its current path until a separate
-decision.
+Source `verify` builds the approved, generated and candidate modules in one
+workspace. Lake writes all outputs into one directory, and the kernel gate takes
+trusted and candidate outputs in separate directories. The verifier knows the
+role of each module, so it copies each output into the directory of its role
+before it starts the gate.
 
 ### 2. The verifier keeps its source rules
 
@@ -108,9 +125,10 @@ into it that a later build uses without compiling. Lake's key is a 64-bit hash
 that is not cryptographic; it detects accidental change, not attack. So a
 cache is only as trusted as every process that can write to it.
 
-- **Same entity runs `prepare` and `verify-bundle`.** Examples: a developer's
+- **Same entity runs the commands.** Examples: a developer's
   machine, a CI job, an operator who runs the agent and the verifier under the
-  same control. The two commands can use the same cache freely.
+  same control. `verify`, `prepare` and `verify-bundle` can use the same cache
+freely.
   `verify-bundle` then finds the contract that `prepare` compiled, and the
   reverse.
 - **Separate environments.** In production, `verify-bundle` will probably run
@@ -153,38 +171,76 @@ environment. With Lake:
 - the verifier maps Lake's failure output to the same per-module diagnostics as
   today.
 
-### 7. Tests and CI: one seed for the whole run
+### 7. The repository builds its Lean code in three stages
+
+Every Lean file that CI requires to compile is compiled before the tests start,
+and its outputs are in the cache that the tests use:
+
+1. **Packages.** Each Lean package (today `belaySqlite` and the verifier
+   library with its executables; later also the test-only conformance library
+   and the documentation tool) is a Lake package with a `lakefile.toml`. Each
+   package is built by its own Nix derivation, which depends on the
+   derivations of the packages it requires. The output is the package's Lake
+   workspace: sources, lakefile, and `.lake/build` with `.olean`, `.trace` and
+   `ir` files. Lake replays such a workspace instead of compiling it (section 3).
+2. **Cases.** A verification case is a folder that contains a manifest,
+   `case.toml`. The manifest names the schema, the contract directory, the
+   migration, the candidate modules, the profile and the expected status.
+   Checked-in cases are in `examples/<case>/`; cases used only by tests are in
+   `tests/cases/<case>/`. A case is not a Lake package: its `SchemaInputs` and
+   `SqlInputs` exist only after the verifier generates them from the SQL, and
+   Lake's key contains the module and package names that the verifier's
+   generator chooses. So a case is built by running the verifier on it, with
+   the cache in a temporary directory, followed by `lake cache stage`.
+3. **Tests.** Tests take their cases from the manifests, not from paths in the
+   test code, and use the cache from stage 2.
+
+The folder decides how a Lean file is built. A unit test puts every `.lean`
+file of the repository in exactly one category, by its path:
+
+| Category | Path rule | Built in |
+| --- | --- | --- |
+| Package | under `packages/<name>/` | stage 1 |
+| Case | under a folder with a `case.toml` | stage 2 |
+| Direct fixture | listed in the test, for example `tests/kernel_gate/` | by its test |
+| Excluded | listed in the test, for example `experiments/` | not built by CI |
+
+A new `.lean` file that is in no category fails the test. So the cache cannot
+miss a file without notice. Lean sources that must fail to compile are not
+cached, because Lake stores only successful builds; tests write most of them at
+run time, and checked-in ones are direct fixtures.
+
+### 8. Tests and CI: one seed for each case
 
 Nix test targets are separate sandboxed derivations that run in parallel. They
 cannot share one writable cache directory, and a shared directory would make a
 target's result depend on the order of the targets. Instead, Nix builds the
 cache once and gives a copy to each target:
 
-- **Seed derivation.** A new Nix derivation generates the workspaces of the
-  checked-in examples, runs `lake build -o mappings.jsonl` in each, and runs
-  `lake cache stage` into its output. It compiles each example module once.
-  The staged outputs are small: 40 KB for the small example, 188 KB for Atuin.
-- **Test targets.** Only the targets that compile contracts (`atuin`,
-  `bundle`, `cli`) take the seed as an input. At start, each target runs
-  `lake cache unstage` into a writable cache in its `$TMPDIR` (inside a
-  generated workspace, because Lake stores mappings for each package) and
-  passes that cache to the verifier. A test that uses an example as it is
-  compiles nothing. A test that changes its inputs compiles only the changed
-  modules, and later tests in the same target reuse them.
+- **Seed derivations.** Nix reads the case folders (`builtins.readDir`) and
+  makes one seed derivation for each case (stage 2). Seeds build in parallel,
+  and a change to one case rebuilds only its seed. The staged outputs are
+  small: 40 KB for the small example, 188 KB for Atuin.
+- **Test targets.** Each target that runs the verifier takes the seeds of the
+  cases it uses. At start, it runs `lake cache unstage` for each seed into a
+  writable cache in its `$TMPDIR` (inside a generated workspace, because Lake
+  stores mappings for each package) and passes that cache to the verifier. A
+  test that uses a case as it is compiles nothing. A test that changes its
+  inputs compiles only the changed modules, and later tests in the same target
+  reuse them.
 - **Fixture environment.** Installed-runtime tests give each child a clean
   environment (`runtime_environment` in `conftest.py`). The cache setting is
   added there; a variable set on the derivation does not reach the verifier.
 - **Keys do not contain paths.** Targets with different runtime roots
   (`runtime`, `leanRoot`, the conformance runtime) get hits when the library
   contents are the same. A difference causes misses, not wrong results.
-- **Reruns.** The seed depends on the examples, the runtime and the Python
-  code that generates `SchemaInputs`/`SqlInputs`. A change to one of them
-  rebuilds the seed and runs the three targets again. They already run again
-  on runtime and Python changes; only example changes add reruns. The seed adds
-  about 6 s before these targets start.
-- **Trust.** The seed is built in the Nix sandbox from repository sources, so
-  it is in the CI job's trust domain (section 4). Only successful `main` jobs
-  save the Nix cache, so a pull request cannot replace the seed that `main`
+- **Reruns.** A seed depends on its case, the runtime and the Python code that
+  generates `SchemaInputs`/`SqlInputs`. Targets already run again on runtime
+  and Python changes; a case change adds reruns only for the targets that use
+  that case. A seed takes about 1 s, or 5 s for Atuin, before its targets start.
+- **Trust.** Seeds are built in the Nix sandbox from repository sources, so
+  they are in the CI job's trust domain (section 4). Only successful `main`
+  jobs save the Nix cache, so a pull request cannot replace a seed that `main`
   uses.
 
 A read-only cache is not used directly: with `enableArtifactCache = true` a
@@ -192,12 +248,12 @@ miss fails because Lake writes the new mapping, and with
 `enableArtifactCache = false` Lake ignores the cache. The writable copy avoids
 both problems.
 
-A named set of tests runs with `--no-cache` and ignores the seed, so the path
+A named set of tests runs with `--no-cache` and ignores the seeds, so the path
 without a cache stays tested. A test checks that a build from the cache and a
 build without it give the same verification result. Host runs of
 `just test-cases` use a persistent cache under `build/`.
 
-### 8. The toolchain must report its commit
+### 9. The toolchain must report its commit
 
 Lake puts the toolchain's commit hash into every key. A Lean built by Nix that
 reports a release tag instead of the commit gets keys that never match: in
@@ -208,11 +264,15 @@ a Lean upgrade cannot silently turn every cache hit into a miss.
 
 ## Consequences
 
-- `prepare` and `verify-bundle` stop compiling unchanged modules. Expected
+- `verify`, `prepare` and `verify-bundle` stop compiling unchanged modules.
+  CI compiles each checked-in case once, in its seed. Expected
   acceptance time for Atuin: about 3.5 s instead of 6.6 s, most of it the
   bundle checker. Expected `prepare` time after a proof edit: under 1 s instead
   of about 2 s.
 - The verifier no longer runs `lean --deps-json` before each compile.
+- Tests name cases through manifests. Adding a case means adding a folder with
+  a `case.toml`; adding any other Lean file means placing it in a category of
+  section 7.
 - Lake becomes part of the trusted implementation. Its cache format and
   behavior can change with each Lean release, and the project follows each
   stable release (see "Lean maintenance" in [CLAUDE.md](../CLAUDE.md)). An
@@ -227,12 +287,32 @@ a Lean upgrade cannot silently turn every cache hit into a miss.
 The experiment did not cover these. Each needs evidence before this ADR is
 accepted:
 
-- the exporter and the bundle checker reading Lake's outputs;
+- the exporter, the bundle checker and the kernel gate reading Lake's
+  outputs, including the split of `verify` outputs by role;
 - mapping Lake failures to per-module diagnostics;
 - macOS;
 - cache growth over many contracts;
 - the seed derivation inside the Nix sandbox (the `stage`/`unstage` flow was
   checked outside Nix with `experiments/lake-cache/seed_flow.py`).
+
+## Plan
+
+Each step is a separate task with its own tests; the order follows the
+dependencies:
+
+1. [Case manifests and the Lean file categories](../plans/20261012-case-manifests-and-lean-categories.task.md):
+   `case.toml` for each case, tests that read them, and the coverage test of
+   section 7. No files move.
+2. [Lake builds in the verifier](../plans/20261012-lake-builds-in-the-verifier.task.md):
+   runtime library packages (section 3), Lake workspaces for all three
+   commands (sections 1, 2, 6), the cache options (section 4), and removal of
+   the stage store (section 5).
+3. [Case seeds in CI](../plans/20261012-case-seeds-in-ci.task.md): seed
+   derivations and their use in the test targets (section 8), and the
+   toolchain commit check (section 9).
+4. [Verifier library as a package](../plans/20261012-verifier-library-package.task.md):
+   the verifier library, the test-only conformance library and the
+   documentation tool move under `packages/` (stage 1 of section 7).
 
 ## Alternatives considered
 
