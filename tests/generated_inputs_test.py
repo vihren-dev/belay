@@ -10,6 +10,7 @@ import pytest
 from migration_check.contract import Contract, compile_trusted
 from belay.sqlite.profiles import profile
 from migration_check.lean_inputs import schema_inputs, sql_inputs
+from migration_check.project_config import load as load_config
 from belay.sqlite.sql_tree import Tree
 from belay.sqlite.structural import Json, generated_inputs_wire
 from belay.sqlite.translate import starting_schema, statements
@@ -25,38 +26,46 @@ WRITES = ("BEGIN; INSERT INTO ledger(version,label,stamp,ok,data) "
           "UPDATE ledger SET ok=-1 WHERE version=7; BEGIN; UPDATE ledger SET label=NULL WHERE version=0; ROLLBACK;")
 
 
-def example(name: str, schema: str = "approved/schema.sql") -> Callable[[Path], tuple[str, str]]:
-    """Schema and migration SQL of an example shipped in the selected runtime."""
-    return lambda runtime: ((runtime / "examples" / schema).read_text(),
-                            (runtime / "examples" / name / "migration.sql").read_text())
+Source = Callable[[Path], tuple[str, str, str]]
+"""Schema SQL, migration SQL and SQLite profile of one case, given the runtime under test."""
 
 
-def conformance_case(name: str) -> Callable[[Path], tuple[str, str]]:
-    """Schema and migration SQL of an ADR 0004 authored case."""
-    def load(_runtime: Path) -> tuple[str, str]:
+def example(name: str) -> Source:
+    """A case shipped in the selected runtime, with the inputs its `belay.toml` names."""
+    def read(runtime: Path) -> tuple[str, str, str]:
+        """Load the case's configuration from the runtime's own examples."""
+        examples = runtime / "examples"
+        config = load_config(examples / name / "belay.toml", examples)
+        return config.schema.read_text(), config.migration.read_text(), config.profile
+    return read
+
+
+def conformance_case(name: str, version: str) -> Source:
+    """Schema and migration SQL of an ADR 0004 authored case, under the given profile."""
+    def load(_runtime: Path) -> tuple[str, str, str]:
         """Read the checked-in structural case; only its SQL is used here."""
         case = json.loads((ROOT / "conformance/cases" / f"{name}.json").read_text())
-        return case["schemaSql"], case["migrationSql"]
+        return case["schemaSql"], case["migrationSql"], version
     return load
 
 
-def literal(schema_sql: str, migration_sql: str) -> Callable[[Path], tuple[str, str]]:
-    """A hand-written schema and migration."""
-    return lambda _runtime: (schema_sql, migration_sql)
+def literal(schema_sql: str, migration_sql: str, version: str) -> Source:
+    """A hand-written schema and migration, under the given profile."""
+    return lambda _runtime: (schema_sql, migration_sql, version)
 
 
-CASES: dict[str, tuple[Callable[[Path], tuple[str, str]], str]] = {
-    "add_column_then_table": (example("add_column_then_table"), "3.51.0"),
-    "table_then_column": (example("table_then_column"), "3.51.0"),
-    "refutation_unchanged_invoices": (example("missing_required_column"), "3.51.0"),
-    "allowed_failure": (example("allowed_failure", "allowed_failure/approved/schema.sql"), "3.51.0"),
-    "atuin_3_46": (example("atuin", "atuin/schema.sql"), "3.46.0"),
-    "literal_writes_and_transactions": (literal(LEDGER, WRITES), "3.46.0"),
-    "rich_schema_nullable_add": (literal(RICH_BASELINE, "ALTER TABLE events ADD extra TEXT;"), "3.51.0"),
-    "unchanged_schema": (literal(LEDGER, "BEGIN; COMMIT;"), "3.51.0"),
-    "unicode_names": (literal('CREATE TABLE "Café"("Имя" TEXT, n INTEGER);',
-                              'ALTER TABLE "Café" ADD "💡" BLOB; CREATE TABLE extra(r REAL, n NUMERIC);'), "3.51.0"),
-    **{f"conformance_{name}": (conformance_case(name), "3.51.0")
+CASES: dict[str, Source] = {
+    "add_column_then_table": example("add_column_then_table"),
+    "table_then_column": example("table_then_column"),
+    "refutation_unchanged_invoices": example("missing_required_column"),
+    "allowed_failure": example("allowed_failure"),
+    "atuin_3_46": example("atuin"),
+    "literal_writes_and_transactions": literal(LEDGER, WRITES, "3.46.0"),
+    "rich_schema_nullable_add": literal(RICH_BASELINE, "ALTER TABLE events ADD extra TEXT;", "3.51.0"),
+    "unchanged_schema": literal(LEDGER, "BEGIN; COMMIT;", "3.51.0"),
+    "unicode_names": literal('CREATE TABLE "Café"("Имя" TEXT, n INTEGER);',
+                             'ALTER TABLE "Café" ADD "💡" BLOB; CREATE TABLE extra(r REAL, n NUMERIC);', "3.51.0"),
+    **{f"conformance_{name}": conformance_case(name, "3.51.0")
        for name in ("add_then_create", "missing_table_prefix", "retained_add_prefix", "retained_create_prefix")},
 }
 
@@ -93,8 +102,7 @@ def parity(runtime_root: Path, lean_sysroot: Path, lean_libraries: tuple[Path, P
 def test_constructed_declarations_match_emitter(parity: Callable[..., CommandResult], runtime_root: Path,
                                                 name: str) -> None:
     """nextSchema, script and profile have the emitter's types and definitionally equal values."""
-    source, version = CASES[name]
-    schema_sql, migration_sql = source(runtime_root)
+    schema_sql, migration_sql, version = CASES[name](runtime_root)
     result = parity(schema_sql, migration_sql, version)
     assert result.returncode == 0, result.diagnostic()
 
@@ -109,6 +117,6 @@ def test_constructed_declarations_match_emitter(parity: Callable[..., CommandRes
 def test_tampered_record_is_rejected(parity: Callable[..., CommandResult], runtime_root: Path,
                                      change: Callable[[dict[str, Json]], object], diagnostic: str) -> None:
     """A record that disagrees with the compiled inputs, or is malformed, is rejected."""
-    schema_sql, migration_sql = example("add_column_then_table")(runtime_root)
+    schema_sql, migration_sql, _version = example("add_column_then_table")(runtime_root)
     result = parity(schema_sql, migration_sql, "3.51.0", change)
     assert result.returncode == 1 and diagnostic in result.stderr, result.diagnostic()

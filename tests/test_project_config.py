@@ -78,7 +78,8 @@ def test_path_outside_root_is_refused(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("name", ["../../outside/Evil", "ABSOLUTE"])
 def test_path_like_module_name_is_refused(tmp_path: Path, name: str) -> None:
-    """A module name that is a path to an existing Lean file outside the root is refused as a name."""
+    """`load` refuses a module name that is a path to an existing Lean file outside the root; otherwise a
+    case could make tests read Lean sources from anywhere."""
     (tmp_path / "outside").mkdir()
     (tmp_path / "outside" / "Evil.lean").write_text("")
     module = str(tmp_path / "outside" / "Evil") if name == "ABSOLUTE" else name
@@ -89,7 +90,8 @@ def test_path_like_module_name_is_refused(tmp_path: Path, name: str) -> None:
 
 
 def test_dotted_module_name_names_a_nested_file(tmp_path: Path) -> None:
-    """`Helpers.Facts` is the module in `Helpers/Facts.lean` of the proofs folder."""
+    """`load` maps the dotted module name `Helpers.Facts` to `Helpers/Facts.lean`, as Lean does, so
+    helper modules in subfolders are accepted."""
     file = case_tree(tmp_path, VALID.replace('"Helper"', '"Helpers.Facts"'))
     (file.parent / "Helpers").mkdir()
     (file.parent / "Helpers" / "Facts.lean").write_text("")

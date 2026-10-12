@@ -166,3 +166,8 @@ def load(file: Path, root: Path) -> ProjectConfig:
 def discover(root: Path) -> list[Path]:
     """Every `belay.toml` below `root`, in a stable order."""
     return sorted(root.rglob(CONFIG_NAME))
+
+
+def case_names(root: Path, suite: str) -> list[str]:
+    """Folders, relative to `root`, of the cases whose `[test]` table assigns them to `suite`."""
+    return [file.parent.relative_to(root).as_posix() for file in discover(root) if load(file, root).test_suite == suite]

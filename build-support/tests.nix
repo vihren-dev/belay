@@ -8,6 +8,8 @@ let
   common = map (name: root + "/${name}") [
     "pytest.ini" "conftest.py" "tests/__init__.py" "tests/runtime_support.py" "tests/runtime_fixtures.py"
     "tests/runtime_installation.py"
+    # The belay.toml reader: tests take the checked-in cases from their belay.toml (ADR 0010).
+    "migration_check/__init__.py" "migration_check/project_config.py"
   ];
   python = name: pkgs.python3.withPackages (ps: [ ps.pytest ps.pytest-timeout ]
     ++ pkgs.lib.optional (name == "model") ps.hypothesis);
@@ -190,6 +192,8 @@ in {
       (fs.fileFilter (file: file.hasExt "json") (root + /conformance/cases))
       (root + /tests/sql_fixtures.py)
       (root + /experiments/adr-0003-latency/cases.py)
+      # cases.py reads the examples' belay.toml files; the runtime under test contains them too.
+      (fs.difference (root + /examples) (fs.fileFilter (file: file.name == ".DS_Store") (root + /examples)))
       (root + /experiments/adr-0003-latency/stage_timing.py)
     ];
     inherit runtime;

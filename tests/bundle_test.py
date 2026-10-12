@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from migration_check.project_config import ProjectConfig, load
 from tests.runtime_support import CommandResult
 from tests.proof_exporter_test import exporter_runtime_identity, input_digests
 
@@ -46,6 +47,12 @@ def data_path(runtime_root: Path, tmp_path: Path,
     return run
 
 
+def case_options(config: ProjectConfig) -> dict[str, object]:
+    """`data_path` arguments for a case, from its `belay.toml`."""
+    return {"approved": config.contract, "candidate": config.proofs, "schema": config.schema,
+            "profile": config.profile}
+
+
 def test_allowed_failure_through_data_path(data_path: Callable[..., dict[str, object]],
                                           example_factory: Callable[[str], Path]) -> None:
     """The allowed-failure example is VERIFIED through `prepare` and `verify-bundle`.
@@ -54,9 +61,9 @@ def test_allowed_failure_through_data_path(data_path: Callable[..., dict[str, ob
     `test_application_key_bundle_repeatability`, which also check their status.
     """
     examples = example_factory("allowed_failure")
-    report = data_path(approved=examples / "approved", candidate=examples,
-                       schema=examples / "approved/schema.sql")
-    assert report["status"] == "VERIFIED", report
+    config = load(examples / "belay.toml", examples)
+    report = data_path(**case_options(config))
+    assert report["status"] == config.test_status, report
 
 
 def test_application_key_bundle_repeatability(data_path: Callable[..., dict[str, object]],
@@ -64,15 +71,15 @@ def test_application_key_bundle_repeatability(data_path: Callable[..., dict[str,
         exporter_runtime_identity: dict[str, object], record_testsuite_property: Callable[[str, object], None]) -> None:
     """Independent preparation binds identical keyed certificates to the selected inputs and library."""
     examples = example_factory("application_keys")
-    options = {"approved": examples / "approved", "candidate": examples / "add_column_then_table",
-               "schema": examples / "approved/schema.sql"}
+    config = load(examples / "add_column_then_table/belay.toml", examples)
+    options = case_options(config)
     hashes = input_digests(examples, "approved", "add_column_then_table", "approved/schema.sql")
     assert hashes == input_digests(runtime_root / "examples/application_keys", "approved",
                                   "add_column_then_table", "approved/schema.sql")
     reports = [data_path(**options, directory=tmp_path / label) for label in ("first", "second")]
     payloads = [(tmp_path / label / "proof.bundle").read_bytes() for label in ("first", "second")]
     for report, payload in zip(reports, payloads, strict=True):
-        assert report["status"] == "VERIFIED" and json.loads(payload.splitlines()[0]) == APPLICATION_KEY_HEADER
+        assert report["status"] == config.test_status and json.loads(payload.splitlines()[0]) == APPLICATION_KEY_HEADER
         expected = {"profile": "3.51.0", "schema.sql": hashes["approved/schema.sql"],
             "migration.sql": hashes["add_column_then_table/migration.sql"], "bundle": hashlib.sha256(payload).hexdigest(),
             **{name: digest for name, digest in hashes.items() if name.startswith("approved/") and name.endswith(".lean")}}
@@ -85,10 +92,12 @@ def test_application_key_bundle_repeatability(data_path: Callable[..., dict[str,
 
 @pytest.fixture
 def small(example_factory: Callable[[str], Path]) -> dict[str, Path]:
-    """Private copies of the small approved contract and positive candidate."""
+    """Private copies of the small approved contract and positive candidate, as their `belay.toml` names them."""
     examples = example_factory(".")
-    return {"approved": examples / "approved", "candidate": examples / "add_column_then_table",
-            "schema": examples / "approved/schema.sql", "reverse": examples / "table_then_column"}
+    config = load(examples / "add_column_then_table/belay.toml", examples)
+    reverse = load(examples / "table_then_column/belay.toml", examples)
+    return {"approved": config.contract, "candidate": config.proofs, "schema": config.schema,
+            "reverse": reverse.proofs}
 
 
 @pytest.mark.parametrize("proof,diagnostic", [
@@ -158,11 +167,9 @@ def test_sql_edit_reuses_modules_without_sql_inputs(runtime_root: Path, example_
     """After an Atuin SQL edit, modules that do not import SqlInputs are reused and the bundle verifies."""
     atuin = example_factory("atuin")
     launcher = str(runtime_root / "bin/migration-check")
-    common = ["--profile", "3.46.0", "--format", "json", "--schema", str(atuin / "schema.sql"),
-              "--requirements", str(atuin / "approved/Requirements.lean"),
-              "--interpretation", str(atuin / "approved/Interpretation.lean"),
-              "--migration", str(atuin / "migration.sql")]
-    candidate = ["--next-interpretation", str(atuin / "NextInterpretation.lean"), "--proofs", str(atuin / "Proofs.lean")]
+    config = load(atuin / "belay.toml", atuin)
+    common = ["--format", "json", *config.contract_arguments()]
+    candidate = config.candidate_arguments()
     bundle = tmp_path / "atuin.bundle"
 
     def prepare() -> dict[str, object]:

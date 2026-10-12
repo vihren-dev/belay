@@ -15,24 +15,34 @@ import pytest
 
 from tests.runtime_support import CommandResult
 from migration_check.import_path import merged_search_path
+from migration_check.project_config import load
 from migration_check.source_closure import lean_process
 from belay.sqlite.parser_library import library_name
 
 pytestmark = [pytest.mark.e2e, pytest.mark.kernel, pytest.mark.requires_lean, pytest.mark.requires_native]
-CASES = {"small": ("approved", "add_column_then_table", "approved/schema.sql", "3.51.0"),
-         "refutation": ("approved", "missing_required_column", "approved/schema.sql", "3.51.0"),
-         "atuin": ("atuin/approved", "atuin", "atuin/schema.sql", "3.46.0")}
-"""Current shipped positive, refutation and Atuin inputs."""
-EXPECTED = {"small": ("VERIFIED", ["Init", "SqliteVerifier.Demonstration", "SqliteVerifier.Library"]),
-            "refutation": ("VIOLATED", ["Init", "SqliteVerifier.Library"]),
-            "atuin": ("VERIFIED", ["Init", "SqliteVerifier"])}
-"""Independent status and exact trusted-import expectations for the shipped examples."""
+CASES = {"small": "add_column_then_table", "refutation": "missing_required_column", "atuin": "atuin"}
+"""Current shipped positive, refutation and Atuin cases, by their names in recorded results."""
+EXPECTED_IMPORTS = {"small": ["Init", "SqliteVerifier.Demonstration", "SqliteVerifier.Library"],
+                    "refutation": ["Init", "SqliteVerifier.Library"], "atuin": ["Init", "SqliteVerifier"]}
+"""Exact trusted-import expectations for the shipped examples; their statuses are in `belay.toml`."""
 REPEATED_CASES = frozenset({"small"})
 """Cases prepared twice to show that preparation is deterministic.
 
 The exporter code is the same for every example, so one small example shows determinism; the
 others are prepared once, for their status, imports and input bindings.
 """
+
+
+def case_inputs(examples: Path, folder: str) -> tuple[str, str, str, str, str]:
+    """Contract, candidate and schema paths relative to `examples`, profile and expected status of one case.
+
+    They come from the case's `belay.toml`, so the test runs the case that users see.
+    """
+    config = load(examples / folder / "belay.toml", examples)
+    assert config.test_status is not None, config.file
+    root = examples.resolve()
+    return (config.contract.relative_to(root).as_posix(), config.proofs.relative_to(root).as_posix(),
+            config.schema.relative_to(root).as_posix(), config.profile, config.test_status)
 
 
 def file_digest(path: Path) -> str:
@@ -94,9 +104,9 @@ def test_current_native_export(name: str, runtime_root: Path, example_factory: C
         exporter_runtime_identity: dict[str, object],
         record_testsuite_property: Callable[[str, object], None]) -> None:
     """Preparations are independently checked against exact current inputs; repeated ones are byte-identical."""
-    approved, candidate, schema, profile = CASES[name]
-    status, imports = EXPECTED[name]
     examples = example_factory(".")
+    approved, candidate, schema, profile, status = case_inputs(examples, CASES[name])
+    imports = EXPECTED_IMPORTS[name]
     hashes = input_digests(examples, approved, candidate, schema)
     assert hashes == input_digests(runtime_root / "examples", approved, candidate, schema)
     payloads: list[bytes] = []
@@ -105,7 +115,8 @@ def test_current_native_export(name: str, runtime_root: Path, example_factory: C
     for label in ("first", "second") if name in REPEATED_CASES else ("first",):
         workspace = tmp_path / label
         workspace.mkdir()
-        bundle, report = prepare_check(runtime_root, examples, workspace, *CASES[name], command_runner)
+        bundle, report = prepare_check(runtime_root, examples, workspace, approved, candidate, schema, profile,
+                                       command_runner)
         payload = bundle.read_bytes()
         assert json.loads(payload.splitlines()[0]) == header
         assert report["status"] == status, report
@@ -145,7 +156,7 @@ end {module}
 /-- This proof requires the caller-owned library-like module to be exported. -/
 theorem Proofs.migrationCorrect : Generated.expected := {module}.checked
 """)
-    _bundle, report = prepare_check(runtime_root, examples, tmp_path, *CASES["small"], command_runner)
+    _bundle, report = prepare_check(runtime_root, examples, tmp_path, *case_inputs(examples, CASES["small"])[:4], command_runner)
     assert report["status"] == "VERIFIED", report
 
 

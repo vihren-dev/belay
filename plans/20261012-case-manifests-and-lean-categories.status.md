@@ -26,3 +26,23 @@ Relevant files: `conftest.py`, `tests/cli_test.py`, `tests/bundle_test.py`, `tes
   file moves) because three cases share `examples/approved/`. The owner
   decided: paths may leave the case folder but must stay inside the folder
   that holds the cases. The task text says so now.
+- 2026-10-12: implemented on top of `main` `0adb73dc`.
+  - `migration_check/project_config.py` reads and validates `belay.toml`
+    (`load`, `discover`, `case_names`); `tests/test_project_config.py`.
+  - A `belay.toml` in each of the six checked-in cases; `[test]` holds the
+    expected status and the Nix target (`suite`, `cli` by default; Atuin is
+    `atuin`).
+  - `cli_test.py`: one test, parametrized from the runtime's `examples/`,
+    replaces the four per-case status tests. `runtime_package_test.py` does the
+    same for the installed archive. `atuin_cli_test.py`, `bundle_test.py`,
+    `proof_exporter_test.py`, `model_roots_test.py`,
+    `generated_inputs_test.py` and `experiments/adr-0003-latency/cases.py`
+    take case inputs from `belay.toml`. `test_application_keys.py` runs no
+    example case and is unchanged.
+  - `tests/test_lean_categories.py`: every `.lean` file is in exactly one
+    category; a stray file in `examples/` is reported.
+  - Nix: the reader is in every target's common inputs; the `bundle` target
+    gets `examples/` because `cases.py` reads it.
+  - Review: two rounds with "must" findings in the reader (a list status
+    raised `TypeError`; path-like module names escaped the root; then tests
+    that passed without the fix), all fixed; the third round had none.
