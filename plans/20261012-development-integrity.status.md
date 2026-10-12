@@ -71,3 +71,4 @@ Decision: [ADR 0011](../docs/adr-0011-product-trust-and-development-integrity.md
   changes one byte of each part in a copy. Review finding
   20261012T090907Z-7c09b6c6#1 was only partly fixed: the runner-failure
   message has no test (it needs a broken runtime).
+- 2026-10-12: owner chose: document memorized answers as a known limit in ADR 0011, add review condition R17 (advisory), and consider a hidden holdout corpus later.

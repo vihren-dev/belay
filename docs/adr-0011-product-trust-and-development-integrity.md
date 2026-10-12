@@ -313,11 +313,22 @@ review condition R8 has no remaining purpose and is removed.
 - **Keep R8 as a review finding.** Rejected: a finding is advisory, and the
   review process cannot close "owner review required".
 
+## Known limit: memorized answers
+
+The lock makes it impossible to change the corpora, the claims or the judge
+without the owner. It does not make it impossible for the subject to contain
+the recorded answers. The corpora are in this repository, so an agent can
+write recorded results into the subject's code, for example as a table keyed
+by SQL text, and the verdict passes. The verdict's separate subject build only
+stops the subject from reading the corpora while it runs. Review condition
+R17 asks reviewers to report such code; it is advisory, so it makes this
+harder but not impossible. The owner accepted this limit on 2026-10-12, while
+the claims cover only 21 agreeing cases of corpora v1 to v3.
+
 ## Open points
 
-- The extracted judge, its interface to the subject, and how a claim states
-  its threshold.
-- The time to hash the frozen corpora during evaluation, measured before the
-  corpora move into the lock.
+- A hidden holdout corpus: claims on cases that agents never see, kept outside
+  this repository and fetched only by the verdict job. This makes memorized
+  answers useless. Consider it before agents work on making corpus v5 agree.
 - Whether workflow changes become rare enough for the budget of decision 4.
   If not, the verdict check from a separate GitHub App is the next option.

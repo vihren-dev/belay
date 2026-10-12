@@ -124,6 +124,12 @@ and its docstring says so. See ADR 0011.
 with a digest that is written in the same test file.
 *Applies to:* all files.
 
+**R17. No recorded answers in the subject.** Code outside `judge/` and the
+corpora does not contain or derive recorded SQLite observations, outputs or
+verdicts of corpus cases in order to predict them, for example as a table
+keyed by case name or SQL text. ADR 0011 names this limit of the judge lock.
+*Applies to:* all files.
+
 ## Output format
 
 Write one line per finding, and nothing else in these lines:
