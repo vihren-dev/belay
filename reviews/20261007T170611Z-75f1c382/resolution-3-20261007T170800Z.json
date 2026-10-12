@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-07T17:08:00+00:00",
+  "finding": "20261007T170611Z-75f1c382#3",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "This changes only a reversible diagnostic string. The malformed-shape result was checked manually, and the existing four mutation cases verify receipt refusal behavior. A new test would mirror message formatting without exercising another acceptance guarantee."
+}

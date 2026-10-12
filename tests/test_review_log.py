@@ -72,19 +72,21 @@ def test_resolution_rejects(finding: str, outcome: str, reason: str, message: st
 
 @pytest.mark.integration
 def test_resolve_command_adds_one_file(tmp_path: Path) -> None:
-    """`just review-resolve` resolves a finding of the frozen log with one new record file next to
-    the finding's review, and leaves the frozen log unchanged."""
+    """`just review-resolve` resolves a finding with one new record file next to the finding's
+    review, and leaves the review file unchanged."""
     review = "20261006T120000Z-abababab"
-    frozen = tmp_path / "log.jsonl"
-    frozen.write_text(json.dumps({"kind": "review", "id": review, "findings": [{"id": f"{review}#1"}]}) + "\n")
-    before = frozen.read_bytes()
+    stored = tmp_path / review / "review.json"
+    stored.parent.mkdir()
+    stored.write_text(json.dumps({"kind": "review", "id": review, "date": "2026-10-06T12:00:00+00:00",
+                                  "findings": [{"id": f"{review}#1"}]}))
+    before = stored.read_bytes()
     environment = {**os.environ, "SQLITE_VERIFIER_REVIEW_LOG": str(tmp_path)}
     result = subprocess.run([sys.executable, "-m", "tools.review_log", f"{review}#1", "rejected", "a test fixture"],
                             cwd=ROOT, env=environment, capture_output=True, text=True, timeout=15, check=False)
     assert result.returncode == 0, result.stderr
-    [stored] = list(tmp_path.glob(f"{review}/resolution-1-*.json"))
-    assert frozen.read_bytes() == before
-    assert read_records(tmp_path)[-1] == json.loads(stored.read_text())
-    assert json.loads(stored.read_text()) | {"date": None} == {
+    [resolved] = list(tmp_path.glob(f"{review}/resolution-1-*.json"))
+    assert stored.read_bytes() == before
+    assert read_records(tmp_path)[-1] == json.loads(resolved.read_text())
+    assert json.loads(resolved.read_text()) | {"date": None} == {
         "kind": "resolution", "finding": f"{review}#1", "outcome": "rejected", "reason": "a test fixture",
         "date": None}

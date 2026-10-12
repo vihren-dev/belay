@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-08T11:23:32+00:00",
+  "finding": "20261008T110709Z-b15e8f53#1",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "Restored exact-spelling sibling merging across mixed roots and verified both root orders; different spellings merge only when all original roots ignore case. Final owner review of trusted package selection remains required."
+}

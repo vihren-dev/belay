@@ -113,6 +113,17 @@ See "Testing" in `AGENTS.md`.
 that a documentation generator writes for Lean's own libraries.
 *Applies to:* `tests/*`, `tools/*`, `build-support/*`.
 
+**R16. Anchored integrity checks.** A check that claims to prevent tampering
+with development evidence (corpora, expected results, thresholds, baselines)
+compares against a protected value: a file that `.github/CODEOWNERS` lists in
+its development-integrity section, or an input of the judge lock. A new or
+changed check whose reference value an unprotected change can also change is
+not added as a tampering defense; it stays only if it finds honest mistakes,
+and its docstring says so. See ADR 0011.
+*Example of a violation:* a test that refuses a changed corpus by comparing it
+with a digest that is written in the same test file.
+*Applies to:* all files.
+
 ## Output format
 
 Write one line per finding, and nothing else in these lines:

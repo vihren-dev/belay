@@ -1,0 +1,50 @@
+{
+  "caller": "claude",
+  "commit": "4845b51ad8552edb80c49f8ae1d0a590e44e7a7e",
+  "date": "2026-10-11T11:35:19+00:00",
+  "exit": 1,
+  "files": [
+    "migration_check/process.py",
+    "plans/20261011-verifier-process-overhead.status.md",
+    "tests/test_process.py"
+  ],
+  "findings": [
+    {
+      "id": "20261011T113519Z-4845b51a#1",
+      "line": 23,
+      "path": "migration_check/process.py",
+      "rule": "R9",
+      "severity": "must",
+      "text": "The docstring claims that the lock prevents signalling after the child is reaped, but `process.wait()` can reap the child before `finished` is set, allowing the timer to signal a reused process-group ID. Fix: synchronize reaping with deadline signalling and document the resulting guarantee accurately."
+    },
+    {
+      "id": "20261011T113519Z-4845b51a#2",
+      "line": 64,
+      "path": "tests/test_process.py",
+      "rule": "R11",
+      "severity": "should",
+      "text": "The assertion is nondeterministic because `timer.cancel()` does not wait for the timer thread to exit, so a successful call can leave the thread temporarily visible. Fix: join the cancelled timer before returning and checking that no timer thread remains."
+    }
+  ],
+  "id": "20261011T113519Z-4845b51a",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "b9509029f9c1",
+    "R7": "1d1132b164f1",
+    "R8": "46eec5fecbaf",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

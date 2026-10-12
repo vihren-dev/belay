@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import resource
 import signal
+import select
 import subprocess
 from tempfile import TemporaryFile
 
@@ -12,6 +13,52 @@ from tempfile import TemporaryFile
 def limit_output_files() -> None:
     """Bound each produced file, including captured output streams."""
     resource.setrlimit(resource.RLIMIT_FSIZE, (16 * 1024 * 1024, 16 * 1024 * 1024))
+
+
+def exited_before(pid: int, timeout: float) -> bool | None:
+    """Wait until the child exits or the deadline passes, without reaping the child.
+
+    The child stays a zombie until `Popen.wait` reaps it, so its process-group
+    ID cannot be reused while the caller decides whether to kill the group.
+    Linux uses a pidfd, which becomes readable at the exit, with no polling.
+    Returns `None` without pidfd support, for example on macOS.
+    """
+    if not hasattr(os, "pidfd_open"):
+        return None
+    try:
+        descriptor = os.pidfd_open(pid)
+    except OSError:
+        return None
+    try:
+        waiter = select.poll()
+        waiter.register(descriptor, select.POLLIN)
+        return bool(waiter.poll(timeout * 1000))
+    finally:
+        os.close(descriptor)
+
+
+def wait_with_deadline(process: subprocess.Popen[bytes], timeout: float) -> bool:
+    """Reap the child; at the deadline, first kill its whole process group.
+
+    `Popen.wait(timeout=...)` polls with sleeps of up to 50 ms, so a short child
+    seemed to run up to 50 ms longer. `exited_before` returns at the exit
+    instead. Without pidfd support, the polling wait remains.
+    Returns false when the deadline killed the process group.
+    """
+    exited = exited_before(process.pid, timeout)
+    if exited is None:
+        try:
+            process.wait(timeout=timeout)
+            return True
+        except subprocess.TimeoutExpired:
+            exited = False
+    if not exited:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    process.wait()
+    return exited
 
 
 def run_process(
@@ -32,15 +79,8 @@ def run_process(
             stdout=stdout_file, stderr=stderr_file, start_new_session=True,
             preexec_fn=limit_output_files,
         ) as process:
-            try:
-                process.wait(timeout=timeout)
-            except subprocess.TimeoutExpired:
-                try:
-                    os.killpg(process.pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
-                process.wait()
-                raise
+            if not wait_with_deadline(process, timeout):
+                raise subprocess.TimeoutExpired(command, timeout)
             stdout_file.seek(0)
             stderr_file.seek(0)
             stdout = stdout_file.read(1024 * 1024).decode("utf-8", errors="replace")
