@@ -70,7 +70,7 @@ def run_judge(root: Path, mode: str, must_agree: list[str] | None = None) -> sub
         "forbidden": ["DISAGREE", "HARNESS_ERROR"]}}}))
     subject = root / f"subject-{mode}.py"
     subject.write_text(SUBJECT.format(mode=mode))
-    return subprocess.run([sys.executable, "-m", "judge", "--root", str(root), "--claims", str(claims),
+    return subprocess.run([sys.executable, "-m", "judge", "run", "--root", str(root), "--claims", str(claims),
                            "--", sys.executable, "-I", str(subject), str(root / "corpus/cases.jsonl.gz")],
                           cwd=ROOT, capture_output=True, text=True, timeout=JUDGE_TIMEOUT_SECONDS, check=False)
 

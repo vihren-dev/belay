@@ -189,23 +189,27 @@ not part of the product and is not shipped.
 
 ### 2. Lock the judge with Nix
 
-The judge is a Nix derivation: the code that turns the subject's outputs into
-a verdict, the acceptance threshold of each claim, the frozen corpora, and the
-native SQLite build that produced the expected outputs. A lock file
-(`nix/judge.lock.json`) records the judge's derivation path for each system.
-Nix computes the derivation path from all inputs: sources, `nix/flake.lock`,
-`nix/sqlite.nix` and the build commands. A change to any of them changes the
-path, so the lock covers the judge's dependencies without a list of files.
+The judge is the code that turns the subject's outputs into a verdict, the
+acceptance threshold of each claim, the frozen corpora, and the native SQLite
+build that produced the expected outputs. A lock file (`nix/judge.lock.json`)
+records one content-derived store path for each part: the judge code with its
+claims (`judge/`), each claimed corpus, and the oracle (`nix/sqlite.nix` with
+`nix/flake.lock`, which also pins the nixpkgs that the verdict uses). A change
+to any file of a part changes its path. Source paths do not depend on the
+system, so one lock serves both systems.
 
-A small Nix file reads the lock, compares it with the derivation path that it
-evaluates, and stops with an error that names the changed part when they
-differ. Sources enter the store as content-derived paths, not as fixed-output
-paths with a declared hash, so that the comparison does not depend on what the
-store already holds. The same file defines the verdict: it runs the locked
-judge on the subject, for example the model, in the Nix sandbox.
+`nix/judge.nix` reads the lock, compares it with the paths that it evaluates,
+and stops with an error that names each changed part. It imports nothing that
+the lock does not cover, except the subject's build. Sources enter the store
+as content-derived paths, not as fixed-output paths with a declared hash, so
+that the comparison does not depend on what the store already holds. The same
+file defines the verdict in three Nix builds: the judge writes the subject's
+inputs; the subject predicts from those inputs alone, in a build that has no
+corpus as an input; the judge compares the predictions with the corpora.
 
-The judge calls the subject only through a fixed interface. The subject cannot
-define or change its own verdict.
+The judge talks to the subject only through a fixed data interface (one
+input and one prediction per JSON line). The subject cannot define or change
+its own verdict.
 
 ### 3. Run the verdict in its own CI job
 

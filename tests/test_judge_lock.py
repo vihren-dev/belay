@@ -16,7 +16,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 NIX_TIMEOUT_SECONDS = 120
 """One evaluation of the lock over a small copy."""
-COPIED = ["nix/judge.nix", "nix/sqlite.nix", "nix/flake.lock", "build-support/locked-nixpkgs.nix", "judge",
+COPIED = ["nix/judge.nix", "nix/sqlite.nix", "nix/flake.lock", "judge",
           "conformance/corpus-v1"]
 """The files that the lock check reads."""
 
