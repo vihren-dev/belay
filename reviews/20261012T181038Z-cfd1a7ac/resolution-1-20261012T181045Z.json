@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-12T18:10:45+00:00",
+  "finding": "20261012T181038Z-cfd1a7ac#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The case layout is whitespace only: every reader parses the cases with json.loads, so no behavior depends on it. A test would run the full native and Lean pipeline to check whitespace and add CI time."
+}

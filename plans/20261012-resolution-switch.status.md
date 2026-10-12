@@ -186,6 +186,16 @@ Relevant files: `belay/sqlite/`, `migration_check/`,
   pass; `runtime-package` did not start, because the resource check found 9.85
   GiB free of the required 10 GiB, so CI runs it.
 
+- 2026-10-12: owner comment on PR #97 about the added lines. 70,000 of them came
+  from pretty-printed frozen cases; `main` stored them as compact JSON. Commit
+  `cfd1a7ac` restores the compact form (same content) and makes the pipeline
+  write it: the branch now adds 6,303 lines and removes 4,515. Review
+  `20261012T181038Z-cfd1a7ac`: one should finding (a test of the whitespace),
+  rejected. After an owner-approved cleanup (old `nix-shell` directories and a
+  Nix garbage collection), all Nix suites and the `requires_nix` tests pass.
+  `runtime-package` fails locally only because the local store path of
+  `python3-3.14.7` was modified on 2026-10-09; it passes in CI.
+
 ## Remaining
 
 - Nothing for this step. The five R8 findings wait for the owner review of the
