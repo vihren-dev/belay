@@ -1,0 +1,57 @@
+{
+  "caller": "claude",
+  "commit": "3606913f85883bc2227eec5474c880615f20b43f",
+  "date": "2026-10-12T09:16:06+00:00",
+  "exit": 0,
+  "files": [
+    "docs/adr-0011-product-trust-and-development-integrity.md",
+    "judge/__main__.py",
+    "nix/judge.lock.json",
+    "nix/judge.nix",
+    "reviews/20261012T091245Z-aa03940a/resolution-1-20261012T091532Z.json",
+    "reviews/20261012T091245Z-aa03940a/resolution-2-20261012T091532Z.json",
+    "reviews/20261012T091245Z-aa03940a/review.json",
+    "tests/test_judge.py",
+    "tests/test_judge_lock.py"
+  ],
+  "findings": [
+    {
+      "id": "20261012T091606Z-3606913f#1",
+      "line": 94,
+      "path": "judge/__main__.py",
+      "rule": "R11",
+      "severity": "should",
+      "text": "The new `inputs` and `verdict` modes have no tests; the updated tests exercise only `run`. Fix: add deterministic tests of input extraction and verdict evaluation, with timeouts on subprocess calls."
+    },
+    {
+      "id": "20261012T091606Z-3606913f#2",
+      "line": 65,
+      "path": "judge/__main__.py",
+      "rule": "R9",
+      "severity": "should",
+      "text": "The new `check` function's docstring describes its actions but gives no reason for the function. Fix: explain that it evaluates development claims and reports whether they hold."
+    }
+  ],
+  "id": "20261012T091606Z-3606913f",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "b9509029f9c1",
+    "R7": "1d1132b164f1",
+    "R8": "46eec5fecbaf",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

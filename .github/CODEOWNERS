@@ -3,8 +3,8 @@
 
 # Development integrity (ADR 0011 decisions 2 to 4): the judge lock, the Nix
 # file that checks it and defines the verdict, the workflows, and this file.
-/nix/judge.lock.json @tzanko-matev
-/nix/judge.nix @tzanko-matev
+/integrity/judge.lock.json @tzanko-matev
+/integrity/judge.nix @tzanko-matev
 /.github/workflows/ @tzanko-matev
 /.github/CODEOWNERS @tzanko-matev
 
