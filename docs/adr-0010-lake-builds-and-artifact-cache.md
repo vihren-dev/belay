@@ -94,7 +94,8 @@ project: the *proofs project*, with the user's own `lakefile.toml` and
 - exports the bundle from the project's outputs.
 
 `prepare` runs in the agent's trust domain (section 4), so it uses the user's
-lakefile as it is. The user can open the same project in an editor and run
+lakefile as it is. Section 10 splits its work into the three phases that the
+proof author uses: generate, check and export. The user can open the same project in an editor and run
 `lake build` without the verifier. A command that creates the project writes a
 starting `lakefile.toml` that requires the verifier's library package
 (section 3) and a `lean-toolchain` with the pinned toolchain.
@@ -290,12 +291,83 @@ compiled all of mathlib for this reason. Our pinned toolchain reports the
 commit today. A test checks that `lean --version` reports the commit hash, so
 a Lean upgrade cannot silently turn every cache hit into a miss.
 
+### 10. The proof author's loop: generate, check, export
+
+The person or agent who works on a proof needs three things. The second one
+runs after every edit and must be fast.
+
+| Phase | What it does | When | Measured or expected cost |
+| --- | --- | --- | --- |
+| Generate | Writes `Generated/` from the SQL: `SchemaInputs`, `SqlInputs`, `Generated` with the target statement, and `Check` | When the SQL, the schema or the contract changes | about 0.1 s |
+| Check | `lake build` in the proofs project, or the editor's Lean server | After every proof edit | 0.2–0.4 s for a proof edit with a warm cache; per tactic in the editor |
+| Export | Writes the bundle for `verify-bundle` | When the proofs are done | about 0.5 s |
+
+`prepare` remains the command that runs all three. The phases are also
+separate commands, so that the loop runs only the check.
+
+**The check is the Lean build.** The target is a generated declaration,
+`Generated.expected`, and the proof states `theorem migrationCorrect :
+Generated.expected`. Compiling the proof therefore checks it against the exact
+generated statement. The generated module `Check` imports the proofs and runs
+an audit command from the verifier library. The command fails the build when:
+
+- the theorem depends on `sorryAx` or on an axiom outside the allowlist of the
+  [kernel gate](kernel-gate.md);
+- the build ran with an option that turns off checks, for example
+  `debug.skipKernelTC`;
+- a proof module imports a module that is not in the verifier library, the
+  approved contract, the generated modules or the proofs project, because
+  `verify-bundle` would not have it.
+
+A green `lake build` then means that the checks `verify-bundle` makes
+were made locally, except the ones in the table below.
+
+**Why it is fast:**
+
+- No process other than Lake and Lean runs: no Python, no export, no second
+  kernel run. Lean's kernel already checks each declaration while it compiles;
+  the independent replay is the verifier's job (export and `verify-bundle`).
+- Lake's artifact cache supplies the library, the contract and every unchanged
+  module (section 4); a proof edit compiles one module.
+- Generation writes a file only when its content changes, so it never causes a
+  rebuild by itself. A SQL change recompiles only the modules that import
+  `SqlInputs`.
+- The proofs project is an ordinary Lake project, so agents can use the Lean
+  language server through tools such as
+  [lean-lsp-mcp](https://github.com/oOo0oOo/lean-lsp-mcp): goals, diagnostics
+  and lemma search without a build. `lake build` confirms.
+- A new session starts with a warm cache: the user's cache, a cache filled from
+  CI's seeds, or Lake's remote cache service. This is safe on the agent's side;
+  `verify-bundle` keeps its own cache (section 4).
+
+The time of the proof itself stays. In Atuin, `AtuinWitness` takes 2.4 s
+because it uses `decide` on large terms; the remedy is library lemmas that make
+common proofs cheap, not the build.
+
+**What the local check does not do,** and how the difference is kept small:
+
+| `verify-bundle` also | Locally |
+| --- | --- |
+| Generates the target from the SQL itself | The same generator writes `Generated/`; a difference means a stale folder, and the next generation removes it |
+| Replays every declaration in an independent kernel | Lean's own kernel checked each declaration during compilation |
+| Accepts declarations only from the installed library and the approved contract | The audit command reports other imports |
+| Rejects changed copies of approved modules | Generation compares the project's copies with the approved files |
+
+The local check decides nothing. A verified result comes only from
+`verify-bundle`, in the verifier's trust domain
+([ADR 0011](adr-0011-product-trust-and-development-integrity.md), section 1).
+The audit command is a convenience for the proof author, not part of the
+product trust base; the kernel gates stay the only judges.
+
 ## Consequences
 
 - `prepare` and `verify-bundle` stop compiling unchanged modules. CI compiles
   each checked-in case once, in its seed.
 - The user keeps proofs in an ordinary Lake project: `lake build` and the
-  editor's Lean server work on it without the verifier. Expected
+  editor's Lean server work on it without the verifier.
+- The proof author's loop is a Lean build of one module, about 0.2–0.4 s after a
+  proof edit instead of 1.4–2.0 s for `prepare` today (latency experiment);
+  most iterations need no build when the agent uses the language server. Expected
   acceptance time for Atuin: about 3.5 s instead of 6.6 s, most of it the
   bundle checker. Expected `prepare` time after a proof edit: under 1 s instead
   of about 2 s.
@@ -320,6 +392,8 @@ accepted:
 - the exporter and the bundle checker reading Lake's outputs;
 - `prepare` on a proofs project with the user's own lakefile, and a proofs
   project that requires the library package of an installation;
+- the generated `Check` module and the audit command, and the time of an edit
+  and check loop on the Atuin example;
 - mapping Lake failures to per-module diagnostics;
 - macOS;
 - cache growth over many contracts;
@@ -336,8 +410,9 @@ dependencies:
    section 7. The candidate files move into a proofs folder only in step 2,
    when `prepare` can build it.
 2. [Lake builds in the verifier](../plans/20261012-lake-builds-in-the-verifier.task.md):
-   runtime library packages (section 3), `prepare` on a proofs project and
-   `verify-bundle` on its own workspace (sections 1, 2, 6), the cache options
+   runtime library packages (section 3), `prepare` on a proofs project with
+   the generate, check and export phases (sections 1, 10), `verify-bundle` on
+   its own workspace (sections 1, 2, 6), the cache options
    (section 4), and removal of the stage store (section 5). The cases become
    proofs projects.
 3. [Case seeds in CI](../plans/20261012-case-seeds-in-ci.task.md): seed

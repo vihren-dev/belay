@@ -2,7 +2,7 @@
 
 Created 2026-10-12. Status: NOT STARTED.
 Decision: [ADR 0010](../docs/adr-0010-lake-builds-and-artifact-cache.md),
-sections 1–6. Proposed; this task starts after the owner accepts the ADR.
+sections 1–6 and 10. Proposed; this task starts after the owner accepts the ADR.
 Evidence: [Lake cache experiment](../experiments/lake-cache/README.md),
 [latency experiment](../experiments/prepare-latency/README.md).
 
@@ -24,23 +24,34 @@ Evidence: [Lake cache experiment](../experiments/lake-cache/README.md),
    workspace it generates itself (snapshotted sources, generated
    `lakefile.toml` and `lean-toolchain`, one `lake build`). It never reads the
    user's lakefile.
-4. The checked-in cases become proofs projects, and their tests and the
+4. The three phases of ADR 0010 section 10 are separate commands, and
+   `prepare` runs all three:
+   - generate writes `Generated/` (including the `Check` module) and changes a
+     file only when its content changes;
+   - check is `lake build` in the proofs project; the generated `Check` module
+     runs an audit command from the verifier library that fails the build on
+     `sorry`, an axiom outside the gate's allowlist, an option that turns off
+     checks, or an import that `verify-bundle` would not have;
+   - export writes the bundle from the built project.
+   The audit command is not part of the product trust base; `verify-bundle`
+   stays the only verdict.
+5. The checked-in cases become proofs projects, and their tests and the
    experiment scripts use them.
-5. The source rules of today stay: approved modules cannot import candidate or
+6. The source rules of today stay: approved modules cannot import candidate or
    reserved modules, and a candidate module cannot take the name of an
    approved or library module. `prepare` reports a violation before Lake runs;
    `verify-bundle` enforces the rules. Headers are read with one
    `lean --deps-json` call for each discovery round.
-6. `prepare` and `verify-bundle` accept `--cache DIR` and `--no-cache`. Without
+7. `prepare` and `verify-bundle` accept `--cache DIR` and `--no-cache`. Without
    either, they use a per-user default cache directory. `--no-cache` compiles
    everything in a private, empty cache.
-7. `lake build` runs with one deadline, a minimal environment, bounded captured
+8. `lake build` runs with one deadline, a minimal environment, bounded captured
    output and a bounded number of parallel jobs. A compile failure gives the
    same status and the same kind of per-module diagnostic as today.
-8. `StageStore`, `MIGRATION_CHECK_STAGE_STORE`, the measurement override,
+9. `StageStore`, `MIGRATION_CHECK_STAGE_STORE`, the measurement override,
    `cache_eligibility.py` and their tests and documentation are removed.
    ADR 0003 and the trust boundary document describe the new cache rule.
-9. Statuses and exit codes of `prepare` and `verify-bundle` are unchanged for
+10. Statuses and exit codes of `prepare` and `verify-bundle` are unchanged for
    every existing test case. `verify` keeps its current compile path; it is
    deprecated and removed in a separate change.
 
@@ -54,6 +65,16 @@ Evidence: [Lake cache experiment](../experiments/lake-cache/README.md),
   `Generated/` folder does not change the result of `verify-bundle`; a changed
   copy of an approved module is reported by `prepare` and rejected by
   `verify-bundle`.
+- Audit: `lake build` in a proofs project fails, naming the cause, for a
+  proof that uses `sorry`, one that uses an axiom outside the allowlist, a
+  build with `debug.skipKernelTC`, and a proof module that imports a package
+  the installation does not have. A correct proof builds green, and
+  `verify-bundle` accepts its export.
+- Loop speed (recorded in the status file, not a test): generate once, then
+  edit `Proofs.lean` and run `lake build`, on the small and Atuin examples;
+  expected 0.2–0.4 s for each edit with a warm cache.
+- Generation is stable: running generate twice changes no file and causes no
+  rebuild.
 - Reuse: a second run of each command on the same inputs, in a new temporary
   directory with the same cache, compiles no module; after a proof edit,
   `prepare` compiles only the changed candidate modules.
@@ -91,6 +112,14 @@ Evidence: [Lake cache experiment](../experiments/lake-cache/README.md),
   Without a `lean-toolchain` file, Lake writes one and stops.
 - `restoreAllArtifacts = true` is needed: the exporter, the bundle checker and
   the gate read `.olean` files from the workspace, not from the cache.
+- The target statement already exists as `Generated.expected`
+  (`migration_check/compile.py`, `EXPECTED_SOURCE`); proofs state
+  `theorem migrationCorrect : Generated.expected`.
+- The allowlist and the target rules of the gate are in `GateCore.lean` and
+  `docs/kernel-gate.md`. The audit command should reuse the allowlist, not
+  copy it, so the local check and the gate cannot drift apart. The gate files
+  are in the product trust base (ADR 0011 section 6); the audit command is
+  not.
 - How a proofs project reaches the approved contract modules (copies inside
   the project, or a library whose source folder is the contract folder) is
   open; `prepare` must compare their bytes with the approved files either way.
