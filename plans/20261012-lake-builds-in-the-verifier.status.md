@@ -110,3 +110,21 @@ Relevant files: `migration_check/compile.py`, `migration_check/contract.py`,
   - New tests: separate agent and verifier caches, warm cache against
     `--no-cache` for every checked-in case (`tests/cache_domains_test.py`), a
     compile error naming the module, a Lake build stopped at its deadline.
+- 2026-10-12: loop timing with the real commands (Linux x86_64, 8
+  processors, warm cache, installed `build/runtime`):
+
+  | | small | Atuin |
+  | --- | --- | --- |
+  | `check` after a proof edit | 0.61–0.65 s | 0.62–0.66 s |
+  | `audit` | 1.00 s | 1.12 s |
+  | `prepare` after a proof edit (all phases) | 1.99 s | 2.21 s |
+  | first `prepare`, empty cache | 3.06 s | 7.37 s |
+
+  The per-edit loop (`check`) is about 0.6 s against 1.4–2.0 s for the old
+  `prepare`; about 0.25 s of it is Python start and runtime checks, so `lake
+  build` in the project is faster still (0.34–0.46 s in the experiment). A full
+  `prepare` after an edit is slightly slower than the old one (it adds the
+  audit and Lake's overhead); the fast path is `check`. macOS was not
+  measured: the macOS CI job skips its checks on pull requests.
+- 2026-10-12: all outcome items and tests of the task are in place; the pull
+  request records its CI times (ADR 0010 section 11).
