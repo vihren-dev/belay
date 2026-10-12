@@ -60,6 +60,7 @@ let
     (root + /packages/belay-sqlite/Belay/Sqlite/Execution.lean) (root + /packages/belay-sqlite/Belay/Sqlite/LiteralData.lean)
     (root + /VerifierConformance/Trace.lean)
     (root + /VerifierConformance/Outputs.lean)
+    (root + /VerifierConformance/Native.lean)
     (root + /VerifierConformance/Case.lean)
     (root + /packages/belay-sqlite/Belay/Sqlite/Laws.lean)
     (root + /conformance/requirements-3.51.0.json)

@@ -2,8 +2,10 @@ import Belay.Sqlite.Model
 
 set_option doc.verso true
 
-/-! A closed literal-DML domain. Admission is a proof obligation, separate from
-native constraint failures. Unmodeled coercions/comparisons are never SQL errors. -/
+/-! A closed literal-DML domain over column positions. Admission is a proof
+obligation, separate from native constraint failures. Unmodeled coercions and
+comparisons are never SQL errors. Writes carry the unique keys of their table as
+column positions, which resolution computes from the catalog. -/
 namespace Belay.Sqlite
 namespace LiteralData
 
@@ -22,8 +24,7 @@ def nonnumericText (bytes : List UInt8) : Bool :=
 NULL and BLOB pass. Integers must be bounded with INTEGER, NUMERIC or BLOB
 affinity. Text passes with TEXT or BLOB affinity, or with INTEGER or NUMERIC
 affinity when {name}`nonnumericText` holds. REAL values do not pass.
-Use {lean}`Value.null` for NULL; constraint checks remain separate. The
-column is given by its affinity, so table columns and catalog columns share it. -/
+Use {lean}`Value.null` for NULL; constraint checks remain separate. -/
 def lossless (affinity : Affinity) : Value → Bool
   | .null | .blob _ => true
   | .integer value => boundedInteger value &&
@@ -32,12 +33,9 @@ def lossless (affinity : Affinity) : Value → Bool
       ([.integer, .numeric].contains affinity && nonnumericText bytes)
   | .real _ => false
 
-/-- Read the cell at the first column with the given name. Return
-{name}`Option.none` for an absent column or missing cell, so malformed rows
-cannot supply an invented value. This lookup does not require table validity. -/
-def read (table : Table) (row : Row) (name : String) : Option Value := do
-  let index ← table.shape.columns.findIdx? (fun column => column.name == name)
-  row.values[index]?
+/-- Read the cell at a column position, or {name}`Option.none` for a missing cell,
+so a malformed row cannot supply an invented value. -/
+def read (row : Row) (position : Nat) : Option Value := row.values[position]?
 
 /-- Admit NULL or a signed 64-bit integer for exact modeled comparisons.
 {assert}`integerOrNull Value.null = true`; every other stored class fails. -/
@@ -46,46 +44,44 @@ def integerOrNull : Value → Bool
   | .integer value => boundedInteger value
   | _ => false
 
-/-- Require a column with the given name and INTEGER, NUMERIC or BLOB affinity.
-Also require {name}`read` of that name in every row to yield a value accepted
-by {name}`integerOrNull`. With no rows only the column requirement remains.
-Use this domain check before integer equality or key comparisons. -/
-def comparisonReady (table : Table) (name : String) : Bool :=
-  table.shape.columns.any (fun column => column.name == name &&
-    [.integer, .numeric, .blob].contains column.affinity) &&
-  table.rows.all (fun row => (read table row name).any integerOrNull)
+/-- Require a column at the position with INTEGER, NUMERIC or BLOB affinity, and
+{name}`read` at that position in every row to yield a value accepted by
+{name}`integerOrNull`. With no rows only the column requirement remains. Use
+this domain check before integer equality or key comparisons. -/
+def comparisonReady (table : Table) (position : Nat) : Bool :=
+  (table.shape.columns[position]?).any (fun column => [.integer, .numeric, .blob].contains column.affinity) &&
+  table.rows.all (fun row => (read row position).any integerOrNull)
 
-/-- For each key name, require both reads to be integers with equal values.
+/-- For each key position, require both reads to be integers with equal values.
 A missing, NULL or other cell makes the comparison false, as needed for the
-admitted ordinary UNIQUE keys. An empty key compares equal vacuously;
-{assert}`keyEqual { shape.columns := [], rows := [] } [] { rowid := 0, values := [] }
-  { rowid := 1, values := [] } = true`. Key admission is a separate check. -/
-def keyEqual (table : Table) (key : List String) (first second : Row) : Bool :=
-  key.all fun name => match read table first name, read table second name with
+admitted unique keys. An empty key compares equal vacuously;
+{assert}`keyEqual [] { rowid := 0, values := [] } { rowid := 1, values := [] } = true`. -/
+def keyEqual (key : List Nat) (first second : Row) : Bool :=
+  key.all fun position => match read first position, read second position with
     | some (.integer a), some (.integer b) => a == b
     | _, _ => false
 
 /-- Reject each row that compares equal under {name}`keyEqual` to a later row.
 Preserve duplicate NULL-containing keys because those comparisons are false.
-Use an empty row list for an empty table: the check then succeeds for any key. -/
-def uniqueRows (table : Table) (key : List String) : List Row → Bool
+An empty row list satisfies the check for any key. -/
+def uniqueRows (key : List Nat) : List Row → Bool
   | [] => true
-  | row :: rest => !(rest.any (keyEqual table key row)) && uniqueRows table key rest
+  | row :: rest => !(rest.any (keyEqual key row)) && uniqueRows key rest
 
-/-- Check modeled NOT NULL cells and every retained key's pairwise uniqueness.
-NOT NULL checks inspect only zipped column/cell pairs; row width is checked
-separately. A table with no rows satisfies both checks. In the admitted domain,
-these checks represent ABORT constraints, rather than admission restrictions. -/
-def constraints (table : Table) : Bool :=
+/-- Check NOT NULL cells and the pairwise uniqueness of every given key. NOT NULL
+checks inspect only zipped column/cell pairs; row width is checked separately.
+A table with no rows satisfies both checks. In the admitted domain these checks
+represent ABORT constraints, rather than admission restrictions. -/
+def constraints (keys : List (List Nat)) (table : Table) : Bool :=
   table.rows.all (fun row => (table.shape.columns.zip row.values).all
     (fun (column, value) => !column.notNull || value != .null)) &&
-  table.shape.properties.keys.all (fun key => uniqueRows table key table.rows)
+  keys.all (fun key => uniqueRows key table.rows)
 
-/-- Require {name}`comparisonReady` for every field of every retained key,
-and {name}`constraints` on the old table. With no keys, comparison requirements
-are vacuous; constraints still apply. Use this check to admit literal DML. -/
-def tableReady (table : Table) : Bool :=
-  table.shape.properties.keys.all (fun key => key.all (comparisonReady table)) && constraints table
+/-- Require {name}`comparisonReady` for every position of every key, and
+{name}`constraints` on the table. With no keys, comparison requirements are
+vacuous; constraints still apply. Use this check to admit literal DML. -/
+def tableReady (keys : List (List Nat)) (table : Table) : Bool :=
+  keys.all (·.all (comparisonReady table)) && constraints keys table
 
 /-- Return 1 for no rows, otherwise one more than the largest stored rowid,
 even when that largest rowid is negative; {assert}`nextRowid [] = 1`.
@@ -95,51 +91,55 @@ def nextRowid (rows : List Row) : Int :=
   | [] => 1
   | first :: rest => (rest.foldl (fun largest row => max largest row.rowid) first.rowid) + 1
 
-/-- Require exactly the table's ordered column names and one value per column.
-Require {name}`lossless` on every column/value pair, {name}`tableReady`, a bounded
-{name}`nextRowid`, and integer-or-NULL reads for every new key component.
-Supplying every value avoids implicit defaults. This admits evaluation;
-the inserted table's constraint truth is checked separately. -/
-def insertReady (table : Table) (columns : List String) (values : List Value) : Bool :=
-  columns == table.shape.columns.map Column.name && values.length == table.shape.columns.length &&
-  (table.shape.columns.zip values).all (fun (column, value) => lossless column.affinity value) &&
-  tableReady table && boundedInteger (nextRowid table.rows) &&
-  table.shape.properties.keys.all (fun key => key.all fun name =>
-    (read table { rowid := 0, values := values } name).any integerOrNull)
-
 /-- Append one row with {name}`nextRowid` and the supplied cells. Retain columns,
-properties and old row order. Callers establish {name}`insertReady` and the
-result's constraints separately; this function accepts any supplied value list. -/
-def inserted (table : Table) (values : List Value) : Table :=
+keys and old row order; this function accepts any supplied value list. -/
+def insertRow (table : Table) (values : List Value) : Table :=
   { table with rows := table.rows ++ [{ rowid := nextRowid table.rows, values := values }] }
 
-/-- Test whether {name}`read` equals the given tagged integer. NULL, absent
-cells and other classes do not match. Use {name}`comparisonReady` to establish
-that this exact tagged test represents the admitted SQL equality. -/
-def matchesKey (table : Table) (row : Row) (key : String) (value : Int) : Bool :=
-  read table row key == some (.integer value)
+/-- Append the rows in order with {name}`insertRow`, as one INSERT with several
+VALUES rows does. No rows leave the table unchanged. -/
+def inserted (table : Table) (rows : List (List Value)) : Table := rows.foldl insertRow table
 
-/-- Set the first matching column in each row accepted by {name}`matchesKey`.
-Retain every rowid, other cell and metadata field. An absent target column
-leaves the table unchanged; a cell index beyond a row's width changes nothing.
-Callers check the admitted assignment domain separately. -/
-def updated (table : Table) (column : String) (value : Value) (key : String) (equals : Int) : Table :=
-  match table.shape.columns.findIdx? (fun item => item.name == column) with
-  | none => table
-  | some index => { table with rows := table.rows.map fun row =>
-      if (matchesKey table row key equals) then { row with values := row.values.set index value } else row }
+/-- Require {name}`tableReady` before the write, one value per column in each row,
+{name}`lossless` on every column/value pair, a bounded rowid for every inserted
+row, and an integer-or-NULL value at every key position of each row. This admits
+evaluation; the inserted table's constraint truth is checked separately. -/
+def insertReady (keys : List (List Nat)) (table : Table) (rows : List (List Value)) : Bool :=
+  tableReady keys table &&
+  rows.all (fun values => values.length == table.shape.columns.length &&
+    (table.shape.columns.zip values).all (fun (column, value) => lossless column.affinity value) &&
+    keys.all (·.all fun position => (values[position]?).any integerOrNull)) &&
+  (inserted table rows).rows.all (fun row => boundedInteger row.rowid)
 
-/-- Require a bounded comparison integer, {name}`tableReady`, a comparison-ready
-key retained as a singleton key, and a target column that accepts the value
-under {name}`lossless`. Require every key component to remain comparison-ready
-after {name}`updated`. The admitted unique equality key permits at most one
-matching row. This check does not establish the updated constraints. -/
-def updateReady (table : Table) (column : String) (value : Value) (key : String) (equals : Int) : Bool :=
-  boundedInteger equals && tableReady table && comparisonReady table key &&
-  table.shape.properties.keys.contains [key] &&
-  table.shape.columns.any (fun item => item.name == column && lossless item.affinity value) &&
-  (updated table column value key equals).shape.properties.keys.all (fun names =>
-    names.all (comparisonReady (updated table column value key equals)))
+/-- Whether a row passes the optional filter: no filter, or the cell at the filter
+position equals the filter value as a tagged value. Use {name}`comparisonReady`
+to establish that this exact test represents SQLite's integer equality. -/
+def selected (filter : Option (Nat × Value)) (row : Row) : Bool :=
+  filter.all fun (position, value) => read row position == some value
+
+/-- Set each assignment's position to its value, in order; a position beyond the
+row's width changes nothing. -/
+def assign (assignments : List (Nat × Value)) (row : Row) : Row :=
+  assignments.foldl (fun current (position, value) => { current with values := current.values.set position value }) row
+
+/-- Apply the assignments to every row that {name}`selected` accepts, with the
+filter evaluated on the old row. Retain every rowid, other cell and the shape. -/
+def updated (table : Table) (assignments : List (Nat × Value)) (filter : Option (Nat × Value)) : Table :=
+  { table with rows := table.rows.map fun row => if selected filter row then assign assignments row else row }
+
+/-- Require a filter over a {name}`comparisonReady` position with a bounded integer
+value, {name}`tableReady` before the write, {name}`lossless` assignments to
+existing columns, and every key position {name}`comparisonReady` after
+{name}`updated`. This check does not establish the updated constraints. -/
+def updateReady (keys : List (List Nat)) (table : Table) (assignments : List (Nat × Value))
+    (filter : Option (Nat × Value)) : Bool :=
+  filter.all (fun (position, value) => comparisonReady table position && match value with
+    | .integer number => boundedInteger number
+    | .null | .real _ | .text _ | .blob _ => false) &&
+  tableReady keys table &&
+  assignments.all (fun (position, value) =>
+    (table.shape.columns[position]?).any fun column => lossless column.affinity value) &&
+  keys.all (·.all (comparisonReady (updated table assignments filter)))
 
 end LiteralData
 end Belay.Sqlite

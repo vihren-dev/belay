@@ -69,6 +69,66 @@ Relevant files: `belay/sqlite/`, `migration_check/`,
   (`tests/sql_fixtures.py` `RICH_BASELINE`). SQLite refuses that schema, and
   so does `resolveSchemaAndScript`; the switch reorders the fixture.
 
+- 2026-10-12, the switch (in progress, one self-contained commit): the Lean
+  model runs `Resolved` statements on a database keyed by catalog position
+  (`Model`, `Execution`, `LiteralData`, `SqlExecution` and the proof modules
+  ported); `Conforms` takes the profile and checks `Catalog.Valid` under its
+  limits (`Catalog.Valid.mono` lifts a check under small limits). The target,
+  the library, the engineering examples and all example files use catalogs;
+  the demonstrations hold for every profile with enough columns. The gates
+  resolve the record again (`GateInputs.lean`) and compare every generated
+  declaration; `migration-resolver` writes the generated modules. All examples
+  verify with the new pipeline (both profiles for the invoice and Atuin cases),
+  and `prepare` with `verify-bundle` works. The harness Lean side (version 3
+  cases with native catalog metadata) compiles.
+- Findings: `resolve` continues after a prepare error, so the resulting catalog
+  of the allowed-failure example contains the unreached table; the failure
+  representation now uses the prefix catalog. `allowed_failure` approved
+  requirements name `.prepare (.tableExists "audit")`. Approved files and their
+  baselines change in `examples/approved`, `examples/allowed_failure/approved`
+  and `examples/atuin/approved`.
+
+- 2026-10-12, the switch, continued: the Python frontend resolution modules
+  (`translate`, `schema_syntax`, `schema_translate`, `sql_dml`, `sql_admission`,
+  `sql_values`, `sql_model`, `structural`, `admission`) and
+  `migration_check/lean_inputs.py` are deleted; `profiles.wire_tag` is gone.
+  `migration_check/inputs.py` builds the record, runs the resolver and maps a
+  refusal to its byte range. The harness uses version 3 cases (statement syntax
+  and native PRAGMA metadata, `conformance/native_metadata.py`); Lean compares
+  the catalog after each statement (`VerifierConformance/Native.lean`). The
+  mutants of `mutation_check.py` and the documents of the ADR's list are updated.
+- Frozen evidence regenerated with the project tools, not by hand:
+  `conformance/cases/*.json` by `just conformance --prove`, and
+  `conformance/regressions/injected-literal-corruption/` by
+  `conformance.regressions.freeze` with the same classification and resolution.
+  Both moved to the version 3 case format. Owner review needed.
+- Finding: the kernel proof of the 2,000-column fixture (`limit_before_duplicate`)
+  times out (over 120 s): the kernel evaluates resolution and catalog validity
+  over 2,000 folded names. It stays a recorded, compiled-only case
+  (`model_cases.Case.kernel_proof`); the ADR's lowered-limit case replaces it in
+  step 2, when the recorder and the case format carry profile limits. The other
+  four fixtures are kernel-checked in about 2 s each.
+- Finding: three authored validity boundaries (duplicate column, missing key
+  column, reserved name) are SQLite prepare errors that resolution decides; they
+  now agree with SQLite instead of being unsupported.
+
+## Removed Python tests and their replacements
+
+| Removed test (case group) | Replacement |
+| --- | --- |
+| `test_translation.py`: `transition` errors (table exists, missing table, column exists) | `Resolution/Examples.lean` `#guard`s; `PrepareRules`, `DefinitionRules` theorems; `cli_test.py::test_schema_prepare_error_names_the_statement` |
+| `test_translation.py`: ASCII-only folding (`normalize`) | `Resolution/Examples.lean` folding `#guard`; `SqliteVerifier/Examples.lean` |
+| `test_translation.py`: unsupported statement list | `syntax_mapping_test.py` refusals; restriction `#guard`s; `cli_test.py::test_restriction_names_the_refused_sql` |
+| `test_translation.py`: parser failure classes, other grammar, grammar rejection, quoted text | moved to `sql_parse_test.py` |
+| `test_schema_translation.py`: metadata and indexes survive ADD | `ModelProjection`, `SchemaExtension` theorems; Atuin example; `conformance_pipeline_test.py::test_catalog_comparison_catches_metadata_drift` |
+| `test_schema_translation.py`: CREATE collides with an index, global namespace, aliases, missing key columns | `Resolution/Examples.lean` shared-namespace and rowid-alias `#guard`s; `NamesSpec`; `conformance_authored_boundaries_test.py` (SQLite prepare errors agree) |
+| `test_schema_translation.py`: statistics tables, unsupported metadata | `Resolution/Examples.lean` `sqlite_stat1` `#guard`; `SchemaExamples.lean`; `syntax_mapping_test.py` refusals |
+| `test_sql_writes.py`: write syntax, transactions | `syntax_mapping_test.py`; `TransactionSpec`; `SqlExamples.lean` |
+| `test_sql_writes.py`: literal storage values, numeric conversion | `Resolution/Examples.lean` numeric `#guard`s; `generated_inputs_test.py` literal case |
+| `test_sql_writes.py`: key domain, coercing writes, unique index update | `Resolution/KeyDomain` `#guard`s in `Resolution/Examples.lean`; affinity restriction `#guard` |
+| `schema_generation_test.py`: profile equivalence, kernel properties | `Codec/SourceExamples.lean`; examples verified under both profiles |
+| `generated_inputs_test.py`: emitter parity | rewritten: parity with the resolver output and tampered records |
+
 ## Remaining
 
 - All outcome items of the task.

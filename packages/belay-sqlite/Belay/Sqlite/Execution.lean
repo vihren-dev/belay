@@ -1,49 +1,27 @@
 import Belay.Sqlite.Model
+import Belay.Sqlite.Resolution.Resolved
 
 set_option doc.verso true
 
-/-! Statement forms, errors and the primitive schema transition used by SQL execution.
-Resource failures and crashes are outside this model. -/
+/-! Errors, outcomes and the definition steps of the execution semantics, which
+runs resolved statements. Resource failures and crashes are outside this model. -/
 
 namespace Belay.Sqlite
-
-/-- One parsed statement in the admitted syntax. Supply explicit transaction control
-when needed; {lean}`Statement.beginTransaction` starts a transaction. -/
-inductive Statement where
-  /-- Create an absent ordinary table with the supplied columns. -/
-  | createTable (name : String) (columns : List Column)
-  /-- Append one nullable plain column to an existing table. -/
-  | addColumn (table : String) (column : Column)
-  /-- Record the current committed database as the transaction snapshot. -/
-  | beginTransaction
-  /-- Commit the current transaction's visible database. -/
-  | commit
-  /-- Restore the open transaction's original database. -/
-  | rollback
-  /-- Insert literal values into the supplied named columns. -/
-  | insert (table : String) (columns : List String) (values : List Value)
-  /-- Replace a named column where an integer key equals the supplied value. -/
-  | update (table column : String) (value : Value) (key : String) (equals : Int)
-  deriving Repr, DecidableEq
 
 /-- A modeled statement error. For example, {lean}`ExecutionError.noActiveTransaction`
 reports COMMIT or ROLLBACK without an open transaction. -/
 inductive ExecutionError where
-  /-- A definition is outside the primitive schema subset. -/
-  | invalidDefinition
-  /-- CREATE names an existing table. -/
-  | tableExists (name : String)
-  /-- The statement names an absent table. -/
-  | missingTable (name : String)
-  /-- ADD names an existing column. -/
-  | columnExists (table column : String)
-  /-- ADD reaches the configured column limit. -/
-  | tooManyColumns (table : String)
+  /-- The execution semantics does not model this statement against this database:
+  a definition outside the modeled subset, or a write to a position without a
+  table. {lit}`resolve` gives no such statement for a conforming database. -/
+  | unmodeled
+  /-- SQLite refused to prepare the statement; resolution decided the error. -/
+  | prepare (error : PrepareError)
   /-- BEGIN encounters an open transaction. -/
   | transactionAlreadyActive
   /-- COMMIT or ROLLBACK encounters no open transaction. -/
   | noActiveTransaction
-  /-- A literal write violates a retained constraint. -/
+  /-- A literal write violates a NOT NULL or unique-key constraint. -/
   | constraintViolation
   deriving Repr, DecidableEq
 
@@ -70,29 +48,35 @@ def Outcome.persistedDatabase : Outcome → Database
   | .pending persisted _ _ => persisted
   | outcome => outcome.database
 
-/-- Check and perform CREATE TABLE or ADD COLUMN at the supplied position.
-Other constructors return {lean}`ExecutionError.invalidDefinition`; SQL execution
-handles their transaction or literal-data behavior separately. The default
-position is zero. Successful ADD appends NULL to each existing row. -/
-def step (statement : Statement) (database : Database) (position : Nat := 0) : Outcome :=
+/-- Whether the model runs a definition of this column: no NOT NULL and no default. -/
+def CatalogColumn.plain (column : CatalogColumn) : Bool := !column.notNull && column.defaultValue.isNone
+
+/-- Whether the model runs a CREATE TABLE of this table: plain columns, no keys and
+no rowid alias. {lit}`resolve` refuses other tables in statements that run. -/
+def CatalogTable.plain (table : CatalogTable) : Bool :=
+  table.columns.all CatalogColumn.plain && table.primaryKey.isEmpty && table.uniqueKeys.isEmpty &&
+    table.rowidAlias.isNone
+
+/-- Perform CREATE TABLE or ADD COLUMN at the supplied position, or fail with the
+prepare error of a statement that SQLite refuses. CREATE TABLE stores an empty
+table at its catalog position; ADD COLUMN appends NULL to each existing row.
+Other constructors, and a definition outside the modeled subset, fail with
+{lean}`ExecutionError.unmodeled`; SQL execution handles transaction control and
+writes separately. The default position is zero. -/
+def step (statement : Resolved.Statement) (database : Database) (position : Nat := 0) : Outcome :=
   match statement with
-  | .createTable name columns =>
-    if !(supportedTableName name && supportedColumns columns && columns.all Column.plain) then
-      .failure position .invalidDefinition database
-    else match database name with
-      | some _ => .failure position (.tableExists name) database
-      | none => .success (database.set name { shape.columns := columns, rows := [] })
-  | .addColumn name column =>
-    if !(supportedTableName name && supportedColumn column && column.plain) then
-      .failure position .invalidDefinition database
-    else match database name with
-      | none => .failure position (.missingTable name) database
-      | some table =>
-        if table.shape.columns.length ≥ maximumColumns then
-          .failure position (.tooManyColumns name) database
-        else if table.shape.columns.any (fun old => old.name == column.name) then
-          .failure position (.columnExists name column.name) database
-        else .success (database.set name (table.appendColumns [column]))
-  | _ => .failure position .invalidDefinition database
+  | .createTable at_ _ table =>
+    if !table.plain then .failure position .unmodeled database
+    else match database at_ with
+      | some _ => .failure position .unmodeled database
+      | none => .success (database.set at_ { shape := table, rows := [] })
+  | .addColumn at_ column =>
+    if !column.plain then .failure position .unmodeled database
+    else match database at_ with
+      | none => .failure position .unmodeled database
+      | some table => .success (database.set at_ (table.appendColumns [column]))
+  | .prepareError error => .failure position (.prepare error) database
+  | .createIndex .. | .begin | .commit | .rollback | .insert .. | .update .. =>
+    .failure position .unmodeled database
 
 end Belay.Sqlite

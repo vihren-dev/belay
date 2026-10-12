@@ -12,10 +12,12 @@
     "tests/test_import_path.py"
   ],
   "cli": [
-    "tests/cli_test.py"
+    "tests/cli_test.py",
+    "tests/cli_refusal_test.py"
   ],
   "kernel": [
     "tests/kernel_gate_test.py",
+    "tests/kernel_gate_inputs_test.py",
     "tests/single_executor_test.py"
   ],
   "model": [

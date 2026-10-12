@@ -17,39 +17,40 @@ def test_production_trace(tmp_path: Path, lean_sysroot: Path, lean_libraries: tu
     proof.write_text('''import VerifierConformance.Trace
 open Belay.Sqlite Belay.Sqlite.Conformance
 
-def columns : List Column := [{ name := "value", affinity := .integer }]
+def columns : List CatalogColumn := [{ name := "value", declaredType := some "INTEGER" }]
 def original : Table := {
-  shape.columns := columns
-  rows := [⟨-4, [.integer 7]⟩, ⟨22, [.integer 8]⟩]
-  shape.properties := { uniqueKeys := [["value"]] } }
+  shape := { columns := columns, uniqueKeys := [[0]] }
+  rows := [⟨-4, [.integer 7]⟩, ⟨22, [.integer 8]⟩] }
 def changed : Table := { original with rows := original.rows ++ [⟨23, [.integer 9]⟩] }
-def initial : Database := fun name =>
-  if name = "records" then some { original with rows := original.rows.reverse } else none
-def names := ["absent", "records"]
-def before : Tables := [("absent", none), ("records", some original)]
-def after : Tables := [("absent", none), ("records", some changed)]
+def initial : Database := fun position =>
+  if position = 1 then some { original with rows := original.rows.reverse } else none
+def count := 2
+def before : Tables := [none, some original]
+def after : Tables := [none, some changed]
 def idle : Observation := ⟨before, before, false, none⟩
 def begun : Observation := ⟨before, before, true, none⟩
 def written : Observation := ⟨after, before, true, none⟩
 def committed : Observation := ⟨after, after, false, none⟩
-def insertNew : Statement := .insert "records" ["value"] [.integer 9]
-def writeScript : List Statement := [.beginTransaction, insertNew]
+def insertNew : Resolved.Statement := .insert 1 [[.integer 9]] [[0]]
+def writeScript : List Resolved.Statement := [.begin, insertNew]
 
-theorem pending_write : trace names writeScript initial = [idle, begun, written] := by
+theorem pending_write : trace count writeScript initial = [idle, begun, written] := by
   decide +kernel
-theorem explicit_commit : trace names (writeScript ++ [.commit]) initial =
+theorem explicit_commit : trace count (writeScript ++ [.commit]) initial =
     [idle, begun, written, committed] := by decide +kernel
-theorem explicit_rollback : trace names (writeScript ++ [.rollback]) initial =
+theorem explicit_rollback : trace count (writeScript ++ [.rollback]) initial =
     [idle, begun, written, idle] := by decide +kernel
-theorem constraint_halts : trace names (writeScript ++ [insertNew, .commit]) initial =
+theorem constraint_halts : trace count (writeScript ++ [insertNew, .commit]) initial =
     [idle, begun, written, { written with error := some (2, .constraintViolation) }] := by
   decide +kernel
-theorem nested_begin_halts : trace names (writeScript ++ [.beginTransaction, .rollback]) initial =
+theorem nested_begin_halts : trace count (writeScript ++ [.begin, .rollback]) initial =
     [idle, begun, written, { written with error := some (2, .transactionAlreadyActive) }] := by
   decide +kernel
-theorem empty_trace : trace names [] initial = [idle] := by decide +kernel
-theorem no_transaction : trace names [.commit, insertNew] initial =
+theorem empty_trace : trace count [] initial = [idle] := by decide +kernel
+theorem no_transaction : trace count [.commit, insertNew] initial =
     [idle, { idle with error := some (0, .noActiveTransaction) }] := by decide +kernel
+theorem prepare_error_halts : trace count [.begin, .prepareError (.noSuchTable "absent")] initial =
+    [idle, begun, { begun with error := some (1, .prepare (.noSuchTable "absent")) }] := by decide +kernel
 #print axioms trace_final
 #print axioms pending_write
 #print axioms explicit_commit
@@ -58,6 +59,7 @@ theorem no_transaction : trace names [.commit, insertNew] initial =
 #print axioms nested_begin_halts
 #print axioms empty_trace
 #print axioms no_transaction
+#print axioms prepare_error_halts
 ''')
     result = subprocess.run([str(lean_sysroot / "bin/lean"), str(proof)],
                             env={**os.environ, "LEAN_PATH": os.pathsep.join(map(str, lean_libraries))},

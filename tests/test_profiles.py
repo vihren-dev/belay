@@ -7,9 +7,8 @@ import pytest
 
 from belay.sqlite.errors import SqlError
 from belay.sqlite.profiles import DEFAULT_PROFILE, profile
-from migration_check.lean_inputs import sql_inputs
 from belay.sqlite.sql_tree import Tree
-from belay.sqlite.translate import starting_schema, statements
+from belay.sqlite.syntax import script_record, statements
 
 pytestmark = pytest.mark.parser
 
@@ -20,11 +19,11 @@ def test_no_framework_directives_or_reserved_catalog_names(parse_sql: Callable[.
     """Comments stay comments, and application bookkeeping names are ordinary tables."""
     assert profile('3.51.0') == DEFAULT_PROFILE
     selected = profile('3.46.0')
-    schema = starting_schema(parse_sql('CREATE TABLE _sqlx_migrations(x TEXT);'))
-    plain = statements(parse_sql('ALTER TABLE _sqlx_migrations ADD y TEXT;'))
-    commented = statements(parse_sql('-- no-transaction\nALTER TABLE _sqlx_migrations ADD y TEXT;'))
-    assert sql_inputs(schema, plain, selected) == sql_inputs(schema, commented, selected)
-    assert '.createTable' in sql_inputs((), statements(parse_sql('CREATE TABLE t(x TEXT);')), selected)
+    schema = statements(parse_sql('CREATE TABLE _sqlx_migrations(x TEXT);', '3.46.0'))
+    plain = statements(parse_sql('ALTER TABLE _sqlx_migrations ADD y TEXT;', '3.46.0'))
+    commented = statements(parse_sql('-- no-transaction\nALTER TABLE _sqlx_migrations ADD y TEXT;', '3.46.0'))
+    assert script_record(selected, schema, plain) == script_record(selected, schema, commented)
+    assert script_record(selected, schema, plain)["release"] == "3.46.0"
 
 
 @pytest.mark.unit

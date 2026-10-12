@@ -30,7 +30,7 @@ agent may produce the bundle with its own tools instead.
 **`verify-bundle`** parses the actual schema and migration SQL itself, compiles (or
 reuses from the opt-in stage store) the starting schema and approved contract,
 and runs `migration-bundle-checker` with the frontend's
-[generated-inputs record](#generated-inputs-record). The checker never compiles candidate source.
+[structural record](#generated-inputs-record). The checker never compiles candidate source.
 It imports the pinned library and trusted modules only from the verifier
 installation, rejects any exported declaration that differs from a trusted one,
 replays the rest in the Lean kernel, reconstructs the verification target itself
@@ -71,28 +71,38 @@ decoding of hostile bundles is part of the
 
 ## Generated-inputs record
 
-`verify-bundle` does not compile `SqlInputs.lean`. It writes the frontend's result
-as one JSON object and passes it to the checker:
+The frontend writes the request as one JSON object, the structural record of
+ADR 0008:
 
 ```json
-{"version": 1, "profile": "sqlite351", "schema": [...], "nextSchema": [...], "script": [...]}
+{"version": 2, "release": "3.51.0", "sourceId": "...", "schema": [...], "script": [...]}
 ```
 
-`schema`, `nextSchema` and `script` use the structural encoding of
-[conformance format v1](conformance-format-v1.md), with indexes in declaration
-order. The checker (`BundleChecker.generatedDeclarations`):
+`schema` and `script` are statement syntax, as `belay.sqlite.syntax` maps the
+SQL (see the [conformance case format](conformance-format-v1.md)). Every command
+runs `migration-resolver` on the record first. It resolves the schema and the
+script in Lean and writes `SchemaInputs.lean` (`Generated.profile`,
+`Generated.schema`, `Generated.startCatalog`) and `SqlInputs.lean`
+(`Generated.script`, `Generated.resolved`, `Generated.nextCatalog`). A model
+restriction returns `UNSUPPORTED` at the byte range of the refused node; a schema
+statement that SQLite refuses returns `INPUT_ERROR` with SQLite's message.
 
-1. requires `schema` to equal the compiled `Generated.startSchema`;
-2. builds `Generated.nextSchema`, `Generated.script` and `Generated.profile` as
-   closed definitions and has the kernel check them;
+The gates do not trust the resolver's output. `migration-proof-checker` and
+`migration-bundle-checker` both receive the record and resolve it again
+(`GateInputs.lean`). The `.olean` gate requires every compiled generated
+declaration to be definitionally equal to its own result. `verify-bundle` does not
+compile `SqlInputs.lean`; the checker (`BundleChecker.generatedDeclarations`):
+
+1. requires the compiled `SchemaInputs` declarations to equal its resolution;
+2. builds `Generated.script`, `Generated.resolved` and `Generated.nextCatalog` as
+   closed definitions from its resolution and has the kernel check them;
 3. accepts a bundle's own copies of those three declarations only when they are
    definitionally equal to the constructed ones. Replay always uses the
    constructed declarations.
 
-Other versions and malformed records are rejected. SQL admission and validation
-still run in the Python frontend before the record is written, and the reported
-`generated/SqlInputs.lean` hash is unchanged. `verify` and `prepare` still compile
-`SqlInputs.lean`; `tests/generated_inputs_test.py` checks that both forms agree.
+Other versions, malformed records and records that do not resolve are rejected.
+`tests/generated_inputs_test.py` checks that the constructed declarations equal
+the compiled resolver output, and that a changed record is rejected.
 
 ## Pinned exporter library and driver
 
@@ -149,7 +159,7 @@ the public launcher from the source runtime (Nix target `tests.bundle`);
 | Stage store: verified restore, damaged or malformed entries miss, unwritable store tolerated, identity follows the runtime | Unit | `tests/test_stage_store.py` |
 | `verify` with a stage store: same results, fresh fallback, approved closures excluded unless eligible | End to end | `tests/stage_reuse_test.py` |
 | The installed commands give `VERIFIED`, `VIOLATED` and a wrong-SQL rejection | Installed | `tests/runtime_package_test.py::test_installed_data_path` |
-| Constructed generated declarations match the Lean emitter; tampered records are rejected | Checker | `tests/generated_inputs_test.py` |
+| Constructed generated declarations match the resolver output; tampered records are rejected | Checker | `tests/generated_inputs_test.py` |
 | Narrowed gate imports keep every existing gate rejection | End to end | `tests/kernel_gate_test.py` (Nix target `tests.kernel`) |
 
 ## Measurements

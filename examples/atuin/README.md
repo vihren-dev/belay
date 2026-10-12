@@ -71,7 +71,7 @@ errors, whereas this example requires optional stored fields to be valid TEXT/NU
 (or INTEGER/NULL for deletion time). Nullable SQL primary keys therefore do not
 imply that NULL application identifiers satisfy this interpretation.
 
-The approved interpretation is pinned to the sealed translation of `schema.sql`.
+The approved interpretation is pinned to the sealed resolution of `schema.sql`.
 Its field mapping names columns without duplicating their full SQL declarations.
 Both interpretations read the same old business model. The resulting reader
 ignores new columns; it needs no shell-specific logic. The requirement is equality

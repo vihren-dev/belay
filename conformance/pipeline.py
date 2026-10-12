@@ -46,14 +46,16 @@ def main() -> int:
     start = time.monotonic()
     results = compiled_many([case for _, _, case in pending], runtime)
     compiled_seconds = time.monotonic() - start
-    proof_cases = [case for (_, index, case), result in zip(pending, results, strict=True)
-                   if args.prove and reports[index]["iteration"] == 0 and result["verdict"] == "AGREE"]
+    proved = {case.name for case in cases() if case.kernel_proof}
+    proof_cases = [case for (fixture, index, case), result in zip(pending, results, strict=True)
+                   if args.prove and reports[index]["iteration"] == 0 and result["verdict"] == "AGREE"
+                   and fixture.name in proved]
     proof_terms = iter(compiled_many(proof_cases, runtime, emit_lean=True) if proof_cases else [])
     for (fixture, index, case), result in zip(pending, results, strict=True):
         reports[index].update({key: value for key, value in result.items() if key not in {"decoded", "caseLean"}})
         if reports[index]["iteration"] == 0:
             (args.output / f"{fixture.name}.json").write_text(json.dumps(case, indent=2) + "\n")
-            if args.prove and result["verdict"] == "AGREE":
+            if args.prove and result["verdict"] == "AGREE" and fixture.name in proved:
                 term = next(proof_terms).get("caseLean")
                 if not isinstance(term, str):
                     raise ValueError("Missing decoded proof term")

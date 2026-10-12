@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model
+import Belay.Sqlite.Declarations
 import Belay.Sqlite.Resolution.Syntax
 
 set_option doc.verso true
@@ -85,6 +85,12 @@ def Catalog.findTable (catalog : Catalog) (name : String) : Option (Nat × Catal
   | some (_, { entry := .index _, .. }) => none
   | none => none
 
+/-- The columns of the table with the name in the catalog, in table order, or
+{lean}`(none : Option (List CatalogColumn))` when no table has the name. Use it to
+state catalog requirements. -/
+def Catalog.columnsOf (catalog : Catalog) (name : String) : Option (List CatalogColumn) :=
+  (catalog.findTable name).map (·.2.columns)
+
 /-- The position of the first column whose folded name equals the folded given name. -/
 def columnPosition (columns : List CatalogColumn) (name : String) : Option Nat :=
   (findPosition (fun column => normalizeIdentifier column.name == normalizeIdentifier name)
@@ -134,6 +140,14 @@ def Catalog.uniqueKeys (catalog : Catalog) (position : Nat) (table : CatalogTabl
     catalog.filterMap fun object => match object.entry with
       | .index index => if index.table == position && index.unique then some index.columns else none
       | .table _ => none
+
+/-- Whether the folded name starts with {lit}`sqlite_`, which SQLite reserves. -/
+def reservedName (name : String) : Bool := (normalizeIdentifier name).startsWith "sqlite_"
+
+/-- Whether a column name is one of SQLite's rowid names, which the model keeps
+for the physical rowid. -/
+def rowidName (name : String) : Bool :=
+  ["rowid", "_rowid_", "oid"].contains (normalizeIdentifier name)
 
 /-- The folded names of all catalog objects, in catalog order. -/
 def Catalog.foldedNames (catalog : Catalog) : List String :=

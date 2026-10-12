@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 import hashlib
+import json
 import os
 from pathlib import Path
 import shutil
@@ -11,10 +12,10 @@ import pytest
 
 from migration_check.compile import artifact_bytes, compile_modules, compile_project
 from migration_check.source_closure import CompileError, module_path
-from belay.sqlite.sql_model import Column, Table
-from migration_check.lean_inputs import schema_inputs
+from belay.sqlite.profiles import DEFAULT_PROFILE
+from belay.sqlite.syntax import script_record
 from tests.runtime_support import CommandResult
-from tests.source_fixtures import (CompilationFixture, DEEPER, FIXTURES, HELPER,
+from tests.source_fixtures import (CompilationFixture, DEEPER, EMPTY_SCHEMA_INPUTS, FIXTURES, HELPER,
                                    compilation_case, source_runtime_only)
 
 pytestmark = [pytest.mark.kernel, pytest.mark.approval]
@@ -32,8 +33,11 @@ def test_sealed_source_compilation(compilation_case: CompilationFixture, proof_c
     assert (project.trusted / "Odd.Module.olean").read_bytes() != b"untrusted compiled artifact"
     assert not (project.trusted / "lakefile.olean").exists()
     assert "approved/SchemaInputs.lean" not in project.hashes
-    assert project.hashes["generated/SchemaInputs.lean"] == hashlib.sha256(schema_inputs(()).encode()).hexdigest()
-    checked = command_runner([str(proof_checker), *map(str, case.libraries), str(project.trusted), str(project.candidate)],
+    assert project.hashes["generated/SchemaInputs.lean"] == hashlib.sha256(EMPTY_SCHEMA_INPUTS.encode()).hexdigest()
+    record = case.root / "record.json"
+    record.write_text(json.dumps(script_record(DEFAULT_PROFILE, (), ())))
+    checked = command_runner([str(proof_checker), *map(str, case.libraries), str(project.trusted), str(project.candidate),
+                              str(record)],
                              cwd=case.root, timeout=30,
                              environment={**os.environ, "LEAN_SYSROOT": str(case.sysroot)})
     assert checked.returncode == 0, checked.diagnostic()
@@ -42,8 +46,9 @@ def test_sealed_source_compilation(compilation_case: CompilationFixture, proof_c
 @pytest.mark.integration
 @pytest.mark.requires_lean
 def test_changed_supplied_schema(compilation_case: CompilationFixture) -> None:
-    """An approved assertion about the supplied empty starting schema rejects a changed generated schema."""
-    changed = schema_inputs((Table("unexpected", (Column("x", "text"),)),))
+    """An approved assertion about the supplied empty starting catalog rejects a changed generated catalog."""
+    changed = EMPTY_SCHEMA_INPUTS.replace("def startCatalog : Catalog := []", 'def startCatalog : Catalog := '
+        '[{ name := "unexpected", entry := .table { columns := [{ name := "x", declaredType := some "TEXT" }] } }]')
     with pytest.raises(CompileError) as rejected:
         compilation_case.compile(schema=changed)
     assert rejected.value.phase == "compile" and "Requirements" in str(rejected.value)
@@ -60,7 +65,7 @@ def test_selected_generated_role(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="reserved"):
         compile_project(sysroot=tmp_path, libraries=(tmp_path, tmp_path), requirements=tmp_path / "SchemaInputs.lean",
             interpretation=tmp_path / "Interpretation.lean", next_interpretation=tmp_path / "NextInterpretation.lean",
-            proofs=tmp_path / "Proofs.lean", schema_inputs=schema_inputs(()), sql_inputs="", workspace=workspace)
+            proofs=tmp_path / "Proofs.lean", schema_inputs=EMPTY_SCHEMA_INPUTS, sql_inputs="", workspace=workspace)
 
 
 @pytest.mark.integration

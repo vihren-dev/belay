@@ -6,6 +6,6 @@ namespace Proofs
 
 /-- The third statement fails; the fourth is skipped and old observations survive. -/
 theorem migrationCorrect : Generated.expected :=
-  SqliteVerifier.Demonstration.failureMigrationCorrect
+  SqliteVerifier.Demonstration.failureMigrationCorrect Generated.profile (by decide)
 
 end Proofs

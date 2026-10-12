@@ -1,18 +1,14 @@
 [
   "belay.sqlite.__init__",
-  "belay.sqlite.admission",
   "belay.sqlite.dialects",
   "belay.sqlite.errors",
+  "belay.sqlite.located",
   "belay.sqlite.parser_library",
   "belay.sqlite.profiles",
   "belay.sqlite.quoted_text",
-  "belay.sqlite.schema_syntax",
-  "belay.sqlite.schema_translate",
-  "belay.sqlite.sql_admission",
-  "belay.sqlite.sql_dml",
-  "belay.sqlite.sql_model",
   "belay.sqlite.sql_tree",
-  "belay.sqlite.sql_values",
-  "belay.sqlite.structural",
-  "belay.sqlite.translate"
+  "belay.sqlite.syntax",
+  "belay.sqlite.syntax_definitions",
+  "belay.sqlite.syntax_expressions",
+  "belay.sqlite.syntax_writes"
 ]

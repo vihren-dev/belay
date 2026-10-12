@@ -10,8 +10,8 @@ abbrev LogicalState := SqliteVerifier.LogicalRows
 def contract : SqliteVerifier.LogicalContract LogicalState where
   valid := fun _ => True
   change := Eq
-  schemaRequirement schema := schema.lookup "invoices" =
-    some [{ name := "amount", affinity := .integer }, { name := "note", affinity := .text }]
+  catalogRequirement catalog := catalog.columnsOf "invoices" =
+    some [{ name := "amount", declaredType := some "INTEGER" }, { name := "note", declaredType := some "TEXT" }]
   failure := fun before _ _ after => before = after
   applicability := SqliteVerifier.requiresSuccess
 

@@ -16,22 +16,22 @@ nonempty admission and sound representations. No support premise is added to the
 target. The proof uses {name}`ProfileExecutes.result` to cover every related
 outcome. Use this when reasoning directly about {name}`runSql`. -/
 theorem VerificationConditions.of_runSql
-    {Logical : Type u} {startSchema nextSchema : Schema} {script : List Statement}
+    {Logical : Type u} {startCatalog nextCatalog : Catalog} {script : List Resolved.Statement}
     {approvedConditions : Database → Prop} {contract : LogicalContract Logical}
     {before after : Interpretation Logical} {failures : FailureRepresentation Logical}
-    {profile : ExecutionProfile}
-    (nonempty : ∃ database, Admitted startSchema approvedConditions database)
-    (beforeSound : SoundRepresentation contract startSchema before)
-    (afterSound : SoundRepresentation contract nextSchema after)
+    {profile : Profile}
+    (nonempty : ∃ database, Admitted profile startCatalog approvedConditions database)
+    (beforeSound : SoundRepresentation contract profile startCatalog before)
+    (afterSound : SoundRepresentation contract profile nextCatalog after)
     (failuresSound : ∀ position reason,
-      SoundRepresentation contract (failures.schema position reason)
+      SoundRepresentation contract profile (failures.catalog position reason)
         (failures.interpretation position reason))
-    (starting : ∀ database, Admitted startSchema approvedConditions database → before.invariant database)
-    (ready : ∀ database, Admitted startSchema approvedConditions database → SupportedSql startSchema script database)
-    (checked : ∀ database, Admitted startSchema approvedConditions database →
+    (starting : ∀ database, Admitted profile startCatalog approvedConditions database → before.invariant database)
+    (ready : ∀ database, Admitted profile startCatalog approvedConditions database → SupportedSql script database)
+    (checked : ∀ database, Admitted profile startCatalog approvedConditions database →
       contract.applicability database (runSql script database) ∧
-      OutcomeSatisfies nextSchema contract before after failures database (runSql script database)) :
-    VerificationConditions startSchema nextSchema script approvedConditions contract before after failures profile := by
+      OutcomeSatisfies nextCatalog contract before after failures database (runSql script database)) :
+    VerificationConditions startCatalog nextCatalog script approvedConditions contract before after failures profile := by
   refine ⟨nonempty, beforeSound, afterSound, failuresSound, starting, ready, ?_⟩
   intro database admitted outcome execution
   simpa only [execution.result] using checked database admitted
@@ -42,16 +42,16 @@ its own support proof for every admitted database. There is no requirement for
 unadmitted databases. All failure positions and pending snapshots are retained.
 The proof transfers the old outcome obligations through the supplied equality. -/
 theorem VerificationConditions.congr_runSql
-    {Logical : Type u} {startSchema nextSchema : Schema} {oldScript newScript : List Statement}
+    {Logical : Type u} {startCatalog nextCatalog : Catalog} {oldScript newScript : List Resolved.Statement}
     {approvedConditions : Database → Prop} {contract : LogicalContract Logical}
     {before after : Interpretation Logical} {failures : FailureRepresentation Logical}
-    {profile : ExecutionProfile}
-    (checked : VerificationConditions startSchema nextSchema oldScript approvedConditions
+    {profile : Profile}
+    (checked : VerificationConditions startCatalog nextCatalog oldScript approvedConditions
       contract before after failures profile)
-    (ready : ∀ database, Admitted startSchema approvedConditions database → SupportedSql startSchema newScript database)
-    (same : ∀ database, Admitted startSchema approvedConditions database →
+    (ready : ∀ database, Admitted profile startCatalog approvedConditions database → SupportedSql newScript database)
+    (same : ∀ database, Admitted profile startCatalog approvedConditions database →
       runSql newScript database = runSql oldScript database) :
-    VerificationConditions startSchema nextSchema newScript approvedConditions
+    VerificationConditions startCatalog nextCatalog newScript approvedConditions
       contract before after failures profile := by
   apply VerificationConditions.of_runSql checked.nonempty checked.beforeSound checked.afterSound
     checked.failuresSound checked.starting ready
@@ -59,19 +59,21 @@ theorem VerificationConditions.congr_runSql
   rw [same database admitted]
   exact checked.outcomes database admitted _ .evaluated
 
-/-- If applicability is {name}`requiresSuccess` and the proposed schema fails the
-contract's schema requirement, no complete verification certificate exists for
-these inputs. Nonempty admission rules out a vacuous certificate. The proof picks
-its admitted witness: errors contradict required success, while success
-contradicts the schema requirement. This is a model refutation, not a native test. -/
-theorem violates_required_schema
-    {Logical : Type u} {startSchema nextSchema : Schema} {script : List Statement}
+/-- If applicability is {name}`requiresSuccess` and the resulting catalog fails the
+contract's catalog requirement, no complete verification certificate exists for
+these inputs under any profile. Nonempty admission rules out a vacuous
+certificate. The proof picks its admitted witness: errors contradict required
+success, while success contradicts the catalog requirement. This is a model
+refutation, not a native test. -/
+theorem violates_required_catalog
+    {Logical : Type u} {startCatalog nextCatalog : Catalog} {script : List Resolved.Statement}
     {approvedConditions : Database → Prop} {contract : LogicalContract Logical}
     {before after : Interpretation Logical} {failures : FailureRepresentation Logical}
     (successRequired : contract.applicability = requiresSuccess)
-    (schemaViolation : ¬contract.schemaRequirement nextSchema) :
-    ¬VerificationConditions startSchema nextSchema script approvedConditions
-      contract before after failures := by
+    {profile : Profile}
+    (catalogViolation : ¬contract.catalogRequirement nextCatalog) :
+    ¬VerificationConditions startCatalog nextCatalog script approvedConditions
+      contract before after failures profile := by
   intro checked
   obtain ⟨database, admitted⟩ := checked.nonempty
   obtain ⟨logical, observed, _⟩ := (checked.beforeSound database (checked.starting database admitted)).2
@@ -83,7 +85,7 @@ theorem violates_required_schema
   | success result =>
     have post := obligations.2 logical observed
     rw [outcome] at post
-    exact schemaViolation post.2.1
+    exact catalogViolation post.2.1
   | pending persisted visible error =>
     have impossible := obligations.1
     simp [outcome, successRequired, requiresSuccess] at impossible

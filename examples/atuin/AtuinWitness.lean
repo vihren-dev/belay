@@ -22,37 +22,42 @@ def businessRows : List HistoryModel.History := [
 
 /-- History rows retain all eleven fields and every approved declaration. -/
 def history (rows : List Row) : Table :=
-  ⟨SchemaBinding.history.shape, rows⟩
-/-- Witnesses contain only the declared application storage. -/
+  ⟨SchemaBinding.history, rows⟩
+
+/-- Witnesses contain only the declared application storage, at the history
+table's catalog position. -/
 def database (rows : List Row) : Database :=
-  SchemaBinding.start.emptyDatabase.set "history" (history rows)
+  SchemaBinding.start.emptyDatabase.set 0 (history rows)
+
 /-- Empty application history is a defined business state. -/
 def emptyState : Database := database []
+
 /-- Nonempty application history uses two actual application identities. -/
 def populatedState : Database := database historyRows
 
-/-- The complete source-linked baseline is an admitted ordinary schema. -/
-theorem start_valid : SchemaBinding.start.Valid := by
-  simp [Schema.Valid, SchemaBinding.start]
-  decide +kernel
-/-- Replacing only row collections preserves the complete declared schema. -/
+/-- The complete source-linked baseline is a valid catalog under the generated profile. -/
+theorem start_valid : SchemaBinding.start.Valid Generated.profile.limits := by decide +kernel
+
+/-- Replacing only row collections preserves the complete declared catalog. -/
 theorem conforms (rows : List Row) (valid : (history rows).Valid) :
-    Conforms SchemaBinding.start (database rows) :=
-  (SchemaBinding.start.emptyDatabase_conforms start_valid).replaceRows
-    (name := "history") (by rfl) (by rfl) valid
+    Conforms Generated.profile SchemaBinding.start (database rows) :=
+  (Catalog.emptyDatabase_conforms start_valid).replaceRows
+    (position := 0) (old := { shape := SchemaBinding.history, rows := [] }) (by decide +kernel) (by rfl) valid
 
 /-- Empty history satisfies storage validity and complete decoder-definedness. -/
-theorem empty_admitted : Admitted SchemaBinding.start Interpretation.admitted emptyState :=
-  ⟨conforms [] (by simp [history, Table.Valid, validRowid, SchemaBinding.history]; decide +kernel),
-    ⟨[], rfl⟩⟩
+theorem empty_admitted : Admitted Generated.profile SchemaBinding.start Interpretation.admitted emptyState :=
+  ⟨conforms [] (by simp [history, Table.Valid]), ⟨[], by decide +kernel⟩⟩
+
 /-- A populated witness rules out preservation arguments covering only empty histories. -/
-theorem populated_admitted : Admitted SchemaBinding.start Interpretation.admitted populatedState :=
-  ⟨conforms historyRows (by simp [history, historyRows, Table.Valid, validRowid, SchemaBinding.history]; decide +kernel),
+theorem populated_admitted :
+    Admitted Generated.profile SchemaBinding.start Interpretation.admitted populatedState :=
+  ⟨conforms historyRows (by simp [history, historyRows, Table.Valid, validRowid]; decide +kernel),
     ⟨businessRows, by decide +kernel⟩⟩
+
 /-- Business observation contains both histories, without physical rowids. -/
 theorem populated_observed : ∃ histories, Interpretation.current.observe populatedState = some histories ∧
     histories.length = 2 := by exact ⟨businessRows, by decide +kernel, rfl⟩
 /-- Empty history is a defined empty state, not an undefined interpretation. -/
-theorem empty_observed : Interpretation.current.observe emptyState = some [] := rfl
+theorem empty_observed : Interpretation.current.observe emptyState = some [] := by decide +kernel
 
 end AtuinWitness

@@ -27,11 +27,14 @@ replayed like any other.
 
 The trusted stage contains approved `Requirements` and `Interpretation` modules
 and their approved dependencies. Generated `SchemaInputs.lean` imports only the
-pinned library and defines `Generated.startSchema`. Approved interpretations may
-refer to this sealed starting schema. Separately generated `SqlInputs.lean` imports
-SchemaInputs and defines `Generated.nextSchema`, `Generated.script`, and the fixed
-`Generated.profile`; approved source compilation cannot access those candidate-dependent inputs. The frontend's parsing and literal generation belong to
-the trusted boundary. Candidate `NextInterpretation`, `Generated`, and `Proofs`
+pinned library and defines `Generated.profile`, `Generated.schema` and
+`Generated.startCatalog`. Approved interpretations may refer to this sealed
+profile and starting catalog. Separately generated `SqlInputs.lean` imports
+SchemaInputs and defines `Generated.script`, `Generated.resolved` and
+`Generated.nextCatalog`; approved source compilation cannot access those
+candidate-dependent inputs. `migration-resolver` writes both modules from the
+frontend's structural record. The frontend's parsing and statement mapping belong
+to the trusted boundary. Candidate `NextInterpretation`, `Generated`, and `Proofs`
 modules never become approved by being compiled or copied into a sealed directory.
 
 The gate imports only declaration data, with no plugins, extension loading, or
@@ -39,8 +42,12 @@ candidate initializer execution. It compares complete declaration records on all
 name collisions, including bodies, safety flags, constructor/recursor fields and
 universe parameters; Lean expression comparison uses alpha equivalence. It
 kernel-replays generated schema/SQL inputs against the pinned library first,
-then approved-source additions, then candidate additions. Even approved sources
-cannot substitute a different definition for the supplied starting schema. Lookup uses the kernel environment so replayed
+then approved-source additions, then candidate additions. Before it accepts the
+generated inputs, it resolves the structural record again with the compiled
+`resolveSchemaAndScript` (`GateInputs.lean`) and requires each generated
+declaration to be definitionally equal to the result, so a changed generated file
+cannot change the target. Even approved sources cannot substitute a different
+definition for the supplied starting catalog. Lookup uses the kernel environment so replayed
 constants cannot disappear behind elaborator visibility maps.
 
 One invocation carries Lean's import state through these four stages. Previously

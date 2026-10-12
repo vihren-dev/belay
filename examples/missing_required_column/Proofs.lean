@@ -1,13 +1,13 @@
 import Generated
 
-/-! A checked refutation identifies the unfulfilled standing schema requirement. -/
+/-! A checked refutation identifies the unfulfilled standing catalog requirement. -/
 namespace Proofs
 
-/-- The required invoice.note column is absent from the generated result schema. -/
+/-- The required invoice.note column is absent from the generated resulting catalog. -/
 theorem migrationViolated : ¬Generated.expected := by
-  apply SqliteVerifier.violates_required_schema (successRequired := rfl)
-  change ¬(some [({ name := "amount", affinity := .integer } : Belay.Sqlite.Column)] =
-    some [({ name := "amount", affinity := .integer } : Belay.Sqlite.Column), { name := "note", affinity := .text }])
-  decide
+  apply SqliteVerifier.violates_required_catalog (successRequired := rfl)
+  show ¬(Generated.nextCatalog.columnsOf "invoices" =
+    some [{ name := "amount", declaredType := some "INTEGER" }, { name := "note", declaredType := some "TEXT" }])
+  decide +kernel
 
 end Proofs

@@ -3,15 +3,15 @@ import SqlInputs
 
 set_option doc.verso true
 
-/-! Candidate observations select the generated next schema and retain the
+/-! Candidate observations select the generated resulting catalog and retain the
 approved logical key policy over actual result storage. -/
 
 namespace NextInterpretation
 
-/-- Observe the same application-key policy under the generated next schema.
+/-- Observe the same application-key policy under the generated resulting catalog.
 The invariant requires conformance and a defined read of every keyed invoice. -/
 def next : SqliteVerifier.Interpretation Requirements.LogicalState :=
-  SqliteVerifier.applicationKeyInterpretation Generated.nextSchema
+  SqliteVerifier.applicationKeyInterpretation Generated.profile Generated.nextCatalog
     SqliteVerifier.ApplicationKeyDemonstration.invoiceTableName
     SqliteVerifier.ApplicationKeyDemonstration.invoiceKeyNames
     SqliteVerifier.ApplicationKeyDemonstration.invoiceProtectedFields

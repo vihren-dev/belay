@@ -3,19 +3,11 @@ import Belay.Sqlite.LiteralData
 
 set_option doc.verso true
 
-/-! Script-directed SQL execution. BEGIN records the committed snapshot; only an
-explicit COMMIT/ROLLBACK changes transaction state. Statement errors stop execution
-without inferring connection closure, framework cleanup, or transaction rollback. -/
+/-! Script-directed SQL execution of resolved statements. BEGIN records the
+committed snapshot; only an explicit COMMIT/ROLLBACK changes transaction state.
+Statement errors stop execution without inferring connection closure, framework
+cleanup, or transaction rollback. -/
 namespace Belay.Sqlite
-
-/-- Select a pinned engine profile. Use {lean}`ExecutionProfile.sqlite351` for
-SQLite 3.51.0. Profiles select engine settings, not framework behavior. -/
-inductive ExecutionProfile where
-  /-- SQLite 3.51.0 with its pinned settings. -/
-  | sqlite351
-  /-- SQLite 3.46.0 with its pinned settings. -/
-  | sqlite346
-  deriving Repr, DecidableEq
 
 /-- The current connection view and optional transaction snapshot. Supply a
 database and omit the snapshot for an idle connection. -/
@@ -43,42 +35,47 @@ inductive SqlTransition where
   /-- Stop with this error or terminal result. -/
   | halt (outcome : Outcome)
 
-/-- Apply literal INSERT/UPDATE and retained ABORT constraints. An absent table
-or failed constraint retains the input database. Other statements use {name}`step`.
-This computation does not establish the separate stored-value support obligation. -/
-def literalStep (statement : Statement) (database : Database) (position : Nat) : Outcome :=
-  match statement with
-  | .insert name _ _ | .update name _ _ _ _ =>
-    match database name with
-    | none => .failure position (.missingTable name) database
-    | some table =>
-      let result := match statement with
-        | .insert _ _ values => LiteralData.inserted table values
-        | .update _ column value key equals => LiteralData.updated table column value key equals
-        | _ => table
-      if LiteralData.constraints result then .success (database.set name result)
-      else .failure position .constraintViolation database
-  | _ => step statement database position
+/-- Store a write's result when it satisfies the constraints of the given keys, or
+fail at the position with {lean}`ExecutionError.constraintViolation` and the
+input database. -/
+def checkedWrite (database : Database) (at_ : Nat) (keys : List (List Nat)) (result : Table)
+    (position : Nat) : Outcome :=
+  if LiteralData.constraints keys result then .success (database.set at_ result)
+  else .failure position .constraintViolation database
 
-/-- Check INSERT/UPDATE coercion and key support against the current table. An
-absent table passes this domain check and fails during execution instead. Other
-statement forms pass. Use it through the reached-statement script support check. -/
-def statementReady (statement : Statement) (database : Database) : Bool :=
+/-- Apply literal INSERT/UPDATE with ABORT constraints over the statement's keys.
+A position without a table fails as {lean}`ExecutionError.unmodeled`; a failed
+constraint retains the input database. Other statements use {name}`step`. This
+computation does not establish the separate stored-value support obligation. -/
+def literalStep (statement : Resolved.Statement) (database : Database) (position : Nat) : Outcome :=
   match statement with
-  | .insert name columns values => (database name).all (fun table =>
-      LiteralData.insertReady table columns values)
-  | .update name column value key equals => (database name).all (fun table =>
-      LiteralData.updateReady table column value key equals)
-  | _ => true
+  | .insert at_ rows keys => match database at_ with
+    | none => .failure position .unmodeled database
+    | some table => checkedWrite database at_ keys (LiteralData.inserted table rows) position
+  | .update at_ assignments filter keys => match database at_ with
+    | none => .failure position .unmodeled database
+    | some table => checkedWrite database at_ keys (LiteralData.updated table assignments filter) position
+  | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ =>
+    step statement database position
+
+/-- Check INSERT/UPDATE admission against the current table. A position without a
+table passes this domain check and fails during execution instead. Other
+statement forms pass. Use it through the reached-statement script support check. -/
+def statementReady (statement : Resolved.Statement) (database : Database) : Bool :=
+  match statement with
+  | .insert at_ rows keys => (database at_).all fun table => LiteralData.insertReady keys table rows
+  | .update at_ assignments filter keys => (database at_).all fun table =>
+      LiteralData.updateReady keys table assignments filter
+  | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ => true
 
 /-- Evaluate one statement at its supplied zero-based position. BEGIN records a
 snapshot; COMMIT clears it; ROLLBACK restores it. Repeated BEGIN or transaction
 closure without a snapshot halts with an error. Other statements use
 {name}`literalStep`; an error retains any open transaction through
-{name}`SqlState.finish`. The profile does not add transaction syntax. -/
-def advance (position : Nat) (statement : Statement) (state : SqlState) : SqlTransition :=
+{name}`SqlState.finish`. -/
+def advance (position : Nat) (statement : Resolved.Statement) (state : SqlState) : SqlTransition :=
   match statement with
-  | .beginTransaction => match state.snapshot with
+  | .begin => match state.snapshot with
     | some _ => .halt (state.finish (.failure position .transactionAlreadyActive state.database))
     | none => .next { state with snapshot := some state.database }
   | .commit => match state.snapshot with
@@ -87,30 +84,31 @@ def advance (position : Nat) (statement : Statement) (state : SqlState) : SqlTra
   | .rollback => match state.snapshot with
     | none => .halt (.failure position .noActiveTransaction state.database)
     | some original => .next { database := original }
-  | _ => match literalStep statement state.database position with
+  | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .update .. | .prepareError _ =>
+    match literalStep statement state.database position with
     | .success database => .next { state with database := database }
     | outcome => .halt (state.finish outcome)
 
 /-- Execute the script from a supplied position and connection state. A halt stops
 the script; a continuing transition advances the position. EOF finishes the
 current state and preserves an open transaction. The idle wrapper starts at position zero. -/
-def runSqlFrom (position : Nat) (script : List Statement) (state : SqlState) : Outcome :=
+def runSqlFrom (position : Nat) (script : List Resolved.Statement) (state : SqlState) : Outcome :=
   match script with
   | [] => state.finish (.success state.database)
   | statement :: rest => match advance position statement state with
     | .halt outcome => outcome
     | .next next => runSqlFrom (position + 1) rest next
 
-/-- Execute a SQL file from position zero outside a transaction. Use
+/-- Execute a resolved script from position zero outside a transaction. Use
 {name}`runSqlFrom` for an explicit position/state. A file is not implicitly atomic;
 transaction control must be supplied in its statements. -/
-def runSql (script : List Statement) (database : Database) : Outcome :=
+def runSql (script : List Resolved.Statement) (database : Database) : Outcome :=
   runSqlFrom 0 script { database := database }
 
 /-- Check {name}`statementReady` at every reached statement and follow the actual
 transition. After a halt, unreachable statements impose no obligation. An empty
-script passes. Combine this with the schema admission check in verification obligations. -/
-def supportedSqlFrom (position : Nat) (script : List Statement) (state : SqlState) : Bool :=
+script passes. -/
+def supportedSqlFrom (position : Nat) (script : List Resolved.Statement) (state : SqlState) : Bool :=
   match script with
   | [] => true
   | statement :: rest => statementReady statement state.database &&
@@ -118,32 +116,24 @@ def supportedSqlFrom (position : Nat) (script : List Statement) (state : SqlStat
     | .halt _ => true
     | .next next => supportedSqlFrom (position + 1) rest next
 
-/-- Permit scripts without CREATE, or require every starting table to have no
-explicit indexes. This conservative check avoids an unmodeled global index-name
-collision during CREATE. An empty schema or a script without CREATE passes. -/
-def schemaAllows (schema : Schema) (script : List Statement) : Bool :=
-  !(script.any fun statement => match statement with | .createTable .. => true | _ => false) ||
-    schema.all (fun table => table.shape.properties.indexes.isEmpty)
+/-- For the supplied script and database, the reached-statement data check returns
+true. This does not assert native refinement or successful execution. A
+verification target proves this obligation for every admitted database; it is not
+an extra unproved premise. -/
+def SupportedSql (script : List Resolved.Statement) (database : Database) : Prop :=
+  supportedSqlFrom 0 script { database := database } = true
 
-/-- For the supplied schema, script and database, require schema admission and
-the reached-statement data check to both return true. This does not assert native
-refinement or successful execution. A verification target proves this obligation
-for every admitted database; it is not an extra unproved premise. -/
-def SupportedSql (schema : Schema) (script : List Statement) (database : Database) : Prop :=
-  schemaAllows schema script = true ∧
-    supportedSqlFrom 0 script { database := database } = true
-
-/-- Relate each pinned profile, script and starting database to its computed
-{name}`runSql` outcome. Both profiles currently have this same deterministic
+/-- Relate each profile, script and starting database to its computed
+{name}`runSql` outcome. Every profile currently has this same deterministic
 semantics; the profile remains bound into verification inputs. -/
-inductive ProfileExecutes : ExecutionProfile → List Statement → Database → Outcome → Prop where
+inductive ProfileExecutes : Profile → List Resolved.Statement → Database → Outcome → Prop where
   /-- The computed SQL result is related for every profile, script and database. -/
   | evaluated : ProfileExecutes profile script database (runSql script database)
 
 /-- For every profile, script and starting database, there exists a related
 outcome. The computed result supplies the witness, including empty scripts,
 errors and pending transactions; outcome coverage is never vacuous. -/
-theorem ProfileExecutes.total (profile : ExecutionProfile) (script : List Statement)
+theorem ProfileExecutes.total (profile : Profile) (script : List Resolved.Statement)
     (database : Database) : ∃ outcome, ProfileExecutes profile script database outcome :=
   ⟨_, .evaluated⟩
 

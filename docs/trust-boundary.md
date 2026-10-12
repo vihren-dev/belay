@@ -12,9 +12,20 @@ contract. It does not imply a native replay occurred. Compiler failures, missing
 proofs, exhausted resources, and unfinished proofs are `UNVERIFIED`.
 
 The trusted implementation includes the installed Python driver, pinned SQLite
-tokenizer/grammar adapter, CST admission and SQL-to-Lean emitter, source staging,
-Lean runtime/kernel and serialized-module loader, protected proof library,
-the kernel gate and bundle checker, and native/model correspondence assumptions.
+tokenizer/grammar adapter, the statement mapping from the syntax tree to statement
+syntax (refusal of unknown syntax and lexical decoding), source staging, Lean
+runtime/kernel and serialized-module loader, protected proof library, the kernel
+gate and bundle checker with name resolution, and native/model correspondence
+assumptions.
+
+Name resolution is part of the compiled gate (ADR 0008). The Lean core's
+`resolve` turns the statement syntax into resolved statements and catalogs, and a
+declarative specification with proofs states what it computes. Both gates resolve
+the frontend's structural record again and require the generated `resolved`,
+catalogs and profile to equal the result. No proof links `resolved` to the SQL:
+that link relies on the trusted compiled gate and the Lean compiler, as the gate
+already does. `migration-resolver`, which writes the generated modules, is not
+trusted: the gates check its output.
 The caller must protect that installation, its runtime paths/environment, approved
 source files, any approval baseline, and any configured stage store
 (`MIGRATION_CHECK_STAGE_STORE`). Stored stages are hash-checked for integrity, but

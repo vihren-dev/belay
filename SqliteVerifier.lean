@@ -12,15 +12,16 @@ Import this module to use the stored-data model, logical contracts and reusable
 schema proofs. A certificate establishes the written model obligations;
 native SQLite conformance is assessed separately.
 
-Start with {name}`Belay.Sqlite.Column` and {name}`Belay.Sqlite.Schema`.
-The optional column fields have plain defaults. A valid schema has a finite
-empty-data witness, useful when proving nonempty admission:
+Start with {name}`Belay.Sqlite.Catalog`: the tables and indexes that resolution
+computes from the schema, with names as written and columns that keep their
+declared type text. The database maps catalog positions to tables. A valid
+catalog has a finite empty-data witness, useful when proving nonempty admission:
 
 ```lean
 open Belay.Sqlite SqliteVerifier
-example : Conforms [] (Schema.emptyDatabase []) :=
-  Schema.emptyDatabase_conforms (by simp [Schema.Valid])
-example : Column.plain { name := "id", affinity := .integer } = true := by rfl
+example : Conforms (Profile.documented "3.51.0" "build") [] (Catalog.emptyDatabase []) :=
+  Catalog.emptyDatabase_conforms (by decide)
+example : CatalogColumn.plain { name := "id", declaredType := some "INTEGER" } = true := by rfl
 ```
 
 Choose the observation and change relation explicitly. Use
@@ -37,7 +38,8 @@ and failures must be excluded by the proof.
 The target is {name}`SqliteVerifier.VerificationConditions`: a starting witness,
 sound before/after/failure representations, the starting invariant, support for
 every admitted database, and applicability plus result obligations for every
-related outcome. {name}`SqliteVerifier.VerificationConditions.of_runSql` lets
+related outcome. Its script is the resolved migration, and its catalogs are the
+starting and resulting catalogs that resolution computes. {name}`SqliteVerifier.VerificationConditions.of_runSql` lets
 users prove those outcome obligations from the computed SQL result while
 retaining the universal support premise. {name}`Belay.Sqlite.SchemaOnly`
 guards the current schema-extension preservation laws.

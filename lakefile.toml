@@ -28,6 +28,9 @@ name = "GatePaths"
 [[lean_lib]]
 name = "GateCore"
 
+[[lean_lib]]
+name = "GateInputs"
+
 [[lean_exe]]
 name = "migration-proof-checker"
 root = "ProofChecker"
@@ -40,9 +43,13 @@ root = "BundleChecker"
 name = "migration-proof-exporter"
 root = "ProofExporter"
 
+[[lean_exe]]
+name = "migration-resolver"
+root = "Resolver"
+
 [[lean_lib]]
 name = "VerifierConformance"
-roots = ["VerifierConformance.Trace", "VerifierConformance.Outputs", "VerifierConformance.Case", "VerifierConformance.Json"]
+roots = ["VerifierConformance.Trace", "VerifierConformance.Outputs", "VerifierConformance.Native", "VerifierConformance.Case", "VerifierConformance.Json"]
 
 [[lean_exe]]
 name = "conformance-runner"

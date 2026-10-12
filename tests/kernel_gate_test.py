@@ -2,6 +2,7 @@
 
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+import json
 import os
 from pathlib import Path
 
@@ -10,6 +11,10 @@ import pytest
 from tests.runtime_support import CommandResult, copy_mutable_tree, run_command
 
 FIXTURES = Path(__file__).with_name("kernel_gate")
+RECORD = {"version": 2, "release": "3.51.0",
+          "sourceId": "2025-11-04 19:38:17 fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b",
+          "schema": [], "script": []}
+"""The structural record of the fixtures' empty schema and script, which the gate resolves again."""
 pytestmark = [pytest.mark.integration, pytest.mark.kernel, pytest.mark.requires_lean]
 
 
@@ -37,10 +42,13 @@ class KernelCase:
                              cwd=directory, environment=self.environment, timeout=30)
         assert result.returncode == 0, result.diagnostic()
 
-    def check(self, *, environment: dict[str, str] | None = None, application_library: str | None = None) -> CommandResult:
+    def check(self, *, environment: dict[str, str] | None = None, application_library: str | None = None,
+              record: dict[str, object] | None = None) -> CommandResult:
         """Replay the private artifacts; the test deadline does not change production limits."""
+        path = self.root / "record.json"
+        path.write_text(json.dumps(RECORD if record is None else record))
         result = self.runner([str(self.checker), application_library or str(self.libraries[0]), str(self.libraries[1]), str(self.root / "trusted"),
-                              str(self.root / "candidate")], cwd=self.root, timeout=60,
+                              str(self.root / "candidate"), str(path)], cwd=self.root, timeout=60,
                              environment=self.environment if environment is None else environment)
         assert "CANDIDATE_INITIALIZER_RAN" not in result.stdout + result.stderr, result.diagnostic()
         return result
@@ -114,7 +122,8 @@ def test_relative_library_path(kernel: KernelCase) -> None:
     *[pytest.param(f"import Lean\ndef {name} : Nat := 0\ntheorem Proofs.migrationCorrect : True := trivial",
                    name, False, id=f"changed_protected_{label}", marks=pytest.mark.approval)
       for label, name in [("contract", "Requirements.contract"), ("SQL", "Generated.script"),
-                          ("schema", "Generated.startSchema"), ("profile", "Generated.profile")]],
+                          ("resolved", "Generated.resolved"), ("catalog", "Generated.startCatalog"),
+                          ("profile", "Generated.profile")]],
     pytest.param("import Generated\nunsafe def Proofs.migrationCorrect : True := True.intro",
                  "Proofs.migrationCorrect", False, id="unsafe_proof"),
     # An explicit partial constant avoids elaboration into an ordinary opaque wrapper.
@@ -135,11 +144,11 @@ def test_proof_attack(kernel: KernelCase, text: str, diagnostic: str, accepted: 
 
 
 @pytest.mark.approval
-def test_approved_source_substitutes_schema(kernel: KernelCase) -> None:
-    """Even approved logical source cannot replace the generated starting schema declaration."""
-    kernel.compile("trusted", "Requirements", source("Requirements") + "\ndef Generated.startSchema : Nat := 0\n")
+def test_approved_source_substitutes_catalog(kernel: KernelCase) -> None:
+    """Even approved logical source cannot replace the generated starting catalog declaration."""
+    kernel.compile("trusted", "Requirements", source("Requirements") + "\ndef Generated.startCatalog : Nat := 0\n")
     result = kernel.check()
-    assert result.returncode == 1 and "Generated.startSchema" in result.stderr, result.diagnostic()
+    assert result.returncode == 1 and "Generated.startCatalog" in result.stderr, result.diagnostic()
     assert "already contains" in result.stderr or "modified protected" in result.stderr, result.diagnostic()
 
 
@@ -149,16 +158,6 @@ def test_forged_convenience_target(kernel: KernelCase) -> None:
     kernel.compile("candidate", "Proofs", "import Generated\ntheorem Proofs.migrationCorrect : Generated.expected := trivial")
     result = kernel.check()
     assert result.returncode != 0 and "reconstructed" in result.stderr, result.diagnostic()
-
-
-def test_changed_sealed_profile(kernel: KernelCase) -> None:
-    """A candidate target cannot silently substitute another sealed SQLite version."""
-    kernel.compile("trusted", "SqlInputs", source("SqlInputs").replace(".sqlite351", ".sqlite346"))
-    legacy = source("Generated").replace("NextInterpretation.failures profile", "NextInterpretation.failures")
-    kernel.compile("candidate", "Generated", legacy)
-    kernel.compile("candidate", "Proofs", source("Proofs"))
-    result = kernel.check()
-    assert result.returncode == 1 and "reconstructed" in result.stderr, result.diagnostic()
 
 
 @pytest.fixture
