@@ -42,3 +42,10 @@ Decision: [ADR 0011](../docs/adr-0011-product-trust-and-development-integrity.md
   after the finding that `native_replay.model_case` builds the reference
   tables with the frontend's translation of recorded schema SQL. The task file
   now names the renderer from model tables to PRAGMA rows (outcome 4).
+- 2026-10-12: `judge/` (records, catalog form, comparison, outputs, claims,
+  `python -m judge`), standard library only. It decodes every step of corpora
+  v1 to v3 (177, 183 and 370 records). `tests/test_judge.py` checks an honest,
+  a wrong, an evasive (all unsupported) and a broken stand-in subject. The
+  subject writes predictions in the raw recorded form; the judge reduces both
+  sides. Statement alignment uses SQLite's consumed byte ranges, as before.
+  The live model cases stay outside the judge (task file updated).

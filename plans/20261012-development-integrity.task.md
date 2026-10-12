@@ -42,9 +42,11 @@ in ruleset 23934665 (`require_code_owner_review: true`, one approval).
    recorded catalog only from the recorded PRAGMA rows, never by translating
    recorded SQL. An "input error" is MODEL_UNSUPPORTED when native SQLite also
    refused the statement, and DISAGREE otherwise. On corpora v1 to v3 and the
-   live model cases it gives the same verdicts as the current `classifyCase`,
+   frozen corpora it gives the same verdicts as the current `classifyCase`,
    except for cases where the catalog comparison is stricter; each such case
-   is listed in the status file with its cause.
+   is listed in the status file with its cause. The live model cases
+   (`conformance/cases/*.json`) are stored in the model's own terms, not as
+   SQLite records, so they stay ordinary model tests outside the judge.
 6. The judge is a Nix derivation whose inputs are the judge, the claims, the
    frozen corpora and the native SQLite build (`nix/sqlite.nix`, with
    `nix/flake.lock`). `nix/judge.lock.json` records its derivation path for
@@ -75,7 +77,7 @@ in ruleset 23934665 (`require_code_owner_review: true`, one approval).
   floor; a subject that crashes or writes malformed output fails with
   HARNESS_ERROR.
 - Parity: the judge and the current `classifyCase` give equal verdicts on
-  corpora v1 to v3 and the live model cases, until the old path is removed;
+  corpora v1 to v3, until the old path is removed;
   each difference is a listed, explained catalog difference.
 - Renderer: for each table shape the model supports, the rendered catalog
   equals what native SQLite reports for the same declaration.
