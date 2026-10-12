@@ -9,7 +9,8 @@ import pytest
 from migration_check.runtime import validate_libraries
 from migration_check.stage_store import runtime_identity
 from tests.runtime_support import run_command, CommandResult
-from tests.proof_exporter_test import prepare_check, CASES
+from tests.example_cases import CASES, case_inputs
+from tests.proof_exporter_test import prepare_check
 
 pytestmark = [pytest.mark.integration, pytest.mark.kernel, pytest.mark.requires_lean]
 
@@ -64,6 +65,7 @@ def test_candidate_model_namespace_is_exported(runtime_root: Path, example_facto
         "theorem Belay.Sqlite.callerProof : Generated.expected := SqliteVerifier.Demonstration.migrationCorrect\n")
     (candidate / 'Proofs.lean').write_text("import Belay.Sqlite.Candidate\n"
         "theorem Proofs.migrationCorrect : Generated.expected := Belay.Sqlite.callerProof\n")
-    _bundle, report = prepare_check(runtime_root, examples, tmp_path, *CASES['small'], command_runner)
+    _bundle, report = prepare_check(runtime_root, examples, tmp_path,
+                                    *case_inputs(examples, CASES['small'])[:4], command_runner)
     assert report['status'] == 'VERIFIED', report
 

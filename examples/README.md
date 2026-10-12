@@ -25,6 +25,10 @@ fixed autocommit profile; they do not assume whole-file rollback or crash safety
 For each candidate provide `approved/Requirements.lean`, `approved/schema.sql`,
 `approved/Interpretation.lean`, and that candidate's `migration.sql`,
 `NextInterpretation.lean`, and `Proofs.lean`, with profile `3.51.0`.
+Each case folder has a `belay.toml` that names these inputs, its profile and its
+approval baseline. It is the project configuration file of the command line
+tool; the tool does not read it yet, and the tests use it to find each case. Its
+`[test]` table holds the status that the tests expect.
 The verifier generates sealed `SchemaInputs.lean`, `SqlInputs.lean` and
 `Generated.lean`; these are not user inputs. The approved interpretation imports
 only `SchemaInputs` from these modules and uses `Generated.startSchema`. Its

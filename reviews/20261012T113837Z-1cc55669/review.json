@@ -1,0 +1,74 @@
+{
+  "caller": "claude",
+  "commit": "1cc55669440e1d4f5ae9a4e8466ecfd04648bec7",
+  "date": "2026-10-12T11:38:37+00:00",
+  "exit": 1,
+  "files": [
+    "examples/add_column_then_table/belay.toml",
+    "examples/allowed_failure/belay.toml",
+    "examples/application_keys/add_column_then_table/belay.toml",
+    "examples/atuin/belay.toml",
+    "examples/missing_required_column/belay.toml",
+    "examples/table_then_column/belay.toml",
+    "migration_check/project_config.py",
+    "plans/20261012-case-manifests-and-lean-categories.status.md",
+    "plans/20261012-case-manifests-and-lean-categories.task.md",
+    "tests/test_project_config.py"
+  ],
+  "findings": [
+    {
+      "id": "20261012T113837Z-1cc55669#1",
+      "line": 128,
+      "path": "migration_check/project_config.py",
+      "rule": "R1",
+      "severity": "should",
+      "text": "The allowed tables are a literal inside `load`, rather than a named policy with a docstring. Fix: define a documented allowed-table constant and use it here."
+    },
+    {
+      "id": "20261012T113837Z-1cc55669#2",
+      "line": 51,
+      "path": "migration_check/project_config.py",
+      "rule": "R9",
+      "severity": "should",
+      "text": "`ConfigError.__init__` has no docstring. Fix: add a docstring that explains why configuration errors identify the file and field."
+    },
+    {
+      "id": "20261012T113837Z-1cc55669#3",
+      "line": 145,
+      "path": "migration_check/project_config.py",
+      "rule": "R10",
+      "severity": "must",
+      "text": "An array or table in `test.status` raises an unhandled `TypeError` that omits the configuration file, field, and corrective action. Fix: check that the value is a string before testing membership and raise `ConfigError` for invalid types."
+    },
+    {
+      "id": "20261012T113837Z-1cc55669#4",
+      "line": 68,
+      "path": "tests/test_project_config.py",
+      "rule": "R11",
+      "severity": "must",
+      "text": "The path-boundary test omits proof-module paths, which currently accept absolute names that reference Lean files outside `root`. Fix: add a failing test for escaping proof-module paths and enforce the documented boundary in `proof_modules`."
+    }
+  ],
+  "id": "20261012T113837Z-1cc55669",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "b9509029f9c1",
+    "R7": "1d1132b164f1",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
