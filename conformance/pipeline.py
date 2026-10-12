@@ -54,7 +54,8 @@ def main() -> int:
     for (fixture, index, case), result in zip(pending, results, strict=True):
         reports[index].update({key: value for key, value in result.items() if key not in {"decoded", "caseLean"}})
         if reports[index]["iteration"] == 0:
-            (args.output / f"{fixture.name}.json").write_text(json.dumps(case, indent=2) + "\n")
+            # Compact, like the frozen cases in conformance/cases: a wide case stays one line.
+            (args.output / f"{fixture.name}.json").write_text(json.dumps(case, separators=(",", ":")) + "\n")
             if args.prove and result["verdict"] == "AGREE" and fixture.name in proved:
                 term = next(proof_terms).get("caseLean")
                 if not isinstance(term, str):
