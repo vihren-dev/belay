@@ -31,12 +31,15 @@ a review finding, for product-trust code. Of its 21 findings up to
 2026-10-11, 16 were deferred with the reason "owner review required". The
 review process cannot close such a finding.
 
-**Many checks only make a change harder.** Pins, denominator checks, mutation
-checks and native replay are in the same repository that the agent changes.
-A check whose reference value is in an unprotected file does not stop a
-determined agent: the agent changes the file and the reference in one commit.
-For example, `conformance/pinned-corpora.json` pins the digest of each frozen
-corpus, but an agent can change a corpus and its pin together.
+**Many checks only make a change harder.** Pins, denominator checks, digest
+and receipt bindings, and the report validators in `reports/` are in the same
+repository that the agent changes. A check whose reference value is in an
+unprotected file does not stop a determined agent: the agent changes the file
+and the reference in one commit. For example, `conformance/pinned-corpora.json`
+pins the digest of each frozen corpus, but an agent can change a corpus and
+its pin together. About 52 of the 572 test functions and 15 report validators
+are of this kind. The validators in `reports/` alone received 46 of the 250
+review findings up to 2026-10-11.
 
 **The judge is large and unprotected.** The code that decides AGREE or
 DISAGREE for a frozen corpus starts at `conformance/replay_tiers.py`, which
@@ -47,12 +50,34 @@ needed to change any of them.
 **Owner approval is not enforced.** On 2026-10-12, the `main` ruleset
 (23934665) had `require_code_owner_review: false` and
 `required_approving_review_count: 0`. The first line of `.github/CODEOWNERS`
-says that the ruleset requires code-owner approvals; it does not.
-`CODEOWNERS` also does not cover `conformance/`, `tests/`,
-`packages/belay-sqlite/`, `belay/`, `GateCore.lean`, `GatePaths.lean`,
-`BundleChecker.lean` or `ProofExporter.lean`. Agents open pull requests as
-the GitHub App `vihren-agents`, so an owner approval is a second, independent
-party.
+says that the ruleset requires code-owner approvals; it does not. Agents open
+pull requests as the GitHub App `vihren-agents`, so an owner approval is a
+second, independent party.
+
+**Where pull-request code can reach the judge.** Measured on 2026-10-12:
+
+| Place | Can pull-request code change the judge or its result? | Reason |
+| --- | --- | --- |
+| Developer machine | No | The Nix store belongs to root; agent accounts are not Nix trusted users; `require-sigs` and the build sandbox are on. A local result also decides nothing. |
+| CI Nix cache | No | Only scheduled runs and pushes to `main` save it (`.github/workflows/ci.yml`). |
+| The current CI job | Yes | One job runs the host tests, which are pull-request code, as a user with `sudo`, before the conformance suites. That code can change the Nix store or the result files. |
+
+A fixed-output source pin, `builtins.path { sha256 = ...; }`, is not a check:
+when the store already has the path, Nix uses it and does not read the
+changed files.
+
+**Review load.** Of the 48 pull requests merged from 2026-09-28 to
+2026-10-12, these would have needed an owner review:
+
+| Protected set | Pull requests |
+| --- | --- |
+| Corpora, tests, model and judge sources | 41 (85%) |
+| The current `CODEOWNERS`, if enforced | 30 (62%) |
+| The protected set of this ADR, with the product trust base | 19 (40%) |
+| The same, without `.github/workflows/` | 10 (21%) |
+
+Workflow changes cause most of the load: 12 of the 48 pull requests changed
+`.github/workflows/`, many of them during CI-time work.
 
 ## Decision
 
@@ -62,8 +87,8 @@ party.
 | --- | --- | --- |
 | Question | Can a user trust a verified result? | Did development measure its work honestly? |
 | Untrusted party | The producer of proofs, bundles and SQL | The agents that develop the verifier |
-| Mechanism | The verifier: kernel replay, trusted library, axiom policy | The protected set and owner approval |
-| Tests | External behavior; they run in every CI scope | The checks of the judge; they run when the protected set changes |
+| Mechanism | The verifier: kernel replay, trusted library, axiom policy | The judge lock, the verdict job and owner approval |
+| Tests | External behavior; they run in every CI scope | The verdict; it runs when the subject or the lock changes |
 | Documents | Product documents, ADR 0003, `kernel-gate.md` | This ADR |
 
 A product-trust mechanism is a product feature. It is designed, documented and
@@ -71,99 +96,131 @@ tested as such, and it does not depend on how the code was developed. A
 development-integrity mechanism protects the owner's view of the work. It is
 not part of the product and is not shipped.
 
-### 2. Make tampering impossible with a small protected set
+### 2. Lock the judge with Nix
 
-A change to a protected file needs the owner's approval before it can merge.
-The protected set is small, so that the owner can review each change to it.
-It contains the complete path from each reference to the CI verdict, and
-nothing else:
+The judge is a Nix derivation: the code that turns the subject's outputs into
+a verdict, the acceptance threshold of each claim, the frozen corpora, and the
+native SQLite build that produced the expected outputs. A lock file
+(`nix/judge.lock.json`) records the judge's derivation path for each system.
+Nix computes the derivation path from all inputs: sources, `nix/flake.lock`,
+`nix/sqlite.nix` and the build commands. A change to any of them changes the
+path, so the lock covers the judge's dependencies without a list of files.
 
-- **Reference data identity.** Digests of the frozen corpora
-  (`conformance/pinned-corpora.json`), not the corpora: a pin protects the
-  bytes that it names.
-- **Oracle.** The native SQLite build that produces the expected outputs:
-  `nix/sqlite.nix` and `nix/flake.lock`.
-- **Judge.** The code that turns the subject's outputs into a verdict, and the
-  acceptance threshold of each claim (for example, which cases of corpus v5
-  must agree). The judge is small and self-contained. It imports only
-  protected files and the standard library, and it calls the subject only
-  through a fixed interface. The subject cannot define or change its own
-  verdict.
-- **CI path.** The workflow and the commands that run the judge, the list of
-  required checks, and `.github/CODEOWNERS`. A pull request runs the workflow
-  from its own branch, so the workflow is part of the judge path.
+A small Nix file reads the lock, compares it with the derivation path that it
+evaluates, and stops with an error that names the changed part when they
+differ. Sources enter the store as content-derived paths, not as fixed-output
+paths with a declared hash, so that the comparison does not depend on what the
+store already holds. The same file defines the verdict: it runs the locked
+judge on the subject, for example the model, in the Nix sandbox.
+
+The judge calls the subject only through a fixed interface. The subject cannot
+define or change its own verdict.
+
+### 3. Run the verdict in its own CI job
+
+The verdict runs in a separate CI job that is a required check. The job runs
+only protected steps: it evaluates the lock and builds the verdict in the Nix
+sandbox. No pull-request code runs on the host of that job. Its Nix store
+comes from Nix's own substitution and builds, or from a cache that only `main`
+saves. The current CI job stays for ordinary tests, which make no integrity
+claim.
+
+### 4. Protect a small set of files and enforce it
+
+A change to these files needs the owner's approval before it can merge:
+
+- `nix/judge.lock.json`: the judge lock.
+- The Nix file that enforces the lock and defines the verdict.
+- `.github/workflows/`: a pull request runs workflows from its own branch, and
+  a new workflow could report a check with the verdict's name.
+- `.github/CODEOWNERS`.
+
+Enforcement:
+
+- The `main` ruleset requires a code-owner review and at least one approval.
+- Agents use an identity without bypass, admin or merge rights. Only the owner
+  merges.
+- The first line of `.github/CODEOWNERS` describes the actual ruleset.
 
 The protected set does not contain instructions or advisory processes, such as
 `AGENTS.md`, the review checklist or the review log. A change to them cannot
 make a verdict pass.
 
-### 3. Integrity checks are anchored or they are not integrity checks
+**Budget.** If more than about one in five pull requests needs an owner review
+under decisions 4 and 6, the protected set is too large and this ADR is
+reconsidered.
 
-A check that claims to prevent tampering compares against a file in the
-protected set. A check whose reference value an unprotected change can also
-change is not a tampering defense. It stays only as an ordinary test, if it
-finds honest mistakes (an accidental edit, a damaged file) that are worth its
-cost. Code whose only purpose is to make tampering harder is removed.
+### 5. Integrity checks are anchored or they are not integrity checks
 
-The review checklist gets this condition, and R8 is removed (see 5).
+A check that claims to prevent tampering compares against a protected value: a
+file of decision 4 or a part of the judge lock. A check whose reference value
+an unprotected change can also change is not a tampering defense. It stays
+only as an ordinary test, if it finds honest mistakes (an accidental edit, a
+damaged file) that are worth its cost. Code whose only purpose is to make
+tampering harder is removed, but only after decisions 2 to 4 are in force.
 
-### 4. Enforcement
+The review checklist gets this condition.
 
-- The `main` ruleset requires a code-owner review and at least one approval.
-- Agents use an identity without bypass, admin or merge rights. Only the owner
-  merges.
-- `.github/CODEOWNERS` has two labeled sections: the development protected set
-  (2) and the product trust base (5). Its first line describes the actual
-  ruleset.
-
-### 5. Product trust base
+### 6. Product trust base
 
 Changes to the code that gives the product guarantee also need the owner's
 review, because the guarantee depends on that code. This is a product reason,
 not a defense against agents. The product trust base starts as the files in
-the scope of review condition R8, plus the import-path check that its
-findings covered outside that scope: the verification target
+the scope of review condition R8, plus the import-path check that its findings
+covered outside that scope: the verification target
 (`SqliteVerifier/Contract.lean`), the kernel gates (`GatePaths.lean`,
-`GateCore.lean`, `ProofChecker.lean`, `BundleChecker.lean`), the export path,
-`packages/belay-sqlite/Belay/Sqlite/Codec.lean`, and the approval, baseline and
-import-path checks in `migration_check/`. With enforced code-owner review on
-this set, review condition R8 has no remaining purpose and is removed.
+`GateCore.lean`, `ProofChecker.lean`, `BundleChecker.lean`),
+`packages/belay-sqlite/Belay/Sqlite/Codec.lean`, and `prepare.py`, `bundle.py`,
+`baseline.py` and `import_path.py` in `migration_check/`. `.github/CODEOWNERS`
+lists it in its own section. With enforced code-owner review on this set,
+review condition R8 has no remaining purpose and is removed.
 
 ## Consequences
 
-- The owner reviews every change to the protected set and to the product trust
-  base. Changes to other files, including the corpora, the model and most
-  tests, need no owner approval, because they cannot change a verdict without
-  a change in the protected set.
-- The current judge must be extracted into a small module that imports no
-  unprotected code. Until then, the judge path includes the 45 modules that
-  `replay_tiers.py` imports, and the protected set is not small.
-- Existing integrity checks are reviewed against decision 3. Checks without a
-  protected anchor are removed or kept as ordinary tests; no check is kept as
-  a tampering defense without an anchor.
-- A task that changes a claim, such as a new corpus or a new threshold, has
-  two pull requests: the protected change, which the owner approves, and the
-  work, which does not touch the protected set.
+- Changes to the corpora, the model and most tests need no owner approval:
+  they cannot change a verdict without a change to the lock.
+- A change to the judge, a new corpus, a new threshold or a `nix/flake.lock`
+  update changes the lock, and the owner reviews the change behind it. The
+  lock diff only shows that a review is due; the source diff shows what to
+  approve.
+- A task that changes a claim has two pull requests: the lock change, which
+  the owner approves, and the work, which does not touch the lock.
+- The current judge must be extracted into a small derivation. Until then, the
+  lock covers the 45 modules that `replay_tiers.py` imports, and most changes
+  to `conformance/` need an owner review.
+- After decisions 2 to 4 are in force, the obstacle checks are removed: the
+  Python fast path and the `pinned` suite (95 s on Linux), the binding and
+  digest tests without a protected anchor, and the report validators. Full
+  validation of a corpus runs once, in the pull request that locks it.
+- The verdict job adds runner time but runs in parallel with the current job.
+  It replaces the frozen replay in that job instead of repeating it.
 - Product-trust tests are external-behavior tests and run in every CI scope.
-  Judge checks run when the protected set changes.
 
 ## Alternatives considered
 
 - **More in-repository checks** (stricter pins, more denominators, test-count
   checks). Rejected: each check lives where the agent writes, so an agent can
-  change it together with what it checks. Each one adds maintenance without a
-  guarantee.
-- **Protect all of `conformance/` and `tests/`.** Rejected: the set is too large
-  for the owner to review each change, so approvals become a formality.
+  change it together with what it checks.
+- **Protect all of `conformance/` and `tests/`.** Rejected: 85% of recent pull
+  requests would need an owner review, so approvals become a formality.
+- **Protect the judge's source files in `CODEOWNERS` instead of a lock.**
+  Rejected: the list must follow every import of the judge, and a missing
+  helper module is a hole. The derivation path covers all inputs.
+- **Required workflows from a protected repository** (organization rulesets).
+  This removes `.github/workflows/` from the protected set and lowers the review
+  load to about 21%. GitHub documents it for Enterprise Cloud only; adopt it if
+  the organization's plan includes it.
+- **A verdict check from a separate GitHub App.** Required checks are bound to
+  the app that reports them, so an Actions job cannot report the verdict. This
+  also removes `.github/workflows/` from the protected set, but needs a hosted
+  verdict runner. Reconsider if the budget of decision 4 is exceeded.
 - **Keep R8 as a review finding.** Rejected: a finding is advisory, and the
   review process cannot close "owner review required".
-- **Store references outside the repository** (a signed manifest or a second
-  repository). Not needed now: an enforced code-owner review on a small set
-  gives the same guarantee with less machinery. Reconsider if the owner cannot
-  review the protected set in time.
 
 ## Open points
 
-- The exact files of the extracted judge, and how a claim states its threshold.
-- Whether the oracle pin (`nix/flake.lock`) changes often enough for its
-  reviews to become a burden.
+- The extracted judge, its interface to the subject, and how a claim states
+  its threshold.
+- The time to hash the frozen corpora during evaluation, measured before the
+  corpora move into the lock.
+- The organization's GitHub plan (see the alternatives).
