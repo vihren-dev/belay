@@ -78,3 +78,6 @@ def test_settings_that_turn_off_kernel_checking_are_found() -> None:
     assert check_disabling_settings(lakefile) == ["package: leanOptions.debug.skipKernelTC",
                                                   "lean_lib Candidate: moreLeanArgs -Ddebug.skipKernelTC=true"]
     assert check_disabling_settings(project_lakefile("proofs", "../approved", ["Requirements"], ["Proofs"])) == []
+    explicit_false = ('[leanOptions]\n"debug.skipKernelTC" = false\n\n'
+                      '[[lean_lib]]\nname = "Candidate"\nmoreLeanArgs = ["-Ddebug.skipKernelTC=false"]\n')
+    assert check_disabling_settings(explicit_false) == []

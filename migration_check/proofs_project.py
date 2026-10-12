@@ -104,18 +104,27 @@ CHECK_DISABLING_OPTIONS = ("debug.skipKernelTC",)
 """Lean options that turn off kernel checking; the audit cannot see them, so generation refuses them."""
 
 
+def turns_on(value: object) -> bool:
+    """Whether an option value enables the option; only an explicit false leaves it off."""
+    return value not in (False, "false")
+
+
 def check_disabling_settings(lakefile_text: str) -> list[str]:
-    """Where a TOML lakefile turns off checks: `leanOptions` keys and `moreLeanArgs`/`weakLeanArgs` entries,
-    for the package and for each library."""
+    """Where a TOML lakefile turns off checks: enabling `leanOptions` entries and `-D` arguments in
+    `moreLeanArgs`/`weakLeanArgs`, for the package and for each library. A setting to false is allowed."""
     data = tomllib.loads(lakefile_text)
     found = []
     for owner, table in [("package", data), *((f"lean_lib {lib.get('name', '?')}", lib)
                                                 for lib in data.get("lean_lib", []))]:
         for option in CHECK_DISABLING_OPTIONS:
-            if option in table.get("leanOptions", {}):
+            options = table.get("leanOptions", {})
+            if option in options and turns_on(options[option]):
                 found.append(f"{owner}: leanOptions.{option}")
             for key in ("moreLeanArgs", "weakLeanArgs"):
-                found.extend(f"{owner}: {key} {argument}" for argument in table.get(key, []) if option in argument)
+                for argument in table.get(key, []):
+                    name, _, value = argument.removeprefix("-D").partition("=")
+                    if argument.startswith("-D") and name == option and turns_on(value or "true"):
+                        found.append(f"{owner}: {key} {argument}")
     return found
 
 

@@ -33,8 +33,10 @@ def generate(options: argparse.Namespace) -> dict[str, object]:
 
 
 def export_bundle_command(options: argparse.Namespace) -> dict[str, object]:
-    """`export`: write the bundle from the built project, without the audit; it regenerates first, so the
-    bundle matches the SQL it names."""
+    """`export`: write the bundle without the audit. It regenerates and builds first (nothing compiles when
+    the project is up to date), so the bundle matches the SQL it names."""
     inputs = generated_inputs(options)
     discovery, generated = generate_project(options, inputs)
-    return {**export(options, inputs.runtime, discovery), "warnings": generated["warnings"]}
+    compiled = build_project(options, inputs.runtime)
+    return {**export(options, inputs.runtime, discovery), "compiled_modules": compiled,
+            "warnings": generated["warnings"]}

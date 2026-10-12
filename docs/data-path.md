@@ -35,7 +35,9 @@ gives the same result for one file. `audit` builds the generated module `Check`,
 command fails on an axiom outside the gate's allowlist (including `sorryAx`) or an
 import that the verifier does not have; it is not part of the per-edit loop because
 it loads `Lean`, about 0.5 s. `generate` refuses a lakefile that turns off kernel
-checking (`debug.skipKernelTC`). The audit decides nothing; `verify-bundle` does.
+checking (`debug.skipKernelTC`). `prepare` audits before it exports; `export` alone
+builds and exports without the audit, so bundles from any tool reach `verify-bundle`.
+The audit decides nothing; `verify-bundle` does.
 
 **`init`** turns a folder with `NextInterpretation.lean` and `Proofs.lean` into a
 *proofs project* ([ADR 0010](adr-0010-lake-builds-and-artifact-cache.md)): it writes
