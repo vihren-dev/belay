@@ -13,10 +13,10 @@ KEY_CHECKS = """
 import SqliteVerifier.ApplicationKeys
 open Belay.Sqlite SqliteVerifier
 
-def columns : List Column := [
-  { name := "id", affinity := .integer },
-  { name := "payload", affinity := .text }]
-def first : Table := { shape.columns := columns, rows := [
+def columns : List CatalogColumn := [
+  { name := "id", declaredType := some "INTEGER" },
+  { name := "payload", declaredType := some "TEXT" }]
+def first : Table := { shape := { columns := columns }, rows := [
   ⟨4, [.integer 1, .text [65]]⟩, ⟨8, [.integer 2, .text [66]]⟩] }
 def reordered : Table := { first with rows := [
   ⟨900, [.integer 2, .text [66]]⟩, ⟨-5, [.integer 1, .text [65]]⟩] }
@@ -32,21 +32,21 @@ def readRecords (table : Table) : ApplicationKeyRows :=
   ["id"] ["payload"]).isSome
 example : applicationKeyPreservation.change (readRecords first) (readRecords reordered) := by
   unfold applicationKeyPreservation
-  decide
-example : readRecords first ≠ readRecords reordered := by decide
+  decide +kernel
+example : readRecords first ≠ readRecords reordered := by decide +kernel
 example : ¬ applicationKeyPreservation.change (readRecords first)
   (readRecords { first with rows := first.rows.take 1 }) := by
   unfold applicationKeyPreservation
-  decide
+  decide +kernel
 example : ¬ applicationKeyPreservation.change (readRecords first)
   (readRecords first ++ readRecords first) := by
   unfold applicationKeyPreservation
-  decide
+  decide +kernel
 example : ¬ applicationKeyPreservation.change (readRecords first)
   (readRecords { first with rows := [
     ⟨4, [.integer 1, .text [90]]⟩, ⟨8, [.integer 2, .text [66]]⟩] }) := by
   unfold applicationKeyPreservation
-  decide
+  decide +kernel
 
 #guard (projectApplicationRows { first with rows := [⟨4, [.null, .text [65]]⟩] }
   ["id"] ["payload"]).isNone
@@ -60,7 +60,7 @@ example : ¬ applicationKeyPreservation.change (readRecords first)
 #guard projectApplicationRows { first with rows := [] } ["id"] ["payload"] = some []
 #guard (projectApplicationRows { first with rows := [⟨4, [.integer 1]⟩] }
   ["id"] ["payload"]).isNone
-#guard (observeApplicationRows "items" ["id"] ["payload"] (fun _ => none)).isNone
+#guard (observeApplicationRows [] "items" ["id"] ["payload"] (fun _ => none)).isNone
 #guard (projectApplicationRows first ["id"] []).map (List.map Prod.snd) = some [[], []]
 """
 

@@ -160,12 +160,12 @@ def test_installed_model_and_codec_consumer(runtime_root: Path, tmp_path: Path,
         command_runner: Callable[..., CommandResult]) -> None:
     """An unrelated installed consumer compiles core, codec and application imports from both roots."""
     source = tmp_path / 'NeutralConsumer.lean'
-    source.write_text('import Belay.Sqlite\nimport Belay.Sqlite.Codec\nimport SqliteVerifier\n'
+    source.write_text('import Belay.Sqlite\nimport Belay.Sqlite.Codec.Resolution\nimport SqliteVerifier\n'
         '#check Belay.Sqlite.Conforms.set\n#check Belay.Sqlite.TableExtends.project\n'
         '#check SqliteVerifier.VerificationConditions\n'
-        'def inputs : Belay.Sqlite.GeneratedInputs := ⟨1, .sqlite351, [], [], []⟩\n'
-        '#eval match Belay.Sqlite.decodeGeneratedInputs (Lean.toJson inputs) with\n'
-        '  | .ok value => value.version == 1\n  | .error _ => false\n')
+        'def record : Belay.Sqlite.ScriptRecord := ⟨2, "3.51.0", "build", [], []⟩\n'
+        '#eval match Belay.Sqlite.decodeScriptRecord (Lean.toJson record) with\n'
+        '  | .ok value => value.version == 2 && value.resolve.toOption.isSome\n  | .error _ => false\n')
     roots = (runtime_root / '.lake/build/lib/lean',
              runtime_root / 'packages/belay-sqlite/.lake/build/lib/lean')
     result = command_runner([str(runtime_root / 'lean/bin/lean'), str(source)],cwd=tmp_path,
@@ -184,11 +184,10 @@ root = Path(sys.argv[1])
 sys.path.insert(0, str(root))
 import belay.sqlite
 from belay.sqlite.profiles import profile
-from belay.sqlite.sql_model import Column
+from belay.sqlite.syntax import script_record
 assert not (root / 'belay/__init__.py').exists()
 assert {path.name for path in (root / 'belay').iterdir()} == {'sqlite'}
-assert profile('3.46.0').wire_tag == 'sqlite346'
-assert Column('value', 'text').name == 'value'
+assert script_record(profile('3.46.0'), (), ())['release'] == '3.46.0'
 assert not any(name.startswith('migration_check') for name in sys.modules)
 print('INSTALLED_FRONTEND')
 '''

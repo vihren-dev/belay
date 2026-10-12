@@ -1,4 +1,4 @@
-import Belay.Sqlite.Codec
+import Belay.Sqlite.Codec.Resolution
 import VerifierConformance.Case
 
 /-! Conformance-case transport. The structural codecs for model types live in
@@ -9,49 +9,44 @@ open Belay.Sqlite
 
 namespace Belay.Sqlite
 
-deriving instance Lean.FromJson, Lean.ToJson for Conformance.NativeObservation,
-  Conformance.StatementOutput, Conformance.OutputGroup, Conformance.NativeOutput
-deriving instance Lean.FromJson for Conformance.Case
-
-/-- Preserve v1 transport exactly while adding output fields only to version two. -/
-instance : Lean.ToJson Conformance.Case where
-  toJson c := Lean.Json.mkObj ([
-    ("version", Lean.toJson c.version), ("schemaSql", Lean.toJson c.schemaSql),
-    ("migrationSql", Lean.toJson c.migrationSql), ("schema", Lean.toJson c.schema),
-    ("initial", Lean.toJson c.initial), ("script", Lean.toJson c.script),
-    ("nativeTrace", Lean.toJson c.nativeTrace), ("requirements", Lean.toJson c.requirements),
-    ("provenance", Lean.toJson c.provenance)] ++ if c.version == 2 then
-      [("parameters", Lean.toJson c.parameters), ("outputs", Lean.toJson c.outputs)] else [])
+deriving instance Lean.FromJson, Lean.ToJson for Conformance.NativeColumn, Conformance.NativeIndex,
+  Conformance.NativeTable, Conformance.NativeObservation
+deriving instance Lean.FromJson, Lean.ToJson for Conformance.StatementOutput, Conformance.OutputGroup,
+  Conformance.NativeOutput
+deriving instance Lean.FromJson, Lean.ToJson for Conformance.Case
 
 namespace Conformance
 
+/-- The supported case version: {assert}`caseVersion = 3`. Version 3 carries
+statement syntax and native catalog metadata instead of resolved statements. -/
+def caseVersion : Nat := 3
+
+/-- Check one native table: folded-name uniqueness is checked by the caller; here,
+distinct bounded rowids and one cell per column. -/
+def checkNativeTable (table : NativeTable) : Except String Unit := do
+  unless (table.rows.map Row.rowid).eraseDups.length == table.rows.length do
+    throw "duplicate physical rowid"
+  for row in table.rows do
+    unless LiteralData.boundedInteger row.rowid && row.values.length == table.columns.length do
+      throw "invalid physical rowid or row width"
+
 /-- Decode without silently accepting unsupported versions or malformed finite fixtures. -/
 def decodeCase (json : Lean.Json) : Except String Case := do
-  let version : Nat ← Lean.fromJson? (← json.getObjVal? "version")
-  let json := if version == 1 then ["parameters", "outputs"].foldl (fun object key =>
-    match object.getObjVal? key with
-    | .ok _ => object
-    | .error _ => object.setObjVal! key (Lean.Json.arr #[])) json else json
   let c : Case ← Lean.fromJson? json
-  unless c.version == 1 || c.version == 2 do throw "unsupported conformance case version"
+  unless c.version == caseVersion do throw s!"unsupported conformance case version {c.version}; regenerate the case"
   unless !(c.nativeTrace.isEmpty) do throw "missing initial native observation"
   for tables in c.initial :: c.nativeTrace.flatMap (fun n => [n.visible, n.persisted]) do
-    unless (tables.map Prod.fst).eraseDups.length == tables.length do
+    unless (tables.map (normalizeIdentifier ·.name)).eraseDups.length == tables.length do
       throw "duplicate table name"
-    for (_, table) in tables do
-      unless (table.rows.map Row.rowid).eraseDups.length == table.rows.length do
-        throw "duplicate physical rowid"
-      for row in table.rows do
-        unless LiteralData.boundedInteger row.rowid && row.values.length == table.shape.columns.length do
-          throw "invalid physical rowid or row width"
+    for table in tables do checkNativeTable table
   for n in c.nativeTrace do
     unless n.extendedCode % 256 == n.primaryCode do throw "inconsistent SQLite result codes"
-  if c.version == 1 then
-    unless c.outputs.isEmpty && c.parameters.isEmpty do throw "outputs require version two"
-  else
-    unless c.outputs.length + 1 == c.nativeTrace.length &&
-        c.parameters.length == c.outputs.length do throw "output/parameter trace length mismatch"
-    for output in c.outputs do
+  match c.outputs with
+  | none => unless c.parameters.isEmpty do throw "parameters require outputs"
+  | some outputs =>
+    unless outputs.length + 1 == c.nativeTrace.length && c.parameters.length == outputs.length do
+      throw "output/parameter trace length mismatch"
+    for output in outputs do
       unless matchesOutput output.result output.result output.groups do
         throw "invalid native output shape or groups"
   return c

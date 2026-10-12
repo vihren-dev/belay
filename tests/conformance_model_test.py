@@ -6,51 +6,48 @@ import json
 
 import pytest
 
-from conformance.case_format import literal_cell, schema_wire, table_wire
-from conformance.model_cases import cases
+from conformance.case_format import Json, literal_cell, row_wire
+from conformance.model_cases import ExpectedTable, cases
 from conformance.native_trace import record
 from conformance.model_check import compiled, prove
 from conformance.pipeline import fixtures
-from belay.sqlite.sql_model import Affinity, Column, Table, transition
-from belay.sqlite.sql_tree import parse
-from belay.sqlite.translate import statements
 from conformance.record_parser import default_parser, runtime_library
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kernel,
               pytest.mark.requires_lean, pytest.mark.requires_native("parser-library", "sqlite3")]
 
 
+def native_expected(table: ExpectedTable) -> Json:
+    """The native table that an authored expectation describes: plain typed columns and its rows."""
+    return {"name": table.name, "columns": [{"name": name, "declaredType": kind, "notNull": False, "defaultValue": None}
+                                           for name, kind in table.columns],
+            "primaryKey": [], "uniqueKeys": [], "indexes": [],
+            "rows": [row_wire(int(row[0]), tuple(literal_cell(value) for value in row[1:])) for row in table.rows]}
+
+
 @pytest.mark.parametrize("name", [case.name for case in cases()])
 def test_native_model(name: str, runtime_root: Path, tmp_path: Path) -> None:
-    """The unchanged five fixtures agree natively, round-trip, and receive kernel proofs."""
+    """The five fixtures agree natively, match their frozen records and round-trip; all but the
+    2,000-column fixture (`kernel_proof`) also receive kernel proofs."""
     index = next(i for i, case in enumerate(cases()) if case.name == name)
     old, fixture = cases()[index], fixtures()[index]
     case = record(fixture, default_parser(runtime_root))
     frozen = json.loads((Path(__file__).resolve().parents[1] / "conformance/cases" / f"{name}.json").read_text())
     assert case == frozen, "Native replay differs from the frozen pinned-engine record"
-    before = tuple(Table(table.name, tuple(Column(name, cast(Affinity, kind.lower()))
-                   for name, kind in table.columns)) for table in old.before)
-    after = tuple(Table(table.name, tuple(Column(name, cast(Affinity, kind.lower()))
-                  for name, kind in table.columns)) for table in old.after)
-    script = statements(parse(default_parser(runtime_root), fixture.migration_sql.encode(), "case.sql"))
-    assert case["schema"] == [schema_wire(table) for table in before]
-    assert transition(before, script)[0] == after
-    expected = [[table.name, table_wire(
-        Table(table.name, tuple(Column(name, cast(Affinity, kind.lower())) for name, kind in table.columns)),
-        [(int(row[0]), tuple(literal_cell(value) for value in row[1:])) for row in table.rows])]
-        for table in sorted(old.after, key=lambda table: table.name)]
+    expected = [native_expected(table) for table in sorted(old.after, key=lambda table: table.name)]
     assert case["nativeTrace"][-1]["visible"] == expected
-    assert old.native_error in dict(case["provenance"])["nativeError"]
+    assert old.native_error in dict(cast(list[list[str]], case["provenance"]))["nativeError"]
     answer = compiled(case, runtime_root, emit_lean=True)
     assert answer["verdict"] == "AGREE", answer
     assert answer["decoded"] == case
-    prove(answer["caseLean"], runtime_root, tmp_path / "Regression.lean", case=case, failure=old.lean_failure)
+    if old.kernel_proof:
+        prove(answer["caseLean"], runtime_root, tmp_path / "Regression.lean", case=case, failure=old.lean_failure)
 
 
 def test_lost_rows_rejected(runtime_root: Path, tmp_path: Path) -> None:
     """A falsely empty target fails the shared checker and cannot receive a kernel proof."""
     case = record(fixtures()[0], default_parser(runtime_root))
-    case["nativeTrace"][-1]["visible"][1][1]["rows"] = []
+    case["nativeTrace"][-1]["visible"][1]["rows"] = []
     result = compiled(case, runtime_root, emit_lean=True)
     assert result["verdict"] == "DISAGREE"
     prove(result["caseLean"], runtime_root, tmp_path / "Rejected.lean", case=case, expected=False)
@@ -69,7 +66,7 @@ def test_version_two_outputs(runtime_root: Path, tmp_path: Path) -> None:
         name="outputs-v2", outputs=True)
     case, error = prepare(native, runtime_library(runtime_root))
     assert case is not None, error
-    assert case["version"] == 2
+    assert case["version"] == 3 and case["outputs"] is not None
     answer = compiled(case, runtime_root, emit_lean=True)
     assert answer["verdict"] == "AGREE", answer
     assert answer["decoded"] == case

@@ -78,7 +78,7 @@ in rec {
     buildPhase = ''
       export HOME="$TMPDIR"
       ${lakeDependencies modelPackage}
-      lake build SqliteVerifier EngineeringExamples migration-proof-checker migration-bundle-checker migration-proof-exporter
+      lake build SqliteVerifier EngineeringExamples migration-proof-checker migration-bundle-checker migration-proof-exporter migration-resolver
     '';
     installPhase = ''
       mkdir -p "$out/.lake/build/bin" "$out/.lake/build/lib"
@@ -86,7 +86,7 @@ in rec {
       # Lake replays the library only when the outputs each trace lists exist, including `ir` (ADR 0010).
       cp -R .lake/build/ir "$out/.lake/build/"
       cp .lake/build/bin/migration-proof-checker .lake/build/bin/migration-bundle-checker \
-        .lake/build/bin/migration-proof-exporter "$out/.lake/build/bin/"
+        .lake/build/bin/migration-proof-exporter .lake/build/bin/migration-resolver "$out/.lake/build/bin/"
     '';
   };
   # Test-only model executable; the shipped verifier runtime keeps its existing commands.

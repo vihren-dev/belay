@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.Definitions
+import Belay.Sqlite.Resolution.KeyDomain
 
 set_option doc.verso true
 
@@ -103,14 +104,12 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
           restrict index [1] "a column named twice in INSERT is not modeled; name each column once"
         else match resolveAll (fun _ row => fullRow context.profile.dqsDml table.columns positions row) values with
           | .error issue => issueResolution catalog index [2] issue
-          | .ok full => .ok (.insert position full, catalog)
-
-/-- Whether the model compares a stored value with an integer literal without a
-conversion: the column has INTEGER, NUMERIC or BLOB affinity, and the execution
-semantics requires its stored values to be integers or NULL. -/
-def integerComparable : Affinity → Bool
-  | .integer | .numeric | .blob => true
-  | .text | .real => false
+          | .ok full =>
+            let keys := catalog.uniqueKeys position table
+            match keyDomainRestriction table.columns keys (fun row => [2, row])
+                (full.map (·.mapIdx fun position value => (position, value))) with
+            | some (path, reason) => restrict index path reason
+            | none => .ok (.insert position full keys, catalog)
 
 /-- Resolve the optional WHERE of UPDATE: none, or one column compared with an
 integer. Other filters, and a comparison that would convert values, are model
@@ -162,6 +161,10 @@ def resolveUpdate (context : ResolveContext) (catalog : Catalog) (index : Nat) (
               storedValue ((table.columns[column]?.map CatalogColumn.affinity).getD .blob) value [item, 1])
               (positions.zip values) with
             | .error issue => issueResolution catalog index [1] issue
-            | .ok stored => .ok (.update position (positions.zip stored) resolvedFilter, catalog)
+            | .ok stored =>
+              let keys := catalog.uniqueKeys position table
+              match keyDomainRestriction table.columns keys (fun _ => [1]) [positions.zip stored] with
+              | some (path, reason) => restrict index path reason
+              | none => .ok (.update position (positions.zip stored) resolvedFilter keys, catalog)
 
 end Belay.Sqlite

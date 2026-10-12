@@ -2,72 +2,79 @@ import Belay.Sqlite.ModelFacts
 
 set_option doc.verso true
 
-/-! Retained constraints are invariant under exact old-field projections. The key
-predicate is universally quantified: no tagged-value equality pretends to be
-SQLite's numeric, collation, or NULL comparison semantics. -/
+/-! Keys are invariant under exact old-field projections. The key predicate is
+universally quantified: no tagged-value equality pretends to be SQLite's numeric,
+collation, or NULL comparison semantics. -/
 
 namespace Belay.Sqlite
 
-/-- For every schema, database, name and table, assume {name}`Conforms` and
-that the table is stored at the name. Then schema property lookup returns its
-properties. An absent table cannot satisfy the premise. Use this for metadata
-reads; the proof projects conformance's whole-shape equality to properties. -/
-theorem Conforms.properties {table : Table} (conforms : Conforms schema database)
-    (present : database name = some table) :
-    schema.lookupProperties name = some table.shape.properties := by
-  simp [Schema.lookupProperties, conforms.shape present]
+/-- For every row, retain its rowid and select the cells at the column positions, in
+order; a position beyond a row's width selects {name}`Option.none`. -/
+def Table.projectPositions (table : Table) (positions : List Nat) : List (Int × List (Option Value)) :=
+  table.rows.map fun row => (row.rowid, positions.map (row.values[·]?))
 
-/-- For every before/after table satisfying {name}`TableExtends`, their properties
-are equal, including keys and indexes. No validity or row premise is required.
-Use this for retained metadata. The proof unfolds the column append witness. -/
-theorem TableExtends.properties (extension : TableExtends before after) :
-    after.shape.properties = before.shape.properties := by
-  obtain ⟨columns, rfl⟩ := extension
-  rfl
-
-/-- For every before/after table satisfying {name}`TableExtends`, the prefix of
-new columns with the old length equals the complete old declarations. With no
-old columns the equality is between empty lists. Use this for retained types,
-defaults and nullability. The proof takes the prefix of the append witness. -/
+/-- For every before/after table satisfying {name}`TableExtends`, the keys, the
+rowid alias and the prefix of new columns with the old length are unchanged. No
+validity or row premise is required. Use this for retained types, defaults,
+nullability and keys. The proof unfolds the column append witness. -/
 theorem TableExtends.declarations (extension : TableExtends before after) :
-    after.shape.columns.take before.shape.columns.length = before.shape.columns := by
+    after.shape.columns.take before.shape.columns.length = before.shape.columns ∧
+    after.shape.primaryKey = before.shape.primaryKey ∧ after.shape.uniqueKeys = before.shape.uniqueKeys ∧
+    after.shape.rowidAlias = before.shape.rowidAlias := by
   obtain ⟨columns, rfl⟩ := extension
   simp [Table.appendColumns]
 
-/-- For every retained key, require the supplied predicate on that key's column
-names and projected rows. With no keys this requires nothing. Supply the desired
-SQLite comparison and NULL meaning, or any other logical key predicate;
-this flexible primitive selects neither a comparator nor a nonnullness rule. -/
-def Table.KeysValid (meaning : List String → List (Int × List (Option Value)) → Prop) (table : Table) : Prop :=
-  ∀ key ∈ table.shape.properties.keys, meaning key (table.project key)
+/-- For every before/after table and position list, assume {name}`TableExtends`,
+one old cell per original column in every old row, and every position below the
+old width. Then the position projections are equal, including rowids. With no
+rows width is vacuous. The proof reads each cell before the appended NULLs. -/
+theorem TableExtends.projectPositions (extension : TableExtends before after)
+    (width : ∀ row ∈ before.rows, row.values.length = before.shape.columns.length)
+    (inside : ∀ position ∈ positions, position < before.shape.columns.length) :
+    after.projectPositions positions = before.projectPositions positions := by
+  obtain ⟨columns, rfl⟩ := extension
+  simp only [Table.projectPositions, Table.appendColumns, List.map_map]
+  apply List.map_congr_left
+  intro row member
+  apply Prod.ext
+  · rfl
+  · apply List.map_congr_left
+    intro position listed
+    have bound : position < row.values.length := by rw [width row member]; exact inside position listed
+    simp [Row.appendNulls, List.getElem?_append_left bound]
 
-/-- For every before/after table and key predicate, assume {name}`TableExtends`,
-correct old row widths, {name}`Covers` for every old key and old {name}`Table.KeysValid`.
-Then key validity holds after. With no keys, coverage and validity are vacuous;
-with no old rows, widths are vacuous. Use this with the supplied key meaning.
-The proof retains properties and rewrites each key projection to the old one. -/
+/-- For every given key, require the supplied predicate on its column positions and
+their projected rows. With no keys this requires nothing. Supply the desired SQLite
+comparison and NULL meaning, or any other logical key predicate; this flexible
+primitive selects neither a comparator nor a nonnullness rule. -/
+def Table.KeysValid (meaning : List Nat → List (Int × List (Option Value)) → Prop) (keys : List (List Nat))
+    (table : Table) : Prop :=
+  ∀ key ∈ keys, meaning key (table.projectPositions key)
+
+/-- For every before/after table, key list and key predicate, assume
+{name}`TableExtends`, correct old row widths, every key position below the old
+width and old {name}`Table.KeysValid`. Then key validity holds after. With no keys
+the premises are vacuous. The proof rewrites each key projection to the old one. -/
 theorem TableExtends.keysValid (extension : TableExtends before after)
     (width : ∀ row ∈ before.rows, row.values.length = before.shape.columns.length)
-    (coverage : ∀ key ∈ before.shape.properties.keys, Covers before key)
-    (valid : before.KeysValid meaning) : after.KeysValid meaning := by
+    (inside : ∀ key ∈ keys, ∀ position ∈ key, position < before.shape.columns.length)
+    (valid : before.KeysValid meaning keys) : after.KeysValid meaning keys := by
   intro key member
-  rw [extension.properties] at member
-  rw [extension.project width (coverage key member)]
+  rw [extension.projectPositions width (inside key member)]
   exact valid key member
 
-/-- For every before/after table, supplied column and predicate, assume
-{name}`TableExtends`, correct old row widths, coverage of the column's name and
-the predicate on that column and its old projection. Then the predicate holds
-for the same column and new projection. Only its name must be covered; equality
-with stored column metadata is not a premise. With no old rows, widths are
-vacuous. Use this to retain any fact about this observation.
-The proof rewrites the projection using {name}`TableExtends.project`. -/
-theorem TableExtends.columnInvariant {column : Column}
-    {predicate : Column → List (Int × List (Option Value)) → Prop} (extension : TableExtends before after)
+/-- For every before/after table, column name and predicate, assume
+{name}`TableExtends`, correct old row widths, coverage of the name and the
+predicate on the name and its old projection. Then the predicate holds for the
+same name and the new projection. With no old rows, widths are vacuous. Use this
+to retain any fact about this observation. The proof rewrites the projection
+using {name}`TableExtends.project`. -/
+theorem TableExtends.columnInvariant {name : String}
+    {predicate : String → List (Int × List (Option Value)) → Prop} (extension : TableExtends before after)
     (width : ∀ row ∈ before.rows, row.values.length = before.shape.columns.length)
-    (covered : Covers before [column.name])
-    (valid : predicate column (before.project [column.name])) :
-    predicate column (after.project [column.name]) := by
+    (covered : Covers before [name])
+    (valid : predicate name (before.project [name])) :
+    predicate name (after.project [name]) := by
   rw [extension.project width covered]
   exact valid
 

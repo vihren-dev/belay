@@ -44,7 +44,7 @@ def test_colliding_model_is_refused_by_both_gates(runtime_root: Path, lean_sysro
     bundle.write_text('{"bundle":1,"trusted_imports":[]}\n')
     generated = tmp_path / 'generated.json'
     generated.write_text('{}')
-    for executable, arguments in [('migration-proof-checker', [str(candidate)]),
+    for executable, arguments in [('migration-proof-checker', [str(candidate), str(generated)]),
                                  ('migration-bundle-checker', [str(bundle), str(generated)])]:
         result = run_command([str(runtime_root / '.lake/build/bin' / executable),
             str(application), str(lean_libraries[1]), str(trusted), *arguments],
@@ -64,7 +64,7 @@ def test_candidate_model_namespace_is_exported(runtime_root: Path, example_facto
     helper.parent.mkdir(parents=True)
     list_candidate_module(candidate, 'Belay.Sqlite.Candidate')
     helper.write_text("import Generated\nimport SqliteVerifier.Demonstration\n"
-        "theorem Belay.Sqlite.callerProof : Generated.expected := SqliteVerifier.Demonstration.migrationCorrect\n")
+        "theorem Belay.Sqlite.callerProof : Generated.expected := SqliteVerifier.Demonstration.migrationCorrect Generated.profile (by decide)\n")
     (candidate / 'Proofs.lean').write_text("import Belay.Sqlite.Candidate\n"
         "theorem Proofs.migrationCorrect : Generated.expected := Belay.Sqlite.callerProof\n")
     _bundle, report = prepare_check(runtime_root, examples, tmp_path,

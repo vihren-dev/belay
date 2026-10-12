@@ -24,7 +24,7 @@ PROOFS = {
     "own_axiom": HEADER + "axiom cheat : False\nnamespace Proofs\n"
                  "theorem migrationCorrect : Generated.expected := cheat.elim\nend Proofs\n",
     "outside_import": "import Lake\n" + HEADER + "namespace Proofs\ntheorem migrationCorrect : Generated.expected :=\n"
-                      "  SqliteVerifier.Demonstration.migrationCorrect\nend Proofs\n",
+                      "  SqliteVerifier.Demonstration.migrationCorrect Generated.profile (by decide)\nend Proofs\n",
 }
 """`Proofs.lean` variants; each but the first breaks one audit rule."""
 

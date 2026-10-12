@@ -167,7 +167,7 @@ def test_shared_interpretation_file(data_path: Callable[..., dict[str, object]],
         "import Requirements\n", "import Requirements\nimport SqliteVerifier.Demonstration\n")
     (shared / "Interpretation.lean").write_text(current + """
 namespace NextInterpretation
-def next : SqliteVerifier.Interpretation Requirements.LogicalState := SqliteVerifier.Demonstration.next
+def next : SqliteVerifier.Interpretation Requirements.LogicalState := SqliteVerifier.Demonstration.next Generated.profile
 def failures : SqliteVerifier.FailureRepresentation Requirements.LogicalState := SqliteVerifier.unreachableFailures
 end NextInterpretation
 """)

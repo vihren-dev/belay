@@ -36,6 +36,11 @@ class Runtime:
         return self.root / ".lake/build/bin/migration-bundle-checker"
 
     @property
+    def resolver(self) -> Path:
+        """ADR 0008 resolver that writes the generated input modules; the gates check its output."""
+        return self.root / ".lake/build/bin/migration-resolver"
+
+    @property
     def exporter(self) -> Path:
         """Repository exporter used by `prepare` with the checker's explicit trusted imports."""
         return self.root / ".lake/build/bin/migration-proof-exporter"

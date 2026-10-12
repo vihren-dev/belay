@@ -1,19 +1,18 @@
-"""Derive today's structural model input from frozen translator-independent evidence."""
+"""Derive the version 3 model case from frozen translator-independent evidence."""
 
 from conformance.record_parser import NO_PARSER_REASON, record_parser
 
-from conformance.case_format import Json, schema_wire, statement_wire, table_wire
+from conformance.case_format import CASE_VERSION, Json, row_wire
 from conformance.native_connection import SOURCE_ID
 from conformance import native_bindings
 from conformance.native_call_recording import validate_recording
-from conformance.native_metadata import check_inventory, identifier, integer, text
+from conformance.native_library import DEFAULT_ENGINE_VERSION
+from conformance.native_metadata import integer, native_table, text
 from belay.sqlite.dialects import NoParserForDialect
 from belay.sqlite.errors import SqlError
-from belay.sqlite.sql_model import Table
-from belay.sqlite.admission import admit
 from belay.sqlite.parser_library import ParserLibrary, ParserLibraryError
 from belay.sqlite.sql_tree import ParserResourceLimit, parse
-from belay.sqlite.translate import commands, starting_schema, statements
+from belay.sqlite.syntax import commands, statements
 
 
 def schema_sql(observation: dict[str, Json]) -> str:
@@ -60,11 +59,26 @@ def output_wire(event: dict[str, Json]) -> dict[str, Json]:
     return {"result": {"columns": columns, "rows": event["rows"], "changes": changes}, "groups": groups}
 
 
+def native_tables(observation: dict[str, Json]) -> list[Json]:
+    """Decode every recorded table with its PRAGMA metadata and rows; Lean compares them."""
+    result: list[Json] = []
+    for item in observation["tables"]:
+        if item["withoutRowid"] or item["kind"] != "table" or item["rowKey"] not in [["rowid"], ["_rowid_"], ["oid"]]:
+            raise ValueError("Unexpected row identity in an observed table")
+        indexes = [(native_bindings.decode_rows([index["entry"]])[0], native_bindings.decode_rows(index["columns"]))
+                   for index in item["indexes"]]
+        rows = [row_wire(integer(native_bindings.decode_cell(row["identity"][0])),
+                         tuple(native_bindings.decode_cell(cell) for cell in row["values"])) for row in item["rows"]]
+        result.append(native_table(item["name"], native_bindings.decode_rows(item["columns"]), indexes, rows))
+    return result
+
+
 def model_case(record: dict[str, Json], library: ParserLibrary) -> dict[str, Json]:
-    """Re-translate on every replay, preserving frozen native truth as the model grows.
+    """Map the SQL to statement syntax again on every replay, preserving frozen native truth.
 
     The case's SQL is parsed with the dialect of its recorded profile before the model
     check, so every case is parser evidence, also when the model does not support it.
+    Lean resolves the syntax and compares the catalog and rows after each statement.
     """
     validate_recording(record)
     if record.get("nativeVersion") not in (1, 2, 3, 4) or record["nativeVersion"] != 4 and record.get("sourceId") != SOURCE_ID:
@@ -74,11 +88,12 @@ def model_case(record: dict[str, Json], library: ParserLibrary) -> dict[str, Jso
     initial_sql = schema_sql(record["initial"]["visible"])
     schema_tree = parse(parser, initial_sql.encode(), "corpus-schema.sql")
     migration_tree = parse(parser, record["migrationSql"].encode(), "corpus-migration.sql")
-    ran = [parse(parser, event["sql"].encode(), "native-statement.sql")
-           for event in record["trace"] if "sql" in event and not event["primaryCode"]]
+    for event in record["trace"]:
+        if "sql" in event and not event["primaryCode"]:
+            parse(parser, event["sql"].encode(), "native-statement.sql")
     if record["nativeVersion"] == 4:
         raise SqlError("UNSUPPORTED", "Model execution profile capability is not implemented")
-    schema = starting_schema(schema_tree)
+    schema = statements(schema_tree)
     script = statements(migration_tree)
     trace = record["trace"]
     if (len(trace) > len(script) or any(event["primaryCode"] for event in trace[:-1])
@@ -86,7 +101,6 @@ def model_case(record: dict[str, Json], library: ParserLibrary) -> dict[str, Jso
         raise ValueError("Native/frontend statement-count mismatch")
     offset = 0
     migration = record["migrationSql"].encode()
-    native_trees = iter(ran)
     for index, event in enumerate(trace):
         consumed = event["sql"].encode()
         end = offset + len(consumed)
@@ -94,44 +108,17 @@ def model_case(record: dict[str, Json], library: ParserLibrary) -> dict[str, Jso
                 or index + 1 < len(script) and end > script[index + 1].start):
             raise ValueError("Native/frontend statement boundary mismatch")
         offset = end
-        if not event["primaryCode"]:
-            native_statement = statements(next(native_trees))
-            if [statement_wire(item) for item in native_statement] != [statement_wire(script[index])]:
-                raise ValueError("Native/frontend statement alignment mismatch")
-    admit(schema, script)
-    cache: dict[str, tuple[Table, ...]] = {initial_sql: schema}
-
-    def tables(observation: dict[str, Json]) -> list[Json]:
-        """Cross-check translated declarations against the independently recorded PRAGMAs."""
-        sql = schema_sql(observation)
-        if sql not in cache:
-            cache[sql] = starting_schema(parse(parser, sql.encode(), "corpus-observation.sql"))
-        actual = {item["name"].translate(str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")): item
-                  for item in observation["tables"]}
-        if set(actual) != {table.name for table in cache[sql]}:
-            raise ValueError("Native table inventory differs")
-        result: list[Json] = []
-        for table in sorted(cache[sql], key=lambda t: t.name):
-            native = actual[table.name]
-            check_inventory(table, native_bindings.decode_rows(native["columns"]), [
-                (native_bindings.decode_rows([index["entry"]])[0], native_bindings.decode_rows(index["columns"])) for index in native["indexes"]])
-            if native["withoutRowid"] or native["kind"] != "table" or native["rowKey"] not in [["rowid"], ["_rowid_"], ["oid"]]:
-                raise ValueError("Unexpected row identity in admitted table")
-            rows = [(integer(native_bindings.decode_cell(row["identity"][0])), tuple(native_bindings.decode_cell(cell) for cell in row["values"]))
-                    for row in native["rows"]]
-            result.append([table.name, table_wire(table, rows)])
-        return result
-
     observations: list[Json] = []
     for event in [record["initial"], *record["trace"]]:
-        observations.append({"visible": tables(event["visible"]), "persisted": tables(event["persisted"]),
+        observations.append({"visible": native_tables(event["visible"]), "persisted": native_tables(event["persisted"]),
             "transactionOpen": event["transactionOpen"], "primaryCode": event.get("primaryCode", 0),
             "extendedCode": event.get("extendedCode", 0)})
-    return {"version": 2 if outputs is not None else 1, "schemaSql": initial_sql, "migrationSql": record["migrationSql"],
-            "schema": [schema_wire(table) for table in schema], "initial": tables(record["initial"]["visible"]),
-            "script": [statement_wire(statement) for statement in script], "nativeTrace": observations,
+    return {"version": CASE_VERSION, "release": DEFAULT_ENGINE_VERSION, "sourceId": SOURCE_ID,
+            "schemaSql": initial_sql, "migrationSql": record["migrationSql"],
+            "schema": [item.value for item in schema], "script": [item.value for item in script],
+            "initial": observations[0]["visible"], "nativeTrace": observations,
             "requirements": record["requirements"], "provenance": [["fixture", record["name"]], ["sourceId", SOURCE_ID]],
-            **({"outputs": outputs, "parameters": [event["parameters"] for event in trace]} if outputs is not None else {})}
+            "outputs": outputs, "parameters": [event["parameters"] for event in trace] if outputs is not None else []}
 
 
 def prepare(record: dict[str, Json], library: ParserLibrary) -> tuple[dict[str, Json] | None, dict[str, Json]]:

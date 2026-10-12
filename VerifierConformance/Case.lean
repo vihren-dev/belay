@@ -1,37 +1,31 @@
-import VerifierConformance.Trace
+import VerifierConformance.Native
 import VerifierConformance.Outputs
 
 /-! ADR 0004's finite comparison authority. Native observations remain empirical
-inputs; proving checkCase certifies only the model's agreement with those inputs. -/
+inputs; proving checkCase certifies only the model's agreement with those inputs.
+A case carries statement syntax: the model resolves it, then executes it, and
+compares each step's catalog and tables with the native ones. -/
 
 namespace Belay.Sqlite.Conformance
 
-/-- Present tables only; absence is reconstructed over the complete case name set. -/
-abbrev FiniteDatabase := List (String × Table)
-
-/-- Native extended codes are retained for diagnostics; the current model compares
-primary codes because constraintViolation does not distinguish constraint kinds. -/
-structure NativeObservation where
-  visible : FiniteDatabase
-  persisted : FiniteDatabase
-  transactionOpen : Bool
-  primaryCode : Nat
-  extendedCode : Nat
-  deriving Repr, DecidableEq
-
-/-- Versioned cases keep initialization separate; v2 adds reached statement outputs. -/
+/-- A version 3 case: the profile's release and build, the SQL texts, their
+statement syntax, the native tables before the migration, and native truth after
+each executed statement. {lit}`outputs` is present when the record has statement
+outputs; it then has one entry per executed statement. -/
 structure Case where
   version : Nat
+  release : String
+  sourceId : String
   schemaSql : String
   migrationSql : String
-  schema : Schema
-  initial : FiniteDatabase
-  script : List Statement
+  schema : List Syntax.Statement
+  script : List Syntax.Statement
+  initial : List NativeTable
   nativeTrace : List NativeObservation
   requirements : List String := []
   provenance : List (String × String) := []
   parameters : List (List Value) := []
-  outputs : List NativeOutput := []
+  outputs : Option (List NativeOutput) := none
   deriving Repr
 
 /-- Unsupported cases cannot be mistaken for either agreement or a model bug. -/
@@ -41,20 +35,29 @@ inductive Verdict where
   | modelUnsupported
   deriving Repr, DecidableEq
 
-/-- Interpret finite fixture contents without changing the production database type. -/
-def databaseOf (tables : FiniteDatabase) : Database :=
-  fun name => (tables.find? (fun entry => entry.1 == name)).map Prod.snd
+/-- The resolution state before the first statement and after each statement, until
+the first model restriction. Observation {lit}`j` of a trace uses state {lit}`j`: a
+statement that fails leaves the catalog as it was, in resolution and in SQLite. -/
+def resolveStates (context : ResolveContext) (index : Nat) (state : ResolveState) :
+    List Syntax.Statement → List ResolveState
+  | [] => [state]
+  | statement :: rest => match resolveStatement context state index statement with
+    | .ok (_, next) => state :: resolveStates context (index + 1) next rest
+    | .error _ => [state]
 
-/-- Include every name a statement can read or create, including failed statements. -/
-def statementNames : Statement → List String
-  | .createTable name _ | .addColumn name _ | .insert name _ _ | .update name .. => [name]
-  | _ => []
+/-- The number of catalog positions that any of the states uses, in its catalog or in
+its saved catalog: the bound up to which a trace observes tables. -/
+def stateBound (states : List ResolveState) : Nat :=
+  states.foldl (fun bound state => max bound (max state.catalog.length ((state.saved.map List.length).getD 0))) 0
 
-/-- Fixture names are included even if native execution unexpectedly loses a table. -/
-def Case.names (c : Case) : List String :=
-  ((c.schema.map TableSchema.name) ++ c.initial.map Prod.fst ++
-    c.script.flatMap statementNames ++ c.nativeTrace.flatMap (fun observation =>
-      (observation.visible ++ observation.persisted).map Prod.fst)).eraseDups
+/-- The starting database: each catalog table holds the rows of the native table with
+its folded name; a catalog table without a native table holds nothing. -/
+def databaseOf (catalog : Catalog) (natives : List NativeTable) : Database :=
+  fun position => match catalog[position]?, catalog.tableAt position with
+    | some object, some shape => (natives.find? fun native =>
+        normalizeIdentifier native.name == normalizeIdentifier object.name).map fun native =>
+          { shape, rows := native.rows }
+    | _, _ => none
 
 /-- The primary result-code abstraction matches the granularity of ExecutionError. -/
 def primaryCode : Option (Nat × ExecutionError) → Nat
@@ -62,30 +65,27 @@ def primaryCode : Option (Nat × ExecutionError) → Nat
   | some (_, .constraintViolation) => 19
   | some _ => 1
 
-/-- Compare typed states and transaction status; never compare error message text. -/
-def matchesObservation (names : List String) (model : Observation)
-    (native : NativeObservation) : Bool :=
-  decide (model.visible = observeTables names (databaseOf native.visible)) &&
-  decide (model.persisted = observeTables names (databaseOf native.persisted)) &&
+/-- Compare the visible and committed views under their catalogs, the transaction
+status and the primary code; never compare error message text. -/
+def matchesObservation (state : ResolveState) (model : Observation) (native : NativeObservation) : Bool :=
+  tablesMatch state.catalog model.visible native.visible &&
+  tablesMatch (state.saved.getD state.catalog) model.persisted native.persisted &&
   model.transactionOpen == native.transactionOpen && primaryCode model.error == native.primaryCode
 
 /-- A missing or extra observation is a disagreement at its first statement position. -/
-def compareSteps (names : List String) (position : Nat) :
+def compareSteps (states : List ResolveState) (position : Nat) :
     List Observation → List NativeObservation → Verdict
   | [], [] => .agree
   | model :: models, native :: natives =>
-    if matchesObservation names model native then compareSteps names (position + 1) models natives
+    let state := states[position + 1]?.getD (states.getLastD { catalog := [] })
+    if matchesObservation state model native then compareSteps states (position + 1) models natives
     else .disagree (some position)
   | _, _ => .disagree (some position)
 
-/-- Keep production admission separate from modeled execution failures. -/
-def admitted (c : Case) : Bool :=
-  schemaAllows c.schema c.script && supportedSqlFrom 0 c.script { database := databaseOf c.initial }
-
-/-- invalidDefinition is an admission boundary, never a native SQLite error. -/
+/-- An unmodeled statement is an admission boundary, never a native SQLite error. -/
 def invalidObservation (observation : Observation) : Bool :=
   match observation.error with
-  | some (_, .invalidDefinition) => true
+  | some (_, .unmodeled) => true
   | _ => false
 
 /-- Missing capability stays unsupported; every available output must match native evidence. -/
@@ -98,25 +98,40 @@ def compareOutputs (position : Nat) : List (Option StatementOutput) → List Nat
     else .disagree (some position)
   | _, _ => .disagree (some position)
 
-/-- Initial state is checked first, admission second, then the complete execution trace. -/
+/-- Resolve the case, then check the initial state first, admission second, and the
+complete execution trace and outputs last. A model restriction is unsupported; a
+schema that SQLite prepared but resolution refuses is a disagreement. -/
 def classifyCase (c : Case) : Verdict :=
-  let names := c.names
-  let observed := trace names c.script (databaseOf c.initial)
-  let outputs := if c.version == 2 then
-    outputTraceFrom 0 c.script { database := databaseOf c.initial } else []
-  match observed, c.nativeTrace with
-  | first :: rest, expected :: expectations =>
-    if !matchesObservation names first expected then .disagree none
-    else if !admitted c || observed.any invalidObservation ||
-        c.parameters.any (fun values => !values.isEmpty) || outputs.any Option.isNone then
-      .modelUnsupported
-    else
-      match compareSteps names 0 rest expectations with
-      | .agree =>
-        if c.version == 1 then .agree
-        else compareOutputs 0 outputs c.outputs
-      | verdict => verdict
-  | _, _ => .disagree none
+  let profile := Profile.documented c.release c.sourceId
+  match resolveSchemaAndScript profile c.schema c.script with
+  | .error (.schemaRestricted _) | .error (.scriptRestricted _) => .modelUnsupported
+  | .error (.schemaPrepareError ..) => .disagree none
+  | .ok resolution =>
+    let states := resolveStates { profile, mode := .execution } 0 { catalog := resolution.startCatalog } c.script
+    let count := stateBound states
+    let initial := databaseOf resolution.startCatalog c.initial
+    let observed := trace count resolution.resolved initial
+    let outputs := outputTraceFrom 0 resolution.resolved { database := initial }
+    match observed, c.nativeTrace with
+    | first :: rest, expected :: expectations =>
+      if !matchesObservation { catalog := resolution.startCatalog } first expected then .disagree none
+      else if !supportedSqlFrom 0 resolution.resolved { database := initial } || observed.any invalidObservation ||
+          c.parameters.any (fun values => !values.isEmpty) || (c.outputs.isSome && outputs.any Option.isNone) then
+        .modelUnsupported
+      else
+        match compareSteps states 0 rest expectations with
+        | .agree => match c.outputs with
+          | none => .agree
+          | some natives => compareOutputs 0 outputs natives
+        | verdict => verdict
+    | _, _ => .disagree none
+
+/-- The model's outcome for a case: resolve the syntax, then run the resolved script
+from the native starting tables; {name}`Option.none` when the model refuses the case. -/
+def modelOutcome (c : Case) : Option Outcome :=
+  match resolveSchemaAndScript (Profile.documented c.release c.sourceId) c.schema c.script with
+  | .ok resolution => some (runSql resolution.resolved (databaseOf resolution.startCatalog c.initial))
+  | .error _ => none
 
 /-- Both compiled testing and concrete kernel proofs use the same classification. -/
 def checkCase (c : Case) : Bool := decide (classifyCase c = .agree)

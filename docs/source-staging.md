@@ -18,22 +18,24 @@ from bypassing selected-file exclusions. Explicitly supplying the same source fo
 multiple roles authorizes that source for those roles.
 
 `SchemaInputs` compiles first with only the pinned library. It exports only
-`Generated.startSchema`, generated structurally from the supplied starting SQL.
+`Generated.profile`, `Generated.schema` and `Generated.startCatalog`, which
+`migration-resolver` writes from the resolution of the supplied starting SQL.
 Approved Requirements and Interpretation closures may import this sealed module
-but candidate modules, scripts and result schemas are absent from its module
+but candidate modules, scripts and resulting catalogs are absent from its module
 search path. This is not filesystem containment. Local
 SchemaInputs sources cannot shadow the generated module; case/path variants and
 selected source roles using that reserved name reject.
 
-The shipped invoice and Atuin interpretations use `Generated.startSchema` from
-this sealed module. Their protected baselines identify both the authored
+The shipped invoice and Atuin interpretations use `Generated.profile` and
+`Generated.startCatalog` from this sealed module. Their protected baselines identify both the authored
 `schema.sql` bytes and every approved source in the closure. A changed schema
 is rejected before proof compilation, even when only SQL comments change.
 An explicitly configured baseline remains required for that approval check;
 generated input hashes do not authorize a new schema.
 
 `SqlInputs` imports SchemaInputs and compiles separately with only its artifacts
-and the pinned library. It defines the script, next schema and profile. Candidate
+and the pinned library. It defines the script syntax, the resolved script and the
+resulting catalog. Candidate
 NextInterpretation, Generated and Proofs then compile with all protected artifacts
 read-only. Each compiler gets a fresh writable scratch
 directory and a bounded process. Read-only file modes prevent accidental edits;

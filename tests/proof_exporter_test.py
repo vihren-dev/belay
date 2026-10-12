@@ -122,7 +122,7 @@ def test_candidate_module_under_library_namespace(module: str, runtime_root: Pat
 import SqliteVerifier.Demonstration
 namespace {module}
 /-- The caller-owned helper establishes this example's complete migration target. -/
-theorem checked : Generated.expected := SqliteVerifier.Demonstration.migrationCorrect
+theorem checked : Generated.expected := SqliteVerifier.Demonstration.migrationCorrect Generated.profile (by decide)
 end {module}
 """)
     (candidate / "Proofs.lean").write_text(f"""import {module}

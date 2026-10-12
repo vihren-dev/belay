@@ -58,9 +58,11 @@ def matchesOutput (expected actual : StatementOutput)
     ordered.all (fun group => group.rows.all (fun row => row.length == expected.columns.length)) &&
     matchesGroups ordered expected.rows && matchesGroups ordered actual.rows
 
-/-- Observe the existing literal-DML domain; unsupported output capability is explicit.
-Transitions and failure status come from production advance, never a second evaluator. -/
-def statementOutput (statement : Statement) (before : SqlState)
+/-- Observe the literal-DML domain; unsupported output capability is explicit.
+Transitions and failure status come from production advance, never a second
+evaluator. A successful INSERT changes one row per VALUES row and a successful
+UPDATE changes each row that its filter selects. -/
+def statementOutput (statement : Resolved.Statement) (before : SqlState)
     (transition : SqlTransition) : Option StatementOutput :=
   let successful := match transition with | .next _ => true | _ => false
   let constraintFailure := match transition with
@@ -68,19 +70,19 @@ def statementOutput (statement : Statement) (before : SqlState)
     | .halt (.pending _ _ (some (_, .constraintViolation))) => true
     | _ => false
   match statement with
-  | .insert .. =>
-    if successful then some ⟨[], [], some 1⟩
+  | .insert _ rows _ =>
+    if successful then some ⟨[], [], some rows.length⟩
     else if constraintFailure then some ⟨[], [], some 0⟩ else none
-  | .update name _ _ key equals =>
+  | .update at_ _ filter _ =>
     if successful then do
-      let table ← before.database name
-      return ⟨[], [], some (table.rows.filter (fun row =>
-        LiteralData.matchesKey table row key equals)).length⟩
+      let table ← before.database at_
+      return ⟨[], [], some (table.rows.filter (LiteralData.selected filter)).length⟩
     else if constraintFailure then some ⟨[], [], some 0⟩ else none
-  | _ => some ⟨[], [], none⟩
+  | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ =>
+    some ⟨[], [], none⟩
 
 /-- Follow reached production transitions and stop at their first failure. -/
-def outputTraceFrom (position : Nat) (script : List Statement) (state : SqlState) :
+def outputTraceFrom (position : Nat) (script : List Resolved.Statement) (state : SqlState) :
     List (Option StatementOutput) :=
   match script with
   | [] => []

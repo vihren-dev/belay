@@ -15,8 +15,8 @@ MODEL_MODULE_PREFIX = "Belay.Sqlite"
 """Only the standalone package namespace supplies project modules to the core."""
 ALLOWED_EXTERNAL_IMPORT_ROOTS = {"Init"}
 """The core uses only Lean's prelude; `Std` and the Lean compiler API add import cost it does not need."""
-EXPECTED_CORE_MODULE_COUNT = 34
-"""The public root reaches thirty-three core modules, including resolution; its compiled examples are not imported."""
+EXPECTED_CORE_MODULE_COUNT = 37
+"""The public root reaches thirty-seven core modules, including resolution; its compiled examples are not imported."""
 pytestmark = [pytest.mark.integration, pytest.mark.requires_nix, pytest.mark.requires_lean("compiler")]
 
 
@@ -55,18 +55,18 @@ def test_installed_core_and_codec_consumer(model_artifact: Path, lean_sysroot: P
     """An unrelated consumer imports both libraries and checks transport roundtrip and refusal."""
     source = tmp_path / "Consumer.lean"
     source.write_text('''import Belay.Sqlite
-import Belay.Sqlite.Codec
+import Belay.Sqlite.Codec.Resolution
 open Belay.Sqlite
 #check Conforms.set
 #check TableExtends.project
 #check Conformance.statement_atomicity
-def sample : GeneratedInputs := ⟨1, .sqlite351, [], [], []⟩
-#eval match decodeGeneratedInputs (Lean.toJson sample) with
-  | .ok result => result.version == 1 && result.schema.isEmpty && result.script.isEmpty
+def sample : ScriptRecord := ⟨2, "3.51.0", "build", [], []⟩
+#eval match decodeScriptRecord (Lean.toJson sample) with
+  | .ok result => result.version == 2 && result.schema.isEmpty && result.script.isEmpty
   | .error _ => false
-#eval match decodeGeneratedInputs (Lean.toJson { sample with version := 2 }) with
+#eval match decodeScriptRecord (Lean.toJson { sample with version := 1 }) with
   | .ok _ => false
-  | .error message => message.contains "2" && message.contains "version 1" && message.contains "Regenerate"
+  | .error message => message.contains "1" && message.contains "version 2" && message.contains "Regenerate"
 #eval match (Lean.fromJson? (Lean.toJson (256 : Nat)) : Except String UInt8) with
   | .ok _ => false
   | .error _ => true

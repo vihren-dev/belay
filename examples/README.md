@@ -31,9 +31,10 @@ tool; the tool does not read it yet, and the tests use it to find each case. Its
 `[test]` table holds the status that the tests expect.
 The verifier generates sealed `SchemaInputs.lean`, `SqlInputs.lean` and
 `Generated.lean`; these are not user inputs. The approved interpretation imports
-only `SchemaInputs` from these modules and uses `Generated.startSchema`. Its
-protected baseline pins `schema.sql` and the complete approved Lean closure.
-Approved modules cannot import the migration, result schema or candidate sources.
+only `SchemaInputs` from these modules and uses `Generated.profile` and
+`Generated.startCatalog`. Its protected baseline pins `schema.sql` and the
+complete approved Lean closure. Approved modules cannot import the migration,
+the resulting catalog or candidate sources.
 
 The public proof implementations are `SqliteVerifier/Demonstration.lean` and
 `SqliteVerifier/ReverseDemonstration.lean`. The named projection, coverage,
@@ -41,7 +42,10 @@ schema-update, and verification primitives remain available for adapting the
 requirements or writing a different proof.
 
 `allowed_failure` is a separate policy example with its own `approved/` files.
-It permits precisely a table-exists error at zero-based statement position 2.
+It permits precisely SQLite's table-exists prepare error at zero-based statement
+position 2. Resolution continues after that error, so the resulting catalog
+contains the unreached table; the failure representation reads the catalog of the
+committed prefix.
 Both earlier changes remain committed, the fourth statement is skipped, and the
 failed outcome reads the same protected invoice projection from resulting storage.
 This demonstrates the general failure contract; it does not weaken or replace

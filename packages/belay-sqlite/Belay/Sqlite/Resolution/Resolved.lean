@@ -72,12 +72,13 @@ structure Restriction where
 namespace Resolved
 
 /-- One statement after name resolution. For example, an INSERT into the table at
-catalog position 0 with one full row is {lean}`Statement.insert 0 [[Value.null]]`. -/
+catalog position 0 with one full row and no unique keys is
+{lean}`Statement.insert 0 [[Value.null]] []`. -/
 inductive Statement where
-  /-- Create the named table; its catalog position is the end of the catalog. -/
-  | createTable (name : String) (table : CatalogTable)
-  /-- Create the named index; its catalog position is the end of the catalog. -/
-  | createIndex (name : String) (index : CatalogIndex)
+  /-- Create the named table at the catalog position, which is the end of the catalog. -/
+  | createTable (position : Nat) (name : String) (table : CatalogTable)
+  /-- Create the named index at the catalog position, which is the end of the catalog. -/
+  | createIndex (position : Nat) (name : String) (index : CatalogIndex)
   /-- Append the column to the table at the catalog position. -/
   | addColumn (table : Nat) (column : CatalogColumn)
   /-- Start a transaction. -/
@@ -86,11 +87,15 @@ inductive Statement where
   | commit
   /-- Roll the transaction back. -/
   | rollback
-  /-- Insert full rows, with one converted value for each column in table order. -/
-  | insert (table : Nat) (rows : List (List Value))
+  /-- Insert full rows, with one converted value for each column in table order.
+  {name}`Statement.insert` also carries the column positions of each unique key of
+  the table, which the statement must keep unique. -/
+  | insert (table : Nat) (rows : List (List Value)) (keys : List (List Nat))
   /-- Set each column position to its value in the rows where the optional filter
-  column equals the filter value; with no filter, in every row. -/
+  column equals the filter value; with no filter, in every row. The unique keys are
+  as for INSERT. -/
   | update (table : Nat) (assignments : List (Nat × Value)) (filter : Option (Nat × Value))
+      (keys : List (List Nat))
   /-- SQLite refuses to prepare the statement with this error. -/
   | prepareError (error : PrepareError)
   deriving Repr, DecidableEq

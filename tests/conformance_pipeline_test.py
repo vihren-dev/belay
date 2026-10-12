@@ -1,5 +1,6 @@
 """Live pinned SQLite, compiled classification, serialization and kernel proof parity."""
 
+from collections.abc import Callable
 from copy import deepcopy
 import json
 from pathlib import Path
@@ -37,7 +38,7 @@ def test_transaction_observation(ending: str, runtime_root: Path) -> None:
 
 
 def test_wrong_trace_and_unsupported(runtime_root: Path, tmp_path: Path) -> None:
-    """Wrong traces fail both tiers; data-domain and invalid-definition failures stay unsupported."""
+    """Wrong traces fail both tiers; data-domain and restricted definitions stay unsupported."""
     case = record(fixtures()[0], default_parser(runtime_root))
     wrong = deepcopy(case)
     wrong["nativeTrace"][-1]["visible"] = []
@@ -47,10 +48,10 @@ def test_wrong_trace_and_unsupported(runtime_root: Path, tmp_path: Path) -> None
     with pytest.raises(AssertionError, match="false|failed"):
         prove(rejected["caseLean"], runtime_root, tmp_path / "FalseProof.lean", case=wrong)
     invalid = deepcopy(case)
-    invalid["script"][0]["addColumn"]["column"]["notNull"] = True
+    invalid["script"][0]["addColumn"]["column"]["constraints"] = ["notNull"]
     result = compiled(invalid, runtime_root, emit_lean=True)
     assert result["verdict"] == "MODEL_UNSUPPORTED"
-    prove(result["caseLean"], runtime_root, tmp_path / "InvalidDefinition.lean", case=invalid, expected=False)
+    prove(result["caseLean"], runtime_root, tmp_path / "RestrictedDefinition.lean", case=invalid, expected=False)
     fixture = Fixture("CREATE TABLE records(id INTEGER,UNIQUE(id));",
         "UPDATE records SET id=2 WHERE id=1;",
         {"records": [(1, ((3, b"not-a-number"),))]}, "unsupported-key-domain")
@@ -74,13 +75,13 @@ def test_exact_storage_and_wide_rows(runtime_root: Path) -> None:
     nan = Fixture(specials.schema_sql, "", {"t": [(1, ((2, 0x7FF8000000000001),))]}, "nan")
     case, verdict = evaluate(nan, runtime_root)
     assert verdict["verdict"] == "DISAGREE" and verdict["position"] is None
-    assert case["nativeTrace"][0]["visible"][0][1]["rows"][0]["values"] == ["null"]
+    assert case["nativeTrace"][0]["visible"][0]["rows"][0]["values"] == ["null"]
     wide = fixtures()[4]
     populated = Fixture(wide.schema_sql, wide.migration_sql,
                         {"full": [(7, tuple((3, b"x") for _ in range(2000)))]}, "wide")
     case = record(populated, default_parser(runtime_root))
     assert compiled(case, runtime_root)["verdict"] == "AGREE"
-    assert len(case["nativeTrace"][0]["visible"][0][1]["rows"][0]["values"]) == 2000
+    assert len(case["nativeTrace"][0]["visible"][0]["rows"][0]["values"]) == 2000
 
 
 def test_fail_closed_transport(runtime_root: Path) -> None:
@@ -92,7 +93,7 @@ def test_fail_closed_transport(runtime_root: Path) -> None:
     wrong["version"] = 2
     assert compiled(wrong, runtime_root)["verdict"] == "HARNESS_ERROR"
     wrong = deepcopy(case)
-    wrong["initial"][0][1]["rows"][0]["values"][1] = {"text": {"bytes": [256]}}
+    wrong["initial"][0]["rows"][0]["values"][1] = {"text": {"bytes": [256]}}
     assert compiled(wrong, runtime_root)["verdict"] == "HARNESS_ERROR"
     result = subprocess.run([str(runtime_root / ".lake/build/bin/conformance-runner")],
         input="not json\n" + json.dumps(case) + "\n", capture_output=True, text=True, timeout=10)
@@ -115,62 +116,52 @@ def test_preserved_schema_metadata(runtime_root: Path, tmp_path: Path) -> None:
         prove(result["caseLean"], runtime_root, tmp_path / "ChangedTerm.lean", case=changed)
 
 
-def test_native_metadata_catches_translator_faults(runtime_root: Path, tmp_path: Path,
-                                                  monkeypatch: pytest.MonkeyPatch) -> None:
-    """Independent PRAGMAs reject corrupted metadata even when the parser accepts it."""
-    from dataclasses import replace
-    from conformance import native_trace
-    from conformance.native_connection import Connection, library_path, load_library
-    from belay.sqlite.sql_tree import parse
-    from belay.sqlite.translate import starting_schema
+def test_catalog_comparison_catches_metadata_drift(runtime_root: Path) -> None:
+    """Lean compares the resolved catalog with the native PRAGMA metadata; any drift disagrees.
+
+    This checks `VerifierConformance.Native.tablesMatch`, which replaced the Python
+    cross-check of the translated schema: each native metadata field is changed in a
+    recorded case, and the compiled classifier must refuse the initial state.
+    """
     sql = ("CREATE TABLE t(id BIGINT PRIMARY KEY, stamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
            "flag INTEGER NOT NULL, value TEXT, UNIQUE(flag,value)); "
            "CREATE UNIQUE INDEX by_value ON t(value,flag);")
-    parser = default_parser(runtime_root)
-    table = starting_schema(parse(parser, sql.encode(), "metadata.sql"))[0]
-    connection = Connection(load_library(library_path()), tmp_path / "metadata.db")
-    try:
-        connection.execute_script(sql)
-        native_trace.snapshot(connection, parser)
-        column = table.columns[2]
-        faults = [replace(table, columns=table.columns[:2] + (replace(column, **change),) + table.columns[3:])
-                  for change in ({"affinity": "text"}, {"name": "wrong"}, {"not_null": False},
-                                 {"declared_type": "bigInt"}, {"current_timestamp": True})]
-        faults += [replace(table, primary_key=()), replace(table, unique_keys=()),
-                   replace(table, indexes=()), replace(table, indexes=(replace(table.indexes[0], unique=False),)),
-                   replace(table, indexes=(replace(table.indexes[0], columns=("flag", "value")),))]
-        for faulty in faults:
-            native_trace.read_schema.cache_clear()
-            monkeypatch.setattr(native_trace, "starting_schema", lambda tree: (faulty,))
-            with pytest.raises(ValueError, match="Native .* differs"):
-                native_trace.snapshot(connection, parser)
-    finally:
-        native_trace.read_schema.cache_clear()
-        connection.close()
+    case = record(Fixture(sql, "BEGIN; COMMIT;", {}, "metadata"), default_parser(runtime_root))
+    assert compiled(case, runtime_root)["verdict"] == "AGREE"
+
+    def changed(change: Callable[[dict[str, object]], object]) -> dict[str, object]:
+        """A copy of the case whose initial table metadata is changed in every observation."""
+        copy = deepcopy(case)
+        for tables in [copy["initial"], *[observation[view] for observation in copy["nativeTrace"]
+                                          for view in ("visible", "persisted")]]:
+            change(tables[0])
+        return copy
+
+    faults = [
+        lambda table: table["columns"][2].update(declaredType="TEXT"),
+        lambda table: table["columns"][2].update(name="wrong"),
+        lambda table: table["columns"][2].update(notNull=False),
+        lambda table: table["columns"][1].update(defaultValue=None),
+        lambda table: table.update(primaryKey=[]),
+        lambda table: table.update(uniqueKeys=[]),
+        lambda table: table.update(indexes=[]),
+        lambda table: table["indexes"][0].update(unique=False),
+        lambda table: table["indexes"][0].update(columns=[2, 3]),
+        lambda table: table.update(name="T"),
+    ]
+    for fault in faults:
+        answer = compiled(changed(fault), runtime_root)
+        assert answer["verdict"] == "DISAGREE" and answer["position"] is None, answer
 
 
-def test_schema_cache_and_batch(runtime_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Unchanged schemas reuse parsing; rollback restores metadata and batch order is exact."""
-    from conformance import native_trace, model_check
-    from belay.sqlite.sql_tree import SqlParser, Tree
-    parser = native_trace.parse
-    parsed: list[str] = []
-
-    def counted(selected: SqlParser, source: bytes, name: str) -> Tree:
-        """Count actual native schema parser invocations without replacing their behavior."""
-        if name == "conformance-schema.sql":
-            parsed.append(source.decode())
-        return parser(selected, source, name)
-
-    native_trace.read_schema.cache_clear()
-    monkeypatch.setattr(native_trace, "parse", counted)
+def test_rollback_restores_metadata_and_batch(runtime_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """ROLLBACK restores the native catalog, recording is repeatable, and batch order is exact."""
+    from conformance import model_check
     fixture = Fixture("CREATE TABLE t(id INTEGER);",
         "BEGIN; ALTER TABLE t ADD a TEXT; ROLLBACK; "
-        "BEGIN; ALTER TABLE t ADD b BLOB; COMMIT;", {}, "schema-cache")
+        "BEGIN; ALTER TABLE t ADD b BLOB; COMMIT;", {}, "schema-rollback")
     case = record(fixture, default_parser(runtime_root))
-    assert len(parsed) == len(set(parsed)) == 3
     assert record(fixture, default_parser(runtime_root)) == case
-    assert len(parsed) == 3
     assert case["nativeTrace"][3]["visible"] == case["nativeTrace"][0]["visible"]
     invalid = deepcopy(case)
     invalid["version"] = 2

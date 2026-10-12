@@ -103,7 +103,7 @@ def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : N
         restrict index [1] "constraints and defaults in a CREATE TABLE that runs are not modeled; create the table with plain columns"
       else if columns.any (!·.constraints.all Syntax.ColumnConstraint.modeledDefault) then
         restrict index [1] "only the CURRENT_TIMESTAMP default is modeled; remove the other default"
-      else .ok (.createTable name table, catalog ++ [{ name := name, entry := .table table }])
+      else .ok (.createTable catalog.length name table, catalog ++ [{ name := name, entry := .table table }])
 
 /-- Resolve CREATE INDEX of a catalog description. The execution semantics does not
 model CREATE INDEX, so a CREATE INDEX that runs is a model restriction. -/
@@ -120,7 +120,7 @@ def resolveCreateIndex (context : ResolveContext) (catalog : Catalog) (index : N
     | some (_, { entry := .index _, .. }) => prepareError catalog (.indexExists name)
     | none => match keyPositions table.columns columns with
       | .error error => prepareError catalog error
-      | .ok positions => .ok (.createIndex name { table := position, columns := positions, unique },
+      | .ok positions => .ok (.createIndex catalog.length name { table := position, columns := positions, unique },
           catalog ++ [{ name := name, entry := .index { table := position, columns := positions, unique } }])
 
 /-- Resolve ALTER TABLE ADD COLUMN. Path 1 is the column definition. -/

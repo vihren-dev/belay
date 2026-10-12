@@ -14,10 +14,13 @@ import pytest
 from migration_check.cli import arguments
 from migration_check.compile import CompiledProject, compile_project
 from migration_check.runtime import Runtime
-from migration_check.lean_inputs import schema_inputs, sql_inputs
 from belay.sqlite.parser_library import installed_library
 
 FIXTURES = Path(__file__).resolve().parent / "kernel_gate"
+EMPTY_SCHEMA_INPUTS = (FIXTURES / "SchemaInputs.lean").read_text()
+"""Generated `SchemaInputs` of an empty schema under the default profile, as the resolver writes it."""
+EMPTY_SQL_INPUTS = (FIXTURES / "SqlInputs.lean").read_text()
+"""Generated `SqlInputs` of an empty script."""
 HELPER = b"/- import Ignored -/\nimport Deeper\ndef approvedHelper : Nat := deeperValue\n"
 DEEPER = b"def deeperValue : Nat := 7\n"
 
@@ -47,8 +50,8 @@ class CompilationFixture:
             requirements=requirements or self.approved / "Requirements.lean",
             interpretation=interpretation or self.approved / "Interpretation.lean",
             next_interpretation=self.candidate / "NextInterpretation.lean",
-            proofs=self.candidate / "Proofs.lean", schema_inputs=schema if schema is not None else schema_inputs(()),
-            sql_inputs=sql_inputs((), ()), workspace=self.workspace)
+            proofs=self.candidate / "Proofs.lean", schema_inputs=schema if schema is not None else EMPTY_SCHEMA_INPUTS,
+            sql_inputs=EMPTY_SQL_INPUTS, workspace=self.workspace)
 
 
 @pytest.fixture
@@ -70,7 +73,7 @@ def compilation_case(tmp_path: Path, lean_sysroot: Path, lean_libraries: tuple[P
     requirement = approved / "Requirements.lean"
     requirement.write_text(requirement.read_text().replace("import SqliteVerifier",
         "import SqliteVerifier\nimport SchemaInputs\nimport «Odd.Module»") +
-        '\nexample : Generated.startSchema = [] := rfl\n')
+        '\nexample : Generated.startCatalog = [] := rfl\n')
     return CompilationFixture(root, approved, candidate, workspace, lean_sysroot, lean_libraries)
 
 

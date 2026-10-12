@@ -1,74 +1,93 @@
-# Supported schema-extension subset
+# Supported subset
 
-The production translator consumes the complete pinned SQLite CST. It admits
-ordinary `CREATE TABLE` and `ALTER TABLE … ADD [COLUMN]` with explicit unquoted
-`INTEGER`, `REAL`, `TEXT`, `BLOB`, or `NUMERIC` types (case insensitive).
-New columns are nullable, have implicit NULL defaults, and have no constraints.
-Migration CREATE remains limited to unconstrained tables; it rejects when the
-baseline contains keys, indexes, NOT NULL constraints or timestamp defaults.
-Identifiers use SQLite quoting and ASCII-only case normalization; non-ASCII
-case distinctions are preserved. Each table has at most 2,000 distinct columns.
+The verifier handles SQL in three layers (ADR 0008). The frontend maps the pinned
+SQLite syntax tree to statement syntax. Lean resolves the syntax against the
+catalog. The execution semantics runs the resolved statements. Each layer has a
+boundary of its own.
 
-The declarative starting schema additionally retains unquoted BIGINT, TIMESTAMP,
-BOOLEAN and omitted type declarations; NOT NULL; a single inline non-rowid-alias
-PRIMARY KEY; unnamed table UNIQUE constraints; CURRENT_TIMESTAMP defaults; and
-named plain-column indexes, including UNIQUE indexes. Default conflict behavior
-and column ordering are retained. Type spelling is normalized to supported
-declarations and affinity, without claiming textual SQL identity. In particular,
-nullable TEXT primary keys remain nullable, separate from physical rowid.
+## Statement syntax
 
-INTEGER PRIMARY KEY aliases, other defaults/constraints, named constraints,
-collations, expression/partial indexes, explicit index sort modifiers, type
-parameters, generated columns, rowid-shadowing names, table options, conditional
-creation and temporary/qualified objects remain unsupported. Views, triggers,
-virtual tables and other dependencies reject; none are silently dropped. The
-only admitted reserved names are the exact native sqlite_stat1 and sqlite_stat4
-table definitions, retained as persisted baseline objects. Migration SQL cannot
-create or alter them. Quoted type names remain unsupported.
+The frontend maps these statements, and refuses every other statement as
+`UNSUPPORTED` at its byte range:
 
-The entire supplied starting schema must fall within this subset. An empty
-starting schema is allowed. The CLI must
-require at least one migration statement. Every command retains its original
-half-open UTF-8 byte span; semicolons in names and trigger bodies cannot split
-commands. Unsupported syntax wrappers, including EXPLAIN, are rejected.
+- `CREATE TABLE` with column definitions (name, declared type text, `NOT NULL`,
+  `PRIMARY KEY` with its sort order, `UNIQUE`, and `DEFAULT` with a literal, a
+  signed number, a time keyword or a name) and table `PRIMARY KEY` and `UNIQUE`
+  constraints over plain column names;
+- `CREATE [UNIQUE] INDEX` over plain column names;
+- `ALTER TABLE … ADD [COLUMN]` with one column definition;
+- `BEGIN` (optionally `DEFERRED`), `COMMIT`/`END` and `ROLLBACK`, optionally with
+  `TRANSACTION`;
+- `INSERT INTO table [(columns)] VALUES` with one or more rows;
+- `UPDATE table SET column = value, … [WHERE expression]`.
 
-Translation computes sequential payload schema effects. A duplicate table, missing
-table, duplicate added column, or exceeded column limit stops the script and
-retains the successful prefix under autocommit. Column-limit failure precedes duplicate-column
-failure, matching the pinned native engine. If failure is inevitable, the
-generated next schema is that prefix; the formal contract must still establish
-the approved applicability and failure guarantees. Predicting an execution
-error alone never establishes `VIOLATED`. No profile implicitly wraps the SQL
-in a transaction or changes bookkeeping. See [execution profiles](execution-profile.md)
-and [profile input](profile-inputs.md).
+Expressions are `NULL`, numeric, string and blob literals, the time keywords,
+names, unary `-` and `+`, and `=`. Named constraints, collations, `CHECK`,
+`REFERENCES`, generated columns, conflict clauses, `RETURNING`, `UPSERT`,
+`WITH`, `FROM`, sort modifiers in keys, partial and expression indexes,
+`IF NOT EXISTS`, `TEMP`, schema names, table options, `AS SELECT`, views,
+triggers, virtual tables, `EXPLAIN`, `PRAGMA` and queries are refused. Names keep
+their case as written; quotes are removed as SQLite removes them. Numeric literals
+and declared types keep their text.
 
-`SqlInputs.lean` contains only structural schema/statement constructors and inert
-quoted names. The driver seals it separately from candidate definitions. A
-translation result is not proof acceptance or evidence of native execution.
+Every command retains its original half-open UTF-8 byte span; semicolons in names
+and trigger bodies cannot split commands. The CLI requires at least one migration
+statement. An empty starting schema is allowed.
 
-## Explicit transactions and literal data operations
+## Schema description
 
-Transactions and data changes are supplied as SQL, not implied by a profile.
-The additional subset admits BEGIN (optionally DEFERRED), COMMIT/END and
-ROLLBACK, optionally with TRANSACTION, but no named transactions, IMMEDIATE,
-EXCLUSIVE or savepoints. It also admits single-row literal INSERT with every column supplied in schema order, and one literal UPDATE
-assignment selected by equality to an integer on a single-column unique key.
-These operations apply to ordinary supported tables irrespective of their names.
+`schema.sql` describes the starting catalog. It may contain only `CREATE TABLE`
+and `CREATE INDEX`, in an order that SQLite can run: an index follows its table.
+A schema statement that SQLite refuses to prepare, for example a second table
+with the same name, is `INPUT_ERROR` with SQLite's message. The description may
+contain keys, `NOT NULL`, the `CURRENT_TIMESTAMP` default, indexes and the exact
+native `sqlite_stat1` and `sqlite_stat4` tables. Other defaults, other reserved
+names and `INTEGER PRIMARY KEY` rowid aliases are model restrictions.
 
-Literal DML has checked data-domain obligations. Assigned values must retain
-their storage classes under affinity; comparisons and unique keys use bounded
-integers or NULL in non-TEXT columns. Existing constraints must hold, and new
-NOT NULL/uniqueness violations are modeled statement failures. Unsupported
-coercions or comparison classes are not invented SQLite error outcomes. INSERT
-uses ordinary automatic rowid allocation; the random-search branch at maximum
-rowid is outside the admitted domain. Defaults are not implicitly evaluated by
-the full-column literal INSERT subset.
+## Resolution
+
+Lean's `resolve` follows SQLite's name resolution: ASCII-only case folding, one
+namespace for tables and indexes, SQLite's affinity rules on the declared type
+text, column positions, defaults of omitted INSERT columns, and SQLite's
+numeric-literal conversion. Limits come from the execution profile. A statement
+that SQLite refuses to prepare becomes its prepare error at its position, for
+example `no such table`, `table already exists`, `duplicate column name` or
+`too many columns`. The script stops there under autocommit and keeps the
+successful prefix. Predicting an error alone never establishes `VIOLATED`.
+
+SQL that SQLite accepts but the model does not describe is a model restriction:
+the whole request is `UNSUPPORTED` at the byte range of the refused node. In the
+migration these are, among others: `CREATE INDEX`; `CREATE TABLE` with
+constraints or defaults; `ADD COLUMN` with a constraint or default; rowid column
+names; REAL values; time values; values that the column affinity would convert;
+column references in values; a filter other than `column = integer` on an
+INTEGER, NUMERIC or BLOB column; a column named twice; writes to a table with a
+unique key over a TEXT or REAL column; and key values other than integers and
+NULL. Each restriction message says what to change.
+
+## Execution
+
+The execution semantics runs the resolved statements on a database keyed by
+catalog position. Transactions and data changes are supplied as SQL, not implied
+by a profile. INSERT appends its rows with ordinary automatic rowid allocation;
+UPDATE sets its assignments in each row that its filter selects. Literal writes
+have checked data-domain obligations: existing key cells and filter cells must
+be integers or NULL, existing constraints must hold, and the random-search branch
+at the maximum rowid is outside the admitted domain. New NOT NULL and uniqueness
+violations are modeled statement failures; unsupported coercions or comparison
+classes are not invented SQLite error outcomes.
 
 An error inside a transaction does not imply rollback. The model distinguishes
 the connection-visible state from its committed snapshot when a transaction
 remains open. A final uncommitted transaction cannot be reported as a committed
 successful migration. Resource, concurrency and crash failures remain outside
-the fixed execution assumptions.
+the fixed execution assumptions. See [execution profiles](execution-profile.md)
+and [profile input](profile-inputs.md).
+
+`SqlInputs.lean` contains only literal statement syntax, resolved statements and
+the resulting catalog. The driver seals it separately from candidate definitions,
+and the gates resolve the record again to check it. A resolution result is not
+proof acceptance or evidence of native execution.
 
 The [Atuin example](../examples/atuin/README.md) supplies only the upstream
 nullable shell-column ALTER payload and proves recovery of the approved old

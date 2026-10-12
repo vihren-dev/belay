@@ -2,8 +2,10 @@
 
 ADR 0004's conformance pipeline uses one Lean `classifyCase` function for compiled
 comparison and its `checkCase` predicate for kernel proofs. The
-[version-one format](conformance-format-v1.md) includes explicit initial rows,
-production-translated SQL, and native initial/per-statement observations.
+[case format](conformance-format-v1.md) includes the statement syntax of the SQL,
+the native tables with their PRAGMA metadata, and native initial/per-statement
+observations. Lean resolves the syntax, executes it, and compares the catalog and
+rows after each statement.
 
 Inside the pinned Nix shell:
 
@@ -53,7 +55,7 @@ assertions were replaced only after native replay through the persistent runner
 agreed. The lost-row negative check now rejects a proof of the shared predicate.
 Imported `alter3` fixtures and their expectations are unchanged.
 
-`conformance/cases/` freezes the five version-one native records. Every model test
+`conformance/cases/` freezes the five native cases in the current case format. Every model test
 re-executes its original SQL and requires equality with that frozen record before
 compiled and kernel checking. The files came from `just conformance --prove`;
 regeneration requires the pinned native runner, never hand-editing a trace to
@@ -94,11 +96,12 @@ Explicit [native corpus profiles](execution-profile.md#native-corpus-profiles-ad
 can record additional settings and the native-only 3.53.4 pin. Such records
 remain `MODEL_UNSUPPORTED`; they do not expand this model correspondence boundary.
 
-Native columns are cross-checked against `table_xinfo` (including type, independently
-derived affinity, nullability, default and primary-key order). `index_list` and
-`index_xinfo` independently check uniqueness, ordered keys, collation and explicit
-index identity. A translator mismatch is a harness error, never agreement. The
-affinity check follows [SQLite’s ordered rules](https://sqlite.org/datatype3.html#determination_of_column_affinity).
+Lean compares the catalog that resolution computes with `table_xinfo` (name,
+declared type text, nullability, default and primary-key order) and with
+`index_list` and `index_xinfo` (UNIQUE constraint keys and explicit index identity,
+keys and uniqueness) after each statement. A difference is a disagreement. The
+frontend refuses collations, descending keys of explicit indexes and partial
+indexes, so their metadata in a native table is a harness error.
 
 Per-statement observations retain primary and extended error codes; comparison
 uses primary codes at the current model's granularity. TEXT/BLOB use bytes and
@@ -108,9 +111,9 @@ therefore produces an initial-state disagreement, not an invalid-SQL harness err
 a transaction is open. Contention that prevents observation is a harness failure,
 not semantic evidence. Native statements have a five-second progress deadline
 and a 100 ms lock wait; outer test/recipe deadlines also bound complete runs.
-Native schema parsing is cached by exact declaration text and parser identity, with a bounded cross-case cache,
-shared by visible and committed observations, so rollback cannot reuse metadata
-from a different schema with the same schema version. Benchmark cases are sent
+Native tables are read from `sqlite_schema` and their PRAGMAs on each observation,
+for the visible and the committed view; no schema is parsed to observe them.
+Benchmark cases are sent
 through one JSON-lines runner process; reports separate native acquisition and
 compiled batch time (including transport). Optional proof-term emission and kernel
 checks run separately, outside the timing.
