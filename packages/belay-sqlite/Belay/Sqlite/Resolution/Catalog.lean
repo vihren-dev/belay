@@ -125,6 +125,16 @@ R-56094-57830). {lit}`INT` and {lit}`BIGINT` do not. -/
 def aliasesRowid (declaredType : Option String) : Bool :=
   declaredType.map String.toUpper == some "INTEGER"
 
+/-- The column positions of each unique key of the table at a catalog position, in
+this order: the primary key when there is one, the UNIQUE constraints, and the
+unique indexes on the table in catalog order. SQLite keeps each of them as an
+index, and a write that makes two rows equal on one of them fails. -/
+def Catalog.uniqueKeys (catalog : Catalog) (position : Nat) (table : CatalogTable) : List (List Nat) :=
+  (if table.primaryKey.isEmpty then [] else [table.primaryKey]) ++ table.uniqueKeys ++
+    catalog.filterMap fun object => match object.entry with
+      | .index index => if index.table == position && index.unique then some index.columns else none
+      | .table _ => none
+
 /-- The folded names of all catalog objects, in catalog order. -/
 def Catalog.foldedNames (catalog : Catalog) : List String :=
   catalog.map fun object => normalizeIdentifier object.name

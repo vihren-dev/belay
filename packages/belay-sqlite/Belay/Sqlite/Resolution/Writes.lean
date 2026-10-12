@@ -103,7 +103,7 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
           restrict index [1] "a column named twice in INSERT is not modeled; name each column once"
         else match resolveAll (fun _ row => fullRow context.profile.dqsDml table.columns positions row) values with
           | .error issue => issueResolution catalog index [2] issue
-          | .ok full => .ok (.insert position full, catalog)
+          | .ok full => .ok (.insert position full (catalog.uniqueKeys position table), catalog)
 
 /-- Whether the model compares a stored value with an integer literal without a
 conversion: the column has INTEGER, NUMERIC or BLOB affinity, and the execution
@@ -162,6 +162,7 @@ def resolveUpdate (context : ResolveContext) (catalog : Catalog) (index : Nat) (
               storedValue ((table.columns[column]?.map CatalogColumn.affinity).getD .blob) value [item, 1])
               (positions.zip values) with
             | .error issue => issueResolution catalog index [1] issue
-            | .ok stored => .ok (.update position (positions.zip stored) resolvedFilter, catalog)
+            | .ok stored =>
+              .ok (.update position (positions.zip stored) resolvedFilter (catalog.uniqueKeys position table), catalog)
 
 end Belay.Sqlite

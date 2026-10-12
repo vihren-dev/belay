@@ -99,22 +99,32 @@ def tableT : Catalog := catalogOf (migration [] [.createTable "t" [column "a", c
   == [.prepareError (.noSuchTable "u"), .prepareError (.tableHasNoColumn "t" "z"),
       .prepareError (.valueCount "t" 2 1), .prepareError (.valuesForColumns 2 1), .prepareError .valuesDiffer]
 #guard statements (migration tableT [.insert "t" (some ["B"]) [[.numeric "1_000"], [.numeric "0x10"], [.negate (.numeric "9223372036854775808")]]])
-  == [.insert 0 [[.null, .integer 1000], [.null, .integer 16], [.null, .integer (-9223372036854775808)]]]
+  == [.insert 0 [[.null, .integer 1000], [.null, .integer 16], [.null, .integer (-9223372036854775808)]] []]
 #guard restricted (migration tableT [.insert "t" (some ["b"]) [[.numeric "9223372036854775808"]]])
 #guard statements (migration tableT [.insert "t" (some ["b"]) [[.numeric "0x10000000000000000"]]])
   == [.prepareError (.hexLiteralTooBig "0x10000000000000000")]
 
 -- Double-quoted strings: a string literal when DQS_DML is on, else "no such column".
 #guard statements (migration tableT [.insert "t" (some ["a"]) [[.identifier "x" true]]])
-  == [.insert 0 [[.text [120], .null]]]
+  == [.insert 0 [[.text [120], .null]] []]
 #guard statements (migration tableT [.insert "t" (some ["a"]) [[.identifier "x" true]]] { defaults with dqsDml := false })
   == [.prepareError (.noSuchColumn "x")]
 
 -- UPDATE: SET and WHERE names, and the modeled integer equality filter.
 #guard statements (migration tableT [.update "t" [("z", .null)] none, .update "t" [("a", .null)] (some (.equals (.identifier "z" false) (.numeric "1"))),
     .update "t" [("A", .string [111])] (some (.equals (.identifier "b" false) (.numeric "7")))])
-  == [.prepareError (.noSuchColumn "z"), .prepareError (.noSuchColumn "z"), .update 0 [(0, .text [111])] (some (1, .integer 7))]
+  == [.prepareError (.noSuchColumn "z"), .prepareError (.noSuchColumn "z"), .update 0 [(0, .text [111])] (some (1, .integer 7)) []]
 #guard restricted (migration tableT [.update "t" [("a", .null)] (some (.equals (.identifier "a" false) (.numeric "1")))])
+
+-- Writes carry the unique keys: the primary key, UNIQUE constraints, then unique indexes.
+#guard statements (migration (catalogOf (schema [.createTable "k" [column "a", column "b", column "c"]
+      [.primaryKey ["c"], .unique ["b", "a"]], .createIndex "ka" true "k" ["a"], .createIndex "kb" false "k" ["b"]]))
+    [.insert "k" none [[.null, .null, .null]], .update "k" [("a", .null)] none])
+  == [.insert 0 [[.null, .null, .null]] [[2], [1, 0], [0]], .update 0 [(0, .null)] none [[2], [1, 0], [0]]]
+
+-- New tables and indexes take the next catalog position.
+#guard statements (schema [.createTable "t" [column "a"] [], .createIndex "i" false "t" ["a"], .createTable "u" [column "a"] []])
+  matches [.createTable 0 "t" _, .createIndex 1 "i" _, .createTable 2 "u" _]
 
 -- Transactions: ROLLBACK restores the catalog of BEGIN; COMMIT keeps the changes.
 #guard statements (migration [] [.begin, .createTable "t" [column "a"] [], .rollback, .createTable "t" [column "a"] []])

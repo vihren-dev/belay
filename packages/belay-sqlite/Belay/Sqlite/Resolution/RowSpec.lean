@@ -83,18 +83,18 @@ theorem fullRow_rowWidth (dqs : Bool) (columns : List CatalogColumn) (positions 
     simpa [hvalue] using hdefault
 
 /-- For a successful resolution of INSERT to an insert statement, the catalog is
-unchanged, the statement names the position of the table that the name finds, and
-for every resolved row there are table positions of the written columns and a
+unchanged, the statement names the position of the table that the name finds and
+carries that table's {name}`Catalog.uniqueKeys`, and for every resolved row there are table positions of the written columns and a
 written row such that the resolved row satisfies {name}`RowWidth` for the table's
 columns. So every resolved row has one value for each table column. Proof sketch:
 split the resolver down to its successful branch; each row is a result of
 {name}`fullRow` by {name}`resolveAllFrom_ok`, and {name}`fullRow_rowWidth` gives the rule. -/
 theorem resolveInsert_rowWidth (context : ResolveContext) (catalog after : Catalog) (index : Nat)
     (tableName : String) (names : Option (List String)) (rows : List (List Syntax.Expr))
-    (position : Nat) (full : List (List Value))
-    (ok : resolveInsert context catalog index tableName names rows = .ok (.insert position full, after)) :
+    (position : Nat) (full : List (List Value)) (keys : List (List Nat))
+    (ok : resolveInsert context catalog index tableName names rows = .ok (.insert position full keys, after)) :
     after = catalog ∧ ∃ table, catalog.findTable tableName = some (position, table) ∧
-      ∀ row ∈ full, ∃ positions written, RowWidth context.profile.dqsDml table.columns positions written row := by
+      keys = catalog.uniqueKeys position table ∧ ∀ row ∈ full, ∃ positions written, RowWidth context.profile.dqsDml table.columns positions written row := by
   unfold resolveInsert at ok
   simp only [prepareError, restrict, issueResolution] at ok
   split at ok
@@ -118,7 +118,7 @@ theorem resolveInsert_rowWidth (context : ResolveContext) (catalog after : Catal
   · split at ok <;> cases ok
   rename_i rows_ok
   cases ok
-  refine ⟨rfl, table, found, fun row member => ?_⟩
+  refine ⟨rfl, table, found, rfl, fun row member => ?_⟩
   unfold resolveAll at rows_ok
   obtain ⟨length, each⟩ := resolveAllFrom_ok _ 0 written full rows_ok
   obtain ⟨r, hr⟩ := List.getElem?_of_mem member
