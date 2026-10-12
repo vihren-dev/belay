@@ -1,0 +1,46 @@
+{
+  "caller": "claude",
+  "commit": "e5336ddc265ed6d633b295e2602123f6f8350d3c",
+  "date": "2026-10-12T09:08:33+00:00",
+  "exit": 0,
+  "files": [
+    "judge/records.py",
+    "reviews/20261012T090605Z-5cc99ed8/resolution-1-20261012T090625Z.json",
+    "reviews/20261012T090605Z-5cc99ed8/resolution-2-20261012T090625Z.json",
+    "reviews/20261012T090605Z-5cc99ed8/resolution-3-20261012T090626Z.json",
+    "reviews/20261012T090605Z-5cc99ed8/review.json",
+    "tests/test_judge_records.py"
+  ],
+  "findings": [
+    {
+      "id": "20261012T090833Z-e5336ddc#1",
+      "line": 22,
+      "path": "tests/test_judge_records.py",
+      "rule": "R9",
+      "severity": "should",
+      "text": "The docstrings for `shard` and `stored` describe their outputs but omit why these helpers exist. Fix: explain that they create corpus fixtures to test shard loading and shared snapshot expansion."
+    }
+  ],
+  "id": "20261012T090833Z-e5336ddc",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "e5336ddc",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "b9509029f9c1",
+    "R7": "1d1132b164f1",
+    "R8": "46eec5fecbaf",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

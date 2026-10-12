@@ -19,14 +19,15 @@ FULL = {"schema": [], "tables": [{"name": "t"}]}
 
 
 def shard(path: Path, records: list[dict[str, object]]) -> None:
-    """Write one gzip-compressed JSON-lines shard."""
+    """Write one gzip-compressed JSON-lines shard, the fixture form of a sharded corpus."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with gzip.open(path, "wt") as stream:
         stream.writelines(json.dumps(record) + "\n" for record in records)
 
 
 def stored(name: str) -> dict[str, object]:
-    """A record in shared snapshot storage: views refer to the pool by digest."""
+    """A record in shared snapshot storage, where views refer to the pool by digest, to test
+    that the judge puts the snapshots back."""
     return {"name": name, "snapshotStorageVersion": 1, "snapshots": {"e": EMPTY, "f": FULL},
             "initial": {"visible": {"snapshot": "e"}, "persisted": {"snapshot": "e"}, "transactionOpen": False},
             "trace": [{"sql": "x;", "visible": {"snapshot": "f"}, "persisted": {"snapshot": "e"},

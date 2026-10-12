@@ -68,3 +68,15 @@ def test_predict_command_reports_scope(runtime_root: Path) -> None:
     assert first["steps"][1]["start"] == 0
     assert tables_form(first["steps"][1]["visible"]) == tables_form(admitted["trace"][0]["visible"])
     assert second["status"] == "unsupported" and second["reason"]
+
+
+def test_execution_profiles_stay_out_of_scope(runtime_root: Path) -> None:
+    """`conformance.predict.translated`: a case recorded with an execution profile (native
+    record version 4) is out of scope, and the reason names the case and why."""
+    given = {**subject_input(record_sql("CREATE TABLE t(a INTEGER);", "", name="profiled")), "nativeVersion": 4}
+    result = subprocess.run([sys.executable, "-m", "conformance.predict", "--runtime", str(runtime_root)],
+                            input=json.dumps(given) + "\n", capture_output=True, text=True,
+                            timeout=PREDICT_TIMEOUT_SECONDS, check=False)
+    prediction = json.loads(result.stdout)
+    assert prediction["status"] == "unsupported"
+    assert prediction["reason"].startswith("profiled: the model does not implement execution profiles")
