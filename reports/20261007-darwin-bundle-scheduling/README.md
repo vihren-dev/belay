@@ -67,11 +67,8 @@ and it does not replace complete hosted acceptance.
 The bounded validator checks raw bytes, exact command guards, before/after
 identities, all JUnit outcomes and actual timing boundaries without a build:
 
-```sh
-nix develop path:./nix --command timeout 15 python3 -B \
-  reports/20261007-darwin-bundle-scheduling/validate.py
-```
-
 Historical T03/T02 receipts, protected baselines and frozen corpus bytes are
 unchanged. The task and status are in
 [`plans`](../../plans/20261007-darwin-bundle-scheduling.task.md).
+
+The scripts that checked these files against each other (`validate.py`, `check_mutations.py`) were removed on 2026-10-12 under ADR 0011: their reference values were in this directory, so they could not detect a deliberate change. The retained files are unchanged.

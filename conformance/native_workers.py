@@ -12,7 +12,7 @@ from conformance.case_format import Json
 from conformance.corpus import load, native_replay
 from conformance.execution_profile import ExecutionProfile
 from conformance.native_connection import NativeError
-from conformance.pinned_corpora import is_pinned
+from conformance.locked_corpora import is_locked
 
 NATIVE_WORKER_LIMIT = 4
 """Each development loading or native-replay phase uses at most four spawned processes; phases do not overlap."""
@@ -34,12 +34,12 @@ class NativeReplayResult:
 def load_development_corpus(directory: Path) -> tuple[dict[str, Json], list[dict[str, Json]]]:
     """Load the corpus before any development replay.
 
-    A pinned frozen corpus is only decoded (`conformance.corpus.load`). Any
+    A locked frozen corpus is only decoded (`conformance.corpus.load`). Any
     other corpus is validated in at most four spawned processes. The caller's
     outer timeout bounds the shared process group. The context finishes
     loading workers before native workers or model execution starts.
     """
-    if is_pinned(directory):
+    if is_locked(directory):
         return load(directory)
     with ProcessPoolExecutor(max_workers=NATIVE_WORKER_LIMIT, mp_context=get_context("spawn")) as executor:
         return load(directory, executor=executor)

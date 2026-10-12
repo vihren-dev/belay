@@ -49,11 +49,6 @@ runtime. The phase has no stage or CPU attribution.
 
 `raw-sha256.json` binds all 20 raw gzip artifacts. All 13 retrieved originals
 match their remote hashes and lengths. Earlier receipts and their target
-misses remain unchanged. Run the bounded read-only evidence checks:
+misses remain unchanged.
 
-```sh
-nix develop path:./nix --command timeout 15 python3 -B \
-  reports/20261007-development-replay-linux-cap4/validate.py
-nix develop path:./nix --command timeout 15 python3 -B \
-  reports/20261007-development-replay-linux-cap4/check_mutations.py
-```
+The scripts that checked these files against each other (`validate.py`, `check_mutations.py`) were removed on 2026-10-12 under ADR 0011: their reference values were in this directory, so they could not detect a deliberate change. The retained files are unchanged.

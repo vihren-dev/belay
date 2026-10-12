@@ -81,3 +81,31 @@ Decision: [ADR 0011](../docs/adr-0011-product-trust-and-development-integrity.md
 - 2026-10-12: PR #91 merged; the new `CODEOWNERS` is enforced. R8 removed from the review checklist (outcome 2).
 - 2026-10-12: first CI run of #92: the Verdict lock check failed because the local lock counted `judge/__pycache__`, and the Check job failed because `tools/check_resources.py` allows only the development environment files in `nix/`. The judge files moved to `integrity/` (CODEOWNERS updated); the judge part covers only `.py` and `.json` files.
 - 2026-10-12: second CI run: `test_flake_checks_reuse_existing_targets` failed because the conformance suites took all of `judge/` as input, including `__pycache__` that the host tests leave; the suites now take only its `.py` and `.json` files (reproduced and fixed locally).
+- 2026-10-12: PR #92 merged; the owner added "Verdict" to the required
+  checks of ruleset 23934665 (confirmed through the rules API).
+- 2026-10-12: step 8, part 1: the corpus pins are gone. `conformance.corpus.load`
+  decodes a corpus only when `judge/claims.json` claims its path
+  (`conformance/locked_corpora.py`); every other directory gets
+  `validated_load`, as before. The `pinned` suite is now `corpora`: complete
+  validation of each locked corpus (82 s locally), rerun when a corpus or the
+  validator changes. Removed: `conformance/pinned_corpora.py`,
+  `conformance/pinned-corpora.json`, the pin-digest tests. Baseline (nightly
+  run 38126119856, Linux, uncached): pinned 95 s, frozen 129 s, model 112 s,
+  sample 60 s; Verdict job 2 to 4.5 min, in parallel.
+- 2026-10-12: step 8, part 2: removed the test assertions that `judge/claims.json` now states (v1 AGREE floor, v2 baseline subset and floor, no DISAGREE or HARNESS_ERROR on v1 to v5 and the sample tiers, and the v4 MODEL_UNSUPPORTED count, which would also forbid future agreement). The rest of each test stays. The v2 progress report left the frozen suite inputs.
+- 2026-10-12: step 8, part 3: removed checks whose reference is in the same
+  unprotected directory: 8 `validate.py` and 4 `check_mutations.py` scripts
+  in `reports/` (their READMEs say why), `tests/test_native_storage_evidence.py`,
+  the bundle-scheduling receipt test, the c4 fidelity ledger test, and the
+  digest and fixed-count lines of the authored-evidence test. Kept as
+  provenance: `reports/20261006-native-replay-storage/validate.py` (its digest
+  is in retained receipts), `reports/20261007-development-replay-executor-runtime/`
+  `validate.py` and `check_mutations.py` (named in a recorded run), and the
+  adr5 execution helpers. Kept as honest-mistake checks: the validator and
+  freeze tests that run on copies, captures and new freezes.
+- 2026-10-12: CI of PR #94 (Linux, uncached suites): corpora 81 s (pinned
+  was 95 s), frozen 87 s (129 s), sample 51 s (60 s), model 70 s (112 s; this
+  suite did not change, so part of the differences is runner variance), host
+  Nix tests 29 s (190 s before #74 removed the invalidation table). Verdict
+  passed. Remaining before DONE: record a model-only pull request that merges
+  with a passing verdict and no owner review.

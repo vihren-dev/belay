@@ -103,7 +103,7 @@ changes the original calls. Both recording kinds retain `setupHelpers`,
 `migrationReadonly`, `migrationReadonlySpans` and `auxiliaryReplay` for fresh
 replay. The complete validation (`conformance.corpus.validated_load`) checks
 this extension before model admission. A frozen corpus gets this validation
-once; [Continuous integration](ci.md) describes the pinned frozen corpora.
+once; [Continuous integration](ci.md) describes the locked frozen corpora.
 Fresh replay checks actual slot names, bound values, source expectations and
 native observations. Historical records retain their original replay shape.
 

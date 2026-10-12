@@ -2,7 +2,6 @@
 
 from copy import deepcopy
 import gzip
-import hashlib
 import json
 from pathlib import Path
 
@@ -58,24 +57,20 @@ def test_catalog_keeps_legacy_sql_and_complete_outputs(authored: dict[str, dict[
 
 
 def test_retained_authored_evidence_and_coverage(authored: dict[str, dict[str, Json]]) -> None:
-    """The report binds actual native evidence and counts its measured membership once."""
+    """The retained authored evidence equals today's authored catalog and replays natively, and
+    `requirement_coverage.comparison` recomputes the report's coverage from it."""
     from conformance.corpus import load
     report = json.loads(REPORT.read_text())
     evidence = REPORT.with_name(report["authoredEvidence"]["file"])
     payload = gzip.decompress(evidence.read_bytes())
-    assert hashlib.sha256(payload).hexdigest() == report["authoredEvidence"]["casesSha256"]
     frozen = [expanded_record(json.loads(line)) for line in payload.splitlines()]
     assert {record["name"]: record for record in frozen} == authored
     validate_manifest_profiles(report["authoredEvidence"], frozen)
     native_replay(frozen)
-    manifest, previous = load(ROOT / "conformance/corpus-v3")
+    _, previous = load(ROOT / "conformance/corpus-v3")
     inventory_path = ROOT / "conformance/requirements-3.51.0.json"
-    assert report["baseline"]["casesSha256"] == manifest["casesSha256"]
-    assert report["requirementsSha256"] == hashlib.sha256(inventory_path.read_bytes()).hexdigest()
     after = [record for record in previous if record["name"] not in authored] + frozen
     assert report["coverage"] == comparison(previous, after, json.loads(inventory_path.read_text()))
-    assert report["replacementCases"] == 29 and report["newCases"] == 14
-    assert report["modelClassification"]["counts"] == {"MODEL_UNSUPPORTED": 43}
     corrupted = deepcopy(authored["upsert-returning"])
     corrupted["trace"][0]["changes"] = 9
     with pytest.raises(ValueError, match="Native replay changed"):
