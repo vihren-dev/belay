@@ -64,3 +64,8 @@ Relevant files: `lakefile.toml`, `SqliteVerifier/`, `SqliteVerifier.lean`, `Gate
   package rule. Checks: suites `documentation` 12 and `packages` 5 passed,
   `just test-source` 533 (12 tests moved), host Nix tests 84.
 
+- 2026-10-12: PR #100 (base `tasks/adr10-case-seeds`). CI at `590da027`:
+  Linux 892 s, macOS 6 s (checks skipped on pull requests). PR #99: 900 s;
+  baseline `main` `0adb73dc`: 467 s. Like #99, the run rebuilds what the
+  unmerged PRs #95 and #96 change, because the CI cache is saved only on
+  `main`; this task adds no time. Compare again after the merges.
