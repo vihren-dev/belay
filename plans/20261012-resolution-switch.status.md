@@ -196,6 +196,14 @@ Relevant files: `belay/sqlite/`, `migration_check/`,
   `runtime-package` fails locally only because the local store path of
   `python3-3.14.7` was modified on 2026-10-09; it passes in CI.
 
+- 2026-10-12: merged `main` `b486a5d7` (ADR 0010 task 2, #96) in `22a4f282`.
+  Two text conflicts (`docs/data-path.md`, `tests/generated_inputs_test.py`) and
+  two of main's new tests needed the switch: the Lean category test lists
+  `GateInputs.lean` and `Resolver.lean`, and the audit test's proof variant
+  passes the profile to the demonstration theorem. `test-full` and `test-nix`
+  pass; the verdict counts are unchanged. Review `20261012T201507Z-22a4f282`:
+  no findings.
+
 ## Remaining
 
 - Nothing for this step. The five R8 findings wait for the owner review of the
