@@ -50,3 +50,14 @@ Decision: [ADR 0011](../docs/adr-0011-product-trust-and-development-integrity.md
   sides. Statement alignment uses SQLite's consumed byte ranges, as before.
   The live model cases stay outside the judge (task file updated).
 - 2026-10-12: review fixes: empty tie groups agree when both results are empty (as in `Outputs.lean`), `tests/test_judge_outputs.py`; one constant for versions with outputs.
+- 2026-10-12: subject predict command: `VerifierConformance/Predict.lean`
+  (`conformance-runner --predict`), `conformance/predict.py`,
+  `conformance/predict_render.py`. The renderer's catalog equals native SQLite
+  for every admitted table shape (`tests/conformance_predict_test.py`).
+- 2026-10-12: parity on corpora v1 to v3: the judge with the real subject and
+  the current `classifyCase` path give the same verdict on all 730 cases; no
+  catalog difference. `judge/claims.json`: AGREE floors v1 2, v2 8 (contains
+  the 8 of `reports/20260929-adr4-corpus-v2-progress.json`), v3 11; no
+  DISAGREE or HARNESS_ERROR on v1 to v5 and the synthetic workload. Full run on
+  all six corpora: claims hold, 18 s on Linux. v4: 1264 and v5: 4376
+  MODEL_UNSUPPORTED, as before.
