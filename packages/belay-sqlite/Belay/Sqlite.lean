@@ -11,5 +11,7 @@ import Belay.Sqlite.SchemaPreservation
 import Belay.Sqlite.LiteralPreservation
 import Belay.Sqlite.ModelProjection
 import Belay.Sqlite.Laws
+import Belay.Sqlite.Resolution
 
-/-! SQLite states, supported execution and structural preservation facts. -/
+/-! SQLite states, supported execution, structural preservation facts, and name
+resolution from statement syntax to resolved statements with its specification. -/
