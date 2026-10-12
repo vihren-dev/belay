@@ -178,6 +178,14 @@ Relevant files: `belay/sqlite/`, `migration_check/`,
   verdict's prediction step takes 4 s on both. These numbers replace the
   earlier comparison against `5feb549e`.
 
+- 2026-10-12: CI on PR #97 failed in `just package`: `test_nix_test_targets`
+  replaces `tests/kernel_gate_test.py` with a failing stub, and
+  `kernel_gate_inputs_test.py` imported its fixtures from that module. Fixed in
+  `7588f379` (fixtures in `tests/kernel_gate_support.py`); review
+  `20261012T180456Z-7588f379`: no findings. Locally all 65 `requires_nix` tests
+  pass; `runtime-package` did not start, because the resource check found 9.85
+  GiB free of the required 10 GiB, so CI runs it.
+
 ## Remaining
 
 - Nothing for this step. The five R8 findings wait for the owner review of the
