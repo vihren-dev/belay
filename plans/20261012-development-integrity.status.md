@@ -38,3 +38,46 @@ Decision: [ADR 0011](../docs/adr-0011-product-trust-and-development-integrity.md
 - 2026-10-12: step 1. `.github/CODEOWNERS` has the two sections of ADR 0011;
   the review checklist has R16 (anchored integrity checks); ADR 0011 is
   ACCEPTED. R8 stays until the new `CODEOWNERS` is on `main` with enforcement.
+- 2026-10-12: owner chose comparison in SQLite's catalog terms (option 1),
+  after the finding that `native_replay.model_case` builds the reference
+  tables with the frontend's translation of recorded schema SQL. The task file
+  now names the renderer from model tables to PRAGMA rows (outcome 4).
+- 2026-10-12: `judge/` (records, catalog form, comparison, outputs, claims,
+  `python -m judge`), standard library only. It decodes every step of corpora
+  v1 to v3 (177, 183 and 370 records). `tests/test_judge.py` checks an honest,
+  a wrong, an evasive (all unsupported) and a broken stand-in subject. The
+  subject writes predictions in the raw recorded form; the judge reduces both
+  sides. Statement alignment uses SQLite's consumed byte ranges, as before.
+  The live model cases stay outside the judge (task file updated).
+- 2026-10-12: review fixes: empty tie groups agree when both results are empty (as in `Outputs.lean`), `tests/test_judge_outputs.py`; one constant for versions with outputs.
+- 2026-10-12: subject predict command: `VerifierConformance/Predict.lean`
+  (`conformance-runner --predict`), `conformance/predict.py`,
+  `conformance/predict_render.py`. The renderer's catalog equals native SQLite
+  for every admitted table shape (`tests/conformance_predict_test.py`).
+- 2026-10-12: parity on corpora v1 to v3: the judge with the real subject and
+  the current `classifyCase` path give the same verdict on all 730 cases; no
+  catalog difference. `judge/claims.json`: AGREE floors v1 2, v2 8 (contains
+  the 8 of `reports/20260929-adr4-corpus-v2-progress.json`), v3 11; no
+  DISAGREE or HARNESS_ERROR on v1 to v5 and the synthetic workload. Full run on
+  all six corpora: claims hold, 18 s on Linux. v4: 1264 and v5: 4376
+  MODEL_UNSUPPORTED, as before.
+- 2026-10-12: `integrity/judge.nix` and `integrity/judge.lock.json`. Refinement of
+  outcome 6: the lock holds one content-derived store path per part (judge
+  code with claims, each claimed corpus, the oracle `nix/sqlite.nix` with
+  `nix/flake.lock`), not one derivation path per system: source paths do not
+  depend on the system, and a mismatch names the part. The verdict
+  (`nix-build integrity/judge.nix -A verdict`, `just verdict`) runs the judge on the
+  subject in the Nix sandbox; all claims hold. `tests/test_judge_lock.py`
+  changes one byte of each part in a copy. Review finding
+  20261012T090907Z-7c09b6c6#1 was only partly fixed: the runner-failure
+  message has no test (it needs a broken runtime).
+- 2026-10-12: owner chose: document memorized answers as a known limit in ADR 0011, add review condition R17 (advisory), and consider a hidden holdout corpus later.
+- 2026-10-12: `.github/workflows/verdict.yml` (job "Verdict"): checkout, Nix
+  with the signed Attic substituter, `nix-build integrity/judge.nix -A verdict`, the
+  report as an artifact; no GitHub Actions cache. `docs/ci.md` describes it;
+  `AGENTS.md` describes the two-pull-request flow for a claim change.
+  Waiting for: the owner adds "Verdict" as a required check of ruleset
+  23934665 after this is on `main`.
+- 2026-10-12: PR #91 merged; the new `CODEOWNERS` is enforced. R8 removed from the review checklist (outcome 2).
+- 2026-10-12: first CI run of #92: the Verdict lock check failed because the local lock counted `judge/__pycache__`, and the Check job failed because `tools/check_resources.py` allows only the development environment files in `nix/`. The judge files moved to `integrity/` (CODEOWNERS updated); the judge part covers only `.py` and `.json` files.
+- 2026-10-12: second CI run: `test_flake_checks_reuse_existing_targets` failed because the conformance suites took all of `judge/` as input, including `__pycache__` that the host tests leave; the suites now take only its `.py` and `.json` files (reproduced and fixed locally).

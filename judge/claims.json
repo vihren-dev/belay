@@ -1,0 +1,76 @@
+{
+ "corpora": {
+  "corpus-v1": {
+   "forbidden": [
+    "DISAGREE",
+    "HARNESS_ERROR"
+   ],
+   "mustAgree": [
+    "altercol:altercol-1.1.0:0",
+    "altercol:altercol-1.2.0:5"
+   ],
+   "path": "conformance/corpus-v1"
+  },
+  "corpus-v2": {
+   "forbidden": [
+    "DISAGREE",
+    "HARNESS_ERROR"
+   ],
+   "mustAgree": [
+    "add-null-populated",
+    "altercol:altercol-1.1.0:0",
+    "altercol:altercol-1.2.0:5",
+    "blob-affinity",
+    "explicit-rollback",
+    "index-duplicate",
+    "index-null",
+    "nested-begin"
+   ],
+   "path": "conformance/corpus-v2"
+  },
+  "corpus-v3": {
+   "forbidden": [
+    "DISAGREE",
+    "HARNESS_ERROR"
+   ],
+   "mustAgree": [
+    "add-null-populated",
+    "altercol:altercol-1.1.0:0",
+    "altercol:altercol-1.2.0:5",
+    "begin-default-deferred",
+    "blob-affinity",
+    "commit-end-alias",
+    "explicit-rollback",
+    "implicit-write-commit",
+    "index-duplicate",
+    "index-null",
+    "nested-begin"
+   ],
+   "path": "conformance/corpus-v3"
+  },
+  "corpus-v4": {
+   "forbidden": [
+    "DISAGREE",
+    "HARNESS_ERROR"
+   ],
+   "mustAgree": [],
+   "path": "conformance/corpus-v4"
+  },
+  "corpus-v5": {
+   "forbidden": [
+    "DISAGREE",
+    "HARNESS_ERROR"
+   ],
+   "mustAgree": [],
+   "path": "conformance/corpus-v5"
+  },
+  "synthetic-workload": {
+   "forbidden": [
+    "DISAGREE",
+    "HARNESS_ERROR"
+   ],
+   "mustAgree": [],
+   "path": "conformance/synthetic-workload/corpus"
+  }
+ }
+}

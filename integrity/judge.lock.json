@@ -1,0 +1,10 @@
+{
+ "corpus corpus-v1": "/nix/store/2b2mvp395lnw0nhcdk8l45h3zj5m25i9-source",
+ "corpus corpus-v2": "/nix/store/ndcy98ynb783fp5fzx3dwwfkpnh3sy5s-source",
+ "corpus corpus-v3": "/nix/store/pmrhsrhh7y0ggg9j3zl4z0yvgzrbb894-source",
+ "corpus corpus-v4": "/nix/store/653vyvp3p77jg3pc4pwcy11zvgjap0ax-source",
+ "corpus corpus-v5": "/nix/store/6fs7vidhnk7pj9pp24bnzi02j2ap1lnc-source",
+ "corpus synthetic-workload": "/nix/store/s4qyby377gydlfyswyclc8qb2sl3cn8k-source",
+ "judge": "/nix/store/x33wgw5vgl2b78c0gw20kw9k4swdqp32-source",
+ "oracle": "/nix/store/r4sm4f8pa49g5kr78d2sk2xbnibp4v3w-source"
+}

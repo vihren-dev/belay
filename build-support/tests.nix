@@ -61,6 +61,8 @@ let
     (root + /VerifierConformance/Trace.lean)
     (root + /VerifierConformance/Outputs.lean)
     (root + /VerifierConformance/Case.lean)
+    (root + /VerifierConformance/Predict.lean)
+    (fs.fileFilter (file: file.hasExt "py" || file.hasExt "json") (root + /judge))
     (root + /packages/belay-sqlite/Belay/Sqlite/Laws.lean)
     (root + /conformance/requirements-3.51.0.json)
     (root + /conformance/regressions)
@@ -85,7 +87,7 @@ let
     "native_observation"
     "upstream_bindings" "upstream_binding_policy" "upstream_display" "upstream_evidence"
     "upstream_helpers"
-    "native_fixture" "import_fixture" "schema"
+    "native_fixture" "import_fixture" "schema" "predict" "predict_render"
     "case_format" "native_connection" "native_library" "native_clock" "native_probe" "native_ordering" "query_window" "native_metadata" "native_record" "native_statements" "native_replay" "record_parser" "upstream_pilot" "upstream_fidelity" "corpus" "generated_program" "mutation_check" "state_machine" "regressions" "progress" "measure_coverage" "native_trace" "pipeline"
   ];
   # Frozen corpora and retained reports: large, rarely changed, read only by the frozen suite.

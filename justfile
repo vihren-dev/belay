@@ -77,6 +77,14 @@ review *args:
 review-resolve *args:
     python3 -m tools.review_log "$@"
 
+# Print the current judge lock values (ADR 0011); an owner-approved pull request writes them to integrity/judge.lock.json.
+judge-lock:
+    nix-instantiate --eval --strict --json integrity/judge.nix -A current | python3 -m json.tool --sort-keys --indent 1
+
+# Run the locked judge on this commit's subject, as the verdict job does.
+verdict:
+    timeout 1800 nix-build integrity/judge.nix -A verdict --out-link build/verdict
+
 # Report per checklist condition how often it fired and what happened to its findings.
 [positional-arguments]
 review-stats *args:
