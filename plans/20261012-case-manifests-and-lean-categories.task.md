@@ -25,8 +25,8 @@ section 7. Accepted on 2026-10-12.
 3. Tests and experiment scripts that run a case without changing it take its
    inputs from `belay.toml`, not from paths and profiles written in the test
    code. Tests that change a case first copy it, as today.
-4. One shared reader loads and validates `belay.toml` files. A wrong or missing field
-   is an error that names the file and the field.
+4. One shared reader loads and validates `belay.toml` files. A wrong or missing
+   field is an error that names the file and the field.
 5. A unit test puts every `.lean` file of the repository in exactly one
    category of ADR 0010 section 7: package, case, direct fixture or excluded.
    Until the verifier library moves under `packages/` (a later task), the
@@ -56,9 +56,9 @@ section 7. Accepted on 2026-10-12.
   `runtime_root / "examples"`, so `belay.toml` files must ship in the runtime:
   `build-support/runtime.nix` copies the repository sources, and
   `build-support/sources.nix` selects them.
-- Each Nix test target lists its input files in `build-support/tests.nix`.
-  The `belay.toml` files and the reader must be in the inputs of every target that uses
-  them, or the target cannot see them.
+- Each Nix test target lists its input files in `build-support/tests.nix`. The
+  `belay.toml` files and the reader must be in the inputs of every target that
+  uses them, or the target cannot see them.
 - `experiments/adr-0003-latency/cases.py` defines three cases in code and is an
   input of the `bundle` target (`tests/test_latency_frontend.py`). It should
   read the `belay.toml` files too, so a case is defined in one place.
@@ -77,8 +77,8 @@ section 7. Accepted on 2026-10-12.
 - The file is TOML: Python reads it with `tomllib`, and Nix can read
   it with `builtins.fromTOML` for the seed task.
 - `verify` is deprecated in favour of `prepare` and `verify-bundle` (owner
-  decision, 2026-10-12). Tests of `verify` still read the `belay.toml` files until they
-  move to the two commands, in a separate change.
+  decision, 2026-10-12). Tests of `verify` still read the `belay.toml` files
+  until they move to the two commands, in a separate change.
 - CI times: record the baseline and each pull request's job times in the
   status file, and investigate a big increase before the merge (ADR 0010
   section 11).
