@@ -1,6 +1,6 @@
 # Bundle attack parity and cold-run measurement
 
-Status: IN PROGRESS. Ordinary macOS correctness checks pass; performance trials remain held.
+Status: IN PROGRESS. macOS correctness and measurements are complete; Linux installed acquisition is held.
 Created 2026-10-06.
 
 ## Outcome
@@ -118,13 +118,20 @@ unit has a status update, Jujutsu commit and independent review.
 
 ## Current checkpoint boundary
 
-The existing attack tests, confidence policy and cold-path recorder are checked
-within the scopes listed in the status file. The campaign writer has bounded
-persistence tests with synthetic observations; separate real-child tests cover
-subprocess boundaries. The named-case launcher has bounded configuration and
-synthetic writer checks. Its installed-runtime execution contract is not yet
-accepted. Ordinary macOS source and seven-suite Nix acceptance pass, with
-separate fresh and cached results. Targeted Nix dependency checks pass. Linux
-correctness acceptance, remaining infrastructure and installed checks, and
-actual macOS/Linux performance trials remain incomplete. Work continues on the existing harness; performance trials
-remain held and this task is not DONE.
+The attack matrix and measurement harness are committed and independently
+reviewed. Current macOS source acceptance passes 629 tests and 58 subtests;
+infrastructure passes 59; the actual offline installed package passes 26.
+All 11 native Nix suites pass 634 tests, with one explicit Linux-only
+sanitizer skip. The complete run retains eight fresh executions and three
+matching cached outputs, with original XML timestamps.
+
+All three macOS campaigns complete with nine valid pairs each. Their
+approved intervals establish regressions. Raw records and author checks
+remain local; the [partial comparison report](20261012-bundle-cold-comparison.md)
+gives complete ranges, stage medians and observation limits.
+
+Hosted Linux correctness passes. Local Linux packaging fails because its
+pinned Python store path has changed bytes. No failed archive is used for
+installed acceptance or timing. Linux installed acceptance and all Linux
+campaigns wait for the requested repair decision. T06 remains IN PROGRESS.
+The owner must dispose of the measured regressions before T06b.

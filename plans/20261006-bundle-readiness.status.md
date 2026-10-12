@@ -489,3 +489,33 @@ Decisions waiting for the owner:
 
 - The Linux Python repair decision and subsequent regression disposition
   listed in the report.
+
+- 2026-10-12: Hosted Linux CI `38220925110` passes at exact PR head
+  `7152fb0c`. Logs confirm 629 source tests, 58 subtests and 59
+  infrastructure checks, plus successful native targets. The hosted
+  macOS PR job is explicitly skipped and is not validation evidence.
+  Remaining local macOS native Nix suites are running after all timing
+  campaigns finish. Linux installed acquisition and timings remain held
+  at the pinned Python integrity failure.
+
+Decisions waiting for the owner:
+
+- The Linux Python repair decision, then regression disposition after
+  Linux comparisons are available.
+
+- 2026-10-12: Complete macOS native acceptance passes 634 tests across
+  all 11 Nix suites, with one explicit Linux-only sanitizer skip. Eight
+  suites execute in this run; bundle, kernel and pinned use matching
+  retained outputs with original timestamps. The earlier fresh bundle and
+  kernel runs remain retained. Exact original XML from all 11 outputs is
+  copied into local evidence and hash-verified; the receipt records execution
+  distinctions, source outputs and timestamps. All 59 macOS infrastructure
+  checks pass in 44.39 seconds. macOS correctness and all three measurement
+  campaigns are complete. Linux installed acquisition and timings remain
+  held at the pinned Python integrity failure. The task checkpoint now
+  reflects this boundary. No T06 delivery or slowdown acceptance is claimed.
+
+Decisions waiting for the owner:
+
+- Whether to repair the exact Linux Python path through Nix.
+- Regression disposition before cutover, after Linux measurements.
