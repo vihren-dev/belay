@@ -158,8 +158,8 @@ def test_cli_defaults_to_frozen_v5(tmp_path: Path, monkeypatch: pytest.MonkeyPat
 def test_actual_frozen_partition_requirement_inventory_and_identities(runtime_root: Path, version: int) -> None:
     """`conformance.progress.loaded_progress` on the frozen corpora: each case appears once.
 
-    The test also checks the part, label and shard denominators, the complete
-    requirement inventory, and that no case disagrees or has a harness error.
+    The test also checks the part, label and shard denominators and the complete
+    requirement inventory. The judge (`judge/claims.json`) states the verdicts.
     """
     corpus = ROOT / f"conformance/corpus-v{version}"
     manifest, records = load(corpus)
