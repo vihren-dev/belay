@@ -1,4 +1,4 @@
-import Belay.Sqlite.Resolution.Request
+import Belay.Sqlite.Resolution.SchemaScript
 import Belay.Sqlite.Resolution.Messages
 
 set_option doc.verso true
@@ -143,16 +143,16 @@ def tableT : Catalog := catalogOf (migration [] [.createTable "t" [column "a", c
 #guard statements (migration [] [.createTable "sqlite_x" [column "a"] []]) == [.prepareError (.reservedName "sqlite_x")]
 #guard !restricted (schema [.createTable "sqlite_stat1" [column "tbl" none, column "idx" none, column "stat" none] []])
 
--- A request: the schema describes the starting catalog, then the migration resolves against it.
-#guard (resolveRequest defaults [.createTable "t" [column "a"] []] [.insert "t" none [[.null]]]).toOption.map
-    (fun request => (request.startCatalog.length, request.resolved, request.nextCatalog.length))
+-- A schema describes the starting catalog, then the script resolves against it.
+#guard (resolveSchemaAndScript defaults [.createTable "t" [column "a"] []] [.insert "t" none [[.null]]]).toOption.map
+    (fun resolution => (resolution.startCatalog.length, resolution.resolved, resolution.nextCatalog.length))
   == some (1, [.insert 0 [[.null]] []], 1)
-#guard resolveRequest defaults [.createTable "t" [column "a"] [], .insert "t" none [[.null]]] []
+#guard resolveSchemaAndScript defaults [.createTable "t" [column "a"] [], .insert "t" none [[.null]]] []
   matches .error (.schemaRestricted { statement := 1, path := [], .. })
-#guard resolveRequest defaults [.createTable "t" [column "a"] [], .createTable "T" [column "a"] []] []
+#guard resolveSchemaAndScript defaults [.createTable "t" [column "a"] [], .createTable "T" [column "a"] []] []
   matches .error (.schemaPrepareError 1 (.tableExists "T"))
-#guard resolveRequest defaults [] [.createTable "t" [column "rowid"] []]
-  matches .error (.migrationRestricted { statement := 0, path := [1], .. })
+#guard resolveSchemaAndScript defaults [] [.createTable "t" [column "rowid"] []]
+  matches .error (.scriptRestricted { statement := 0, path := [1], .. })
 #guard (PrepareError.valueCount "t" 2 1).message == "table t has 2 columns but 1 values were supplied"
 
 -- Restriction messages say what to do next.

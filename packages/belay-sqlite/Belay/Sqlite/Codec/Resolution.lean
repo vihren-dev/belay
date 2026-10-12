@@ -3,15 +3,16 @@ import Belay.Sqlite.Codec
 set_option doc.verso true
 
 /-! JSON transport and closed kernel terms for statement syntax, catalogs and
-resolved statements, and the structural record of a request. The frontend writes
-the record; the resolver and the gates read it. -/
+resolved statements, and the structural record of a schema and a script. A
+program that maps SQL text to statements writes the record, and a program that
+resolves the statements reads it. -/
 
 namespace Belay.Sqlite
 
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.Expr, Syntax.ColumnConstraint
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ColumnDefinition, Syntax.TableConstraint
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.Statement
-deriving instance Lean.ToJson for PrepareError, Restriction, RequestIssue
+deriving instance Lean.ToJson for PrepareError, Restriction, ScriptIssue
 
 -- One command per type: a combined `deriving instance` treats its types as one group.
 deriving instance Lean.ToExpr for Syntax.Expr
@@ -29,11 +30,16 @@ deriving instance Lean.ToExpr for CatalogObject
 deriving instance Lean.ToExpr for PrepareError
 deriving instance Lean.ToExpr for Resolved.Statement
 
-/-- The structural record of a request, version 2: the SQLite release and build
-of the profile, and the schema and migration statements as written. Use an empty
-schema list for an empty starting catalog. -/
-structure RequestRecord where
-  /-- The wire format version; supported records use 2. -/
+/-- The supported version of {lit}`ScriptRecord`, the structural record of a schema
+and a script: {assert}`scriptRecordVersion = 2`. Version 1 carried resolved
+statements, which the record no longer contains. -/
+def scriptRecordVersion : Nat := 2
+
+/-- The structural record of a schema and a script: the SQLite release and build of
+the profile, and the schema and script statements as written. Use an empty schema
+list for an empty starting catalog. -/
+structure ScriptRecord where
+  /-- The wire format version; supported records use {name}`scriptRecordVersion`. -/
   version : Nat
   /-- The SQLite release, for example {lit}`3.51.0`. -/
   release : String
@@ -41,24 +47,24 @@ structure RequestRecord where
   sourceId : String
   /-- The schema statements as written. -/
   schema : List Syntax.Statement
-  /-- The migration statements as written. -/
+  /-- The script statements as written. -/
   script : List Syntax.Statement
   deriving Lean.FromJson, Lean.ToJson
 
 /-- The profile of a record: the documented defaults of its release and build,
 until a measured profile can be given. -/
-def RequestRecord.profile (record : RequestRecord) : Profile :=
+def ScriptRecord.profile (record : ScriptRecord) : Profile :=
   Profile.documented record.release record.sourceId
 
-/-- Resolve the request that a record describes. -/
-def RequestRecord.resolve (record : RequestRecord) : Except RequestIssue ResolvedRequest :=
-  resolveRequest record.profile record.schema record.script
+/-- Resolve the schema and the script of a record. -/
+def ScriptRecord.resolve (record : ScriptRecord) : Except ScriptIssue ResolvedScript :=
+  resolveSchemaAndScript record.profile record.schema record.script
 
-/-- Decode a request record, and refuse other versions. -/
-def decodeRequestRecord (json : Lean.Json) : Except String RequestRecord := do
-  let record : RequestRecord ← Lean.fromJson? json
-  unless record.version == 2 do
-    throw s!"request record version {record.version} is unsupported; only version 2 is supported. Regenerate the record with a matching frontend."
+/-- Decode a record, and refuse versions other than {name}`scriptRecordVersion`. -/
+def decodeScriptRecord (json : Lean.Json) : Except String ScriptRecord := do
+  let record : ScriptRecord ← Lean.fromJson? json
+  unless record.version == scriptRecordVersion do
+    throw s!"script record version {record.version} is unsupported; only version {scriptRecordVersion} is supported. Regenerate the record with a matching frontend."
   return record
 
 end Belay.Sqlite

@@ -34,12 +34,19 @@ Relevant files: `belay/sqlite/`, `migration_check/`,
   carry their catalog position; `Resolved.insert` and `update` carry the
   table's unique keys (`Catalog.uniqueKeys`: primary key, UNIQUE constraints,
   unique indexes). Review `20261012T104153Z-0ff6b34c`: no findings.
-- 2026-10-12: `resolveRequest` (schema in description mode, then migration in
+- 2026-10-12: commit `e77423a6`: `resolveRequest` (schema in description mode, then migration in
   execution mode; a schema holds only CREATE TABLE and CREATE INDEX),
   `PrepareError.message`, the codec for syntax, catalogs and resolved
   statements, the version 2 `RequestRecord`, and the Lean source of the
   generated modules (`leanTerm`, derived `Repr`). A build-time check
   elaborates the printed terms of a sample and compares them with the values.
+  Review `20261012T104800Z-e77423a6`: one must finding (R5, a catch-all match
+  in `firstPrepareError`) and four should findings (R1 version literal, R6
+  application words in model docstrings, R11 only single terms checked). All
+  fixed in the next refactor: the names are now `resolveSchemaAndScript`,
+  `ResolvedScript`, `ScriptIssue` and `ScriptRecord` in module
+  `Resolution/SchemaScript`, `scriptRecordVersion` names the version, and the
+  build-time check elaborates both complete generated modules.
 
 ## Remaining
 
