@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-12T18:30:27+00:00",
+  "finding": "20261012T183023Z-cdb08e52#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "The docstring now says why the helper exists."
+}

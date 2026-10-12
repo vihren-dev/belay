@@ -19,7 +19,8 @@ def nix_string(path: Path) -> str:
 
 
 def import_file(name: str) -> str:
-    """A Nix expression that imports `build-support/NAME` of this checkout."""
+    """A Nix expression that imports `build-support/NAME` of this checkout, so the evaluation tests use the
+    real build definitions and only the source tree is private."""
     return f'import (builtins.toPath {nix_string(ROOT / "build-support" / name)})'
 
 
