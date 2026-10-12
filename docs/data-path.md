@@ -56,7 +56,7 @@ With `--format json` each command prints one JSON object.
 | Command | Result | Report | Exit code |
 | --- | --- | --- | --- |
 | `init` | Project written | `{"status": "INITIALIZED", "project": PATH, "lakefile": PATH}` | 0 |
-| `prepare` | Bundle written | `{"status": "PREPARED", "bundle": PATH, "compiled_modules": [...]}` | 0 |
+| `prepare` | Bundle written | `{"status": "PREPARED", "bundle": PATH, "compiled_modules": [...], "warnings": [...]}`; a warning names approved code that runs during elaboration (`#eval`, `run_cmd`, `initialize`, syntax extensions), whose cached outputs can differ from fresh ones | 0 |
 | `verify-bundle` | Proof checked | `{"status": "VERIFIED", "profile": ..., "statements": N, "inputs": {...}, "compiled_modules": [...]}`; `inputs` holds the same hashes as `verify` plus `"bundle"`, the SHA-256 of the bundle file | 0 |
 | `clean-cache` | Other builds' folders removed | `{"status": "CLEANED", "root": PATH, "removed": [...]}` | 0 |
 | `verify-bundle` | Refutation checked | `{"status": "VIOLATED", "message": ...}` | 1 |

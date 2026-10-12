@@ -167,6 +167,8 @@ def main(values: Sequence[str]) -> int:
     if json_output:
         print(json.dumps(result, ensure_ascii=False))
     elif result["status"] == "PREPARED":
+        for warning in result.get("warnings", []):
+            print(f"warning: {warning}")
         print(f"PREPARED: {result['bundle']}")
     elif result["status"] == "INITIALIZED":
         print(f"INITIALIZED: {result['lakefile']}")

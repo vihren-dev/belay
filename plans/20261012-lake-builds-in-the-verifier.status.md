@@ -75,3 +75,7 @@ Relevant files: `migration_check/compile.py`, `migration_check/contract.py`,
   - Remaining: F (elaboration warning), G (phases, audit, shared allowlist),
     H (remove the stage store and eligibility registry; batched header
     reading; the parallel-jobs bound).
+- 2026-10-12: step F done: `prepare` reports approved commands that run code
+  during elaboration (`migration_check/elaboration_commands.py`) in
+  `warnings` and prints them; `tests/prepare_warning_test.py` (bundle target,
+  74 passed).

@@ -19,6 +19,7 @@ from .compile import EXPECTED_SOURCE
 from .contract import Contract, discover_contract
 from .contract_build import LIBRARY_PREFIXES, selected_cache
 from .diagnostics import Rejection
+from .elaboration_commands import elaboration_commands
 from .import_path import merged_search_path
 from .inputs import generated_inputs
 from .lake_workspace import lake_build
@@ -117,4 +118,7 @@ def prepare(options: argparse.Namespace) -> dict[str, object]:
             raise Rejection("UNVERIFIED", str(error)) from error
     export_bundle(runtime=runtime, outputs=project / ".lake/build/lib/lean", trusted_imports=trusted_imports,
                   output=options.output.resolve(), timeout=60)
-    return {"status": "PREPARED", "bundle": str(options.output), "compiled_modules": list(compiled)}
+    # Warn the contract's reviewer about code that runs during elaboration (ADR 0010, "Decisions").
+    warnings = elaboration_commands({name: source.contents for name, source in contract.sources.items()})
+    return {"status": "PREPARED", "bundle": str(options.output), "compiled_modules": list(compiled),
+            "warnings": [f"approved code runs during elaboration: {place}" for place in warnings]}
