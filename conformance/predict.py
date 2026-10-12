@@ -42,7 +42,8 @@ def initial_tables(schema: tuple[Table, ...], rows: dict[str, Json]) -> list[Jso
 def translated(given: dict[str, Json], library: object) -> tuple[dict[str, Json], list[Statement]]:
     """The model input of one case and its statements; frontend refusals raise `SqlError`."""
     if given.get("nativeVersion") == PROFILE_VERSION:
-        raise SqlError("UNSUPPORTED", "Model execution profile capability is not implemented")
+        raise SqlError("UNSUPPORTED", f"{given['name']}: the model does not implement execution profiles "
+                       f"(native record version {PROFILE_VERSION}); this case stays out of scope until it does")
     parser = record_parser(library, given)
     schema = starting_schema(parse(parser, given["initialSchemaSql"].encode(), "corpus-schema.sql"))
     script = statements(parse(parser, given["migrationSql"].encode(), "corpus-migration.sql"))
@@ -97,7 +98,9 @@ def main(arguments: Sequence[str]) -> int:
     answered = subprocess.run([str(runner), "--predict"], input="".join(json.dumps(item[2]) + "\n" for item in pending),
                               capture_output=True, text=True, timeout=RUNNER_TIMEOUT_SECONDS, check=False)
     if answered.returncode:
-        print(f"predict: {runner} exited with {answered.returncode}: {answered.stderr.strip()}", file=sys.stderr)
+        print(f"predict: {runner} exited with {answered.returncode}: {answered.stderr.strip()}. Read the "
+              f"runner's message above, rebuild the conformance runtime (nix-build build-support/default.nix "
+              f"-A conformance), and run the command again.", file=sys.stderr)
         return 1
     for (index, script, _), line in zip(pending, answered.stdout.splitlines(), strict=True):
         results[index] = prediction(inputs[index], script, json.loads(line))
