@@ -112,6 +112,32 @@ Relevant files: `belay/sqlite/`, `migration_check/`,
   column, reserved name) are SQLite prepare errors that resolution decides; they
   now agree with SQLite instead of being unsupported.
 
+- 2026-10-12: commit `53e14988`: the switch. Review `20261012T123032Z-53e14988`:
+  11 must findings. Five are R8 owner-review markers (target, `GateCore`,
+  `ProofChecker`, `BundleChecker`, codec): deferred to the owner review of the
+  pull request. Six fixed in the refactor `2050776f`: `step` no longer fails on
+  a definition that is not plain (R7; `statementReady` excludes it and CREATE
+  INDEX, and the guard `ModeledDefinitions` carries the condition into the
+  support lemmas), `advance` matches each outcome constructor (R5), proof
+  sketches for four library theorems (R3), `Covers.columnsPresent` moved into
+  the model (R6), and a next step in the generated-declaration errors (R10).
+- 2026-10-12: CI time after the switch, same method as the baseline, two
+  samples of the development test suites, both against a new `main` sample
+  of 151 s taken in the same hour: 180 s and 161 s. The suites that did not
+  change took about 7% longer in the first sample, so the second sample is
+  the better comparison: about 10 s more (7%). The cause is spread over the
+  verification suites: each Atuin verification takes 2 to 4 s more (kernel
+  checks of literal catalogs in its proofs, and one resolver run per
+  verification). Lean builds, forced rebuild: `modelPackage` 18 s (main 14 s),
+  `leanRuntime` 18 s (15 s), `conformanceRuntime` 24 s (19 s),
+  `publicDocumentation` 7 s (5 s). One sample each, under the same load as
+  the 180 s run. All suites pass.
+- Finding: the conformance kernel proofs (`just conformance --prove`) evaluate
+  `resolve` in the kernel, because the case classification resolves the
+  recorded syntax. The task allows kernel evaluation of `resolve` in no proof
+  or build of the verification path; these proofs are harness evidence. The
+  2,000-column case shows the cost: it is compiled-only until step 2.
+
 ## Removed Python tests and their replacements
 
 | Removed test (case group) | Replacement |
@@ -131,4 +157,10 @@ Relevant files: `belay/sqlite/`, `migration_check/`,
 
 ## Remaining
 
-- All outcome items of the task.
+- Stopped 2026-10-12 for the owner: review `20261012T125454Z-2050776f` of the
+  refactor `2050776f` has a new must finding (R11: no checked example requires
+  `step` to run a CREATE TABLE and an ADD COLUMN that are not plain while
+  `statementReady` refuses them). This is the second review round with new must
+  findings, so the review rule requires an owner decision before more fixes.
+- Then: mark the task and this status DONE, push `tasks/resolution-switch`
+  and open the pull request with the CI times above.
