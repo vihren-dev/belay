@@ -110,3 +110,13 @@ Decisions waiting for the owner:
 
 - Final review of PR #81 before step 1b. The local integration is prepared
   for that review and still needs its independent integration review.
+
+- 2026-10-12: Local integration `013c880d` passes independent review
+  `20261012T080822Z-013c880d` with no findings. The integrated source is
+  checked on macOS within the build and source scopes above. Publishing
+  this integration will provide a current-main head for hosted checks and
+  final owner review. No step 1b switch or owner acceptance is claimed.
+
+Decisions waiting for the owner:
+
+- Final review of PR #81 after hosted checks at the integrated head.
