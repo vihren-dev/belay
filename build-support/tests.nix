@@ -62,7 +62,7 @@ let
     (root + /VerifierConformance/Outputs.lean)
     (root + /VerifierConformance/Case.lean)
     (root + /VerifierConformance/Predict.lean)
-    (root + /judge)
+    (fs.fileFilter (file: file.hasExt "py" || file.hasExt "json") (root + /judge))
     (root + /packages/belay-sqlite/Belay/Sqlite/Laws.lean)
     (root + /conformance/requirements-3.51.0.json)
     (root + /conformance/regressions)

@@ -80,3 +80,4 @@ Decision: [ADR 0011](../docs/adr-0011-product-trust-and-development-integrity.md
   23934665 after this is on `main`.
 - 2026-10-12: PR #91 merged; the new `CODEOWNERS` is enforced. R8 removed from the review checklist (outcome 2).
 - 2026-10-12: first CI run of #92: the Verdict lock check failed because the local lock counted `judge/__pycache__`, and the Check job failed because `tools/check_resources.py` allows only the development environment files in `nix/`. The judge files moved to `integrity/` (CODEOWNERS updated); the judge part covers only `.py` and `.json` files.
+- 2026-10-12: second CI run: `test_flake_checks_reuse_existing_targets` failed because the conformance suites took all of `judge/` as input, including `__pycache__` that the host tests leave; the suites now take only its `.py` and `.json` files (reproduced and fixed locally).
