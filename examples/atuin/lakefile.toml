@@ -20,4 +20,9 @@ roots = ["SchemaInputs", "SqlInputs", "Generated"]
 [[lean_lib]]
 name = "Candidate"
 srcDir = "."
-roots = ["NextInterpretation", "AtuinWitness", "HistoryDecodingChecks", "AtuinFacts", "Proofs"]
+roots = ["NextInterpretation", "HistoryDecodingChecks", "AtuinWitness", "AtuinFacts", "Proofs"]
+
+[[lean_lib]]
+name = "Audit"
+srcDir = "Generated"
+roots = ["Check"]

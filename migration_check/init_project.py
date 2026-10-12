@@ -13,7 +13,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from .diagnostics import Rejection
-from .prepare import discover_project
+from .project_discovery import discover_project
 from .proofs_project import link_runtime, project_lakefile
 from .runtime import Runtime
 from .source_closure import CompileError
@@ -35,13 +35,12 @@ def init_project(options: argparse.Namespace) -> dict[str, object]:
                         "keep the approved contract in one folder, which the project reads in place")
     with TemporaryDirectory(prefix="init-") as temporary:
         try:
-            contract, candidates, _ = discover_project(runtime=runtime, requirements=requirements,
-                                                       interpretation=interpretation, project=project,
-                                                       workspace=Path(temporary))
+            discovery = discover_project(runtime=runtime, requirements=requirements,
+                                         interpretation=interpretation, project=project, workspace=Path(temporary))
         except CompileError as error:
             raise Rejection("INPUT_ERROR", str(error)) from error
     lakefile.write_text(project_lakefile(PACKAGE_NAME, os.path.relpath(requirements.parent, project),
-                                         contract.order, candidates), encoding="utf-8")
+                                         discovery.contract.order, discovery.candidates), encoding="utf-8")
     (project / "lean-toolchain").write_text((runtime.root / "lean-toolchain").read_text(encoding="utf-8"),
                                            encoding="utf-8")
     link_runtime(project, runtime.root)

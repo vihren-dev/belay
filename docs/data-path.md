@@ -22,7 +22,20 @@ migration-check verify-bundle --profile 3.51.0 \
   [--cache DIR | --no-cache] [--format json]
 
 migration-check clean-cache
+
+# The phases that prepare runs, one at a time (ADR 0010 section 10):
+migration-check generate CONTRACT-AND-SQL-OPTIONS --project candidate   # after a SQL change
+migration-check check --project candidate                              # after each proof edit
+migration-check audit --project candidate                              # before export
+migration-check export CONTRACT-AND-SQL-OPTIONS --project candidate --output proof.bundle
 ```
+
+`check` is the same as `lake build` in the project, and the editor's Lean server
+gives the same result for one file. `audit` builds the generated module `Check`, whose
+command fails on an axiom outside the gate's allowlist (including `sorryAx`) or an
+import that the verifier does not have; it is not part of the per-edit loop because
+it loads `Lean`, about 0.5 s. `generate` refuses a lakefile that turns off kernel
+checking (`debug.skipKernelTC`). The audit decides nothing; `verify-bundle` does.
 
 **`init`** turns a folder with `NextInterpretation.lean` and `Proofs.lean` into a
 *proofs project* ([ADR 0010](adr-0010-lake-builds-and-artifact-cache.md)): it writes
@@ -177,6 +190,8 @@ the public launcher from the source runtime (Nix target `tests.bundle`);
 | The installed runtime is a Lake package that Lake replays; the bounded Lake build reuses its cache and names a failed module | End to end | `tests/lake_runtime_package_test.py` |
 | Proofs projects: runtime link, generation only of changed files, starting lakefile, contract folder and module-list checks | Unit | `tests/test_proofs_project.py` |
 | Workspace lakefile and Lake output reading; cache location and cleanup | Unit | `tests/test_lake_workspace.py`, `tests/test_cache_location.py` |
+| `audit` rejects `sorry`, an own axiom and an outside import, naming each; `generate` is stable and refuses `debug.skipKernelTC` | End to end | `tests/project_phases_test.py` |
+| `prepare` warns about approved code that runs during elaboration | End to end | `tests/prepare_warning_test.py` |
 | Stage store: verified restore, damaged or malformed entries miss, unwritable store tolerated, identity follows the runtime | Unit | `tests/test_stage_store.py` |
 | `verify` with a stage store: same results, fresh fallback, approved closures excluded unless eligible | End to end | `tests/stage_reuse_test.py` |
 | The installed commands give `VERIFIED`, `VIOLATED` and a wrong-SQL rejection | Installed | `tests/runtime_package_test.py::test_installed_data_path` |

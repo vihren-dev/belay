@@ -21,3 +21,8 @@ roots = ["SchemaInputs", "SqlInputs", "Generated"]
 name = "Candidate"
 srcDir = "."
 roots = ["NextInterpretation", "Proofs"]
+
+[[lean_lib]]
+name = "Audit"
+srcDir = "Generated"
+roots = ["Check"]

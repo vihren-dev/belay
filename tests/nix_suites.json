@@ -12,7 +12,8 @@
     "tests/test_import_path.py",
     "tests/lake_runtime_package_test.py",
     "tests/bundle_cache_test.py",
-    "tests/prepare_warning_test.py"
+    "tests/prepare_warning_test.py",
+    "tests/project_phases_test.py"
   ],
   "cli": [
     "tests/cli_test.py"

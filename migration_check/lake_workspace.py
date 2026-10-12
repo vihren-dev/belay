@@ -78,9 +78,11 @@ def failed_targets(output: str) -> tuple[str, ...]:
 
 
 def lake_build(directory: Path, sysroot: Path, cache: Path, library_prefixes: Sequence[str],
-               timeout: float = BUILD_TIMEOUT_SECONDS) -> tuple[str, ...]:
-    """Build the workspace's default targets; return the compiled modules or raise `CompileError`."""
-    result = run_process([str(sysroot / "bin/lake"), "build", "--no-ansi", "--keep-toolchain"], write_root=directory,
+               targets: Sequence[str] = (), timeout: float = BUILD_TIMEOUT_SECONDS) -> tuple[str, ...]:
+    """Build the given targets (default: the workspace's default targets); return the compiled modules or
+    raise `CompileError`."""
+    result = run_process([str(sysroot / "bin/lake"), "build", *targets, "--no-ansi", "--keep-toolchain"],
+                         write_root=directory,
                          environment={"LAKE_CACHE_DIR": str(cache)}, timeout=timeout)
     output = result.stdout + result.stderr
     if result.returncode:

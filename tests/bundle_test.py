@@ -28,7 +28,7 @@ def data_path(runtime_root: Path, tmp_path: Path,
     """Prepare a bundle from one contract/candidate pair, then verify it against another contract."""
     def run(*, approved: Path, candidate: Path, schema: Path, profile: str = "3.51.0",
             checked_approved: Path | None = None, checked_migration: Path | None = None,
-            directory: Path | None = None) -> dict[str, object]:
+            directory: Path | None = None, audit: bool = True) -> dict[str, object]:
         """Return verify-bundle's JSON report after asserting prepare succeeded."""
         def common(contract: Path, migration: Path) -> list[str]:
             return ["--profile", profile, "--format", "json", "--schema", str(schema),
@@ -45,9 +45,14 @@ def data_path(runtime_root: Path, tmp_path: Path,
                                   "--requirements", str(approved / "Requirements.lean"),
                                   "--interpretation", str(approved / "Interpretation.lean")], cwd=tmp_path, timeout=120)
         assert created.returncode == 0, created.diagnostic()
-        prepared = command_runner([launcher, "prepare", *common(approved, candidate / "migration.sql"),
-                                   "--project", str(project), "--output", str(bundle)], cwd=tmp_path, timeout=180)
-        assert prepared.returncode == 0 and prepared.json_object()["status"] == "PREPARED", prepared.diagnostic()
+        inputs, target = [*common(approved, candidate / "migration.sql"), "--project", str(project)], str(bundle)
+        # Without the audit, the phases build a bundle as an agent's own tools could; verify-bundle judges it.
+        steps = ([["prepare", *inputs, "--output", target]] if audit else
+                 [["generate", *inputs], ["check", "--project", str(project), "--format", "json"],
+                  ["export", *inputs, "--output", target]])
+        for step in steps:
+            prepared = command_runner([launcher, *step], cwd=tmp_path, timeout=180)
+            assert prepared.returncode == 0, prepared.diagnostic()
         checked = command_runner([launcher, "verify-bundle",
                                   *common(checked_approved or approved, checked_migration or candidate / "migration.sql"),
                                   "--bundle", str(bundle)], cwd=tmp_path, timeout=120)
@@ -118,9 +123,11 @@ def small(example_factory: Callable[[str], Path]) -> dict[str, Path]:
 ], ids=["sorry", "forbidden_axiom", "wrong_target"])
 def test_invalid_proof_rejected(data_path: Callable[..., dict[str, object]], small: dict[str, Path],
                                 proof: str, diagnostic: str) -> None:
-    """Unfinished proofs, extra axioms and proofs of another statement are UNVERIFIED."""
+    """Unfinished proofs, extra axioms and proofs of another statement are UNVERIFIED in `verify-bundle`, also
+    for a bundle exported without the audit that `prepare` runs."""
     (small["candidate"] / "Proofs.lean").write_text("import Generated\n" + proof + "\n")
-    report = data_path(approved=small["approved"], candidate=small["candidate"], schema=small["schema"])
+    report = data_path(approved=small["approved"], candidate=small["candidate"], schema=small["schema"],
+                       audit=False)
     assert report["status"] == "UNVERIFIED" and diagnostic in str(report["message"]), report
 
 

@@ -9,6 +9,7 @@ from collections.abc import Sequence
 
 from .diagnostics import Rejection
 from belay.sqlite.errors import SqlError
+from .cli_project import COMMANDS, SUCCESS, add_project_commands, human_lines, run_project_command
 from .inputs import generated_inputs, read_sql
 from .process import run_process
 from .stage_store import StageStore
@@ -71,27 +72,8 @@ def arguments(values: Sequence[str]) -> argparse.Namespace:
     common_arguments(verify, ("next-interpretation", "proofs"))
     verify.add_argument("--artifacts", type=Path, help="Create a directory with generated SQL and input hashes")
     verify.add_argument("--approved-baseline", type=Path, help="Require unchanged approved source/dependency hashes")
-    prepare = commands.add_parser("prepare", help="Build the proofs project and export a proof bundle (agent side)",
-        description="Build the candidate's proofs project with Lake and write a proof bundle for later "
-                    "verification. PREPARED records that the bundle was written.",
-        epilog=guide, formatter_class=argparse.RawDescriptionHelpFormatter)
-    common_arguments(prepare, ())
-    prepare.add_argument("--project", required=True, type=Path,
-                         help="Proofs project: a Lake project with NextInterpretation.lean and Proofs.lean (see init)")
-    prepare.add_argument("--output", required=True, type=Path, help="Bundle file to write")
-    cache_arguments(prepare)
-    init = commands.add_parser("init", help="Create a proofs project around a candidate's Lean files",
-        description="Write a starting lakefile.toml, lean-toolchain and the .belay/runtime link into a folder "
-                    "that holds NextInterpretation.lean and Proofs.lean.", epilog=guide,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
-    init.add_argument("--project", required=True, type=Path, help="Folder of the candidate's Lean files")
-    for name in ("requirements", "interpretation"):
-        init.add_argument("--" + name, required=True, type=Path, help=INPUT_HELP[name])
-    init.add_argument("--format", choices=("human", "json"), default="human")
-    clean = commands.add_parser("clean-cache", help="Remove cache folders of other verifier builds",
-        description="Remove the subfolders of the default Lake cache that belong to other verifier builds; "
-                    "the current build's folder stays.")
-    clean.add_argument("--format", choices=("human", "json"), default="human")
+    add_project_commands(commands, guide, lambda command: common_arguments(command, ()), cache_arguments,
+                         INPUT_HELP)
     bundle = commands.add_parser("verify-bundle", help="Check a proof bundle without compiling candidate source",
         description=VERIFICATION_SCOPE, epilog=guide, formatter_class=argparse.RawDescriptionHelpFormatter)
     common_arguments(bundle, ("bundle",))
@@ -144,15 +126,8 @@ def main(values: Sequence[str]) -> int:
     json_output = json_output or "--format=json" in values
     try:
         options = arguments(values)
-        if options.command == "prepare":
-            from .prepare import prepare
-            result = prepare(options)
-        elif options.command == "init":
-            from .init_project import init_project
-            result = init_project(options)
-        elif options.command == "clean-cache":
-            from .cache_commands import clean_cache
-            result = clean_cache()
+        if options.command in COMMANDS:
+            result = run_project_command(options)
         elif options.command == "verify-bundle":
             from .bundle import verify_bundle
             result = verify_bundle(options)
@@ -166,14 +141,8 @@ def main(values: Sequence[str]) -> int:
         result = Rejection("UNVERIFIED", str(error)).diagnostic()
     if json_output:
         print(json.dumps(result, ensure_ascii=False))
-    elif result["status"] == "PREPARED":
-        for warning in result.get("warnings", []):
-            print(f"warning: {warning}")
-        print(f"PREPARED: {result['bundle']}")
-    elif result["status"] == "INITIALIZED":
-        print(f"INITIALIZED: {result['lakefile']}")
-    elif result["status"] == "CLEANED":
-        print(f"CLEANED: {len(result['removed'])} folders")
+    elif result["status"] in SUCCESS:
+        print("\n".join(human_lines(result)))
     elif result["status"] != "VERIFIED":
         print(f"{result['status']}: {result['message']}")
-    return 0 if result["status"] in ("VERIFIED", "PREPARED", "INITIALIZED", "CLEANED") else 1
+    return 0 if result["status"] == "VERIFIED" or result["status"] in SUCCESS else 1

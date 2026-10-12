@@ -79,3 +79,18 @@ Relevant files: `migration_check/compile.py`, `migration_check/contract.py`,
   during elaboration (`migration_check/elaboration_commands.py`) in
   `warnings` and prints them; `tests/prepare_warning_test.py` (bundle target,
   74 passed).
+- 2026-10-12: step G done:
+  - `SqliteVerifier/AxiomPolicy.lean` holds `allowedAxioms`, which
+    `GateCore.lean` and the new `SqliteVerifier/Audit.lean` (`#belay_audit`)
+    both read. Only `Audit` imports `Lean`.
+  - Commands `generate`, `check`, `audit`, `export` (`project_phases.py`,
+    `project_discovery.py`, `cli_project.py`); `prepare` runs them and audits
+    before it exports; `export` alone does not audit, so a bundle from other
+    tools still reaches `verify-bundle`, the judge.
+  - The audit module `Check` is generated; its library `Audit` is not a
+    default target. `generate` refuses `debug.skipKernelTC` in the lakefile.
+  - CODEOWNERS: `SqliteVerifier/AxiomPolicy.lean`, `contract_build.py`,
+    `lake_workspace.py` and `project_phases.py` join the product trust base
+    (owner review in the pull request).
+  - Checks: Nix targets `bundle` (81 passed), `cli`, `atuin`, `kernel`; `just
+    documentation-inventory`; `just test-source` (554 passed).

@@ -21,7 +21,11 @@ GENERATED_FOLDER = "Generated"
 """Project folder that the tool rewrites; nobody edits it by hand."""
 
 GENERATED_MODULES = ("SchemaInputs", "SqlInputs", "Generated")
-"""Modules that the tool writes into `Generated/`."""
+"""Modules that the tool writes into `Generated/` and that the default build compiles."""
+
+AUDIT_LIBRARY, AUDIT_MODULE = "Audit", "Check"
+"""The generated module that audits the proofs, and its library; it is not a default target, so the
+per-edit check does not pay for loading `Lean` (ADR 0010 section 10)."""
 
 
 def link_runtime(project: Path, runtime_root: Path) -> None:
@@ -60,7 +64,7 @@ def project_lakefile(name: str, contract_folder: str, contract_modules: Iterable
     lines = [f"name = {json.dumps(name)}", f"defaultTargets = {json.dumps([lib for lib, _, _ in libraries])}",
              "enableArtifactCache = true", "restoreAllArtifacts = true", "",
              "[[require]]", 'name = "sqliteVerifier"', f"path = {json.dumps(RUNTIME_LINK.as_posix())}"]
-    for library, folder, roots in libraries:
+    for library, folder, roots in (*libraries, (AUDIT_LIBRARY, GENERATED_FOLDER, [AUDIT_MODULE])):
         lines += ["", "[[lean_lib]]", f"name = {json.dumps(library)}", f"srcDir = {json.dumps(folder)}",
                   f"roots = {json.dumps(roots)}"]
     return "\n".join(lines) + "\n"
@@ -94,6 +98,25 @@ def reads_contract_from(lakefile_text: str, project: Path, contract_folder: Path
         if source == contract_folder.resolve() and {"Requirements", "Interpretation"} <= set(library.get("roots", [])):
             return True
     return False
+
+
+CHECK_DISABLING_OPTIONS = ("debug.skipKernelTC",)
+"""Lean options that turn off kernel checking; the audit cannot see them, so generation refuses them."""
+
+
+def check_disabling_settings(lakefile_text: str) -> list[str]:
+    """Where a TOML lakefile turns off checks: `leanOptions` keys and `moreLeanArgs`/`weakLeanArgs` entries,
+    for the package and for each library."""
+    data = tomllib.loads(lakefile_text)
+    found = []
+    for owner, table in [("package", data), *((f"lean_lib {lib.get('name', '?')}", lib)
+                                                for lib in data.get("lean_lib", []))]:
+        for option in CHECK_DISABLING_OPTIONS:
+            if option in table.get("leanOptions", {}):
+                found.append(f"{owner}: leanOptions.{option}")
+            for key in ("moreLeanArgs", "weakLeanArgs"):
+                found.extend(f"{owner}: {key} {argument}" for argument in table.get(key, []) if option in argument)
+    return found
 
 
 def missing_modules(lakefile_text: str, modules: Iterable[str]) -> list[str]:

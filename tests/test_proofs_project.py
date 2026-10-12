@@ -6,8 +6,8 @@ import tomllib
 
 import pytest
 
-from migration_check.proofs_project import (RUNTIME_LINK, link_runtime, missing_modules, project_lakefile,
-                                            reads_contract_from, write_generated)
+from migration_check.proofs_project import (RUNTIME_LINK, check_disabling_settings, link_runtime, missing_modules,
+                                            project_lakefile, reads_contract_from, write_generated)
 
 pytestmark = pytest.mark.unit
 
@@ -37,13 +37,16 @@ def test_generation_writes_only_changed_modules(tmp_path: Path) -> None:
 
 
 def test_starting_lakefile_reads_contract_in_place_and_requires_the_link() -> None:
-    """`project_lakefile` declares the contract with its folder as `srcDir`, the generated modules, and the
-    candidate modules, and requires the library through `.belay/runtime`."""
+    """`project_lakefile` declares the contract with its folder as `srcDir`, the generated modules, the
+    candidate modules, and the audit module outside the default targets, and requires the library through
+    `.belay/runtime`."""
     parsed = tomllib.loads(project_lakefile("proofs", "../approved", ["Requirements", "Interpretation"],
                                             ["NextInterpretation", "Proofs"]))
     assert parsed["require"] == [{"name": "sqliteVerifier", "path": ".belay/runtime"}]
     assert [(lib["name"], lib["srcDir"]) for lib in parsed["lean_lib"]] == [
-        ("Contract", "../approved"), ("GeneratedInputs", "Generated"), ("Candidate", ".")]
+        ("Contract", "../approved"), ("GeneratedInputs", "Generated"), ("Candidate", "."), ("Audit", "Generated")]
+    assert parsed["defaultTargets"] == ["Contract", "GeneratedInputs", "Candidate"]
+    assert parsed["lean_lib"][3]["roots"] == ["Check"]
     assert parsed["lean_lib"][1]["roots"] == ["SchemaInputs", "SqlInputs", "Generated"]
 
 
@@ -65,3 +68,13 @@ def test_contract_library_must_read_the_given_approved_folder(tmp_path: Path) ->
     text = project_lakefile("proofs", "../approved", ["Requirements", "Interpretation"], ["Proofs"])
     assert reads_contract_from(text, project, tmp_path / "approved")
     assert not reads_contract_from(text, project, tmp_path / "other")
+
+
+def test_settings_that_turn_off_kernel_checking_are_found() -> None:
+    """`check_disabling_settings` finds `debug.skipKernelTC` in package and library `leanOptions` and in
+    `moreLeanArgs`, because the audit cannot see an option and the proof would build green locally."""
+    lakefile = ('[leanOptions]\n"debug.skipKernelTC" = true\n\n'
+                '[[lean_lib]]\nname = "Candidate"\nmoreLeanArgs = ["-Ddebug.skipKernelTC=true"]\n')
+    assert check_disabling_settings(lakefile) == ["package: leanOptions.debug.skipKernelTC",
+                                                  "lean_lib Candidate: moreLeanArgs -Ddebug.skipKernelTC=true"]
+    assert check_disabling_settings(project_lakefile("proofs", "../approved", ["Requirements"], ["Proofs"])) == []
