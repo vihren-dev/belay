@@ -18,7 +18,7 @@ from tempfile import TemporaryDirectory
 
 from .baseline import check_baseline
 from .cache_location import cache_directory, runtime_version
-from .contract import CompiledContract, discover_contract, source_hashes
+from .contract import RESERVED_CONTRACT_STEM, CompiledContract, discover_contract, source_hashes
 from .lake_workspace import Library, lake_build, write_workspace
 from .runtime import Runtime, validate_libraries
 from .source_closure import role_sources
@@ -53,7 +53,7 @@ def build_contract(*, runtime: Runtime, requirements: Path, interpretation: Path
     validate_libraries(runtime.sysroot, runtime.libraries)
     selected = {"Requirements": requirements.resolve(strict=True),
                 "Interpretation": interpretation.resolve(strict=True)}
-    if any(path.stem.casefold() == "schemainputs" for path in selected.values()):
+    if any(path.stem.casefold() == RESERVED_CONTRACT_STEM for path in selected.values()):
         raise ValueError("SchemaInputs is reserved for generated starting schema")
     approved, generated = workspace / "approved", workspace / "generated"
     for directory in (approved, generated):

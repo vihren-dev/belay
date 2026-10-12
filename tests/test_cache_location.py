@@ -4,7 +4,10 @@ from pathlib import Path
 
 import pytest
 
+import argparse
+
 from migration_check.cache_location import cache_directory, clean_other_versions, default_root, runtime_version
+from migration_check.contract_build import selected_cache
 
 pytestmark = pytest.mark.unit
 
@@ -40,3 +43,17 @@ def test_runtime_version_changes_with_the_build(tmp_path: Path) -> None:
     first = runtime_version(tmp_path / "lean", (tmp_path / "lib-a",))
     assert first == runtime_version(tmp_path / "lean", (tmp_path / "lib-a",)) and len(first) == 16
     assert first != runtime_version(tmp_path / "lean", (tmp_path / "lib-b",))
+
+
+def test_no_cache_gives_a_private_empty_folder_even_with_a_configured_cache(tmp_path: Path,
+                                                                        monkeypatch: pytest.MonkeyPatch) -> None:
+    """`selected_cache` with `--no-cache` ignores `BELAY_CACHE_DIR` and gives a new, empty folder that is
+    removed afterwards, so nothing is read from or written to the configured cache."""
+    configured = tmp_path / "configured"
+    configured.mkdir()
+    (configured / "entry").write_text("x")
+    monkeypatch.setenv("BELAY_CACHE_DIR", str(configured))
+    with selected_cache(argparse.Namespace(no_cache=True, cache=None), runtime=None) as cache:  # type: ignore[arg-type]
+        assert cache != configured and list(cache.iterdir()) == []
+        private = cache
+    assert not private.exists() and (configured / "entry").exists()

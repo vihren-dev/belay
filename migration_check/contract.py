@@ -1,19 +1,22 @@
-"""Compile the trusted stages: generated schema, approved contract and generated SQL.
+"""Discover the approved contract and compile the trusted stages for source `verify`.
 
-Shared by source `verify`, `verify-bundle` and `prepare`. Each stage may be restored
-from an opt-in `StageStore` when eligible (ADR 0003, "Approved contract reuse");
-otherwise it is compiled freshly with the pinned Lean.
+Discovery (`discover_contract`, `source_hashes`) is shared by `verify`, `verify-bundle`
+and `prepare`. `compile_trusted` compiles the generated schema, the approved contract
+and the generated SQL for `verify` only; each stage may be restored from an opt-in
+`StageStore` when eligible (ADR 0003, "Approved contract reuse"). `verify-bundle` and
+`prepare` build with Lake instead (ADR 0010, `contract_build`, `prepare`).
 """
 
 from dataclasses import dataclass
 import hashlib
 from pathlib import Path
 
-from .baseline import check_baseline
-from .runtime import validate_libraries
 from .cache_eligibility import approved_reuse_allowed
-from .source_closure import Source, discover_sources, module_path, role_sources
+from .source_closure import Source, discover_sources, module_path
 from .stage_store import StageStore, runtime_identity, stage_key
+
+RESERVED_CONTRACT_STEM = "schemainputs"
+"""Case-folded file stem that an approved source may not have: `SchemaInputs` is the generated starting schema."""
 
 APPROVED_FORBIDDEN = frozenset({"NextInterpretation", "Generated", "Proofs", "SqlInputs", "SchemaInputs"})
 
@@ -111,36 +114,3 @@ class CompiledContract:
     hashes: dict[str, str]
     external: frozenset[str]
     modules: frozenset[str]
-
-
-def compile_contract(*, sysroot: Path, libraries: tuple[Path, Path], requirements: Path, interpretation: Path,
-                     schema_inputs: str, sql_inputs: str, workspace: Path, store: StageStore | None,
-                     approved_baseline: Path | None = None, schema_hash: str | None = None,
-                     compile_sql: bool = True) -> CompiledContract:
-    """Check optional approval, then compile the trusted stages without any candidate source.
-
-    `compile_sql=False` leaves `SqlInputs` uncompiled for the bundle checker to construct;
-    its source hash is still reported.
-    """
-    validate_libraries(sysroot, libraries)
-    selected = {"Requirements": requirements.resolve(strict=True),
-                "Interpretation": interpretation.resolve(strict=True)}
-    if any(path.stem.casefold() == "schemainputs" for path in selected.values()):
-        raise ValueError("SchemaInputs is reserved for generated starting schema")
-    approved_sources, trusted = workspace / "approved-sources", workspace / "trusted"
-    for directory in (approved_sources, trusted):
-        directory.mkdir()
-    initial = role_sources(selected)
-    contract = discover_contract(
-        initial=initial,
-        roots=tuple(dict.fromkeys(path.parent for path in selected.values())), excluded=set(),
-        directory=approved_sources, sysroot=sysroot, libraries=libraries, workspace=workspace)
-    hashes = source_hashes("approved", contract.sources)
-    hashes["generated/SchemaInputs.lean"] = hashlib.sha256(schema_inputs.encode()).hexdigest()
-    hashes["generated/SqlInputs.lean"] = hashlib.sha256(sql_inputs.encode()).hexdigest()
-    if approved_baseline is not None:
-        check_baseline(approved_baseline, {**hashes, **({"schema.sql": schema_hash} if schema_hash else {})})
-    compile_trusted(contract=contract, approved_sources=approved_sources, schema_inputs=schema_inputs,
-                    sql_inputs=sql_inputs if compile_sql else None, trusted=trusted, sysroot=sysroot, libraries=libraries,
-                    workspace=workspace, store=store)
-    return CompiledContract(trusted, hashes, contract.external, frozenset(contract.sources))

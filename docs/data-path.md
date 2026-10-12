@@ -29,8 +29,9 @@ migration-check clean-cache
 a `lakefile.toml` that reads the approved contract in place and lists the
 contract, generated and candidate modules, a `lean-toolchain`, and the link
 `.belay/runtime` to the installation, which the lakefile requires. From then on
-the lakefile belongs to the user, and `lake build` and the editor's Lean server
-work on the project without the verifier.
+the lakefile belongs to the user. After `prepare` has written the generated
+modules once, `lake build` and the editor's Lean server work on the project
+without the verifier.
 
 **`prepare`** writes the generated modules into the project's `Generated/`
 folder (only files whose content changed), checks that the lakefile reads the
@@ -67,7 +68,8 @@ came from the cache are not listed.
 **The cache.** `--cache DIR`, else the variable `BELAY_CACHE_DIR`, else a per-user
 folder (`$XDG_CACHE_HOME/belay/` or `~/.cache/belay/`, `~/Library/Caches/belay/` on
 macOS) with one subfolder for each verifier build; `clean-cache` removes the other
-builds' subfolders. `--no-cache` compiles everything in a private, empty cache.
+builds' subfolders. `--no-cache` uses a private, empty artifact cache; `prepare`
+still reuses the outputs in the project's own `.lake` folder.
 Any process that can write to the cache can put outputs into it that later builds
 use without compiling, so the caller protects it like the installation. When the
 same person or job runs `prepare` and `verify-bundle`, they may share one cache; a
