@@ -35,3 +35,6 @@ Decision: [ADR 0011](../docs/adr-0011-product-trust-and-development-integrity.md
 - 2026-10-12: task and status files created. Ruleset 23934665 confirmed:
   `require_code_owner_review: true`, one required approval, stale approvals
   dismissed on push.
+- 2026-10-12: step 1. `.github/CODEOWNERS` has the two sections of ADR 0011;
+  the review checklist has R16 (anchored integrity checks); ADR 0011 is
+  ACCEPTED. R8 stays until the new `CODEOWNERS` is on `main` with enforcement.
