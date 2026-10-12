@@ -1,6 +1,6 @@
 # Switch the verifier to Lean resolution, step 1b of ADR 0008
 
-Created 2026-10-12. Status: IN PROGRESS.
+Created 2026-10-12. Status: DONE (2026-10-12).
 Specification: [ADR 0008](../docs/adr-0008-syntax-and-resolution-in-lean.md),
 all of "Decision" except the profile measurement, the error phase and the
 coverage shard (step 2) and the query syntax (step 3); "Consequences"; and

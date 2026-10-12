@@ -1,6 +1,6 @@
 # Status: switch the verifier to Lean resolution, step 1b of ADR 0008
 
-Created 2026-10-12. Status: IN PROGRESS.
+Created 2026-10-12. Status: DONE (2026-10-12).
 Task: [task](20261012-resolution-switch.task.md).
 Specification: [ADR 0008](../docs/adr-0008-syntax-and-resolution-in-lean.md).
 Previous step: [step 1a status](20261010-syntax-resolution-core.status.md).
@@ -155,12 +155,13 @@ Relevant files: `belay/sqlite/`, `migration_check/`,
 | `schema_generation_test.py`: profile equivalence, kernel properties | `Codec/SourceExamples.lean`; examples verified under both profiles |
 | `generated_inputs_test.py`: emitter parity | rewritten: parity with the resolver output and tampered records |
 
+- 2026-10-12: review `20261012T125454Z-2050776f` of the refactor had one must
+  finding (R11: no checked example of `step` running a definition that is not
+  plain). This was the second round with new must findings; the owner approved
+  the fix. Commit `68ca1ab8` adds two kernel-checked examples
+  (`SchemaExamples.lean`). Review `20261012T130540Z-68ca1ab8`: no findings.
+
 ## Remaining
 
-- Stopped 2026-10-12 for the owner: review `20261012T125454Z-2050776f` of the
-  refactor `2050776f` has a new must finding (R11: no checked example requires
-  `step` to run a CREATE TABLE and an ADD COLUMN that are not plain while
-  `statementReady` refuses them). This is the second review round with new must
-  findings, so the review rule requires an owner decision before more fixes.
-- Then: mark the task and this status DONE, push `tasks/resolution-switch`
-  and open the pull request with the CI times above.
+- Nothing for this step. The five R8 findings wait for the owner review of the
+  pull request. Step 2 of ADR 0008 replaces the compiled-only 2,000-column case.
