@@ -1,6 +1,7 @@
 # ADR 0011: Product trust and development integrity
 
-Date: 2026-10-12. Status: PROPOSED.
+Date: 2026-10-12. Status: ACCEPTED on 2026-10-12 (PR #90).
+Implementation: [task](../plans/20261012-development-integrity.task.md).
 Audience: designers and reviewers.
 Related: [ADR 0003](adr-0003-agent-proof-preparation.md),
 [ADR 0005](adr-0005-conformance-corpus-scale.md), [kernel gate](kernel-gate.md),

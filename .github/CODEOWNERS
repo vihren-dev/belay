@@ -1,15 +1,21 @@
-# Main ruleset 23934665 requires these code-owner approvals.
-/SqliteVerifier/ @tzanko-matev
-/SqliteVerifier.lean @tzanko-matev
+# Ruleset 23934665 requires one approval and a code-owner review before a merge to main.
+# See docs/adr-0011-product-trust-and-development-integrity.md.
+
+# Development integrity (ADR 0011 decisions 2 to 4): the judge lock, the Nix
+# file that checks it and defines the verdict, the workflows, and this file.
+/nix/judge.lock.json @tzanko-matev
+/nix/judge.nix @tzanko-matev
+/.github/workflows/ @tzanko-matev
+/.github/CODEOWNERS @tzanko-matev
+
+# Product trust base (ADR 0011 decision 6): the code that gives the product guarantee.
+/SqliteVerifier/Contract.lean @tzanko-matev
+/GatePaths.lean @tzanko-matev
+/GateCore.lean @tzanko-matev
 /ProofChecker.lean @tzanko-matev
-/migration_check/ @tzanko-matev
-/bin/ @tzanko-matev
-/packaging/ @tzanko-matev
-/parser/ @tzanko-matev
-/.github/ @tzanko-matev
-/nix/ @tzanko-matev
-/tools/ @tzanko-matev
-/.envrc @tzanko-matev
-/lean-toolchain @tzanko-matev
-/lakefile.toml @tzanko-matev
-/justfile @tzanko-matev
+/BundleChecker.lean @tzanko-matev
+/packages/belay-sqlite/Belay/Sqlite/Codec.lean @tzanko-matev
+/migration_check/prepare.py @tzanko-matev
+/migration_check/bundle.py @tzanko-matev
+/migration_check/baseline.py @tzanko-matev
+/migration_check/import_path.py @tzanko-matev
