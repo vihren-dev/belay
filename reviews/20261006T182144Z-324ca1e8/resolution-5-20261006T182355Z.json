@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-06T18:23:55+00:00",
+  "finding": "20261006T182144Z-324ca1e8#5",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "Docstring clarification for measurement-source hashing is deferred with the held harness. Own status already records the actual measurement-code identities and incomplete acceptance scope."
+}
