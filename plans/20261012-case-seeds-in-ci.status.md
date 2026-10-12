@@ -52,3 +52,6 @@ Relevant files: `build-support/tests.nix`, `tests/nix_suites.json`,
     the generated audit module changed with Python's string hashing. The
     graph now keeps import order; `project_phases_test.py` pins Atuin's order.
     `bundle` 94 passed in 174 s; `just test-source` 544 passed.
+  - Fix: `tests/test_source_identity.py` checks the exact attributes of
+    `sources.nix`; it now includes `runtimeWithoutExamples`. `just test-nix`
+    68 passed.

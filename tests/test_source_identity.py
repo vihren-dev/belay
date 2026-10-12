@@ -10,7 +10,7 @@ from tests.runtime_support import run_command
 
 ROOT = Path(__file__).resolve().parents[1]
 pytestmark = [pytest.mark.integration, pytest.mark.environment, pytest.mark.requires_nix]
-COMPONENTS: set[str] = {"runtime", "lean", "conformanceLean", "model"}
+COMPONENTS: set[str] = {"runtime", "runtimeWithoutExamples", "lean", "conformanceLean", "model"}
 DYNAMIC: dict[str, set[str]] = {
     "packages/belay-sqlite/Belay/Sqlite/Model.lean": {"model"},
     "packages/belay-sqlite/Belay/Sqlite/Codec.lean": {"model"},
@@ -19,8 +19,8 @@ DYNAMIC: dict[str, set[str]] = {
     "SqliteVerifier/ContractProofs.lean": {"lean", "conformanceLean"},
     "SqliteVerifier/Library.lean": {"lean", "conformanceLean"},
     "VerifierConformance/Trace.lean": {"conformanceLean"},
-    "belay/sqlite/sql_model.py": {"runtime"},
-    "migration_check/runtime.py": {"runtime"}, "tests/test_input.py": set(),
+    "belay/sqlite/sql_model.py": {"runtime", "runtimeWithoutExamples"},
+    "migration_check/runtime.py": {"runtime", "runtimeWithoutExamples"}, "tests/test_input.py": set(),
     "packaging/helper.py": set(), "tools/helper.py": set(),
     "conformance/check.py": set(), "examples/example.sql": {"runtime"},
 }
@@ -28,8 +28,8 @@ FIXED: dict[str, set[str]] = {
     **{f"packages/belay-sqlite/{name}": {"model"}
        for name in ("lakefile.toml", "lake-manifest.json", "lean-toolchain")},
     "ConformanceRunner.lean": {"conformanceLean"},
-    **{name: {"runtime"} for name in ("LICENSE", "docs/install.md", "packaging/install.sh")},
-    "packaging/install.py": {"runtime"},
+    **{name: {"runtime", "runtimeWithoutExamples"}
+       for name in ("LICENSE", "docs/install.md", "packaging/install.sh", "packaging/install.py")},
     **{name: {"lean", "conformanceLean"} for name in ("lakefile.toml", "lake-manifest.json", "lean-toolchain")},
 }
 PARENTS: tuple[str, ...] = (".", "parser", "SqliteVerifier", "VerifierConformance", "migration_check", "belay/sqlite", "tests", "packaging", "tools",
