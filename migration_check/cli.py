@@ -52,6 +52,14 @@ def common_arguments(command: argparse.ArgumentParser, candidate: tuple[str, ...
     command.add_argument("--format", choices=("human", "json"), default="human")
 
 
+def cache_arguments(command: argparse.ArgumentParser) -> None:
+    """Lake's artifact cache: a folder the caller protects, or none (ADR 0010 section 4)."""
+    choice = command.add_mutually_exclusive_group()
+    choice.add_argument("--cache", type=Path, help="Lake artifact cache folder (default: BELAY_CACHE_DIR, "
+                        "else a per-user folder with one subfolder for each verifier build)")
+    choice.add_argument("--no-cache", action="store_true", help="Compile everything in a private, empty cache")
+
+
 def arguments(values: Sequence[str]) -> argparse.Namespace:
     """Expose `verify` and the ADR 0003 data path: `prepare` (agent side) and `verify-bundle`."""
     guide = f"Lean API walkthrough and reference guide:\n{API_REFERENCE_GUIDE}"
@@ -63,16 +71,32 @@ def arguments(values: Sequence[str]) -> argparse.Namespace:
     common_arguments(verify, ("next-interpretation", "proofs"))
     verify.add_argument("--artifacts", type=Path, help="Create a directory with generated SQL and input hashes")
     verify.add_argument("--approved-baseline", type=Path, help="Require unchanged approved source/dependency hashes")
-    prepare = commands.add_parser("prepare", help="Build the candidate and export a proof bundle (agent side)",
-        description="Write a candidate proof bundle for later verification. PREPARED records that the bundle was written.",
+    prepare = commands.add_parser("prepare", help="Build the proofs project and export a proof bundle (agent side)",
+        description="Build the candidate's proofs project with Lake and write a proof bundle for later "
+                    "verification. PREPARED records that the bundle was written.",
         epilog=guide, formatter_class=argparse.RawDescriptionHelpFormatter)
-    common_arguments(prepare, ("next-interpretation", "proofs"))
-    prepare.add_argument("--workspace", required=True, type=Path, help="Persistent agent build directory")
+    common_arguments(prepare, ())
+    prepare.add_argument("--project", required=True, type=Path,
+                         help="Proofs project: a Lake project with NextInterpretation.lean and Proofs.lean (see init)")
     prepare.add_argument("--output", required=True, type=Path, help="Bundle file to write")
+    cache_arguments(prepare)
+    init = commands.add_parser("init", help="Create a proofs project around a candidate's Lean files",
+        description="Write a starting lakefile.toml, lean-toolchain and the .belay/runtime link into a folder "
+                    "that holds NextInterpretation.lean and Proofs.lean.", epilog=guide,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    init.add_argument("--project", required=True, type=Path, help="Folder of the candidate's Lean files")
+    for name in ("requirements", "interpretation"):
+        init.add_argument("--" + name, required=True, type=Path, help=INPUT_HELP[name])
+    init.add_argument("--format", choices=("human", "json"), default="human")
+    clean = commands.add_parser("clean-cache", help="Remove cache folders of other verifier builds",
+        description="Remove the subfolders of the default Lake cache that belong to other verifier builds; "
+                    "the current build's folder stays.")
+    clean.add_argument("--format", choices=("human", "json"), default="human")
     bundle = commands.add_parser("verify-bundle", help="Check a proof bundle without compiling candidate source",
         description=VERIFICATION_SCOPE, epilog=guide, formatter_class=argparse.RawDescriptionHelpFormatter)
     common_arguments(bundle, ("bundle",))
     bundle.add_argument("--approved-baseline", type=Path, help="Require unchanged approved source/dependency hashes")
+    cache_arguments(bundle)
     return parser.parse_args(values)
 
 
@@ -123,6 +147,12 @@ def main(values: Sequence[str]) -> int:
         if options.command == "prepare":
             from .prepare import prepare
             result = prepare(options)
+        elif options.command == "init":
+            from .init_project import init_project
+            result = init_project(options)
+        elif options.command == "clean-cache":
+            from .cache_commands import clean_cache
+            result = clean_cache()
         elif options.command == "verify-bundle":
             from .bundle import verify_bundle
             result = verify_bundle(options)
@@ -138,6 +168,10 @@ def main(values: Sequence[str]) -> int:
         print(json.dumps(result, ensure_ascii=False))
     elif result["status"] == "PREPARED":
         print(f"PREPARED: {result['bundle']}")
+    elif result["status"] == "INITIALIZED":
+        print(f"INITIALIZED: {result['lakefile']}")
+    elif result["status"] == "CLEANED":
+        print(f"CLEANED: {len(result['removed'])} folders")
     elif result["status"] != "VERIFIED":
         print(f"{result['status']}: {result['message']}")
-    return 0 if result["status"] in ("VERIFIED", "PREPARED") else 1
+    return 0 if result["status"] in ("VERIFIED", "PREPARED", "INITIALIZED", "CLEANED") else 1

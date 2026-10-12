@@ -10,6 +10,10 @@ import subprocess
 from tempfile import TemporaryFile
 
 
+ALLOWED_ENVIRONMENT = frozenset({"LEAN_PATH", "LEAN_SYSROOT", "LAKE_CACHE_DIR"})
+"""Variables a caller may pass: Lean's search path and sysroot, and Lake's artifact cache (ADR 0010)."""
+
+
 def limit_output_files() -> None:
     """Bound each produced file, including captured output streams."""
     resource.setrlimit(resource.RLIMIT_FSIZE, (16 * 1024 * 1024, 16 * 1024 * 1024))
@@ -68,8 +72,8 @@ def run_process(
     """Run trusted source code with explicit environment, deadline and bounded output."""
     if timeout <= 0:
         raise ValueError("A positive process timeout is required")
-    if set(environment) - {"LEAN_PATH", "LEAN_SYSROOT"}:
-        raise ValueError("Only trusted Lean search-path settings may enter the process")
+    if set(environment) - ALLOWED_ENVIRONMENT:
+        raise ValueError("Only trusted Lean search-path and Lake cache settings may enter the process")
     command = list(arguments)
     env = {"HOME": str(write_root), "TMPDIR": str(write_root), "LANG": "C.UTF-8"}
     env.update(environment)

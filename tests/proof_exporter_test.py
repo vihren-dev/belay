@@ -13,7 +13,7 @@ import os
 
 import pytest
 
-from tests.example_cases import CASES, case_inputs, file_digest, input_digests
+from tests.example_cases import CASES, case_inputs, file_digest, input_digests, list_candidate_module
 from tests.runtime_support import CommandResult
 from migration_check.import_path import merged_search_path
 from migration_check.source_closure import lean_process
@@ -58,10 +58,9 @@ def prepare_check(runtime: Path, examples: Path, temporary: Path, approved: str,
               "--migration", str(examples / candidate / "migration.sql")]
     bundle = temporary / "proof.bundle"
     launcher = str(runtime / "bin/migration-check")
-    prepared = run([launcher, "prepare", *common,
-        "--next-interpretation", str(examples / candidate / "NextInterpretation.lean"),
-        "--proofs", str(examples / candidate / "Proofs.lean"),
-        "--workspace", str(temporary / "agent"), "--output", str(bundle)], cwd=temporary, timeout=180)
+    # The checked-in case folder is the proofs project; `examples` is a private copy, so `prepare` may write it.
+    prepared = run([launcher, "prepare", *common, "--project", str(examples / candidate),
+        "--output", str(bundle)], cwd=temporary, timeout=180)
     assert prepared.returncode == 0 and prepared.json_object()["status"] == "PREPARED", prepared.diagnostic()
     checked = run([launcher, "verify-bundle", *common, "--bundle", str(bundle),
         "--approved-baseline", str(examples / approved / "baseline.json")], cwd=temporary, timeout=120)
@@ -118,6 +117,7 @@ def test_candidate_module_under_library_namespace(module: str, runtime_root: Pat
     candidate = examples / "add_column_then_table"
     helper = candidate / (module.replace(".", "/") + ".lean")
     helper.parent.mkdir(parents=True)
+    list_candidate_module(candidate, module)
     helper.write_text(f"""import Generated
 import SqliteVerifier.Demonstration
 namespace {module}
@@ -129,7 +129,8 @@ end {module}
 /-- This proof requires the caller-owned library-like module to be exported. -/
 theorem Proofs.migrationCorrect : Generated.expected := {module}.checked
 """)
-    _bundle, report = prepare_check(runtime_root, examples, tmp_path, *case_inputs(examples, CASES["small"])[:4], command_runner)
+    _bundle, report = prepare_check(runtime_root, examples, tmp_path, *case_inputs(examples, CASES["small"])[:4],
+                                    command_runner)
     assert report["status"] == "VERIFIED", report
 
 

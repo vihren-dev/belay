@@ -1,32 +1,30 @@
-"""`prepare`: agent-side bundle preparation for the ADR 0003 data path.
+"""`prepare`: build the user's proofs project and export a bundle (ADR 0003 data path, ADR 0010).
 
-This is a convenience the agent may replace with its own tools; nothing it caches
-is trusted by `verify-bundle`. It keeps a persistent agent workspace, compiles the
-contract and candidate modules incrementally, and exports the proof closure with
-the pinned lean4export, omitting declarations from the trusted library.
-
-Candidate reuse follows each module's imports (`module_keys.py`): an edit
-recompiles the edited module and the modules that import it, directly or
-transitively, and nothing else.
+The proofs project is a Lake project with the user's own lakefile (`proofs_project`).
+`prepare` writes the generated modules into it, checks that its lakefile lists every
+module Lake must build, builds it with Lake and the caller's artifact cache, and
+exports the proof closure with the pinned lean4export, omitting declarations from the
+trusted library. It runs in the agent's trust domain: nothing it builds or caches is
+trusted by `verify-bundle`, which compiles the contract itself.
 """
 
 import argparse
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 from tempfile import TemporaryDirectory
 
-from .compile import EXPECTED_SOURCE, compile_modules
-from .contract import compile_contract
+from .compile import EXPECTED_SOURCE
+from .contract import Contract, discover_contract
+from .contract_build import LIBRARY_PREFIXES, selected_cache
 from .diagnostics import Rejection
-from .inputs import generated_inputs
 from .import_path import merged_search_path
-from .module_keys import contract_keys, module_keys
+from .inputs import generated_inputs
+from .lake_workspace import lake_build
+from .proofs_project import GENERATED_MODULES, link_runtime, missing_modules, reads_contract_from, write_generated
 from .runtime import Runtime
 from .source_closure import CompileError, Source, discover_sources, module_path, role_sources
-from .stage_store import StageStore, runtime_identity
 
 EXPORT_ROOTS = ("Proofs.migrationCorrect", "Proofs.migrationViolated",
                 "NextInterpretation.next", "NextInterpretation.failures")
@@ -35,99 +33,88 @@ EXPORT_ROOTS = ("Proofs.migrationCorrect", "Proofs.migrationViolated",
 PROTECTED_BASE_MODULE = "SqliteVerifier"
 """Protected library that GateCore.baseModules always imports for the verification target."""
 
-
-def compile_candidates(*, order: tuple[str, ...], sources: Path, candidate: Path, trusted: Path,
-                       cache: Path, keys: dict[str, str], runtime: Runtime, workspace: Path) -> tuple[int, int]:
-    """Compile candidate modules in order, reusing cached outputs whose dependency-aware key matches."""
-    compiled, reused = 0, 0
-    for name in order:
-        relative = module_path(name)
-        entry = cache / keys[name]
-        if not (entry / relative.parent / f"{relative.name}.olean").is_file():
-            # Missing or incomplete entries are rebuilt; the verifier never trusts this cache.
-            shutil.rmtree(entry, ignore_errors=True)
-            with TemporaryDirectory(prefix="module-", dir=workspace) as temporary:
-                output = Path(temporary)
-                compile_modules(order=(name,), sources=sources, destination=output, previous=(trusted, candidate),
-                                sysroot=runtime.sysroot, libraries=runtime.libraries, workspace=workspace)
-                cache.mkdir(parents=True, exist_ok=True)
-                shutil.copytree(output, entry, dirs_exist_ok=True)
-            compiled += 1
-        else:
-            reused += 1
-        shutil.copytree(entry, candidate, dirs_exist_ok=True)
-    return compiled, reused
+CANDIDATE_ROOTS = ("NextInterpretation", "Proofs")
+"""Candidate modules that every proofs project has, at its top level."""
 
 
-def export_bundle(*, runtime: Runtime, trusted: Path, candidate: Path, trusted_imports: set[str],
-                  output: Path, timeout: float) -> None:
+def discover_project(*, runtime: Runtime, requirements: Path, interpretation: Path, project: Path,
+                     workspace: Path) -> tuple[Contract, tuple[str, ...], set[str]]:
+    """The approved closure, the candidate modules and the trusted imports, under today's source rules.
+
+    Candidate modules may import the contract and the generated inputs but not provide
+    their own `SchemaInputs` or `SqlInputs`.
+    """
+    selected = {"Requirements": requirements.resolve(strict=True), "Interpretation": interpretation.resolve(strict=True)}
+    contract = discover_contract(
+        initial=role_sources(selected), roots=tuple(dict.fromkeys(path.parent for path in selected.values())),
+        excluded=set(), directory=workspace / "approved", sysroot=runtime.sysroot, libraries=runtime.libraries,
+        workspace=workspace)
+    external: set[str] = set(contract.external)
+    initial = {name: Source(path, path.read_bytes()) for name in CANDIDATE_ROOTS
+               for path in [(project / f"{name}.lean").resolve(strict=True)]}
+    initial["Generated"] = Source(None, EXPECTED_SOURCE.encode())
+    _, order = discover_sources(
+        initial=initial, roots=(project,), excluded=set(), forbidden={"SchemaInputs", "SqlInputs"},
+        available=set(contract.sources) | {"SchemaInputs", "SqlInputs"}, directory=workspace / "candidate",
+        sysroot=runtime.sysroot, libraries=runtime.libraries, workspace=workspace, external=external)
+    return contract, tuple(name for name in order if name != "Generated"), external
+
+
+def export_bundle(*, runtime: Runtime, outputs: Path, trusted_imports: set[str], output: Path,
+                  timeout: float) -> None:
     """Use the header's trusted imports and protected base to omit exactly the checker library closure."""
-    roots = (runtime.sysroot / "lib/lean", *runtime.libraries, trusted, candidate)
+    roots = (runtime.sysroot / "lib/lean", *runtime.libraries, outputs)
     requested = [module_path(name) for name in trusted_imports | {PROTECTED_BASE_MODULE}]
-    requested.extend(path.relative_to(root).with_suffix("") for root in (trusted, candidate)
-                     for path in root.rglob("*.olean"))
-    with merged_search_path(roots, candidate.parent, requested=requested) as paths, output.open("w", encoding="utf-8") as stream:
+    requested.extend(path.relative_to(outputs).with_suffix("") for path in outputs.rglob("*.olean"))
+    with TemporaryDirectory(prefix="export-") as scratch, \
+            merged_search_path(roots, Path(scratch), requested=requested) as paths, \
+            output.open("w", encoding="utf-8") as stream:
         environment = {"LEAN_SYSROOT": str(runtime.sysroot), "PATH": os.environ.get("PATH", ""),
                        "LEAN_PATH": os.pathsep.join(map(str, paths))}
         stream.write(json.dumps({"bundle": 1, "trusted_imports": sorted(trusted_imports)}) + "\n")
         stream.flush()
         omitted = sorted(trusted_imports | {PROTECTED_BASE_MODULE})
         result = subprocess.run([str(runtime.exporter), *["--omit=" + module for module in omitted],
-                                 "--ignore-missing", "Proofs", "--",
-                                 *EXPORT_ROOTS], env=environment, stdout=stream, stderr=subprocess.PIPE,
-                                text=True, timeout=timeout, check=False)
+                                 "--ignore-missing", "Proofs", "--", *EXPORT_ROOTS], env=environment, stdout=stream,
+                                stderr=subprocess.PIPE, text=True, timeout=timeout, check=False)
     if result.returncode:
         raise Rejection("UNVERIFIED", f"Proof exporter {runtime.exporter} failed: {result.stderr.strip()}; "
                         "check the candidate imports and proof declarations")
 
 
 def prepare(options: argparse.Namespace) -> dict[str, object]:
-    """Build the candidate against the approved contract and export a bundle to `--output`."""
+    """Build the proofs project against the approved contract and export a bundle to `--output`."""
     inputs = generated_inputs(options)
     runtime = inputs.runtime
     if not runtime.exporter.is_file():
         raise Rejection("INPUT_ERROR", f"Proof exporter is missing: {runtime.exporter}; run just build or reinstall")
-    agent = options.workspace.resolve()
-    agent.mkdir(parents=True, exist_ok=True)
-    with TemporaryDirectory(prefix="prepare-", dir=agent) as temporary:
-        workspace = Path(temporary)
+    project = options.project.resolve(strict=True)
+    link_runtime(project, runtime.root)
+    write_generated(project, {"SchemaInputs": inputs.schema_source, "SqlInputs": inputs.sql_source,
+                              "Generated": EXPECTED_SOURCE})
+    with TemporaryDirectory(prefix="prepare-") as temporary:
         try:
-            contract = compile_contract(
-                sysroot=runtime.sysroot, libraries=runtime.libraries, requirements=options.requirements,
-                interpretation=options.interpretation, schema_inputs=inputs.schema_source,
-                sql_inputs=inputs.sql_source, workspace=workspace,
-                store=StageStore(agent / "stage-store", approved_eligible=True))
-            selected = {"Requirements": options.requirements.resolve(strict=True),
-                        "Interpretation": options.interpretation.resolve(strict=True),
-                        "NextInterpretation": options.next_interpretation.resolve(strict=True),
-                        "Proofs": options.proofs.resolve(strict=True)}
-            # Same aliasing as `verify`: a file shared with an earlier role is imported, not repeated.
-            roles = role_sources(selected)
-            sources, candidate = workspace / "candidate-sources", workspace / "candidate"
-            for directory in (sources, candidate):
-                directory.mkdir()
-            external: set[str] = set()
-            imports: dict[str, tuple[str, ...]] = {}
-            _, order = discover_sources(
-                initial={"NextInterpretation": roles["NextInterpretation"], "Proofs": roles["Proofs"],
-                         "Generated": Source(None, EXPECTED_SOURCE.encode())},
-                roots=tuple(dict.fromkeys(path.parent for path in selected.values())), excluded=set(),
-                forbidden={"SchemaInputs", "SqlInputs"},
-                available=set(contract.modules) | {"SchemaInputs", "SqlInputs"},
-                directory=sources, sysroot=runtime.sysroot, libraries=runtime.libraries, workspace=workspace,
-                external=external, imports_out=imports)
-            contract_key, sql_key = contract_keys(contract.hashes)
-            keys = module_keys(
-                order=order, imports=imports, contract_modules=contract.modules, contract_key=contract_key,
-                sql_key=sql_key, runtime=runtime_identity(runtime.sysroot, runtime.libraries),
-                sources={name: (sources / module_path(name)).with_suffix(module_path(name).suffix + ".lean")
-                         .read_bytes() for name in order})
-            compiled, reused = compile_candidates(
-                order=order, sources=sources, candidate=candidate, trusted=contract.trusted,
-                cache=agent / "modules", keys=keys, runtime=runtime, workspace=workspace)
+            contract, candidates, trusted_imports = discover_project(
+                runtime=runtime, requirements=options.requirements, interpretation=options.interpretation,
+                project=project, workspace=Path(temporary))
         except CompileError as error:
             raise Rejection("UNVERIFIED", str(error)) from error
-        export_bundle(runtime=runtime, trusted=contract.trusted, candidate=candidate,
-                      trusted_imports=external | contract.external, output=options.output.resolve(), timeout=60)
-    return {"status": "PREPARED", "bundle": str(options.output), "compiled_modules": compiled,
-            "reused_modules": reused}
+    lakefile = project / "lakefile.toml"
+    if lakefile.is_file():
+        text = lakefile.read_text(encoding="utf-8")
+        approved = options.requirements.resolve().parent
+        if not reads_contract_from(text, project, approved):
+            raise Rejection("INPUT_ERROR", f"{lakefile} has no library that reads Requirements and Interpretation "
+                            f"from {approved}; set that library's srcDir to the approved folder")
+        missing = missing_modules(text, [*contract.order, *GENERATED_MODULES, *candidates])
+        if missing:
+            raise Rejection("INPUT_ERROR", f"{lakefile} lists no library for the modules {', '.join(missing)}; "
+                            "add each one to the roots of the library whose folder holds it")
+    with selected_cache(options, runtime) as cache:
+        try:
+            compiled = lake_build(project, runtime.sysroot, cache, LIBRARY_PREFIXES)
+        except CompileError as error:
+            raise Rejection("UNVERIFIED", str(error)) from error
+    export_bundle(runtime=runtime, outputs=project / ".lake/build/lib/lean", trusted_imports=trusted_imports,
+                  output=options.output.resolve(), timeout=60)
+    return {"status": "PREPARED", "bundle": str(options.output), "compiled_modules": list(compiled)}

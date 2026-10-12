@@ -50,12 +50,12 @@ use the [data path](data-path.md) commands from the same installation:
 
 ```sh
 V="$HOME/.local/opt/sqlite-verifier"
-E="$V/examples"
+cp -R "$V/examples" examples  # prepare writes into the proofs project, so use a copy
+E="$PWD/examples"
 "$V/bin/migration-check" prepare --profile 3.51.0 --schema "$E/approved/schema.sql" \
   --requirements "$E/approved/Requirements.lean" --interpretation "$E/approved/Interpretation.lean" \
   --migration "$E/add_column_then_table/migration.sql" \
-  --next-interpretation "$E/add_column_then_table/NextInterpretation.lean" \
-  --proofs "$E/add_column_then_table/Proofs.lean" --workspace agent-build --output proof.bundle
+  --project "$E/add_column_then_table" --output proof.bundle
 "$V/bin/migration-check" verify-bundle --profile 3.51.0 --schema "$E/approved/schema.sql" \
   --requirements "$E/approved/Requirements.lean" --interpretation "$E/approved/Interpretation.lean" \
   --migration "$E/add_column_then_table/migration.sql" --bundle proof.bundle --format json

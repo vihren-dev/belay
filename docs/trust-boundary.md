@@ -16,9 +16,15 @@ tokenizer/grammar adapter, CST admission and SQL-to-Lean emitter, source staging
 Lean runtime/kernel and serialized-module loader, protected proof library,
 the kernel gate and bundle checker, and native/model correspondence assumptions.
 The caller must protect that installation, its runtime paths/environment, approved
-source files, any approval baseline, and any configured stage store
-(`MIGRATION_CHECK_STAGE_STORE`). Stored stages are hash-checked for integrity, but
-a reused stage is trusted like one compiled fresh. Lean source can execute arbitrary code during compilation. The current CLI assumes
+source files, any approval baseline, any configured stage store
+(`MIGRATION_CHECK_STAGE_STORE`), and the Lake artifact cache of `prepare` and
+`verify-bundle` (`--cache`, `BELAY_CACHE_DIR` or the per-user default). Stored
+stages are hash-checked for integrity, but a reused stage is trusted like one
+compiled fresh. Lake's cache key is a 64-bit hash that detects accidental change,
+not attack: any process that can write to the cache can put outputs into it that
+later builds use without compiling. A cache is therefore only as trusted as every
+process that can write to it ([ADR 0010](adr-0010-lake-builds-and-artifact-cache.md)
+section 4). Lean source can execute arbitrary code during compilation. The current CLI assumes
 trusted execution: callers must trust that code and protect approved inputs, the
 verifier process and its result channel. It provides no OS sandbox, network
 restriction or filesystem containment. Kernel replay rejects invalid proofs but
