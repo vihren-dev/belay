@@ -120,3 +120,8 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of PR #81 after hosted checks at the integrated head.
+
+- 2026-10-12: Merge `2ab3f2fb` brings `main` at `6441fc14` (ADR 0011
+  proposal, #90) into the branch without conflicts. It adds one document and
+  three review records and changes no source or test file. Review
+  `20261012T090836Z-2ab3f2fb` has no findings.
