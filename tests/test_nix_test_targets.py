@@ -28,7 +28,7 @@ def runtime_expression(root: Path, sources: str) -> str:
     """The real runtime derivation (`runtime.nix`) built from the `sources` attribute of `sources.nix` for
     the source tree `root`; Nix only evaluates it, so the tests see its true inputs."""
     return f'''{import_file("runtime.nix")} {{
-        inherit pkgs; inherit (builds) leanToolchain leanRuntime modelPackage sources;
+        inherit pkgs; inherit (builds) leanToolchain leanRuntime modelPackage sources verifierLibrary;
         parserLibrary = builds.parserLibrary.library;
         src = ({import_file("sources.nix")} {{ inherit (pkgs) lib; root = /. + {nix_string(root)}; }}).{sources};
       }}'''
@@ -61,7 +61,7 @@ def test_bounded_commands_keep_complete_suite_ownership() -> None:
     scripts = json.loads(result.stdout)
     ownership = json.loads((ROOT / 'tests/nix_suites.json').read_text())
     assert set(scripts) == set(ownership) == {'atuin', 'bundle', 'cli', 'kernel', 'model', 'frozen', 'corpora',
-                                               'harness', 'sample', 'upstream', 'parserLibrary'}
+                                               'harness', 'sample', 'upstream', 'parserLibrary', 'packages'}
     for name, script in scripts.items():
         command = shlex.split(next(line for line in script.replace('\\\n', ' ').splitlines()
                                   if line.strip().startswith('timeout ')))
@@ -77,7 +77,7 @@ def source_tree(tmp_path: Path) -> Path:
     """Copy only small potential test inputs; no store outputs, vendored parsers or build trees."""
     for name in ('pytest.ini', 'conftest.py', 'LICENSE'):
         shutil.copy2(ROOT / name, tmp_path / name)
-    for name in ('tests', 'migration_check', 'belay', 'conformance', 'examples', 'docs', 'packaging', 'packages', 'SqliteVerifier', 'VerifierConformance', 'reports', 'nix', 'build-support', 'tools'):
+    for name in ('tests', 'migration_check', 'belay', 'conformance', 'examples', 'docs', 'packaging', 'packages', 'reports', 'nix', 'build-support', 'tools'):
         shutil.copytree(ROOT / name, tmp_path / name,
                         ignore=shutil.ignore_patterns('__pycache__', '*.pyc', 'upstream'))
     for name in ("cases.py", "stage_timing.py"):

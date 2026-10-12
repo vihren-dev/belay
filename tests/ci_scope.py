@@ -27,7 +27,7 @@ FULL_EVENTS = {"workflow_dispatch", "schedule"}
 
 INFRASTRUCTURE_PREFIXES = ("build-support/", "nix/", "parser/", ".github/")
 INFRASTRUCTURE_FILES = {"justfile", ".envrc", "flake.nix", "flake.lock", "lean-toolchain",
-                        "lakefile.toml", "lake-manifest.json", "pytest.ini", "conftest.py",
+                        "pytest.ini", "conftest.py",
                         "tools/ci_checks.py", "tools/check_resources.py",
                         "tests/nix_suites.json", "tests/conformance_frontend.json",
                         "tests/test_source_identity.py", "tests/test_nix_test_targets.py",
@@ -38,8 +38,8 @@ INFRASTRUCTURE_FILES = {"justfile", ".envrc", "flake.nix", "flake.lock", "lean-t
 PACKAGING_PREFIXES = ("belay/", "packages/", "packaging/", "bin/", "parser/", "nix/", ".github/")
 PACKAGING_FILES = {"build-support/runtime.nix", "build-support/default.nix", "build-support/sources.nix",
                    "build-support/lean-toolchain.nix", "build-support/lean4export.nix",
-                   "lean-toolchain", "lakefile.toml", "lake-manifest.json", "justfile",
-                   "migration_check/runtime.py", "docs/install.md", "ProofChecker.lean",
+                   "lean-toolchain", "justfile",
+                   "migration_check/runtime.py", "docs/install.md",
                    "tests/runtime_package_test.py", "tests/runtime_installation.py",
                    "tests/test_toolchain_smoke.py"}
 """Archive contents, installation and runtime discovery, which the installed acceptance checks."""

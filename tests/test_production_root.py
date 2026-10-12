@@ -7,6 +7,7 @@ import tomllib
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
+LIBRARY_ROOT = ROOT / "packages/sqlite-verifier"
 MODEL_ROOT = ROOT / "packages/belay-sqlite"
 PRODUCTION_ROOT_MODULE = "SqliteVerifier"
 """The public application root that every proof check imports as its trusted base."""
@@ -17,7 +18,7 @@ pytestmark = [pytest.mark.unit]
 
 def example_modules() -> set[str]:
     """Read the example module names from the Lake configuration that builds them."""
-    configuration = tomllib.loads((ROOT / "lakefile.toml").read_text())
+    configuration = tomllib.loads((LIBRARY_ROOT / "lakefile.toml").read_text())
     libraries = {library["name"]: library for library in configuration["lean_lib"]}
     return set(libraries[EXAMPLES_LIBRARY]["globs"])
 
@@ -25,7 +26,7 @@ def example_modules() -> set[str]:
 def local_source(module: str) -> Path | None:
     """Find a project module's source in the application or model package."""
     relative = Path(*module.split(".")).with_suffix(".lean")
-    for base in (ROOT, MODEL_ROOT):
+    for base in (LIBRARY_ROOT, MODEL_ROOT):
         if (base / relative).is_file():
             return base / relative
     return None

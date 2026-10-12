@@ -10,30 +10,38 @@ from tests.runtime_support import run_command
 
 ROOT = Path(__file__).resolve().parents[1]
 pytestmark = [pytest.mark.integration, pytest.mark.environment, pytest.mark.requires_nix]
-COMPONENTS: set[str] = {"runtime", "runtimeWithoutExamples", "lean", "conformanceLean", "model"}
+PACKAGES: dict[str, str] = {"sqlite-verifier": "verifierLibrary", "verifier-gate": "verifierGate",
+                            "verifier-conformance": "verifierConformance"}
+"""The Lean package folders under packages/ that `sources.nix` selects one by one, to their attributes."""
+COMPONENTS: set[str] = {"runtime", "runtimeWithoutExamples", "model", *PACKAGES.values()}
 DYNAMIC: dict[str, set[str]] = {
     "packages/belay-sqlite/Belay/Sqlite/Model.lean": {"model"},
     "packages/belay-sqlite/Belay/Sqlite/Codec.lean": {"model"},
     **{f"parser/input.{suffix}": set() for suffix in ("py", "c", "h", "y", "json")},
-    "SqliteVerifier/Contract.lean": {"lean", "conformanceLean"}, "Root.lean": {"lean", "conformanceLean"},
-    "SqliteVerifier/ContractProofs.lean": {"lean", "conformanceLean"},
-    "SqliteVerifier/Library.lean": {"lean", "conformanceLean"},
-    "VerifierConformance/Trace.lean": {"conformanceLean"},
+    "packages/sqlite-verifier/SqliteVerifier/Contract.lean": {"verifierLibrary"},
+    "packages/sqlite-verifier/SqliteVerifier/ContractProofs.lean": {"verifierLibrary"},
+    "packages/sqlite-verifier/SqliteVerifier/Library.lean": {"verifierLibrary"},
+    "packages/sqlite-verifier/Root.lean": {"verifierLibrary"},
+    "packages/verifier-gate/ProofChecker.lean": {"verifierGate"},
+    "packages/verifier-conformance/VerifierConformance/Trace.lean": {"verifierConformance"},
+    "packages/verifier-conformance/ConformanceRunner.lean": {"verifierConformance"},
     "belay/sqlite/sql_model.py": {"runtime", "runtimeWithoutExamples"},
     "migration_check/runtime.py": {"runtime", "runtimeWithoutExamples"}, "tests/test_input.py": set(),
-    "packaging/helper.py": set(), "tools/helper.py": set(),
+    "packaging/helper.py": set(), "tools/helper.py": set(), "Loose.lean": set(),
     "conformance/check.py": set(), "examples/example.sql": {"runtime"},
 }
 FIXED: dict[str, set[str]] = {
     **{f"packages/belay-sqlite/{name}": {"model"}
        for name in ("lakefile.toml", "lake-manifest.json", "lean-toolchain")},
-    "ConformanceRunner.lean": {"conformanceLean"},
+    **{f"packages/{folder}/{name}": {attribute} for folder, attribute in PACKAGES.items()
+       for name in ("lakefile.toml", "lake-manifest.json", "lean-toolchain")},
     **{name: {"runtime", "runtimeWithoutExamples"}
        for name in ("LICENSE", "docs/install.md", "packaging/install.sh", "packaging/install.py")},
-    **{name: {"lean", "conformanceLean"} for name in ("lakefile.toml", "lake-manifest.json", "lean-toolchain")},
 }
-PARENTS: tuple[str, ...] = (".", "parser", "SqliteVerifier", "VerifierConformance", "migration_check", "belay/sqlite", "tests", "packaging", "tools",
-           "conformance", "examples", "packages/belay-sqlite", "packages/belay-sqlite/Belay/Sqlite")
+PARENTS: tuple[str, ...] = (".", "parser", "migration_check", "belay/sqlite", "tests", "packaging", "tools",
+           "conformance", "examples", "packages/belay-sqlite", "packages/belay-sqlite/Belay/Sqlite",
+           *(f"packages/{folder}" for folder in PACKAGES), "packages/sqlite-verifier/SqliteVerifier",
+           "packages/verifier-conformance/VerifierConformance")
 IGNORED: tuple[str, ...] = (".git", ".jj", ".lake", "build", "dist", "__pycache__")
 PARSER_LIBRARY_INPUTS: dict[str, str] = {
     "parser/dialects.json": json.dumps({"releases": [{"version": "3.51.0", "sources": "upstream"}],
@@ -166,7 +174,7 @@ def test_model_dependency_invalidates_application_artifacts(
         assert result.returncode == 0, result.diagnostic()
         return json.loads(result.stdout)
     before = derivations()
-    application = root / 'SqliteVerifier/Contract.lean'
+    application = root / 'packages/sqlite-verifier/SqliteVerifier/Contract.lean'
     original = application.read_bytes()
     application.write_bytes(original+b'\napplication-only change\n')
     changed = derivations()

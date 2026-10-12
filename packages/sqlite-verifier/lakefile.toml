@@ -1,15 +1,12 @@
+# The verifier library: the contract language, the engineering examples and the kernel gate's libraries.
+# The installed runtime ships this package's outputs (build-support/runtime.nix).
 name = "sqliteVerifier"
 version = "0.1.0"
 defaultTargets = ["SqliteVerifier"]
 
-# Populated from the pinned upstream source in build-support/lean4export.nix.
-[[require]]
-name = "lean4export"
-path = "build/lean4export"
-
 [[require]]
 name = "belaySqlite"
-path = "packages/belay-sqlite"
+path = "../belay-sqlite"
 
 [[lean_lib]]
 name = "SqliteVerifier"
@@ -27,23 +24,3 @@ name = "GatePaths"
 
 [[lean_lib]]
 name = "GateCore"
-
-[[lean_exe]]
-name = "migration-proof-checker"
-root = "ProofChecker"
-
-[[lean_exe]]
-name = "migration-bundle-checker"
-root = "BundleChecker"
-
-[[lean_exe]]
-name = "migration-proof-exporter"
-root = "ProofExporter"
-
-[[lean_lib]]
-name = "VerifierConformance"
-roots = ["VerifierConformance.Trace", "VerifierConformance.Outputs", "VerifierConformance.Case", "VerifierConformance.Json", "VerifierConformance.Predict"]
-
-[[lean_exe]]
-name = "conformance-runner"
-root = "ConformanceRunner"

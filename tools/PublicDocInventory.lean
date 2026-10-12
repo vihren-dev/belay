@@ -5,8 +5,14 @@ import PublicDocSyntax
 
 open Lean PublicDocInventory
 
-/-- Locate the separately built model source beneath the repository root. -/
-private def modelPackageDirectory : System.FilePath := "packages/belay-sqlite"
+/-- Find a module's source file: directly below the root, as for a test fixture, or in one of the
+Lean packages in the root's `packages` folder, as for the verifier library and the model. -/
+def findSource (root relative : System.FilePath) : IO (Option System.FilePath) := do
+  let packages := root / "packages"
+  let packageRoots ← if ← packages.isDir then
+      pure <| (← packages.readDir).map (·.path) |>.qsort (·.toString < ·.toString)
+    else pure #[]
+  (#[root] ++ packageRoots).map (· / relative) |>.findM? (·.pathExists)
 
 /-- Keep each kernel constant kind visible, including compiler-created recursors. -/
 def constantKind : ConstantInfo → String
@@ -47,10 +53,7 @@ unsafe def readModules (root : System.FilePath) (entry : Name) : IO (Array Json)
   for index in [:env.header.moduleNames.size] do
     let name := env.header.moduleNames[index]!
     let relative := System.FilePath.mk ("/".intercalate (name.components.map (·.toString))) |>.addExtension "lean"
-    let localPath := root / relative
-    let path ← if ← localPath.pathExists then pure localPath
-      else pure (root / modelPackageDirectory / relative)
-    if ← path.pathExists then
+    if let some path ← findSource root relative then
       let declarations ← readSourceDeclarators env path
       let ilean ← (← searchPathRef.get).findModuleWithExt "ilean" name
       let some ilean := ilean

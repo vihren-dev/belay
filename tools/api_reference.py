@@ -20,6 +20,8 @@ from urllib.parse import quote, unquote, urlsplit
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from tools.source_revision import FULL_COMMIT_HASH_PATTERN
 
+LIBRARY_PACKAGE_DIRECTORY = Path("packages/sqlite-verifier")
+"""Repository location of the verifier library package; doc-gen4 runs in its Lake environment."""
 MODEL_PACKAGE_DIRECTORY = Path("packages/belay-sqlite")
 """Repository location of the independent model package and its source files."""
 PUBLIC_PAGE_ROOTS = frozenset({"SqliteVerifier", "SqliteVerifier.html", "Belay"})
@@ -63,14 +65,17 @@ class PageLinks(HTMLParser):
 
 def public_sources(root: Path) -> list[Path]:
     """Enumerate the entry point and library source files selected by the Nix fileset."""
-    return [root / "SqliteVerifier.lean", *sorted((root / "SqliteVerifier").rglob("*.lean")),
+    library = root / LIBRARY_PACKAGE_DIRECTORY
+    return [library / "SqliteVerifier.lean", *sorted((library / "SqliteVerifier").rglob("*.lean")),
             *sorted((root / MODEL_PACKAGE_DIRECTORY / "Belay").rglob("*.lean"))]
 
 
 def module_source_path(root: Path, source: Path) -> Path:
-    """Map the model package source to its Lean module, retaining its repository path for links."""
-    model = root / MODEL_PACKAGE_DIRECTORY
-    return source.relative_to(model) if source.is_relative_to(model) else source.relative_to(root)
+    """The path of a package source relative to its package, which is the module path; links keep the
+    repository path."""
+    package = next(root / directory for directory in (LIBRARY_PACKAGE_DIRECTORY, MODEL_PACKAGE_DIRECTORY)
+                   if source.is_relative_to(root / directory))
+    return source.relative_to(package)
 
 
 def source_revision(revision: str) -> str:
@@ -145,8 +150,8 @@ def generate_reference(root: Path, executable: Path, build: Path) -> dict[str, i
         raise ValueError(f"Core documentation database is missing: {database}; build apiReferenceCore first")
 
     def run(*arguments: str) -> None:
-        """Run doc-gen4 in Lake's environment of our project, so it finds our compiled modules."""
-        subprocess.run(["lake", "env", str(executable), *arguments], cwd=root,
+        """Run doc-gen4 in Lake's environment of the library package, so it finds our compiled modules."""
+        subprocess.run(["lake", "env", str(executable), *arguments], cwd=root / LIBRARY_PACKAGE_DIRECTORY,
                        check=True, timeout=COMMAND_TIMEOUT_SECONDS)
 
     modules: list[str] = []

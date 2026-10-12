@@ -1,5 +1,7 @@
 # Independent pytest targets: Nix owns isolation, dependency identity and reuse.
 { pkgs, leanToolchain, leanRuntime, runtime, seedRuntime, modelPackage, parserLibrary, conformance ? runtime, root ? ../.
+# Lean package outputs by their folder in the repository layout (default.nix); the `packages` suite replays them.
+, leanPackages ? { }
 , native ? import ../nix/sqlite.nix { inherit pkgs; }
 , conformanceNative ? import ./conformance-native.nix { inherit pkgs; }
 }:
@@ -29,6 +31,16 @@ let
     ln -s ${leanRuntime}/.lake "$out/.lake"
     mkdir -p "$out/packages"
     ln -s ${modelPackage} "$out/packages/belay-sqlite"
+  '';
+  # The package outputs in the repository layout. Each package folder is a real folder, so the relative
+  # paths of its requirements resolve here; its entries link to the store, because Lake must not write.
+  packageRoot = pkgs.runCommand "sqlite-verifier-test-packages" {} ''
+    mkdir -p "$out"
+    ln -s ${leanToolchain} "$out/lean"
+    ${pkgs.lib.concatStrings (pkgs.lib.mapAttrsToList (path: package: ''
+      mkdir -p "$out/${path}"
+      for entry in $(ls -A ${package}); do ln -s "${package}/$entry" "$out/${path}/$entry"; done
+    '') leanPackages)}
   '';
   # `seeds`: Lake cache seeds (case-seeds.nix) copied into one writable cache that the tests use (ADR 0010).
   suite = name: { inputs, runtime, tools ? [], environment ? {}, seeds ? [] }:
@@ -69,10 +81,10 @@ let
     (fs.fileFilter (file: file.hasExt "json") (root + /conformance/cases))
     (root + /packages/belay-sqlite/Belay/Sqlite/SqlExecution.lean)
     (root + /packages/belay-sqlite/Belay/Sqlite/Execution.lean) (root + /packages/belay-sqlite/Belay/Sqlite/LiteralData.lean)
-    (root + /VerifierConformance/Trace.lean)
-    (root + /VerifierConformance/Outputs.lean)
-    (root + /VerifierConformance/Case.lean)
-    (root + /VerifierConformance/Predict.lean)
+    (root + /packages/verifier-conformance/VerifierConformance/Trace.lean)
+    (root + /packages/verifier-conformance/VerifierConformance/Outputs.lean)
+    (root + /packages/verifier-conformance/VerifierConformance/Case.lean)
+    (root + /packages/verifier-conformance/VerifierConformance/Predict.lean)
     (fs.fileFilter (file: file.hasExt "py" || file.hasExt "json") (root + /judge))
     (root + /packages/belay-sqlite/Belay/Sqlite/Laws.lean)
     (root + /conformance/requirements-3.51.0.json)
@@ -214,6 +226,10 @@ in {
   cli = suite "cli" {
     inputs = caseReader;
     inherit runtime;
+  };
+  packages = suite "packages" {
+    inputs = [ ];
+    runtime = packageRoot;
   };
   kernel = suite "kernel" {
     inputs = [ (fs.fileFilter (file: file.hasExt "lean") (root + /tests/kernel_gate)) ];

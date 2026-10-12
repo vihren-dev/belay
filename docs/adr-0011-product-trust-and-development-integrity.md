@@ -269,7 +269,10 @@ covered outside that scope: the verification target
 `GateCore.lean`, `ProofChecker.lean`, `BundleChecker.lean`),
 `packages/belay-sqlite/Belay/Sqlite/Codec.lean`, and `prepare.py`, `bundle.py`,
 `baseline.py` and `import_path.py` in `migration_check/`. `.github/CODEOWNERS`
-lists it in its own section. With enforced code-owner review on this set,
+lists it in its own section. (ADR 0010 moved the Lean files into packages:
+`Contract.lean` to `packages/sqlite-verifier/SqliteVerifier/`, the two gate
+libraries to `packages/sqlite-verifier/`, and the two checkers to
+`packages/verifier-gate/`.) With enforced code-owner review on this set,
 review condition R8 has no remaining purpose and is removed.
 
 ## Consequences

@@ -1,13 +1,15 @@
-"""`just build` links the Lean outputs of every Lake package into the checkout.
+"""`just build` links the Lean outputs of the built runtime into the checkout.
 
-Tests that use the checkout as their runtime root read each package's compiled
-modules at `PACKAGE/.lake/build` (see `tests/runtime_fixtures.py`). Lake builds a
-path dependency in its own directory, so each package needs its own link to the
-built runtime. Without the link of a new package, those tests fail with a missing
-module file although the runtime has it.
+Tests that use the checkout as their runtime root read the compiled modules where
+the installed runtime has them (see `tests/runtime_fixtures.py`): the verifier
+library's at `.lake/build`, and each shipped package's at `packages/NAME/.lake/build`.
+`build-support/runtime.nix` decides which packages the runtime ships. Without the
+link of a new shipped package, those tests fail with a missing module file although
+the runtime has it.
 """
 
 from pathlib import Path
+import re
 import shlex
 import subprocess
 
@@ -18,8 +20,8 @@ pytestmark = [pytest.mark.unit, pytest.mark.environment]
 
 
 @pytest.mark.requires_native("just")
-def test_build_links_each_lake_package_output_to_the_runtime() -> None:
-    """Each directory with a lakefile.toml gets a `.lake/build` link into `build/runtime`."""
+def test_build_links_each_runtime_lake_output() -> None:
+    """The checkout gets a `.lake/build` link into `build/runtime` for the root and each shipped package."""
     result = subprocess.run(["just", "--dry-run", "build"], cwd=ROOT, capture_output=True,
                             text=True, timeout=5)
     assert result.returncode == 0, result.stdout + result.stderr
@@ -29,11 +31,9 @@ def test_build_links_each_lake_package_output_to_the_runtime() -> None:
         if words[:2] == ["ln", "-sfn"]:
             link = ROOT / words[3]
             links[link] = (link.parent / words[2]).resolve(strict=False)
-    packages = [lakefile.parent for lakefile in [ROOT / "lakefile.toml",
-                                                 *(ROOT / "packages").glob("*/lakefile.toml")]]
-    assert len(packages) >= 2
-    for package in packages:
-        relative = package.relative_to(ROOT)
-        link = package / ".lake/build"
+    shipped = re.findall(r'"\$out/(packages/[^"/]+)"', (ROOT / "build-support/runtime.nix").read_text())
+    assert shipped, "build-support/runtime.nix ships no package; the test no longer reads it correctly"
+    for relative in (Path("."), *map(Path, shipped)):
+        link = ROOT / relative / ".lake/build"
         assert link in links, f"just build does not link {relative / '.lake/build'}"
         assert links[link] == (ROOT / "build/runtime" / relative / ".lake/build").resolve(strict=False)

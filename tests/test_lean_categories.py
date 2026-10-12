@@ -36,10 +36,8 @@ class Rules:
 REPOSITORY_RULES = Rules(
     package=(
         "packages/",
-        # Today's locations of package sources, until the verifier library moves under packages/.
-        "SqliteVerifier/", "SqliteVerifier.lean", "BundleChecker.lean", "ConformanceRunner.lean",
-        "GateCore.lean", "GatePaths.lean", "ProofChecker.lean", "ProofExporter.lean",
-        "VerifierConformance/", "tools/PublicDocInventory.lean", "tools/PublicDocSyntax.lean",
+        # The documentation tool's sources, until they move under packages/.
+        "tools/PublicDocInventory.lean", "tools/PublicDocSyntax.lean",
     ),
     direct_fixture=("tests/kernel_gate/", "tests/public_doc_inventory/", "conformance/regressions/"),
     excluded=("experiments/",),

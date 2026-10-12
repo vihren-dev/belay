@@ -29,7 +29,7 @@ def instrument(root: Path) -> None:
         text = text.replace("namespace Belay.Sqlite\n", "namespace Belay.Sqlite\nattribute [simp] dbgTrace\n", 1)
         path.write_text(text)
     (root / "coverage-sites.json").write_text(json.dumps(sites, indent=2) + "\n")
-    runner = root / "ConformanceRunner.lean"
+    runner = root / "packages/verifier-conformance/ConformanceRunner.lean"
     source = runner.read_text()
     original = '[("verdict", toJson name), ("position", toJson position)]'
     observed = '''[("verdict", toJson name), ("position", toJson position),
