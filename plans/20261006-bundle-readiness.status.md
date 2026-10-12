@@ -438,3 +438,21 @@ Decisions waiting for the owner:
 - Whether to verify and repair the exact Linux Python store path through
   Nix, then retry unchanged packaging, or hold Linux validation.
 - Disposition of the macOS small-success regression before cutover.
+
+- 2026-10-12: The macOS checked-refutation campaign completes nine
+  valid pairs. Median verify time is 2.806074 seconds; preparation plus
+  bundle checking is 4.248018 seconds. The median paired difference is
+  1.451174 seconds, with an approved interval of 1.410712 to 1.549040
+  seconds. This result is REGRESSION. Author checks verify all 27 fresh
+  invocations, raw-output hashes, unchanged baseline identities, complete
+  stage traces, public VIOLATED exits and the recomputed interval. No
+  pair is excluded. Records remain local under
+  `build/20261012-t06-installed/darwin-checked-refutation`. The resource
+  guard passes before the Atuin campaign starts. Linux remains held for
+  the requested Python integrity repair decision.
+
+Decisions waiting for the owner:
+
+- Whether to repair the exact Linux Python store path through Nix.
+- Disposition of both measured regressions before cutover, after the
+  remaining comparisons are available.
