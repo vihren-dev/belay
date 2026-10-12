@@ -61,3 +61,13 @@ Decision: [ADR 0011](../docs/adr-0011-product-trust-and-development-integrity.md
   DISAGREE or HARNESS_ERROR on v1 to v5 and the synthetic workload. Full run on
   all six corpora: claims hold, 18 s on Linux. v4: 1264 and v5: 4376
   MODEL_UNSUPPORTED, as before.
+- 2026-10-12: `nix/judge.nix` and `nix/judge.lock.json`. Refinement of
+  outcome 6: the lock holds one content-derived store path per part (judge
+  code with claims, each claimed corpus, the oracle `nix/sqlite.nix` with
+  `nix/flake.lock`), not one derivation path per system: source paths do not
+  depend on the system, and a mismatch names the part. The verdict
+  (`nix-build nix/judge.nix -A verdict`, `just verdict`) runs the judge on the
+  subject in the Nix sandbox; all claims hold. `tests/test_judge_lock.py`
+  changes one byte of each part in a copy. Review finding
+  20261012T090907Z-7c09b6c6#1 was only partly fixed: the runner-failure
+  message has no test (it needs a broken runtime).
