@@ -20,7 +20,11 @@ COMMAND = re.compile(r"^\s*(?:@\[[^\]]*\]\s*)?(?:(?:private|protected|local|scop
 
 
 def elaboration_commands(sources: Mapping[str, bytes]) -> list[str]:
-    """`Module:line: command` for each elaboration command in the given module sources."""
+    """`Module:line: command` for each elaboration command in the given module sources.
+
+    It points the contract's reviewer at code that can make a cached output differ
+    from a fresh one.
+    """
     found = []
     for module, contents in sorted(sources.items()):
         in_comment = False

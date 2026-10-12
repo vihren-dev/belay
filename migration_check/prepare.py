@@ -121,4 +121,6 @@ def prepare(options: argparse.Namespace) -> dict[str, object]:
     # Warn the contract's reviewer about code that runs during elaboration (ADR 0010, "Decisions").
     warnings = elaboration_commands({name: source.contents for name, source in contract.sources.items()})
     return {"status": "PREPARED", "bundle": str(options.output), "compiled_modules": list(compiled),
-            "warnings": [f"approved code runs during elaboration: {place}" for place in warnings]}
+            "warnings": [f"{place} runs code while Lean compiles the approved contract, so a cached output can "
+                         "differ from a fresh one; review that command, or run with --no-cache"
+                         for place in warnings]}
