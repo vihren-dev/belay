@@ -161,6 +161,23 @@ Relevant files: `belay/sqlite/`, `migration_check/`,
   the fix. Commit `68ca1ab8` adds two kernel-checked examples
   (`SchemaExamples.lean`). Review `20261012T130540Z-68ca1ab8`: no findings.
 
+- 2026-10-12: merged `main` `0adb73dc` (ADR 0010, ADR 0011 up to step 8) into the
+  branch. ADR 0011's prediction path used the deleted translation, so the merge
+  ports it: `VerifierConformance/Predict.lean` resolves the syntax and reports
+  native catalog metadata, and `conformance/predict.py` and `predict_render.py`
+  follow. The judge lock and the claims do not change. The verdict passes, with
+  more agreeing cases than `main`: corpus-v1 9 (main 2), v2 15 (8), v3 31 (11),
+  and no DISAGREE or HARNESS_ERROR. Review `20261012T132010Z-1370bc41`: one
+  must finding (R5, a catch-all over default expressions), fixed in
+  `18e8f83c`; review `20261012T132419Z-18e8f83c`: no findings.
+- 2026-10-12: final CI time against the merged `main` `0adb73dc`, two rounds
+  that alternate `main` and the branch, forced rebuilds: development test suites
+  143 s and 143 s on `main`, 148 s and 149 s on the branch (+5 s, +4%);
+  `modelPackage` 14-15 s to 17 s, `leanRuntime` 14-16 s to 16 s,
+  `conformanceRuntime` 20 s to 22 s, `publicDocumentation` 5-6 s to 6 s. The
+  verdict's prediction step takes 4 s on both. These numbers replace the
+  earlier comparison against `5feb549e`.
+
 ## Remaining
 
 - Nothing for this step. The five R8 findings wait for the owner review of the
