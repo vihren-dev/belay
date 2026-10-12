@@ -1,6 +1,40 @@
 # Development replay headroom status
 
-Status: IN PROGRESS. Created 2026-10-06.
+Status: DONE. Created 2026-10-06. Completed 2026-10-12.
+
+Accepted main `97395bc885ac28dc69ee04eab3d2f7390074aab9` meets the strict
+under-30-second target: 8.738554166 seconds on macOS arm64 and 23.883770589
+seconds on Linux amd64. Both are fresh complete phase runs under the unchanged
+120-second process-group bound. Complete pin validation passed 13 checks on
+both platforms before timing; the owner-approved pinned loading path was used.
+The local parameter-cache prototype is retained under
+`archive/t04c-cache-prototype-20261012` and is not needed or published.
+
+Both runs retain the exact 4,378-case denominator, the original policy and
+all 184 selected identities and verdicts. Every selected case remains
+MODEL_UNSUPPORTED; this is not supported-model agreement. All 184 ordinary-file
+fixtures are unique and cleaned. Source, runtime, Python, helper and native
+library identities are equal before and after. Native execution profiles and
+storage/load observations are retained. OS file caches were not flushed.
+
+Raw reports, phase timestamps, commands, complete identity manifests and
+receipts remain local in `build/20261012-t04c-accepted-main/`. Linux file hashes
+were computed remotely and checked after retrieval. No validation-result folder
+is committed. The case comparison checks names and final model verdicts, as the
+task requires; complete frontend diagnostics are retained separately. Accepted
+parser changes alter the old diagnostic for `validity-no-columns`, while its
+MODEL_UNSUPPORTED verdict remains unchanged. Earlier rejected receipts are
+retained, and no timeout or failure is counted as a pass.
+
+These measurements establish the task's observable completion on delivered
+main without further production changes. Publication of this completion record
+and closure of issue #33 follow the normal documentation-only merge process.
+
+Decisions waiting for the owner:
+
+- None for T04c. The source changes are already on accepted main.
+
+## Historical observations before completion
 
 Fresh standalone acceptance passes on reviewed source `2006755a`:
 10.649971125 seconds on macOS and 24.784056110 seconds on Linux.
