@@ -120,3 +120,34 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of PR #81 after hosted checks at the integrated head.
+
+- 2026-10-12: Published the checked integration as PR #81 head
+  `04832712`, preserving the original feature commits. Hosted CI
+  `38222051759` is running at that exact head. Its result is pending;
+  no merge, owner approval or step 1b switch is claimed.
+
+Decisions waiting for the owner:
+
+- Final PR #81 review after hosted acceptance at the integrated head.
+
+- 2026-10-12: Hosted CI `38222051759` completes successfully at exact
+  integrated PR head `04832712`. Linux runs the full routed checks and
+  retains the checked native runtime. The macOS PR job is explicitly
+  skipped; local macOS acceptance remains the evidence listed above.
+  Final owner approval has been requested. The PR is not merged, and
+  step 1b has not started.
+
+Decisions waiting for the owner:
+
+- Final PR #81 approval at `04832712`.
+
+- 2026-10-12: Synced new main `6441fc14` locally while retaining the
+  requested approval head `04832712` on PR #81. Main adds proposed
+  ADR 0011 and three review records only. No implementation or instruction
+  changes are included, and documentation checks pass. The proposal is
+  not treated as an accepted development policy. The local checkpoint
+  preserves both parents and waits for the existing owner review.
+
+Decisions waiting for the owner:
+
+- Final PR #81 approval at the previously checked head `04832712`.
