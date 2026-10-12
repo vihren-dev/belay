@@ -5,6 +5,6 @@
  "corpus corpus-v4": "/nix/store/653vyvp3p77jg3pc4pwcy11zvgjap0ax-source",
  "corpus corpus-v5": "/nix/store/6fs7vidhnk7pj9pp24bnzi02j2ap1lnc-source",
  "corpus synthetic-workload": "/nix/store/s4qyby377gydlfyswyclc8qb2sl3cn8k-source",
- "judge": "/nix/store/dii2vbri4bkc019b3y40jm652qkysby0-source",
+ "judge": "/nix/store/dv9zq7c3q1b9bpzkm2k7v4qrmdq2ic7r-source",
  "oracle": "/nix/store/r4sm4f8pa49g5kr78d2sk2xbnibp4v3w-source"
 }

@@ -113,3 +113,24 @@ def test_broken_subject_is_a_failure(corpus: Path) -> None:
     malformed = run_judge(corpus, "malformed")
     assert malformed.returncode == 1
     assert json.loads(malformed.stdout) == {"fixture": {"HARNESS_ERROR": CASES}}
+
+
+@pytest.mark.integration
+def test_inputs_and_verdict_modes_as_the_verdict_job_runs_them(corpus: Path) -> None:
+    """`judge.__main__.main` `inputs` then `verdict`: the subject runs on the written inputs
+    alone, as in the Nix builds, and the verdict over its predictions meets the claim."""
+    run_judge(corpus, "honest")  # Writes the claims and the stand-in subject.
+    claims, subject = corpus / "claims-honest.json", corpus / "subject-honest.py"
+    judge = [sys.executable, "-m", "judge"]
+    written = subprocess.run([*judge, "inputs", "--root", str(corpus), "--claims", str(claims), "--out", str(corpus / "in")],
+                             cwd=ROOT, capture_output=True, text=True, timeout=JUDGE_TIMEOUT_SECONDS, check=False)
+    assert written.returncode == 0, written.stderr
+    (corpus / "out").mkdir()
+    with (corpus / "in/fixture.jsonl").open() as given, (corpus / "out/fixture.jsonl").open("w") as predicted:
+        subprocess.run([sys.executable, "-I", str(subject), str(corpus / "corpus/cases.jsonl.gz")], stdin=given,
+                       stdout=predicted, timeout=JUDGE_TIMEOUT_SECONDS, check=True)
+    verdict = subprocess.run([*judge, "verdict", "--root", str(corpus), "--claims", str(claims),
+                              "--predictions", str(corpus / "out")],
+                             cwd=ROOT, capture_output=True, text=True, timeout=JUDGE_TIMEOUT_SECONDS, check=False)
+    assert verdict.returncode == 0, verdict.stderr
+    assert json.loads(verdict.stdout) == {"fixture": {"AGREE": CASES}}

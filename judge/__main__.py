@@ -62,7 +62,8 @@ def run_subject(subject: Sequence[str], loaded: list[dict[str, Json]]) -> list[J
 
 
 def check(claims: list[Claim], verdicts: dict[str, dict[str, Verdict]], report_path: Path | None) -> int:
-    """Print the counts and every failure; write the full report if asked."""
+    """Decide whether the claims hold: print the counts and every failure, and write the full
+    report if asked, so that the verdict job's result and its reason are both visible."""
     report = {corpus: {"counts": counts(found), "verdicts": {
         name: [verdict.name, verdict.position, verdict.detail] for name, verdict in sorted(found.items())}}
         for corpus, found in verdicts.items()}
