@@ -5,7 +5,8 @@ let
   source = fileset: fs.toSource { inherit root fileset; };
   # Prune generated trees even when a developer creates them inside a component.
   clean = path: fs.unions (lib.mapAttrsToList (name: type:
-    if builtins.elem name [ ".git" ".jj" ".lake" "build" "dist" "__pycache__" ] then fs.unions []
+    # `.belay` and `Generated` are tool-owned parts of proofs projects (ADR 0010).
+    if builtins.elem name [ ".git" ".jj" ".lake" "build" "dist" "__pycache__" ".belay" "Generated" ] then fs.unions []
     else if type == "directory" then clean (path + "/${name}")
     else if type == "regular" then path + "/${name}" else fs.unions []) (builtins.readDir path));
   filtered = predicate: path: fs.intersection (clean path) (fs.fileFilter predicate path);

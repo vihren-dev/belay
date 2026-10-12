@@ -111,3 +111,27 @@ def test_flake_checks_reuse_existing_targets(system: str, flake_source: Path) ->
     checks = json.loads(flake.stdout)
     assert set(checks) == set(json.loads((ROOT / 'tests/nix_suites.json').read_text()))
     assert checks == json.loads(legacy.stdout)
+
+
+def target_derivations(root: Path) -> dict[str, str]:
+    """The derivation path of each Nix test target for a source tree.
+
+    Two evaluations that differ only in one source file show which targets that file
+    invalidates, without building anything.
+    """
+    result = run_command(['nix-instantiate', '--eval', '--strict', '--json',
+        '--extra-experimental-features', 'nix-command flakes', '--expr',
+        f'builtins.mapAttrs (_: test: test.drvPath) ({expression(root)})'], cwd=ROOT, timeout=120)
+    assert result.returncode == 0, result.diagnostic()
+    return json.loads(result.stdout)
+
+
+def test_case_reader_change_reruns_only_targets_that_use_it(source_tree: Path) -> None:
+    """`build-support/tests.nix` gives the belay.toml reader only to the targets whose tests read cases, so
+    changing it does not rerun the conformance, kernel or parser targets (ADR 0010 section 11)."""
+    shutil.copytree(ROOT / 'judge', source_tree / 'judge')  # an input of the corpora target
+    before = target_derivations(source_tree)
+    reader = source_tree / 'migration_check/project_config.py'
+    reader.write_text(reader.read_text() + '\n# A changed reader.\n')
+    after = target_derivations(source_tree)
+    assert {name for name in before if before[name] != after[name]} == {'atuin', 'bundle', 'cli'}

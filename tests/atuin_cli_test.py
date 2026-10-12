@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from migration_check.project_config import load
+
 if TYPE_CHECKING:
     from tests.runtime_support import CommandResult
 
@@ -28,15 +30,12 @@ def verify(runtime_root: Path, pilot: Path,
            command_runner: Callable[..., CommandResult]) -> Callable[..., dict[str, object]]:
     """Keep public status, process exit and non-timeout proof rejection assertions together."""
     def invoke(expected: str, artifacts: Path | None = None) -> dict[str, object]:
-        """Verify this case's exact files under the same protected closure and deadline."""
+        """Verify this case's exact files, named by its `belay.toml`, under the same closure and deadline."""
+        case = load(pilot / 'belay.toml', pilot)
+        assert case.baseline is not None, case.file
         command = [str(runtime_root / 'bin/migration-check'), 'verify', '--format', 'json',
-                   '--profile', '3.46.0', '--schema', str(pilot / 'schema.sql'),
-                   '--migration', str(pilot / 'migration.sql'),
-                   '--requirements', str(pilot / 'approved/Requirements.lean'),
-                   '--interpretation', str(pilot / 'approved/Interpretation.lean'),
-                   '--next-interpretation', str(pilot / 'NextInterpretation.lean'),
-                   '--proofs', str(pilot / 'Proofs.lean'),
-                   '--approved-baseline', str(pilot / 'approved/baseline.json')]
+                   *case.contract_arguments(), *case.candidate_arguments(),
+                   '--approved-baseline', str(case.baseline)]
         if artifacts is not None:
             command += ['--artifacts', str(artifacts)]
         result = command_runner(command, cwd=pilot.parent, timeout=180)
@@ -63,10 +62,13 @@ def replace_bytes(path: Path, old: bytes, new: bytes) -> None:
 @pytest.mark.kernel
 def test_valid_migration_preserves_history(pilot: Path, verify: Callable[..., dict[str, object]],
                                           tmp_path: Path) -> None:
-    """Accept the payload with exact protected hashes and complete generated artifacts."""
+    """Accept the unchanged case with the status its `belay.toml` expects, exact protected hashes and
+    complete generated artifacts."""
     assert b'alter table history add column shell text;' in (pilot / 'migration.sql').read_bytes()
     artifacts = tmp_path / 'artifacts'
-    report = verify('VERIFIED', artifacts)
+    expected = load(pilot / 'belay.toml', pilot).test_status
+    assert expected is not None
+    report = verify(expected, artifacts)
     assert report['statements'] == 1 and report['profile'] == '3.46.0'
     inputs = report['inputs']
     assert isinstance(inputs, dict)

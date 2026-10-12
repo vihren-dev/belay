@@ -68,6 +68,8 @@ is an authoring convenience and is never the gate's acceptance target.
 The proof's actual body and the expected target's dependencies are traversed
 without imported axiom caches. Relevant unsafe/partial declarations, `sorryAx`,
 and all axioms except `propext`, `Classical.choice`, and `Quot.sound` are rejected.
+The allowlist is `SqliteVerifier.allowedAxioms` (`SqliteVerifier/AxiomPolicy.lean`); the gate
+and the proof author's audit command (`SqliteVerifier.Audit`) read the same list.
 The kernel checks the proof body and checks its inferred type is definitionally
 equal to the reconstructed proposition. Exit zero means these checks succeeded;
 no printed sentinel or compiler exit status substitutes for them.

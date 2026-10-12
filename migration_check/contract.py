@@ -1,19 +1,20 @@
-"""Compile the trusted stages: generated schema, approved contract and generated SQL.
+"""Discover the approved contract and compile the trusted stages for source `verify`.
 
-Shared by source `verify`, `verify-bundle` and `prepare`. Each stage may be restored
-from an opt-in `StageStore` when eligible (ADR 0003, "Approved contract reuse");
-otherwise it is compiled freshly with the pinned Lean.
+Discovery (`discover_contract`, `source_hashes`) is shared by `verify`, `verify-bundle`
+and `prepare`. `compile_trusted` compiles the generated schema, the approved contract
+and the generated SQL for the deprecated `verify`, always freshly. `verify-bundle` and
+`prepare` build with Lake and its artifact cache instead (ADR 0010, `contract_build`,
+`project_phases`).
 """
 
 from dataclasses import dataclass
 import hashlib
 from pathlib import Path
 
-from .baseline import check_baseline
-from .runtime import validate_libraries
-from .cache_eligibility import approved_reuse_allowed
-from .source_closure import Source, discover_sources, module_path, role_sources
-from .stage_store import StageStore, runtime_identity, stage_key
+from .source_closure import Source, discover_sources, module_path
+
+RESERVED_CONTRACT_STEM = "schemainputs"
+"""Case-folded file stem that an approved source may not have: `SchemaInputs` is the generated starting schema."""
 
 APPROVED_FORBIDDEN = frozenset({"NextInterpretation", "Generated", "Proofs", "SqlInputs", "SchemaInputs"})
 
@@ -44,55 +45,30 @@ def source_hashes(stage: str, sources: dict[str, Source]) -> dict[str, str]:
             for name, source in sources.items()}
 
 
-def run_stage(*, stage: str, order: tuple[str, ...], sources: Path, destination: Path,
-              previous: tuple[Path, ...], previous_keys: tuple[str, ...], sysroot: Path, libraries: tuple[Path, Path],
-              workspace: Path, store: StageStore | None, eligible: bool) -> tuple[list[str], str]:
-    """Restore an eligible stage from the store or compile it, returning diagnostics and its key."""
-    from .compile import compile_modules
-
-    modules = {name: (sources / module_path(name)).with_suffix(module_path(name).suffix + ".lean").read_bytes()
-               for name in order}
-    key = stage_key(stage, modules, previous_keys, runtime_identity(sysroot, libraries))
-    required = tuple(f"{module_path(name).as_posix()}.olean" for name in order)
-    if store is not None and eligible and store.restore(key, destination, required):
-        return [], key
-    diagnostics = compile_modules(order=order, sources=sources, destination=destination,
-                                  previous=previous, sysroot=sysroot, libraries=libraries, workspace=workspace)
-    if store is not None and eligible:
-        store.save(key, destination)
-    return diagnostics, key
-
-
 def compile_trusted(*, contract: Contract, approved_sources: Path, schema_inputs: str, sql_inputs: str | None,
-                    trusted: Path, sysroot: Path, libraries: tuple[Path, Path], workspace: Path,
-                    store: StageStore | None) -> list[str]:
-    """Compile schema, approved and SQL stages into `trusted`, reusing only eligible stages.
+                    trusted: Path, sysroot: Path, libraries: tuple[Path, Path], workspace: Path) -> list[str]:
+    """Compile the schema, approved and SQL stages into `trusted`, every time.
 
     With `sql_inputs=None` the SQL stage is skipped: the bundle checker constructs those
     declarations itself from the frontend's structural record.
     """
+    from .compile import compile_modules
+
     sql_sources = workspace / "sql-sources"
     schema_output, sql_output = workspace / "schema-output", workspace / "sql-output"
     for directory in (sql_sources, schema_output, sql_output):
         directory.mkdir()
     # Starting schema has no access to approved or candidate sources/artifacts.
     (sql_sources / "SchemaInputs.lean").write_text(schema_inputs, encoding="utf-8")
-    common = {"sysroot": sysroot, "libraries": libraries, "workspace": workspace, "store": store}
-    diagnostics, schema_key = run_stage(stage="SchemaInputs", order=("SchemaInputs",), sources=sql_sources,
-                                        destination=schema_output, previous=(), previous_keys=(),
-                                        eligible=True, **common)
-    approved_digest = hashlib.sha256(repr(sorted(source_hashes("approved", contract.sources).items()))
-                                     .encode()).hexdigest()
-    more, _ = run_stage(stage="approved", order=contract.order, sources=approved_sources,
-                                   destination=trusted, previous=(schema_output,), previous_keys=(schema_key,),
-                                   eligible=store is not None and approved_reuse_allowed(approved_digest, store),
-                                   **common)
-    diagnostics += more
+    common = {"sysroot": sysroot, "libraries": libraries, "workspace": workspace}
+    diagnostics = compile_modules(order=("SchemaInputs",), sources=sql_sources, destination=schema_output,
+                                  previous=(), **common)
+    diagnostics += compile_modules(order=contract.order, sources=approved_sources, destination=trusted,
+                                   previous=(schema_output,), **common)
     if sql_inputs is not None:
         (sql_sources / "SqlInputs.lean").write_text(sql_inputs, encoding="utf-8")
-        more, _ = run_stage(stage="SqlInputs", order=("SqlInputs",), sources=sql_sources, destination=sql_output,
-                            previous=(schema_output,), previous_keys=(schema_key,), eligible=True, **common)
-        diagnostics += more
+        diagnostics += compile_modules(order=("SqlInputs",), sources=sql_sources, destination=sql_output,
+                                       previous=(schema_output,), **common)
     for directory in (schema_output, sql_output):
         for artifact in directory.rglob("*"):
             if artifact.is_file():
@@ -111,36 +87,3 @@ class CompiledContract:
     hashes: dict[str, str]
     external: frozenset[str]
     modules: frozenset[str]
-
-
-def compile_contract(*, sysroot: Path, libraries: tuple[Path, Path], requirements: Path, interpretation: Path,
-                     schema_inputs: str, sql_inputs: str, workspace: Path, store: StageStore | None,
-                     approved_baseline: Path | None = None, schema_hash: str | None = None,
-                     compile_sql: bool = True) -> CompiledContract:
-    """Check optional approval, then compile the trusted stages without any candidate source.
-
-    `compile_sql=False` leaves `SqlInputs` uncompiled for the bundle checker to construct;
-    its source hash is still reported.
-    """
-    validate_libraries(sysroot, libraries)
-    selected = {"Requirements": requirements.resolve(strict=True),
-                "Interpretation": interpretation.resolve(strict=True)}
-    if any(path.stem.casefold() == "schemainputs" for path in selected.values()):
-        raise ValueError("SchemaInputs is reserved for generated starting schema")
-    approved_sources, trusted = workspace / "approved-sources", workspace / "trusted"
-    for directory in (approved_sources, trusted):
-        directory.mkdir()
-    initial = role_sources(selected)
-    contract = discover_contract(
-        initial=initial,
-        roots=tuple(dict.fromkeys(path.parent for path in selected.values())), excluded=set(),
-        directory=approved_sources, sysroot=sysroot, libraries=libraries, workspace=workspace)
-    hashes = source_hashes("approved", contract.sources)
-    hashes["generated/SchemaInputs.lean"] = hashlib.sha256(schema_inputs.encode()).hexdigest()
-    hashes["generated/SqlInputs.lean"] = hashlib.sha256(sql_inputs.encode()).hexdigest()
-    if approved_baseline is not None:
-        check_baseline(approved_baseline, {**hashes, **({"schema.sql": schema_hash} if schema_hash else {})})
-    compile_trusted(contract=contract, approved_sources=approved_sources, schema_inputs=schema_inputs,
-                    sql_inputs=sql_inputs if compile_sql else None, trusted=trusted, sysroot=sysroot, libraries=libraries,
-                    workspace=workspace, store=store)
-    return CompiledContract(trusted, hashes, contract.external, frozenset(contract.sources))

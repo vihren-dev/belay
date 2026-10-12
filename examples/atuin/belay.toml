@@ -1,0 +1,13 @@
+# Atuin: add the shell column to command history (source-backed case study).
+[project]
+profile = "3.46.0"
+schema = "schema.sql"
+migration = "migration.sql"
+contract = "approved"
+baseline = "approved/baseline.json"
+proofs = "."
+proof_modules = ["NextInterpretation", "Proofs", "AtuinFacts", "AtuinWitness", "HistoryDecodingChecks"]
+
+[test]
+status = "VERIFIED"
+suite = "atuin"

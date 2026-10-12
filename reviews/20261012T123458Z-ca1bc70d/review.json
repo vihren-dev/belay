@@ -1,0 +1,65 @@
+{
+  "caller": "claude",
+  "commit": "ca1bc70da851612d601b195d15bc8ee5a96cd968",
+  "date": "2026-10-12T12:34:58+00:00",
+  "exit": 0,
+  "files": [
+    "docs/data-path.md",
+    "migration_check/cli.py",
+    "migration_check/elaboration_commands.py",
+    "migration_check/prepare.py",
+    "plans/20261012-lake-builds-in-the-verifier.status.md",
+    "reviews/20261012T123020Z-d5d7a154/review.json",
+    "tests/nix_suites.json",
+    "tests/prepare_warning_test.py",
+    "tests/test_elaboration_commands.py"
+  ],
+  "findings": [
+    {
+      "id": "20261012T123458Z-ca1bc70d#1",
+      "line": 23,
+      "path": "migration_check/elaboration_commands.py",
+      "rule": "R9",
+      "severity": "should",
+      "text": "The `elaboration_commands` docstring describes its output but does not explain why the function exists. Fix: state that it directs contract reviewers to code that can make cached outputs differ from fresh outputs."
+    },
+    {
+      "id": "20261012T123458Z-ca1bc70d#2",
+      "line": 124,
+      "path": "migration_check/prepare.py",
+      "rule": "R10",
+      "severity": "should",
+      "text": "The new warning names a command and its location but gives no next action or explanation of the cache risk. Fix: explain that cached outputs can differ from fresh outputs and direct the user to review the command or use `--no-cache`."
+    },
+    {
+      "id": "20261012T123458Z-ca1bc70d#3",
+      "line": 170,
+      "path": "migration_check/cli.py",
+      "rule": "R11",
+      "severity": "should",
+      "text": "The new plain-text warning output has no test that would fail if this loop were removed. Fix: add a CLI test without `--format json` that checks the warning and the successful `PREPARED` output."
+    }
+  ],
+  "id": "20261012T123458Z-ca1bc70d",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "b9509029f9c1",
+    "R7": "1d1132b164f1",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from migration_check.project_config import case_names, load
 from tests.runtime_support import CommandResult
 
 pytestmark = [pytest.mark.e2e, pytest.mark.kernel, pytest.mark.requires_lean,
@@ -62,34 +63,30 @@ def test_valid_migration_artifacts(invoke: Callable[..., dict[str, object]], tmp
     assert "VerificationConditions" in (artifacts / "Generated.lean").read_text()
 
 
+def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
+    """Run `test_checked_in_case_status` once for each checked-in case of this target.
+
+    The cases come from the runtime under test when one is given (in Nix, the
+    source checkout is not there), else from the checkout.
+    """
+    if "case_name" in metafunc.fixturenames:
+        examples = (metafunc.config.getoption("runtime_root") or metafunc.config.rootpath) / "examples"
+        metafunc.parametrize("case_name", case_names(examples, "cli"))
+
+
 @pytest.mark.approval
-def test_reverse_migration_reuses_baseline(invoke: Callable[..., dict[str, object]], approved: Path,
-                                         example_factory: Callable[[str], Path]) -> None:
-    """A different valid statement order verifies against the same checked-in approved baseline."""
-    invoke("VERIFIED", alternative=example_factory("table_then_column"),
-           extra=("--approved-baseline", str(approved / "baseline.json")))
-
-
-def test_checked_refutation(invoke: Callable[..., dict[str, object]], example_factory: Callable[[str], Path],
-                            approved: Path) -> None:
-    """A checked counterargument returns VIOLATED with a nonzero process status."""
-    invoke("VIOLATED", alternative=example_factory("missing_required_column"),
-           extra=("--approved-baseline", str(approved / "baseline.json")))
-
-
-def test_allowed_failure(invoke: Callable[..., dict[str, object]], example_factory: Callable[[str], Path]) -> None:
-    """An explicitly allowed execution failure satisfies its own approved contract."""
-    case = example_factory("allowed_failure")
-    invoke("VERIFIED", alternative=case, contract=case / "approved",
-           extra=("--approved-baseline", str(case / "approved/baseline.json")))
-
-
-def test_application_key_invoice_variant(invoke: Callable[..., dict[str, object]],
-        example_factory: Callable[[str], Path]) -> None:
-    """The key-based invoice certificate verifies the actual authored schema extension."""
-    examples = example_factory("application_keys")
-    invoke("VERIFIED", contract=examples / "approved",
-           alternative=examples / "add_column_then_table")
+def test_checked_in_case_status(case_name: str, runtime_root: Path, command_runner: Callable[..., CommandResult],
+                                tmp_path: Path) -> None:
+    """Each checked-in case gives the status its `belay.toml` expects, with its approval baseline."""
+    examples = runtime_root / "examples"
+    case = load(examples / case_name / "belay.toml", examples)
+    command = [str(runtime_root / "bin/migration-check"), "verify", "--format", "json",
+               *case.contract_arguments(), *case.candidate_arguments()]
+    if case.baseline is not None:
+        command += ["--approved-baseline", str(case.baseline)]
+    result = command_runner(command, cwd=tmp_path, timeout=90)
+    assert result.json_object()["status"] == case.test_status, result.diagnostic()
+    assert result.returncode == (0 if case.test_status == "VERIFIED" else 1), result.diagnostic()
 
 
 @pytest.mark.approval

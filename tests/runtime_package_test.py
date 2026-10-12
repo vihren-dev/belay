@@ -7,6 +7,7 @@ import sys
 
 import pytest
 
+from migration_check.project_config import case_names, load
 from tests.runtime_support import CommandResult
 
 pytestmark = [pytest.mark.e2e, pytest.mark.packaging, pytest.mark.requires_nix,
@@ -53,51 +54,37 @@ def test_installed_parser(version: str, runtime_root: Path, tmp_path: Path,
 def installed_verify(runtime_root: Path, tmp_path: Path,
                      command_runner: Callable[..., CommandResult]) -> Callable[..., CommandResult]:
     """Bind installed examples and launcher together without importing checkout implementation."""
-    def invoke(candidate: str, *, migration: Path | None = None, timeout: int = 180) -> CommandResult:
-        """Use the original public seven inputs and retain the installed test deadlines."""
-        approved = runtime_root / "examples/approved"
-        proposed = runtime_root / "examples" / candidate
-        return command_runner([str(runtime_root / "bin/migration-check"), "verify", "--profile", "3.51.0",
-            "--format", "json", "--schema", str(approved / "schema.sql"),
-            "--requirements", str(approved / "Requirements.lean"),
-            "--interpretation", str(approved / "Interpretation.lean"),
-            "--migration", str(migration or proposed / "migration.sql"),
-            "--next-interpretation", str(proposed / "NextInterpretation.lean"),
-            "--proofs", str(proposed / "Proofs.lean"),
-            "--approved-baseline", str(approved / "baseline.json")], cwd=tmp_path, timeout=timeout)
+    def invoke(case: str, *, migration: Path | None = None, timeout: int = 180) -> CommandResult:
+        """Verify an installed case with the inputs its `belay.toml` names; retain the installed deadlines."""
+        examples = runtime_root / "examples"
+        config = load(examples / case / "belay.toml", examples)
+        arguments = config.contract_arguments()
+        if migration is not None:
+            arguments[arguments.index("--migration") + 1] = str(migration)
+        baseline = ["--approved-baseline", str(config.baseline)] if config.baseline is not None else []
+        return command_runner([str(runtime_root / "bin/migration-check"), "verify", "--format", "json",
+                               *arguments, *config.candidate_arguments(), *baseline], cwd=tmp_path, timeout=timeout)
     return invoke
 
 
-def test_verified_example(installed_verify: Callable[..., CommandResult]) -> None:
-    """The installed entrypoint independently verifies the shipped positive migration."""
-    result = installed_verify("add_column_then_table")
-    assert result.returncode == 0 and result.json_object()["status"] == "VERIFIED", result.diagnostic()
+def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
+    """Run `test_installed_case_status` once for each checked-in case of the `cli` target.
+
+    The names come from the selected runtime root, or from the checkout when an
+    archive is installed during the run.
+    """
+    if "case_name" in metafunc.fixturenames:
+        examples = (metafunc.config.getoption("runtime_root") or metafunc.config.rootpath) / "examples"
+        metafunc.parametrize("case_name", case_names(examples, "cli"))
 
 
-def test_refuted_example(installed_verify: Callable[..., CommandResult]) -> None:
-    """The installed entrypoint returns VIOLATED and nonzero for a kernel-checked refutation."""
-    result = installed_verify("missing_required_column")
-    assert result.returncode != 0 and result.json_object()["status"] == "VIOLATED", result.diagnostic()
-
-
-@pytest.mark.parametrize("candidate,approved", [
-    ("table_then_column", "approved"),
-    ("allowed_failure", "allowed_failure/approved"),
-])
-def test_other_protected_examples(runtime_root: Path, tmp_path: Path,
-        command_runner: Callable[..., CommandResult], candidate: str, approved: str) -> None:
-    """Every other invoice candidate verifies with its actual installed protected baseline."""
-    examples = runtime_root / "examples"
-    proposed, protected = examples / candidate, examples / approved
-    result = command_runner([str(runtime_root / "bin/migration-check"), "verify", "--profile", "3.51.0",
-        "--format", "json", "--schema", str(protected / "schema.sql"),
-        "--requirements", str(protected / "Requirements.lean"),
-        "--interpretation", str(protected / "Interpretation.lean"),
-        "--migration", str(proposed / "migration.sql"),
-        "--next-interpretation", str(proposed / "NextInterpretation.lean"),
-        "--proofs", str(proposed / "Proofs.lean"),
-        "--approved-baseline", str(protected / "baseline.json")], cwd=tmp_path, timeout=180)
-    assert result.returncode == 0 and result.json_object()["status"] == "VERIFIED", result.diagnostic()
+def test_installed_case_status(case_name: str, runtime_root: Path,
+                               installed_verify: Callable[..., CommandResult]) -> None:
+    """The installed entrypoint gives each shipped case the status its `belay.toml` expects."""
+    expected = load(runtime_root / "examples" / case_name / "belay.toml", runtime_root / "examples").test_status
+    result = installed_verify(case_name)
+    assert result.json_object()["status"] == expected, result.diagnostic()
+    assert result.returncode == (0 if expected == "VERIFIED" else 1), result.diagnostic()
 
 
 def test_installed_protected_schema_precedes_invalid_proof(runtime_root: Path, tmp_path: Path,
@@ -143,9 +130,13 @@ def test_installed_gc_roots(runtime_root: Path, tmp_path: Path,
     ("add_column_then_table", "table_then_column", "UNVERIFIED"),
 ], ids=["verified", "refuted", "wrong_sql_rejected"])
 def test_installed_data_path(runtime_root: Path, tmp_path: Path, command_runner: Callable[..., CommandResult],
-                             candidate: str, checked_migration: str | None, status: str) -> None:
-    """The installed `prepare` and `verify-bundle` reproduce the source statuses under poisoned imports."""
-    examples = runtime_root / "examples"
+                             example_factory: Callable[[str], Path], candidate: str, checked_migration: str | None,
+                             status: str) -> None:
+    """The installed `prepare` and `verify-bundle` reproduce the source statuses under poisoned imports.
+
+    `prepare` builds the case's proofs project, so it runs on a private copy of the installed examples.
+    """
+    examples = example_factory(".")
     launcher = str(runtime_root / "bin/migration-check")
 
     def common(migration: str) -> list[str]:
@@ -156,11 +147,8 @@ def test_installed_data_path(runtime_root: Path, tmp_path: Path, command_runner:
                 "--migration", str(examples / migration / "migration.sql")]
 
     bundle = tmp_path / "proof.bundle"
-    prepared = command_runner([launcher, "prepare", *common(candidate),
-                               "--next-interpretation", str(examples / candidate / "NextInterpretation.lean"),
-                               "--proofs", str(examples / candidate / "Proofs.lean"),
-                               "--workspace", str(tmp_path / "agent"), "--output", str(bundle)],
-                              cwd=tmp_path, timeout=180)
+    prepared = command_runner([launcher, "prepare", *common(candidate), "--project", str(examples / candidate),
+                               "--output", str(bundle)], cwd=tmp_path, timeout=180)
     assert prepared.returncode == 0 and prepared.json_object()["status"] == "PREPARED", prepared.diagnostic()
     checked = command_runner([launcher, "verify-bundle", *common(checked_migration or candidate),
                               "--bundle", str(bundle)], cwd=tmp_path, timeout=120)

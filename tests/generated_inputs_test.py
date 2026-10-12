@@ -15,6 +15,7 @@ import pytest
 
 from belay.sqlite.located import Json
 from belay.sqlite.profiles import profile
+from migration_check.project_config import load as load_config
 from belay.sqlite.sql_tree import Tree
 from belay.sqlite.syntax import script_record, statements
 from migration_check.contract import Contract, compile_trusted
@@ -22,7 +23,6 @@ from tests.runtime_support import CommandResult, run_command
 from tests.sql_fixtures import RICH_BASELINE
 
 pytestmark = [pytest.mark.integration, pytest.mark.kernel, pytest.mark.requires_lean, pytest.mark.requires_native]
-ROOT = Path(__file__).resolve().parents[1]
 LEDGER = "CREATE TABLE ledger(version BIGINT PRIMARY KEY, label TEXT, stamp TIMESTAMP, ok BOOLEAN, data BLOB);"
 WRITES = ("BEGIN; INSERT INTO ledger(version,label,stamp,ok,data) "
           "VALUES(-9223372036854775808,'can''t λ \\ \"q\"','2026-09-25 00:00:00',NULL,X'00ff7f80'); COMMIT; "
@@ -30,30 +30,38 @@ WRITES = ("BEGIN; INSERT INTO ledger(version,label,stamp,ok,data) "
           "UPDATE ledger SET ok=-1 WHERE version=7; BEGIN; UPDATE ledger SET label=NULL WHERE version=0; ROLLBACK;")
 
 
-def example(name: str, schema: str = "approved/schema.sql") -> Callable[[Path], tuple[str, str]]:
-    """Schema and migration SQL of an example shipped in the selected runtime."""
-    return lambda runtime: ((runtime / "examples" / schema).read_text(),
-                            (runtime / "examples" / name / "migration.sql").read_text())
+Source = Callable[[Path], tuple[str, str, str]]
+"""Schema SQL, migration SQL and SQLite profile of one case, given the runtime under test."""
 
 
-def literal(schema_sql: str, migration_sql: str) -> Callable[[Path], tuple[str, str]]:
-    """A hand-written schema and migration."""
-    return lambda _runtime: (schema_sql, migration_sql)
+def example(name: str) -> Source:
+    """A case shipped in the selected runtime, with the inputs its `belay.toml` names."""
+    def read(runtime: Path) -> tuple[str, str, str]:
+        """Load the case's configuration from the runtime's own examples."""
+        examples = runtime / "examples"
+        config = load_config(examples / name / "belay.toml", examples)
+        return config.schema.read_text(), config.migration.read_text(), config.profile
+    return read
 
 
-CASES: dict[str, tuple[Callable[[Path], tuple[str, str]], str]] = {
-    "add_column_then_table": (example("add_column_then_table"), "3.51.0"),
-    "table_then_column": (example("table_then_column"), "3.51.0"),
-    "refutation_unchanged_invoices": (example("missing_required_column"), "3.51.0"),
-    "allowed_failure": (example("allowed_failure", "allowed_failure/approved/schema.sql"), "3.51.0"),
-    "atuin_3_46": (example("atuin", "atuin/schema.sql"), "3.46.0"),
-    "literal_writes_and_transactions": (literal(LEDGER, WRITES), "3.46.0"),
-    "rich_schema_nullable_add": (literal(RICH_BASELINE, "ALTER TABLE events ADD extra TEXT;"), "3.51.0"),
-    "unchanged_schema": (literal(LEDGER, "BEGIN; COMMIT;"), "3.51.0"),
-    "unicode_names": (literal('CREATE TABLE "Café"("Имя" TEXT, n INTEGER);',
-                              'ALTER TABLE "Café" ADD "💡" BLOB; CREATE TABLE extra(r REAL, n NUMERIC);'), "3.51.0"),
-    "prepare_errors": (literal(LEDGER, "ALTER TABLE absent ADD x TEXT; CREATE TABLE LEDGER(x); "
-                               "INSERT INTO ledger(version, missing) VALUES (1, 2);"), "3.51.0"),
+def literal(schema_sql: str, migration_sql: str, version: str) -> Source:
+    """A hand-written schema and migration, under the given profile."""
+    return lambda _runtime: (schema_sql, migration_sql, version)
+
+
+CASES: dict[str, Source] = {
+    "add_column_then_table": example("add_column_then_table"),
+    "table_then_column": example("table_then_column"),
+    "refutation_unchanged_invoices": example("missing_required_column"),
+    "allowed_failure": example("allowed_failure"),
+    "atuin_3_46": example("atuin"),
+    "literal_writes_and_transactions": literal(LEDGER, WRITES, "3.46.0"),
+    "rich_schema_nullable_add": literal(RICH_BASELINE, "ALTER TABLE events ADD extra TEXT;", "3.51.0"),
+    "unchanged_schema": literal(LEDGER, "BEGIN; COMMIT;", "3.51.0"),
+    "unicode_names": literal('CREATE TABLE "Café"("Имя" TEXT, n INTEGER);',
+                             'ALTER TABLE "Café" ADD "💡" BLOB; CREATE TABLE extra(r REAL, n NUMERIC);', "3.51.0"),
+    "prepare_errors": literal(LEDGER, "ALTER TABLE absent ADD x TEXT; CREATE TABLE LEDGER(x); "
+                              "INSERT INTO ledger(version, missing) VALUES (1, 2);", "3.51.0"),
 }
 
 
@@ -83,7 +91,7 @@ def parity(runtime_root: Path, lean_sysroot: Path, lean_libraries: tuple[Path, P
         schema_source, sql_source = resolver_sources(runtime_root, record, workspace)
         compile_trusted(contract=Contract({}, (), frozenset()), approved_sources=approved,
                         schema_inputs=schema_source, sql_inputs=sql_source, trusted=trusted, sysroot=lean_sysroot,
-                        libraries=tuple(path.resolve() for path in lean_libraries), workspace=workspace, store=None)
+                        libraries=tuple(path.resolve() for path in lean_libraries), workspace=workspace)
         if mutate is not None:
             mutate(record)
         generated = tmp_path / "generated.json"
@@ -98,8 +106,7 @@ def parity(runtime_root: Path, lean_sysroot: Path, lean_libraries: tuple[Path, P
 def test_constructed_declarations_match_resolver(parity: Callable[..., CommandResult], runtime_root: Path,
                                                  name: str) -> None:
     """The checker's own resolution equals the compiled resolver output, declaration by declaration."""
-    source, version = CASES[name]
-    schema_sql, migration_sql = source(runtime_root)
+    schema_sql, migration_sql, version = CASES[name](runtime_root)
     result = parity(schema_sql, migration_sql, version)
     assert result.returncode == 0, result.diagnostic()
 
@@ -119,6 +126,6 @@ def test_constructed_declarations_match_resolver(parity: Callable[..., CommandRe
 def test_tampered_record_is_rejected(parity: Callable[..., CommandResult], runtime_root: Path,
                                      change: Callable[[dict[str, Json]], object], diagnostic: str) -> None:
     """A record that disagrees with the compiled inputs, is malformed, or does not resolve is rejected."""
-    schema_sql, migration_sql = example("add_column_then_table")(runtime_root)
+    schema_sql, migration_sql, _version = example("add_column_then_table")(runtime_root)
     result = parity(schema_sql, migration_sql, "3.51.0", change)
     assert result.returncode == 1 and diagnostic in result.stderr, result.diagnostic()

@@ -9,6 +9,9 @@ let
     "pytest.ini" "conftest.py" "tests/__init__.py" "tests/runtime_support.py" "tests/runtime_fixtures.py"
     "tests/runtime_installation.py"
   ];
+  # The belay.toml reader, for targets whose tests take the checked-in cases from belay.toml (ADR 0010).
+  # Only these targets list it, so a change to the reader does not rerun the conformance targets.
+  caseReader = map (name: root + "/${name}") [ "migration_check/__init__.py" "migration_check/project_config.py" ];
   python = name: pkgs.python3.withPackages (ps: [ ps.pytest ps.pytest-timeout ]
     ++ pkgs.lib.optional (name == "model") ps.hypothesis);
   # Each test has its own limit, so a hang fails with the name of the test. Nix runs suites
@@ -181,7 +184,7 @@ in {
     runtime = parserLibrary;
   };
   atuin = suite "atuin" {
-    inputs = [];
+    inputs = caseReader;
     inherit runtime;
   };
   bundle = suite "bundle" {
@@ -190,13 +193,17 @@ in {
       (fs.fileFilter (file: file.hasExt "py") (root + /belay/sqlite))
       (fs.fileFilter (file: file.hasExt "json") (root + /conformance/cases))
       (root + /tests/sql_fixtures.py)
+      (root + /tests/example_cases.py)
       (root + /experiments/adr-0003-latency/cases.py)
+      # cases.py reads the examples' belay.toml files; the runtime under test contains them too.
+      # Regular files only: no `.belay` links of local proofs-project builds (ADR 0010).
+      (fs.fileFilter (file: file.type == "regular" && file.name != ".DS_Store") (root + /examples))
       (root + /experiments/adr-0003-latency/stage_timing.py)
     ];
     inherit runtime;
   };
   cli = suite "cli" {
-    inputs = [];
+    inputs = caseReader;
     inherit runtime;
   };
   kernel = suite "kernel" {

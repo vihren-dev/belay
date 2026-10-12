@@ -1,7 +1,8 @@
 """`verify-bundle`: check an exported proof bundle without compiling candidate source (ADR 0003).
 
-The verifier still parses the actual SQL itself. It compiles (or reuses) the starting
-schema and approved contract, and passes the frontend's structural record to the
+The verifier still parses the actual SQL itself. It builds the starting schema and
+the approved contract with Lake, reusing outputs from its own artifact cache (ADR
+0010), and passes the frontend's structural record to the
 checker, which constructs the generated SQL declarations without a Lean compile (ADR
 0003 P3). Only the candidate's declarations arrive as data. Statuses and exit codes
 match `verify`.
@@ -13,12 +14,11 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from .contract import compile_contract
+from .contract_build import build_contract, selected_cache
 from .diagnostics import Rejection
 from .inputs import generated_inputs
 from .process import run_process
 from .source_closure import CompileError
-from .stage_store import StageStore
 
 
 def verify_bundle(options: argparse.Namespace) -> dict[str, object]:
@@ -28,15 +28,13 @@ def verify_bundle(options: argparse.Namespace) -> dict[str, object]:
     if not runtime.bundle_checker.is_file():
         raise Rejection("INPUT_ERROR", "This runtime has no bundle checker; rebuild with ADR 0003 support")
     bundle_bytes = options.bundle.read_bytes()
-    with TemporaryDirectory(prefix="migration-bundle-") as temporary:
+    with TemporaryDirectory(prefix="migration-bundle-") as temporary, selected_cache(options, runtime) as cache:
         workspace = Path(temporary).resolve()
         try:
-            contract = compile_contract(
-                sysroot=runtime.sysroot, libraries=runtime.libraries, requirements=options.requirements,
-                interpretation=options.interpretation, schema_inputs=inputs.schema_source,
-                sql_inputs=inputs.sql_source, workspace=workspace, store=StageStore.configured(),
-                approved_baseline=options.approved_baseline, schema_hash=inputs.schema_hash,
-                compile_sql=False)
+            contract, compiled = build_contract(
+                runtime=runtime, requirements=options.requirements, interpretation=options.interpretation,
+                schema_inputs=inputs.schema_source, sql_inputs=inputs.sql_source, workspace=workspace / "build",
+                cache=cache, approved_baseline=options.approved_baseline, schema_hash=inputs.schema_hash)
         except CompileError as error:
             raise Rejection("UNVERIFIED", str(error)) from error
         snapshot, generated = workspace / "bundle.ndjson", workspace / "generated.json"
@@ -54,4 +52,4 @@ def verify_bundle(options: argparse.Namespace) -> dict[str, object]:
         raise Rejection("UNVERIFIED", checked.stderr.strip() or "Bundle checker rejected the proof")
     hashes = {**contract.hashes, **inputs.hashes, "bundle": hashlib.sha256(bundle_bytes).hexdigest()}
     return {"status": "VERIFIED", "profile": inputs.profile.engine, "statements": inputs.statements,
-            "inputs": hashes}
+            "inputs": hashes, "compiled_modules": list(compiled)}

@@ -38,8 +38,10 @@ section 7. Accepted on 2026-10-12.
 ## Tests
 
 - Unit tests of the reader: a valid `belay.toml`; each missing or wrong
-  field, with the file and field named in the error; paths that leave the case
-  folder are refused.
+  field, with the file and field named in the error; paths that leave the
+  folder that holds the cases (`examples/` or `tests/cases/`) are refused.
+  Paths may leave the case folder itself, because three cases share the
+  contract in `examples/approved/` (owner decision, 2026-10-12).
 - The category test of item 5, with deterministic fixture trees for a file in
   no category and a file in two categories, plus the real repository tree.
 - A test that each checked-in case has a `belay.toml`, and that its
