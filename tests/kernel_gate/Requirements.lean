@@ -4,7 +4,7 @@ import SqliteVerifier
 namespace Requirements
 /-- Fixed logical state for the no-op test. -/
 abbrev LogicalState := Unit
-/-- Unrestrictive observations leave schema conformance as the concrete obligation. -/
+/-- Unrestrictive observations leave catalog conformance as the concrete obligation. -/
 def contract : SqliteVerifier.LogicalContract LogicalState :=
   ⟨fun _ => True, fun _ _ => True, fun _ => True,
    fun _ _ _ _ => True, fun _ _ => True⟩

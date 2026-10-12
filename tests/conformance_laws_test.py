@@ -34,8 +34,8 @@ def test_native_laws(size: int, runtime_root: Path) -> None:
         {"t": [(n - 4, ((1, n),)) for n in range(size)]}, "native-laws")
     trace = record(fixture, default_parser(runtime_root))["nativeTrace"]
     assert trace[-1]["visible"] == trace[0]["visible"]
-    before = trace[2]["visible"][0][1]["rows"]
-    after = trace[3]["visible"][0][1]["rows"]
+    before = trace[2]["visible"][0]["rows"]
+    after = trace[3]["visible"][0]["rows"]
     assert after == [{"rowid": row["rowid"], "values": row["values"] + ["null"]} for row in before]
     failed = Fixture(fixture.schema_sql,
         "BEGIN; INSERT INTO t(id) VALUES(99); INSERT INTO t(id) VALUES(99);", fixture.rows, "atomicity")

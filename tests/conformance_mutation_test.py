@@ -10,7 +10,6 @@ import pytest
 from conformance.native_connection import Connection
 from conformance.native_trace import Fixture, initialize, record
 from conformance.model_check import compiled, evaluate
-from belay.sqlite.sql_model import Table
 from conformance.record_parser import default_parser
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -28,14 +27,14 @@ def test_model_mutation(runtime_root: Path, tmp_path: Path) -> None:
     sources = []
     for filename in ("packages/belay-sqlite/Belay/Sqlite/SqlExecution.lean",
                      *(f"packages/verifier-conformance/VerifierConformance/{name}.lean"
-                       for name in ("Trace", "Outputs", "Case"))):
+                       for name in ("Trace", "Outputs", "Native", "Case"))):
         source = (ROOT / filename).read_text()
         source = "\n".join(line for line in source.splitlines() if not line.startswith("import "))
         source = source.replace("namespace Belay.Sqlite", "namespace Belay.Sqlite.Mutant")
         source = source.replace("end Belay.Sqlite", "end Belay.Sqlite.Mutant")
         if filename == "packages/belay-sqlite/Belay/Sqlite/SqlExecution.lean":
-            assert source.count("LiteralData.inserted table values") == 1
-            source = source.replace("LiteralData.inserted table values", "table")
+            assert source.count("(LiteralData.inserted table rows)") == 1
+            source = source.replace("(LiteralData.inserted table rows)", "table")
         sources.append(source)
     proof = tmp_path / "Mutant.lean"
     proof.write_text("import VerifierConformance.Case\n" + "\n".join(sources) +
@@ -54,9 +53,9 @@ def test_model_mutation(runtime_root: Path, tmp_path: Path) -> None:
 
 def test_locked_native_snapshot_is_harness_error(runtime_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A real second-connection SQLITE_BUSY prevents any case from reaching comparison."""
-    def initialize_locked(connection: Connection, schema: tuple[Table, ...], fixture: Fixture) -> None:
+    def initialize_locked(connection: Connection, fixture: Fixture) -> None:
         """Inject a native exclusive lock after the otherwise ordinary fixture initialization."""
-        initialize(connection, schema, fixture)
+        initialize(connection, fixture)
         connection.execute_script("BEGIN EXCLUSIVE;")
 
     monkeypatch.setattr("conformance.native_trace.initialize", initialize_locked)

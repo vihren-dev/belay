@@ -106,10 +106,12 @@ def verify(options: argparse.Namespace) -> dict[str, object]:
         hashes = {**compiled.hashes, **inputs.hashes}
         if options.artifacts is not None:
             (options.artifacts / "inputs.json").write_text(json.dumps(hashes, indent=2) + "\n", encoding="utf-8")
-        output = workspace / "gate-output"
+        output, record = workspace / "gate-output", workspace / "record.json"
         output.mkdir()
+        record.write_text(json.dumps(inputs.structural), encoding="utf-8")
         checked = run_process(
-            [str(runtime.checker), *map(str, runtime.libraries), str(compiled.trusted), str(compiled.candidate)],
+            [str(runtime.checker), *map(str, runtime.libraries), str(compiled.trusted), str(compiled.candidate),
+             str(record)],
             write_root=output, environment={"LEAN_SYSROOT": str(runtime.sysroot)}, timeout=30)
         if checked.returncode == 2:
             raise Rejection("VIOLATED", "A kernel-checked argument refutes the supplied verification contract")

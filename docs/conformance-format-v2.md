@@ -1,12 +1,12 @@
-# Conformance case format v2
+# Conformance outputs and native acquisition
 
-ADR 0005 extends [v1](conformance-format-v1.md) with statement outputs and typed
-parameters. The existing v1 serialization and verdicts are preserved. This is
-the comparison interface for the existing literal-write subset. Native acquisition
-supports ordered queries and explicit profiles; missing model capabilities remain
-unsupported.
+ADR 0005 adds statement outputs and typed parameters to the
+[conformance case](conformance-format-v1.md). This is the comparison interface for
+the literal-write subset. Native acquisition supports ordered queries and explicit
+profiles; missing model capabilities remain unsupported.
 
-A v2 case has all v1 fields, `version: 2`, and two additional arrays:
+A case whose record has outputs carries them in two fields; a case without them
+has `outputs: null` and `parameters: []`:
 
 - `parameters`: one array of typed values per reached statement, using the shared
   value codec. Parameterized model execution is not implemented and remains
@@ -26,15 +26,16 @@ Both arrays have one fewer entry than `nativeTrace`, which includes initializati
 
 `classifyCase` compares stored state through the existing production trace, then
 compares statement outputs. Output instrumentation follows production `advance`:
-INSERT counts one on success; UPDATE counts matched rows, including unchanged
-values; supported ABORT constraint failures count zero. Other DML failures have
+INSERT counts one per VALUES row on success; UPDATE counts the rows that its
+filter selects, including unchanged values; supported ABORT constraint failures
+count zero. Other DML failures have
 no modeled output capability and stay unsupported. No query evaluator is added.
 
 The acquisition format has a separate version: `nativeVersion: 3` records typed
 parameters, `columns`, `columnCount`, `rows`, and `changes` beside each native
 statement observation. Fresh native replay binds the recorded parameters and
 checks outputs and state. The adapter validates acquisition fields before
-frontend admission and maps admitted records to case version two. Ordered query
+the statement mapping and builds a case with outputs from each admitted record. Ordered query
 records cannot yet reach model comparison because query semantics are absent;
 faithful tie-group acquisition is required before those cases can be frozen.
 

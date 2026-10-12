@@ -1,9 +1,12 @@
 """Native records survive frontend limitations and replay through today's model."""
 
+from copy import deepcopy
 from pathlib import Path
 import pytest
 
-from conformance.native_record import record_sql
+from conformance.corpus import native_replay, replay
+from conformance.native_connection import Connection, NativeError, library_path, load_library
+from conformance.native_record import execute, record_sql
 from conformance.native_replay import prepare
 from conformance.model_check import compiled
 from conformance.record_parser import runtime_library
@@ -34,7 +37,8 @@ def test_outside_subset_survives(runtime_root: Path, monkeypatch: pytest.MonkeyP
 
 
 def test_native_record_replay(runtime_root: Path) -> None:
-    """Frozen typed rows and traces become structural cases without rerunning native SQL."""
+    """Frozen typed rows and traces become cases without rerunning native SQL; Lean compares the
+    recorded metadata with the catalog, and malformed metadata is a harness error."""
     record = record_sql("CREATE TABLE t(id INTEGER NOT NULL,UNIQUE(id)); INSERT INTO t VALUES(7);",
         "BEGIN; INSERT INTO t(id) VALUES(8); INSERT INTO t(id) VALUES(8); COMMIT;", name="replay")
     assert len(record["trace"]) == 3
@@ -42,7 +46,12 @@ def test_native_record_replay(runtime_root: Path) -> None:
     case, error = prepare(record, runtime_library(runtime_root))
     assert case is not None, error
     assert compiled(case, runtime_root)["verdict"] == "AGREE"
-    record["initial"]["visible"]["tables"][0]["columns"][0][3] = {"integer": {"value": 0}}
+    nullable = deepcopy(record)
+    nullable["initial"]["visible"]["tables"][0]["columns"][0][3] = {"integer": {"value": 0}}
+    changed, error = prepare(nullable, runtime_library(runtime_root))
+    assert changed is not None, error
+    assert compiled(changed, runtime_root)["verdict"] == "DISAGREE"
+    record["initial"]["visible"]["tables"][0]["columns"][0][2] = {"integer": {"value": 0}}
     assert prepare(record, runtime_library(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
 
 
@@ -54,7 +63,6 @@ def test_nonmain_state_cannot_disappear() -> None:
 
 def test_statement_alignment_is_harness_error(runtime_root: Path) -> None:
     """A missing/merged observation cannot masquerade as a production model disagreement."""
-    from copy import deepcopy
     record = record_sql("CREATE TABLE t(v BLOB);", "BEGIN; ROLLBACK;", name="alignment")
     for trace in (record["trace"][:1], record["trace"] + record["trace"][-1:]):
         broken = deepcopy(record)
@@ -70,8 +78,6 @@ def test_statement_alignment_is_harness_error(runtime_root: Path) -> None:
 
 def test_native_semantic_errors_are_recorded(tmp_path: Path) -> None:
     """Rowid mismatch and a real length-limit failure retain native result codes."""
-    from conformance.native_connection import Connection, library_path, load_library
-    from conformance.native_record import execute
     record = record_sql("CREATE TABLE t(v);", "INSERT INTO t(rowid,v) VALUES('no',1);", name="rowid")
     assert record["trace"][0]["primaryCode"] == 20
     connection = Connection(load_library(library_path()), tmp_path / "length.db")
@@ -84,7 +90,6 @@ def test_native_semantic_errors_are_recorded(tmp_path: Path) -> None:
 
 def test_trailing_queries_do_not_hide_migration_progress(runtime_root: Path) -> None:
     """Report only an agreeing migration prefix as query-blocked; keep queries and settings honest."""
-    from conformance.corpus import replay
     records = [record_sql("CREATE TABLE t(v BLOB); INSERT INTO t VALUES(1);", sql, name=str(index))
                for index, sql in enumerate([
                    "ALTER TABLE t ADD x TEXT; SELECT * FROM t; PRAGMA table_info(t);",
@@ -99,7 +104,6 @@ def test_trailing_queries_do_not_hide_migration_progress(runtime_root: Path) -> 
 
 def test_external_files_are_rejected_before_creation(tmp_path: Path) -> None:
     """Excluded ATTACH cannot create files before the recorder notices its extra schema."""
-    from conformance.native_connection import NativeError
     destination = tmp_path / "external.db"
     with pytest.raises(NativeError, match="authorized"):
         record_sql(f"ATTACH '{destination}' AS extra;", "", name="external")
@@ -120,7 +124,6 @@ def test_native_syntax_errors_remain_frontend_exclusions(runtime_root: Path) -> 
 
 def test_native_output_shape_bindings_and_probe_guard(tmp_path: Path) -> None:
     """Empty queries keep shape, binding preserves typed bytes, and probes cannot write."""
-    from conformance.native_connection import Connection, library_path, load_library
     connection = Connection(load_library(library_path()), tmp_path / "outputs.db")
     try:
         empty = connection.query_result('SELECT 1 AS "value" WHERE 0;', readonly=True)
@@ -149,7 +152,6 @@ def test_native_output_shape_bindings_and_probe_guard(tmp_path: Path) -> None:
         returning = connection.query_result("INSERT INTO t VALUES(1) RETURNING x;")
         assert returning.columns == ("x",) and returning.rows == [((1, 1),)]
         import ctypes as c
-        from conformance.native_connection import NativeError
         # The probe must delegate to and restore the acquisition authorizer.
         connection.authorizer = c.CFUNCTYPE(c.c_int, c.c_void_p, c.c_int,
             c.c_char_p, c.c_char_p, c.c_char_p, c.c_char_p)(
@@ -185,7 +187,6 @@ def test_record_outputs_and_direct_changes() -> None:
     tables = {table["name"]: table for table in trace[4]["visible"]["tables"]}
     assert tables["child"]["rows"] == []
     assert len(tables["audit"]["rows"]) == 6
-    from conformance.corpus import native_replay
     native_replay([record])
     record["trace"][0]["changes"] = 2
     with pytest.raises(ValueError, match="Native replay changed"):

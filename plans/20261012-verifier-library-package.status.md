@@ -69,3 +69,13 @@ Relevant files: `lakefile.toml`, `SqliteVerifier/`, `SqliteVerifier.lean`, `Gate
   baseline `main` `0adb73dc`: 467 s. Like #99, the run rebuilds what the
   unmerged PRs #95 and #96 change, because the CI cache is saved only on
   `main`; this task adds no time. Compare again after the merges.
+- 2026-10-12: GitHub merged #100 into `tasks/adr10-case-seeds`, so PR #99
+  carries tasks 3 and 4. Merged `main` (#97, ADR 0008 step 1b) into it.
+  #97 changed Lean files that this task moved; the move did not change
+  their contents, so `main`'s versions went to the new paths. New modules:
+  `GateInputs` (library, `packages/sqlite-verifier`), `migration-resolver`
+  (executable, `packages/verifier-gate`, shipped in `leanRuntime`) and
+  `VerifierConformance.Native`. All Nix test suites, `just test-source` 465
+  and host Nix tests 84 pass. `conformanceCoverage` fails on `main` too:
+  #97 removed `Case.names`, which `conformance/instrument_model.py` still
+  inserts into the runner; not changed here.

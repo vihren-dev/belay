@@ -7,12 +7,10 @@ from hypothesis import settings, seed, strategies as st
 from hypothesis.stateful import RuleBasedStateMachine, initialize, rule, run_state_machine_as_test
 
 from conformance.case_format import Json
-from conformance.generated_program import Program, command, native_laws
+from conformance.generated_program import Affinity, Program, SqlValue, command, native_laws
 from conformance.model_check import acquire, compiled
 from conformance.native_record import record_sql
 from conformance.native_replay import prepare
-from belay.sqlite.sql_model import Affinity
-from belay.sqlite.sql_values import SqlValue
 from conformance.record_parser import default_parser, runtime_library
 
 VALUES = {
@@ -117,8 +115,8 @@ def generate(runtime: Path, *, error_seeking: bool, examples: int = 20, steps: i
                 "INSERT INTO t(v) VALUES('" + self.boundary + "');", name="generated-affinity-boundary")
             case, result = prepare(native, runtime_library(runtime))
             if case is not None:
+                # Lean resolution refuses the conversion; the boundary keeps its classification.
                 result = compiled(case, runtime)
-                records.append(case)
             boundaries.append({"record": native, "classification": result})
             counts[result["verdict"]] += 1
             assert result["verdict"] in {"AGREE", "MODEL_UNSUPPORTED"}, result

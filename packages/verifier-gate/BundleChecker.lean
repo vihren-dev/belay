@@ -1,5 +1,4 @@
-import GateCore
-import Belay.Sqlite.Codec
+import GateInputs
 import Export.Parse
 
 /-! ADR 0003 data path: check an exported proof bundle without compiling candidate source.
@@ -7,8 +6,9 @@ import Export.Parse
 A bundle is one file: a JSON header line, then a lean4export NDJSON export. The
 header names the trusted-library modules the export references but omits. The
 checker imports those only from the sysroot, application library and model library, imports the
-verifier-compiled starting schema and contract, constructs the generated SQL
-declarations from the frontend's structural record (`generatedDeclarations`),
+verifier-compiled starting schema and contract, resolves the frontend's structural
+record and constructs the generated SQL declarations from the result
+(`generatedDeclarations`),
 requires every exported declaration that repeats a trusted one to match it, replays
 the rest in the kernel, and applies the same target, audit and exit codes as the
 `.olean` gate. -/
@@ -36,32 +36,24 @@ def normalizeInfo : ConstantInfo → ConstantInfo
     .recInfo { v with type := normalize v.type, rules := rules }
 
 /-- Declarations the checker constructs itself instead of compiling `SqlInputs.lean`. -/
-def generatedNames : List Name := [`Generated.nextSchema, `Generated.script, `Generated.profile]
+def generatedNames : List Name := [`Generated.script, `Generated.resolved, `Generated.nextCatalog]
 
 /-- A closed, safe definition with the hints Lean would assign to an ordinary `def`. -/
 def definition (env : Environment) (name : Name) (type value : Expr) : ConstantInfo :=
   .defnInfo { name, levelParams := [], type, value, safety := .safe, all := [name],
               hints := .regular (getMaxHeight env value + 1) }
 
-/-- Build `Generated.nextSchema`, `script` and `profile` from the frontend's record.
-
-The record's starting schema must equal the compiled `Generated.startSchema`, so the
+/-- Build `Generated.script`, `resolved` and `nextCatalog` from the resolution of the
+frontend's record. The compiled `SchemaInputs` must equal the same resolution, so the
 constructed declarations describe the same request as the contract's inputs. -/
-def generatedDeclarations (env : Environment) (inputs : Belay.Sqlite.GeneratedInputs) :
+def generatedDeclarations (env : Environment) (resolution : Belay.Sqlite.ResolvedScript) :
     IO (Std.HashMap Name ConstantInfo) := do
-  let start ← closedConstant env `Generated.startSchema
-  unless ← kernelResult (Kernel.isDefEq env {} start (toExpr inputs.schema)) do
-    throw <| IO.userError "generated inputs do not match the compiled starting schema"
-  let schema := mkConst `Belay.Sqlite.Schema
-  let script := mkApp (mkConst ``List [levelZero]) (mkConst `Belay.Sqlite.Statement)
-  return Std.HashMap.ofList [
-    (`Generated.nextSchema, definition env `Generated.nextSchema schema (toExpr inputs.nextSchema)),
-    (`Generated.script, definition env `Generated.script script (toExpr inputs.script)),
-    (`Generated.profile, definition env `Generated.profile
-      (mkConst `Belay.Sqlite.ExecutionProfile) (toExpr inputs.profile))]
+  requireValues env (schemaValues resolution)
+  return Std.HashMap.ofList ((sqlValues resolution).map fun (name, type, value) =>
+    (name, definition env name type value))
 
 /-- Same type and definitionally equal value: elaborated and constructed literals differ
-structurally (numerals, `nextSchema := startSchema`) but must denote the same data. -/
+structurally (numerals, constructor applications) but must denote the same data. -/
 def sameDefinition (env : Environment) (a b : ConstantInfo) : IO Bool := do
   match a, b with
   | .defnInfo x, .defnInfo y =>
@@ -88,10 +80,9 @@ def exportedAdditions (trusted : Environment) (exported : Export.ExportedEnv) :
       fresh := fresh.insert name info
   return fresh
 
-/-- Read and decode the frontend's structural record. -/
-def readGenerated (path : System.FilePath) : IO Belay.Sqlite.GeneratedInputs := do
-  let json ← IO.ofExcept (Json.parse (← IO.FS.readFile path))
-  IO.ofExcept (Belay.Sqlite.decodeGeneratedInputs json)
+/-- Read the frontend's structural record and resolve it. -/
+def readGenerated (path : System.FilePath) : IO Belay.Sqlite.ResolvedScript := do
+  resolveRecord (← readRecord path)
 
 /-- Read the version-1 header: `{"bundle": 1, "trusted_imports": ["Mod", ...]}`. -/
 def readHeader (line : String) : IO (Array Name) := do
@@ -129,8 +120,9 @@ def checkBundle (library model trusted bundle generated : System.FilePath) : IO 
   let checked := Environment.ofKernelEnv (← trustedEnv.toKernelEnv.replay (← exportedAdditions trustedEnv exported))
   checkTarget checked (exported.constMap.contains `Proofs.migrationCorrect)
 
-/-- Test mode (ADR 0003 assumption A5): the constructed declarations must agree with
-`SqlInputs.olean` compiled from today's emitter for the same request. -/
+/-- Test mode (ADR 0003 assumption A5): the declarations constructed from the resolved
+record must agree with `SqlInputs.olean` compiled from the resolver's source for the
+same request. -/
 def checkParity (library model trusted generated : System.FilePath) : IO UInt32 := do
   let contract ← trustedImports [trusted] [`SchemaInputs, `SqlInputs]
   let (schemaEnv, state) ← schemaEnvironment library model trusted contract
@@ -141,9 +133,9 @@ def checkParity (library model trusted generated : System.FilePath) : IO UInt32 
     let some emitted := compiled.toKernelEnv.find? name
       | throw <| IO.userError s!"not emitted: {name}"
     unless built.type == emitted.type do
-      throw <| IO.userError s!"type differs from the emitter: {name}"
+      throw <| IO.userError s!"type differs from the compiled SqlInputs: {name}"
     unless ← sameDefinition compiled built emitted do
-      throw <| IO.userError s!"value differs from the emitter: {name}"
+      throw <| IO.userError s!"value differs from the compiled SqlInputs: {name}"
   return 0
 
 /-- Exit 0 for a checked proof, 2 for a checked refutation, 1 for anything else. -/

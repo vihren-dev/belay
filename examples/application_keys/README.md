@@ -31,7 +31,7 @@ migration-check verify --profile 3.51.0 \
   --proofs examples/application_keys/add_column_then_table/Proofs.lean
 ```
 
-`Interpretation.current` uses the sealed starting-schema translation. The proof
+`Interpretation.current` uses the sealed starting catalog. The proof
 reuses the complete library certificate and generic observation-preservation
 laws; it assumes no particular stored rows. The starting witness is the empty
 invoice table. The generated target binds the current source files and runtime.

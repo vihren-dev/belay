@@ -9,4 +9,4 @@ globs = ["Belay.Sqlite", "Belay.Sqlite.Declarations", "Belay.Sqlite.Model", "Bel
 
 [[lean_lib]]
 name = "Belay.Sqlite.Codec"
-roots = ["Belay.Sqlite.Codec"]
+roots = ["Belay.Sqlite.Codec", "Belay.Sqlite.Codec.Resolution", "Belay.Sqlite.Codec.Source", "Belay.Sqlite.Codec.SourceExamples"]

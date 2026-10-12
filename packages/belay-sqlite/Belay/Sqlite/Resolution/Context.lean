@@ -30,14 +30,6 @@ structure ResolveContext where
 it succeeds, or a model restriction. -/
 abbrev StatementResolution := Except Restriction (Resolved.Statement × Catalog)
 
-/-- Whether the folded name starts with {lit}`sqlite_`, which SQLite reserves. -/
-def reservedName (name : String) : Bool := (normalizeIdentifier name).startsWith "sqlite_"
-
-/-- Whether a column name is one of SQLite's rowid names, which the model keeps
-for the physical rowid. -/
-def rowidName (name : String) : Bool :=
-  ["rowid", "_rowid_", "oid"].contains (normalizeIdentifier name)
-
 /-- Whether a DEFAULT expression is constant for SQLite: a literal, a signed
 literal, a time keyword, or an identifier, which SQLite stores as text. -/
 def constantDefault : Syntax.Expr → Bool

@@ -24,3 +24,7 @@ name = "GatePaths"
 
 [[lean_lib]]
 name = "GateCore"
+
+# The gate's input decoding, which the proof checker and the bundle checker share.
+[[lean_lib]]
+name = "GateInputs"

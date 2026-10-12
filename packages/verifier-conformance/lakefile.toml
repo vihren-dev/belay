@@ -10,7 +10,7 @@ path = "../belay-sqlite"
 
 [[lean_lib]]
 name = "VerifierConformance"
-roots = ["VerifierConformance.Trace", "VerifierConformance.Outputs", "VerifierConformance.Case", "VerifierConformance.Json", "VerifierConformance.Predict"]
+roots = ["VerifierConformance.Trace", "VerifierConformance.Outputs", "VerifierConformance.Native", "VerifierConformance.Case", "VerifierConformance.Json", "VerifierConformance.Predict"]
 
 [[lean_exe]]
 name = "conformance-runner"

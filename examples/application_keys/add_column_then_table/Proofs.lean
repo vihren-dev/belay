@@ -10,8 +10,8 @@ namespace Proofs
 
 /-- The exact generated verification target holds for every admitted starting
 database under the stated key policy. The public certificate supplies all fields;
-the generated target binds the authored SQL, schemas and representation sources. -/
+the generated target binds the authored SQL, catalogs and representation sources. -/
 theorem migrationCorrect : Generated.expected :=
-  SqliteVerifier.ApplicationKeyDemonstration.migrationCorrect
+  SqliteVerifier.ApplicationKeyDemonstration.migrationCorrect Generated.profile (by decide)
 
 end Proofs

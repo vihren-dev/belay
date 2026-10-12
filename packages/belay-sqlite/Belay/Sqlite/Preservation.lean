@@ -13,22 +13,22 @@ Use it to preserve old cells and physical row identities. -/
 def TableExtends (before after : Table) : Prop :=
   ∃ columns, after = before.appendColumns columns
 
-/-- For every table name and table present before execution, there exists a table
-present after execution that satisfies {name}`TableExtends`. An empty before
+/-- For every catalog position and table present before execution, there exists a
+table present after execution that satisfies {name}`TableExtends`. An empty before
 database imposes no requirement. New tables are allowed. -/
 def DatabaseExtends (before after : Database) : Prop :=
-  ∀ name table, before name = some table →
-    ∃ result, after name = some result ∧ TableExtends table result
+  ∀ position table, before position = some table →
+    ∃ result, after position = some result ∧ TableExtends table result
 
 /-- For every table, appending no columns gives the same table, including its
-rows and properties. The proof unfolds the table and row operations. -/
+rows and keys. The proof unfolds the table and row operations. -/
 theorem Table.appendColumns_nil (table : Table) : table.appendColumns [] = table := by
   cases table
   simp [Table.appendColumns, Row.appendNulls]
 
 /-- For every table and two column lists, consecutive NULL extensions equal one
 extension by their concatenation. The proof distributes row mapping over append. -/
-theorem Table.appendColumns_append (table : Table) (first second : List Column) :
+theorem Table.appendColumns_append (table : Table) (first second : List CatalogColumn) :
     (table.appendColumns first).appendColumns second = table.appendColumns (first ++ second) := by
   simp [Table.appendColumns, Row.appendNulls, List.map_map,
     List.append_assoc, Function.comp_def]
@@ -56,30 +56,31 @@ an after database, the before extends to the after. The proof retrieves each
 present intermediate table and composes its table extension witnesses. -/
 theorem DatabaseExtends.trans (first : DatabaseExtends before middle)
     (second : DatabaseExtends middle after) : DatabaseExtends before after := by
-  intro name table present
-  obtain ⟨intermediate, present', growth⟩ := first name table present
-  obtain ⟨result, present'', growth'⟩ := second name intermediate present'
+  intro position table present
+  obtain ⟨intermediate, present', growth⟩ := first position table present
+  obtain ⟨result, present'', growth'⟩ := second position intermediate present'
   exact ⟨result, present'', growth.trans growth'⟩
 
-/-- For every database and absent name, setting a table at that name extends the
-database. Existing tables at other names are unchanged; no condition is imposed
-on the new table. The proof separates equal and distinct names. -/
-theorem DatabaseExtends.create (database : Database) (name : String) (table : Table)
-    (absent : database name = none) : DatabaseExtends database (database.set name table) := by
+/-- For every database and position without a table, setting a table at that
+position extends the database. Existing tables at other positions are unchanged;
+no condition is imposed on the new table. The proof separates equal and distinct
+positions. -/
+theorem DatabaseExtends.create (database : Database) (position : Nat) (table : Table)
+    (absent : database position = none) : DatabaseExtends database (database.set position table) := by
   intro other old present
-  by_cases same : other = name
+  by_cases same : other = position
   · subst other
     simp [absent] at present
   · exact ⟨old, by simp [Database.set, same, present], TableExtends.refl old⟩
 
 /-- For every present table and any column list, setting its NULL extension at
-its existing name extends the database. Other tables are unchanged. The proof
-uses the supplied presence equality for the selected name. -/
-theorem DatabaseExtends.add (database : Database) (name : String) (table : Table)
-    (columns : List Column) (present : database name = some table) :
-    DatabaseExtends database (database.set name (table.appendColumns columns)) := by
+its existing position extends the database. Other tables are unchanged. The proof
+uses the supplied presence equality for the selected position. -/
+theorem DatabaseExtends.add (database : Database) (position : Nat) (table : Table)
+    (columns : List CatalogColumn) (present : database position = some table) :
+    DatabaseExtends database (database.set position (table.appendColumns columns)) := by
   intro other old oldPresent
-  by_cases same : other = name
+  by_cases same : other = position
   · subst other
     have equal : old = table := Option.some.inj (oldPresent.symm.trans present)
     subst old
@@ -88,37 +89,29 @@ theorem DatabaseExtends.add (database : Database) (name : String) (table : Table
 
 /-- For every statement, database and position, the primitive {name}`step`
 result extends the input database. CREATE/ADD extend existing tables or retain
-errors; other constructors return an unchanged invalid-definition error. This
-is a primitive schema fact, not a preservation law for literal SQL writes.
-The proof follows the primitive branches and table-update witnesses. -/
-theorem step_extends (statement : Statement) (database : Database) (position : Nat) :
+errors; other constructors return an unchanged error. This is a primitive schema
+fact, not a preservation law for literal SQL writes. The proof follows the
+primitive branches and table-update witnesses. -/
+theorem step_extends (statement : Resolved.Statement) (database : Database) (position : Nat) :
     DatabaseExtends database (step statement database position).database := by
   cases statement with
-  | createTable name columns =>
+  | createTable at_ name table =>
     simp only [step]
-    split
-    · exact DatabaseExtends.refl database
-    · cases h : database name with
-      | none => exact DatabaseExtends.create database name { shape.columns := columns, rows := [] } h
-      | some table => exact DatabaseExtends.refl database
-  | addColumn name column =>
+    cases h : database at_ with
+    | none => exact DatabaseExtends.create database at_ { shape := table, rows := [] } h
+    | some table => exact DatabaseExtends.refl database
+  | addColumn at_ column =>
     simp only [step]
-    split
-    · exact DatabaseExtends.refl database
-    · cases h : database name with
-      | none => exact DatabaseExtends.refl database
-      | some table =>
-        simp only
-        split
-        · exact DatabaseExtends.refl database
-        · split
-          · exact DatabaseExtends.refl database
-          · exact DatabaseExtends.add database name table [column] h
-  | beginTransaction => exact DatabaseExtends.refl database
+    cases h : database at_ with
+    | none => exact DatabaseExtends.refl database
+    | some table => exact DatabaseExtends.add database at_ table [column] h
+  | createIndex _ _ _ => exact DatabaseExtends.refl database
+  | begin => exact DatabaseExtends.refl database
   | commit => exact DatabaseExtends.refl database
   | rollback => exact DatabaseExtends.refl database
   | insert _ _ _ => exact DatabaseExtends.refl database
-  | update _ _ _ _ _ => exact DatabaseExtends.refl database
+  | update _ _ _ _ => exact DatabaseExtends.refl database
+  | prepareError _ => exact DatabaseExtends.refl database
 
 /-- For every script containing only CREATE/ADD, idle starting database and
 position, the computed SQL result extends the starting database. Invalid schema

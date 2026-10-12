@@ -89,6 +89,7 @@ let
     (root + /packages/belay-sqlite/Belay/Sqlite/Execution.lean) (root + /packages/belay-sqlite/Belay/Sqlite/LiteralData.lean)
     (root + /packages/verifier-conformance/VerifierConformance/Trace.lean)
     (root + /packages/verifier-conformance/VerifierConformance/Outputs.lean)
+    (root + /packages/verifier-conformance/VerifierConformance/Native.lean)
     (root + /packages/verifier-conformance/VerifierConformance/Case.lean)
     (root + /packages/verifier-conformance/VerifierConformance/Predict.lean)
     (fs.fileFilter (file: file.hasExt "py" || file.hasExt "json") (root + /judge))
@@ -243,7 +244,7 @@ in {
     runtime = documentationRoot;
   };
   kernel = suite "kernel" {
-    inputs = [ (fs.fileFilter (file: file.hasExt "lean") (root + /tests/kernel_gate)) ];
+    inputs = [ (fs.fileFilter (file: file.hasExt "lean") (root + /tests/kernel_gate)) (root + /tests/kernel_gate_support.py) ];
     runtime = leanRoot;
   };
   model = suite "model" {

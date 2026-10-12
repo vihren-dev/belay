@@ -2,9 +2,8 @@
 
 `just test-full` runs two Hypothesis RuleBasedStateMachine modes at seed 4004,
 20 examples and at most eight actions per example. Each example checks a DDL
-program and a keyed DML program: the production frontend conservatively excludes
-CREATE mixed with a baseline containing keys. Every rendered program must decode
-to the original structural constructors. SQLite records the trace; compiled
+program and a keyed DML program. Every rendered program must map to the
+statement syntax that the generator intended. SQLite records the trace; compiled
 `classifyCase` remains the sole agreement authority. Atomic errors, successful
 rollback, and ADD row preservation also run as native properties.
 

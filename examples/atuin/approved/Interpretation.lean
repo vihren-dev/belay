@@ -1,6 +1,6 @@
 import Requirements
 
-/-! The approved initial interpretation is pinned to generated schema.sql.
+/-! The approved initial interpretation is pinned to the resolution of schema.sql.
 Complete decoder-definedness is an explicit condition on starting storage. -/
 namespace Interpretation
 open Belay.Sqlite SqliteVerifier
@@ -11,7 +11,7 @@ def admitted (database : Database) : Prop :=
 
 /-- The current business reader uses the exact generated starting representation. -/
 def current : Interpretation Requirements.LogicalState where
-  invariant := HistoryMapping.representation Generated.startSchema
+  invariant := HistoryMapping.representation Generated.profile Generated.startCatalog
   observe := HistoryMapping.observe
 
 end Interpretation

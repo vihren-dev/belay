@@ -14,9 +14,8 @@ def audit_axioms(output: str) -> None:
 def assertions(term: str, encoded: str, *, expected: bool = True, failure: str | None = None) -> str:
     """Embed the runner's decoded structural case, never a separate comparison implementation."""
     preserved = "" if failure is None else (
-        "theorem preservedFailure : (observeOutcome fixture.names "
-        "(Belay.Sqlite.runSql fixture.script (databaseOf fixture.initial))).error = " + failure +
-        " := by decide +kernel\n#print axioms preservedFailure\n")
+        "theorem preservedFailure : (modelOutcome fixture).map (fun outcome => (observeOutcome 0 outcome).error) = "
+        "some (" + failure + ") := by decide +kernel\n#print axioms preservedFailure\n")
     return ("import VerifierConformance.Json\n"
             "open Belay.Sqlite.Conformance\n"
             "set_option maxRecDepth 100000\nset_option maxHeartbeats 30000000\n"

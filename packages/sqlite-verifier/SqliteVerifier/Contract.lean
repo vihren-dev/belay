@@ -17,8 +17,8 @@ structure LogicalContract (Logical : Type u) where
   valid : Logical → Prop
   /-- Required relation between every observed before/after pair on success. -/
   change : Logical → Logical → Prop
-  /-- Required predicate on the proposed schema on success or an error-free pending outcome. -/
-  schemaRequirement : Schema → Prop
+  /-- Required predicate on the resulting catalog on success or an error-free pending outcome. -/
+  catalogRequirement : Catalog → Prop
   /-- Required relation on observed before/result values at the actual failure position and error. -/
   failure : Logical → Nat → ExecutionError → Logical → Prop
   /-- Required outcome predicate for each admitted database and every execution outcome. -/
@@ -33,87 +33,90 @@ structure Interpretation (Logical : Type u) where
   /-- Read an actual logical value; {lean}`Option.none` means the read is undefined. -/
   observe : Database → Option Logical
 
-/-- Select the schema and interpretation for each zero-based failure position and
+/-- Select the catalog and interpretation for each zero-based failure position and
 error. They describe the resulting storage, including a committed prefix. -/
 structure FailureRepresentation (Logical : Type u) where
-  /-- Result schema selected for every failure position and error. -/
-  schema : Nat → ExecutionError → Schema
+  /-- Result catalog selected for every failure position and error. -/
+  catalog : Nat → ExecutionError → Catalog
   /-- Result representation selected for every failure position and error. -/
   interpretation : Nat → ExecutionError → Interpretation Logical
 
 /-- For every database satisfying the interpretation invariant, require conformance
-to the given schema and an observed logical value that the contract declares valid.
-A false invariant imposes no requirement. Use this for each before/after/failure representation. -/
-def SoundRepresentation (contract : LogicalContract Logical) (schema : Schema)
+to the given catalog under the profile and an observed logical value that the
+contract declares valid. A false invariant imposes no requirement. Use this for
+each before/after/failure representation. -/
+def SoundRepresentation (contract : LogicalContract Logical) (profile : Profile) (catalog : Catalog)
     (interpretation : Interpretation Logical) : Prop :=
   ∀ database, interpretation.invariant database →
-    Conforms schema database ∧ ∃ logical,
+    Conforms profile catalog database ∧ ∃ logical,
       interpretation.observe database = some logical ∧ contract.valid logical
 
-/-- A database is admitted exactly when it conforms to the supplied schema and
-satisfies the approved condition. This predicate does not assert that any such
-database exists; a complete verification target requires a separate witness. -/
-def Admitted (schema : Schema) (approvedConditions : Database → Prop)
+/-- A database is admitted exactly when it conforms to the supplied catalog under
+the profile and satisfies the approved condition. This predicate does not assert
+that any such database exists; a complete verification target requires a
+separate witness. -/
+def Admitted (profile : Profile) (catalog : Catalog) (approvedConditions : Database → Prop)
     (database : Database) : Prop :=
-  Conforms schema database ∧ approvedConditions database
+  Conforms profile catalog database ∧ approvedConditions database
 
 /-- For every original value actually observed before execution, impose the
 following result obligations. If no original value is observed, this predicate
 requires nothing. Success and an error-free pending transaction require the after
-invariant, the next-schema requirement and an observed value related by the
+invariant, the resulting-catalog requirement and an observed value related by the
 contract change predicate. Failure and a pending transaction with an error require
 the selected failure invariant and an observed value related by the failure
 predicate at that position/error. Committed storage is not inspected here. -/
-def OutcomeSatisfies (nextSchema : Schema) (contract : LogicalContract Logical)
+def OutcomeSatisfies (nextCatalog : Catalog) (contract : LogicalContract Logical)
     (before after : Interpretation Logical) (failures : FailureRepresentation Logical)
     (database : Database) (outcome : Outcome) : Prop :=
   ∀ original, before.observe database = some original →
     match outcome with
     | .success result =>
-      after.invariant result ∧ contract.schemaRequirement nextSchema ∧
+      after.invariant result ∧ contract.catalogRequirement nextCatalog ∧
         ∃ logical, after.observe result = some logical ∧ contract.change original logical
     | .failure position reason result =>
       (failures.interpretation position reason).invariant result ∧ ∃ logical,
         (failures.interpretation position reason).observe result = some logical ∧
           contract.failure original position reason logical
     | .pending _ result none =>
-      after.invariant result ∧ contract.schemaRequirement nextSchema ∧
+      after.invariant result ∧ contract.catalogRequirement nextCatalog ∧
         ∃ logical, after.observe result = some logical ∧ contract.change original logical
     | .pending _ result (some (position, reason)) =>
       (failures.interpretation position reason).invariant result ∧ ∃ logical,
         (failures.interpretation position reason).observe result = some logical ∧
           contract.failure original position reason logical
 
-/-- The complete verification target for bound schemas, script, approved conditions,
-representations and profile. Each field is required; a starting witness prevents
-inconsistent admission from making the universal obligations vacuous. Outcomes
-are those of {name}`ProfileExecutes`, including errors and open transactions.
-Supply an applicability predicate that states which outcomes the application allows. -/
-structure VerificationConditions (startSchema nextSchema : Schema) (script : List Statement)
+/-- The complete verification target for the bound starting and resulting catalogs,
+resolved script, approved conditions, representations and profile. Each field is
+required; a starting witness prevents inconsistent admission from making the
+universal obligations vacuous. Outcomes are those of {name}`ProfileExecutes`,
+including errors and open transactions. Supply an applicability predicate that
+states which outcomes the application allows. -/
+structure VerificationConditions (startCatalog nextCatalog : Catalog) (script : List Resolved.Statement)
     (approvedConditions : Database → Prop) (contract : LogicalContract Logical)
     (before after : Interpretation Logical) (failures : FailureRepresentation Logical)
-    (profile : ExecutionProfile := .sqlite351) : Prop where
+    (profile : Profile) : Prop where
   /-- There exists a conforming database satisfying the approved starting condition. -/
-  nonempty : ∃ database, Admitted startSchema approvedConditions database
+  nonempty : ∃ database, Admitted profile startCatalog approvedConditions database
   /-- Every database in the before invariant conforms and has an observed valid value. -/
-  beforeSound : SoundRepresentation contract startSchema before
+  beforeSound : SoundRepresentation contract profile startCatalog before
   /-- Every database in the after invariant conforms and has an observed valid value. -/
-  afterSound : SoundRepresentation contract nextSchema after
+  afterSound : SoundRepresentation contract profile nextCatalog after
   /-- For every position/error, the failure invariant implies conformance and an observed valid value;
   an impossible failure invariant makes that instance vacuous. -/
   failuresSound : ∀ position reason,
-    SoundRepresentation contract (failures.schema position reason)
+    SoundRepresentation contract profile (failures.catalog position reason)
       (failures.interpretation position reason)
   /-- Every admitted starting database satisfies the before invariant. -/
-  starting : ∀ database, Admitted startSchema approvedConditions database → before.invariant database
+  starting : ∀ database, Admitted profile startCatalog approvedConditions database → before.invariant database
   /-- Every admitted starting database satisfies the checked SQL support obligation. -/
-  ready : ∀ database, Admitted startSchema approvedConditions database → SupportedSql startSchema script database
+  ready : ∀ database, Admitted profile startCatalog approvedConditions database → SupportedSql script database
   /-- For every admitted database and every related outcome, require both applicability
   and {name}`OutcomeSatisfies`. No outcome may be excluded by an extra premise. -/
-  outcomes : ∀ database, Admitted startSchema approvedConditions database →
+  outcomes : ∀ database, Admitted profile startCatalog approvedConditions database →
     ∀ outcome, ProfileExecutes profile script database outcome →
       contract.applicability database outcome ∧
-      OutcomeSatisfies nextSchema contract before after failures database outcome
+      OutcomeSatisfies nextCatalog contract before after failures database outcome
 
 /-- For every database, accept precisely a successful outcome. Failures and all
 pending transactions are false. Use this when the application requires a closed,
@@ -124,13 +127,13 @@ def requiresSuccess (_ : Database) : Outcome → Prop
   | .pending .. => False
 
 /-- Build a contract whose validity is the supplied predicate and whose change
-relation requires equality of the old and new logical values. Every next schema
-satisfies its schema requirement. No failure is permitted, and applicability is
+relation requires equality of the old and new logical values. Every resulting
+catalog satisfies its catalog requirement. No failure is permitted, and applicability is
 {name}`requiresSuccess`. Candidate proofs still establish sound representations. -/
 def LogicalContract.preservation (valid : Logical → Prop) : LogicalContract Logical where
   valid := valid
   change := fun before after => after = before
-  schemaRequirement _ := True
+  catalogRequirement _ := True
   failure := fun _ _ _ _ => False
   applicability := requiresSuccess
 

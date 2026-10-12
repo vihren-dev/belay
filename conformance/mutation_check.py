@@ -13,10 +13,10 @@ from conformance.case_format import Json
 from conformance.model_check import compiled_many
 
 MUTANTS = {
-    "update_ignored": ("SqlExecution", "LiteralData.updated table column value key equals", "table"),
+    "update_ignored": ("SqlExecution", "(LiteralData.updated table assignments filter)", "table"),
     "add_unpadded": ("Execution", "table.appendColumns [column]", "{ table with shape.columns := table.shape.columns ++ [column] }"),
     "rollback_ignored": ("SqlExecution", ".next { database := original }", ".next { database := state.database }"),
-    "unique_disabled": ("LiteralData", "table.shape.properties.keys.all (fun key => uniqueRows table key table.rows)", "true"),
+    "unique_disabled": ("LiteralData", "keys.all (fun key => uniqueRows key table.rows)", "true"),
 }
 
 
@@ -45,24 +45,31 @@ def measure(cases: list[dict[str, Json]], runtime: Path) -> dict[str, Json]:
         for filename in (*(f"packages/belay-sqlite/Belay/Sqlite/{name}.lean"
                            for name in ("Execution", "LiteralData", "SqlExecution")),
                          *(f"packages/verifier-conformance/VerifierConformance/{name}.lean"
-                           for name in ("Trace", "Outputs", "Case"))):
+                           for name in ("Trace", "Outputs", "Native", "Case"))):
             text = (root / filename).read_text()
             hashes[filename] = hashlib.sha256(text.encode()).hexdigest()
             if Path(filename).stem == target:
                 assert text.count(before) == 1, (name, before)
                 text = text.replace(before, after)
             if Path(filename).stem == "Execution":
-                # Reuse production Statement/Outcome types; only the step definition is shadowed.
+                # Reuse production statement/outcome types; only the step definition is shadowed.
                 text = schema_step_source(text)
             text = "\n".join(line for line in text.splitlines() if not line.startswith("import "))
             text = text.replace("namespace Belay.Sqlite", f"namespace Belay.Sqlite.{name}")
             text = text.replace("end Belay.Sqlite", f"end Belay.Sqlite.{name}")
             source += text + "\n"
-        fields = ("version", "schemaSql", "migrationSql", "schema", "initial", "script", "nativeTrace", "requirements", "provenance", "parameters", "outputs")
-        # NativeObservation is namespace-local too, so copy its unchanged data fields explicitly.
-        native = "c.nativeTrace.map fun n => { visible := n.visible, persisted := n.persisted, transactionOpen := n.transactionOpen, primaryCode := n.primaryCode, extendedCode := n.extendedCode }"
-        outputs = "c.outputs.map fun n => { result := { columns := n.result.columns, rows := n.result.rows, changes := n.result.changes }, groups := n.groups.map (fun groups => groups.map fun g => { rows := g.rows, count := g.count }) }"
-        copied = {"nativeTrace": native, "outputs": outputs}
+        fields = ("version", "release", "sourceId", "schemaSql", "migrationSql", "schema", "script", "initial",
+                  "nativeTrace", "requirements", "provenance", "parameters", "outputs")
+        # Native observations and outputs are namespace-local too, so copy their unchanged data fields.
+        table = (f"(fun t : Belay.Sqlite.Conformance.NativeTable => ({{ name := t.name, columns := t.columns.map fun c => "
+                 "{ name := c.name, declaredType := c.declaredType, notNull := c.notNull, defaultValue := c.defaultValue }, "
+                 "primaryKey := t.primaryKey, uniqueKeys := t.uniqueKeys, indexes := t.indexes.map fun i => "
+                 "{ name := i.name, columns := i.columns, unique := i.unique }, rows := t.rows } : "
+                 f"Belay.Sqlite.{name}.Conformance.NativeTable))")
+        native = (f"c.nativeTrace.map fun n => {{ visible := n.visible.map {table}, persisted := n.persisted.map {table}, "
+                  "transactionOpen := n.transactionOpen, primaryCode := n.primaryCode, extendedCode := n.extendedCode }")
+        outputs = "c.outputs.map (·.map fun n => { result := { columns := n.result.columns, rows := n.result.rows, changes := n.result.changes }, groups := n.groups.map (fun groups => groups.map fun g => { rows := g.rows, count := g.count }) })"
+        copied = {"initial": f"c.initial.map {table}", "nativeTrace": native, "outputs": outputs}
         conversion = ", ".join(field + " := " + ("(" + copied[field] + ")" if field in copied else "c." + field) for field in fields)
         source += f'\ndef convert_{name} (c : Belay.Sqlite.Conformance.Case) : Belay.Sqlite.{name}.Conformance.Case := {{ {conversion} }}\n'
         source += f'#eval IO.println (String.intercalate "\\n" (originals.zipIdx.map fun (c, i) => s!"MUTANT|{name}|{{i}}|{{reprStr (Belay.Sqlite.{name}.Conformance.classifyCase (convert_{name} c))}}"))\n'

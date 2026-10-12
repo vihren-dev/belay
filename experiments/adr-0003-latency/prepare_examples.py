@@ -4,6 +4,7 @@ Usage: python3 experiments/adr-0003-latency/prepare_examples.py
 Writes build/adr-0003-latency/compiled/<case>/{trusted,candidate}.
 """
 
+import argparse
 import shutil
 import sys
 from pathlib import Path
@@ -13,27 +14,21 @@ from cases import CASES, ROOT, WORK  # noqa: E402
 
 sys.path.insert(0, str(ROOT))
 from migration_check.compile import compile_project  # noqa: E402
-from belay.sqlite.profiles import profile  # noqa: E402
-from migration_check.runtime import Runtime  # noqa: E402
-from migration_check.lean_inputs import schema_inputs, sql_inputs  # noqa: E402
-from belay.sqlite.sql_tree import parse  # noqa: E402
-from belay.sqlite.translate import starting_schema, statements  # noqa: E402
+from migration_check.inputs import generated_inputs  # noqa: E402
 
 
 def compile_case(name: str, schema: Path, approved: Path, candidate: Path, version: str) -> Path:
     """Run the same staged compilation as `verify`, into a workspace that is kept."""
-    selected = profile(version)
-    runtime = Runtime.locate()
-    parser = runtime.sql_parser(selected)
-    start = starting_schema(parse(parser, schema.read_bytes(), "schema.sql"))
-    script = statements(parse(parser, (candidate / "migration.sql").read_bytes(), "migration.sql"))
+    inputs = generated_inputs(argparse.Namespace(profile=version, schema=schema,
+                                                 migration=candidate / "migration.sql"))
+    runtime = inputs.runtime
     workspace = WORK / "compiled" / name
     shutil.rmtree(workspace, ignore_errors=True)
     workspace.mkdir(parents=True)
     compile_project(sysroot=runtime.sysroot, libraries=runtime.libraries,
                     requirements=approved / "Requirements.lean", interpretation=approved / "Interpretation.lean",
                     next_interpretation=candidate / "NextInterpretation.lean", proofs=candidate / "Proofs.lean",
-                    schema_inputs=schema_inputs(start), sql_inputs=sql_inputs(start, script, selected),
+                    schema_inputs=inputs.schema_source, sql_inputs=inputs.sql_source,
                     workspace=workspace)
     return workspace
 

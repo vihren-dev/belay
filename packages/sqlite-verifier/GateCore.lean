@@ -108,7 +108,7 @@ def expectedTarget (env : Environment) : IO Expr := do
     | throw <| IO.userError "Requirements.LogicalState must be a type"
   let some logicalLevel := level.normalize.dec
     | throw <| IO.userError "Requirements.LogicalState must inhabit Type"
-  let names := #[`Generated.startSchema, `Generated.nextSchema, `Generated.script,
+  let names := #[`Generated.startCatalog, `Generated.nextCatalog, `Generated.resolved,
     `Interpretation.admitted, `Requirements.contract, `Interpretation.current,
     `NextInterpretation.next, `NextInterpretation.failures, `Generated.profile]
   let arguments ← names.mapM (closedConstant env)

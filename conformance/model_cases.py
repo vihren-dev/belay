@@ -22,6 +22,10 @@ class Case:
     after: tuple[ExpectedTable, ...]
     lean_failure: str
     native_error: str
+    kernel_proof: bool = True
+    """Whether the kernel checks this case. The compiled runner classifies every case;
+    the kernel evaluates resolution too slowly for a table with 2,000 columns, so that
+    case stays compiled-only until a lowered profile column limit replaces it."""
 
 
 def cases() -> tuple[Case, ...]:
@@ -39,16 +43,17 @@ def cases() -> tuple[Case, ...]:
         Case("retained_add_prefix", (invoices,),
              "ALTER TABLE invoices ADD note TEXT; CREATE TABLE invoices(other TEXT); "
              "CREATE TABLE unreached(value BLOB);", (annotated,),
-             'some (1, .tableExists "invoices")', "table invoices already exists"),
+             'some (1, .prepare (.tableExists "invoices"))', "table invoices already exists"),
         Case("retained_create_prefix", (invoices,),
              "CREATE TABLE audit(message TEXT); ALTER TABLE invoices ADD amount INTEGER;",
-             (invoices, audit), 'some (1, .columnExists "invoices" "amount")',
+             (invoices, audit), 'some (1, .prepare (.duplicateColumn "amount"))',
              "duplicate column name: amount"),
         Case("missing_table_prefix", (invoices,),
              "CREATE TABLE audit(message TEXT); ALTER TABLE absent ADD note TEXT;",
-             (invoices, audit), 'some (1, .missingTable "absent")', "no such table: absent"),
+             (invoices, audit), 'some (1, .prepare (.noSuchTable "absent"))', "no such table: absent"),
         Case("limit_before_duplicate", (full,), "ALTER TABLE full ADD c0 TEXT;", (full,),
-             'some (0, .tooManyColumns "full")', "too many columns on sqlite_altertab_full"),
+             'some (0, .prepare (.tooManyColumns "full"))', "too many columns on sqlite_altertab_full",
+             kernel_proof=False),
     )
 
 

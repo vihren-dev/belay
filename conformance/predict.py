@@ -1,9 +1,9 @@
 """`python -m conformance.predict --runtime ROOT`: the subject's predict command (ADR 0011).
 
 The judge (`judge/`) writes one input per line: what a frozen record holds before its
-migration runs. This command translates each input with the frontend, runs the model's
-`conformance-runner --predict` once over all translated inputs, and writes one prediction per
-line in the recorded form (`conformance.predict_render`). It never sees an observation that
+migration runs. This command maps each input to statement syntax with the frontend, runs the model's
+`conformance-runner --predict` once over all inputs, which resolves and runs them in Lean, and
+writes one prediction per line in the recorded form (`conformance.predict_render`). It never sees an observation that
 SQLite made after the start, and it decides nothing about agreement.
 """
 
@@ -14,14 +14,15 @@ from pathlib import Path
 import subprocess
 import sys
 
-from belay.sqlite.admission import admit
 from belay.sqlite.dialects import NoParserForDialect
 from belay.sqlite.errors import SqlError
-from belay.sqlite.sql_model import Statement, Table
+from belay.sqlite.located import Located
 from belay.sqlite.sql_tree import ParserResourceLimit, parse
-from belay.sqlite.translate import starting_schema, statements
+from belay.sqlite.syntax import statements
 from conformance import native_bindings
-from conformance.case_format import Json, schema_wire, statement_wire, table_wire
+from conformance.case_format import Json, row_wire
+from conformance.native_connection import SOURCE_ID
+from conformance.native_library import DEFAULT_ENGINE_VERSION
 from conformance.predict_render import output_record, view_record
 from conformance.record_parser import NO_PARSER_REASON, record_parser, runtime_library
 
@@ -31,25 +32,26 @@ PROFILE_VERSION = 4
 """Native record version whose execution profiles the model does not implement yet."""
 
 
-def initial_tables(schema: tuple[Table, ...], rows: dict[str, Json]) -> list[Json]:
-    """The starting tables: the translated schema with the given rows, by table name."""
-    by_name = {name.lower(): table_rows for name, table_rows in rows.items()}
-    return [[table.name, table_wire(table, [
-        (native_bindings.decode_cell(row["identity"][0])[1], tuple(native_bindings.decode_cell(cell) for cell in row["values"]))
-        for row in by_name.get(table.name, [])])] for table in sorted(schema, key=lambda item: item.name)]
+def initial_rows(rows: dict[str, Json]) -> list[Json]:
+    """The starting rows of each table by name, as stored rows with their row ids."""
+    return [{"name": name, "rows": [row_wire(native_bindings.decode_cell(row["identity"][0])[1],
+                                             tuple(native_bindings.decode_cell(cell) for cell in row["values"]))
+                                    for row in table_rows]}
+            for name, table_rows in sorted(rows.items())]
 
 
-def translated(given: dict[str, Json], library: object) -> tuple[dict[str, Json], list[Statement]]:
-    """The model input of one case and its statements; frontend refusals raise `SqlError`."""
+def mapped(given: dict[str, Json], library: object) -> tuple[dict[str, Json], list[Located]]:
+    """The model input of one case and its statements; frontend refusals raise `SqlError`.
+    The records hold no profile before version 4, so the input names the default engine."""
     if given.get("nativeVersion") == PROFILE_VERSION:
         raise SqlError("UNSUPPORTED", f"{given['name']}: the model does not implement execution profiles "
                        f"(native record version {PROFILE_VERSION}); this case stays out of scope until it does")
     parser = record_parser(library, given)
-    schema = starting_schema(parse(parser, given["initialSchemaSql"].encode(), "corpus-schema.sql"))
+    schema = statements(parse(parser, given["initialSchemaSql"].encode(), "corpus-schema.sql"))
     script = statements(parse(parser, given["migrationSql"].encode(), "corpus-migration.sql"))
-    admit(schema, script)
-    return {"schema": [schema_wire(table) for table in schema], "initial": initial_tables(schema, given["initialRows"]),
-            "script": [statement_wire(statement) for statement in script]}, script
+    return {"release": DEFAULT_ENGINE_VERSION, "sourceId": SOURCE_ID,
+            "schema": [item.value for item in schema], "script": [item.value for item in script],
+            "initial": initial_rows(given["initialRows"])}, script
 
 
 def refusal(given: dict[str, Json], error: Exception) -> dict[str, Json]:
@@ -64,10 +66,12 @@ def refusal(given: dict[str, Json], error: Exception) -> dict[str, Json]:
     return {"name": given["name"], "status": "error", "reason": f"{type(error).__name__}: {error}"}
 
 
-def prediction(given: dict[str, Json], script: list[Statement], model: dict[str, Json]) -> dict[str, Json]:
+def prediction(given: dict[str, Json], script: list[Located], model: dict[str, Json]) -> dict[str, Json]:
     """One prediction in the recorded form. Bound parameters are outside the model's scope."""
     if "error" in model:
         return {"name": given["name"], "status": "error", "reason": str(model["error"])}
+    if "restricted" in model:
+        return {"name": given["name"], "status": "unsupported", "reason": str(model["restricted"])}
     steps = [{"visible": view_record(step["visible"]), "persisted": view_record(step["persisted"]),
               "transactionOpen": step["transactionOpen"], "primaryCode": step["primaryCode"],
               **({"start": script[index - 1].start} if index else {})}
@@ -86,10 +90,10 @@ def main(arguments: Sequence[str]) -> int:
     library = runtime_library(options.runtime)
     inputs = [json.loads(line) for line in sys.stdin if line.strip()]
     results: list[dict[str, Json] | None] = []
-    pending: list[tuple[int, list[Statement], dict[str, Json]]] = []
+    pending: list[tuple[int, list[Located], dict[str, Json]]] = []
     for index, given in enumerate(inputs):
         try:
-            model_input, script = translated(given, library)
+            model_input, script = mapped(given, library)
             pending.append((index, script, model_input))
             results.append(None)
         except (SqlError, NoParserForDialect, ValueError, KeyError, TypeError, IndexError) as error:

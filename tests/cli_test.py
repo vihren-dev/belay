@@ -57,9 +57,9 @@ def test_valid_migration_artifacts(invoke: Callable[..., dict[str, object]], tmp
     invoke("VERIFIED", extra=("--artifacts", str(artifacts),
                              "--approved-baseline", str(approved / "baseline.json")))
     assert {path.name for path in artifacts.iterdir()} == {"SchemaInputs.lean", "SqlInputs.lean", "Generated.lean", "inputs.json"}
-    assert "def startSchema" in (artifacts / "SchemaInputs.lean").read_text()
-    assert "def startSchema" not in (artifacts / "SqlInputs.lean").read_text()
-    assert ".addColumn" in (artifacts / "SqlInputs.lean").read_text()
+    assert "def startCatalog" in (artifacts / "SchemaInputs.lean").read_text()
+    assert "def startCatalog" not in (artifacts / "SqlInputs.lean").read_text()
+    assert "Belay.Sqlite.Resolved.Statement.addColumn" in (artifacts / "SqlInputs.lean").read_text()
     assert "VerificationConditions" in (artifacts / "Generated.lean").read_text()
 
 

@@ -1,40 +1,50 @@
-# Conformance case format v1
+# Conformance case format
 
 ADR 0004's test-only `conformance-runner` accepts one JSON object per line and
-returns one result per line. `packages/belay-sqlite/Belay/Sqlite/Codec.lean` owns the codecs for schema
-declarations, statements, values and profiles; `packages/verifier-conformance/VerifierConformance/Json.lean` adds
-the conformance case and observation records. The Python encoders are in
-`belay/sqlite/structural.py`, re-exported by `conformance/case_format.py`.
-ADR 0003's `verify-bundle` uses the same codecs for its generated-inputs record
-(see the [data path guide](data-path.md)); that record keeps indexes in declaration
-order, as the Lean emitter does, where conformance cases order them by name.
+returns one result per line. The current case format is version 3. Versions 1
+and 2 carried statements and schemas that Python resolved; ADR 0008 replaced
+them, and the runner refuses them. Frozen corpus records are not cases: they keep
+SQL text and native observations, and replay builds a version 3 case from them
+each time.
+
+`packages/belay-sqlite/Belay/Sqlite/Codec.lean` and
+`packages/belay-sqlite/Belay/Sqlite/Codec/Resolution.lean` own the codecs for
+values, statement syntax and catalogs.
+`packages/verifier-conformance/VerifierConformance/Json.lean` adds the case
+and observation records. The Python side is `belay/sqlite/syntax.py` for statement
+syntax, `conformance/native_metadata.py` for native tables and
+`conformance/case_format.py` for values and rows. ADR 0003's `verify-bundle` uses
+the same syntax codec for its structural record (see the
+[data path guide](data-path.md)).
 
 ## Record
 
-All fields are required in JSON, including empty metadata lists:
-
 | Field | Meaning |
 | --- | --- |
-| `version` | Integer `1` for this format; [v2](conformance-format-v2.md) adds outputs. Unknown versions are harness errors. |
+| `version` | Integer `3`. Other versions are harness errors. |
+| `release`, `sourceId` | The SQLite release and build. The runner resolves under the documented profile of this release. |
 | `schemaSql`, `migrationSql` | Original SQL, kept separately. |
-| `schema` | Production `starting_schema` result, as structural table declarations. |
-| `initial` | Finite array of `[tableName, table]` pairs with explicit physical rowids. |
-| `script` | Structural production statements in execution order. |
+| `schema`, `script` | Statement syntax of the schema and migration SQL, as `belay.sqlite.syntax` maps them. |
+| `initial` | Native tables before the migration. |
 | `nativeTrace` | Initial observation, then one observation per executed statement. |
-| `requirements` | Array of requirement-ID strings; optional evidence expressed as `[]`. |
+| `requirements` | Array of requirement-ID strings; `[]` when there are none. |
 | `provenance` | Array of `[key, value]` string pairs, including fixture name and engine source ID. |
+| `outputs`, `parameters` | Statement outputs and their bound parameters ([outputs](conformance-format-v2.md)); `null` and `[]` when the record has no outputs. |
 
-A table has `columns`, `rows`, and `properties`. A schema declaration has `name`,
-`columns`, and `properties`. Rows have integer `rowid` and ordered `values`.
-Columns have `name`, `affinity`, `declaredType`, `notNull`, and `defaultValue`.
-Properties retain `primaryKey`, `uniqueKeys`, and explicit `indexes`; each index
-retains `name`, `columns`, and `unique`. Enum tags use the Lean constructor names.
-`defaultValue` is JSON null or `"currentTimestamp"`.
+Statement syntax uses Lean's derived JSON encoding of `Syntax.Statement`: nullary
+constructors are strings (`"begin"`, `"commit"`, `"rollback"`), and other
+constructors are single-key objects with named fields, for example
+`{"addColumn": {"table": "t", "column": {"name": "c", "declaredType": "TEXT", "constraints": []}}}`.
+Names keep their case as written. Numeric literals keep their token text.
 
-These flat wire fields are unchanged. The Lean codec constructs one name-free
-`TableShape` from `columns` and `properties`; `Table` adds rows and `TableSchema`
-adds its name. `Conforms` compares complete shapes, so every represented schema
-field is required to agree. Generated Lean modules use the same shared shape.
+A native table has `name` (as written in `sqlite_schema`), `columns`,
+`primaryKey`, `uniqueKeys`, `indexes` and `rows`. Each column has `name`,
+`declaredType` (the declared type text, `""` for none), `notNull` and
+`defaultValue` (the default's text or null), from `PRAGMA table_xinfo`. The
+primary key lists column positions in key order. `uniqueKeys` lists the key
+positions of each UNIQUE constraint index (`index_list` origin `u`). `indexes`
+lists the explicit indexes (origin `c`) with `name`, `columns` and `unique`. Rows
+have integer `rowid` and ordered `values`.
 
 Values preserve storage classes:
 
@@ -45,54 +55,55 @@ Values preserve storage classes:
 
 REAL payloads are unsigned 64-bit decimal **strings**, avoiding JSON consumers'
 floating-point precision loss. Bytes are integers in 0..255. Physical rowids are
-signed 64-bit integers; duplicate table names, duplicate rowids, and incorrect row
-widths are rejected by the decoder. Native initialization failures are harness
-errors. Initial observations detect affinity changes or other differences between
-the supplied fixture and its actual stored representation. Fixture setup binds
-REAL values through the C API: infinities survive, while NaN becomes native NULL
-and disagrees with a requested NaN REAL in the initial-state comparison.
+signed 64-bit integers; duplicate table names (after ASCII folding), duplicate
+rowids, and incorrect row widths are rejected by the decoder. Native
+initialization failures are harness errors. Fixture setup binds REAL values
+through the C API: infinities survive, while NaN becomes native NULL and
+disagrees with a requested NaN REAL in the initial-state comparison.
 
-## Statements and observations
+## Observations
 
-Nullary statements are strings: `"beginTransaction"`, `"commit"`, `"rollback"`.
-Other constructors are single-key objects with named fields:
-
-| Tag | Fields |
-| --- | --- |
-| `createTable` | `name`, `columns` |
-| `addColumn` | `table`, `column` |
-| `insert` | `table`, `columns` (names), `values` |
-| `update` | `table`, `column`, `value`, `key`, `equals` |
-
-An observation contains `visible`, `persisted` (finite table arrays),
+An observation contains `visible`, `persisted` (native table arrays),
 `transactionOpen`, `primaryCode`, and `extendedCode`. Code zero means success.
 While a transaction is open, `persisted` is read on a second connection. Otherwise
 it is the same snapshot as `visible`. Both codes are retained, and the decoder
 requires `extendedCode % 256 == primaryCode`.
 
-The current model compares **primary** codes: success 0, `constraintViolation` 19,
-and other modeled execution errors 1. Extended codes remain diagnostics because
-the model does not distinguish constraint subtypes. Error messages are not compared.
-`invalidDefinition` is unsupported admission, not a native error.
+The model compares **primary** codes: success 0, `constraintViolation` 19, and
+other modeled errors, including SQLite's prepare errors, 1. Extended codes remain
+diagnostics because the model does not distinguish constraint subtypes. Error
+messages are not compared. `unmodeled` is unsupported admission, not a native
+error.
 
-Schema SQL is read independently from `sqlite_schema` and normalized through the
-production schema frontend, then checked against independent `table_xinfo`,
-`index_list` and `index_xinfo` observations and a separate affinity implementation.
-Declarations are parsed once per distinct schema within a case. Implicit indexes are represented by their owning
-constraints. Explicit indexes are ordered by name. Typed row reads use the C API,
-with column-bounded queries for wide tables. Table and row order are canonical;
-comparison includes absent names from the fixture, statements, and native states.
+## Comparison
+
+The runner resolves `schema` in description mode and `script` in execution mode
+(`resolveSchemaAndScript`). A model restriction is `MODEL_UNSUPPORTED`. A schema
+that SQLite ran but resolution refuses is a disagreement at the initial state.
+The runner then follows the catalog after each statement and compares, under the
+visible and the committed catalog:
+
+- each catalog table with the native table of the same folded name: its name as
+  written, its columns, primary key, UNIQUE constraint keys and explicit indexes
+  (`VerifierConformance.Native.tablesMatch`);
+- the rows of the model table at that catalog position with the native rows, in
+  rowid order;
+- that no native table is outside the catalog.
+
+This comparison checks the catalog that resolution computes. Python reads the
+native metadata only; it does not resolve the schema.
 
 ## Evidence boundary
 
 `classifyCase` compares the initial states, checks production admission, then
 compares every reached observation. Missing or extra observations disagree.
 `DISAGREE` has a zero-based statement `position`, or null for an initial mismatch.
-`MODEL_UNSUPPORTED` can never satisfy `checkCase`. Frontend rejection happens
-before a Lean case exists. Native observation and decoding failures report
-`HARNESS_ERROR`; the checker is not invoked on failed native acquisition.
+`MODEL_UNSUPPORTED` can never satisfy `checkCase`. Syntax without a statement
+constructor is refused before a Lean case exists. Native observation and decoding
+failures report `HARNESS_ERROR`; the checker is not invoked on failed native
+acquisition.
 
-The runner trusts that SQL was translated and observations were acquired by the
+The runner trusts that the syntax was mapped and observations were acquired by the
 harness. Supplying a fabricated JSON trace does not establish native evidence.
 `--emit-lean` returns the decoded record and its closed Lean term. Kernel
 regressions first use `#guard` to verify the elaborated term re-encodes to the

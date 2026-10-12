@@ -22,4 +22,4 @@ Unobservable views or absent application callbacks are acquisition failures.
 every replay. Unsupported cases retain their original native record. Admitted
 cases cross-check the frozen PRAGMA metadata independently and reach the existing
 Lean classifier. No native trace is regenerated or edited during model replay.
-The structural case format remains [version one](conformance-format-v1.md).
+The model case format is [version 3](conformance-format-v1.md).

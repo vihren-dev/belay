@@ -33,7 +33,7 @@ def test_stateful_modes(runtime_root: Path, error_seeking: bool) -> None:
     assert any(event["visible"] != case["nativeTrace"][index]["visible"]
                for case in cases for index, event in enumerate(case["nativeTrace"][1:])
                if isinstance(case["script"][index], dict) and "update" in case["script"][index])
-    assert any(dict(case["initial"])["exists_table"]["rows"] for case in cases if "exists_table" in dict(case["initial"]))
+    assert any(table["rows"] for case in cases for table in case["initial"] if table["name"] == "exists_table")
 
 
 @pytest.mark.parametrize("literal", ["'1'", "' 1'", "'1.0'", "1e20", "0.0", "-0.0", "9223372036854775808"])
@@ -70,7 +70,7 @@ def test_shrink_delete_and_freeze(runtime_root: Path, tmp_path: Path) -> None:
         broken = deepcopy(case)
         for statement in broken["script"]:
             if isinstance(statement, dict) and "insert" in statement:
-                statement["insert"]["values"][1] = {"integer": {"value": 99}}
+                statement["insert"]["rows"][0][1] = {"numeric": {"text": "99"}}
                 break
         return compiled(broken, runtime_root)
 

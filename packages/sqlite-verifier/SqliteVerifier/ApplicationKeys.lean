@@ -37,7 +37,7 @@ SQL affinity and collation are not evaluated by this logical projection. -/
 def projectApplicationRows (table : Table) (keyNames fields : List String) :
     Option ApplicationKeyRows := do
   if keyNames.isEmpty || keyNames.eraseDups.length != keyNames.length ||
-      !(keyNames ++ fields).all (fun name => table.shape.columns.any (fun column => column.name == name))
+      !(keyNames ++ fields).all (fun name => (columnPosition table.shape.columns name).isSome)
     then none
     else
       let records : ApplicationKeyRows ← (table.project (keyNames ++ fields)).mapM fun (_, cells) => do
@@ -45,13 +45,15 @@ def projectApplicationRows (table : Table) (keyNames fields : List String) :
         pure (values.take keyNames.length, values.drop keyNames.length)
       if ApplicationKeyRows.Valid records then some records else none
 
-/-- Observe {name}`projectApplicationRows` from the selected stored table.
-An absent table returns {name}`Option.none`, distinct from a present empty
-table's {lean}`(some [] : Option ApplicationKeyRows)`. Use an empty protected
-field list for keys alone; the key/domain checks remain. -/
-def observeApplicationRows (name : String) (keyNames fields : List String)
+/-- Observe {name}`projectApplicationRows` from the stored table with the name in
+the catalog. A name without a table, or an absent stored table, returns
+{name}`Option.none`, distinct from a present empty table's
+{lean}`(some [] : Option ApplicationKeyRows)`. Use an empty protected field list
+for keys alone; the key/domain checks remain. -/
+def observeApplicationRows (catalog : Catalog) (name : String) (keyNames fields : List String)
     (database : Database) : Option ApplicationKeyRows := do
-  let table ← database name
+  let position ← tablePosition catalog name
+  let table ← database position
   projectApplicationRows table keyNames fields
 
 /-- Require {name}`Conforms` and a defined application-key observation as the
@@ -59,22 +61,22 @@ representation invariant. Observe through {name}`observeApplicationRows`.
 An absent or invalid-key table cannot satisfy the invariant. Use this helper
 for the stated key policy; general {name}`Interpretation` remains available
 for other NULL, duplicate and identity policies. -/
-def applicationKeyInterpretation (schema : Schema) (name : String)
+def applicationKeyInterpretation (profile : Profile) (catalog : Catalog) (name : String)
     (keyNames fields : List String) : Interpretation ApplicationKeyRows where
-  invariant database := Conforms schema database ∧
-    ∃ records, observeApplicationRows name keyNames fields database = some records
-  observe := observeApplicationRows name keyNames fields
+  invariant database := Conforms profile catalog database ∧
+    ∃ records, observeApplicationRows catalog name keyNames fields database = some records
+  observe := observeApplicationRows catalog name keyNames fields
 
 /-- A convenience {name}`LogicalContract` requiring valid application keys and
 {name}`List.Perm` of complete records on success and failure. Permutation retains
 multiplicity and protected cells while allowing reordered rows and changed
-physical rowids. Schema and applicability predicates are true for every input;
+physical rowids. Catalog and applicability predicates are true for every input;
 override them through the general constructor when the application needs more.
 Failure position and reason impose no additional condition in this helper. -/
 def applicationKeyPreservation : LogicalContract ApplicationKeyRows where
   valid := ApplicationKeyRows.Valid
   change before after := after.Perm before
-  schemaRequirement := fun _ => True
+  catalogRequirement := fun _ => True
   failure before _ _ after := after.Perm before
   applicability := fun _ _ => True
 

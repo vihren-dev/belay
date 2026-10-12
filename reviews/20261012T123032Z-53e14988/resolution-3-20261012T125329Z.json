@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-12T12:53:29+00:00",
+  "finding": "20261012T123032Z-53e14988#3",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "Owner review requested in the pull request for ADR 0008 step 1b; the owner reviews the trusted change before merge"
+}

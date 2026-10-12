@@ -1,8 +1,9 @@
-# The kernel gate's executables: the proof checker, the bundle checker and the proof exporter.
+# The kernel gate's executables: the proof checker, the bundle checker and the proof exporter, and the
+# ADR 0008 resolver that writes the generated input modules.
 # The installed runtime ships their binaries next to the verifier library's outputs.
 name = "verifierGate"
 version = "0.1.0"
-defaultTargets = ["migration-proof-checker", "migration-bundle-checker", "migration-proof-exporter"]
+defaultTargets = ["migration-proof-checker", "migration-bundle-checker", "migration-proof-exporter", "migration-resolver"]
 
 [[require]]
 name = "sqliteVerifier"
@@ -24,3 +25,7 @@ root = "BundleChecker"
 [[lean_exe]]
 name = "migration-proof-exporter"
 root = "ProofExporter"
+
+[[lean_exe]]
+name = "migration-resolver"
+root = "Resolver"

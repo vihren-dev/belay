@@ -4,9 +4,9 @@ import SqlInputs
 /-! A plausible resulting interpretation cannot repair a missing required column. -/
 namespace NextInterpretation
 
-/-- The old values are still readable, but the target schema requirement fails. -/
+/-- The old values are still readable, but the target catalog requirement fails. -/
 def next : SqliteVerifier.Interpretation Requirements.LogicalState :=
-  SqliteVerifier.projectedInterpretation Generated.nextSchema "invoices" ["amount"]
+  SqliteVerifier.projectedInterpretation Generated.profile Generated.nextCatalog "invoices" ["amount"]
 
 /-- This example asks for successful applicability, as the approved contract requires. -/
 def failures : SqliteVerifier.FailureRepresentation Requirements.LogicalState :=

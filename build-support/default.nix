@@ -67,7 +67,7 @@ in rec {
     pname = "sqlite-verifier-library";
     directory = "packages/sqlite-verifier";
     source = sources.verifierLibrary;
-    targets = [ "SqliteVerifier" "EngineeringExamples" "GatePaths" "GateCore" ];
+    targets = [ "SqliteVerifier" "EngineeringExamples" "GatePaths" "GateCore" "GateInputs" ];
     requires."packages/belay-sqlite" = modelPackage;
   };
   # The exporter library that the gate's executables import; built once, here, not in each gate build.
@@ -82,7 +82,7 @@ in rec {
     pname = "sqlite-verifier-gate";
     directory = "packages/verifier-gate";
     source = sources.verifierGate;
-    targets = [ "migration-proof-checker" "migration-bundle-checker" "migration-proof-exporter" ];
+    targets = [ "migration-proof-checker" "migration-bundle-checker" "migration-proof-exporter" "migration-resolver" ];
     requires = { "packages/belay-sqlite" = modelPackage; "packages/sqlite-verifier" = verifierLibrary;
                  "build/lean4export" = lean4exportPackage; };
     executables = true;
@@ -115,7 +115,8 @@ in rec {
     # Lake replays the library only when the outputs each trace lists exist, including `ir` (ADR 0010).
     cp -R ${verifierLibrary}/.lake/build/ir "$out/.lake/build/"
     cp ${verifierGate}/.lake/build/bin/migration-proof-checker ${verifierGate}/.lake/build/bin/migration-bundle-checker \
-      ${verifierGate}/.lake/build/bin/migration-proof-exporter "$out/.lake/build/bin/"
+      ${verifierGate}/.lake/build/bin/migration-proof-exporter ${verifierGate}/.lake/build/bin/migration-resolver \
+      "$out/.lake/build/bin/"
   '';
   # Test-only model executable and library next to the runtime's; the shipped runtime keeps its commands.
   conformanceRuntime = pkgs.runCommand "sqlite-verifier-conformance-runtime" { } ''

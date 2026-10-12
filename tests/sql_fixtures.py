@@ -1,12 +1,13 @@
-"""Shared SQL fixture text for translation and generated-Lean tests."""
+"""Shared SQL fixture text for frontend and generated-input tests."""
 
 RICH_BASELINE = """
-CREATE INDEX event_time ON events(occurred);
 CREATE TABLE events(id TEXT PRIMARY KEY, occurred INTEGER NOT NULL, message TEXT NOT NULL,
                     author TEXT, UNIQUE(occurred, message));
+CREATE INDEX event_time ON events(occurred);
 CREATE UNIQUE INDEX author_message ON events(author, message);
 CREATE TABLE ledger(version BIGINT PRIMARY KEY, description TEXT NOT NULL,
                     installed_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     success BOOLEAN NOT NULL, checksum BLOB NOT NULL, execution_time BIGINT NOT NULL);
 """
-"""A declarative baseline using every supported column, key and index feature."""
+"""A declarative baseline using every modeled column, key and index feature. Each index
+follows its table, as SQLite requires when it runs the schema."""

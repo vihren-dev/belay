@@ -14,7 +14,7 @@ including demonstrations. The model's basic dependency direction is correct,
 but model lemmas in `Library`, `LiteralPreservation`, `SchemaExtension` and
 `SchemaPreservation` pull in the contract. Model validation also reaches it
 through `NullableProjection`. SQL translation and application Lean generation
-share normalized types in [sql_model.py](../belay/sqlite/sql_model.py).
+share normalized types in `sql_model.py` (replaced by ADR 0008).
 
 [Execution](../packages/belay-sqlite/Belay/Sqlite/Execution.lean) and
 [SqlExecution](../packages/belay-sqlite/Belay/Sqlite/SqlExecution.lean) dispatch through `advance`,

@@ -5,8 +5,8 @@ set_option doc.verso true
 /-! A real closed proof exercises replay against the formal model. -/
 open Belay.Sqlite SqliteVerifier
 namespace Proofs
-/-- The fixture's observation covers every admitted empty-schema database. -/
-theorem sound : SoundRepresentation Requirements.contract [] Interpretation.current := by
+/-- The fixture's observation covers every admitted empty-catalog database. -/
+theorem sound : SoundRepresentation Requirements.contract Generated.profile [] Interpretation.current := by
   intro database conforms
   exact ⟨conforms, (), rfl, True.intro⟩
 /-- The complete {name}`Generated.expected` target holds for this empty script.
@@ -14,9 +14,7 @@ The proof provides an admitted witness, sound representations, explicit SQL supp
 and the computed successful outcome; no extra execution premise is assumed. -/
 theorem migrationCorrect : Generated.expected := by
   apply VerificationConditions.of_runSql
-  · exact ⟨fun _ => none, by
-      simp [Admitted, Conforms, Schema.Valid, Schema.lookupShape,
-        Generated.startSchema, Interpretation.admitted]⟩
+  · exact ⟨Catalog.emptyDatabase [], Catalog.emptyDatabase_conforms (by decide), trivial⟩
   · exact sound
   · exact sound
   · intro position reason
@@ -24,7 +22,7 @@ theorem migrationCorrect : Generated.expected := by
   · intro database admitted
     exact admitted.1
   · intro database _
-    exact ⟨by decide +kernel, by rfl⟩
+    rfl
   · intro database admitted
     constructor
     · trivial

@@ -1,15 +1,23 @@
-"""Structural statements rendered to SQL and checked by the production frontend."""
+"""Generated statements: expected statement syntax beside independently rendered SQL.
+
+The round trip checks the frontend's mapping (`belay.sqlite.syntax`) against the
+syntax the generator intended, before native comparison can mask a difference.
+"""
 
 from dataclasses import dataclass, field
-from pathlib import Path
+from typing import Literal
 
-from conformance.case_format import Json, statement_wire
-from conformance.native_trace import Fixture
-from conformance.native_connection import Cell
-from belay.sqlite.sql_model import Affinity, Column, Statement
 from belay.sqlite.sql_tree import SqlParser, parse
-from belay.sqlite.sql_values import SqlValue
-from belay.sqlite.translate import statements
+from belay.sqlite.syntax import statements
+from conformance.case_format import Json
+from conformance.native_connection import Cell
+from conformance.native_trace import Fixture
+
+Affinity = Literal["integer", "real", "text", "blob", "numeric"]
+"""A declared type name that the generator writes; SQLite derives the affinity from it."""
+
+SqlValue = int | str | bytes | None
+"""A literal value that the generator writes in SQL."""
 
 
 def literal(value: SqlValue) -> str:
@@ -21,29 +29,48 @@ def literal(value: SqlValue) -> str:
     return str(value) if isinstance(value, int) else "'" + value.replace("'", "''") + "'"
 
 
+def literal_syntax(value: SqlValue) -> Json:
+    """The statement syntax of a rendered literal: SQLite parses a negative number as a negation."""
+    if value is None:
+        return "null"
+    if isinstance(value, bytes):
+        return {"blob": {"bytes": list(value)}}
+    if isinstance(value, str):
+        return {"string": {"bytes": list(value.encode())}}
+    number: Json = {"numeric": {"text": str(abs(value))}}
+    return {"negate": {"operand": number}} if value < 0 else number
+
+
+def column_syntax(column: str, affinity: Affinity) -> Json:
+    """The syntax of a column with a declared type and no constraints."""
+    return {"name": column, "declaredType": affinity.upper(), "constraints": []}
+
+
 def command(kind: str, table: str = "", *, column: str = "v", value: SqlValue = None,
-            key: int = 1, affinity: Affinity = "blob") -> tuple[Statement, str]:
-    """Generate constructors before syntax, independent of the parser under test."""
-    statement = Statement(kind, table, (), "generated.sql", 0, 0)
+            key: int = 1, affinity: Affinity = "blob") -> tuple[Json, str]:
+    """Generate the expected syntax before the SQL, independent of the parser under test."""
     if kind in ("beginTransaction", "commit", "rollback"):
-        return statement, {"beginTransaction": "BEGIN;", "commit": "COMMIT;", "rollback": "ROLLBACK;"}[kind]
-    if kind in ("createTable", "addColumn"):
-        columns = (Column(column, affinity),)
-        statement = Statement(kind, table, columns, "generated.sql", 0, 0)
-        sql = f"CREATE TABLE {table}({column} {affinity.upper()});" if kind == "createTable" else f"ALTER TABLE {table} ADD {column} {affinity.upper()};"
-    elif kind == "insert":
-        statement = Statement(kind, table, (), "generated.sql", 0, 0, ("id", "v"), (key, value))
-        sql = f"INSERT INTO {table}(id,v) VALUES({literal(key)},{literal(value)});"
-    else:
-        statement = Statement(kind, table, (), "generated.sql", 0, 0, (column,), (value,), "id", key)
-        sql = f"UPDATE {table} SET {column}={literal(value)} WHERE id={key};"
-    return statement, sql
+        return ({"beginTransaction": "begin"}.get(kind, kind),
+                {"beginTransaction": "BEGIN;", "commit": "COMMIT;", "rollback": "ROLLBACK;"}[kind])
+    if kind == "createTable":
+        return ({"createTable": {"name": table, "columns": [column_syntax(column, affinity)], "constraints": []}},
+                f"CREATE TABLE {table}({column} {affinity.upper()});")
+    if kind == "addColumn":
+        return ({"addColumn": {"table": table, "column": column_syntax(column, affinity)}},
+                f"ALTER TABLE {table} ADD {column} {affinity.upper()};")
+    if kind == "insert":
+        return ({"insert": {"table": table, "columns": ["id", "v"], "rows": [[literal_syntax(key), literal_syntax(value)]]}},
+                f"INSERT INTO {table}(id,v) VALUES({literal(key)},{literal(value)});")
+    filter_: Json = {"equals": {"left": {"identifier": {"name": "id", "doubleQuoted": False}},
+                                "right": literal_syntax(key)}}
+    return ({"update": {"table": table, "assignments": [[column, literal_syntax(value)]], "filter": filter_}},
+            f"UPDATE {table} SET {column}={literal(value)} WHERE id={key};")
 
 
 @dataclass
 class Program:
-    """Keep the expected structural constructors beside their independently rendered SQL."""
-    commands: list[tuple[Statement, str]] = field(default_factory=list)
+    """Keep the expected statement syntax beside its independently rendered SQL."""
+    commands: list[tuple[Json, str]] = field(default_factory=list)
     schema: str = "CREATE TABLE t(id INTEGER NOT NULL,v BLOB,UNIQUE(id));"
 
     rows: dict[str, list[tuple[int, tuple[Cell, ...]]]] = field(default_factory=lambda: {"t": [(1, ((1, 1), (4, b"")))]})
@@ -56,7 +83,12 @@ class Program:
     def roundtrip(self, parser: SqlParser) -> None:
         """Reject parser/renderer disagreement before native comparison can mask it."""
         parsed = statements(parse(parser, self.fixture().migration_sql.encode(), "generated.sql"))
-        assert [statement_wire(item) for item in parsed] == [statement_wire(item) for item, _ in self.commands]
+        assert [item.value for item in parsed] == [syntax for syntax, _ in self.commands]
+
+
+def table_named(tables: list[Json], name: str) -> dict[str, Json]:
+    """The native table with the given name in one observation."""
+    return next(table for table in tables if isinstance(table, dict) and table["name"] == name)
 
 
 def native_laws(case: dict[str, Json]) -> None:
@@ -70,7 +102,7 @@ def native_laws(case: dict[str, Json]) -> None:
             assert after["visible"] == before["persisted"]
         elif isinstance(statement, dict) and "addColumn" in statement:
             name = statement["addColumn"]["table"]
-            old, new = dict(before["visible"])[name], dict(after["visible"])[name]
+            old, new = table_named(before["visible"], name), table_named(after["visible"], name)
             assert len(new["rows"]) == len(old["rows"])
             for first, second in zip(old["rows"], new["rows"], strict=True):
                 assert second == {"rowid": first["rowid"], "values": first["values"] + ["null"]}

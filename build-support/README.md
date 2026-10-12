@@ -64,8 +64,9 @@ runtime ships.
 `runtime/` assembles those outputs, source/module membership,
 examples, the `belay.sqlite` namespace frontend and the Python CLI.
 The frontend takes explicit parser and profile inputs. It has no dependency on
-the verification application. Application Lean emission lives in
-`migration_check/lean_inputs.py`; conformance calls frontend admission directly. `just build` uses this same runtime and exposes local development
+the verification application. It maps SQL to statement syntax; the Lean
+`migration-resolver` writes the application's generated modules, and the
+conformance runner resolves statement syntax itself. `just build` uses this same runtime and exposes local development
 paths as links: `.lake/build` and `packages/belay-sqlite/.lake/build` (the
 outputs of the two Lake packages), `lean`, and the parsers in `build/`; it does not rebuild Lean through Elan or Lake outside Nix. It never caches a user
 proof verdict or installed test result. Set
