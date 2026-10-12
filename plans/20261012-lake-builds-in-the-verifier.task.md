@@ -16,22 +16,26 @@ Evidence: [Lake cache experiment](../experiments/lake-cache/README.md),
 2. `prepare` builds the user's proofs project (ADR 0010 section 1): a Lake
    project with the user's own `lakefile.toml` and `lean-toolchain`. On every
    run it writes the generated modules into the project's `Generated/`
-   folder, checks that the project's copies of the approved contract are the
-   approved files, runs `lake build` in the project and exports the bundle.
+   folder, runs `lake build` in the project and exports the bundle. The
+   project reads the approved contract in place: its lakefile declares a
+   library whose `srcDir` is the approved folder.
    A command creates a proofs project with a starting `lakefile.toml` that
    requires the installed library package, and a `lean-toolchain`.
 3. `verify-bundle` compiles only approved and generated modules, in a
    workspace it generates itself (snapshotted sources, generated
    `lakefile.toml` and `lean-toolchain`, one `lake build`). It never reads the
    user's lakefile.
-4. The three phases of ADR 0010 section 10 are separate commands, and
-   `prepare` runs all three:
+4. The phases of ADR 0010 section 10 are separate commands, and `prepare`
+   runs all of them:
    - generate writes `Generated/` (including the `Check` module) and changes a
      file only when its content changes;
-   - check is `lake build` in the proofs project; the generated `Check` module
-     runs an audit command from the verifier library that fails the build on
-     `sorry`, an axiom outside the gate's allowlist, an option that turns off
-     checks, or an import that `verify-bundle` would not have;
+   - check is `lake build` of the candidate modules, after every edit;
+   - audit is `lake build` of the generated `Check` module, on demand (status
+     and before export). Its command from the verifier library fails the build
+     on `sorry`, an axiom outside the gate's allowlist, or an import that
+     `verify-bundle` would not have. The allowlist is shared with the gate,
+     not copied. Generation rejects options that turn off checks in the TOML
+     lakefile (`leanOptions`, `moreLeanArgs`);
    - export writes the bundle from the built project.
    The audit command is not part of the product trust base; `verify-bundle`
    stays the only verdict.
@@ -65,14 +69,15 @@ Evidence: [Lake cache experiment](../experiments/lake-cache/README.md),
   `Generated/` folder does not change the result of `verify-bundle`; a changed
   copy of an approved module is reported by `prepare` and rejected by
   `verify-bundle`.
-- Audit: `lake build` in a proofs project fails, naming the cause, for a
-  proof that uses `sorry`, one that uses an axiom outside the allowlist, a
-  build with `debug.skipKernelTC`, and a proof module that imports a package
-  the installation does not have. A correct proof builds green, and
+- Audit: building `Check` fails, naming the cause, for a proof that uses
+  `sorry`, one that uses an axiom outside the allowlist, and a proof module
+  that imports a module the installation does not have; generation refuses a
+  lakefile that sets `debug.skipKernelTC`. A correct proof builds green, and
   `verify-bundle` accepts its export.
-- Loop speed (recorded in the status file, not a test): generate once, then
-  edit `Proofs.lean` and run `lake build`, on the small and Atuin examples;
-  expected 0.2–0.4 s for each edit with a warm cache.
+- Loop speed (recorded in the status file, not a test): add a theorem to
+  `Proofs.lean` and build the candidate, on the small and Atuin examples; the
+  experiment measured 0.34–0.46 s for the check and 0.7–1.1 s more for the
+  audit.
 - Generation is stable: running generate twice changes no file and causes no
   rebuild.
 - Reuse: a second run of each command on the same inputs, in a new temporary
@@ -115,14 +120,22 @@ Evidence: [Lake cache experiment](../experiments/lake-cache/README.md),
 - The target statement already exists as `Generated.expected`
   (`migration_check/compile.py`, `EXPECTED_SOURCE`); proofs state
   `theorem migrationCorrect : Generated.expected`.
-- The allowlist and the target rules of the gate are in `GateCore.lean` and
-  `docs/kernel-gate.md`. The audit command should reuse the allowlist, not
-  copy it, so the local check and the gate cannot drift apart. The gate files
-  are in the product trust base (ADR 0011 section 6); the audit command is
-  not.
-- How a proofs project reaches the approved contract modules (copies inside
-  the project, or a library whose source folder is the contract folder) is
-  open; `prepare` must compare their bytes with the approved files either way.
+- The gate's axiom allowlist is written inline in `GateCore.lean`
+  (`[propext, Classical.choice, Quot.sound]`). It must become one named
+  declaration that the gate and the audit command both use, so they cannot
+  drift apart. The gate files are in the product trust base (ADR 0011
+  section 6); the audit command is not.
+- The audit command imports `Lean`, about 0.5 s to load; that is why it is not
+  in the per-edit check. It cannot see an option that a proof module sets for
+  itself (experiment finding 15).
+- A comment-only edit leaves the `.olean` byte-identical, and Lake then
+  rebuilds nothing that imports it; timing tests must change a declaration.
+- The installation's library package must declare `EngineeringExamples`, or
+  the examples must stop importing `SqliteVerifier.Demonstration`
+  (experiment finding 13).
+- `experiments/lake-cache/installation.nix`, `data_path.py` and
+  `check_loop.py` are working prototypes of the runtime packages, the data
+  path and the audit command.
 - A user's lakefile may contain anything, including `require` of other
   packages; `prepare` runs in the agent's trust domain and uses it as it is.
   What `verify-bundle` cannot accept (for example declarations from a package

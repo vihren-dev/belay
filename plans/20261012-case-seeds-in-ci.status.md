@@ -15,3 +15,6 @@ Relevant files: `build-support/tests.nix`, `tests/nix_suites.json`,
 - 2026-10-12: updated with ADR 0010: `verify` is deprecated (owner decision)
   and out of scope; `prepare` builds the user's proofs project; cases take the
   layout of a user's project.
+- 2026-10-12: experiment round two (`experiments/lake-cache/`, findings 11–16)
+  confirmed the design; the task records the prototypes and the measured
+  numbers.

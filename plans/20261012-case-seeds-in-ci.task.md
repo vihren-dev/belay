@@ -48,6 +48,9 @@ and [Lake builds in the verifier](20261012-lake-builds-in-the-verifier.task.md).
   only successful `main` jobs save.
 - `lake cache unstage` must run inside a generated workspace, because Lake
   stores mappings for each package (`experiments/lake-cache/seed_flow.py`).
+- `experiments/lake-cache/seed.nix` is a working prototype: a seed derivation
+  and a second derivation that unstages it and builds fresh copies with zero
+  compiled modules, in the Nix sandbox (experiment finding 16).
 - Read-only caches fail on a miss when the workspace enables the cache; the
   target needs a writable copy (experiment finding 8).
 - Lake's key includes module and package names, so seeds must be produced by

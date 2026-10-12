@@ -88,17 +88,20 @@ project: the *proofs project*, with the user's own `lakefile.toml` and
 - writes the generated modules (`SchemaInputs`, `SqlInputs`, `Generated`) from
   the SQL into a folder of the project that the tool owns, `Generated/`, on
   every run, so they are never stale and nobody runs a generator by hand;
-- checks that the project's copies of the approved contract modules are the
-  approved files, and checks the source rules of section 2;
+- checks the source rules of section 2. The project reads the approved
+  contract in place: its lakefile declares a library whose `srcDir` is the
+  approved folder, so there are no copies that could differ (experiment
+  finding 11);
 - runs `lake build` in the project, with the cache of section 4;
 - exports the bundle from the project's outputs.
 
 `prepare` runs in the agent's trust domain (section 4), so it uses the user's
-lakefile as it is. Section 10 splits its work into the three phases that the
-proof author uses: generate, check and export. The user can open the same project in an editor and run
-`lake build` without the verifier. A command that creates the project writes a
-starting `lakefile.toml` that requires the verifier's library package
-(section 3) and a `lean-toolchain` with the pinned toolchain.
+lakefile as it is. Section 10 splits its work into the phases that the proof
+author uses: generate, check, audit and export. The user can open the same
+project in an editor and run `lake build` without the verifier. A command that
+creates the project writes a starting `lakefile.toml` that requires the
+verifier's library package (section 3) and a `lean-toolchain` with the pinned
+toolchain.
 
 **`verify-bundle` builds its own workspace.** It writes a workspace that
 contains copies of the snapshotted approved sources and of the generated
@@ -138,8 +141,11 @@ The runtime build adds, for `SqliteVerifier` and `belaySqlite`:
   read-only, and Lake must not copy them into the cache.
 
 A user's proofs project requires the library package from the installation in
-the same way. A test builds a generated workspace and a proofs project against
-the installed runtime and requires that Lake compiles no library module.
+the same way. The package declares every library that examples and users may
+import; today the small example imports `SqliteVerifier.Demonstration` from
+`EngineeringExamples` (experiment finding 13). A test builds a generated
+workspace and a proofs project against the installed runtime and requires that
+Lake compiles no library module.
 
 ### 4. One cache for each trust domain
 
@@ -291,44 +297,59 @@ compiled all of mathlib for this reason. Our pinned toolchain reports the
 commit today. A test checks that `lean --version` reports the commit hash, so
 a Lean upgrade cannot silently turn every cache hit into a miss.
 
-### 10. The proof author's loop: generate, check, export
+### 10. The proof author's loop: generate, check, audit, export
 
-The person or agent who works on a proof needs three things. The second one
-runs after every edit and must be fast.
+The person or agent who works on a proof needs three things: generate Lean from
+the SQL, check the current proof, and export the proof data. The check runs
+after every edit and must be fast. Measured on Linux x86_64 with a warm cache
+([Lake cache experiment](../experiments/lake-cache/README.md), findings 14–15):
 
-| Phase | What it does | When | Measured or expected cost |
+| Phase | What it does | When | Cost |
 | --- | --- | --- | --- |
-| Generate | Writes `Generated/` from the SQL: `SchemaInputs`, `SqlInputs`, `Generated` with the target statement, and `Check` | When the SQL, the schema or the contract changes | about 0.1 s |
-| Check | `lake build` in the proofs project, or the editor's Lean server | After every proof edit | 0.2–0.4 s for a proof edit with a warm cache; per tactic in the editor |
-| Export | Writes the bundle for `verify-bundle` | When the proofs are done | about 0.5 s |
+| Generate | Writes `Generated/` from the SQL: `SchemaInputs`, `SqlInputs`, `Generated` with the target statement, and `Check` | When the SQL or the schema changes | about 0.1 s |
+| Check | `lake build` of the candidate modules, or the editor's Lean server | After every proof edit | 0.34–0.46 s; per tactic in the editor |
+| Audit | `lake build` of the generated `Check` module | On demand: the status command, and before export | 0.7–1.1 s more |
+| Export | Writes the bundle for `verify-bundle` | When the proofs are done | 0.4–0.5 s |
 
-`prepare` remains the command that runs all three. The phases are also
+`prepare` remains the command that runs all phases. The phases are also
 separate commands, so that the loop runs only the check.
 
 **The check is the Lean build.** The target is a generated declaration,
 `Generated.expected`, and the proof states `theorem migrationCorrect :
 Generated.expected`. Compiling the proof therefore checks it against the exact
-generated statement. The generated module `Check` imports the proofs and runs
-an audit command from the verifier library. The command fails the build when:
+generated statement, and Lean's kernel checks each declaration while it
+compiles.
+
+**The audit is a generated module.** `Check` imports the proofs and runs an
+audit command from the verifier library. The command fails the build, with a
+message that names the cause, when:
 
 - the theorem depends on `sorryAx` or on an axiom outside the allowlist of the
-  [kernel gate](kernel-gate.md);
-- the build ran with an option that turns off checks, for example
-  `debug.skipKernelTC`;
-- a proof module imports a module that is not in the verifier library, the
-  approved contract, the generated modules or the proofs project, because
+  [kernel gate](kernel-gate.md); the command and the gate use one shared
+  allowlist, which today is written inline in `GateCore.lean`;
+- the proofs import a module that is not in the verifier library, the approved
+  contract, the generated modules or the proofs project, because
   `verify-bundle` would not have it.
 
-A green `lake build` then means that the checks `verify-bundle` makes
-were made locally, except the ones in the table below.
+The audit command needs Lean's elaborator, so `Check` imports `Lean`, which
+takes about 0.5 s to load. That is why the audit is not part of the per-edit
+check.
 
-**Why it is fast:**
+**Options that turn off checks.** The audit cannot see an option such as
+`debug.skipKernelTC` that a proof module sets for itself: an option applies to
+the module that sets it, and the `.olean` does not record it. Generation
+rejects such options in the TOML lakefile (`leanOptions`, `moreLeanArgs`). An
+option set in a Lean source file can make the local check green; it cannot
+make a result verified, because `verify-bundle` replays every declaration in
+the kernel.
+
+**Why the check is fast:**
 
 - No process other than Lake and Lean runs: no Python, no export, no second
-  kernel run. Lean's kernel already checks each declaration while it compiles;
-  the independent replay is the verifier's job (export and `verify-bundle`).
+  kernel run. The independent replay is the verifier's job.
 - Lake's artifact cache supplies the library, the contract and every unchanged
-  module (section 4); a proof edit compiles one module.
+  module (section 4); a proof edit compiles one module. An edit that leaves a
+  module's `.olean` unchanged, such as a comment, rebuilds nothing after it.
 - Generation writes a file only when its content changes, so it never causes a
   rebuild by itself. A SQL change recompiles only the modules that import
   `SqlInputs`.
@@ -344,14 +365,15 @@ The time of the proof itself stays. In Atuin, `AtuinWitness` takes 2.4 s
 because it uses `decide` on large terms; the remedy is library lemmas that make
 common proofs cheap, not the build.
 
-**What the local check does not do,** and how the difference is kept small:
+**What the local check and audit do not do,** and how the difference is kept
+small:
 
 | `verify-bundle` also | Locally |
 | --- | --- |
 | Generates the target from the SQL itself | The same generator writes `Generated/`; a difference means a stale folder, and the next generation removes it |
-| Replays every declaration in an independent kernel | Lean's own kernel checked each declaration during compilation |
-| Accepts declarations only from the installed library and the approved contract | The audit command reports other imports |
-| Rejects changed copies of approved modules | Generation compares the project's copies with the approved files |
+| Replays every declaration in an independent kernel | Lean's own kernel checks each declaration during compilation, unless a source file turns that off (see above) |
+| Accepts declarations only from the installed library and the approved contract | The audit reports other imports |
+| Uses the approved contract | The proofs project reads the contract in place from the approved folder (section 1), so there is no copy that can differ |
 
 The local check decides nothing. A verified result comes only from
 `verify-bundle`, in the verifier's trust domain
@@ -365,9 +387,10 @@ product trust base; the kernel gates stay the only judges.
   each checked-in case once, in its seed.
 - The user keeps proofs in an ordinary Lake project: `lake build` and the
   editor's Lean server work on it without the verifier.
-- The proof author's loop is a Lean build of one module, about 0.2–0.4 s after a
-  proof edit instead of 1.4–2.0 s for `prepare` today (latency experiment);
-  most iterations need no build when the agent uses the language server. Expected
+- The proof author's loop is a Lean build of one module, 0.34–0.46 s after a
+  proof edit instead of 1.4–2.0 s for `prepare` today; the audit adds
+  0.7–1.1 s when it runs. Most iterations need no build when the agent uses
+  the language server. Expected
   acceptance time for Atuin: about 3.5 s instead of 6.6 s, most of it the
   bundle checker. Expected `prepare` time after a proof edit: under 1 s instead
   of about 2 s.
@@ -384,21 +407,38 @@ product trust base; the kernel gates stay the only judges.
   is compatible: hostile agents run `prepare` in their own trust domain, and
   `verify-bundle` keeps a cache that agents cannot write.
 
-## Not yet verified
+## Evidence
 
-The experiment did not cover these. Each needs evidence before this ADR is
-accepted:
+The [Lake cache experiment](../experiments/lake-cache/README.md) checked each
+part of this decision on Linux x86_64:
 
-- the exporter and the bundle checker reading Lake's outputs;
-- `prepare` on a proofs project with the user's own lakefile, and a proofs
-  project that requires the library package of an installation;
-- the generated `Check` module and the audit command, and the time of an edit
-  and check loop on the Atuin example;
-- mapping Lake failures to per-module diagnostics;
-- macOS;
-- cache growth over many contracts;
-- the seed derivation inside the Nix sandbox (the `stage`/`unstage` flow was
-  checked outside Nix with `experiments/lake-cache/seed_flow.py`).
+- reuse across workspaces, cutoff on unchanged outputs, read-only caches, and
+  `stage`/`unstage` (findings 1–10);
+- an installation whose libraries are Lake packages, a user's proofs project
+  with its own lakefile that requires it and reads the contract in place, and
+  the installed exporter and bundle checker on Lake's outputs: VERIFIED for
+  the small and Atuin examples, VIOLATED for the refutation (findings 11–13);
+- the per-edit check and the audit command, with its failure cases
+  (findings 14–15);
+- the seed in the Nix sandbox: fresh workspaces built from an unstaged seed
+  compile nothing (finding 16).
+
+These are left to the implementation tasks, because they carry no design risk:
+mapping Lake failures to per-module diagnostics; macOS, which the tasks' tests
+cover on the macOS CI runner; and the cleanup of caches (see "Decisions
+requested").
+
+## Decisions requested
+
+1. **Reuse within a trust domain (section 5).** This replaces ADR 0003's
+   per-closure review. The remaining risk: approved Lean code that reads the
+   clock, the environment or undeclared files while it compiles can make a
+   cached output differ from a fresh one; `--no-cache` avoids it.
+2. **Cache options.** `--cache DIR`, `--no-cache` and a per-user default
+   location, under today's command name, or left to the rename of the command
+   line tool.
+3. **Cache cleanup.** A contract adds about 0.25–3 MB to a cache. Proposed: no
+   automatic limit; the documentation names `lake cache clean`.
 
 ## Plan
 
@@ -411,7 +451,7 @@ dependencies:
    when `prepare` can build it.
 2. [Lake builds in the verifier](../plans/20261012-lake-builds-in-the-verifier.task.md):
    runtime library packages (section 3), `prepare` on a proofs project with
-   the generate, check and export phases (sections 1, 10), `verify-bundle` on
+   the generate, check, audit and export phases (sections 1, 10), `verify-bundle` on
    its own workspace (sections 1, 2, 6), the cache options
    (section 4), and removal of the stage store (section 5). The cases become
    proofs projects.

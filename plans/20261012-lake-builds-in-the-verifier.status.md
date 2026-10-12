@@ -22,3 +22,6 @@ Relevant files: `migration_check/compile.py`, `migration_check/contract.py`,
 - 2026-10-12: ADR 0010 section 10 added: generate, check and export phases;
   the check is `lake build` with a generated `Check` module and an audit
   command. Outcome item 4 and the audit and loop-speed tests added.
+- 2026-10-12: experiment round two (`experiments/lake-cache/`, findings 11–16)
+  confirmed the design; the task records the prototypes and the measured
+  numbers.

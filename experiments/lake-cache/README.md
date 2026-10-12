@@ -16,6 +16,20 @@ nix develop path:./nix -c python3 experiments/lake-cache/lake_bench.py build/lak
 nix develop path:./nix -c python3 experiments/lake-cache/seed_flow.py build/lake-cache
 ```
 
+The second round (2026-10-12, after `main` was merged at `5f2a3a52`) uses a real
+installation instead of the shim:
+
+```sh
+nix-build experiments/lake-cache/installation.nix --out-link build/lake-installation \
+  --extra-experimental-features 'nix-command flakes'
+nix develop path:./nix -c just build
+nix develop path:./nix -c python3 experiments/lake-cache/data_path.py build/lake-exp/dp build/lake-installation
+nix develop path:./nix -c python3 experiments/lake-cache/check_loop.py build/lake-exp/dp build/lake-installation 5
+nix-build experiments/lake-cache/seed.nix -A check --arg work ./build/lake-exp/dp \
+  --argstr installation "$(readlink -f build/lake-installation)" --option sandbox true \
+  --extra-experimental-features 'nix-command flakes'
+```
+
 `lake_bench.py` writes one TOML-only workspace per scenario, in a new directory:
 a `lakefile.toml` (data, not Lean code) with one library whose roots are the
 approved, generated and candidate modules, plus copies of those sources. The
@@ -88,6 +102,64 @@ outside these tables and do not change.
     instead of the commit gets different keys and no cache hits (see
     [ledger/ledger#3270](https://github.com/ledger/ledger/pull/3270)). Ours
     reports the commit.
+
+## Second round: the data path on Lake outputs
+
+Linux x86_64, 2026-10-12. Raw results: `results-round2-Linux-x86_64.jsonl`.
+
+`installation.nix` builds an installation whose libraries are Lake packages
+(ADR 0010 section 3) from the repository's own `leanRuntime` and
+`modelPackage`: `ir` kept, library-only lakefiles, `enableArtifactCache = false`.
+
+11. **A user's proofs project builds against the installation.** The project has
+    its own `lakefile.toml` that requires the installed library by path. Lake
+    replays the library (0 library compiles). The contract library's `srcDir`
+    points at the approved folder outside the project, and Lake reads the
+    contract there in place, so the project needs no copies.
+12. **The installed exporter and bundle checker accept Lake's outputs.**
+    `data_path.py` builds the proofs project (cache A), exports, builds
+    `verify-bundle`'s own workspace (approved and generated modules only, cache
+    B) and runs the installed checker on it:
+
+    | Case | Proofs build (compiled) | Export | Verifier build (compiled) | Check | Checker exit |
+    | --- | --- | --- | --- | --- | --- |
+    | small | 1.04 s (7) | 0.38 s | 0.44 s (3) | 0.44 s | 0, VERIFIED |
+    | refutation | 0.84 s (4) | 0.38 s | 0.15 s (0) | 0.49 s | 2, VIOLATED |
+    | Atuin | 4.65 s (14) | 0.50 s | 2.45 s (7) | 4.10 s | 0, VERIFIED |
+
+    The refutation shares the small example's contract, so both of its builds
+    took it from the caches.
+13. **The library package must declare every library the examples import.**
+    The small example's proof imports `SqliteVerifier.Demonstration`, which is
+    in `EngineeringExamples`, not in the `SqliteVerifier` library. Lake found
+    the `.olean` in the package's output folder anyway; a real package declares
+    the library, or the examples stop importing it.
+14. **The proof loop without the audit is 0.34–0.46 s; the audit adds 0.7–1.1 s.**
+    `check_loop.py` adds a new small theorem to `Proofs.lean` for each edit (a
+    comment leaves the `.olean` unchanged, and Lake then skips everything that
+    imports it):
+
+    | Case | `lake build Candidate` | `lake build Candidate Check` |
+    | --- | --- | --- |
+    | small | 0.35 s | 1.05 s |
+    | refutation | 0.34 s | 1.24 s |
+    | Atuin | 0.46 s | 1.56 s |
+
+    The audit command needs Lean's elaborator, so `Check` imports `Lean`, which
+    costs about 0.5 s to load (the latency experiment measured 0.67 s for a
+    compile importing `Lean` and `SqliteVerifier`, against 0.17 s without
+    `Lean`).
+15. **The audit catches three of four failures.** It fails the build with a
+    clear message for `sorry` (`sorryAx`), a custom axiom, and an import of a
+    module the installation does not have (`Lake`). It does not see
+    `set_option debug.skipKernelTC true` in `Proofs.lean`: options apply to the
+    module that sets them, and the `.olean` does not record them. The proof
+    then builds green locally; `verify-bundle`'s kernel replay still checks
+    every declaration.
+16. **The seed works in the Nix sandbox.** `seed.nix` builds each case's proofs
+    project and verify-bundle workspace with one cache, stages them, and a
+    second derivation unstages them into a writable cache and builds fresh
+    copies: 0 modules compiled for all six workspaces, without network.
 
 ## Not covered
 
