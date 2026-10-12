@@ -200,7 +200,7 @@ in {
     inherit runtime;
   };
   kernel = suite "kernel" {
-    inputs = [ (fs.fileFilter (file: file.hasExt "lean") (root + /tests/kernel_gate)) ];
+    inputs = [ (fs.fileFilter (file: file.hasExt "lean") (root + /tests/kernel_gate)) (root + /tests/kernel_gate_support.py) ];
     runtime = leanRoot;
   };
   model = suite "model" {

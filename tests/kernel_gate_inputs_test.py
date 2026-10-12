@@ -6,7 +6,7 @@ rejects a compiled generated declaration, or a record, whose resolution differs.
 
 import pytest
 
-from tests.kernel_gate_test import RECORD, KernelCase, compiled_kernel, kernel, source  # noqa: F401  (fixtures)
+from tests.kernel_gate_support import RECORD, KernelCase, compiled_kernel, kernel, source  # noqa: F401  (fixtures)
 
 pytestmark = [pytest.mark.integration, pytest.mark.kernel, pytest.mark.requires_lean]
 
