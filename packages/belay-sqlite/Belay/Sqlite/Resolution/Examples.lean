@@ -117,11 +117,23 @@ def tableT : Catalog := catalogOf (migration [] [.createTable "t" [column "a", c
   == [.prepareError (.noSuchColumn "z"), .prepareError (.noSuchColumn "z"), .update 0 [(0, .text [111])] (some (1, .integer 7)) []]
 #guard restricted (migration tableT [.update "t" [("a", .null)] (some (.equals (.identifier "a" false) (.numeric "1")))])
 
+/-- A table with keys over integer-comparable columns: a primary key, a UNIQUE
+constraint, a unique index and an index that is not unique. -/
+def keyed : Catalog := catalogOf (schema [.createTable "k" [column "a" (some "INTEGER"), column "b" (some "NUMERIC"),
+    column "c" (some "BIGINT"), column "d"] [.primaryKey ["c"], .unique ["b", "a"]],
+  .createIndex "ka" true "k" ["a"], .createIndex "kb" false "k" ["b"]])
+
 -- Writes carry the unique keys: the primary key, UNIQUE constraints, then unique indexes.
-#guard statements (migration (catalogOf (schema [.createTable "k" [column "a", column "b", column "c"]
-      [.primaryKey ["c"], .unique ["b", "a"]], .createIndex "ka" true "k" ["a"], .createIndex "kb" false "k" ["b"]]))
-    [.insert "k" none [[.null, .null, .null]], .update "k" [("a", .null)] none])
-  == [.insert 0 [[.null, .null, .null]] [[2], [1, 0], [0]], .update 0 [(0, .null)] none [[2], [1, 0], [0]]]
+#guard statements (migration keyed [.insert "k" none [[.null, .null, .null, .null]], .update "k" [("a", .null)] none])
+  == [.insert 0 [[.null, .null, .null, .null]] [[2], [1, 0], [0]], .update 0 [(0, .null)] none [[2], [1, 0], [0]]]
+
+-- Key domain: key values are integers or NULL, and key columns are integer-comparable.
+#guard migration keyed [.insert "k" (some ["a", "d"]) [[.null, .null], [.string [120], .null]]]
+  matches .restricted { statement := 0, path := [2, 1], .. }
+#guard migration keyed [.update "k" [("d", .string [49]), ("c", .string [120])] none] matches .restricted { path := [1], .. }
+#guard !restricted (migration keyed [.update "k" [("d", .string [49])] none])
+#guard migration (catalogOf (schema [.createTable "s" [column "a"] [.unique ["a"]]])) [.insert "s" none [[.null]]]
+  matches .restricted { path := [], .. }
 
 -- New tables and indexes take the next catalog position.
 #guard statements (schema [.createTable "t" [column "a"] [], .createIndex "i" false "t" ["a"], .createTable "u" [column "a"] []])

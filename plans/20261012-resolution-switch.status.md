@@ -46,7 +46,16 @@ Relevant files: `belay/sqlite/`, `migration_check/`,
   fixed in the next refactor: the names are now `resolveSchemaAndScript`,
   `ResolvedScript`, `ScriptIssue` and `ScriptRecord` in module
   `Resolution/SchemaScript`, `scriptRecordVersion` names the version, and the
-  build-time check elaborates both complete generated modules.
+  build-time check elaborates both complete generated modules. Two more
+  rounds (`601b4835`, `0b7cde81`) asked for Lean's diagnostics in the check's
+  errors and a test of them; fixed in `0b7cde81`, `e7474a7e` and `d1eebfba`,
+  whose review has no findings.
+- 2026-10-12: the key-domain checks of `sql_admission.py` become model
+  restrictions in `resolve` (`Resolution/KeyDomain`), as the ADR's cleanup list
+  says: a write to a table with a unique key over a column that is not
+  integer-comparable, and a write of a value other than an integer or NULL
+  into a key column. Without them, such a script would fail its proof instead
+  of being unsupported.
 
 ## Remaining
 

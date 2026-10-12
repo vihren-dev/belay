@@ -28,8 +28,8 @@ def sampleRecord : ScriptRecord where
       column "at" (some "TIMESTAMP") [.default (.currentTime "CURRENT_TIMESTAMP")], column "b" none]
       [.unique ["b"]], .createIndex "by_at" true "Ünit \"q\"" ["at"]]
   script := [.begin, .addColumn "ÜNIT \"Q\"" (column "n" (some "TEXT")),
-    .insert "Ünit \"q\"" (some ["id", "at", "b", "n"]) [[.negate (.numeric "9"), .null, .blob [0, 255], .string [104, 105]]],
-    .update "Ünit \"q\"" [("n", .null)] (some (.equals (.identifier "id" false) (.numeric "0x10"))),
+    .insert "Ünit \"q\"" (some ["id", "at", "b", "n"]) [[.negate (.numeric "9"), .null, .null, .blob [0, 255]]],
+    .update "Ünit \"q\"" [("n", .string [104, 105])] (some (.equals (.identifier "id" false) (.numeric "0x10"))),
     .insert "missing" none [[.null]], .commit]
 
 /-- The resolved sample, or nothing when it does not resolve. -/
