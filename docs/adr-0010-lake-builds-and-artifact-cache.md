@@ -369,6 +369,10 @@ The removal of `verify` is a separate change and not part of this plan.
   across CI runs, but without signing and with a 64-bit key they are safe only
   inside one trust domain. The Nix cache, saved only from `main`, already
   does this.
-- **Run Lake on the user's own project.** Rejected: a `lakefile.lean` is Lean
-  code, and the verifier must not run it. The verifier also needs its own
-  snapshot and role rules.
+- **`verify-bundle` runs Lake on the user's own project.** Rejected: a user's
+  lakefile can run code (`lakefile.lean`, or packages that `require` fetches)
+  and can load native code or change compiler options, and `verify-bundle`
+  runs in the verifier's trust domain. It also needs its own snapshot and role
+  rules. `prepare` uses the user's project (section 1) because it runs in the
+  agent's trust domain, where the user's own code is already trusted, and the
+  bundle checker does not depend on how the bundle was built.
