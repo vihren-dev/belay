@@ -21,3 +21,8 @@ Relevant files: `conftest.py`, `tests/cli_test.py`, `tests/bundle_test.py`, `tes
   ready. CI times are recorded from the first pull request (section 11).
 - 2026-10-12: the case file is `belay.toml`, the tool's project configuration
   file, with test-only data in a `[test]` table (owner decision).
+- 2026-10-12: started after PR #76 merged. The task's test list said that
+  paths leaving the case folder are refused, which contradicts item 6 (no Lean
+  file moves) because three cases share `examples/approved/`. The owner
+  decided: paths may leave the case folder but must stay inside the folder
+  that holds the cases. The task text says so now.
