@@ -11,7 +11,7 @@ Related: [ADR 0002](adr-0002-compile-project-cache.md),
 
 ## Context
 
-`verify`, `prepare` and `verify-bundle` compile Lean modules themselves. For each module,
+The verifier's commands compile Lean modules themselves. For each module,
 the verifier starts one `lean` process. It also runs `lean --deps-json` two
 times for each module: once to discover sources and once more before each
 compile. Modules compile one after another, also when they do not import each
@@ -25,6 +25,16 @@ every command compiles the same approved contract again on every run, and CI
 compiles the same example contracts again in every test. Most of these CI
 compiles come from tests of source `verify` (`cli_test.py`, `atuin_cli_test.py`
 and others); fewer tests call `prepare` and `verify-bundle`.
+
+The owner decided on 2026-10-12 to deprecate `verify` in favour of `prepare` and
+`verify-bundle`. This ADR covers only those two commands. `verify` keeps its
+current path until it is removed, in a separate change; its tests then move to
+the two commands and get the benefits of this decision.
+
+A user is likely to keep their Lean files as a Lean project with its own
+`lakefile.toml`, and to edit proofs in an editor with the Lean language server.
+Today `prepare` takes each file as a separate flag and builds them in a
+workspace of its own.
 
 The repository has Lean code of different kinds, and each kind compiles in its
 own way today:
@@ -69,39 +79,51 @@ there, so Lake decides that every `SqliteVerifier` module is not built.
 
 ## Decision
 
-### 1. Lake compiles every verification workspace
+### 1. Lake builds the user's proofs project and the verifier's workspace
 
-`verify`, `prepare` and `verify-bundle` write a workspace and run `lake build`
-in it. The workspace contains:
+**`prepare` builds the user's project.** The candidate's Lean files are a Lake
+project: the *proofs project*, with the user's own `lakefile.toml` and
+`lean-toolchain`. `prepare`:
 
-- copies of the snapshotted approved, generated and (for `verify` and
-  `prepare`) candidate sources;
-- a `lean-toolchain` file with the pinned toolchain;
-- a `lakefile.toml` that the verifier generates. It declares one library with
-  the workspace modules as roots, enables the artifact cache, sets
-  `restoreAllArtifacts = true`, and requires the runtime's library package by
-  path.
+- writes the generated modules (`SchemaInputs`, `SqlInputs`, `Generated`) from
+  the SQL into a folder of the project that the tool owns, `Generated/`, on
+  every run, so they are never stale and nobody runs a generator by hand;
+- checks that the project's copies of the approved contract modules are the
+  approved files, and checks the source rules of section 2;
+- runs `lake build` in the project, with the cache of section 4;
+- exports the bundle from the project's outputs.
 
-The verifier never runs a `lakefile.lean` and never reads a lakefile from a
-user. TOML is data; Lake does not execute it.
+`prepare` runs in the agent's trust domain (section 4), so it uses the user's
+lakefile as it is. The user can open the same project in an editor and run
+`lake build` without the verifier. A command that creates the project writes a
+starting `lakefile.toml` that requires the verifier's library package
+(section 3) and a `lean-toolchain` with the pinned toolchain.
 
-`verify-bundle` builds only the approved and generated modules. It never
-compiles candidate source; this keeps the ADR 0003 rule that acceptance does not
-accept candidate `.olean` files.
+**`verify-bundle` builds its own workspace.** It writes a workspace that
+contains copies of the snapshotted approved sources and of the generated
+sources it computes itself, a generated `lakefile.toml` and a
+`lean-toolchain`, and runs one `lake build`. Its lakefile declares one library
+with these modules as roots, enables the artifact cache, sets
+`restoreAllArtifacts = true`, and requires the runtime's library package by
+path. It never reads the user's lakefile, never runs a `lakefile.lean`, and
+never compiles candidate source; this keeps the ADR 0003 rule that acceptance
+does not accept candidate `.olean` files.
 
-Source `verify` builds the approved, generated and candidate modules in one
-workspace. Lake writes all outputs into one directory, and the kernel gate takes
-trusted and candidate outputs in separate directories. The verifier knows the
-role of each module, so it copies each output into the directory of its role
-before it starts the gate.
+The generated files in the user's project are a convenience for writing
+proofs. They cannot change what is checked: the bundle checker computes the
+generated declarations itself and rejects a difference (ADR 0003 P3,
+ADR 0008).
 
 ### 2. The verifier keeps its source rules
 
-Lake does not know the roles of modules. Before Lake runs, the verifier checks
-the import headers as today: approved modules must not import candidate or
-reserved modules, and a candidate module must not have the name of an approved
-or library module. The verifier reads all headers with one `lean --deps-json`
-call for each discovery round, not one call for each module.
+Lake does not know the roles of modules. `prepare` checks the import headers
+before Lake runs, so the agent learns about a violation early; `verify-bundle`
+checks the approved closure, and its checker rejects exported declarations that
+differ from trusted ones. The rules are those of today: approved modules must
+not import candidate or reserved modules, and a candidate module must not have
+the name of an approved or library module. The verifier reads all headers with
+one `lean --deps-json` call for each discovery round, not one call for each
+module.
 
 ### 3. The runtime ships Lake library packages
 
@@ -114,8 +136,9 @@ The runtime build adds, for `SqliteVerifier` and `belaySqlite`:
 - `enableArtifactCache = false` in both library packages. Library outputs are
   read-only, and Lake must not copy them into the cache.
 
-A test builds a generated workspace against the installed runtime and requires
-that Lake compiles no library module.
+A user's proofs project requires the library package from the installation in
+the same way. A test builds a generated workspace and a proofs project against
+the installed runtime and requires that Lake compiles no library module.
 
 ### 4. One cache for each trust domain
 
@@ -127,8 +150,7 @@ cache is only as trusted as every process that can write to it.
 
 - **Same entity runs the commands.** Examples: a developer's
   machine, a CI job, an operator who runs the agent and the verifier under the
-  same control. `verify`, `prepare` and `verify-bundle` can use the same cache
-freely.
+  same control. `prepare` and `verify-bundle` can use the same cache freely.
   `verify-bundle` then finds the contract that `prepare` compiled, and the
   reverse.
 - **Separate environments.** In production, `verify-bundle` will probably run
@@ -183,15 +205,18 @@ and its outputs are in the cache that the tests use:
    derivations of the packages it requires. The output is the package's Lake
    workspace: sources, lakefile, and `.lake/build` with `.olean`, `.trace` and
    `ir` files. Lake replays such a workspace instead of compiling it (section 3).
-2. **Cases.** A verification case is a folder that contains a manifest,
-   `case.toml`. The manifest names the schema, the contract directory, the
-   migration, the candidate modules, the profile and the expected status.
-   Checked-in cases are in `examples/<case>/`; cases used only by tests are in
-   `tests/cases/<case>/`. A case is not a Lake package: its `SchemaInputs` and
-   `SqlInputs` exist only after the verifier generates them from the SQL, and
-   Lake's key contains the module and package names that the verifier's
-   generator chooses. So a case is built by running the verifier on it, with
-   the cache in a temporary directory, followed by `lake cache stage`.
+2. **Cases.** A verification case has the layout of a user's project, so the
+   tests use the input format that users use. A case folder contains a
+   manifest, `case.toml`, and a proofs project (section 1). The manifest names
+   the schema, the contract directory, the migration and the profile, and, for
+   tests only, the expected status. When the product's project configuration
+   file is decided, it replaces the first part of the manifest. Checked-in cases
+   are in `examples/<case>/`; cases used only by tests are in
+   `tests/cases/<case>/`. A plain `lake build` cannot build a case: its
+   generated modules exist only after the verifier writes them, and the keys of
+   `verify-bundle`'s workspace contain the package and module names that the
+   verifier chooses. So a case is built by running `prepare` and then
+   `verify-bundle` on it with one cache, followed by `lake cache stage`.
 3. **Tests.** Tests take their cases from the manifests, not from paths in the
    test code, and use the cache from stage 2.
 
@@ -201,7 +226,7 @@ file of the repository in exactly one category, by its path:
 | Category | Path rule | Built in |
 | --- | --- | --- |
 | Package | under `packages/<name>/` | stage 1 |
-| Case | under a folder with a `case.toml` | stage 2 |
+| Case | under a case folder (with a `case.toml`) | stage 2 |
 | Direct fixture | listed in the test, for example `tests/kernel_gate/` | by its test |
 | Excluded | listed in the test, for example `experiments/` | not built by CI |
 
@@ -218,16 +243,19 @@ target's result depend on the order of the targets. Instead, Nix builds the
 cache once and gives a copy to each target:
 
 - **Seed derivations.** Nix reads the case folders (`builtins.readDir`) and
-  makes one seed derivation for each case (stage 2). Seeds build in parallel,
-  and a change to one case rebuilds only its seed. The staged outputs are
-  small: 40 KB for the small example, 188 KB for Atuin.
-- **Test targets.** Each target that runs the verifier takes the seeds of the
-  cases it uses. At start, it runs `lake cache unstage` for each seed into a
-  writable cache in its `$TMPDIR` (inside a generated workspace, because Lake
-  stores mappings for each package) and passes that cache to the verifier. A
-  test that uses a case as it is compiles nothing. A test that changes its
-  inputs compiles only the changed modules, and later tests in the same target
-  reuse them.
+  makes one seed derivation for each case (stage 2). A seed runs `prepare` and
+  `verify-bundle`, so it holds the outputs of both the proofs project and the
+  verifier's workspace. Seeds build in parallel, and a change to one case
+  rebuilds only its seed. The staged outputs are small: 40 KB for the small
+  example, 188 KB for Atuin.
+- **Test targets.** Each target that runs `prepare` or `verify-bundle` takes
+  the seeds of the cases it uses. Tests of `verify` take none; they move to the
+  two commands when `verify` is removed. At start, a target runs `lake cache
+  unstage` for each seed into a writable cache in its `$TMPDIR` (inside a
+  generated workspace, because Lake stores mappings for each package) and
+  passes that cache to the verifier. A test that uses a case as it is compiles
+  nothing. A test that changes its inputs compiles only the changed modules,
+  and later tests in the same target reuse them.
 - **Fixture environment.** Installed-runtime tests give each child a clean
   environment (`runtime_environment` in `conftest.py`). The cache setting is
   added there; a variable set on the derivation does not reach the verifier.
@@ -264,15 +292,17 @@ a Lean upgrade cannot silently turn every cache hit into a miss.
 
 ## Consequences
 
-- `verify`, `prepare` and `verify-bundle` stop compiling unchanged modules.
-  CI compiles each checked-in case once, in its seed. Expected
+- `prepare` and `verify-bundle` stop compiling unchanged modules. CI compiles
+  each checked-in case once, in its seed.
+- The user keeps proofs in an ordinary Lake project: `lake build` and the
+  editor's Lean server work on it without the verifier. Expected
   acceptance time for Atuin: about 3.5 s instead of 6.6 s, most of it the
   bundle checker. Expected `prepare` time after a proof edit: under 1 s instead
   of about 2 s.
 - The verifier no longer runs `lean --deps-json` before each compile.
-- Tests name cases through manifests. Adding a case means adding a folder with
-  a `case.toml`; adding any other Lean file means placing it in a category of
-  section 7.
+- Tests name cases through their folders. Adding a case means adding a folder
+  with a `case.toml` and a proofs project; adding any other Lean file means
+  placing it in a category of section 7.
 - Lake becomes part of the trusted implementation. Its cache format and
   behavior can change with each Lean release, and the project follows each
   stable release (see "Lean maintenance" in [CLAUDE.md](../CLAUDE.md)). An
@@ -287,8 +317,9 @@ a Lean upgrade cannot silently turn every cache hit into a miss.
 The experiment did not cover these. Each needs evidence before this ADR is
 accepted:
 
-- the exporter, the bundle checker and the kernel gate reading Lake's
-  outputs, including the split of `verify` outputs by role;
+- the exporter and the bundle checker reading Lake's outputs;
+- `prepare` on a proofs project with the user's own lakefile, and a proofs
+  project that requires the library package of an installation;
 - mapping Lake failures to per-module diagnostics;
 - macOS;
 - cache growth over many contracts;
@@ -300,19 +331,23 @@ accepted:
 Each step is a separate task with its own tests; the order follows the
 dependencies:
 
-1. [Case manifests and the Lean file categories](../plans/20261012-case-manifests-and-lean-categories.task.md):
-   `case.toml` for each case, tests that read them, and the coverage test of
-   section 7. No files move.
+1. [Case folders and the Lean file categories](../plans/20261012-case-manifests-and-lean-categories.task.md):
+   each case gets a `case.toml`, tests read them, and the coverage test of
+   section 7. The candidate files move into a proofs folder only in step 2,
+   when `prepare` can build it.
 2. [Lake builds in the verifier](../plans/20261012-lake-builds-in-the-verifier.task.md):
-   runtime library packages (section 3), Lake workspaces for all three
-   commands (sections 1, 2, 6), the cache options (section 4), and removal of
-   the stage store (section 5).
+   runtime library packages (section 3), `prepare` on a proofs project and
+   `verify-bundle` on its own workspace (sections 1, 2, 6), the cache options
+   (section 4), and removal of the stage store (section 5). The cases become
+   proofs projects.
 3. [Case seeds in CI](../plans/20261012-case-seeds-in-ci.task.md): seed
    derivations and their use in the test targets (section 8), and the
    toolchain commit check (section 9).
 4. [Verifier library as a package](../plans/20261012-verifier-library-package.task.md):
    the verifier library, the test-only conformance library and the
    documentation tool move under `packages/` (stage 1 of section 7).
+
+The removal of `verify` is a separate change and not part of this plan.
 
 ## Alternatives considered
 

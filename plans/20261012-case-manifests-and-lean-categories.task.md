@@ -1,4 +1,4 @@
-# Case manifests and Lean file categories
+# Case folders and Lean file categories
 
 Created 2026-10-12. Status: NOT STARTED.
 Decision: [ADR 0010](../docs/adr-0010-lake-builds-and-artifact-cache.md),
@@ -9,8 +9,13 @@ section 7. Proposed; this task starts after the owner accepts the ADR.
 1. Every verification case is a folder with a manifest, `case.toml`. The
    manifest names the schema, the contract directory, the migration, the
    candidate modules (`NextInterpretation`, `Proofs`, and any helper modules),
-   the SQLite profile, the approval baseline when there is one, and the
-   expected status (`VERIFIED`, `VIOLATED`, ...).
+   the SQLite profile, the approval baseline when there is one, and, for tests
+   only, the expected status (`VERIFIED`, `VIOLATED`, ...). The case folder
+   has the layout of a user's project (ADR 0010 section 7): in the task
+   [Lake builds in the verifier](20261012-lake-builds-in-the-verifier.task.md),
+   its candidate files become a proofs project, and the product's project
+   configuration file later replaces the first part of the manifest. The
+   manifest format should make both changes small.
 2. Checked-in cases keep their places in `examples/`. Cases used only by
    tests are in `tests/cases/<case>/`. Today there are six checked-in cases:
    `add_column_then_table`, `table_then_column`, `missing_required_column`
@@ -70,3 +75,6 @@ section 7. Proposed; this task starts after the owner accepts the ADR.
   `experiments/adr-0003-latency/bench/Main.lean`.
 - The manifest format is TOML: Python reads it with `tomllib`, and Nix can read
   it with `builtins.fromTOML` for the seed task.
+- `verify` is deprecated in favour of `prepare` and `verify-bundle` (owner
+  decision, 2026-10-12). Tests of `verify` still read the manifests until they
+  move to the two commands, in a separate change.

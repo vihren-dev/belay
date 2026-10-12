@@ -3,19 +3,21 @@
 Created 2026-10-12. Status: NOT STARTED.
 Decision: [ADR 0010](../docs/adr-0010-lake-builds-and-artifact-cache.md),
 sections 8 and 9. Proposed; this task starts after the owner accepts the ADR.
-Depends on: [case manifests](20261012-case-manifests-and-lean-categories.task.md)
+Depends on: [case folders](20261012-case-manifests-and-lean-categories.task.md)
 and [Lake builds in the verifier](20261012-lake-builds-in-the-verifier.task.md).
 
 ## Outcome
 
 1. Nix has one seed derivation for each case folder, found from the folders
-   and their `case.toml` files, not from a list in a Nix file. A seed runs the
-   installed verifier on its case with a cache in a temporary directory, then
-   `lake cache stage` into its output.
-2. Each Nix test target that runs the verifier takes the seeds of the cases its
-   tests use. Before its tests start, it unstages them into one writable cache
-   in its `$TMPDIR`. The tests pass that cache to the verifier through the
-   child environment (`runtime_environment` in `conftest.py`).
+   and their `case.toml` files, not from a list in a Nix file. A seed runs
+   `prepare` and then `verify-bundle` on its case with one cache in a temporary
+   directory, then `lake cache stage` into its output, so it holds the outputs
+   of both the proofs project and `verify-bundle`'s workspace.
+2. Each Nix test target that runs `prepare` or `verify-bundle` takes the seeds
+   of the cases its tests use. Tests of the deprecated `verify` take none.
+   Before its tests start, it unstages them into one writable cache in its
+   `$TMPDIR`. The tests pass that cache to the verifier through the child
+   environment (`runtime_environment` in `conftest.py`).
 3. A test that runs a case unchanged compiles no Lean module. A test that
    changes a case compiles only the changed modules.
 4. A named set of tests runs with `--no-cache` and ignores the seeds.
@@ -49,7 +51,7 @@ and [Lake builds in the verifier](20261012-lake-builds-in-the-verifier.task.md).
 - Read-only caches fail on a miss when the workspace enables the cache; the
   target needs a writable copy (experiment finding 8).
 - Lake's key includes module and package names, so seeds must be produced by
-  the verifier's own workspace generator, not by a hand-written workspace.
+  the verifier's own commands, not by a hand-written workspace.
 - A seed depends on the runtime and the Python code that generates
   `SchemaInputs` and `SqlInputs`; targets already rebuild on those changes.
 - The kernel suite compiles its fixtures directly (`tests/kernel_gate`); it

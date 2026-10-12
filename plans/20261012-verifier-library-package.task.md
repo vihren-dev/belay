@@ -3,7 +3,7 @@
 Created 2026-10-12. Status: NOT STARTED.
 Decision: [ADR 0010](../docs/adr-0010-lake-builds-and-artifact-cache.md),
 section 7, stage 1. Proposed; this task starts after the owner accepts the ADR.
-Depends on: [case manifests](20261012-case-manifests-and-lean-categories.task.md)
+Depends on: [case folders](20261012-case-manifests-and-lean-categories.task.md)
 and [Lake builds in the verifier](20261012-lake-builds-in-the-verifier.task.md).
 
 ## Outcome

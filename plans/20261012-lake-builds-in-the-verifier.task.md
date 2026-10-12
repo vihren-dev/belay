@@ -13,34 +13,50 @@ Evidence: [Lake cache experiment](../experiments/lake-cache/README.md),
    no `lean4export`), `enableArtifactCache = false`, and complete `.lake/build`
    outputs including `ir`. A generated workspace that requires them compiles no
    library module.
-2. `verify`, `prepare` and `verify-bundle` compile through a generated
-   workspace: snapshotted sources, a generated `lakefile.toml` and
-   `lean-toolchain`, and one `lake build`. `verify-bundle` builds only approved
-   and generated modules. `verify` gives the kernel gate trusted and candidate
-   outputs in separate directories, as today.
-3. The source rules of today stay: approved modules cannot import candidate or
+2. `prepare` builds the user's proofs project (ADR 0010 section 1): a Lake
+   project with the user's own `lakefile.toml` and `lean-toolchain`. On every
+   run it writes the generated modules into the project's `Generated/`
+   folder, checks that the project's copies of the approved contract are the
+   approved files, runs `lake build` in the project and exports the bundle.
+   A command creates a proofs project with a starting `lakefile.toml` that
+   requires the installed library package, and a `lean-toolchain`.
+3. `verify-bundle` compiles only approved and generated modules, in a
+   workspace it generates itself (snapshotted sources, generated
+   `lakefile.toml` and `lean-toolchain`, one `lake build`). It never reads the
+   user's lakefile.
+4. The checked-in cases become proofs projects, and their tests and the
+   experiment scripts use them.
+5. The source rules of today stay: approved modules cannot import candidate or
    reserved modules, and a candidate module cannot take the name of an
-   approved or library module. Headers are read with one `lean --deps-json`
-   call for each discovery round.
-4. All three commands accept `--cache DIR` and `--no-cache`. Without either,
-   they use a per-user default cache directory. `--no-cache` compiles
+   approved or library module. `prepare` reports a violation before Lake runs;
+   `verify-bundle` enforces the rules. Headers are read with one
+   `lean --deps-json` call for each discovery round.
+6. `prepare` and `verify-bundle` accept `--cache DIR` and `--no-cache`. Without
+   either, they use a per-user default cache directory. `--no-cache` compiles
    everything in a private, empty cache.
-5. `lake build` runs with one deadline, a minimal environment, bounded captured
+7. `lake build` runs with one deadline, a minimal environment, bounded captured
    output and a bounded number of parallel jobs. A compile failure gives the
    same status and the same kind of per-module diagnostic as today.
-6. `StageStore`, `MIGRATION_CHECK_STAGE_STORE`, the measurement override,
+8. `StageStore`, `MIGRATION_CHECK_STAGE_STORE`, the measurement override,
    `cache_eligibility.py` and their tests and documentation are removed.
    ADR 0003 and the trust boundary document describe the new cache rule.
-7. Statuses and exit codes of all three commands are unchanged for every
-   existing test case.
+9. Statuses and exit codes of `prepare` and `verify-bundle` are unchanged for
+   every existing test case. `verify` keeps its current compile path; it is
+   deprecated and removed in a separate change.
 
 ## Tests
 
 - Runtime: a generated workspace against the installed runtime builds with
   zero library compiles; Lake runs with the runtime's library outputs read-only.
+- User project: `prepare` on a proofs project whose lakefile the user
+  changed (an extra module root, an extra option) builds and exports; `lake
+  build` in the project works without the verifier; a stale or edited
+  `Generated/` folder does not change the result of `verify-bundle`; a changed
+  copy of an approved module is reported by `prepare` and rejected by
+  `verify-bundle`.
 - Reuse: a second run of each command on the same inputs, in a new temporary
   directory with the same cache, compiles no module; after a proof edit,
-  `prepare` and `verify` compile only the changed candidate modules.
+  `prepare` compiles only the changed candidate modules.
 - Trust domains: `verify-bundle` with its own empty cache verifies a bundle
   that `prepare` made with a different cache.
 - Equivalence: for each checked-in case, the result with a warm cache equals
@@ -49,8 +65,10 @@ Evidence: [Lake cache experiment](../experiments/lake-cache/README.md),
   rejection before Lake runs.
 - Failures: a candidate compile error gives `UNVERIFIED` and names the module;
   a `lake build` over its deadline is stopped and reported.
-- End to end through the installed runtime: `cli_test.py`, `bundle_test.py`,
-  `atuin_cli_test.py`, `proof_exporter_test.py`, `kernel_gate_test.py`.
+- End to end through the installed runtime: `bundle_test.py`,
+  `proof_exporter_test.py`, `runtime_package_test.py`; the tests of `verify`
+  (`cli_test.py`, `atuin_cli_test.py`, `kernel_gate_test.py`) keep passing
+  unchanged.
 - Timing (recorded in the status file, not a test): the experiment scenarios
   of `experiments/lake-cache/` through the real commands, on Linux and macOS.
 
@@ -73,9 +91,13 @@ Evidence: [Lake cache experiment](../experiments/lake-cache/README.md),
   Without a `lean-toolchain` file, Lake writes one and stops.
 - `restoreAllArtifacts = true` is needed: the exporter, the bundle checker and
   the gate read `.olean` files from the workspace, not from the cache.
-- The gate (`ProofChecker.lean`) takes the trusted and candidate artifact
-  directories as separate arguments; Lake writes all outputs into one
-  directory.
+- How a proofs project reaches the approved contract modules (copies inside
+  the project, or a library whose source folder is the contract folder) is
+  open; `prepare` must compare their bytes with the approved files either way.
+- A user's lakefile may contain anything, including `require` of other
+  packages; `prepare` runs in the agent's trust domain and uses it as it is.
+  What `verify-bundle` cannot accept (for example declarations from a package
+  the installation does not have) should be reported by `prepare`.
 - Lake's cache key is a 64-bit, non-cryptographic hash. Caches are safe only
   within one trust domain (ADR 0010 section 4); the documentation must say
   that the caller protects the cache directory.

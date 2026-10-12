@@ -12,3 +12,6 @@ Relevant files: `build-support/tests.nix`, `tests/nix_suites.json`,
 
 - 2026-10-12: task and status files created with ADR 0010 (PR #76). Work
   starts after the owner accepts the ADR.
+- 2026-10-12: updated with ADR 0010: `verify` is deprecated (owner decision)
+  and out of scope; `prepare` builds the user's proofs project; cases take the
+  layout of a user's project.
