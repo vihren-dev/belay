@@ -1,6 +1,6 @@
 # Syntax and resolution core, step 1a of ADR 0008
 
-Created 2026-10-10. Status: IN REVIEW.
+Created 2026-10-10. Status: DONE on 2026-10-12.
 Specification: [ADR 0008](../docs/adr-0008-syntax-and-resolution-in-lean.md),
 "Three layers", "Catalog", "Errors from resolution", "Specification of
 resolution", "Execution profile" and "Scope of the first implementation".
@@ -91,3 +91,20 @@ dependents, step 1 is split in two pull requests:
   examples are slow (the ADR measured 116 s for 70 statements), so the tests
   use `#guard` and the proofs are about the definitions, not about large
   concrete scripts. Build times before and after are recorded in the status.
+
+## Delivery, 2026-10-12
+
+The owner approved PR #81 on GitHub. Hosted Linux CI run `38231133914`
+passes at final head `a89400d4`. The macOS PR job explicitly skips its
+checks; the retained local macOS records supply the recorded acceptance.
+Changes since the tested source head `eced8883` only integrate the accepted
+development-integrity policy and its records from main. No model source
+changed in that integration. PR #81 merged normally as `72824afa`.
+
+This completes the unused syntax and resolution core, step 1a. Step 1b,
+which switches the verifier to these layers, remains separate work.
+
+Decisions waiting for the owner:
+
+- None for delivered step 1a. Later trust-relevant changes retain their
+  required final review.
