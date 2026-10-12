@@ -94,3 +94,19 @@ Relevant files: `migration_check/compile.py`, `migration_check/contract.py`,
     (owner review in the pull request).
   - Checks: Nix targets `bundle` (81 passed), `cli`, `atuin`, `kernel`; `just
     documentation-inventory`; `just test-source` (554 passed).
+- 2026-10-12: step H:
+  - `StageStore`, `MIGRATION_CHECK_STAGE_STORE`, the measurement override,
+    `cache_eligibility.py`, `tests/test_stage_store.py` and
+    `tests/stage_reuse_test.py` are removed; the deprecated `verify` compiles
+    freshly. ADR 0003's "Approved contract reuse" points to ADR 0010; the
+    trust boundary, source staging and data path documents follow.
+  - Batched header reading (item 5) was already on `main`
+    (`fc3c3d5d`, `migration_check/lean_headers.py`): one `lean --deps-json`
+    process per discovery round, each header read once per process.
+  - Parallel jobs: Lake has no jobs option, but `LEAN_NUM_THREADS` bounds its
+    thread pool (Atuin from an empty cache: 4.75 s default, 5.57 s with two
+    threads, 8.97 s with one). `lake_build` sets it to the processor count,
+    at most 8.
+  - New tests: separate agent and verifier caches, warm cache against
+    `--no-cache` for every checked-in case (`tests/cache_domains_test.py`), a
+    compile error naming the module, a Lake build stopped at its deadline.

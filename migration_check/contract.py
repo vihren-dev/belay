@@ -2,18 +2,16 @@
 
 Discovery (`discover_contract`, `source_hashes`) is shared by `verify`, `verify-bundle`
 and `prepare`. `compile_trusted` compiles the generated schema, the approved contract
-and the generated SQL for `verify` only; each stage may be restored from an opt-in
-`StageStore` when eligible (ADR 0003, "Approved contract reuse"). `verify-bundle` and
-`prepare` build with Lake instead (ADR 0010, `contract_build`, `prepare`).
+and the generated SQL for the deprecated `verify`, always freshly. `verify-bundle` and
+`prepare` build with Lake and its artifact cache instead (ADR 0010, `contract_build`,
+`project_phases`).
 """
 
 from dataclasses import dataclass
 import hashlib
 from pathlib import Path
 
-from .cache_eligibility import approved_reuse_allowed
 from .source_closure import Source, discover_sources, module_path
-from .stage_store import StageStore, runtime_identity, stage_key
 
 RESERVED_CONTRACT_STEM = "schemainputs"
 """Case-folded file stem that an approved source may not have: `SchemaInputs` is the generated starting schema."""
@@ -47,55 +45,30 @@ def source_hashes(stage: str, sources: dict[str, Source]) -> dict[str, str]:
             for name, source in sources.items()}
 
 
-def run_stage(*, stage: str, order: tuple[str, ...], sources: Path, destination: Path,
-              previous: tuple[Path, ...], previous_keys: tuple[str, ...], sysroot: Path, libraries: tuple[Path, Path],
-              workspace: Path, store: StageStore | None, eligible: bool) -> tuple[list[str], str]:
-    """Restore an eligible stage from the store or compile it, returning diagnostics and its key."""
-    from .compile import compile_modules
-
-    modules = {name: (sources / module_path(name)).with_suffix(module_path(name).suffix + ".lean").read_bytes()
-               for name in order}
-    key = stage_key(stage, modules, previous_keys, runtime_identity(sysroot, libraries))
-    required = tuple(f"{module_path(name).as_posix()}.olean" for name in order)
-    if store is not None and eligible and store.restore(key, destination, required):
-        return [], key
-    diagnostics = compile_modules(order=order, sources=sources, destination=destination,
-                                  previous=previous, sysroot=sysroot, libraries=libraries, workspace=workspace)
-    if store is not None and eligible:
-        store.save(key, destination)
-    return diagnostics, key
-
-
 def compile_trusted(*, contract: Contract, approved_sources: Path, schema_inputs: str, sql_inputs: str | None,
-                    trusted: Path, sysroot: Path, libraries: tuple[Path, Path], workspace: Path,
-                    store: StageStore | None) -> list[str]:
-    """Compile schema, approved and SQL stages into `trusted`, reusing only eligible stages.
+                    trusted: Path, sysroot: Path, libraries: tuple[Path, Path], workspace: Path) -> list[str]:
+    """Compile the schema, approved and SQL stages into `trusted`, every time.
 
     With `sql_inputs=None` the SQL stage is skipped: the bundle checker constructs those
     declarations itself from the frontend's structural record.
     """
+    from .compile import compile_modules
+
     sql_sources = workspace / "sql-sources"
     schema_output, sql_output = workspace / "schema-output", workspace / "sql-output"
     for directory in (sql_sources, schema_output, sql_output):
         directory.mkdir()
     # Starting schema has no access to approved or candidate sources/artifacts.
     (sql_sources / "SchemaInputs.lean").write_text(schema_inputs, encoding="utf-8")
-    common = {"sysroot": sysroot, "libraries": libraries, "workspace": workspace, "store": store}
-    diagnostics, schema_key = run_stage(stage="SchemaInputs", order=("SchemaInputs",), sources=sql_sources,
-                                        destination=schema_output, previous=(), previous_keys=(),
-                                        eligible=True, **common)
-    approved_digest = hashlib.sha256(repr(sorted(source_hashes("approved", contract.sources).items()))
-                                     .encode()).hexdigest()
-    more, _ = run_stage(stage="approved", order=contract.order, sources=approved_sources,
-                                   destination=trusted, previous=(schema_output,), previous_keys=(schema_key,),
-                                   eligible=store is not None and approved_reuse_allowed(approved_digest, store),
-                                   **common)
-    diagnostics += more
+    common = {"sysroot": sysroot, "libraries": libraries, "workspace": workspace}
+    diagnostics = compile_modules(order=("SchemaInputs",), sources=sql_sources, destination=schema_output,
+                                  previous=(), **common)
+    diagnostics += compile_modules(order=contract.order, sources=approved_sources, destination=trusted,
+                                   previous=(schema_output,), **common)
     if sql_inputs is not None:
         (sql_sources / "SqlInputs.lean").write_text(sql_inputs, encoding="utf-8")
-        more, _ = run_stage(stage="SqlInputs", order=("SqlInputs",), sources=sql_sources, destination=sql_output,
-                            previous=(schema_output,), previous_keys=(schema_key,), eligible=True, **common)
-        diagnostics += more
+        diagnostics += compile_modules(order=("SqlInputs",), sources=sql_sources, destination=sql_output,
+                                       previous=(schema_output,), **common)
     for directory in (schema_output, sql_output):
         for artifact in directory.rglob("*"):
             if artifact.is_file():

@@ -207,6 +207,11 @@ supported interface.
 
 ### Approved contract reuse
 
+Replaced on 2026-10-12 by [ADR 0010](adr-0010-lake-builds-and-artifact-cache.md)
+section 5: outputs of the approved contract are reused from Lake's artifact cache
+within one trust domain, and the per-closure review, `cache_eligibility.py` and
+the stage store are removed. The text below is the original decision.
+
 Reuse needs two things (ADR 0002 §3.3):
 
 - **Determinism:** compiling the approved closure must depend only on the

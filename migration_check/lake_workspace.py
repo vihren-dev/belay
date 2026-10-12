@@ -11,11 +11,16 @@ deadline, a minimal environment and limited output files (`process.run_process`)
 from collections.abc import Sequence
 from dataclasses import dataclass
 import json
+import os
 from pathlib import Path
 import re
 
 from .process import run_process
 from .source_closure import CompileError
+
+MAX_PARALLEL_JOBS = 8
+"""Upper bound on Lake's parallel jobs. Lake has no jobs option; it runs on Lean's thread pool, which
+`LEAN_NUM_THREADS` bounds (an Atuin build took 9.0 s with one thread and 4.8 s with eight)."""
 
 BUILD_TIMEOUT_SECONDS = 300
 """Deadline for one `lake build` of a workspace; the Atuin contract builds in about 3 s."""
@@ -77,13 +82,19 @@ def failed_targets(output: str) -> tuple[str, ...]:
     return tuple(failed)
 
 
+def parallel_jobs() -> int:
+    """Lake's parallel jobs: the machine's processors, at most `MAX_PARALLEL_JOBS`."""
+    return max(1, min(os.cpu_count() or 1, MAX_PARALLEL_JOBS))
+
+
 def lake_build(directory: Path, sysroot: Path, cache: Path, library_prefixes: Sequence[str],
                targets: Sequence[str] = (), timeout: float = BUILD_TIMEOUT_SECONDS) -> tuple[str, ...]:
     """Build the given targets (default: the workspace's default targets); return the compiled modules or
     raise `CompileError`."""
     result = run_process([str(sysroot / "bin/lake"), "build", *targets, "--no-ansi", "--keep-toolchain"],
                          write_root=directory,
-                         environment={"LAKE_CACHE_DIR": str(cache)}, timeout=timeout)
+                         environment={"LAKE_CACHE_DIR": str(cache), "LEAN_NUM_THREADS": str(parallel_jobs())},
+                         timeout=timeout)
     output = result.stdout + result.stderr
     if result.returncode:
         failed = failed_targets(output) or ("(workspace)",)

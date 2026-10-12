@@ -108,3 +108,12 @@ def test_export_builds_the_current_sources(small: ProjectConfig, phase: Callable
     assert phase("export", *project, "--output", str(bundle))["status"] == "PREPARED"
     report = phase("verify-bundle", *small.contract_arguments(), "--bundle", str(bundle))
     assert report["status"] == "UNVERIFIED" and "reconstructed verification target" in str(report["message"]), report
+
+
+def test_compile_error_names_the_module(small: ProjectConfig, phase: Callable[..., dict[str, object]],
+                                        tmp_path: Path) -> None:
+    """A type error in a proof module gives UNVERIFIED from `prepare`, naming the module, as before Lake."""
+    (small.proofs / "Proofs.lean").write_text(HEADER + "theorem Proofs.migrationCorrect : Generated.expected := 1\n")
+    report = phase("prepare", *small.contract_arguments(), "--project", str(small.proofs),
+                   "--output", str(tmp_path / "proof.bundle"))
+    assert report["status"] == "UNVERIFIED" and "Proofs" in str(report["message"]), report

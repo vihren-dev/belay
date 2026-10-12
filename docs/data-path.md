@@ -194,8 +194,6 @@ the public launcher from the source runtime (Nix target `tests.bundle`);
 | Workspace lakefile and Lake output reading; cache location and cleanup | Unit | `tests/test_lake_workspace.py`, `tests/test_cache_location.py` |
 | `audit` rejects `sorry`, an own axiom and an outside import, naming each; `generate` is stable and refuses `debug.skipKernelTC` | End to end | `tests/project_phases_test.py` |
 | `prepare` warns about approved code that runs during elaboration | End to end | `tests/prepare_warning_test.py` |
-| Stage store: verified restore, damaged or malformed entries miss, unwritable store tolerated, identity follows the runtime | Unit | `tests/test_stage_store.py` |
-| `verify` with a stage store: same results, fresh fallback, approved closures excluded unless eligible | End to end | `tests/stage_reuse_test.py` |
 | The installed commands give `VERIFIED`, `VIOLATED` and a wrong-SQL rejection | Installed | `tests/runtime_package_test.py::test_installed_data_path` |
 | Constructed generated declarations match the Lean emitter; tampered records are rejected | Checker | `tests/generated_inputs_test.py` |
 | Narrowed gate imports keep every existing gate rejection | End to end | `tests/kernel_gate_test.py` (Nix target `tests.kernel`) |

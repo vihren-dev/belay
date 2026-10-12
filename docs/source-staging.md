@@ -48,15 +48,10 @@ source dependencies and the fixed target alias. The caller controls sysroot,
 library, generated SQL data, and workspace ownership; it must subsequently invoke
 the independent kernel gate. Successful compilation alone is not verification.
 
-For `verify`, the three trusted stages (`SchemaInputs`, the approved closure and
-`SqlInputs`) are compiled by `migration_check.contract`. When a caller configures
-`MIGRATION_CHECK_STAGE_STORE`, an
-eligible stage can be restored instead of compiled. Its key covers the stage's
-exact sources, preceding stages and the resolved toolchain/library identity, and
-every restored file is hash-checked. Generated stages are eligible; an approved
-closure only after a recorded determinism review (`cache_eligibility.py`). Any
-miss or damaged entry falls back to compilation. The shared helper `role_sources`
-applies the same-file rule above to every command.
+For the deprecated `verify`, the three trusted stages (`SchemaInputs`, the
+approved closure and `SqlInputs`) are compiled freshly by
+`migration_check.contract` on every run. The shared helper `role_sources` applies
+the same-file rule above to every command.
 
 `verify-bundle` and `prepare` use the same discovery and source rules, and build
 with Lake ([ADR 0010](adr-0010-lake-builds-and-artifact-cache.md)).

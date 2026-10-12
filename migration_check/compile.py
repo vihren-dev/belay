@@ -10,7 +10,6 @@ from .runtime import validate_libraries
 from .contract import RESERVED_CONTRACT_STEM, compile_trusted, discover_contract, source_hashes
 from .source_closure import (CompileError, Source, discover_sources, file_identity, lean_process, module_path,
                              role_sources)
-from .stage_store import StageStore
 
 EXPECTED_SOURCE = """import Requirements
 import Interpretation
@@ -82,11 +81,10 @@ def compile_modules(*, order: tuple[str, ...], sources: Path, destination: Path,
 def compile_project(*, sysroot: Path, libraries: tuple[Path, Path], requirements: Path,
                     interpretation: Path, next_interpretation: Path, proofs: Path,
                     schema_inputs: str, sql_inputs: str, workspace: Path,
-                    approved_baseline: Path | None = None, schema_hash: str | None = None,
-                    store: StageStore | None = None) -> CompiledProject:
+                    approved_baseline: Path | None = None, schema_hash: str | None = None) -> CompiledProject:
     """Check optional approval against sealed closures before trusted source compilation.
 
-    `store` enables reuse of eligible trusted stages; candidate modules always compile.
+    Every stage compiles freshly; the deprecated `verify` has no cache (ADR 0010 builds the data path with Lake).
     """
     sysroot, first, second, workspace = (path.resolve(strict=True) for path in (sysroot, *libraries, workspace))
     libraries = (first, second)
@@ -131,7 +129,7 @@ def compile_project(*, sysroot: Path, libraries: tuple[Path, Path], requirements
         check_baseline(approved_baseline, protected_hashes)
     diagnostics = compile_trusted(contract=contract, approved_sources=approved_sources,
         schema_inputs=schema_inputs, sql_inputs=sql_inputs, trusted=trusted, sysroot=sysroot,
-        libraries=libraries, workspace=workspace, store=store)
+        libraries=libraries, workspace=workspace)
     diagnostics += compile_modules(order=proposed_order, sources=candidate_sources,
         destination=candidate, previous=(trusted,), sysroot=sysroot, libraries=libraries, workspace=workspace)
     return CompiledProject(trusted, candidate, hashes, tuple(text for text in diagnostics if text))

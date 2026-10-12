@@ -12,7 +12,6 @@ from belay.sqlite.errors import SqlError
 from .cli_project import COMMANDS, SUCCESS, add_project_commands, human_lines, run_project_command
 from .inputs import generated_inputs, read_sql
 from .process import run_process
-from .stage_store import StageStore
 
 __all__ = ["arguments", "main", "read_sql", "verify"]
 
@@ -101,8 +100,7 @@ def verify(options: argparse.Namespace) -> dict[str, object]:
                 sysroot=runtime.sysroot, libraries=runtime.libraries, requirements=options.requirements,
                 interpretation=options.interpretation, next_interpretation=options.next_interpretation,
                 proofs=options.proofs, schema_inputs=starting, sql_inputs=generated, workspace=workspace,
-                approved_baseline=options.approved_baseline, schema_hash=schema_hash,
-                store=StageStore.configured())
+                approved_baseline=options.approved_baseline, schema_hash=schema_hash)
         except CompileError as error:
             raise Rejection("UNVERIFIED", str(error)) from error
         hashes = {**compiled.hashes, **inputs.hashes}

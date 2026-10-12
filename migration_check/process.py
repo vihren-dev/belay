@@ -10,8 +10,9 @@ import subprocess
 from tempfile import TemporaryFile
 
 
-ALLOWED_ENVIRONMENT = frozenset({"LEAN_PATH", "LEAN_SYSROOT", "LAKE_CACHE_DIR"})
-"""Variables a caller may pass: Lean's search path and sysroot, and Lake's artifact cache (ADR 0010)."""
+ALLOWED_ENVIRONMENT = frozenset({"LEAN_PATH", "LEAN_SYSROOT", "LAKE_CACHE_DIR", "LEAN_NUM_THREADS"})
+"""Variables a caller may pass: Lean's search path and sysroot, Lake's artifact cache, and the thread count that
+bounds Lake's parallel jobs (ADR 0010)."""
 
 
 def limit_output_files() -> None:

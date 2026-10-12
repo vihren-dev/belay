@@ -9,6 +9,7 @@ or fail on the read-only installation.
 from collections.abc import Callable
 import os
 from pathlib import Path
+import subprocess
 
 import pytest
 
@@ -60,3 +61,11 @@ def test_lake_build_reuses_cache_and_names_failed_module(runtime_root: Path, tmp
     with pytest.raises(CompileError) as failure:
         lake_build(workspace("broken", "def x : Nat := true\n"), sysroot, cache, prefixes)
     assert failure.value.module == "Probe" and "Probe.lean" in failure.value.diagnostics
+
+
+def test_lake_build_over_its_deadline_is_stopped(runtime_root: Path, tmp_path: Path) -> None:
+    """`lake_build` passes its deadline to the bounded runner, which stops Lake and reports the timeout."""
+    write_workspace(tmp_path / "slow", "probe", runtime_root, [Library("Probe", ".", ("Probe",))])
+    (tmp_path / "slow/Probe.lean").write_text("import SqliteVerifier\ndef x : Nat := 1\n")
+    with pytest.raises(subprocess.TimeoutExpired):
+        lake_build(tmp_path / "slow", runtime_root / "lean", tmp_path / "cache", LIBRARY_PREFIXES, timeout=0.05)
