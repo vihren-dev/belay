@@ -144,8 +144,7 @@ reviews commits from Codex sessions.
   when it is wrong, and say why.
 - `just review` and `just review-resolve` each add one new record file under
   `reviews/`. Commit the new files with your next commit. Do not edit or delete
-  record files, and do not edit `reviews/log.jsonl`: it holds the older records
-  and is frozen.
+  record files.
 - The owner uses `just review-stats` to find conditions that never fire, are
   mostly rejected, or that nobody acts on, and removes or rewrites them.
 - Exit code 2: the command cannot choose a reviewer or revision; follow its

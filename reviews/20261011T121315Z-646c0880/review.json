@@ -1,0 +1,51 @@
+{
+  "caller": "claude",
+  "commit": "646c0880976bde9a21ab679b253c45ff111480d6",
+  "date": "2026-10-11T12:13:15+00:00",
+  "exit": 1,
+  "files": [
+    "AGENTS.md",
+    "docs/ci.md",
+    "justfile",
+    "plans/20261011-review-log-conversion.status.md",
+    "tests/test_ci_scope.py",
+    "tests/test_review_log.py",
+    "tests/test_review_log_check.py",
+    "tests/test_review_log_frozen.py",
+    "tests/test_review_records.py",
+    "tools/review_log_check.py",
+    "tools/review_log_frozen.py",
+    "tools/review_records.py"
+  ],
+  "findings": [
+    {
+      "id": "20261011T121315Z-646c0880#1",
+      "line": 61,
+      "path": "tests/test_review_records.py",
+      "rule": "R11",
+      "severity": "must",
+      "text": "The reader switch has no test that preserves existing review history: this commit leaves all 556 distinct old records unread and makes CI reject the retained `reviews/log.jsonl`. Fix: convert and delete the old log in the same commit, and add a check that all distinct records remain readable and CI accepts the converted tree."
+    }
+  ],
+  "id": "20261011T121315Z-646c0880",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "b9509029f9c1",
+    "R7": "1d1132b164f1",
+    "R8": "46eec5fecbaf",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

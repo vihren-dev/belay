@@ -1,0 +1,40 @@
+{
+  "caller": "claude",
+  "commit": "5ed3797dc951d8f36475a0419103d3eb440cb41b",
+  "date": "2026-10-07T12:23:48+00:00",
+  "exit": 0,
+  "files": [
+    ".github/workflows/ci.yml",
+    "reviews/log.jsonl"
+  ],
+  "findings": [
+    {
+      "id": "20261007T122348Z-5ed3797d#1",
+      "line": 82,
+      "path": ".github/workflows/ci.yml",
+      "rule": "R11",
+      "severity": "should",
+      "text": "No regression test covers the new platform guards on the reference build and upload steps. Fix: add a test that verifies both steps skip macOS pull requests and documentation-only changes, and run for eligible checks."
+    }
+  ],
+  "id": "20261007T122348Z-5ed3797d",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "xrlxpwuylnlx",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "5600dce59aef",
+    "R7": "0b68df581c57",
+    "R8": "b4168359c60d",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

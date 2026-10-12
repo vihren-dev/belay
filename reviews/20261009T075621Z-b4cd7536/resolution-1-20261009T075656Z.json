@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-09T07:56:56+00:00",
+  "finding": "20261009T075621Z-b4cd7536#1",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "Filing the doc-gen4 issue is an outward action that needs owner approval (requested 2026-10-09). Likely regression of leanprover/doc-gen4 PR #371; the docstring will name the issue once it is filed."
+}

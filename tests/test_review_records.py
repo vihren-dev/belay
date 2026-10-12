@@ -1,4 +1,4 @@
-"""Review records as one file each, next to the frozen log (`tools/review_records.py`).
+"""Review records as one file each (`tools/review_records.py`).
 
 The layout exists so that workspaces that record reviews at the same time never change the
 same file. These tests check the paths, that no file is ever replaced, and the read order.
@@ -10,14 +10,11 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-from tools.review_log import Rule, resolution, review_record
-from tools.review_records import (FROZEN_LOG, is_record_path, path_problem, read_records, record_path,
-                                  write_record)
-from tools.review_stats import collect
+from tools.review_log import resolution, review_record
+from tools.review_records import is_record_path, path_problem, read_records, record_path, write_record
 
 WHEN = datetime(2026, 10, 11, 8, 55, 34, tzinfo=timezone.utc)
 CHECKLIST = "**R1. One.** Text one.\n*Applies to:* all files.\n\n## Output format\n"
-RULES = {"R1": Rule("v1", ("*",))}
 
 
 def review() -> dict[str, object]:
@@ -38,15 +35,15 @@ def test_record_paths() -> None:
         assert path_problem(record_path(record).as_posix(), record) is None
         assert is_record_path(f"reviews/{record_path(record)}")
     assert path_problem(record_path(resolved).as_posix(), reviewed) is not None
-    assert is_record_path("reviews/log.jsonl") and not is_record_path("reviews/notes.md")
+    assert not is_record_path("reviews/log.jsonl") and not is_record_path("reviews/notes.md")
     assert not is_record_path("other/20261011T085534Z-6bb34bbf/review.json")
 
 
 @pytest.mark.unit
 def test_write_creates_one_file_and_never_replaces(tmp_path: Path) -> None:
-    """Each record creates one file; the frozen log and other files keep their bytes; a second
-    record at the same path is refused and the first file is kept."""
-    (tmp_path / FROZEN_LOG).write_text("{}\n")
+    """Each record creates one file; other files keep their bytes; a second record at the same
+    path is refused and the first file is kept."""
+    (tmp_path / "notes.md").write_text("kept\n")
     reviewed = review()
     first = write_record(reviewed, tmp_path)
     assert json.loads(first.read_text()) == reviewed
@@ -61,32 +58,15 @@ def test_write_creates_one_file_and_never_replaces(tmp_path: Path) -> None:
 
 
 @pytest.mark.unit
-def test_read_joins_frozen_log_and_files_in_a_fixed_order(tmp_path: Path) -> None:
-    """The frozen log comes first in line order, then record files by date, a review before a
-    resolution of the same second, then path."""
+def test_read_orders_files_by_date(tmp_path: Path) -> None:
+    """Record files come by date, a review before a resolution of the same second, then path;
+    other files are not records."""
     reviewed = review()
-    frozen = [{"kind": "review", "id": "old", "findings": [], "date": "2026-10-12T00:00:00+00:00"}]
-    (tmp_path / FROZEN_LOG).write_text("".join(json.dumps(record) + "\n" for record in frozen))
     later = resolution([reviewed], f"{reviewed['id']}#1", "fixed", "", datetime(2026, 10, 11, 9, tzinfo=timezone.utc))
     earlier = resolution([reviewed], f"{reviewed['id']}#2", "fixed", "", WHEN)
     for record in (later, earlier, reviewed):
         write_record(record, tmp_path)
     (tmp_path / "notes.md").write_text("not a record")
-    assert read_records(tmp_path) == [*frozen, reviewed, earlier, later]
+    (tmp_path / "log.jsonl").write_text(json.dumps(reviewed) + "\n")
+    assert read_records(tmp_path) == [reviewed, earlier, later]
     assert read_records(tmp_path / "absent") == []
-
-
-@pytest.mark.unit
-def test_statistics_do_not_depend_on_the_storage(tmp_path: Path) -> None:
-    """The same records give the same statistics in the frozen log and as record files."""
-    reviewed = review()
-    records = [reviewed, resolution([reviewed], f"{reviewed['id']}#1", "rejected", "wrong", WHEN),
-               resolution([reviewed], f"{reviewed['id']}#1", "fixed", "", datetime(2026, 10, 12, tzinfo=timezone.utc))]
-    reviewed["rules"] = {"R1": "v1"}
-    as_log, as_files = tmp_path / "log", tmp_path / "files"
-    as_log.mkdir()
-    (as_log / FROZEN_LOG).write_text("".join(json.dumps(record) + "\n" for record in records))
-    for record in records:
-        write_record(record, as_files)
-    assert collect(read_records(as_log), RULES) == collect(read_records(as_files), RULES)
-    assert collect(read_records(as_files), RULES)["R1"].outcomes["fixed"] == 1

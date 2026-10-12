@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-11T11:39:27+00:00",
+  "finding": "20261011T113857Z-946ee385#1",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "Owner review requested in the pull request: prepare and verify-bundle now locate the runtime before input generation and pass it on; no other change to the export path"
+}

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-06T18:24:48+00:00",
+  "finding": "20261006T182311Z-941c1aa4#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Document the exact declaration/namespace span and the final-declaration requirement. The real error-seeking mode and four source regressions pass."
+}

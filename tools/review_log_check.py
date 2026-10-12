@@ -1,14 +1,14 @@
 """Check that the review log only grows: records are added, and no base record is lost or changed.
 
 `AGENTS.md` forbids editing or deleting review records. CI runs this check in every scope,
-so a pull request that changes only documentation and the log can skip the build, and still
-cannot change or remove a review record. The log has two parts (`tools/review_records.py`):
+so a pull request that changes only documentation and records can skip the build, and still
+cannot change or remove a review record. Each record is one file (`tools/review_records.py`):
+each base file must be present with the same bytes, and each file must hold a valid record at
+the path that its record determines.
 
-- The frozen `reviews/log.jsonl`. Merges of main into a branch reorder lines and can remove a
-  line that both sides contain, so the check requires each base line to be present, not a
-  position or a count. Branches written before the record files still add lines to it.
-- One file per record. Each base file must be present with the same bytes, and each file must
-  hold a valid record at the path that its record determines.
+`reviews/log.jsonl` held the records written before record files. The change that converts it
+deletes it; for that change only, the check accepts the deletion when each of its records exists
+as a record file (`plans/20261011-review-log-conversion.task.md`). A follow-up removes the rule.
 """
 
 import argparse
@@ -21,10 +21,10 @@ import re
 import subprocess
 import sys
 
-from tools.review_records import DIRECTORY, FROZEN_LOG, is_record_path, path_problem
+from tools.review_records import DIRECTORY, is_record_path, path_problem
 
-LOG = f"{DIRECTORY}/{FROZEN_LOG}"
-"""The frozen log path, relative to the repository root."""
+CONVERTED_LOG = f"{DIRECTORY}/log.jsonl"
+"""The converted one-line-per-record log, relative to the repository root."""
 REQUIRED_FIELDS = {"review": frozenset({"kind", "id", "commit", "date", "findings", "well_formed"}),
                    "resolution": frozenset({"kind", "finding", "outcome", "date"})}
 """The fields of each record kind, as `tools/review.py` and `tools/review_log.py` write them."""
@@ -52,18 +52,21 @@ def record_problem(text: str) -> str | None:
     return f"missing fields {', '.join(missing)}" if missing else None
 
 
-def problems(base: Sequence[str], head: Sequence[str]) -> list[str]:
-    """The violations of the append-only rule from the base frozen log to the head frozen log.
+def canonical(record: object) -> str:
+    """One record as text that does not depend on key order or spacing, to compare records."""
+    return json.dumps(record, ensure_ascii=False, sort_keys=True)
 
-    Each head line must be a record, and each base line must occur in the head log unchanged.
-    The rule requires nothing about the order of lines or about repeated lines.
+
+def conversion_problems(base_log: Sequence[str], head: Mapping[str, bytes]) -> list[str]:
+    """The records of the base commit's converted log that no head record file holds.
+
+    `head` maps each path under `reviews/` to its working-tree bytes.
     """
-    found = [f"line {number}: {problem}" for number, line in enumerate(head, start=1)
-             if (problem := record_problem(line)) is not None]
-    present = set(head)
-    found += [f"base line {number} is changed or removed" for number, line in enumerate(base, start=1)
-              if line not in present]
-    return found
+    stored = {canonical(json.loads(content)) for path, content in head.items()
+              if is_record_path(path) and record_problem(content.decode("utf-8", errors="replace")) is None}
+    return [f"{CONVERTED_LOG} line {number}: no record file holds this record"
+            for number, line in enumerate(base_log, start=1)
+            if line.strip() and canonical(json.loads(line)) not in stored]
 
 
 def blob_hash(content: bytes) -> str:
@@ -75,13 +78,11 @@ def file_problems(base: Mapping[str, str], head: Mapping[str, bytes]) -> list[st
     """The violations of the append-only rule for record files.
 
     `base` maps each repository path under `reviews/` to its blob hash in the base commit;
-    `head` maps each path under `reviews/` to its working-tree bytes. The frozen log is checked
-    by `problems` and is ignored here.
+    `head` maps each path under `reviews/` to its working-tree bytes. A base converted log is
+    checked by `conversion_problems` instead.
     """
     found: list[str] = []
     for path, content in sorted(head.items()):
-        if path == LOG:
-            continue
         if not is_record_path(path):
             found.append(f"{path}: not a record file; use ID/review.json or ID/resolution-N-SECOND.json")
             continue
@@ -90,7 +91,7 @@ def file_problems(base: Mapping[str, str], head: Mapping[str, bytes]) -> list[st
         if problem is not None:
             found.append(f"{path}: {problem}")
     found += [f"{path}: base record file is changed or removed" for path, blob in sorted(base.items())
-              if path != LOG and (path not in head or blob_hash(head[path]) != blob)]
+              if path != CONVERTED_LOG and (path not in head or blob_hash(head[path]) != blob)]
     return found
 
 
@@ -131,15 +132,13 @@ def main(arguments: Sequence[str]) -> int:
     base = os.environ.get(BASE_VARIABLE, "")
     base_blobs = base_files(options.root, base) if base else {}
     head = head_files(options.root)
-    base_log = git(options.root, "show", f"{base}:{LOG}").splitlines() if LOG in base_blobs else []
-    head_log = head[LOG].decode("utf-8").splitlines() if LOG in head else []
-    log_problems, record_file_problems = problems(base_log, head_log), file_problems(base_blobs, head)
-    for problem in log_problems:
-        print(f"review log: {LOG}: {problem}; restore the original line", file=sys.stderr)
-    for problem in record_file_problems:
+    base_log = (git(options.root, "show", f"{base}:{CONVERTED_LOG}").splitlines()
+                if CONVERTED_LOG in base_blobs else [])
+    found = conversion_problems(base_log, head) + file_problems(base_blobs, head)
+    for problem in found:
         print(f"review log: {problem}; restore the original record files and add each new record "
               f"with `just review` or `just review-resolve`", file=sys.stderr)
-    return 1 if log_problems or record_file_problems else 0
+    return 1 if found else 0
 
 
 if __name__ == "__main__":
