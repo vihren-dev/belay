@@ -27,6 +27,7 @@ folder that holds the cases (`root`), because several cases share one contract.
 
 from dataclasses import dataclass
 from pathlib import Path
+import re
 import tomllib
 
 CONFIG_NAME = "belay.toml"
@@ -34,6 +35,12 @@ CONFIG_NAME = "belay.toml"
 
 REQUIRED_PROOF_MODULES = ("NextInterpretation", "Proofs")
 """Candidate modules that every project has; others are helpers."""
+
+TABLES = frozenset({"project", "test"})
+"""Top-level tables; `[project]` is required, `[test]` is optional."""
+
+MODULE_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*")
+"""A Lean module name, such as `Proofs` or `Helpers.Facts`; it cannot name a path."""
 
 PROJECT_KEYS = frozenset({"profile", "schema", "migration", "contract", "baseline", "proofs", "proof_modules"})
 """Keys allowed in `[project]`; an unknown key is an error, so a typo cannot pass silently."""
@@ -49,6 +56,7 @@ class ConfigError(ValueError):
     """A configuration file that cannot be used; the message names the file and the field."""
 
     def __init__(self, file: Path, field: str, problem: str) -> None:
+        """Name the file, the field and the problem, so the author knows exactly what to correct."""
         super().__init__(f"{file}: field {field}: {problem}. Correct {field} in {file}.")
 
 
@@ -114,7 +122,9 @@ def proof_modules(project: dict[str, object], file: Path, proofs: Path) -> tuple
     for name in [*REQUIRED_PROOF_MODULES, *value]:
         if name not in value:
             raise ConfigError(file, "project.proof_modules", f"{name} is required")
-        if not (proofs / f"{name}.lean").is_file():
+        if not MODULE_NAME.fullmatch(name):
+            raise ConfigError(file, "project.proof_modules", f"{name} is not a Lean module name")
+        if not (proofs / (name.replace(".", "/") + ".lean")).is_file():
             raise ConfigError(file, "project.proof_modules", f"{name}.lean is missing in {proofs}")
     return tuple(value)
 
@@ -125,7 +135,7 @@ def load(file: Path, root: Path) -> ProjectConfig:
         data = tomllib.loads(file.read_text(encoding="utf-8"))
     except tomllib.TOMLDecodeError as error:
         raise ConfigError(file, "(file)", f"not valid TOML ({error})") from error
-    unknown_tables = set(data) - {"project", "test"}
+    unknown_tables = set(data) - TABLES
     project, test = data.get("project"), data.get("test", {})
     if unknown_tables or not isinstance(project, dict) or not isinstance(test, dict):
         raise ConfigError(file, "(tables)", "only the tables [project] and [test] are allowed, and [project] is required")
@@ -142,7 +152,7 @@ def load(file: Path, root: Path) -> ProjectConfig:
     baseline = (inside(file, root, "baseline", text(project, "baseline", file, "project"), directory=False)
                 if "baseline" in project else None)
     status = test.get("status")
-    if status is not None and status not in STATUSES:
+    if status is not None and (not isinstance(status, str) or status not in STATUSES):
         raise ConfigError(file, "test.status", f"one of {', '.join(sorted(STATUSES))} is required")
     return ProjectConfig(
         file=file.resolve(), profile=text(project, "profile", file, "project"),
