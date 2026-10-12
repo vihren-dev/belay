@@ -98,8 +98,8 @@ its artifact cache ([ADR 0010](adr-0010-lake-builds-and-artifact-cache.md)). Its
 cache starts from the case seeds (`build-support/case-seeds.nix`): one Nix derivation
 for each folder with a `belay.toml`, whose output is the Lake cache after preparing
 and verifying that case. A test that runs a case unchanged compiles nothing; a test
-that needs a cold cache passes `--cache` itself. A change to one case rebuilds only
-its seed. `just test-cases` keeps one cache under `build/lake-test-cache`.
+that needs a cold cache passes `--cache` itself. The seeds build with a runtime
+that has no `examples/` folder, so a change to one case rebuilds only its seed. `just test-cases` keeps one cache under `build/lake-test-cache`.
 
 While ADR 0010 is implemented, each pull request records its CI job times next to
 the latest comparable `main` run, and a big increase (starting threshold: 20 % or

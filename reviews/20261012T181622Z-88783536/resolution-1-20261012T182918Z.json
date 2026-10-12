@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-12T18:29:18+00:00",
+  "finding": "20261012T181622Z-88783536#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Seeds build with a runtime without examples/; the test evaluates that real runtime."
+}

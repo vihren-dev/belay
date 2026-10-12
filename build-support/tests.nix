@@ -1,5 +1,5 @@
 # Independent pytest targets: Nix owns isolation, dependency identity and reuse.
-{ pkgs, leanToolchain, leanRuntime, runtime, modelPackage, parserLibrary, conformance ? runtime, root ? ../.
+{ pkgs, leanToolchain, leanRuntime, runtime, seedRuntime, modelPackage, parserLibrary, conformance ? runtime, root ? ../.
 , native ? import ../nix/sqlite.nix { inherit pkgs; }
 , conformanceNative ? import ./conformance-native.nix { inherit pkgs; }
 }:
@@ -112,7 +112,7 @@ let
     (root + /conformance/corpus-v3)
     (root + /conformance/corpus-v2)
   ];
-  caseSeeds = import ./case-seeds.nix { inherit pkgs runtime root; };
+  caseSeeds = import ./case-seeds.nix { inherit pkgs root; runtime = seedRuntime; };
   modelTools = [ native.sqlite native.sqlite346 native.sqlite3534 ];
 in {
   sample = suite "sample" {

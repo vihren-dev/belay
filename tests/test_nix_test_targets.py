@@ -13,23 +13,41 @@ ROOT = Path(__file__).resolve().parents[1]
 pytestmark = [pytest.mark.integration, pytest.mark.environment, pytest.mark.requires_nix]
 
 
+def nix_string(path: Path) -> str:
+    """`path` as a Nix string literal; JSON quoting matches Nix's, except that `${` must not interpolate."""
+    return json.dumps(str(path)).replace("${", "\\${")
+
+
+def import_file(name: str) -> str:
+    """A Nix expression that imports `build-support/NAME` of this checkout."""
+    return f'import (builtins.toPath {nix_string(ROOT / "build-support" / name)})'
+
+
+def runtime_expression(root: Path, sources: str) -> str:
+    """The real runtime derivation (`runtime.nix`) built from the `sources` attribute of `sources.nix` for
+    the source tree `root`; Nix only evaluates it, so the tests see its true inputs."""
+    return f'''{import_file("runtime.nix")} {{
+        inherit pkgs; inherit (builds) leanToolchain leanRuntime modelPackage sources;
+        parserLibrary = builds.parserLibrary.library;
+        src = ({import_file("sources.nix")} {{ inherit (pkgs) lib; root = /. + {nix_string(root)}; }}).{sources};
+      }}'''
+
+
+PRELUDE = f'''let
+      pkgs = {import_file("locked-nixpkgs.nix")} {{}};
+      builds = {import_file("default.nix")} {{}};
+    in'''
+"""Binds `pkgs` and the real builds of this checkout for the expressions below."""
+
+
 def expression(root: Path) -> str:
     """Reuse the actual test definitions with a private source tree and unchanged runtime dependencies."""
-    quote = lambda path: json.dumps(str(path)).replace("${", "\\${")
-    return f'''let
-      pkgs = import (builtins.toPath {quote(ROOT / 'build-support/locked-nixpkgs.nix')}) {{}};
-      builds = import (builtins.toPath {quote(ROOT / 'build-support/default.nix')}) {{}};
-    in import (builtins.toPath {quote(ROOT / 'build-support/tests.nix')}) {{
+    return f'''{PRELUDE} {import_file("tests.nix")} {{
       inherit pkgs; inherit (builds) leanToolchain leanRuntime conformance modelPackage;
       parserLibrary = builds.parserLibrary.testRoot;
-      runtime = import (builtins.toPath {quote(ROOT / 'build-support/runtime.nix')}) {{
-        inherit pkgs; inherit (builds) leanToolchain leanRuntime modelPackage;
-        parserLibrary = builds.parserLibrary.library;
-        sources = builds.sources // {{ runtime = (import (builtins.toPath {quote(ROOT / 'build-support/sources.nix')}) {{
-          inherit (pkgs) lib; root = /. + {quote(root)};
-        }}).runtime; }};
-      }};
-      root = /. + {quote(root)};
+      runtime = {runtime_expression(root, "runtime")};
+      seedRuntime = {runtime_expression(root, "runtimeWithoutExamples")};
+      root = /. + {nix_string(root)};
     }}'''
 
 
@@ -138,12 +156,11 @@ def test_case_reader_change_reruns_only_targets_that_use_it(source_tree: Path) -
 
 
 def seed_derivations(root: Path) -> dict[str, str]:
-    """The derivation path of each case seed (`build-support/case-seeds.nix`) for a source tree."""
-    quote = lambda path: json.dumps(str(path)).replace("${", "\\${")
-    expression = (f'let pkgs = import (builtins.toPath {quote(ROOT / "build-support/locked-nixpkgs.nix")}) {{}}; '
-                  f'in builtins.mapAttrs (_: seed: seed.drvPath) (import (builtins.toPath '
-                  f'{quote(ROOT / "build-support/case-seeds.nix")}) {{ inherit pkgs; runtime = "/runtime"; '
-                  f'root = /. + {quote(root)}; }})')
+    """The derivation path of each case seed (`build-support/case-seeds.nix`) for a source tree, built with
+    the same runtime as `default.nix` gives the seeds."""
+    expression = (f'{PRELUDE} builtins.mapAttrs (_: seed: seed.drvPath) ({import_file("case-seeds.nix")} {{ '
+                  f'inherit pkgs; runtime = {runtime_expression(root, "runtimeWithoutExamples")}; '
+                  f'root = /. + {nix_string(root)}; }})')
     result = run_command(['nix-instantiate', '--eval', '--strict', '--json',
         '--extra-experimental-features', 'nix-command flakes', '--expr', expression], cwd=ROOT, timeout=120)
     assert result.returncode == 0, result.diagnostic()
@@ -158,8 +175,8 @@ def test_every_case_folder_has_one_seed(source_tree: Path) -> None:
 
 
 def test_case_change_rebuilds_only_its_seed(source_tree: Path) -> None:
-    """A seed's inputs are only what its `belay.toml` names, so editing one case's proof changes only that
-    case's seed (ADR 0010 section 8)."""
+    """A seed's inputs are what its `belay.toml` names and a runtime without examples/, so editing one
+    case's proof changes only that case's seed (ADR 0010 section 8)."""
     before = seed_derivations(source_tree)
     proof = source_tree / 'examples/table_then_column/Proofs.lean'
     proof.write_text(proof.read_text() + '\n-- A changed proof.\n')

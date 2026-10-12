@@ -1,12 +1,13 @@
 # Assemble immutable runtime artifacts for trusted source execution.
-{ pkgs, sources, leanToolchain, parserLibrary, leanRuntime, modelPackage }:
+# `src` defaults to the runtime sources; case seeds give the sources without examples.
+{ pkgs, sources, leanToolchain, parserLibrary, leanRuntime, modelPackage, src ? sources.runtime }:
 let
   python = pkgs.python3;
   runtimePath = pkgs.lib.makeBinPath [ python ];
 in pkgs.stdenv.mkDerivation {
   pname = "sqlite-verifier-runtime";
   version = "1";
-  src = sources.runtime;
+  inherit src;
   nativeBuildInputs = [ python leanToolchain ];
   dontConfigure = true;
   dontBuild = true;

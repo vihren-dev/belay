@@ -44,3 +44,11 @@ Relevant files: `build-support/tests.nix`, `tests/nix_suites.json`,
     tests before the seeds, locally); `cli` 17, `atuin` 12; `just test-source`
     544 passed. `verify-bundle` now reports `compiled_modules` for a
     refutation too (`Rejection` details), so the refutation case can be checked.
+  - Review of the first commit (3 "should" findings, fixed): the runtime held
+    all examples, so one case change rebuilt every seed. Seeds now build with
+    `seedRuntime`, the runtime without `examples/`; the Nix evaluation tests
+    use the real runtimes. With that runtime, Atuin's `Check` missed the
+    cache: `discover_sources` kept imports in a set, so the module order of
+    the generated audit module changed with Python's string hashing. The
+    graph now keeps import order; `project_phases_test.py` pins Atuin's order.
+    `bundle` 94 passed in 174 s; `just test-source` 544 passed.

@@ -284,7 +284,9 @@ cache once and gives a copy to each target:
   (`runtime`, `leanRoot`, the conformance runtime) get hits when the library
   contents are the same. A difference causes misses, not wrong results.
 - **Reruns.** A seed depends on its case, the runtime and the Python code that
-  generates `SchemaInputs`/`SqlInputs`. Targets already run again on runtime
+  generates `SchemaInputs`/`SqlInputs`. The seeds use a runtime without the
+  `examples/` folder, which is otherwise the same, so a change to one example
+  does not rebuild the other seeds. Targets already run again on runtime
   and Python changes; a case change adds reruns only for the targets that use
   that case. A seed takes about 1 s, or 5 s for Atuin, before its targets start.
 - **Trust.** Seeds are built in the Nix sandbox from repository sources, so

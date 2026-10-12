@@ -19,6 +19,12 @@ let
     (extensions [ "lean" ] (root + /SqliteVerifier))
     (root + /lakefile.toml) (root + /lake-manifest.json) (root + /lean-toolchain)
   ];
+  runtimeFiles = fs.unions [
+    (extensions [ "py" ] (root + /migration_check))
+    (extensions [ "py" ] (root + /belay/sqlite))
+    (root + /LICENSE) (root + /docs/install.md)
+    (root + /packaging/install.py) (root + /packaging/install.sh)
+  ];
 in {
   model = fs.toSource {
     root = root + /packages/belay-sqlite;
@@ -29,13 +35,11 @@ in {
       (root + /packages/belay-sqlite/lean-toolchain)
     ];
   };
-  runtime = source (fs.unions [
-    (extensions [ "py" ] (root + /migration_check))
-    (extensions [ "py" ] (root + /belay/sqlite))
-    (filtered (file: file.name != ".DS_Store" && !file.hasExt "pyc") (root + /examples))
-    (root + /LICENSE) (root + /docs/install.md)
-    (root + /packaging/install.py) (root + /packaging/install.sh)
-  ]);
+  runtime = source (fs.unions [ runtimeFiles
+    (filtered (file: file.name != ".DS_Store" && !file.hasExt "pyc") (root + /examples)) ]);
+  # The runtime without examples/: case seeds build against it, so a change to one example
+  # rebuilds only that example's seed (ADR 0010 section 8).
+  runtimeWithoutExamples = source runtimeFiles;
   lean = source leanFiles;
   conformanceLean = source (fs.unions [ leanFiles
     (root + /ConformanceRunner.lean) (extensions [ "lean" ] (root + /VerifierConformance)) ]);

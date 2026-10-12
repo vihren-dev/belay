@@ -51,7 +51,7 @@ in rec {
     inherit pkgs; inherit (conformanceNative) fixture upstream;
   };
   tests = import ./tests.nix {
-    inherit pkgs leanToolchain leanRuntime runtime native conformance modelPackage root;
+    inherit pkgs leanToolchain leanRuntime runtime seedRuntime native conformance modelPackage root;
     parserLibrary = parserLibrary.testRoot;
   };
   # `just test` skips the slow model comparisons, the frozen evidence and the locked-corpus validation;
@@ -60,6 +60,12 @@ in rec {
   runtime = import ./runtime.nix {
     inherit pkgs sources leanToolchain leanRuntime modelPackage;
     parserLibrary = parserLibrary.library;
+  };
+  # The runtime without examples/, for the case seeds: a change to one example rebuilds only its seed.
+  seedRuntime = import ./runtime.nix {
+    inherit pkgs sources leanToolchain leanRuntime modelPackage;
+    parserLibrary = parserLibrary.library;
+    src = sources.runtimeWithoutExamples;
   };
   # The in-process SQLite parser library of the verifier and the harness; tests.parserLibrary checks it.
   parserLibrary = import ./parser-library.nix { inherit pkgs root; };

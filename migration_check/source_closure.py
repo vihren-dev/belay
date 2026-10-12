@@ -125,6 +125,9 @@ def discover_sources(*, initial: dict[str, Source], roots: Sequence[Path],
                      imports_out: dict[str, tuple[str, ...]] | None = None) -> tuple[dict[str, Source], tuple[str, ...]]:
     """Snapshot only reachable local sources and reject ambiguous or cyclic dependencies.
 
+    The module order is a function of the sources only, so generated files that list
+    the modules are the same in each run and keep their Lake cache entries.
+
     When given, `external` collects imports resolved from the pinned sysroot or
     verifier libraries; exported bundles name these trusted modules instead of
     repeating their declarations. When given, `imports_out` receives each
@@ -134,7 +137,8 @@ def discover_sources(*, initial: dict[str, Source], roots: Sequence[Path],
     sources = dict(initial)
     excluded_ids = {file_identity(path) for path in excluded}
     forbidden_folded = {name.casefold() for name in forbidden}
-    graph: dict[str, set[str]] = {}
+    # Imports in source order (a dict, not a set), so the module order does not depend on string hashing.
+    graph: dict[str, dict[str, None]] = {}
     pending = list(initial)
     while pending:
         name = pending.pop()
@@ -152,7 +156,7 @@ def discover_sources(*, initial: dict[str, Source], roots: Sequence[Path],
         dependencies = imports(snapshot, sysroot, libraries, workspace)
         if imports_out is not None:
             imports_out[name] = dependencies
-        graph[name] = set()
+        graph[name] = {}
         for dependency in dependencies:
             dep_path = module_path(dependency)
             if dependency in available:
@@ -179,6 +183,6 @@ def discover_sources(*, initial: dict[str, Source], roots: Sequence[Path],
                               if value.path is not None and file_identity(value.path) == identity), None)
                 sources[dependency] = Source(origin, (f"import {alias}\n".encode()
                     if alias else origin.read_bytes()))
-            graph[name].add(dependency)
+            graph[name][dependency] = None
             pending.append(dependency)
     return sources, tuple(TopologicalSorter(graph).static_order())

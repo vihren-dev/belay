@@ -6,6 +6,7 @@ kernel checking is refused before Lake runs.
 """
 
 from collections.abc import Callable
+import json
 from pathlib import Path
 
 import pytest
@@ -73,6 +74,25 @@ def test_generate_is_stable(small: ProjectConfig, phase: Callable[..., dict[str,
     first, second = phase("generate", *arguments), phase("generate", *arguments)
     assert set(first["written_modules"]) == {"SchemaInputs", "SqlInputs", "Generated", "Check"}, first
     assert second["written_modules"] == [], second
+
+
+ATUIN_MODULES = ["SchemaBinding", "HistoryModel", "HistoryDecoding", "HistoryMapping", "Requirements",
+                 "Interpretation", "SchemaInputs", "SqlInputs", "Generated", "NextInterpretation", "AtuinWitness",
+                 "HistoryDecodingChecks", "AtuinFacts", "Proofs"]
+"""The Atuin case's contract, generated and candidate modules in the order its import graph gives."""
+
+
+def test_audit_module_lists_modules_in_import_order(example_factory: Callable[[str], Path],
+                                                    phase: Callable[..., dict[str, object]]) -> None:
+    """`source_closure.discover_sources` orders the modules from the imports only, so `generate` writes the
+    same `Check` in each process and Lake keeps its cache entry. With an unordered set of imports, the order of
+    Atuin's modules changed with Python's string hashing, which is random for each process."""
+    examples = example_factory(".")
+    atuin = load(examples / "atuin/belay.toml", examples)
+    assert phase("generate", *atuin.contract_arguments(), "--project", str(atuin.proofs))["status"] == "GENERATED"
+    audit = (atuin.proofs / "Generated/Check.lean").read_text()
+    allowed = json.loads(audit[audit.index(" allowing ") + len(" allowing "):])
+    assert allowed[allowed.index("SchemaBinding"):] == ATUIN_MODULES, allowed
 
 
 def test_lakefile_that_skips_kernel_checks_is_refused(small: ProjectConfig,
