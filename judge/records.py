@@ -18,7 +18,7 @@ WITH_OUTPUTS = (3, 4)
 """Native record versions that carry statement parameters and outputs."""
 
 
-def expanded(record: Json) -> dict[str, Json]:
+def expanded(record: Json, where: str) -> dict[str, Json]:
     """A record with its shared snapshots put back in place.
 
     Sharded corpora store each distinct table snapshot once, in `snapshots`, and refer to
@@ -26,7 +26,7 @@ def expanded(record: Json) -> dict[str, Json]:
     checked again here.
     """
     if not isinstance(record, dict):
-        raise ValueError("a record is not a JSON object")
+        raise ValueError(f"{where}: a record is not a JSON object; each line of a corpus file must hold one record")
     if "snapshots" not in record:
         return record
     pool = record["snapshots"]
@@ -37,11 +37,12 @@ def expanded(record: Json) -> dict[str, Json]:
 
 
 def lines(path: Path) -> Iterator[dict[str, Json]]:
-    """The records of one gzip-compressed JSON-lines file."""
+    """The records of one gzip-compressed JSON-lines file, expanded, so that single-file and
+    sharded corpora give the judge records of one form."""
     with gzip.open(path, "rt", encoding="utf-8") as stream:
-        for line in stream:
+        for number, line in enumerate(stream, start=1):
             if line.strip():
-                yield expanded(json.loads(line))
+                yield expanded(json.loads(line), f"{path}:{number}")
 
 
 def corpus_records(directory: Path) -> Iterator[dict[str, Json]]:
