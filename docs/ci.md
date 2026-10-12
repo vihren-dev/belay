@@ -209,8 +209,10 @@ review as other changes.
 
 ## Verdict of the development claims
 
-The `Verdict` workflow (`.github/workflows/verdict.yml`) is a required check of
-every pull request, including documentation-only ones (ADR 0011). It runs
+The `Verdict` workflow (`.github/workflows/verdict.yml`) runs on every pull
+request, including documentation-only ones (ADR 0011). It becomes a required
+check of ruleset 23934665 when the owner adds it there after this workflow is
+on `main`. It runs
 `nix-build nix/judge.nix -A verdict` and nothing else on its host, and it
 restores no GitHub Actions cache.
 
