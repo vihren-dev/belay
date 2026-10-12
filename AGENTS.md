@@ -142,8 +142,9 @@ reviews commits from Codex sessions.
   `just review-resolve FINDING-ID fixed`, or `rejected "REASON"`, or
   `deferred "REASON"`. `just review` prints the finding ids. Reject a finding
   when it is wrong, and say why.
-- `just review` and `just review-resolve` add lines to `reviews/log.jsonl`.
-  Commit the log with your next commit. Do not edit or delete log lines.
+- `just review` and `just review-resolve` each add one new record file under
+  `reviews/`. Commit the new files with your next commit. Do not edit or delete
+  record files.
 - The owner uses `just review-stats` to find conditions that never fire, are
   mostly rejected, or that nobody acts on, and removes or rewrites them.
 - Exit code 2: the command cannot choose a reviewer or revision; follow its

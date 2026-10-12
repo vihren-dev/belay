@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-11T11:00:09+00:00",
+  "finding": "20261011T105958Z-d6909b37#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The owner decided on 2026-10-11 to accept new frozen-log lines until all branches are rebased (step 2 of plans/20261011-review-log-per-record-files.task.md); step 3 converts the log and removes this rule."
+}

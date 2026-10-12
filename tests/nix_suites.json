@@ -26,7 +26,8 @@
     "tests/conformance_laws_test.py",
     "tests/conformance_record_test.py",
     "tests/conformance_trace_test.py",
-    "tests/conformance_dqs_test.py"
+    "tests/conformance_dqs_test.py",
+    "tests/shared_table_shape_test.py"
   ],
   "frozen": [
     "tests/conformance_progress_views_test.py",
@@ -85,5 +86,8 @@
   ],
   "parserLibrary": [
     "tests/parser_library_test.py"
+  ],
+  "pinned": [
+    "tests/conformance_pinned_corpora_test.py"
   ]
 }

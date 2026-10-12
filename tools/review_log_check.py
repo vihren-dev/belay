@@ -1,14 +1,19 @@
-"""Check that the review log only grows: each line is a record, and no base line is lost.
+"""Check that the review log only grows: records are added, and no base record is lost or changed.
 
-`AGENTS.md` forbids editing or deleting lines of `reviews/log.jsonl`. CI runs this check in
-every scope, so a pull request that changes only documentation and the log can skip the
-build, and still cannot change or remove a review record. Merges of main into a branch
-reorder lines and can remove a line that both sides contain, so the check requires each
-base line to be present, not a position or a count.
+`AGENTS.md` forbids editing or deleting review records. CI runs this check in every scope,
+so a pull request that changes only documentation and records can skip the build, and still
+cannot change or remove a review record. Each record is one file (`tools/review_records.py`):
+each base file must be present with the same bytes, and each file must hold a valid record at
+the path that its record determines.
+
+`reviews/log.jsonl` held the records written before record files. The change that converts it
+deletes it; for that change only, the check accepts the deletion when each of its records exists
+as a record file (`plans/20261011-review-log-conversion.task.md`). A follow-up removes the rule.
 """
 
 import argparse
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -16,8 +21,10 @@ import re
 import subprocess
 import sys
 
-LOG = "reviews/log.jsonl"
-"""The log path, relative to the repository root."""
+from tools.review_records import DIRECTORY, is_record_path, path_problem
+
+CONVERTED_LOG = f"{DIRECTORY}/log.jsonl"
+"""The converted one-line-per-record log, relative to the repository root."""
 REQUIRED_FIELDS = {"review": frozenset({"kind", "id", "commit", "date", "findings", "well_formed"}),
                    "resolution": frozenset({"kind", "finding", "outcome", "date"})}
 """The fields of each record kind, as `tools/review.py` and `tools/review_log.py` write them."""
@@ -26,13 +33,13 @@ BASE_VARIABLE = "REVIEW_LOG_BASE"
 NO_BASE = "0" * 40
 """Git's hash for a missing commit, which GitHub sends for a new branch."""
 GIT_TIMEOUT_SECONDS = 30
-"""Reading one file from a local commit."""
+"""Reading the reviews directory of one local commit."""
 
 
-def record_problem(line: str) -> str | None:
-    """Why one log line is not a review record, or `None` when it is one."""
+def record_problem(text: str) -> str | None:
+    """Why one log line or record file is not a review record, or `None` when it is one."""
     try:
-        record = json.loads(line)
+        record = json.loads(text)
     except json.JSONDecodeError:
         return "not JSON"
     if not isinstance(record, dict):
@@ -45,33 +52,76 @@ def record_problem(line: str) -> str | None:
     return f"missing fields {', '.join(missing)}" if missing else None
 
 
-def problems(base: Sequence[str], head: Sequence[str]) -> list[str]:
-    """The violations of the append-only rule from the base log to the head log.
+def canonical(record: object) -> str:
+    """One record as text that does not depend on key order or spacing, to compare records."""
+    return json.dumps(record, ensure_ascii=False, sort_keys=True)
 
-    Each head line must be a record, and each base line must occur in the head log unchanged.
-    The rule requires nothing about the order of lines or about repeated lines.
+
+def conversion_problems(base_log: Sequence[str], head: Mapping[str, bytes]) -> list[str]:
+    """The records of the base commit's converted log that no head record file holds.
+
+    `head` maps each path under `reviews/` to its working-tree bytes.
     """
-    found = [f"line {number}: {problem}" for number, line in enumerate(head, start=1)
-             if (problem := record_problem(line)) is not None]
-    present = set(head)
-    found += [f"base line {number} is changed or removed" for number, line in enumerate(base, start=1)
-              if line not in present]
+    stored = {canonical(json.loads(content)) for path, content in head.items()
+              if is_record_path(path) and record_problem(content.decode("utf-8", errors="replace")) is None}
+    return [f"{CONVERTED_LOG} line {number}: no record file holds this record"
+            for number, line in enumerate(base_log, start=1)
+            if line.strip() and canonical(json.loads(line)) not in stored]
+
+
+def blob_hash(content: bytes) -> str:
+    """Git's object id of a file's content, to compare a working-tree file with a base blob."""
+    return hashlib.sha1(b"blob %d\0" % len(content) + content).hexdigest()
+
+
+def file_problems(base: Mapping[str, str], head: Mapping[str, bytes]) -> list[str]:
+    """The violations of the append-only rule for record files.
+
+    `base` maps each repository path under `reviews/` to its blob hash in the base commit;
+    `head` maps each path under `reviews/` to its working-tree bytes. A base converted log is
+    checked by `conversion_problems` instead.
+    """
+    found: list[str] = []
+    for path, content in sorted(head.items()):
+        if not is_record_path(path):
+            found.append(f"{path}: not a record file; use ID/review.json or ID/resolution-N-SECOND.json")
+            continue
+        text = content.decode("utf-8", errors="replace")
+        problem = record_problem(text) or path_problem(path.removeprefix(f"{DIRECTORY}/"), json.loads(text))
+        if problem is not None:
+            found.append(f"{path}: {problem}")
+    found += [f"{path}: base record file is changed or removed" for path, blob in sorted(base.items())
+              if path != CONVERTED_LOG and (path not in head or blob_hash(head[path]) != blob)]
     return found
 
 
-def base_lines(root: Path, base: str) -> list[str]:
-    """The log lines of the base commit; a commit without the log has none."""
+def git(root: Path, *arguments: str) -> str:
+    """The output of one Git command that reads the local repository. CI has Git but no jj, so
+    the check reads the base commit with Git."""
+    return subprocess.run(["git", *arguments], cwd=root, check=True, capture_output=True, text=True,
+                          timeout=GIT_TIMEOUT_SECONDS).stdout
+
+
+def base_files(root: Path, base: str) -> dict[str, str]:
+    """The blob hash of each file under `reviews/` in the base commit; a commit without it has none.
+    Comparing blob hashes finds a changed record file without reading each base file."""
     if re.fullmatch(r"[0-9a-f]{40}", base) is None:
         raise ValueError(f"{BASE_VARIABLE} must be a full commit hash, not {base!r}")
     if base == NO_BASE:
-        return []
-    listed = subprocess.run(["git", "ls-tree", "--name-only", base, LOG], cwd=root, check=True,
-                            capture_output=True, text=True, timeout=GIT_TIMEOUT_SECONDS)
-    if not listed.stdout.strip():
-        return []
-    shown = subprocess.run(["git", "show", f"{base}:{LOG}"], cwd=root, check=True,
-                           capture_output=True, text=True, timeout=GIT_TIMEOUT_SECONDS)
-    return shown.stdout.splitlines()
+        return {}
+    files: dict[str, str] = {}
+    for entry in git(root, "ls-tree", "-r", base, "--", f"{DIRECTORY}/").splitlines():
+        details, path = entry.split("\t", 1)
+        files[path] = details.split()[2]
+    return files
+
+
+def head_files(root: Path) -> dict[str, bytes]:
+    """The bytes of each file under `reviews/` in the working tree, which is the change under check.
+    Every file is listed, so the check also finds files that are not records."""
+    directory = root / DIRECTORY
+    return {path.relative_to(root).as_posix(): path.read_bytes()
+            for path in sorted(directory.rglob("*")) if path.is_file()} if directory.is_dir() else {}
 
 
 def main(arguments: Sequence[str]) -> int:
@@ -79,13 +129,15 @@ def main(arguments: Sequence[str]) -> int:
     parser = argparse.ArgumentParser(description=main.__doc__)
     parser.add_argument("--root", type=Path, default=Path.cwd())
     options = parser.parse_args(arguments)
-    log = options.root / LOG
-    head = log.read_text(encoding="utf-8").splitlines() if log.exists() else []
     base = os.environ.get(BASE_VARIABLE, "")
-    found = problems(base_lines(options.root, base) if base else [], head)
+    base_blobs = base_files(options.root, base) if base else {}
+    head = head_files(options.root)
+    base_log = (git(options.root, "show", f"{base}:{CONVERTED_LOG}").splitlines()
+                if CONVERTED_LOG in base_blobs else [])
+    found = conversion_problems(base_log, head) + file_problems(base_blobs, head)
     for problem in found:
-        print(f"review log: {LOG}: {problem}; restore the original line and add new records "
-              f"only at the end", file=sys.stderr)
+        print(f"review log: {problem}; restore the original record files and add each new record "
+              f"with `just review` or `just review-resolve`", file=sys.stderr)
     return 1 if found else 0
 
 

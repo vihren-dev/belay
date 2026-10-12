@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-06T12:58:59+00:00",
+  "finding": "20261006T124913Z-452e432c#4",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "This is the exact historical helper actually executed, and its byte hash binds the retained run. Keep those executed evidence bytes unchanged. The bounded real Linux execution and complete native comparisons passed; apply policy extraction, small fixture tests and diagnostic improvements only in a future measurement revision."
+}
