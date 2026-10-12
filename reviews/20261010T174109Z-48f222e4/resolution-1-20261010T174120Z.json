@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-10T17:41:20+00:00",
+  "finding": "20261010T174109Z-48f222e4#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "A manual measurement script of the ADR 0003 experiment; this commit repairs its calls only. A test would compile three Lean example projects in each CI run. Verified by running the script, which prepared all three cases."
+}
