@@ -20,3 +20,27 @@ Relevant files: `build-support/tests.nix`, `tests/nix_suites.json`,
   numbers.
 - 2026-10-12: ADR 0010 accepted with the owner's decisions; the task is
   ready. CI times are recorded from the first pull request (section 11).
+- 2026-10-12: started, stacked on PR #96.
+  - Design choice (told to the owner): a seed's output is the Lake cache
+    folder that `prepare` and `verify-bundle` filled; a test target merges
+    the seeds by copying them into one writable cache. `lake cache unstage`
+    needs a workspace whose package name matches each mapping file, so the
+    staged form would need dummy workspaces. The copy depends on Lake's cache
+    layout; the test that unchanged cases compile nothing fails if an upgrade
+    changes it.
+  - `build-support/case-seeds.nix` and `case_seed.py`: one seed per case
+    folder, with only the files its `belay.toml` names as inputs; the seed
+    requires the case's expected status.
+  - `tests.nix`: `suite` takes `seeds`; the `bundle` target copies them into
+    `$TMPDIR/lake-cache` and sets `BELAY_TEST_CACHE` and `BELAY_TEST_SEEDED`.
+    `conftest.py` gives children that cache; `just test-cases` keeps one
+    under `build/lake-test-cache`. Tests that need a cold cache pass
+    `--cache` themselves.
+  - Tests: `tests/case_seeds_test.py` (unchanged cases compile nothing),
+    the toolchain commit check, and Nix evaluation tests (one seed per case
+    folder; a case change rebuilds only its seed). The CI store tool keeps
+    seeds already: it roots the test targets with `keep-outputs`.
+  - Checks: Nix target `bundle` with seeds 93 passed in 176 s (229 s for 86
+    tests before the seeds, locally); `cli` 17, `atuin` 12; `just test-source`
+    544 passed. `verify-bundle` now reports `compiled_modules` for a
+    refutation too (`Rejection` details), so the refutation case can be checked.

@@ -9,6 +9,7 @@ or fail on the read-only installation.
 from collections.abc import Callable
 import os
 from pathlib import Path
+import re
 import subprocess
 
 import pytest
@@ -69,3 +70,11 @@ def test_lake_build_over_its_deadline_is_stopped(runtime_root: Path, tmp_path: P
     (tmp_path / "slow/Probe.lean").write_text("import SqliteVerifier\ndef x : Nat := 1\n")
     with pytest.raises(subprocess.TimeoutExpired):
         lake_build(tmp_path / "slow", runtime_root / "lean", tmp_path / "cache", LIBRARY_PREFIXES, timeout=0.05)
+
+
+def test_toolchain_reports_its_commit(runtime_root: Path, tmp_path: Path,
+                                      command_runner: Callable[..., CommandResult]) -> None:
+    """The pinned `lean --version` names the toolchain's commit: Lake puts it in every cache key, and a Lean
+    that reports only a release tag gets keys that never match a cache (ledger/ledger#3270)."""
+    result = command_runner([str(runtime_root / "lean/bin/lean"), "--version"], cwd=tmp_path, timeout=30)
+    assert result.returncode == 0 and re.search(r"commit [0-9a-f]{40}", result.stdout), result.diagnostic()

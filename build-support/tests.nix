@@ -30,7 +30,8 @@ let
     mkdir -p "$out/packages"
     ln -s ${modelPackage} "$out/packages/belay-sqlite"
   '';
-  suite = name: { inputs, runtime, tools ? [], environment ? {} }:
+  # `seeds`: Lake cache seeds (case-seeds.nix) copied into one writable cache that the tests use (ADR 0010).
+  suite = name: { inputs, runtime, tools ? [], environment ? {}, seeds ? [] }:
     let
       files = (builtins.fromJSON (builtins.readFile (root + /tests/nix_suites.json))).${name};
       file = builtins.head files;
@@ -45,6 +46,13 @@ let
       installPhase = ''
         export HOME="$TMPDIR"
         export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+        ${pkgs.lib.optionalString (seeds != [ ]) ''
+          export BELAY_TEST_CACHE="$TMPDIR/lake-cache" BELAY_TEST_SEEDED=1
+          mkdir -p "$BELAY_TEST_CACHE"
+          for seed in ${pkgs.lib.concatStringsSep " " (map toString seeds)}; do
+            cp -R --no-preserve=mode "$seed/." "$BELAY_TEST_CACHE/"
+          done
+        ''}
         timeout ${toString suiteTimeoutSeconds} python3 -m pytest ${file} ${pkgs.lib.concatStringsSep " " extraFiles} --runtime-root ${runtime} \
           -p no:cacheprovider -p pytest_timeout --timeout=${toString testTimeoutSeconds} \
           --junitxml "$out/junit.xml" -v --durations=10
@@ -104,6 +112,7 @@ let
     (root + /conformance/corpus-v3)
     (root + /conformance/corpus-v2)
   ];
+  caseSeeds = import ./case-seeds.nix { inherit pkgs runtime root; };
   modelTools = [ native.sqlite native.sqlite346 native.sqlite3534 ];
 in {
   sample = suite "sample" {
@@ -187,6 +196,7 @@ in {
     inherit runtime;
   };
   bundle = suite "bundle" {
+    seeds = builtins.attrValues caseSeeds;
     inputs = [
       (fs.fileFilter (file: file.hasExt "py") (root + /migration_check))
       (fs.fileFilter (file: file.hasExt "py") (root + /belay/sqlite))

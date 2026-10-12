@@ -74,7 +74,7 @@ With `--format json` each command prints one JSON object.
 | `prepare` | Bundle written | `{"status": "PREPARED", "bundle": PATH, "compiled_modules": [...], "warnings": [...]}`; a warning names approved code that runs during elaboration (`#eval`, `run_cmd`, `initialize`, syntax extensions), whose cached outputs can differ from fresh ones | 0 |
 | `verify-bundle` | Proof checked | `{"status": "VERIFIED", "profile": ..., "statements": N, "inputs": {...}, "compiled_modules": [...]}`; `inputs` holds the same hashes as `verify` plus `"bundle"`, the SHA-256 of the bundle file | 0 |
 | `clean-cache` | Other builds' folders removed | `{"status": "CLEANED", "root": PATH, "removed": [...]}` | 0 |
-| `verify-bundle` | Refutation checked | `{"status": "VIOLATED", "message": ...}` | 1 |
+| `verify-bundle` | Refutation checked | `{"status": "VIOLATED", "message": ..., "compiled_modules": [...]}` | 1 |
 | either | Anything else | `{"status": "INPUT_ERROR" \| "UNSUPPORTED" \| "UNVERIFIED", "message": ...}` | 1 |
 
 `compiled_modules` lists the modules that Lake compiled in this run; modules that

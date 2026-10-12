@@ -13,7 +13,8 @@
     "tests/bundle_cache_test.py",
     "tests/prepare_warning_test.py",
     "tests/project_phases_test.py",
-    "tests/cache_domains_test.py"
+    "tests/cache_domains_test.py",
+    "tests/case_seeds_test.py"
   ],
   "cli": [
     "tests/cli_test.py"

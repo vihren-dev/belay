@@ -28,7 +28,7 @@ def data_path(runtime_root: Path, tmp_path: Path,
     """Prepare a bundle from one contract/candidate pair, then verify it against another contract."""
     def run(*, approved: Path, candidate: Path, schema: Path, profile: str = "3.51.0",
             checked_approved: Path | None = None, checked_migration: Path | None = None,
-            directory: Path | None = None, audit: bool = True) -> dict[str, object]:
+            directory: Path | None = None, audit: bool = True, cache: Path | None = None) -> dict[str, object]:
         """Return verify-bundle's JSON report after asserting prepare succeeded."""
         def common(contract: Path, migration: Path) -> list[str]:
             return ["--profile", profile, "--format", "json", "--schema", str(schema),
@@ -45,17 +45,18 @@ def data_path(runtime_root: Path, tmp_path: Path,
                                   "--requirements", str(approved / "Requirements.lean"),
                                   "--interpretation", str(approved / "Interpretation.lean")], cwd=tmp_path, timeout=120)
         assert created.returncode == 0, created.diagnostic()
+        caching = ["--cache", str(cache)] if cache is not None else []
         inputs, target = [*common(approved, candidate / "migration.sql"), "--project", str(project)], str(bundle)
         # Without the audit, the phases build a bundle as an agent's own tools could; verify-bundle judges it.
-        steps = ([["prepare", *inputs, "--output", target]] if audit else
-                 [["generate", *inputs], ["check", "--project", str(project), "--format", "json"],
-                  ["export", *inputs, "--output", target]])
+        steps = ([["prepare", *inputs, "--output", target, *caching]] if audit else
+                 [["generate", *inputs], ["check", "--project", str(project), "--format", "json", *caching],
+                  ["export", *inputs, "--output", target, *caching]])
         for step in steps:
             prepared = command_runner([launcher, *step], cwd=tmp_path, timeout=180)
             assert prepared.returncode == 0, prepared.diagnostic()
         checked = command_runner([launcher, "verify-bundle",
                                   *common(checked_approved or approved, checked_migration or candidate / "migration.sql"),
-                                  "--bundle", str(bundle)], cwd=tmp_path, timeout=120)
+                                  "--bundle", str(bundle), *caching], cwd=tmp_path, timeout=120)
         report = checked.json_object()
         assert checked.returncode == (0 if report["status"] == "VERIFIED" else 1), checked.diagnostic()
         return report

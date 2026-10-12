@@ -260,19 +260,23 @@ target's result depend on the order of the targets. Instead, Nix builds the
 cache once and gives a copy to each target:
 
 - **Seed derivations.** Nix reads the case folders (`builtins.readDir`) and
-  makes one seed derivation for each case (stage 2). A seed runs `prepare` and
-  `verify-bundle`, so it holds the outputs of both the proofs project and the
-  verifier's workspace. Seeds build in parallel, and a change to one case
-  rebuilds only its seed. The staged outputs are small: 40 KB for the small
-  example, 188 KB for Atuin.
+  makes one seed derivation for each case (stage 2), with only the files its
+  `belay.toml` names as inputs. A seed runs `prepare` and `verify-bundle` with
+  one cache, and its output is that cache folder, so it holds the outputs of
+  both the proofs project and the verifier's workspace. Seeds build in
+  parallel, and a change to one case rebuilds only its seed.
 - **Test targets.** Each target that runs `prepare` or `verify-bundle` takes
   the seeds of the cases it uses. Tests of `verify` take none; they move to the
-  two commands when `verify` is removed. At start, a target runs `lake cache
-  unstage` for each seed into a writable cache in its `$TMPDIR` (inside a
-  generated workspace, because Lake stores mappings for each package) and
-  passes that cache to the verifier. A test that uses a case as it is compiles
-  nothing. A test that changes its inputs compiles only the changed modules,
-  and later tests in the same target reuse them.
+  two commands when `verify` is removed. Before its tests start, a target
+  copies the seeds into one writable cache in its `$TMPDIR` (cache entries are
+  addressed by content, so seeds do not conflict) and passes that cache to the
+  verifier. A test that uses a case as it is compiles nothing. A test that
+  changes its inputs compiles only the changed modules, and later tests in the
+  same target reuse them. (Implemented 2026-10-12: copying the cache folder
+  replaced `lake cache stage` and `unstage`, because `unstage` needs a
+  workspace whose package name matches each mapping file. If a Lake upgrade
+  changes the cache layout, the test that unchanged cases compile nothing
+  fails.)
 - **Fixture environment.** Installed-runtime tests give each child a clean
   environment (`runtime_environment` in `conftest.py`). The cache setting is
   added there; a variable set on the derivation does not reach the verifier.

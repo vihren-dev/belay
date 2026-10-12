@@ -135,3 +135,33 @@ def test_case_reader_change_reruns_only_targets_that_use_it(source_tree: Path) -
     reader.write_text(reader.read_text() + '\n# A changed reader.\n')
     after = target_derivations(source_tree)
     assert {name for name in before if before[name] != after[name]} == {'atuin', 'bundle', 'cli'}
+
+
+def seed_derivations(root: Path) -> dict[str, str]:
+    """The derivation path of each case seed (`build-support/case-seeds.nix`) for a source tree."""
+    quote = lambda path: json.dumps(str(path)).replace("${", "\\${")
+    expression = (f'let pkgs = import (builtins.toPath {quote(ROOT / "build-support/locked-nixpkgs.nix")}) {{}}; '
+                  f'in builtins.mapAttrs (_: seed: seed.drvPath) (import (builtins.toPath '
+                  f'{quote(ROOT / "build-support/case-seeds.nix")}) {{ inherit pkgs; runtime = "/runtime"; '
+                  f'root = /. + {quote(root)}; }})')
+    result = run_command(['nix-instantiate', '--eval', '--strict', '--json',
+        '--extra-experimental-features', 'nix-command flakes', '--expr', expression], cwd=ROOT, timeout=120)
+    assert result.returncode == 0, result.diagnostic()
+    return json.loads(result.stdout)
+
+
+def test_every_case_folder_has_one_seed(source_tree: Path) -> None:
+    """`case-seeds.nix` finds the cases from their folders: one seed for each folder with a `belay.toml`."""
+    folders = {path.parent.relative_to(source_tree).as_posix()
+               for path in (source_tree / 'examples').rglob('belay.toml')}
+    assert folders and set(seed_derivations(source_tree)) == folders
+
+
+def test_case_change_rebuilds_only_its_seed(source_tree: Path) -> None:
+    """A seed's inputs are only what its `belay.toml` names, so editing one case's proof changes only that
+    case's seed (ADR 0010 section 8)."""
+    before = seed_derivations(source_tree)
+    proof = source_tree / 'examples/table_then_column/Proofs.lean'
+    proof.write_text(proof.read_text() + '\n-- A changed proof.\n')
+    after = seed_derivations(source_tree)
+    assert {name for name in before if before[name] != after[name]} == {'examples/table_then_column'}
