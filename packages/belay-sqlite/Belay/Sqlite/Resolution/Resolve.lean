@@ -1,4 +1,4 @@
-import Belay.Sqlite.Resolution.Writes
+import Belay.Sqlite.Resolution.Queries
 
 set_option doc.verso true
 
@@ -42,6 +42,8 @@ def resolveStatement (context : ResolveContext) (state : ResolveState) (index : 
   | .insert table columns rows => state.withCatalog (resolveInsert context state.catalog index table columns rows)
   | .update table assignments filter =>
     state.withCatalog (resolveUpdate context state.catalog index table assignments filter)
+  | .select columns table filter groupBy orderBy limit offset =>
+    state.withCatalog (resolveSelect context state.catalog index columns table filter groupBy orderBy limit offset)
 
 /-- Resolve the statements from a zero-based index and a state, in order. -/
 def resolveFrom (context : ResolveContext) (index : Nat) (state : ResolveState) :

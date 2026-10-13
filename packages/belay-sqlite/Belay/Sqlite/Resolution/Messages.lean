@@ -8,6 +8,13 @@ appear as written in the statement, as SQLite prints them. -/
 
 namespace Belay.Sqlite
 
+/-- An ordinal as SQLite's {lit}`%r` format writes it: {assert}`ordinal 1 = "1st"`,
+{assert}`ordinal 12 = "12th"`, {assert}`ordinal 23 = "23rd"`. -/
+def ordinal (number : Nat) : String :=
+  let suffix := if number % 100 / 10 == 1 then "th" else match number % 10 with
+    | 1 => "st" | 2 => "nd" | 3 => "rd" | _ => "th"
+  s!"{number}{suffix}"
+
 /-- SQLite's message for a prepare error, for example {lit}`no such table: t`. -/
 def PrepareError.message : PrepareError → String
   | .reservedName name => s!"object name reserved for internal use: {name}"
@@ -30,5 +37,9 @@ def PrepareError.message : PrepareError → String
   | .cannotAddPrimaryKey => "Cannot add a PRIMARY KEY column"
   | .cannotAddUnique => "Cannot add a UNIQUE column"
   | .hexLiteralTooBig text => s!"hex literal too big: {text}"
+  | .misuseOfAggregate function => s!"misuse of aggregate function {function}()"
+  | .aggregateInGroupBy => "aggregate functions are not allowed in the GROUP BY clause"
+  | .orderByOutOfRange term columns => s!"{ordinal term} ORDER BY term out of range - should be between 1 and {columns}"
+  | .groupByOutOfRange term columns => s!"{ordinal term} GROUP BY term out of range - should be between 1 and {columns}"
 
 end Belay.Sqlite

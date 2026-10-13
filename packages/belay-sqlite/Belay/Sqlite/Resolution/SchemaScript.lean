@@ -41,7 +41,7 @@ structure ResolvedScript where
 /-- Whether a schema statement can describe a catalog: CREATE TABLE or CREATE INDEX. -/
 def Syntax.Statement.describesCatalog : Syntax.Statement → Bool
   | .createTable .. | .createIndex .. => true
-  | .addColumn .. | .begin | .commit | .rollback | .insert .. | .update .. => false
+  | .addColumn .. | .begin | .commit | .rollback | .insert .. | .update .. | .select .. => false
 
 /-- The first schema statement that cannot describe a catalog, as a restriction. -/
 def schemaStatementRestriction (schema : List Syntax.Statement) : Option Restriction :=
