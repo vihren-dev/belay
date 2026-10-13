@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-12T18:29:19+00:00",
+  "finding": "20261012T181622Z-88783536#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Isolation is now true; ci.md and ADR 0010 name the example-free seed runtime."
+}

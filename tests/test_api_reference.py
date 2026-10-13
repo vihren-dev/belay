@@ -12,8 +12,8 @@ import subprocess
 import pytest
 
 import tools.api_reference as api_reference
-from tools.api_reference import (CORE_DATABASE, SOURCE_REPOSITORY, SOURCE_REVISION_PLACEHOLDER,
-                                  correct_recursor_links, generate_reference)
+from tools.api_reference import (CORE_DATABASE, LIBRARY_PACKAGE_DIRECTORY, SOURCE_REPOSITORY,
+                                  SOURCE_REVISION_PLACEHOLDER, correct_recursor_links, generate_reference)
 from tools.api_reference_links import link_sources
 from tools.ci_store_gc import TARGETS
 from tools.source_revision import FULL_COMMIT_HASH_PATTERN
@@ -32,11 +32,12 @@ def test_nix_and_python_source_revision_policy_agree() -> None:
 
 
 def test_core_takes_only_the_toolchain_and_doc_gen4() -> None:
-    """No repository file reaches the core build, the base starts from it, and CI keeps both."""
+    """No repository file reaches the core build, the base starts from it and the built library and model
+    packages, and CI keeps both."""
     core = (BUILD_SUPPORT / "api-reference-core.nix").read_text()
     assert "{ pkgs, leanToolchain, docGen4 }:" in core and "../" not in core
     base = (BUILD_SUPPORT / "api-reference.nix").read_text()
-    assert "{ pkgs, sources, leanToolchain, lean4export, docGen4, core, modelPackage }:" in base
+    assert "{ pkgs, leanToolchain, docGen4, core, modelPackage, verifierLibrary }:" in base
     assert "--revision" not in base and "inventory" not in base
     assert {"apiReferenceCore", "apiReferenceBase"} <= set(TARGETS)
 
@@ -70,10 +71,11 @@ def test_correction_changes_only_omitted_recursors(tmp_path: Path, link: str) ->
 
 
 def source_tree(root: Path) -> Path:
-    """An entry point and two nested library modules, without compiling Lean."""
-    (root / "SqliteVerifier/Nested").mkdir(parents=True)
+    """An entry point and two nested library modules in the library package, without compiling Lean."""
+    library = root / LIBRARY_PACKAGE_DIRECTORY
+    (library / "SqliteVerifier/Nested").mkdir(parents=True)
     for path in ("SqliteVerifier.lean", "SqliteVerifier/Model.lean", "SqliteVerifier/Nested/Rows.lean"):
-        (root / path).write_text("-- fixture\n")
+        (library / path).write_text("-- fixture\n")
     return root
 
 
@@ -86,7 +88,7 @@ def run_generator(tmp_path: Path, ours: str) -> tuple[list[list[str]], Path]:
 
     def record(command: list[str], **options: object) -> subprocess.CompletedProcess[str]:
         """Accept every doc-gen4 call and keep its arguments."""
-        assert options["cwd"] == root and options["check"] and options["timeout"]
+        assert options["cwd"] == root / LIBRARY_PACKAGE_DIRECTORY and options["check"] and options["timeout"]
         calls.append(command)
         return subprocess.CompletedProcess(command, 0)
 
@@ -100,8 +102,9 @@ def test_generator_gives_each_module_its_own_source_uri(tmp_path: Path) -> None:
     """Each public module is added once with its file's placeholder URI, before one `fromDb`."""
     calls, build = run_generator(tmp_path, '<a href="#Value.rec">own</a>')
     prefix = f"{SOURCE_REPOSITORY}/blob/{SOURCE_REVISION_PLACEHOLDER}/"
-    modules = {"SqliteVerifier": "SqliteVerifier.lean", "SqliteVerifier.Model": "SqliteVerifier/Model.lean",
-               "SqliteVerifier.Nested.Rows": "SqliteVerifier/Nested/Rows.lean"}
+    modules = {name: f"{LIBRARY_PACKAGE_DIRECTORY}/{path}" for name, path in (
+        ("SqliteVerifier", "SqliteVerifier.lean"), ("SqliteVerifier.Model", "SqliteVerifier/Model.lean"),
+        ("SqliteVerifier.Nested.Rows", "SqliteVerifier/Nested/Rows.lean"))}
     assert all(call[:3] == ["lake", "env", "/tools/doc-gen4"] for call in calls)
     assert [call[3:] for call in calls[:-1]] == [
         ["single", "--build", str(build), module, CORE_DATABASE, prefix + path] for module, path in modules.items()]

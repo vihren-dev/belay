@@ -44,7 +44,7 @@ universe parameters; Lean expression comparison uses alpha equivalence. It
 kernel-replays generated schema/SQL inputs against the pinned library first,
 then approved-source additions, then candidate additions. Before it accepts the
 generated inputs, it resolves the structural record again with the compiled
-`resolveSchemaAndScript` (`GateInputs.lean`) and requires each generated
+`resolveSchemaAndScript` (`packages/sqlite-verifier/GateInputs.lean`) and requires each generated
 declaration to be definitionally equal to the result, so a changed generated file
 cannot change the target. Even approved sources cannot substitute a different
 definition for the supplied starting catalog. Lookup uses the kernel environment so replayed
@@ -68,7 +68,7 @@ is an authoring convenience and is never the gate's acceptance target.
 The proof's actual body and the expected target's dependencies are traversed
 without imported axiom caches. Relevant unsafe/partial declarations, `sorryAx`,
 and all axioms except `propext`, `Classical.choice`, and `Quot.sound` are rejected.
-The allowlist is `SqliteVerifier.allowedAxioms` (`SqliteVerifier/AxiomPolicy.lean`); the gate
+The allowlist is `SqliteVerifier.allowedAxioms` (`packages/sqlite-verifier/SqliteVerifier/AxiomPolicy.lean`); the gate
 and the proof author's audit command (`SqliteVerifier.Audit`) read the same list.
 The kernel checks the proof body and checks its inferred type is definitionally
 equal to the reconstructed proposition. Exit zero means these checks succeeded;
@@ -81,10 +81,10 @@ checked model-contract refutation, 0 for the positive proof, and 1 for rejection
 A rejected, missing, or unfinished proof cannot produce `VIOLATED`. A negative
 argument is not reported as a native counterexample.
 
-Path validation and exact artifact selection live in `GatePaths.lean`.
+Path validation and exact artifact selection live in `packages/sqlite-verifier/GatePaths.lean`.
 The shared checks (declaration comparison, axiom audit, target reconstruction and
-target check) live in `GateCore.lean`. `migration-bundle-checker`
-(`BundleChecker.lean`) applies the same checks to exported proof data instead of
+target check) live in `packages/sqlite-verifier/GateCore.lean`. `migration-bundle-checker`
+(`packages/verifier-gate/BundleChecker.lean`) applies the same checks to exported proof data instead of
 candidate `.olean` files; see the [data path](data-path.md).
 
 Run `just test-cases tests/kernel_gate_test.py`, or the cached Nix target

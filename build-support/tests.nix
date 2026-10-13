@@ -1,5 +1,7 @@
 # Independent pytest targets: Nix owns isolation, dependency identity and reuse.
-{ pkgs, leanToolchain, leanRuntime, runtime, modelPackage, parserLibrary, conformance ? runtime, root ? ../.
+{ pkgs, leanToolchain, leanRuntime, runtime, seedRuntime, modelPackage, parserLibrary, conformance ? runtime, root ? ../.
+# Lean package outputs by their folder in the repository layout (default.nix); the `packages` suite replays them.
+, leanPackages
 , native ? import ../nix/sqlite.nix { inherit pkgs; }
 , conformanceNative ? import ./conformance-native.nix { inherit pkgs; }
 }:
@@ -30,7 +32,24 @@ let
     mkdir -p "$out/packages"
     ln -s ${modelPackage} "$out/packages/belay-sqlite"
   '';
-  suite = name: { inputs, runtime, tools ? [], environment ? {} }:
+  # The package outputs in the repository layout. Each package folder is a real folder, so the relative
+  # paths of its requirements resolve here; its entries link to the store, because Lake must not write.
+  packageRoot = pkgs.runCommand "sqlite-verifier-test-packages" {} ''
+    mkdir -p "$out"
+    ln -s ${leanToolchain} "$out/lean"
+    ${pkgs.lib.concatStrings (pkgs.lib.mapAttrsToList (path: package: ''
+      mkdir -p "$out/${path}"
+      for entry in $(ls -A ${package}); do ln -s "${package}/$entry" "$out/${path}/$entry"; done
+    '') leanPackages)}
+  '';
+  # The compiler and the built documentation tool, for the inventory's fixture tests.
+  documentationRoot = pkgs.runCommand "sqlite-verifier-test-documentation" {} ''
+    mkdir -p "$out/packages"
+    ln -s ${leanToolchain} "$out/lean"
+    ln -s ${leanPackages."packages/public-doc-tools"} "$out/packages/public-doc-tools"
+  '';
+  # `seeds`: Lake cache seeds (case-seeds.nix) copied into one writable cache that the tests use (ADR 0010).
+  suite = name: { inputs, runtime, tools ? [], environment ? {}, seeds ? [] }:
     let
       files = (builtins.fromJSON (builtins.readFile (root + /tests/nix_suites.json))).${name};
       file = builtins.head files;
@@ -45,6 +64,13 @@ let
       installPhase = ''
         export HOME="$TMPDIR"
         export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+        ${pkgs.lib.optionalString (seeds != [ ]) ''
+          export BELAY_TEST_CACHE="$TMPDIR/lake-cache" BELAY_TEST_SEEDED=1
+          mkdir -p "$BELAY_TEST_CACHE"
+          for seed in ${pkgs.lib.concatStringsSep " " (map toString seeds)}; do
+            cp -R --no-preserve=mode "$seed/." "$BELAY_TEST_CACHE/"
+          done
+        ''}
         timeout ${toString suiteTimeoutSeconds} python3 -m pytest ${file} ${pkgs.lib.concatStringsSep " " extraFiles} --runtime-root ${runtime} \
           -p no:cacheprovider -p pytest_timeout --timeout=${toString testTimeoutSeconds} \
           --junitxml "$out/junit.xml" -v --durations=10
@@ -61,11 +87,11 @@ let
     (fs.fileFilter (file: file.hasExt "json") (root + /conformance/cases))
     (root + /packages/belay-sqlite/Belay/Sqlite/SqlExecution.lean)
     (root + /packages/belay-sqlite/Belay/Sqlite/Execution.lean) (root + /packages/belay-sqlite/Belay/Sqlite/LiteralData.lean)
-    (root + /VerifierConformance/Trace.lean)
-    (root + /VerifierConformance/Outputs.lean)
-    (root + /VerifierConformance/Native.lean)
-    (root + /VerifierConformance/Case.lean)
-    (root + /VerifierConformance/Predict.lean)
+    (root + /packages/verifier-conformance/VerifierConformance/Trace.lean)
+    (root + /packages/verifier-conformance/VerifierConformance/Outputs.lean)
+    (root + /packages/verifier-conformance/VerifierConformance/Native.lean)
+    (root + /packages/verifier-conformance/VerifierConformance/Case.lean)
+    (root + /packages/verifier-conformance/VerifierConformance/Predict.lean)
     (fs.fileFilter (file: file.hasExt "py" || file.hasExt "json") (root + /judge))
     (root + /packages/belay-sqlite/Belay/Sqlite/Laws.lean)
     (root + /conformance/requirements-3.51.0.json)
@@ -105,6 +131,7 @@ let
     (root + /conformance/corpus-v3)
     (root + /conformance/corpus-v2)
   ];
+  caseSeeds = import ./case-seeds.nix { inherit pkgs root; runtime = seedRuntime; };
   modelTools = [ native.sqlite native.sqlite346 native.sqlite3534 ];
 in {
   sample = suite "sample" {
@@ -188,6 +215,7 @@ in {
     inherit runtime;
   };
   bundle = suite "bundle" {
+    seeds = builtins.attrValues caseSeeds;
     inputs = [
       (fs.fileFilter (file: file.hasExt "py") (root + /migration_check))
       (fs.fileFilter (file: file.hasExt "py") (root + /belay/sqlite))
@@ -205,6 +233,15 @@ in {
   cli = suite "cli" {
     inputs = caseReader;
     inherit runtime;
+  };
+  packages = suite "packages" {
+    inputs = [ ];
+    runtime = packageRoot;
+  };
+  documentation = suite "documentation" {
+    inputs = [ (root + /tools/__init__.py) (root + /tools/public_doc_inventory.py) (root + /tools/public_doc_coverage.py)
+               (root + /tests/public_doc_inventory) ];
+    runtime = documentationRoot;
   };
   kernel = suite "kernel" {
     inputs = [ (fs.fileFilter (file: file.hasExt "lean") (root + /tests/kernel_gate)) (root + /tests/kernel_gate_support.py) ];

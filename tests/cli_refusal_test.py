@@ -1,7 +1,7 @@
 """Refusals from Lean resolution reach the public `verify` result with their source range.
 
-`migration_check/inputs.py` maps a resolver refusal (`Resolver.lean`) to a byte range
-through the frontend's `Located` paths.
+`migration_check/inputs.py` maps a resolver refusal (`packages/verifier-gate/Resolver.lean`)
+to a byte range through the frontend's `Located` paths.
 """
 
 from collections.abc import Callable

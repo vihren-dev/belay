@@ -44,11 +44,23 @@ does the checks between the Lemon and compiler steps. The test suite
 at `lib/`. See the [SQLite syntax boundary](../docs/sqlite-parser.md).
 
 `parserLibrary.grammars` retains each grammar's Lemon outputs and generated
-parser. `leanRuntime/.lake/build/` contains the current Lean library
-and checkers. `modelPackage` builds `Belay.Sqlite` and its separate codec with
-no application inputs. The application requires it at `packages/belay-sqlite`.
-`EngineeringExamples` is a separate dependency for the shipped examples; the
-production application root excludes demonstrations.
+parser. Each Lean package under `packages/` has its own `lakefile.toml` and its
+own derivation (`lean-package.nix`), which builds it once, in a copy of the
+repository layout that holds the outputs of the packages it requires. Lake
+replays those outputs and compiles only the package's own modules; the output
+is the package's Lake workspace. `tests.packages` checks that a workspace that
+requires an output compiles nothing. The packages are `modelPackage`
+(`packages/belay-sqlite`: `Belay.Sqlite` and its codec, with no application
+inputs), `verifierLibrary` (`packages/sqlite-verifier`: the library, the
+engineering examples, `GatePaths` and `GateCore`), `verifierGate`
+(`packages/verifier-gate`: the three executables) and `verifierConformance`
+(`packages/verifier-conformance`: the test-only conformance library and runner)
+and `docTools` (`packages/public-doc-tools`: the documentation inventory).
+`lean4exportPackage` builds the exporter library in the same way.
+`EngineeringExamples` is a separate library for the shipped examples; the
+production application root excludes demonstrations. `leanRuntime/.lake/build/`
+holds the library's outputs and the gate's binaries in the layout that the
+runtime ships.
 `runtime/` assembles those outputs, source/module membership,
 examples, the `belay.sqlite` namespace frontend and the Python CLI.
 The frontend takes explicit parser and profile inputs. It has no dependency on
@@ -99,24 +111,26 @@ source parser and original compiler references. Every authored public
 declaration, constructor and field must have direct checked Verso documentation.
 Missing, ordinary and unclassified documentation fail this development target.
 `just test`, `just test-full` and reference generation run this gate. Its
-inventory tools stay outside the installed proof runtime.
+inventory tool is the `docTools` package (`packages/public-doc-tools`) with the
+Python driver `tools/public_doc_inventory.py`; neither is in the installed
+proof runtime. `tests.documentation` runs the inventory on small fixtures.
 
 `lean4export.nix` fetches unpatched lean4export at tag `v4.34.0` as a fixed-output source.
-The Lean runtime copies that source to
-`build/lean4export` inside its derivation, where `lakefile.toml` expects the path
-dependency, to build `migration-bundle-checker` and the repository-owned
-`migration-proof-exporter`. Both executables ship from `leanRuntime`; there is
-no separately built upstream exporter or patch. `prepare` supplies its bundle
+`lean4exportPackage` builds its `Export` library at `build/lean4export`, where
+`packages/verifier-gate/lakefile.toml` expects the path dependency, for
+`migration-bundle-checker` and the repository-owned `migration-proof-exporter`.
+Both executables ship from `leanRuntime`; there is no separately built upstream
+exporter or patch. `prepare` supplies its bundle
 header's trusted imports as explicit omission modules. See the
 [data path guide](../docs/data-path.md) for the upgrade procedure.
 
-`conformanceRuntime` builds the separate `VerifierConformance` Lean library and
-test-only `conformance-runner` from `sources.conformanceLean`;
-`conformance` assembles its compiler, library and parser links. `tests.model` uses
+`conformanceRuntime` adds the outputs of `verifierConformance`, the separate
+`VerifierConformance` Lean library and test-only `conformance-runner`, to those of
+`leanRuntime`; `conformance` assembles its compiler, library and parser links. `tests.model` uses
 this runtime, including native acquisition and the model-mutation checks. The
 ordinary `runtime` excludes both the new executable and conformance modules.
-Changes inside `VerifierConformance/` or to `ConformanceRunner.lean` invalidate
-only the conformance source identity, not the production Lean library.
+Changes inside `packages/verifier-conformance/` invalidate only the conformance
+package, not the production Lean library.
 Use `just conformance-build`, then `python3 -m pytest tests/conformance_model_test.py
 --runtime-root build/conformance`, to force a focused local run. `just conformance
 --repeat 3 --prove` writes the prototype's JSON cases, proofs and timing report.

@@ -128,3 +128,10 @@ Relevant files: `migration_check/compile.py`, `migration_check/contract.py`,
   measured: the macOS CI job skips its checks on pull requests.
 - 2026-10-12: all outcome items and tests of the task are in place; the pull
   request records its CI times (ADR 0010 section 11).
+- 2026-10-12: CI of PR #96 (run 38254870761, `package`): Linux 928 s against
+  the 467 s baseline (+461 s, +99 %). Investigated: the Lean library rebuilt
+  once (new `SqliteVerifier.AxiomPolicy` and `Audit`, changed `GateCore.lean`),
+  and the `bundle` target took 374 s for 86 tests against 210 s for 69 in
+  PR #95 (+164 s; mostly `cache_domains_test`, the phase tests and the audit in
+  `prepare`). Recorded on the pull request; the case-seed task addresses the
+  recurring part. Owner approved PR #95 and PR #96 on 2026-10-12.

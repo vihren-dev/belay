@@ -25,3 +25,12 @@ def test_prepare_prints_warnings_before_the_result(monkeypatch: pytest.MonkeyPat
     assert cli.main(PREPARE_ARGUMENTS) == 0
     assert capsys.readouterr().out.splitlines() == ["warning: Requirements:3: #eval runs code",
                                                     "PREPARED: proof.bundle"]
+
+
+def test_rejection_details_join_the_report() -> None:
+    """`Rejection.diagnostic` adds its details, such as `compiled_modules`, to the report of a refutation, while
+    the status and message stay the rejection's own."""
+    from migration_check.diagnostics import Rejection
+
+    report = Rejection("VIOLATED", "refuted", details={"compiled_modules": [], "status": "VERIFIED"}).diagnostic()
+    assert report["status"] == "VIOLATED" and report["message"] == "refuted" and report["compiled_modules"] == []

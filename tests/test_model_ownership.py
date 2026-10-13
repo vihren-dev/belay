@@ -90,7 +90,7 @@ def test_application_import_is_refused_with_adjacent_checkout(
     """Nearby real application source and artifacts cannot satisfy a forbidden model dependency."""
     adjacent = isolated_model.parent / "application/SqliteVerifier"
     adjacent.mkdir(parents=True)
-    shutil.copyfile(ROOT / "SqliteVerifier/Contract.lean", adjacent / "Contract.lean")
+    shutil.copyfile(ROOT / "packages/sqlite-verifier/SqliteVerifier/Contract.lean", adjacent / "Contract.lean")
     shutil.copyfile(lean_libraries[0] / "SqliteVerifier/Contract.olean", adjacent / "Contract.olean")
     source = isolated_model / "Forbidden.lean"
     source.write_text("import SqliteVerifier.Contract\n")

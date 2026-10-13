@@ -23,7 +23,7 @@ build: resources
 # Run an explicitly selected scenario without rebuilding its prerequisites.
 [positional-arguments]
 test-cases *args:
-    python3 -m pytest --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD}" "$@"
+    BELAY_TEST_CACHE="${BELAY_TEST_CACHE:-$PWD/build/lake-test-cache}" python3 -m pytest --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD}" "$@"
 
 # Build the test-only compiled model without adding commands to the shipped runtime.
 conformance-build:

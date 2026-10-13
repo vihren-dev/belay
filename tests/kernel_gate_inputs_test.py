@@ -1,6 +1,7 @@
 """The `.olean` gate checks the generated inputs against its own resolution of the record.
 
-`ProofChecker.lean` resolves the structural record again (`GateInputs.lean`) and
+`packages/verifier-gate/ProofChecker.lean` resolves the structural record again
+(`packages/sqlite-verifier/GateInputs.lean`) and
 rejects a compiled generated declaration, or a record, whose resolution differs.
 """
 

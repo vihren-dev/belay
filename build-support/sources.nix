@@ -11,13 +11,17 @@ let
     else if type == "regular" then path + "/${name}" else fs.unions []) (builtins.readDir path));
   filtered = predicate: path: fs.intersection (clean path) (fs.fileFilter predicate path);
   extensions = names: filtered (file: builtins.any file.hasExt names);
-  leanFiles = fs.unions [
-    (fs.unions (map (name: root + "/${name}")
-      (builtins.filter (name: lib.hasSuffix ".lean" name && name != "ConformanceRunner.lean"
-        && (builtins.readDir root).${name} == "regular")
-        (builtins.attrNames (builtins.readDir root)))))
-    (extensions [ "lean" ] (root + /SqliteVerifier))
-    (root + /lakefile.toml) (root + /lake-manifest.json) (root + /lean-toolchain)
+  # A Lean package under packages/: its Lean sources and its Lake files, relative to the package.
+  package = directory: let folder = root + "/packages/${directory}"; in fs.toSource {
+    root = folder;
+    fileset = fs.unions ([ (extensions [ "lean" ] folder) ]
+      ++ map (name: folder + "/${name}") [ "lakefile.toml" "lake-manifest.json" "lean-toolchain" ]);
+  };
+  runtimeFiles = fs.unions [
+    (extensions [ "py" ] (root + /migration_check))
+    (extensions [ "py" ] (root + /belay/sqlite))
+    (root + /LICENSE) (root + /docs/install.md)
+    (root + /packaging/install.py) (root + /packaging/install.sh)
   ];
 in {
   model = fs.toSource {
@@ -29,14 +33,13 @@ in {
       (root + /packages/belay-sqlite/lean-toolchain)
     ];
   };
-  runtime = source (fs.unions [
-    (extensions [ "py" ] (root + /migration_check))
-    (extensions [ "py" ] (root + /belay/sqlite))
-    (filtered (file: file.name != ".DS_Store" && !file.hasExt "pyc") (root + /examples))
-    (root + /LICENSE) (root + /docs/install.md)
-    (root + /packaging/install.py) (root + /packaging/install.sh)
-  ]);
-  lean = source leanFiles;
-  conformanceLean = source (fs.unions [ leanFiles
-    (root + /ConformanceRunner.lean) (extensions [ "lean" ] (root + /VerifierConformance)) ]);
+  runtime = source (fs.unions [ runtimeFiles
+    (filtered (file: file.name != ".DS_Store" && !file.hasExt "pyc") (root + /examples)) ]);
+  # The runtime without examples/: case seeds build against it, so a change to one example
+  # rebuilds only that example's seed (ADR 0010 section 8).
+  runtimeWithoutExamples = source runtimeFiles;
+  verifierLibrary = package "sqlite-verifier";
+  verifierGate = package "verifier-gate";
+  verifierConformance = package "verifier-conformance";
+  docTools = package "public-doc-tools";
 }

@@ -13,7 +13,7 @@ from tools.public_doc_coverage import mapping, module_coverage, position, sequen
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests/public_doc_inventory/InventoryFixture.lean"
 """One compiling source covers fields, constructors, defaults, deriving and generated-looking names."""
-pytestmark = [pytest.mark.integration, pytest.mark.environment, pytest.mark.requires_lean]
+pytestmark = [pytest.mark.integration, pytest.mark.environment]
 
 
 def compiler(runtime_root: Path) -> Path:
@@ -35,7 +35,8 @@ def fixture_report(tmp_path: Path, runtime_root: Path, source: str,
         for module in [*(dependencies or {}), "InventoryFixture"]:
             subprocess.run([str(lean), "-o", f"{module}.olean", "-i", f"{module}.ilean", f"{module}.lean"],
                            cwd=tmp_path, check=True, capture_output=True, text=True, timeout=15)
-        return inventory(tmp_path, "InventoryFixture", lean, tmp_path / "coverage.json")
+        return inventory(tmp_path, "InventoryFixture", lean, tmp_path / "coverage.json",
+                         runtime_root / "packages/public-doc-tools")
     finally:
         if original is None:
             os.environ.pop("LEAN_PATH", None)

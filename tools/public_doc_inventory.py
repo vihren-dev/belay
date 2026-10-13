@@ -11,28 +11,28 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from tools.public_doc_coverage import coverage_report, mapping, position, sequence
 
 COMPILER_TIMEOUT_SECONDS = 60
-"""Bound each compiler call: prefix query, helper compilation and metadata query."""
+"""Bound each compiler call: the prefix query and the metadata query."""
 
 
-def inventory(root: Path, entry: str, lean: Path, output: Path) -> dict[str, object]:
-    """Use the selected compiler and its sysroot to query the built public import closure."""
+def inventory(root: Path, entry: str, lean: Path, output: Path, tools: Path) -> dict[str, object]:
+    """Use the selected compiler and its sysroot to query the built public import closure.
+
+    `tools` is the built `packages/public-doc-tools` package (its Nix derivation output):
+    the inventory imports its compiled `PublicDocSyntax` and runs `PublicDocInventory.lean`.
+    """
     output.parent.mkdir(parents=True, exist_ok=True)
     work = output.parent / "public-doc-helper"
     work.mkdir(exist_ok=True)
-    tools = Path(__file__).resolve().parent
-    helper = work / "PublicDocSyntax.olean"
     environment = dict(os.environ)
     environment.pop("LEAN_SYSROOT", None)
-    prefix = subprocess.run([str(lean), "--print-prefix"], cwd=tools, env=environment,
+    prefix = subprocess.run([str(lean), "--print-prefix"], cwd=work, env=environment,
                             capture_output=True, text=True, check=True,
                             timeout=COMPILER_TIMEOUT_SECONDS)
     environment["LEAN_SYSROOT"] = prefix.stdout.strip()
-    subprocess.run([str(lean), "-o", str(helper), str(tools / "PublicDocSyntax.lean")],
-                   cwd=tools, env=environment, check=True, timeout=COMPILER_TIMEOUT_SECONDS)
-    environment["LEAN_PATH"] = str(work) + os.pathsep + environment.get("LEAN_PATH", "")
+    environment["LEAN_PATH"] = str(tools / ".lake/build/lib/lean") + os.pathsep + environment.get("LEAN_PATH", "")
     metadata = work / "metadata.json"
     subprocess.run([str(lean), "--run", str(tools / "PublicDocInventory.lean"),
-                    str(root), entry, str(metadata)], cwd=tools, env=environment,
+                    str(root), entry, str(metadata)], cwd=work, env=environment,
                    check=True, timeout=COMPILER_TIMEOUT_SECONDS)
     report = coverage_report(json.loads(metadata.read_text()))
     output.write_text(json.dumps(report, indent=2) + "\n")
@@ -67,9 +67,10 @@ def main() -> int:
     parser.add_argument("--entry", default="SqliteVerifier")
     parser.add_argument("--lean", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--tools", type=Path, required=True, help="Built packages/public-doc-tools package")
     arguments = parser.parse_args()
     root, output = arguments.root.resolve(), arguments.output.resolve()
-    report = inventory(root, arguments.entry, arguments.lean.resolve(), output)
+    report = inventory(root, arguments.entry, arguments.lean.resolve(), output, arguments.tools.resolve())
     complete = require_complete(report, output)
     return 0 if complete else 1
 

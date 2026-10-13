@@ -59,7 +59,7 @@ lemmas about them) does not import the verification application (`Contract`,
 `Library`, the demonstrations). A lemma that is only about the model belongs in
 the model, not in an application file. Model docstrings speak about SQLite, not
 about "approved", "candidate" or "proof" data.
-*Applies to:* `packages/belay-sqlite/Belay/Sqlite/*.lean`, `SqliteVerifier/*.lean`.
+*Applies to:* `packages/belay-sqlite/Belay/Sqlite/*.lean`, `packages/sqlite-verifier/SqliteVerifier/*.lean`.
 
 **R7. SQLite rule or model restriction.** A SQLite rule is a check that SQLite
 itself makes, for example "no two columns with the same name". A model
@@ -69,7 +69,7 @@ check, a supported-subset check, or `step` says which of the two it is. A model
 restriction must never appear in `step` as a modeled failure: then the model
 would predict an error where SQLite succeeds. It belongs in the supported-subset
 check instead.
-*Applies to:* `packages/belay-sqlite/Belay/Sqlite/*.lean`, `SqliteVerifier/*.lean`, `belay/sqlite/*.py`, `migration_check/*.py`.
+*Applies to:* `packages/belay-sqlite/Belay/Sqlite/*.lean`, `packages/sqlite-verifier/SqliteVerifier/*.lean`, `belay/sqlite/*.py`, `migration_check/*.py`.
 
 **R9. Docstrings.** Each new class, structure, function and module has a
 docstring that gives the reason for the object. Text follows "Writing style" in
@@ -143,6 +143,6 @@ No findings.
 Example:
 
 ```
-- R1 must GateCore.lean:38 The allowed axioms are a literal inside the traversal of `audit`. Fix: define `allowedAxioms` with a docstring and use it in `audit`.
+- R1 must packages/sqlite-verifier/GateCore.lean:38 The allowed axioms are a literal inside the traversal of `audit`. Fix: define `allowedAxioms` with a docstring and use it in `audit`.
 - R9 should migration_check/bundle.py:25 `verify_bundle` has no reason in its docstring. Fix: say why the bundle is copied before the check.
 ```

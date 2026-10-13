@@ -8,8 +8,8 @@ Task: [architecture decision](../plans/20261006-model-architecture.task.md).
 
 ## Context
 
-The [root Lake package](../lakefile.toml) builds the model and verification
-application together. [Its public module](../SqliteVerifier.lean) imports both,
+The [library's Lake package](../packages/sqlite-verifier/lakefile.toml) (at that time the root package) builds the model and verification
+application together. [Its public module](../packages/sqlite-verifier/SqliteVerifier.lean) imports both,
 including demonstrations. The model's basic dependency direction is correct,
 but model lemmas in `Library`, `LiteralPreservation`, `SchemaExtension` and
 `SchemaPreservation` pull in the contract. Model validation also reaches it

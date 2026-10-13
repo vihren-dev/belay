@@ -36,8 +36,9 @@ only `SchemaInputs` from these modules and uses `Generated.profile` and
 complete approved Lean closure. Approved modules cannot import the migration,
 the resulting catalog or candidate sources.
 
-The public proof implementations are `SqliteVerifier/Demonstration.lean` and
-`SqliteVerifier/ReverseDemonstration.lean`. The named projection, coverage,
+The public proof implementations are
+`packages/sqlite-verifier/SqliteVerifier/Demonstration.lean` and
+`packages/sqlite-verifier/SqliteVerifier/ReverseDemonstration.lean`. The named projection, coverage,
 schema-update, and verification primitives remain available for adapting the
 requirements or writing a different proof.
 

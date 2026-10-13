@@ -42,10 +42,10 @@ def measure(cases: list[dict[str, Json]], runtime: Path) -> dict[str, Json]:
               "def originals : List Belay.Sqlite.Conformance.Case := [\n" + terms + "\n]\n")
     hashes: dict[str, str] = {}
     for name, (target, before, after) in MUTANTS.items():
-        for filename in ("packages/belay-sqlite/Belay/Sqlite/Execution.lean", "packages/belay-sqlite/Belay/Sqlite/LiteralData.lean",
-                         "packages/belay-sqlite/Belay/Sqlite/SqlExecution.lean", "VerifierConformance/Trace.lean",
-                         "VerifierConformance/Outputs.lean", "VerifierConformance/Native.lean",
-                         "VerifierConformance/Case.lean"):
+        for filename in (*(f"packages/belay-sqlite/Belay/Sqlite/{name}.lean"
+                           for name in ("Execution", "LiteralData", "SqlExecution")),
+                         *(f"packages/verifier-conformance/VerifierConformance/{name}.lean"
+                           for name in ("Trace", "Outputs", "Native", "Case"))):
             text = (root / filename).read_text()
             hashes[filename] = hashlib.sha256(text.encode()).hexdigest()
             if Path(filename).stem == target:

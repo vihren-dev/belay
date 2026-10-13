@@ -9,7 +9,8 @@ each time.
 
 `packages/belay-sqlite/Belay/Sqlite/Codec.lean` and
 `packages/belay-sqlite/Belay/Sqlite/Codec/Resolution.lean` own the codecs for
-values, statement syntax and catalogs. `VerifierConformance/Json.lean` adds the case
+values, statement syntax and catalogs.
+`packages/verifier-conformance/VerifierConformance/Json.lean` adds the case
 and observation records. The Python side is `belay/sqlite/syntax.py` for statement
 syntax, `conformance/native_metadata.py` for native tables and
 `conformance/case_format.py` for values and rows. ADR 0003's `verify-bundle` uses

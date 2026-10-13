@@ -46,10 +46,12 @@ def verify_bundle(options: argparse.Namespace) -> dict[str, object]:
             [str(runtime.bundle_checker), *map(str, runtime.libraries), str(contract.trusted), str(snapshot),
              str(generated)],
             write_root=output, environment={"LEAN_SYSROOT": str(runtime.sysroot)}, timeout=30)
+    details = {"compiled_modules": list(compiled)}
     if checked.returncode == 2:
-        raise Rejection("VIOLATED", "A kernel-checked argument refutes the supplied verification contract")
+        raise Rejection("VIOLATED", "A kernel-checked argument refutes the supplied verification contract",
+                        details=details)
     if checked.returncode != 0:
-        raise Rejection("UNVERIFIED", checked.stderr.strip() or "Bundle checker rejected the proof")
+        raise Rejection("UNVERIFIED", checked.stderr.strip() or "Bundle checker rejected the proof", details=details)
     hashes = {**contract.hashes, **inputs.hashes, "bundle": hashlib.sha256(bundle_bytes).hexdigest()}
     return {"status": "VERIFIED", "profile": inputs.profile.engine, "statements": inputs.statements,
             "inputs": hashes, "compiled_modules": list(compiled)}

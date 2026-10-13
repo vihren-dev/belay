@@ -66,10 +66,12 @@ def example_factory(runtime_root: Path, tmp_path: Path) -> Callable[[str], Path]
 def runtime_environment(pytestconfig: pytest.Config, tmp_path: Path) -> dict[str, str]:
     """Poison only installed children, leaving the dev pytest interpreter and parent untouched.
 
-    Each case gets its own Lake artifact cache, so tests never write to the user's cache
-    and do not depend on each other's outputs.
+    Children use the suite's Lake cache when `BELAY_TEST_CACHE` names one: a Nix target
+    fills it from the case seeds, a host run keeps one under `build/` (ADR 0010 section 8).
+    Otherwise each case gets its own cache. Tests never write to the user's cache; a test
+    that needs a cold cache passes `--cache` or `--no-cache` itself.
     """
-    cache = {"BELAY_CACHE_DIR": str(tmp_path / "lake-cache")}
+    cache = {"BELAY_CACHE_DIR": os.environ.get("BELAY_TEST_CACHE") or str(tmp_path / "lake-cache")}
     if pytestconfig.getoption("runtime_variant") == "source":
         return {**os.environ, **cache}
     poison = tmp_path / "ambient imports"

@@ -93,6 +93,18 @@ application, for example `migration_check/prepare.py`, keeps their results.
 Only `tests.frozen` (and the `corpora`, `sample` and `upstream` targets that read them) depend on
 the large frozen corpora and retained reports.
 
+The `bundle` target runs `prepare` and `verify-bundle`, which build with Lake and
+its artifact cache ([ADR 0010](adr-0010-lake-builds-and-artifact-cache.md)). Its
+cache starts from the case seeds (`build-support/case-seeds.nix`): one Nix derivation
+for each folder with a `belay.toml`, whose output is the Lake cache after preparing
+and verifying that case. A test that runs a case unchanged compiles nothing; a test
+that needs a cold cache passes `--cache` itself. The seeds build with a runtime
+that has no `examples/` folder, so a change to one case rebuilds only its seed. `just test-cases` keeps one cache under `build/lake-test-cache`.
+
+While ADR 0010 is implemented, each pull request records its CI job times next to
+the latest comparable `main` run, and a big increase (starting threshold: 20 % or
+2 minutes for a job) is explained before the merge (ADR 0010 section 11).
+
 The frozen corpora (v1 to v5 and the synthetic workload corpus) are the corpora
 that `judge/claims.json` claims, and the judge lock protects their bytes
 (ADR 0011, "Verdict of the development claims" below).

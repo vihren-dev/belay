@@ -1,9 +1,10 @@
 """ADR 0003 P3 and ADR 0008: the generated inputs are the resolution of the structural record.
 
-The resolver (`Resolver.lean`) writes `SchemaInputs` and `SqlInputs` from the record.
-The bundle checker (`BundleChecker.lean`, `GateInputs.lean`) resolves the record
-again; in `--parity` mode it compares its constructed declarations with the
-compiled resolver output. A changed record or a changed compiled module is rejected.
+The resolver (`packages/verifier-gate/Resolver.lean`) writes `SchemaInputs` and
+`SqlInputs` from the record. The bundle checker
+(`packages/verifier-gate/BundleChecker.lean`, `packages/sqlite-verifier/GateInputs.lean`)
+resolves the record again; in `--parity` mode it compares its constructed
+declarations with the compiled resolver output. A changed record or a changed compiled module is rejected.
 """
 
 from collections.abc import Callable

@@ -17,10 +17,11 @@ def test_verify_bundle_reuses_its_lake_cache(data_path: Callable[..., dict[str, 
     """`verify-bundle` builds the contract with Lake (ADR 0010): the first run compiles the approved modules and
     `SchemaInputs`; a second run with the same cache, in a new directory, compiles nothing and gives the same
     status."""
+    cold = tmp_path / "cold-cache"  # its own cache: a seeded suite cache would already hold the contract
     first = data_path(approved=small["approved"], candidate=small["candidate"], schema=small["schema"],
-                      directory=tmp_path / "first")
+                      directory=tmp_path / "first", cache=cold)
     second = data_path(approved=small["approved"], candidate=small["candidate"], schema=small["schema"],
-                       directory=tmp_path / "second")
+                       directory=tmp_path / "second", cache=cold)
     assert first["status"] == second["status"] == "VERIFIED", (first, second)
     assert set(first["compiled_modules"]) == {"Requirements", "Interpretation", "SchemaInputs"}, first
     assert second["compiled_modules"] == [], second
@@ -38,6 +39,7 @@ def test_sql_edit_reuses_modules_without_sql_inputs(runtime_root: Path, example_
     def prepare() -> dict[str, object]:
         """Prepare the same proofs project (the checked-in Atuin case) with the same cache."""
         result = command_runner([launcher, "prepare", *common, "--project", str(config.proofs),
+                                 "--cache", str(tmp_path / "cold-cache"),
                                  "--output", str(bundle)], cwd=tmp_path, timeout=180)
         report = result.json_object()
         assert report["status"] == "PREPARED", result.diagnostic()

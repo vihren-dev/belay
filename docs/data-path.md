@@ -74,7 +74,7 @@ With `--format json` each command prints one JSON object.
 | `prepare` | Bundle written | `{"status": "PREPARED", "bundle": PATH, "compiled_modules": [...], "warnings": [...]}`; a warning names approved code that runs during elaboration (`#eval`, `run_cmd`, `initialize`, syntax extensions), whose cached outputs can differ from fresh ones | 0 |
 | `verify-bundle` | Proof checked | `{"status": "VERIFIED", "profile": ..., "statements": N, "inputs": {...}, "compiled_modules": [...]}`; `inputs` holds the same hashes as `verify` plus `"bundle"`, the SHA-256 of the bundle file | 0 |
 | `clean-cache` | Other builds' folders removed | `{"status": "CLEANED", "root": PATH, "removed": [...]}` | 0 |
-| `verify-bundle` | Refutation checked | `{"status": "VIOLATED", "message": ...}` | 1 |
+| `verify-bundle` | Refutation checked | `{"status": "VIOLATED", "message": ..., "compiled_modules": [...]}` | 1 |
 | either | Anything else | `{"status": "INPUT_ERROR" \| "UNSUPPORTED" \| "UNVERIFIED", "message": ...}` | 1 |
 
 `compiled_modules` lists the modules that Lake compiled in this run; modules that
@@ -132,7 +132,7 @@ statement that SQLite refuses returns `INPUT_ERROR` with SQLite's message.
 
 The gates do not trust the resolver's output. `migration-proof-checker` and
 `migration-bundle-checker` both receive the record and resolve it again
-(`GateInputs.lean`). The `.olean` gate requires every compiled generated
+(`packages/sqlite-verifier/GateInputs.lean`). The `.olean` gate requires every compiled generated
 declaration to be definitionally equal to its own result. `verify-bundle` does not
 compile `SqlInputs.lean`; the checker (`BundleChecker.generatedDeclarations`):
 
@@ -149,7 +149,7 @@ the compiled resolver output, and that a changed record is rejected.
 
 ## Pinned exporter library and driver
 
-The runtime ships `migration-proof-exporter`, built from `ProofExporter.lean`
+The runtime ships `migration-proof-exporter`, built from `packages/verifier-gate/ProofExporter.lean`
 under Lean 4.34.1. It uses unpatched lean4export at tag `v4.34.0`
 (`076e8e57707e813375e8f9da8bf989799ace9680`), pinned by
 `build-support/lean4export.nix`. `prepare` passes `--omit=SqliteVerifier` plus
@@ -171,14 +171,14 @@ these interfaces without notice. When Lean is upgraded:
 1. Select the matching lean4export release and check that it builds under the new
    Lean version. Update its commit and hash in `lean4export.nix`; a patch-level
    Lean release can use the matching minor-release exporter tag.
-2. Check the internal interfaces used by `ProofExporter.lean`, and check Lean's
+2. Check the internal interfaces used by `packages/verifier-gate/ProofExporter.lean`, and check Lean's
    declaration-origin and module-import APIs. Keep upstream unsafe/partial
    declaration handling unchanged.
 3. Rebuild and run `tests/bundle_test.py` (Nix target `tests.bundle`), which covers
    parity with `verify` and the rejection cases. The exporter tests also check
    the retained bundle byte identities and a candidate in a library namespace.
 4. Re-check the exporter's normalization (it removes metadata and sets `let`
-   nondep flags to false). `BundleChecker.lean` applies the same normalization when
+   nondep flags to false). `packages/verifier-gate/BundleChecker.lean` applies the same normalization when
    comparing protected declarations.
 
 ## Tests
