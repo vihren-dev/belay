@@ -91,19 +91,32 @@ def trimFraction (text : List Char) : List Char :=
   let trimmed := (text.reverse.dropWhile (· == '0')).reverse
   if trimmed.getLast? == some '.' then trimmed ++ ['0'] else trimmed
 
-/-- The text of a finite double that is not zero, by {lit}`%!.15g`: 15 significant
-digits, plain notation for decimal exponents from -4 to 14, else exponent notation;
+/-- The significant digits of a REAL as text: the precision 15 of {lit}`%!.15g`. -/
+def realTextDigits : Nat := 15
+
+/-- The digit limit of {lit}`sqlite3FpDecode` under the {lit}`!` flag of SQLite's printf:
+a decoding with more digits is rounded to it. -/
+def realTextDigitLimit : Nat := 26
+
+/-- The least decimal exponent that {lit}`%g` writes in plain notation; below it, the
+text uses exponent notation. -/
+def plainExponentMinimum : Int := -4
+
+/-- The text of a finite double that is not zero, by {lit}`%!.15g`: {name}`realTextDigits`
+significant digits, plain notation for decimal exponents from
+{name}`plainExponentMinimum` to one less than the digit count, else exponent notation;
 trailing zeros removed, but at least one digit after the point. -/
 def finiteText (negative : Bool) (value : Float) : String :=
   let (digits, exponent) := fpDigits value
-  let (digits, point) := roundDigits 15 26 digits (digits.length + exponent)
+  let (digits, point) := roundDigits realTextDigits realTextDigitLimit digits (digits.length + exponent)
   let exp := point - 1
+  let last : Int := realTextDigits - 1
   let sign := if negative then "-" else ""
-  if exp < -4 || exp > 14 then
-    let body := [digitAt digits 0, '.'] ++ (List.range 14).map (fun index => digitAt digits (index + 1))
+  if exp < plainExponentMinimum || exp > last then
+    let body := [digitAt digits 0, '.'] ++ (List.range (realTextDigits - 1)).map (fun index => digitAt digits (index + 1))
     sign ++ String.ofList (trimFraction body) ++ exponentSuffix exp
   else
-    let precision := (14 - exp).toNat
+    let precision := (last - exp).toNat
     let whole := if exp < 0 then ['0'] else (List.range (exp.toNat + 1)).map (digitAt digits)
     let used := if exp < 0 then 0 else exp.toNat + 1
     let zeros := min precision (if exp < 0 then (-exp - 1).toNat else 0)
