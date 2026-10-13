@@ -43,7 +43,12 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Syntax.lean`,
   structurally recursive stable sort (`stableSort`; `List.mergeSort` does not
   reduce in the kernel) and a one-line case term from the runner (a wrapped
   `some` breaks the column rule of structure instances).
+- 2026-10-13: CI timing (forced rebuild of the `tests` set, 8 cores): main 259 s,
+  branch 286 s (+27 s). Suites alone: `model` 159 s to 131 s (folding fix, with
+  the new coverage proofs), `mutants` 21 s to 67 s (16 query mutants). Merging the
+  two mutant tests into one pool did not help (69 s); the mutant rebuilds use all
+  cores. PR A opened.
 
 ## Remaining
 
-- CI timing, PR A; then PR B (judge: claim a query corpus, mustAgree cases).
+- PR B (judge: claim a query corpus, mustAgree cases).
