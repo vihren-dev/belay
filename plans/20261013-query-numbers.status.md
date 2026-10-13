@@ -69,6 +69,11 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Comparison.lean`,
   mutant copy spends about 6 s in its build and 6 s elaborating the case terms;
   classifying from JSON cuts the second to 0.9 s but raises the build to 17 s
   (codec modules), so the term classifier stays.
+- 2026-10-13: PR A (#109) failed CI: the query mutant test reached the 300 s
+  pytest timeout on the CI runner (110 s on 8 cores locally). Each mutant now names
+  its target case (`TARGETS` in `query_mutants.py` and `number_mutants.py`, taken
+  from a full measurement), and a mutant copy classifies only its target; the base
+  check still classifies all cases. Locally 110 s to 70 s.
 
 ## Remaining
 

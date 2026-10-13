@@ -119,27 +119,35 @@ def mutate(base: Path, root: Path, name: str, change: tuple[str, str, str], lean
 
 
 def measure(cases: list[dict[str, Json]], repository: Path, runtime: Path,
-            mutants: dict[str, tuple[str, str, str]] = MUTANTS) -> dict[str, Json]:
+            mutants: dict[str, tuple[str, str, str]] = MUTANTS,
+            targets: dict[str, tuple[str, ...]] | None = None) -> dict[str, Json]:
     """Classify the cases with the unchanged model and with each of `mutants`, in parallel.
     `runtime` is the conformance runtime: its runner emits the case terms, and its
-    `lean` folder is the pinned toolchain."""
+    `lean` folder is the pinned toolchain. Every case must agree with the unchanged
+    model. With `targets`, a mutant copy classifies only the cases that its entry names,
+    which keeps the elaboration of case terms short; without it, every case."""
     lean = runtime / "lean"
     terms = [str(answer["caseLean"]) for answer in compiled_many(cases, runtime, emit_lean=True)]
-    program = classifier(terms)
+    names = [str(case["provenance"][0][1]) for case in cases]
+    selected = {name: [index for index, case in enumerate(names) if targets is None or case in targets[name]]
+                for name in mutants}
+    missing = [name for name, indexes in selected.items() if not indexes]
+    if missing:
+        raise ValueError(f"Mutants without a target case among the cases: {missing}; name an existing case")
     with TemporaryDirectory(prefix="resolve-mutants-") as directory:
         root = Path(directory)
         base = root / "base"
         for package in ("belay-sqlite", "verifier-conformance"):
             shutil.copytree(repository / "packages" / package, base / package,
                             ignore=shutil.ignore_patterns(".lake", "build"))
-        original = verdicts(base, lean, program)
+        original = verdicts(base, lean, classifier(terms))
         if original != ["Belay.Sqlite.Conformance.Verdict.agree"] * len(cases):
             raise ValueError(f"Every case must agree with the unchanged model before mutation: {original}")
         with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as pool:
             results = dict(zip(mutants, pool.map(
-                lambda name: mutate(base, root, name, mutants[name], lean, program), mutants)))
-    names = [str(case["provenance"][0][1]) for case in cases]
+                lambda name: mutate(base, root, name, mutants[name], lean,
+                                    classifier([terms[index] for index in selected[name]])), mutants)))
     return {name: {"killed": any(verdict != original[0] for verdict in found),
-                   "changed": {case: verdict for case, verdict in zip(names, found, strict=True)
+                   "changed": {names[index]: verdict for index, verdict in zip(selected[name], found, strict=True)
                                if verdict != original[0]}}
             for name, found in results.items()}

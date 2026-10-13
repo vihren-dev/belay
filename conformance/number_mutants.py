@@ -53,3 +53,15 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
 replacement. The names follow the list in the task of slice 2."""
+
+TARGETS: dict[str, tuple[str, ...]] = {
+    "overflow_stays_integer": ("add-subtract-multiply-limits",), "integer_division_as_real": ("divide-remainder-limits",),
+    "real_division_by_zero_not_null": ("real-arithmetic",), "nan_not_null": ("nan-is-null",),
+    "real_remainder_in_doubles": ("real-arithmetic",), "cast_integer_rounds": ("cast-integer",),
+    "sum_naive": ("sum-compensated",), "sum_overflow_ignored": ("sum-overflow",), "avg_integer": ("avg-overflow-succeeds",),
+    "coalesce_last": ("coalesce",), "spaces_not_skipped": ("text-operands",), "exponent_ignored": ("cast-real",),
+    "coalesce_argument_count_removed": ("coalesce-one-argument",),
+}
+"""The authored case that each mutant changes: the case of
+`conformance.authored_numbers` that tests the rule. A mutant copy classifies only its
+target, which keeps the measurement short."""

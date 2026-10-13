@@ -62,3 +62,17 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
 replacement. The names follow the list of ADR 0012, "Testing"."""
+
+TARGETS: dict[str, tuple[str, ...]] = {
+    "null_equals_null": ("compare-null-operands",), "integer_as_double": ("integer-real-exact",),
+    "text_without_case": ("text-binary",), "descending_ignored": ("order-descending",),
+    "null_last_ascending": ("order-storage-classes",), "count_counts_null": ("count-skips-null",),
+    "extremum_over_null": ("min-max-skip-null",), "empty_aggregate_no_row": ("aggregate-empty-table",),
+    "limit_one_too_high": ("limit-offset",), "offset_ignored": ("limit-offset",),
+    "no_such_column": ("no-such-column",), "no_such_table": ("no-such-table",),
+    "no_misuse_of_aggregate": ("aggregate-in-where",), "no_aggregate_in_group_by": ("aggregate-written-in-group-by",),
+    "no_order_by_out_of_range": ("order-by-out-of-range",), "no_group_by_out_of_range": ("group-by-out-of-range",),
+}
+"""The authored case that each mutant changes: the case of
+`conformance.authored_queries` that tests the rule. A mutant copy classifies only its
+target, which keeps the measurement short."""
