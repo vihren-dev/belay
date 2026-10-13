@@ -63,7 +63,15 @@ Relevant files: `conformance/native_connection.py`,
   its imports are now the model modules it uses. Two cases added for the
   mutants (a `CHARINT` unique key, an `INTEGER PRIMARY KEY DESC`), and the
   non-ASCII neighbor now uses an uppercase non-ASCII name. 16 cases in all.
+- 2026-10-13: commit `fc3489f9` (mutants). Review `20261013T033043Z-fc3489f9`:
+  two should findings (named limits, the CI document), fixed in `18cb0768`; its
+  review has no findings. `docs/conformance-format-v2.md` names profile format 3.
 
 ## Remaining
 
-- All outcome items of the task.
+- CI time measurement against `main`, the push and the pull request.
+- Step 2b: the judge compares the error phase; the authored coverage shard
+  (including cases for the prepare-error conditions without a model case:
+  reserved names, multiple primary keys, non-constant defaults, altering
+  `sqlite_schema`, INSERT and UPDATE column errors, and CREATE TABLE column
+  checks) becomes a claimed corpus.
