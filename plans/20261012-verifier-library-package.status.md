@@ -94,3 +94,14 @@ Relevant files: `lakefile.toml`, `SqliteVerifier/`, `SqliteVerifier.lean`, `Gate
     re-run workflows, and a manual run selects all checks. Open: compare the
     next `main` run that changes code with this one, and investigate if
     Linux stays above 918 s (765 s + 20 %).
+- 2026-10-13: warm measurement. `main` `c844e1c5` (#101, judge claims, no
+  Lean change), scope `package`, the same suites as the baseline run
+  (`0adb73dc`): Linux 592 s (baseline 467 s, +125 s), macOS 1276 s (1366 s).
+  Linux is just above the threshold (2 minutes). Causes:
+  - host Nix tests 27 → 59 s (65 → 84 tests): the new evaluation tests of
+    seeds and packages evaluate the real runtime derivations (tasks 3, 4);
+  - installed acceptance 63 → 96 s: installed `prepare` runs Lake and the
+    audit (task 2);
+  - harness 69 → 94 s (56 → 68 tests): #97, not ADR 0010.
+  Accepted for now. A follow-up can make the evaluation tests cheaper, for
+  example by evaluating the seed and target derivations in one Nix call.
