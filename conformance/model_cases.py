@@ -7,10 +7,12 @@ Cell = int | str | None
 
 @dataclass(frozen=True)
 class ExpectedTable:
-    """Canonical declarations and rows ordered explicitly by physical rowid."""
+    """Canonical declarations and rows ordered explicitly by physical rowid, and the
+    explicit indexes of the table: name, key column names and uniqueness."""
     name: str
     columns: tuple[tuple[str, str], ...]
     rows: tuple[tuple[Cell, ...], ...]
+    indexes: tuple[tuple[str, tuple[str, ...], bool], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -24,18 +26,29 @@ class Case:
     native_error: str
     kernel_proof: bool = True
     """Whether the kernel checks this case. The compiled runner classifies every case;
-    the kernel evaluates resolution too slowly for a table with 2,000 columns, so that
-    case stays compiled-only until a lowered profile column limit replaces it."""
+    the kernel evaluates resolution too slowly for a table with 2,000 columns, so the
+    default-value case of the column limit stays compiled-only. The lowered-limit
+    cases check the same rules in the kernel."""
+    limits: tuple[tuple[str, int], ...] = ()
+    """Connection limits that the recorder lowers before the schema runs."""
 
 
 def cases() -> tuple[Case, ...]:
-    """Exercise success, error prefixes, missing objects, and the native column limit."""
+    """Exercise success, error prefixes, missing objects and the native column limit, and
+    each first-scope resolution condition of ADR 0008 with a neighbor where it just does
+    not apply: ASCII-only name folding, a table with an index's name, transaction
+    control without a transaction, and the column limit lowered to 5."""
     invoices = ExpectedTable("invoices", (("amount", "INTEGER"), ("label", "TEXT")),
                              ((-4, 7, "repeat"), (9, 7, "repeat"), (22, None, "café")))
     annotated = ExpectedTable("invoices", invoices.columns + (("note", "TEXT"),),
                               tuple(row + (None,) for row in invoices.rows))
     audit = ExpectedTable("audit", (("message", "TEXT"),), ())
     full = ExpectedTable("full", tuple((f"c{i}", "TEXT") for i in range(2000)), ())
+    indexed = ExpectedTable("invoices", invoices.columns, invoices.rows, (("invoices_label", ("label",), False),))
+    other = ExpectedTable("ínvoices", (("other", "TEXT"),), ())
+    narrow = ExpectedTable("narrow", tuple((f"c{i}", "TEXT") for i in range(4)), ())
+    widened = ExpectedTable("narrow", narrow.columns + (("c4", "TEXT"),), ())
+    lowered = (("columns", 5),)
     return (
         Case("add_then_create", (invoices,),
              "ALTER TABLE invoices ADD note TEXT; CREATE TABLE audit(message TEXT);",
@@ -54,6 +67,26 @@ def cases() -> tuple[Case, ...]:
         Case("limit_before_duplicate", (full,), "ALTER TABLE full ADD c0 TEXT;", (full,),
              'some (0, .prepare (.tooManyColumns "full"))', "too many columns on sqlite_altertab_full",
              kernel_proof=False),
+        Case("create_folded_name", (invoices,), "CREATE TABLE INVOICES(other TEXT);", (invoices,),
+             'some (0, .prepare (.tableExists "INVOICES"))', "table INVOICES already exists"),
+        Case("create_non_ascii_name", (invoices,), "CREATE TABLE ínvoices(other TEXT);", (invoices, other),
+             "none", ""),
+        Case("table_named_like_index", (indexed,), "CREATE TABLE invoices_label(other TEXT);", (indexed,),
+             'some (0, .prepare (.indexNameUsed "invoices_label"))', "there is already an index named invoices_label"),
+        Case("commit_without_transaction", (invoices,), "COMMIT;", (invoices,),
+             "some (0, .noActiveTransaction)", "cannot commit - no transaction is active"),
+        Case("rollback_without_transaction", (invoices,), "ROLLBACK;", (invoices,),
+             "some (0, .noActiveTransaction)", "cannot rollback - no transaction is active"),
+        Case("begin_rollback", (invoices,), "BEGIN; ALTER TABLE invoices ADD note TEXT; ROLLBACK;", (invoices,),
+             "none", ""),
+        Case("lowered_limit_reached", (narrow,), "ALTER TABLE narrow ADD c4 TEXT;", (widened,), "none", "",
+             limits=lowered),
+        Case("lowered_limit_exceeded", (widened,), "ALTER TABLE narrow ADD c5 TEXT;", (widened,),
+             'some (0, .prepare (.tooManyColumns "narrow"))', "too many columns on sqlite_altertab_narrow",
+             limits=lowered),
+        Case("lowered_limit_before_duplicate", (widened,), "ALTER TABLE narrow ADD c0 TEXT;", (widened,),
+             'some (0, .prepare (.tooManyColumns "narrow"))', "too many columns on sqlite_altertab_narrow",
+             limits=lowered),
     )
 
 
@@ -63,10 +96,13 @@ def quoted(name: str) -> str:
 
 
 def schema_sql(tables: tuple[ExpectedTable, ...]) -> str:
-    """Declare independent expected schemas as actual SQLite input."""
-    return "\n".join(f"CREATE TABLE {quoted(table.name)}(" +
-                     ",".join(f"{quoted(name)} {kind}" for name, kind in table.columns) + ");"
-                     for table in tables)
+    """Declare independent expected schemas, then their indexes, as actual SQLite input."""
+    return "\n".join([*(f"CREATE TABLE {quoted(table.name)}(" +
+                       ",".join(f"{quoted(name)} {kind}" for name, kind in table.columns) + ");"
+                       for table in tables),
+                     *(f"CREATE {'UNIQUE ' if unique else ''}INDEX {quoted(name)} ON {quoted(table.name)}(" +
+                       ",".join(quoted(column) for column in columns) + ");"
+                       for table in tables for name, columns, unique in table.indexes)])
 
 
 def literal(value: Cell) -> str:

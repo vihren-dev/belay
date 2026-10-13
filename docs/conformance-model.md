@@ -34,7 +34,8 @@ as historical evidence from before connection, metadata and streaming correction
 
 ## Preserved authored cases
 
-The five cases in `conformance/model_cases.py` retain their original independent
+The cases in `conformance/model_cases.py` (the five original cases and the nine
+resolution cases of ADR 0008) keep their independent
 fixtures and final expectations. Native results are checked against those
 expectations before the same decoded case receives a compiled verdict and a
 kernel proof. Their authored native diagnostic substrings and exact modeled
@@ -47,15 +48,21 @@ primary-code comparator. No expected value is derived from the model.
 | ADD then conflicting CREATE | ADD remains committed; later table creation is not reached. |
 | CREATE then duplicate-column ADD | New audit table remains committed; old invoices remain unchanged. |
 | CREATE then missing-table ADD | New audit table remains committed; missing-table error occurs at statement 1. |
-| ADD at 2000 columns with a duplicate name | Column-limit error takes precedence over duplicate-column error; all columns and empty contents remain. |
+| ADD at 2000 columns with a duplicate name | Column-limit error takes precedence over duplicate-column error; all columns and empty contents remain. Compiled only: the default-value case of the column limit. |
+| CREATE with an ASCII case variant of an existing name | Table-exists error; SQLite folds only ASCII letters. |
+| CREATE with a non-ASCII variant of an existing name | Succeeds: the neighbor of the case above. |
+| CREATE with the name of an index | Index-name error; the table and its index remain. |
+| COMMIT, ROLLBACK without a transaction | No-active-transaction error at statement 0, reported by `sqlite3_step`. |
+| BEGIN, ADD, ROLLBACK | The catalog and the rows return to the state at BEGIN. |
+| ADD under a column limit of 5 | Reaching the limit succeeds; one column more fails; the limit error takes precedence over a duplicate name. The recorder lowers the limit and records it. |
 
-All five fixtures survive JSON decoding unchanged, including rowids `-4`, `9`,
+All fixtures survive JSON decoding unchanged, including rowids `-4`, `9`,
 `22`, NULL, UTF-8 text and the 2000-column table. Their former separate model
 assertions were replaced only after native replay through the persistent runner
 agreed. The lost-row negative check now rejects a proof of the shared predicate.
 Imported `alter3` fixtures and their expectations are unchanged.
 
-`conformance/cases/` freezes the five native cases in the current case format. Every model test
+`conformance/cases/` freezes the native cases in the current case format. Every model test
 re-executes its original SQL and requires equality with that frozen record before
 compiled and kernel checking. The files came from `just conformance --prove`;
 regeneration requires the pinned native runner, never hand-editing a trace to
@@ -120,9 +127,9 @@ through one JSON-lines runner process; reports separate native acquisition and
 compiled batch time (including transport). Optional proof-term emission and kernel
 checks run separately, outside the timing.
 Parsing is bounded to five seconds, each compiled batch to 30 seconds, and
-concrete kernel checks to 120 seconds (including the wide case).
+concrete kernel checks to 120 seconds. The 2,000-column case is compiled only.
 
-The original tier-two denominator remains five authored derived cases, plus the
+The tier-two denominator is the 14 authored derived cases, plus the
 injected transport regression. [Stateful generation](conformance-generation.md)
 and [frozen corpus progress](conformance-progress.md) have separate denominators.
 W3–W7 were approved and implemented after the prototype review. Original static

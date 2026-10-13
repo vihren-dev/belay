@@ -42,6 +42,16 @@ Relevant files: `conformance/native_connection.py`,
   step 2b). The five model cases and the injected-corruption regression are
   regenerated with `just conformance --prove` and `regressions.freeze` (new
   `caseSha256` 8477dc93...). `tests/conformance_phase_test.py` checks both phases.
+- 2026-10-13: commit `2dd26f96` (case version 4). Review
+  `20261013T030157Z-2dd26f96`: two should findings; the error message is fixed in
+  `a09734dc`, and the missing lowered-limit test comes with the next commit.
+- 2026-10-13: nine authored model cases: ASCII-only folding (an ASCII case
+  variant collides, a non-ASCII variant does not), a table with an index's name,
+  COMMIT and ROLLBACK without a transaction, BEGIN-ADD-ROLLBACK, and three cases
+  under a column limit lowered to 5 (reached, exceeded, limit before duplicate).
+  All 14 cases agree and the 13 small ones are kernel-proved. The generation
+  test's column boundary uses a lowered limit instead of 2,000 columns. The
+  model suite takes about 165 s instead of 88 s in one local run.
 
 ## Remaining
 

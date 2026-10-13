@@ -1,6 +1,7 @@
 """Fixed-seed state machines, boundary exclusions, and a reproducibly shrunk disagreement."""
 
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 
 from hypothesis import find, settings, strategies as st
@@ -49,11 +50,12 @@ def test_affinity_boundaries_remain_unsupported(runtime_root: Path, literal: str
 
 
 def test_column_boundary(runtime_root: Path) -> None:
-    """The error-seeking boundary reaches the real 2000-column failure and atomicity check."""
+    """The error-seeking boundary reaches the real column-limit failure and atomicity check,
+    under a column limit lowered to 5 instead of a table with 2,000 columns."""
     program = Program([command("addColumn", "wide", column="extra")],
-        Program().schema + "CREATE TABLE wide(" + ",".join(f"c{i} BLOB" for i in range(2000)) + ");")
+        Program().schema + "CREATE TABLE wide(" + ",".join(f"c{i} BLOB" for i in range(5)) + ");")
     program.roundtrip(default_parser(runtime_root))
-    case, error = acquire(program.fixture(), runtime_root)
+    case, error = acquire(replace(program.fixture(), limits={"columns": 5}), runtime_root)
     assert case is not None, error
     assert case["nativeTrace"][-1]["primaryCode"] == 1
     native_laws(case)
