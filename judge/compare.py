@@ -66,7 +66,9 @@ def boundary_differs(ranges: list[tuple[int, int]], steps: list[dict[str, Json]]
 
 
 def predicted_verdict(record: dict[str, Json], prediction: dict[str, Json]) -> Verdict:
-    """The verdict of a prediction with observations."""
+    """The verdict of a prediction with observations. A recorded step that has a `phase`
+    (native record version 5) also requires the same phase: `prepare` when
+    `sqlite3_prepare_v2` failed, `step` when `sqlite3_step` failed, `null` otherwise."""
     steps, recorded, ranges = prediction["steps"], recorded_steps(record), consumed_ranges(record)
     if not isinstance(steps, list) or not steps:
         raise ValueError("a prediction has no initial step")
@@ -84,6 +86,8 @@ def predicted_verdict(record: dict[str, Json], prediction: dict[str, Json]) -> V
             return Verdict("DISAGREE", position, "different statement boundary")
         if not same_step(event, step):
             return Verdict("DISAGREE", position, "observation differs")
+        if "phase" in event and event["phase"] != step.get("phase"):
+            return Verdict("DISAGREE", position, "error phase differs")
     if record.get("nativeVersion") in WITH_OUTPUTS:
         return compare_outputs(record, outputs)
     return Verdict("AGREE")

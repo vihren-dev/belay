@@ -134,3 +134,24 @@ def test_inputs_and_verdict_modes_as_the_verdict_job_runs_them(corpus: Path) -> 
                              cwd=ROOT, capture_output=True, text=True, timeout=JUDGE_TIMEOUT_SECONDS, check=False)
     assert verdict.returncode == 0, verdict.stderr
     assert json.loads(verdict.stdout) == {"fixture": {"AGREE": CASES}}
+
+
+@pytest.mark.unit
+def test_error_phase_is_compared_when_recorded() -> None:
+    """`judge.compare.predicted_verdict`: a recorded step with a `phase` (native record version 5)
+    requires the same predicted phase; a record without phases compares as before."""
+    from judge.compare import predicted_verdict
+    with gzip.open(ROOT / "conformance/corpus-v1/cases.jsonl.gz", "rt") as stream:
+        record = next(value for value in map(json.loads, stream) if value["trace"])
+    steps, offset = [record["initial"]], 0
+    for event in record["trace"]:
+        steps.append({**event, "start": offset})
+        offset += len(event["sql"].encode())
+    prediction = {"supported": True, "steps": steps}
+    phased = {**record, "trace": [{**event, "phase": "prepare"} for event in record["trace"]]}
+    assert predicted_verdict(record, prediction).name == "AGREE"
+    assert predicted_verdict(phased, {**prediction, "steps": [steps[0], *({**step, "phase": "prepare"}
+                                                                         for step in steps[1:])]}).name == "AGREE"
+    disagreement = predicted_verdict(phased, {**prediction, "steps": [steps[0], *({**step, "phase": "step"}
+                                                                                for step in steps[1:])]})
+    assert (disagreement.name, disagreement.position, disagreement.detail) == ("DISAGREE", 0, "error phase differs")
