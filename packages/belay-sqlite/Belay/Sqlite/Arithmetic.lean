@@ -97,15 +97,19 @@ def ArithmeticOperator.integer (operator : ArithmeticOperator) (left right : Val
   | .divide => if b == 0 then .null else exact (a.tdiv b)
   | .remainder => if b == 0 then .null else .integer (a.tmod (if b == -1 then 1 else b))
 
+/-- Whether a value is the NULL cell. -/
+def Value.isNullCell : Value → Bool
+  | .null => true
+  | .integer _ | .real _ | .text _ | .blob _ => false
+
 /-- SQLite's value of {lit}`left operator right`: NULL when an operand is NULL, integer
 arithmetic when both operands are integers or count as integers, else double
 arithmetic; a NaN result is NULL. -/
 def ArithmeticOperator.apply (operator : ArithmeticOperator) (left right : Value) : Value :=
-  match left, right with
-  | .null, _ | _, .null => .null
-  | _, _ => match left.arithmeticInteger?, right.arithmeticInteger? with
+  if left.isNullCell || right.isNullCell then .null
+  else match left.arithmeticInteger?, right.arithmeticInteger? with
     | some a, some b => operator.integer left right a b
-    | _, _ => operator.real left right
+    | some _, none | none, some _ | none, none => operator.real left right
 
 /-- The bytes of a value converted to TEXT: an integer in decimal, a REAL by
 {name}`realText`, TEXT and BLOB bytes as they are, NULL as no bytes. -/
@@ -115,10 +119,15 @@ def Value.textBytes : Value → List UInt8
   | .text bytes | .blob bytes => bytes
   | .null => []
 
+/-- The magnitude bound of {lit}`sqlite3RealSameAsInt`: {lit}`2^51`. An integer at or
+beyond it never counts as the same as a double. -/
+def realSameAsIntBound : Int := 2 ^ 51
+
 /-- Whether a double equals a 64-bit integer for {lit}`sqlite3RealSameAsInt`: it is zero,
-or the integer converts to the same double and is below {lit}`2^51` in magnitude. -/
+or the integer converts to the same double and lies in
+{lit}`[-realSameAsIntBound, realSameAsIntBound)`. -/
 def realSameAsInt (value : Float) (integer : Int) : Bool :=
-  value == 0 || ((Float.ofInt integer).toBits == value.toBits && -2251799813685248 ≤ integer && integer < 2251799813685248)
+  value == 0 || ((Float.ofInt integer).toBits == value.toBits && -realSameAsIntBound ≤ integer && integer < realSameAsIntBound)
 
 /-- The value with NUMERIC affinity forced ({lit}`sqlite3VdbeMemNumerify`): a number stays;
 a TEXT or BLOB becomes an integer when its integer form reads whole, or when its double
@@ -133,15 +142,15 @@ def Value.numerify : Value → Value
   | value@(.null) | value@(.integer _) | value@(.real _) => value
 
 /-- SQLite's {lit}`CAST(value AS type)` for the affinity of the type
-({lit}`sqlite3VdbeMemCast`): NULL stays NULL; BLOB keeps a BLOB and takes the TEXT bytes
-of other values; NUMERIC is {name}`Value.numerify`; INTEGER and REAL read the value as
-{name}`Value.toInt64` and {name}`Value.toReal` do; TEXT takes {name}`Value.textBytes`. -/
-def castValue (affinity : Affinity) : Value → Value
+({lit}`sqlite3VdbeMemCast`): NULL stays NULL; BLOB takes {name}`Value.textBytes`, which
+keeps the bytes of a BLOB; NUMERIC is {name}`Value.numerify`; INTEGER and REAL read the
+value as {name}`Value.toInt64` and {name}`Value.toReal` do; TEXT takes
+{name}`Value.textBytes`. -/
+def castValue (affinity : Affinity) (value : Value) : Value :=
+  match value with
   | .null => .null
-  | value => match affinity with
-    | .blob => match value with
-      | .blob bytes => .blob bytes
-      | other => .blob other.textBytes
+  | .integer _ | .real _ | .text _ | .blob _ => match affinity with
+    | .blob => .blob value.textBytes
     | .numeric => value.numerify
     | .integer => .integer value.toInt64
     | .real => realValue value.toReal
