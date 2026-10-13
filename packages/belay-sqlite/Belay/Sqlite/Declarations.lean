@@ -46,8 +46,10 @@ structure Row where
 
 /-- Copy SQLite's ASCII-only case folding, including decoded quoted identifiers.
 Fold ASCII capitals to lowercase and leave every other character unchanged; for
-example, {lit}`Ab_É` folds to {lit}`ab_É`. -/
+example, {lit}`Ab_É` folds to {lit}`ab_É`. The fold goes through the character list:
+in the kernel proofs of conformance cases, {lit}`String.map` takes seconds for each
+name that has a capital, and the list takes milliseconds. -/
 def normalizeIdentifier (name : String) : String :=
-  name.map fun c => if 'A' ≤ c ∧ c ≤ 'Z' then Char.ofNat (c.toNat + 32) else c
+  String.ofList (name.toList.map fun c => if 'A' ≤ c ∧ c ≤ 'Z' then Char.ofNat (c.toNat + 32) else c)
 
 end Belay.Sqlite
