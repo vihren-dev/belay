@@ -1,0 +1,69 @@
+{
+  "caller": "claude",
+  "commit": "b24c25acd072e7f0059e6e52d600e0a85acdec4c",
+  "date": "2026-10-13T08:32:58+00:00",
+  "exit": 0,
+  "files": [
+    "build-support/tests.nix",
+    "conformance/case_format.py",
+    "conformance/corpus.py",
+    "conformance/execution_profile.py",
+    "conformance/native_observation.py",
+    "conformance/native_record.py",
+    "conformance/native_replay.py",
+    "conformance/native_replay_report.py",
+    "conformance/native_statements.py",
+    "conformance/predict.py",
+    "conformance/profile_scope.py",
+    "conformance/record_parser.py",
+    "conformance/record_versions.py",
+    "conformance/upstream_fidelity.py",
+    "docs/conformance-format-v2.md",
+    "docs/native-corpus-format.md",
+    "packages/verifier-conformance/VerifierConformance/Predict.lean",
+    "plans/20261013-corpus-phase-and-coverage.status.md",
+    "tests/conformance_authored_boundaries_test.py",
+    "tests/conformance_authored_test.py",
+    "tests/conformance_predict_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261013T083258Z-b24c25ac#1",
+      "line": 198,
+      "path": "conformance/execution_profile.py",
+      "rule": "R1",
+      "severity": "should",
+      "text": "The profiled-version policy is a literal `(4, 5)` inside manifest validation despite the new documented `PROFILED` definition. Fix: use `record_versions.PROFILED` in this check."
+    },
+    {
+      "id": "20261013T083258Z-b24c25ac#2",
+      "line": 96,
+      "path": "tests/conformance_predict_test.py",
+      "rule": "R11",
+      "severity": "should",
+      "text": "The test claims to check recorded limits, but its SQL behaves identically under the lowered and default column limits, so discarding the recorded limits still passes. Fix: add a case whose prediction changes under the lowered limit and assert that result."
+    }
+  ],
+  "id": "20261013T083258Z-b24c25ac",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "fa2475f44035",
+    "R7": "0a38ead152b1",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

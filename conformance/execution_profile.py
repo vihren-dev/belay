@@ -6,6 +6,7 @@ from conformance.case_format import Json
 from conformance.native_connection import Connection
 from conformance.native_limits import Limits, checked_limits, compile_option_limits, lower_limits, measured_limits
 from conformance.native_metadata import text
+from conformance.record_versions import PROFILED
 
 IGNORED_SETTINGS = {"journal_mode", "synchronous", "cache_size", "temp_store", "mmap_size", "busy_timeout"}
 
@@ -100,8 +101,7 @@ class ExecutionProfile:
                              f"measured {measured}. Establish the profile again on a new connection.")
 
     def effective_limits(self) -> Limits:
-        """The limits that applied when this profile was recorded; before format 3, the
-        compile options give them (`native_limits.compile_option_limits`)."""
+        """The recorded limits; before format 3, those of the compile options."""
         return dict(self.limits) if self.limits else compile_option_limits(self.compile_options)
 
     def to_wire(self) -> dict[str, Json]:
@@ -195,5 +195,5 @@ def validate_manifest_profiles(manifest: dict[str, Json], records: list[dict[str
     if len(set(identities)) != len(identities):
         raise ValueError("Duplicate manifest execution profile identity")
     for record in records:
-        if record.get("nativeVersion") in (4, 5) and recorded_profile(record) not in profiles:
+        if record.get("nativeVersion") in PROFILED and recorded_profile(record) not in profiles:
             raise ValueError("Native record execution profile differs from manifest")

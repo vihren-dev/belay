@@ -70,9 +70,10 @@ def test_predict_command_reports_scope(runtime_root: Path) -> None:
     assert second["status"] == "unsupported" and second["reason"]
 
 
-def profiled(runtime_root: Path, name: str, **settings: object) -> dict[str, object]:
-    """A version 5 record of a case that fails in `sqlite3_step`, under a measured profile with
-    the given execution settings and a column limit lowered to 5."""
+def profiled(runtime_root: Path, name: str, setup: str = "CREATE TABLE t(a INTEGER NOT NULL);",
+             migration: str = "INSERT INTO t(a) VALUES (NULL);", **settings: object) -> dict[str, object]:
+    """A version 5 record, by default of a case that fails in `sqlite3_step`, under a measured
+    profile with the given execution settings and a column limit lowered to 5."""
     from tempfile import TemporaryDirectory
     from conformance.execution_profile import measured_profile
     from conformance.native_connection import Connection, library_path, load_library
@@ -84,8 +85,7 @@ def profiled(runtime_root: Path, name: str, **settings: object) -> dict[str, obj
             profile = measured_profile(connection, name=name, format_version=3, **settings)
         finally:
             connection.close()
-    return record_sql("CREATE TABLE t(a INTEGER NOT NULL);", "INSERT INTO t(a) VALUES (NULL);",
-                      name=name, outputs=True, profile=profile)
+    return record_sql(setup, migration, name=name, outputs=True, profile=profile)
 
 
 def test_profiled_records_use_their_limits_and_phases(runtime_root: Path) -> None:
@@ -101,3 +101,14 @@ def test_profiled_records_use_their_limits_and_phases(runtime_root: Path) -> Non
     assert first["steps"][1]["primaryCode"] == 19
     assert second["status"] == "unsupported"
     assert second["reason"].startswith("keyed: the model does not implement foreign keys")
+
+
+def test_prediction_uses_the_recorded_column_limit(runtime_root: Path) -> None:
+    """`VerifierConformance.Predict.predict` resolves under the recorded limits: ADD COLUMN on a
+    table with 5 columns is a prepare error under the recorded limit of 5, which the default
+    limit of 2,000 would accept."""
+    record = profiled(runtime_root, "narrow", "CREATE TABLE t(a, b, c, d, e);", "ALTER TABLE t ADD f;")
+    assert record["trace"][0]["primaryCode"] == 1 and record["trace"][0]["phase"] == "prepare"
+    [prediction] = predict(runtime_root, record)
+    assert prediction["status"] == "predicted" and prediction["supported"], prediction
+    assert (prediction["steps"][1]["primaryCode"], prediction["steps"][1]["phase"]) == (1, "prepare")
