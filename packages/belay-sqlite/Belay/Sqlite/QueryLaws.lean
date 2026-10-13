@@ -43,7 +43,9 @@ theorem compareSort_transCmp : ∀ directions : List Bool, Std.TransCmp (compare
     rw [equal]; exact inferInstance
 
 /-- For every relation, item and list, {name}`insertStable` gives a permutation of the
-item followed by the list. -/
+item followed by the list. Proof sketch: induction over the list; when the item goes
+after the head, the result is the head followed by a permutation of the item and the
+tail, which one swap turns into the item, the head and the tail. -/
 theorem insertStable_perm (le : α → α → Bool) (item : α) :
     ∀ items : List α, (insertStable le item items).Perm (item :: items)
   | [] => .refl _
@@ -55,7 +57,10 @@ theorem insertStable_perm (le : α → α → Bool) (item : α) :
 
 /-- For every relation, starting list and list of items, inserting the items one by
 one with {name}`insertStable` gives a permutation of the starting list followed by
-the items. -/
+the items. Proof sketch: induction over the items, for every starting list; each
+insertion is a permutation of the item in front of the starting list
+({name}`insertStable_perm`), and moving the item from the front to the middle is a
+permutation too. -/
 theorem foldl_insertStable_perm (le : α → α → Bool) :
     ∀ (items start : List α), (items.foldl (fun sorted item => insertStable le item sorted) start).Perm (start ++ items)
   | [], start => by simp
@@ -65,7 +70,9 @@ theorem foldl_insertStable_perm (le : α → α → Bool) :
     exact ((insertStable_perm le item start).append_right items).trans List.perm_middle.symm
 
 /-- For every relation and list, {name}`stableSort` gives a permutation of the list:
-the sort neither adds, drops nor repeats an item. -/
+the sort neither adds, drops nor repeats an item. Proof sketch: the sort inserts the
+items into an empty list, so {name}`foldl_insertStable_perm` applies with an empty
+starting list. -/
 theorem stableSort_perm (le : α → α → Bool) (items : List α) : (stableSort le items).Perm items := by
   simpa [stableSort] using foldl_insertStable_perm le items []
 
