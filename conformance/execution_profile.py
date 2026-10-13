@@ -195,5 +195,5 @@ def validate_manifest_profiles(manifest: dict[str, Json], records: list[dict[str
     if len(set(identities)) != len(identities):
         raise ValueError("Duplicate manifest execution profile identity")
     for record in records:
-        if record.get("nativeVersion") == 4 and recorded_profile(record) not in profiles:
+        if record.get("nativeVersion") in (4, 5) and recorded_profile(record) not in profiles:
             raise ValueError("Native record execution profile differs from manifest")

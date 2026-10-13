@@ -40,7 +40,9 @@ def table_rows(event: dict[str, Json], name: str, *, persisted: bool = False) ->
 
 def test_catalog_keeps_legacy_sql_and_complete_outputs(authored: dict[str, dict[str, Json]],
                                                       runtime_root: Path) -> None:
-    """Legacy scenarios gain evidence; explicit profiles cannot produce false model agreements."""
+    """Legacy scenarios gain evidence; explicit profiles cannot produce false model agreements:
+    no case disagrees, the 10 cases whose SQL and default execution settings the model
+    implements agree, and the others stay out of scope (`profile_scope`)."""
     for name, setup, sql, tags in requirement_definitions():
         record = authored[name]
         assert (record["setupSql"], record["migrationSql"], record["requirements"]) == (setup, sql, tags)
@@ -53,7 +55,7 @@ def test_catalog_keeps_legacy_sql_and_complete_outputs(authored: dict[str, dict[
             output_wire(event)
             assert event["columnCount"] == len(event["columns"])
     result = replay(list(authored.values()), runtime_root)
-    assert result["counts"] == {"MODEL_UNSUPPORTED": 43}
+    assert result["counts"] == {"MODEL_UNSUPPORTED": 33, "AGREE": 10}
 
 
 def test_retained_authored_evidence_and_coverage(authored: dict[str, dict[str, Json]]) -> None:

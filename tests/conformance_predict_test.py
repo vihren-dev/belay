@@ -70,13 +70,34 @@ def test_predict_command_reports_scope(runtime_root: Path) -> None:
     assert second["status"] == "unsupported" and second["reason"]
 
 
-def test_execution_profiles_stay_out_of_scope(runtime_root: Path) -> None:
-    """`conformance.predict.mapped`: a case recorded with an execution profile (native
-    record version 4) is out of scope, and the reason names the case and why."""
-    given = {**subject_input(record_sql("CREATE TABLE t(a INTEGER);", "", name="profiled")), "nativeVersion": 4}
-    result = subprocess.run([sys.executable, "-m", "conformance.predict", "--runtime", str(runtime_root)],
-                            input=json.dumps(given) + "\n", capture_output=True, text=True,
-                            timeout=PREDICT_TIMEOUT_SECONDS, check=False)
-    prediction = json.loads(result.stdout)
-    assert prediction["status"] == "unsupported"
-    assert prediction["reason"].startswith("profiled: the model does not implement execution profiles")
+def profiled(runtime_root: Path, name: str, **settings: object) -> dict[str, object]:
+    """A version 5 record of a case that fails in `sqlite3_step`, under a measured profile with
+    the given execution settings and a column limit lowered to 5."""
+    from tempfile import TemporaryDirectory
+    from conformance.execution_profile import measured_profile
+    from conformance.native_connection import Connection, library_path, load_library
+    from conformance.native_limits import lower_limits
+    with TemporaryDirectory() as directory:
+        connection = Connection(load_library(library_path()), Path(directory) / "profile.db")
+        try:
+            lower_limits(connection, {"columns": 5})
+            profile = measured_profile(connection, name=name, format_version=3, **settings)
+        finally:
+            connection.close()
+    return record_sql("CREATE TABLE t(a INTEGER NOT NULL);", "INSERT INTO t(a) VALUES (NULL);",
+                      name=name, outputs=True, profile=profile)
+
+
+def test_profiled_records_use_their_limits_and_phases(runtime_root: Path) -> None:
+    """`conformance.profile_scope.modeled_profile` and `VerifierConformance.Predict`: a record
+    whose profile uses only the default execution settings is predicted under its recorded
+    limits, with the error phase; one with foreign keys is out of scope, and the reason names
+    the setting."""
+    default, keyed = profiled(runtime_root, "default"), profiled(runtime_root, "keyed", foreign_keys=True)
+    assert default["nativeVersion"] == 5 and default["trace"][0]["phase"] == "step"
+    first, second = predict(runtime_root, default, keyed)
+    assert first["status"] == "predicted" and first["supported"], first
+    assert [step["phase"] for step in first["steps"]] == [None, "step"]
+    assert first["steps"][1]["primaryCode"] == 19
+    assert second["status"] == "unsupported"
+    assert second["reason"].startswith("keyed: the model does not implement foreign keys")

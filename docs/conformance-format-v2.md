@@ -67,12 +67,20 @@ identities, engine builds, transaction modes and changes to established behavior
 settings during case SQL are refused. Setup can replay FK changes when it restores
 the selected profile before case SQL. Transaction-local FK writes keep SQLite's
 no-op behavior; readback still checks the fixed profile after each statement.
-The model has no explicit-profile capability yet; valid v4
-records remain `MODEL_UNSUPPORTED`, while malformed evidence is a harness error.
+The model implements a profile when it uses SQLite's default execution settings: no
+foreign keys or recursive triggers, DEFERRED transactions, no controlled clock,
+read-write access, trusted schema mode and no other writers
+(`conformance/profile_scope.py`). Name resolution then uses the profile's release,
+build, limits and double-quoted-string settings. A record whose profile changes
+another setting is `MODEL_UNSUPPORTED`, with the setting named; malformed evidence is
+a harness error.
 A profile record of format 3 also has `limits`, the measured connection limits
 ([execution profile](execution-profile.md)); replay establishes and reads them back.
-Records of formats 1 and 2 have the limits of their compile options. No frozen
-record has format 3 yet.
+Records of formats 1 and 2 have the limits of their compile options.
+Acquisition `nativeVersion: 5` is version 4 with a profile of format 3 and a `phase`
+in each trace event: `prepare` when `sqlite3_prepare_v2` failed, `step` when
+`sqlite3_step` failed, and `null` otherwise. `conformance/record_versions.py` lists
+what each version carries. No frozen record has version 5 yet.
 Manifests declare `executionProfiles`, an array of these complete profile records.
 Every v4 record must match a declaration exactly; duplicate name/version identities
 and missing or conflicting declarations are refused. Legacy corpora retain their

@@ -14,8 +14,9 @@ from belay.sqlite.dialects import ProfileIdentity
 from belay.sqlite.parser_library import ParserLibrary, installed_library, load
 from belay.sqlite.sql_tree import SqlParser
 from conformance.case_format import Json
-from conformance.execution_profile import recorded_profile
+from conformance.execution_profile import profile_from_wire, recorded_profile
 from conformance.native_library import DEFAULT_ENGINE_VERSION, SOURCE_ID
+from conformance.record_versions import PROFILED
 
 NO_PARSER_REASON = "no parser for this dialect"
 """The reason of a `MODEL_UNSUPPORTED` case whose recorded profile has no built dialect."""
@@ -34,9 +35,10 @@ def default_parser(runtime: Path) -> SqlParser:
 
 
 def record_profile(record: dict[str, Json]) -> ProfileIdentity:
-    """Return the profile that a native record was recorded with."""
-    if record.get("nativeVersion") == 4:
-        profile = recorded_profile(record)
+    """Return the profile that a native record was recorded with. A subject input has the
+    record's profile but no trace, so its clock values cannot be checked here."""
+    if record.get("nativeVersion") in PROFILED:
+        profile = recorded_profile(record) if "trace" in record else profile_from_wire(record["profile"])
         return ProfileIdentity(profile.engine_version, profile.source_id, profile.compile_options)
     source_id = record.get("sourceId")
     if not isinstance(source_id, str):

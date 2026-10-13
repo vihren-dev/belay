@@ -2,12 +2,12 @@
 
 from conformance.record_parser import NO_PARSER_REASON, record_parser
 
-from conformance.case_format import CASE_VERSION, Json, case_profile, row_wire
-from conformance.native_limits import DOCUMENTED_LIMITS
+from conformance.case_format import CASE_VERSION, Json, row_wire
+from conformance.profile_scope import modeled_profile
+from conformance.record_versions import PROFILED, WITH_OUTPUTS
 from conformance.native_connection import SOURCE_ID
 from conformance import native_bindings
 from conformance.native_call_recording import validate_recording
-from conformance.native_library import DEFAULT_ENGINE_VERSION
 from conformance.native_metadata import integer, native_table, text
 from belay.sqlite.dialects import NoParserForDialect
 from belay.sqlite.errors import SqlError
@@ -82,9 +82,10 @@ def model_case(record: dict[str, Json], library: ParserLibrary) -> dict[str, Jso
     Lean resolves the syntax and compares the catalog and rows after each statement.
     """
     validate_recording(record)
-    if record.get("nativeVersion") not in (1, 2, 3, 4) or record["nativeVersion"] != 4 and record.get("sourceId") != SOURCE_ID:
+    if (record.get("nativeVersion") not in (1, 2, 3, *PROFILED)
+            or record["nativeVersion"] not in PROFILED and record.get("sourceId") != SOURCE_ID):
         raise ValueError("Unsupported native record version or engine identity")
-    outputs = [output_wire(event) for event in record["trace"]] if record["nativeVersion"] in (3, 4) else None
+    outputs = [output_wire(event) for event in record["trace"]] if record["nativeVersion"] in WITH_OUTPUTS else None
     parser = record_parser(library, record)
     initial_sql = schema_sql(record["initial"]["visible"])
     schema_tree = parse(parser, initial_sql.encode(), "corpus-schema.sql")
@@ -92,8 +93,7 @@ def model_case(record: dict[str, Json], library: ParserLibrary) -> dict[str, Jso
     for event in record["trace"]:
         if "sql" in event and not event["primaryCode"]:
             parse(parser, event["sql"].encode(), "native-statement.sql")
-    if record["nativeVersion"] == 4:
-        raise SqlError("UNSUPPORTED", "Model execution profile capability is not implemented")
+    profile = modeled_profile(record)
     schema = statements(schema_tree)
     script = statements(migration_tree)
     trace = record["trace"]
@@ -113,12 +113,12 @@ def model_case(record: dict[str, Json], library: ParserLibrary) -> dict[str, Jso
     for event in [record["initial"], *record["trace"]]:
         observations.append({"visible": native_tables(event["visible"]), "persisted": native_tables(event["persisted"]),
             "transactionOpen": event["transactionOpen"], "primaryCode": event.get("primaryCode", 0),
-            "extendedCode": event.get("extendedCode", 0), "phase": None})
-    return {"version": CASE_VERSION, "profile": case_profile(DEFAULT_ENGINE_VERSION, SOURCE_ID, DOCUMENTED_LIMITS),
+            "extendedCode": event.get("extendedCode", 0), "phase": event.get("phase")})
+    return {"version": CASE_VERSION, "profile": profile,
             "schemaSql": initial_sql, "migrationSql": record["migrationSql"],
             "schema": [item.value for item in schema], "script": [item.value for item in script],
             "initial": observations[0]["visible"], "nativeTrace": observations,
-            "requirements": record["requirements"], "provenance": [["fixture", record["name"]], ["sourceId", SOURCE_ID]],
+            "requirements": record["requirements"], "provenance": [["fixture", record["name"]], ["sourceId", str(profile["sourceId"])]],
             "outputs": outputs, "parameters": [event["parameters"] for event in trace] if outputs is not None else []}
 
 

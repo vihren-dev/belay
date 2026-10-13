@@ -2,6 +2,7 @@
 
 from conformance.case_format import Json
 from conformance.native_connection import Connection, Cell
+from conformance.native_limits import measured_limits
 from conformance.native_metadata import integer, quoted, text
 from conformance.native_statements import wire_rows
 
@@ -12,6 +13,7 @@ def observe(connection: Connection) -> dict[str, Json]:
     if connection.query("SELECT name FROM sqlite_temp_schema;"):
         raise ValueError("Excluded connection context: temporary schema")
     schema = connection.query("SELECT type,name,tbl_name,sql FROM sqlite_schema ORDER BY type,name;")
+    chunk_size = measured_limits(connection)["columns"]  # A profile may have lowered the result-column limit.
     inventory = {text(row[1]): row for row in connection.query("PRAGMA table_list;") if text(row[0]) == "main"}
     tables: list[Json] = []
     for kind, name_cell, _, _ in schema:
@@ -32,8 +34,8 @@ def observe(connection: Connection) -> dict[str, Json]:
         ordering = ",".join(quoted(n) for n in key)
         identities = connection.query(f"SELECT {ordering} FROM {quoted(name)} ORDER BY {ordering};")
         values: list[list[Cell]] = [[] for _ in identities]
-        for offset in range(0, len(names), 2000):
-            selected = ",".join(quoted(n) for n in names[offset:offset + 2000])
+        for offset in range(0, len(names), chunk_size):
+            selected = ",".join(quoted(n) for n in names[offset:offset + chunk_size])
             chunk = connection.query(f"SELECT {selected} FROM {quoted(name)} ORDER BY {ordering};")
             if len(chunk) != len(identities):
                 raise ValueError("Native rows changed during observation")

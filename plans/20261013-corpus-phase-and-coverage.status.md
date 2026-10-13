@@ -22,6 +22,16 @@ Relevant files: `conformance/native_statements.py`, `conformance/native_record.p
 ## Progress
 
 - 2026-10-13: task and status files created from `main` `69bd75b4`.
+- 2026-10-13: native record version 5 (format-3 profile, `phase` per event) and
+  prediction and replay of profiled records (`conformance/profile_scope.py`,
+  `conformance/record_versions.py`). A profile is in scope when it uses only the
+  default execution settings. Verdict on the claimed corpora: corpus-v4 15 AGREE
+  (was 0), corpus-v5 70 AGREE (was 0), all other counts unchanged, no DISAGREE or
+  HARNESS_ERROR. The authored replay tests now expect 5 and 10 agreements.
+  Finding: a subject input has the record's profile but no trace, so
+  `record_parser.record_profile` reads it from the wire form. Finding:
+  `native_observation` read 2,000 columns at a time; it now uses the
+  connection's column limit.
 
 ## Remaining
 

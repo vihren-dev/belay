@@ -8,6 +8,7 @@ from conformance.execution_profile import recorded_profile
 from conformance.upstream_helpers import command_events
 from conformance.query_window import ASCII_UPPER, identifier_name, tokens
 from conformance.upstream_result_values import helper_cells, value_text, values_agree
+from conformance.record_versions import PROFILED, WITH_OUTPUTS
 
 
 def fidelity_difference(reason: str, *, sql: str = "", native_error: str = "",
@@ -93,8 +94,8 @@ def minimize_prefix(record: dict[str, Json]) -> dict[str, Json]:
             for key in ("setup_parameters", "setup_parameter_names", "setup_helpers", "setup_call_indices"):
                 if key in recording:
                     recording[key] = recording[key][:position] + recording[key][position + 1:]
-            outputs = record["nativeVersion"] in (3, 4)
-            profile = recorded_profile(record) if record["nativeVersion"] == 4 else None
+            outputs = record["nativeVersion"] in WITH_OUTPUTS
+            profile = recorded_profile(record) if record["nativeVersion"] in PROFILED else None
             fresh = record_sql(trial, record["migrationSql"], name=record["name"],
                 requirements=record["requirements"], outputs=outputs,
                 parameters=decode_rows([event["parameters"] for event in record["trace"]]) if outputs else None,

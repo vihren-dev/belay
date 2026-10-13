@@ -43,6 +43,8 @@ def record_sql(setup: str | list[str | dict[str, Json]], migration: str, *, name
     if setup_calls is not None:
         setup_helpers = [call["helper"] if call is not None else "eval" for call in setup_calls]
     controlled = profile is not None and profile.clock == "unix-milliseconds-v1"
+    measured = profile is not None and profile.format_version == 3
+    """A profile with measured limits makes a version 5 record, whose events have phases."""
     auxiliary_replay = auxiliary_replay or any(helper.startswith("aux:") for helper in setup_helpers or [])
     if tcl_calls is not None:
         auxiliary_replay = auxiliary_replay or any(call["helper"].startswith("aux:") for call in tcl_calls["assertion"])
@@ -153,8 +155,8 @@ def record_sql(setup: str | list[str | dict[str, Json]], migration: str, *, name
             transaction_mode=profile.transaction_mode if profile else None, select_only=migration_readonly,
             readonly_spans=migration_readonly_spans, committed_reads=auxiliary_replay,
             record_bindings=recording is not None, parameter_names=parameter_names,
-            tcl_calls=tcl_calls["assertion"] if tcl_calls is not None else None)]
-    result = {"nativeVersion": 4 if profile is not None else 3 if outputs else 2 if isinstance(setup, list) and any(isinstance(item, dict) for item in setup) else 1, "name": name, "setupSql": setup if isinstance(setup, str) else "\n".join(item for item in setup if isinstance(item, str)),
+            tcl_calls=tcl_calls["assertion"] if tcl_calls is not None else None, phases=measured)]
+    result = {"nativeVersion": 5 if measured else 4 if profile is not None else 3 if outputs else 2 if isinstance(setup, list) and any(isinstance(item, dict) for item in setup) else 1, "name": name, "setupSql": setup if isinstance(setup, str) else "\n".join(item for item in setup if isinstance(item, str)),
             "setupCommands": [setup] if isinstance(setup, str) else setup, "setupOutcomes": setup_outcomes,
             "setupResults": setup_results, "setupErrors": setup_errors, "migrationSql": migration,
             "sourceId": engine.sqlite3_sourceid().decode(), "requirements": requirements or [], "initial": initial, "trace": trace,
