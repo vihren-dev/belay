@@ -18,6 +18,7 @@ from conformance.native_storage import expanded_record
 from conformance.native_call_recording import replay_arguments, validate_recording
 from conformance.locked_corpora import is_locked, locked_records
 from conformance.record_parser import NO_PARSER_REASON, runtime_library
+from conformance.record_versions import PROFILED, WITH_OUTPUTS
 
 
 def load(directory: Path, *, executor: Executor | None = None) -> tuple[dict[str, Json], list[dict[str, Json]]]:
@@ -109,10 +110,10 @@ def native_replay(records: list[dict[str, Json]], *, profile: ExecutionProfile |
     """Verify frozen observations without rewriting evidence, optionally auditing explicit file storage."""
     for record in records:
         recording = replay_arguments(record)
-        selected_profile = recorded_profile(record) if record["nativeVersion"] == 4 else None
+        selected_profile = recorded_profile(record) if record["nativeVersion"] in PROFILED else None
         if profile is not None and selected_profile != profile:
             raise ValueError("Native replay execution profile differs")
-        outputs = record["nativeVersion"] in (3, 4)
+        outputs = record["nativeVersion"] in WITH_OUTPUTS
         parameters = decode_rows([event["parameters"] for event in record["trace"]]) if outputs else None
         clock_values = [event["clockUnixMilliseconds"] for event in record["trace"]] if selected_profile and selected_profile.clock == "unix-milliseconds-v1" else None
         fresh = record_sql(record["setupCommands"], record["migrationSql"], name=record["name"],

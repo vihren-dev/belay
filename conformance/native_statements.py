@@ -26,8 +26,11 @@ def execute(connection: Connection, sql: str, *, outputs: bool = False,
             readonly_spans: list[tuple[int, int]] | None = None,
             committed_reads: bool = False, record_bindings: bool = False,
             parameter_names: list[list[str | None]] | None = None,
-            tcl_calls: list[dict[str, Json]] | None = None) -> Iterator[dict[str, Json]]:
-    """Use SQLite's prepared-statement tail to split SQL, including trigger bodies."""
+            tcl_calls: list[dict[str, Json]] | None = None,
+            phases: bool = False) -> Iterator[dict[str, Json]]:
+    """Use SQLite's prepared-statement tail to split SQL, including trigger bodies.
+    With `phases`, each event also records where a statement failed: `prepare` for
+    `sqlite3_prepare_v2`, `step` for `sqlite3_step`, and `None` otherwise."""
     if parameters is not None and not outputs:
         raise ValueError("Bound parameters require output recording")
     if (record_bindings or parameter_names is not None or tcl_calls is not None) and not outputs:
@@ -72,7 +75,7 @@ def execute(connection: Connection, sql: str, *, outputs: bool = False,
             code = connection.library.sqlite3_prepare_v2(connection.handle, remaining, len(remaining),
                                                           c.byref(statement), c.byref(tail))
             if guarded and code & 255 == 23:  # AUTH: let the guard explain its refusal.
-                connection.check(code)
+                connection.check(code, "prepare")
         suffix = tail.value or b""
         consumed = remaining[:len(remaining) - len(suffix)]
         rows: list[Row] = []
@@ -83,6 +86,7 @@ def execute(connection: Connection, sql: str, *, outputs: bool = False,
         bound: tuple[Cell, ...] = supplied or ()
         changes: int | None = None
         message = ""
+        phase: str | None = None
         try:
             if call is not None:
                 check_call_end(sql, remaining, consumed, call_index, tcl_calls)
@@ -90,7 +94,7 @@ def execute(connection: Connection, sql: str, *, outputs: bool = False,
                 if parameters is not None and supplied is None or parameter_names is not None and names_expected is None:
                     raise ValueError("Expected binding metadata for every reached statement")
                 names, bound = statement_bindings(connection, statement, bound, names_expected, call)
-            connection.check(code)
+            connection.check(code, "prepare")
             if statement.value:
                 if guarded and (not connection.library.sqlite3_stmt_readonly(statement)
                                     or connection.library.sqlite3_stmt_isexplain(statement)):
@@ -116,7 +120,7 @@ def execute(connection: Connection, sql: str, *, outputs: bool = False,
                         connection.bind(statement, index, cell)
                 while True:
                     result = connection.library.sqlite3_step(statement)
-                    connection.check(result)
+                    connection.check(result, "step")
                     if result == 101:
                         break
                     rows.append(tuple(connection.cell(statement, index) for index in range(
@@ -124,7 +128,7 @@ def execute(connection: Connection, sql: str, *, outputs: bool = False,
         except NativeError as error:
             if getattr(connection, "recording_exclusion", None):
                 raise ValueError(connection.recording_exclusion) from error
-            code, message = error.code, str(error)
+            code, message, phase = error.code, str(error), error.phase
             if not connection.is_sql_error(code):
                 raise
         finally:
@@ -141,6 +145,8 @@ def execute(connection: Connection, sql: str, *, outputs: bool = False,
                 raise ValueError("Expected one clock value per reached statement")
             event: dict[str, Json] = {"sql": consumed.decode(), "rows": wire_rows(rows),
                 "primaryCode": code & 255, "extendedCode": code, "error": message}
+            if phases:
+                event["phase"] = phase
             if outputs:
                 from conformance.native_ordering import query_groups
                 groups = query_groups(connection, consumed.decode(), bound, columns, rows) if not code and changes is None else None

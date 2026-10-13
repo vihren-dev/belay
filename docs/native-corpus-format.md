@@ -5,7 +5,9 @@ admission. `nativeVersion: 1` retains setup SQL, migration SQL, engine identity,
 requirements, an initial snapshot and per-statement native events. SQLite's
 prepare tail splits statements, including whole trigger definitions. Each event
 retains result rows, primary/extended code, diagnostics, visible/committed
-snapshots and transaction state. Execution stops on its first SQL error.
+snapshots and transaction state. Execution stops on its first SQL error. Later
+versions add setup operations, outputs, an explicit profile and, in version 5, the
+phase of each error ([conformance format v2](conformance-format-v2.md)).
 
 Snapshots contain all main-schema SQL objects, including views and triggers;
 `table_xinfo`, `index_list`, `index_xinfo`, foreign-key metadata, and typed rows.

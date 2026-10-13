@@ -109,7 +109,7 @@ let
     "native_storage"
     "refresh_corpus" "requirement_cases" "requirement_coverage"
     "authored_cases" "authored_cases_queries" "authored_boundaries" "authored_review" "authored_report"
-    "authored_transactions" "transaction_evidence"
+    "authored_transactions" "transaction_evidence" "authored_resolution" "resolution_evidence"
     "upstream_selection" "upstream_catalog" "upstream_sampling" "upstream_profiles" "upstream_functions" "upstream_result_values"
     "corpus_shards" "corpus_workers" "corpus_evidence" "corpus_acquisition" "locked_corpora" "freeze_corpus" "freeze_validation" "freeze_profiles" "workload" "workload_inputs"
     "upstream_assertions"
@@ -118,7 +118,7 @@ let
     "upstream_bindings" "upstream_binding_policy" "upstream_display" "upstream_evidence"
     "upstream_helpers"
     "native_fixture" "import_fixture" "schema" "predict" "predict_render"
-    "case_format" "native_connection" "native_library" "native_clock" "native_probe" "native_ordering" "query_window" "native_metadata" "native_record" "native_statements" "native_replay" "record_parser" "upstream_pilot" "upstream_fidelity" "corpus" "generated_program" "mutation_check" "state_machine" "regressions" "progress" "measure_coverage" "native_trace" "pipeline"
+    "case_format" "native_connection" "native_library" "native_clock" "native_probe" "native_ordering" "query_window" "native_metadata" "native_record" "native_statements" "native_replay" "profile_scope" "record_versions" "record_parser" "upstream_pilot" "upstream_fidelity" "corpus" "generated_program" "mutation_check" "state_machine" "regressions" "progress" "measure_coverage" "native_trace" "pipeline"
   ];
   # Frozen corpora and retained reports: large, rarely changed, read only by the frozen suite.
   frozenData = [
@@ -142,7 +142,7 @@ in {
       (root + /conformance/synthetic-workload)
     ] ++ map (name: root + "/conformance/${name}.py") [
       "replay_tiers" "native_workers" "corpus" "corpus_shards" "corpus_workers" "corpus_evidence" "corpus_acquisition" "locked_corpora" "case_format"
-      "workload" "workload_inputs" "execution_profile" "native_limits" "native_replay" "record_parser" "model_check"
+      "workload" "workload_inputs" "execution_profile" "native_limits" "native_replay" "profile_scope" "record_versions" "record_parser" "model_check"
       "native_record" "native_observation" "native_acquisition" "native_connection" "native_library" "native_clock" "native_storage"
       "native_probe" "native_ordering" "query_window" "native_metadata" "native_statements"
       "native_bindings" "native_call_recording" "upstream_bindings" "upstream_binding_policy"
@@ -163,7 +163,7 @@ in {
       "execution_profile" "native_limits" "freeze_profiles" "freeze_validation" "model_assertions" "model_check"
       "native_acquisition" "native_binding_types" "native_binding_validation" "native_bindings"
       "native_call_recording" "native_clock" "native_connection" "native_library" "native_metadata"
-      "native_observation" "native_record" "native_replay" "native_statements" "native_storage"
+      "native_observation" "native_record" "native_replay" "profile_scope" "record_versions" "native_statements" "native_storage"
       "native_trace" "native_workers" "locked_corpora" "query_window" "record_parser"
       "upstream_binding_policy" "upstream_bindings" "upstream_catalog" "upstream_helpers"
       "upstream_profiles" "upstream_result_values" "upstream_sampling"

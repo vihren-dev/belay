@@ -5,7 +5,7 @@ import VerifierConformance.Json
 The input holds only the profile, the statement syntax of the starting schema and of the
 script, and the starting rows by table name. The model resolves the syntax, runs the
 resolved script, and reports each observed table in SQLite's catalog terms, the primary
-SQLite result code that it predicts, each statement output, and whether the case is in the
+SQLite result code and error phase that it predicts, each statement output, and whether the case is in the
 model's scope. The judge, outside this repository's model code, compares the prediction
 with the recorded observations. -/
 
@@ -19,10 +19,10 @@ structure NamedRows where
   rows : List Row
   deriving FromJson
 
-/-- What the model may see of a case: nothing that SQLite observed after the start. -/
+/-- What the model may see of a case: nothing that SQLite observed after the start. The
+profile is the recorded one when the model implements its execution settings. -/
 structure PredictInput where
-  release : String
-  sourceId : String
+  profile : Profile
   schema : List Syntax.Statement
   script : List Syntax.Statement
   initial : List NamedRows
@@ -75,6 +75,7 @@ def stepJson (state : ResolveState) (observation : Observation) : Json :=
   Json.mkObj [("visible", predictedTables state.catalog observation.visible),
     ("persisted", predictedTables (state.saved.getD state.catalog) observation.persisted),
     ("transactionOpen", toJson observation.transactionOpen),
+    ("phase", toJson (errorPhase observation.error)),
     ("primaryCode", toJson (primaryCode observation.error))]
 
 /-- The model's prediction. A model restriction puts the case out of scope. A schema
@@ -83,14 +84,15 @@ the judge reports as a disagreement. Otherwise the case is in scope when the rea
 statements pass the support check and none is unmodeled, the rule that
 {name}`classifyCase` applies. -/
 def predict (p : PredictInput) : Json :=
-  let profile := Profile.documented p.release p.sourceId
+  let profile := p.profile
   match resolveSchemaAndScript profile p.schema p.script with
   | .error (.schemaRestricted restriction) | .error (.scriptRestricted restriction) =>
     Json.mkObj [("restricted", toJson restriction.reason)]
   | .error (.schemaPrepareError ..) =>
     Json.mkObj [("supported", toJson true), ("outputs", toJson ([] : List Json)), ("steps", toJson [
       Json.mkObj [("visible", toJson ([] : List Json)), ("persisted", toJson ([] : List Json)),
-        ("transactionOpen", toJson false), ("primaryCode", toJson (0 : Nat))]])]
+        ("transactionOpen", toJson false), ("primaryCode", toJson (0 : Nat)),
+        ("phase", toJson (none : Option ErrorPhase))]])]
   | .ok resolution =>
     let states := resolveStates { profile, mode := .execution } 0 { catalog := resolution.startCatalog } p.script
     let count := stateBound states

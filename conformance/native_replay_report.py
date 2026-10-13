@@ -12,6 +12,7 @@ from conformance.native_connection import library_path
 from conformance.native_library import DEFAULT_ENGINE_VERSION, library_binary
 from conformance.native_storage import serialized
 from conformance.progress import RUNTIME_FILES
+from conformance.record_versions import PROFILED
 from tools.check_resources import check_resources
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,7 +30,7 @@ def check_receipt_path(receipt: Path, temporary_root: Path | None, capture: Path
 
 def bindings(corpus: Path, records: list[dict[str, Json]], runtime: Path | None) -> dict[str, Json]:
     """Hash actual code, corpus, runtime and selected native library bytes before and after replay."""
-    versions = {record['profile']['engineVersion'] if record['nativeVersion'] == 4 else DEFAULT_ENGINE_VERSION
+    versions = {record['profile']['engineVersion'] if record['nativeVersion'] in PROFILED else DEFAULT_ENGINE_VERSION
                 for record in records}
     libraries = [library_path(library_binary(version)) for version in sorted(versions)]
     sources = [*sorted((ROOT / 'conformance').glob('*.py')),

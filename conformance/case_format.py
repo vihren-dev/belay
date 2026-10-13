@@ -46,7 +46,8 @@ def row_wire(rowid: int, cells: tuple[Cell, ...]) -> Json:
     return {"rowid": rowid, "values": [cell_wire(cell) for cell in cells]}
 
 
-def case_profile(release: str, source_id: str, limits: dict[str, int]) -> Json:
+def case_profile(release: str, source_id: str, limits: dict[str, int], *,
+                 dqs_dml: bool = True, dqs_ddl: bool = True) -> Json:
     """The profile of a case as Lean's `Profile`: the engine, the measured limits, and the
-    double-quoted-string settings, which every recorder keeps at the library default (on)."""
-    return {"release": release, "sourceId": source_id, "limits": dict(limits), "dqsDml": True, "dqsDdl": True}
+    double-quoted-string settings, which the library keeps on unless a profile turns them off."""
+    return {"release": release, "sourceId": source_id, "limits": dict(limits), "dqsDml": dqs_dml, "dqsDdl": dqs_ddl}
