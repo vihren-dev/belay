@@ -71,7 +71,7 @@ def errorPhase : Option (Nat × ExecutionError) → Option ErrorPhase
   | none => none
   | some (_, .prepare _) => some .prepare
   | some (_, .unmodeled) | some (_, .transactionAlreadyActive) | some (_, .noActiveTransaction)
-  | some (_, .constraintViolation) => some .step
+  | some (_, .constraintViolation) | some (_, .integerOverflow) => some .step
 
 /-- Compare the visible and committed views under their catalogs, the transaction
 status, the primary code and, when the recorder observed it, the error phase; never

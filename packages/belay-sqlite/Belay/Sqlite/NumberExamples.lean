@@ -1,6 +1,7 @@
 import Belay.Sqlite.NumberConvert
 import Belay.Sqlite.RealText
 import Belay.Sqlite.Arithmetic
+import Belay.Sqlite.Summation
 
 set_option doc.verso true
 
@@ -71,5 +72,14 @@ def integerOf (text : String) : Int := (atoi64 text.toUTF8.toList).1
 #guard [castValue .numeric (.text "4.0".toUTF8.toList), castValue .integer (.real 0xC004000000000000),
   castValue .text (.real 0x3FB999999999999A), castValue .blob (.integer 12)] ==
   [.integer 4, .integer (-2), .text "0.1".toUTF8.toList, .blob "12".toUTF8.toList]
+-- SUM is exact over integers; an overflow fails unless a later REAL input follows;
+-- TEXT gets numeric affinity, and text that is not a number adds 0.0.
+#guard (sumOf [.integer int64Maximum, .integer 1]).sumValue == none
+#guard (sumOf [.integer int64Maximum, .integer 1, .real 0x3FE0000000000000]).sumValue == some (.real 4890909195324358656)
+#guard [(sumOf []).sumValue, (sumOf [.null]).sumValue, (sumOf [.text "7".toUTF8.toList, .integer 1]).sumValue,
+  (sumOf [.text "abc".toUTF8.toList]).sumValue] == [some .null, some .null, some (.integer 8), some (.real 0)]
+-- AVG never fails: the overflowing sum continues in doubles.
+#guard [(sumOf []).averageValue, (sumOf [.integer int64Maximum, .integer 1]).averageValue] ==
+  [.null, .real 4886405595696988160]
 
 end Belay.Sqlite.NumberExamples

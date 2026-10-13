@@ -69,7 +69,11 @@ theorem literal_cases (statement : Resolved.Statement) (database : Database) (po
     all_goals try (split <;> simp_all)
     all_goals simp
   | createIndex _ _ _ => simp [literalStep, step]
-  | query _ => simp [literalStep, step]
+  | query query =>
+    simp only [literalStep, step]
+    cases database query.table with
+    | none => simp
+    | some table => cases h : query.fails table <;> simp [h]
   | prepareError _ => simp [literalStep, step]
   | begin => simp [literalStep, step]
   | commit => simp [literalStep, step]

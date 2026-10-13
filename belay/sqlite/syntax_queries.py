@@ -68,7 +68,7 @@ def function_call(tree: Tree, node: Node, children: list[Node]) -> Located:
                                node.start, node.end)
         if len(items) > 1:
             return call_pairs(tree, node.start, node.end, function, [item[-1] for item in items])
-    raise tree.unsupported(node, "Only COUNT(*), COUNT, MIN and MAX of one argument, and COALESCE are modeled as functions")
+    raise tree.unsupported(node, "Only COUNT(*), COUNT, MIN, MAX, SUM and AVG of one argument, and COALESCE are modeled as functions")
 
 
 def query_expression(tree: Tree, node: Node) -> Located:

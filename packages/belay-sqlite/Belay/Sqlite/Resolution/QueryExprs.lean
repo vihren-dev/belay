@@ -27,13 +27,15 @@ def aggregateIssue (misuse : Bool) (function : String) : ValueIssue :=
   if misuse then .prepare (.misuseOfAggregate function)
   else .restriction [] "an aggregate inside an expression is not modeled; use the aggregate as a whole result column"
 
-/-- The aggregate of slice 1 that a function name names, after ASCII folding:
-{lit}`count`, {lit}`min` or {lit}`max` of one operand. -/
+/-- The aggregate that a function name names, after ASCII folding: {lit}`count`,
+{lit}`min`, {lit}`max`, {lit}`sum` or {lit}`avg` of one operand. -/
 def aggregateNamed (name : String) : Option (Resolved.Expr → Resolved.Aggregate) :=
   match normalizeIdentifier name with
   | "count" => some .count
   | "min" => some .min
   | "max" => some .max
+  | "sum" => some .sum
+  | "avg" => some .avg
   | _ => none
 
 /-- Whether a call is an aggregate of slice 1: {lit}`count(*)`, or a named aggregate
@@ -46,7 +48,7 @@ def aggregateCall : Syntax.Expr → Bool
 
 /-- The restriction for a function call that the model does not evaluate. -/
 def unmodeledFunction : ValueIssue :=
-  .restriction [] "only COUNT(*), COUNT, MIN and MAX of one argument, and COALESCE of two or more arguments are modeled as functions"
+  .restriction [] "only COUNT(*), COUNT, MIN, MAX, SUM and AVG of one argument, and COALESCE of two or more arguments are modeled as functions"
 
 /-- The issue of a call with {lit}`*` or one argument that is not an aggregate:
 SQLite's {lit}`wrong number of arguments` for {lit}`COALESCE`, which needs two or more

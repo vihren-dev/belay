@@ -1,5 +1,5 @@
 import Belay.Sqlite.Comparison
-import Belay.Sqlite.Arithmetic
+import Belay.Sqlite.Summation
 
 set_option doc.verso true
 
@@ -45,7 +45,19 @@ inductive Aggregate where
   | min (operand : Expr)
   /-- {lit}`MAX(x)`: the greatest operand value that is not NULL, or NULL. -/
   | max (operand : Expr)
+  /-- {lit}`SUM(x)`: the sum of the operand values that are not NULL, by
+  {name}`SumState.sumValue`; it fails on an integer overflow. -/
+  | sum (operand : Expr)
+  /-- {lit}`AVG(x)`: the average of the operand values that are not NULL, by
+  {name}`SumState.averageValue`. -/
+  | avg (operand : Expr)
   deriving Repr, DecidableEq
+
+/-- Whether an aggregate can fail while the statement runs: {lit}`SUM`, on an integer
+overflow. -/
+def Aggregate.canFail : Aggregate → Bool
+  | .sum _ => true
+  | .countRows | .count _ | .min _ | .max _ | .avg _ => false
 
 /-- One result column: an expression over a row, or, in an aggregate query, an
 aggregate over a group or an expression over the group's first row, which

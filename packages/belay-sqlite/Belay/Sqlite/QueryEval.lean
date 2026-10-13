@@ -57,6 +57,14 @@ def Aggregate.eval (rows : List (List Value)) : Aggregate → Value
   | .count operand => .integer (rows.filter fun row => !(operand.eval row).isNull).length
   | .min operand => extremum (fun a b => compareValues a b == .lt) (rows.map operand.eval)
   | .max operand => extremum (fun a b => compareValues a b == .gt) (rows.map operand.eval)
+  | .sum operand => ((sumOf (rows.map operand.eval)).sumValue).getD .null
+  | .avg operand => (sumOf (rows.map operand.eval)).averageValue
+
+/-- Whether an aggregate fails over the rows of one group: {lit}`SUM` with an integer
+overflow that no later REAL input cleared. Every other aggregate never fails. -/
+def Aggregate.fails (rows : List (List Value)) : Aggregate → Bool
+  | .sum operand => ((sumOf (rows.map operand.eval)).sumValue).isNone
+  | .countRows | .count _ | .min _ | .max _ | .avg _ => false
 
 /-- The groups of rows by the values of the grouping terms, in the order in which
 each group first appears. Two rows are in one group when each term's values compare
@@ -96,6 +104,11 @@ def stableSort (le : α → α → Bool) (items : List α) : List α :=
 /-- A result row with its sort values. -/
 abbrev Record := List Value × List Value
 
+/-- The groups of an aggregate query: all rows as one group without {lit}`GROUP BY`,
+also when there are none; else the groups of the grouping terms. -/
+def queryGroups (query : Query) (rows : List (List Value)) : List (List (List Value)) :=
+  if query.groupBy.isEmpty then [rows] else groups query.groupBy rows
+
 /-- The result rows and sort values of a query, one per source row, or one per group
 of an aggregate query. -/
 def records (query : Query) (rows : List (List Value)) : List Record :=
@@ -104,8 +117,7 @@ def records (query : Query) (rows : List (List Value)) : List Record :=
       | .expression expression => expression.eval source
       | .output index => output.getD index .null
   if query.aggregate then
-    let grouped := if query.groupBy.isEmpty then [rows] else groups query.groupBy rows
-    grouped.map fun group =>
+    (queryGroups query rows).map fun group =>
       let output := query.columns.map fun
         | .scalar expression => expression.eval (group.headD [])
         | .aggregate aggregate => aggregate.eval group
@@ -133,5 +145,14 @@ def Query.run (query : Query) (table : Table) : List (List Value) :=
     (records query (filtered query (sourceRows table)))
   let window := sorted.drop query.offset
   (match query.limit with | some limit => window.take limit | none => window).map Prod.fst
+
+/-- Whether a query fails over a table, so that SQLite stops the statement with the
+{lit}`integer overflow` error: an aggregate query in which an aggregate of a result
+column fails ({name}`Aggregate.fails`) for some group. -/
+def Query.fails (query : Query) (table : Table) : Bool :=
+  query.aggregate && (queryGroups query (filtered query (sourceRows table))).any fun group =>
+    query.columns.any fun
+      | .aggregate aggregate => aggregate.fails group
+      | .scalar _ => false
 
 end Belay.Sqlite.Resolved

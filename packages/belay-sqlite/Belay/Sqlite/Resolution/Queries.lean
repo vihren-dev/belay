@@ -140,6 +140,10 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
     let limitValue ← windowValue [5] limit
     let offsetValue ← windowValue [6] offset
     if offsetValue.any (· < 0) then throw (.restriction [6] "a negative OFFSET is not modeled; write OFFSET 0 or more")
+    if !groupBy.isEmpty && (limit.isSome || offset.isSome) && outputs.any (fun (output, _) => match output with
+        | .aggregate aggregate => aggregate.canFail
+        | .scalar _ => false) then
+      throw (.restriction [5] "SUM in a grouped query with LIMIT or OFFSET is not modeled, because SQLite may stop before an overflowing group; remove the window or the SUM")
     return { table := position, filter := condition, aggregate, groupBy := terms, columns := outputs.map (·.1),
              names := outputs.map (·.2), orderBy := order, offset := (offsetValue.getD 0).toNat,
              limit := limitValue.bind fun value => if value < 0 then none else some value.toNat }

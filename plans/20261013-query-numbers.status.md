@@ -49,6 +49,14 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Comparison.lean`,
   moved to `Resolution/QueryAffinity.lean`; a no-affinity operand that may be TEXT
   (a `COALESCE` with a column) is restricted against a numeric operand. The verdict
   passes; corpus-v5 has 202 AGREE (194 before).
+- 2026-10-13: `SUM` and `AVG`. `Summation.lean` ports `sumStep`, `sumFinalize` and
+  `avgFinalize` (Kahan-Babuska-Neumaier, the overflow flag, numeric affinity of TEXT
+  inputs); it agrees with native SQLite on 406 random sequences, 12 of them with the
+  overflow error. A query's step fails with `ExecutionError.integerOverflow` when
+  `Query.fails` holds; its output is the column names and no rows without GROUP BY,
+  and none with GROUP BY (SQLite may return other groups first). `SUM` in a grouped
+  query with LIMIT or OFFSET is a restriction. The verdict passes; corpus-v5 has 210
+  AGREE.
 
 ## Remaining
 
