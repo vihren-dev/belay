@@ -34,10 +34,12 @@ Relevant files: `conformance/native_statements.py`, `conformance/native_record.p
   connection's column limit.
 - 2026-10-13: commit `b24c25ac`; review: two should findings, fixed in `414532f9`
   (no findings).
-- 2026-10-13: 36 authored coverage cases (`conformance/authored_resolution.py`),
-  each with requirement identifiers, recorded as version 5 records; 34 agree with
-  phases, 2 are out of scope (a parenthesized default expression; NOT NULL added
-  to a table with rows, a step error). `conformance/resolution_evidence.py` writes
+- 2026-10-13: 41 authored coverage cases (`conformance/authored_resolution.py`),
+  each with requirement identifiers, recorded as version 5 records; 37 agree with
+  phases, 4 are out of scope (a parenthesized default expression; NOT NULL added
+  to a table with rows, a step error; CREATE TABLE with a primary key or a
+  default). Review `20261013T084407Z-248564ed` asked for neighbors of every
+  condition; added. `conformance/resolution_evidence.py` writes
   them as corpus version 6; `corpus_shards.write` takes the record version.
 
 ## Remaining
@@ -46,4 +48,4 @@ Relevant files: `conformance/native_statements.py`, `conformance/native_record.p
 - Pull request B (judge, owner approval): compare `phase` in `judge/catalog.py` or
   `judge/compare.py`; add 5 to `judge/records.py` `WITH_OUTPUTS`; freeze
   `conformance/corpus-v6` with `python -m conformance.resolution_evidence`;
-  claim it with `mustAgree` for the 34 agreeing cases; update the lock.
+  claim it with `mustAgree` for the 37 agreeing cases; update the lock.

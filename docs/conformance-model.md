@@ -79,7 +79,9 @@ first-scope resolution rules: each condition, a neighbor where it just does not
 apply, and cases where two errors apply at once, each with requirement
 identifiers. They are recorded as native version 5 records, with the error phase of
 each statement, and the column-limit cases under a column limit of 5. All cases
-agree with the model except two whose SQL it does not describe.
+agree with the model except four whose SQL it does not describe: a parenthesized
+default, NOT NULL added to a table with rows, and a CREATE TABLE that runs with a
+primary key or a default.
 `python -m conformance.resolution_evidence --output DIRECTORY` freezes them as
 corpus version 6. The judge claims such a corpus only in a separate,
 owner-approved change.
