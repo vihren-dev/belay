@@ -48,9 +48,10 @@ in rec {
     parserLibrary = parserLibrary.testRoot;
     inherit leanPackages;
   };
-  # `just test` skips the slow model comparisons, the frozen evidence and the locked-corpus validation;
+  # `just test` skips the slow model comparisons, the frozen evidence, the locked-corpus validation
+  # and the resolution mutants;
   # `just test-full` runs them.
-  developmentTests = pkgs.lib.removeAttrs tests [ "model" "frozen" "corpora" ];
+  developmentTests = pkgs.lib.removeAttrs tests [ "model" "frozen" "corpora" "mutants" ];
   runtime = import ./runtime.nix {
     inherit pkgs sources leanToolchain verifierLibrary leanRuntime modelPackage;
     parserLibrary = parserLibrary.library;

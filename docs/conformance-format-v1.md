@@ -1,11 +1,12 @@
 # Conformance case format
 
 ADR 0004's test-only `conformance-runner` accepts one JSON object per line and
-returns one result per line. The current case format is version 3. Versions 1
+returns one result per line. The current case format is version 4. Versions 1
 and 2 carried statements and schemas that Python resolved; ADR 0008 replaced
-them, and the runner refuses them. Frozen corpus records are not cases: they keep
-SQL text and native observations, and replay builds a version 3 case from them
-each time.
+them. Version 3 had only the release and the build instead of the measured
+profile, and no error phase. The runner refuses all older versions. Frozen
+corpus records are not cases: they keep SQL text and native observations, and
+replay builds a version 4 case from them each time.
 
 `packages/belay-sqlite/Belay/Sqlite/Codec.lean` and
 `packages/belay-sqlite/Belay/Sqlite/Codec/Resolution.lean` own the codecs for
@@ -21,8 +22,8 @@ the same syntax codec for its structural record (see the
 
 | Field | Meaning |
 | --- | --- |
-| `version` | Integer `3`. Other versions are harness errors. |
-| `release`, `sourceId` | The SQLite release and build. The runner resolves under the documented profile of this release. |
+| `version` | Integer `4`. Other versions are harness errors. |
+| `profile` | The measured profile of the native connection, as Lean's `Profile`: `release`, `sourceId`, `limits` (the fields of `conformance/native_limits.py`, as `sqlite3_limit(db, id, -1)` reported them) and `dqsDml`, `dqsDdl`. The runner resolves under this profile. A case built from a frozen corpus record has SQLite's documented default limits, which the recorder of those records kept. |
 | `schemaSql`, `migrationSql` | Original SQL, kept separately. |
 | `schema`, `script` | Statement syntax of the schema and migration SQL, as `belay.sqlite.syntax` maps them. |
 | `initial` | Native tables before the migration. |
@@ -64,15 +65,20 @@ disagrees with a requested NaN REAL in the initial-state comparison.
 ## Observations
 
 An observation contains `visible`, `persisted` (native table arrays),
-`transactionOpen`, `primaryCode`, and `extendedCode`. Code zero means success.
-While a transaction is open, `persisted` is read on a second connection. Otherwise
-it is the same snapshot as `visible`. Both codes are retained, and the decoder
-requires `extendedCode % 256 == primaryCode`.
+`transactionOpen`, `primaryCode`, `extendedCode` and `phase`. Code zero means
+success. While a transaction is open, `persisted` is read on a second connection.
+Otherwise it is the same snapshot as `visible`. Both codes are retained, and the
+decoder requires `extendedCode % 256 == primaryCode`. `phase` is `"prepare"` when
+`sqlite3_prepare_v2` failed, `"step"` when `sqlite3_step` failed, and `null`
+without an error. It is also `null` in a case built from a frozen corpus record,
+whose recorder did not observe phases.
 
 The model compares **primary** codes: success 0, `constraintViolation` 19, and
 other modeled errors, including SQLite's prepare errors, 1. Extended codes remain
-diagnostics because the model does not distinguish constraint subtypes. Error
-messages are not compared. `unmodeled` is unsupported admission, not a native
+diagnostics because the model does not distinguish constraint subtypes. When a
+case has the phase of an error, the phase must match too: a prepare error of
+resolution is a `prepare` error, and every other modeled error is a `step`
+error. Error messages are not compared. `unmodeled` is unsupported admission, not a native
 error.
 
 ## Comparison

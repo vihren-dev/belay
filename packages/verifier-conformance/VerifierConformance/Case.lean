@@ -1,5 +1,6 @@
 import VerifierConformance.Native
 import VerifierConformance.Outputs
+import Belay.Sqlite.Resolution.SchemaScript
 
 /-! ADR 0004's finite comparison authority. Native observations remain empirical
 inputs; proving checkCase certifies only the model's agreement with those inputs.
@@ -8,14 +9,13 @@ compares each step's catalog and tables with the native ones. -/
 
 namespace Belay.Sqlite.Conformance
 
-/-- A version 3 case: the profile's release and build, the SQL texts, their
-statement syntax, the native tables before the migration, and native truth after
-each executed statement. {lit}`outputs` is present when the record has statement
-outputs; it then has one entry per executed statement. -/
+/-- A version 4 case: the measured profile of the native connection, the SQL
+texts, their statement syntax, the native tables before the migration, and native
+truth after each executed statement. {lit}`outputs` is present when the record has
+statement outputs; it then has one entry per executed statement. -/
 structure Case where
   version : Nat
-  release : String
-  sourceId : String
+  profile : Profile
   schemaSql : String
   migrationSql : String
   schema : List Syntax.Statement
@@ -65,12 +65,22 @@ def primaryCode : Option (Nat × ExecutionError) → Nat
   | some (_, .constraintViolation) => 19
   | some _ => 1
 
+/-- The phase in which SQLite reports a modeled error: a prepare error of resolution
+in {lit}`sqlite3_prepare_v2`, and every other modeled error in {lit}`sqlite3_step`. -/
+def errorPhase : Option (Nat × ExecutionError) → Option ErrorPhase
+  | none => none
+  | some (_, .prepare _) => some .prepare
+  | some (_, .unmodeled) | some (_, .transactionAlreadyActive) | some (_, .noActiveTransaction)
+  | some (_, .constraintViolation) => some .step
+
 /-- Compare the visible and committed views under their catalogs, the transaction
-status and the primary code; never compare error message text. -/
+status, the primary code and, when the recorder observed it, the error phase; never
+compare error message text. -/
 def matchesObservation (state : ResolveState) (model : Observation) (native : NativeObservation) : Bool :=
   tablesMatch state.catalog model.visible native.visible &&
   tablesMatch (state.saved.getD state.catalog) model.persisted native.persisted &&
-  model.transactionOpen == native.transactionOpen && primaryCode model.error == native.primaryCode
+  model.transactionOpen == native.transactionOpen && primaryCode model.error == native.primaryCode &&
+  (native.phase.isNone || native.phase == errorPhase model.error)
 
 /-- A missing or extra observation is a disagreement at its first statement position. -/
 def compareSteps (states : List ResolveState) (position : Nat) :
@@ -98,11 +108,12 @@ def compareOutputs (position : Nat) : List (Option StatementOutput) → List Nat
     else .disagree (some position)
   | _, _ => .disagree (some position)
 
-/-- Resolve the case, then check the initial state first, admission second, and the
-complete execution trace and outputs last. A model restriction is unsupported; a
-schema that SQLite prepared but resolution refuses is a disagreement. -/
+/-- Resolve the case under its recorded profile, then check the initial state first,
+admission second, and the complete execution trace and outputs last. A model
+restriction is unsupported; a schema that SQLite prepared but resolution refuses is
+a disagreement. -/
 def classifyCase (c : Case) : Verdict :=
-  let profile := Profile.documented c.release c.sourceId
+  let profile := c.profile
   match resolveSchemaAndScript profile c.schema c.script with
   | .error (.schemaRestricted _) | .error (.scriptRestricted _) => .modelUnsupported
   | .error (.schemaPrepareError ..) => .disagree none
@@ -129,7 +140,7 @@ def classifyCase (c : Case) : Verdict :=
 /-- The model's outcome for a case: resolve the syntax, then run the resolved script
 from the native starting tables; {name}`Option.none` when the model refuses the case. -/
 def modelOutcome (c : Case) : Option Outcome :=
-  match resolveSchemaAndScript (Profile.documented c.release c.sourceId) c.schema c.script with
+  match resolveSchemaAndScript c.profile c.schema c.script with
   | .ok resolution => some (runSql resolution.resolved (databaseOf resolution.startCatalog c.initial))
   | .error _ => none
 

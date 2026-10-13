@@ -1,7 +1,20 @@
 {
-  "version": 3,
-  "release": "3.51.0",
-  "sourceId": "2025-11-04 19:38:17 fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b",
+  "version": 4,
+  "profile": {
+    "release": "3.51.0",
+    "sourceId": "2025-11-04 19:38:17 fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b",
+    "limits": {
+      "columns": 2000,
+      "expressionDepth": 1000,
+      "compoundSelect": 500,
+      "functionArguments": 1000,
+      "variableNumber": 32766,
+      "length": 1000000000,
+      "triggerDepth": 1000
+    },
+    "dqsDml": true,
+    "dqsDdl": true
+  },
   "schemaSql": "CREATE TABLE t(id INTEGER NOT NULL,v BLOB,UNIQUE(id));",
   "migrationSql": "INSERT INTO t(id,v) VALUES(2,0);",
   "schema": [
@@ -192,7 +205,8 @@
       ],
       "transactionOpen": false,
       "primaryCode": 0,
-      "extendedCode": 0
+      "extendedCode": 0,
+      "phase": null
     },
     {
       "visible": [
@@ -313,7 +327,8 @@
       ],
       "transactionOpen": false,
       "primaryCode": 0,
-      "extendedCode": 0
+      "extendedCode": 0,
+      "phase": null
     }
   ],
   "requirements": [],

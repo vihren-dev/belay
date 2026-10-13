@@ -3,9 +3,18 @@ open Belay.Sqlite.Conformance
 set_option maxRecDepth 100000
 set_option maxHeartbeats 30000000
 def fixture : Case :=
-  { version := 3,
-    release := "3.51.0",
-    sourceId := "2025-11-04 19:38:17 fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b",
+  { version := 4,
+    profile := { release := "3.51.0",
+                 sourceId := "2025-11-04 19:38:17 fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b",
+                 limits := { columns := 2000,
+                             expressionDepth := 1000,
+                             compoundSelect := 500,
+                             functionArguments := 1000,
+                             variableNumber := 32766,
+                             length := 1000000000,
+                             triggerDepth := 1000 },
+                 dqsDml := true,
+                 dqsDdl := true },
     schemaSql := "CREATE TABLE t(id INTEGER NOT NULL,v BLOB,UNIQUE(id));",
     migrationSql := "INSERT INTO t(id,v) VALUES(2,0);",
     schema := [Belay.Sqlite.Syntax.Statement.createTable
@@ -57,7 +66,8 @@ def fixture : Case :=
                                                             Belay.Sqlite.Value.blob []] }] }],
                       transactionOpen := false,
                       primaryCode := 0,
-                      extendedCode := 0 },
+                      extendedCode := 0,
+                      phase := none },
                     { visible := [{ name := "t",
                                     columns := [{ name := "id",
                                                   declaredType := "INTEGER",
@@ -94,14 +104,15 @@ def fixture : Case :=
                                                             Belay.Sqlite.Value.integer 0] }] }],
                       transactionOpen := false,
                       primaryCode := 0,
-                      extendedCode := 0 }],
+                      extendedCode := 0,
+                      phase := none }],
     requirements := [],
     provenance := [("fixture", "hypothesis"),
                    ("sourceId", "2025-11-04 19:38:17 fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b"),
                    ("nativeError", "")],
     parameters := [],
     outputs := none }
-#guard match Lean.Json.parse "{\"version\": 3, \"release\": \"3.51.0\", \"sourceId\": \"2025-11-04 19:38:17 fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b\", \"schemaSql\": \"CREATE TABLE t(id INTEGER NOT NULL,v BLOB,UNIQUE(id));\", \"migrationSql\": \"INSERT INTO t(id,v) VALUES(2,0);\", \"schema\": [{\"createTable\": {\"name\": \"t\", \"columns\": [{\"name\": \"id\", \"declaredType\": \"INTEGER\", \"constraints\": [\"notNull\"]}, {\"name\": \"v\", \"declaredType\": \"BLOB\", \"constraints\": []}], \"constraints\": [{\"unique\": {\"columns\": [\"id\"]}}]}}], \"script\": [{\"insert\": {\"table\": \"t\", \"columns\": [\"id\", \"v\"], \"rows\": [[{\"numeric\": {\"text\": \"2\"}}, {\"numeric\": {\"text\": \"0\"}}]]}}], \"initial\": [{\"name\": \"t\", \"columns\": [{\"name\": \"id\", \"declaredType\": \"INTEGER\", \"notNull\": true, \"defaultValue\": null}, {\"name\": \"v\", \"declaredType\": \"BLOB\", \"notNull\": false, \"defaultValue\": null}], \"primaryKey\": [], \"uniqueKeys\": [[0]], \"indexes\": [], \"rows\": [{\"rowid\": 1, \"values\": [{\"integer\": {\"value\": 1}}, {\"blob\": {\"bytes\": []}}]}]}], \"nativeTrace\": [{\"visible\": [{\"name\": \"t\", \"columns\": [{\"name\": \"id\", \"declaredType\": \"INTEGER\", \"notNull\": true, \"defaultValue\": null}, {\"name\": \"v\", \"declaredType\": \"BLOB\", \"notNull\": false, \"defaultValue\": null}], \"primaryKey\": [], \"uniqueKeys\": [[0]], \"indexes\": [], \"rows\": [{\"rowid\": 1, \"values\": [{\"integer\": {\"value\": 1}}, {\"blob\": {\"bytes\": []}}]}]}], \"persisted\": [{\"name\": \"t\", \"columns\": [{\"name\": \"id\", \"declaredType\": \"INTEGER\", \"notNull\": true, \"defaultValue\": null}, {\"name\": \"v\", \"declaredType\": \"BLOB\", \"notNull\": false, \"defaultValue\": null}], \"primaryKey\": [], \"uniqueKeys\": [[0]], \"indexes\": [], \"rows\": [{\"rowid\": 1, \"values\": [{\"integer\": {\"value\": 1}}, {\"blob\": {\"bytes\": []}}]}]}], \"transactionOpen\": false, \"primaryCode\": 0, \"extendedCode\": 0}, {\"visible\": [{\"name\": \"t\", \"columns\": [{\"name\": \"id\", \"declaredType\": \"INTEGER\", \"notNull\": true, \"defaultValue\": null}, {\"name\": \"v\", \"declaredType\": \"BLOB\", \"notNull\": false, \"defaultValue\": null}], \"primaryKey\": [], \"uniqueKeys\": [[0]], \"indexes\": [], \"rows\": [{\"rowid\": 1, \"values\": [{\"integer\": {\"value\": 1}}, {\"blob\": {\"bytes\": []}}]}, {\"rowid\": 2, \"values\": [{\"integer\": {\"value\": 2}}, {\"integer\": {\"value\": 0}}]}]}], \"persisted\": [{\"name\": \"t\", \"columns\": [{\"name\": \"id\", \"declaredType\": \"INTEGER\", \"notNull\": true, \"defaultValue\": null}, {\"name\": \"v\", \"declaredType\": \"BLOB\", \"notNull\": false, \"defaultValue\": null}], \"primaryKey\": [], \"uniqueKeys\": [[0]], \"indexes\": [], \"rows\": [{\"rowid\": 1, \"values\": [{\"integer\": {\"value\": 1}}, {\"blob\": {\"bytes\": []}}]}, {\"rowid\": 2, \"values\": [{\"integer\": {\"value\": 2}}, {\"integer\": {\"value\": 0}}]}]}], \"transactionOpen\": false, \"primaryCode\": 0, \"extendedCode\": 0}], \"requirements\": [], \"provenance\": [[\"fixture\", \"hypothesis\"], [\"sourceId\", \"2025-11-04 19:38:17 fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b\"], [\"nativeError\", \"\"]], \"parameters\": [], \"outputs\": null}" with
+#guard match Lean.Json.parse "{\"version\": 4, \"profile\": {\"release\": \"3.51.0\", \"sourceId\": \"2025-11-04 19:38:17 fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b\", \"limits\": {\"columns\": 2000, \"expressionDepth\": 1000, \"compoundSelect\": 500, \"functionArguments\": 1000, \"variableNumber\": 32766, \"length\": 1000000000, \"triggerDepth\": 1000}, \"dqsDml\": true, \"dqsDdl\": true}, \"schemaSql\": \"CREATE TABLE t(id INTEGER NOT NULL,v BLOB,UNIQUE(id));\", \"migrationSql\": \"INSERT INTO t(id,v) VALUES(2,0);\", \"schema\": [{\"createTable\": {\"name\": \"t\", \"columns\": [{\"name\": \"id\", \"declaredType\": \"INTEGER\", \"constraints\": [\"notNull\"]}, {\"name\": \"v\", \"declaredType\": \"BLOB\", \"constraints\": []}], \"constraints\": [{\"unique\": {\"columns\": [\"id\"]}}]}}], \"script\": [{\"insert\": {\"table\": \"t\", \"columns\": [\"id\", \"v\"], \"rows\": [[{\"numeric\": {\"text\": \"2\"}}, {\"numeric\": {\"text\": \"0\"}}]]}}], \"initial\": [{\"name\": \"t\", \"columns\": [{\"name\": \"id\", \"declaredType\": \"INTEGER\", \"notNull\": true, \"defaultValue\": null}, {\"name\": \"v\", \"declaredType\": \"BLOB\", \"notNull\": false, \"defaultValue\": null}], \"primaryKey\": [], \"uniqueKeys\": [[0]], \"indexes\": [], \"rows\": [{\"rowid\": 1, \"values\": [{\"integer\": {\"value\": 1}}, {\"blob\": {\"bytes\": []}}]}]}], \"nativeTrace\": [{\"visible\": [{\"name\": \"t\", \"columns\": [{\"name\": \"id\", \"declaredType\": \"INTEGER\", \"notNull\": true, \"defaultValue\": null}, {\"name\": \"v\", \"declaredType\": \"BLOB\", \"notNull\": false, \"defaultValue\": null}], \"primaryKey\": [], \"uniqueKeys\": [[0]], \"indexes\": [], \"rows\": [{\"rowid\": 1, \"values\": [{\"integer\": {\"value\": 1}}, {\"blob\": {\"bytes\": []}}]}]}], \"persisted\": [{\"name\": \"t\", \"columns\": [{\"name\": \"id\", \"declaredType\": \"INTEGER\", \"notNull\": true, \"defaultValue\": null}, {\"name\": \"v\", \"declaredType\": \"BLOB\", \"notNull\": false, \"defaultValue\": null}], \"primaryKey\": [], \"uniqueKeys\": [[0]], \"indexes\": [], \"rows\": [{\"rowid\": 1, \"values\": [{\"integer\": {\"value\": 1}}, {\"blob\": {\"bytes\": []}}]}]}], \"transactionOpen\": false, \"primaryCode\": 0, \"extendedCode\": 0, \"phase\": null}, {\"visible\": [{\"name\": \"t\", \"columns\": [{\"name\": \"id\", \"declaredType\": \"INTEGER\", \"notNull\": true, \"defaultValue\": null}, {\"name\": \"v\", \"declaredType\": \"BLOB\", \"notNull\": false, \"defaultValue\": null}], \"primaryKey\": [], \"uniqueKeys\": [[0]], \"indexes\": [], \"rows\": [{\"rowid\": 1, \"values\": [{\"integer\": {\"value\": 1}}, {\"blob\": {\"bytes\": []}}]}, {\"rowid\": 2, \"values\": [{\"integer\": {\"value\": 2}}, {\"integer\": {\"value\": 0}}]}]}], \"persisted\": [{\"name\": \"t\", \"columns\": [{\"name\": \"id\", \"declaredType\": \"INTEGER\", \"notNull\": true, \"defaultValue\": null}, {\"name\": \"v\", \"declaredType\": \"BLOB\", \"notNull\": false, \"defaultValue\": null}], \"primaryKey\": [], \"uniqueKeys\": [[0]], \"indexes\": [], \"rows\": [{\"rowid\": 1, \"values\": [{\"integer\": {\"value\": 1}}, {\"blob\": {\"bytes\": []}}]}, {\"rowid\": 2, \"values\": [{\"integer\": {\"value\": 2}}, {\"integer\": {\"value\": 0}}]}]}], \"transactionOpen\": false, \"primaryCode\": 0, \"extendedCode\": 0, \"phase\": null}], \"requirements\": [], \"provenance\": [[\"fixture\", \"hypothesis\"], [\"sourceId\", \"2025-11-04 19:38:17 fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b\"], [\"nativeError\", \"\"]], \"parameters\": [], \"outputs\": null}" with
   | .ok json => json == Lean.toJson fixture
   | .error _ => false
 theorem checkedCase : checkCase fixture = true := by decide +kernel

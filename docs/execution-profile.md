@@ -123,6 +123,19 @@ unchanged. Profile transport `formatVersion: 2` adds four required fields:
 native record version 4 and snapshot/shard storage versions. Unknown fields,
 partial field sets and unsupported formats are refused.
 
+Profile transport `formatVersion: 3` adds `limits`: the effective limits of the
+connection, as `sqlite3_limit(db, id, -1)` reports them, with the fields
+`columns`, `expressionDepth`, `compoundSelect`, `functionArguments`,
+`variableNumber`, `length` and `triggerDepth` (`conformance/native_limits.py`).
+Establishing such a profile lowers the connection's limits to these values and
+reads them back. A profile of format 1 or 2 has no limits field; its recorder
+kept every limit at the compile-time value, so its limits are the `SQLITE_MAX_*`
+values of its compile options. No frozen record changes. Native connections no
+longer set a limit of their own: a new connection keeps the build's
+compile-time limits until a profile or fixture lowers them. SQLite cannot read
+its schema table with fewer than 5 columns, so the recorder refuses to lower
+the column limit below 5. A profile record itself accepts any natural number.
+
 The recorder establishes trusted schema and both DQS modes on each connection,
 then verifies the settings and SQLite's actual database access flag. It checks
 them again after SQL, before initialization reopens and on committed-state
@@ -153,9 +166,8 @@ Run it on each shipped platform. On the opened driver connection, collect
 Read the effective column limit on that same connection through the driver's
 limit API or `sqlite3_limit(db, SQLITE_LIMIT_COLUMN, -1)`. Query it without
 changing it. `MAX_COLUMN` in the compile options gives the ceiling; it does not
-show whether the application lowered the connection's limit. The current
-recorder establishes and verifies 2000. A workload with another effective limit
-needs a supported profile before its suite can be completed.
+show whether the application lowered the connection's limit. Profile format 3
+records the measured limits, and the recorder establishes and verifies them.
 Retain the driver dependency lock, command, build configuration and outputs
 beside the external workload profile. A system sqlite3 shell or package version
 does not measure the engine linked into a driver.

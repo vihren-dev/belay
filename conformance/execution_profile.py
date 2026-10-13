@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from conformance.case_format import Json
 from conformance.native_connection import Connection
+from conformance.native_limits import Limits, checked_limits, compile_option_limits, lower_limits, measured_limits
 from conformance.native_metadata import text
 
 IGNORED_SETTINGS = {"journal_mode", "synchronous", "cache_size", "temp_store", "mmap_size", "busy_timeout"}
@@ -29,6 +30,8 @@ class ExecutionProfile:
     dqs_dml: bool = True
     dqs_ddl: bool = True
     access_mode: str = "read-write"
+    limits: tuple[tuple[str, int], ...] = ()
+    """Format 3 only: the measured limits of the connection, sorted by name."""
 
     def __post_init__(self) -> None:
         """Refuse malformed or unimplemented conditions rather than approximate them."""
@@ -37,7 +40,9 @@ class ExecutionProfile:
                 or not self.compile_options
                 or tuple(sorted(set(self.compile_options))) != self.compile_options
                 or type(self.foreign_keys) is not bool or type(self.recursive_triggers) is not bool
-                or type(self.format_version) is not int or self.format_version not in (1, 2)
+                or type(self.format_version) is not int or self.format_version not in (1, 2, 3)
+                or (self.format_version == 3) != bool(self.limits)
+                or self.limits and tuple(sorted(checked_limits(dict(self.limits)).items())) != self.limits
                 or any(type(value) is not bool for value in (self.trusted_schema, self.dqs_dml, self.dqs_ddl))
                 or self.access_mode not in {"read-write", "read-only"}
                 or self.format_version == 1 and (not self.trusted_schema or not self.dqs_dml
@@ -65,6 +70,8 @@ class ExecutionProfile:
         for option, enabled in ((1013, self.dqs_dml), (1014, self.dqs_ddl)):
             if connection.configure(option, int(enabled)) != int(enabled):
                 raise ValueError("Execution profile DQS setting readback differs")
+        if self.limits:
+            lower_limits(connection, dict(self.limits))
         self.verify_settings(connection)
         connection.readonly_evidence = self.access_mode == "read-only"
 
@@ -88,6 +95,14 @@ class ExecutionProfile:
         readonly = connection.library.sqlite3_db_readonly(connection.handle, b"main")
         if connection.access_mode != self.access_mode or readonly != int(self.access_mode == "read-only"):
             raise ValueError("Execution profile access mode readback differs")
+        if self.limits and (measured := measured_limits(connection)) != dict(self.limits):
+            raise ValueError(f"Execution profile limits readback differs: expected {dict(self.limits)}, "
+                             f"measured {measured}. Establish the profile again on a new connection.")
+
+    def effective_limits(self) -> Limits:
+        """The limits that applied when this profile was recorded; before format 3, the
+        compile options give them (`native_limits.compile_option_limits`)."""
+        return dict(self.limits) if self.limits else compile_option_limits(self.compile_options)
 
     def to_wire(self) -> dict[str, Json]:
         """Keep profile identity in a stable JSON record alongside native evidence."""
@@ -97,9 +112,11 @@ class ExecutionProfile:
             "recursiveTriggers": self.recursive_triggers, "transactionMode": self.transaction_mode,
             "clock": self.clock, "ignoredSettings": [list(item) for item in self.ignored_settings],
             "otherWriters": list(self.other_writers), "timezone": self.timezone}
-        if self.format_version == 2:
-            value.update({"formatVersion": 2, "trustedSchema": self.trusted_schema,
+        if self.format_version >= 2:
+            value.update({"formatVersion": self.format_version, "trustedSchema": self.trusted_schema,
                           "dqsDml": self.dqs_dml, "dqsDdl": self.dqs_ddl, "accessMode": self.access_mode})
+        if self.limits:
+            value["limits"] = dict(self.limits)
         return value
 
 
@@ -110,9 +127,11 @@ def profile_from_wire(value: Json) -> ExecutionProfile:
     extended = isinstance(value, dict) and "formatVersion" in value
     if extended:
         fields |= {"formatVersion", "trustedSchema", "dqsDml", "dqsDdl", "accessMode"}
+    if extended and value.get("formatVersion") == 3:
+        fields |= {"limits"}
     if not isinstance(value, dict) or set(value) != fields:
         raise ValueError("Invalid execution profile fields")
-    if extended and (type(value["formatVersion"]) is not int or value["formatVersion"] != 2
+    if extended and (type(value["formatVersion"]) is not int or value["formatVersion"] not in (2, 3)
             or any(type(value[key]) is not bool for key in ("trustedSchema", "dqsDml", "dqsDdl"))
             or not isinstance(value["accessMode"], str)):
         raise ValueError("Invalid execution profile format or conditions")
@@ -130,8 +149,9 @@ def profile_from_wire(value: Json) -> ExecutionProfile:
         tuple(value["compileOptions"]), value["foreignKeys"], value["recursiveTriggers"],
         value["transactionMode"], value["clock"],
         tuple((item[0], item[1]) for item in value["ignoredSettings"]), tuple(value["otherWriters"]), value["timezone"],
-        2 if extended else 1, value.get("trustedSchema", True), value.get("dqsDml", True),
-        value.get("dqsDdl", True), value.get("accessMode", "read-write"))
+        value["formatVersion"] if extended else 1, value.get("trustedSchema", True), value.get("dqsDml", True),
+        value.get("dqsDdl", True), value.get("accessMode", "read-write"),
+        tuple(sorted(checked_limits(value["limits"]).items())) if "limits" in value else ())
 
 
 def measured_profile(connection: Connection, *, name: str, version: int = 1,
@@ -146,7 +166,8 @@ def measured_profile(connection: Connection, *, name: str, version: int = 1,
         engine.sqlite3_sourceid().decode(),
         tuple(sorted(text(row[0]) for row in connection.query("PRAGMA compile_options;"))),
         foreign_keys, recursive_triggers, transaction_mode, clock, format_version=format_version,
-        trusted_schema=trusted_schema, dqs_dml=dqs_dml, dqs_ddl=dqs_ddl, access_mode=access_mode)
+        trusted_schema=trusted_schema, dqs_dml=dqs_dml, dqs_ddl=dqs_ddl, access_mode=access_mode,
+        limits=tuple(sorted(measured_limits(connection).items())) if format_version == 3 else ())
 
 
 def recorded_profile(record: dict[str, Json]) -> ExecutionProfile:

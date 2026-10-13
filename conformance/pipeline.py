@@ -14,10 +14,10 @@ from conformance.native_connection import SOURCE_ID, library_path
 
 
 def fixtures() -> tuple[Fixture, ...]:
-    """Preserve the five independent authored fixtures, including their physical rowids."""
+    """Preserve the independent authored fixtures, their physical rowids and lowered limits."""
     return tuple(Fixture(schema_sql(case.before), case.migration,
                          {table.name: [(int(row[0]), tuple(literal_cell(cell) for cell in row[1:]))
-                                       for row in table.rows] for table in case.before}, case.name)
+                                       for row in table.rows] for table in case.before}, case.name, dict(case.limits))
                  for case in cases())
 
 

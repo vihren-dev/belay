@@ -1,8 +1,9 @@
-"""The version 3 conformance case: statement syntax and native truth.
+"""The version 4 conformance case: the measured profile, statement syntax and native truth.
 
-A case carries the schema and migration as the Lean `Syntax` JSON of
-`belay.sqlite.syntax`, and each native observation as tables with their PRAGMA
-metadata (`conformance.native_metadata`) and typed rows. Lean decodes it with
+A case carries the profile of the native connection (`case_profile`), the schema
+and migration as the Lean `Syntax` JSON of `belay.sqlite.syntax`, and each native
+observation as tables with their PRAGMA metadata (`conformance.native_metadata`),
+typed rows and the phase of an error. Lean decodes it with
 `Belay.Sqlite.Conformance.decodeCase`.
 """
 
@@ -10,9 +11,9 @@ from typing import TypeAlias
 
 from belay.sqlite.located import Json
 
-__all__ = ["CASE_VERSION", "Cell", "Json", "cell_wire", "literal_cell", "row_wire"]
+__all__ = ["CASE_VERSION", "Cell", "Json", "case_profile", "cell_wire", "literal_cell", "row_wire"]
 
-CASE_VERSION = 3
+CASE_VERSION = 4
 """The case version that Lean's `decodeCase` accepts."""
 
 Cell: TypeAlias = tuple[int, int | bytes | None]
@@ -43,3 +44,9 @@ def literal_cell(value: int | str | bytes | None) -> Cell:
 def row_wire(rowid: int, cells: tuple[Cell, ...]) -> Json:
     """One stored row: its physical rowid and typed cells in column order."""
     return {"rowid": rowid, "values": [cell_wire(cell) for cell in cells]}
+
+
+def case_profile(release: str, source_id: str, limits: dict[str, int]) -> Json:
+    """The profile of a case as Lean's `Profile`: the engine, the measured limits, and the
+    double-quoted-string settings, which every recorder keeps at the library default (on)."""
+    return {"release": release, "sourceId": source_id, "limits": dict(limits), "dqsDml": True, "dqsDdl": True}

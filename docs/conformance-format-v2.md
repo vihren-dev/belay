@@ -69,6 +69,10 @@ the selected profile before case SQL. Transaction-local FK writes keep SQLite's
 no-op behavior; readback still checks the fixed profile after each statement.
 The model has no explicit-profile capability yet; valid v4
 records remain `MODEL_UNSUPPORTED`, while malformed evidence is a harness error.
+A profile record of format 3 also has `limits`, the measured connection limits
+([execution profile](execution-profile.md)); replay establishes and reads them back.
+Records of formats 1 and 2 have the limits of their compile options. No frozen
+record has format 3 yet.
 Manifests declare `executionProfiles`, an array of these complete profile records.
 Every v4 record must match a declaration exactly; duplicate name/version identities
 and missing or conflicting declarations are refused. Legacy corpora retain their

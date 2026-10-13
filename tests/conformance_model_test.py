@@ -21,13 +21,16 @@ def native_expected(table: ExpectedTable) -> Json:
     """The native table that an authored expectation describes: plain typed columns and its rows."""
     return {"name": table.name, "columns": [{"name": name, "declaredType": kind, "notNull": False, "defaultValue": None}
                                            for name, kind in table.columns],
-            "primaryKey": [], "uniqueKeys": [], "indexes": [],
+            "primaryKey": [[column for column, _ in table.columns].index(key) for key in table.primary_key],
+            "uniqueKeys": [],
+            "indexes": [{"name": name, "columns": [[column for column, _ in table.columns].index(key) for key in keys],
+                         "unique": unique} for name, keys, unique in table.indexes],
             "rows": [row_wire(int(row[0]), tuple(literal_cell(value) for value in row[1:])) for row in table.rows]}
 
 
 @pytest.mark.parametrize("name", [case.name for case in cases()])
 def test_native_model(name: str, runtime_root: Path, tmp_path: Path) -> None:
-    """The five fixtures agree natively, match their frozen records and round-trip; all but the
+    """Each fixture agrees natively, matches its frozen record and round-trips; all but the
     2,000-column fixture (`kernel_proof`) also receive kernel proofs."""
     index = next(i for i, case in enumerate(cases()) if case.name == name)
     old, fixture = cases()[index], fixtures()[index]
@@ -66,7 +69,7 @@ def test_version_two_outputs(runtime_root: Path, tmp_path: Path) -> None:
         name="outputs-v2", outputs=True)
     case, error = prepare(native, runtime_library(runtime_root))
     assert case is not None, error
-    assert case["version"] == 3 and case["outputs"] is not None
+    assert case["version"] == 4 and case["outputs"] is not None
     answer = compiled(case, runtime_root, emit_lean=True)
     assert answer["verdict"] == "AGREE", answer
     assert answer["decoded"] == case
@@ -92,3 +95,14 @@ def test_version_two_outputs(runtime_root: Path, tmp_path: Path) -> None:
     assert prepare(ordered, runtime_library(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
     native["trace"][0]["columnCount"] = 1
     assert prepare(native, runtime_library(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
+
+
+def test_lowered_limit_is_read_from_the_case(runtime_root: Path) -> None:
+    """`VerifierConformance.Case.classifyCase` resolves under the recorded profile: under the
+    documented 2,000-column limit, the native too-many-columns error of a lowered limit disagrees."""
+    index = next(i for i, case in enumerate(cases()) if case.name == "lowered_limit_exceeded")
+    case = record(fixtures()[index], default_parser(runtime_root))
+    assert case["profile"]["limits"]["columns"] == 5
+    assert compiled(case, runtime_root)["verdict"] == "AGREE"
+    case["profile"]["limits"]["columns"] = 2000
+    assert compiled(case, runtime_root)["verdict"] == "DISAGREE"

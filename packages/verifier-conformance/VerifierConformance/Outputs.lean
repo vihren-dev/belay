@@ -1,4 +1,4 @@
-import Belay.Sqlite
+import Belay.Sqlite.SqlExecution
 
 /-! ADR 0005 output comparison uses native tie groups, without evaluating SQL. -/
 

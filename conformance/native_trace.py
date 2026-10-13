@@ -6,25 +6,29 @@ Python translation.
 """
 
 from contextlib import ExitStack
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from belay.sqlite.sql_tree import SqlParser, parse
 from belay.sqlite.syntax import statements
-from conformance.case_format import CASE_VERSION, Json, row_wire
+from conformance.case_format import CASE_VERSION, Json, case_profile, row_wire
 from conformance.native_connection import Cell, Connection, NativeError, SQL_ERRORS, SOURCE_ID, library_path, load_library
 from conformance.native_library import DEFAULT_ENGINE_VERSION
+from conformance.native_limits import lower_limits, measured_limits
 from conformance.native_metadata import integer, native_table, quoted, table_metadata, text
 
 
 @dataclass(frozen=True)
 class Fixture:
-    """Initial rows are independent typed data; setup SQL is not the tested migration."""
+    """Initial rows are independent typed data; setup SQL is not the tested migration.
+    `limits` lowers connection limits before the schema runs, for example
+    `{"columns": 5}`; the case records the limits that the connection then reports."""
     schema_sql: str
     migration_sql: str
     rows: dict[str, list[tuple[int, tuple[Cell, ...]]]]
     name: str
+    limits: dict[str, int] = field(default_factory=dict)
 
 
 def table_names(connection: Connection) -> list[str]:
@@ -39,15 +43,17 @@ def table_names(connection: Connection) -> list[str]:
 
 
 def snapshot(connection: Connection) -> list[Json]:
-    """Read every table's metadata and rows; chunk wide rows below the result-column limit."""
+    """Read every table's metadata and rows; chunk wide rows below the connection's
+    result-column limit, which a fixture may have lowered."""
+    chunk = measured_limits(connection)["columns"] - 1
     tables: list[Json] = []
     for name in table_names(connection):
         info, indexes = table_metadata(connection, name)
         columns = [text(row[1]) for row in info]
         rowids = [integer(row[0]) for row in connection.query(f"SELECT rowid FROM {quoted(name)} ORDER BY rowid;")]
         cells: dict[int, list[Cell]] = {rowid: [] for rowid in rowids}
-        for offset in range(0, len(columns), 1999):
-            names = ",".join(quoted(column) for column in columns[offset:offset + 1999])
+        for offset in range(0, len(columns), chunk):
+            names = ",".join(quoted(column) for column in columns[offset:offset + chunk])
             rows = connection.query(f"SELECT rowid,{names} FROM {quoted(name)} ORDER BY rowid;")
             if [integer(row[0]) for row in rows] != rowids:
                 raise ValueError("Rows changed while observing a native snapshot")
@@ -94,22 +100,23 @@ def record(fixture: Fixture, parser: SqlParser, library: Path | None = None, *,
         database = Path(directory) / "case.db"
         writer = Connection(pinned, database)
         stack.callback(writer.close)
+        limits = lower_limits(writer, fixture.limits)
         initialize(writer, fixture)
         reader = Connection(pinned, database)
         stack.callback(reader.close)
 
-        def observe(code: int) -> dict[str, Json]:
+        def observe(code: int, phase: str | None = None) -> dict[str, Json]:
             """No observation failure can produce an agreement candidate."""
             visible = snapshot(writer)
             persisted = snapshot(reader) if writer.transaction_open else visible
             return {"visible": visible, "persisted": persisted, "transactionOpen": writer.transaction_open,
-                    "primaryCode": code & 255, "extendedCode": code}
+                    "primaryCode": code & 255, "extendedCode": code, "phase": phase}
 
         observations: list[Json] = [observe(0)]
         native_error = ""
         sql_bytes = fixture.migration_sql.encode()
         for statement in script:
-            code = 0
+            code, phase = 0, None
             if migration_coverage:
                 pinned.__gcov_reset()
             try:
@@ -117,18 +124,18 @@ def record(fixture: Fixture, parser: SqlParser, library: Path | None = None, *,
             except NativeError as error:
                 if error.code & 255 not in SQL_ERRORS:
                     raise
-                code = error.code
+                code, phase = error.code, error.phase
                 native_error = str(error)
             finally:
                 if migration_coverage:
                     pinned.__gcov_dump()
                     pinned.__gcov_reset()
-            observations.append(observe(code))
+            observations.append(observe(code, phase))
             if code:
                 break
     if migration_coverage:
         pinned.__gcov_reset()  # Discard final observation/connection cleanup before the exit dump.
-    return {"version": CASE_VERSION, "release": DEFAULT_ENGINE_VERSION, "sourceId": SOURCE_ID,
+    return {"version": CASE_VERSION, "profile": case_profile(DEFAULT_ENGINE_VERSION, SOURCE_ID, limits),
             "schemaSql": fixture.schema_sql, "migrationSql": fixture.migration_sql,
             "schema": [item.value for item in schema], "script": [item.value for item in script],
             "initial": requested(observations[0]["visible"], fixture), "nativeTrace": observations,
