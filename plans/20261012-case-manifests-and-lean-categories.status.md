@@ -1,6 +1,6 @@
 # Status: case folders and Lean file categories
 
-Created 2026-10-12. Status: READY.
+Created 2026-10-12. Status: DONE (2026-10-13).
 Task: [task](20261012-case-manifests-and-lean-categories.task.md).
 ADR: [ADR 0010](../docs/adr-0010-lake-builds-and-artifact-cache.md), accepted.
 
@@ -69,3 +69,6 @@ Relevant files: `conftest.py`, `tests/cli_test.py`, `tests/bundle_test.py`, `tes
   now an input only of the `cli` and `atuin` targets (and `bundle`, which has
   all of `migration_check`), so a change to it no longer reruns the
   conformance targets.
+- 2026-10-13: DONE. The owner approved and PR #95 merged into `main` on
+  2026-10-12. CI times after all four ADR 0010 tasks: see the library package
+  status file.

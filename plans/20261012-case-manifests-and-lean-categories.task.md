@@ -1,6 +1,6 @@
 # Case folders and Lean file categories
 
-Created 2026-10-12. Status: READY.
+Created 2026-10-12. Status: DONE (2026-10-13).
 Decision: [ADR 0010](../docs/adr-0010-lake-builds-and-artifact-cache.md),
 section 7. Accepted on 2026-10-12.
 
