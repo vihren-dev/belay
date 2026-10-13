@@ -105,7 +105,7 @@ let
     (root + /build-support/conformance-native.nix)
   ] ++ map (name: root + "/conformance/${name}.py") [
     "model_assertions" "model_cases" "model_check" "replay_tiers" "native_workers"
-    "execution_profile" "native_acquisition"
+    "execution_profile" "native_limits" "native_acquisition"
     "native_storage"
     "refresh_corpus" "requirement_cases" "requirement_coverage"
     "authored_cases" "authored_cases_queries" "authored_boundaries" "authored_review" "authored_report"
@@ -142,7 +142,7 @@ in {
       (root + /conformance/synthetic-workload)
     ] ++ map (name: root + "/conformance/${name}.py") [
       "replay_tiers" "native_workers" "corpus" "corpus_shards" "corpus_workers" "corpus_evidence" "corpus_acquisition" "locked_corpora" "case_format"
-      "workload" "workload_inputs" "execution_profile" "native_replay" "record_parser" "model_check"
+      "workload" "workload_inputs" "execution_profile" "native_limits" "native_replay" "record_parser" "model_check"
       "native_record" "native_observation" "native_acquisition" "native_connection" "native_library" "native_clock" "native_storage"
       "native_probe" "native_ordering" "query_window" "native_metadata" "native_statements"
       "native_bindings" "native_call_recording" "upstream_bindings" "upstream_binding_policy"
@@ -160,7 +160,7 @@ in {
   corpora = suite "corpora" {
     inputs = frontend ++ [ claims ] ++ lockedCorpora ++ map (name: root + "/conformance/${name}.py") [
       "case_format" "corpus" "corpus_acquisition" "corpus_evidence" "corpus_shards" "corpus_workers"
-      "execution_profile" "freeze_profiles" "freeze_validation" "model_assertions" "model_check"
+      "execution_profile" "native_limits" "freeze_profiles" "freeze_validation" "model_assertions" "model_check"
       "native_acquisition" "native_binding_types" "native_binding_validation" "native_bindings"
       "native_call_recording" "native_clock" "native_connection" "native_library" "native_metadata"
       "native_observation" "native_record" "native_replay" "native_statements" "native_storage"

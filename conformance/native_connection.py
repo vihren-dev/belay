@@ -34,11 +34,17 @@ class NativeResult:
 
 
 class NativeError(RuntimeError):
-    """Retain extended result codes without treating diagnostic text as an oracle."""
+    """Retain extended result codes without treating diagnostic text as an oracle.
 
-    def __init__(self, code: int, message: str) -> None:
+    `phase` says where a statement failed: `prepare` for `sqlite3_prepare_v2`,
+    `step` for `sqlite3_step`, and `None` for other calls. ADR 0008 compares a
+    prepare error with resolution and a step error with the execution semantics.
+    """
+
+    def __init__(self, code: int, message: str, phase: str | None = None) -> None:
         super().__init__(message)
         self.code = code
+        self.phase = phase
 
 
 def library_path(executable_name: str = "sqlite3") -> Path:
@@ -71,7 +77,6 @@ class Connection:
             library.sqlite3_close(self.handle)
             raise NativeError(opened, message)
         library.sqlite3_busy_timeout(self.handle, 100)
-        library.sqlite3_limit(self.handle, 2, 2000)
         library.sqlite3_progress_handler(self.handle, 1000, self.progress, None)
         try:
             if library.sqlite3_db_readonly(self.handle, b"main") != int(access_mode == "read-only"):
@@ -80,8 +85,6 @@ class Connection:
             for option in (1013, 1014):  # Verify library-default DQS_DML and DQS_DDL.
                 if self.configure(option, -1) != 1:
                     raise RuntimeError("SQLite connection configuration readback failed")
-            if library.sqlite3_limit(self.handle, 2, -1) != 2000:
-                raise RuntimeError("SQLite connection does not match the execution profile")
             self.execute_script("PRAGMA trusted_schema=ON; PRAGMA writable_schema=OFF;")
         except Exception:
             self.close()
@@ -93,11 +96,11 @@ class Connection:
         self.check(self.library.sqlite3_db_config(self.handle, option, c.c_int(value), c.byref(actual)))
         return actual.value
 
-    def check(self, code: int) -> None:
+    def check(self, code: int, phase: str | None = None) -> None:
         """Capture the error before another operation can overwrite the connection state."""
         if code not in (0, 100, 101):
             raise NativeError(self.library.sqlite3_extended_errcode(self.handle),
-                              self.library.sqlite3_errmsg(self.handle).decode(errors="replace"))
+                              self.library.sqlite3_errmsg(self.handle).decode(errors="replace"), phase)
 
     def is_sql_error(self, code: int) -> bool:
         """Admit ordinary write denial only on a verified read-only evidence connection."""
@@ -159,7 +162,7 @@ class Connection:
         statement, tail = c.c_void_p(), c.c_char_p()
         encoded = encoded_sql(sql)
         self.check(self.library.sqlite3_prepare_v2(self.handle, encoded, len(encoded),
-                                                 c.byref(statement), c.byref(tail)))
+                                                 c.byref(statement), c.byref(tail)), "prepare")
         try:
             if not statement.value or (tail.value or b"").strip():
                 raise ValueError("Expected one complete SQL statement")
@@ -175,7 +178,7 @@ class Connection:
             rows: list[Row] = []
             while True:
                 code = self.library.sqlite3_step(statement)
-                self.check(code)
+                self.check(code, "step")
                 if code == 101:
                     return NativeResult(columns, rows)
                 rows.append(tuple(self.cell(statement, index)

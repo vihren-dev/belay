@@ -102,11 +102,11 @@ def test_readonly_reopen_and_environmental_error_boundary(tmp_path: Path,
     assert evidence["trace"][-1]["extendedCode"] == 8
     native_replay([evidence])
     original = Connection.check
-    def environmental(connection: Connection, code: int) -> None:
+    def environmental(connection: Connection, code: int, phase: str | None = None) -> None:
         """Inject the recovery-specific extended failure at the shared native error boundary."""
         if code & 255 == 8:
-            raise NativeError(264, "recovery failure")
-        original(connection, code)
+            raise NativeError(264, "recovery failure", phase)
+        original(connection, code, phase)
     monkeypatch.setattr(Connection, "check", environmental)
     with pytest.raises(NativeError) as denied:
         record_sql("CREATE TABLE t(id);", "INSERT INTO t VALUES(2);", name="environment",
