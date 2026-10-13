@@ -64,7 +64,12 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Comparison.lean`,
   (`tests/conformance_query_mutants_test.py`). `conformance/authored_evidence.py`
   is the shared corpus writer; `number_evidence.py` writes corpus version 8 for
   PR B.
+- 2026-10-13: CI timing (forced rebuild, 8 cores): `tests` main 289 s, branch 335 s
+  (+46 s, 16 %); suites alone: `model` 129 s to 149 s, `mutants` 66 s to 139 s. A
+  mutant copy spends about 6 s in its build and 6 s elaborating the case terms;
+  classifying from JSON cuts the second to 0.9 s but raises the build to 17 s
+  (codec modules), so the term classifier stays.
 
 ## Remaining
 
-- CI timing, PR A; then PR B (judge: claim corpus-v8 and the newly agreeing cases).
+- PR A; then PR B (judge: claim corpus-v8 and the newly agreeing cases).
