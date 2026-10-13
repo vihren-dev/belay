@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.Catalog
+import Belay.Sqlite.Resolution.QueryForm
 
 set_option doc.verso true
 
@@ -55,6 +56,16 @@ inductive PrepareError where
   | cannotAddUnique
   /-- {lit}`hex literal too big: %s` (a hexadecimal literal with more than 16 digits). -/
   | hexLiteralTooBig (text : String)
+  /-- {lit}`misuse of aggregate function %s()` (an aggregate in {lit}`WHERE`, or one
+  aggregate inside another; {lit}`resolveSelectStep`). -/
+  | misuseOfAggregate (function : String)
+  /-- {lit}`aggregate functions are not allowed in the GROUP BY clause`. -/
+  | aggregateInGroupBy
+  /-- {lit}`%r ORDER BY term out of range - should be between 1 and %d`: the one-based
+  term and the number of result columns ({lit}`resolveOrderGroupBy`). -/
+  | orderByOutOfRange (term columns : Nat)
+  /-- {lit}`%r GROUP BY term out of range - should be between 1 and %d`. -/
+  | groupByOutOfRange (term columns : Nat)
   deriving Repr, DecidableEq
 
 /-- A model restriction: SQLite accepts the SQL, but the model does not describe
@@ -98,6 +109,8 @@ inductive Statement where
       (keys : List (List Nat))
   /-- SQLite refuses to prepare the statement with this error. -/
   | prepareError (error : PrepareError)
+  /-- Run a query: it reads the database, changes nothing, and has result rows. -/
+  | query (query : Query)
   deriving Repr, DecidableEq
 
 end Resolved

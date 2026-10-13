@@ -1,4 +1,7 @@
 import Belay.Sqlite.Declarations
+import Belay.Sqlite.Comparison
+import Belay.Sqlite.QueryEval
+import Belay.Sqlite.QueryLaws
 import Belay.Sqlite.Model
 import Belay.Sqlite.Execution
 import Belay.Sqlite.LiteralData

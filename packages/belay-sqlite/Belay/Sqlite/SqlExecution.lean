@@ -55,7 +55,7 @@ def literalStep (statement : Resolved.Statement) (database : Database) (position
   | .update at_ assignments filter keys => match database at_ with
     | none => .failure position .unmodeled database
     | some table => checkedWrite database at_ keys (LiteralData.updated table assignments filter) position
-  | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ =>
+  | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ | .query _ =>
     step statement database position
 
 /-- Check that the model describes the statement against the current table.
@@ -72,7 +72,7 @@ def statementReady (statement : Resolved.Statement) (database : Database) : Bool
   | .createTable _ _ table => table.plain
   | .addColumn _ column => column.plain
   | .createIndex .. => false
-  | .begin | .commit | .rollback | .prepareError _ => true
+  | .begin | .commit | .rollback | .prepareError _ | .query _ => true
 
 /-- Evaluate one statement at its supplied zero-based position. BEGIN records a
 snapshot; COMMIT clears it; ROLLBACK restores it. Repeated BEGIN or transaction
@@ -90,7 +90,7 @@ def advance (position : Nat) (statement : Resolved.Statement) (state : SqlState)
   | .rollback => match state.snapshot with
     | none => .halt (.failure position .noActiveTransaction state.database)
     | some original => .next { database := original }
-  | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .update .. | .prepareError _ =>
+  | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .update .. | .prepareError _ | .query _ =>
     match literalStep statement state.database position with
     | .success database => .next { state with database := database }
     | .failure failed reason database => .halt (state.finish (.failure failed reason database))

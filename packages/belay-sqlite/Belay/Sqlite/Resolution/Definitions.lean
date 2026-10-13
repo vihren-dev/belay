@@ -50,7 +50,7 @@ def addDefinitions (limit : Nat) (tableName : String) (table : CatalogTable) :
     if table.columns.length + 1 > limit then throw (.tooManyColumns tableName)
     if (columnPosition table.columns definition.name).isSome then
       throw (.duplicateColumn definition.name)
-    let column : CatalogColumn := { name := definition.name, declaredType := definition.declaredType }
+    let column : CatalogColumn := { name := definition.name, declaredType := reportedType definition.declaredType }
     let added := { table with columns := table.columns ++ [column] }
     let constrained ← definition.constraints.foldlM (applyConstraint tableName definition) added
     addDefinitions limit tableName constrained rest
@@ -144,7 +144,7 @@ def resolveAddColumn (context : ResolveContext) (catalog : Catalog) (index : Nat
     else if !definition.constraints.isEmpty then
       restrict index [1] "only a nullable column without a default can be added"
     else
-      let column : CatalogColumn := { name := definition.name, declaredType := definition.declaredType }
+      let column : CatalogColumn := { name := definition.name, declaredType := reportedType definition.declaredType }
       let object := { name := (catalog[position]?.map (·.name)).getD tableName,
                       entry := .table { table with columns := table.columns ++ [column] } }
       .ok (.addColumn position column, catalog.set position object)

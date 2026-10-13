@@ -1,6 +1,6 @@
 # ADR 0012: Query semantics in the SQLite model
 
-Date: 2026-10-13. Status: PROPOSED.
+Date: 2026-10-13. Status: ACCEPTED on 2026-10-13.
 Audience: designers and reviewers.
 Related: [ADR 0005](adr-0005-conformance-corpus-scale.md),
 [ADR 0006](adr-0006-model-boundary-and-execution-levels.md),

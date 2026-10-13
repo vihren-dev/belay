@@ -41,7 +41,7 @@ structure ResolvedScript where
 /-- Whether a schema statement can describe a catalog: CREATE TABLE or CREATE INDEX. -/
 def Syntax.Statement.describesCatalog : Syntax.Statement → Bool
   | .createTable .. | .createIndex .. => true
-  | .addColumn .. | .begin | .commit | .rollback | .insert .. | .update .. => false
+  | .addColumn .. | .begin | .commit | .rollback | .insert .. | .update .. | .select .. => false
 
 /-- The first schema statement that cannot describe a catalog, as a restriction. -/
 def schemaStatementRestriction (schema : List Syntax.Statement) : Option Restriction :=
@@ -52,7 +52,7 @@ def schemaStatementRestriction (schema : List Syntax.Statement) : Option Restric
 def Resolved.Statement.prepareError? : Resolved.Statement → Option PrepareError
   | .prepareError error => some error
   | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback
-  | .insert .. | .update .. => none
+  | .insert .. | .update .. | .query _ => none
 
 /-- The zero-based index and error of the first prepare error in a list of
 resolved statements, from a starting index. -/

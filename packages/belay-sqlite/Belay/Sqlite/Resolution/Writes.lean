@@ -44,14 +44,11 @@ def assignedValue (columns : List CatalogColumn) (dqs : Bool) : Syntax.Expr → 
     if (columnPosition columns name).isSome then
       .error (.restriction [] "column references in values are not modeled; write a literal value")
     else literalValue dqs (.identifier name doubleQuoted)
-  | .null => literalValue dqs .null
-  | .numeric text => literalValue dqs (.numeric text)
-  | .string bytes => literalValue dqs (.string bytes)
-  | .blob bytes => literalValue dqs (.blob bytes)
-  | .currentTime keyword => literalValue dqs (.currentTime keyword)
-  | .negate operand => literalValue dqs (.negate operand)
-  | .positive operand => literalValue dqs (.positive operand)
-  | .equals left right => literalValue dqs (.equals left right)
+  | expression@.null | expression@(.numeric _) | expression@(.string _) | expression@(.blob _)
+  | expression@(.currentTime _) | expression@(.negate _) | expression@(.positive _)
+  | expression@(.equals ..) | expression@(.compare ..) | expression@(.and ..) | expression@(.or ..)
+  | expression@(.not _) | expression@(.isNull ..) | expression@(.callStar _) | expression@(.call ..) =>
+    literalValue dqs expression
 
 /-- Turn a value issue into the statement's resolution: a prepare error keeps the
 catalog, a restriction refuses the script. -/
@@ -133,9 +130,12 @@ def resolveFilter (context : ResolveContext) (columns : List CatalogColumn) :
         .error (.restriction [1] "only an integer equality with an INTEGER, NUMERIC or BLOB column is modeled; compare such a column with an integer literal")
   | some (.equals (.null) _) | some (.equals (.numeric _) _) | some (.equals (.string _) _)
   | some (.equals (.blob _) _) | some (.equals (.currentTime _) _) | some (.equals (.negate _) _)
-  | some (.equals (.positive _) _) | some (.equals (.equals ..) _) | some .null | some (.numeric _)
-  | some (.string _) | some (.blob _) | some (.currentTime _) | some (.identifier ..)
-  | some (.negate _) | some (.positive _) =>
+  | some (.equals (.positive _) _) | some (.equals (.equals ..) _) | some (.equals (.compare ..) _)
+  | some (.equals (.and ..) _) | some (.equals (.or ..) _) | some (.equals (.not _) _)
+  | some (.equals (.isNull ..) _) | some (.equals (.callStar _) _) | some (.equals (.call ..) _)
+  | some .null | some (.numeric _) | some (.string _) | some (.blob _) | some (.currentTime _)
+  | some (.identifier ..) | some (.negate _) | some (.positive _) | some (.compare ..) | some (.and ..)
+  | some (.or ..) | some (.not _) | some (.isNull ..) | some (.callStar _) | some (.call ..) =>
     .error (.restriction [] "only a column equality filter is modeled; write WHERE column = integer")
 
 /-- Resolve UPDATE. Path 1 is the assignment list and path 2 the filter. -/

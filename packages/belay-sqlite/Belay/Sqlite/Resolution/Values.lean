@@ -93,7 +93,7 @@ An identifier written in double quotes is a string literal when the
 double-quoted-string setting {lit}`dqs` is on; any other identifier names no
 column, which SQLite reports as {lit}`no such column: %s`. Unary plus keeps its
 operand; unary minus negates a numeric literal. The time keywords and other
-expressions are model restrictions. -/
+expressions, comparisons, logical operators and aggregates are model restrictions. -/
 def literalValue (dqs : Bool) : Syntax.Expr → Except ValueIssue Value
   | .null => .ok .null
   | .string bytes => .ok (.text bytes)
@@ -108,7 +108,9 @@ def literalValue (dqs : Bool) : Syntax.Expr → Except ValueIssue Value
     else .error (.prepare (.noSuchColumn name))
   | .currentTime _ => .error (.restriction [] "time values are not modeled; write the time as a text literal")
   | .negate _ => .error (.restriction [] "only a numeric literal may be negated; write the negated value as a literal")
-  | .equals .. => .error (.restriction [] "a comparison is not a literal value; write a literal value")
+  | .equals .. | .compare .. | .and .. | .or .. | .not _ | .isNull .. =>
+    .error (.restriction [] "a comparison or logical operator is not a literal value; write a literal value")
+  | .callStar _ | .call .. => .error (.restriction [] "an aggregate is not a literal value; write a literal value")
 
 /-- Admit a value only when the column's affinity stores it unchanged
 ({name}`LiteralData.lossless`); otherwise the conversion is a model restriction. -/

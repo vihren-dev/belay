@@ -10,5 +10,6 @@
   "belay.sqlite.syntax",
   "belay.sqlite.syntax_definitions",
   "belay.sqlite.syntax_expressions",
+  "belay.sqlite.syntax_queries",
   "belay.sqlite.syntax_writes"
 ]

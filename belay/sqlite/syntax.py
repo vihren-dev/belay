@@ -10,6 +10,7 @@ from .located import Json, Located
 from .profiles import ExecutionProfile
 from .sql_tree import Node, Tree
 from .syntax_definitions import add_column, create_index, create_table
+from .syntax_queries import select
 from .syntax_writes import insert, transaction, update
 
 SCRIPT_RECORD_VERSION = 2
@@ -46,8 +47,10 @@ def statement(tree: Tree, command: Node) -> Located:
         return insert(tree, command)
     if symbols[:2] == ["with", "UPDATE"]:
         return update(tree, command)
+    if symbols == ["select"]:
+        return select(tree, command)
     raise tree.unsupported(command, "This statement is not modeled; the model runs CREATE TABLE, CREATE INDEX, "
-                           "ALTER TABLE ADD COLUMN, BEGIN, COMMIT, ROLLBACK, INSERT and UPDATE")
+                           "ALTER TABLE ADD COLUMN, BEGIN, COMMIT, ROLLBACK, INSERT, UPDATE and SELECT")
 
 
 def statements(tree: Tree) -> tuple[Located, ...]:

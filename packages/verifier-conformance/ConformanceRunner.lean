@@ -10,6 +10,11 @@ open Lean Belay.Sqlite.Conformance
 def harnessError (message : String) : Json :=
   Json.mkObj [("verdict", toJson "HARNESS_ERROR"), ("error", toJson message)]
 
+/-- The width at which the case term is rendered: wide enough that the term stays on one
+line. A wrapped term can break Lean's column rule for structure instances, because the
+`Repr` of `some` does not indent the lines that follow it. -/
+def caseTermWidth : Nat := 1000000000
+
 /-- Both verdict and optional proof input originate in one decoded structural case. -/
 def evaluateLine (line : String) (emitLean : Bool) : Json :=
   match Json.parse line >>= decodeCase with
@@ -21,7 +26,7 @@ def evaluateLine (line : String) (emitLean : Bool) : Json :=
       | .disagree position => ("DISAGREE", position)
       | .modelUnsupported => ("MODEL_UNSUPPORTED", none)
     Json.mkObj ([("verdict", toJson name), ("position", toJson position)] ++
-      if emitLean then [("caseLean", toJson (reprStr c)), ("decoded", toJson c)] else [])
+      if emitLean then [("caseLean", toJson ((repr c).pretty caseTermWidth)), ("decoded", toJson c)] else [])
 
 /-- One prediction, or an error object that the judge counts as a harness error. -/
 def predictLine (line : String) : Json :=

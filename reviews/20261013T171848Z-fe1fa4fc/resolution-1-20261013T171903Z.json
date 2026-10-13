@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-13T17:19:03+00:00",
+  "finding": "20261013T171848Z-fe1fa4fc#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "proof sketches added to insertStable_perm, foldl_insertStable_perm and stableSort_perm"
+}

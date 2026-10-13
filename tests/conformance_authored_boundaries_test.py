@@ -43,18 +43,20 @@ def test_explicit_catalog_native_replay_and_classification(boundaries: dict[str,
         assert expanded_record(shared_record(record)) == record
         assert record["profile"]["engineVersion"] == "3.51.0"
     native_replay(catalog)
-    assert replay(catalog, runtime_root)["counts"] == {"MODEL_UNSUPPORTED": 18, "AGREE": 5}
+    assert replay(catalog, runtime_root)["counts"] == {"MODEL_UNSUPPORTED": 17, "AGREE": 6}
 
 
 def test_validity_boundaries_without_profile_gate(runtime_root: Path) -> None:
     """Fresh implicit-profile records: model boundaries stay unsupported, and SQLite's prepare errors agree.
 
-    The native-valid cases use queries or parameters, which the statement mapping
-    refuses. A duplicate column, a missing key column and a reserved name are SQLite
-    prepare errors that Lean resolution decides, so the model agrees with them; an
-    empty column list is a grammar error on both sides.
+    The native-valid cases use parameters or schemas outside the model, which the
+    statement mapping or resolution refuses; a query on a table whose names differ
+    only in case agrees (ADR 0012). A duplicate column, a missing key column and a
+    reserved name are SQLite prepare errors that Lean resolution decides, so the
+    model agrees with them; an empty column list is a grammar error on both sides.
     """
-    agreeing = {"validity-duplicate-column", "validity-missing-key-column", "validity-reserved-name"}
+    agreeing = {"validity-duplicate-column", "validity-missing-key-column", "validity-reserved-name",
+                "validity-identifier-case"}
     for case in validity_definitions():
         record = record_sql(case.setup, case.sql, name=case.name, outputs=True,
             parameters=list(case.parameters) if case.parameters is not None else None)
@@ -63,4 +65,5 @@ def test_validity_boundaries_without_profile_gate(runtime_root: Path) -> None:
             assert model is not None, (case.name, answer)
             assert compiled(model, runtime_root)["verdict"] == "AGREE", case.name
         else:
-            assert model is None and answer["verdict"] == "MODEL_UNSUPPORTED", case.name
+            verdict = compiled(model, runtime_root)["verdict"] if model is not None else answer["verdict"]
+            assert verdict == "MODEL_UNSUPPORTED", case.name

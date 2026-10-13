@@ -8,7 +8,7 @@ namespace AtuinFacts
 open Belay.Sqlite SqliteVerifier
 
 /-- The proposed nullable field is a candidate choice, outside the approved contract. -/
-def added : CatalogColumn := { name := "shell", declaredType := some "text" }
+def added : CatalogColumn := { name := "shell", declaredType := some "TEXT" }
 
 /-- The supplied SQL resolves to exactly this single supported extension. -/
 theorem script_bound : Generated.resolved = [.addColumn 0 added] := by rfl

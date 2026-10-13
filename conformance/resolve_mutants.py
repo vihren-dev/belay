@@ -105,9 +105,9 @@ def verdicts(packages: Path, lean: Path, program: str) -> list[str]:
     return run(["lake", "env", "lean", "--run", "Classify.lean"], conformance, lean, RUN_TIMEOUT_SECONDS).splitlines()
 
 
-def mutate(base: Path, root: Path, name: str, lean: Path, program: str) -> list[str]:
-    """Copy the built base, apply one mutant, and classify the cases with it."""
-    target, before, after = MUTANTS[name]
+def mutate(base: Path, root: Path, name: str, change: tuple[str, str, str], lean: Path, program: str) -> list[str]:
+    """Copy the built base, apply one mutant's change, and classify the cases with it."""
+    target, before, after = change
     copy = root / name
     shutil.copytree(base, copy, symlinks=True)
     source = copy / target
@@ -118,8 +118,9 @@ def mutate(base: Path, root: Path, name: str, lean: Path, program: str) -> list[
     return verdicts(copy, lean, program)
 
 
-def measure(cases: list[dict[str, Json]], repository: Path, runtime: Path) -> dict[str, Json]:
-    """Classify the cases with the unchanged model and with each mutant, in parallel.
+def measure(cases: list[dict[str, Json]], repository: Path, runtime: Path,
+            mutants: dict[str, tuple[str, str, str]] = MUTANTS) -> dict[str, Json]:
+    """Classify the cases with the unchanged model and with each of `mutants`, in parallel.
     `runtime` is the conformance runtime: its runner emits the case terms, and its
     `lean` folder is the pinned toolchain."""
     lean = runtime / "lean"
@@ -135,7 +136,8 @@ def measure(cases: list[dict[str, Json]], repository: Path, runtime: Path) -> di
         if original != ["Belay.Sqlite.Conformance.Verdict.agree"] * len(cases):
             raise ValueError(f"Every case must agree with the unchanged model before mutation: {original}")
         with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as pool:
-            results = dict(zip(MUTANTS, pool.map(lambda name: mutate(base, root, name, lean, program), MUTANTS)))
+            results = dict(zip(mutants, pool.map(
+                lambda name: mutate(base, root, name, mutants[name], lean, program), mutants)))
     names = [str(case["provenance"][0][1]) for case in cases]
     return {name: {"killed": any(verdict != original[0] for verdict in found),
                    "changed": {case: verdict for case, verdict in zip(names, found, strict=True)

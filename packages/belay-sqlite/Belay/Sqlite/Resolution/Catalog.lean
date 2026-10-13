@@ -125,6 +125,19 @@ def affinityOf : Option String → Affinity
 /-- The affinity of a catalog column, from its declared type text. -/
 def CatalogColumn.affinity (column : CatalogColumn) : Affinity := affinityOf column.declaredType
 
+/-- The standard type names that SQLite recognizes in a declared type, in capitals
+({lit}`sqlite3StdType`). -/
+def standardTypeNames : List String := ["ANY", "BLOB", "INT", "INTEGER", "REAL", "TEXT"]
+
+/-- A declared type as SQLite keeps and reports it: a type that is exactly one of
+{name}`standardTypeNames`, with ASCII case ignored, becomes that name in capitals
+({lit}`sqlite3AddColumn`); any other type text stays as written, so {lit}`int` is
+{lit}`INT` and {lit}`VarChar(10)` keeps its case. -/
+def reportedType : Option String → Option String
+  | none => none
+  | some text => some ((standardTypeNames.find? fun standard =>
+      normalizeIdentifier standard == normalizeIdentifier text).getD text)
+
 /-- Whether a declared type makes a single-column primary key an alias for the
 rowid: the text equals {lit}`INTEGER` with ASCII case ignored ({lit}`lang_createtable.html`,
 R-56094-57830). {lit}`INT` and {lit}`BIGINT` do not. -/

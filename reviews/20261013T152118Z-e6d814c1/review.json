@@ -1,0 +1,55 @@
+{
+  "caller": "claude",
+  "commit": "e6d814c1bc1699770f354c0e151be14a1193c951",
+  "date": "2026-10-13T15:21:18+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay-sqlite/Belay/Sqlite/QueryEval.lean",
+    "packages/belay-sqlite/Belay/Sqlite/QueryExamples.lean",
+    "packages/belay-sqlite/Belay/Sqlite/QueryLaws.lean",
+    "packages/belay-sqlite/Belay/Sqlite/Resolution/QueryForm.lean",
+    "packages/belay-sqlite/Belay/Sqlite.lean",
+    "packages/belay-sqlite/lakefile.toml",
+    "reviews/20261013T150953Z-d3004d4d/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261013T152118Z-e6d814c1#1",
+      "line": 14,
+      "path": "packages/belay-sqlite/Belay/Sqlite/QueryLaws.lean",
+      "rule": "R3",
+      "severity": "must",
+      "text": "`transCmp_on` is a public library theorem used by `compareSort_transCmp`, but its docstring has no proof sketch. Fix: explain that the proof applies the original comparison's orientation and transitivity laws to the mapped keys."
+    },
+    {
+      "id": "20261013T152118Z-e6d814c1#2",
+      "line": 31,
+      "path": "packages/belay-sqlite/Belay/Sqlite/QueryEval.lean",
+      "rule": "R11",
+      "severity": "must",
+      "text": "The new `AND`, `OR`, `NOT`, and `IS NULL` evaluation branches have no tests that exercise their behavior. Fix: add deterministic checked examples for their true, false, and NULL cases, including `IS NOT NULL`."
+    }
+  ],
+  "id": "20261013T152118Z-e6d814c1",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "fa2475f44035",
+    "R7": "0a38ead152b1",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
