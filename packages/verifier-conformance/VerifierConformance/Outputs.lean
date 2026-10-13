@@ -1,4 +1,5 @@
 import Belay.Sqlite.SqlExecution
+import Belay.Sqlite.QueryEval
 
 /-! ADR 0005 output comparison uses native tie groups, without evaluating SQL. -/
 
@@ -61,7 +62,9 @@ def matchesOutput (expected actual : StatementOutput)
 /-- Observe the literal-DML domain; unsupported output capability is explicit.
 Transitions and failure status come from production advance, never a second
 evaluator. A successful INSERT changes one row per VALUES row and a successful
-UPDATE changes each row that its filter selects. -/
+UPDATE changes each row that its filter selects. A query has its result column
+names and the rows of {name}`Resolved.Query.run` over the table before it, and no
+change count; a query whose table is missing has no output. -/
 def statementOutput (statement : Resolved.Statement) (before : SqlState)
     (transition : SqlTransition) : Option StatementOutput :=
   let successful := match transition with | .next _ => true | _ => false
@@ -78,6 +81,9 @@ def statementOutput (statement : Resolved.Statement) (before : SqlState)
       let table ← before.database at_
       return ⟨[], [], some (table.rows.filter (LiteralData.selected filter)).length⟩
     else if constraintFailure then some ⟨[], [], some 0⟩ else none
+  | .query query =>
+    if successful then (before.database query.table).map fun table => ⟨query.names, query.run table, none⟩
+    else none
   | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ =>
     some ⟨[], [], none⟩
 

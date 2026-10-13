@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.Catalog
+import Belay.Sqlite.Resolution.QueryForm
 
 set_option doc.verso true
 
@@ -98,6 +99,8 @@ inductive Statement where
       (keys : List (List Nat))
   /-- SQLite refuses to prepare the statement with this error. -/
   | prepareError (error : PrepareError)
+  /-- Run a query: it reads the database, changes nothing, and has result rows. -/
+  | query (query : Query)
   deriving Repr, DecidableEq
 
 end Resolved

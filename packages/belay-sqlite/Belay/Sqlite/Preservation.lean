@@ -106,6 +106,7 @@ theorem step_extends (statement : Resolved.Statement) (database : Database) (pos
     | none => exact DatabaseExtends.refl database
     | some table => exact DatabaseExtends.add database at_ table [column] h
   | createIndex _ _ _ => exact DatabaseExtends.refl database
+  | query _ => exact DatabaseExtends.refl database
   | begin => exact DatabaseExtends.refl database
   | commit => exact DatabaseExtends.refl database
   | rollback => exact DatabaseExtends.refl database

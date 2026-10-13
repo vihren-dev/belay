@@ -68,7 +68,8 @@ table at its catalog position; ADD COLUMN appends NULL to each existing row.
 CREATE TABLE at an occupied position, ADD COLUMN at a position without a table,
 and CREATE INDEX fail with {lean}`ExecutionError.unmodeled`: {lit}`resolve` gives
 no such statement for a conforming database, and the supported-subset check
-excludes CREATE INDEX. SQL execution handles transaction control and writes
+excludes CREATE INDEX. A query changes nothing and succeeds; its result rows are
+not part of the outcome. SQL execution handles transaction control and writes
 separately. The default position is zero. -/
 def step (statement : Resolved.Statement) (database : Database) (position : Nat := 0) : Outcome :=
   match statement with
@@ -79,6 +80,7 @@ def step (statement : Resolved.Statement) (database : Database) (position : Nat 
     | none => .failure position .unmodeled database
     | some table => .success (database.set at_ (table.appendColumns [column]))
   | .prepareError error => .failure position (.prepare error) database
+  | .query _ => .success database
   | .createIndex .. | .begin | .commit | .rollback | .insert .. | .update .. =>
     .failure position .unmodeled database
 

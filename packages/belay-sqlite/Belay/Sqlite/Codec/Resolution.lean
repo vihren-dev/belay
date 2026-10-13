@@ -28,6 +28,12 @@ deriving instance Lean.ToExpr for CatalogIndex
 deriving instance Lean.ToExpr for CatalogEntry
 deriving instance Lean.ToExpr for CatalogObject
 deriving instance Lean.ToExpr for PrepareError
+deriving instance Lean.ToExpr for Comparison
+deriving instance Lean.ToExpr for Resolved.Expr
+deriving instance Lean.ToExpr for Resolved.Aggregate
+deriving instance Lean.ToExpr for Resolved.Output
+deriving instance Lean.ToExpr for Resolved.SortKey
+deriving instance Lean.ToExpr for Resolved.Query
 deriving instance Lean.ToExpr for Resolved.Statement
 
 /-- The supported version of {lit}`ScriptRecord`, the structural record of a schema
