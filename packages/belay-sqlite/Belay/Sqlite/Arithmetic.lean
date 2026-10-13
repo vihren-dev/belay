@@ -119,8 +119,9 @@ def Value.textBytes : Value → List UInt8
   | .text bytes | .blob bytes => bytes
   | .null => []
 
-/-- The magnitude bound of {lit}`sqlite3RealSameAsInt`: {lit}`2^51`. An integer at or
-beyond it never counts as the same as a double. -/
+/-- The magnitude bound of {lit}`sqlite3RealSameAsInt`: {lit}`2^51`. For a nonzero double,
+only an integer in the half-open interval {lit}`[-2^51, 2^51)` can count as the same as
+the double; a zero double counts as the same as every integer. -/
 def realSameAsIntBound : Int := 2 ^ 51
 
 /-- Whether a double equals a 64-bit integer for {lit}`sqlite3RealSameAsInt`: it is zero,
