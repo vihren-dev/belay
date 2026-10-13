@@ -1,11 +1,12 @@
 import Belay.Sqlite.NumberConvert
 import Belay.Sqlite.RealText
+import Belay.Sqlite.Arithmetic
 
 set_option doc.verso true
 
 /-! Checked examples of SQLite's conversions between text and numbers (ADR 0012, slice 2).
-Each expected value is the result of {lit}`CAST(text AS REAL)`, {lit}`CAST(text AS INTEGER)`
-or {lit}`CAST(real AS TEXT)` in the pinned native SQLite 3.51.0. The examples fix the intended reading of each
+Each expected value is the result of a {lit}`CAST` or an arithmetic operator in the
+pinned native SQLite 3.51.0. The examples fix the intended reading of each
 rule; the conformance cases compare the conversions with native SQLite. -/
 
 namespace Belay.Sqlite.NumberExamples
@@ -50,5 +51,25 @@ def integerOf (text : String) : Int := (atoi64 text.toUTF8.toList).1
   ["123456789012346.0", "0.0001", "1.0e-05", "0.333333333333333", "-2.5"]
 #guard [realText 1.7976931348623157e308, realText 5e-324, realText (Float.ofBits 0x7FF0000000000000),
   realText (Float.ofBits 0xFFF0000000000000)] == ["1.79769313486232e+308", "4.94065645841247e-324", "Inf", "-Inf"]
+-- Integer arithmetic is exact while it fits; an overflow gives a REAL.
+#guard ArithmeticOperator.add.apply (.integer 7) (.integer (-3)) == .integer 4
+#guard ArithmeticOperator.add.apply (.integer int64Maximum) (.integer 1) == .real 0x43E0000000000000
+#guard ArithmeticOperator.divide.apply (.integer int64Minimum) (.integer (-1)) == .real 0x43E0000000000000
+-- Integer division truncates toward zero; the remainder has the sign of the dividend.
+#guard [ArithmeticOperator.divide.apply (.integer (-7)) (.integer 2), ArithmeticOperator.remainder.apply (.integer (-7)) (.integer 2)] ==
+  [.integer (-3), .integer (-1)]
+-- Division and remainder by zero, NULL operands and a NaN result are NULL.
+#guard [ArithmeticOperator.divide.apply (.integer 1) (.integer 0), ArithmeticOperator.remainder.apply (.real 0x3FF8000000000000) (.integer 0),
+  ArithmeticOperator.add.apply .null (.integer 1),
+  ArithmeticOperator.subtract.apply (.real 0x7FF0000000000000) (.real 0x7FF0000000000000)] == [.null, .null, .null, .null]
+-- A REAL remainder converts both operands to integers: 7.5 % 2 is 1.0.
+#guard ArithmeticOperator.remainder.apply (.real 0x401E000000000000) (.integer 2) == .real 0x3FF0000000000000
+-- TEXT operands convert: ' 7 ' is the integer 7, '1.5' is a REAL, 'abc' is 0.
+#guard [ArithmeticOperator.add.apply (.text " 7 ".toUTF8.toList) (.integer 1), ArithmeticOperator.multiply.apply (.text "1.5".toUTF8.toList) (.integer 2),
+  ArithmeticOperator.add.apply (.text "abc".toUTF8.toList) (.integer 1)] == [.integer 8, .real 0x4008000000000000, .integer 1]
+-- CAST: NUMERIC makes an integer of '4.0', INTEGER truncates a REAL, TEXT renders a REAL.
+#guard [castValue .numeric (.text "4.0".toUTF8.toList), castValue .integer (.real 0xC004000000000000),
+  castValue .text (.real 0x3FB999999999999A), castValue .blob (.integer 12)] ==
+  [.integer 4, .integer (-2), .text "0.1".toUTF8.toList, .blob "12".toUTF8.toList]
 
 end Belay.Sqlite.NumberExamples

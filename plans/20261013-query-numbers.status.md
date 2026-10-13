@@ -34,6 +34,11 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Comparison.lean`,
 - 2026-10-13: `RealText.lean` ports `%!.15g` over `sqlite3FpDecode` (REAL to text).
   It agrees with native `CAST(real AS TEXT)` on 5033 doubles (edge cases, random
   bit patterns and random magnitudes).
+- 2026-10-13: `Arithmetic.lean` ports `OP_Add` to `OP_Remainder` (with the numeric
+  type of TEXT and BLOB operands) and `sqlite3VdbeMemCast`. It agrees with native
+  SQLite on 6696 checks: 36 values (NULL, integers at the limits, REALs with
+  infinities and signed zero, numeric and other TEXT, BLOBs) under each operator,
+  unary minus as `0 - x`, and each `CAST` affinity.
 
 ## Remaining
 
