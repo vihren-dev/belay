@@ -31,8 +31,19 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Syntax.lean`,
   that SQLite reports in capitals (`reportedType`; this bug was already on main), and
   a result column alias in `WHERE` (altercol-15.0, now a restriction). The verdict
   passes; corpus-v5 has 194 AGREE and no DISAGREE.
+- 2026-10-13: `normalizeIdentifier` folds through the character list: in the
+  kernel, `String.map` took seconds for each name with a capital, and the
+  `create_folded_name` proof (45 to 120 s, near its timeout) now takes about 1 s.
+- 2026-10-13: evidence. `conformance/authored_queries.py` has 36 coverage cases
+  (each rule, neighbors, boundaries, each prepare error); all agree and have
+  kernel proofs (`tests/conformance_query_coverage_test.py`).
+  `conformance/query_mutants.py` has the 16 mutants of ADR 0012; each changes a
+  verdict (`tests/conformance_query_mutants_test.py`). `conformance/query_evidence.py`
+  writes the cases as corpus version 7 for PR B. Kernel proofs of queries needed a
+  structurally recursive stable sort (`stableSort`; `List.mergeSort` does not
+  reduce in the kernel) and a one-line case term from the runner (a wrapped
+  `some` breaks the column rule of structure instances).
 
 ## Remaining
 
-- Authored query coverage cases, query mutants, model cases with queries, CI
-  timing, PR A; then PR B (judge: claim a query corpus, mustAgree cases).
+- CI timing, PR A; then PR B (judge: claim a query corpus, mustAgree cases).

@@ -75,4 +75,17 @@ def unknown : Expr := .literal .null
 #guard [unknown, no].map (fun a => (Expr.isNull a false).eval []) == [.integer 1, .integer 0]
 #guard [unknown, no].map (fun a => (Expr.isNull a true).eval []) == [.integer 0, .integer 1]
 
+-- Values: storage classes, exact integer-real comparison, bytes, and NULL in comparisons.
+#guard compareValues (.integer 1) (.real 0x3FF0000000000000) == .eq
+#guard compareValues (.integer 9007199254740993) (.real 0x4340000000000001) == .lt
+#guard compareValues .null (.integer (-5)) == .lt
+#guard compareValues (.real 0xFFF0000000000000) (.integer (-(2 ^ 63))) == .lt
+#guard compareValues (.integer 7) (.text []) == .lt
+#guard compareValues (.text [255]) (.blob []) == .lt
+#guard compareValues (.text [97]) (.text [97, 0]) == .lt
+#guard compareValues (.real 0x8000000000000000) (.real 0) == .eq
+#guard Comparison.eq.apply .null .null == .null
+#guard Comparison.is.apply .null .null == .integer 1
+#guard Comparison.isNot.apply .null (.integer 0) == .integer 1
+
 end Belay.Sqlite.Resolved.QueryExamples

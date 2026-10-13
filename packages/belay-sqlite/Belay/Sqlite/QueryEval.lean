@@ -74,6 +74,19 @@ def compareSort : List Bool → List Value → List Value → Ordering
   | descending :: directions, a, b =>
     (compareTerm descending (a.headD .null) (b.headD .null)).then (compareSort directions a.tail b.tail)
 
+/-- Insert an item into a list after every leading item that is at most the new
+item by {lit}`le`. In a sorted list, the item goes after its equals, which keeps a
+sort stable. -/
+def insertStable (le : α → α → Bool) (item : α) : List α → List α
+  | [] => [item]
+  | head :: tail => if le head item then head :: insertStable le item tail else item :: head :: tail
+
+/-- A stable sort by {lit}`le`: each item, in list order, is inserted after its
+equals. Unlike {lit}`List.mergeSort`, it uses only structural recursion, so the
+kernel can evaluate it in the proofs of conformance cases. -/
+def stableSort (le : α → α → Bool) (items : List α) : List α :=
+  items.foldl (fun sorted item => insertStable le item sorted) []
+
 /-- A result row with its sort values. -/
 abbrev Record := List Value × List Value
 
@@ -100,7 +113,7 @@ def records (query : Query) (rows : List (List Value)) : List Record :=
 
 /-- The rows of the table in rowid order, as the source of a query. -/
 def sourceRows (table : Table) : List (List Value) :=
-  (table.rows.mergeSort fun a b => decide (a.rowid ≤ b.rowid)).map Row.values
+  (stableSort (fun a b => decide (a.rowid ≤ b.rowid)) table.rows).map Row.values
 
 /-- The rows that the {lit}`WHERE` condition keeps: those where it is true. -/
 def filtered (query : Query) (rows : List (List Value)) : List (List Value) :=
@@ -110,8 +123,8 @@ def filtered (query : Query) (rows : List (List Value)) : List (List Value) :=
 sort by the {lit}`ORDER BY` terms, then the window. -/
 def Query.run (query : Query) (table : Table) : List (List Value) :=
   let directions := query.orderBy.map Prod.snd
-  let sorted := (records query (filtered query (sourceRows table))).mergeSort fun a b =>
-    (compareSort directions a.2 b.2).isLE
+  let sorted := stableSort (fun a b => (compareSort directions a.2 b.2).isLE)
+    (records query (filtered query (sourceRows table)))
   let window := sorted.drop query.offset
   (match query.limit with | some limit => window.take limit | none => window).map Prod.fst
 

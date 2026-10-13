@@ -42,21 +42,87 @@ theorem compareSort_transCmp : ∀ directions : List Bool, Std.TransCmp (compare
       funext a b; simp [compareSort, compareLex]
     rw [equal]; exact inferInstance
 
+/-- For every relation, item and list, {name}`insertStable` gives a permutation of the
+item followed by the list. -/
+theorem insertStable_perm (le : α → α → Bool) (item : α) :
+    ∀ items : List α, (insertStable le item items).Perm (item :: items)
+  | [] => .refl _
+  | head :: tail => by
+    unfold insertStable
+    split
+    · exact ((insertStable_perm le item tail).cons head).trans (.swap item head tail)
+    · exact .refl _
+
+/-- For every relation, starting list and list of items, inserting the items one by
+one with {name}`insertStable` gives a permutation of the starting list followed by
+the items. -/
+theorem foldl_insertStable_perm (le : α → α → Bool) :
+    ∀ (items start : List α), (items.foldl (fun sorted item => insertStable le item sorted) start).Perm (start ++ items)
+  | [], start => by simp
+  | item :: items, start => by
+    simp only [List.foldl_cons]
+    refine (foldl_insertStable_perm le items _).trans ?_
+    exact ((insertStable_perm le item start).append_right items).trans List.perm_middle.symm
+
+/-- For every relation and list, {name}`stableSort` gives a permutation of the list:
+the sort neither adds, drops nor repeats an item. -/
+theorem stableSort_perm (le : α → α → Bool) (items : List α) : (stableSort le items).Perm items := by
+  simpa [stableSort] using foldl_insertStable_perm le items []
+
+/-- For every relation {lit}`le` that is transitive and total (for all {lit}`a` and
+{lit}`b`, {lit}`le a b` or {lit}`le b a`), every item and every list that is in order
+by {lit}`le`: the result of {name}`insertStable` is in order by {lit}`le`. Proof
+sketch: induction over the list. When the item goes after the head, the head is at
+most the item and every later item; when it goes before the head, totality puts the
+item at most the head, and transitivity at most every later item. -/
+theorem insertStable_sorted (le : α → α → Bool) (trans : ∀ a b c, le a b → le b c → le a c)
+    (total : ∀ a b, le a b || le b a) (item : α) :
+    ∀ items : List α, items.Pairwise (le · ·) → (insertStable le item items).Pairwise (le · ·)
+  | [], _ => by simp [insertStable]
+  | head :: tail, sorted => by
+    rw [List.pairwise_cons] at sorted
+    unfold insertStable
+    split
+    · rename_i before
+      refine List.pairwise_cons.2 ⟨fun x member => ?_, insertStable_sorted le trans total item tail sorted.2⟩
+      rcases List.mem_cons.1 ((insertStable_perm le item tail).mem_iff.1 member) with equal | later
+      · exact equal ▸ before
+      · exact sorted.1 x later
+    · rename_i after
+      have first : le item head := by simpa [after] using total head item
+      refine List.pairwise_cons.2 ⟨fun x member => ?_, List.pairwise_cons.2 sorted⟩
+      rcases List.mem_cons.1 member with equal | later
+      · exact equal ▸ first
+      · exact trans _ _ _ first (sorted.1 x later)
+
+/-- For every transitive and total relation {lit}`le` and every list, the result of
+{name}`stableSort` is in order by {lit}`le`: each item is at most every later item.
+Proof sketch: each insertion keeps the order ({name}`insertStable_sorted`). -/
+theorem stableSort_sorted (le : α → α → Bool) (trans : ∀ a b c, le a b → le b c → le a c)
+    (total : ∀ a b, le a b || le b a) (items : List α) : (stableSort le items).Pairwise (le · ·) := by
+  suffices ∀ (items start : List α), start.Pairwise (le · ·) →
+      (items.foldl (fun sorted item => insertStable le item sorted) start).Pairwise (le · ·) from
+    this items [] .nil
+  intro items
+  induction items with
+  | nil => exact fun _ sorted => sorted
+  | cons item items ih => exact fun start sorted => ih _ (insertStable_sorted le trans total item start sorted)
+
 /-- For every list of directions and records, the sorted records are a permutation
 of the records: the sort neither adds, drops nor repeats a record. -/
 theorem sort_perm (directions : List Bool) (items : List Record) :
-    (items.mergeSort fun a b => (compareSort directions a.2 b.2).isLE).Perm items :=
-  List.mergeSort_perm _ _
+    (stableSort (fun a b => (compareSort directions a.2 b.2).isLE) items).Perm items :=
+  stableSort_perm _ _
 
 /-- For every list of directions and records, the sorted records are in order:
 each record compares as less than or equal to every later record by the
-{lit}`ORDER BY` terms. The proof uses the core lemma for {lit}`mergeSort` with the
+{lit}`ORDER BY` terms. The proof uses {name}`stableSort_sorted` with the
 transitivity and totality of {name}`compareSort`. -/
 theorem sort_sorted (directions : List Bool) (items : List Record) :
-    (items.mergeSort fun a b => (compareSort directions a.2 b.2).isLE).Pairwise
+    (stableSort (fun a b => (compareSort directions a.2 b.2).isLE) items).Pairwise
       fun a b => (compareSort directions a.2 b.2).isLE := by
   have := compareSort_transCmp directions
-  apply List.pairwise_mergeSort
+  apply stableSort_sorted
   · intro a b c first second
     exact Std.TransCmp.isLE_trans first second
   · intro a b
