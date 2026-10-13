@@ -70,11 +70,19 @@ replacement. A removed prepare-error condition lets the statement continue where
 the match allows it (`no_table_exists` creates the table again), or makes it a
 model restriction where nothing can continue (`no_such_table`)."""
 
+BUILD_TIMEOUT_SECONDS = 600
+"""One Lake build of a copy; a fresh base build takes about 12 seconds."""
+RUN_TIMEOUT_SECONDS = 300
+"""One interpreted classification of all case terms."""
+MAX_REC_DEPTH = 100000
+"""Lean's `maxRecDepth` for elaborating the case terms, as the kernel proofs of the cases use."""
+
+
 def classifier(terms: list[str]) -> str:
     """A Lean program that prints the verdict of each case term, one per line."""
     cases = ",\n".join("  " + term.replace("\n", "\n  ") for term in terms)
     return ("import VerifierConformance.Case\nopen Belay.Sqlite Belay.Sqlite.Conformance\n"
-            "set_option maxRecDepth 100000\n"
+            f"set_option maxRecDepth {MAX_REC_DEPTH}\n"
             f"def cases : List Case := [\n{cases}]\n"
             "def main : IO Unit := for c in cases do IO.println (reprStr (classifyCase c))\n")
 
@@ -92,9 +100,9 @@ def run(arguments: list[str], cwd: Path, lean: Path, timeout: float) -> str:
 def verdicts(packages: Path, lean: Path, program: str) -> list[str]:
     """Build the case classification of the copy and print one verdict for each case."""
     conformance = packages / "verifier-conformance"
-    run(["lake", "build", "VerifierConformance.Case"], conformance, lean, 600)
+    run(["lake", "build", "VerifierConformance.Case"], conformance, lean, BUILD_TIMEOUT_SECONDS)
     (conformance / "Classify.lean").write_text(program)
-    return run(["lake", "env", "lean", "--run", "Classify.lean"], conformance, lean, 300).splitlines()
+    return run(["lake", "env", "lean", "--run", "Classify.lean"], conformance, lean, RUN_TIMEOUT_SECONDS).splitlines()
 
 
 def mutate(base: Path, root: Path, name: str, lean: Path, program: str) -> list[str]:

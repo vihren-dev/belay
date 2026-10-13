@@ -56,8 +56,8 @@ their per-test limits, described below. The
 [dated evidence](../reports/20261007-darwin-bundle-scheduling/README.md)
 distinguishes the earlier hosted failures from the isolated local pass.
 
-`just test-full` builds eleven independent Nix test targets
-with `nix-build -A tests`; the flake exposes the same derivations as
+`just test-full` builds independent Nix test targets
+with `nix-build -A tests`, among them these; the flake exposes the same derivations as
 `checks.<system>`:
 
 - `tests.kernel`: real Lean compilation and proof-checker replay attacks.
@@ -66,6 +66,8 @@ with `nix-build -A tests`; the flake exposes the same derivations as
 - `tests.frozen`: replay and classification of the frozen corpora (v1 to v5)
   and checks of the retained evidence reports.
 - `tests.corpora`: complete validation of each locked frozen corpus.
+- `tests.mutants`: mutants of name resolution, each built as a changed copy of the
+  Lean packages; every mutant must change the verdict of an authored model case.
 - `tests.harness`: fast acquisition, storage, profile and workload checks of the
   conformance harness.
 - `tests.sample`: all frozen v4 authored and synthetic cases plus a stable
@@ -131,7 +133,7 @@ sandbox is supplied or tested. Nix daemon and installation tests run on the host
 Cheap unit tests rerun normally. Direct `just test-cases FILE` always executes
 pytest, even if the corresponding Nix target is already cached.
 Development `just test` selects `developmentTests`, the same targets except
-`tests.model`, `tests.frozen` and `tests.corpora`. `tests/nix_suites.json` assigns test files to Nix and supplies the
+`tests.model`, `tests.frozen`, `tests.corpora` and `tests.mutants`. `tests/nix_suites.json` assigns test files to Nix and supplies the
 host `--source-checks` exclusion list. Source-owned conformance checks remain
 fresh. Every scope from `test` up runs all Nix targets.
 
