@@ -1,6 +1,6 @@
 # Measured profile limits, error phase and resolve mutants, step 2a of ADR 0008
 
-Created 2026-10-13. Status: IN PROGRESS.
+Created 2026-10-13. Status: DONE (2026-10-13).
 Specification: [ADR 0008](../docs/adr-0008-syntax-and-resolution-in-lean.md),
 "Execution profile" (limits, measurement, frozen records) and "How `resolve` is
 tested" (error phase, limits, mutants), and the recorder items of "Cleanup after

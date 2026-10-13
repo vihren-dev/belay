@@ -1,6 +1,6 @@
 # Status: measured profile limits, error phase and resolve mutants, step 2a of ADR 0008
 
-Created 2026-10-13. Status: IN PROGRESS.
+Created 2026-10-13. Status: DONE (2026-10-13).
 Task: [task](20261013-measured-profile-limits.task.md).
 Specification: [ADR 0008](../docs/adr-0008-syntax-and-resolution-in-lean.md).
 Previous step: [step 1b status](20261012-resolution-switch.status.md).
@@ -67,9 +67,16 @@ Relevant files: `conformance/native_connection.py`,
   two should findings (named limits, the CI document), fixed in `18cb0768`; its
   review has no findings. `docs/conformance-format-v2.md` names profile format 3.
 
+- 2026-10-13: CI time against `main` `6c9ec7a6`, two rounds that alternate
+  `main` and the branch, forced rebuilds (`nix-build --check`) of the full
+  `tests` set that CI builds: 224 s and 222 s on `main`, 238 s and 238 s on the
+  branch (+15 s, +7%). `modelPackage` 17 s on both; the other Lean targets take
+  2 to 5 s on both (Lake reuses their outputs). The cost is the model suite
+  (16 instead of 5 cases, 15 of them kernel-proved) and the new `mutants` suite,
+  which share the CPU with the other suites.
+
 ## Remaining
 
-- CI time measurement against `main`, the push and the pull request.
 - Step 2b: the judge compares the error phase; the authored coverage shard
   (including cases for the prepare-error conditions without a model case:
   reserved names, multiple primary keys, non-constant defaults, altering
