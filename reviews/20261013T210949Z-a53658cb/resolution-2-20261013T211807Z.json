@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-13T21:18:07+00:00",
+  "finding": "20261013T210949Z-a53658cb#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "windowSkipsFailure is a named predicate with a docstring; resolveSelect uses it"
+}

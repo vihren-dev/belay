@@ -88,4 +88,11 @@ def unknown : Expr := .literal .null
 #guard Comparison.is.apply .null .null == .integer 1
 #guard Comparison.isNot.apply .null (.integer 0) == .integer 1
 
+-- A SUM that overflows fails the query, except under LIMIT 0, which SQLite does not
+-- evaluate.
+#guard
+  let large : Table := { table with rows := [⟨1, [.integer int64Maximum, .null]⟩, ⟨2, [.integer 1, .null]⟩] }
+  let total : Query := { plain with aggregate := true, columns := [.aggregate (.sum (.column 0))] }
+  total.fails large && !({ total with limit := some 0 }).fails large && !total.fails table
+
 end Belay.Sqlite.Resolved.QueryExamples

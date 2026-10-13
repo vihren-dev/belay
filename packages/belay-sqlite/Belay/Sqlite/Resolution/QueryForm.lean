@@ -69,6 +69,12 @@ inductive Output where
   | aggregate (aggregate : Aggregate)
   deriving Repr, DecidableEq
 
+/-- Whether a result column can fail while the statement runs: an aggregate that
+{name}`Aggregate.canFail`. -/
+def Output.canFail : Output → Bool
+  | .aggregate function => function.canFail
+  | .scalar _ => false
+
 /-- The value that one {lit}`ORDER BY` term sorts by: an expression over the source
 row (only in a query that is not an aggregate query), or a result column. -/
 inductive SortKey where

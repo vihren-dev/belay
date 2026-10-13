@@ -84,6 +84,15 @@ def windowValue (path : List Nat) : Option Syntax.Expr → Except ValueIssue (Op
     | some value => .ok (some value)
     | none => .error (.restriction path "only an integer literal is modeled as LIMIT or OFFSET; write an integer")
 
+/-- Whether a query is a model restriction because SQLite may skip a failing group: it
+has {lit}`GROUP BY`, a {lit}`LIMIT` or {lit}`OFFSET`, and a result column that can fail
+({name}`Resolved.Output.canFail`). SQLite finalizes the groups in an order that the
+model does not describe and stops at the window, so it may never compute a group
+whose {lit}`SUM` overflows. -/
+def windowSkipsFailure (groupBy : List Syntax.Expr) (limit offset : Option Syntax.Expr)
+    (outputs : List Resolved.Output) : Bool :=
+  !groupBy.isEmpty && (limit.isSome || offset.isSome) && outputs.any Resolved.Output.canFail
+
 /-- Resolve a {lit}`SELECT` from one table; see the module documentation for the steps. -/
 def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
     (results : List Syntax.ResultColumn) (tableName : String) (filter : Option Syntax.Expr)
@@ -140,9 +149,7 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
     let limitValue ← windowValue [5] limit
     let offsetValue ← windowValue [6] offset
     if offsetValue.any (· < 0) then throw (.restriction [6] "a negative OFFSET is not modeled; write OFFSET 0 or more")
-    if !groupBy.isEmpty && (limit.isSome || offset.isSome) && outputs.any (fun (output, _) => match output with
-        | .aggregate aggregate => aggregate.canFail
-        | .scalar _ => false) then
+    if windowSkipsFailure groupBy limit offset (outputs.map (·.1)) then
       throw (.restriction [5] "SUM in a grouped query with LIMIT or OFFSET is not modeled, because SQLite may stop before an overflowing group; remove the window or the SUM")
     return { table := position, filter := condition, aggregate, groupBy := terms, columns := outputs.map (·.1),
              names := outputs.map (·.2), orderBy := order, offset := (offsetValue.getD 0).toNat,

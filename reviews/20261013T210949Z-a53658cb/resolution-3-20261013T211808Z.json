@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-13T21:18:08+00:00",
+  "finding": "20261013T210949Z-a53658cb#3",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "docs/semantic-subset.md lists SUM and AVG, the summation and its overflow, and the grouped window restriction"
+}

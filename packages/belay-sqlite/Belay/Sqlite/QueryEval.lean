@@ -147,10 +147,11 @@ def Query.run (query : Query) (table : Table) : List (List Value) :=
   (match query.limit with | some limit => window.take limit | none => window).map Prod.fst
 
 /-- Whether a query fails over a table, so that SQLite stops the statement with the
-{lit}`integer overflow` error: an aggregate query in which an aggregate of a result
-column fails ({name}`Aggregate.fails`) for some group. -/
+{lit}`integer overflow` error: an aggregate query without {lit}`LIMIT 0` in which an
+aggregate of a result column fails ({name}`Aggregate.fails`) for some group. With
+{lit}`LIMIT 0`, SQLite skips the evaluation and returns no rows. -/
 def Query.fails (query : Query) (table : Table) : Bool :=
-  query.aggregate && (queryGroups query (filtered query (sourceRows table))).any fun group =>
+  query.aggregate && query.limit != some 0 && (queryGroups query (filtered query (sourceRows table))).any fun group =>
     query.columns.any fun
       | .aggregate aggregate => aggregate.fails group
       | .scalar _ => false

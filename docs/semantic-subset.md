@@ -27,7 +27,7 @@ The frontend maps these statements, and refuses every other statement as
 Expressions are `NULL`, numeric, string and blob literals, the time keywords,
 names, unary `-` and `+`, and `=`. Inside a `SELECT`, they may also be the other
 comparisons, `IS` and `IS NOT`, `AND`, `OR`, `NOT`, `IS NULL` and its forms,
-parentheses, `COUNT(*)`, `COUNT`, `MIN` and `MAX` of one argument, the arithmetic
+parentheses, `COUNT(*)`, `COUNT`, `MIN`, `MAX`, `SUM` and `AVG` of one argument, the arithmetic
 operators `+`, `-`, `*`, `/` and `%`, unary `-` and `+` of any expression,
 `CAST(expression AS type)`, and `COALESCE` of two or more arguments (ADR 0012,
 slice 2). REAL literals have a value only in a `SELECT`. Named
@@ -78,7 +78,8 @@ column, literal, `COALESCE`, or `CAST` to TEXT or BLOB used as a condition; an a
 outside `GROUP BY` in an aggregate query; `ORDER BY` terms of an aggregate query
 other than result column numbers and aliases; a result column alias in `WHERE`
 or inside an `ORDER BY` expression; a query of SQLite's own tables, such as
-`sqlite_schema`; and `LIMIT` or `OFFSET` other than
+`sqlite_schema`; `SUM` in a query with `GROUP BY` and `LIMIT` or `OFFSET`; and
+`LIMIT` or `OFFSET` other than
 an integer literal, or a negative `OFFSET`. Each restriction message says what to
 change.
 
@@ -95,7 +96,9 @@ Arithmetic, `CAST` and the conversions between text and numbers follow the pinne
 SQLite source step by step: integer arithmetic while the result fits in 64 bits,
 else double arithmetic; NULL for a division by zero or a NaN result; SQLite's own
 text-to-REAL conversion and its 15-digit text of a REAL, which are not correctly
-rounded. Literal writes
+rounded; and `SUM` and `AVG` with SQLite's summation. A `SUM` that overflows the
+64-bit integers stops the query with `integer overflow`, unless a later REAL input
+makes the sum approximate. Literal writes
 have checked data-domain obligations: existing key cells and filter cells must
 be integers or NULL, existing constraints must hold, and the random-search branch
 at the maximum rowid is outside the admitted domain. New NOT NULL and uniqueness
