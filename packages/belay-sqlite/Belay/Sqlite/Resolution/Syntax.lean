@@ -1,4 +1,5 @@
 import Belay.Sqlite.Comparison
+import Belay.Sqlite.Arithmetic
 
 set_option doc.verso true
 
@@ -50,6 +51,17 @@ inductive Expr where
   /-- A function call with one argument, such as {lit}`MIN(x)`, with the function
   name as written. Resolution folds the name and decides the function. -/
   | call (name : String) (operand : Expr)
+  /-- An arithmetic operator, {lit}`+`, {lit}`-`, {lit}`*`, {lit}`/` or {lit}`%`, between
+  two expressions. -/
+  | arithmetic (operator : ArithmeticOperator) (left right : Expr)
+  /-- {lit}`CAST(operand AS typeName)`, with the type name as written. -/
+  | cast (operand : Expr) (typeName : String)
+  /-- A function call with two or more arguments, with the function name as written:
+  the first argument, then the others as another {lit}`callPair` with the same name, or
+  as the last argument. {lit}`COALESCE(a, b, c)` is
+  {lean}`Expr.callPair "COALESCE" (.identifier "a" false) (.callPair "COALESCE" (.identifier "b" false) (.identifier "c" false))`.
+  Resolution folds the name and decides the function. -/
+  | callPair (name : String) (first rest : Expr)
   deriving Repr, DecidableEq
 
 /-- A column constraint as written. For example, {lit}`PRIMARY KEY DESC` is

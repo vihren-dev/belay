@@ -115,7 +115,7 @@ with ASCII case ignored, in the documented order (R-14349-34154):
 def affinityOf : Option String → Affinity
   | none => .blob
   | some text =>
-    let upper := text.toUpper
+    let upper := String.ofList (text.toList.map Char.toUpper)
     if containsText upper "INT" then .integer
     else if ["CHAR", "CLOB", "TEXT"].any (containsText upper) then .text
     else if containsText upper "BLOB" then .blob

@@ -23,7 +23,8 @@ def falsy (value : Value) : Bool := !value.isNull && !truthy value
 /-- The value of an expression over the cells of one row, in column order. A column
 past the end of the row reads as NULL. {lit}`AND` is false when an operand is false,
 else NULL when an operand is NULL, else true; {lit}`OR` is the dual; {lit}`NOT`
-keeps NULL. -/
+keeps NULL. Arithmetic and {lit}`CAST` follow {name}`ArithmeticOperator.apply` and
+{name}`castValue`; {lit}`COALESCE` gives its first operand unless that is NULL. -/
 def Expr.eval (row : List Value) : Expr → Value
   | .column position => row.getD position .null
   | .literal value => value
@@ -38,6 +39,11 @@ def Expr.eval (row : List Value) : Expr → Value
     let value := operand.eval row
     if value.isNull then .null else truth (!truthy value)
   | .isNull operand negated => truth ((operand.eval row).isNull != negated)
+  | .arithmetic operator left right => operator.apply (left.eval row) (right.eval row)
+  | .cast affinity operand => castValue affinity (operand.eval row)
+  | .coalesce first rest =>
+    let value := first.eval row
+    if value.isNullCell then rest.eval row else value
 
 /-- The first value of a list that no later value improves on, ignoring NULL; NULL
 when every value is NULL. A tie keeps the earlier value, as SQLite's {lit}`min()` and

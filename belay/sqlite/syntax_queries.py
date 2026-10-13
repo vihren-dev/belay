@@ -3,11 +3,13 @@
 A query keeps its result columns with their source text, which SQLite uses as the
 column name, its table, and its WHERE, GROUP BY, ORDER BY, LIMIT and OFFSET
 clauses. Inside a query, an expression may also be a comparison, AND, OR, NOT,
-IS NULL, or a function call with `*` or one argument, with the function name as
-written: Lean folds the name and decides the function. Other statements keep the
-expressions of `syntax_expressions.expression`. Compound SELECT, WITH, DISTINCT,
-HAVING, joins, `table.*`, NULLS FIRST or LAST and calls with other arguments have
-no constructor and are refused with their source range.
+IS NULL, arithmetic, unary minus or plus of any expression, CAST with its type
+name as written, or a function call with `*` or with one or more arguments, with
+the function name as written: Lean folds the name and decides the function. A call
+with two or more arguments is a chain of `callPair` nodes. Other statements keep
+the expressions of `syntax_expressions.expression`. Compound SELECT, WITH,
+DISTINCT, HAVING, joins, `table.*`, NULLS FIRST or LAST and calls without
+arguments have no constructor and are refused with their source range.
 """
 
 from .located import Located, constructor, leaf, sequence, structure
@@ -19,6 +21,8 @@ COMPARISONS = {"NE": "ne", "LT": "lt", "LE": "le", "GT": "gt", "GE": "ge"}
 """Comparison tokens other than `=`, and their `Comparison` constructors in Lean."""
 CONNECTIVES = {"AND": "and", "OR": "or"}
 """Logical tokens and their `Syntax.Expr` constructors in Lean."""
+ARITHMETIC = {"PLUS": "add", "MINUS": "subtract", "STAR": "multiply", "SLASH": "divide", "REM": "remainder"}
+"""Arithmetic tokens and their `ArithmeticOperator` constructors in Lean."""
 
 
 def binary(tree: Tree, node: Node, kind: str, left: Node, right: Node) -> Located:
@@ -27,9 +31,10 @@ def binary(tree: Tree, node: Node, kind: str, left: Node, right: Node) -> Locate
                        node.start, node.end)
 
 
-def compare(tree: Tree, node: Node, operator: str, left: Node, right: Node) -> Located:
-    """A comparison other than `=`."""
-    return constructor("compare", [("operator", leaf(operator, node.start, node.end)),
+def compare(tree: Tree, node: Node, operator: str, left: Node, right: Node, kind: str = "compare") -> Located:
+    """A comparison other than `=`, or an arithmetic operator: a constructor with an
+    operator and two operands."""
+    return constructor(kind, [("operator", leaf(operator, node.start, node.end)),
                                    ("left", query_expression(tree, left)),
                                    ("right", query_expression(tree, right))], node.start, node.end)
 
@@ -40,8 +45,17 @@ def is_null(tree: Tree, node: Node, operand: Node, negated: bool) -> Located:
                                   ("negated", leaf(negated, node.start, node.end))], node.start, node.end)
 
 
+def call_pairs(tree: Tree, start: int, end: int, function: Located, arguments: list[Node]) -> Located:
+    """Two or more arguments as a chain of `callPair` nodes over a byte range: the first
+    argument, then the rest as another pair from the second argument on, or the last argument."""
+    rest = (query_expression(tree, arguments[1]) if len(arguments) == 2
+            else call_pairs(tree, arguments[1].start, end, function, arguments[1:]))
+    return constructor("callPair", [("name", function), ("first", query_expression(tree, arguments[0])),
+                                    ("rest", rest)], start, end)
+
+
 def function_call(tree: Tree, node: Node, children: list[Node]) -> Located:
-    """A call with `*` or with one argument, with the function name as written."""
+    """A call with `*` or with one or more arguments, with the function name as written."""
     function = name(tree, children[0])
     if [child.symbol for child in children] == ["ID", "LP", "STAR", "RP"]:
         return constructor("callStar", [("name", function)], node.start, node.end)
@@ -52,7 +66,9 @@ def function_call(tree: Tree, node: Node, children: list[Node]) -> Located:
         if len(items) == 1:
             return constructor("call", [("name", function), ("operand", query_expression(tree, items[0][-1]))],
                                node.start, node.end)
-    raise tree.unsupported(node, "Only COUNT(*), and COUNT, MIN and MAX of one argument, are modeled as functions")
+        if len(items) > 1:
+            return call_pairs(tree, node.start, node.end, function, [item[-1] for item in items])
+    raise tree.unsupported(node, "Only COUNT(*), COUNT, MIN and MAX of one argument, and COALESCE are modeled as functions")
 
 
 def query_expression(tree: Tree, node: Node) -> Located:
@@ -70,8 +86,17 @@ def query_expression(tree: Tree, node: Node) -> Located:
             return compare(tree, node, "is", children[0], children[2])
         if symbols[1] in CONNECTIVES:
             return binary(tree, node, CONNECTIVES[symbols[1]], children[0], children[2])
+        if symbols[1] in ARITHMETIC:
+            return compare(tree, node, ARITHMETIC[symbols[1]], children[0], children[2], "arithmetic")
     if symbols == ["expr", "IS", "NOT", "expr"]:
         return compare(tree, node, "isNot", children[0], children[3])
+    if symbols in (["MINUS", "expr"], ["PLUS", "expr"]):
+        kind = "negate" if symbols[0] == "MINUS" else "positive"
+        return constructor(kind, [("operand", query_expression(tree, children[1]))], node.start, node.end)
+    if symbols == ["CAST", "LP", "expr", "AS", "typetoken", "RP"]:
+        return constructor("cast", [("operand", query_expression(tree, children[2])),
+                                    ("typeName", leaf(tree.text(children[4]), children[4].start, children[4].end))],
+                           node.start, node.end)
     if symbols == ["NOT", "expr"]:
         return constructor("not", [("operand", query_expression(tree, children[1]))], node.start, node.end)
     if symbols in (["expr", "ISNULL"], ["expr", "NOTNULL"], ["expr", "NOT", "NULL"]):

@@ -30,19 +30,26 @@ def scaleByTen (x : Float × Float) (exponent : Int) : Float × Float :=
 significand in 64 bits. -/
 def atofNormalizeLimit : Nat := (2 ^ 64 - 1 - 0x7ff) / 10
 
+/-- Multiply the significand by ten and lower the exponent while the exponent is
+positive and the significand is below {name}`atofNormalizeLimit`; the fuel bounds the
+steps. -/
+def atofScaleUp : Nat → Nat → Int → Nat × Int
+  | 0, s, e => (s, e)
+  | fuel + 1, s, e => if e > 0 && s < atofNormalizeLimit then atofScaleUp fuel (s * 10) (e - 1) else (s, e)
+
+/-- Divide the significand by ten and raise the exponent while the exponent is negative
+and the significand ends in a zero; the fuel bounds the steps. -/
+def atofTrimZeros : Nat → Nat → Int → Nat × Int
+  | 0, s, e => (s, e)
+  | fuel + 1, s, e => if e < 0 && s % 10 == 0 then atofTrimZeros fuel (s / 10) (e + 1) else (s, e)
+
 /-- Normalize the significand and the decimal exponent as {lit}`sqlite3AtoF` does
 before it scales: multiply by ten while the exponent is positive and the significand
 stays below {name}`atofNormalizeLimit`, then divide by ten while the exponent is
 negative and the significand ends in a zero. -/
 def atofNormalize (significand : Nat) (exponent : Int) : Nat × Int :=
-  let rec up (fuel : Nat) (s : Nat) (e : Int) : Nat × Int := match fuel with
-    | 0 => (s, e)
-    | fuel + 1 => if e > 0 && s < atofNormalizeLimit then up fuel (s * 10) (e - 1) else (s, e)
-  let rec down (fuel : Nat) (s : Nat) (e : Int) : Nat × Int := match fuel with
-    | 0 => (s, e)
-    | fuel + 1 => if e < 0 && s % 10 == 0 then down fuel (s / 10) (e + 1) else (s, e)
-  let (s, e) := up exponent.natAbs significand exponent
-  down e.natAbs s e
+  let (s, e) := atofScaleUp exponent.natAbs significand exponent
+  atofTrimZeros e.natAbs s e
 
 /-- The double that {lit}`sqlite3AtoF` computes from a nonzero significand and a decimal
 exponent: the significand as a double with its rounding error, scaled by powers of ten,

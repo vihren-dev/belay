@@ -39,6 +39,16 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Comparison.lean`,
   SQLite on 6696 checks: 36 values (NULL, integers at the limits, REALs with
   infinities and signed zero, numeric and other TEXT, BLOBs) under each operator,
   unary minus as `0 - x`, and each `CAST` affinity.
+- 2026-10-13: syntax, resolution and frontend for numbers in queries.
+  `Syntax.Expr` gains `arithmetic`, `cast` and `callPair` (a call with two or more
+  arguments as a chain, so that the frontend need not fold the name);
+  `Resolved.Expr` gains `arithmetic`, `cast` and `coalesce`. REAL literals in
+  queries take `sqlite3AtoF` values; `-expr` is `0 - expr`, `+expr` drops the
+  affinity; `COALESCE` with one argument and `COUNT` with two give
+  `wrongArgumentCount`; the hex error text keeps the minus sign. The affinity rules
+  moved to `Resolution/QueryAffinity.lean`; a no-affinity operand that may be TEXT
+  (a `COALESCE` with a column) is restricted against a numeric operand. The verdict
+  passes; corpus-v5 has 202 AGREE (194 before).
 
 ## Remaining
 

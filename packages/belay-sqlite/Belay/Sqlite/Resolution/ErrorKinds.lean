@@ -18,7 +18,7 @@ def PrepareError.namesObject : PrepareError → Bool
   | .defaultNotConstant _ | .noSuchColumn _ | .tableHasNoColumn .. | .valueCount ..
   | .valuesForColumns .. | .valuesDiffer | .tableMayNotBeAltered _ | .tableMayNotBeIndexed _
   | .cannotAddPrimaryKey | .cannotAddUnique | .hexLiteralTooBig _ | .misuseOfAggregate _
-  | .aggregateInGroupBy | .orderByOutOfRange .. | .groupByOutOfRange .. => false
+  | .aggregateInGroupBy | .orderByOutOfRange .. | .groupByOutOfRange .. | .wrongArgumentCount _ => false
 
 /-- A value issue that is not a prepare error naming a catalog object. -/
 def ValueIssue.namesNoObject : ValueIssue → Prop

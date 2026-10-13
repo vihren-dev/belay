@@ -9,7 +9,7 @@ resolves the statements reads it. -/
 
 namespace Belay.Sqlite
 
-deriving instance Lean.FromJson, Lean.ToJson for Comparison
+deriving instance Lean.FromJson, Lean.ToJson for Comparison, ArithmeticOperator
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.Expr, Syntax.ColumnConstraint
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ResultColumn, Syntax.OrderTerm
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ColumnDefinition, Syntax.TableConstraint
@@ -18,6 +18,8 @@ deriving instance Lean.ToJson for PrepareError, Restriction, ScriptIssue
 
 -- One command per type: a combined `deriving instance` treats its types as one group.
 deriving instance Lean.ToExpr for Comparison
+deriving instance Lean.ToExpr for ArithmeticOperator
+deriving instance Lean.ToExpr for Affinity
 deriving instance Lean.ToExpr for Syntax.Expr
 deriving instance Lean.ToExpr for Syntax.ResultColumn
 deriving instance Lean.ToExpr for Syntax.OrderTerm

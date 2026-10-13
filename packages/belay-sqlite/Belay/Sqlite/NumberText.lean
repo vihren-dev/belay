@@ -118,6 +118,21 @@ def readSign : List UInt8 → Int × List UInt8
   | 43 :: rest => (1, rest)
   | bytes => (1, bytes)
 
+/-- The exponent part of {lit}`sqlite3AtoF`, if the text has one, then the trailing
+spaces: the state after it and the text that is left. -/
+def atofExponentPart (state : AtofState) : List UInt8 → AtofState × List UInt8
+  | [] => (state, [])
+  | marker :: rest =>
+    if marker == 101 || marker == 69 then
+      let state := { state with exponentValid := false, kind := state.kind + 1 }
+      match rest with
+      | [] => (state, [])
+      | rest =>
+        let (exponentSign, rest) := readSign rest
+        let (state, rest) := atofExponent { state with negativeExponent := exponentSign < 0 } rest
+        (state, dropSpaces rest)
+    else (state, dropSpaces (marker :: rest))
+
 /-- The parse of {lit}`sqlite3AtoF`, after leading spaces: the sign, the state and the
 text that is left after trailing spaces. {lit}`none` stands for empty
 text, which converts to zero. -/
@@ -131,21 +146,7 @@ def atofParse (bytes : List UInt8) : Option (Int × AtofState × List UInt8) :=
     | [] => some (sign, state, [])
     | 46 :: fraction =>
       let (state, text) := atofFraction { state with kind := state.kind + 1 } fraction
-      some (sign, exponentPart state text)
-    | text => some (sign, exponentPart state text)
-where
-  /-- The exponent part, if any, then the trailing spaces. -/
-  exponentPart (state : AtofState) : List UInt8 → AtofState × List UInt8
-    | [] => (state, [])
-    | marker :: rest =>
-      if marker == 101 || marker == 69 then
-        let state := { state with exponentValid := false, kind := state.kind + 1 }
-        match rest with
-        | [] => (state, [])
-        | rest =>
-          let (exponentSign, rest) := readSign rest
-          let (state, rest) := atofExponent { state with negativeExponent := exponentSign < 0 } rest
-          (state, dropSpaces rest)
-      else (state, dropSpaces (marker :: rest))
+      some (sign, atofExponentPart state text)
+    | text => some (sign, atofExponentPart state text)
 
 end Belay.Sqlite

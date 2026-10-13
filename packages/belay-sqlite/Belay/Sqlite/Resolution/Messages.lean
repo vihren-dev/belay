@@ -41,5 +41,6 @@ def PrepareError.message : PrepareError → String
   | .aggregateInGroupBy => "aggregate functions are not allowed in the GROUP BY clause"
   | .orderByOutOfRange term columns => s!"{ordinal term} ORDER BY term out of range - should be between 1 and {columns}"
   | .groupByOutOfRange term columns => s!"{ordinal term} GROUP BY term out of range - should be between 1 and {columns}"
+  | .wrongArgumentCount function => s!"wrong number of arguments to function {function}()"
 
 end Belay.Sqlite

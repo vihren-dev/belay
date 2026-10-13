@@ -1,4 +1,5 @@
 import Belay.Sqlite.Comparison
+import Belay.Sqlite.Arithmetic
 
 set_option doc.verso true
 
@@ -26,6 +27,12 @@ inductive Expr where
   | not (operand : Expr)
   /-- {lit}`IS NULL`, or {lit}`IS NOT NULL` when {lit}`negated` is true. -/
   | isNull (operand : Expr) (negated : Bool)
+  /-- An arithmetic operator between two operands. -/
+  | arithmetic (operator : ArithmeticOperator) (left right : Expr)
+  /-- {lit}`CAST` to the affinity of the written type name. -/
+  | cast (affinity : Affinity) (operand : Expr)
+  /-- {lit}`COALESCE`: the first operand when it is not NULL, else the second. -/
+  | coalesce (first rest : Expr)
   deriving Repr, DecidableEq
 
 /-- An aggregate function of slice 1, over the rows of one group. -/

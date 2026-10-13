@@ -59,9 +59,9 @@ def test_postfix_null_tests_map_to_is_null(parse_sql: Callable[..., Tree], sql: 
     ("SELECT 1;", "SELECT 1"), ("SELECT DISTINCT a FROM t;", "DISTINCT"),
     ("SELECT a FROM t GROUP BY a HAVING a > 1;", "HAVING a > 1"), ("SELECT t.* FROM t;", "t.*"),
     ("SELECT a FROM t, u;", "t,"), ("SELECT a FROM t ORDER BY a NULLS LAST;", "NULLS LAST"),
-    ("SELECT substr(a, 1) FROM t;", "substr(a, 1)"), ("SELECT count(DISTINCT a) FROM t;", "DISTINCT"),
+    ("SELECT random() FROM t;", "random()"), ("SELECT count(DISTINCT a) FROM t;", "DISTINCT"),
     ("SELECT a FROM t UNION SELECT a FROM t;", "SELECT a FROM t UNION SELECT a FROM t"),
-    ("SELECT a + 1 FROM t;", "a + 1"), ("SELECT a FROM t AS s;", "AS s"),
+    ("SELECT a || 1 FROM t;", "a || 1"), ("SELECT a FROM t AS s;", "AS s"),
 ])
 def test_query_syntax_outside_the_slice_is_unsupported_at_its_range(
         parse_sql: Callable[..., Tree], sql: str, refused: str) -> None:
@@ -70,6 +70,20 @@ def test_query_syntax_outside_the_slice_is_unsupported_at_its_range(
         statements(parse_sql(sql))
     assert raised.value.status == "UNSUPPORTED"
     assert sql.encode()[raised.value.start:raised.value.end].decode() == refused
+
+
+def test_numbers_map_arithmetic_cast_and_call_chains(parse_sql: Callable[..., Tree]) -> None:
+    """Arithmetic, unary minus of an expression, CAST with its type name as written, and a
+    call with three arguments as a chain of `callPair` nodes (ADR 0012, slice 2)."""
+    [select] = [item.value for item in statements(parse_sql(
+        "SELECT -(a % 2) * b, CAST(a AS Varchar(10)), Coalesce(a, b, 3) FROM t;"))]
+    values = [column["expression"]["value"] for column in select["select"]["columns"]]
+    remainder = {"arithmetic": {"operator": "remainder", "left": column("a"), "right": {"numeric": {"text": "2"}}}}
+    assert values[0] == {"arithmetic": {"operator": "multiply", "left": {"negate": {"operand": remainder}},
+                                        "right": column("b")}}
+    assert values[1] == {"cast": {"operand": column("a"), "typeName": "Varchar(10)"}}
+    assert values[2] == {"callPair": {"name": "Coalesce", "first": column("a"), "rest": {
+        "callPair": {"name": "Coalesce", "first": column("b"), "rest": {"numeric": {"text": "3"}}}}}}
 
 
 def test_query_expressions_stay_refused_in_writes(parse_sql: Callable[..., Tree]) -> None:

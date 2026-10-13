@@ -32,7 +32,8 @@ abbrev StatementResolution := Except Restriction (Resolved.Statement × Catalog)
 
 /-- Whether a DEFAULT expression is constant for SQLite: a literal, a signed
 literal, a time keyword, or an identifier, which SQLite stores as text. A
-comparison, logical operator or aggregate counts as constant here, so that
+comparison, logical operator, aggregate, arithmetic, {lit}`CAST` or a call
+with two or more arguments counts as constant here, so that
 resolution never predicts SQLite's error for it; the model restricts such
 defaults instead ({lit}`Syntax.ColumnConstraint.modeledDefault`). -/
 def constantDefault : Syntax.Expr → Bool
@@ -40,6 +41,7 @@ def constantDefault : Syntax.Expr → Bool
   | .negate operand | .positive operand => constantDefault operand
   | .equals .. => false
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. => true
+  | .arithmetic .. | .cast .. | .callPair .. => true
 
 /-- Whether the constraint is PRIMARY KEY. -/
 def Syntax.ColumnConstraint.isPrimaryKey : Syntax.ColumnConstraint → Bool
@@ -64,7 +66,8 @@ def Syntax.ColumnConstraint.modeledDefault : Syntax.ColumnConstraint → Bool
   | .default (.null) | .default (.numeric _) | .default (.string _) | .default (.blob _)
   | .default (.identifier ..) | .default (.negate _) | .default (.positive _)
   | .default (.equals ..) | .default (.compare ..) | .default (.and ..) | .default (.or ..)
-  | .default (.not _) | .default (.isNull ..) | .default (.callStar _) | .default (.call ..) => false
+  | .default (.not _) | .default (.isNull ..) | .default (.callStar _) | .default (.call ..)
+  | .default (.arithmetic ..) | .default (.cast ..) | .default (.callPair ..) => false
   | .notNull | .primaryKey _ | .unique => true
 
 /-- A prepare error leaves the catalog unchanged. -/
