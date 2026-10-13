@@ -1,6 +1,6 @@
 # Single-table queries, slice 1 of ADR 0012
 
-Created 2026-10-13. Status: IN PROGRESS.
+Created 2026-10-13. Status: DONE (pull requests #107 and B).
 Specification: [ADR 0012](../docs/adr-0012-query-semantics.md), "Decision" for the
 first slice (levels, syntax and resolution, values, expressions, queries, output,
 statements, testing). Related: [ADR 0008](../docs/adr-0008-syntax-and-resolution-in-lean.md)
