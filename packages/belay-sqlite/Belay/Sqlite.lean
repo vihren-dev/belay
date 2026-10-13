@@ -1,4 +1,5 @@
 import Belay.Sqlite.Declarations
+import Belay.Sqlite.Comparison
 import Belay.Sqlite.Model
 import Belay.Sqlite.Execution
 import Belay.Sqlite.LiteralData
