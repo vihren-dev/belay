@@ -1,5 +1,6 @@
 import VerifierConformance.Native
 import VerifierConformance.Outputs
+import Belay.Sqlite.Resolution.SchemaScript
 
 /-! ADR 0004's finite comparison authority. Native observations remain empirical
 inputs; proving checkCase certifies only the model's agreement with those inputs.

@@ -59,13 +59,17 @@ you think is best"):
    takes more than 120 s). Decision of 2026-10-13, for owner review: the ADR
    also says the suite needs no 2,000-column table, and the two sentences
    conflict for the column limit.
-6. **Mutants of `resolve`.** The mutation check copies the resolution modules
-   with the other model modules. Each mutant of the ADR's list makes at least
-   one model case disagree: fold non-ASCII letters, change the order of the
+6. **Mutants of `resolve`.** Each mutant of the ADR's list changes the verdict
+   of at least one model case: fold non-ASCII letters, change the order of the
    affinity rules, make `INTEGER PRIMARY KEY DESC` a rowid alias, keep the
-   catalog after ROLLBACK, permit a table and an index with the same name,
-   use 2,000 columns instead of the profile limit, and remove each
-   prepare-error condition of the first scope, one at a time.
+   catalog after ROLLBACK, permit a table and an index with the same name, use
+   2,000 columns instead of the profile limit, and remove each prepare-error
+   condition that a model case covers, one at a time. Decision of 2026-10-13,
+   for owner review: a mutant counts as killed when a case leaves AGREE, also to
+   `MODEL_UNSUPPORTED`, because the model refuses coercing writes and the
+   affinity and rowid-alias mutants can only move a case out of scope; the ADR
+   says "disagree". The prepare-error conditions without a model case get
+   their cases with the authored coverage shard of step 2b.
 7. **Documents.** `docs/execution-profile.md`, `docs/conformance-format-v1.md`
    (the model case), `docs/conformance-format-v2.md` (the profile record),
    `docs/conformance-fixtures.md` and `docs/conformance-model.md` describe the

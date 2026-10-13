@@ -21,7 +21,8 @@ def native_expected(table: ExpectedTable) -> Json:
     """The native table that an authored expectation describes: plain typed columns and its rows."""
     return {"name": table.name, "columns": [{"name": name, "declaredType": kind, "notNull": False, "defaultValue": None}
                                            for name, kind in table.columns],
-            "primaryKey": [], "uniqueKeys": [],
+            "primaryKey": [[column for column, _ in table.columns].index(key) for key in table.primary_key],
+            "uniqueKeys": [],
             "indexes": [{"name": name, "columns": [[column for column, _ in table.columns].index(key) for key in keys],
                          "unique": unique} for name, keys, unique in table.indexes],
             "rows": [row_wire(int(row[0]), tuple(literal_cell(value) for value in row[1:])) for row in table.rows]}

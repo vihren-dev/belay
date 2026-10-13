@@ -34,7 +34,7 @@ as historical evidence from before connection, metadata and streaming correction
 
 ## Preserved authored cases
 
-The cases in `conformance/model_cases.py` (the five original cases and the nine
+The cases in `conformance/model_cases.py` (the five original cases and the 11
 resolution cases of ADR 0008) keep their independent
 fixtures and final expectations. Native results are checked against those
 expectations before the same decoded case receives a compiled verdict and a
@@ -55,12 +55,24 @@ primary-code comparator. No expected value is derived from the model.
 | COMMIT, ROLLBACK without a transaction | No-active-transaction error at statement 0, reported by `sqlite3_step`. |
 | BEGIN, ADD, ROLLBACK | The catalog and the rows return to the state at BEGIN. |
 | ADD under a column limit of 5 | Reaching the limit succeeds; one column more fails; the limit error takes precedence over a duplicate name. The recorder lowers the limit and records it. |
+| INSERT under a unique key on a `CHARINT` column | Succeeds: the INTEGER affinity rule comes before the TEXT rule, so the key is integer-comparable. |
+| INSERT into a table with `INTEGER PRIMARY KEY DESC` | Succeeds with row id 1: a descending key is not a rowid alias. |
 
 All fixtures survive JSON decoding unchanged, including rowids `-4`, `9`,
 `22`, NULL, UTF-8 text and the 2000-column table. Their former separate model
 assertions were replaced only after native replay through the persistent runner
 agreed. The lost-row negative check now rejects a proof of the shared predicate.
 Imported `alter3` fixtures and their expectations are unchanged.
+
+`conformance/resolve_mutants.py` checks that these cases test each rule of name
+resolution (ADR 0008). Each mutant is a copy of the `belay-sqlite` and
+`verifier-conformance` packages with one change, such as folding non-ASCII
+letters, keeping the catalog after ROLLBACK, a constant column limit of 2,000, or
+one removed prepare-error condition. Lake builds only the import closure of
+`VerifierConformance.Case`, which has no proof modules, so a mutant that breaks a
+proof still builds. A mutant is killed when any case gets a verdict other than
+AGREE; three mutants move a case out of the model's scope instead of making it
+disagree. The `mutants` Nix suite requires every mutant to be killed.
 
 `conformance/cases/` freezes the native cases in the current case format. Every model test
 re-executes its original SQL and requires equality with that frozen record before
@@ -129,7 +141,7 @@ checks run separately, outside the timing.
 Parsing is bounded to five seconds, each compiled batch to 30 seconds, and
 concrete kernel checks to 120 seconds. The 2,000-column case is compiled only.
 
-The tier-two denominator is the 14 authored derived cases, plus the
+The tier-two denominator is the 16 authored derived cases, plus the
 injected transport regression. [Stateful generation](conformance-generation.md)
 and [frozen corpus progress](conformance-progress.md) have separate denominators.
 W3–W7 were approved and implemented after the prototype review. Original static

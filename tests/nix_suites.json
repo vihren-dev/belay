@@ -105,5 +105,8 @@
   ],
   "documentation": [
     "tests/test_public_doc_inventory.py"
+  ],
+  "mutants": [
+    "tests/conformance_resolve_mutants_test.py"
   ]
 }

@@ -52,6 +52,17 @@ Relevant files: `conformance/native_connection.py`,
   All 14 cases agree and the 13 small ones are kernel-proved. The generation
   test's column boundary uses a lowered limit instead of 2,000 columns. The
   model suite takes about 165 s instead of 88 s in one local run.
+- 2026-10-13: commit `1c575626` (authored cases); review: no findings.
+- 2026-10-13: resolve mutants (`conformance/resolve_mutants.py`, Nix suite
+  `mutants`): 11 mutants, each built as a changed copy of the two Lean packages
+  and killed by a model case (about 19 s in the sandbox). Finding: a copy of
+  single definitions in a private namespace, as `mutation_check.py` does, cannot
+  mutate resolution, because dot notation still calls the originals. Finding:
+  `VerifierConformance/Outputs.lean` imported all of `Belay.Sqlite`, so the
+  closure of `Case` contained the specification proofs, which a mutant breaks;
+  its imports are now the model modules it uses. Two cases added for the
+  mutants (a `CHARINT` unique key, an `INTEGER PRIMARY KEY DESC`), and the
+  non-ASCII neighbor now uses an uppercase non-ASCII name. 16 cases in all.
 
 ## Remaining
 

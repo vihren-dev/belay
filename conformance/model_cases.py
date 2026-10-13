@@ -7,12 +7,15 @@ Cell = int | str | None
 
 @dataclass(frozen=True)
 class ExpectedTable:
-    """Canonical declarations and rows ordered explicitly by physical rowid, and the
-    explicit indexes of the table: name, key column names and uniqueness."""
+    """Canonical declarations and rows ordered explicitly by physical rowid, the explicit
+    indexes of the table (name, key column names, uniqueness), the SQL constraints
+    written after a column's type, and the primary-key columns they declare."""
     name: str
     columns: tuple[tuple[str, str], ...]
     rows: tuple[tuple[Cell, ...], ...]
     indexes: tuple[tuple[str, tuple[str, ...], bool], ...] = ()
+    constraints: tuple[tuple[str, str], ...] = ()
+    primary_key: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -37,7 +40,9 @@ def cases() -> tuple[Case, ...]:
     """Exercise success, error prefixes, missing objects and the native column limit, and
     each first-scope resolution condition of ADR 0008 with a neighbor where it just does
     not apply: ASCII-only name folding, a table with an index's name, transaction
-    control without a transaction, and the column limit lowered to 5."""
+    control without a transaction, and the column limit lowered to 5. The affinity
+    of a `CHARINT` key and a `PRIMARY KEY DESC` that is not a rowid alias let the
+    resolve mutants (`conformance.resolve_mutants`) change a verdict."""
     invoices = ExpectedTable("invoices", (("amount", "INTEGER"), ("label", "TEXT")),
                              ((-4, 7, "repeat"), (9, 7, "repeat"), (22, None, "café")))
     annotated = ExpectedTable("invoices", invoices.columns + (("note", "TEXT"),),
@@ -46,6 +51,10 @@ def cases() -> tuple[Case, ...]:
     full = ExpectedTable("full", tuple((f"c{i}", "TEXT") for i in range(2000)), ())
     indexed = ExpectedTable("invoices", invoices.columns, invoices.rows, (("invoices_label", ("label",), False),))
     other = ExpectedTable("ínvoices", (("other", "TEXT"),), ())
+    shouted = ExpectedTable("ÍNVOICES", (("other", "TEXT"),), ())
+    keyed = ExpectedTable("keyed", (("k", "CHARINT"), ("v", "TEXT")), (), (("keyed_k", ("k",), True),))
+    ranked = ExpectedTable("ranked", (("id", "INTEGER"), ("v", "TEXT")), (),
+                           constraints=(("id", "PRIMARY KEY DESC"),), primary_key=("id",))
     narrow = ExpectedTable("narrow", tuple((f"c{i}", "TEXT") for i in range(4)), ())
     widened = ExpectedTable("narrow", narrow.columns + (("c4", "TEXT"),), ())
     lowered = (("columns", 5),)
@@ -69,8 +78,13 @@ def cases() -> tuple[Case, ...]:
              kernel_proof=False),
         Case("create_folded_name", (invoices,), "CREATE TABLE INVOICES(other TEXT);", (invoices,),
              'some (0, .prepare (.tableExists "INVOICES"))', "table INVOICES already exists"),
-        Case("create_non_ascii_name", (invoices,), "CREATE TABLE ínvoices(other TEXT);", (invoices, other),
-             "none", ""),
+        Case("create_non_ascii_name", (invoices, other), "CREATE TABLE ÍNVOICES(other TEXT);",
+             (invoices, other, shouted), "none", ""),
+        Case("charint_key", (keyed,), "INSERT INTO keyed(k, v) VALUES(1, 'a');",
+             (ExpectedTable("keyed", keyed.columns, ((1, 1, "a"),), keyed.indexes),), "none", ""),
+        Case("integer_key_desc", (ranked,), "INSERT INTO ranked(id, v) VALUES(7, 'a');",
+             (ExpectedTable("ranked", ranked.columns, ((1, 7, "a"),), constraints=ranked.constraints,
+                            primary_key=ranked.primary_key),), "none", ""),
         Case("table_named_like_index", (indexed,), "CREATE TABLE invoices_label(other TEXT);", (indexed,),
              'some (0, .prepare (.indexNameUsed "invoices_label"))', "there is already an index named invoices_label"),
         Case("commit_without_transaction", (invoices,), "COMMIT;", (invoices,),
@@ -98,7 +112,9 @@ def quoted(name: str) -> str:
 def schema_sql(tables: tuple[ExpectedTable, ...]) -> str:
     """Declare independent expected schemas, then their indexes, as actual SQLite input."""
     return "\n".join([*(f"CREATE TABLE {quoted(table.name)}(" +
-                       ",".join(f"{quoted(name)} {kind}" for name, kind in table.columns) + ");"
+                       ",".join(f"{quoted(name)} {kind}" + "".join(f" {sql}" for column, sql in table.constraints
+                                                                   if column == name)
+                                for name, kind in table.columns) + ");"
                        for table in tables),
                      *(f"CREATE {'UNIQUE ' if unique else ''}INDEX {quoted(name)} ON {quoted(table.name)}(" +
                        ",".join(quoted(column) for column in columns) + ");"
