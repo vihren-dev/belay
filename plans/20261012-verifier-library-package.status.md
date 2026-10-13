@@ -1,6 +1,6 @@
 # Status: verifier library as a package
 
-Created 2026-10-12. Status: IN PROGRESS.
+Created 2026-10-12. Status: DONE (2026-10-13).
 Task: [task](20261012-verifier-library-package.task.md).
 ADR: [ADR 0010](../docs/adr-0010-lake-builds-and-artifact-cache.md), accepted.
 
@@ -79,3 +79,18 @@ Relevant files: `lakefile.toml`, `SqliteVerifier/`, `SqliteVerifier.lean`, `Gate
   and host Nix tests 84 pass. `conformanceCoverage` fails on `main` too:
   #97 removed `Case.names`, which `conformance/instrument_model.py` still
   inserts into the runner; not changed here.
+- 2026-10-13: DONE. PR #99 merged into `main` as `6c9ec7a6`. CI on `main`:
+  Linux 1043 s, macOS 1717 s. The run before it (`1a606217`, #97): Linux
+  765 s, macOS 1693 s; the ADR's baseline (`0adb73dc`): Linux 467 s, macOS
+  1366 s. Linux is +278 s over #97, above the 20 % limit; investigated:
+  - Both runs rebuilt the Lean runtime from an empty cache, because both
+    commits change Lean sources. This run also built every new package
+    derivation, `lean4export` and the six seeds for the first time.
+  - Suites that this work does not change were 30 % to 65 % slower in this
+    run (146 tests: 99 → 136 s; 27 tests: 75 → 123 s; host Nix tests:
+    38 → 74 s), so most of the increase is load from the first-time builds
+    that run next to them, not slower tests.
+  - The recurring cost needs a run with a warm cache. The agent app cannot
+    re-run workflows, and a manual run selects all checks. Open: compare the
+    next `main` run that changes code with this one, and investigate if
+    Linux stays above 918 s (765 s + 20 %).

@@ -1,6 +1,6 @@
 # Case seeds in CI
 
-Created 2026-10-12. Status: READY.
+Created 2026-10-12. Status: DONE (2026-10-13).
 Decision: [ADR 0010](../docs/adr-0010-lake-builds-and-artifact-cache.md),
 sections 8 and 9. Accepted on 2026-10-12.
 Depends on: [case folders](20261012-case-manifests-and-lean-categories.task.md)

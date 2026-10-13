@@ -1,6 +1,6 @@
 # Status: Lake builds in the verifier
 
-Created 2026-10-12. Status: READY.
+Created 2026-10-12. Status: DONE (2026-10-13).
 Task: [task](20261012-lake-builds-in-the-verifier.task.md).
 ADR: [ADR 0010](../docs/adr-0010-lake-builds-and-artifact-cache.md), accepted.
 
@@ -135,3 +135,6 @@ Relevant files: `migration_check/compile.py`, `migration_check/contract.py`,
   PR #95 (+164 s; mostly `cache_domains_test`, the phase tests and the audit in
   `prepare`). Recorded on the pull request; the case-seed task addresses the
   recurring part. Owner approved PR #95 and PR #96 on 2026-10-12.
+- 2026-10-13: DONE. The owner approved and PR #96 merged into `main` on
+  2026-10-12. CI times after all four ADR 0010 tasks: see the library package
+  status file.
