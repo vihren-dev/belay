@@ -38,3 +38,11 @@ def test_recorded_phase_must_match_the_model(runtime_root: Path, migration: str,
     unobserved = deepcopy(case)
     unobserved["nativeTrace"][-1]["phase"] = None
     assert compiled(unobserved, runtime_root)["verdict"] == "AGREE"
+
+
+def test_phase_without_an_error_is_a_harness_error(runtime_root: Path) -> None:
+    """`VerifierConformance.Json.decodeCase` refuses a phase on a successful observation and names it."""
+    case = record(Fixture(SCHEMA, "INSERT INTO t(id) VALUES(2);", ROWS, "phase"), default_parser(runtime_root))
+    case["nativeTrace"][1]["phase"] = "step"
+    result = compiled(case, runtime_root)
+    assert result["verdict"] == "HARNESS_ERROR" and "native observation 1" in result["error"], result

@@ -42,9 +42,11 @@ def decodeCase (json : Lean.Json) : Except String Case := do
     unless (tables.map (normalizeIdentifier ·.name)).eraseDups.length == tables.length do
       throw "duplicate table name"
     for table in tables do checkNativeTable table
-  for n in c.nativeTrace do
+  for (n, position) in c.nativeTrace.zipIdx do
     unless n.extendedCode % 256 == n.primaryCode do throw "inconsistent SQLite result codes"
-    unless n.primaryCode != 0 || n.phase.isNone do throw "an error phase without an error"
+    unless n.primaryCode != 0 || n.phase.isNone do
+      throw s!"native observation {position} has an error phase but result code 0; record the case again, \
+        so that a successful observation has a null phase"
   match c.outputs with
   | none => unless c.parameters.isEmpty do throw "parameters require outputs"
   | some outputs =>
