@@ -68,3 +68,25 @@ metadata; no installer or signature policy changed. See the
 [Nix binary-cache settings](https://nix.dev/manual/nix/2.29/store/types/local-binary-cache-store.html). These local phase measurements
 are distinct from hosted end-to-end results. Single samples vary with runner load;
 the two same-revision complete runs above provide the final validation evidence.
+
+## ADR 0010 tasks on `main`
+
+[ADR 0010](adr-0010-lake-builds-and-artifact-cache.md) section 11 records the
+`main` job times after each of its tasks. Each run below rebuilt the Lean
+runtime from an empty cache, because each commit changes Lean sources or their
+build. The run of task 1 was cancelled when task 2 merged.
+
+| Run | Revision | macOS | Linux |
+| --- | --- | --- | --- |
+| [Baseline, before the tasks](https://github.com/vihren-dev/sqlite-verifier/actions/runs/38243172224) | 0adb73dc | 22m46s | 7m47s |
+| [Tasks 1 and 2: case folders, Lake builds](https://github.com/vihren-dev/sqlite-verifier/actions/runs/38300789342) | b486a5d7 | 27m27s | 16m29s |
+| [ADR 0008 step 1b, not an ADR 0010 task](https://github.com/vihren-dev/sqlite-verifier/actions/runs/38304626417) | 1a606217 | 28m13s | 12m45s |
+| [Tasks 3 and 4: case seeds, Lean packages](https://github.com/vihren-dev/sqlite-verifier/actions/runs/38336687979) | 6c9ec7a6 | 28m37s | 17m23s |
+| [First run after the tasks without a Lean rebuild](https://github.com/vihren-dev/sqlite-verifier/actions/runs/38360981596) | c844e1c5 | 21m16s | 9m52s |
+
+In the last run, suites that tasks 3 and 4 do not change were 30 % to 65 %
+slower than in the run before it. The first builds of the new package
+derivations and case seeds ran next to them. The run of c844e1c5 changes
+no Lean source and reruns the same suites as the baseline run: Linux is 2m05s
+slower. The new Nix evaluation tests add about 30s, Lake builds and the audit
+in the installed checks about 30s, and new harness tests of ADR 0008 about 25s.

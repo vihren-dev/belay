@@ -1,6 +1,6 @@
 # Verifier library as a package
 
-Created 2026-10-12. Status: READY.
+Created 2026-10-12. Status: DONE (2026-10-13).
 Decision: [ADR 0010](../docs/adr-0010-lake-builds-and-artifact-cache.md),
 section 7, stage 1. Accepted on 2026-10-12.
 Depends on: [case folders](20261012-case-manifests-and-lean-categories.task.md)

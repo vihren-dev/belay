@@ -1,6 +1,6 @@
 # Status: case seeds in CI
 
-Created 2026-10-12. Status: READY.
+Created 2026-10-12. Status: DONE (2026-10-13).
 Task: [task](20261012-case-seeds-in-ci.task.md).
 ADR: [ADR 0010](../docs/adr-0010-lake-builds-and-artifact-cache.md), accepted.
 
@@ -63,3 +63,6 @@ Relevant files: `build-support/tests.nix`, `tests/nix_suites.json`,
   #96's, not a new increase. The `bundle` suite took 182 s for 94 tests, after
   the six seeds. The first run (`35e97c9e`) was cancelled by the push of the
   source identity fix. Compare again after #95 and #96 merge.
+- 2026-10-13: DONE. PR #100 merged into PR #99's branch, and PR #99 (tasks 3 and
+  4, with `main` merged in) merged into `main` as `6c9ec7a6`. CI times after
+  all four tasks: see the library package status file.
