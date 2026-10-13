@@ -29,11 +29,17 @@ def resolvedOne (statement : Syntax.Statement) : Option Resolved.Statement :=
 
 /-- The query of a resolution, if it is one. -/
 def queryOf (statement : Syntax.Statement) : Option Resolved.Query :=
-  match resolvedOne statement with | some (.query query) => some query | _ => none
+  match resolvedOne statement with
+  | some (.query query) => some query
+  | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some .begin | some .commit
+  | some .rollback | some (.insert ..) | some (.update ..) | some (.prepareError _) | none => none
 
 /-- The prepare error of a resolution, if it is one. -/
 def errorOf (statement : Syntax.Statement) : Option PrepareError :=
-  match resolvedOne statement with | some (.prepareError error) => some error | _ => none
+  match resolvedOne statement with
+  | some (.prepareError error) => some error
+  | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some .begin | some .commit
+  | some .rollback | some (.insert ..) | some (.update ..) | some (.query _) | none => none
 
 /-- Whether the statement is a model restriction. -/
 def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration catalog [statement])
@@ -65,6 +71,10 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
 #guard restrictedOne (select [written (.identifier "b" false) "b", written .countRows "count(*)"])
 #guard restrictedOne (select [.star] (filter := some (.identifier "Abc" false)))
 #guard restrictedOne (select [.star] (offset := some (.negate (.numeric "1"))))
+-- GROUP BY resolves a name to a source column before a result alias, so an alias
+-- of an aggregate does not hide the column `b`.
+#guard (queryOf (select [.expression .countRows (some "b") "count(*)"] (groupBy := [.identifier "b" false]))).map
+  (·.groupBy) == some [.column 1]
 -- A negative LIMIT means no limit; ORDER BY an alias names the result column.
 #guard (queryOf (select [.star] (limit := some (.negate (.numeric "1"))))).map (·.limit) == some none
 #guard (queryOf (select [.expression (.identifier "b" false) (some "k") "b"]

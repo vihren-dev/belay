@@ -26,29 +26,47 @@ def Resolved.Expr.isCondition : Resolved.Expr → Bool
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. => true
   | .column _ | .literal _ => false
 
-/-- Why the affinity rule of a comparison would convert an operand, with the path
-of that operand (R-10393-27560): when the other operand has INTEGER, REAL or
-NUMERIC affinity, a text literal or a column of another affinity would get
-NUMERIC affinity (R-58138-64688); when the other operand is a TEXT column and this
-one has no affinity, a value other than NULL, text or a blob would get TEXT
+/-- The literal value of a resolved expression, if it is a literal. -/
+def Resolved.Expr.literal? : Resolved.Expr → Option Value
+  | .literal value => some value
+  | .column _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. => none
+
+/-- Whether a value is TEXT. -/
+def Value.isText : Value → Bool
+  | .text _ => true
+  | .null | .integer _ | .real _ | .blob _ => false
+
+/-- Whether TEXT affinity keeps a value unchanged: NULL, TEXT or BLOB. -/
+def Value.keepsText : Value → Bool
+  | .null | .text _ | .blob _ => true
+  | .integer _ | .real _ => false
+
+/-- Why the affinity rule of a comparison would convert one operand, given the
+affinity of the other: when the other operand has INTEGER, REAL or NUMERIC
+affinity, a text literal or a column of another affinity would get NUMERIC
+affinity (R-58138-64688); when the other operand is a TEXT column and this one has
+no affinity, a value other than a NULL, text or blob literal would get TEXT
 affinity (R-29161-32953). -/
+def conversion (target : Operand) (other : Option Affinity) : Option String :=
+  if other.any numericAffinity then
+    match target.2 with
+    | some affinity =>
+      if numericAffinity affinity then none
+      else some "a comparison of columns with different kinds of affinity is not modeled; compare columns with the same kind"
+    | none =>
+      if (target.1.literal?.map Value.isText).getD false then
+        some "a text value compared with a numeric column would be converted to a number; write a number"
+      else none
+  else if other == some .text && target.2.isNone && !((target.1.literal?.map Value.keepsText).getD false) then
+    some "a number compared with a TEXT column would be converted to text; write a text value"
+  else none
+
+/-- Why the affinity rule of a comparison would convert an operand, with the path of
+that operand (R-10393-27560), checking the left operand first. -/
 def affinityIssue (left right : Operand) : Option (List Nat × String) :=
-  let converts := fun (target : Operand) (other : Option Affinity) =>
-    if other.any numericAffinity then
-      match target with
-      | (.literal (.text _), _) => some "a text value compared with a numeric column would be converted to a number; write a number"
-      | (_, some affinity) =>
-        if numericAffinity affinity then none
-        else some "a comparison of columns with different kinds of affinity is not modeled; compare columns with the same kind"
-      | _ => none
-    else if other == some .text && target.2.isNone then
-      match target.1 with
-      | .literal .null | .literal (.text _) | .literal (.blob _) => none
-      | _ => some "a number compared with a TEXT column would be converted to text; write a text value"
-    else none
-  match converts left right.2 with
+  match conversion left right.2 with
   | some reason => some ([0], reason)
-  | none => (converts right left.2).map ([1], ·)
+  | none => (conversion right left.2).map ([1], ·)
 
 /-- The issue of an aggregate where only a row value can be: SQLite's
 {lit}`misuse of aggregate function` when {lit}`misuse` is true (in {lit}`WHERE`, or
