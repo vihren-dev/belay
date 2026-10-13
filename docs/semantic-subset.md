@@ -19,14 +19,21 @@ The frontend maps these statements, and refuses every other statement as
 - `BEGIN` (optionally `DEFERRED`), `COMMIT`/`END` and `ROLLBACK`, optionally with
   `TRANSACTION`;
 - `INSERT INTO table [(columns)] VALUES` with one or more rows;
-- `UPDATE table SET column = value, … [WHERE expression]`.
+- `UPDATE table SET column = value, … [WHERE expression]`;
+- `SELECT columns FROM table [WHERE …] [GROUP BY …] [ORDER BY … [ASC|DESC]]
+  [LIMIT n [OFFSET m]]` from one table, whose result columns are `*` or
+  expressions with an optional alias (ADR 0012, slice 1).
 
 Expressions are `NULL`, numeric, string and blob literals, the time keywords,
-names, unary `-` and `+`, and `=`. Named constraints, collations, `CHECK`,
-`REFERENCES`, generated columns, conflict clauses, `RETURNING`, `UPSERT`,
-`WITH`, `FROM`, sort modifiers in keys, partial and expression indexes,
-`IF NOT EXISTS`, `TEMP`, schema names, table options, `AS SELECT`, views,
-triggers, virtual tables, `EXPLAIN`, `PRAGMA` and queries are refused. Names keep
+names, unary `-` and `+`, and `=`. Inside a `SELECT`, they may also be the other
+comparisons, `IS` and `IS NOT`, `AND`, `OR`, `NOT`, `IS NULL` and its forms,
+parentheses, `COUNT(*)`, and `COUNT`, `MIN` and `MAX` of one argument. Named
+constraints, collations, `CHECK`, `REFERENCES`, generated columns, conflict
+clauses, `RETURNING`, `UPSERT`, `WITH`, `FROM` in writes, sort modifiers in keys,
+partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
+options, `AS SELECT`, views, triggers, virtual tables, `EXPLAIN`, `PRAGMA`,
+compound `SELECT`, `DISTINCT`, `HAVING`, joins, table aliases, `table.*`,
+`NULLS FIRST` and `NULLS LAST`, and other functions are refused. Names keep
 their case as written; quotes are removed as SQLite removes them. Numeric literals
 and declared types keep their text.
 
@@ -63,14 +70,24 @@ names; REAL values; time values; values that the column affinity would convert;
 column references in values; a filter other than `column = integer` on an
 INTEGER, NUMERIC or BLOB column; a column named twice; writes to a table with a
 unique key over a TEXT or REAL column; and key values other than integers and
-NULL. Each restriction message says what to change.
+NULL. In a `SELECT`: a comparison whose affinity rule would convert a value; a
+value used as a condition; an aggregate inside an expression; a result column
+outside `GROUP BY` in an aggregate query; `ORDER BY` terms of an aggregate query
+other than result column numbers and aliases; a result column alias in `WHERE`
+or inside an `ORDER BY` expression; a query of SQLite's own tables, such as
+`sqlite_schema`; and `LIMIT` or `OFFSET` other than
+an integer literal, or a negative `OFFSET`. Each restriction message says what to
+change.
 
 ## Execution
 
 The execution semantics runs the resolved statements on a database keyed by
 catalog position. Transactions and data changes are supplied as SQL, not implied
 by a profile. INSERT appends its rows with ordinary automatic rowid allocation;
-UPDATE sets its assignments in each row that its filter selects. Literal writes
+UPDATE sets its assignments in each row that its filter selects. A `SELECT`
+changes nothing; its result rows follow ADR 0012: rows in rowid order, the
+`WHERE` filter with three-valued logic, groups, result columns, a stable sort by
+the `ORDER BY` terms with SQLite's comparison of values, then the window. Literal writes
 have checked data-domain obligations: existing key cells and filter cells must
 be integers or NULL, existing constraints must hold, and the random-search branch
 at the maximum rowid is outside the admitted domain. New NOT NULL and uniqueness

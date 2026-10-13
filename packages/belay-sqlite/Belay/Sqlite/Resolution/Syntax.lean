@@ -10,16 +10,6 @@ token text, because SQLite's conversion rules are not lexical. -/
 
 namespace Belay.Sqlite.Syntax
 
-/-- An aggregate function of one operand, by its folded name. -/
-inductive AggregateFunction where
-  /-- {lit}`count`. -/
-  | count
-  /-- {lit}`min`. -/
-  | min
-  /-- {lit}`max`. -/
-  | max
-  deriving Repr, DecidableEq
-
 /-- An expression as written. For example, the literal {lit}`-5` is
 {lean}`Expr.negate (.numeric "5")`. -/
 inductive Expr where
@@ -54,10 +44,12 @@ inductive Expr where
   | not (operand : Expr)
   /-- {lit}`IS NULL`, or {lit}`IS NOT NULL` (also {lit}`NOTNULL`) when {lit}`negated`. -/
   | isNull (operand : Expr) (negated : Bool)
-  /-- {lit}`COUNT(*)`. -/
-  | countRows
-  /-- {lit}`COUNT(x)`, {lit}`MIN(x)` or {lit}`MAX(x)`, with one operand. -/
-  | aggregate (function : AggregateFunction) (operand : Expr)
+  /-- A function call with {lit}`*` as its argument, such as {lit}`COUNT(*)`, with the
+  function name as written. -/
+  | callStar (name : String)
+  /-- A function call with one argument, such as {lit}`MIN(x)`, with the function
+  name as written. Resolution folds the name and decides the function. -/
+  | call (name : String) (operand : Expr)
   deriving Repr, DecidableEq
 
 /-- A column constraint as written. For example, {lit}`PRIMARY KEY DESC` is

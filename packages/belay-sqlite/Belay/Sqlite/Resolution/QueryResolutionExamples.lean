@@ -48,18 +48,23 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
 #guard (queryOf (select [.star])).map (·.names) == some ["Abc", "b"]
 #guard (queryOf (select [written (.identifier "ABC" false) "ABC",
   written (.equals (.identifier "abc" false) (.numeric "1")) "abc = 1"])).map (·.names) == some ["Abc", "abc = 1"]
-#guard (queryOf (select [.expression .countRows (some "n") "count(*)", written .countRows "count(*)"])).map
+#guard (queryOf (select [.expression (.callStar "count") (some "n") "count(*)", written (.callStar "count") "count(*)"])).map
   (·.names) == some ["n", "count(*)"]
 -- Names that SQLite refuses while it prepares the query.
 #guard errorOf (select [written (.identifier "missing" false) "missing"]) == some (.noSuchColumn "missing")
 #guard errorOf (.select [.star] "absent" none [] [] none none) == some (.noSuchTable "absent")
-#guard errorOf (select [.star] (filter := some (.equals .countRows (.numeric "1")))) ==
+#guard errorOf (select [.star] (filter := some (.equals (.callStar "count") (.numeric "1")))) ==
   some (.misuseOfAggregate "count")
-#guard errorOf (select [written (.aggregate .max (.aggregate .min (.identifier "b" false))) "max(min(b))"]) ==
+#guard errorOf (select [written (.call "MAX" (.call "min" (.identifier "b" false))) "MAX(min(b))"]) ==
   some (.misuseOfAggregate "min")
 #guard errorOf (select [.star] (orderBy := [{ expression := .numeric "3", descending := false }])) ==
   some (.orderByOutOfRange 1 2)
-#guard errorOf (select [written .countRows "count(*)"] (groupBy := [.numeric "1"])) == some .aggregateInGroupBy
+#guard errorOf (select [written (.callStar "COUNT") "COUNT(*)"] (groupBy := [.numeric "1"])) == some .aggregateInGroupBy
+#guard restrictedOne (select [written (.call "group_concat" (.identifier "b" false)) "group_concat(b)"])
+-- SQLite's own tables are not in the catalog; querying one is a model restriction.
+#guard restrictedOne (.select [.star] "sqlite_master" none [] [] none none)
+-- A declared type that is a standard type name is kept in capitals, as SQLite reports it.
+#guard reportedType (some "int") == some "INT" && reportedType (some "VarChar(10)") == some "VarChar(10)"
 -- A double-quoted name that names no column is a string literal.
 #guard (queryOf (select [written (.identifier "x" true) "\"x\""])).isSome
 -- Comparisons whose affinity rule would convert a value are model restrictions.
@@ -68,12 +73,18 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
 #guard restrictedOne (select [.star] (filter := some (.equals (.identifier "Abc" false) (.identifier "b" false))))
 #guard (queryOf (select [.star] (filter := some (.equals (.identifier "Abc" false) (.numeric "5"))))).isSome
 -- The restrictions of slice 1.
-#guard restrictedOne (select [written (.identifier "b" false) "b", written .countRows "count(*)"])
+#guard restrictedOne (select [written (.identifier "b" false) "b", written (.callStar "count") "count(*)"])
 #guard restrictedOne (select [.star] (filter := some (.identifier "Abc" false)))
 #guard restrictedOne (select [.star] (offset := some (.negate (.numeric "1"))))
+-- SQLite resolves a result column alias in WHERE and in ORDER BY expressions; the
+-- model restricts it, even when the alias is written in double quotes.
+#guard restrictedOne (select [.expression (.identifier "Abc" false) (some "d") "Abc"]
+  (filter := some (.equals (.identifier "d" true) (.numeric "0"))))
+#guard restrictedOne (select [.expression (.identifier "Abc" false) (some "d") "Abc"]
+  (orderBy := [{ expression := .isNull (.identifier "D" false) false, descending := false }]))
 -- GROUP BY resolves a name to a source column before a result alias, so an alias
 -- of an aggregate does not hide the column `b`.
-#guard (queryOf (select [.expression .countRows (some "b") "count(*)"] (groupBy := [.identifier "b" false]))).map
+#guard (queryOf (select [.expression (.callStar "count") (some "b") "count(*)"] (groupBy := [.identifier "b" false]))).map
   (·.groupBy) == some [.column 1]
 -- A negative LIMIT means no limit; ORDER BY an alias names the result column.
 #guard (queryOf (select [.star] (limit := some (.negate (.numeric "1"))))).map (·.limit) == some none

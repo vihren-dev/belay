@@ -10,7 +10,8 @@ from .sql_tree import Node, Tree
 from .syntax_expressions import dequote, expression, identifier, name, term
 
 MODELED_FORMS = ("rewrite it with the modeled forms: CREATE TABLE, CREATE [UNIQUE] INDEX, ALTER TABLE ADD COLUMN, "
-                 "BEGIN, COMMIT, ROLLBACK, INSERT ... VALUES and UPDATE ... SET ... [WHERE column = value]")
+                 "BEGIN, COMMIT, ROLLBACK, INSERT ... VALUES, UPDATE ... SET ... [WHERE column = value] and "
+                 "SELECT ... FROM table [WHERE] [GROUP BY] [ORDER BY] [LIMIT]")
 """The corrective action for a production that has no syntax constructor."""
 
 

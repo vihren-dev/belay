@@ -90,7 +90,9 @@ def test_version_two_outputs(runtime_root: Path, tmp_path: Path) -> None:
         assert prepare(unsupported, runtime_library(runtime_root))[1]["verdict"] == "MODEL_UNSUPPORTED"
     ordered = record_sql("CREATE TABLE t(k); INSERT INTO t VALUES(1),(1),(2);",
                          "SELECT k FROM t ORDER BY k LIMIT 1;", name="ordered", outputs=True)
-    assert prepare(ordered, runtime_library(runtime_root))[1]["verdict"] == "MODEL_UNSUPPORTED"
+    # The LIMIT cuts the tie group of k = 1; the model's row is a submultiset of it (ADR 0005).
+    model, answer = prepare(ordered, runtime_library(runtime_root))
+    assert model is not None and compiled(model, runtime_root)["verdict"] == "AGREE", answer
     ordered["trace"][0]["groups"][0]["count"] = 3
     assert prepare(ordered, runtime_library(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
     native["trace"][0]["columnCount"] = 1

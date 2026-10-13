@@ -22,7 +22,17 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Syntax.lean`,
 
 - 2026-10-13: ADR 0012 accepted by the owner and merged (#106); task and status
   files created.
+- 2026-10-13: value comparison (`Comparison.lean`), the resolved query form with
+  its evaluation, laws and examples, `Resolved.Statement.query` through the model
+  and its outputs, and resolution of `Syntax.Statement.select`; each reviewed.
+- 2026-10-13: frontend `belay/sqlite/syntax_queries.py`; function calls keep the
+  name as written and Lean folds it. Bringing SELECT into scope exposed three corpus
+  disagreements: `sqlite_master` queries (now a restriction), standard type names
+  that SQLite reports in capitals (`reportedType`; this bug was already on main), and
+  a result column alias in `WHERE` (altercol-15.0, now a restriction). The verdict
+  passes; corpus-v5 has 194 AGREE and no DISAGREE.
 
 ## Remaining
 
-- All outcome items of the task.
+- Authored query coverage cases, query mutants, model cases with queries, CI
+  timing, PR A; then PR B (judge: claim a query corpus, mustAgree cases).

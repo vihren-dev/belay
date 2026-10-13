@@ -22,9 +22,9 @@ def integerLiteral : Syntax.Expr → Option Int
   | .negate operand => match operand with
     | .numeric text => (numericValue text true).integer?
     | .null | .string _ | .blob _ | .currentTime _ | .identifier .. | .negate _ | .positive _ | .equals ..
-    | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .countRows | .aggregate .. => none
+    | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. => none
   | .null | .string _ | .blob _ | .currentTime _ | .identifier .. | .positive _ | .equals .. | .compare ..
-  | .and .. | .or .. | .not _ | .isNull .. | .countRows | .aggregate .. => none
+  | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. => none
 
 /-- One resolved result column with its name: {lit}`*` gives every column of the
 table under its defined name; an aggregate is a whole result column; any other
@@ -36,11 +36,14 @@ def resolveResultColumn (dqs : Bool) (columns : List CatalogColumn) (column : Na
   | .expression value alias text => do
     let named := fun (output : Resolved.Output) (defined : Option String) => [(output, alias.getD (defined.getD text))]
     match value with
-    | .countRows => .ok (named (.aggregate .countRows) none)
-    | .aggregate function operand =>
-      let (resolved, _) ← (resolveOperand dqs columns true operand).mapError (·.under [0, column, 0, 1])
-      .ok (named (.aggregate (match function with
-        | .count => .count resolved | .min => .min resolved | .max => .max resolved)) none)
+    | .callStar name =>
+      if normalizeIdentifier name == "count" then .ok (named (.aggregate .countRows) none)
+      else throw (unmodeledFunction.under [0, column, 0])
+    | .call name operand => match aggregateNamed name with
+      | some aggregate =>
+        let (resolved, _) ← (resolveOperand dqs columns true operand).mapError (·.under [0, column, 0, 1])
+        .ok (named (.aggregate (aggregate resolved)) none)
+      | none => throw (unmodeledFunction.under [0, column, 0])
     | .identifier name _ =>
       let (resolved, _) ← (resolveOperand dqs columns false value).mapError (·.under [0, column, 0])
       .ok (named (.scalar resolved) ((columnPosition columns name).bind (columns[·]?.map CatalogColumn.name)))
@@ -68,7 +71,7 @@ def namedResult (names : List (Option String)) : Syntax.Expr → Option (Except 
   | .identifier name _ => (aliasIndex names name).map .ok
   | term@.null | term@(.numeric _) | term@(.string _) | term@(.blob _) | term@(.currentTime _)
   | term@(.negate _) | term@(.positive _) | term@(.equals ..) | term@(.compare ..) | term@(.and ..)
-  | term@(.or ..) | term@(.not _) | term@(.isNull ..) | term@.countRows | term@(.aggregate ..) =>
+  | term@(.or ..) | term@(.not _) | term@(.isNull ..) | term@(.callStar _) | term@(.call ..) =>
     (integerLiteral term).map fun (number : Int) =>
       if 1 ≤ number ∧ number ≤ (names.length : Int) then .ok (number.toNat - 1) else .error ()
 
@@ -86,7 +89,10 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
     StatementResolution :=
   let dqs := context.profile.dqsDml
   match catalog.findTable tableName with
-  | none => prepareError catalog (.noSuchTable tableName)
+  | none =>
+    if reservedName tableName then
+      restrict index [1] "queries of SQLite's own tables, such as sqlite_schema, are not modeled; query an application table"
+    else prepareError catalog (.noSuchTable tableName)
   | some (position, table) =>
   let resolved : Except ValueIssue Resolved.Query := do
     let outputs := (← resolveAll (resolveResultColumn dqs table.columns) results).flatten
@@ -95,7 +101,9 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
       | .expression _ alias _ => [alias]
     let condition ← match filter with
       | none => pure none
-      | some term => some <$> condition [2] (resolveOperand dqs table.columns true term)
+      | some term =>
+        if namesAlias table.columns (aliases.filterMap id) term then throw (aliasInExpression.under [2])
+        else some <$> condition [2] (resolveOperand dqs table.columns true term)
     let aggregate := !groupBy.isEmpty || outputs.any fun (output, _) => match output with
       | .aggregate _ => true
       | .scalar _ => false
@@ -107,7 +115,8 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
         | some position, _ => .ok (.column position)
         | none, some column => grouped column
         | none, none => (resolveOperand dqs table.columns true term).map (·.1) |>.mapError (·.under [3, item])
-      | .countRows | .aggregate .. => .error (.prepare .aggregateInGroupBy)
+      | .callStar _ | .call .. =>
+        .error (if aggregateCall term then .prepare .aggregateInGroupBy else unmodeledFunction.under [3, item])
       | .numeric _ | .negate _ => match namedResult aliases term with
         | some (.ok column) => grouped column
         | some (.error ()) => .error (.prepare (.groupByOutOfRange (item + 1) outputs.length))
@@ -122,6 +131,8 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
       | some (.error ()) => .error (.prepare (.orderByOutOfRange (item + 1) outputs.length))
       | none =>
         if aggregate then .error (.restriction [4, item] "an aggregate query is modeled with ORDER BY result column numbers or aliases only")
+        else if namesAlias table.columns (aliases.filterMap id) term.expression then
+          .error (aliasInExpression.under [4, item, 0])
         else (resolveOperand dqs table.columns false term.expression).map (fun (e, _) => (.expression e, term.descending))
           |>.mapError (·.under [4, item, 0])) orderBy
     let limitValue ← windowValue [5] limit

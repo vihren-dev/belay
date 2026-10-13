@@ -39,7 +39,7 @@ def constantDefault : Syntax.Expr → Bool
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. => true
   | .negate operand | .positive operand => constantDefault operand
   | .equals .. => false
-  | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .countRows | .aggregate .. => true
+  | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. => true
 
 /-- Whether the constraint is PRIMARY KEY. -/
 def Syntax.ColumnConstraint.isPrimaryKey : Syntax.ColumnConstraint → Bool
@@ -64,7 +64,7 @@ def Syntax.ColumnConstraint.modeledDefault : Syntax.ColumnConstraint → Bool
   | .default (.null) | .default (.numeric _) | .default (.string _) | .default (.blob _)
   | .default (.identifier ..) | .default (.negate _) | .default (.positive _)
   | .default (.equals ..) | .default (.compare ..) | .default (.and ..) | .default (.or ..)
-  | .default (.not _) | .default (.isNull ..) | .default .countRows | .default (.aggregate ..) => false
+  | .default (.not _) | .default (.isNull ..) | .default (.callStar _) | .default (.call ..) => false
   | .notNull | .primaryKey _ | .unique => true
 
 /-- A prepare error leaves the catalog unchanged. -/

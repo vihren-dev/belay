@@ -24,14 +24,14 @@ theorem namedResult_integer (names : List (Option String)) (term : Syntax.Expr) 
   | _ => simp only [namedResult, literal, Option.map_some]; split <;> rfl
 
 /-- For every context, catalog, statement index and {lit}`SELECT`: when the catalog
-has no table with the folded name, resolution gives SQLite's
-{lit}`no such table: %s` and keeps the catalog. -/
+has no table with the folded name and the name is not reserved for SQLite's own
+tables, resolution gives SQLite's {lit}`no such table: %s` and keeps the catalog. -/
 theorem resolveSelect_noSuchTable (context : ResolveContext) (catalog : Catalog) (index : Nat)
     (results : List Syntax.ResultColumn) (tableName : String) (filter : Option Syntax.Expr)
     (groupBy : List Syntax.Expr) (orderBy : List Syntax.OrderTerm) (limit offset : Option Syntax.Expr)
-    (missing : catalog.findTable tableName = none) :
+    (missing : catalog.findTable tableName = none) (application : reservedName tableName = false) :
     resolveSelect context catalog index results tableName filter groupBy orderBy limit offset =
       .ok (.prepareError (.noSuchTable tableName), catalog) := by
-  simp [resolveSelect, missing, prepareError]
+  simp [resolveSelect, missing, application, prepareError]
 
 end Belay.Sqlite

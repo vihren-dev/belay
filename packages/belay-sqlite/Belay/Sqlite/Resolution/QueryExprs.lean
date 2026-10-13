@@ -76,11 +76,43 @@ def aggregateIssue (misuse : Bool) (function : String) : ValueIssue :=
   if misuse then .prepare (.misuseOfAggregate function)
   else .restriction [] "an aggregate inside an expression is not modeled; use the aggregate as a whole result column"
 
-/-- The folded name of an aggregate function, as SQLite prints it in a message. -/
-def Syntax.AggregateFunction.name : Syntax.AggregateFunction → String
-  | .count => "count"
-  | .min => "min"
-  | .max => "max"
+/-- The aggregate of slice 1 that a function name names, after ASCII folding:
+{lit}`count`, {lit}`min` or {lit}`max` of one operand. -/
+def aggregateNamed (name : String) : Option (Resolved.Expr → Resolved.Aggregate) :=
+  match normalizeIdentifier name with
+  | "count" => some .count
+  | "min" => some .min
+  | "max" => some .max
+  | _ => none
+
+/-- Whether a call is an aggregate of slice 1: {lit}`count(*)`, or a named aggregate
+of one operand. -/
+def aggregateCall : Syntax.Expr → Bool
+  | .callStar name => normalizeIdentifier name == "count"
+  | .call name _ => (aggregateNamed name).isSome
+  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .negate _ | .positive _
+  | .equals .. | .compare .. | .and .. | .or .. | .not _ | .isNull .. => false
+
+/-- The restriction for a function call that slice 1 does not evaluate. -/
+def unmodeledFunction : ValueIssue :=
+  .restriction [] "only COUNT(*), and COUNT, MIN and MAX of one argument, are modeled as functions"
+
+/-- Whether an expression names a result column alias: an identifier that names no
+column of the table but, after ASCII folding, is one of {lit}`aliases`. SQLite
+resolves such a name in {lit}`WHERE` and inside {lit}`ORDER BY` expressions to the
+aliased result expression, before the double-quoted string fallback. -/
+def namesAlias (columns : List CatalogColumn) (aliases : List String) : Syntax.Expr → Bool
+  | .identifier name _ => (columnPosition columns name).isNone &&
+      aliases.any (normalizeIdentifier · == normalizeIdentifier name)
+  | .equals left right | .compare _ left right | .and left right | .or left right =>
+    namesAlias columns aliases left || namesAlias columns aliases right
+  | .not operand | .isNull operand _ | .call _ operand | .negate operand | .positive operand =>
+    namesAlias columns aliases operand
+  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ => false
+
+/-- The restriction for a result column alias inside an expression. -/
+def aliasInExpression : ValueIssue :=
+  .restriction [] "a result column alias inside WHERE or an ORDER BY expression is not modeled; write the column expression"
 
 /-- A condition, or a model restriction at {lit}`path` when the operand gives a
 value instead of a truth value. -/
@@ -127,8 +159,8 @@ def resolveOperand (dqs : Bool) (columns : List CatalogColumn) (misuse : Bool) :
   | .isNull operand negated => do
     let a ← (resolveOperand dqs columns misuse operand).mapError (·.under [0])
     .ok (.isNull a.1 negated, none)
-  | .countRows => .error (aggregateIssue misuse "count")
-  | .aggregate function _ => .error (aggregateIssue misuse function.name)
+  | call@(.callStar name) | call@(.call name _) =>
+    .error (if aggregateCall call then aggregateIssue misuse name else unmodeledFunction)
   | literal@.null | literal@(.numeric _) | literal@(.string _) | literal@(.blob _)
   | literal@(.currentTime _) | literal@(.negate _) | literal@(.positive _) =>
     (literalValue dqs literal).map fun value => (.literal value, none)

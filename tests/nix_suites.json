@@ -35,6 +35,7 @@
     "tests/conformance_trace_test.py",
     "tests/conformance_dqs_test.py",
     "tests/conformance_phase_test.py",
+    "tests/conformance_queries_test.py",
     "tests/conformance_authored_resolution_test.py",
     "tests/shared_table_shape_test.py"
   ],

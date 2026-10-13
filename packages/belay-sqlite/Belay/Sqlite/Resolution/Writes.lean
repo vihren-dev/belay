@@ -47,7 +47,7 @@ def assignedValue (columns : List CatalogColumn) (dqs : Bool) : Syntax.Expr → 
   | expression@.null | expression@(.numeric _) | expression@(.string _) | expression@(.blob _)
   | expression@(.currentTime _) | expression@(.negate _) | expression@(.positive _)
   | expression@(.equals ..) | expression@(.compare ..) | expression@(.and ..) | expression@(.or ..)
-  | expression@(.not _) | expression@(.isNull ..) | expression@.countRows | expression@(.aggregate ..) =>
+  | expression@(.not _) | expression@(.isNull ..) | expression@(.callStar _) | expression@(.call ..) =>
     literalValue dqs expression
 
 /-- Turn a value issue into the statement's resolution: a prepare error keeps the
@@ -132,10 +132,10 @@ def resolveFilter (context : ResolveContext) (columns : List CatalogColumn) :
   | some (.equals (.blob _) _) | some (.equals (.currentTime _) _) | some (.equals (.negate _) _)
   | some (.equals (.positive _) _) | some (.equals (.equals ..) _) | some (.equals (.compare ..) _)
   | some (.equals (.and ..) _) | some (.equals (.or ..) _) | some (.equals (.not _) _)
-  | some (.equals (.isNull ..) _) | some (.equals .countRows _) | some (.equals (.aggregate ..) _)
+  | some (.equals (.isNull ..) _) | some (.equals (.callStar _) _) | some (.equals (.call ..) _)
   | some .null | some (.numeric _) | some (.string _) | some (.blob _) | some (.currentTime _)
   | some (.identifier ..) | some (.negate _) | some (.positive _) | some (.compare ..) | some (.and ..)
-  | some (.or ..) | some (.not _) | some (.isNull ..) | some .countRows | some (.aggregate ..) =>
+  | some (.or ..) | some (.not _) | some (.isNull ..) | some (.callStar _) | some (.call ..) =>
     .error (.restriction [] "only a column equality filter is modeled; write WHERE column = integer")
 
 /-- Resolve UPDATE. Path 1 is the assignment list and path 2 the filter. -/
