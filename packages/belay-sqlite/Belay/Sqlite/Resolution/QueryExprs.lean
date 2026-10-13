@@ -1,5 +1,5 @@
 import Belay.Sqlite.Resolution.Writes
-import Belay.Sqlite.Resolution.QueryForm
+import Belay.Sqlite.Resolution.QueryAffinity
 
 set_option doc.verso true
 
@@ -11,62 +11,13 @@ are. -/
 
 namespace Belay.Sqlite
 
-/-- A resolved operand and its affinity in a comparison: a column reference has
-its column's affinity, every other expression has none. -/
-abbrev Operand := Resolved.Expr × Option Affinity
-
-/-- Whether an affinity is INTEGER, REAL or NUMERIC. -/
-def numericAffinity : Affinity → Bool
-  | .integer | .real | .numeric => true
-  | .text | .blob => false
-
-/-- Whether a resolved expression gives a truth value: a comparison, a logical
-operator, or {lit}`IS NULL`. -/
+/-- Whether a resolved expression gives a truth value without a text-to-number
+conversion: a comparison, a logical operator, {lit}`IS NULL`, arithmetic, or a
+{lit}`CAST` to INTEGER, REAL or NUMERIC, whose values are numbers or NULL. -/
 def Resolved.Expr.isCondition : Resolved.Expr → Bool
-  | .compare .. | .and .. | .or .. | .not _ | .isNull .. => true
-  | .column _ | .literal _ => false
-
-/-- The literal value of a resolved expression, if it is a literal. -/
-def Resolved.Expr.literal? : Resolved.Expr → Option Value
-  | .literal value => some value
-  | .column _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. => none
-
-/-- Whether a value is TEXT. -/
-def Value.isText : Value → Bool
-  | .text _ => true
-  | .null | .integer _ | .real _ | .blob _ => false
-
-/-- Whether TEXT affinity keeps a value unchanged: NULL, TEXT or BLOB. -/
-def Value.keepsText : Value → Bool
-  | .null | .text _ | .blob _ => true
-  | .integer _ | .real _ => false
-
-/-- Why the affinity rule of a comparison would convert one operand, given the
-affinity of the other: when the other operand has INTEGER, REAL or NUMERIC
-affinity, a text literal or a column of another affinity would get NUMERIC
-affinity (R-58138-64688); when the other operand is a TEXT column and this one has
-no affinity, a value other than a NULL, text or blob literal would get TEXT
-affinity (R-29161-32953). -/
-def conversion (target : Operand) (other : Option Affinity) : Option String :=
-  if other.any numericAffinity then
-    match target.2 with
-    | some affinity =>
-      if numericAffinity affinity then none
-      else some "a comparison of columns with different kinds of affinity is not modeled; compare columns with the same kind"
-    | none =>
-      if (target.1.literal?.map Value.isText).getD false then
-        some "a text value compared with a numeric column would be converted to a number; write a number"
-      else none
-  else if other == some .text && target.2.isNone && !((target.1.literal?.map Value.keepsText).getD false) then
-    some "a number compared with a TEXT column would be converted to text; write a text value"
-  else none
-
-/-- Why the affinity rule of a comparison would convert an operand, with the path of
-that operand (R-10393-27560), checking the left operand first. -/
-def affinityIssue (left right : Operand) : Option (List Nat × String) :=
-  match conversion left right.2 with
-  | some reason => some ([0], reason)
-  | none => (conversion right left.2).map ([1], ·)
+  | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. => true
+  | .cast affinity _ => numericAffinity affinity
+  | .column _ | .literal _ | .coalesce .. => false
 
 /-- The issue of an aggregate where only a row value can be: SQLite's
 {lit}`misuse of aggregate function` when {lit}`misuse` is true (in {lit}`WHERE`, or
@@ -76,13 +27,15 @@ def aggregateIssue (misuse : Bool) (function : String) : ValueIssue :=
   if misuse then .prepare (.misuseOfAggregate function)
   else .restriction [] "an aggregate inside an expression is not modeled; use the aggregate as a whole result column"
 
-/-- The aggregate of slice 1 that a function name names, after ASCII folding:
-{lit}`count`, {lit}`min` or {lit}`max` of one operand. -/
+/-- The aggregate that a function name names, after ASCII folding: {lit}`count`,
+{lit}`min`, {lit}`max`, {lit}`sum` or {lit}`avg` of one operand. -/
 def aggregateNamed (name : String) : Option (Resolved.Expr → Resolved.Aggregate) :=
   match normalizeIdentifier name with
   | "count" => some .count
   | "min" => some .min
   | "max" => some .max
+  | "sum" => some .sum
+  | "avg" => some .avg
   | _ => none
 
 /-- Whether a call is an aggregate of slice 1: {lit}`count(*)`, or a named aggregate
@@ -91,11 +44,24 @@ def aggregateCall : Syntax.Expr → Bool
   | .callStar name => normalizeIdentifier name == "count"
   | .call name _ => (aggregateNamed name).isSome
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .negate _ | .positive _
-  | .equals .. | .compare .. | .and .. | .or .. | .not _ | .isNull .. => false
+  | .equals .. | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast .. | .callPair .. => false
 
-/-- The restriction for a function call that slice 1 does not evaluate. -/
+/-- The restriction for a function call that the model does not evaluate. -/
 def unmodeledFunction : ValueIssue :=
-  .restriction [] "only COUNT(*), and COUNT, MIN and MAX of one argument, are modeled as functions"
+  .restriction [] "only COUNT(*), COUNT, MIN, MAX, SUM and AVG of one argument, and COALESCE of two or more arguments are modeled as functions"
+
+/-- The issue of a call with {lit}`*` or one argument that is not an aggregate:
+SQLite's {lit}`wrong number of arguments` for {lit}`COALESCE`, which needs two or more
+arguments; else {name}`unmodeledFunction`. -/
+def callIssue (name : String) : ValueIssue :=
+  if normalizeIdentifier name == "coalesce" then .prepare (.wrongArgumentCount name) else unmodeledFunction
+
+/-- The issue of a call with two or more arguments that is not {lit}`COALESCE`: SQLite's
+{lit}`wrong number of arguments` for {lit}`COUNT`, whose aggregate takes one argument;
+else {name}`unmodeledFunction`. {lit}`MIN` and {lit}`MAX` with two or more arguments are
+scalar functions, which the model does not evaluate. -/
+def pairIssue (name : String) : ValueIssue :=
+  if normalizeIdentifier name == "count" then .prepare (.wrongArgumentCount name) else unmodeledFunction
 
 /-- Whether an expression names a result column alias: an identifier that names no
 column of the table but, after ASCII folding, is one of {lit}`aliases`. SQLite
@@ -106,7 +72,8 @@ def namesAlias (columns : List CatalogColumn) (aliases : List String) : Syntax.E
       aliases.any (normalizeIdentifier · == normalizeIdentifier name)
   | .equals left right | .compare _ left right | .and left right | .or left right =>
     namesAlias columns aliases left || namesAlias columns aliases right
-  | .not operand | .isNull operand _ | .call _ operand | .negate operand | .positive operand =>
+  | .arithmetic _ left right | .callPair _ left right => namesAlias columns aliases left || namesAlias columns aliases right
+  | .not operand | .isNull operand _ | .call _ operand | .negate operand | .positive operand | .cast operand _ =>
     namesAlias columns aliases operand
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ => false
 
@@ -126,7 +93,10 @@ def condition (path : List Nat) : Except ValueIssue Operand → Except ValueIssu
 first column with its folded name; otherwise it is a string literal when it was
 written in double quotes and {lit}`dqs` is on, else SQLite's
 {lit}`no such column: %s`. The operands of {lit}`AND`, {lit}`OR` and {lit}`NOT` must be
-conditions. An aggregate gives {name}`aggregateIssue`. -/
+conditions. An aggregate gives {name}`aggregateIssue`. A numeric literal has the value of
+{name}`queryNumeric`; unary minus of another expression is {lit}`0 - operand` and unary
+plus keeps the value without its affinity, as SQLite generates them; a {lit}`CAST` has
+the affinity of its type name. -/
 def resolveOperand (dqs : Bool) (columns : List CatalogColumn) (misuse : Bool) : Syntax.Expr → Except ValueIssue Operand
   | .identifier name doubleQuoted => match columnPosition columns name with
     | some position => .ok (.column position, (columns[position]?.map CatalogColumn.affinity))
@@ -159,10 +129,31 @@ def resolveOperand (dqs : Bool) (columns : List CatalogColumn) (misuse : Bool) :
   | .isNull operand negated => do
     let a ← (resolveOperand dqs columns misuse operand).mapError (·.under [0])
     .ok (.isNull a.1 negated, none)
+  | .arithmetic operator left right => do
+    let a ← (resolveOperand dqs columns misuse left).mapError (·.under [1])
+    let b ← (resolveOperand dqs columns misuse right).mapError (·.under [2])
+    .ok (.arithmetic operator a.1 b.1, none)
+  | .cast operand typeName => do
+    let a ← (resolveOperand dqs columns misuse operand).mapError (·.under [0])
+    let affinity := affinityOf (some typeName)
+    .ok (.cast affinity a.1, some affinity)
+  | .callPair name first rest =>
+    if normalizeIdentifier name == "coalesce" then do
+      let a ← (resolveOperand dqs columns misuse first).mapError (·.under [1])
+      let b ← (resolveOperand dqs columns misuse rest).mapError (·.under [2])
+      .ok (.coalesce a.1 b.1, none)
+    else .error (pairIssue name)
+  | .numeric text => (queryNumeric text false).map fun value => (.literal value, none)
+  | .negate (.numeric text) => (queryNumeric text true).map fun value => (.literal value, none)
+  | .negate operand => do
+    let a ← (resolveOperand dqs columns misuse operand).mapError (·.under [0])
+    .ok (.arithmetic .subtract (.literal (.integer 0)) a.1, none)
+  | .positive operand => do
+    let a ← (resolveOperand dqs columns misuse operand).mapError (·.under [0])
+    .ok (a.1, none)
   | call@(.callStar name) | call@(.call name _) =>
-    .error (if aggregateCall call then aggregateIssue misuse name else unmodeledFunction)
-  | literal@.null | literal@(.numeric _) | literal@(.string _) | literal@(.blob _)
-  | literal@(.currentTime _) | literal@(.negate _) | literal@(.positive _) =>
+    .error (if aggregateCall call then aggregateIssue misuse name else callIssue name)
+  | literal@.null | literal@(.string _) | literal@(.blob _) | literal@(.currentTime _) =>
     (literalValue dqs literal).map fun value => (.literal value, none)
 
 end Belay.Sqlite

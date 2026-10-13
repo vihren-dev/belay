@@ -40,8 +40,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "  | .count _ => .integer rows.length"),
     "extremum_over_null": (EVALUATION, "(values.filter (!·.isNull)).foldl", "values.foldl"),
     "empty_aggregate_no_row": (EVALUATION,
-        "let grouped := if query.groupBy.isEmpty then [rows] else",
-        "let grouped := if query.groupBy.isEmpty then (if rows.isEmpty then [] else [rows]) else"),
+        "  if query.groupBy.isEmpty then [rows] else groups query.groupBy rows",
+        "  if query.groupBy.isEmpty then (if rows.isEmpty then [] else [rows]) else groups query.groupBy rows"),
     "limit_one_too_high": (EVALUATION, "window.take limit", "window.take (limit + 1)"),
     "offset_ignored": (EVALUATION, "let window := sorted.drop query.offset", "let window := sorted"),
     "no_such_column": (EXPRESSIONS,
@@ -51,8 +51,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "no_misuse_of_aggregate": (EXPRESSIONS,
         "  if misuse then .prepare (.misuseOfAggregate function)", "  if false then .prepare (.misuseOfAggregate function)"),
     "no_aggregate_in_group_by": (RESOLUTION,
-        ".error (if aggregateCall term then .prepare .aggregateInGroupBy else unmodeledFunction.under [3, item])",
-        ".error (unmodeledFunction.under [3, item])"),
+        ".error (if aggregateCall term then .prepare .aggregateInGroupBy else (callIssue name).under [3, item])",
+        ".error ((callIssue name).under [3, item])"),
     "no_order_by_out_of_range": (RESOLUTION,
         "      | some (.error ()) => .error (.prepare (.orderByOutOfRange (item + 1) outputs.length))",
         "      | some (.error ()) => .error (.restriction [4, item] \"mutant\")"),
@@ -62,3 +62,17 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
 replacement. The names follow the list of ADR 0012, "Testing"."""
+
+TARGETS: dict[str, tuple[str, ...]] = {
+    "null_equals_null": ("compare-null-operands",), "integer_as_double": ("integer-real-exact",),
+    "text_without_case": ("text-binary",), "descending_ignored": ("order-descending",),
+    "null_last_ascending": ("order-storage-classes",), "count_counts_null": ("count-skips-null",),
+    "extremum_over_null": ("min-max-skip-null",), "empty_aggregate_no_row": ("aggregate-empty-table",),
+    "limit_one_too_high": ("limit-offset",), "offset_ignored": ("limit-offset",),
+    "no_such_column": ("no-such-column",), "no_such_table": ("no-such-table",),
+    "no_misuse_of_aggregate": ("aggregate-in-where",), "no_aggregate_in_group_by": ("aggregate-written-in-group-by",),
+    "no_order_by_out_of_range": ("order-by-out-of-range",), "no_group_by_out_of_range": ("group-by-out-of-range",),
+}
+"""The authored case that each mutant changes: the case of
+`conformance.authored_queries` that tests the rule. A mutant copy classifies only its
+target, which keeps the measurement short."""

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-13T20:25:51+00:00",
+  "finding": "20261013T200302Z-a101c923#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the docstring states the half-open interval for nonzero doubles and the zero exception"
+}

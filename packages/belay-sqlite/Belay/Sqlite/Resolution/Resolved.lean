@@ -66,6 +66,9 @@ inductive PrepareError where
   | orderByOutOfRange (term columns : Nat)
   /-- {lit}`%r GROUP BY term out of range - should be between 1 and %d`. -/
   | groupByOutOfRange (term columns : Nat)
+  /-- {lit}`wrong number of arguments to function %s()`, with the function name as
+  written ({lit}`resolveExprStep`). -/
+  | wrongArgumentCount (function : String)
   deriving Repr, DecidableEq
 
 /-- A model restriction: SQLite accepts the SQL, but the model does not describe

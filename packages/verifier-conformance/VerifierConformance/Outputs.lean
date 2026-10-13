@@ -64,13 +64,20 @@ Transitions and failure status come from production advance, never a second
 evaluator. A successful INSERT changes one row per VALUES row and a successful
 UPDATE changes each row that its filter selects. A query has its result column
 names and the rows of {name}`Resolved.Query.run` over the table before it, and no
-change count; a query whose table is missing has no output. -/
+change count; a query whose table is missing has no output. A query that fails with
+{lit}`integer overflow` has its column names and no rows when it has no
+{lit}`GROUP BY`; with {lit}`GROUP BY`, SQLite may return the rows of other groups
+before the failing one, in an order the model does not describe, so it has no output. -/
 def statementOutput (statement : Resolved.Statement) (before : SqlState)
     (transition : SqlTransition) : Option StatementOutput :=
   let successful := match transition with | .next _ => true | _ => false
   let constraintFailure := match transition with
     | .halt (.failure _ .constraintViolation _) => true
     | .halt (.pending _ _ (some (_, .constraintViolation))) => true
+    | _ => false
+  let overflow := match transition with
+    | .halt (.failure _ .integerOverflow _) => true
+    | .halt (.pending _ _ (some (_, .integerOverflow))) => true
     | _ => false
   match statement with
   | .insert _ rows _ =>
@@ -83,7 +90,7 @@ def statementOutput (statement : Resolved.Statement) (before : SqlState)
     else if constraintFailure then some ⟨[], [], some 0⟩ else none
   | .query query =>
     if successful then (before.database query.table).map fun table => ⟨query.names, query.run table, none⟩
-    else none
+    else if overflow && query.groupBy.isEmpty then some ⟨query.names, [], none⟩ else none
   | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ =>
     some ⟨[], [], none⟩
 

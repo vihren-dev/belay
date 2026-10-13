@@ -1,4 +1,5 @@
 import Belay.Sqlite.Comparison
+import Belay.Sqlite.Summation
 
 set_option doc.verso true
 
@@ -26,6 +27,12 @@ inductive Expr where
   | not (operand : Expr)
   /-- {lit}`IS NULL`, or {lit}`IS NOT NULL` when {lit}`negated` is true. -/
   | isNull (operand : Expr) (negated : Bool)
+  /-- An arithmetic operator between two operands. -/
+  | arithmetic (operator : ArithmeticOperator) (left right : Expr)
+  /-- {lit}`CAST` to the affinity of the written type name. -/
+  | cast (affinity : Affinity) (operand : Expr)
+  /-- {lit}`COALESCE`: the first operand when it is not NULL, else the second. -/
+  | coalesce (first rest : Expr)
   deriving Repr, DecidableEq
 
 /-- An aggregate function of slice 1, over the rows of one group. -/
@@ -38,7 +45,19 @@ inductive Aggregate where
   | min (operand : Expr)
   /-- {lit}`MAX(x)`: the greatest operand value that is not NULL, or NULL. -/
   | max (operand : Expr)
+  /-- {lit}`SUM(x)`: the sum of the operand values that are not NULL, by
+  {name}`SumState.sumValue`; it fails on an integer overflow. -/
+  | sum (operand : Expr)
+  /-- {lit}`AVG(x)`: the average of the operand values that are not NULL, by
+  {name}`SumState.averageValue`. -/
+  | avg (operand : Expr)
   deriving Repr, DecidableEq
+
+/-- Whether an aggregate can fail while the statement runs: {lit}`SUM`, on an integer
+overflow. -/
+def Aggregate.canFail : Aggregate → Bool
+  | .sum _ => true
+  | .countRows | .count _ | .min _ | .max _ | .avg _ => false
 
 /-- One result column: an expression over a row, or, in an aggregate query, an
 aggregate over a group or an expression over the group's first row, which
@@ -49,6 +68,12 @@ inductive Output where
   /-- An aggregate over the rows of a group. -/
   | aggregate (aggregate : Aggregate)
   deriving Repr, DecidableEq
+
+/-- Whether a result column can fail while the statement runs: an aggregate that
+{name}`Aggregate.canFail`. -/
+def Output.canFail : Output → Bool
+  | .aggregate function => function.canFail
+  | .scalar _ => false
 
 /-- The value that one {lit}`ORDER BY` term sorts by: an expression over the source
 row (only in a query that is not an aggregate query), or a result column. -/

@@ -82,6 +82,23 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
   (filter := some (.equals (.identifier "d" true) (.numeric "0"))))
 #guard restrictedOne (select [.expression (.identifier "Abc" false) (some "d") "Abc"]
   (orderBy := [{ expression := .isNull (.identifier "D" false) false, descending := false }]))
+-- Numbers (slice 2): a REAL literal has SQLite's value; unary minus of a column is
+-- `0 - column`; a CAST has the affinity of its type name; COALESCE needs two arguments.
+#guard (queryOf (select [written (.numeric "1.5") "1.5"])).map (·.columns) == some [.scalar (.literal (.real 0x3FF8000000000000))]
+#guard (queryOf (select [written (.negate (.identifier "Abc" false)) "-Abc"])).map (·.columns) ==
+  some [.scalar (.arithmetic .subtract (.literal (.integer 0)) (.column 0))]
+#guard (queryOf (select [written (.cast (.identifier "b" false) "int") "CAST(b AS int)"])).map (·.columns) ==
+  some [.scalar (.cast .integer (.column 1))]
+#guard errorOf (select [written (.call "Coalesce" (.identifier "b" false)) "Coalesce(b)"]) == some (.wrongArgumentCount "Coalesce")
+#guard errorOf (select [written (.callPair "count" (.identifier "b" false) (.identifier "b" false)) "count(b, b)"]) ==
+  some (.wrongArgumentCount "count")
+#guard errorOf (select [written (.negate (.numeric "0x8000000000000000")) "-0x8000000000000000"]) ==
+  some (.hexLiteralTooBig "-0x8000000000000000")
+-- A COALESCE with a column may be TEXT, which a numeric column would convert: a restriction.
+#guard restrictedOne (select [.star] (filter := some (.equals (.identifier "Abc" false)
+  (.callPair "coalesce" (.identifier "b" false) (.numeric "0")))))
+-- Arithmetic gives a number, so it can be a condition.
+#guard (queryOf (select [.star] (filter := some (.arithmetic .add (.identifier "Abc" false) (.numeric "1"))))).isSome
 -- GROUP BY resolves a name to a source column before a result alias, so an alias
 -- of an aggregate does not hide the column `b`.
 #guard (queryOf (select [.expression (.callStar "count") (some "b") "count(*)"] (groupBy := [.identifier "b" false]))).map

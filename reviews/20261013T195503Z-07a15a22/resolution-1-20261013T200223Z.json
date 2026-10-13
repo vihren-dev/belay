@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-13T20:02:23+00:00",
+  "finding": "20261013T195503Z-07a15a22#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "realSameAsIntBound is a named definition with a docstring"
+}

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-13T19:26:59+00:00",
+  "finding": "20261013T191950Z-9c17ded6#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "atofNormalizeLimit is a named definition with a docstring"
+}

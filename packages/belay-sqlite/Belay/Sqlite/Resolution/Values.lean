@@ -1,6 +1,7 @@
 import Belay.Sqlite.LiteralData
 import Belay.Sqlite.Resolution.Profile
 import Belay.Sqlite.Resolution.Resolved
+import Belay.Sqlite.NumberConvert
 
 set_option doc.verso true
 
@@ -79,13 +80,33 @@ def numericValue (text : String) (negated : Bool) : NumericValue :=
     else decimalNumericValue chars sign
   | _ => decimalNumericValue chars sign
 
+/-- The text of SQLite's {lit}`hex literal too big` error: the literal as written, after
+a minus sign when it is negated ({lit}`codeInteger`). -/
+def hexErrorText (text : String) (negated : Bool) : String := (if negated then "-" else "") ++ text
+
 /-- Convert a numeric literal to a stored value. A REAL value is a model restriction;
 a hexadecimal literal over 64 bits is SQLite's prepare error. -/
 def numericLiteral (text : String) (negated : Bool) (path : List Nat) : Except ValueIssue Value :=
   match numericValue text negated with
   | .integer value => .ok (.integer value)
   | .real => .error (.restriction path "REAL values are not modeled; use an integer, text, blob or NULL value")
-  | .hexTooBig => .error (.prepare (.hexLiteralTooBig text))
+  | .hexTooBig => .error (.prepare (.hexLiteralTooBig (hexErrorText text negated)))
+
+/-- The value of a numeric literal in a query ({lit}`codeInteger` and {lit}`codeReal`):
+an integer as in {name}`numericValue`; a REAL by {name}`atof` of the text without
+separators, negated when {lit}`negated` is true; and the {lit}`hex literal too big`
+error for a hexadecimal literal outside 64 bits, also after negation. -/
+def queryNumeric (text : String) (negated : Bool) : Except ValueIssue Value :=
+  let chars := text.toList.filter (· ≠ '_')
+  let hex := chars.take 2 == ['0', 'x'] || chars.take 2 == ['0', 'X']
+  match numericValue text negated with
+  | .integer value => .ok (.integer value)
+  | .hexTooBig => .error (.prepare (.hexLiteralTooBig (hexErrorText text negated)))
+  | .real =>
+    if hex then .error (.prepare (.hexLiteralTooBig (hexErrorText text negated)))
+    else
+      let value := (atof (String.ofList chars).toUTF8.toList).1
+      .ok (.real (if negated then -value else value).toBits)
 
 /-- The stored value of a literal expression in a VALUES row or a SET assignment,
 where no column is in scope. NULL, string and blob literals keep their bytes.
@@ -111,6 +132,8 @@ def literalValue (dqs : Bool) : Syntax.Expr → Except ValueIssue Value
   | .equals .. | .compare .. | .and .. | .or .. | .not _ | .isNull .. =>
     .error (.restriction [] "a comparison or logical operator is not a literal value; write a literal value")
   | .callStar _ | .call .. => .error (.restriction [] "an aggregate is not a literal value; write a literal value")
+  | .arithmetic .. | .cast .. | .callPair .. =>
+    .error (.restriction [] "an expression is not a literal value outside a query; write a literal value")
 
 /-- Admit a value only when the column's affinity stores it unchanged
 ({name}`LiteralData.lossless`); otherwise the conversion is a model restriction. -/

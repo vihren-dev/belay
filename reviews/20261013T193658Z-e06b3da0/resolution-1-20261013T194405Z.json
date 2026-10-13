@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-13T19:44:05+00:00",
+  "finding": "20261013T193658Z-e06b3da0#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "realTextDigits, realTextDigitLimit and plainExponentMinimum are named definitions with docstrings"
+}

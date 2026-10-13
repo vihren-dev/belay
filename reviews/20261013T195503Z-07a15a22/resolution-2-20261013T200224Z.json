@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-13T20:02:24+00:00",
+  "finding": "20261013T195503Z-07a15a22#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "ArithmeticOperator.apply uses Value.isNullCell, which matches every constructor; castValue matches every constructor; the option pair match is explicit"
+}

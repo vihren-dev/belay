@@ -22,9 +22,10 @@ def integerLiteral : Syntax.Expr → Option Int
   | .negate operand => match operand with
     | .numeric text => (numericValue text true).integer?
     | .null | .string _ | .blob _ | .currentTime _ | .identifier .. | .negate _ | .positive _ | .equals ..
-    | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. => none
+    | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast ..
+    | .callPair .. => none
   | .null | .string _ | .blob _ | .currentTime _ | .identifier .. | .positive _ | .equals .. | .compare ..
-  | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. => none
+  | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast .. | .callPair .. => none
 
 /-- One resolved result column with its name: {lit}`*` gives every column of the
 table under its defined name; an aggregate is a whole result column; any other
@@ -38,17 +39,17 @@ def resolveResultColumn (dqs : Bool) (columns : List CatalogColumn) (column : Na
     match value with
     | .callStar name =>
       if normalizeIdentifier name == "count" then .ok (named (.aggregate .countRows) none)
-      else throw (unmodeledFunction.under [0, column, 0])
+      else throw ((callIssue name).under [0, column, 0])
     | .call name operand => match aggregateNamed name with
       | some aggregate =>
         let (resolved, _) ← (resolveOperand dqs columns true operand).mapError (·.under [0, column, 0, 1])
         .ok (named (.aggregate (aggregate resolved)) none)
-      | none => throw (unmodeledFunction.under [0, column, 0])
+      | none => throw ((callIssue name).under [0, column, 0])
     | .identifier name _ =>
       let (resolved, _) ← (resolveOperand dqs columns false value).mapError (·.under [0, column, 0])
       .ok (named (.scalar resolved) ((columnPosition columns name).bind (columns[·]?.map CatalogColumn.name)))
     | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .positive _ | .equals ..
-    | .compare .. | .and .. | .or .. | .not _ | .isNull .. =>
+    | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast .. | .callPair .. =>
       let (resolved, _) ← (resolveOperand dqs columns false value).mapError (·.under [0, column, 0])
       .ok (named (.scalar resolved) none)
 
@@ -71,7 +72,8 @@ def namedResult (names : List (Option String)) : Syntax.Expr → Option (Except 
   | .identifier name _ => (aliasIndex names name).map .ok
   | term@.null | term@(.numeric _) | term@(.string _) | term@(.blob _) | term@(.currentTime _)
   | term@(.negate _) | term@(.positive _) | term@(.equals ..) | term@(.compare ..) | term@(.and ..)
-  | term@(.or ..) | term@(.not _) | term@(.isNull ..) | term@(.callStar _) | term@(.call ..) =>
+  | term@(.or ..) | term@(.not _) | term@(.isNull ..) | term@(.callStar _) | term@(.call ..)
+  | term@(.arithmetic ..) | term@(.cast ..) | term@(.callPair ..) =>
     (integerLiteral term).map fun (number : Int) =>
       if 1 ≤ number ∧ number ≤ (names.length : Int) then .ok (number.toNat - 1) else .error ()
 
@@ -81,6 +83,15 @@ def windowValue (path : List Nat) : Option Syntax.Expr → Except ValueIssue (Op
   | some term => match integerLiteral term with
     | some value => .ok (some value)
     | none => .error (.restriction path "only an integer literal is modeled as LIMIT or OFFSET; write an integer")
+
+/-- Whether a query is a model restriction because SQLite may skip a failing group: it
+has {lit}`GROUP BY`, a {lit}`LIMIT` or {lit}`OFFSET`, and a result column that can fail
+({name}`Resolved.Output.canFail`). SQLite finalizes the groups in an order that the
+model does not describe and stops at the window, so it may never compute a group
+whose {lit}`SUM` overflows. -/
+def windowSkipsFailure (groupBy : List Syntax.Expr) (limit offset : Option Syntax.Expr)
+    (outputs : List Resolved.Output) : Bool :=
+  !groupBy.isEmpty && (limit.isSome || offset.isSome) && outputs.any Resolved.Output.canFail
 
 /-- Resolve a {lit}`SELECT` from one table; see the module documentation for the steps. -/
 def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
@@ -115,14 +126,14 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
         | some position, _ => .ok (.column position)
         | none, some column => grouped column
         | none, none => (resolveOperand dqs table.columns true term).map (·.1) |>.mapError (·.under [3, item])
-      | .callStar _ | .call .. =>
-        .error (if aggregateCall term then .prepare .aggregateInGroupBy else unmodeledFunction.under [3, item])
+      | .callStar name | .call name _ =>
+        .error (if aggregateCall term then .prepare .aggregateInGroupBy else (callIssue name).under [3, item])
       | .numeric _ | .negate _ => match namedResult aliases term with
         | some (.ok column) => grouped column
         | some (.error ()) => .error (.prepare (.groupByOutOfRange (item + 1) outputs.length))
         | none => .error (.restriction [3, item] "only a column name or a result column number is modeled in GROUP BY")
       | .null | .string _ | .blob _ | .currentTime _ | .positive _ | .equals .. | .compare .. | .and .. | .or ..
-      | .not _ | .isNull .. =>
+      | .not _ | .isNull .. | .arithmetic .. | .cast .. | .callPair .. =>
         .error (.restriction [3, item] "only a column name or a result column number is modeled in GROUP BY")) groupBy
     if aggregate && !outputs.all (groupedOutput terms ·.1) then
       throw (.restriction [0] "a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it")
@@ -138,6 +149,8 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
     let limitValue ← windowValue [5] limit
     let offsetValue ← windowValue [6] offset
     if offsetValue.any (· < 0) then throw (.restriction [6] "a negative OFFSET is not modeled; write OFFSET 0 or more")
+    if windowSkipsFailure groupBy limit offset (outputs.map (·.1)) then
+      throw (.restriction [5] "SUM in a grouped query with LIMIT or OFFSET is not modeled, because SQLite may stop before an overflowing group; remove the window or the SUM")
     return { table := position, filter := condition, aggregate, groupBy := terms, columns := outputs.map (·.1),
              names := outputs.map (·.2), orderBy := order, offset := (offsetValue.getD 0).toNat,
              limit := limitValue.bind fun value => if value < 0 then none else some value.toNat }
