@@ -23,4 +23,4 @@ def publish(directory: Path) -> dict[str, Json]:
 
 
 if __name__ == "__main__":
-    authored_evidence.main(CORPUS, __doc__)
+    authored_evidence.main(CORPUS, "Record the authored query cases natively and write them as a new corpus directory.")

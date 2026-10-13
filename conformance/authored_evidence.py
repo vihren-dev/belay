@@ -56,8 +56,9 @@ def publish(corpus: AuthoredCorpus, directory: Path) -> dict[str, Json]:
     return manifest
 
 
-def main(corpus: AuthoredCorpus, description: str | None) -> None:
-    """Create the corpus directory given by `--output` and print its acquisition receipt."""
+def main(corpus: AuthoredCorpus, description: str) -> None:
+    """Create the corpus directory given by `--output` and print its acquisition receipt; the
+    description is the help text of the command."""
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--output", type=Path, required=True, help="New directory for the corpus")
     manifest = publish(corpus, parser.parse_args().output)
