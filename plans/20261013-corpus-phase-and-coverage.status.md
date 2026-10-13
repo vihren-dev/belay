@@ -1,6 +1,6 @@
 # Status: error phase in corpus records and the resolution coverage corpus, step 2b of ADR 0008
 
-Created 2026-10-13. Status: IN PROGRESS.
+Created 2026-10-13. Status: DONE (2026-10-13).
 Task: [task](20261013-corpus-phase-and-coverage.task.md).
 Specification: [ADR 0008](../docs/adr-0008-syntax-and-resolution-in-lean.md).
 Previous step: [step 2a status](20261013-measured-profile-limits.status.md).
@@ -48,9 +48,14 @@ Relevant files: `conformance/native_statements.py`, `conformance/native_record.p
   and corpus-v5 are now parsed and resolved instead of refused at once. Lean
   builds unchanged.
 
+- 2026-10-13: pull request A merged (#104). Pull request B (judge): the judge
+  compares the error phase of version 5 records and treats version 5 as a version
+  with outputs; `conformance/corpus-v6` freezes the 41 coverage cases; the claims
+  add its 37 agreeing cases and the 15 corpus-v4 and 70 corpus-v5 cases that
+  agree since #104; the lock is updated. Verdict: corpus-v6 37 AGREE, 4
+  MODEL_UNSUPPORTED, all other counts unchanged. Review
+  `20261013T115124Z-5a29143a`: no findings.
+
 ## Remaining
 
-- Pull request B (judge, owner approval): compare `phase` in `judge/catalog.py` or
-  `judge/compare.py`; add 5 to `judge/records.py` `WITH_OUTPUTS`; freeze
-  `conformance/corpus-v6` with `python -m conformance.resolution_evidence`;
-  claim it with `mustAgree` for the 37 agreeing cases; update the lock.
+- Nothing for step 2b. Pull request B needs the owner's approval (ADR 0011).
