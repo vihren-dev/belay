@@ -95,8 +95,9 @@ class ExecutionProfile:
         readonly = connection.library.sqlite3_db_readonly(connection.handle, b"main")
         if connection.access_mode != self.access_mode or readonly != int(self.access_mode == "read-only"):
             raise ValueError("Execution profile access mode readback differs")
-        if self.limits and measured_limits(connection) != dict(self.limits):
-            raise ValueError("Execution profile limits readback differs")
+        if self.limits and (measured := measured_limits(connection)) != dict(self.limits):
+            raise ValueError(f"Execution profile limits readback differs: expected {dict(self.limits)}, "
+                             f"measured {measured}. Establish the profile again on a new connection.")
 
     def effective_limits(self) -> Limits:
         """The limits that applied when this profile was recorded; before format 3, the

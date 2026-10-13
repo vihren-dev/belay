@@ -6,6 +6,7 @@ from the compile options of an older profile; `conformance.native_connection`
 reports whether a statement failed in `sqlite3_prepare_v2` or in `sqlite3_step`.
 """
 
+from collections.abc import Iterator
 from dataclasses import replace
 from pathlib import Path
 
@@ -21,7 +22,7 @@ DOCUMENTED = {name: default for name, (_, _, default) in LIMIT_IDS.items()}
 
 
 @pytest.fixture
-def connection(tmp_path: Path) -> Connection:
+def connection(tmp_path: Path) -> Iterator[Connection]:
     """One fresh connection to the pinned library."""
     opened = Connection(load_library(library_path()), tmp_path / "limits.db")
     yield opened
@@ -43,10 +44,11 @@ def test_lowered_column_limit_is_measured_and_enforced(connection: Connection) -
         connection.query("ALTER TABLE t ADD d;")
 
 
-@pytest.mark.parametrize("request_", [{"columns": 2001}, {"unknown": 1}, {"columns": -1}])
+@pytest.mark.parametrize("request_", [{"columns": 2001}, {"unknown": 1}, {"columns": -1}, {"columns": 4}])
 def test_limit_requests_above_the_build_or_unknown_are_refused(connection: Connection,
                                                                request_: dict[str, int]) -> None:
-    """SQLite caps a higher value silently, so the recorder refuses it instead of recording a cap."""
+    """SQLite caps a higher value silently, and cannot read its schema table with fewer than 5
+    columns, so the recorder refuses such requests instead of recording an unusable limit."""
     with pytest.raises(ValueError, match="Cannot lower the native limit"):
         lower_limits(connection, request_)
 

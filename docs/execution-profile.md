@@ -133,8 +133,8 @@ kept every limit at the compile-time value, so its limits are the `SQLITE_MAX_*`
 values of its compile options. No frozen record changes. Native connections no
 longer set a limit of their own: a new connection keeps the build's
 compile-time limits until a profile or fixture lowers them. SQLite cannot read
-its schema table with fewer than 5 columns, so a lowered column limit is at
-least 5.
+its schema table with fewer than 5 columns, so the recorder refuses to lower
+the column limit below 5. A profile record itself accepts any natural number.
 
 The recorder establishes trusted schema and both DQS modes on each connection,
 then verifies the settings and SQLite's actual database access flag. It checks

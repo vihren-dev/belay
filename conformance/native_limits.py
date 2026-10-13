@@ -23,6 +23,10 @@ LIMIT_IDS: dict[str, tuple[int, str, int]] = {
 """Each recorded limit: its `SQLITE_LIMIT_*` id, its compile option and SQLite's
 documented default. The names are the field names of Lean's `Limits`."""
 
+MINIMUM_COLUMNS = 5
+"""The lowest usable column limit: SQLite's own `sqlite_schema` table has 5 columns,
+and below that SQLite cannot read the schema."""
+
 Limits = dict[str, int]
 """One value for each name of `LIMIT_IDS`."""
 
@@ -38,18 +42,21 @@ def lower_limits(connection: Connection, requested: Mapping[str, int]) -> Limits
 
     A request must name known limits and must not exceed the current value: SQLite
     silently caps a higher value at the compile-time maximum, so a higher request
-    would record a limit that the fixture did not ask for.
+    would record a limit that the fixture did not ask for. A column limit below
+    `MINIMUM_COLUMNS` is refused, because the connection could not read its schema.
     """
     current = measured_limits(connection)
     for name, value in requested.items():
-        if name not in LIMIT_IDS or type(value) is not int or not 0 <= value <= current[name]:
+        lowest = MINIMUM_COLUMNS if name == "columns" else 0
+        if name not in LIMIT_IDS or type(value) is not int or not lowest <= value <= current[name]:
             raise ValueError(f"Cannot lower the native limit {name} to {value!r}; the connection allows "
-                             f"{current.get(name)}. Request a known limit at or below that value.")
+                             f"{lowest} to {current.get(name)}. Request a known limit in that range.")
         connection.library.sqlite3_limit(connection.handle, LIMIT_IDS[name][0], value)
     measured = measured_limits(connection)
     if any(measured[name] != value for name, value in requested.items()):
         raise RuntimeError(f"The native connection did not keep the requested limits: asked {dict(requested)}, "
-                           f"measured {measured}")
+                           f"measured {measured}. Check that the pinned SQLite library is in use, then request "
+                           f"limits that the connection reports back unchanged.")
     return measured
 
 
