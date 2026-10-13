@@ -1,6 +1,6 @@
 # Status: single-table queries, slice 1 of ADR 0012
 
-Created 2026-10-13. Status: IN PROGRESS.
+Created 2026-10-13. Status: DONE (after pull request B merges).
 Task: [task](20261013-single-table-queries.task.md).
 Specification: [ADR 0012](../docs/adr-0012-query-semantics.md).
 
@@ -48,7 +48,12 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Syntax.lean`,
   the new coverage proofs), `mutants` 21 s to 67 s (16 query mutants). Merging the
   two mutant tests into one pool did not help (69 s); the mutant rebuilds use all
   cores. PR A opened.
+- 2026-10-13: pull request A merged (#107). Pull request B: `conformance/corpus-v7`
+  (the 36 query coverage cases, from `conformance.query_evidence`) is claimed with
+  every case in `mustAgree`, and the corpus cases that now agree are added to
+  `mustAgree`: v1 +2, v2 +2, v3 +3, v4 +1, v5 +124. The judge lock changes only
+  the `judge` entry and adds `corpus corpus-v7`. The verdict passes.
 
 ## Remaining
 
-- PR B (judge: claim a query corpus, mustAgree cases).
+- Nothing for slice 1. Next: slice 2 of ADR 0012 (numbers).
