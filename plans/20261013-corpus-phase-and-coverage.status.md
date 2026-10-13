@@ -41,10 +41,15 @@ Relevant files: `conformance/native_statements.py`, `conformance/native_record.p
   default). Review `20261013T084407Z-248564ed` asked for neighbors of every
   condition; added. `conformance/resolution_evidence.py` writes
   them as corpus version 6; `corpus_shards.write` takes the record version.
+- 2026-10-13: CI time of pull request A against `main` `69bd75b4`, two rounds that
+  alternate `main` and the branch, forced rebuilds of the full `tests` set: 239 s
+  and 239 s on `main`, 251 s and 252 s on the branch (+13 s, +5%). The verdict's
+  prediction step takes 8 s instead of 2 s, because profiled records of corpus-v4
+  and corpus-v5 are now parsed and resolved instead of refused at once. Lean
+  builds unchanged.
 
 ## Remaining
 
-- Pull request A: CI time, push, pull request.
 - Pull request B (judge, owner approval): compare `phase` in `judge/catalog.py` or
   `judge/compare.py`; add 5 to `judge/records.py` `WITH_OUTPUTS`; freeze
   `conformance/corpus-v6` with `python -m conformance.resolution_evidence`;
