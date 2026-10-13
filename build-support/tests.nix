@@ -109,7 +109,7 @@ let
     "native_storage"
     "refresh_corpus" "requirement_cases" "requirement_coverage"
     "authored_cases" "authored_cases_queries" "authored_boundaries" "authored_review" "authored_report"
-    "authored_transactions" "transaction_evidence"
+    "authored_transactions" "transaction_evidence" "authored_resolution" "resolution_evidence"
     "upstream_selection" "upstream_catalog" "upstream_sampling" "upstream_profiles" "upstream_functions" "upstream_result_values"
     "corpus_shards" "corpus_workers" "corpus_evidence" "corpus_acquisition" "locked_corpora" "freeze_corpus" "freeze_validation" "freeze_profiles" "workload" "workload_inputs"
     "upstream_assertions"

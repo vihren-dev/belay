@@ -74,6 +74,16 @@ proof still builds. A mutant is killed when any case gets a verdict other than
 AGREE; three mutants move a case out of the model's scope instead of making it
 disagree. The `mutants` Nix suite requires every mutant to be killed.
 
+`conformance/authored_resolution.py` holds the coverage cases of ADR 0008 for the
+first-scope resolution rules: each condition, a neighbor where it just does not
+apply, and cases where two errors apply at once, each with requirement
+identifiers. They are recorded as native version 5 records, with the error phase of
+each statement, and the column-limit cases under a column limit of 5. All cases
+agree with the model except two whose SQL it does not describe.
+`python -m conformance.resolution_evidence --output DIRECTORY` freezes them as
+corpus version 6. The judge claims such a corpus only in a separate,
+owner-approved change.
+
 `conformance/cases/` freezes the native cases in the current case format. Every model test
 re-executes its original SQL and requires equality with that frozen record before
 compiled and kernel checking. The files came from `just conformance --prove`;

@@ -13,9 +13,9 @@ from conformance.native_replay import output_wire
 from conformance.native_call_recording import validate_recording
 from conformance.native_storage import CASE_BYTE_LIMIT, check_size, expanded_record, serialized, shared_record
 from conformance.corpus_workers import validated_shards
+from conformance.record_versions import PROFILED as NATIVE_VERSIONS  # Record versions a corpus may declare.
 
-FORMATS = {"shardStorageVersion": 1, "caseFormatVersion": 2,
-           "nativeVersion": 4, "snapshotStorageVersion": 1}
+FORMATS = {"shardStorageVersion": 1, "caseFormatVersion": 2, "nativeVersion": 4, "snapshotStorageVersion": 1}
 
 
 def source_path(directory: Path, relative: Json) -> Path:
@@ -44,7 +44,7 @@ def formats(value: dict[str, Json], *, root: bool = False) -> None:
     for field, expected in FORMATS.items():
         if field == "shardStorageVersion" and not root:
             continue
-        if type(value.get(field)) is not int or value[field] != expected:
+        if type(value.get(field)) is not int or value[field] not in (NATIVE_VERSIONS if field == "nativeVersion" else (expected,)):
             raise ValueError(f"Unsupported corpus format: {field}")
 
 
@@ -78,7 +78,7 @@ def payload_records(payload: bytes, binding: dict[str, Json]) -> list[dict[str, 
         if not isinstance(value, dict):
             raise ValueError("Invalid corpus shard record")
         for field in ("nativeVersion", "snapshotStorageVersion"):
-            if type(value.get(field)) is not int or value[field] != FORMATS[field]:
+            if type(value.get(field)) is not int or value[field] != binding.get(field, FORMATS[field]):
                 raise ValueError(f"Unsupported corpus record format: {field}")
         check_size(len(serialized(value)))
         record = expanded_record(value, byte_limit=CASE_BYTE_LIMIT)
@@ -148,11 +148,13 @@ def load(directory: Path, manifest: dict[str, Json], *, executor: Executor | Non
 
 
 def write(directory: Path, shards: list[tuple[str, str, list[dict[str, Json]]]], *,
-          corpus_version: int = 4, metadata: dict[str, Json] | None = None) -> dict[str, Json]:
-    """Validate all inputs before freezing a new directory; existing evidence is never replaced."""
+          corpus_version: int = 4, metadata: dict[str, Json] | None = None, native_version: int = 4) -> dict[str, Json]:
+    """Validate all inputs before freezing a new directory; existing evidence is never replaced.
+    Every record has the record version `native_version`, which the manifest declares."""
     if directory.exists() or directory.is_symlink():
         raise ValueError("Corpus output already exists")
     natural(corpus_version, positive=True)
+    formats(declared := {**FORMATS, "nativeVersion": native_version}, root=True)
     if not shards:
         raise ValueError("Invalid corpus shards")
     declarations: list[Json] = []
@@ -171,7 +173,7 @@ def write(directory: Path, shards: list[tuple[str, str, list[dict[str, Json]]]],
         declaration: dict[str, Json] = {"path": path, "source": source, "part": part,
             "recordedCases": len(cases), "casesSha256": hashlib.sha256(payload).hexdigest(),
             "executionProfiles": profiles(cases),
-            **{field: version for field, version in FORMATS.items() if field != "shardStorageVersion"}}
+            **{field: version for field, version in declared.items() if field != "shardStorageVersion"}}
         checked = payload_records(payload, declaration)
         for record in checked:
             if record["name"] in names:
@@ -181,7 +183,7 @@ def write(directory: Path, shards: list[tuple[str, str, list[dict[str, Json]]]],
         declarations.append(declaration)
         compressed.append((path, gzip.compress(payload, mtime=0)))
         combined.update(payload)
-    manifest: dict[str, Json] = {**FORMATS, "corpusVersion": corpus_version,
+    manifest: dict[str, Json] = {**declared, "corpusVersion": corpus_version,
         "recordedCases": len(records), "casesSha256": combined.hexdigest(),
         "executionProfiles": profiles(records), "shards": declarations}
     if metadata is not None and manifest.keys() & metadata.keys():
