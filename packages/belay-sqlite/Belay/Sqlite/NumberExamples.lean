@@ -1,10 +1,11 @@
 import Belay.Sqlite.NumberConvert
+import Belay.Sqlite.RealText
 
 set_option doc.verso true
 
-/-! Checked examples of SQLite's text-to-number conversions (ADR 0012, slice 2). Each
-expected value is the result of {lit}`CAST(text AS REAL)` or {lit}`CAST(text AS INTEGER)`
-in the pinned native SQLite 3.51.0. The examples fix the intended reading of each
+/-! Checked examples of SQLite's conversions between text and numbers (ADR 0012, slice 2).
+Each expected value is the result of {lit}`CAST(text AS REAL)`, {lit}`CAST(text AS INTEGER)`
+or {lit}`CAST(real AS TEXT)` in the pinned native SQLite 3.51.0. The examples fix the intended reading of each
 rule; the conformance cases compare the conversions with native SQLite. -/
 
 namespace Belay.Sqlite.NumberExamples
@@ -41,5 +42,13 @@ def integerOf (text : String) : Int := (atoi64 text.toUTF8.toList).1
 -- REAL to INTEGER saturates and truncates toward zero.
 #guard [realToI64 1e19, realToI64 (-1e19), realToI64 (-2.7), realToI64 2.7] ==
   [9223372036854775807, -9223372036854775808, -2, 2]
+-- REAL to text: 15 significant digits, plain notation for exponents from -4 to 14,
+-- at least one digit after the point, and Inf for an infinity.
+#guard [realText 0, realText (-0.0), realText 1, realText 0.1, realText 1e14, realText 1e15] ==
+  ["0.0", "0.0", "1.0", "0.1", "100000000000000.0", "1.0e+15"]
+#guard [realText 123456789012345.6, realText 0.0001, realText 0.00001, realText (1 / 3), realText (-2.5)] ==
+  ["123456789012346.0", "0.0001", "1.0e-05", "0.333333333333333", "-2.5"]
+#guard [realText 1.7976931348623157e308, realText 5e-324, realText (Float.ofBits 0x7FF0000000000000),
+  realText (Float.ofBits 0xFFF0000000000000)] == ["1.79769313486232e+308", "4.94065645841247e-324", "Inf", "-Inf"]
 
 end Belay.Sqlite.NumberExamples

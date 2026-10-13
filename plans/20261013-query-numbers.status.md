@@ -31,6 +31,9 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Comparison.lean`,
   where SQLite differs from correct rounding (for example `2.6018159083016613186e-270`);
   `NumberExamples.lean` keeps a set of them. One conversion takes about 2 s in the
   kernel; one `Float` operation about 5 ms.
+- 2026-10-13: `RealText.lean` ports `%!.15g` over `sqlite3FpDecode` (REAL to text).
+  It agrees with native `CAST(real AS TEXT)` on 5033 doubles (edge cases, random
+  bit patterns and random magnitudes).
 
 ## Remaining
 
