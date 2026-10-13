@@ -115,12 +115,12 @@ def definitions() -> list[QueryCase]:
     ]
 
 
-def records(cases: list[QueryCase] | None = None) -> list[dict[str, Json]]:
+def records(cases: list[QueryCase] | None = None, part: str = "queries") -> list[dict[str, Json]]:
     """Record each case natively as a version 5 record with outputs, under SQLite's default
-    measured profile, with its part and features."""
+    measured profile, with the part and its features."""
     selected = definitions() if cases is None else cases
     measured = profile(())
     return [{**record_sql(case.setup, case.sql, name=case.name, requirements=list(case.requirements), outputs=True,
                           profile=measured),
-             "part": "queries", "features": list(case.features)}
+             "part": part, "features": list(case.features)}
             for case in selected]

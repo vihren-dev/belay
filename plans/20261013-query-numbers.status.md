@@ -57,7 +57,14 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Comparison.lean`,
   and none with GROUP BY (SQLite may return other groups first). `SUM` in a grouped
   query with LIMIT or OFFSET is a restriction. The verdict passes; corpus-v5 has 210
   AGREE.
+- 2026-10-13: evidence. `conformance/authored_numbers.py` has 31 coverage cases;
+  all agree and have kernel proofs (`tests/conformance_query_coverage_test.py`, now
+  over both case sets). `conformance/number_mutants.py` has the 13 mutants of the
+  task; with the 16 query mutants, each changes a verdict
+  (`tests/conformance_query_mutants_test.py`). `conformance/authored_evidence.py`
+  is the shared corpus writer; `number_evidence.py` writes corpus version 8 for
+  PR B.
 
 ## Remaining
 
-- All outcome items of the task.
+- CI timing, PR A; then PR B (judge: claim corpus-v8 and the newly agreeing cases).
