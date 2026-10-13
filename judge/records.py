@@ -14,7 +14,7 @@ from judge.cells import Json, text
 
 CASES_FILE = "cases.jsonl.gz"
 """Corpora v1 to v3 store one record per line in this file; later corpora use shards."""
-WITH_OUTPUTS = (3, 4)
+WITH_OUTPUTS = (3, 4, 5)
 """Native record versions that carry statement parameters and outputs."""
 
 
