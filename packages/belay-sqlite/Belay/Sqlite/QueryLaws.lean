@@ -10,7 +10,8 @@ of its input, the window has the length that {lit}`OFFSET` and {lit}`LIMIT` give
 namespace Belay.Sqlite.Resolved
 
 /-- For every transitive comparison and every key function, comparing the keys is
-again a transitive comparison. -/
+again a transitive comparison. The proof applies the orientation and transitivity
+laws of the original comparison to the keys of the compared values. -/
 theorem transCmp_on {cmp : β → β → Ordering} [Std.TransCmp cmp] (key : α → β) :
     Std.TransCmp (fun a b => cmp (key a) (key b)) where
   eq_swap := Std.OrientedCmp.eq_swap

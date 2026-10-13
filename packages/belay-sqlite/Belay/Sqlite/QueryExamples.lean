@@ -56,4 +56,23 @@ def grouped : Query where
 #guard { plain with aggregate := true, columns := [.aggregate .countRows, .aggregate (.max (.column 0))] }.run
   { table with rows := [] } == [[.integer 0, .null]]
 
+/-- The three logical values as expressions: true, false and NULL. -/
+def yes : Expr := .literal (.integer 1)
+/-- The false value. -/
+def no : Expr := .literal (.integer 0)
+/-- The NULL value. -/
+def unknown : Expr := .literal .null
+
+-- AND: false wins over NULL, NULL wins over true.
+#guard [(yes, yes), (yes, no), (no, unknown), (unknown, yes), (unknown, unknown)].map
+  (fun (a, b) => (Expr.and a b).eval []) == [.integer 1, .integer 0, .integer 0, .null, .null]
+-- OR: true wins over NULL, NULL wins over false.
+#guard [(no, no), (yes, no), (yes, unknown), (unknown, no), (unknown, unknown)].map
+  (fun (a, b) => (Expr.or a b).eval []) == [.integer 0, .integer 1, .integer 1, .null, .null]
+-- NOT keeps NULL.
+#guard [yes, no, unknown].map (fun a => (Expr.not a).eval []) == [.integer 0, .integer 1, .null]
+-- IS NULL and IS NOT NULL never give NULL.
+#guard [unknown, no].map (fun a => (Expr.isNull a false).eval []) == [.integer 1, .integer 0]
+#guard [unknown, no].map (fun a => (Expr.isNull a true).eval []) == [.integer 0, .integer 1]
+
 end Belay.Sqlite.Resolved.QueryExamples
