@@ -63,7 +63,7 @@ with `nix-build -A tests`, among them these; the flake exposes the same derivati
 - `tests.kernel`: real Lean compilation and proof-checker replay attacks.
 - `tests.model`: production SQL translation and concrete Lean model assertions,
   compared with pinned native SQLite on authored and generated cases.
-- `tests.frozen`: replay and classification of the frozen corpora (v1 to v7)
+- `tests.frozen`: replay and classification of the frozen corpora (v1 to v8)
   and checks of the retained evidence reports.
 - `tests.corpora`: complete validation of each locked frozen corpus.
 - `tests.mutants`: mutants of name resolution, each built as a changed copy of the
@@ -107,7 +107,7 @@ While ADR 0010 is implemented, each pull request records its CI job times next t
 the latest comparable `main` run, and a big increase (starting threshold: 20 % or
 2 minutes for a job) is explained before the merge (ADR 0010 section 11).
 
-The frozen corpora (v1 to v7 and the synthetic workload corpus) are the corpora
+The frozen corpora (v1 to v8 and the synthetic workload corpus) are the corpora
 that `judge/claims.json` claims, and the judge lock protects their bytes
 (ADR 0011, "Verdict of the development claims" below).
 `conformance.corpus.load` decodes a locked corpus without validating it again.

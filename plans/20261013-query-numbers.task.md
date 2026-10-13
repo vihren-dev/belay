@@ -1,6 +1,6 @@
 # Numbers in queries, slice 2 of ADR 0012
 
-Created 2026-10-13. Status: IN PROGRESS.
+Created 2026-10-13. Status: DONE (pull requests #109 and B).
 Specification: [ADR 0012](../docs/adr-0012-query-semantics.md), "Slices", item 2,
 with the levels, testing rules and layering of its "Decision". Related: slice 1,
 [task](20261013-single-table-queries.task.md) (done, #107 and #108); ADR 0005

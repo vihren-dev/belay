@@ -1,6 +1,6 @@
 # Status: numbers in queries, slice 2 of ADR 0012
 
-Created 2026-10-13. Status: IN PROGRESS.
+Created 2026-10-13. Status: DONE (after pull request B merges).
 Task: [task](20261013-query-numbers.task.md).
 Specification: [ADR 0012](../docs/adr-0012-query-semantics.md), "Slices", item 2.
 
@@ -74,7 +74,11 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Comparison.lean`,
   its target case (`TARGETS` in `query_mutants.py` and `number_mutants.py`, taken
   from a full measurement), and a mutant copy classifies only its target; the base
   check still classifies all cases. Locally 110 s to 70 s.
+- 2026-10-13: pull request A merged (#109). Pull request B: `conformance/corpus-v8`
+  (the 31 number cases) is claimed with every case in `mustAgree`, and 16 newly
+  agreeing corpus-v5 cases join `mustAgree`. The lock changes only the `judge`
+  entry and adds `corpus corpus-v8`. The verdict passes.
 
 ## Remaining
 
-- PR A; then PR B (judge: claim corpus-v8 and the newly agreeing cases).
+- Nothing for slice 2. Next: slice 3 of ADR 0012 (writes with output).
