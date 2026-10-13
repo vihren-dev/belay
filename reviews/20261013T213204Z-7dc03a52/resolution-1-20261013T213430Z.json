@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-13T21:34:30+00:00",
+  "finding": "20261013T213204Z-7dc03a52#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "tests/corpus_writer_help_test.py runs both commands with --help and a timeout and checks a plain description without ADR references"
+}
