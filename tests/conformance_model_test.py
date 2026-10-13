@@ -66,7 +66,7 @@ def test_version_two_outputs(runtime_root: Path, tmp_path: Path) -> None:
         name="outputs-v2", outputs=True)
     case, error = prepare(native, runtime_library(runtime_root))
     assert case is not None, error
-    assert case["version"] == 3 and case["outputs"] is not None
+    assert case["version"] == 4 and case["outputs"] is not None
     answer = compiled(case, runtime_root, emit_lean=True)
     assert answer["verdict"] == "AGREE", answer
     assert answer["decoded"] == case

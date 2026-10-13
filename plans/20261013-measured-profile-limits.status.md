@@ -29,6 +29,20 @@ Relevant files: `conformance/native_connection.py`,
   from `main` `6c9ec7a6`. The judge-claims pull request #101 (new `mustAgree`
   cases after step 1b) is open for owner approval.
 
+- 2026-10-13: commit `d7eb0b03`: native connections keep the build's limits;
+  `conformance/native_limits.py` measures and lowers them; profile format 3
+  records them, and an older profile takes them from its compile options;
+  `NativeError.phase`. Finding: SQLite cannot read its schema table with a column
+  limit below 5, so the recorder refuses lower values. Review
+  `20261013T024942Z-d7eb0b03`: four should findings, fixed in `cc7c9cf0`; its
+  review has no findings.
+- 2026-10-13: case version 4: the case carries the measured profile and each
+  native error's phase; Lean resolves under the recorded profile and compares the
+  phase when the record has it (cases from frozen corpus records have none, until
+  step 2b). The five model cases and the injected-corruption regression are
+  regenerated with `just conformance --prove` and `regressions.freeze` (new
+  `caseSha256` 8477dc93...). `tests/conformance_phase_test.py` checks both phases.
+
 ## Remaining
 
 - All outcome items of the task.

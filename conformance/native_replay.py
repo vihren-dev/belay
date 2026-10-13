@@ -2,7 +2,8 @@
 
 from conformance.record_parser import NO_PARSER_REASON, record_parser
 
-from conformance.case_format import CASE_VERSION, Json, row_wire
+from conformance.case_format import CASE_VERSION, Json, case_profile, row_wire
+from conformance.native_limits import DOCUMENTED_LIMITS
 from conformance.native_connection import SOURCE_ID
 from conformance import native_bindings
 from conformance.native_call_recording import validate_recording
@@ -112,8 +113,8 @@ def model_case(record: dict[str, Json], library: ParserLibrary) -> dict[str, Jso
     for event in [record["initial"], *record["trace"]]:
         observations.append({"visible": native_tables(event["visible"]), "persisted": native_tables(event["persisted"]),
             "transactionOpen": event["transactionOpen"], "primaryCode": event.get("primaryCode", 0),
-            "extendedCode": event.get("extendedCode", 0)})
-    return {"version": CASE_VERSION, "release": DEFAULT_ENGINE_VERSION, "sourceId": SOURCE_ID,
+            "extendedCode": event.get("extendedCode", 0), "phase": None})
+    return {"version": CASE_VERSION, "profile": case_profile(DEFAULT_ENGINE_VERSION, SOURCE_ID, DOCUMENTED_LIMITS),
             "schemaSql": initial_sql, "migrationSql": record["migrationSql"],
             "schema": [item.value for item in schema], "script": [item.value for item in script],
             "initial": observations[0]["visible"], "nativeTrace": observations,

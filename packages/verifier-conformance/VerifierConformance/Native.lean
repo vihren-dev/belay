@@ -36,14 +36,27 @@ structure NativeTable where
   rows : List Row
   deriving Repr, DecidableEq
 
+/-- Where SQLite reported a statement's error: in {lit}`sqlite3_prepare_v2`, where
+resolution decides it, or in {lit}`sqlite3_step`, where the execution semantics
+decides it. -/
+inductive ErrorPhase where
+  /-- {lit}`sqlite3_prepare_v2` failed. -/
+  | prepare
+  /-- {lit}`sqlite3_step` failed. -/
+  | step
+  deriving Repr, DecidableEq
+
 /-- Native truth after one statement. Extended codes are retained for diagnostics;
-the model compares primary codes. -/
+the model compares primary codes. {lit}`phase` is the phase of an error when the
+recorder observed it; it is {name}`Option.none` without an error, and for records
+from a recorder that did not observe phases. -/
 structure NativeObservation where
   visible : List NativeTable
   persisted : List NativeTable
   transactionOpen : Bool
   primaryCode : Nat
   extendedCode : Nat
+  phase : Option ErrorPhase := none
   deriving Repr, DecidableEq
 
 /-- Insert a key into lexicographic order, with structural recursion the kernel reduces. -/

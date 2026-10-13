@@ -9,6 +9,8 @@ open Belay.Sqlite
 
 namespace Belay.Sqlite
 
+deriving instance Lean.FromJson, Lean.ToJson for Limits, Profile
+deriving instance Lean.FromJson, Lean.ToJson for Conformance.ErrorPhase
 deriving instance Lean.FromJson, Lean.ToJson for Conformance.NativeColumn, Conformance.NativeIndex,
   Conformance.NativeTable, Conformance.NativeObservation
 deriving instance Lean.FromJson, Lean.ToJson for Conformance.StatementOutput, Conformance.OutputGroup,
@@ -17,9 +19,10 @@ deriving instance Lean.FromJson, Lean.ToJson for Conformance.Case
 
 namespace Conformance
 
-/-- The supported case version: {assert}`caseVersion = 3`. Version 3 carries
-statement syntax and native catalog metadata instead of resolved statements. -/
-def caseVersion : Nat := 3
+/-- The supported case version: {assert}`caseVersion = 4`. Version 4 carries the
+measured profile of the native connection and the phase of each native error;
+version 3 had only the release and the build. -/
+def caseVersion : Nat := 4
 
 /-- Check one native table: folded-name uniqueness is checked by the caller; here,
 distinct bounded rowids and one cell per column. -/
@@ -41,6 +44,7 @@ def decodeCase (json : Lean.Json) : Except String Case := do
     for table in tables do checkNativeTable table
   for n in c.nativeTrace do
     unless n.extendedCode % 256 == n.primaryCode do throw "inconsistent SQLite result codes"
+    unless n.primaryCode != 0 || n.phase.isNone do throw "an error phase without an error"
   match c.outputs with
   | none => unless c.parameters.isEmpty do throw "parameters require outputs"
   | some outputs =>

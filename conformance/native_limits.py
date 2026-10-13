@@ -30,6 +30,10 @@ and below that SQLite cannot read the schema."""
 Limits = dict[str, int]
 """One value for each name of `LIMIT_IDS`."""
 
+DOCUMENTED_LIMITS: Limits = {name: default for name, (_, _, default) in LIMIT_IDS.items()}
+"""SQLite's documented defaults: the limits of a record whose recorder kept the pinned
+build's compile-time values and recorded no profile."""
+
 
 def measured_limits(connection: Connection) -> Limits:
     """The limits that apply to the connection now, read without changing them."""
