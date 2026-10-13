@@ -25,15 +25,19 @@ def scaleByTen (x : Float × Float) (exponent : Int) : Float × Float :=
     let (x, n) := scaleDown n 10 1.0e-10 (-3.6432197315497741579e-27) x n
     (scaleDown n 1 1.0e-1 (-5.5511151231257827021e-18) x n).1
 
+/-- The significand limit of the normalization in {lit}`sqlite3AtoF`:
+{lit}`(LARGEST_UINT64 - 0x7ff) / 10`. Below it, a multiplication by ten keeps the
+significand in 64 bits. -/
+def atofNormalizeLimit : Nat := (2 ^ 64 - 1 - 0x7ff) / 10
+
 /-- Normalize the significand and the decimal exponent as {lit}`sqlite3AtoF` does
 before it scales: multiply by ten while the exponent is positive and the significand
-stays below {lit}`(LARGEST_UINT64 - 0x7ff) / 10`, then divide by ten while the
-exponent is negative and the significand ends in a zero. -/
+stays below {name}`atofNormalizeLimit`, then divide by ten while the exponent is
+negative and the significand ends in a zero. -/
 def atofNormalize (significand : Nat) (exponent : Int) : Nat × Int :=
-  let limit := (2 ^ 64 - 1 - 0x7ff) / 10
   let rec up (fuel : Nat) (s : Nat) (e : Int) : Nat × Int := match fuel with
     | 0 => (s, e)
-    | fuel + 1 => if e > 0 && s < limit then up fuel (s * 10) (e - 1) else (s, e)
+    | fuel + 1 => if e > 0 && s < atofNormalizeLimit then up fuel (s * 10) (e - 1) else (s, e)
   let rec down (fuel : Nat) (s : Nat) (e : Int) : Nat × Int := match fuel with
     | 0 => (s, e)
     | fuel + 1 => if e < 0 && s % 10 == 0 then down fuel (s / 10) (e + 1) else (s, e)

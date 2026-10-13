@@ -57,7 +57,9 @@ structure AtofState where
   significand : Nat := 0
   /-- The decimal shift from digits that the significand dropped or the fraction added. -/
   shift : Int := 0
-  /-- The written exponent, at most 10000. -/
+  /-- The written exponent, read as {lit}`atofExponent` does: below the cap it takes the
+  next digit, so it can reach 99999; a digit read at or above the cap sets it to the
+  cap. -/
   exponent : Nat := 0
   /-- Whether the exponent is negative. -/
   negativeExponent : Bool := false
@@ -67,6 +69,10 @@ structure AtofState where
   digits : Nat := 0
   /-- 1 for an integer form, 2 or more with a fraction or an exponent. -/
   kind : Nat := 1
+
+/-- The exponent cap of {lit}`sqlite3AtoF`: an exponent digit read when the exponent is
+at least the cap sets it to the cap, which keeps the exponent small. -/
+def atofExponentCap : Nat := 10000
 
 /-- The significand limit of {lit}`sqlite3AtoF`: {lit}`(LARGEST_UINT64 - 9) / 10`. -/
 def atofLimit : Nat := (2 ^ 64 - 1 - 9) / 10
@@ -92,12 +98,13 @@ def atofFraction (state : AtofState) : List UInt8 → AtofState × List UInt8
     else (state, byte :: rest)
   | [] => (state, [])
 
-/-- Read exponent digits; the exponent stops growing at 10000. -/
+/-- Read exponent digits: below {name}`atofExponentCap` each digit is appended, and at or
+above it a digit sets the exponent to the cap. -/
 def atofExponent (state : AtofState) : List UInt8 → AtofState × List UInt8
   | byte :: rest =>
     if isDigitByte byte then
-      atofExponent { state with exponent := if state.exponent < 10000 then state.exponent * 10 + digitValue byte
-                                             else 10000, exponentValid := true } rest
+      atofExponent { state with exponent := if state.exponent < atofExponentCap then state.exponent * 10 + digitValue byte
+                                             else atofExponentCap, exponentValid := true } rest
     else (state, byte :: rest)
   | [] => (state, [])
 

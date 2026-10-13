@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-13T19:27:00+00:00",
+  "finding": "20261013T191950Z-9c17ded6#3",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the exponent field docstring states the 99999 reach and the reset to the cap"
+}
