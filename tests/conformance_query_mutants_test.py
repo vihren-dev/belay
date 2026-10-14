@@ -14,7 +14,6 @@ as its target, which keeps the elaboration of case terms short.
 """
 
 from pathlib import Path
-from types import ModuleType
 
 import pytest
 
@@ -30,7 +29,13 @@ pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requ
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def measure_set(runtime_root: Path, records: list[dict[str, Json]], tables: list[ModuleType]) -> None:
+Mutants = dict[str, tuple[str, str, str]]
+"""A mutant table: the file, the exact text and the replacement of each mutant."""
+Targets = dict[str, tuple[str, ...]]
+"""The target cases of each mutant."""
+
+
+def measure_set(runtime_root: Path, records: list[dict[str, Json]], tables: list[tuple[Mutants, Targets]]) -> None:
     """Every case of the records agrees with the unchanged model, and every mutant of the mutant
     tables changes the verdict of its target case."""
     library = runtime_library(runtime_root)
@@ -39,12 +44,12 @@ def measure_set(runtime_root: Path, records: list[dict[str, Json]], tables: list
         case, answer = prepare(record, library)
         assert case is not None, (record["name"], answer)
         cases.append(case)
-    mutants: dict[str, tuple[str, str, str]] = {}
-    targets: dict[str, tuple[str, ...]] = {}
-    for table in tables:
-        assert not set(table.MUTANTS) & set(mutants), "mutant names must be unique"
-        mutants |= table.MUTANTS
-        targets |= table.TARGETS
+    mutants: Mutants = {}
+    targets: Targets = {}
+    for table, table_targets in tables:
+        assert not set(table) & set(mutants), "mutant names must be unique"
+        mutants |= table
+        targets |= table_targets
     result = measure(cases, ROOT, runtime_root, mutants, targets)
     assert set(result) == set(mutants)
     survivors = [name for name, item in result.items() if not item["killed"]]
@@ -52,11 +57,15 @@ def measure_set(runtime_root: Path, records: list[dict[str, Json]], tables: list
 
 
 def test_every_query_and_number_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The mutants of query semantics and numbers, against the query and number cases."""
-    measure_set(runtime_root, authored_queries.records() + authored_numbers.records(), [query_mutants, number_mutants])
+    """The authored query and number cases notice every changed rule of query semantics and
+    numbers (`conformance.query_mutants`, `conformance.number_mutants`), so these rules are tested."""
+    measure_set(runtime_root, authored_queries.records() + authored_numbers.records(),
+                [(query_mutants.MUTANTS, query_mutants.TARGETS), (number_mutants.MUTANTS, number_mutants.TARGETS)])
 
 
 def test_every_write_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The mutants of writes with output and of row-dependent writes, against the write cases."""
+    """The authored write cases notice every changed rule of writes with output and of
+    row-dependent writes (`conformance.write_mutants`, `conformance.row_write_mutants`), so
+    these rules are tested."""
     measure_set(runtime_root, authored_writes.records() + authored_row_writes.records(),
-                [write_mutants, row_write_mutants])
+                [(write_mutants.MUTANTS, write_mutants.TARGETS), (row_write_mutants.MUTANTS, row_write_mutants.TARGETS)])
