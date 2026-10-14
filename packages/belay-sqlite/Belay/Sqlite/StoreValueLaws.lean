@@ -102,7 +102,8 @@ theorem storeValue_text_not_number (value : Value) :
     (∀ whole, storeValue .text value ≠ .integer whole) ∧ (∀ bits, storeValue .text value ≠ .real bits) := by
   cases value <;> simp [storeValue]
 
-/-- For every affinity, {name}`storeValue` keeps NULL. -/
+/-- For every affinity, {name}`storeValue` keeps NULL. Proof sketch: each affinity's case
+returns NULL unchanged by its definition. -/
 theorem storeValue_null (affinity : Affinity) : storeValue affinity .null = .null := by
   cases affinity <;> rfl
 

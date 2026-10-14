@@ -1,5 +1,4 @@
 import Belay.Sqlite.Preservation
-import Belay.Sqlite.StoreValueLaws
 
 set_option doc.verso true
 
@@ -106,30 +105,6 @@ theorem Conforms.table {shape : CatalogTable} (conforms : Conforms profile catal
   cases present : database position with
   | none => simp [present, lookup] at equal
   | some table => exact ⟨table, rfl, by simpa [present, lookup] using equal, valid table present⟩
-
-/-- For every valid table and added columns, {name}`Table.appendColumns` remains
-valid. With no rows, rowid and width conditions are vacuous. Use this for NULL
-extension; column support is a catalog check. The proof preserves rowids and adds
-widths. -/
-theorem Table.Valid.appendColumns {table : Table} {columns : List CatalogColumn} (valid : table.Valid) :
-    (table.appendColumns columns).Valid := by
-  refine ⟨?_, ?_⟩
-  · simpa [Table.appendColumns, Row.appendNulls, List.map_map, Function.comp_def] using valid.1
-  · intro row member
-    obtain ⟨original, oldMember, rfl⟩ := List.mem_map.mp member
-    obtain ⟨rowid, width, stored⟩ := valid.2 original oldMember
-    refine ⟨rowid, by simp [Row.appendNulls, Table.appendColumns, width], ?_⟩
-    intro position column value columnAt cellAt
-    simp only [Table.appendColumns, Row.appendNulls] at columnAt cellAt
-    by_cases old : position < original.values.length
-    · rw [List.getElem?_append_left old] at cellAt
-      rw [List.getElem?_append_left (width ▸ old)] at columnAt
-      exact stored position column value columnAt cellAt
-    · rw [List.getElem?_append_right (by omega)] at cellAt
-      obtain ⟨_, cellAt⟩ := List.getElem?_eq_some_iff.mp cellAt
-      simp only [List.getElem_replicate] at cellAt
-      subst cellAt
-      exact storeValue_null _
 
 /-- For every original/next catalog, database, position and table, assume original
 {name}`Conforms`, a valid next catalog and a valid replacement table. For every
