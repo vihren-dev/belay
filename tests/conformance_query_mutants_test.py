@@ -8,7 +8,7 @@ model that no case notices shows a missing case. The cases are the authored case
 `conformance.authored_queries`, `conformance.authored_numbers`,
 `conformance.authored_writes`, `conformance.authored_row_writes`,
 `conformance.authored_deletes` and `conformance.authored_joins`, recorded natively
-with their outputs. Two measurements, one for queries, numbers and joins and one for writes,
+with their outputs. Two measurements, one for queries and numbers and one for writes and joins,
 each build one base copy for their mutants, which keeps each test within its time
 limit on a hosted runner; every case must agree with the base copy. Each mutant copy then classifies the case that the mutant names
 as its target, which keeps the elaboration of case terms short.
@@ -58,18 +58,19 @@ def measure_set(runtime_root: Path, records: list[dict[str, Json]], tables: list
 
 
 def test_every_query_and_number_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored query, number and join cases notice every changed rule of query
-    semantics, numbers and joins (`conformance.query_mutants`, `conformance.number_mutants`,
-    `conformance.join_mutants`), so these rules are tested."""
-    measure_set(runtime_root, authored_queries.records() + authored_numbers.records() + authored_joins.records(),
-                [(query_mutants.MUTANTS, query_mutants.TARGETS), (number_mutants.MUTANTS, number_mutants.TARGETS),
-                 (join_mutants.MUTANTS, join_mutants.TARGETS)])
+    """The authored query and number cases notice every changed rule of query semantics and
+    numbers (`conformance.query_mutants`, `conformance.number_mutants`), so these rules are tested."""
+    measure_set(runtime_root, authored_queries.records() + authored_numbers.records(),
+                [(query_mutants.MUTANTS, query_mutants.TARGETS), (number_mutants.MUTANTS, number_mutants.TARGETS)])
 
 
-def test_every_write_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored write cases notice every changed rule of writes with output, of
-    row-dependent writes and of DELETE (`conformance.write_mutants`,
-    `conformance.row_write_mutants`, `conformance.delete_mutants`), so these rules are tested."""
-    measure_set(runtime_root, authored_writes.records() + authored_row_writes.records() + authored_deletes.records(),
+def test_every_write_and_join_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored write and join cases notice every changed rule of writes with output, of
+    row-dependent writes, of DELETE and of joins (`conformance.write_mutants`,
+    `conformance.row_write_mutants`, `conformance.delete_mutants`, `conformance.join_mutants`),
+    so these rules are tested. The joins share this measurement, which is the shorter one,
+    to keep each test within its time limit."""
+    measure_set(runtime_root, authored_writes.records() + authored_row_writes.records() + authored_deletes.records()
+                + authored_joins.records(),
                 [(write_mutants.MUTANTS, write_mutants.TARGETS), (row_write_mutants.MUTANTS, row_write_mutants.TARGETS),
-                 (delete_mutants.MUTANTS, delete_mutants.TARGETS)])
+                 (delete_mutants.MUTANTS, delete_mutants.TARGETS), (join_mutants.MUTANTS, join_mutants.TARGETS)])
