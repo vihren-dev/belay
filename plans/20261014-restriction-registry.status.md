@@ -46,8 +46,12 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Values.lean`,
   `condition-as-value`, `aggregate-as-value`, `expression-as-value`), dead since
   slice 3a moved write values to query semantics, and `returning-target`, which the
   frontend blocks (DELETE ... RETURNING is refused).
+- 2026-10-14: removed the four `literalValue` restrictions; query leaves and
+  `defaultValue` give their values directly. `conformance/restriction_examples.py`
+  has one example script per id (35); `tests/conformance_restriction_examples_test.py`
+  (harness suite, about 2 s) runs each through the frontend and the resolver;
+  `returning-target` is listed as frontend-blocked until slice 3c.
 
 ## Remaining
 
-- Remove the four dead restrictions; restriction example test.
 - Mutant links; obligation mutants, boundary cases and the scheduled suite.

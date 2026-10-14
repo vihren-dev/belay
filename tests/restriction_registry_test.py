@@ -3,14 +3,18 @@
 `Resolution/Restrictions.lean` lists every model restriction of name resolution as a
 constructor of `RestrictionKind`, and `Resolution/RestrictionText.lean` gives each one
 its stable id. `docs/semantic-subset.md` must list every id in its restriction table,
-so that the documentation cannot drift from the registry; Lean checks that the ids are
-distinct and that `RestrictionKind.all` holds every kind.
+so that the documentation cannot drift from the registry, and
+`conformance/restriction_examples.py` must have an example script for every id, so that
+no restriction is left that SQL cannot reach. Lean checks that the ids are distinct and
+that `RestrictionKind.all` holds every kind.
 """
 
 import re
 from pathlib import Path
 
 import pytest
+
+from conformance.restriction_examples import EXAMPLES, FRONTEND_BLOCKED
 
 pytestmark = [pytest.mark.unit]
 ROOT = Path(__file__).resolve().parents[1]
@@ -48,3 +52,11 @@ def test_documentation_lists_every_id_once() -> None:
     documented = documented_ids()
     assert len(documented) == len(set(documented)), documented
     assert set(documented) == set(registry_ids().values()), set(documented) ^ set(registry_ids().values())
+
+
+def test_every_id_has_one_example() -> None:
+    """`conformance.restriction_examples` has an example for each registry id and for no other
+    name, and every frontend-blocked restriction has an example."""
+    ids = set(registry_ids().values())
+    assert set(EXAMPLES) == ids, set(EXAMPLES) ^ ids
+    assert set(FRONTEND_BLOCKED) <= set(EXAMPLES), set(FRONTEND_BLOCKED) - set(EXAMPLES)

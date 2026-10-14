@@ -55,6 +55,7 @@
   ],
   "harness": [
     "tests/conformance_acquisition_test.py",
+    "tests/conformance_restriction_examples_test.py",
     "tests/conformance_authored_boundaries_test.py",
     "tests/conformance_authored_review_test.py",
     "tests/conformance_workload_test.py",

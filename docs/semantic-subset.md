@@ -97,7 +97,9 @@ The registry is `RestrictionKind` in
 `packages/belay-sqlite/Belay/Sqlite/Resolution/Restrictions.lean`, with the ids and
 messages in `RestrictionText.lean`. Every id has one row in this table;
 `tests/restriction_registry_test.py` checks that the table and the registry list the
-same ids. Syntax that the frontend refuses before resolution, such as `DISTINCT` or
+same ids. `conformance/restriction_examples.py` has, for every id, a schema and a
+migration that the resolver refuses with that id, and a test runs each one. Syntax
+that the frontend refuses before resolution, such as `DISTINCT` or
 an UPSERT, has no id. `just restriction-costs` counts, for each id and for each kind
 of frontend refusal, the cases of the claimed corpora that it keeps out of scope.
 
