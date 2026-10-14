@@ -137,5 +137,7 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
 #guard restrictedOne (select [.star] (filter := some (.equals (.identifier "oid" false) (.numeric "1"))))
 #guard restrictedOne (.update "t" [("b", .identifier "_rowid_" false)] none)
 #guard restrictedOne (.delete "t" (some (.equals (.identifier "rowid" true) (.numeric "1"))))
+-- In VALUES no table is in scope, and SQLite reports `no such column: rowid`.
+#guard errorOf (.insert "t" none [[.identifier "rowid" false, .null]]) == some (.noSuchColumn "rowid")
 
 end Belay.Sqlite.Resolution.QueryResolutionExamples

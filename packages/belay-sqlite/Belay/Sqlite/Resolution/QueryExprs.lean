@@ -92,8 +92,9 @@ def condition (path : List Nat) : Except ValueIssue Operand → Except ValueIssu
   | .error issue => .error (issue.under path)
 
 /-- Resolve an expression over the columns of the source table. An identifier is the
-first column with its folded name; otherwise a rowid name ({name}`rowidName`) is a
-model restriction, because SQLite reads the rowid; otherwise it is a string literal
+first column with its folded name; otherwise, when a table is in scope (the column
+list is not empty), a rowid name ({name}`rowidName`) is a model restriction, because
+SQLite reads the rowid; otherwise it is a string literal
 when it was written in double quotes and {lit}`dqs` is on, else SQLite's
 {lit}`no such column: %s`. The operands of {lit}`AND`, {lit}`OR` and {lit}`NOT` must be
 conditions. An aggregate gives {name}`aggregateIssue`. A numeric literal has the value of
@@ -104,7 +105,7 @@ def resolveOperand (dqs : Bool) (columns : List CatalogColumn) (misuse : Bool) :
   | .identifier name doubleQuoted => match columnPosition columns name with
     | some position => .ok (.column position, (columns[position]?.map CatalogColumn.affinity))
     | none =>
-      if rowidName name then .error (.restriction [] .rowidName)
+      if rowidName name && !columns.isEmpty then .error (.restriction [] .rowidName)
       else if doubleQuoted && dqs then .ok (.literal (.text name.toUTF8.toList), none)
       else .error (.prepare (.noSuchColumn name))
   | .equals left right => do
@@ -176,8 +177,9 @@ def mentionsColumn (columns : List CatalogColumn) : Syntax.Expr → Bool
 /-- The value of a constant expression in a write (ADR 0012, slice 3a): the expression
 resolved as a query expression with no column in scope and an aggregate as SQLite's
 {lit}`misuse of aggregate function`, then evaluated. So {lit}`1 + 2` is 3 and
-{lit}`CAST('7' AS INTEGER)` is 7; an identifier is a double-quoted string or
-{lit}`no such column`, as in a {lit}`VALUES` row. -/
+{lit}`CAST('7' AS INTEGER)` is 7; an identifier, a rowid name included, is a
+double-quoted string or {lit}`no such column`, as in a {lit}`VALUES` row, where no table
+is in scope. -/
 def constantValue (dqs : Bool) (expression : Syntax.Expr) : Except ValueIssue Value :=
   (resolveOperand dqs [] true expression).map fun operand => operand.1.eval []
 
