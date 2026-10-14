@@ -50,7 +50,17 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/LiteralData.lean`,
 - 2026-10-14: `tableReady` in `updateReady` re-examined: with row-dependent values only
   in non-key columns, the key check after the update still covers every key cell that
   the update does not change, so `COVERED_ELSEWHERE["update-table-ready"]` stays.
+- 2026-10-14: two review rounds in a row had a "must" finding (8aff03b5: a catch-all
+  pattern; 351f3415: the fix used aggregate constructors that do not exist and was
+  committed although the build failed, because a pipeline hid the exit code). Both are
+  fixed (e356f084, review clean). Stopped to report to the owner, as the review rule
+  requires. Builds are now checked by their exit code before a commit.
 
 ## Remaining
 
-- Everything in the task's "Outcome".
+- Preservation of `Conforms` by every statement (insert, update, schema statements).
+- Authored coverage cases of the amendment's "Testing" list (store-time list and UPDATE
+  list, including the old filter boundary case), with kernel proofs, a corpus writer.
+- Mutants of the amendment's list.
+- CI timing, pull request A, and pull request B (judge: claim the coverage corpus and
+  corpus 10).
