@@ -1,6 +1,6 @@
 # Status: restriction registry
 
-Created 2026-10-14. Status: IN PROGRESS.
+Created 2026-10-14. Status: DONE (pull request A; the judge pull request that claims corpus 10 follows).
 Task: [task](20261014-restriction-registry.task.md).
 
 Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Values.lean`,
@@ -65,6 +65,13 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Values.lean`,
   `scheduledTests.obligations` (about 18 s) runs in `just package`, not on pull
   requests. `conformance/obligation_evidence.py` writes corpus version 10.
 
+- 2026-10-14: rebased on main after #111. `just test-full`, `just test-nix` and
+  `just test-scheduled` pass. CI time of the pull request suites that this work
+  changes, forced rebuild on the same machine, main then branch: `tests.harness`
+  21 s and 21 s, `tests.mutants` 112 s and 113 s; host source tests about 1 s more.
+  The scheduled suite (about 16 s) runs only in `just package`.
+
 ## Remaining
 
-- Full checks, CI timing, pull request A; later the judge PR that claims corpus 10.
+- A judge pull request (owner approval) that claims corpus 10 of
+  `conformance/obligation_evidence.py`, with every case `MODEL_UNSUPPORTED`.
