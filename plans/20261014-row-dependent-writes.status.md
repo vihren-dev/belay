@@ -62,11 +62,14 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/LiteralData.lean`,
   `Conforms.set`. The module count test (`just test-nix`) was not run after the UPDATE
   commit and failed there (57 modules); it now expects 58. `just test-nix` runs with
   `test-full` from now on.
+- 2026-10-14: evidence. `conformance/authored_row_writes.py`: 24 cases (11 store-time,
+  13 UPDATE, including the slice 3a filter boundary case, which now agrees), all agree
+  with kernel proofs (about 12 s). `conformance/row_write_evidence.py` writes corpus 11.
+  `conformance/row_write_mutants.py`: the 9 mutants of the amendment's list, all killed
+  in the mutants suite. Storing constants at resolution matters only for the key-domain
+  check (the execution stores again), so its mutant targets `SET k = '7'`.
 
 ## Remaining
 
-- Authored coverage cases of the amendment's "Testing" list (store-time list and UPDATE
-  list, including the old filter boundary case), with kernel proofs, a corpus writer.
-- Mutants of the amendment's list.
 - CI timing, pull request A, and pull request B (judge: claim the coverage corpus and
   corpus 10).

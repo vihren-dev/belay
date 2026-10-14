@@ -24,4 +24,5 @@ def publish(directory: Path) -> dict[str, Json]:
 
 
 if __name__ == "__main__":
-    authored_evidence.main(CORPUS, "Record the obligation boundary cases natively and write them as a new corpus directory.")
+    authored_evidence.main(CORPUS, "Record the obligation boundary cases natively and write them as a new "
+                                   "corpus directory.")
