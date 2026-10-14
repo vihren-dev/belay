@@ -532,11 +532,7 @@ joins in `DELETE` stay refused.
 
 1. **`USING` and `NATURAL`.** Decided; see "Owner decisions".
 2. **`RIGHT` and `FULL` joins.** Decided; see "Owner decisions".
-3. **Two sources with the same name.** `FROM t, t` and `FROM t AS x, u AS x` are
-   prepared by SQLite, and a column of both gives a message with the schema name,
-   for example `ambiguous column name: main.t.a`. Options: (A) model the message;
-   (B) make two sources with the same name a model restriction. Recommendation: B;
-   a self-join with aliases covers the use.
+3. **Two sources with the same name.** Decided; see "Owner decisions".
 4. **Size.** SQLite allows up to 64 tables in a join. A join of many large tables
    makes the kernel proofs of conformance cases expensive. Options: (A) no limit
    beyond SQLite's; (B) a model restriction above a small number of tables, such
@@ -565,3 +561,8 @@ joins in `DELETE` stay refused.
    checked on 3.51.0, `SELECT a FROM t FULL JOIN u USING (a)` gives the right row's
    `a` for a right row that no left row matches. Slice 4c comes after 4b so that
    this rule is decided with the rest of `USING`.
+3. **Two sources with the same name.** Decided on 2026-10-14: a model restriction.
+   `FROM t, t` and `FROM t AS x, u AS x` are refused with the range of the second
+   source; a self-join names its sources with different aliases. SQLite prepares such
+   a query and reports a column of both with the schema name, as
+   `ambiguous column name: main.t.a`, which the model does not reproduce.
