@@ -527,3 +527,14 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of the completed T14 representation and codec changes.
+
+
+- 2026-10-14: Correction 80873314 passes review
+  20261014T161540Z-80873314 with no findings. The shared literal-default
+  evaluator, its error proof and native comparisons are tested and reviewed.
+  Next acceptance remains SQL catalog admission, ADD COLUMN row extension
+  with stored-form preservation, and the installed example on both platforms.
+
+Decisions waiting for the owner:
+
+- Final review of the completed T14 representation and codec changes.
