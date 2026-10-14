@@ -1,6 +1,6 @@
 # Status: writes with output, slice 3a of ADR 0012
 
-Created 2026-10-14. Status: IN PROGRESS.
+Created 2026-10-14. Status: DONE (after pull request B merges).
 Task: [task](20261014-writes-with-output.task.md).
 Specification: [ADR 0012](../docs/adr-0012-query-semantics.md), "Slices", item 3, as
 narrowed by the owner to slice 3a.
@@ -55,7 +55,11 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Resolved.lean`,
   writes the cases as corpus version 9 for PR B.
 - 2026-10-14: CI timing (forced rebuild, 8 cores): `tests` main 314 s, branch 330 s
   (+16 s, 5 %); suites alone: `model` 150 s to 160 s, `mutants` 104 s to 119 s.
+- 2026-10-14: pull request A merged (#112). Pull request B: `conformance/corpus-v9`
+  (the 16 write cases) is claimed with every case in `mustAgree`, and 7 newly
+  agreeing corpus-v5 cases join `mustAgree` (217). The lock changes only the
+  `judge` entry and adds `corpus corpus-v9`. The verdict passes.
 
 ## Remaining
 
-- PR A; then PR B (judge: claim corpus-v9 and the newly agreeing cases).
+- Nothing for slice 3a. Slice 3b waits for the owner's decision on the amendment (#111).

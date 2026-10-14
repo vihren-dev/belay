@@ -246,8 +246,13 @@
     "minmax:minmax-13.7.1:103",
     "minmax:minmax-13.7.2:104",
     "nested-begin",
+    "returning1:12.1:54",
+    "returning1:12.2:55",
+    "returning1:12.3:56",
+    "returning1:12.4:57",
     "returning1:returning1-7.1:26",
     "returning1:returning1-8.1:34",
+    "returning1:returning1-9.1:38",
     "select1:select1-1.1:0",
     "select1:select1-1.4:3",
     "select1:select1-1.5:4",
@@ -319,9 +324,11 @@
     "trans3:trans3-1.1:0",
     "triggerE:triggerE-1.0:0",
     "untyped-storage",
+    "update:update-1.1:0",
     "update:update-2.1:1",
     "update:update-21.1:134",
     "update:update-3.1:2",
+    "update:update-3.2:3",
     "update:update-3.5.2:8",
     "update:update-3.6:10",
     "upsert4:upsert4-1.2.6:15",
@@ -463,6 +470,31 @@
     "unary-plus-has-no-affinity"
    ],
    "path": "conformance/corpus-v8"
+  },
+  "corpus-v9": {
+   "forbidden": [
+    "DISAGREE",
+    "HARNESS_ERROR"
+   ],
+   "mustAgree": [
+    "insert-constant-expressions",
+    "insert-returning-star",
+    "insert-rows-expressions-aliases",
+    "insert-without-returning",
+    "returning-aggregate-error",
+    "returning-defined-names",
+    "returning-missing-column",
+    "returning-not-null-failure",
+    "returning-unique-failure",
+    "update-constant-set-and-filter",
+    "update-returning-every-row",
+    "update-returning-new-values",
+    "update-returning-no-row",
+    "values-aggregate-error",
+    "values-coalesce-argument-count",
+    "values-error-before-returning"
+   ],
+   "path": "conformance/corpus-v9"
   },
   "synthetic-workload": {
    "forbidden": [
