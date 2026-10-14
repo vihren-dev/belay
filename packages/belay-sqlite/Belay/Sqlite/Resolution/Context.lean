@@ -31,18 +31,20 @@ it succeeds, or a model restriction. -/
 abbrev StatementResolution := Except Restriction (Resolved.Statement × Catalog)
 
 /-- Whether a name is SQLite's TRUE or FALSE keyword, ignoring ASCII letter case.
-For example, {lean}`booleanKeywordName "TrUe"` is true. Quoting is checked by
-{name}`Syntax.Expr`, separately from this name predicate. -/
+Recognize boolean literals without treating ordinary column names as constants.
+For example, {lean}`booleanKeywordName "TrUe"` is true. This predicate checks only
+spelling; callers check the expression's quote flag. -/
 def booleanKeywordName (name : String) : Bool :=
   ["true", "false"].contains (normalizeIdentifier name)
 
-/-- Preparation eligibility inside the default forms that the model classifies:
+/-- SQLite's constant-default preparation check for the forms classified here:
 literals, time keywords, signs and equality. Unquoted TRUE and FALSE are constant
 keywords; other nested identifiers are column references. For example,
 {lean}`constantDefaultExpression (.equals (.numeric "1") (.numeric "1"))` is true.
 For the other expression forms, return true to leave their existing model
 restriction in control; true does not establish that SQLite accepts those forms.
-This predicate does not evaluate the default or admit its execution. -/
+These checks describe SQLite preparation errors. Supported-domain admission and
+default evaluation are separate. -/
 def constantDefaultExpression : Syntax.Expr → Bool
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ => true
   | .identifier name doubleQuoted => !doubleQuoted && booleanKeywordName name
@@ -51,7 +53,8 @@ def constantDefaultExpression : Syntax.Expr → Bool
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. => true
   | .arithmetic .. | .cast .. | .callPair .. => true
 
-/-- Preparation eligibility of a written DEFAULT. A bare identifier is permitted:
+/-- SQLite's constant-default preparation check for a written DEFAULT, with the
+classification scope of {name}`constantDefaultExpression`. A bare identifier is permitted:
 TRUE and FALSE are boolean keywords, and other names are stored as text. Other
 expressions use {name}`constantDefaultExpression`, including its permissive
 classification of forms that remain model restrictions. For example,
