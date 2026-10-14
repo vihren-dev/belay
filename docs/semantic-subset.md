@@ -59,9 +59,11 @@ statement. An empty starting schema is allowed.
 and `CREATE INDEX`, in an order that SQLite can run: an index follows its table.
 A schema statement that SQLite refuses to prepare, for example a second table
 with the same name, is `INPUT_ERROR` with SQLite's message. The description may
-contain keys, `NOT NULL`, the `CURRENT_TIMESTAMP` default, indexes and the exact
+contain keys, `NOT NULL`, literal defaults, the `CURRENT_TIMESTAMP` default, indexes and the exact
 native `sqlite_stat1` and `sqlite_stat4` tables. Other defaults, other reserved
 names and `INTEGER PRIMARY KEY` rowid aliases are model restrictions.
+Omitted INSERT columns use their literal defaults and column affinities. A
+`CURRENT_TIMESTAMP` value remains unsupported when an INSERT needs to evaluate it.
 
 ## Resolution
 
@@ -114,7 +116,7 @@ of frontend refusal, the cases of the claimed corpora that it keeps out of scope
 | `rowid-column-name` | Column names `rowid`, `_rowid_` and `oid` are not modeled | ADR 0008 |
 | `rowid-alias` | INTEGER PRIMARY KEY rowid aliases are not modeled | ADR 0008 |
 | `create-table-constraints` | Constraints and defaults in a CREATE TABLE that runs are not modeled | ADR 0008 |
-| `unmodeled-default` | Only the `CURRENT_TIMESTAMP` default is modeled | ADR 0008 |
+| `unmodeled-default` | Only literal defaults and `CURRENT_TIMESTAMP` are modeled | ADR 0008 |
 | `create-index-runs` | A CREATE INDEX that runs is not modeled | ADR 0008 |
 | `add-column-constraint` | Only a nullable column without a default can be added | ADR 0008 |
 | `time-value` | Time values are not modeled | ADR 0008 |

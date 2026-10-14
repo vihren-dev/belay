@@ -21,7 +21,7 @@ inductive RestrictionKind where
   | rowidAlias
   /-- Constraints and defaults in a CREATE TABLE that runs are not modeled (ADR 0008). -/
   | createTableConstraints
-  /-- Only the {lit}`CURRENT_TIMESTAMP` default is modeled (ADR 0008). -/
+  /-- Only literal defaults and {lit}`CURRENT_TIMESTAMP` are modeled (ADR 0008, T14). -/
   | unmodeledDefault
   /-- A CREATE INDEX that runs is not modeled (ADR 0008). -/
   | createIndexRuns

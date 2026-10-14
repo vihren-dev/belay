@@ -49,7 +49,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .rowidColumnName => "column names rowid, _rowid_ and oid are not modeled; rename the column"
   | .rowidAlias => "INTEGER PRIMARY KEY rowid aliases are not modeled; declare the key column with another type, such as BIGINT"
   | .createTableConstraints => "constraints and defaults in a CREATE TABLE that runs are not modeled; create the table with plain columns"
-  | .unmodeledDefault => "only the CURRENT_TIMESTAMP default is modeled; remove the other default"
+  | .unmodeledDefault => "default expression is not modeled; use a literal default"
   | .createIndexRuns => "a CREATE INDEX that runs is not modeled; remove the CREATE INDEX statement"
   | .addColumnConstraint => "only a nullable column without a default can be added"
   | .timeValue => "time values are not modeled; write the time as a text literal"

@@ -34,9 +34,9 @@ def applyConstraint (tableName : String) (definition : Syntax.ColumnDefinition)
     let position := table.columns.length - 1
     let alias := if aliasesRowid definition.declaredType && !descending then some position else none
     .ok { table with primaryKey := [position], rowidAlias := alias }
-  | .default value =>
+  | .default value sourceText =>
     if !constantDefault value then .error (.defaultNotConstant definition.name) else
-    .ok { table with columns := updateLast table.columns fun column => { column with defaultValue := some value } }
+    .ok { table with columns := updateLast table.columns fun column => { column with defaultValue := some ⟨value, sourceText⟩ } }
   | .notNull => .ok { table with columns := updateLast table.columns fun column => { column with notNull := true } }
   | .unique => .ok { table with uniqueKeys := table.uniqueKeys ++ [[table.columns.length - 1]] }
 

@@ -61,7 +61,7 @@ example : constantDefault ({expression}) = {str(code == 0).lower()} := by decide
  def catalog : Catalog := [{{ name := "t", entry := .table {{
   columns := [{{name := "id", declaredType := some "BLOB"}}] }} }}]
 #eval (resolveAddColumn {{ profile := Profile.documented "{version}" "", mode := .execution }}
-    catalog 0 "t" {{ name := "added", declaredType := some "BLOB", constraints := [.default ({expression})] }}).toOption.map
+    catalog 0 "t" {{ name := "added", declaredType := some "BLOB", constraints := [.default ({expression}) "unused in preparation classification"] }}).toOption.map
   (fun pair => pair.1 == .prepareError (.defaultNotConstant "added"))
 '''
     assert compile_checks(source, tmp_path, lean_sysroot, lean_libraries).strip() == expected

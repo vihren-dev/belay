@@ -70,28 +70,27 @@ def constantDefault (expression : Syntax.Expr) : Bool :=
 /-- Whether the constraint is PRIMARY KEY. -/
 def Syntax.ColumnConstraint.isPrimaryKey : Syntax.ColumnConstraint → Bool
   | .primaryKey _ => true
-  | .notNull | .unique | .default _ => false
+  | .notNull | .unique | .default _ _ => false
 
 /-- Whether the constraint is UNIQUE. -/
 def Syntax.ColumnConstraint.isUnique : Syntax.ColumnConstraint → Bool
   | .unique => true
-  | .notNull | .primaryKey _ | .default _ => false
+  | .notNull | .primaryKey _ | .default _ _ => false
 
 /-- Whether the constraint is a DEFAULT that SQLite refuses as not constant. -/
 def Syntax.ColumnConstraint.nonconstantDefault : Syntax.ColumnConstraint → Bool
-  | .default value => !constantDefault value
+  | .default value _ => !constantDefault value
   | .notNull | .primaryKey _ | .unique => false
 
-/-- Whether the model describes the constraint's default: no default, or the
-{lit}`CURRENT_TIMESTAMP` default, which the model keeps without evaluating it. Other
-defaults are a model restriction until the execution semantics evaluates them. -/
+/-- Whether the model describes a catalog default: a literal whose value or
+SQLite preparation error is modeled, or {lit}`CURRENT_TIMESTAMP`, which is kept
+without evaluating it. Compound expressions remain model restrictions. Constraints
+without a default pass this check. -/
 def Syntax.ColumnConstraint.modeledDefault : Syntax.ColumnConstraint → Bool
-  | .default (.currentTime keyword) => normalizeIdentifier keyword == "current_timestamp"
-  | .default (.null) | .default (.numeric _) | .default (.string _) | .default (.blob _)
-  | .default (.identifier ..) | .default (.negate _) | .default (.positive _)
-  | .default (.equals ..) | .default (.compare ..) | .default (.and ..) | .default (.or ..)
-  | .default (.not _) | .default (.isNull ..) | .default (.callStar _) | .default (.call ..)
-  | .default (.arithmetic ..) | .default (.cast ..) | .default (.callPair ..) => false
+  | .default (.currentTime keyword) _ => normalizeIdentifier keyword == "current_timestamp"
+  | .default expression _ => match literalDefault expression with
+    | .ok _ | .error (.prepare _) => true
+    | .error (.restriction ..) => false
   | .notNull | .primaryKey _ | .unique => true
 
 /-- A prepare error leaves the catalog unchanged. -/

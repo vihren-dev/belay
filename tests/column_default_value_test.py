@@ -48,12 +48,12 @@ def test_omitted_default_values(version: str, affinity: str, tmp_path: Path,
             expected.append([cell_wire(cell) for cell in rows[0]])
     finally:
         connection.close()
-    expressions = ", ".join(f"({expression})" for _, expression in CASES)
+    expressions = ", ".join(f"⟨({expression}), {quoted_string(sql)}⟩" for sql, expression in CASES)
     source = f'''import Belay.Sqlite.Codec
 import Belay.Sqlite.Resolution.Writes
 open Belay.Sqlite Lean
 #eval do
-  let inputs : List Syntax.Expr := [{expressions}]
+  let inputs : List Syntax.DefaultExpression := [{expressions}]
   let rows ← inputs.mapM fun expression => do
     let columns : List CatalogColumn := [{{name := "id", declaredType := some "BLOB"}},
       {{name := "added", declaredType := some {quoted_string(affinity)}, defaultValue := some expression}}]
@@ -91,7 +91,7 @@ import Belay.Sqlite.Resolution.Messages
 open Belay.Sqlite Lean
 #eval do
   let columns : List CatalogColumn := [{{name := "id", declaredType := none}},
-    {{name := "added", declaredType := none, defaultValue := some ({expression})}}]
+    {{name := "added", declaredType := none, defaultValue := some ⟨({expression}), {quoted_string(sql)}⟩}}]
   match fullRow columns [0] [.integer 7] with
   | .error (.prepare error) =>
     IO.println (toJson ["prepare", error.message]).compress

@@ -9,7 +9,7 @@ compares each step's catalog and tables with the native ones. -/
 
 namespace Belay.Sqlite.Conformance
 
-/-- A version 4 case: the measured profile of the native connection, the SQL
+/-- A version 5 case: the measured profile of the native connection, the SQL
 texts, their statement syntax, the native tables before the migration, and native
 truth after each executed statement. {lit}`outputs` is present when the record has
 statement outputs; it then has one entry per executed statement. -/

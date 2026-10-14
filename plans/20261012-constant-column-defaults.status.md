@@ -629,3 +629,56 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of the completed T14 representation and codec changes.
+
+
+- 2026-10-15: Written default evaluation now treats bracketed and backtick
+  identifiers as text. The error-preservation proof compiles. Script records
+  use version 3, and conformance cases use version 5 to identify the changed
+  default syntax. Retained native records are unchanged. Their replay tests
+  permit only the transport version difference; all other fields must match.
+
+  The focused run passed all 54 tests in 137.97 seconds, including 85
+  admission cases with kernel checks and a mutation that changes default
+  spelling without changing blob bytes. The broader harness passed all 179
+  tests in 6.21 seconds after its version assertion and restriction example
+  were corrected. CURRENT_DATE now exercises the unmodeled-default restriction.
+
+  The full model run is still active. Its retained-fixture assertions used
+  the old version and failed; the assertion correction is in the working
+  copy for the next run. Remaining model checks have reached the new admission
+  tests. Do not treat this run as passing. Build and test evidence is in
+  build/t14-quoted-defaults-build-20261015.log,
+  build/t14-quoted-defaults-focused-20261015.log and
+  build/t14-default-admission-acceptance-20261015.log.
+  Full model revalidation, generated-input checks, protected verdict and
+  independent review remain before the feature commit is accepted.
+
+Decisions waiting for the owner:
+
+- Final review of the completed T14 representation and codec changes.
+
+
+- 2026-10-15: Literal catalog admission is ready for independent review.
+  The sandboxed macOS model suite passes all 153 tests in 343.59 seconds.
+  The harness passes all 179 tests, and the 16 generated-input parity checks
+  pass in 19.30 seconds. All 796 public declarations have checked documentation.
+  The protected verdict passes with unchanged corpus counts. The judge, claims,
+  lock and retained native records are unchanged.
+
+  Evidence: build/t14-default-admission-final-20261015.log,
+  build/t14-default-generated-inputs-final-20261015.log and
+  build/t14-default-verdict-20261015.log. The first generated-input invocation
+  selected the conformance runtime, which excludes examples. The passing run
+  uses the complete runtime. This was a test invocation correction.
+
+  This checkpoint admits literal defaults in catalog schemas and supplies
+  omitted INSERT values. Source spelling survives syntax, codecs, catalog
+  comparison and prediction. Quote delimiters distinguish literal text from
+  boolean keywords. A source-spelling mutation with equal blob bytes is rejected
+  by the catalog comparison and has a kernel-checked disagreement.
+  ADD COLUMN row extension, preservation proofs, installed examples and final
+  two-platform acceptance remain. Independent review follows this commit.
+
+Decisions waiting for the owner:
+
+- Final review of the completed T14 representation and codec changes.

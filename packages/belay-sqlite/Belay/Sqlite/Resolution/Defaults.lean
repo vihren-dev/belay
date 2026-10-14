@@ -27,6 +27,18 @@ def literalDefault : Syntax.Expr → Except ValueIssue Value
   | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast .. | .callPair .. =>
     .error (.restriction [] .unmodeledDefault)
 
+/-- Evaluate a written default before affinity applies. Bracket and backtick
+quotes make an identifier a text literal, including {lit}`[true]`; the expression's
+double-quote flag handles {lit}`"true"`. Use {name}`literalDefault` for expressions
+whose identifier quote distinction is already represented there. -/
+def writtenDefault (written : Syntax.DefaultExpression) : Except ValueIssue Value :=
+  match written.expression with
+  | .identifier name _ =>
+    if written.sourceText.startsWith "[" || written.sourceText.startsWith "`" then
+      .ok (.text name.toUTF8.toList)
+    else literalDefault written.expression
+  | _ => literalDefault written.expression
+
 /-- The value of a column's DEFAULT before affinity applies; NULL when it is
 omitted. {name}`literalDefault` identifies unsupported expressions. INSERT's
 full-row construction applies the column's affinity after evaluating this value.
@@ -34,6 +46,6 @@ Omit the default field for an ordinary nullable column. -/
 def defaultValue (column : CatalogColumn) : Except ValueIssue Value :=
   match column.defaultValue with
   | none => .ok .null
-  | some expression => literalDefault expression
+  | some written => writtenDefault written
 
 end Belay.Sqlite

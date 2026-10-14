@@ -66,8 +66,8 @@ theorem defaultValue_issue (column : CatalogColumn) (issue : ValueIssue)
   unfold defaultValue at failed
   split at failed
   · cases failed
-  · unfold literalDefault at failed
-    repeat' split at failed
+  · unfold writtenDefault at failed
+    repeat' first | split at failed | unfold literalDefault at failed
     all_goals first
       | (cases failed <;> trivial)
       | (unfold queryNumeric at failed; dsimp only at failed
