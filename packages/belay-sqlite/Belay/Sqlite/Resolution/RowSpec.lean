@@ -50,19 +50,19 @@ and a full row:
 * Every other table column has the value of its default, as {name}`defaultValue`
   gives it.
 Written positions outside the table impose nothing. -/
-def RowWidth (dqs : Bool) (columns : List CatalogColumn) (positions : List Nat)
+def RowWidth (columns : List CatalogColumn) (positions : List Nat)
     (written full : List Value) : Prop :=
   full.length = columns.length ∧ ∀ index (h : index < columns.length),
     (∀ k, positions.idxOf? index = some k → full[index]? = some (written[k]?.getD .null)) ∧
-    (positions.idxOf? index = none → defaultValue dqs columns[index] = .ok (full[index]?.getD .null))
+    (positions.idxOf? index = none → defaultValue columns[index] = .ok (full[index]?.getD .null))
 
 /-- For all inputs, a successful {name}`fullRow` gives a full row that satisfies
 {name}`RowWidth`. Proof sketch: {name}`resolveAllFrom_ok` gives the length and the
 value of each column, and {name}`storedValue_ok` shows that the admission check keeps
 each value. -/
-theorem fullRow_rowWidth (dqs : Bool) (columns : List CatalogColumn) (positions : List Nat)
-    (written full : List Value) (ok : fullRow dqs columns positions written = .ok full) :
-    RowWidth dqs columns positions written full := by
+theorem fullRow_rowWidth (columns : List CatalogColumn) (positions : List Nat)
+    (written full : List Value) (ok : fullRow columns positions written = .ok full) :
+    RowWidth columns positions written full := by
   unfold fullRow resolveAll at ok
   obtain ⟨length, each⟩ := resolveAllFrom_ok _ 0 columns full ok
   refine ⟨length, fun index h => ?_⟩
@@ -96,7 +96,7 @@ theorem resolveInsert_rowWidth (context : ResolveContext) (catalog after : Catal
     (columns : List (Resolved.Expr × String))
     (ok : resolveInsert context catalog index tableName names rows returning = .ok (.insert position full keys columns, after)) :
     after = catalog ∧ ∃ table, catalog.findTable tableName = some (position, table) ∧
-      keys = catalog.uniqueKeys position table ∧ ∀ row ∈ full, ∃ positions written, RowWidth context.profile.dqsDml table.columns positions written row := by
+      keys = catalog.uniqueKeys position table ∧ ∀ row ∈ full, ∃ positions written, RowWidth table.columns positions written row := by
   unfold resolveInsert at ok
   simp only [prepareError, restrict, issueResolution] at ok
   split at ok
@@ -133,6 +133,6 @@ theorem resolveInsert_rowWidth (context : ResolveContext) (catalog after : Catal
   obtain ⟨value, hvalue, step⟩ := each r written[r] (List.getElem?_eq_getElem hlen)
   rw [hr] at hvalue
   cases hvalue
-  exact ⟨positions, written[r], fullRow_rowWidth _ _ _ _ _ step⟩
+  exact ⟨positions, written[r], fullRow_rowWidth _ _ _ _ step⟩
 
 end Belay.Sqlite

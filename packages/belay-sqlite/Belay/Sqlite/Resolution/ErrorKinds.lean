@@ -25,30 +25,6 @@ def ValueIssue.namesNoObject : ValueIssue → Prop
   | .prepare error => error.namesObject = false
   | .restriction .. => True
 
-/-- For every expression, an issue of {name}`literalValue` names no catalog object.
-Proof sketch: induction on the expression; the only prepare errors are
-{name}`PrepareError.noSuchColumn` and {name}`PrepareError.hexLiteralTooBig`. -/
-theorem literalValue_issue (dqs : Bool) (expression : Syntax.Expr) (issue : ValueIssue)
-    (failed : literalValue dqs expression = .error issue) : issue.namesNoObject := by
-  induction expression generalizing issue with
-  | positive operand ih =>
-    simp only [literalValue, Except.mapError] at failed
-    split at failed <;> try contradiction
-    rename_i inner hinner
-    cases failed
-    have := ih inner hinner
-    split <;> simp_all [ValueIssue.namesNoObject]
-  | numeric text =>
-    simp only [literalValue, numericLiteral] at failed
-    split at failed <;> cases failed <;> simp [ValueIssue.namesNoObject, PrepareError.namesObject]
-  | negate operand =>
-    cases operand <;> simp only [literalValue, numericLiteral] at failed <;>
-      (try split at failed) <;> cases failed <;> simp [ValueIssue.namesNoObject, PrepareError.namesObject]
-  | identifier name doubleQuoted =>
-    simp only [literalValue] at failed
-    split at failed <;> cases failed; simp [ValueIssue.namesNoObject, PrepareError.namesObject]
-  | _ => simp only [literalValue] at failed <;> cases failed <;> simp [ValueIssue.namesNoObject]
-
 /-- For every resolver, start and list: if {name}`resolveAllFrom` fails with an
 issue, there is a position and an item for which the resolver fails with the same
 issue. The formula does not say that the item is in the list or where. Proof sketch:
@@ -83,15 +59,11 @@ theorem ValueIssue.under_namesNoObject (prefix_ : List Nat) (issue : ValueIssue)
   cases issue <;> simp_all [ValueIssue.under, ValueIssue.namesNoObject]
 
 /-- For every column, an issue of {name}`defaultValue` names no catalog object.
-Proof sketch: the only failing branch is {name}`literalValue`, which
-{name}`literalValue_issue` covers. -/
-theorem defaultValue_issue (dqs : Bool) (column : CatalogColumn) (issue : ValueIssue)
-    (failed : defaultValue dqs column = .error issue) : issue.namesNoObject := by
+Proof sketch: the function fails only with model restrictions. -/
+theorem defaultValue_issue (column : CatalogColumn) (issue : ValueIssue)
+    (failed : defaultValue column = .error issue) : issue.namesNoObject := by
   unfold defaultValue at failed
-  split at failed
-  · cases failed
-  · cases failed
-  · exact literalValue_issue _ _ _ failed
+  split at failed <;> cases failed <;> trivial
 
 /-- For every affinity, value and path, an issue of {name}`storedValue` names no
 catalog object: the formula states this conclusion, although the function only
@@ -105,15 +77,15 @@ theorem storedValue_issue (affinity : Affinity) (value : Value) (path : List Nat
 /-- For all inputs, an issue of {name}`fullRow` names no catalog object. Proof sketch:
 by {name}`resolveAll_issue`, the issue comes from one column, where it is an issue of
 {name}`storedValue` or of {name}`defaultValue`. -/
-theorem fullRow_issue (dqs : Bool) (columns : List CatalogColumn) (positions : List Nat) (row : List Value)
-    (issue : ValueIssue) (failed : fullRow dqs columns positions row = .error issue) : issue.namesNoObject := by
+theorem fullRow_issue (columns : List CatalogColumn) (positions : List Nat) (row : List Value)
+    (issue : ValueIssue) (failed : fullRow columns positions row = .error issue) : issue.namesNoObject := by
   unfold fullRow at failed
   refine resolveAll_issue _ _ _ (fun position column issue h => ?_) failed
   simp only [bind, Except.bind] at h
   split at h
   · exact storedValue_issue _ _ _ _ h
   · split at h
-    · cases h; exact defaultValue_issue _ _ _ (by assumption)
+    · cases h; exact defaultValue_issue _ _ (by assumption)
     · exact storedValue_issue _ _ _ _ h
 
 end Belay.Sqlite

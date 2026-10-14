@@ -113,10 +113,6 @@ of frontend refusal, the cases of the claimed corpora that it keeps out of scope
 | `add-column-constraint` | Only a nullable column without a default can be added | ADR 0008 |
 | `real-value` | REAL values are not modeled | ADR 0008 |
 | `time-value` | Time values are not modeled | ADR 0008 |
-| `negated-non-numeric` | Only a numeric literal may be negated | ADR 0008 |
-| `condition-as-value` | A comparison or logical operator is not a literal value | ADR 0008 |
-| `aggregate-as-value` | An aggregate is not a literal value | ADR 0008 |
-| `expression-as-value` | An expression is not a literal value outside a query | ADR 0012 slice 2 |
 | `affinity-conversion` | The column affinity would convert this value | ADR 0008 |
 | `key-affinity` | Unique keys over TEXT or REAL columns are not modeled | ADR 0008 |
 | `key-value` | Only integer and NULL values are modeled in unique key columns | ADR 0008 |

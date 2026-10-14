@@ -74,8 +74,8 @@ theorem callIssues (misuse : Bool) (name : String) :
 {name}`resolveOperand` name no catalog object. Proof sketch: induction on the
 expression. A compound expression sequences its operands with {name}`bind_issues`,
 {name}`under_issues` and {name}`condition_issues`, and fails itself only with a
-restriction; a leaf gives {lit}`no such column`, a literal issue
-({name}`literalValue_issue`), {name}`queryNumeric_issues` or {name}`callIssues`. -/
+restriction; a leaf gives {lit}`no such column`, a restriction,
+{name}`queryNumeric_issues` or {name}`callIssues`. -/
 theorem resolveOperand_issue (dqs : Bool) (columns : List CatalogColumn) (misuse : Bool)
     (expression : Syntax.Expr) : IssuesNameNoObject (resolveOperand dqs columns misuse expression) := by
   have pair_match : ∀ (a b : Operand) (build : Resolved.Expr → Resolved.Expr → Resolved.Expr)
@@ -86,7 +86,9 @@ theorem resolveOperand_issue (dqs : Bool) (columns : List CatalogColumn) (misuse
     split at failed <;> cases failed; trivial
   induction expression with
   | null | string _ | blob _ | currentTime _ =>
-    exact map_issues _ (fun issue failed => literalValue_issue _ _ _ failed)
+    intro issue failed
+    simp only [resolveOperand] at failed
+    cases failed <;> trivial
   | numeric text => exact map_issues _ (queryNumeric_issues _ _)
   | identifier name doubleQuoted =>
     intro issue failed

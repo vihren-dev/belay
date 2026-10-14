@@ -155,8 +155,10 @@ def resolveOperand (dqs : Bool) (columns : List CatalogColumn) (misuse : Bool) :
     .ok (a.1, none)
   | call@(.callStar name) | call@(.call name _) =>
     .error (if aggregateCall call then aggregateIssue misuse name else callIssue name)
-  | literal@.null | literal@(.string _) | literal@(.blob _) | literal@(.currentTime _) =>
-    (literalValue dqs literal).map fun value => (.literal value, none)
+  | .null => .ok (.literal .null, none)
+  | .string bytes => .ok (.literal (.text bytes), none)
+  | .blob bytes => .ok (.literal (.blob bytes), none)
+  | .currentTime _ => .error (.restriction [] .timeValue)
 
 /-- Whether an expression names a column of the table: an identifier with the folded
 name of a column, anywhere in the expression. A write value that names a column

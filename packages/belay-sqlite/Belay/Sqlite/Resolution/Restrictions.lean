@@ -31,14 +31,6 @@ inductive RestrictionKind where
   | realValue
   /-- Time values are not modeled (ADR 0008). -/
   | timeValue
-  /-- Only a numeric literal may be negated (ADR 0008). -/
-  | negatedNonNumeric
-  /-- A comparison or logical operator is not a literal value (ADR 0008). -/
-  | conditionAsValue
-  /-- An aggregate is not a literal value (ADR 0008). -/
-  | aggregateAsValue
-  /-- An expression is not a literal value outside a query (ADR 0012 slice 2). -/
-  | expressionAsValue
   /-- The column affinity would convert this value (ADR 0008). -/
   | affinityConversion
   /-- Unique keys over TEXT or REAL columns are not modeled (ADR 0008). -/

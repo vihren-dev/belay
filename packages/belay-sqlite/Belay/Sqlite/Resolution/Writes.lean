@@ -25,12 +25,14 @@ def resolveAll (resolveOne : Nat → α → Except ValueIssue β) (items : List 
   resolveAllFrom resolveOne 0 items
 
 /-- The value of a column's DEFAULT when INSERT omits the column: NULL without a
-default, else the default literal. A time default is a model restriction. -/
-def defaultValue (dqs : Bool) (column : CatalogColumn) : Except ValueIssue Value :=
+default. The only default that a catalog holds is {lit}`CURRENT_TIMESTAMP`
+(resolution refuses the others with {name}`RestrictionKind.unmodeledDefault`), and
+its time value is a model restriction. -/
+def defaultValue (column : CatalogColumn) : Except ValueIssue Value :=
   match column.defaultValue with
   | none => .ok .null
-  | some (.identifier name _) => .ok (.text name.toUTF8.toList)
-  | some value => literalValue dqs value
+  | some (.currentTime _) => .error (.restriction [] .timeValue)
+  | some _ => .error (.restriction [] .unmodeledDefault)
 
 /-- The value of a SET expression with the table's columns in scope. An expression
 that names a column depends on the row, which the model does not describe yet; any
@@ -57,12 +59,12 @@ def insertPositions (tableName : String) (columns : List CatalogColumn) :
 
 /-- One full row in table order: the written value of a named column, or its default.
 Each value must be stored unchanged by the column's affinity. -/
-def fullRow (dqs : Bool) (columns : List CatalogColumn) (positions : List Nat) (row : List Value) :
+def fullRow (columns : List CatalogColumn) (positions : List Nat) (row : List Value) :
     Except ValueIssue (List Value) :=
   resolveAll (fun position column => do
     let value ← match positions.idxOf? position with
       | some written => .ok (row[written]?.getD .null)
-      | none => defaultValue dqs column
+      | none => defaultValue column
     storedValue column.affinity value [position]) columns
 
 /-- Resolve INSERT. Path 1 is the column list and path 2 the rows. -/
@@ -90,7 +92,7 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
           prepareError catalog (.valuesForColumns width positions.length)
         else if positions.eraseDups.length != positions.length then
           restrict index [1] .insertColumnTwice
-        else match resolveAll (fun _ row => fullRow context.profile.dqsDml table.columns positions row) values with
+        else match resolveAll (fun _ row => fullRow table.columns positions row) values with
           | .error issue => issueResolution catalog index [2] issue
           | .ok full =>
             let keys := catalog.uniqueKeys position table

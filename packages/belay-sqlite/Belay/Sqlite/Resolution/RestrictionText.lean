@@ -20,10 +20,6 @@ def RestrictionKind.id : RestrictionKind → String
   | .addColumnConstraint => "add-column-constraint"
   | .realValue => "real-value"
   | .timeValue => "time-value"
-  | .negatedNonNumeric => "negated-non-numeric"
-  | .conditionAsValue => "condition-as-value"
-  | .aggregateAsValue => "aggregate-as-value"
-  | .expressionAsValue => "expression-as-value"
   | .affinityConversion => "affinity-conversion"
   | .keyAffinity => "key-affinity"
   | .keyValue => "key-value"
@@ -63,10 +59,6 @@ def RestrictionKind.message : RestrictionKind → String
   | .addColumnConstraint => "only a nullable column without a default can be added"
   | .realValue => "REAL values are not modeled; use an integer, text, blob or NULL value"
   | .timeValue => "time values are not modeled; write the time as a text literal"
-  | .negatedNonNumeric => "only a numeric literal may be negated; write the negated value as a literal"
-  | .conditionAsValue => "a comparison or logical operator is not a literal value; write a literal value"
-  | .aggregateAsValue => "an aggregate is not a literal value; write a literal value"
-  | .expressionAsValue => "an expression is not a literal value outside a query; write a literal value"
   | .affinityConversion => "the column affinity would convert this value; write NULL, a blob, or a value that the affinity keeps unchanged"
   | .keyAffinity => "unique keys over TEXT or REAL columns are not modeled; write only to tables whose key columns have INTEGER, NUMERIC or BLOB affinity"
   | .keyValue => "only integer and NULL values are modeled in unique key columns; write an integer or NULL key value"
@@ -95,7 +87,7 @@ def RestrictionKind.message : RestrictionKind → String
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .rowidAlias, .createTableConstraints, .unmodeledDefault, .createIndexRuns, .addColumnConstraint, .realValue, .timeValue, .negatedNonNumeric, .conditionAsValue, .aggregateAsValue, .expressionAsValue, .affinityConversion, .keyAffinity, .keyValue, .columnInValue, .insertColumnTwice, .updateColumnTwice, .literalComparison, .nonIntegerFilter, .filterForm, .rowidInReturning, .returningTarget, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .valueAsCondition, .mixedAffinityComparison, .textToNumber, .numberToText, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum]
+  [.schemaStatement, .engineTable, .rowidColumnName, .rowidAlias, .createTableConstraints, .unmodeledDefault, .createIndexRuns, .addColumnConstraint, .realValue, .timeValue, .affinityConversion, .keyAffinity, .keyValue, .columnInValue, .insertColumnTwice, .updateColumnTwice, .literalComparison, .nonIntegerFilter, .filterForm, .rowidInReturning, .returningTarget, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .valueAsCondition, .mixedAffinityComparison, .textToNumber, .numberToText, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

@@ -90,14 +90,6 @@ def numericValue (text : String) (negated : Bool) : NumericValue :=
 a minus sign when it is negated ({lit}`codeInteger`). -/
 def hexErrorText (text : String) (negated : Bool) : String := (if negated then "-" else "") ++ text
 
-/-- Convert a numeric literal to a stored value. A REAL value is a model restriction;
-a hexadecimal literal over 64 bits is SQLite's prepare error. -/
-def numericLiteral (text : String) (negated : Bool) (path : List Nat) : Except ValueIssue Value :=
-  match numericValue text negated with
-  | .integer value => .ok (.integer value)
-  | .real => .error (.restriction path .realValue)
-  | .hexTooBig => .error (.prepare (.hexLiteralTooBig (hexErrorText text negated)))
-
 /-- Whether literal characters, without separators, start with {lit}`0x` or {lit}`0X`. -/
 def startsHex (chars : List Char) : Bool := chars.take 2 == ['0', 'x'] || chars.take 2 == ['0', 'X']
 
@@ -117,33 +109,6 @@ def queryNumeric (text : String) (negated : Bool) : Except ValueIssue Value :=
   | .integer value, _ => .ok (.integer value)
   | .hexTooBig, _ | .real, true => .error (.prepare (.hexLiteralTooBig (hexErrorText text negated)))
   | .real, false => .ok (realLiteral chars negated)
-
-/-- The stored value of a literal expression in a VALUES row or a SET assignment,
-where no column is in scope. NULL, string and blob literals keep their bytes.
-An identifier written in double quotes is a string literal when the
-double-quoted-string setting {lit}`dqs` is on; any other identifier names no
-column, which SQLite reports as {lit}`no such column: %s`. Unary plus keeps its
-operand; unary minus negates a numeric literal. The time keywords and other
-expressions, comparisons, logical operators and aggregates are model restrictions. -/
-def literalValue (dqs : Bool) : Syntax.Expr → Except ValueIssue Value
-  | .null => .ok .null
-  | .string bytes => .ok (.text bytes)
-  | .blob bytes => .ok (.blob bytes)
-  | .numeric text => numericLiteral text false []
-  | .negate (.numeric text) => numericLiteral text true [0]
-  | .positive operand => (literalValue dqs operand).mapError fun
-      | .restriction path reason => .restriction (0 :: path) reason
-      | .prepare error => .prepare error
-  | .identifier name doubleQuoted =>
-    if doubleQuoted && dqs then .ok (.text name.toUTF8.toList)
-    else .error (.prepare (.noSuchColumn name))
-  | .currentTime _ => .error (.restriction [] .timeValue)
-  | .negate _ => .error (.restriction [] .negatedNonNumeric)
-  | .equals .. | .compare .. | .and .. | .or .. | .not _ | .isNull .. =>
-    .error (.restriction [] .conditionAsValue)
-  | .callStar _ | .call .. => .error (.restriction [] .aggregateAsValue)
-  | .arithmetic .. | .cast .. | .callPair .. =>
-    .error (.restriction [] .expressionAsValue)
 
 /-- Admit a value only when the column's affinity stores it unchanged
 ({name}`LiteralData.lossless`). Otherwise it is a model restriction: a REAL value,
