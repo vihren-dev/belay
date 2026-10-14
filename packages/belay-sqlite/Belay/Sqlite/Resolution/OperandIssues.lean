@@ -86,9 +86,7 @@ theorem resolveOperand_issue (dqs : Bool) (columns : List CatalogColumn) (misuse
     split at failed <;> cases failed; trivial
   induction expression with
   | null | string _ | blob _ | currentTime _ =>
-    intro issue failed
-    simp only [resolveOperand] at failed
-    cases failed <;> trivial
+    intro issue failed; simp only [resolveOperand] at failed; cases failed <;> trivial
   | numeric text => exact map_issues _ (queryNumeric_issues _ _)
   | identifier name doubleQuoted =>
     intro issue failed

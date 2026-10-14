@@ -32,7 +32,10 @@ def defaultValue (column : CatalogColumn) : Except ValueIssue Value :=
   match column.defaultValue with
   | none => .ok .null
   | some (.currentTime _) => .error (.restriction [] .timeValue)
-  | some _ => .error (.restriction [] .unmodeledDefault)
+  | some .null | some (.numeric _) | some (.string _) | some (.blob _) | some (.identifier ..)
+  | some (.negate _) | some (.positive _) | some (.equals ..) | some (.compare ..) | some (.and ..)
+  | some (.or ..) | some (.not _) | some (.isNull ..) | some (.callStar _) | some (.call ..)
+  | some (.arithmetic ..) | some (.cast ..) | some (.callPair ..) => .error (.restriction [] .unmodeledDefault)
 
 /-- The value of a SET expression with the table's columns in scope. An expression
 that names a column depends on the row, which the model does not describe yet; any
