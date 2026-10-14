@@ -1,5 +1,6 @@
 import Belay.Sqlite.Resolution.Definitions
 import Belay.Sqlite.Resolution.KeyDomain
+import Belay.Sqlite.Resolution.QueryExprs
 
 set_option doc.verso true
 
@@ -9,11 +10,6 @@ A resolved INSERT row has one value for each table column in table order: a name
 column gets the written value and every other column its default. -/
 
 namespace Belay.Sqlite
-
-/-- Prefix the paths of model restrictions with the node's position. -/
-def ValueIssue.under (prefix_ : List Nat) : ValueIssue → ValueIssue
-  | .restriction path reason => .restriction (prefix_ ++ path) reason
-  | .prepare error => .prepare error
 
 /-- Resolve the items in order from a starting position, and stop at the first issue. -/
 def resolveAllFrom (resolveOne : Nat → α → Except ValueIssue β) (start : Nat) :
@@ -36,20 +32,13 @@ def defaultValue (dqs : Bool) (column : CatalogColumn) : Except ValueIssue Value
   | some (.identifier name _) => .ok (.text name.toUTF8.toList)
   | some value => literalValue dqs value
 
-/-- The value of a SET expression with the table's columns in scope. A name of a
-column is a column reference, which the first scope does not model; any other
-expression is a literal as in {name}`literalValue`. -/
-def assignedValue (columns : List CatalogColumn) (dqs : Bool) : Syntax.Expr → Except ValueIssue Value
-  | .identifier name doubleQuoted =>
-    if (columnPosition columns name).isSome then
-      .error (.restriction [] "column references in values are not modeled; write a literal value")
-    else literalValue dqs (.identifier name doubleQuoted)
-  | expression@.null | expression@(.numeric _) | expression@(.string _) | expression@(.blob _)
-  | expression@(.currentTime _) | expression@(.negate _) | expression@(.positive _)
-  | expression@(.equals ..) | expression@(.compare ..) | expression@(.and ..) | expression@(.or ..)
-  | expression@(.not _) | expression@(.isNull ..) | expression@(.callStar _) | expression@(.call ..)
-  | expression@(.arithmetic ..) | expression@(.cast ..) | expression@(.callPair ..) =>
-    literalValue dqs expression
+/-- The value of a SET expression with the table's columns in scope. An expression
+that names a column depends on the row, which the model does not describe yet; any
+other expression is a constant, as in {name}`constantValue`. -/
+def assignedValue (columns : List CatalogColumn) (dqs : Bool) (expression : Syntax.Expr) : Except ValueIssue Value :=
+  if mentionsColumn columns expression then
+    .error (.restriction [] "column references in values are not modeled; write a value that names no column")
+  else constantValue dqs expression
 
 /-- Turn a value issue into the statement's resolution: a prepare error keeps the
 catalog, a restriction refuses the script. -/
@@ -90,7 +79,7 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
     match positions with
     | .error error => prepareError catalog error
     | .ok positions =>
-      match resolveAll (fun row values => (resolveAll (fun _ => literalValue context.profile.dqsDml)
+      match resolveAll (fun row values => (resolveAll (fun _ => constantValue context.profile.dqsDml)
           values).mapError (·.under [row])) rows with
       | .error issue => issueResolution catalog index [2] issue
       | .ok values =>

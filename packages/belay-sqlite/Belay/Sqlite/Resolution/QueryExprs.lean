@@ -1,5 +1,7 @@
-import Belay.Sqlite.Resolution.Writes
+import Belay.Sqlite.Resolution.Values
+import Belay.Sqlite.Resolution.Catalog
 import Belay.Sqlite.Resolution.QueryAffinity
+import Belay.Sqlite.QueryEval
 
 set_option doc.verso true
 
@@ -155,5 +157,24 @@ def resolveOperand (dqs : Bool) (columns : List CatalogColumn) (misuse : Bool) :
     .error (if aggregateCall call then aggregateIssue misuse name else callIssue name)
   | literal@.null | literal@(.string _) | literal@(.blob _) | literal@(.currentTime _) =>
     (literalValue dqs literal).map fun value => (.literal value, none)
+
+/-- Whether an expression names a column of the table: an identifier with the folded
+name of a column, anywhere in the expression. A write value that names a column
+depends on the row. -/
+def mentionsColumn (columns : List CatalogColumn) : Syntax.Expr → Bool
+  | .identifier name _ => (columnPosition columns name).isSome
+  | .equals left right | .compare _ left right | .and left right | .or left right
+  | .arithmetic _ left right | .callPair _ left right => mentionsColumn columns left || mentionsColumn columns right
+  | .not operand | .isNull operand _ | .call _ operand | .negate operand | .positive operand | .cast operand _ =>
+    mentionsColumn columns operand
+  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ => false
+
+/-- The value of a constant expression in a write (ADR 0012, slice 3a): the expression
+resolved as a query expression with no column in scope and an aggregate as SQLite's
+{lit}`misuse of aggregate function`, then evaluated. So {lit}`1 + 2` is 3 and
+{lit}`CAST('7' AS INTEGER)` is 7; an identifier is a double-quoted string or
+{lit}`no such column`, as in a {lit}`VALUES` row. -/
+def constantValue (dqs : Bool) (expression : Syntax.Expr) : Except ValueIssue Value :=
+  (resolveOperand dqs [] true expression).map fun operand => operand.1.eval []
 
 end Belay.Sqlite

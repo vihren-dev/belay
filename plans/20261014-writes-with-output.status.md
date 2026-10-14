@@ -27,6 +27,14 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Resolved.lean`,
 ## Progress
 
 - 2026-10-14: task and status files created.
+- 2026-10-14: constant expressions in writes. `constantValue` (QueryExprs) resolves a
+  `VALUES` item or `SET` value as a query expression with no column in scope and
+  evaluates it; `assignedValue` restricts an expression that names a column
+  (`mentionsColumn`). Native checks: aggregates in `VALUES` and `SET` give `misuse of
+  aggregate function`. `ValueIssue.under` moved to `Values.lean` so that `Writes`
+  can import `QueryExprs`. `OperandIssues.lean` proves that issues of
+  `resolveOperand` name no catalog object, for the prepare-error rules of INSERT and
+  UPDATE; `queryNumeric` became one match so that the proof can split it.
 
 ## Remaining
 
