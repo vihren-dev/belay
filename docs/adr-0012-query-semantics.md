@@ -244,3 +244,203 @@ results without it.
 - Subqueries, compound `SELECT`, `DISTINCT`, `HAVING` and window functions.
 - Triggers and foreign-key actions, which run statements inside statements and
   need the fuel and transaction rules that ADR 0006 asks for.
+
+## Amendment 1: Row-dependent writes (slice 3b)
+
+Date: 2026-10-14. Status: PROPOSED.
+Related: the slice 3a task, plans/20261014-writes-with-output.task.md.
+
+### Context
+
+The owner narrowed slice 3 to slice 3a: constant expressions folded at resolution,
+and `RETURNING`. In slice 3a, writes stay literal, and a value that the affinity
+would convert is a model restriction (`LiteralData.lossless`). This amendment
+decides slice 3b: `SET` values that read the row (`SET v = v + 1`), an `UPDATE`
+filter that is any condition of slices 1 and 2, and store-time affinity.
+
+### Resolved forms
+
+- **`UPDATE`.** `Resolved.Statement.update` keeps one constructor, with assignments
+  `List (Nat × Resolved.Expr)` and filter `Option Resolved.Expr`. The literal update
+  of slice 3a is a special case: `.literal` values and the filter
+  `.compare .eq (.column p) (.literal (.integer n))`. No second evaluator exists.
+- **Resolution.** `resolveUpdate` resolves each `SET` value and the `WHERE`
+  condition with the expression resolution of `SELECT`, with the table's columns in
+  scope. The affinity rules of a comparison, the prepare errors (`no such column`,
+  `misuse of aggregate function`) and the restrictions of slices 1 and 2 apply
+  without change. A constant expression folds to `.literal` of its stored value.
+- **Key columns.** A `SET` value that reads the row may not assign a key column:
+  this is a model restriction (owner decision of 2026-10-14, question 1 below). A
+  key column takes a constant, as in slice 3a.
+- **`INSERT`.** `VALUES` cannot read a row: SQLite reports `no such column`. So
+  `Resolved.Statement.insert` stays literal. Resolution applies the column affinity
+  to each value and to each default, and stores the result.
+
+### Store-time affinity
+
+SQLite applies the column affinity to each value that it writes (`applyAffinity`
+in `OP_MakeRecord`, SQLite 3.51.0). The rules of the pinned `datatype3.html`:
+
+| Affinity | Rule |
+| --- | --- |
+| TEXT | An INTEGER or REAL becomes TEXT (R-54378-38553); a REAL keeps 15 significant digits (R-25142-32967). NULL, TEXT and BLOB stay (R-21926-12440). |
+| NUMERIC, INTEGER | The two are the same (R-15334-58407). A TEXT that is a well-formed integer or real literal becomes INTEGER or REAL, INTEGER first (R-12079-51392, R-36476-47203, R-05192-57965). Integer text outside 64 bits becomes REAL (R-27233-06819). Hexadecimal text and other TEXT stay TEXT (R-47301-17448). A REAL that is exactly an integer becomes INTEGER (R-22849-20349). |
+| REAL | As NUMERIC, then an INTEGER becomes REAL (R-18885-42713). |
+| BLOB | No change (R-03366-15091). |
+
+- **Decision.** The model applies these rules instead of restricting them. A new
+  Values-level function `storeValue : Affinity → Value → Value` ports
+  `applyAffinity`, `applyNumericAffinity`, `alsoAnInt` and
+  `sqlite3VdbeIntegerAffinity` with the slice 2 conversions (`atof`, `atoi64`,
+  `realToI64`, `realSameAsInt`, `realText`).
+- **Not `CAST`.** `castValue` converts also when the result loses information
+  (R-59532-48165): `CAST('abc' AS INTEGER)` is 0, but INTEGER affinity keeps
+  `'abc'`. `sqlite3VdbeIntegerAffinity` also excludes the least and greatest
+  64-bit integers. So `storeValue` is a separate function.
+- **REAL columns.** SQLite writes a whole REAL as an integer on disk and reads it
+  back as REAL (R-31757-07599, R-59544-00330, `OP_RealAffinity`). The model stores
+  the value as SQLite reads it: a REAL.
+- **Admission.** `lossless` is removed as a restriction. `insertReady` requires
+  `storeValue a v = v` for each stored value instead. Resolution makes this true.
+
+### Execution
+
+`LiteralData.updated` becomes the update of slice 3b; `checkedWrite` stays.
+
+1. **Rows.** For each row in table order, the filter is evaluated on the old row.
+   The row is selected when the value is true (`truthy`, R-58095-46013). NULL and
+   false do not select it. Without a filter, every row is selected (R-55869-30521).
+2. **Values.** Each `SET` value is evaluated on the old row of a selected row,
+   also when an earlier assignment writes a column that it reads (R-36239-04077,
+   R-40598-36595). `storeValue` with the column affinity gives the stored value.
+   Other columns and the rowid do not change (R-40472-60438).
+3. **Constraints.** `checkedWrite` checks NOT NULL and the unique keys on the
+   table after the write. On a failure, it keeps the input database: ABORT backs
+   out the whole statement (R-55069-12282, R-47224-48532). This is the only
+   run-time error: no expression of slices 1 and 2 fails outside an aggregate, and
+   an aggregate in `SET` or `WHERE` is a prepare error.
+4. **Output.** The change count is the number of selected rows; zero is not an
+   error (R-58129-20729). `RETURNING` of slice 3a reads the new rows.
+
+SQLite checks each row when it writes it, in an order that it does not specify
+(R-10927-26133). With a row-dependent key value, the result can depend on that
+order: `SET k = k + 1` over the keys 1 and 2 fails or succeeds by plan. Key
+values are constants (see "Resolved forms"), and then a check after the write
+agrees with every order: a constant key for two or more selected rows collides in
+every order, and for one row it collides only with a row that keeps its key.
+
+### Data-domain obligations and the verification target
+
+`statementReady` keeps its form. `updateReady` requires these conditions:
+
+- `tableReady keys table` before the write, and each assignment names a column.
+  These do not change.
+- Each key position is `comparisonReady` in the table after the write. The formula
+  and its meaning do not change, because key values are constants.
+- **Removed:** `comparisonReady` at the filter position and the integer filter
+  value. The Values level computes the comparison with SQLite's rules.
+
+`insertReady` changes only from `lossless` to `storeValue a v = v`. `Conforms`,
+which defines the admitted databases with the approved conditions, gains stored
+form: every cell equals `storeValue` of itself for its column (question 5).
+
+**Verification target.** `VerificationConditions` keeps its formulas, and
+`Contract.lean` can stay unchanged: it names `SupportedSql` and `ProfileExecutes`
+from `SqlExecution.lean`, whose types do not change. The field `ready` still
+requires `SupportedSql` for every admitted database, as a proof obligation, not a
+premise. The obligations now depend on the values that an `UPDATE` reads, so a
+proof of `ready` can need an approved condition about those values. The meaning of
+`ready` changes in files that are not owner-reviewed. They stay outside CODEOWNERS
+(question 3): like the rest of the model, they are checked by evidence. Each
+conjunct of `insertReady`, `updateReady` and `statementReady` has a mutant, and a
+claimed boundary case, with a database state just outside the domain, disagrees
+when the conjunct is removed.
+
+### Restrictions that remain
+
+- Unique keys over TEXT or REAL columns, and key values other than integer or
+  NULL. A `SET` value that reads the row for a key column (question 1).
+- `INTEGER PRIMARY KEY` rowid aliases; a column assigned twice in `UPDATE`.
+- `INSERT OR`, `UPDATE OR`, UPSERT (slice 5); `UPDATE … FROM`; `ORDER BY` and
+  `LIMIT` on `UPDATE`; `INSERT … SELECT`; subqueries; parameters.
+- A bare column or literal as a condition; collations other than BINARY.
+- Triggers and foreign-key actions. `DELETE` until slice 3c (question 6).
+
+### Testing
+
+- **Authored coverage cases.** `storeValue` for each affinity and each storage
+  class, with neighbors: `'3.0e+5'`, `' 12 '`, `'0x10'`, `'abc'`,
+  `'9223372036854775808'` and `'1e400'` into INTEGER, NUMERIC and REAL; 5.0, 5.5
+  and `2^63` as REAL into INTEGER; an integer and `2^53 + 1` into REAL; a REAL into
+  TEXT; a BLOB into each. `UPDATE`: `SET v = v + 1`; `SET a = b, b = a`; a filter
+  that is NULL for some rows; `AND`, `OR`, `IS` and `IS NULL` filters; no match; a
+  NOT NULL failure from a NULL cell; a unique failure after `SET k = 5` over two
+  rows; `SET k = k + 1` (a restriction); a failure after some rows match, with
+  `RETURNING`; an integer overflow to REAL in a non-key column.
+- **Mutants.** Each must change the verdict of a case: `SET` values read the new
+  row; a NULL filter selects the row; no store affinity; `castValue` as store
+  affinity; a REAL column keeps an integer; a TEXT column keeps a number; a failed
+  `UPDATE` keeps the rows before the failing one; the change count counts every row.
+- **Obligation mutants and boundary cases.** Each conjunct of the admission
+  obligations has a mutant that removes it, and a boundary case whose database state
+  is just outside the domain: `MODEL_UNSUPPORTED` with the conjunct, `DISAGREE`
+  without it. For example, a REAL that equals an integer in a unique key. The
+  boundary cases are frozen and claimed through the judge, so a weakened obligation
+  fails the verdict. The boundary case of the slice 3a filter obligation, `1.0` in a
+  column without affinity under the filter `c = 1`, becomes an ordinary coverage
+  case when slice 3b removes that obligation: the model must agree that SQLite
+  updates the row.
+- **Proofs.** Every statement of the model keeps `Conforms`, including stored form
+  (question 5). `storeValue` is idempotent, and its result for TEXT affinity is never
+  a number. The update changes only selected rows, only at assigned positions, and
+  keeps rowids and order. The update of slice 3a is the special case of literal
+  assignments, so the existing preservation proofs carry over. With constant key
+  values, row-by-row checks in every order give the result of `checkedWrite`.
+
+### Slices
+
+Item 3 of "Slices" becomes three items. **3a. Writes with output** is the narrowed
+slice of the owner. **3b. Row-dependent writes** is this amendment. **3c. DELETE**
+follows 3b: `DELETE FROM table [WHERE condition] [RETURNING columns]` with the
+filter of 3b, its change count and its `RETURNING` rows. Items 4 to 6 do not change. Slice 5 (`ON CONFLICT`) uses the expressions of slice 3b in
+`DO UPDATE SET`.
+
+### Alternatives considered
+
+- **Keep the conversion a restriction.** Rejected: the workload writes text into
+  numeric columns, and slice 2 already has the conversions.
+- **Store with `castValue`.** Rejected: CAST and affinity differ (see above).
+- **Row-by-row checks in rowid order.** Rejected: SQLite does not specify the
+  order, and a plan with an index visits rows in another order.
+- **A second constructor for row-dependent `UPDATE`.** Rejected: two evaluators
+  for one statement, against the "Consequences" of this ADR.
+
+### Owner decisions
+
+1. **Key columns.** Decided on 2026-10-14: a row-dependent `SET` value for a key
+   column is a model restriction. Row-dependent writes to keys are rare in
+   migrations, and the restriction keeps the key obligations of slice 3a.
+2. **Order-dependent unique failures.** Resolved by question 1: with constant key
+   values, no result depends on the order of rows.
+3. **Owner review of obligations.** Decided on 2026-10-14: no CODEOWNERS change.
+   The obligations are model code like the rest of the model, so evidence checks
+   them: obligation mutants and claimed boundary cases (see "Testing"). The
+   obligations of slice 3a get the same mutants and cases before slice 3b.
+4. **Filter obligation.** Decided on 2026-10-14: removed. It guarded the tagged
+   value test of the slice 3a filter, which slice 3b replaces with SQLite's
+   comparison; `SELECT` has no such obligation either. The key obligations stay,
+   because uniqueness is still an integer test (`keyEqual`).
+5. **Stored form.** Decided on 2026-10-14: `Conforms` requires every cell in its
+   stored form, `storeValue affinity cell = cell` for its column. Admitted databases
+   over-approximate the databases reachable through SQLite: each invariant in
+   `Conforms` (unique rowids, rowids in range, one cell per column, and now stored
+   form) is a guarantee of SQLite's normal write path, which is an assumption of the
+   trust boundary (`docs/trust-boundary.md`). A preservation theorem shows that the
+   model's statements keep every invariant; its key lemma is that `storeValue` is
+   idempotent. An invariant may join `Conforms` only if it holds for every database
+   that SQLite can reach. A property of the databases that the model's own statements
+   can reach (for example, no REAL value in an INTEGER column) must never be used to
+   admit a database, so the model defines no such notion.
+6. **`DELETE`.** Decided on 2026-10-14: its own slice, 3c, right after 3b. It
+   reuses the filter of 3b, keeps 3b focused, and makes migrations that delete
+   rows, where application data is lost, verifiable early.
