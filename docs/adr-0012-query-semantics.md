@@ -247,7 +247,7 @@ results without it.
 
 ## Amendment 1: Row-dependent writes (slice 3b)
 
-Date: 2026-10-14. Status: PROPOSED.
+Date: 2026-10-14. Status: ACCEPTED (2026-10-14, #111).
 Related: the slice 3a task, plans/20261014-writes-with-output.task.md.
 
 ### Context
@@ -352,9 +352,11 @@ premise. The obligations now depend on the values that an `UPDATE` reads, so a
 proof of `ready` can need an approved condition about those values. The meaning of
 `ready` changes in files that are not owner-reviewed. They stay outside CODEOWNERS
 (question 3): like the rest of the model, they are checked by evidence. Each
-conjunct of `insertReady`, `updateReady` and `statementReady` has a mutant, and a
-claimed boundary case, with a database state just outside the domain, disagrees
-when the conjunct is removed.
+conjunct of `insertReady`, `updateReady` and `statementReady` that a database state
+can violate after resolution has a mutant, and a claimed boundary case, with a
+database state just outside the domain, disagrees when the conjunct is removed.
+Each other conjunct names the restriction that resolution reports first, or the
+reason that no boundary case exists (`conformance/obligation_mutants.py`).
 
 ### Restrictions that remain
 
@@ -382,9 +384,10 @@ when the conjunct is removed.
   affinity; a REAL column keeps an integer; a TEXT column keeps a number; a failed
   `UPDATE` keeps the rows before the failing one; the change count counts every row.
 - **Obligation mutants and boundary cases.** Each conjunct of the admission
-  obligations has a mutant that removes it, and a boundary case whose database state
-  is just outside the domain: `MODEL_UNSUPPORTED` with the conjunct, `DISAGREE`
-  without it. For example, a REAL that equals an integer in a unique key. The
+  obligations that a database state can violate after resolution has a mutant that
+  removes it, and a boundary case whose database state is just outside the domain:
+  `MODEL_UNSUPPORTED` with the conjunct, `DISAGREE` without it. Each other conjunct
+  names what covers it, as "Data-domain obligations" says. For example, a REAL that equals an integer in a unique key. The
   boundary cases are frozen and claimed through the judge, so a weakened obligation
   fails the verdict. The boundary case of the slice 3a filter obligation, `1.0` in a
   column without affinity under the filter `c = 1`, becomes an ordinary coverage

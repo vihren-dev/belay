@@ -147,17 +147,6 @@ theorem constantValue_issue (dqs : Bool) (expression : Syntax.Expr) (issue : Val
   · cases failed; exact resolveOperand_issue _ _ _ _ _ (by assumption)
   · cases failed
 
-/-- For every column list, an issue of {name}`assignedValue` names no catalog object.
-Proof sketch: an expression that names a column is a restriction, and every other
-expression is a constant, which {name}`constantValue_issue` covers. -/
-theorem assignedValue_issue (columns : List CatalogColumn) (dqs : Bool) (expression : Syntax.Expr)
-    (issue : ValueIssue) (failed : assignedValue columns dqs expression = .error issue) :
-    issue.namesNoObject := by
-  unfold assignedValue at failed
-  split at failed
-  · cases failed; trivial
-  · exact constantValue_issue _ _ _ failed
-
 /-- For every list of computations whose issues name no catalog object, the issues of
 their concatenation in order name none. Proof sketch: induction on the list, with
 {name}`bind_issues` at each element. -/

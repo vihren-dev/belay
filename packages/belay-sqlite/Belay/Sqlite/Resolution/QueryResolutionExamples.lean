@@ -99,16 +99,19 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
   (.callPair "coalesce" (.identifier "b" false) (.numeric "0")))))
 -- Arithmetic gives a number, so it can be a condition.
 #guard (queryOf (select [.star] (filter := some (.arithmetic .add (.identifier "Abc" false) (.numeric "1"))))).isSome
--- Constant expressions in writes (slice 3a) are computed at resolution; an expression
--- that names a column depends on the row and is a restriction.
+-- Constant expressions in writes (slice 3a) are computed and stored at resolution; a SET
+-- value that names a column stays an expression over the old row (slice 3b).
 #guard resolvedOne (.insert "t" none [[.arithmetic .add (.numeric "1") (.numeric "2"), .string [120]]]) ==
   some (.insert 0 [[.integer 3, .text [120]]] [] [])
-#guard resolvedOne (.update "t" [("Abc", .cast (.string [55]) "INTEGER")] none) == some (.update 0 [(0, .integer 7)] none [] [])
+#guard resolvedOne (.update "t" [("Abc", .cast (.string [55]) "INTEGER")] none) ==
+  some (.update 0 [(0, .literal (.integer 7))] none [] [])
 #guard errorOf (.insert "t" none [[.callStar "count", .null]]) == some (.misuseOfAggregate "count")
-#guard restrictedOne (.update "t" [("b", .arithmetic .add (.identifier "Abc" false) (.numeric "1"))] none)
--- The value of a `column = value` filter is a constant too: `WHERE Abc = 1 + 2` filters on 3.
+#guard resolvedOne (.update "t" [("b", .arithmetic .add (.identifier "Abc" false) (.numeric "1"))] none) ==
+  some (.update 0 [(1, .arithmetic .add (.column 0) (.literal (.integer 1)))] none [] [])
+-- The filter is a condition, resolved as in SELECT: `WHERE Abc = 1 + 2`.
 #guard resolvedOne (.update "t" [("b", .string [120])] (some (.equals (.identifier "Abc" false)
-  (.arithmetic .add (.numeric "1") (.numeric "2"))))) == some (.update 0 [(1, .text [120])] (some (0, .integer 3)) [] [])
+  (.arithmetic .add (.numeric "1") (.numeric "2"))))) == some (.update 0 [(1, .literal (.text [120]))]
+  (some (.compare .eq (.column 0) (.arithmetic .add (.literal (.integer 1)) (.literal (.integer 2))))) [] [])
 -- RETURNING (slice 3a): `*` and named expressions over the written row; an aggregate is
 -- a misuse, a rowid a restriction, and an error in the values comes first.
 #guard (resolvedOne (.returning (.insert "t" none [[.numeric "1", .string [120]]]) [.star, .expression (.identifier "B" false) none "B"]))

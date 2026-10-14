@@ -26,7 +26,8 @@ def database : Database := fun position => if position = 0 then some table else 
     [(.column 1, "v"), (.arithmetic .add (.column 0) (.literal (.integer 1)), "k + 1")]] { database } ==
   [some ⟨["v", "k + 1"], [[.text [101], .integer 6]], some 1⟩]
 -- UPDATE ... SET v = 'z' WHERE k = 1 RETURNING v returns the new values of the two matched rows.
-#guard outputTraceFrom 0 [.update 0 [(1, .text [122])] (some (0, .integer 1)) [] [(.column 1, "v")]] { database } ==
+#guard outputTraceFrom 0 [.update 0 [(1, .literal (.text [122]))] (some (.compare .eq (.column 0) (.literal (.integer 1)))) []
+    [(.column 1, "v")]] { database } ==
   [some ⟨["v"], [[.text [122]], [.text [122]]], some 2⟩]
 
 end Belay.Sqlite.Conformance.QueryOutputs

@@ -1,5 +1,5 @@
 import Belay.Sqlite.Execution
-import Belay.Sqlite.LiteralData
+import Belay.Sqlite.RowUpdate
 
 set_option doc.verso true
 

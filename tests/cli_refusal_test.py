@@ -18,8 +18,8 @@ pytestmark = [pytest.mark.e2e, pytest.mark.kernel, pytest.mark.requires_lean,
 @pytest.mark.parametrize("sql,refused,restriction", [
     ("CREATE INDEX i ON invoices(amount);", "CREATE INDEX i ON invoices(amount)", "create-index-runs"),
     ("CREATE TABLE t(a TEXT, rowid TEXT);", "a TEXT, rowid TEXT", "rowid-column-name"),
-    ("INSERT INTO invoices VALUES (1.5);", "1.5", "real-value"),
-], ids=["index_that_runs", "rowid_column", "real_value"])
+    ("SELECT amount FROM invoices WHERE amount = '1';", "'1'", "text-to-number"),
+], ids=["index_that_runs", "rowid_column", "text_to_number"])
 def test_restriction_names_the_refused_sql(invoke: Callable[..., dict[str, object]], candidate: Path,
                                            sql: str, refused: str, restriction: str) -> None:
     """A model restriction from Lean resolution is UNSUPPORTED at the byte range of the refused node,

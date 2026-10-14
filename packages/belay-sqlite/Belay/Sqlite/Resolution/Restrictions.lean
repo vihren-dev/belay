@@ -27,28 +27,19 @@ inductive RestrictionKind where
   | createIndexRuns
   /-- Only a nullable column without a default can be added (ADR 0008). -/
   | addColumnConstraint
-  /-- REAL values are not modeled (ADR 0008). -/
-  | realValue
   /-- Time values are not modeled (ADR 0008). -/
   | timeValue
-  /-- The column affinity would convert this value (ADR 0008). -/
-  | affinityConversion
   /-- Unique keys over TEXT or REAL columns are not modeled (ADR 0008). -/
   | keyAffinity
   /-- Only integer and NULL values are modeled in unique key columns (ADR 0008). -/
   | keyValue
-  /-- Column references in values are not modeled (ADR 0012 slice 3a). -/
-  | columnInValue
+  /-- A {lit}`SET` value that reads the row is not modeled for a column of a unique key
+  (ADR 0012, amendment 1, owner decision on question 1). -/
+  | rowDependentKey
   /-- A column named twice in INSERT is not modeled (ADR 0008). -/
   | insertColumnTwice
   /-- A column assigned twice in UPDATE is not modeled (ADR 0008). -/
   | updateColumnTwice
-  /-- A comparison of two literals is not modeled (ADR 0008). -/
-  | literalComparison
-  /-- Only an integer equality with an INTEGER, NUMERIC or BLOB column is modeled (ADR 0008). -/
-  | nonIntegerFilter
-  /-- Only a column equality filter is modeled (ADR 0008). -/
-  | filterForm
   /-- A rowid in RETURNING is not modeled (ADR 0012 slice 3a). -/
   | rowidInReturning
   /-- RETURNING is modeled only on INSERT and UPDATE (ADR 0012 slice 3a). -/

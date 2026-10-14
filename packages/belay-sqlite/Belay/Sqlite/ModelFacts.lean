@@ -106,19 +106,6 @@ theorem Conforms.table {shape : CatalogTable} (conforms : Conforms profile catal
   | none => simp [present, lookup] at equal
   | some table => exact ⟨table, rfl, by simpa [present, lookup] using equal, valid table present⟩
 
-/-- For every valid table and added columns, {name}`Table.appendColumns` remains
-valid. With no rows, rowid and width conditions are vacuous. Use this for NULL
-extension; column support is a catalog check. The proof preserves rowids and adds
-widths. -/
-theorem Table.Valid.appendColumns {table : Table} {columns : List CatalogColumn} (valid : table.Valid) :
-    (table.appendColumns columns).Valid := by
-  refine ⟨?_, ?_⟩
-  · simpa [Table.appendColumns, Row.appendNulls, List.map_map, Function.comp_def] using valid.1
-  · intro row member
-    obtain ⟨original, oldMember, rfl⟩ := List.mem_map.mp member
-    obtain ⟨rowid, width⟩ := valid.2 original oldMember
-    exact ⟨rowid, by simp [Row.appendNulls, Table.appendColumns, width]⟩
-
 /-- For every original/next catalog, database, position and table, assume original
 {name}`Conforms`, a valid next catalog and a valid replacement table. For every
 position, assume the next catalog has the replacement's shape at the changed

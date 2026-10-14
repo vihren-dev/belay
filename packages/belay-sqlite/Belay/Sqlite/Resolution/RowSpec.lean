@@ -31,35 +31,28 @@ theorem resolveAllFrom_ok (resolveOne : Nat → α → Except ValueIssue β) (st
       obtain ⟨v, hv, hr⟩ := each index found (by simpa using h)
       exact ⟨v, by simpa using hv, by simpa [Nat.add_assoc, Nat.add_comm 1 index] using hr⟩
 
-/-- For every affinity, value and path, a successful {name}`storedValue` returns the
-same value. Proof sketch: the only successful branch returns its input. -/
-theorem storedValue_ok (affinity : Affinity) (value stored : Value) (path : List Nat)
-    (ok : storedValue affinity value path = .ok stored) : stored = value := by
-  unfold storedValue at ok
-  split at ok
-  · cases ok; rfl
-  · split at ok <;> cases ok
-
 /-- The row width rule ({lit}`lang_insert.html`, R-12183-43719 and R-18927-01951):
 for the table columns, the table positions of the written columns, a written row
 and a full row:
 * The full row has one value for each table column.
 * For each table column, when its position occurs in the written positions, the
   first occurrence {lit}`k` decides: the column has the {lit}`k`-th written value, or
-  NULL when the written row has no {lit}`k`-th value.
+  NULL when the written row has no {lit}`k`-th value, stored with the column's
+  affinity ({name}`storeValue`).
 * Every other table column has the value of its default, as {name}`defaultValue`
-  gives it.
+  gives it, stored with the column's affinity.
 Written positions outside the table impose nothing. -/
 def RowWidth (columns : List CatalogColumn) (positions : List Nat)
     (written full : List Value) : Prop :=
   full.length = columns.length ∧ ∀ index (h : index < columns.length),
-    (∀ k, positions.idxOf? index = some k → full[index]? = some (written[k]?.getD .null)) ∧
-    (positions.idxOf? index = none → defaultValue columns[index] = .ok (full[index]?.getD .null))
+    (∀ k, positions.idxOf? index = some k →
+      full[index]? = some (storeValue columns[index].affinity (written[k]?.getD .null))) ∧
+    (positions.idxOf? index = none →
+      (defaultValue columns[index]).map (storeValue columns[index].affinity) = .ok (full[index]?.getD .null))
 
 /-- For all inputs, a successful {name}`fullRow` gives a full row that satisfies
 {name}`RowWidth`. Proof sketch: {name}`resolveAllFrom_ok` gives the length and the
-value of each column, and {name}`storedValue_ok` shows that the admission check keeps
-each value. -/
+value of each column, which is the stored written value or the stored default. -/
 theorem fullRow_rowWidth (columns : List CatalogColumn) (positions : List Nat)
     (written full : List Value) (ok : fullRow columns positions written = .ok full) :
     RowWidth columns positions written full := by
@@ -72,15 +65,17 @@ theorem fullRow_rowWidth (columns : List CatalogColumn) (positions : List Nat)
   · intro k hk
     rw [hk] at step
     simp only at step
-    rw [hvalue, storedValue_ok _ _ _ _ step]
+    cases step
+    exact hvalue
   · intro hk
     rw [hk] at step
     simp only at step
-    split at step <;> try contradiction
-    rename_i stored hdefault
-    have same := storedValue_ok _ _ _ _ step
-    subst same
-    simpa [hvalue] using hdefault
+    cases hdefault : defaultValue columns[index] with
+    | error cause => rw [hdefault] at step; cases step
+    | ok default =>
+      rw [hdefault] at step
+      cases step
+      simp [hvalue, Except.map]
 
 /-- For a successful resolution of INSERT to an insert statement, the catalog is
 unchanged, the statement names the position of the table that the name finds and

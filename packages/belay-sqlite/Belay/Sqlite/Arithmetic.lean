@@ -1,4 +1,5 @@
 import Belay.Sqlite.NumberConvert
+import Belay.Sqlite.Operators
 import Belay.Sqlite.RealText
 
 set_option doc.verso true
@@ -56,19 +57,6 @@ def Value.arithmeticInteger? : Value → Option Int
   | .text bytes | .blob bytes => textInteger? bytes
   | .null | .real _ => none
 
-/-- An arithmetic operator of SQL. -/
-inductive ArithmeticOperator where
-  /-- {lit}`+`. -/
-  | add
-  /-- {lit}`-`. -/
-  | subtract
-  /-- {lit}`*`. -/
-  | multiply
-  /-- {lit}`/`. -/
-  | divide
-  /-- {lit}`%`. -/
-  | remainder
-  deriving Repr, DecidableEq
 
 /-- The double result of an operator, as {lit}`fp_math` computes it, or NULL. A division
 by zero gives NULL; the remainder converts both operands to integers, with a divisor of

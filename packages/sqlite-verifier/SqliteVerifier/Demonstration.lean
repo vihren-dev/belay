@@ -1,4 +1,5 @@
 import SqliteVerifier.Library
+import Belay.Sqlite.SchemaExtension
 
 set_option doc.verso true
 
@@ -116,7 +117,7 @@ theorem migrationCorrect (profile : Profile) (columns : 2 ≤ profile.limits.col
       subst name
       exact ⟨0, by rw [shape]; decide +kernel⟩
     have growth : TableExtends table (table.appendColumns [note]) := ⟨[note], rfl⟩
-    have sameProjection := growth.project (fun row member => (valid.2 row member).2) covered
+    have sameProjection := growth.project (fun row member => (valid.2 row member).2.1) covered
     have stored : ((database.set 0 (table.appendColumns [note])).set 1
         { shape := { columns := [message] }, rows := [] }) 0 = some (table.appendColumns [note]) := by
       simp [Database.set]

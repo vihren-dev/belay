@@ -2,6 +2,7 @@ import Belay.Sqlite.Declarations
 import Belay.Sqlite.Comparison
 import Belay.Sqlite.QueryEval
 import Belay.Sqlite.QueryLaws
+import Belay.Sqlite.StoreValueLaws
 import Belay.Sqlite.Model
 import Belay.Sqlite.Execution
 import Belay.Sqlite.LiteralData
@@ -12,6 +13,7 @@ import Belay.Sqlite.ModelFacts
 import Belay.Sqlite.SchemaExtension
 import Belay.Sqlite.SchemaPreservation
 import Belay.Sqlite.LiteralPreservation
+import Belay.Sqlite.WritePreservation
 import Belay.Sqlite.ModelProjection
 import Belay.Sqlite.Laws
 import Belay.Sqlite.Resolution

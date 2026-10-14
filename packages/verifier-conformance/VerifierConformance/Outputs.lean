@@ -96,7 +96,8 @@ def statementOutput (statement : Resolved.Statement) (before : SqlState)
     if successful then do
       let table ← before.database at_
       let chosen := table.rows.filter (LiteralData.selected filter)
-      return ⟨names, returnedRows returning (chosen.map fun row => (LiteralData.assign assignments row).values),
+      let written := chosen.map fun row => (LiteralData.assign table.shape.columns assignments row).values
+      return ⟨names, returnedRows returning written,
         some chosen.length⟩
     else if constraintFailure then some ⟨names, [], some 0⟩ else none
   | .query query =>

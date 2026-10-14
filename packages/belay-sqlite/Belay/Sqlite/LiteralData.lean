@@ -13,25 +13,10 @@ namespace LiteralData
 {assert}`boundedInteger 0 = true`; the upper bound itself is excluded. -/
 def boundedInteger (value : Int) : Bool := decide (-(2 ^ 63 : Int) ≤ value ∧ value < 2 ^ 63)
 
-/-- Require no NUL byte and at least one byte outside digits, signs, decimal
-points, exponents and ASCII whitespace. This sufficient test prevents numeric
-affinity conversion; {assert}`nonnumericText [] = false`. It is not a text decoder. -/
-def nonnumericText (bytes : List UInt8) : Bool :=
-  !bytes.contains 0 && bytes.any (fun byte =>
-    !("0123456789+-.eE \t\r\n\x0b\x0c".toUTF8.toList.contains byte))
-
-/-- Admit values whose modeled affinity conversion keeps them unchanged.
-NULL and BLOB pass. Integers must be bounded with INTEGER, NUMERIC or BLOB
-affinity. Text passes with TEXT or BLOB affinity, or with INTEGER or NUMERIC
-affinity when {name}`nonnumericText` holds. REAL values do not pass.
-Use {lean}`Value.null` for NULL; constraint checks remain separate. -/
-def lossless (affinity : Affinity) : Value → Bool
-  | .null | .blob _ => true
-  | .integer value => boundedInteger value &&
-      [.integer, .numeric, .blob].contains affinity
-  | .text bytes => [.text, .blob].contains affinity ||
-      ([.integer, .numeric].contains affinity && nonnumericText bytes)
-  | .real _ => false
+/-- Whether a value is in the stored form of an affinity: {name}`storeValue` keeps it.
+This is the form of every cell that SQLite stores ({name}`Row.Stored`).
+{assert}`storedForm .integer (.integer 5) = true`. -/
+def storedForm (affinity : Affinity) (value : Value) : Bool := storeValue affinity value == value
 
 /-- Read the cell at a column position, or {name}`Option.none` for a missing cell,
 so a malformed row cannot supply an invented value. -/
@@ -101,45 +86,15 @@ VALUES rows does. No rows leave the table unchanged. -/
 def inserted (table : Table) (rows : List (List Value)) : Table := rows.foldl insertRow table
 
 /-- Require {name}`tableReady` before the write, one value per column in each row,
-{name}`lossless` on every column/value pair, a bounded rowid for every inserted
+{name}`storedForm` on every column/value pair, a bounded rowid for every inserted
 row, and an integer-or-NULL value at every key position of each row. This admits
 evaluation; the inserted table's constraint truth is checked separately. -/
 def insertReady (keys : List (List Nat)) (table : Table) (rows : List (List Value)) : Bool :=
   tableReady keys table &&
   rows.all (fun values => values.length == table.shape.columns.length &&
-    (table.shape.columns.zip values).all (fun (column, value) => lossless column.affinity value) &&
+    (table.shape.columns.zip values).all (fun (column, value) => storedForm column.affinity value) &&
     keys.all (·.all fun position => (values[position]?).any integerOrNull)) &&
   (inserted table rows).rows.all (fun row => boundedInteger row.rowid)
-
-/-- Whether a row passes the optional filter: no filter, or the cell at the filter
-position equals the filter value as a tagged value. Use {name}`comparisonReady`
-to establish that this exact test represents SQLite's integer equality. -/
-def selected (filter : Option (Nat × Value)) (row : Row) : Bool :=
-  filter.all fun (position, value) => read row position == some value
-
-/-- Set each assignment's position to its value, in order; a position beyond the
-row's width changes nothing. -/
-def assign (assignments : List (Nat × Value)) (row : Row) : Row :=
-  assignments.foldl (fun current (position, value) => { current with values := current.values.set position value }) row
-
-/-- Apply the assignments to every row that {name}`selected` accepts, with the
-filter evaluated on the old row. Retain every rowid, other cell and the shape. -/
-def updated (table : Table) (assignments : List (Nat × Value)) (filter : Option (Nat × Value)) : Table :=
-  { table with rows := table.rows.map fun row => if selected filter row then assign assignments row else row }
-
-/-- Require a filter over a {name}`comparisonReady` position with a bounded integer
-value, {name}`tableReady` before the write, {name}`lossless` assignments to
-existing columns, and every key position {name}`comparisonReady` after
-{name}`updated`. This check does not establish the updated constraints. -/
-def updateReady (keys : List (List Nat)) (table : Table) (assignments : List (Nat × Value))
-    (filter : Option (Nat × Value)) : Bool :=
-  filter.all (fun (position, value) => comparisonReady table position && match value with
-    | .integer number => boundedInteger number
-    | .null | .real _ | .text _ | .blob _ => false) &&
-  tableReady keys table &&
-  assignments.all (fun (position, value) =>
-    (table.shape.columns[position]?).any fun column => lossless column.affinity value) &&
-  keys.all (·.all (comparisonReady (updated table assignments filter)))
 
 end LiteralData
 end Belay.Sqlite

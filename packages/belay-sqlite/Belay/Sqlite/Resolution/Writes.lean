@@ -37,14 +37,6 @@ def defaultValue (column : CatalogColumn) : Except ValueIssue Value :=
   | some (.or ..) | some (.not _) | some (.isNull ..) | some (.callStar _) | some (.call ..)
   | some (.arithmetic ..) | some (.cast ..) | some (.callPair ..) => .error (.restriction [] .unmodeledDefault)
 
-/-- The value of a SET expression with the table's columns in scope. An expression
-that names a column depends on the row, which the model does not describe yet; any
-other expression is a constant, as in {name}`constantValue`. -/
-def assignedValue (columns : List CatalogColumn) (dqs : Bool) (expression : Syntax.Expr) : Except ValueIssue Value :=
-  if mentionsColumn columns expression then
-    .error (.restriction [] .columnInValue)
-  else constantValue dqs expression
-
 /-- Turn a value issue into the statement's resolution: a prepare error keeps the
 catalog, a restriction refuses the script. -/
 def issueResolution (catalog : Catalog) (index : Nat) (path : List Nat) : ValueIssue → StatementResolution
@@ -60,15 +52,15 @@ def insertPositions (tableName : String) (columns : List CatalogColumn) :
     | some position => (insertPositions tableName columns rest).map (position :: ·)
     | none => .error (.tableHasNoColumn tableName name)
 
-/-- One full row in table order: the written value of a named column, or its default.
-Each value must be stored unchanged by the column's affinity. -/
+/-- One full row in table order: the written value of a named column, or its default,
+stored with the column's affinity ({name}`storeValue`). -/
 def fullRow (columns : List CatalogColumn) (positions : List Nat) (row : List Value) :
     Except ValueIssue (List Value) :=
   resolveAll (fun position column => do
     let value ← match positions.idxOf? position with
       | some written => .ok (row[written]?.getD .null)
       | none => defaultValue column
-    storedValue column.affinity value [position]) columns
+    .ok (storeValue column.affinity value)) columns
 
 /-- Resolve INSERT. Path 1 is the column list and path 2 the rows. -/
 def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : String)
@@ -105,70 +97,5 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
             | none => match resolveReturning context.profile.dqsDml table.columns returning with
               | .error issue => issueResolution catalog index [3] issue
               | .ok columns => .ok (.insert position full keys columns, catalog)
-
-/-- Resolve the optional WHERE of UPDATE: none, or one column compared with an
-integer. Other filters, and a comparison that would convert values, are model
-restrictions. Path 2 is the filter. -/
-def resolveFilter (context : ResolveContext) (columns : List CatalogColumn) :
-    Option Syntax.Expr → Except ValueIssue (Option (Nat × Value))
-  | none => .ok none
-  | some (.equals (.identifier name doubleQuoted) right) =>
-    match columnPosition columns name with
-    | none =>
-      if doubleQuoted && context.profile.dqsDml then .error (.restriction [0] .literalComparison)
-      else .error (.prepare (.noSuchColumn name))
-    | some position => do
-      let value ← (assignedValue columns context.profile.dqsDml right).mapError (·.under [1])
-      let affinity := (columns[position]?.map CatalogColumn.affinity).getD .blob
-      match value with
-      | .integer _ =>
-        if integerComparable affinity then .ok (some (position, value))
-        else .error (.restriction [1] .nonIntegerFilter)
-      | .null | .real _ | .text _ | .blob _ =>
-        .error (.restriction [1] .nonIntegerFilter)
-  | some (.equals (.null) _) | some (.equals (.numeric _) _) | some (.equals (.string _) _)
-  | some (.equals (.blob _) _) | some (.equals (.currentTime _) _) | some (.equals (.negate _) _)
-  | some (.equals (.positive _) _) | some (.equals (.equals ..) _) | some (.equals (.compare ..) _)
-  | some (.equals (.and ..) _) | some (.equals (.or ..) _) | some (.equals (.not _) _)
-  | some (.equals (.isNull ..) _) | some (.equals (.callStar _) _) | some (.equals (.call ..) _)
-  | some (.equals (.arithmetic ..) _) | some (.equals (.cast ..) _) | some (.equals (.callPair ..) _)
-  | some .null | some (.numeric _) | some (.string _) | some (.blob _) | some (.currentTime _)
-  | some (.identifier ..) | some (.negate _) | some (.positive _) | some (.compare ..) | some (.and ..)
-  | some (.or ..) | some (.not _) | some (.isNull ..) | some (.callStar _) | some (.call ..)
-  | some (.arithmetic ..) | some (.cast ..) | some (.callPair ..) =>
-    .error (.restriction [] .filterForm)
-
-/-- Resolve UPDATE. Path 1 is the assignment list, path 2 the filter and path 3 the
-{lit}`RETURNING` columns, which resolve last. -/
-def resolveUpdate (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : String)
-    (assignments : List (String × Syntax.Expr)) (filter : Option Syntax.Expr)
-    (returning : List Syntax.ResultColumn) : StatementResolution :=
-  match catalog.findTable tableName with
-  | none => prepareError catalog (.noSuchTable tableName)
-  | some (position, table) =>
-    match resolveAll (fun item (_, value) => (assignedValue table.columns context.profile.dqsDml value).mapError
-        (·.under [item, 1])) assignments with
-    | .error issue => issueResolution catalog index [1] issue
-    | .ok values =>
-      match assignments.mapM (fun (name, _) => (columnPosition table.columns name).elim
-          (Except.error (PrepareError.noSuchColumn name)) Except.ok) with
-      | .error error => prepareError catalog error
-      | .ok positions =>
-        match resolveFilter context table.columns filter with
-        | .error issue => issueResolution catalog index [2] issue
-        | .ok resolvedFilter =>
-          if positions.eraseDups.length != positions.length then
-            restrict index [1] .updateColumnTwice
-          else match resolveAll (fun item (column, value) =>
-              storedValue ((table.columns[column]?.map CatalogColumn.affinity).getD .blob) value [item, 1])
-              (positions.zip values) with
-            | .error issue => issueResolution catalog index [1] issue
-            | .ok stored =>
-              let keys := catalog.uniqueKeys position table
-              match keyDomainRestriction table.columns keys (fun _ => [1]) [positions.zip stored] with
-              | some (path, reason) => restrict index path reason
-              | none => match resolveReturning context.profile.dqsDml table.columns returning with
-                | .error issue => issueResolution catalog index [3] issue
-                | .ok columns => .ok (.update position (positions.zip stored) resolvedFilter keys columns, catalog)
 
 end Belay.Sqlite

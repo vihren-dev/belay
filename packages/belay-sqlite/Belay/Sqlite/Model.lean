@@ -1,5 +1,6 @@
 import Belay.Sqlite.Resolution.Catalog
 import Belay.Sqlite.Resolution.Profile
+import Belay.Sqlite.StoreValue
 
 set_option doc.verso true
 
@@ -82,13 +83,25 @@ instance Catalog.decidableValid (limits : Limits) (catalog : Catalog) : Decidabl
 * It is less than two to the power 63. -/
 def validRowid (rowid : Int) : Prop := -(2 ^ 63 : Int) ≤ rowid ∧ rowid < 2 ^ 63
 
+/-- For the given columns and row: for every position at which both a column and a
+cell exist, the cell equals {name}`storeValue` of itself with the column's affinity.
+Positions without a column or without a cell impose nothing. SQLite stores every
+value that it writes in this form, so every database that SQLite reaches meets it
+(ADR 0012, amendment 1, question 5). -/
+def Row.Stored (columns : List CatalogColumn) (row : Row) : Prop :=
+  ∀ (position : Nat) (column : CatalogColumn) (value : Value),
+    columns[position]? = some column → row.values[position]? = some value →
+    storeValue column.affinity value = value
+
 /-- For the given table, require both conditions:
 * Its physical rowids have no duplicates.
-* Every stored row satisfies {name}`validRowid` and has one cell per column.
+* Every stored row satisfies {name}`validRowid`, has one cell per column, and is
+  {name}`Row.Stored` for the table's columns.
 With no rows, both conditions impose nothing; column support is a catalog check. -/
 def Table.Valid (table : Table) : Prop :=
   (table.rows.map Row.rowid).Nodup ∧
-  ∀ row ∈ table.rows, validRowid row.rowid ∧ row.values.length = table.shape.columns.length
+  ∀ row ∈ table.rows, validRowid row.rowid ∧ row.values.length = table.shape.columns.length ∧
+    row.Stored table.shape.columns
 
 /-- For the given profile, catalog and database, require {name}`Catalog.Valid` under
 the profile's limits. For every catalog position:

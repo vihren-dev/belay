@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 
 from conformance.case_format import Json
-from conformance.model_check import compiled_many
+from conformance.replay_support import classify, collection_paused
 from conformance.native_record import record_sql
 from conformance.native_bindings import decode_rows
 from conformance.native_replay import prepare, without_trailing_queries
@@ -26,12 +26,14 @@ def load(directory: Path, *, executor: Executor | None = None) -> tuple[dict[str
 
     A corpus that the judge lock protects (`conformance.locked_corpora`) passed
     complete validation in the `corpora` suite, so its cases are only decoded.
-    Any other corpus gets `validated_load`, with the optional executor.
+    Any other corpus gets `validated_load`, with the optional executor. Decoding runs
+    with the garbage collector paused (`collection_paused`).
     """
-    if is_locked(directory):
-        manifest = json.loads((directory / "manifest.json").read_text())
-        return manifest, locked_records(directory, manifest)
-    return validated_load(directory, executor=executor)
+    with collection_paused():
+        if is_locked(directory):
+            manifest = json.loads((directory / "manifest.json").read_text())
+            return manifest, locked_records(directory, manifest)
+        return validated_load(directory, executor=executor)
 
 
 def validated_load(directory: Path, *, executor: Executor | None = None
@@ -60,49 +62,64 @@ def validated_load(directory: Path, *, executor: Executor | None = None
 
 
 def replay(records: list[dict[str, Json]], runtime: Path) -> dict[str, Json]:
-    """Count frontend exclusions separately while using Lean as the only agreement oracle."""
-    cases: list[dict[str, Json]] = []
-    positions: list[int] = []
-    answers: list[dict[str, Json]] = []
-    library = runtime_library(runtime)
-    for position, record in enumerate(records):
-        case, answer = prepare(record, library)
-        answers.append(answer)
-        if case is not None:
-            positions.append(position)
-            cases.append(case)
-    for position, answer in zip(positions, compiled_many(cases, runtime) if cases else [], strict=True):
-        answers[position] = answer
-    query_counts: Counter[str] = Counter()
-    for record, answer in zip(records, answers, strict=True):
-        if answer["verdict"] != "MODEL_UNSUPPORTED" or answer.get("reason") == NO_PARSER_REASON:
-            continue
-        projection = without_trailing_queries(record, library)
-        if projection is None:
-            query_counts["OTHER_UNSUPPORTED"] += 1
-            continue
-        case, prefix_answer = prepare(projection, library)
-        if case is not None:
-            prefix_answer = compiled_many([case], runtime)[0]
-        category = "PREFIX_" + prefix_answer["verdict"]
-        if prefix_answer["verdict"] == "AGREE":
-            category = "BLOCKED_ONLY_BY_QUERIES" if projection["trace"] else "QUERY_ONLY_CASE"
-        query_counts[category] += 1
-        answer["queryDiagnostic"] = {"category": category, "prefix": prefix_answer,
-            "migrationStatements": len(projection["trace"]), "trailingObservations": len(record["trace"]) - len(projection["trace"])}
-    areas: dict[str, Counter[str]] = defaultdict(Counter)
-    requirements: dict[str, Counter[str]] = defaultdict(Counter)
-    details: list[Json] = []
-    for record, answer in zip(records, answers, strict=True):
-        verdict = answer["verdict"]
-        areas[record.get("upstream", {}).get("file", "authored")][verdict] += 1
-        for requirement in record["requirements"] or ["UNTAGGED"]:
-            requirements[requirement][verdict] += 1
-        details.append({"name": record["name"], **answer})
-    return {"queryDiagnostics": dict(query_counts), "counts": dict(Counter(answer["verdict"] for answer in answers)),
-            "noParserForDialect": sum(answer.get("reason") == NO_PARSER_REASON for answer in answers),
-            "byArea": {key: dict(value) for key, value in sorted(areas.items())},
-            "byRequirement": {key: dict(value) for key, value in sorted(requirements.items())}, "cases": details}
+    """Count frontend exclusions separately while using Lean as the only agreement oracle.
+    The replay runs with the garbage collector paused (`collection_paused`): it builds
+    plain data, and a full collection would walk every object of the corpus again."""
+    with collection_paused():
+        cases: list[dict[str, Json]] = []
+        positions: list[int] = []
+        answers: list[dict[str, Json]] = []
+        library = runtime_library(runtime)
+        for position, record in enumerate(records):
+            case, answer = prepare(record, library)
+            answers.append(answer)
+            if case is not None:
+                positions.append(position)
+                cases.append(case)
+        for position, answer in zip(positions, classify(cases, runtime), strict=True):
+            answers[position] = answer
+        query_counts: Counter[str] = Counter()
+        projections: list[tuple[dict[str, Json], dict[str, Json], dict[str, Json]]] = []
+        prefix_answers: list[dict[str, Json]] = []
+        prefix_cases: list[dict[str, Json]] = []
+        prefix_positions: list[int] = []
+        for record, answer in zip(records, answers, strict=True):
+            if answer["verdict"] != "MODEL_UNSUPPORTED" or answer.get("reason") == NO_PARSER_REASON:
+                continue
+            projection = without_trailing_queries(record, library)
+            if projection is None:
+                query_counts["OTHER_UNSUPPORTED"] += 1
+                continue
+            case, prefix_answer = prepare(projection, library)
+            if case is not None:
+                prefix_positions.append(len(projections))
+                prefix_cases.append(case)
+            projections.append((record, answer, projection))
+            prefix_answers.append(prefix_answer)
+        for position, prefix_answer in zip(prefix_positions, classify(prefix_cases, runtime), strict=True):
+            prefix_answers[position] = prefix_answer
+        for (record, answer, projection), prefix_answer in zip(projections, prefix_answers, strict=True):
+            category = "PREFIX_" + prefix_answer["verdict"]
+            if prefix_answer["verdict"] == "AGREE":
+                category = "BLOCKED_ONLY_BY_QUERIES" if projection["trace"] else "QUERY_ONLY_CASE"
+            query_counts[category] += 1
+            answer["queryDiagnostic"] = {"category": category, "prefix": prefix_answer,
+                "migrationStatements": len(projection["trace"]),
+                "trailingObservations": len(record["trace"]) - len(projection["trace"])}
+        areas: dict[str, Counter[str]] = defaultdict(Counter)
+        requirements: dict[str, Counter[str]] = defaultdict(Counter)
+        details: list[Json] = []
+        for record, answer in zip(records, answers, strict=True):
+            verdict = answer["verdict"]
+            areas[record.get("upstream", {}).get("file", "authored")][verdict] += 1
+            for requirement in record["requirements"] or ["UNTAGGED"]:
+                requirements[requirement][verdict] += 1
+            details.append({"name": record["name"], **answer})
+        return {"queryDiagnostics": dict(query_counts),
+                "counts": dict(Counter(answer["verdict"] for answer in answers)),
+                "noParserForDialect": sum(answer.get("reason") == NO_PARSER_REASON for answer in answers),
+                "byArea": {key: dict(value) for key, value in sorted(areas.items())},
+                "byRequirement": {key: dict(value) for key, value in sorted(requirements.items())}, "cases": details}
 
 
 def native_replay(records: list[dict[str, Json]], *, profile: ExecutionProfile | None = None,

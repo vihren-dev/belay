@@ -24,8 +24,8 @@ pytestmark = [pytest.mark.integration, pytest.mark.conformance,
 def test_stateful_modes(runtime_root: Path, error_seeking: bool) -> None:
     """Both modes reach compiled comparison, with native law checks on every executed case."""
     counts, cases, boundaries = generate(runtime_root, error_seeking=error_seeking)
-    assert counts["AGREE"] == len(cases) and len(cases) >= 20
-    assert counts["MODEL_UNSUPPORTED"] == len(boundaries) and boundaries
+    assert counts["AGREE"] == len(cases) + len(boundaries) and len(cases) >= 20
+    assert boundaries and all(item["classification"]["verdict"] == "AGREE" for item in boundaries)
     if error_seeking:
         from conformance.mutation_check import measure
         mutations = measure(cases, runtime_root)
@@ -37,15 +37,20 @@ def test_stateful_modes(runtime_root: Path, error_seeking: bool) -> None:
     assert any(table["rows"] for case in cases for table in case["initial"] if table["name"] == "exists_table")
 
 
-@pytest.mark.parametrize("literal", ["'1'", "' 1'", "'1.0'", "1e20", "0.0", "-0.0", "9223372036854775808"])
-def test_affinity_boundaries_remain_unsupported(runtime_root: Path, literal: str) -> None:
-    """Native affinity observations are retained even when no structural case can be admitted."""
+@pytest.mark.parametrize("literal,verdict", [
+    ("'1'", "AGREE"), ("' 1'", "AGREE"), ("'1.0'", "AGREE"), ("0.0", "AGREE"), ("-0.0", "AGREE"),
+    ("1e20", "MODEL_UNSUPPORTED"), ("9223372036854775808", "MODEL_UNSUPPORTED"),
+])
+def test_affinity_boundaries_in_a_unique_key(runtime_root: Path, literal: str, verdict: str) -> None:
+    """Store-time affinity (`StoreValue.storeValue`) in a unique INTEGER key: a value that is
+    stored as an integer agrees with native SQLite; a value that stays REAL is outside the
+    model's key domain (restriction `key-value`)."""
     native = record_sql("CREATE TABLE t(id INTEGER,UNIQUE(id));",
                         f"INSERT INTO t(id) VALUES({literal});", name=f"boundary-{literal}")
     case, answer = prepare(native, runtime_library(runtime_root))
     if case is not None:
         answer = compiled(case, runtime_root)
-    assert answer["verdict"] == "MODEL_UNSUPPORTED"
+    assert answer["verdict"] == verdict, answer
     assert native["trace"]
 
 

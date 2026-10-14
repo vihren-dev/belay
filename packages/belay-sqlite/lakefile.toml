@@ -5,7 +5,7 @@ defaultTargets = ["Belay.Sqlite", "Belay.Sqlite.Codec"]
 [[lean_lib]]
 name = "Belay.Sqlite"
 roots = []
-globs = ["Belay.Sqlite", "Belay.Sqlite.Declarations", "Belay.Sqlite.Comparison", "Belay.Sqlite.NumberText", "Belay.Sqlite.NumberConvert", "Belay.Sqlite.RealText", "Belay.Sqlite.Arithmetic", "Belay.Sqlite.Summation", "Belay.Sqlite.NumberExamples", "Belay.Sqlite.QueryEval", "Belay.Sqlite.QueryLaws", "Belay.Sqlite.QueryExamples", "Belay.Sqlite.Model", "Belay.Sqlite.Execution", "Belay.Sqlite.LiteralData", "Belay.Sqlite.SqlExecution", "Belay.Sqlite.SqlProofs", "Belay.Sqlite.Preservation", "Belay.Sqlite.ModelFacts", "Belay.Sqlite.SchemaExtension", "Belay.Sqlite.SchemaPreservation", "Belay.Sqlite.LiteralPreservation", "Belay.Sqlite.ModelProjection", "Belay.Sqlite.Laws", "Belay.Sqlite.Resolution.*"]
+globs = ["Belay.Sqlite", "Belay.Sqlite.Declarations", "Belay.Sqlite.Operators", "Belay.Sqlite.Comparison", "Belay.Sqlite.NumberText", "Belay.Sqlite.NumberConvert", "Belay.Sqlite.RealText", "Belay.Sqlite.Arithmetic", "Belay.Sqlite.Summation", "Belay.Sqlite.StoreValue", "Belay.Sqlite.StoreValueLaws", "Belay.Sqlite.StoreValueExamples", "Belay.Sqlite.NumberExamples", "Belay.Sqlite.QueryEval", "Belay.Sqlite.QueryLaws", "Belay.Sqlite.QueryExamples", "Belay.Sqlite.Model", "Belay.Sqlite.Execution", "Belay.Sqlite.LiteralData", "Belay.Sqlite.RowUpdate", "Belay.Sqlite.SqlExecution", "Belay.Sqlite.SqlProofs", "Belay.Sqlite.Preservation", "Belay.Sqlite.ModelFacts", "Belay.Sqlite.SchemaExtension", "Belay.Sqlite.SchemaPreservation", "Belay.Sqlite.LiteralPreservation", "Belay.Sqlite.WritePreservation", "Belay.Sqlite.ModelProjection", "Belay.Sqlite.Laws", "Belay.Sqlite.Resolution.*"]
 
 [[lean_lib]]
 name = "Belay.Sqlite.Codec"

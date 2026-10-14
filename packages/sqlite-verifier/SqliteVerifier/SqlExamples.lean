@@ -36,7 +36,7 @@ def keys : List (List Nat) := [[0]]
 /-- The file itself supplies both transaction control and literal writes. -/
 def script : List Resolved.Statement := [.begin, .addColumn 0 note,
   .insert 0 [[.integer 2, .text [99], .null]] keys [],
-  .commit, .update 0 [(1, .text [100])] (some (0, .integer 2)) keys []]
+  .commit, .update 0 [(1, .literal (.text [100]))] (some (.compare .eq (.column 0) (.literal (.integer 2)))) keys []]
 
 /-- Return true exactly for a pending transaction; success and failure return
 false. Use it to check transaction status without comparing database functions. -/
@@ -83,11 +83,12 @@ example : error (runSql [.insert 0 [[.integer 3, .text []], [.integer 3, .text [
 example : error (runSql [.begin, .prepareError (.noSuchTable "t")] database) =
     some (1, .prepare (.noSuchTable "t")) := by decide +kernel
 
--- Unsupported coercions and random rowid allocation are failed domain obligations,
--- not modeled native constraint errors. Nullable duplicate keys remain supported.
-example : LiteralData.lossless .text (.integer 7) = false := by decide +kernel
-example : LiteralData.lossless .numeric (.text [49, 50]) = false := by decide +kernel
-example : LiteralData.lossless .numeric
+-- A value that the affinity would convert is not in stored form, and random rowid
+-- allocation fails the domain obligation; neither is a modeled native constraint error.
+-- Nullable duplicate keys remain supported.
+example : LiteralData.storedForm .text (.integer 7) = false := by decide +kernel
+example : LiteralData.storedForm .numeric (.text [49, 50]) = false := by decide +kernel
+example : LiteralData.storedForm .numeric
     (.text "2026-09-25 00:00:00".toUTF8.toList) = true := by decide +kernel
 example : LiteralData.insertReady keys { original with rows := [⟨9223372036854775807, [.null, .text []]⟩] }
     [[.integer 2, .text []]] = false := by decide +kernel

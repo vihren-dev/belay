@@ -67,7 +67,7 @@ def generate(runtime: Path, *, error_seeking: bool, examples: int = 20, steps: i
 
         @rule(value=st.sampled_from(["1", " 1", "1.0", "1e20"]))
         def affinity_boundary(self, value: str) -> None:
-            """Keep conversion evidence outside the current lossless model domain."""
+            """Record text that numeric affinity converts when it is stored (store-time affinity)."""
             self.boundary = value
 
         @rule()
@@ -115,7 +115,7 @@ def generate(runtime: Path, *, error_seeking: bool, examples: int = 20, steps: i
                 "INSERT INTO t(v) VALUES('" + self.boundary + "');", name="generated-affinity-boundary")
             case, result = prepare(native, runtime_library(runtime))
             if case is not None:
-                # Lean resolution refuses the conversion; the boundary keeps its classification.
+                # Store-time affinity converts the text; the model must agree with native SQLite.
                 result = compiled(case, runtime)
             boundaries.append({"record": native, "classification": result})
             counts[result["verdict"]] += 1

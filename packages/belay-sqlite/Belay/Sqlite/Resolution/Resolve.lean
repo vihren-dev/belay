@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.Queries
+import Belay.Sqlite.Resolution.Updates
 
 set_option doc.verso true
 
