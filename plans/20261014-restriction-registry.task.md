@@ -1,6 +1,6 @@
 # Restriction registry
 
-Created 2026-10-14. Status: DONE (pull request A; the judge pull request that claims corpus 10 follows).
+Created 2026-10-14. Status: DONE (#114; corpus 10 claimed in the judge pull request of slice 3b).
 Requested by the owner on 2026-10-14, before slice 3b of ADR 0012, so that the
 restrictions of slice 3b are recorded from the start, and so that the admission
 obligations are checked by evidence (owner decision on question 3 of the ADR 0012
