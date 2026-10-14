@@ -382,9 +382,12 @@ when the conjunct is removed.
 - **Obligation mutants and boundary cases.** Each conjunct of the admission
   obligations has a mutant that removes it, and a boundary case whose database state
   is just outside the domain: `MODEL_UNSUPPORTED` with the conjunct, `DISAGREE`
-  without it. For example, `1.0` in a column without affinity under the filter
-  `c = 1`, and a REAL that equals an integer in a unique key. The boundary cases are
-  frozen and claimed through the judge, so a weakened obligation fails the verdict.
+  without it. For example, a REAL that equals an integer in a unique key. The
+  boundary cases are frozen and claimed through the judge, so a weakened obligation
+  fails the verdict. The boundary case of the slice 3a filter obligation, `1.0` in a
+  column without affinity under the filter `c = 1`, becomes an ordinary coverage
+  case when slice 3b removes that obligation: the model must agree that SQLite
+  updates the row.
 - **Proofs.** `storeValue` is idempotent, and its result for TEXT affinity is never
   a number. The update changes only selected rows, only at assigned positions, and
   keeps rowids and order. The update of slice 3a is the special case of literal
@@ -419,8 +422,10 @@ do not change. Slice 5 (`ON CONFLICT`) uses the expressions of slice 3b in
    The obligations are model code like the rest of the model, so evidence checks
    them: obligation mutants and claimed boundary cases (see "Testing"). The
    obligations of slice 3a get the same mutants and cases before slice 3b.
-4. **Filter obligation.** Slice 3b removes it and so admits more scripts. Accept,
-   or keep it?
+4. **Filter obligation.** Decided on 2026-10-14: removed. It guarded the tagged
+   value test of the slice 3a filter, which slice 3b replaces with SQLite's
+   comparison; `SELECT` has no such obligation either. The key obligations stay,
+   because uniqueness is still an integer test (`keyEqual`).
 5. **Stored form.** `Conforms` admits values that SQLite cannot store, for example
    an INTEGER in a TEXT column. Proposed: no new obligation; such states make
    proofs harder, not unsound. Alternative: a helper approved condition that
