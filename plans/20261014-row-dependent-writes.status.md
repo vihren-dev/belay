@@ -68,8 +68,14 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/LiteralData.lean`,
   `conformance/row_write_mutants.py`: the 9 mutants of the amendment's list, all killed
   in the mutants suite. Storing constants at resolution matters only for the key-domain
   check (the execution stores again), so its mutant targets `SET k = '7'`.
+- 2026-10-14: CI time of the pull request suites that this work changes (forced rebuild,
+  same machine, main then branch): `tests.harness` 21 s and 21 s, `tests.mutants` 110 s
+  and 125 s (9 new mutants), `tests.model` 158 s and 169 s (24 new cases with kernel
+  proofs), `tests.frozen` 180 s and 179 s. The suites run in parallel; the longest of
+  these, `tests.frozen`, does not change. Pull request A opened.
 
 ## Remaining
 
-- CI timing, pull request A, and pull request B (judge: claim the coverage corpus and
-  corpus 10).
+- Pull request B (judge, owner approval) after A merges: freeze and claim corpus 10
+  (obligation boundaries, DISAGREE forbidden) and corpus 11 (row-dependent writes, every
+  case in `mustAgree`), and add the newly agreeing cases of v1 to v5 to `mustAgree`.
