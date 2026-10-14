@@ -531,9 +531,7 @@ joins in `DELETE` stay refused.
 ### Open questions
 
 1. **`USING` and `NATURAL`.** Decided; see "Owner decisions".
-2. **`RIGHT` and `FULL` joins.** SQLite 3.39 added them (R-15753-04279,
-   R-18902-30764), and item 4 names only inner and left joins. Options: (A) model
-   them; (B) refuse them as model restrictions. Recommendation: B.
+2. **`RIGHT` and `FULL` joins.** Decided; see "Owner decisions".
 3. **Two sources with the same name.** `FROM t, t` and `FROM t AS x, u AS x` are
    prepared by SQLite, and a column of both gives a message with the schema name,
    for example `ambiguous column name: main.t.a`. Options: (A) model the message;
@@ -558,3 +556,12 @@ joins in `DELETE` stay refused.
    `ON` or `USING` is `a NATURAL join may not have an ON or USING clause`; `NATURAL`
    without a common column is a cross join. Slice 4b adds no evaluation: its joins
    are inner and left joins with a generated `ON` condition.
+2. **`RIGHT` and `FULL` joins.** Decided on 2026-10-14: both are modeled, in a slice
+   4c right after slice 4b; slices 4 and 4b refuse them as model restrictions. A
+   right join adds, for each right row that no left row matches, the right row with
+   NULL in every left column (R-15753-04279); a full join adds both kinds of row
+   (R-18902-30764). With `USING`, an unqualified name of a merged column in a right or
+   full join is the value of whichever input is present, as `coalesce(left, right)`:
+   checked on 3.51.0, `SELECT a FROM t FULL JOIN u USING (a)` gives the right row's
+   `a` for a right row that no left row matches. Slice 4c comes after 4b so that
+   this rule is decided with the rest of `USING`.
