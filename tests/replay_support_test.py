@@ -37,6 +37,7 @@ def test_classify_keeps_order_across_batches(monkeypatch: pytest.MonkeyPatch) ->
     batches: list[int] = []
 
     def fake(cases: list[dict[str, Json]], runtime: Path) -> list[dict[str, Json]]:
+        """Stand in for the classifier: record each batch size and answer with each case's index."""
         batches.append(len(cases))
         return [{"verdict": "AGREE", "index": case["index"]} for case in cases]
 
