@@ -1,4 +1,4 @@
-import Belay.Sqlite.Resolution.Values
+import Belay.Sqlite.Resolution.Defaults
 
 set_option doc.verso true
 

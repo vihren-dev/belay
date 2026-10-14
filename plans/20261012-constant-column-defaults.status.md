@@ -470,3 +470,39 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of the completed T14 representation and codec changes.
+
+
+- 2026-10-14: Added a shared literal-default evaluator in Resolution/Defaults.lean
+  and moved defaultValue out of Writes.lean. It evaluates NULL, numeric, text
+  and blob literals, signed numeric literals and bare identifiers, including
+  the TRUE/FALSE exception. Time values and compound expressions retain model
+  restrictions. No resolved-default metadata or second affinity implementation
+  was added. INSERT's existing fullRow applies storeValue after this evaluator.
+
+  Ten native-comparison tests cover 12 defaults across five affinities and
+  both pinned engines: 120 comparisons of omitted INSERT values and storage
+  classes. They fail against the prior runtime's unmodeledDefault refusal and
+  pass against the new evaluator. All 25 focused comparisons and package,
+  ownership and frontend checks pass. All 143 sandboxed macOS model tests pass.
+  Runtime libraries and all 791 public declarations compile. The protected
+  verdict retains its agreement counts and lock, with no disagreements.
+
+  The first build exposed the old proof assumption that defaultValue fails
+  only with model restrictions. The corrected proof also covers the numeric
+  literal preparation error for an oversized hexadecimal literal. Its initial
+  tactic attempt failed; the checked correction reduces the numeric conversion
+  before splitting its result. A test import from the old column codec was
+  corrected to conformance.case_format. These failures are not passing checks.
+
+  Evidence: build/t14-literal-defaults-before-checked-20261014.log,
+  build/t14-literal-defaults-final-20261014.log,
+  build/t14-literal-defaults-focused-20261014.log,
+  build/t14-literal-default-model-20261014.log and
+  build/t14-literal-default-verdict-20261014.log. Independent review follows
+  the commit. SQL catalog admission still refuses these literal defaults;
+  ADD COLUMN execution and preservation are not changed by this unit.
+  Those integrations and final cross-platform acceptance remain unfinished.
+
+Decisions waiting for the owner:
+
+- Final review of the completed T14 representation and codec changes.
