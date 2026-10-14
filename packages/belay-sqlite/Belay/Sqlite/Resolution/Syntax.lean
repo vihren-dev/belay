@@ -114,6 +114,17 @@ structure OrderTerm where
   descending : Bool
   deriving Repr, DecidableEq
 
+/-- A write that can carry {lit}`RETURNING`: an {lit}`INSERT`, {lit}`UPDATE` or
+{lit}`DELETE` with the fields of the statement of the same name. -/
+inductive Write where
+  /-- {lit}`INSERT INTO table [(columns)] VALUES rows`. -/
+  | insert (table : String) (columns : Option (List String)) (rows : List (List Expr))
+  /-- {lit}`UPDATE table SET assignments [WHERE filter]`. -/
+  | update (table : String) (assignments : List (String × Expr)) (filter : Option Expr)
+  /-- {lit}`DELETE FROM table [WHERE filter]`. -/
+  | delete (table : String) (filter : Option Expr)
+  deriving Repr, DecidableEq
+
 /-- One statement as written. For example, {lit}`COMMIT` is
 {lean}`Statement.commit`. -/
 inductive Statement where
@@ -135,15 +146,17 @@ inductive Statement where
   | insert (table : String) (columns : Option (List String)) (rows : List (List Expr))
   /-- {lit}`UPDATE table SET assignments [WHERE filter]`. -/
   | update (table : String) (assignments : List (String × Expr)) (filter : Option Expr)
+  /-- {lit}`DELETE FROM table [WHERE filter]`. -/
+  | delete (table : String) (filter : Option Expr)
   /-- {lit}`SELECT columns FROM table [WHERE filter] [GROUP BY terms] [ORDER BY terms]
   [LIMIT limit [OFFSET offset]]`, from one table. An omitted clause is
   {lit}`none` or an empty list; {lit}`LIMIT offset, limit` gives both expressions. -/
   | select (columns : List ResultColumn) (table : String) (filter : Option Expr) (groupBy : List Expr)
       (orderBy : List OrderTerm) (limit : Option Expr) (offset : Option Expr)
-  /-- A write with {lit}`RETURNING columns`: an {lit}`INSERT` or {lit}`UPDATE` statement and
-  its result columns. A write without {lit}`RETURNING` is the statement alone, so its
-  record does not change. -/
-  | returning (write : Statement) (columns : List ResultColumn)
+  /-- A write with {lit}`RETURNING columns`: an {lit}`INSERT`, {lit}`UPDATE` or
+  {lit}`DELETE` and its result columns. A write without {lit}`RETURNING` is the statement
+  alone, so its record does not change. -/
+  | returning (write : Write) (columns : List ResultColumn)
   deriving Repr, DecidableEq
 
 end Belay.Sqlite.Syntax

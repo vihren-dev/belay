@@ -69,7 +69,9 @@ Transitions and failure status come from production advance, never a second
 evaluator. A successful INSERT changes one row per VALUES row and a successful
 UPDATE changes each row that its filter selects; their {lit}`RETURNING` rows are
 {name}`returnedRows` of the inserted rows, or of the new values of the selected rows. A
-write that fails a constraint returns its {lit}`RETURNING` names and no rows. A query has its result column
+successful DELETE changes each row that its filter selects, and its {lit}`RETURNING` rows
+are {name}`returnedRows` of the old values of those rows. A write that fails a
+constraint returns its {lit}`RETURNING` names and no rows. A query has its result column
 names and the rows of {name}`Resolved.Query.run` over the table before it, and no
 change count; a query whose table is missing has no output. A query that fails with
 {lit}`integer overflow` has its column names and no rows when it has no
@@ -100,6 +102,13 @@ def statementOutput (statement : Resolved.Statement) (before : SqlState)
       return ⟨names, returnedRows returning written,
         some chosen.length⟩
     else if constraintFailure then some ⟨names, [], some 0⟩ else none
+  | .delete at_ filter returning =>
+    let names := returning.map (·.2)
+    if successful then do
+      let table ← before.database at_
+      let chosen := table.rows.filter (LiteralData.selected filter)
+      return ⟨names, returnedRows returning (chosen.map (·.values)), some chosen.length⟩
+    else none
   | .query query =>
     if successful then (before.database query.table).map fun table => ⟨query.names, query.run table, none⟩
     else if overflow && query.groupBy.isEmpty then some ⟨query.names, [], none⟩ else none

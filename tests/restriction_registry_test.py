@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from conformance.restriction_examples import EXAMPLES, FRONTEND_BLOCKED
+from conformance.restriction_examples import EXAMPLES
 
 pytestmark = [pytest.mark.unit]
 ROOT = Path(__file__).resolve().parents[1]
@@ -55,8 +55,6 @@ def test_documentation_lists_every_id_once() -> None:
 
 
 def test_every_id_has_one_example() -> None:
-    """`conformance.restriction_examples` has an example for each registry id and for no other
-    name, and every frontend-blocked restriction has an example."""
+    """`conformance.restriction_examples` has an example for each registry id and for no other name."""
     ids = set(registry_ids().values())
     assert set(EXAMPLES) == ids, set(EXAMPLES) ^ ids
-    assert set(FRONTEND_BLOCKED) <= set(EXAMPLES), set(FRONTEND_BLOCKED) - set(EXAMPLES)

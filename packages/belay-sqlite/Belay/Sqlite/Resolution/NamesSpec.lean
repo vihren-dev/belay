@@ -88,6 +88,18 @@ theorem resolveUpdate_same (context : ResolveContext) (catalog after : Catalog) 
   repeat' split at ok
   all_goals first | (cases ok; rfl) | (cases ok)
 
+/-- For every successful resolution of DELETE, the catalog is unchanged. Proof sketch:
+every branch of the resolver returns the input catalog. -/
+theorem resolveDelete_same (context : ResolveContext) (catalog after : Catalog) (index : Nat)
+    (tableName : String) (filter : Option Syntax.Expr) (returning : List Syntax.ResultColumn)
+    (statement : Resolved.Statement)
+    (ok : resolveDelete context catalog index tableName filter returning = .ok (statement, after)) :
+    after = catalog := by
+  unfold resolveDelete at ok
+  simp only [prepareError, restrict, issueResolution] at ok
+  repeat' split at ok
+  all_goals first | (cases ok; rfl) | (cases ok)
+
 /-- The resolution state keeps unique names: the current catalog has unique folded
 names, and so does the catalog that an open transaction saved, if there is one. -/
 def ResolveState.NamesUnique (state : ResolveState) : Prop :=
@@ -141,6 +153,10 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveUpdate_same _ _ _ _ _ _ _ _ _ (by assumption) ▸ .same)
+  | delete table filter =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    exact keep _ (resolveDelete_same _ _ _ _ _ _ _ _ (by assumption) ▸ .same)
   | select results table filter groupBy orderBy limit offset =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
@@ -153,7 +169,8 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
       | (split at ok <;> cases ok
          first
            | exact keep _ (resolveInsert_same _ _ _ _ _ _ _ _ _ (returningPaths_ok _ _ (by assumption)) ▸ .same)
-           | exact keep _ (resolveUpdate_same _ _ _ _ _ _ _ _ _ (returningPaths_ok _ _ (by assumption)) ▸ .same))
+           | exact keep _ (resolveUpdate_same _ _ _ _ _ _ _ _ _ (returningPaths_ok _ _ (by assumption)) ▸ .same)
+           | exact keep _ (resolveDelete_same _ _ _ _ _ _ _ _ (returningPaths_ok _ _ (by assumption)) ▸ .same))
 
 /-- For every context, starting catalog and script with a successful resolution: if
 the starting catalog has unique folded names, so does the resulting catalog.

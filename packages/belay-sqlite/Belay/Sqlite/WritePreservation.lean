@@ -6,7 +6,7 @@ set_option doc.verso true
 
 /-! Preservation of {lit}`Conforms` by INSERT and UPDATE (ADR 0012, amendment 1,
 "Proofs"): every row that a write produces has a valid rowid, one cell per column and
-every cell in stored form. Schema statements keep {lit}`Conforms` by
+every cell in stored form. DELETE is in {lit}`DeletePreservation`. Schema statements keep {lit}`Conforms` by
 {lit}`Conforms.appendAt` and {lit}`Conforms.set`. -/
 
 namespace Belay.Sqlite
