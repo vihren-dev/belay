@@ -340,7 +340,9 @@ every order, and for one row it collides only with a row that keeps its key.
 - **Removed:** `comparisonReady` at the filter position and the integer filter
   value. The Values level computes the comparison with SQLite's rules.
 
-`insertReady` changes only from `lossless` to `storeValue a v = v`.
+`insertReady` changes only from `lossless` to `storeValue a v = v`. `Conforms`,
+which defines the admitted databases with the approved conditions, gains stored
+form: every cell equals `storeValue` of itself for its column (question 5).
 
 **Verification target.** `VerificationConditions` keeps its formulas, and
 `Contract.lean` can stay unchanged: it names `SupportedSql` and `ProfileExecutes`
@@ -388,7 +390,8 @@ when the conjunct is removed.
   column without affinity under the filter `c = 1`, becomes an ordinary coverage
   case when slice 3b removes that obligation: the model must agree that SQLite
   updates the row.
-- **Proofs.** `storeValue` is idempotent, and its result for TEXT affinity is never
+- **Proofs.** Every statement of the model keeps `Conforms`, including stored form
+  (question 5). `storeValue` is idempotent, and its result for TEXT affinity is never
   a number. The update changes only selected rows, only at assigned positions, and
   keeps rowids and order. The update of slice 3a is the special case of literal
   assignments, so the existing preservation proofs carry over. With constant key
@@ -426,9 +429,16 @@ do not change. Slice 5 (`ON CONFLICT`) uses the expressions of slice 3b in
    value test of the slice 3a filter, which slice 3b replaces with SQLite's
    comparison; `SELECT` has no such obligation either. The key obligations stay,
    because uniqueness is still an integer test (`keyEqual`).
-5. **Stored form.** `Conforms` admits values that SQLite cannot store, for example
-   an INTEGER in a TEXT column. Proposed: no new obligation; such states make
-   proofs harder, not unsound. Alternative: a helper approved condition that
-   requires `storeValue a v = v` for every cell.
+5. **Stored form.** Decided on 2026-10-14: `Conforms` requires every cell in its
+   stored form, `storeValue affinity cell = cell` for its column. Admitted databases
+   over-approximate the databases reachable through SQLite: each invariant in
+   `Conforms` (unique rowids, rowids in range, one cell per column, and now stored
+   form) is a guarantee of SQLite's normal write path, which is an assumption of the
+   trust boundary (`docs/trust-boundary.md`). A preservation theorem shows that the
+   model's statements keep every invariant; its key lemma is that `storeValue` is
+   idempotent. An invariant may join `Conforms` only if it holds for every database
+   that SQLite can reach. A property of the databases that the model's own statements
+   can reach (for example, no REAL value in an INTEGER column) must never be used to
+   admit a database, so the model defines no such notion.
 6. **`DELETE`.** It needs only the filter. Proposed: a later slice. Alternative:
    add it to slice 3b.
