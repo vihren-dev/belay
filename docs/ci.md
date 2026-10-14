@@ -84,8 +84,9 @@ with `nix-build -A tests`, among them these; the flake exposes the same derivati
 
 `just test-scheduled` builds the scheduled suites of `tests/nix_scheduled_suites.json`
 with `nix-build -A scheduledTests`. `just package` runs it, so main pushes, tags,
-manual and nightly runs check these suites; pull requests do not, so that their CI
-time does not grow. The flake checks exclude them.
+manual and nightly runs check these suites, and so does a pull request with the
+`package` scope. Pull requests with a smaller scope do not, so that their CI time
+does not grow. The flake checks exclude them.
 
 - `scheduledTests.obligations`: mutants of the admission obligations; each must make
   its boundary case of `conformance/authored_obligations.py` disagree with native
