@@ -21,12 +21,9 @@ def RestrictionKind.id : RestrictionKind → String
   | .timeValue => "time-value"
   | .keyAffinity => "key-affinity"
   | .keyValue => "key-value"
-  | .columnInValue => "column-in-value"
+  | .rowDependentKey => "row-dependent-key"
   | .insertColumnTwice => "insert-column-twice"
   | .updateColumnTwice => "update-column-twice"
-  | .literalComparison => "literal-comparison"
-  | .nonIntegerFilter => "non-integer-filter"
-  | .filterForm => "filter-form"
   | .rowidInReturning => "rowid-in-returning"
   | .returningTarget => "returning-target"
   | .systemTable => "system-table"
@@ -58,12 +55,9 @@ def RestrictionKind.message : RestrictionKind → String
   | .timeValue => "time values are not modeled; write the time as a text literal"
   | .keyAffinity => "unique keys over TEXT or REAL columns are not modeled; write only to tables whose key columns have INTEGER, NUMERIC or BLOB affinity"
   | .keyValue => "only integer and NULL values are modeled in unique key columns; write an integer or NULL key value"
-  | .columnInValue => "column references in values are not modeled; write a value that names no column"
+  | .rowDependentKey => "a SET value that reads the row is not modeled for a column of a unique key; assign a constant value"
   | .insertColumnTwice => "a column named twice in INSERT is not modeled; name each column once"
   | .updateColumnTwice => "a column assigned twice in UPDATE is not modeled; assign each column once"
-  | .literalComparison => "a comparison of two literals is not modeled; compare a column with a literal"
-  | .nonIntegerFilter => "only an integer equality with an INTEGER, NUMERIC or BLOB column is modeled; compare such a column with an integer literal"
-  | .filterForm => "only a column equality filter is modeled; write WHERE column = integer"
   | .rowidInReturning => "a rowid in RETURNING is not modeled; return the table's columns"
   | .returningTarget => "RETURNING is modeled only on INSERT and UPDATE; remove it"
   | .systemTable => "queries of SQLite's own tables, such as sqlite_schema, are not modeled; query an application table"
@@ -83,7 +77,7 @@ def RestrictionKind.message : RestrictionKind → String
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .rowidAlias, .createTableConstraints, .unmodeledDefault, .createIndexRuns, .addColumnConstraint, .timeValue, .keyAffinity, .keyValue, .columnInValue, .insertColumnTwice, .updateColumnTwice, .literalComparison, .nonIntegerFilter, .filterForm, .rowidInReturning, .returningTarget, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .valueAsCondition, .mixedAffinityComparison, .textToNumber, .numberToText, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum]
+  [.schemaStatement, .engineTable, .rowidColumnName, .rowidAlias, .createTableConstraints, .unmodeledDefault, .createIndexRuns, .addColumnConstraint, .timeValue, .keyAffinity, .keyValue, .rowDependentKey, .insertColumnTwice, .updateColumnTwice, .rowidInReturning, .returningTarget, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .valueAsCondition, .mixedAffinityComparison, .textToNumber, .numberToText, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

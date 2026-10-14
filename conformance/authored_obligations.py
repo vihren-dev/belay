@@ -1,8 +1,8 @@
 """Boundary cases of the admission obligations (task of 2026-10-14, restriction registry).
 
 Each case starts from a native state just outside the model's data domain: a REAL value
-that equals an integer, stored in a column without affinity, where the model compares
-only integers. Resolution accepts the statement, so only the obligation conjunct that
+that equals an integer, stored in a unique key column without affinity, where the model
+compares key values only as integers (`LiteralData.keyEqual`). Resolution accepts the statement, so only the obligation conjunct that
 `conformance.obligation_mutants` names for the case keeps it `MODEL_UNSUPPORTED`; the
 mutant that removes the conjunct makes the case disagree with native SQLite, which
 compares INTEGER and REAL values numerically. Native SQLite is the only source of
@@ -18,9 +18,6 @@ NUMERIC_COMPARISON = "R-29765-45832"
 KEYED = "CREATE TABLE k(id INTEGER, u UNIQUE); INSERT INTO k VALUES(1, 1.0), (2, 2);"
 """A unique key column without affinity that holds the REAL 1.0 and the integer 2."""
 
-FILTERED = "CREATE TABLE f(id INTEGER, c); INSERT INTO f VALUES(1, 1.0), (2, 2);"
-"""A column without affinity, without a key, that holds the REAL 1.0 and the integer 2."""
-
 
 def definitions() -> list[QueryCase]:
     """The boundary cases, one for each obligation conjunct with a mutant."""
@@ -30,8 +27,6 @@ def definitions() -> list[QueryCase]:
              ("obligation", "insert", "unique")),
         case("update-key-real-equals-integer", KEYED, "UPDATE k SET u = 1 WHERE id = 2;", (NUMERIC_COMPARISON,),
              ("obligation", "update", "unique")),
-        case("update-filter-real-equals-integer", FILTERED, "UPDATE f SET id = 9 WHERE c = 1;",
-             (NUMERIC_COMPARISON,), ("obligation", "update", "filter")),
     ]
 
 

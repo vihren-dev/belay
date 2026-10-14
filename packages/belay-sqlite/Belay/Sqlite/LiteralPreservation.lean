@@ -158,4 +158,20 @@ theorem Row.Stored.of_storedForm {columns : List CatalogColumn} {row : Row}
   have check := List.all_eq_true.mp all _ member
   simpa [LiteralData.storedForm] using check
 
+/-- For every column list and row: if the row is {name}`Row.Stored` for the columns,
+{name}`LiteralData.storedForm` holds for every column/cell pair of the zip. Proof
+sketch: a pair of the zip has a position with that column and that cell. -/
+theorem Row.Stored.storedForm {columns : List CatalogColumn} {row : Row} (stored : row.Stored columns) :
+    (columns.zip row.values).all (fun (column, value) => LiteralData.storedForm column.affinity value) = true := by
+  apply List.all_eq_true.mpr
+  intro ⟨column, value⟩ member
+  obtain ⟨position, pair⟩ := List.mem_iff_getElem?.mp member
+  rw [List.getElem?_zip_eq_some] at pair
+  simpa [LiteralData.storedForm] using stored position column value pair.1 pair.2
+
+/-- Decide {name}`Row.Stored` by computing {name}`LiteralData.storedForm` over the zip of
+columns and cells, so a concrete row's stored form can be proved with {lit}`decide`. -/
+instance Row.decidableStored (columns : List CatalogColumn) (row : Row) : Decidable (row.Stored columns) :=
+  decidable_of_iff _ ⟨Row.Stored.of_storedForm, Row.Stored.storedForm⟩
+
 end Belay.Sqlite

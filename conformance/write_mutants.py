@@ -15,10 +15,10 @@ EXPRESSIONS = "belay-sqlite/Belay/Sqlite/Resolution/QueryExprs.lean"
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "update_returning_old_values": (OUTPUTS,
-        "(chosen.map fun row => (LiteralData.assign assignments row).values)", "(chosen.map fun row => row.values)"),
+        "let written := chosen.map fun row => (LiteralData.assign table.shape.columns assignments row).values",
+        "let written := chosen.map fun row => row.values"),
     "update_returning_every_row": (OUTPUTS,
-        "      return ⟨names, returnedRows returning (chosen.map",
-        "      return ⟨names, returnedRows returning (table.rows.map"),
+        "      let written := chosen.map fun row =>", "      let written := table.rows.map fun row =>"),
     "returning_rows_on_failure": (OUTPUTS,
         "    if successful then some ⟨names, returnedRows returning rows, some rows.length⟩\n"
         "    else if constraintFailure then some ⟨names, [], some 0⟩ else none",

@@ -32,6 +32,24 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/LiteralData.lean`,
   `Conforms`, requires `Row.Stored`; `appendColumns` and `insertRow` keep it. The
   verdict on main versus this commit: AGREE v1 11→13, v2 17→19, v3 34→46, v4 16→26,
   v5 217→232; no DISAGREE.
+- 2026-10-14: the refactor commit 4d71d36c moved `Table.Valid.appendColumns` to
+  `SchemaExtension` without rebuilding the runtime, so `SqliteVerifier.Demonstration`
+  did not build at that commit; the next commit adds the import.
+- 2026-10-14: row-dependent UPDATE. `Resolved.Statement.update` holds expressions and an
+  optional condition. `Resolution/Updates.lean` resolves each assignment in SQLite's
+  order (expression, then column name; the earlier code resolved all values first, so
+  `SET missing = 1, b = other` reported the wrong column), folds constant values to
+  stored literals, refuses a row-dependent value for a key column (`row-dependent-key`)
+  and resolves the filter as a SELECT condition. `RowUpdate.lean` evaluates the filter
+  and the values on the old row and stores each value. `updateReady` keeps
+  `tableReady`, a column at each assigned position and the key check after the
+  update. Restrictions `column-in-value`, `literal-comparison`, `non-integer-filter`
+  and `filter-form` leave the registry (30 ids). `Row.Stored` is decidable, so the
+  Atuin example proves stored form by `decide`. Verdict: AGREE v3 46→47, v5 232→235; no
+  DISAGREE. The authored legacy catalog: 20 agree (was 10), 23 out of scope.
+- 2026-10-14: `tableReady` in `updateReady` re-examined: with row-dependent values only
+  in non-key columns, the key check after the update still covers every key cell that
+  the update does not change, so `COVERED_ELSEWHERE["update-table-ready"]` stays.
 
 ## Remaining
 

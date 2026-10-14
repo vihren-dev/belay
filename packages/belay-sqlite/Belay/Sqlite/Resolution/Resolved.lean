@@ -111,10 +111,12 @@ inductive Statement where
   an expression over the written row and its name each, none without
   {lit}`RETURNING`. The execution semantics does not read them. -/
   | insert (table : Nat) (rows : List (List Value)) (keys : List (List Nat)) (returning : List (Expr × String))
-  /-- Set each column position to its value in the rows where the optional filter
-  column equals the filter value; with no filter, in every row. The unique keys and
+  /-- In every row where the optional filter condition is true (every row without a
+  filter), set each column position to its expression, evaluated on the old row and
+  stored with the column's affinity. A literal update of slice 3a is the special case
+  of {lit}`.literal` values and the filter {lit}`column = integer`. The unique keys and
   the {lit}`RETURNING` columns are as for INSERT. -/
-  | update (table : Nat) (assignments : List (Nat × Value)) (filter : Option (Nat × Value))
+  | update (table : Nat) (assignments : List (Nat × Expr)) (filter : Option Expr)
       (keys : List (List Nat)) (returning : List (Expr × String))
   /-- SQLite refuses to prepare the statement with this error. -/
   | prepareError (error : PrepareError)

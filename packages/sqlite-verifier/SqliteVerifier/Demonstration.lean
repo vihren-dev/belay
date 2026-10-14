@@ -1,4 +1,5 @@
 import SqliteVerifier.Library
+import Belay.Sqlite.SchemaExtension
 
 set_option doc.verso true
 

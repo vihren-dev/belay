@@ -33,9 +33,10 @@ comparisons, `IS` and `IS NOT`, `AND`, `OR`, `NOT`, `IS NULL` and its forms,
 parentheses, `COUNT(*)`, `COUNT`, `MIN`, `MAX`, `SUM` and `AVG` of one argument, the arithmetic
 operators `+`, `-`, `*`, `/` and `%`, unary `-` and `+` of any expression,
 `CAST(expression AS type)`, and `COALESCE` of two or more arguments (ADR 0012,
-slice 2). In a write, a `VALUES` item, a `SET` value and the value of a
-`column = value` filter may be any of these expressions that names no column:
-resolution computes its value (slice 3a). The value is then stored as SQLite
+slice 2). In a write, a `VALUES` item may be any of these expressions that names no
+column: resolution computes its value (slice 3a). A `SET` value may be any of these
+expressions over the table's columns, evaluated on the old row, and the `WHERE` of an
+`UPDATE` any condition of a `SELECT` (slice 3b). Each written value is then stored as SQLite
 stores it in a column of that affinity (slice 3b): for example, the text `'12'`
 becomes the integer 12 in an INTEGER column, and an integer becomes text in a TEXT
 column. A REAL value can be stored in any column that is not part of a unique key. Named
@@ -77,8 +78,8 @@ SQL that SQLite accepts but the model does not describe is a model restriction:
 the whole request is `UNSUPPORTED` at the byte range of the refused node. In the
 migration these are, among others: `CREATE INDEX`; `CREATE TABLE` with
 constraints or defaults; `ADD COLUMN` with a constraint or default; rowid column
-names; time values; column references in values; a filter other than `column = integer` on an
-INTEGER, NUMERIC or BLOB column; a column named twice; writes to a table with a
+names; time values; a `SET` value that reads the row for a column of a unique key; a
+column named twice; writes to a table with a
 unique key over a TEXT or REAL column; and key values other than integers and
 NULL. In a `SELECT`: a comparison whose affinity rule would convert a value; a
 column, literal, `COALESCE`, or `CAST` to TEXT or BLOB used as a condition; an aggregate inside an expression; a result column
@@ -119,12 +120,9 @@ of frontend refusal, the cases of the claimed corpora that it keeps out of scope
 | `time-value` | Time values are not modeled | ADR 0008 |
 | `key-affinity` | Unique keys over TEXT or REAL columns are not modeled | ADR 0008 |
 | `key-value` | Only integer and NULL values are modeled in unique key columns | ADR 0008 |
-| `column-in-value` | Column references in values are not modeled | ADR 0012 slice 3a |
+| `row-dependent-key` | A SET value that reads the row is not modeled for a column of a unique key | ADR 0012 amendment 1 (question 1) |
 | `insert-column-twice` | A column named twice in INSERT is not modeled | ADR 0008 |
 | `update-column-twice` | A column assigned twice in UPDATE is not modeled | ADR 0008 |
-| `literal-comparison` | A comparison of two literals is not modeled | ADR 0008 |
-| `non-integer-filter` | Only an integer equality with an INTEGER, NUMERIC or BLOB column is modeled | ADR 0008 |
-| `filter-form` | Only a column equality filter is modeled | ADR 0008 |
 | `rowid-in-returning` | A rowid in RETURNING is not modeled | ADR 0012 slice 3a |
 | `returning-target` | RETURNING is modeled only on INSERT and UPDATE | ADR 0012 slice 3a |
 | `system-table` | Queries of SQLite's own tables, such as `sqlite_schema`, are not modeled | ADR 0012 slice 1 |

@@ -13,6 +13,6 @@ open Belay.Sqlite.Resolution.Examples
 -- INSERT: an integer is stored as its text in the TEXT column a.
 #guard statements (migration tableT [.insert "t" (some ["a"]) [[.numeric "7"]]]) == [.insert 0 [[.text [55], .null]] [] []]
 -- UPDATE: SET stores the text '1' as the integer 1 in the INTEGER column b.
-#guard statements (migration tableT [.update "t" [("b", .string [49])] none]) == [.update 0 [(1, .integer 1)] none [] []]
+#guard statements (migration tableT [.update "t" [("b", .string [49])] none]) == [.update 0 [(1, .literal (.integer 1))] none [] []]
 
 end Belay.Sqlite.Resolution.StoreExamples

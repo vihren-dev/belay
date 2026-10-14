@@ -96,35 +96,5 @@ def insertReady (keys : List (List Nat)) (table : Table) (rows : List (List Valu
     keys.all (·.all fun position => (values[position]?).any integerOrNull)) &&
   (inserted table rows).rows.all (fun row => boundedInteger row.rowid)
 
-/-- Whether a row passes the optional filter: no filter, or the cell at the filter
-position equals the filter value as a tagged value. Use {name}`comparisonReady`
-to establish that this exact test represents SQLite's integer equality. -/
-def selected (filter : Option (Nat × Value)) (row : Row) : Bool :=
-  filter.all fun (position, value) => read row position == some value
-
-/-- Set each assignment's position to its value, in order; a position beyond the
-row's width changes nothing. -/
-def assign (assignments : List (Nat × Value)) (row : Row) : Row :=
-  assignments.foldl (fun current (position, value) => { current with values := current.values.set position value }) row
-
-/-- Apply the assignments to every row that {name}`selected` accepts, with the
-filter evaluated on the old row. Retain every rowid, other cell and the shape. -/
-def updated (table : Table) (assignments : List (Nat × Value)) (filter : Option (Nat × Value)) : Table :=
-  { table with rows := table.rows.map fun row => if selected filter row then assign assignments row else row }
-
-/-- Require a filter over a {name}`comparisonReady` position with a bounded integer
-value, {name}`tableReady` before the write, {name}`storedForm` assignments to
-existing columns, and every key position {name}`comparisonReady` after
-{name}`updated`. This check does not establish the updated constraints. -/
-def updateReady (keys : List (List Nat)) (table : Table) (assignments : List (Nat × Value))
-    (filter : Option (Nat × Value)) : Bool :=
-  filter.all (fun (position, value) => comparisonReady table position && match value with
-    | .integer number => boundedInteger number
-    | .null | .real _ | .text _ | .blob _ => false) &&
-  tableReady keys table &&
-  assignments.all (fun (position, value) =>
-    (table.shape.columns[position]?).any fun column => storedForm column.affinity value) &&
-  keys.all (·.all (comparisonReady (updated table assignments filter)))
-
 end LiteralData
 end Belay.Sqlite

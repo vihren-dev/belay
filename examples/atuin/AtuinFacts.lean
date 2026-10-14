@@ -62,7 +62,7 @@ theorem observed (present : database 0 = some history)
     HistoryMapping.observe (database.set 0 (history.appendColumns [added])) = some logical := by
   have unchanged : (history.appendColumns [added]).project SchemaBinding.fields =
       history.project SchemaBinding.fields :=
-    TableExtends.project ⟨[added], rfl⟩ (fun row member => (valid.2 row member).2) (covers columns)
+    TableExtends.project ⟨[added], rfl⟩ (fun row member => (valid.2 row member).2.1) (covers columns)
   simpa [HistoryMapping.observe, located, Database.set, unchanged] using
     (show HistoryDecoding.decodeRows (history.project SchemaBinding.fields) = some logical by
       simpa [HistoryMapping.observe, located, present] using before)
