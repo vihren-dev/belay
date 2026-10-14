@@ -101,7 +101,8 @@ def tableT : Catalog := catalogOf (migration [] [.createTable "t" [column "a", c
       .prepareError (.valueCount "t" 2 1), .prepareError (.valuesForColumns 2 1), .prepareError .valuesDiffer]
 #guard statements (migration tableT [.insert "t" (some ["B"]) [[.numeric "1_000"], [.numeric "0x10"], [.negate (.numeric "9223372036854775808")]]])
   == [.insert 0 [[.null, .integer 1000], [.null, .integer 16], [.null, .integer (-9223372036854775808)]] [] []]
-#guard restricted (migration tableT [.insert "t" (some ["b"]) [[.numeric "9223372036854775808"]]])
+#guard statements (migration tableT [.insert "t" (some ["b"]) [[.numeric "9223372036854775808"]]])
+  == [.insert 0 [[.null, .real (9223372036854775808.0 : Float).toBits]] [] []]
 #guard statements (migration tableT [.insert "t" (some ["b"]) [[.numeric "0x10000000000000000"]]])
   == [.prepareError (.hexLiteralTooBig "0x10000000000000000")]
 
@@ -170,7 +171,8 @@ def keyed : Catalog := catalogOf (schema [.createTable "k" [column "a" (some "IN
 -- Restriction messages say what to do next.
 #guard reason (schema [.createTable "t" [{ name := "x", declaredType := some "INTEGER", constraints := [.primaryKey false] }] []])
   == "INTEGER PRIMARY KEY rowid aliases are not modeled; declare the key column with another type, such as BIGINT"
-#guard reason (migration tableT [.insert "t" (some ["b"]) [[.string [49]]]])
-  == "the column affinity would convert this value; write NULL, a blob, or a value that the affinity keeps unchanged"
+
+-- Store-time affinity: the text '1' is stored as the integer 1 in the INTEGER column.
+#guard statements (migration tableT [.insert "t" (some ["b"]) [[.string [49]]]]) == [.insert 0 [[.null, .integer 1]] [] []]
 
 end Belay.Sqlite.Resolution.Examples

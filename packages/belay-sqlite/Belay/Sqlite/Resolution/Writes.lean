@@ -60,15 +60,15 @@ def insertPositions (tableName : String) (columns : List CatalogColumn) :
     | some position => (insertPositions tableName columns rest).map (position :: ·)
     | none => .error (.tableHasNoColumn tableName name)
 
-/-- One full row in table order: the written value of a named column, or its default.
-Each value must be stored unchanged by the column's affinity. -/
+/-- One full row in table order: the written value of a named column, or its default,
+stored with the column's affinity ({name}`storeValue`). -/
 def fullRow (columns : List CatalogColumn) (positions : List Nat) (row : List Value) :
     Except ValueIssue (List Value) :=
   resolveAll (fun position column => do
     let value ← match positions.idxOf? position with
       | some written => .ok (row[written]?.getD .null)
       | none => defaultValue column
-    storedValue column.affinity value [position]) columns
+    .ok (storeValue column.affinity value)) columns
 
 /-- Resolve INSERT. Path 1 is the column list and path 2 the rows. -/
 def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : String)
@@ -159,16 +159,14 @@ def resolveUpdate (context : ResolveContext) (catalog : Catalog) (index : Nat) (
         | .ok resolvedFilter =>
           if positions.eraseDups.length != positions.length then
             restrict index [1] .updateColumnTwice
-          else match resolveAll (fun item (column, value) =>
-              storedValue ((table.columns[column]?.map CatalogColumn.affinity).getD .blob) value [item, 1])
-              (positions.zip values) with
-            | .error issue => issueResolution catalog index [1] issue
-            | .ok stored =>
-              let keys := catalog.uniqueKeys position table
-              match keyDomainRestriction table.columns keys (fun _ => [1]) [positions.zip stored] with
-              | some (path, reason) => restrict index path reason
-              | none => match resolveReturning context.profile.dqsDml table.columns returning with
-                | .error issue => issueResolution catalog index [3] issue
-                | .ok columns => .ok (.update position (positions.zip stored) resolvedFilter keys columns, catalog)
+          else
+            let stored := (positions.zip values).map fun (column, value) =>
+              (column, storeValue (columnAffinity table.columns column) value)
+            let keys := catalog.uniqueKeys position table
+            match keyDomainRestriction table.columns keys (fun _ => [1]) [stored] with
+            | some (path, reason) => restrict index path reason
+            | none => match resolveReturning context.profile.dqsDml table.columns returning with
+              | .error issue => issueResolution catalog index [3] issue
+              | .ok columns => .ok (.update position stored resolvedFilter keys columns, catalog)
 
 end Belay.Sqlite

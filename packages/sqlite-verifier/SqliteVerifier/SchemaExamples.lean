@@ -1,4 +1,5 @@
 import Belay.Sqlite.SchemaPreservation
+import Belay.Sqlite.LiteralPreservation
 
 set_option doc.verso true
 
@@ -51,9 +52,15 @@ def statisticsTable : CatalogTable := { columns := ["tbl", "idx", "stat"].map fu
   { name := "key_index", entry := .index { table := 0, columns := [0], unique := true } }] == false
 
 /-- The concrete {name}`table` satisfies {name}`Table.Valid`, including its
-negative rowid and NULL cell. The proof reduces widths and bounds. -/
+negative rowid and NULL cell. The proof reduces widths and bounds, and computes the
+stored form of the row. -/
 example : table.Valid := by
-  simp [Table.Valid, table, validRowid]
+  simp only [Table.Valid, table, validRowid]
+  refine ⟨by simp, ?_⟩
+  intro row member
+  simp only [List.mem_singleton] at member
+  subst row
+  exact ⟨by decide, by simp, Row.Stored.of_storedForm (by decide +kernel)⟩
 
 /-- Adding a plain {lit}`shell` column to the table at position 0 returns that
 table's {name}`Table.appendColumns` at the same position, preserving its keys. The

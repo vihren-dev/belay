@@ -63,14 +63,16 @@ theorem LiteralData.rowid_lt_next (member : row ∈ rows) : row.rowid < nextRowi
     omega
 
 /-- For every table and value list, assume {name}`Table.Valid`, a valid newly
-allocated rowid, and one supplied value per column. Then {name}`LiteralData.insertRow`
+allocated rowid, one supplied value per column, and the new row in
+{name}`Row.Stored` form for the table's columns. Then {name}`LiteralData.insertRow`
 satisfies {name}`Table.Valid`. Old row checks are vacuous for an empty table;
 new row bounds and width still apply. This says nothing about key constraints.
 The proof makes the new rowid fresh using {name}`LiteralData.rowid_lt_next`,
 then handles the old rows and the appended row separately. -/
 theorem Table.Valid.insertRow (valid : table.Valid)
     (bounded : validRowid (LiteralData.nextRowid table.rows))
-    (width : values.length = table.shape.columns.length) :
+    (width : values.length = table.shape.columns.length)
+    (stored : Row.Stored table.shape.columns { rowid := LiteralData.nextRowid table.rows, values }) :
     (LiteralData.insertRow table values).Valid := by
   refine ⟨?_, ?_⟩
   · have fresh : LiteralData.nextRowid table.rows ∉ table.rows.map Row.rowid := by
@@ -87,7 +89,7 @@ theorem Table.Valid.insertRow (valid : table.Valid)
     simp only [LiteralData.insertRow, List.mem_append, List.mem_singleton] at member
     rcases member with old | rfl
     · exact valid.2 row old
-    · exact ⟨bounded, width⟩
+    · exact ⟨bounded, width, stored⟩
 
 /-- For every key, old row list and added row, assume {name}`LiteralData.uniqueRows`
 on the old list and false {name}`LiteralData.keyEqual` from every old row to the
@@ -141,5 +143,19 @@ theorem LiteralData.insertRow_comparison (old : comparisonReady table position =
     (fun row => (read row position).any integerOrNull) = true
   rw [List.all_append, old.2]
   simp [read, cell]
+
+/-- For every column list and row: if {name}`LiteralData.storedForm` holds for every
+column/cell pair of the zip, the row is {name}`Row.Stored` for the columns. Use this to
+prove stored form of a concrete row by computation, or of an admitted inserted row.
+Proof sketch: a position with both a column and a cell gives a pair of the zip. -/
+theorem Row.Stored.of_storedForm {columns : List CatalogColumn} {row : Row}
+    (all : (columns.zip row.values).all (fun (column, value) => LiteralData.storedForm column.affinity value) = true) :
+    row.Stored columns := by
+  intro position column value columnAt cellAt
+  have pair : (columns.zip row.values)[position]? = some (column, value) := by
+    simp [List.getElem?_zip_eq_some, columnAt, cellAt]
+  have member := List.mem_of_getElem? pair
+  have check := List.all_eq_true.mp all _ member
+  simpa [LiteralData.storedForm] using check
 
 end Belay.Sqlite

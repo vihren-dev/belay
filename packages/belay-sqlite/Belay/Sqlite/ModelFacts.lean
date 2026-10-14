@@ -1,4 +1,5 @@
 import Belay.Sqlite.Preservation
+import Belay.Sqlite.StoreValueLaws
 
 set_option doc.verso true
 
@@ -116,8 +117,19 @@ theorem Table.Valid.appendColumns {table : Table} {columns : List CatalogColumn}
   · simpa [Table.appendColumns, Row.appendNulls, List.map_map, Function.comp_def] using valid.1
   · intro row member
     obtain ⟨original, oldMember, rfl⟩ := List.mem_map.mp member
-    obtain ⟨rowid, width⟩ := valid.2 original oldMember
-    exact ⟨rowid, by simp [Row.appendNulls, Table.appendColumns, width]⟩
+    obtain ⟨rowid, width, stored⟩ := valid.2 original oldMember
+    refine ⟨rowid, by simp [Row.appendNulls, Table.appendColumns, width], ?_⟩
+    intro position column value columnAt cellAt
+    simp only [Table.appendColumns, Row.appendNulls] at columnAt cellAt
+    by_cases old : position < original.values.length
+    · rw [List.getElem?_append_left old] at cellAt
+      rw [List.getElem?_append_left (width ▸ old)] at columnAt
+      exact stored position column value columnAt cellAt
+    · rw [List.getElem?_append_right (by omega)] at cellAt
+      obtain ⟨_, cellAt⟩ := List.getElem?_eq_some_iff.mp cellAt
+      simp only [List.getElem_replicate] at cellAt
+      subst cellAt
+      exact storeValue_null _
 
 /-- For every original/next catalog, database, position and table, assume original
 {name}`Conforms`, a valid next catalog and a valid replacement table. For every

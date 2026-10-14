@@ -18,9 +18,7 @@ def RestrictionKind.id : RestrictionKind → String
   | .unmodeledDefault => "unmodeled-default"
   | .createIndexRuns => "create-index-runs"
   | .addColumnConstraint => "add-column-constraint"
-  | .realValue => "real-value"
   | .timeValue => "time-value"
-  | .affinityConversion => "affinity-conversion"
   | .keyAffinity => "key-affinity"
   | .keyValue => "key-value"
   | .columnInValue => "column-in-value"
@@ -57,9 +55,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .unmodeledDefault => "only the CURRENT_TIMESTAMP default is modeled; remove the other default"
   | .createIndexRuns => "a CREATE INDEX that runs is not modeled; remove the CREATE INDEX statement"
   | .addColumnConstraint => "only a nullable column without a default can be added"
-  | .realValue => "REAL values are not modeled; use an integer, text, blob or NULL value"
   | .timeValue => "time values are not modeled; write the time as a text literal"
-  | .affinityConversion => "the column affinity would convert this value; write NULL, a blob, or a value that the affinity keeps unchanged"
   | .keyAffinity => "unique keys over TEXT or REAL columns are not modeled; write only to tables whose key columns have INTEGER, NUMERIC or BLOB affinity"
   | .keyValue => "only integer and NULL values are modeled in unique key columns; write an integer or NULL key value"
   | .columnInValue => "column references in values are not modeled; write a value that names no column"
@@ -87,7 +83,7 @@ def RestrictionKind.message : RestrictionKind → String
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .rowidAlias, .createTableConstraints, .unmodeledDefault, .createIndexRuns, .addColumnConstraint, .realValue, .timeValue, .affinityConversion, .keyAffinity, .keyValue, .columnInValue, .insertColumnTwice, .updateColumnTwice, .literalComparison, .nonIntegerFilter, .filterForm, .rowidInReturning, .returningTarget, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .valueAsCondition, .mixedAffinityComparison, .textToNumber, .numberToText, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum]
+  [.schemaStatement, .engineTable, .rowidColumnName, .rowidAlias, .createTableConstraints, .unmodeledDefault, .createIndexRuns, .addColumnConstraint, .timeValue, .keyAffinity, .keyValue, .columnInValue, .insertColumnTwice, .updateColumnTwice, .literalComparison, .nonIntegerFilter, .filterForm, .rowidInReturning, .returningTarget, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .valueAsCondition, .mixedAffinityComparison, .textToNumber, .numberToText, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

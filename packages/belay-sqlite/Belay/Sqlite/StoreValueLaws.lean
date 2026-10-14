@@ -102,4 +102,8 @@ theorem storeValue_text_not_number (value : Value) :
     (∀ whole, storeValue .text value ≠ .integer whole) ∧ (∀ bits, storeValue .text value ≠ .real bits) := by
   cases value <;> simp [storeValue]
 
+/-- For every affinity, {name}`storeValue` keeps NULL. -/
+theorem storeValue_null (affinity : Affinity) : storeValue affinity .null = .null := by
+  cases affinity <;> rfl
+
 end Belay.Sqlite

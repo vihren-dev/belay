@@ -25,6 +25,13 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/LiteralData.lean`,
   `StoreValueLaws.lean` proves idempotence and that TEXT affinity stores no number;
   `StoreValueExamples.lean` checks the amendment's store list against values from
   native 3.51.0.
+- 2026-10-14: stored values. Resolution stores INSERT values, defaults and SET values
+  with `storeValue`; `storedValue`, `lossless` and `nonnumericText` are removed, and
+  with them the restrictions `real-value` and `affinity-conversion` (registry 33 ids).
+  `insertReady` and `updateReady` require `storedForm`. `Table.Valid`, and so
+  `Conforms`, requires `Row.Stored`; `appendColumns` and `insertRow` keep it. The
+  verdict on main versus this commit: AGREE v1 11→13, v2 17→19, v3 34→46, v4 16→26,
+  v5 217→232; no DISAGREE.
 
 ## Remaining
 

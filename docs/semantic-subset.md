@@ -35,8 +35,10 @@ operators `+`, `-`, `*`, `/` and `%`, unary `-` and `+` of any expression,
 `CAST(expression AS type)`, and `COALESCE` of two or more arguments (ADR 0012,
 slice 2). In a write, a `VALUES` item, a `SET` value and the value of a
 `column = value` filter may be any of these expressions that names no column:
-resolution computes its value (slice 3a). REAL values are computed, but stored
-only where the model admits them. Named
+resolution computes its value (slice 3a). The value is then stored as SQLite
+stores it in a column of that affinity (slice 3b): for example, the text `'12'`
+becomes the integer 12 in an INTEGER column, and an integer becomes text in a TEXT
+column. A REAL value can be stored in any column that is not part of a unique key. Named
 constraints, collations, `CHECK`, `REFERENCES`, generated columns, conflict
 clauses, `UPSERT`, `WITH`, `FROM` in writes, sort modifiers in keys,
 partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
@@ -75,8 +77,7 @@ SQL that SQLite accepts but the model does not describe is a model restriction:
 the whole request is `UNSUPPORTED` at the byte range of the refused node. In the
 migration these are, among others: `CREATE INDEX`; `CREATE TABLE` with
 constraints or defaults; `ADD COLUMN` with a constraint or default; rowid column
-names; REAL values; time values; values that the column affinity would convert;
-column references in values; a filter other than `column = integer` on an
+names; time values; column references in values; a filter other than `column = integer` on an
 INTEGER, NUMERIC or BLOB column; a column named twice; writes to a table with a
 unique key over a TEXT or REAL column; and key values other than integers and
 NULL. In a `SELECT`: a comparison whose affinity rule would convert a value; a
@@ -115,9 +116,7 @@ of frontend refusal, the cases of the claimed corpora that it keeps out of scope
 | `unmodeled-default` | Only the `CURRENT_TIMESTAMP` default is modeled | ADR 0008 |
 | `create-index-runs` | A CREATE INDEX that runs is not modeled | ADR 0008 |
 | `add-column-constraint` | Only a nullable column without a default can be added | ADR 0008 |
-| `real-value` | REAL values are not modeled | ADR 0008 |
 | `time-value` | Time values are not modeled | ADR 0008 |
-| `affinity-conversion` | The column affinity would convert this value | ADR 0008 |
 | `key-affinity` | Unique keys over TEXT or REAL columns are not modeled | ADR 0008 |
 | `key-value` | Only integer and NULL values are modeled in unique key columns | ADR 0008 |
 | `column-in-value` | Column references in values are not modeled | ADR 0012 slice 3a |

@@ -21,8 +21,8 @@ EXECUTION = SQLITE + "SqlExecution.lean"
 OBLIGATIONS: dict[str, tuple[str, str, str]] = {
     "insert-table-ready": (LITERAL_DATA, "insertReady", "tableReady keys table"),
     "insert-row-width": (LITERAL_DATA, "insertReady", "values.length == table.shape.columns.length"),
-    "insert-lossless": (LITERAL_DATA, "insertReady",
-                        "(table.shape.columns.zip values).all (fun (column, value) => lossless column.affinity value)"),
+    "insert-stored-form": (LITERAL_DATA, "insertReady",
+                        "(table.shape.columns.zip values).all (fun (column, value) => storedForm column.affinity value)"),
     "insert-key-values": (LITERAL_DATA, "insertReady",
                           "keys.all (·.all fun position => (values[position]?).any integerOrNull)"),
     "insert-rowid-bounded": (LITERAL_DATA, "insertReady",
@@ -30,8 +30,8 @@ OBLIGATIONS: dict[str, tuple[str, str, str]] = {
     "update-filter-comparable": (LITERAL_DATA, "updateReady", "comparisonReady table position"),
     "update-filter-integer": (LITERAL_DATA, "updateReady", "| .integer number => boundedInteger number"),
     "update-table-ready": (LITERAL_DATA, "updateReady", "tableReady keys table"),
-    "update-lossless": (LITERAL_DATA, "updateReady",
-                        "(table.shape.columns[position]?).any fun column => lossless column.affinity value"),
+    "update-stored-form": (LITERAL_DATA, "updateReady",
+                        "(table.shape.columns[position]?).any fun column => storedForm column.affinity value"),
     "update-keys-after": (LITERAL_DATA, "updateReady",
                           "keys.all (·.all (comparisonReady (updated table assignments filter)))"),
     "create-table-plain": (EXECUTION, "statementReady", "table.plain"),
@@ -43,12 +43,14 @@ that contains it, and its exact text there."""
 
 COVERED_ELSEWHERE: dict[str, str] = {
     "insert-row-width": "reason:resolution gives one value per column (RowSpec.fullRow_rowWidth)",
-    "insert-lossless": "restriction:affinity-conversion",
+    "insert-stored-form": "reason:resolution stores every written value with storeValue, which is idempotent "
+                          "(StoreValueLaws.storeValue_storeValue)",
     "insert-key-values": "restriction:key-value",
     "insert-rowid-bounded": "reason:after the largest rowid SQLite chooses a random rowid, so a native "
                             "record of the boundary cannot be replayed exactly",
     "update-filter-integer": "restriction:non-integer-filter",
-    "update-lossless": "restriction:affinity-conversion",
+    "update-stored-form": "reason:resolution stores every assigned value with storeValue, which is idempotent "
+                          "(StoreValueLaws.storeValue_storeValue)",
     "update-table-ready": "reason:overlaps update-keys-after, which checks every key cell after the update, "
                           "and SQLite guarantees the constraints; update_without_key_checks removes both",
     "create-table-plain": "restriction:create-table-constraints",
@@ -62,10 +64,10 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "insert_without_table_ready": (LITERAL_DATA, "  tableReady keys table &&\n  rows.all", "  rows.all"),
     "update_without_key_checks": (LITERAL_DATA,
         "  tableReady keys table &&\n  assignments.all (fun (position, value) =>\n"
-        "    (table.shape.columns[position]?).any fun column => lossless column.affinity value) &&\n"
+        "    (table.shape.columns[position]?).any fun column => storedForm column.affinity value) &&\n"
         "  keys.all (·.all (comparisonReady (updated table assignments filter)))",
         "  assignments.all (fun (position, value) =>\n"
-        "    (table.shape.columns[position]?).any fun column => lossless column.affinity value)"),
+        "    (table.shape.columns[position]?).any fun column => storedForm column.affinity value)"),
     "update_filter_without_comparable": (LITERAL_DATA,
         "filter.all (fun (position, value) => comparisonReady table position && match value with",
         "filter.all (fun (position, value) => match value with"),

@@ -67,7 +67,7 @@ def generate(runtime: Path, *, error_seeking: bool, examples: int = 20, steps: i
 
         @rule(value=st.sampled_from(["1", " 1", "1.0", "1e20"]))
         def affinity_boundary(self, value: str) -> None:
-            """Keep conversion evidence outside the current lossless model domain."""
+            """Record text that numeric affinity converts when it is stored (store-time affinity)."""
             self.boundary = value
 
         @rule()

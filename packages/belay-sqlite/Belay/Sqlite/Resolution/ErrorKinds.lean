@@ -65,27 +65,18 @@ theorem defaultValue_issue (column : CatalogColumn) (issue : ValueIssue)
   unfold defaultValue at failed
   split at failed <;> cases failed <;> trivial
 
-/-- For every affinity, value and path, an issue of {name}`storedValue` names no
-catalog object: the formula states this conclusion, although the function only
-fails with a model restriction. Proof sketch: the only failing branch is a restriction. -/
-theorem storedValue_issue (affinity : Affinity) (value : Value) (path : List Nat) (issue : ValueIssue)
-    (failed : storedValue affinity value path = .error issue) : issue.namesNoObject := by
-  unfold storedValue at failed
-  repeat' split at failed
-  all_goals first | (cases failed; done) | (cases failed; trivial)
-
 /-- For all inputs, an issue of {name}`fullRow` names no catalog object. Proof sketch:
-by {name}`resolveAll_issue`, the issue comes from one column, where it is an issue of
-{name}`storedValue` or of {name}`defaultValue`. -/
+by {name}`resolveAll_issue`, the issue comes from one column, where only
+{name}`defaultValue` can fail. -/
 theorem fullRow_issue (columns : List CatalogColumn) (positions : List Nat) (row : List Value)
     (issue : ValueIssue) (failed : fullRow columns positions row = .error issue) : issue.namesNoObject := by
   unfold fullRow at failed
   refine resolveAll_issue _ _ _ (fun position column issue h => ?_) failed
   simp only [bind, Except.bind] at h
   split at h
-  · exact storedValue_issue _ _ _ _ h
-  · split at h
-    · cases h; exact defaultValue_issue _ _ (by assumption)
-    · exact storedValue_issue _ _ _ _ h
+  · cases h
+  · cases hdefault : defaultValue column with
+    | error cause => rw [hdefault] at h; cases h; exact defaultValue_issue _ _ hdefault
+    | ok _ => rw [hdefault] at h; cases h
 
 end Belay.Sqlite

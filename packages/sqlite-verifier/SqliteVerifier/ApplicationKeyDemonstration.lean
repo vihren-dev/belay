@@ -94,7 +94,7 @@ theorem migrationCorrect (profile : Profile) (columns : 2 ≤ profile.limits.col
     have growth := runSql_extends
       (script := Demonstration.script) (by simp [SchemaOnly, Demonstration.script]) database
     have preserved := DatabaseExtends.observeApplicationRows growth located present
-      (fun row member => (valid.2 row member).2) covered
+      (fun row member => (valid.2 row member).2.1) covered
     have sameNames : observeApplicationRows Demonstration.nextCatalog invoiceTableName invoiceKeyNames
         invoiceProtectedFields = observeApplicationRows Demonstration.startCatalog invoiceTableName
           invoiceKeyNames invoiceProtectedFields := by

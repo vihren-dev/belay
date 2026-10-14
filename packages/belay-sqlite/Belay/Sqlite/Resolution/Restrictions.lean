@@ -27,12 +27,8 @@ inductive RestrictionKind where
   | createIndexRuns
   /-- Only a nullable column without a default can be added (ADR 0008). -/
   | addColumnConstraint
-  /-- REAL values are not modeled (ADR 0008). -/
-  | realValue
   /-- Time values are not modeled (ADR 0008). -/
   | timeValue
-  /-- The column affinity would convert this value (ADR 0008). -/
-  | affinityConversion
   /-- Unique keys over TEXT or REAL columns are not modeled (ADR 0008). -/
   | keyAffinity
   /-- Only integer and NULL values are modeled in unique key columns (ADR 0008). -/

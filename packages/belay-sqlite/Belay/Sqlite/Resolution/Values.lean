@@ -110,13 +110,4 @@ def queryNumeric (text : String) (negated : Bool) : Except ValueIssue Value :=
   | .hexTooBig, _ | .real, true => .error (.prepare (.hexLiteralTooBig (hexErrorText text negated)))
   | .real, false => .ok (realLiteral chars negated)
 
-/-- Admit a value only when the column's affinity stores it unchanged
-({name}`LiteralData.lossless`). Otherwise it is a model restriction: a REAL value,
-which writes do not model, or a value that the affinity would convert. -/
-def storedValue (affinity : Affinity) (value : Value) (path : List Nat) : Except ValueIssue Value :=
-  if LiteralData.lossless affinity value then .ok value
-  else match value with
-    | .real _ => .error (.restriction path .realValue)
-    | .null | .integer _ | .text _ | .blob _ => .error (.restriction path .affinityConversion)
-
 end Belay.Sqlite
