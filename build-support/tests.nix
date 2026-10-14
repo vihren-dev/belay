@@ -111,6 +111,7 @@ let
     "authored_cases" "authored_cases_queries" "authored_boundaries" "authored_review" "authored_report"
     "authored_transactions" "transaction_evidence" "authored_resolution" "resolution_evidence"
     "authored_queries" "query_evidence" "query_mutants" "authored_evidence" "authored_numbers" "number_evidence"
+    "authored_writes" "write_evidence" "write_mutants"
     "number_mutants"
     "upstream_selection" "upstream_catalog" "upstream_sampling" "upstream_profiles" "upstream_functions" "upstream_result_values"
     "corpus_shards" "corpus_workers" "corpus_evidence" "corpus_acquisition" "locked_corpora" "freeze_corpus" "freeze_validation" "freeze_profiles" "workload" "workload_inputs"

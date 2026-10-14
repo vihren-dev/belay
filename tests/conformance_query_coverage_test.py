@@ -1,6 +1,7 @@
-"""The authored coverage cases of queries and of numbers in queries (ADR 0012, slices 1 and 2).
+"""The authored coverage cases of queries, numbers and writes with output (ADR 0012, slices 1 to 3a).
 
-The cases of `conformance.authored_queries` and `conformance.authored_numbers` are
+The cases of `conformance.authored_queries`, `conformance.authored_numbers` and
+`conformance.authored_writes` are
 recorded natively as version 5 records with statement outputs, name requirement
 identifiers of the pinned documentation, and replay through resolution, the
 execution semantics and query evaluation. Every case agrees with the model, and the
@@ -16,7 +17,8 @@ from types import ModuleType
 
 import pytest
 
-from conformance import authored_numbers, authored_queries, number_evidence, query_evidence
+from conformance import (authored_numbers, authored_queries, authored_writes, number_evidence, query_evidence,
+                         write_evidence)
 from conformance.model_check import compiled_many, prove
 from conformance.native_replay import prepare
 from conformance.record_parser import runtime_library
@@ -25,7 +27,7 @@ from conformance.requirement_coverage import resolved_ids
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kernel, pytest.mark.requires_lean,
               pytest.mark.requires_native("parser-library", "sqlite3")]
 ROOT = Path(__file__).resolve().parents[1]
-CASE_SETS = [authored_queries, authored_numbers]
+CASE_SETS = [authored_queries, authored_numbers, authored_writes]
 """The authored case modules: each has `definitions` and `records`."""
 
 
@@ -53,8 +55,9 @@ def test_coverage_cases_agree_with_kernel_proofs(cases: ModuleType, runtime_root
 
 
 @pytest.mark.parametrize(("evidence", "cases", "version"), [(query_evidence, authored_queries, 7),
-                                                            (number_evidence, authored_numbers, 8)],
-                         ids=["queries", "numbers"])
+                                                            (number_evidence, authored_numbers, 8),
+                                                            (write_evidence, authored_writes, 9)],
+                         ids=["queries", "numbers", "writes"])
 def test_coverage_corpus_round_trips(evidence: ModuleType, cases: ModuleType, version: int, tmp_path: Path) -> None:
     """The corpus writer writes a corpus of version 5 records that reads back unchanged and
     replays natively, and refuses to replace an existing directory."""

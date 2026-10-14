@@ -48,7 +48,12 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Resolved.lean`,
   has 217 AGREE (210 before).
 - 2026-10-14: the amendment for slice 3b is proposed in #111 (docs only, for the
   owner); it lists six open questions.
+- 2026-10-14: evidence. `conformance/authored_writes.py` has 16 cases; all agree and
+  have kernel proofs (`tests/conformance_query_coverage_test.py`).
+  `conformance/write_mutants.py` has the 5 mutants of the task with their target
+  cases; with the query and number mutants, each changes a verdict. `write_evidence.py`
+  writes the cases as corpus version 9 for PR B.
 
 ## Remaining
 
-- All outcome items of the task.
+- CI timing, PR A; then PR B (judge: claim corpus-v9 and the newly agreeing cases).
