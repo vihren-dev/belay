@@ -1,6 +1,6 @@
 # Status: row-dependent writes (slice 3b)
 
-Created 2026-10-14. Status: IN PROGRESS.
+Created 2026-10-14. Status: DONE.
 Task: [task](20261014-row-dependent-writes.task.md).
 Specification: [ADR 0012, Amendment 1](../docs/adr-0012-query-semantics.md).
 
@@ -91,8 +91,13 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/LiteralData.lean`,
     measurement takes 59 s instead of 77 s alone.
   Under the full parallel test load locally: query mutants 110 s → 80 s, v5 test → 47 s.
 
+- 2026-10-14: #115 merged. Pull request B: corpus 10 (2 obligation boundary cases,
+  DISAGREE and HARNESS_ERROR forbidden) and corpus 11 (24 row-dependent write cases,
+  all in `mustAgree`) are frozen and claimed; the 45 cases of v1 to v5 that agree since
+  #115 are added to `mustAgree` (v1 +2, v2 +2, v3 +13, v4 +10, v5 +18). `just
+  judge-lock` regenerated the lock: the judge entry changes and the two corpora are
+  added. Slice 3b is done.
+
 ## Remaining
 
-- Pull request B (judge, owner approval) after A merges: freeze and claim corpus 10
-  (obligation boundaries, DISAGREE forbidden) and corpus 11 (row-dependent writes, every
-  case in `mustAgree`), and add the newly agreeing cases of v1 to v5 to `mustAgree`.
+- None. Next: slice 3c (DELETE).

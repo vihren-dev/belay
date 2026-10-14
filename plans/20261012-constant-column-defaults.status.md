@@ -538,3 +538,21 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of the completed T14 representation and codec changes.
+
+
+- 2026-10-14: GitHub main advanced to c10fe001, the merge of PR 116.
+  Integrated it before extending catalog admission. It supplies the approved
+  obligation and row-write corpora, their claims and lock, and includes both
+  corpora in the frozen test inputs. These files exactly match merged main;
+  this task adds no judge or claim change. The merge has no conflicts.
+
+  The protected verdict passes, including all 24 row-write cases in corpus 11
+  and the two correctly unsupported obligation cases in corpus 10. Existing
+  corpus counts are unchanged. The sandboxed macOS frozen suite passes.
+  Evidence is in build/t14-pr116-verdict-20261014.log and
+  build/t14-pr116-frozen-20261014.log. Catalog-admission code is unchanged
+  at this checkpoint; integration review follows the commit.
+
+Decisions waiting for the owner:
+
+- Final review of the completed T14 representation and codec changes.
