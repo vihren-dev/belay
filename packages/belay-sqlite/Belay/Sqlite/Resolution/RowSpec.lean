@@ -38,7 +38,7 @@ theorem storedValue_ok (affinity : Affinity) (value stored : Value) (path : List
   unfold storedValue at ok
   split at ok
   · cases ok; rfl
-  · contradiction
+  · split at ok <;> cases ok
 
 /-- The row width rule ({lit}`lang_insert.html`, R-12183-43719 and R-18927-01951):
 for the table columns, the table positions of the written columns, a written row

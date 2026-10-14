@@ -59,15 +59,17 @@ def test_predicted_catalog_equals_native(name: str, runtime_root: Path) -> None:
 def test_predict_command_reports_scope(runtime_root: Path) -> None:
     """`conformance.predict.main`: an admitted case is predicted with one step per executed
     statement and a start offset, including the starting rows; a refused one is out of scope
-    with the frontend's reason."""
+    with the frontend's reason, and a restricted one also names the restriction's stable id."""
     admitted = record_sql("CREATE TABLE t(a INTEGER); INSERT INTO t VALUES (7);", "INSERT INTO t(a) VALUES (1);",
                           name="admitted")
     refused = record_sql("CREATE TABLE t(a INTEGER);", "CREATE VIEW v AS SELECT a FROM t;", name="refused")
-    first, second = predict(runtime_root, admitted, refused)
+    restricted = record_sql("CREATE TABLE t(a INTEGER);", "INSERT INTO t(a) VALUES (1.5);", name="restricted")
+    first, second, third = predict(runtime_root, admitted, refused, restricted)
     assert first["status"] == "predicted" and first["supported"] and len(first["steps"]) == 2
     assert first["steps"][1]["start"] == 0
     assert tables_form(first["steps"][1]["visible"]) == tables_form(admitted["trace"][0]["visible"])
     assert second["status"] == "unsupported" and second["reason"]
+    assert third["status"] == "unsupported" and third["restriction"] == "real-value", third
 
 
 def profiled(runtime_root: Path, name: str, setup: str = "CREATE TABLE t(a INTEGER NOT NULL);",

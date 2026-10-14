@@ -99,7 +99,8 @@ fails with a model restriction. Proof sketch: the only failing branch is a restr
 theorem storedValue_issue (affinity : Affinity) (value : Value) (path : List Nat) (issue : ValueIssue)
     (failed : storedValue affinity value path = .error issue) : issue.namesNoObject := by
   unfold storedValue at failed
-  split at failed <;> cases failed; trivial
+  repeat' split at failed
+  all_goals first | (cases failed; done) | (cases failed; trivial)
 
 /-- For all inputs, an issue of {name}`fullRow` names no catalog object. Proof sketch:
 by {name}`resolveAll_issue`, the issue comes from one column, where it is an issue of

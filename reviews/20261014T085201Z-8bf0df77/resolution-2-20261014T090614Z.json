@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-14T09:06:14+00:00",
+  "finding": "20261014T085201Z-8bf0df77#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "docs/semantic-subset.md has the restriction table with every id and describes the restriction report field; tests/restriction_registry_test.py keeps them in sync"
+}

@@ -146,9 +146,12 @@ def literalValue (dqs : Bool) : Syntax.Expr → Except ValueIssue Value
     .error (.restriction [] .expressionAsValue)
 
 /-- Admit a value only when the column's affinity stores it unchanged
-({name}`LiteralData.lossless`); otherwise the conversion is a model restriction. -/
+({name}`LiteralData.lossless`). Otherwise it is a model restriction: a REAL value,
+which writes do not model, or a value that the affinity would convert. -/
 def storedValue (affinity : Affinity) (value : Value) (path : List Nat) : Except ValueIssue Value :=
   if LiteralData.lossless affinity value then .ok value
-  else .error (.restriction path .affinityConversion)
+  else match value with
+    | .real _ => .error (.restriction path .realValue)
+    | .null | .integer _ | .text _ | .blob _ => .error (.restriction path .affinityConversion)
 
 end Belay.Sqlite

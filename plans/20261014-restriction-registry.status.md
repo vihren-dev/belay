@@ -28,8 +28,12 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Values.lean`,
   confirm every site. `Restriction` JSON keeps `reason` and adds `restriction` (the
   id); the CLI resolver, the prediction output, `conformance/predict.py` and the
   `migration_check` rejection details carry the id. The verdict counts do not change.
+- 2026-10-14: documentation table of all 39 ids in `docs/semantic-subset.md`,
+  `tests/restriction_registry_test.py`, `RestrictionKind.mem_all` and a check of
+  distinct ids; tests of the id in the CLI report and the prediction output. The
+  prediction test found a message regression from slice 3a: a REAL value in a write
+  reported `affinity-conversion`; `storedValue` now reports `real-value` for it.
 
 ## Remaining
 
-- Documentation table and registry test; cost report; mutant links; obligation
-  mutants and boundary cases.
+- Cost report; mutant links; obligation mutants and boundary cases.

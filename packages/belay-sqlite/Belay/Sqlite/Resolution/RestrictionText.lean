@@ -97,4 +97,12 @@ def RestrictionKind.message : RestrictionKind → String
 def RestrictionKind.all : List RestrictionKind :=
   [.schemaStatement, .engineTable, .rowidColumnName, .rowidAlias, .createTableConstraints, .unmodeledDefault, .createIndexRuns, .addColumnConstraint, .realValue, .timeValue, .negatedNonNumeric, .conditionAsValue, .aggregateAsValue, .expressionAsValue, .affinityConversion, .keyAffinity, .keyValue, .columnInValue, .insertColumnTwice, .updateColumnTwice, .literalComparison, .nonIntegerFilter, .filterForm, .rowidInReturning, .returningTarget, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .valueAsCondition, .mixedAffinityComparison, .textToNumber, .numberToText, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum]
 
+/-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
+analysis on the restriction. -/
+theorem RestrictionKind.mem_all (kind : RestrictionKind) : kind ∈ RestrictionKind.all := by
+  cases kind <;> simp [RestrictionKind.all]
+
+-- The ids are distinct.
+#guard (RestrictionKind.all.map RestrictionKind.id).eraseDups.length == RestrictionKind.all.length
+
 end Belay.Sqlite
