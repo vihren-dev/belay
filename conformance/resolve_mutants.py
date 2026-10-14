@@ -90,6 +90,10 @@ BUILD_TIMEOUT_SECONDS = 600
 """One Lake build of a copy; a fresh base build takes about 12 seconds."""
 RUN_TIMEOUT_SECONDS = 300
 """One interpreted classification of all case terms."""
+AGREE = "Belay.Sqlite.Conformance.Verdict.agree"
+"""The printed verdict of an agreeing case."""
+UNSUPPORTED = "Belay.Sqlite.Conformance.Verdict.modelUnsupported"
+"""The printed verdict of a case outside the model's scope, such as a boundary case of an obligation."""
 MAX_REC_DEPTH = 100000
 """Lean's `maxRecDepth` for elaborating the case terms, as the kernel proofs of the cases use."""
 
@@ -136,11 +140,11 @@ def mutate(base: Path, root: Path, name: str, change: tuple[str, str, str], lean
 
 def measure(cases: list[dict[str, Json]], repository: Path, runtime: Path,
             mutants: dict[str, tuple[str, str, str]] = MUTANTS,
-            targets: dict[str, tuple[str, ...]] | None = None) -> dict[str, Json]:
+            targets: dict[str, tuple[str, ...]] | None = None, expected: str = AGREE) -> dict[str, Json]:
     """Classify the cases with the unchanged model and with each of `mutants`, in parallel.
     `runtime` is the conformance runtime: its runner emits the case terms, and its
-    `lean` folder is the pinned toolchain. Every case must agree with the unchanged
-    model. With `targets`, a mutant copy classifies only the cases that its entry names,
+    `lean` folder is the pinned toolchain. Every case must have the `expected` verdict
+    with the unchanged model: `AGREE` for coverage cases, `UNSUPPORTED` for boundary cases. With `targets`, a mutant copy classifies only the cases that its entry names,
     which keeps the elaboration of case terms short; without it, every case."""
     lean = runtime / "lean"
     terms = [str(answer["caseLean"]) for answer in compiled_many(cases, runtime, emit_lean=True)]
@@ -157,13 +161,13 @@ def measure(cases: list[dict[str, Json]], repository: Path, runtime: Path,
             shutil.copytree(repository / "packages" / package, base / package,
                             ignore=shutil.ignore_patterns(".lake", "build"))
         original = verdicts(base, lean, classifier(terms))
-        if original != ["Belay.Sqlite.Conformance.Verdict.agree"] * len(cases):
-            raise ValueError(f"Every case must agree with the unchanged model before mutation: {original}")
+        if original != [expected] * len(cases):
+            raise ValueError(f"Every case must be {expected} with the unchanged model before mutation: {original}")
         with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as pool:
             results = dict(zip(mutants, pool.map(
                 lambda name: mutate(base, root, name, mutants[name], lean,
                                     classifier([terms[index] for index in selected[name]])), mutants)))
-    return {name: {"killed": any(verdict != original[0] for verdict in found),
+    return {name: {"killed": any(verdict != expected for verdict in found),
                    "changed": {names[index]: verdict for index, verdict in zip(selected[name], found, strict=True)
-                               if verdict != original[0]}}
+                               if verdict != expected}}
             for name, found in results.items()}

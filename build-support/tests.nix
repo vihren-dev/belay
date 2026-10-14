@@ -80,6 +80,10 @@ let
   claims = root + /judge/claims.json;
   lockedCorpora = map (entry: root + "/${entry.path}")
     (builtins.attrValues (builtins.fromJSON (builtins.readFile claims)).corpora);
+  # Mutants rebuild changed copies of the two Lean packages, so their suites read the
+  # complete sources, without local build outputs in `.lake`.
+  mutantInputs = modelInputs ++ map (package: fs.difference (root + "/packages/${package}")
+    (fs.maybeMissing (root + "/packages/${package}/.lake"))) [ "belay-sqlite" "verifier-conformance" ];
   # Inputs shared by the three suites that the old single model suite contained.
   modelInputs = frontend ++ [
     claims
@@ -112,7 +116,7 @@ let
     "authored_transactions" "transaction_evidence" "authored_resolution" "resolution_evidence"
     "authored_queries" "query_evidence" "query_mutants" "authored_evidence" "authored_numbers" "number_evidence"
     "authored_writes" "write_evidence" "write_mutants"
-    "number_mutants" "restriction_examples"
+    "number_mutants" "restriction_examples" "authored_obligations" "obligation_mutants" "obligation_evidence"
     "upstream_selection" "upstream_catalog" "upstream_sampling" "upstream_profiles" "upstream_functions" "upstream_result_values"
     "corpus_shards" "corpus_workers" "corpus_evidence" "corpus_acquisition" "locked_corpora" "freeze_corpus" "freeze_validation" "freeze_profiles" "workload" "workload_inputs"
     "upstream_assertions"
@@ -269,11 +273,14 @@ in {
     runtime = conformance;
     tools = modelTools;
   };
-  # Mutants of resolution rebuild changed copies of the two Lean packages, so this suite
-  # reads their complete sources, without local build outputs in `.lake`.
   mutants = suite "mutants" {
-    inputs = modelInputs ++ map (package: fs.difference (root + "/packages/${package}")
-      (fs.maybeMissing (root + "/packages/${package}/.lake"))) [ "belay-sqlite" "verifier-conformance" ];
+    inputs = mutantInputs;
+    runtime = conformance;
+    tools = modelTools;
+  };
+  # The obligation mutants and their boundary cases; a scheduled suite (default.nix).
+  obligations = suite "obligations" {
+    inputs = mutantInputs;
     runtime = conformance;
     tools = modelTools;
   };

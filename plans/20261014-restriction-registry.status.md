@@ -54,7 +54,17 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Values.lean`,
 - 2026-10-14: mutant links. Each mutant table has `GUARDS`; `conformance/mutant_guards.py`
   checks that a `rule:` guard names the declaration that contains the mutant's text, and
   that restriction and obligation guards exist. All 45 existing mutants guard rules.
+- 2026-10-14: obligation mutants. `conformance/obligation_mutants.py` lists 13 conjuncts of
+  `insertReady`, `updateReady` and `statementReady`. Only three can be violated by a
+  native state that resolution accepts; they have mutants and boundary cases in
+  `conformance/authored_obligations.py` (a REAL 1.0 in an untyped unique key under
+  INSERT and UPDATE, and under the filter `c = 1`). The two key checks of `updateReady`
+  cover each other, so one mutant removes both. Seven conjuncts repeat a resolution
+  restriction, and three have a recorded reason (row width is a resolution theorem;
+  the largest-rowid case is random in SQLite). The scheduled suite
+  `scheduledTests.obligations` (about 18 s) runs in `just package`, not on pull
+  requests. `conformance/obligation_evidence.py` writes corpus version 10.
 
 ## Remaining
 
-- Obligation mutants, boundary cases and the scheduled suite.
+- Full checks, CI timing, pull request A; later the judge PR that claims corpus 10.

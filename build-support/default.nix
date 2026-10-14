@@ -43,11 +43,16 @@ in rec {
   conformanceDocs = import ./conformance-docs.nix {
     inherit pkgs; inherit (conformanceNative) fixture upstream;
   };
-  tests = import ./tests.nix {
+  allTests = import ./tests.nix {
     inherit pkgs leanToolchain leanRuntime runtime seedRuntime native conformance modelPackage root;
     parserLibrary = parserLibrary.testRoot;
     inherit leanPackages;
   };
+  # Suites that only main pushes and scheduled runs build (`just test-scheduled`), so that the CI
+  # time of pull requests does not grow; tests/nix_scheduled_suites.json lists them.
+  scheduledSuites = builtins.fromJSON (builtins.readFile ../tests/nix_scheduled_suites.json);
+  tests = pkgs.lib.removeAttrs allTests scheduledSuites;
+  scheduledTests = pkgs.lib.getAttrs scheduledSuites allTests;
   # `just test` skips the slow model comparisons, the frozen evidence, the locked-corpus validation
   # and the resolution mutants;
   # `just test-full` runs them.

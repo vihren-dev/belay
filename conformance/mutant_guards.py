@@ -57,3 +57,28 @@ def guard_problems(mutants: dict[str, tuple[str, str, str]], guards: dict[str, s
         elif kind not in GUARD_KINDS:
             problems.append(f"{name}: {guard} does not start with rule:, restriction: or obligation:")
     return problems
+
+
+def obligation_problems(obligations: dict[str, tuple[str, str, str]], covered: dict[str, str],
+                        guards: dict[str, str], packages: Path, restriction_ids: set[str]) -> list[str]:
+    """Each obligation conjunct whose text is not inside its declaration, that has neither or
+    both of a mutant and an entry of `covered`, and each entry of `covered` that names no
+    conjunct, a restriction that does not exist or no reason, as one message per problem.
+    `obligations` and `covered` have the forms of `obligation_mutants.OBLIGATIONS` and
+    `obligation_mutants.COVERED_ELSEWHERE`."""
+    problems = []
+    guarded = {guard.partition(":")[2] for guard in guards.values() if guard.startswith("obligation:")}
+    for name, (path, declaration, text) in obligations.items():
+        source = (packages / path).read_text()
+        spans = declaration_spans(source).get(declaration, [])
+        if not any(text in source[start:end] for start, end in spans):
+            problems.append(f"{name}: its text is not inside the declaration {declaration} of {path}")
+        if (name in guarded) == (name in covered):
+            problems.append(f"{name}: needs exactly one of a mutant and an entry of COVERED_ELSEWHERE")
+    for name, evidence in covered.items():
+        kind, _, target = evidence.partition(":")
+        if name not in obligations:
+            problems.append(f"{name}: covered, but not an obligation conjunct")
+        if not (kind == "restriction" and target in restriction_ids or kind == "reason" and target):
+            problems.append(f"{name}: {evidence} is neither restriction: with a registry id nor reason: with text")
+    return problems
