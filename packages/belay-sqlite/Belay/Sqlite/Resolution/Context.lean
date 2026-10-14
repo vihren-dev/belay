@@ -30,18 +30,39 @@ structure ResolveContext where
 it succeeds, or a model restriction. -/
 abbrev StatementResolution := Except Restriction (Resolved.Statement × Catalog)
 
-/-- Whether a DEFAULT expression is constant for SQLite: a literal, a signed
-literal, a time keyword, or an identifier, which SQLite stores as text. A
-comparison, logical operator, aggregate, arithmetic, {lit}`CAST` or a call
-with two or more arguments counts as constant here, so that
-resolution never predicts SQLite's error for it; the model restricts such
-defaults instead ({lit}`Syntax.ColumnConstraint.modeledDefault`). -/
-def constantDefault : Syntax.Expr → Bool
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. => true
-  | .negate operand | .positive operand => constantDefault operand
-  | .equals .. => false
+/-- Whether a name is SQLite's TRUE or FALSE keyword, ignoring ASCII letter case.
+For example, {lean}`booleanKeywordName "TrUe"` is true. Quoting is checked by
+{name}`Syntax.Expr`, separately from this name predicate. -/
+def booleanKeywordName (name : String) : Bool :=
+  ["true", "false"].contains (normalizeIdentifier name)
+
+/-- Preparation eligibility inside the default forms that the model classifies:
+literals, time keywords, signs and equality. Unquoted TRUE and FALSE are constant
+keywords; other nested identifiers are column references. For example,
+{lean}`constantDefaultExpression (.equals (.numeric "1") (.numeric "1"))` is true.
+For the other expression forms, return true to leave their existing model
+restriction in control; true does not establish that SQLite accepts those forms.
+This predicate does not evaluate the default or admit its execution. -/
+def constantDefaultExpression : Syntax.Expr → Bool
+  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ => true
+  | .identifier name doubleQuoted => !doubleQuoted && booleanKeywordName name
+  | .negate operand | .positive operand => constantDefaultExpression operand
+  | .equals left right => constantDefaultExpression left && constantDefaultExpression right
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. => true
   | .arithmetic .. | .cast .. | .callPair .. => true
+
+/-- Preparation eligibility of a written DEFAULT. A bare identifier is permitted:
+TRUE and FALSE are boolean keywords, and other names are stored as text. Other
+expressions use {name}`constantDefaultExpression`, including its permissive
+classification of forms that remain model restrictions. For example,
+{lean}`constantDefault (.identifier "hello" false)` is true. Omit the DEFAULT
+constraint when a column needs no default. -/
+def constantDefault (expression : Syntax.Expr) : Bool :=
+  match expression with
+  | .identifier .. => true
+  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .positive _
+  | .equals .. | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call ..
+  | .arithmetic .. | .cast .. | .callPair .. => constantDefaultExpression expression
 
 /-- Whether the constraint is PRIMARY KEY. -/
 def Syntax.ColumnConstraint.isPrimaryKey : Syntax.ColumnConstraint → Bool
