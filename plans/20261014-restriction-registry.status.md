@@ -1,6 +1,6 @@
 # Status: restriction registry
 
-Created 2026-10-14. Status: DONE (pull request A; the judge pull request that claims corpus 10 follows).
+Created 2026-10-14. Status: DONE (#114; corpus 10 claimed in the judge pull request of slice 3b).
 Task: [task](20261014-restriction-registry.task.md).
 
 Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Values.lean`,
@@ -73,5 +73,4 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Values.lean`,
 
 ## Remaining
 
-- A judge pull request (owner approval) that claims corpus 10 of
-  `conformance/obligation_evidence.py`, with every case `MODEL_UNSUPPORTED`.
+- None. Corpus 10 is claimed in pull request B of slice 3b (2026-10-14).

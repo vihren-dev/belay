@@ -1,6 +1,6 @@
 # Row-dependent writes, slice 3b of ADR 0012
 
-Created 2026-10-14. Status: IN PROGRESS.
+Created 2026-10-14. Status: DONE (pull requests #115 and B).
 Specification: [ADR 0012](../docs/adr-0012-query-semantics.md), "Amendment 1:
 Row-dependent writes (slice 3b)", with the owner decisions of 2026-10-14. Related:
 slice 3a ([task](20261014-writes-with-output.task.md)), the restriction registry
