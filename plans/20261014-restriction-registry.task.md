@@ -2,7 +2,9 @@
 
 Created 2026-10-14. Status: IN PROGRESS.
 Requested by the owner on 2026-10-14, before slice 3b of ADR 0012, so that the
-restrictions of slice 3b are recorded from the start. Related: ADR 0008 (model
+restrictions of slice 3b are recorded from the start, and so that the admission
+obligations are checked by evidence (owner decision on question 3 of the ADR 0012
+amendment, #111). Related: ADR 0008 (model
 restrictions, R7), ADR 0012 and its amendment for row-dependent writes,
 `docs/semantic-subset.md`.
 
@@ -28,6 +30,19 @@ each one is a free-text reason at its resolver call site. After this task:
 5. **A cost report.** A command counts, for each restriction id, the cases of the
    claimed corpora that it makes `MODEL_UNSUPPORTED`, from the subject's predictions
    (`nix-build integrity/judge.nix -A predictions`).
+6. **Mutants name what they guard.** Each mutant of `resolve_mutants.py`,
+   `query_mutants.py`, `number_mutants.py` and `write_mutants.py` names the rule,
+   restriction or obligation that it guards. A test checks that every restriction
+   id and every conjunct of the admission obligations has at least one mutant, and
+   that every mutant names something that exists.
+7. **Obligation mutants and boundary cases.** Each conjunct of `insertReady`,
+   `updateReady` and `statementReady` has a mutant that removes it, and an authored
+   boundary case whose database state is just outside the domain: with the conjunct
+   the case is `MODEL_UNSUPPORTED`, without it the case disagrees with native SQLite.
+   Examples: `1.0` in a column without affinity under the filter `c = 1`; a REAL that
+   equals an integer in a unique key column. The boundary cases form a new coverage
+   corpus for a later judge change (owner decision of 2026-10-14 on question 3 of
+   the ADR 0012 amendment).
 
 ## Tests
 
@@ -39,6 +54,7 @@ each one is a free-text reason at its resolver call site. After this task:
 - A test of the prediction output and of the frontend rejection that the id is
   present.
 - A test of the cost report over a small fixed set of predictions.
+- The mutant link test, and the obligation mutants against their boundary cases.
 
 ## Key points for the implementer
 

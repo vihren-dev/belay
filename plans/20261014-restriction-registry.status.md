@@ -18,6 +18,8 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Values.lean`,
 - 2026-10-14: task and status files created. The owner chose option B for question 1
   of the ADR 0012 amendment (#111): a row-dependent value for a key column is a model
   restriction; this task comes before slice 3b.
+- 2026-10-14: the owner chose no CODEOWNERS change for the obligations (question 3);
+  the task gains mutant-to-rule links, obligation mutants and boundary cases.
 
 ## Remaining
 
