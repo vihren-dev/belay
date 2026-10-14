@@ -20,10 +20,14 @@ DECLARATION = re.compile(r"^(?:@\[[^\]]*\]\s*)?(?:private |protected )?(?:noncom
                          r"(?:def|theorem|abbrev|instance|structure|inductive) ([\w.']+)", re.MULTILINE)
 """The start of a top-level Lean declaration and its name."""
 
+GUARD_KINDS = ("rule", "restriction", "obligation")
+"""The kinds of guard that the module docstring describes, as the prefix before the colon."""
+
 
 def declaration_spans(text: str) -> dict[str, list[tuple[int, int]]]:
     """For each declared name in a Lean source, the character ranges from its declaration
-    to the next declaration or the end of the file."""
+    to the next declaration or the end of the file. A `rule:` guard is valid only when the
+    mutant's text lies in such a range, so the guard names the rule that the mutant changes."""
     starts = list(DECLARATION.finditer(text))
     spans: dict[str, list[tuple[int, int]]] = {}
     for index, match in enumerate(starts):
@@ -50,6 +54,6 @@ def guard_problems(mutants: dict[str, tuple[str, str, str]], guards: dict[str, s
             position = text.find(before)
             if not any(start <= position < end for start, end in declaration_spans(text).get(target, [])):
                 problems.append(f"{name}: its text is not inside the declaration {target} of {path}")
-        elif kind not in ("rule", "restriction", "obligation"):
+        elif kind not in GUARD_KINDS:
             problems.append(f"{name}: {guard} does not start with rule:, restriction: or obligation:")
     return problems
