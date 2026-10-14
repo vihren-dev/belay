@@ -30,4 +30,9 @@ def database : Database := fun position => if position = 0 then some table else 
     [(.column 1, "v")]] { database } ==
   [some ⟨["v"], [[.text [122]], [.text [122]]], some 2⟩]
 
+open Resolved.QueryExamples in
+-- DELETE ... RETURNING v without a filter returns the old value of every row and counts them.
+#guard outputTraceFrom 0 [.delete 0 none [(.column 1, "v")]] { database } ==
+  [some ⟨["v"], table.rows.map (fun row => [row.values.getD 1 .null]), some table.rows.length⟩]
+
 end Belay.Sqlite.Conformance.QueryOutputs
