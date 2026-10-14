@@ -1,5 +1,7 @@
 import Belay.Sqlite.Model
 import Belay.Sqlite.Resolution.QueryForm
+import Belay.Sqlite.Comparison
+import Belay.Sqlite.Summation
 
 set_option doc.verso true
 

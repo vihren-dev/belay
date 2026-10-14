@@ -1,5 +1,5 @@
-import Belay.Sqlite.Comparison
-import Belay.Sqlite.Arithmetic
+import Belay.Sqlite.Declarations
+import Belay.Sqlite.Operators
 
 set_option doc.verso true
 

@@ -1,0 +1,48 @@
+{
+  "caller": "claude",
+  "commit": "9d180e8979e0c960590d32d0d2146ef2e3c3f391",
+  "date": "2026-10-14T14:54:39+00:00",
+  "exit": 0,
+  "files": [
+    "build-support/tests.nix",
+    "conformance/corpus.py",
+    "conformance/replay_support.py",
+    "reviews/20261014T135104Z-f3e1534c/review.json",
+    "reviews/20261014T145218Z-7715711d/resolution-1-20261014T145329Z.json",
+    "reviews/20261014T145218Z-7715711d/resolution-2-20261014T145329Z.json",
+    "reviews/20261014T145218Z-7715711d/review.json",
+    "tests/replay_support_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261014T145439Z-9d180e89#1",
+      "line": 39,
+      "path": "tests/replay_support_test.py",
+      "rule": "R9",
+      "severity": "should",
+      "text": "The new `fake` function has no docstring that explains its purpose. Fix: add a docstring that says it records batch sizes and returns indexed answers to check batching and order."
+    }
+  ],
+  "id": "20261014T145439Z-9d180e89",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "fa2475f44035",
+    "R7": "0a38ead152b1",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

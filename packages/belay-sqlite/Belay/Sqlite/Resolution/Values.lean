@@ -1,4 +1,3 @@
-import Belay.Sqlite.LiteralData
 import Belay.Sqlite.Resolution.Profile
 import Belay.Sqlite.Resolution.Resolved
 import Belay.Sqlite.NumberConvert

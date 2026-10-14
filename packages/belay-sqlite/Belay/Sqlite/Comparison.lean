@@ -1,4 +1,5 @@
 import Belay.Sqlite.Declarations
+import Belay.Sqlite.Operators
 
 set_option doc.verso true
 
@@ -60,26 +61,6 @@ instance : Std.TransCmp compareValues := by
 /-- Whether the value is NULL in a comparison: a NULL, or a NaN REAL. -/
 def Value.isNull (value : Value) : Bool := value.rank == 0
 
-/-- A comparison operator of SQL: the six that give NULL for a NULL operand, and
-{lit}`IS` and {lit}`IS NOT`, which treat two NULLs as equal (R-24731-45773). -/
-inductive Comparison where
-  /-- {lit}`=` or {lit}`==`. -/
-  | eq
-  /-- {lit}`<>` or {lit}`!=`. -/
-  | ne
-  /-- {lit}`<`. -/
-  | lt
-  /-- {lit}`<=`. -/
-  | le
-  /-- {lit}`>`. -/
-  | gt
-  /-- {lit}`>=`. -/
-  | ge
-  /-- {lit}`IS`. -/
-  | is
-  /-- {lit}`IS NOT`. -/
-  | isNot
-  deriving Repr, DecidableEq
 
 /-- Whether an ordering satisfies the operator, for operands that are not NULL. -/
 def Comparison.holds : Comparison → Ordering → Bool

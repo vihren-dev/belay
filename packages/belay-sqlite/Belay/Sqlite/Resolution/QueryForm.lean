@@ -1,5 +1,5 @@
-import Belay.Sqlite.Comparison
-import Belay.Sqlite.Summation
+import Belay.Sqlite.Declarations
+import Belay.Sqlite.Operators
 
 set_option doc.verso true
 
@@ -46,10 +46,10 @@ inductive Aggregate where
   /-- {lit}`MAX(x)`: the greatest operand value that is not NULL, or NULL. -/
   | max (operand : Expr)
   /-- {lit}`SUM(x)`: the sum of the operand values that are not NULL, by
-  {name}`SumState.sumValue`; it fails on an integer overflow. -/
+  {lit}`SumState.sumValue`; it fails on an integer overflow. -/
   | sum (operand : Expr)
   /-- {lit}`AVG(x)`: the average of the operand values that are not NULL, by
-  {name}`SumState.averageValue`. -/
+  {lit}`SumState.averageValue`. -/
   | avg (operand : Expr)
   deriving Repr, DecidableEq
 
