@@ -53,7 +53,9 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Resolved.lean`,
   `conformance/write_mutants.py` has the 5 mutants of the task with their target
   cases; with the query and number mutants, each changes a verdict. `write_evidence.py`
   writes the cases as corpus version 9 for PR B.
+- 2026-10-14: CI timing (forced rebuild, 8 cores): `tests` main 314 s, branch 330 s
+  (+16 s, 5 %); suites alone: `model` 150 s to 160 s, `mutants` 104 s to 119 s.
 
 ## Remaining
 
-- CI timing, PR A; then PR B (judge: claim corpus-v9 and the newly agreeing cases).
+- PR A; then PR B (judge: claim corpus-v9 and the newly agreeing cases).
