@@ -61,8 +61,9 @@ def resolveStatement (context : ResolveContext) (state : ResolveState) (index : 
   | .insert table columns rows => state.withCatalog (resolveInsert context state.catalog index table columns rows [])
   | .update table assignments filter =>
     state.withCatalog (resolveUpdate context state.catalog index table assignments filter [])
-  | .select columns table filter groupBy orderBy limit offset =>
-    state.withCatalog (resolveSelect context state.catalog index columns table filter groupBy orderBy limit offset)
+  | .select columns source joins filter groupBy orderBy limit offset =>
+    state.withCatalog
+      (resolveSelect context state.catalog index columns source joins filter groupBy orderBy limit offset)
   | .delete table filter => state.withCatalog (resolveDelete context state.catalog index table filter [])
   | .returning write columns => match write with
     | .insert table names rows =>

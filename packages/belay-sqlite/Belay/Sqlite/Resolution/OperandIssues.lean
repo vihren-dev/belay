@@ -74,10 +74,10 @@ theorem callIssues (misuse : Bool) (name : String) :
 {name}`resolveOperand` name no catalog object. Proof sketch: induction on the
 expression. A compound expression sequences its operands with {name}`bind_issues`,
 {name}`under_issues` and {name}`condition_issues`, and fails itself only with a
-restriction; a leaf gives {lit}`no such column`, a restriction,
+restriction; a leaf gives {lit}`no such column`, {lit}`ambiguous column name`, a restriction,
 {name}`queryNumeric_issues` or {name}`callIssues`. -/
-theorem resolveOperand_issue (dqs : Bool) (columns : List CatalogColumn) (misuse : Bool)
-    (expression : Syntax.Expr) : IssuesNameNoObject (resolveOperand dqs columns misuse expression) := by
+theorem resolveOperand_issue (dqs : Bool) (scope : Scope) (misuse : Bool)
+    (expression : Syntax.Expr) : IssuesNameNoObject (resolveOperand dqs scope misuse expression) := by
   have pair_match : ∀ (a b : Operand) (build : Resolved.Expr → Resolved.Expr → Resolved.Expr)
       (shift : List Nat → List Nat), IssuesNameNoObject (match affinityIssue a b with
         | some (path, reason) => (Except.error (.restriction (shift path) reason) : Except ValueIssue Operand)
@@ -89,6 +89,11 @@ theorem resolveOperand_issue (dqs : Bool) (columns : List CatalogColumn) (misuse
     intro issue failed; simp only [resolveOperand] at failed; cases failed <;> trivial
   | numeric text => exact map_issues _ (queryNumeric_issues _ _)
   | identifier name doubleQuoted =>
+    intro issue failed
+    simp only [resolveOperand] at failed
+    repeat' split at failed
+    all_goals (cases failed <;> simp [ValueIssue.namesNoObject, PrepareError.namesObject])
+  | qualified source column =>
     intro issue failed
     simp only [resolveOperand] at failed
     repeat' split at failed
@@ -142,10 +147,9 @@ catalog object. Proof sketch: the issue is one of {name}`resolveOperand`. -/
 theorem constantValue_issue (dqs : Bool) (expression : Syntax.Expr) (issue : ValueIssue)
     (failed : constantValue dqs expression = .error issue) : issue.namesNoObject := by
   unfold constantValue at failed
-  simp only [Except.map] at failed
-  split at failed
-  · cases failed; exact resolveOperand_issue _ _ _ _ _ (by assumption)
-  · cases failed
+  cases h : resolveOperand dqs [] true expression with
+  | error cause => rw [h] at failed; cases failed; exact resolveOperand_issue dqs [] true expression _ h
+  | ok _ => rw [h] at failed; cases failed
 
 /-- For every list of computations whose issues name no catalog object, the issues of
 their concatenation in order name none. Proof sketch: induction on the list, with
@@ -160,13 +164,23 @@ theorem concat_issues (results : List (Except ValueIssue (List β)))
     exact bind_issues (each head (by simp)) fun _ =>
       bind_issues (ih fun result member => each result (by simp [member])) fun _ _ failed => by cases failed
 
-/-- For every column, the issues of one {lit}`RETURNING` column name no catalog
-object. Proof sketch: an expression has the issues of {name}`resolveOperand` under a
-path. -/
-theorem returningColumn_issues (dqs : Bool) (columns : List CatalogColumn) (item : Nat)
-    (column : Syntax.ResultColumn) : IssuesNameNoObject (returningColumn dqs columns item column) := by
+/-- For every scope, the issues of {name}`sourceStarColumns` name no catalog object: the
+only one is {name}`PrepareError.noSuchSource`. -/
+theorem sourceStarColumns_issues (scope : Scope) (source : String) :
+    IssuesNameNoObject (sourceStarColumns scope source) := by
+  intro issue failed
+  unfold sourceStarColumns at failed
+  split at failed <;> cases failed
+  simp [ValueIssue.namesNoObject, PrepareError.namesObject]
+
+/-- For every scope, the issues of one {lit}`RETURNING` column name no catalog
+object. Proof sketch: {lit}`source.*` has the issues of {name}`sourceStarColumns_issues`,
+and an expression has the issues of {name}`resolveOperand` under a path. -/
+theorem returningColumn_issues (dqs : Bool) (scope : Scope) (item : Nat)
+    (column : Syntax.ResultColumn) : IssuesNameNoObject (returningColumn dqs scope item column) := by
   cases column with
   | star => intro issue failed; cases failed
+  | sourceStar source => exact sourceStarColumns_issues scope source
   | expression value alias text =>
     simp only [returningColumn]
     exact bind_issues (under_issues _ (resolveOperand_issue _ _ _ _)) fun operand _ failed => by
@@ -175,8 +189,8 @@ theorem returningColumn_issues (dqs : Bool) (columns : List CatalogColumn) (item
 /-- For every list of {lit}`RETURNING` columns, the issues of
 {name}`resolveReturning` name no catalog object. Proof sketch:
 {name}`concat_issues` with {name}`returningColumn_issues` for each column. -/
-theorem resolveReturning_issue (dqs : Bool) (columns : List CatalogColumn) (items : List Syntax.ResultColumn) :
-    IssuesNameNoObject (resolveReturning dqs columns items) := by
+theorem resolveReturning_issue (dqs : Bool) (scope : Scope) (items : List Syntax.ResultColumn) :
+    IssuesNameNoObject (resolveReturning dqs scope items) := by
   apply concat_issues
   intro result member
   obtain ⟨index, bound, equal⟩ := List.mem_mapIdx.1 member

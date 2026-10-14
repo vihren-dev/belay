@@ -1,12 +1,13 @@
-import Belay.Sqlite.Resolution.Writes
+import Belay.Sqlite.Resolution.Sources
 
 set_option doc.verso true
 
-/-! Resolution of a single-table {lit}`SELECT` (ADR 0012, slice 1). The steps follow
-SQLite's resolver: the table, the result columns, {lit}`WHERE`, {lit}`GROUP BY`,
-{lit}`ORDER BY`, then {lit}`LIMIT` and {lit}`OFFSET`. The paths of a restriction use the
-child positions of {lit}`Syntax.Statement.select`: 0 the columns, 2 the filter, 3 the
-grouping terms, 4 the ordering terms, 5 the limit and 6 the offset. -/
+/-! Resolution of a {lit}`SELECT` (ADR 0012, slice 1, and amendment 2 for joins). The
+steps follow SQLite's resolver: the tables of {lit}`FROM` ({lit}`Sources`), the result
+columns, {lit}`WHERE`, the {lit}`ON` conditions, {lit}`GROUP BY`, {lit}`ORDER BY`, then
+{lit}`LIMIT` and {lit}`OFFSET`. The paths of a restriction use the child positions of
+{lit}`Syntax.Statement.select`: 0 the columns, 1 the first table, 2 the joins, 3 the
+filter, 4 the grouping terms, 5 the ordering terms, 6 the limit and 7 the offset. -/
 
 namespace Belay.Sqlite
 
@@ -23,17 +24,21 @@ def integerLiteral : Syntax.Expr → Option Int
     | .numeric text => (numericValue text true).integer?
     | .null | .string _ | .blob _ | .currentTime _ | .identifier .. | .negate _ | .positive _ | .equals ..
     | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast ..
-    | .callPair .. => none
+    | .callPair .. | .qualified .. => none
   | .null | .string _ | .blob _ | .currentTime _ | .identifier .. | .positive _ | .equals .. | .compare ..
-  | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast .. | .callPair .. => none
+  | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast .. | .callPair ..
+  | .qualified .. => none
 
-/-- One resolved result column with its name: {lit}`*` gives every column of the
-table under its defined name; an aggregate is a whole result column; any other
-expression is a scalar. A name is the {lit}`AS` alias, else the defined name of a
-referenced column, else the source text as written. -/
-def resolveResultColumn (dqs : Bool) (columns : List CatalogColumn) (column : Nat) :
+/-- One resolved result column with its names: {lit}`*` gives every column of every
+source under its defined name, {lit}`x.*` every column of source {lit}`x`
+({name}`sourceStarColumns`); an aggregate is a whole result column; any other expression
+is a scalar. A name is the {lit}`AS` alias, else the defined name of a referenced column
+({name}`definedName`), else the source text as written. -/
+def resolveResultColumn (dqs : Bool) (scope : Scope) (column : Nat) :
     Syntax.ResultColumn → Except ValueIssue (List (Resolved.Output × String))
-  | .star => .ok (columns.mapIdx fun position defined => (.scalar (.column position), defined.name))
+  | .star => .ok (scope.columns.mapIdx fun position defined => (.scalar (.column position), defined.name))
+  | .sourceStar source => (sourceStarColumns scope source).map fun columns =>
+      columns.map fun (expression, name) => (.scalar expression, name)
   | .expression value alias text => do
     let named := fun (output : Resolved.Output) (defined : Option String) => [(output, alias.getD (defined.getD text))]
     match value with
@@ -42,16 +47,14 @@ def resolveResultColumn (dqs : Bool) (columns : List CatalogColumn) (column : Na
       else throw ((callIssue name).under [0, column, 0])
     | .call name operand => match aggregateNamed name with
       | some aggregate =>
-        let (resolved, _) ← (resolveOperand dqs columns true operand).mapError (·.under [0, column, 0, 1])
+        let (resolved, _) ← (resolveOperand dqs scope true operand).mapError (·.under [0, column, 0, 1])
         .ok (named (.aggregate (aggregate resolved)) none)
       | none => throw ((callIssue name).under [0, column, 0])
-    | .identifier name _ =>
-      let (resolved, _) ← (resolveOperand dqs columns false value).mapError (·.under [0, column, 0])
-      .ok (named (.scalar resolved) ((columnPosition columns name).bind (columns[·]?.map CatalogColumn.name)))
-    | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .positive _ | .equals ..
-    | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast .. | .callPair .. =>
-      let (resolved, _) ← (resolveOperand dqs columns false value).mapError (·.under [0, column, 0])
-      .ok (named (.scalar resolved) none)
+    | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .qualified .. | .negate _
+    | .positive _ | .equals .. | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast ..
+    | .callPair .. =>
+      let (resolved, _) ← (resolveOperand dqs scope false value).mapError (·.under [0, column, 0])
+      .ok (named (.scalar resolved) (definedName scope value))
 
 /-- The index of the first result column whose alias has the folded name. -/
 def aliasIndex (names : List (Option String)) (name : String) : Option Nat :=
@@ -73,7 +76,7 @@ def namedResult (names : List (Option String)) : Syntax.Expr → Option (Except 
   | term@.null | term@(.numeric _) | term@(.string _) | term@(.blob _) | term@(.currentTime _)
   | term@(.negate _) | term@(.positive _) | term@(.equals ..) | term@(.compare ..) | term@(.and ..)
   | term@(.or ..) | term@(.not _) | term@(.isNull ..) | term@(.callStar _) | term@(.call ..)
-  | term@(.arithmetic ..) | term@(.cast ..) | term@(.callPair ..) =>
+  | term@(.arithmetic ..) | term@(.cast ..) | term@(.callPair ..) | term@(.qualified ..) =>
     (integerLiteral term).map fun (number : Int) =>
       if 1 ≤ number ∧ number ≤ (names.length : Int) then .ok (number.toNat - 1) else .error ()
 
@@ -93,28 +96,25 @@ def windowSkipsFailure (groupBy : List Syntax.Expr) (limit offset : Option Synta
     (outputs : List Resolved.Output) : Bool :=
   !groupBy.isEmpty && (limit.isSome || offset.isSome) && outputs.any Resolved.Output.canFail
 
-/-- Resolve a {lit}`SELECT` from one table; see the module documentation for the steps. -/
+/-- Resolve a {lit}`SELECT`; see the module documentation for the steps. -/
 def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
-    (results : List Syntax.ResultColumn) (tableName : String) (filter : Option Syntax.Expr)
-    (groupBy : List Syntax.Expr) (orderBy : List Syntax.OrderTerm) (limit offset : Option Syntax.Expr) :
-    StatementResolution :=
+    (results : List Syntax.ResultColumn) (source : Syntax.TableReference) (joins : List Syntax.Join)
+    (filter : Option Syntax.Expr) (groupBy : List Syntax.Expr) (orderBy : List Syntax.OrderTerm)
+    (limit offset : Option Syntax.Expr) : StatementResolution :=
   let dqs := context.profile.dqsDml
-  match catalog.findTable tableName with
-  | none =>
-    if reservedName tableName then
-      restrict index [1] .systemTable
-    else prepareError catalog (.noSuchTable tableName)
-  | some (position, table) =>
   let resolved : Except ValueIssue Resolved.Query := do
-    let outputs := (← resolveAll (resolveResultColumn dqs table.columns) results).flatten
+    let (first, tables, scope) ← resolveTables catalog source joins
+    let outputs := (← resolveAll (resolveResultColumn dqs scope) results).flatten
     let aliases := results.flatMap fun
-      | .star => table.columns.map fun _ => none
+      | .star => scope.columns.map fun _ => none
+      | .sourceStar name => ((scope.source? name).map (·.2.map fun _ => none)).getD []
       | .expression _ alias _ => [alias]
     let condition ← match filter with
       | none => pure none
       | some term =>
-        if namesAlias table.columns (aliases.filterMap id) term then throw (aliasInExpression.under [2])
-        else some <$> condition [2] (resolveOperand dqs table.columns true term)
+        if namesAlias scope (aliases.filterMap id) term then throw (aliasInExpression.under [3])
+        else some <$> condition [3] (resolveOperand dqs scope true term)
+    let conditions ← resolveAll (resolveJoinCondition dqs scope) joins
     let aggregate := !groupBy.isEmpty || outputs.any fun (output, _) => match output with
       | .aggregate _ => true
       | .scalar _ => false
@@ -122,37 +122,41 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
       | some (.scalar expression, _) => .ok expression
       | some (.aggregate _, _) | none => .error (.prepare .aggregateInGroupBy)
     let terms ← resolveAll (fun item term => match term with
-      | .identifier name _ => match columnPosition table.columns name, aliasIndex aliases name with
-        | some position, _ => .ok (.column position)
-        | none, some column => grouped column
-        | none, none => (resolveOperand dqs table.columns true term).map (·.1) |>.mapError (·.under [3, item])
+      | .identifier name _ => match scope.matches name, aliasIndex aliases name with
+        | [position], _ => .ok (.column position)
+        | [], some column => grouped column
+        | _, _ => (resolveOperand dqs scope true term).map (·.1) |>.mapError (·.under [4, item])
       | .callStar name | .call name _ =>
-        .error (if aggregateCall term then .prepare .aggregateInGroupBy else (callIssue name).under [3, item])
+        .error (if aggregateCall term then .prepare .aggregateInGroupBy else (callIssue name).under [4, item])
       | .numeric _ | .negate _ => match namedResult aliases term with
         | some (.ok column) => grouped column
         | some (.error ()) => .error (.prepare (.groupByOutOfRange (item + 1) outputs.length))
-        | none => .error (.restriction [3, item] .groupByTerm)
+        | none => .error (.restriction [4, item] .groupByTerm)
+      | .qualified .. => (resolveOperand dqs scope true term).map (·.1) |>.mapError (·.under [4, item])
       | .null | .string _ | .blob _ | .currentTime _ | .positive _ | .equals .. | .compare .. | .and .. | .or ..
       | .not _ | .isNull .. | .arithmetic .. | .cast .. | .callPair .. =>
-        .error (.restriction [3, item] .groupByTerm)) groupBy
+        .error (.restriction [4, item] .groupByTerm)) groupBy
     if aggregate && !outputs.all (groupedOutput terms ·.1) then
       throw (.restriction [0] .bareColumn)
     let order ← resolveAll (fun item (term : Syntax.OrderTerm) => match namedResult aliases term.expression with
       | some (.ok column) => .ok (Resolved.SortKey.output column, term.descending)
       | some (.error ()) => .error (.prepare (.orderByOutOfRange (item + 1) outputs.length))
       | none =>
-        if aggregate then .error (.restriction [4, item] .aggregateOrderBy)
-        else if namesAlias table.columns (aliases.filterMap id) term.expression then
-          .error (aliasInExpression.under [4, item, 0])
-        else (resolveOperand dqs table.columns false term.expression).map (fun (e, _) => (.expression e, term.descending))
-          |>.mapError (·.under [4, item, 0])) orderBy
-    let limitValue ← windowValue [5] limit
-    let offsetValue ← windowValue [6] offset
-    if offsetValue.any (· < 0) then throw (.restriction [6] .negativeOffset)
+        if aggregate then .error (.restriction [5, item] .aggregateOrderBy)
+        else if namesAlias scope (aliases.filterMap id) term.expression then
+          .error (aliasInExpression.under [5, item, 0])
+        else (resolveOperand dqs scope false term.expression).map (fun (e, _) => (.expression e, term.descending))
+          |>.mapError (·.under [5, item, 0])) orderBy
+    let limitValue ← windowValue [6] limit
+    let offsetValue ← windowValue [7] offset
+    if offsetValue.any (· < 0) then throw (.restriction [7] .negativeOffset)
     if windowSkipsFailure groupBy limit offset (outputs.map (·.1)) then
-      throw (.restriction [5] .windowedGroupSum)
-    return { table := position, filter := condition, aggregate, groupBy := terms, columns := outputs.map (·.1),
-             names := outputs.map (·.2), orderBy := order, offset := (offsetValue.getD 0).toNat,
+      throw (.restriction [6] .windowedGroupSum)
+    let resolvedJoins := (joins.zip (tables.zip conditions)).map fun (join, table, on) =>
+      ({ kind := join.resolvedKind, table, condition := on } : Resolved.Join)
+    return { table := first, joins := resolvedJoins, filter := condition, aggregate, groupBy := terms,
+             columns := outputs.map (·.1), names := outputs.map (·.2), orderBy := order,
+             offset := (offsetValue.getD 0).toNat,
              limit := limitValue.bind fun value => if value < 0 then none else some value.toNat }
   match resolved with
   | .ok query => .ok (.query query, catalog)
@@ -161,10 +165,10 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
 /-- For every successful resolution of a {lit}`SELECT`, the catalog is unchanged.
 Proof sketch: every branch of the resolver returns the input catalog. -/
 theorem resolveSelect_same (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (results : List Syntax.ResultColumn) (tableName : String) (filter : Option Syntax.Expr)
-    (groupBy : List Syntax.Expr) (orderBy : List Syntax.OrderTerm) (limit offset : Option Syntax.Expr)
-    (statement : Resolved.Statement)
-    (ok : resolveSelect context catalog index results tableName filter groupBy orderBy limit offset =
+    (results : List Syntax.ResultColumn) (source : Syntax.TableReference) (joins : List Syntax.Join)
+    (filter : Option Syntax.Expr) (groupBy : List Syntax.Expr) (orderBy : List Syntax.OrderTerm)
+    (limit offset : Option Syntax.Expr) (statement : Resolved.Statement)
+    (ok : resolveSelect context catalog index results source joins filter groupBy orderBy limit offset =
       .ok (statement, after)) :
     after = catalog := by
   unfold resolveSelect at ok

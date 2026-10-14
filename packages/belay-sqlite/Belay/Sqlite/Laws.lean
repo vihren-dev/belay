@@ -74,9 +74,9 @@ theorem literal_cases (statement : Resolved.Statement) (database : Database) (po
   | createIndex _ _ _ => simp [literalStep, step]
   | query query =>
     simp only [literalStep, step]
-    cases database query.table with
+    cases query.source database with
     | none => simp
-    | some table => cases h : query.fails table <;> simp [h]
+    | some rows => cases h : query.fails rows <;> simp [h]
   | prepareError _ => simp [literalStep, step]
   | begin => simp [literalStep, step]
   | commit => simp [literalStep, step]

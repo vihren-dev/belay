@@ -135,25 +135,54 @@ def records (query : Query) (rows : List (List Value)) : List Record :=
 def sourceRows (table : Table) : List (List Value) :=
   (stableSort (fun a b => decide (a.rowid ≤ b.rowid)) table.rows).map Row.values
 
+/-- The rows of a join for one left row: the concatenation with each row of the joined
+table in rowid order for which the {lit}`ON` condition is true (R-44414-54710,
+R-38465-03616). -/
+def joinMatches (row : List Value) (join : Join) (table : Table) : List (List Value) :=
+  (sourceRows table).filterMap fun cells =>
+    let joined := row ++ cells
+    if join.condition.all fun condition => truthy (condition.eval joined) then some joined else none
+
+/-- The rows that one left row gives in a join: its {name}`joinMatches`; for a left join
+without a match, one row with NULL in every column of the joined table (R-24610-05866). -/
+def joinRow (join : Join) (table : Table) (row : List Value) : List (List Value) :=
+  match join.kind with
+  | .inner => joinMatches row join table
+  | .left =>
+    if (joinMatches row join table).isEmpty then [row ++ List.replicate table.shape.columns.length .null]
+    else joinMatches row join table
+
+/-- The rows of a join after the rows so far: the rows of {name}`joinRow` for each left
+row, in order. -/
+def joinRows (left : List (List Value)) (join : Join) (table : Table) : List (List Value) :=
+  left.flatMap (joinRow join table)
+
+/-- The source rows of a query over a database: the rows of the first table in rowid
+order, joined with each join's table in order ({name}`joinRows`); none when a table is
+missing. A query of one table has the rows of {name}`sourceRows`. -/
+def Query.source (query : Query) (database : Database) : Option (List (List Value)) := do
+  let first ← database query.table
+  query.joins.foldlM (fun rows join => (database join.table).map (joinRows rows join)) (sourceRows first)
+
 /-- The rows that the {lit}`WHERE` condition keeps: those where it is true. -/
 def filtered (query : Query) (rows : List (List Value)) : List (List Value) :=
   rows.filter fun row => query.filter.all fun condition => truthy (condition.eval row)
 
-/-- The result rows of a query over a table: filter, groups and columns, a stable
-sort by the {lit}`ORDER BY` terms, then the window. -/
-def Query.run (query : Query) (table : Table) : List (List Value) :=
+/-- The result rows of a query over its source rows ({name}`Query.source`): filter,
+groups and columns, a stable sort by the {lit}`ORDER BY` terms, then the window. -/
+def Query.run (query : Query) (rows : List (List Value)) : List (List Value) :=
   let directions := query.orderBy.map Prod.snd
   let sorted := stableSort (fun a b => (compareSort directions a.2 b.2).isLE)
-    (records query (filtered query (sourceRows table)))
+    (records query (filtered query rows))
   let window := sorted.drop query.offset
   (match query.limit with | some limit => window.take limit | none => window).map Prod.fst
 
-/-- Whether a query fails over a table, so that SQLite stops the statement with the
+/-- Whether a query fails over its source rows, so that SQLite stops the statement with the
 {lit}`integer overflow` error: an aggregate query without {lit}`LIMIT 0` in which an
 aggregate of a result column fails ({name}`Aggregate.fails`) for some group. With
 {lit}`LIMIT 0`, SQLite skips the evaluation and returns no rows. -/
-def Query.fails (query : Query) (table : Table) : Bool :=
-  query.aggregate && query.limit != some 0 && (queryGroups query (filtered query (sourceRows table))).any fun group =>
+def Query.fails (query : Query) (rows : List (List Value)) : Bool :=
+  query.aggregate && query.limit != some 0 && (queryGroups query (filtered query rows)).any fun group =>
     query.columns.any fun
       | .aggregate aggregate => aggregate.fails group
       | .scalar _ => false

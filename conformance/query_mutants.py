@@ -18,6 +18,8 @@ RESOLUTION = SQLITE + "Resolution/Queries.lean"
 """The resolution of a SELECT."""
 EXPRESSIONS = SQLITE + "Resolution/QueryExprs.lean"
 """The resolution of query expressions."""
+SOURCES = SQLITE + "Resolution/Sources.lean"
+"""The resolution of the tables of FROM."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "null_equals_null": (COMPARISON,
@@ -46,13 +48,13 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "offset_ignored": (EVALUATION, "let window := sorted.drop query.offset", "let window := sorted"),
     "no_such_column": (EXPRESSIONS,
         "      else .error (.prepare (.noSuchColumn name))", "      else .ok (.literal .null, none)"),
-    "no_such_table": (RESOLUTION,
-        "    else prepareError catalog (.noSuchTable tableName)", "    else restrict index [1] .systemTable"),
+    "no_such_table": (SOURCES,
+        "    else .error (.prepare (.noSuchTable reference.table))", "    else .error (.restriction path .systemTable)"),
     "no_misuse_of_aggregate": (EXPRESSIONS,
         "  if misuse then .prepare (.misuseOfAggregate function)", "  if false then .prepare (.misuseOfAggregate function)"),
     "no_aggregate_in_group_by": (RESOLUTION,
-        ".error (if aggregateCall term then .prepare .aggregateInGroupBy else (callIssue name).under [3, item])",
-        ".error ((callIssue name).under [3, item])"),
+        ".error (if aggregateCall term then .prepare .aggregateInGroupBy else (callIssue name).under [4, item])",
+        ".error ((callIssue name).under [4, item])"),
     "no_order_by_out_of_range": (RESOLUTION,
         "      | some (.error ()) => .error (.prepare (.orderByOutOfRange (item + 1) outputs.length))",
         "      | some (.error ()) => .error (.restriction [4, item] .aggregateOrderBy)"),
@@ -89,7 +91,7 @@ GUARDS: dict[str, str] = {
     "limit_one_too_high": "rule:Query.run",
     "offset_ignored": "rule:Query.run",
     "no_such_column": "rule:resolveOperand",
-    "no_such_table": "rule:resolveSelect",
+    "no_such_table": "rule:resolveTableReference",
     "no_misuse_of_aggregate": "rule:aggregateIssue",
     "no_aggregate_in_group_by": "rule:resolveSelect",
     "no_order_by_out_of_range": "rule:resolveSelect",

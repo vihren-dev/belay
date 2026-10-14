@@ -110,7 +110,7 @@ def statementOutput (statement : Resolved.Statement) (before : SqlState)
       return ⟨names, returnedRows returning (chosen.map (·.values)), some chosen.length⟩
     else none
   | .query query =>
-    if successful then (before.database query.table).map fun table => ⟨query.names, query.run table, none⟩
+    if successful then (query.source before.database).map fun rows => ⟨query.names, query.run rows, none⟩
     else if overflow && query.groupBy.isEmpty then some ⟨query.names, [], none⟩ else none
   | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ =>
     some ⟨[], [], none⟩

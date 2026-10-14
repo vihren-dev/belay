@@ -28,6 +28,9 @@ inductive Expr where
   /-- An identifier. {name}`Expr.identifier` records whether it was written in
   double quotes, which decides SQLite's double-quoted-string fallback. -/
   | identifier (name : String) (doubleQuoted : Bool)
+  /-- A qualified column name {lit}`source.column`, with both names as written. The
+  source is a table name or an alias. -/
+  | qualified (source column : String)
   /-- Unary minus. -/
   | negate (operand : Expr)
   /-- Unary plus, which SQLite keeps as a no-op. -/
@@ -100,10 +103,51 @@ inductive TableConstraint where
 optional {lit}`AS` alias and its source text as written, which SQLite uses as the
 column name when there is no alias. -/
 inductive ResultColumn where
-  /-- {lit}`*`: every column of the table. -/
+  /-- {lit}`*`: every column of every source. -/
   | star
+  /-- {lit}`source.*`: every column of the source with this name, as written. -/
+  | sourceStar (source : String)
   /-- An expression, its alias, and its source text. -/
   | expression (value : Expr) (alias : Option String) (text : String)
+  deriving Repr, DecidableEq
+
+/-- A table in {lit}`FROM`: its name and its optional alias, both as written. Use
+{lean}`(none : Option String)` for no alias. -/
+structure TableReference where
+  /-- The table name. -/
+  table : String
+  /-- The alias of {lit}`table AS alias` or {lit}`table alias`. -/
+  alias : Option String
+  deriving Repr, DecidableEq
+
+/-- The kind of a join that Lean reads from its operator: an inner join ({lit}`,`,
+{lit}`JOIN`, {lit}`INNER JOIN` or {lit}`CROSS JOIN`), or a left, right or full outer
+join. -/
+inductive JoinKind where
+  /-- An inner join. -/
+  | inner
+  /-- {lit}`LEFT [OUTER] JOIN`. -/
+  | left
+  /-- {lit}`RIGHT [OUTER] JOIN`. -/
+  | right
+  /-- {lit}`FULL [OUTER] JOIN`. -/
+  | full
+  deriving Repr, DecidableEq
+
+/-- One join of {lit}`FROM` after the first table: the keywords of its operator, the
+joined table, its optional {lit}`ON` condition and its optional {lit}`USING` column
+names. For {lit}`, t` the operator has no keywords and all optional parts are absent. -/
+structure Join where
+  /-- The keywords of the join operator before {lit}`JOIN`, as written, such as
+  {lean}`["LEFT", "outer"]`; empty for {lit}`,` and a plain {lit}`JOIN`. Lean reads the
+  kind of the join from them, so the frontend does not fold their case. -/
+  operator : List String
+  /-- The joined table. -/
+  source : TableReference
+  /-- The {lit}`ON` condition. -/
+  condition : Option Expr
+  /-- The {lit}`USING` column names, as written. -/
+  usingColumns : Option (List String)
   deriving Repr, DecidableEq
 
 /-- One {lit}`ORDER BY` term: an expression, and whether it is {lit}`DESC`. -/
@@ -148,11 +192,12 @@ inductive Statement where
   | update (table : String) (assignments : List (String × Expr)) (filter : Option Expr)
   /-- {lit}`DELETE FROM table [WHERE filter]`. -/
   | delete (table : String) (filter : Option Expr)
-  /-- {lit}`SELECT columns FROM table [WHERE filter] [GROUP BY terms] [ORDER BY terms]
-  [LIMIT limit [OFFSET offset]]`, from one table. An omitted clause is
-  {lit}`none` or an empty list; {lit}`LIMIT offset, limit` gives both expressions. -/
-  | select (columns : List ResultColumn) (table : String) (filter : Option Expr) (groupBy : List Expr)
-      (orderBy : List OrderTerm) (limit : Option Expr) (offset : Option Expr)
+  /-- {lit}`SELECT columns FROM source joins [WHERE filter] [GROUP BY terms] [ORDER BY terms]
+  [LIMIT limit [OFFSET offset]]`: the first table of {lit}`FROM` and the joins after it, in
+  order; one table has no joins. An omitted clause is {lit}`none` or an empty list;
+  {lit}`LIMIT offset, limit` gives both expressions. -/
+  | select (columns : List ResultColumn) (source : TableReference) (joins : List Join) (filter : Option Expr)
+      (groupBy : List Expr) (orderBy : List OrderTerm) (limit : Option Expr) (offset : Option Expr)
   /-- A write with {lit}`RETURNING columns`: an {lit}`INSERT`, {lit}`UPDATE` or
   {lit}`DELETE` and its result columns. A write without {lit}`RETURNING` is the statement
   alone, so its record does not change. -/

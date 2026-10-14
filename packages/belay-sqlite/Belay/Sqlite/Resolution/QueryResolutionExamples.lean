@@ -18,7 +18,7 @@ def catalog : Catalog :=
 /-- A {lit}`SELECT` from {lit}`t` with the given parts. -/
 def select (columns : List ResultColumn) (filter : Option Expr := none) (groupBy : List Expr := [])
     (orderBy : List OrderTerm := []) (limit offset : Option Expr := none) : Syntax.Statement :=
-  .select columns "t" filter groupBy orderBy limit offset
+  .select columns { table := "t", alias := none } [] filter groupBy orderBy limit offset
 
 /-- A result column written as an expression without an alias. -/
 def written (value : Expr) (text : String) : ResultColumn := .expression value none text
@@ -52,7 +52,7 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
   (·.names) == some ["n", "count(*)"]
 -- Names that SQLite refuses while it prepares the query.
 #guard errorOf (select [written (.identifier "missing" false) "missing"]) == some (.noSuchColumn "missing")
-#guard errorOf (.select [.star] "absent" none [] [] none none) == some (.noSuchTable "absent")
+#guard errorOf (.select [.star] { table := "absent", alias := none } [] none [] [] none none) == some (.noSuchTable "absent")
 #guard errorOf (select [.star] (filter := some (.equals (.callStar "count") (.numeric "1")))) ==
   some (.misuseOfAggregate "count")
 #guard errorOf (select [written (.call "MAX" (.call "min" (.identifier "b" false))) "MAX(min(b))"]) ==
@@ -62,7 +62,7 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
 #guard errorOf (select [written (.callStar "COUNT") "COUNT(*)"] (groupBy := [.numeric "1"])) == some .aggregateInGroupBy
 #guard restrictedOne (select [written (.call "group_concat" (.identifier "b" false)) "group_concat(b)"])
 -- SQLite's own tables are not in the catalog; querying one is a model restriction.
-#guard restrictedOne (.select [.star] "sqlite_master" none [] [] none none)
+#guard restrictedOne (.select [.star] { table := "sqlite_master", alias := none } [] none [] [] none none)
 -- A declared type that is a standard type name is kept in capitals, as SQLite reports it.
 #guard reportedType (some "int") == some "INT" && reportedType (some "VarChar(10)") == some "VarChar(10)"
 -- A double-quoted name that names no column is a string literal.

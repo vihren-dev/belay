@@ -84,13 +84,37 @@ inductive SortKey where
   | output (index : Nat)
   deriving Repr, DecidableEq
 
-/-- A resolved single-table {lit}`SELECT`: the table's catalog position, the
-{lit}`WHERE` condition, whether it is an aggregate query with its grouping terms,
+/-- The kind of a resolved join: inner, or left outer. -/
+inductive JoinKind where
+  /-- An inner join: the rows of the product for which the condition is true. -/
+  | inner
+  /-- A left outer join: the inner join, and each left row that no right row matches,
+  with NULL in every right column. -/
+  | left
+  deriving Repr, DecidableEq
+
+/-- One resolved join after the first table: its kind, the catalog position of the
+joined table, and its {lit}`ON` condition over the joined row so far and the new table;
+{lean}`(none : Option Expr)` for no condition. -/
+structure Join where
+  /-- The kind of the join. -/
+  kind : JoinKind
+  /-- The catalog position of the joined table. -/
+  table : Nat
+  /-- The {lit}`ON` condition, over the cells of the tables up to this one. -/
+  condition : Option Expr
+  deriving Repr, DecidableEq
+
+/-- A resolved {lit}`SELECT`: the first table's catalog position and the joins after
+it, the {lit}`WHERE` condition, whether it is an aggregate query with its grouping terms,
 the result columns with their names, the {lit}`ORDER BY` terms with a flag for
 {lit}`DESC`, and the window. Use {lean}`(none : Option Nat)` for no {lit}`LIMIT`. -/
 structure Query where
-  /-- The catalog position of the source table. -/
+  /-- The catalog position of the first source table. -/
   table : Nat
+  /-- The joins after the first table, in order; empty for a query of one table. An
+  expression names a cell by its position in the concatenated row of all tables. -/
+  joins : List Join := []
   /-- The {lit}`WHERE` condition, or {lean}`(none : Option Expr)` for every row. -/
   filter : Option Expr
   /-- Whether the query is an aggregate query: it has {lit}`GROUP BY` or an aggregate. -/

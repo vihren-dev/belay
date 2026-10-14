@@ -35,7 +35,7 @@ def test_select_keeps_columns_text_and_clauses(parse_sql: Callable[..., Tree]) -
                     {"expression": {"value": {"compare": {"operator": "ne", "left": column("b"),
                                                           "right": {"numeric": {"text": "1"}}}},
                                     "alias": None, "text": "b  <>  1"}}],
-        "table": "t",
+        "source": {"table": "t", "alias": None}, "joins": [],
         "filter": {"and": {"left": {"compare": {"operator": "isNot", "left": column("a"), "right": "null"}},
                            "right": {"not": {"operand": {"compare": {"operator": "lt", "left": column("b"),
                                                                      "right": {"numeric": {"text": "2"}}}}}}}},
@@ -57,11 +57,11 @@ def test_postfix_null_tests_map_to_is_null(parse_sql: Callable[..., Tree], sql: 
 
 @pytest.mark.parametrize(("sql", "refused"), [
     ("SELECT 1;", "SELECT 1"), ("SELECT DISTINCT a FROM t;", "DISTINCT"),
-    ("SELECT a FROM t GROUP BY a HAVING a > 1;", "HAVING a > 1"), ("SELECT t.* FROM t;", "t.*"),
-    ("SELECT a FROM t, u;", "t,"), ("SELECT a FROM t ORDER BY a NULLS LAST;", "NULLS LAST"),
+    ("SELECT a FROM t GROUP BY a HAVING a > 1;", "HAVING a > 1"), ("SELECT main.t.a FROM t;", "main.t.a"),
+    ("SELECT a FROM main.t;", ".t"), ("SELECT a FROM t ORDER BY a NULLS LAST;", "NULLS LAST"),
     ("SELECT random() FROM t;", "random()"), ("SELECT count(DISTINCT a) FROM t;", "DISTINCT"),
     ("SELECT a FROM t UNION SELECT a FROM t;", "SELECT a FROM t UNION SELECT a FROM t"),
-    ("SELECT a || 1 FROM t;", "a || 1"), ("SELECT a FROM t AS s;", "AS s"),
+    ("SELECT a || 1 FROM t;", "a || 1"), ("SELECT a FROM (SELECT 1 AS a);", "(SELECT 1 AS a)"),
 ])
 def test_query_syntax_outside_the_slice_is_unsupported_at_its_range(
         parse_sql: Callable[..., Tree], sql: str, refused: str) -> None:
@@ -122,6 +122,25 @@ def test_delete_forms_outside_the_slice_are_refused(parse_sql: Callable[..., Tre
         statements(parse_sql(sql))
     assert raised.value.status == "UNSUPPORTED"
     assert sql.encode()[raised.value.start:raised.value.end].decode() == refused
+
+
+def test_joins_map_sources_kinds_and_conditions(parse_sql: Callable[..., Tree]) -> None:
+    """`syntax_sources.from_clause`: the first table with its alias, then each join with its
+    operator keywords as written, its table and its ON condition or USING names; `x.c` and
+    `x.*` map to their constructors (slice 4)."""
+    [query] = [item.value for item in statements(parse_sql(
+        "SELECT x.a, u.* FROM t AS x Left JOIN u ON x.a = u.a, v NATURAL join w CROSS JOIN y USING (b);"))]
+    select = query["select"]
+    assert select["source"] == {"table": "t", "alias": "x"}
+    assert select["columns"][0]["expression"]["value"] == {"qualified": {"source": "x", "column": "a"}}
+    assert select["columns"][1] == {"sourceStar": {"source": "u"}}
+    on = {"equals": {"left": {"qualified": {"source": "x", "column": "a"}},
+                     "right": {"qualified": {"source": "u", "column": "a"}}}}
+    assert select["joins"] == [
+        {"operator": ["Left"], "source": {"table": "u", "alias": None}, "condition": on, "usingColumns": None},
+        {"operator": [], "source": {"table": "v", "alias": None}, "condition": None, "usingColumns": None},
+        {"operator": ["NATURAL"], "source": {"table": "w", "alias": None}, "condition": None, "usingColumns": None},
+        {"operator": ["CROSS"], "source": {"table": "y", "alias": None}, "condition": None, "usingColumns": ["b"]}]
 
 
 def test_upsert_stays_refused(parse_sql: Callable[..., Tree]) -> None:
