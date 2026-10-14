@@ -603,3 +603,29 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of the completed T14 representation and codec changes.
+
+
+- 2026-10-15: The working copy now carries each default's source text from
+  frontend syntax through the catalog to Native.columnMatches and
+  Predict.nativeColumn. The judge and native recorder are unchanged.
+  The runtime builds, the generated-source round trip passes, and all 795
+  public declarations have checked documentation. A constructor-based Repr
+  fixes invalid indentation from printing the new nested default record.
+
+  The focused run passes 48 frontend checks. For each of five affinities,
+  the first 11 admission cases agree and their generated terms pass the
+  kernel. This includes the previously lost blob casing and sign spacing.
+  All five parameters then fail at the bracket-quoted [true] default.
+  The expression tree marks it as not double-quoted, so the literal evaluator
+  still treats it as the boolean keyword. Preserve this quote distinction
+  in default evaluation next. The changed transport also needs its version
+  updated before acceptance. Production and test edits remain uncommitted
+  because the admission suite is not yet passing.
+
+  Evidence: build/t14-default-spelling-build-20261015.log and
+  build/t14-default-spelling-focused-20261015.log (five failed, 48 passed
+  in 89.03 seconds). The temporary generated-source diagnostic was removed.
+
+Decisions waiting for the owner:
+
+- Final review of the completed T14 representation and codec changes.
