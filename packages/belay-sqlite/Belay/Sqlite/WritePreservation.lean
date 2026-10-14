@@ -82,7 +82,8 @@ theorem Table.Valid.updated {table : Table} (valid : table.Valid) (assignments :
   · exact ⟨rowid, width, stored⟩
 
 /-- For every table and value rows, every row of the table is a row of
-{name}`LiteralData.inserted`: INSERT only appends. -/
+{name}`LiteralData.inserted`: INSERT only appends. Proof sketch: induction on the value
+rows; each {name}`LiteralData.insertRow` keeps the old rows before the new one. -/
 theorem LiteralData.mem_inserted {table : Table} {rows : List (List Value)} {row : Row}
     (member : row ∈ table.rows) : row ∈ (inserted table rows).rows := by
   induction rows generalizing table with
@@ -90,7 +91,8 @@ theorem LiteralData.mem_inserted {table : Table} {rows : List (List Value)} {row
   | cons values rest ih =>
     exact ih (by simp [insertRow, member])
 
-/-- For every table and value rows, {name}`LiteralData.inserted` keeps the shape. -/
+/-- For every table and value rows, {name}`LiteralData.inserted` keeps the shape. Proof
+sketch: induction on the value rows; each {name}`LiteralData.insertRow` keeps the shape. -/
 theorem LiteralData.inserted_shape (table : Table) (rows : List (List Value)) :
     (inserted table rows).shape = table.shape := by
   induction rows generalizing table with
@@ -123,7 +125,9 @@ theorem Table.Valid.inserted {table : Table} {rows : List (List Value)} (valid :
 /-- For every profile, catalog, database, write position, result table, keys and
 statement position: assume {name}`Conforms`, a table at the write position with the
 result's shape, and a valid result. Then the database of {name}`checkedWrite` conforms:
-it stores the result, or keeps the input database on a constraint failure. -/
+it stores the result, or keeps the input database on a constraint failure. Proof
+sketch: the success branch is {name}`Conforms.replaceRows`; the failure branch keeps the
+database. -/
 theorem checkedWrite_conforms {old result : Table} (conforms : Conforms profile catalog database)
     (present : database at_ = some old) (shape : result.shape = old.shape) (valid : result.Valid)
     (keys : List (List Nat)) (position : Nat) :
