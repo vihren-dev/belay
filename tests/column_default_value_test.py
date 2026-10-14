@@ -7,7 +7,7 @@ import pytest
 
 from belay.sqlite.quoted_text import quoted_string
 from conformance.case_format import Json, cell_wire
-from conformance.native_connection import Connection, library_path
+from conformance.native_connection import Connection, NativeError, library_path
 from conformance.native_library import library_binary, load_library
 from tests.shared_table_shape_test import compile_checks
 
@@ -62,3 +62,39 @@ open Belay.Sqlite Lean
 '''
     actual = json.loads(compile_checks(source, tmp_path, lean_sysroot, lean_libraries))
     assert actual == expected, {"defaults": [sql for sql, _ in CASES], "actual": actual, "expected": expected}
+
+
+@pytest.mark.parametrize("version", ["3.51.0", "3.46.0"])
+@pytest.mark.parametrize("negated", [False, True])
+def test_oversized_hex_default_prepare_error(version: str, negated: bool, tmp_path: Path,
+        lean_sysroot: Path, lean_libraries: tuple[Path, Path]) -> None:
+    """fullRow preserves SQLite's prepare error for an oversized hexadecimal default."""
+    token = "0x1ffffffffffffffff"
+    sql = ("-" if negated else "") + token
+    connection = Connection(load_library(library_path(library_binary(version)), version),
+                            tmp_path / "native.db")
+    try:
+        connection.execute_script(f"CREATE TABLE t(id BLOB, added BLOB DEFAULT {sql});")
+        with pytest.raises(NativeError) as failure:
+            connection.query("INSERT INTO t(id) VALUES(7);")
+        error = failure.value
+        assert error.code == 1 and error.phase == "prepare"
+        expected = [error.phase, str(error)]
+    finally:
+        connection.close()
+    expression = f'.numeric "{token}"'
+    if negated:
+        expression = f".negate ({expression})"
+    source = f'''import Belay.Sqlite.Codec
+import Belay.Sqlite.Resolution.Writes
+import Belay.Sqlite.Resolution.Messages
+open Belay.Sqlite Lean
+#eval do
+  let columns : List CatalogColumn := [{{name := "id", declaredType := none}},
+    {{name := "added", declaredType := none, defaultValue := some ({expression})}}]
+  match fullRow columns [0] [.integer 7] with
+  | .error (.prepare error) =>
+    IO.println (toJson ["prepare", error.message]).compress
+  | _ => throw (IO.userError "expected the default's preparation error")
+'''
+    assert json.loads(compile_checks(source, tmp_path, lean_sysroot, lean_libraries)) == expected

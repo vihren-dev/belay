@@ -506,3 +506,24 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of the completed T14 representation and codec changes.
+
+
+- 2026-10-14: Review 20261014T161238Z-4c9108df found no required changes
+  and two recommendations for the hexadecimal error path. The documentation
+  now identifies this as SQLite's preparation error. Four new comparisons
+  cover positive and negative oversized hexadecimal defaults on both engines.
+  SQLite accepts each table definition and rejects the omitted-value INSERT
+  during preparation; fullRow produces the matching preparation error and
+  message. All four pass in build/t14-literal-hex-review-checked-20261014.log.
+  The first test attempt imported a conformance module outside the fixture's
+  library path; the corrected test imports the model's error messages directly.
+
+  All 791 public declarations compile in
+  build/t14-literal-review-docs-20261014.log. Both findings are recorded as
+  fixed. Production behavior is unchanged from the passing 143-test run;
+  the four added cases have fresh focused results. Independent review of
+  this correction follows its commit.
+
+Decisions waiting for the owner:
+
+- Final review of the completed T14 representation and codec changes.
