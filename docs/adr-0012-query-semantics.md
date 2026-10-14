@@ -530,12 +530,7 @@ joins in `DELETE` stay refused.
 
 ### Open questions
 
-1. **`USING` and `NATURAL`.** SQLite merges the named columns: the right column is
-   omitted from `*` (R-57047-10461), and an unqualified name refers to the left one.
-   Options: (A) model both in slice 4; (B) refuse both as model restrictions and
-   decide them in a later slice; (C) model `USING` only. Recommendation: B. They
-   change the column list of `*` and name resolution, and most migrations write
-   `ON`.
+1. **`USING` and `NATURAL`.** Decided; see "Owner decisions".
 2. **`RIGHT` and `FULL` joins.** SQLite 3.39 added them (R-15753-04279,
    R-18902-30764), and item 4 names only inner and left joins. Options: (A) model
    them; (B) refuse them as model restrictions. Recommendation: B.
@@ -549,3 +544,17 @@ joins in `DELETE` stay refused.
    beyond SQLite's; (B) a model restriction above a small number of tables, such
    as 4. Recommendation: A, with the authored cases kept small; the model evaluates
    only what a case runs.
+
+### Owner decisions
+
+1. **`USING` and `NATURAL`.** Decided on 2026-10-14: both are modeled, in a slice
+   4b right after slice 4; slice 4 refuses them as model restrictions. SQLite merges
+   the named columns: the right column is omitted from `*` (R-57047-10461), and an
+   unqualified name refers to the left one; `t.a` and `u.a` still name both columns.
+   `USING (a)` compares the left-most column `a` of the left input with the right
+   column, and an unqualified `a` that names two left columns stays
+   `ambiguous column name: a`. A name in `USING` that is not in both inputs is
+   `cannot join using column a - column not present in both tables`; `NATURAL` with
+   `ON` or `USING` is `a NATURAL join may not have an ON or USING clause`; `NATURAL`
+   without a common column is a cross join. Slice 4b adds no evaluation: its joins
+   are inner and left joins with a generated `ON` condition.
