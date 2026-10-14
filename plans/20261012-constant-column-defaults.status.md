@@ -578,3 +578,28 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of the completed T14 representation and codec changes.
+
+
+- 2026-10-15: Catalog admission builds, including the 791 checked public
+  declarations. Its focused run fails all five affinity parameters; 15 other
+  checks pass. The first NULL-default case disagrees because Native.columnMatches
+  and Predict.nativeColumn still handle only CURRENT_TIMESTAMP. This is not a
+  passing feature checkpoint. The admission edits remain in the working copy.
+
+  A bounded probe with the pinned runtime confirms that X'00ff' and x'00FF'
+  produce the same expression tree but different native default metadata.
+  The same loss occurs for - 7 and -7. Bracketed and backtick-quoted true
+  also lose their quote kind. Evidence is in
+  build/t14-default-spelling-20261015.json. The next change must preserve
+  source spelling through syntax, codecs and catalog before extending the
+  two conformance adapters. The judge and its lock remain unchanged.
+  The pending admission test now includes these spelling cases.
+
+  Build and failure logs are build/t14-default-admission-build-20261014.log
+  and build/t14-default-admission-focused-20261014.log. The initial spelling
+  probe used unsupported INSERT DEFAULT VALUES; its corrected run uses
+  SELECT and all ten cases reach the frontend successfully.
+
+Decisions waiting for the owner:
+
+- Final review of the completed T14 representation and codec changes.

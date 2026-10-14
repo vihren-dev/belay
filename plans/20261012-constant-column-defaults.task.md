@@ -73,6 +73,13 @@ model must preserve this distinction or refuse the unmodeled form through
 its supported-domain check. It must not predict an ADD failure for an
 empty table merely to avoid modeling the form.
 
+Default metadata must preserve the source spelling that SQLite reports through
+PRAGMA table_xinfo. Blob letter case, whitespace after a sign and identifier
+quote delimiters are lost by the current expression tree. Retain that syntax
+through the frontend, codec and catalog; do not normalize the judge or copy
+recorded observations into predictions. Quoted boolean names must retain enough
+information to distinguish them from unquoted TRUE and FALSE.
+
 Final owner review is required for column-representation, codec and any
 trust-relevant changes. No such production change is made in the native
 investigation checkpoint.
