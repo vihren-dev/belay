@@ -81,6 +81,11 @@ review-resolve *args:
 judge-lock:
     nix-instantiate --eval --strict --json integrity/judge.nix -A current | python3 -m json.tool --sort-keys --indent 1
 
+# Count the claimed-corpus cases that each model restriction keeps out of scope.
+restriction-costs:
+    timeout 1800 nix-build integrity/judge.nix -A predictions --out-link build/predictions --extra-experimental-features 'nix-command flakes' >&2
+    python3 -m conformance.restriction_costs --predictions build/predictions
+
 # Run the locked judge on this commit's subject, as the verdict job does.
 verdict:
     timeout 1800 nix-build integrity/judge.nix -A verdict --out-link build/verdict

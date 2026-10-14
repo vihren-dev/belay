@@ -33,7 +33,12 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Values.lean`,
   distinct ids; tests of the id in the CLI report and the prediction output. The
   prediction test found a message regression from slice 3a: a REAL value in a write
   reported `affinity-conversion`; `storedValue` now reports `real-value` for it.
+- 2026-10-14: `conformance/restriction_costs.py` and `just restriction-costs` count the
+  claimed-corpus cases out of scope by restriction id, by frontend refusal and as
+  undeclared. First result: frontend refusals dominate (statements not modeled 968,
+  SELECT without FROM 483, column constraints 422, table options 313); the largest
+  registry restrictions are `rowid-alias` 101 and `unmodeled-function` 85.
 
 ## Remaining
 
-- Cost report; mutant links; obligation mutants and boundary cases.
+- Mutant links; obligation mutants and boundary cases.
