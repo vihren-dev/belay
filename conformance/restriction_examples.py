@@ -34,7 +34,7 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "row-dependent-key": ("CREATE TABLE t(a INTEGER UNIQUE);", "UPDATE t SET a = a + 1;"),
     "insert-column-twice": ("CREATE TABLE t(a INTEGER);", "INSERT INTO t(a, a) VALUES (1, 2);"),
     "update-column-twice": ("CREATE TABLE t(a INTEGER);", "UPDATE t SET a = 1, a = 2;"),
-    "rowid-in-returning": ("CREATE TABLE t(a INTEGER);", "INSERT INTO t VALUES (1) RETURNING rowid;"),
+    "rowid-name": ("CREATE TABLE t(a INTEGER);", "SELECT rowid FROM t;"),
     "system-table": ("CREATE TABLE t(a INTEGER);", "SELECT name FROM sqlite_schema;"),
     "unmodeled-function": ("CREATE TABLE t(a INTEGER);", "SELECT abs(a) FROM t;"),
     "aggregate-in-expression": ("CREATE TABLE t(a INTEGER);", "SELECT count(*) + 1 FROM t;"),

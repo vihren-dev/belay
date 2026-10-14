@@ -40,8 +40,11 @@ inductive RestrictionKind where
   | insertColumnTwice
   /-- A column assigned twice in UPDATE is not modeled (ADR 0008). -/
   | updateColumnTwice
-  /-- A rowid in RETURNING is not modeled (ADR 0012 slice 3a). -/
-  | rowidInReturning
+  /-- A rowid name ({lit}`rowid`, {lit}`_rowid_` or {lit}`oid`) that is not a column is
+  not modeled in an expression: introduced for RETURNING in ADR 0012 slice 3a, and
+  extended to queries and write expressions on 2026-10-14, where SQLite reads the
+  rowid and the model would report {lit}`no such column`. -/
+  | rowidName
   /-- Queries of SQLite's own tables, such as {lit}`sqlite_schema`, are not modeled (ADR 0012 slice 1). -/
   | systemTable
   /-- Only {lit}`COUNT(*)`, {lit}`COUNT`, {lit}`MIN`, {lit}`MAX`, {lit}`SUM` and {lit}`AVG` of one argument, and {lit}`COALESCE` of two or more arguments are modeled as functions (ADR 0012 slices 1 and 2). -/

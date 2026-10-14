@@ -92,8 +92,9 @@ def condition (path : List Nat) : Except ValueIssue Operand → Except ValueIssu
   | .error issue => .error (issue.under path)
 
 /-- Resolve an expression over the columns of the source table. An identifier is the
-first column with its folded name; otherwise it is a string literal when it was
-written in double quotes and {lit}`dqs` is on, else SQLite's
+first column with its folded name; otherwise a rowid name ({name}`rowidName`) is a
+model restriction, because SQLite reads the rowid; otherwise it is a string literal
+when it was written in double quotes and {lit}`dqs` is on, else SQLite's
 {lit}`no such column: %s`. The operands of {lit}`AND`, {lit}`OR` and {lit}`NOT` must be
 conditions. An aggregate gives {name}`aggregateIssue`. A numeric literal has the value of
 {name}`queryNumeric`; unary minus of another expression is {lit}`0 - operand` and unary
@@ -103,7 +104,8 @@ def resolveOperand (dqs : Bool) (columns : List CatalogColumn) (misuse : Bool) :
   | .identifier name doubleQuoted => match columnPosition columns name with
     | some position => .ok (.column position, (columns[position]?.map CatalogColumn.affinity))
     | none =>
-      if doubleQuoted && dqs then .ok (.literal (.text name.toUTF8.toList), none)
+      if rowidName name then .error (.restriction [] .rowidName)
+      else if doubleQuoted && dqs then .ok (.literal (.text name.toUTF8.toList), none)
       else .error (.prepare (.noSuchColumn name))
   | .equals left right => do
     let a ← (resolveOperand dqs columns misuse left).mapError (·.under [0])

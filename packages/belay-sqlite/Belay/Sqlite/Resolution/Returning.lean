@@ -11,26 +11,12 @@ SQLite's {lit}`misuse of aggregate function`. -/
 
 namespace Belay.Sqlite
 
-/-- Whether an expression names a rowid ({name}`rowidName`) that is not a column of
-the table. SQLite reads the rowid there, which a {lit}`RETURNING` column of the model
-does not. -/
-def mentionsRowid (columns : List CatalogColumn) : Syntax.Expr → Bool
-  | .identifier name _ => rowidName name && (columnPosition columns name).isNone
-  | .equals left right | .compare _ left right | .and left right | .or left right
-  | .arithmetic _ left right | .callPair _ left right => mentionsRowid columns left || mentionsRowid columns right
-  | .not operand | .isNull operand _ | .call _ operand | .negate operand | .positive operand | .cast operand _ =>
-    mentionsRowid columns operand
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ => false
-
 /-- One {lit}`RETURNING` column at position {lit}`item`: the expressions and names it
 gives. The paths of its issues start at the column's position. -/
 def returningColumn (dqs : Bool) (columns : List CatalogColumn) (item : Nat) :
     Syntax.ResultColumn → Except ValueIssue (List (Resolved.Expr × String))
   | .star => .ok (columns.mapIdx fun position column => (.column position, column.name))
-  | .expression value alias text =>
-    if mentionsRowid columns value then
-      .error (.restriction [item, 0] .rowidInReturning)
-    else do
+  | .expression value alias text => do
       let (resolved, _) ← (resolveOperand dqs columns true value).mapError (·.under [item, 0])
       let defined := match value with
         | .identifier name _ => (columnPosition columns name).bind (columns[·]?.map CatalogColumn.name)

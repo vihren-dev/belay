@@ -131,4 +131,11 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
   (orderBy := [{ expression := .identifier "K" false, descending := true }]))).map (·.orderBy) ==
   some [(.output 0, true)]
 
+-- A rowid name that is not a column is a restriction in every expression, since SQLite
+-- reads the rowid: in a result column, in WHERE, in a SET value and in a DELETE filter.
+#guard restrictedOne (select [written (.identifier "rowid" false) "rowid"])
+#guard restrictedOne (select [.star] (filter := some (.equals (.identifier "oid" false) (.numeric "1"))))
+#guard restrictedOne (.update "t" [("b", .identifier "_rowid_" false)] none)
+#guard restrictedOne (.delete "t" (some (.equals (.identifier "rowid" true) (.numeric "1"))))
+
 end Belay.Sqlite.Resolution.QueryResolutionExamples

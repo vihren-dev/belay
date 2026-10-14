@@ -161,18 +161,16 @@ theorem concat_issues (results : List (Except ValueIssue (List β)))
       bind_issues (ih fun result member => each result (by simp [member])) fun _ _ failed => by cases failed
 
 /-- For every column, the issues of one {lit}`RETURNING` column name no catalog
-object. Proof sketch: a rowid is a restriction, and an expression has the issues of
-{name}`resolveOperand` under a path. -/
+object. Proof sketch: an expression has the issues of {name}`resolveOperand` under a
+path. -/
 theorem returningColumn_issues (dqs : Bool) (columns : List CatalogColumn) (item : Nat)
     (column : Syntax.ResultColumn) : IssuesNameNoObject (returningColumn dqs columns item column) := by
   cases column with
   | star => intro issue failed; cases failed
   | expression value alias text =>
     simp only [returningColumn]
-    split
-    · intro issue failed; cases failed; trivial
-    · exact bind_issues (under_issues _ (resolveOperand_issue _ _ _ _)) fun operand _ failed => by
-        obtain ⟨_, _⟩ := operand; cases failed
+    exact bind_issues (under_issues _ (resolveOperand_issue _ _ _ _)) fun operand _ failed => by
+      obtain ⟨_, _⟩ := operand; cases failed
 
 /-- For every list of {lit}`RETURNING` columns, the issues of
 {name}`resolveReturning` name no catalog object. Proof sketch:
