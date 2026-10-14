@@ -41,7 +41,9 @@ key column is always a literal, because {name}`resolveAssignment` refuses others
 def literalAssignments (assignments : List (Nat × Resolved.Expr)) : List (Nat × Value) :=
   assignments.filterMap fun
     | (position, .literal value) => some (position, value)
-    | _ => none
+    | (_, .column _) | (_, .compare ..) | (_, .and ..) | (_, .or ..) | (_, .not _) | (_, .isNull ..)
+    | (_, .arithmetic ..) | (_, .cast ..) | (_, .coalesce ..) | (_, .countRows) | (_, .count _) | (_, .min _)
+    | (_, .max _) | (_, .sum _) | (_, .avg _) => none
 
 /-- Resolve UPDATE. Path 1 is the assignment list, path 2 the filter and path 3 the
 {lit}`RETURNING` columns, which resolve last. The assignments resolve in order, then
