@@ -17,6 +17,14 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/LiteralData.lean`,
 - 2026-10-14: task and status files created. The amendment (#111) is ACCEPTED, with
   its "Testing" text changed to the evidence form of the restriction registry task:
   a conjunct has a mutant and a boundary case, or names what covers it.
+- 2026-10-14: `storeValue` (`StoreValue.lean`), a port of `applyAffinity`,
+  `applyNumericAffinity`, `alsoAnInt` and `sqlite3VdbeIntegerAffinity` of 3.51.0, with
+  the read of a REAL column. A REAL in a REAL column keeps its bits except that -0.0
+  becomes +0.0 (`positiveZero`): this closed form of "write the whole REAL as an
+  integer, read it back as a double" makes idempotence provable without float lemmas.
+  `StoreValueLaws.lean` proves idempotence and that TEXT affinity stores no number;
+  `StoreValueExamples.lean` checks the amendment's store list against values from
+  native 3.51.0.
 
 ## Remaining
 
