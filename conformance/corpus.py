@@ -2,17 +2,14 @@
 
 import argparse
 from collections import Counter, defaultdict
-from collections.abc import Iterator
 from concurrent.futures import Executor
-from contextlib import contextmanager
-import gc
 import gzip
 import hashlib
 import json
 from pathlib import Path
 
 from conformance.case_format import Json
-from conformance.model_check import compiled_many
+from conformance.replay_support import classify, collection_paused
 from conformance.native_record import record_sql
 from conformance.native_bindings import decode_rows
 from conformance.native_replay import prepare, without_trailing_queries
@@ -22,23 +19,6 @@ from conformance.native_call_recording import replay_arguments, validate_recordi
 from conformance.locked_corpora import is_locked, locked_records
 from conformance.record_parser import NO_PARSER_REASON, runtime_library
 from conformance.record_versions import PROFILED, WITH_OUTPUTS
-
-
-@contextmanager
-def collection_paused() -> Iterator[None]:
-    """Pause Python's cyclic garbage collector, and restore its state afterwards.
-
-    Decoded JSON has no reference cycles, so reference counting frees it without the
-    collector. A corpus has millions of decoded objects, and each full collection walks
-    all of them again: for corpus v5 the collector took 7 of the 11 seconds of `load`.
-    """
-    enabled = gc.isenabled()
-    gc.disable()
-    try:
-        yield
-    finally:
-        if enabled:
-            gc.enable()
 
 
 def load(directory: Path, *, executor: Executor | None = None) -> tuple[dict[str, Json], list[dict[str, Json]]]:
@@ -79,18 +59,6 @@ def validated_load(directory: Path, *, executor: Executor | None = None
         from conformance.upstream_binding_policy import validate_capture_bindings
         validate_capture_bindings(manifest, records)
     return manifest, records
-
-
-RUNNER_BATCH = 256
-"""Cases per run of the compiled classifier: each run costs a process start, and a
-batch must finish within the runner's time limit (`model_check.compiled_many`)."""
-
-
-def classify(cases: list[dict[str, Json]], runtime: Path) -> list[dict[str, Json]]:
-    """Classify the cases in order with the compiled classifier, in batches of
-    `RUNNER_BATCH`, so that many cases need few process starts."""
-    return [answer for start in range(0, len(cases), RUNNER_BATCH)
-            for answer in compiled_many(cases[start:start + RUNNER_BATCH], runtime)]
 
 
 def replay(records: list[dict[str, Json]], runtime: Path) -> dict[str, Json]:
