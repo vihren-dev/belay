@@ -23,27 +23,29 @@ def definedName (scope : Scope) : Syntax.Expr → Option String
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
   | .cast .. | .callPair .. => none
 
-/-- The columns of {lit}`source.*` with their positions in the concatenated row and their
-names, or SQLite's {lit}`no such table: source` when no source has the name. -/
-def sourceStarColumns (scope : Scope) (source : String) : Except ValueIssue (List (Resolved.Expr × String)) :=
-  match scope.source? source with
-  | some (offset, columns) => .ok (columns.mapIdx fun position column => (.column (offset + position), column.name))
-  | none => .error (.prepare (.noSuchSource source))
-
 /-- One {lit}`RETURNING` column at position {lit}`item`: the expressions and names it
-gives. The paths of its issues start at the column's position. -/
+gives. The paths of its issues start at the column's position. A {lit}`source.*`
+column is SQLite's {name}`PrepareError.returningSourceStar`. -/
 def returningColumn (dqs : Bool) (scope : Scope) (item : Nat) :
     Syntax.ResultColumn → Except ValueIssue (List (Resolved.Expr × String))
   | .star => .ok (scope.columns.mapIdx fun position column => (.column position, column.name))
-  | .sourceStar source => sourceStarColumns scope source
+  | .sourceStar _ => .error (.prepare .returningSourceStar)
   | .expression value alias text => do
       let (resolved, _) ← (resolveOperand dqs scope true value).mapError (·.under [item, 0])
       .ok [(resolved, alias.getD ((definedName scope value).getD text))]
 
+/-- Whether a result column is {lit}`source.*`. -/
+def Syntax.ResultColumn.isSourceStar : Syntax.ResultColumn → Bool
+  | .sourceStar _ => true
+  | .star | .expression .. => false
+
 /-- The {lit}`RETURNING` columns of a write over the table's scope, in order, or the
-first issue. No {lit}`RETURNING` is the empty list. -/
+first issue. No {lit}`RETURNING` is the empty list. SQLite expands the wildcards before
+it resolves names, so a {lit}`source.*` column anywhere is
+{name}`PrepareError.returningSourceStar` before the issue of any other column. -/
 def resolveReturning (dqs : Bool) (scope : Scope) (items : List Syntax.ResultColumn) :
     Except ValueIssue (List (Resolved.Expr × String)) :=
+  if items.any Syntax.ResultColumn.isSourceStar then .error (.prepare .returningSourceStar) else
   (items.mapIdx fun item column => returningColumn dqs scope item column).foldr
     (fun next rest => do let first ← next; let others ← rest; .ok (first ++ others)) (.ok [])
 

@@ -19,6 +19,13 @@ def Resolved.Expr.readsBelow (bound : Nat) : Resolved.Expr → Bool
     left.readsBelow bound && right.readsBelow bound
   | .not operand | .isNull operand _ | .cast _ operand => operand.readsBelow bound
 
+/-- The columns of {lit}`source.*` with their positions in the concatenated row and their
+names, or SQLite's {lit}`no such table: source` when no source has the name. -/
+def sourceStarColumns (scope : Scope) (source : String) : Except ValueIssue (List (Resolved.Expr × String)) :=
+  match scope.source? source with
+  | some (offset, columns) => .ok (columns.mapIdx fun position column => (.column (offset + position), column.name))
+  | none => .error (.prepare (.noSuchSource source))
+
 /-- The number of tables in a join that SQLite accepts ({lit}`SQLITE_MAX_SRCLIST`). -/
 def maximumJoinTables : Nat := 64
 
@@ -34,16 +41,31 @@ def resolveTableReference (catalog : Catalog) (path : List Nat) (reference : Syn
     if reservedName reference.table then .error (.restriction path .systemTable)
     else .error (.prepare (.noSuchTable reference.table))
 
+/-- The kind of a join that Lean reads from the keywords of its operator
+({name}`Syntax.Join.operator`): an inner join ({lit}`,`,
+{lit}`JOIN`, {lit}`INNER JOIN` or {lit}`CROSS JOIN`), or a left, right or full outer
+join. -/
+inductive JoinOperatorKind where
+  /-- An inner join. -/
+  | inner
+  /-- {lit}`LEFT [OUTER] JOIN`. -/
+  | left
+  /-- {lit}`RIGHT [OUTER] JOIN`. -/
+  | right
+  /-- {lit}`FULL [OUTER] JOIN`. -/
+  | full
+  deriving Repr, DecidableEq
+
 /-- The kind of a join operator and whether it has {lit}`NATURAL`, from its keywords as
 written, which SQLite compares without ASCII case: {lean}`joinOperator ["Left", "OUTER"]`
 is a left join without {lit}`NATURAL`. None for keywords that the model does not
 describe, such as {lean}`["OUTER", "LEFT"]`, which SQLite also accepts. -/
-def joinOperator (words : List String) : Option (Syntax.JoinKind × Bool) :=
+def joinOperator (words : List String) : Option (JoinOperatorKind × Bool) :=
   let folded := words.map normalizeIdentifier
   let (natural, rest) := match folded with
     | "natural" :: rest => (true, rest)
     | rest => (false, rest)
-  let kind : Option Syntax.JoinKind := match rest with
+  let kind : Option JoinOperatorKind := match rest with
     | [] | ["inner"] | ["cross"] => some .inner
     | ["left"] | ["left", "outer"] => some .left
     | ["right"] | ["right", "outer"] => some .right
@@ -64,12 +86,14 @@ def joinFormIssue (item : Nat) (join : Syntax.Join) : Option ValueIssue :=
       | .right | .full => some (.restriction [2, item, 0] .rightOrFullJoin)
       | .inner | .left => none
 
-/-- The kind of a resolved join: left for a left join operator, else inner, which is
-right for every join that {name}`joinFormIssue` accepts. -/
+/-- The kind of a resolved join: left for a left join operator and inner for an inner
+one. {name}`joinFormIssue` refuses every other operator before the kind is used, so
+their kind here is never read. -/
 def Syntax.Join.resolvedKind (join : Syntax.Join) : Resolved.JoinKind :=
   match joinOperator join.operator with
   | some (.left, _) => .left
-  | _ => .inner
+  | some (.inner, _) => .inner
+  | some (.right, _) | some (.full, _) | none => .inner
 
 /-- Resolve the tables of {lit}`FROM`: the first table's position, the positions of the
 joined tables, and the scope of all sources, in order. More than

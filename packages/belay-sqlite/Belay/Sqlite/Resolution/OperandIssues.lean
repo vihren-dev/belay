@@ -164,33 +164,29 @@ theorem concat_issues (results : List (Except ValueIssue (List β)))
     exact bind_issues (each head (by simp)) fun _ =>
       bind_issues (ih fun result member => each result (by simp [member])) fun _ _ failed => by cases failed
 
-/-- For every scope, the issues of {name}`sourceStarColumns` name no catalog object: the
-only one is {name}`PrepareError.noSuchSource`. -/
-theorem sourceStarColumns_issues (scope : Scope) (source : String) :
-    IssuesNameNoObject (sourceStarColumns scope source) := by
-  intro issue failed
-  unfold sourceStarColumns at failed
-  split at failed <;> cases failed
-  simp [ValueIssue.namesNoObject, PrepareError.namesObject]
-
 /-- For every scope, the issues of one {lit}`RETURNING` column name no catalog
-object. Proof sketch: {lit}`source.*` has the issues of {name}`sourceStarColumns_issues`,
-and an expression has the issues of {name}`resolveOperand` under a path. -/
+object. Proof sketch: {lit}`source.*` is {name}`PrepareError.returningSourceStar`, which
+names none, and an expression has the issues of {name}`resolveOperand` under a path. -/
 theorem returningColumn_issues (dqs : Bool) (scope : Scope) (item : Nat)
     (column : Syntax.ResultColumn) : IssuesNameNoObject (returningColumn dqs scope item column) := by
   cases column with
   | star => intro issue failed; cases failed
-  | sourceStar source => exact sourceStarColumns_issues scope source
+  | sourceStar source =>
+    intro issue failed; cases failed; simp [ValueIssue.namesNoObject, PrepareError.namesObject]
   | expression value alias text =>
     simp only [returningColumn]
     exact bind_issues (under_issues _ (resolveOperand_issue _ _ _ _)) fun operand _ failed => by
       obtain ⟨_, _⟩ := operand; cases failed
 
 /-- For every list of {lit}`RETURNING` columns, the issues of
-{name}`resolveReturning` name no catalog object. Proof sketch:
+{name}`resolveReturning` name no catalog object. Proof sketch: a {lit}`source.*` column
+gives {name}`PrepareError.returningSourceStar`, which names none; otherwise
 {name}`concat_issues` with {name}`returningColumn_issues` for each column. -/
 theorem resolveReturning_issue (dqs : Bool) (scope : Scope) (items : List Syntax.ResultColumn) :
     IssuesNameNoObject (resolveReturning dqs scope items) := by
+  unfold resolveReturning
+  split
+  · intro issue failed; cases failed; simp [ValueIssue.namesNoObject, PrepareError.namesObject]
   apply concat_issues
   intro result member
   obtain ⟨index, bound, equal⟩ := List.mem_mapIdx.1 member

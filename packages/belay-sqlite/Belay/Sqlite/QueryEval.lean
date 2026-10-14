@@ -5,10 +5,12 @@ import Belay.Sqlite.Summation
 
 set_option doc.verso true
 
-/-! The Expressions and Queries levels of ADR 0012, slice 1: the value of an
-expression over one row, and the result rows of a single-table query. The steps
-follow the ADR in order: the rows in rowid order, the {lit}`WHERE` filter, the
-groups, the result columns, a stable sort by the {lit}`ORDER BY` terms, and the
+/-! The Expressions and Queries levels of ADR 0012, slice 1 and amendment 2: the value
+of an expression over one row, the source rows of a query, and its result rows. The
+source rows are the rows of the first table in rowid order, joined left to right
+with the table of each inner or left join; a joined row is the concatenation of the
+cells of its tables. The steps then follow the ADR in order: the {lit}`WHERE` filter,
+the groups, the result columns, a stable sort by the {lit}`ORDER BY` terms, and the
 {lit}`OFFSET` and {lit}`LIMIT` window. -/
 
 namespace Belay.Sqlite.Resolved

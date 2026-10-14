@@ -79,6 +79,9 @@ inductive PrepareError where
   | noSuchSource (name : String)
   /-- {lit}`at most 64 tables in a join`. -/
   | tooManyTables
+  /-- {lit}`RETURNING may not use "TABLE.*" wildcards`: a {lit}`source.*` column in
+  {lit}`RETURNING`, for every source name. -/
+  | returningSourceStar
   deriving Repr, DecidableEq
 
 /-- A model restriction: SQLite accepts the SQL, but the model does not describe

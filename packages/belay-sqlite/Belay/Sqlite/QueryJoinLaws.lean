@@ -27,7 +27,9 @@ theorem sourceRows_width {table : Table} (valid : table.Valid) :
   exact (valid.2 row ((stableSort_perm _ _).mem_iff.mp sorted)).2.1
 
 /-- For every width, left row of that width, join and valid table, every row of
-{name}`joinMatches` has the width plus one cell per column of the table. -/
+{name}`joinMatches` has the width plus one cell per column of the table. Proof sketch: a
+match is the left row followed by a row of {name}`sourceRows`, whose width is
+{name}`sourceRows_width`. -/
 theorem joinMatches_width {width : Nat} {row : List Value} {table : Table} (join : Join) (valid : table.Valid)
     (rowWidth : row.length = width) :
     ∀ joined ∈ joinMatches row join table, joined.length = width + table.shape.columns.length := by

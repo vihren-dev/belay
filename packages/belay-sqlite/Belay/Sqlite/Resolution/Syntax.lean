@@ -120,20 +120,6 @@ structure TableReference where
   alias : Option String
   deriving Repr, DecidableEq
 
-/-- The kind of a join that Lean reads from its operator: an inner join ({lit}`,`,
-{lit}`JOIN`, {lit}`INNER JOIN` or {lit}`CROSS JOIN`), or a left, right or full outer
-join. -/
-inductive JoinKind where
-  /-- An inner join. -/
-  | inner
-  /-- {lit}`LEFT [OUTER] JOIN`. -/
-  | left
-  /-- {lit}`RIGHT [OUTER] JOIN`. -/
-  | right
-  /-- {lit}`FULL [OUTER] JOIN`. -/
-  | full
-  deriving Repr, DecidableEq
-
 /-- One join of {lit}`FROM` after the first table: the keywords of its operator, the
 joined table, its optional {lit}`ON` condition and its optional {lit}`USING` column
 names. For {lit}`, t` the operator has no keywords and all optional parts are absent. -/

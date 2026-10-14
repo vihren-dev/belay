@@ -24,8 +24,8 @@ The frontend maps these statements, and refuses every other statement as
   expression is true (slice 3c);
 - `RETURNING columns` after `INSERT … VALUES`, `UPDATE` and `DELETE`, with result
   columns as in `SELECT`, over each written or deleted row (slices 3a and 3c); an
-  aggregate is SQLite's prepare error, and a rowid name in `RETURNING` is a model
-  restriction;
+  aggregate and `source.*` are SQLite's prepare errors, and a rowid name in
+  `RETURNING` is a model restriction;
 - `SELECT columns FROM tables [WHERE …] [GROUP BY …] [ORDER BY … [ASC|DESC]]
   [LIMIT n [OFFSET m]]`, whose result columns are `*`, `source.*` or expressions
   with an optional alias (ADR 0012, slice 1). `FROM` is one table, or tables joined

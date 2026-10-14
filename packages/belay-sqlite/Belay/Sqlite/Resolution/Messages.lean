@@ -45,5 +45,6 @@ def PrepareError.message : PrepareError → String
   | .ambiguousColumn name => s!"ambiguous column name: {name}"
   | .noSuchSource name => s!"no such table: {name}"
   | .tooManyTables => "at most 64 tables in a join"
+  | .returningSourceStar => "RETURNING may not use \"TABLE.*\" wildcards"
 
 end Belay.Sqlite

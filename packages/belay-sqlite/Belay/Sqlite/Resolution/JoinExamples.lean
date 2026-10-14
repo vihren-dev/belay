@@ -52,6 +52,12 @@ def joinU : Resolved.Join := { kind := .inner, table := 1, condition := some (.c
 #guard resolvedOne [.expression (qualified "t" "a") none "t.a"] { table := "t", alias := some "x" } [] ==
   some (.prepareError (.noSuchColumn "t.a"))
 #guard resolvedOne [.sourceStar "zz"] (table "t") [] == some (.prepareError (.noSuchSource "zz"))
+-- `x.*` in RETURNING is SQLite's prepare error, after the errors of the write itself.
+#guard (statements (migration tables [.returning (.delete "t" none) [.star, .sourceStar "t"]])).head? ==
+  some (.prepareError .returningSourceStar)
+#guard (statements (migration tables
+  [.returning (.delete "t" (some (.identifier "zz" false))) [.sourceStar "t"]])).head? ==
+  some (.prepareError (.noSuchColumn "zz"))
 -- 65 tables are SQLite's limit error.
 #guard resolvedOne [.star] (table "t") ((List.range 64).map fun item =>
   joined [] { table := "t", alias := some s!"t{item}" }) == some (.prepareError .tooManyTables)
