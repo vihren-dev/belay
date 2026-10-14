@@ -39,6 +39,15 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Values.lean`,
   SELECT without FROM 483, column constraints 422, table options 313); the largest
   registry restrictions are `rowid-alias` 101 and `unmodeled-function` 85.
 
+- 2026-10-14: owner decision on outcome 6: every restriction gets an example script,
+  not a mutant; the obligation mutants run in a scheduled suite on main pushes and
+  nightly runs. A probe of one script per id found five restrictions that no SQL
+  reaches: four branches of `literalValue` (`negated-non-numeric`,
+  `condition-as-value`, `aggregate-as-value`, `expression-as-value`), dead since
+  slice 3a moved write values to query semantics, and `returning-target`, which the
+  frontend blocks (DELETE ... RETURNING is refused).
+
 ## Remaining
 
-- Mutant links; obligation mutants and boundary cases.
+- Remove the four dead restrictions; restriction example test.
+- Mutant links; obligation mutants, boundary cases and the scheduled suite.

@@ -30,11 +30,15 @@ each one is a free-text reason at its resolver call site. After this task:
 5. **A cost report.** A command counts, for each restriction id, the cases of the
    claimed corpora that it makes `MODEL_UNSUPPORTED`, from the subject's predictions
    (`nix-build integrity/judge.nix -A predictions`).
-6. **Mutants name what they guard.** Each mutant of `resolve_mutants.py`,
-   `query_mutants.py`, `number_mutants.py` and `write_mutants.py` names the rule,
-   restriction or obligation that it guards. A test checks that every restriction
-   id and every conjunct of the admission obligations has at least one mutant, and
-   that every mutant names something that exists.
+6. **Mutants name what they guard, and every restriction has an example.** Each
+   mutant of `resolve_mutants.py`, `query_mutants.py`, `number_mutants.py` and
+   `write_mutants.py` names the rule, restriction or obligation that it guards. A
+   fast test checks that every name exists. Every restriction id has an example
+   script that the resolver refuses with that id; a fast test runs each example
+   through the frontend and the resolver. A restriction that no SQL can reach is
+   removed, or, where only the frontend blocks it, its example is a frontend refusal
+   that the test checks. (Owner decision of 2026-10-14: restrictions get examples,
+   not mutants, because a mutant that removes a restriction must invent a rule.)
 7. **Obligation mutants and boundary cases.** Each conjunct of `insertReady`,
    `updateReady` and `statementReady` has a mutant that removes it, and an authored
    boundary case whose database state is just outside the domain: with the conjunct
@@ -42,7 +46,9 @@ each one is a free-text reason at its resolver call site. After this task:
    Examples: `1.0` in a column without affinity under the filter `c = 1`; a REAL that
    equals an integer in a unique key column. The boundary cases form a new coverage
    corpus for a later judge change (owner decision of 2026-10-14 on question 3 of
-   the ADR 0012 amendment).
+   the ADR 0012 amendment). The obligation mutants run in a scheduled suite on
+   main pushes and nightly runs, not on each pull request, so that CI time of pull
+   requests does not grow (owner decision of 2026-10-14).
 
 ## Tests
 
@@ -54,7 +60,9 @@ each one is a free-text reason at its resolver call site. After this task:
 - A test of the prediction output and of the frontend rejection that the id is
   present.
 - A test of the cost report over a small fixed set of predictions.
-- The mutant link test, and the obligation mutants against their boundary cases.
+- The mutant link test and the restriction example test, both fast.
+- The obligation mutants against their boundary cases, in the scheduled suite; a
+  test that the pull request suites do not include the scheduled suite.
 
 ## Key points for the implementer
 
