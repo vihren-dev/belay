@@ -73,6 +73,9 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/LiteralData.lean`,
   and 125 s (9 new mutants), `tests.model` 158 s and 169 s (24 new cases with kernel
   proofs), `tests.frozen` 180 s and 179 s. The suites run in parallel; the longest of
   these, `tests.frozen`, does not change. Pull request A opened.
+- 2026-10-14: CI of #115 failed: the single mutant test (54 mutants) passed the 300 s
+  pytest limit on the hosted runner. Split into a query and number test (79 s locally)
+  and a write test (27 s); together 107 s locally, less than the 125 s before.
 
 ## Remaining
 
