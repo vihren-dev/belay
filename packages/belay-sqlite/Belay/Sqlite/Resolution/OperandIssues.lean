@@ -13,7 +13,8 @@ abbrev IssuesNameNoObject (result : Except ValueIssue α) : Prop :=
   ∀ issue, result = .error issue → issue.namesNoObject
 
 /-- For all computations: if the issues of the first and of every continuation name no
-catalog object, so do the issues of their sequence. -/
+catalog object, so do the issues of their sequence. Proof sketch: a failed sequence
+failed in the first computation, or in the continuation of its value. -/
 theorem bind_issues {first : Except ValueIssue α} {next : α → Except ValueIssue β}
     (left : IssuesNameNoObject first) (right : ∀ value, IssuesNameNoObject (next value)) :
     IssuesNameNoObject (first >>= next) := by
@@ -23,7 +24,8 @@ theorem bind_issues {first : Except ValueIssue α} {next : α → Except ValueIs
   | ok value => exact right value issue failed
 
 /-- For every computation and path: if its issues name no catalog object, so do its
-issues under the path. -/
+issues under the path. Proof sketch: a path changes only the location of a
+restriction ({name}`ValueIssue.under_namesNoObject`). -/
 theorem under_issues {result : Except ValueIssue α} (path : List Nat) (issues : IssuesNameNoObject result) :
     IssuesNameNoObject (result.mapError (·.under path)) := by
   intro issue failed
@@ -32,7 +34,8 @@ theorem under_issues {result : Except ValueIssue α} (path : List Nat) (issues :
   | ok _ => cases failed
 
 /-- For every path and operand computation: if its issues name no catalog object, so
-do the issues of {name}`condition`. -/
+do the issues of {name}`condition`. Proof sketch: {name}`condition` passes an issue on
+under the path, and adds only a restriction. -/
 theorem condition_issues (path : List Nat) {result : Except ValueIssue Operand}
     (issues : IssuesNameNoObject result) : IssuesNameNoObject (condition path result) := by
   intro issue failed
@@ -40,7 +43,8 @@ theorem condition_issues (path : List Nat) {result : Except ValueIssue Operand}
   | error inner => cases failed; exact ValueIssue.under_namesNoObject _ _ (issues _ rfl)
   | ok operand => simp only [condition] at failed; split at failed <;> cases failed; trivial
 
-/-- For every value computation and function: mapping the value keeps the issues. -/
+/-- For every value computation and function: mapping the value keeps the issues.
+Proof sketch: a failed map is the failed computation. -/
 theorem map_issues {result : Except ValueIssue α} (function : α → β) (issues : IssuesNameNoObject result) :
     IssuesNameNoObject (result.map function) := by
   intro issue failed
@@ -49,7 +53,8 @@ theorem map_issues {result : Except ValueIssue α} (function : α → β) (issue
   | ok _ => cases failed
 
 /-- For every literal text and sign, the issues of {name}`queryNumeric` name no
-catalog object: the only prepare error is {lit}`hex literal too big`. -/
+catalog object: the only prepare error is {lit}`hex literal too big`. Proof sketch:
+split the match of {name}`queryNumeric`; the failing branches give that error. -/
 theorem queryNumeric_issues (text : String) (negated : Bool) : IssuesNameNoObject (queryNumeric text negated) := by
   intro issue failed
   unfold queryNumeric at failed
@@ -58,7 +63,8 @@ theorem queryNumeric_issues (text : String) (negated : Bool) : IssuesNameNoObjec
 
 /-- For every flag and name, the issues of a function call name no catalog object:
 {name}`aggregateIssue`, {name}`callIssue` and {name}`pairIssue` give only
-{lit}`misuse of aggregate function`, {lit}`wrong number of arguments`, or a restriction. -/
+{lit}`misuse of aggregate function`, {lit}`wrong number of arguments`, or a restriction.
+Proof sketch: unfold the three functions and split their conditions. -/
 theorem callIssues (misuse : Bool) (name : String) :
     (aggregateIssue misuse name).namesNoObject ∧ (callIssue name).namesNoObject ∧ (pairIssue name).namesNoObject := by
   unfold aggregateIssue callIssue pairIssue unmodeledFunction

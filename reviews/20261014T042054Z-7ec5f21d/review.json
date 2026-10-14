@@ -1,0 +1,66 @@
+{
+  "caller": "claude",
+  "commit": "7ec5f21da53c4e4fa1449be7abff3c17347f1c08",
+  "date": "2026-10-14T04:20:54+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay-sqlite/Belay/Sqlite/Resolution/ErrorKinds.lean",
+    "packages/belay-sqlite/Belay/Sqlite/Resolution/OperandIssues.lean",
+    "packages/belay-sqlite/Belay/Sqlite/Resolution/PrepareRules.lean",
+    "packages/belay-sqlite/Belay/Sqlite/Resolution/Queries.lean",
+    "packages/belay-sqlite/Belay/Sqlite/Resolution/QueryExprs.lean",
+    "packages/belay-sqlite/Belay/Sqlite/Resolution/QueryResolutionExamples.lean",
+    "packages/belay-sqlite/Belay/Sqlite/Resolution/UpdateRules.lean",
+    "packages/belay-sqlite/Belay/Sqlite/Resolution/Values.lean",
+    "packages/belay-sqlite/Belay/Sqlite/Resolution/Writes.lean",
+    "plans/20261014-writes-with-output.status.md"
+  ],
+  "findings": [
+    {
+      "id": "20261014T042054Z-7ec5f21d#1",
+      "line": 17,
+      "path": "packages/belay-sqlite/Belay/Sqlite/Resolution/OperandIssues.lean",
+      "rule": "R3",
+      "severity": "must",
+      "text": "`bind_issues`, `under_issues`, `condition_issues`, `map_issues`, `queryNumeric_issues`, and `callIssues` are library theorems used by other proofs but have no proof sketches. Fix: add a short sketch of the strategy and key idea to each docstring."
+    },
+    {
+      "id": "20261014T042054Z-7ec5f21d#2",
+      "line": 79,
+      "path": "packages/belay-sqlite/Belay/Sqlite/Resolution/Writes.lean",
+      "rule": "R13",
+      "severity": "should",
+      "text": "Constant expressions are now admitted in writes, but `docs/semantic-subset.md` still describes arithmetic, casts, and COALESCE as SELECT-only expressions. Fix: update the supported-subset documentation in the same commit."
+    },
+    {
+      "id": "20261014T042054Z-7ec5f21d#3",
+      "line": 38,
+      "path": "packages/belay-sqlite/Belay/Sqlite/Resolution/Writes.lean",
+      "rule": "R11",
+      "severity": "must",
+      "text": "Changing `assignedValue` also admits constant expressions in UPDATE filters through `resolveFilter`, but the added tests cover only VALUES and SET expressions. Fix: add a regression check that resolves an UPDATE with a filter such as `WHERE Abc = 1 + 2` to an integer equality filter."
+    }
+  ],
+  "id": "20261014T042054Z-7ec5f21d",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "fa2475f44035",
+    "R7": "0a38ead152b1",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

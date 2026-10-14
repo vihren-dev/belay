@@ -30,7 +30,10 @@ comparisons, `IS` and `IS NOT`, `AND`, `OR`, `NOT`, `IS NULL` and its forms,
 parentheses, `COUNT(*)`, `COUNT`, `MIN`, `MAX`, `SUM` and `AVG` of one argument, the arithmetic
 operators `+`, `-`, `*`, `/` and `%`, unary `-` and `+` of any expression,
 `CAST(expression AS type)`, and `COALESCE` of two or more arguments (ADR 0012,
-slice 2). REAL literals have a value only in a `SELECT`. Named
+slice 2). In a write, a `VALUES` item, a `SET` value and the value of a
+`column = value` filter may be any of these expressions that names no column:
+resolution computes its value (slice 3a). REAL values are computed, but stored
+only where the model admits them. Named
 constraints, collations, `CHECK`, `REFERENCES`, generated columns, conflict
 clauses, `RETURNING`, `UPSERT`, `WITH`, `FROM` in writes, sort modifiers in keys,
 partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-14T04:28:40+00:00",
+  "finding": "20261014T042054Z-7ec5f21d#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "docs/semantic-subset.md describes constant expressions in VALUES, SET and the value of a column = value filter"
+}

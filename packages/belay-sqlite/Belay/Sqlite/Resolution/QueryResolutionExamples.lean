@@ -106,6 +106,9 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
 #guard resolvedOne (.update "t" [("Abc", .cast (.string [55]) "INTEGER")] none) == some (.update 0 [(0, .integer 7)] none [])
 #guard errorOf (.insert "t" none [[.callStar "count", .null]]) == some (.misuseOfAggregate "count")
 #guard restrictedOne (.update "t" [("b", .arithmetic .add (.identifier "Abc" false) (.numeric "1"))] none)
+-- The value of a `column = value` filter is a constant too: `WHERE Abc = 1 + 2` filters on 3.
+#guard resolvedOne (.update "t" [("b", .string [120])] (some (.equals (.identifier "Abc" false)
+  (.arithmetic .add (.numeric "1") (.numeric "2"))))) == some (.update 0 [(1, .text [120])] (some (0, .integer 3)) [])
 -- GROUP BY resolves a name to a source column before a result alias, so an alias
 -- of an aggregate does not hide the column `b`.
 #guard (queryOf (select [.expression (.callStar "count") (some "b") "count(*)"] (groupBy := [.identifier "b" false]))).map
