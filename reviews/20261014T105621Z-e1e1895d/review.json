@@ -1,0 +1,48 @@
+{
+  "caller": "claude",
+  "commit": "e1e1895d0a11d15b1a49c9a8965669fa064345d3",
+  "date": "2026-10-14T10:56:21+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay-sqlite/Belay/Sqlite/StoreValue.lean",
+    "packages/belay-sqlite/Belay/Sqlite/StoreValueExamples.lean",
+    "packages/belay-sqlite/Belay/Sqlite/StoreValueLaws.lean",
+    "packages/belay-sqlite/Belay/Sqlite.lean",
+    "packages/belay-sqlite/lakefile.toml",
+    "plans/20261014-row-dependent-writes.status.md",
+    "reviews/20261014T104814Z-60850090/review.json",
+    "tests/test_model_package.py"
+  ],
+  "findings": [
+    {
+      "id": "20261014T105621Z-e1e1895d#1",
+      "line": 11,
+      "path": "packages/belay-sqlite/Belay/Sqlite/StoreValueLaws.lean",
+      "rule": "R3",
+      "severity": "must",
+      "text": "`positiveZero_positiveZero`, `numericStore_textNumber`, `numericStore_numericStore`, and `storeValue_real_other` are public library theorems used by other proofs but lack proof sketches. Fix: add a 1–5 sentence sketch of the strategy and key idea to each theorem's docstring."
+    }
+  ],
+  "id": "20261014T105621Z-e1e1895d",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "fa2475f44035",
+    "R7": "0a38ead152b1",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

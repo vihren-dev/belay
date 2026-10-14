@@ -8,7 +8,9 @@ TEXT affinity never stores a number. -/
 
 namespace Belay.Sqlite
 
-/-- For all bits, {name}`positiveZero` applied twice equals {name}`positiveZero` applied once. -/
+/-- For all bits, {name}`positiveZero` applied twice equals {name}`positiveZero` applied once.
+Proof sketch: after one application the bits are not {name}`negativeZeroBits`, so the
+second application keeps them. -/
 theorem positiveZero_positiveZero (bits : UInt64) : positiveZero (positiveZero bits) = positiveZero bits := by
   unfold positiveZero
   split
@@ -23,7 +25,9 @@ theorem numericStore_integerAffinity (bits : UInt64) :
   cases h : wholeReal bits <;> simp [integerAffinity, numericStore, h]
 
 /-- For all text bytes and values: if {name}`textNumber` gives the value, then
-{name}`numericStore` keeps it. -/
+{name}`numericStore` keeps it. Proof sketch: split on the result code of {name}`atof`;
+the value is an integer, which {name}`numericStore` keeps, or a result of
+{name}`integerAffinity`, which {name}`numericStore_integerAffinity` covers. -/
 theorem numericStore_textNumber {bytes : List UInt8} {value : Value} (found : textNumber bytes = some value) :
     numericStore value = value := by
   unfold textNumber at found
@@ -45,7 +49,9 @@ theorem numericStore_numericText (bytes : List UInt8) :
   | some value => simp only [numericText, h, Option.getD_some]; exact numericStore_textNumber h
 
 /-- For every value, {name}`numericStore` applied twice equals {name}`numericStore` applied
-once. -/
+once. Proof sketch: by cases on the storage class; a REAL uses
+{name}`numericStore_integerAffinity`, a TEXT {name}`numericStore_numericText`, and the
+other classes do not change. -/
 theorem numericStore_numericStore (value : Value) : numericStore (numericStore value) = numericStore value := by
   cases value with
   | real bits => exact numericStore_integerAffinity bits
@@ -63,7 +69,8 @@ theorem storeValue_real_realRead (value : Value) (kept : numericStore value = va
   | text _ => simp only [realRead, storeValue, kept]
 
 /-- For every value that is not a REAL, {name}`storeValue` with REAL affinity is
-{name}`realRead` of {name}`numericStore`. -/
+{name}`realRead` of {name}`numericStore`. Proof sketch: by cases on the value; each
+non-REAL case is the defining equation, and the REAL case contradicts the premise. -/
 theorem storeValue_real_other (value : Value) (other : ∀ bits, value ≠ .real bits) :
     storeValue .real value = realRead (numericStore value) := by
   cases value <;> simp_all [storeValue]
