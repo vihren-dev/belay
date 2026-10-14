@@ -55,6 +55,10 @@ def joinU : Resolved.Join := { kind := .inner, table := 1, condition := some (.c
 -- `x.*` in RETURNING is SQLite's prepare error, after the errors of the write itself.
 #guard (statements (migration tables [.returning (.delete "t" none) [.star, .sourceStar "t"]])).head? ==
   some (.prepareError .returningSourceStar)
+-- SQLite expands the wildcards first: `t.*` wins over a missing name in an earlier column.
+#guard (statements (migration tables
+  [.returning (.delete "t" none) [.expression (.identifier "zz" false) none "zz", .sourceStar "t"]])).head? ==
+  some (.prepareError .returningSourceStar)
 #guard (statements (migration tables
   [.returning (.delete "t" (some (.identifier "zz" false))) [.sourceStar "t"]])).head? ==
   some (.prepareError (.noSuchColumn "zz"))
