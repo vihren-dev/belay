@@ -55,10 +55,16 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/LiteralData.lean`,
   committed although the build failed, because a pipeline hid the exit code). Both are
   fixed (e356f084, review clean). Stopped to report to the owner, as the review rule
   requires. Builds are now checked by their exit code before a commit.
+- 2026-10-14: `WritePreservation.lean`: `Table.Valid.updated` (no premise),
+  `Table.Valid.inserted` (under the conjuncts of `insertReady`), `checkedWrite_conforms`,
+  and the step theorems `literalStep_insert_conforms` and `literalStep_update_conforms`.
+  Schema statements keep `Conforms` by the existing `Conforms.appendAt` and
+  `Conforms.set`. The module count test (`just test-nix`) was not run after the UPDATE
+  commit and failed there (57 modules); it now expects 58. `just test-nix` runs with
+  `test-full` from now on.
 
 ## Remaining
 
-- Preservation of `Conforms` by every statement (insert, update, schema statements).
 - Authored coverage cases of the amendment's "Testing" list (store-time list and UPDATE
   list, including the old filter boundary case), with kernel proofs, a corpus writer.
 - Mutants of the amendment's list.

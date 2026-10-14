@@ -13,6 +13,7 @@ import Belay.Sqlite.ModelFacts
 import Belay.Sqlite.SchemaExtension
 import Belay.Sqlite.SchemaPreservation
 import Belay.Sqlite.LiteralPreservation
+import Belay.Sqlite.WritePreservation
 import Belay.Sqlite.ModelProjection
 import Belay.Sqlite.Laws
 import Belay.Sqlite.Resolution
