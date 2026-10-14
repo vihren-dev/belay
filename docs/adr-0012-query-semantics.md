@@ -364,7 +364,7 @@ when the conjunct is removed.
 - `INSERT OR`, `UPDATE OR`, UPSERT (slice 5); `UPDATE … FROM`; `ORDER BY` and
   `LIMIT` on `UPDATE`; `INSERT … SELECT`; subqueries; parameters.
 - A bare column or literal as a condition; collations other than BINARY.
-- Triggers and foreign-key actions. `DELETE`, which the model does not have.
+- Triggers and foreign-key actions. `DELETE` until slice 3c (question 6).
 
 ### Testing
 
@@ -399,9 +399,10 @@ when the conjunct is removed.
 
 ### Slices
 
-Item 3 of "Slices" becomes two items. **3a. Writes with output** is the narrowed
-slice of the owner. **3b. Row-dependent writes** is this amendment. Items 4 to 6
-do not change. Slice 5 (`ON CONFLICT`) uses the expressions of slice 3b in
+Item 3 of "Slices" becomes three items. **3a. Writes with output** is the narrowed
+slice of the owner. **3b. Row-dependent writes** is this amendment. **3c. DELETE**
+follows 3b: `DELETE FROM table [WHERE condition] [RETURNING columns]` with the
+filter of 3b, its change count and its `RETURNING` rows. Items 4 to 6 do not change. Slice 5 (`ON CONFLICT`) uses the expressions of slice 3b in
 `DO UPDATE SET`.
 
 ### Alternatives considered
@@ -414,7 +415,7 @@ do not change. Slice 5 (`ON CONFLICT`) uses the expressions of slice 3b in
 - **A second constructor for row-dependent `UPDATE`.** Rejected: two evaluators
   for one statement, against the "Consequences" of this ADR.
 
-### Open questions for the owner
+### Owner decisions
 
 1. **Key columns.** Decided on 2026-10-14: a row-dependent `SET` value for a key
    column is a model restriction. Row-dependent writes to keys are rare in
@@ -440,5 +441,6 @@ do not change. Slice 5 (`ON CONFLICT`) uses the expressions of slice 3b in
    that SQLite can reach. A property of the databases that the model's own statements
    can reach (for example, no REAL value in an INTEGER column) must never be used to
    admit a database, so the model defines no such notion.
-6. **`DELETE`.** It needs only the filter. Proposed: a later slice. Alternative:
-   add it to slice 3b.
+6. **`DELETE`.** Decided on 2026-10-14: its own slice, 3c, right after 3b. It
+   reuses the filter of 3b, keeps 3b focused, and makes migrations that delete
+   rows, where application data is lost, verifiable early.
