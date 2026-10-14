@@ -460,8 +460,8 @@ Item 4 of "Slices" names inner and left joins, qualified names and the
 `ambiguous column name` error. The rest of this ADR describes a query over one
 table: `Resolved.Query` holds one table position, an expression names a column by
 its position in that table, and more than one table is a restriction. This
-amendment decides the joined source and the names of slice 4. The open questions at
-the end need the owner's decision before the slice starts.
+amendment decides the joined source and the names of slice 4, and the owner's
+decisions at the end add slices 4b and 4c.
 
 ### Source
 
@@ -533,11 +533,7 @@ joins in `DELETE` stay refused.
 1. **`USING` and `NATURAL`.** Decided; see "Owner decisions".
 2. **`RIGHT` and `FULL` joins.** Decided; see "Owner decisions".
 3. **Two sources with the same name.** Decided; see "Owner decisions".
-4. **Size.** SQLite allows up to 64 tables in a join. A join of many large tables
-   makes the kernel proofs of conformance cases expensive. Options: (A) no limit
-   beyond SQLite's; (B) a model restriction above a small number of tables, such
-   as 4. Recommendation: A, with the authored cases kept small; the model evaluates
-   only what a case runs.
+4. **Size.** Decided; see "Owner decisions".
 
 ### Owner decisions
 
@@ -566,3 +562,7 @@ joins in `DELETE` stay refused.
    source; a self-join names its sources with different aliases. SQLite prepares such
    a query and reports a column of both with the schema name, as
    `ambiguous column name: main.t.a`, which the model does not reproduce.
+4. **Size.** Decided on 2026-10-14: no limit beyond SQLite's. A join of 64 tables
+   runs; a 65th table is SQLite's prepare error `at most 64 tables in a join`
+   (checked on 3.51.0). The authored coverage cases, which have kernel proofs, stay
+   small: two or three tables with a few rows each.
