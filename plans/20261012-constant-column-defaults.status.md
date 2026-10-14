@@ -566,3 +566,15 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of the completed T14 representation and codec changes.
+
+
+- 2026-10-14: The resource guard stopped new build work at 9.62 GiB free.
+  Under the owner's standing cleanup approval, Nix garbage collection
+  deleted 118 unreachable store paths and freed 5,386.12 MiB. Every deletion
+  is recorded in build/t14-space-cleanup-20261014.log. No workspace test
+  directory or retained build link was deleted. The resource guard passes
+  after cleanup. Catalog-admission implementation has not started yet.
+
+Decisions waiting for the owner:
+
+- Final review of the completed T14 representation and codec changes.
