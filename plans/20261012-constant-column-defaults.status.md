@@ -556,3 +556,13 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of the completed T14 representation and codec changes.
+
+
+- 2026-10-14: Integration e30196a9 passes independent review
+  20261014T162046Z-e30196a9 with no findings. The frozen suite passed all
+  146 tests in 68.46 seconds. The active bookmark includes the approved
+  corpus update. Catalog admission and ADD COLUMN execution remain next.
+
+Decisions waiting for the owner:
+
+- Final review of the completed T14 representation and codec changes.
