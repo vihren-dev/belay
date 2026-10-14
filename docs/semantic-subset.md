@@ -20,6 +20,9 @@ The frontend maps these statements, and refuses every other statement as
   `TRANSACTION`;
 - `INSERT INTO table [(columns)] VALUES` with one or more rows;
 - `UPDATE table SET column = value, … [WHERE expression]`;
+- `RETURNING columns` after `INSERT … VALUES` and `UPDATE`, with result columns as in
+  `SELECT`, over each written row (slice 3a); an aggregate is SQLite's prepare error,
+  and a rowid name in `RETURNING` is a model restriction;
 - `SELECT columns FROM table [WHERE …] [GROUP BY …] [ORDER BY … [ASC|DESC]]
   [LIMIT n [OFFSET m]]` from one table, whose result columns are `*` or
   expressions with an optional alias (ADR 0012, slice 1).
@@ -30,9 +33,12 @@ comparisons, `IS` and `IS NOT`, `AND`, `OR`, `NOT`, `IS NULL` and its forms,
 parentheses, `COUNT(*)`, `COUNT`, `MIN`, `MAX`, `SUM` and `AVG` of one argument, the arithmetic
 operators `+`, `-`, `*`, `/` and `%`, unary `-` and `+` of any expression,
 `CAST(expression AS type)`, and `COALESCE` of two or more arguments (ADR 0012,
-slice 2). REAL literals have a value only in a `SELECT`. Named
+slice 2). In a write, a `VALUES` item, a `SET` value and the value of a
+`column = value` filter may be any of these expressions that names no column:
+resolution computes its value (slice 3a). REAL values are computed, but stored
+only where the model admits them. Named
 constraints, collations, `CHECK`, `REFERENCES`, generated columns, conflict
-clauses, `RETURNING`, `UPSERT`, `WITH`, `FROM` in writes, sort modifiers in keys,
+clauses, `UPSERT`, `WITH`, `FROM` in writes, sort modifiers in keys,
 partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
 options, `AS SELECT`, views, triggers, virtual tables, `EXPLAIN`, `PRAGMA`,
 compound `SELECT`, `DISTINCT`, `HAVING`, joins, table aliases, `table.*`,

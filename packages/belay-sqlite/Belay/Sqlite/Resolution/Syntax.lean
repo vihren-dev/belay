@@ -140,6 +140,10 @@ inductive Statement where
   {lit}`none` or an empty list; {lit}`LIMIT offset, limit` gives both expressions. -/
   | select (columns : List ResultColumn) (table : String) (filter : Option Expr) (groupBy : List Expr)
       (orderBy : List OrderTerm) (limit : Option Expr) (offset : Option Expr)
+  /-- A write with {lit}`RETURNING columns`: an {lit}`INSERT` or {lit}`UPDATE` statement and
+  its result columns. A write without {lit}`RETURNING` is the statement alone, so its
+  record does not change. -/
+  | returning (write : Statement) (columns : List ResultColumn)
   deriving Repr, DecidableEq
 
 end Belay.Sqlite.Syntax

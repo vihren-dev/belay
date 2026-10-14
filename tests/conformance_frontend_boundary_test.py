@@ -37,7 +37,7 @@ assert record['release'] == '3.51.0' and record['sourceId'] == selected.source_i
 assert record['script'][0]['update']['assignments'] == [['x', {'string': {'bytes': [195, 169]}}]]
 assert [item['createIndex']['name'] for item in record['schema'][1:]] == ['second', 'first']
 try:
-    statements(parse(parser, b'UPDATE t SET x=upper(x) WHERE k=1;', 'bad.sql'))
+    statements(parse(parser, b'UPDATE t SET x=x || 1 WHERE k=1;', 'bad.sql'))
 except SqlError as error:
     assert error.status == 'UNSUPPORTED'
     assert error.source == 'bad.sql' and error.end > error.start

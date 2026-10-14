@@ -49,10 +49,10 @@ constraint retains the input database. Other statements use {name}`step`. This
 computation does not establish the separate stored-value support obligation. -/
 def literalStep (statement : Resolved.Statement) (database : Database) (position : Nat) : Outcome :=
   match statement with
-  | .insert at_ rows keys => match database at_ with
+  | .insert at_ rows keys _ => match database at_ with
     | none => .failure position .unmodeled database
     | some table => checkedWrite database at_ keys (LiteralData.inserted table rows) position
-  | .update at_ assignments filter keys => match database at_ with
+  | .update at_ assignments filter keys _ => match database at_ with
     | none => .failure position .unmodeled database
     | some table => checkedWrite database at_ keys (LiteralData.updated table assignments filter) position
   | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ | .query _ =>
@@ -66,8 +66,8 @@ accepts such statements. Other statement forms pass. Use it through the
 reached-statement script support check. -/
 def statementReady (statement : Resolved.Statement) (database : Database) : Bool :=
   match statement with
-  | .insert at_ rows keys => (database at_).all fun table => LiteralData.insertReady keys table rows
-  | .update at_ assignments filter keys => (database at_).all fun table =>
+  | .insert at_ rows keys _ => (database at_).all fun table => LiteralData.insertReady keys table rows
+  | .update at_ assignments filter keys _ => (database at_).all fun table =>
       LiteralData.updateReady keys table assignments filter
   | .createTable _ _ table => table.plain
   | .addColumn _ column => column.plain

@@ -10,7 +10,7 @@ namespace Belay.Sqlite
 /-- Whether a statement is BEGIN, COMMIT or ROLLBACK. -/
 def Syntax.Statement.transactionControl : Syntax.Statement → Bool
   | .begin | .commit | .rollback => true
-  | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .update .. | .select .. => false
+  | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .update .. | .select .. | .returning .. => false
 
 /-- For every statement that is not BEGIN, COMMIT or ROLLBACK and that resolves, the
 saved catalog of the next state is the saved catalog of the state. Proof sketch:
@@ -22,8 +22,9 @@ theorem resolveStatement_saved (context : ResolveContext) (state next : ResolveS
     (ok : resolveStatement context state index statement = .ok (resolved, next)) :
     next.saved = state.saved := by
   cases statement <;> simp [Syntax.Statement.transactionControl] at plain <;>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok <;>
-    split at ok <;> cases ok <;> rfl
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+  all_goals (repeat' split at ok)
+  all_goals first | (cases ok; done) | (cases ok; rfl)
 
 /-- For every list of statements without BEGIN, COMMIT or ROLLBACK that resolves, the
 saved catalog of the final state is the saved catalog of the first state. Proof

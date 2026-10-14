@@ -87,8 +87,8 @@ theorem all_scripts_preserve (script : List Resolved.Statement) (guard : SchemaO
     DatabaseExtends database (runSql script database).database := runSql_extends guard database
 
 -- A literal INSERT changes the rows, so the schema-only preservation guard is necessary.
-example : ¬ SchemaOnly [.insert 0 [[.integer 8]] []] := by simp [SchemaOnly]
-#guard ((runSql [.insert 0 [[.integer 8]] []] initial).database 0).map (fun table => table.rows.length) = some 3
+example : ¬ SchemaOnly [.insert 0 [[.integer 8]] [] []] := by simp [SchemaOnly]
+#guard ((runSql [.insert 0 [[.integer 8]] [] []] initial).database 0).map (fun table => table.rows.length) = some 3
 
 /-- No complete certificate exists when the approved starting condition is false:
 its required admitted witness would satisfy False. This holds for every supplied

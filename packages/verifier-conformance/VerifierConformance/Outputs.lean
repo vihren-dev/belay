@@ -59,10 +59,17 @@ def matchesOutput (expected actual : StatementOutput)
     ordered.all (fun group => group.rows.all (fun row => row.length == expected.columns.length)) &&
     matchesGroups ordered expected.rows && matchesGroups ordered actual.rows
 
+/-- The {lit}`RETURNING` rows of a write: each {lit}`RETURNING` expression evaluated over
+each written row, in order. A write without {lit}`RETURNING` returns no rows. -/
+def returnedRows (returning : List (Resolved.Expr × String)) (written : List (List Value)) : List ResultRow :=
+  if returning.isEmpty then [] else written.map fun row => returning.map fun (expression, _) => expression.eval row
+
 /-- Observe the literal-DML domain; unsupported output capability is explicit.
 Transitions and failure status come from production advance, never a second
 evaluator. A successful INSERT changes one row per VALUES row and a successful
-UPDATE changes each row that its filter selects. A query has its result column
+UPDATE changes each row that its filter selects; their {lit}`RETURNING` rows are
+{name}`returnedRows` of the inserted rows, or of the new values of the selected rows. A
+write that fails a constraint returns its {lit}`RETURNING` names and no rows. A query has its result column
 names and the rows of {name}`Resolved.Query.run` over the table before it, and no
 change count; a query whose table is missing has no output. A query that fails with
 {lit}`integer overflow` has its column names and no rows when it has no
@@ -80,14 +87,18 @@ def statementOutput (statement : Resolved.Statement) (before : SqlState)
     | .halt (.pending _ _ (some (_, .integerOverflow))) => true
     | _ => false
   match statement with
-  | .insert _ rows _ =>
-    if successful then some ⟨[], [], some rows.length⟩
-    else if constraintFailure then some ⟨[], [], some 0⟩ else none
-  | .update at_ _ filter _ =>
+  | .insert _ rows _ returning =>
+    let names := returning.map (·.2)
+    if successful then some ⟨names, returnedRows returning rows, some rows.length⟩
+    else if constraintFailure then some ⟨names, [], some 0⟩ else none
+  | .update at_ assignments filter _ returning =>
+    let names := returning.map (·.2)
     if successful then do
       let table ← before.database at_
-      return ⟨[], [], some (table.rows.filter (LiteralData.selected filter)).length⟩
-    else if constraintFailure then some ⟨[], [], some 0⟩ else none
+      let chosen := table.rows.filter (LiteralData.selected filter)
+      return ⟨names, returnedRows returning (chosen.map fun row => (LiteralData.assign assignments row).values),
+        some chosen.length⟩
+    else if constraintFailure then some ⟨names, [], some 0⟩ else none
   | .query query =>
     if successful then (before.database query.table).map fun table => ⟨query.names, query.run table, none⟩
     else if overflow && query.groupBy.isEmpty then some ⟨query.names, [], none⟩ else none

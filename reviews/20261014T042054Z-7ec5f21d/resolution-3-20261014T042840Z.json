@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-14T04:28:40+00:00",
+  "finding": "20261014T042054Z-7ec5f21d#3",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "QueryResolutionExamples checks that WHERE Abc = 1 + 2 resolves to the integer filter (0, 3)"
+}
