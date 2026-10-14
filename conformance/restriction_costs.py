@@ -25,8 +25,8 @@ from conformance.case_format import Json
 
 
 def cause(prediction: dict[str, Json]) -> tuple[str, str] | None:
-    """The kind and the name of the cause that keeps a case out of scope, or `None` for a
-    case in scope."""
+    """Classify one prediction by what keeps it out of scope, so that each case counts
+    toward exactly one cause. Return `None` for a case in scope."""
     if prediction.get("status") == "unsupported":
         if "restriction" in prediction:
             return "restrictions", str(prediction["restriction"])
@@ -37,8 +37,9 @@ def cause(prediction: dict[str, Json]) -> tuple[str, str] | None:
 
 
 def costs(directory: Path) -> dict[str, Json]:
-    """The number of cases for each cause, over every corpus file, most frequent first,
-    and the number of cases in each corpus."""
+    """Count the causes over every corpus file, most frequent first, so that the largest
+    blocker comes first in the ranking. Keep the size of each corpus, so that a count
+    can be read as a share."""
     counters: dict[str, Counter[str]] = {"restrictions": Counter(), "frontend": Counter(), "undeclared": Counter()}
     cases: dict[str, int] = {}
     for path in sorted(directory.glob("*.jsonl")):
@@ -52,7 +53,8 @@ def costs(directory: Path) -> dict[str, Json]:
 
 
 def main() -> None:
-    """Print the counts as JSON."""
+    """Print the counts as JSON, for a person who chooses the next restriction to lift
+    and for scripts that compare two runs."""
     parser = argparse.ArgumentParser(description="Count the corpus cases that each model restriction keeps out of "
                                                  "scope, from the subject's predictions.")
     parser.add_argument("--predictions", type=Path, required=True, help="Directory of CORPUS.jsonl predictions")
