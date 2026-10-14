@@ -1,6 +1,6 @@
 # Writes with output, slice 3a of ADR 0012
 
-Created 2026-10-14. Status: IN PROGRESS.
+Created 2026-10-14. Status: DONE (pull requests #112 and B).
 Specification: [ADR 0012](../docs/adr-0012-query-semantics.md), "Slices", item 3,
 narrowed by the owner on 2026-10-14 to the part that keeps writes literal (slice 3a).
 Writes whose values or filters depend on the row (`SET v = v + 1`, a general `WHERE`)
