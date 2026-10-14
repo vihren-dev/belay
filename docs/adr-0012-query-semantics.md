@@ -347,9 +347,12 @@ every order, and for one row it collides only with a row that keeps its key.
 from `SqlExecution.lean`, whose types do not change. The field `ready` still
 requires `SupportedSql` for every admitted database, as a proof obligation, not a
 premise. The obligations now depend on the values that an `UPDATE` reads, so a
-proof of `ready` can need an approved condition, for example `k < 2^63 - 1`. The
-meaning of `ready` changes in files that are not owner-reviewed; this amendment is
-the owner's review of that change.
+proof of `ready` can need an approved condition about those values. The meaning of
+`ready` changes in files that are not owner-reviewed. They stay outside CODEOWNERS
+(question 3): like the rest of the model, they are checked by evidence. Each
+conjunct of `insertReady`, `updateReady` and `statementReady` has a mutant, and a
+claimed boundary case, with a database state just outside the domain, disagrees
+when the conjunct is removed.
 
 ### Restrictions that remain
 
@@ -376,6 +379,12 @@ the owner's review of that change.
   row; a NULL filter selects the row; no store affinity; `castValue` as store
   affinity; a REAL column keeps an integer; a TEXT column keeps a number; a failed
   `UPDATE` keeps the rows before the failing one; the change count counts every row.
+- **Obligation mutants and boundary cases.** Each conjunct of the admission
+  obligations has a mutant that removes it, and a boundary case whose database state
+  is just outside the domain: `MODEL_UNSUPPORTED` with the conjunct, `DISAGREE`
+  without it. For example, `1.0` in a column without affinity under the filter
+  `c = 1`, and a REAL that equals an integer in a unique key. The boundary cases are
+  frozen and claimed through the judge, so a weakened obligation fails the verdict.
 - **Proofs.** `storeValue` is idempotent, and its result for TEXT affinity is never
   a number. The update changes only selected rows, only at assigned positions, and
   keeps rowids and order. The update of slice 3a is the special case of literal
@@ -406,8 +415,10 @@ do not change. Slice 5 (`ON CONFLICT`) uses the expressions of slice 3b in
    migrations, and the restriction keeps the key obligations of slice 3a.
 2. **Order-dependent unique failures.** Resolved by question 1: with constant key
    values, no result depends on the order of rows.
-3. **Owner review of obligations.** `SqlExecution.lean` and `LiteralData.lean`
-   define what `ready` requires. Should they join `.github/CODEOWNERS`?
+3. **Owner review of obligations.** Decided on 2026-10-14: no CODEOWNERS change.
+   The obligations are model code like the rest of the model, so evidence checks
+   them: obligation mutants and claimed boundary cases (see "Testing"). The
+   obligations of slice 3a get the same mutants and cases before slice 3b.
 4. **Filter obligation.** Slice 3b removes it and so admits more scripts. Accept,
    or keep it?
 5. **Stored form.** `Conforms` admits values that SQLite cannot store, for example
