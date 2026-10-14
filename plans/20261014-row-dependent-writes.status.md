@@ -76,6 +76,20 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/LiteralData.lean`,
 - 2026-10-14: CI of #115 failed: the single mutant test (54 mutants) passed the 300 s
   pytest limit on the hosted runner. Split into a query and number test (79 s locally)
   and a write test (27 s); together 107 s locally, less than the 125 s before.
+- 2026-10-14: the second CI run failed: the frozen v5 progress test passed 300 s.
+  On main's Linux runner it already took 260 s, and the query mutant test 266 s; the
+  9 new mutants added contention. Profiling (owner's request) found:
+  - 37 of the 61 s of the v5 test in 1,061 one-case classifier runs of the query
+    diagnostic: now batched (256 cases per run);
+  - 7 of the 11 s of corpus `load` in the cyclic garbage collector, which walked the
+    10.9 million decoded objects on each full collection: load and replay now run with
+    the collector paused (`conformance/replay_support.py`). The test takes 24 s alone.
+  - every mutant rebuilds the modules after its file, and Resolution.Syntax and the
+    modules after it depended on Comparison and Arithmetic only for the operator types:
+    the types moved to `Operators.lean`, and Values dropped an unused import. An
+    Arithmetic mutant rebuilds 20 modules instead of 29; the query and number
+    measurement takes 59 s instead of 77 s alone.
+  Under the full parallel test load locally: query mutants 110 s → 80 s, v5 test → 47 s.
 
 ## Remaining
 
