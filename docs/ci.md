@@ -82,6 +82,16 @@ with `nix-build -A tests`, among them these; the flake exposes the same derivati
   corpus text. Its runtime root holds the built library and inputs, so a model,
   harness or documentation change reuses the result.
 
+`just test-scheduled` builds the scheduled suites of `tests/nix_scheduled_suites.json`
+with `nix-build -A scheduledTests`. `just package` runs it, so main pushes, tags,
+manual and nightly runs check these suites, and so does a pull request with the
+`package` scope. Pull requests with a smaller scope do not, so that their CI time
+does not grow. The flake checks exclude them.
+
+- `scheduledTests.obligations`: mutants of the admission obligations; each must make
+  its boundary case of `conformance/authored_obligations.py` disagree with native
+  SQLite.
+
 Each target runs ordinary pytest on a cache miss. Its explicit source files,
 Python/pytest, native tools, Lean artifacts and command determine its Nix identity.
 Successful outputs retain pytest's JUnit XML. There is no Python cache validator or
@@ -135,7 +145,7 @@ pytest, even if the corresponding Nix target is already cached.
 Development `just test` selects `developmentTests`, the same targets except
 `tests.model`, `tests.frozen`, `tests.corpora` and `tests.mutants`. `tests/nix_suites.json` assigns test files to Nix and supplies the
 host `--source-checks` exclusion list. Source-owned conformance checks remain
-fresh. Every scope from `test` up runs all Nix targets.
+fresh. Every scope from `test` up runs all Nix targets of `tests`.
 
 The pinned cache-nix-action restores the Nix store on every applicable run.
 Only main pushes and nightly runs save caches after their checks. The cache key is the platform, the Nix pins and a hash of

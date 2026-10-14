@@ -60,7 +60,8 @@ def refusal(result: dict[str, Json], schema: tuple[Located, ...], script: tuple[
     if result["status"] == "schemaError":
         return Rejection("INPUT_ERROR", f"SQLite refuses this schema statement: {result['message']}; correct the "
                          "schema", source=str(source), start=start, end=end)
-    return Rejection("UNSUPPORTED", str(result["reason"]), source=str(source), start=start, end=end)
+    return Rejection("UNSUPPORTED", str(result["reason"]), source=str(source), start=start, end=end,
+                     details={"restriction": str(result["restriction"])})
 
 
 def resolve(runtime: Runtime, record: dict[str, Json], schema: tuple[Located, ...],

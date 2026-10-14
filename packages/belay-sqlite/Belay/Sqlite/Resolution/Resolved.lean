@@ -1,5 +1,6 @@
 import Belay.Sqlite.Resolution.Catalog
 import Belay.Sqlite.Resolution.QueryForm
+import Belay.Sqlite.Resolution.RestrictionText
 
 set_option doc.verso true
 
@@ -79,9 +80,12 @@ structure Restriction where
   statement : Nat
   /-- Child positions from the statement to the refused node; empty for the statement. -/
   path : List Nat
-  /-- Why the model does not describe the SQL. -/
-  reason : String
+  /-- Which restriction of the registry refuses the SQL. -/
+  kind : RestrictionKind
   deriving Repr, DecidableEq
+
+/-- The message of a restriction that users read: the message of its kind. -/
+def Restriction.reason (restriction : Restriction) : String := restriction.kind.message
 
 namespace Resolved
 

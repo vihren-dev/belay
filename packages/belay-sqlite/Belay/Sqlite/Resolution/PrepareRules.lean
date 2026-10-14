@@ -104,7 +104,7 @@ theorem resolveInsert_named (context : ResolveContext) (catalog after : Catalog)
     | (rename_i _ _ cause; have := insertValues_issue _ _ _ cause
        simp_all [ValueIssue.namesNoObject]; done)
     | (rename_i _ _ cause; have := resolveAll_issue _ _ _
-         (fun _ row _ h => fullRow_issue _ _ _ row _ h) cause
+         (fun _ row _ h => fullRow_issue _ _ row _ h) cause
        simp_all [ValueIssue.namesNoObject]; done)
     | (rename_i cause; cases names <;> simp only at cause <;>
         first | cases cause | simp [insertPositions_error _ _ _ _ cause] at named)

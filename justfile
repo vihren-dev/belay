@@ -81,6 +81,11 @@ review-resolve *args:
 judge-lock:
     nix-instantiate --eval --strict --json integrity/judge.nix -A current | python3 -m json.tool --sort-keys --indent 1
 
+# Count the claimed-corpus cases that each model restriction keeps out of scope.
+restriction-costs:
+    timeout 1800 nix-build integrity/judge.nix -A predictions --out-link build/predictions --extra-experimental-features 'nix-command flakes' >&2
+    python3 -m conformance.restriction_costs --predictions build/predictions
+
 # Run the locked judge on this commit's subject, as the verdict job does.
 verdict:
     timeout 1800 nix-build integrity/judge.nix -A verdict --out-link build/verdict
@@ -94,6 +99,11 @@ review-stats *args:
 test-nix:
     timeout --foreground 600 python3 -u -m pytest -v tests -m requires_nix --ignore=tests/runtime_package_test.py --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD}" --junitxml build/test-results/nix.xml
 
+# Run the scheduled suites (tests/nix_scheduled_suites.json), which pull requests skip.
+test-scheduled:
+    mkdir -p build
+    timeout 900 nix-build build-support/default.nix -A scheduledTests --out-link build/nix-tests-scheduled --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+
 # Select only the cached application-specific suite.
 test-atuin:
     mkdir -p build
@@ -105,7 +115,7 @@ runtime-package: build
     timeout --foreground 1800 python3 -m pytest --junitxml build/test-results/installed.xml --runtime-archive "dist/sqlite-verifier-${SQLITE_VERIFIER_SYSTEM:?Enter nix develop path:./nix}.tar.gz" --runtime-variant installed tests/runtime_package_test.py tests/atuin_cli_test.py
 
 # Keep a source snapshot alongside the checked installable runtime.
-package: test-full test-nix runtime-package
+package: test-full test-nix runtime-package test-scheduled
     mkdir -p dist
     tar --exclude='./.jj' --exclude='./.git' --exclude='./.lake' --exclude='./.direnv' --exclude='./dist' --exclude='./build' --exclude='__pycache__' --exclude='./result*' -czf dist/sqlite-verifier-source.tar.gz .
 

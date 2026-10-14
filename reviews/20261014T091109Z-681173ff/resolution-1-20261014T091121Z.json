@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-14T09:11:21+00:00",
+  "finding": "20261014T091109Z-681173ff#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the docstrings of cause, costs and main explain how each supports ranking the restrictions"
+}

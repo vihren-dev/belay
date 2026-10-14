@@ -46,7 +46,7 @@ def Syntax.Statement.describesCatalog : Syntax.Statement → Bool
 /-- The first schema statement that cannot describe a catalog, as a restriction. -/
 def schemaStatementRestriction (schema : List Syntax.Statement) : Option Restriction :=
   (findPosition (!·.describesCatalog) schema).map fun (index, _) =>
-    { statement := index, path := [], reason := "a schema contains only CREATE TABLE and CREATE INDEX statements; move the other statement to the script" }
+    { statement := index, path := [], kind := .schemaStatement }
 
 /-- The prepare error of a resolved statement, if it is one. -/
 def Resolved.Statement.prepareError? : Resolved.Statement → Option PrepareError

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-14T09:06:13+00:00",
+  "finding": "20261014T085201Z-8bf0df77#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "tests check the id in the CLI rejection report (resolver JSON through migration_check) and in the prediction output"
+}

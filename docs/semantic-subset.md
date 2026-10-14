@@ -89,6 +89,60 @@ or inside an `ORDER BY` expression; a query of SQLite's own tables, such as
 an integer literal, or a negative `OFFSET`. Each restriction message says what to
 change.
 
+### Restriction registry
+
+Each model restriction has a stable id. A rejection reports it in the field
+`restriction`, next to its message, and the conformance predictions record it too.
+The registry is `RestrictionKind` in
+`packages/belay-sqlite/Belay/Sqlite/Resolution/Restrictions.lean`, with the ids and
+messages in `RestrictionText.lean`. Every id has one row in this table;
+`tests/restriction_registry_test.py` checks that the table and the registry list the
+same ids. `conformance/restriction_examples.py` has, for every id, a schema and a
+migration that the resolver refuses with that id, and a test runs each one. The
+exception is `returning-target`: the frontend refuses its example (DELETE ...
+RETURNING) before resolution, and the test checks that refusal. Syntax
+that the frontend refuses before resolution, such as `DISTINCT` or
+an UPSERT, has no id. `just restriction-costs` counts, for each id and for each kind
+of frontend refusal, the cases of the claimed corpora that it keeps out of scope.
+
+| Id | Restriction | Introduced by |
+| --- | --- | --- |
+| `schema-statement` | A schema contains only CREATE TABLE and CREATE INDEX statements | ADR 0008 |
+| `engine-table` | Engine-managed tables other than sqlite_stat1 and sqlite_stat4 are not modeled | ADR 0008 |
+| `rowid-column-name` | Column names `rowid`, `_rowid_` and `oid` are not modeled | ADR 0008 |
+| `rowid-alias` | INTEGER PRIMARY KEY rowid aliases are not modeled | ADR 0008 |
+| `create-table-constraints` | Constraints and defaults in a CREATE TABLE that runs are not modeled | ADR 0008 |
+| `unmodeled-default` | Only the `CURRENT_TIMESTAMP` default is modeled | ADR 0008 |
+| `create-index-runs` | A CREATE INDEX that runs is not modeled | ADR 0008 |
+| `add-column-constraint` | Only a nullable column without a default can be added | ADR 0008 |
+| `real-value` | REAL values are not modeled | ADR 0008 |
+| `time-value` | Time values are not modeled | ADR 0008 |
+| `affinity-conversion` | The column affinity would convert this value | ADR 0008 |
+| `key-affinity` | Unique keys over TEXT or REAL columns are not modeled | ADR 0008 |
+| `key-value` | Only integer and NULL values are modeled in unique key columns | ADR 0008 |
+| `column-in-value` | Column references in values are not modeled | ADR 0012 slice 3a |
+| `insert-column-twice` | A column named twice in INSERT is not modeled | ADR 0008 |
+| `update-column-twice` | A column assigned twice in UPDATE is not modeled | ADR 0008 |
+| `literal-comparison` | A comparison of two literals is not modeled | ADR 0008 |
+| `non-integer-filter` | Only an integer equality with an INTEGER, NUMERIC or BLOB column is modeled | ADR 0008 |
+| `filter-form` | Only a column equality filter is modeled | ADR 0008 |
+| `rowid-in-returning` | A rowid in RETURNING is not modeled | ADR 0012 slice 3a |
+| `returning-target` | RETURNING is modeled only on INSERT and UPDATE | ADR 0012 slice 3a |
+| `system-table` | Queries of SQLite's own tables, such as `sqlite_schema`, are not modeled | ADR 0012 slice 1 |
+| `unmodeled-function` | Only `COUNT(*)`, `COUNT`, `MIN`, `MAX`, `SUM` and `AVG` of one argument, and `COALESCE` of two or more arguments are modeled as functions | ADR 0012 slices 1 and 2 |
+| `aggregate-in-expression` | An aggregate inside an expression is not modeled | ADR 0012 slice 1 |
+| `alias-in-expression` | A result column alias inside WHERE or an ORDER BY expression is not modeled | ADR 0012 slice 1 |
+| `value-as-condition` | A value used as a condition is not modeled | ADR 0012 slice 1 |
+| `mixed-affinity-comparison` | A comparison of columns with different kinds of affinity is not modeled | ADR 0012 slice 1 |
+| `text-to-number` | A text value compared with a numeric column would be converted to a number | ADR 0012 slice 1 |
+| `number-to-text` | A number compared with a TEXT column would be converted to text | ADR 0012 slice 1 |
+| `group-by-term` | Only a column name or a result column number is modeled in GROUP BY | ADR 0012 slice 1 |
+| `bare-column` | A result column outside GROUP BY in an aggregate query is not modeled | ADR 0012 slice 1 |
+| `aggregate-order-by` | An aggregate query is modeled with ORDER BY result column numbers or aliases only | ADR 0012 slice 1 |
+| `window-value` | Only an integer literal is modeled as LIMIT or OFFSET | ADR 0012 slice 1 |
+| `negative-offset` | A negative OFFSET is not modeled | ADR 0012 slice 1 |
+| `windowed-group-sum` | SUM in a grouped query with LIMIT or OFFSET is not modeled, because SQLite may stop before an overflowing group | ADR 0012 slice 2 |
+
 ## Execution
 
 The execution semantics runs the resolved statements on a database keyed by

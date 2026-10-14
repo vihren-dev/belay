@@ -29,7 +29,7 @@ def returningColumn (dqs : Bool) (columns : List CatalogColumn) (item : Nat) :
   | .star => .ok (columns.mapIdx fun position column => (.column position, column.name))
   | .expression value alias text =>
     if mentionsRowid columns value then
-      .error (.restriction [item, 0] "a rowid in RETURNING is not modeled; return the table's columns")
+      .error (.restriction [item, 0] .rowidInReturning)
     else do
       let (resolved, _) ← (resolveOperand dqs columns true value).mapError (·.under [item, 0])
       let defined := match value with

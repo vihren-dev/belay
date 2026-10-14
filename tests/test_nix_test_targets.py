@@ -62,7 +62,7 @@ def test_bounded_commands_keep_complete_suite_ownership() -> None:
     ownership = json.loads((ROOT / 'tests/nix_suites.json').read_text())
     assert set(scripts) == set(ownership) == {'atuin', 'bundle', 'cli', 'kernel', 'model', 'frozen', 'corpora',
                                                'harness', 'sample', 'upstream', 'parserLibrary', 'packages',
-                                               'documentation', 'mutants'}
+                                               'documentation', 'mutants', 'obligations'}
     for name, script in scripts.items():
         command = shlex.split(next(line for line in script.replace('\\\n', ' ').splitlines()
                                   if line.strip().startswith('timeout ')))
@@ -129,7 +129,8 @@ def test_flake_checks_reuse_existing_targets(system: str, flake_source: Path) ->
     assert flake.returncode == 0, flake.diagnostic()
     assert legacy.returncode == 0, legacy.diagnostic()
     checks = json.loads(flake.stdout)
-    assert set(checks) == set(json.loads((ROOT / 'tests/nix_suites.json').read_text()))
+    scheduled = set(json.loads((ROOT / 'tests/nix_scheduled_suites.json').read_text()))
+    assert set(checks) == set(json.loads((ROOT / 'tests/nix_suites.json').read_text())) - scheduled
     assert checks == json.loads(legacy.stdout)
 
 

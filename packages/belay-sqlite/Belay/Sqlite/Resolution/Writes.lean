@@ -25,19 +25,24 @@ def resolveAll (resolveOne : Nat → α → Except ValueIssue β) (items : List 
   resolveAllFrom resolveOne 0 items
 
 /-- The value of a column's DEFAULT when INSERT omits the column: NULL without a
-default, else the default literal. A time default is a model restriction. -/
-def defaultValue (dqs : Bool) (column : CatalogColumn) : Except ValueIssue Value :=
+default. The only default that a catalog holds is {lit}`CURRENT_TIMESTAMP`
+(resolution refuses the others with {name}`RestrictionKind.unmodeledDefault`), and
+its time value is a model restriction. -/
+def defaultValue (column : CatalogColumn) : Except ValueIssue Value :=
   match column.defaultValue with
   | none => .ok .null
-  | some (.identifier name _) => .ok (.text name.toUTF8.toList)
-  | some value => literalValue dqs value
+  | some (.currentTime _) => .error (.restriction [] .timeValue)
+  | some .null | some (.numeric _) | some (.string _) | some (.blob _) | some (.identifier ..)
+  | some (.negate _) | some (.positive _) | some (.equals ..) | some (.compare ..) | some (.and ..)
+  | some (.or ..) | some (.not _) | some (.isNull ..) | some (.callStar _) | some (.call ..)
+  | some (.arithmetic ..) | some (.cast ..) | some (.callPair ..) => .error (.restriction [] .unmodeledDefault)
 
 /-- The value of a SET expression with the table's columns in scope. An expression
 that names a column depends on the row, which the model does not describe yet; any
 other expression is a constant, as in {name}`constantValue`. -/
 def assignedValue (columns : List CatalogColumn) (dqs : Bool) (expression : Syntax.Expr) : Except ValueIssue Value :=
   if mentionsColumn columns expression then
-    .error (.restriction [] "column references in values are not modeled; write a value that names no column")
+    .error (.restriction [] .columnInValue)
   else constantValue dqs expression
 
 /-- Turn a value issue into the statement's resolution: a prepare error keeps the
@@ -57,12 +62,12 @@ def insertPositions (tableName : String) (columns : List CatalogColumn) :
 
 /-- One full row in table order: the written value of a named column, or its default.
 Each value must be stored unchanged by the column's affinity. -/
-def fullRow (dqs : Bool) (columns : List CatalogColumn) (positions : List Nat) (row : List Value) :
+def fullRow (columns : List CatalogColumn) (positions : List Nat) (row : List Value) :
     Except ValueIssue (List Value) :=
   resolveAll (fun position column => do
     let value ← match positions.idxOf? position with
       | some written => .ok (row[written]?.getD .null)
-      | none => defaultValue dqs column
+      | none => defaultValue column
     storedValue column.affinity value [position]) columns
 
 /-- Resolve INSERT. Path 1 is the column list and path 2 the rows. -/
@@ -89,8 +94,8 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
         else if names.isSome && width != positions.length then
           prepareError catalog (.valuesForColumns width positions.length)
         else if positions.eraseDups.length != positions.length then
-          restrict index [1] "a column named twice in INSERT is not modeled; name each column once"
-        else match resolveAll (fun _ row => fullRow context.profile.dqsDml table.columns positions row) values with
+          restrict index [1] .insertColumnTwice
+        else match resolveAll (fun _ row => fullRow table.columns positions row) values with
           | .error issue => issueResolution catalog index [2] issue
           | .ok full =>
             let keys := catalog.uniqueKeys position table
@@ -110,7 +115,7 @@ def resolveFilter (context : ResolveContext) (columns : List CatalogColumn) :
   | some (.equals (.identifier name doubleQuoted) right) =>
     match columnPosition columns name with
     | none =>
-      if doubleQuoted && context.profile.dqsDml then .error (.restriction [0] "a comparison of two literals is not modeled; compare a column with a literal")
+      if doubleQuoted && context.profile.dqsDml then .error (.restriction [0] .literalComparison)
       else .error (.prepare (.noSuchColumn name))
     | some position => do
       let value ← (assignedValue columns context.profile.dqsDml right).mapError (·.under [1])
@@ -118,9 +123,9 @@ def resolveFilter (context : ResolveContext) (columns : List CatalogColumn) :
       match value with
       | .integer _ =>
         if integerComparable affinity then .ok (some (position, value))
-        else .error (.restriction [1] "only an integer equality with an INTEGER, NUMERIC or BLOB column is modeled; compare such a column with an integer literal")
+        else .error (.restriction [1] .nonIntegerFilter)
       | .null | .real _ | .text _ | .blob _ =>
-        .error (.restriction [1] "only an integer equality with an INTEGER, NUMERIC or BLOB column is modeled; compare such a column with an integer literal")
+        .error (.restriction [1] .nonIntegerFilter)
   | some (.equals (.null) _) | some (.equals (.numeric _) _) | some (.equals (.string _) _)
   | some (.equals (.blob _) _) | some (.equals (.currentTime _) _) | some (.equals (.negate _) _)
   | some (.equals (.positive _) _) | some (.equals (.equals ..) _) | some (.equals (.compare ..) _)
@@ -131,7 +136,7 @@ def resolveFilter (context : ResolveContext) (columns : List CatalogColumn) :
   | some (.identifier ..) | some (.negate _) | some (.positive _) | some (.compare ..) | some (.and ..)
   | some (.or ..) | some (.not _) | some (.isNull ..) | some (.callStar _) | some (.call ..)
   | some (.arithmetic ..) | some (.cast ..) | some (.callPair ..) =>
-    .error (.restriction [] "only a column equality filter is modeled; write WHERE column = integer")
+    .error (.restriction [] .filterForm)
 
 /-- Resolve UPDATE. Path 1 is the assignment list, path 2 the filter and path 3 the
 {lit}`RETURNING` columns, which resolve last. -/
@@ -153,7 +158,7 @@ def resolveUpdate (context : ResolveContext) (catalog : Catalog) (index : Nat) (
         | .error issue => issueResolution catalog index [2] issue
         | .ok resolvedFilter =>
           if positions.eraseDups.length != positions.length then
-            restrict index [1] "a column assigned twice in UPDATE is not modeled; assign each column once"
+            restrict index [1] .updateColumnTwice
           else match resolveAll (fun item (column, value) =>
               storedValue ((table.columns[column]?.map CatalogColumn.affinity).getD .blob) value [item, 1])
               (positions.zip values) with

@@ -47,7 +47,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "no_such_column": (EXPRESSIONS,
         "      else .error (.prepare (.noSuchColumn name))", "      else .ok (.literal .null, none)"),
     "no_such_table": (RESOLUTION,
-        "    else prepareError catalog (.noSuchTable tableName)", "    else restrict index [1] \"mutant\""),
+        "    else prepareError catalog (.noSuchTable tableName)", "    else restrict index [1] .systemTable"),
     "no_misuse_of_aggregate": (EXPRESSIONS,
         "  if misuse then .prepare (.misuseOfAggregate function)", "  if false then .prepare (.misuseOfAggregate function)"),
     "no_aggregate_in_group_by": (RESOLUTION,
@@ -55,10 +55,10 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         ".error ((callIssue name).under [3, item])"),
     "no_order_by_out_of_range": (RESOLUTION,
         "      | some (.error ()) => .error (.prepare (.orderByOutOfRange (item + 1) outputs.length))",
-        "      | some (.error ()) => .error (.restriction [4, item] \"mutant\")"),
+        "      | some (.error ()) => .error (.restriction [4, item] .aggregateOrderBy)"),
     "no_group_by_out_of_range": (RESOLUTION,
         "        | some (.error ()) => .error (.prepare (.groupByOutOfRange (item + 1) outputs.length))",
-        "        | some (.error ()) => .error (.restriction [3, item] \"mutant\")"),
+        "        | some (.error ()) => .error (.restriction [3, item] .groupByTerm)"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
 replacement. The names follow the list of ADR 0012, "Testing"."""
@@ -76,3 +76,24 @@ TARGETS: dict[str, tuple[str, ...]] = {
 """The authored case that each mutant changes: the case of
 `conformance.authored_queries` that tests the rule. A mutant copy classifies only its
 target, which keeps the measurement short."""
+
+GUARDS: dict[str, str] = {
+    "null_equals_null": "rule:Comparison.apply",
+    "integer_as_double": "rule:Value.scaled",
+    "text_without_case": "rule:Value.bytes",
+    "descending_ignored": "rule:compareTerm",
+    "null_last_ascending": "rule:compareTerm",
+    "count_counts_null": "rule:Aggregate.eval",
+    "extremum_over_null": "rule:extremum",
+    "empty_aggregate_no_row": "rule:queryGroups",
+    "limit_one_too_high": "rule:Query.run",
+    "offset_ignored": "rule:Query.run",
+    "no_such_column": "rule:resolveOperand",
+    "no_such_table": "rule:resolveSelect",
+    "no_misuse_of_aggregate": "rule:aggregateIssue",
+    "no_aggregate_in_group_by": "rule:resolveSelect",
+    "no_order_by_out_of_range": "rule:resolveSelect",
+    "no_group_by_out_of_range": "rule:resolveSelect",
+}
+"""What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
+changes. `conformance.mutant_guards` checks every entry."""

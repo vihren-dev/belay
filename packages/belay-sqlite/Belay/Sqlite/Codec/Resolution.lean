@@ -14,7 +14,16 @@ deriving instance Lean.FromJson, Lean.ToJson for Syntax.Expr, Syntax.ColumnConst
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ResultColumn, Syntax.OrderTerm
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ColumnDefinition, Syntax.TableConstraint
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.Statement
-deriving instance Lean.ToJson for PrepareError, Restriction, ScriptIssue
+deriving instance Lean.ToJson for PrepareError
+
+/-- A model restriction as JSON: the statement index, the path, the message that users
+read as {lit}`reason`, and the stable id of its kind as {lit}`restriction`. -/
+instance : Lean.ToJson Restriction where
+  toJson restriction := Lean.Json.mkObj [("statement", Lean.toJson restriction.statement),
+    ("path", Lean.toJson restriction.path), ("reason", Lean.toJson restriction.reason),
+    ("restriction", Lean.toJson restriction.kind.id)]
+
+deriving instance Lean.ToJson for ScriptIssue
 
 -- One command per type: a combined `deriving instance` treats its types as one group.
 deriving instance Lean.ToExpr for Comparison

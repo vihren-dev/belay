@@ -15,20 +15,22 @@ pytestmark = [pytest.mark.e2e, pytest.mark.kernel, pytest.mark.requires_lean,
               pytest.mark.requires_native]
 
 
-@pytest.mark.parametrize("sql,refused", [
-    ("CREATE INDEX i ON invoices(amount);", "CREATE INDEX i ON invoices(amount)"),
-    ("CREATE TABLE t(a TEXT, rowid TEXT);", "a TEXT, rowid TEXT"),
-    ("INSERT INTO invoices VALUES (1.5);", "1.5"),
+@pytest.mark.parametrize("sql,refused,restriction", [
+    ("CREATE INDEX i ON invoices(amount);", "CREATE INDEX i ON invoices(amount)", "create-index-runs"),
+    ("CREATE TABLE t(a TEXT, rowid TEXT);", "a TEXT, rowid TEXT", "rowid-column-name"),
+    ("INSERT INTO invoices VALUES (1.5);", "1.5", "real-value"),
 ], ids=["index_that_runs", "rowid_column", "real_value"])
 def test_restriction_names_the_refused_sql(invoke: Callable[..., dict[str, object]], candidate: Path,
-                                           sql: str, refused: str) -> None:
-    """A model restriction from Lean resolution is UNSUPPORTED at the byte range of the refused node."""
+                                           sql: str, refused: str, restriction: str) -> None:
+    """A model restriction from Lean resolution is UNSUPPORTED at the byte range of the refused node,
+    and the report names the restriction's stable id from the registry (`RestrictionKind.id`)."""
     (candidate / "migration.sql").write_text(sql)
     report = invoke("UNSUPPORTED")
     start, end = report["start"], report["end"]
     assert isinstance(start, int) and isinstance(end, int)
     assert sql.encode()[start:end].decode() == refused, report
     assert str(report["source"]).endswith("migration.sql") and "; " in str(report["message"]), report
+    assert report["restriction"] == restriction, report
 
 
 def test_schema_prepare_error_names_the_statement(invoke: Callable[..., dict[str, object]], approved: Path) -> None:

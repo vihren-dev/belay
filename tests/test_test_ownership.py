@@ -49,3 +49,17 @@ def test_recipe_expansion_retains_full_model_in_release_checks() -> None:
         assert f"-A {target} --out-link build/nix-tests" in commands
         if recipe != "test":
             assert "-A developmentTests" not in commands
+
+
+def test_scheduled_suites_run_only_in_the_package_recipe() -> None:
+    """A scheduled suite (`tests/nix_scheduled_suites.json`) is an owned Nix suite, the pull
+    request recipes build only `tests`, which excludes it, and `just package`, which main
+    pushes and scheduled runs use, builds it through `test-scheduled`."""
+    suites = json.loads((ROOT / "tests/nix_suites.json").read_text())
+    scheduled = json.loads((ROOT / "tests/nix_scheduled_suites.json").read_text())
+    assert scheduled and set(scheduled) <= set(suites)
+    recipes = (ROOT / "justfile").read_text()
+    assert "\npackage: test-full test-nix runtime-package test-scheduled\n" in recipes
+    assert "-A scheduledTests " in recipes and "-A tests " in recipes
+    default = (ROOT / "build-support/default.nix").read_text()
+    assert "tests = pkgs.lib.removeAttrs allTests scheduledSuites;" in default
