@@ -458,3 +458,15 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of the completed T14 representation and codec changes.
+
+
+- 2026-10-14: Documentation correction 7044c7d6 passes review
+  20261014T155857Z-7044c7d6 with no findings. The preparation correction on
+  current main is tested and reviewed. The task bookmark records this
+  checkpoint. Constant-default admission, execution, preservation and
+  installed acceptance remain unfinished. The older implementation and
+  evidence remain on the archive bookmark named above.
+
+Decisions waiting for the owner:
+
+- Final review of the completed T14 representation and codec changes.
