@@ -89,7 +89,7 @@ def predict (p : PredictInput) : Json :=
   let profile := p.profile
   match resolveSchemaAndScript profile p.schema p.script with
   | .error (.schemaRestricted restriction) | .error (.scriptRestricted restriction) =>
-    Json.mkObj [("restricted", toJson restriction.reason)]
+    Json.mkObj [("restricted", toJson restriction.reason), ("restriction", toJson restriction.kind.id)]
   | .error (.schemaPrepareError ..) =>
     Json.mkObj [("supported", toJson true), ("outputs", toJson ([] : List Json)), ("steps", toJson [
       Json.mkObj [("visible", toJson ([] : List Json)), ("persisted", toJson ([] : List Json)),

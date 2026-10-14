@@ -18,8 +18,9 @@ with the path of the node inside the expression. -/
 inductive ValueIssue where
   /-- SQLite refuses to prepare the statement. -/
   | prepare (error : PrepareError)
-  /-- The model does not describe the expression at this path. -/
-  | restriction (path : List Nat) (reason : String)
+  /-- The model does not describe the expression at this path, for the reason of the
+  restriction kind. -/
+  | restriction (path : List Nat) (kind : RestrictionKind)
   deriving Repr, DecidableEq
 
 /-- Prefix the paths of model restrictions with the node's position. -/
@@ -94,7 +95,7 @@ a hexadecimal literal over 64 bits is SQLite's prepare error. -/
 def numericLiteral (text : String) (negated : Bool) (path : List Nat) : Except ValueIssue Value :=
   match numericValue text negated with
   | .integer value => .ok (.integer value)
-  | .real => .error (.restriction path "REAL values are not modeled; use an integer, text, blob or NULL value")
+  | .real => .error (.restriction path .realValue)
   | .hexTooBig => .error (.prepare (.hexLiteralTooBig (hexErrorText text negated)))
 
 /-- Whether literal characters, without separators, start with {lit}`0x` or {lit}`0X`. -/
@@ -136,18 +137,18 @@ def literalValue (dqs : Bool) : Syntax.Expr → Except ValueIssue Value
   | .identifier name doubleQuoted =>
     if doubleQuoted && dqs then .ok (.text name.toUTF8.toList)
     else .error (.prepare (.noSuchColumn name))
-  | .currentTime _ => .error (.restriction [] "time values are not modeled; write the time as a text literal")
-  | .negate _ => .error (.restriction [] "only a numeric literal may be negated; write the negated value as a literal")
+  | .currentTime _ => .error (.restriction [] .timeValue)
+  | .negate _ => .error (.restriction [] .negatedNonNumeric)
   | .equals .. | .compare .. | .and .. | .or .. | .not _ | .isNull .. =>
-    .error (.restriction [] "a comparison or logical operator is not a literal value; write a literal value")
-  | .callStar _ | .call .. => .error (.restriction [] "an aggregate is not a literal value; write a literal value")
+    .error (.restriction [] .conditionAsValue)
+  | .callStar _ | .call .. => .error (.restriction [] .aggregateAsValue)
   | .arithmetic .. | .cast .. | .callPair .. =>
-    .error (.restriction [] "an expression is not a literal value outside a query; write a literal value")
+    .error (.restriction [] .expressionAsValue)
 
 /-- Admit a value only when the column's affinity stores it unchanged
 ({name}`LiteralData.lossless`); otherwise the conversion is a model restriction. -/
 def storedValue (affinity : Affinity) (value : Value) (path : List Nat) : Except ValueIssue Value :=
   if LiteralData.lossless affinity value then .ok value
-  else .error (.restriction path "the column affinity would convert this value; write NULL, a blob, or a value that the affinity keeps unchanged")
+  else .error (.restriction path .affinityConversion)
 
 end Belay.Sqlite

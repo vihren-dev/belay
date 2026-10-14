@@ -47,7 +47,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "no_such_column": (EXPRESSIONS,
         "      else .error (.prepare (.noSuchColumn name))", "      else .ok (.literal .null, none)"),
     "no_such_table": (RESOLUTION,
-        "    else prepareError catalog (.noSuchTable tableName)", "    else restrict index [1] \"mutant\""),
+        "    else prepareError catalog (.noSuchTable tableName)", "    else restrict index [1] .systemTable"),
     "no_misuse_of_aggregate": (EXPRESSIONS,
         "  if misuse then .prepare (.misuseOfAggregate function)", "  if false then .prepare (.misuseOfAggregate function)"),
     "no_aggregate_in_group_by": (RESOLUTION,
@@ -55,10 +55,10 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         ".error ((callIssue name).under [3, item])"),
     "no_order_by_out_of_range": (RESOLUTION,
         "      | some (.error ()) => .error (.prepare (.orderByOutOfRange (item + 1) outputs.length))",
-        "      | some (.error ()) => .error (.restriction [4, item] \"mutant\")"),
+        "      | some (.error ()) => .error (.restriction [4, item] .aggregateOrderBy)"),
     "no_group_by_out_of_range": (RESOLUTION,
         "        | some (.error ()) => .error (.prepare (.groupByOutOfRange (item + 1) outputs.length))",
-        "        | some (.error ()) => .error (.restriction [3, item] \"mutant\")"),
+        "        | some (.error ()) => .error (.restriction [3, item] .groupByTerm)"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
 replacement. The names follow the list of ADR 0012, "Testing"."""

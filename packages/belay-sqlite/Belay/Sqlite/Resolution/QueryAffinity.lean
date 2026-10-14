@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.QueryForm
+import Belay.Sqlite.Resolution.Restrictions
 
 set_option doc.verso true
 
@@ -53,23 +54,23 @@ affinity, an operand without affinity that may be TEXT ({name}`Resolved.Expr.may
 or a column of another affinity would get NUMERIC affinity (R-58138-64688); when the other operand is a TEXT column and this one has
 no affinity, a value other than a NULL, text or blob literal would get TEXT
 affinity (R-29161-32953). -/
-def conversion (target : Operand) (other : Option Affinity) : Option String :=
+def conversion (target : Operand) (other : Option Affinity) : Option RestrictionKind :=
   if other.any numericAffinity then
     match target.2 with
     | some affinity =>
       if numericAffinity affinity then none
-      else some "a comparison of columns with different kinds of affinity is not modeled; compare columns with the same kind"
+      else some .mixedAffinityComparison
     | none =>
       if target.1.mayBeText then
-        some "a text value compared with a numeric column would be converted to a number; write a number"
+        some .textToNumber
       else none
   else if other == some .text && target.2.isNone && !((target.1.literal?.map Value.keepsText).getD false) then
-    some "a number compared with a TEXT column would be converted to text; write a text value"
+    some .numberToText
   else none
 
 /-- Why the affinity rule of a comparison would convert an operand, with the path of
 that operand (R-10393-27560), checking the left operand first. -/
-def affinityIssue (left right : Operand) : Option (List Nat × String) :=
+def affinityIssue (left right : Operand) : Option (List Nat × RestrictionKind) :=
   match conversion left right.2 with
   | some reason => some ([0], reason)
   | none => (conversion right left.2).map ([1], ·)

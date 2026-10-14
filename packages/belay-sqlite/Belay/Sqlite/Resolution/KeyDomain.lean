@@ -31,11 +31,11 @@ unique key column that is not {name}`integerComparable` (path empty), or else th
 first written row (path from {lit}`rowPath`) that has a value outside
 {name}`keyValue` in a key column. Each row lists column positions and values. -/
 def keyDomainRestriction (columns : List CatalogColumn) (keys : List (List Nat))
-    (rowPath : Nat → List Nat) (rows : List (List (Nat × Value))) : Option (List Nat × String) :=
+    (rowPath : Nat → List Nat) (rows : List (List (Nat × Value))) : Option (List Nat × RestrictionKind) :=
   let keyColumns := keys.flatten
   if keyColumns.any (fun position => !integerComparable (columnAffinity columns position)) then
-    some ([], "unique keys over TEXT or REAL columns are not modeled; write only to tables whose key columns have INTEGER, NUMERIC or BLOB affinity")
+    some ([], .keyAffinity)
   else (findPosition (·.any fun (position, value) => keyColumns.contains position && !keyValue value) rows).map
-    fun (row, _) => (rowPath row, "only integer and NULL values are modeled in unique key columns; write an integer or NULL key value")
+    fun (row, _) => (rowPath row, .keyValue)
 
 end Belay.Sqlite

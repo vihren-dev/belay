@@ -75,7 +75,7 @@ def prepareError (catalog : Catalog) (error : PrepareError) : StatementResolutio
   .ok (.prepareError error, catalog)
 
 /-- A model restriction at a path of statement {lit}`index`. -/
-def restrict (index : Nat) (path : List Nat) (reason : String) : StatementResolution :=
-  .error { statement := index, path := path, reason := reason }
+def restrict (index : Nat) (path : List Nat) (kind : RestrictionKind) : StatementResolution :=
+  .error { statement := index, path := path, kind := kind }
 
 end Belay.Sqlite

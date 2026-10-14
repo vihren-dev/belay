@@ -58,7 +58,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "no_such_table": (SQLITE + "Resolution/Definitions.lean",
         "  | none => prepareError catalog (.noSuchTable tableName)\n  | some (position, table) =>\n"
         "    if reservedName tableName then prepareError catalog (.tableMayNotBeAltered tableName)",
-        "  | none => restrict index [] \"mutant\"\n  | some (position, table) =>\n"
+        "  | none => restrict index [] .createIndexRuns\n  | some (position, table) =>\n"
         "    if reservedName tableName then prepareError catalog (.tableMayNotBeAltered tableName)"),
     "commit_without_transaction": (SQLITE + "SqlExecution.lean",
         "    | none => .halt (.failure position .noActiveTransaction state.database)\n"

@@ -37,7 +37,7 @@ that names a column depends on the row, which the model does not describe yet; a
 other expression is a constant, as in {name}`constantValue`. -/
 def assignedValue (columns : List CatalogColumn) (dqs : Bool) (expression : Syntax.Expr) : Except ValueIssue Value :=
   if mentionsColumn columns expression then
-    .error (.restriction [] "column references in values are not modeled; write a value that names no column")
+    .error (.restriction [] .columnInValue)
   else constantValue dqs expression
 
 /-- Turn a value issue into the statement's resolution: a prepare error keeps the
@@ -89,7 +89,7 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
         else if names.isSome && width != positions.length then
           prepareError catalog (.valuesForColumns width positions.length)
         else if positions.eraseDups.length != positions.length then
-          restrict index [1] "a column named twice in INSERT is not modeled; name each column once"
+          restrict index [1] .insertColumnTwice
         else match resolveAll (fun _ row => fullRow context.profile.dqsDml table.columns positions row) values with
           | .error issue => issueResolution catalog index [2] issue
           | .ok full =>
@@ -110,7 +110,7 @@ def resolveFilter (context : ResolveContext) (columns : List CatalogColumn) :
   | some (.equals (.identifier name doubleQuoted) right) =>
     match columnPosition columns name with
     | none =>
-      if doubleQuoted && context.profile.dqsDml then .error (.restriction [0] "a comparison of two literals is not modeled; compare a column with a literal")
+      if doubleQuoted && context.profile.dqsDml then .error (.restriction [0] .literalComparison)
       else .error (.prepare (.noSuchColumn name))
     | some position => do
       let value ← (assignedValue columns context.profile.dqsDml right).mapError (·.under [1])
@@ -118,9 +118,9 @@ def resolveFilter (context : ResolveContext) (columns : List CatalogColumn) :
       match value with
       | .integer _ =>
         if integerComparable affinity then .ok (some (position, value))
-        else .error (.restriction [1] "only an integer equality with an INTEGER, NUMERIC or BLOB column is modeled; compare such a column with an integer literal")
+        else .error (.restriction [1] .nonIntegerFilter)
       | .null | .real _ | .text _ | .blob _ =>
-        .error (.restriction [1] "only an integer equality with an INTEGER, NUMERIC or BLOB column is modeled; compare such a column with an integer literal")
+        .error (.restriction [1] .nonIntegerFilter)
   | some (.equals (.null) _) | some (.equals (.numeric _) _) | some (.equals (.string _) _)
   | some (.equals (.blob _) _) | some (.equals (.currentTime _) _) | some (.equals (.negate _) _)
   | some (.equals (.positive _) _) | some (.equals (.equals ..) _) | some (.equals (.compare ..) _)
@@ -131,7 +131,7 @@ def resolveFilter (context : ResolveContext) (columns : List CatalogColumn) :
   | some (.identifier ..) | some (.negate _) | some (.positive _) | some (.compare ..) | some (.and ..)
   | some (.or ..) | some (.not _) | some (.isNull ..) | some (.callStar _) | some (.call ..)
   | some (.arithmetic ..) | some (.cast ..) | some (.callPair ..) =>
-    .error (.restriction [] "only a column equality filter is modeled; write WHERE column = integer")
+    .error (.restriction [] .filterForm)
 
 /-- Resolve UPDATE. Path 1 is the assignment list, path 2 the filter and path 3 the
 {lit}`RETURNING` columns, which resolve last. -/
@@ -153,7 +153,7 @@ def resolveUpdate (context : ResolveContext) (catalog : Catalog) (index : Nat) (
         | .error issue => issueResolution catalog index [2] issue
         | .ok resolvedFilter =>
           if positions.eraseDups.length != positions.length then
-            restrict index [1] "a column assigned twice in UPDATE is not modeled; assign each column once"
+            restrict index [1] .updateColumnTwice
           else match resolveAll (fun item (column, value) =>
               storedValue ((table.columns[column]?.map CatalogColumn.affinity).getD .blob) value [item, 1])
               (positions.zip values) with

@@ -27,7 +27,7 @@ inside another aggregate), else a model restriction (inside an expression of a
 result column). -/
 def aggregateIssue (misuse : Bool) (function : String) : ValueIssue :=
   if misuse then .prepare (.misuseOfAggregate function)
-  else .restriction [] "an aggregate inside an expression is not modeled; use the aggregate as a whole result column"
+  else .restriction [] .aggregateInExpression
 
 /-- The aggregate that a function name names, after ASCII folding: {lit}`count`,
 {lit}`min`, {lit}`max`, {lit}`sum` or {lit}`avg` of one operand. -/
@@ -50,7 +50,7 @@ def aggregateCall : Syntax.Expr → Bool
 
 /-- The restriction for a function call that the model does not evaluate. -/
 def unmodeledFunction : ValueIssue :=
-  .restriction [] "only COUNT(*), COUNT, MIN, MAX, SUM and AVG of one argument, and COALESCE of two or more arguments are modeled as functions"
+  .restriction [] .unmodeledFunction
 
 /-- The issue of a call with {lit}`*` or one argument that is not an aggregate:
 SQLite's {lit}`wrong number of arguments` for {lit}`COALESCE`, which needs two or more
@@ -81,14 +81,14 @@ def namesAlias (columns : List CatalogColumn) (aliases : List String) : Syntax.E
 
 /-- The restriction for a result column alias inside an expression. -/
 def aliasInExpression : ValueIssue :=
-  .restriction [] "a result column alias inside WHERE or an ORDER BY expression is not modeled; write the column expression"
+  .restriction [] .aliasInExpression
 
 /-- A condition, or a model restriction at {lit}`path` when the operand gives a
 value instead of a truth value. -/
 def condition (path : List Nat) : Except ValueIssue Operand → Except ValueIssue Resolved.Expr
   | .ok (expression, _) =>
     if expression.isCondition then .ok expression
-    else .error (.restriction path "a value used as a condition is not modeled; write a comparison")
+    else .error (.restriction path .valueAsCondition)
   | .error issue => .error (issue.under path)
 
 /-- Resolve an expression over the columns of the source table. An identifier is the

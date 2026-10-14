@@ -20,7 +20,16 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Values.lean`,
   restriction; this task comes before slice 3b.
 - 2026-10-14: the owner chose no CODEOWNERS change for the obligations (question 3);
   the task gains mutant-to-rule links, obligation mutants and boundary cases.
+- 2026-10-14: the registry. `Resolution/Restrictions.lean` defines `RestrictionKind`
+  with 39 constructors, each naming its origin; `RestrictionText.lean` gives the
+  stable id, the unchanged message and the list of all kinds. A script mapped each
+  message literal to one constructor (every literal matched exactly one). The type
+  change of `ValueIssue.restriction`, `Restriction` and `restrict` made the compiler
+  confirm every site. `Restriction` JSON keeps `reason` and adds `restriction` (the
+  id); the CLI resolver, the prediction output, `conformance/predict.py` and the
+  `migration_check` rejection details carry the id. The verdict counts do not change.
 
 ## Remaining
 
-- All outcome items of the task.
+- Documentation table and registry test; cost report; mutant links; obligation
+  mutants and boundary cases.

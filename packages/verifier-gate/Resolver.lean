@@ -15,10 +15,12 @@ The gates do not trust this output: they resolve the record again. See ADR 0008,
 
 open Lean Belay.Sqlite
 
-/-- The JSON of a model restriction in the schema or the script. -/
+/-- The JSON of a model restriction in the schema or the script, with its message and its
+stable id. -/
 def restrictionJson (part : String) (restriction : Restriction) : Json :=
   Json.mkObj [("status", "restricted"), ("part", toJson part), ("statement", toJson restriction.statement),
-    ("path", toJson restriction.path), ("reason", toJson restriction.reason)]
+    ("path", toJson restriction.path), ("reason", toJson restriction.reason),
+    ("restriction", toJson restriction.kind.id)]
 
 /-- The JSON status of an issue: a restriction or a schema prepare error. -/
 def issueJson : ScriptIssue → Json

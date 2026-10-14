@@ -67,7 +67,7 @@ def resolveStatement (context : ResolveContext) (state : ResolveState) (index : 
     | .update table assignments filter =>
       state.withCatalog (returningPaths (resolveUpdate context state.catalog index table assignments filter columns))
     | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .select .. | .returning .. =>
-      .error { statement := index, path := [0], reason := "RETURNING is modeled only on INSERT and UPDATE; remove it" }
+      .error { statement := index, path := [0], kind := .returningTarget }
 
 /-- Resolve the statements from a zero-based index and a state, in order. -/
 def resolveFrom (context : ResolveContext) (index : Nat) (state : ResolveState) :

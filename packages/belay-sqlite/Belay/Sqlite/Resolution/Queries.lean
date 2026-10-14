@@ -82,7 +82,7 @@ def windowValue (path : List Nat) : Option Syntax.Expr → Except ValueIssue (Op
   | none => .ok none
   | some term => match integerLiteral term with
     | some value => .ok (some value)
-    | none => .error (.restriction path "only an integer literal is modeled as LIMIT or OFFSET; write an integer")
+    | none => .error (.restriction path .windowValue)
 
 /-- Whether a query is a model restriction because SQLite may skip a failing group: it
 has {lit}`GROUP BY`, a {lit}`LIMIT` or {lit}`OFFSET`, and a result column that can fail
@@ -102,7 +102,7 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
   match catalog.findTable tableName with
   | none =>
     if reservedName tableName then
-      restrict index [1] "queries of SQLite's own tables, such as sqlite_schema, are not modeled; query an application table"
+      restrict index [1] .systemTable
     else prepareError catalog (.noSuchTable tableName)
   | some (position, table) =>
   let resolved : Except ValueIssue Resolved.Query := do
@@ -131,26 +131,26 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
       | .numeric _ | .negate _ => match namedResult aliases term with
         | some (.ok column) => grouped column
         | some (.error ()) => .error (.prepare (.groupByOutOfRange (item + 1) outputs.length))
-        | none => .error (.restriction [3, item] "only a column name or a result column number is modeled in GROUP BY")
+        | none => .error (.restriction [3, item] .groupByTerm)
       | .null | .string _ | .blob _ | .currentTime _ | .positive _ | .equals .. | .compare .. | .and .. | .or ..
       | .not _ | .isNull .. | .arithmetic .. | .cast .. | .callPair .. =>
-        .error (.restriction [3, item] "only a column name or a result column number is modeled in GROUP BY")) groupBy
+        .error (.restriction [3, item] .groupByTerm)) groupBy
     if aggregate && !outputs.all (groupedOutput terms ·.1) then
-      throw (.restriction [0] "a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it")
+      throw (.restriction [0] .bareColumn)
     let order ← resolveAll (fun item (term : Syntax.OrderTerm) => match namedResult aliases term.expression with
       | some (.ok column) => .ok (Resolved.SortKey.output column, term.descending)
       | some (.error ()) => .error (.prepare (.orderByOutOfRange (item + 1) outputs.length))
       | none =>
-        if aggregate then .error (.restriction [4, item] "an aggregate query is modeled with ORDER BY result column numbers or aliases only")
+        if aggregate then .error (.restriction [4, item] .aggregateOrderBy)
         else if namesAlias table.columns (aliases.filterMap id) term.expression then
           .error (aliasInExpression.under [4, item, 0])
         else (resolveOperand dqs table.columns false term.expression).map (fun (e, _) => (.expression e, term.descending))
           |>.mapError (·.under [4, item, 0])) orderBy
     let limitValue ← windowValue [5] limit
     let offsetValue ← windowValue [6] offset
-    if offsetValue.any (· < 0) then throw (.restriction [6] "a negative OFFSET is not modeled; write OFFSET 0 or more")
+    if offsetValue.any (· < 0) then throw (.restriction [6] .negativeOffset)
     if windowSkipsFailure groupBy limit offset (outputs.map (·.1)) then
-      throw (.restriction [5] "SUM in a grouped query with LIMIT or OFFSET is not modeled, because SQLite may stop before an overflowing group; remove the window or the SUM")
+      throw (.restriction [5] .windowedGroupSum)
     return { table := position, filter := condition, aggregate, groupBy := terms, columns := outputs.map (·.1),
              names := outputs.map (·.2), orderBy := order, offset := (offsetValue.getD 0).toNat,
              limit := limitValue.bind fun value => if value < 0 then none else some value.toNat }
