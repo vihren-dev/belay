@@ -269,6 +269,9 @@ filter that is any condition of slices 1 and 2, and store-time affinity.
   scope. The affinity rules of a comparison, the prepare errors (`no such column`,
   `misuse of aggregate function`) and the restrictions of slices 1 and 2 apply
   without change. A constant expression folds to `.literal` of its stored value.
+- **Key columns.** A `SET` value that reads the row may not assign a key column:
+  this is a model restriction (owner decision of 2026-10-14, question 1 below). A
+  key column takes a constant, as in slice 3a.
 - **`INSERT`.** `VALUES` cannot read a row: SQLite reports `no such column`. So
   `Resolved.Statement.insert` stays literal. Resolution applies the column affinity
   to each value and to each default, and stores the result.
@@ -320,11 +323,11 @@ in `OP_MakeRecord`, SQLite 3.51.0). The rules of the pinned `datatype3.html`:
    error (R-58129-20729). `RETURNING` of slice 3a reads the new rows.
 
 SQLite checks each row when it writes it, in an order that it does not specify
-(R-10927-26133). A check after the write agrees in two cases: the table after the
-write fails a check, so every order fails; or no selected row gets a key that
-another selected row has before the write, so no order collides. `SET k = k + 1`
-over the keys 1 and 2 is in neither case: the result depends on the order. The
-order-free obligation below excludes this case; the model chooses no order.
+(R-10927-26133). With a row-dependent key value, the result can depend on that
+order: `SET k = k + 1` over the keys 1 and 2 fails or succeeds by plan. Key
+values are constants (see "Resolved forms"), and then a check after the write
+agrees with every order: a constant key for two or more selected rows collides in
+every order, and for one row it collides only with a row that keeps its key.
 
 ### Data-domain obligations and the verification target
 
@@ -333,11 +336,7 @@ order-free obligation below excludes this case; the model chooses no order.
 - `tableReady keys table` before the write, and each assignment names a column.
   These do not change.
 - Each key position is `comparisonReady` in the table after the write. The formula
-  does not change, but values now come from rows. `SET k = k + 1` with `k` at
-  `2^63 - 1` gives a REAL, and `SET k = k + 0.5` gives a REAL in every row.
-- **New: order-free keys.** When the table after the write passes `constraints`,
-  no selected row has a new key that `keyEqual` matches with the old key of a
-  different selected row.
+  and its meaning do not change, because key values are constants.
 - **Removed:** `comparisonReady` at the filter position and the integer filter
   value. The Values level computes the comparison with SQLite's rules.
 
@@ -355,7 +354,7 @@ the owner's review of that change.
 ### Restrictions that remain
 
 - Unique keys over TEXT or REAL columns, and key values other than integer or
-  NULL. For an expression assignment, the second becomes the obligation above.
+  NULL. A `SET` value that reads the row for a key column (question 1).
 - `INTEGER PRIMARY KEY` rowid aliases; a column assigned twice in `UPDATE`.
 - `INSERT OR`, `UPDATE OR`, UPSERT (slice 5); `UPDATE … FROM`; `ORDER BY` and
   `LIMIT` on `UPDATE`; `INSERT … SELECT`; subqueries; parameters.
@@ -370,8 +369,8 @@ the owner's review of that change.
   and `2^63` as REAL into INTEGER; an integer and `2^53 + 1` into REAL; a REAL into
   TEXT; a BLOB into each. `UPDATE`: `SET v = v + 1`; `SET a = b, b = a`; a filter
   that is NULL for some rows; `AND`, `OR`, `IS` and `IS NULL` filters; no match; a
-  NOT NULL failure from a NULL cell; a unique failure after `SET k = k * 0`;
-  `SET k = k + 1000` over keys below 1000; a failure after some rows match, with
+  NOT NULL failure from a NULL cell; a unique failure after `SET k = 5` over two
+  rows; `SET k = k + 1` (a restriction); a failure after some rows match, with
   `RETURNING`; an integer overflow to REAL in a non-key column.
 - **Mutants.** Each must change the verdict of a case: `SET` values read the new
   row; a NULL filter selects the row; no store affinity; `castValue` as store
@@ -380,8 +379,8 @@ the owner's review of that change.
 - **Proofs.** `storeValue` is idempotent, and its result for TEXT affinity is never
   a number. The update changes only selected rows, only at assigned positions, and
   keeps rowids and order. The update of slice 3a is the special case of literal
-  assignments, so the existing preservation proofs carry over. Under the order-free
-  obligation, row-by-row checks in every order give the result of `checkedWrite`.
+  assignments, so the existing preservation proofs carry over. With constant key
+  values, row-by-row checks in every order give the result of `checkedWrite`.
 
 ### Slices
 
@@ -402,11 +401,11 @@ do not change. Slice 5 (`ON CONFLICT`) uses the expressions of slice 3b in
 
 ### Open questions for the owner
 
-1. **Key columns.** Proposed: allow expression assignments to key columns, with the
-   obligations above. Alternative: restrict them at resolution, as in slice 3a.
-2. **Order-dependent unique failures.** Proposed: exclude them by an obligation.
-   Alternative: `ProfileExecutes` relates such a statement to both outcomes;
-   `Contract.lean` would not change, but proofs would cover that failure.
+1. **Key columns.** Decided on 2026-10-14: a row-dependent `SET` value for a key
+   column is a model restriction. Row-dependent writes to keys are rare in
+   migrations, and the restriction keeps the key obligations of slice 3a.
+2. **Order-dependent unique failures.** Resolved by question 1: with constant key
+   values, no result depends on the order of rows.
 3. **Owner review of obligations.** `SqlExecution.lean` and `LiteralData.lean`
    define what `ready` requires. Should they join `.github/CODEOWNERS`?
 4. **Filter obligation.** Slice 3b removes it and so admits more scripts. Accept,
