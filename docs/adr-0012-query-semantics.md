@@ -447,3 +447,122 @@ filter of 3b, its change count and its `RETURNING` rows. Items 4 to 6 do not cha
 6. **`DELETE`.** Decided on 2026-10-14: its own slice, 3c, right after 3b. It
    reuses the filter of 3b, keeps 3b focused, and makes migrations that delete
    rows, where application data is lost, verifiable early.
+
+## Amendment 2: Joins (slice 4)
+
+Date: 2026-10-14. Status: PROPOSED.
+Related: "Slices", item 4; "Queries"; the slice 1 task,
+plans/20261013-single-table-queries.task.md.
+
+### Context
+
+Item 4 of "Slices" names inner and left joins, qualified names and the
+`ambiguous column name` error. The rest of this ADR describes a query over one
+table: `Resolved.Query` holds one table position, an expression names a column by
+its position in that table, and more than one table is a restriction. This
+amendment decides the joined source and the names of slice 4, and the owner's
+decisions at the end add slices 4b and 4c.
+
+### Source
+
+- **Forms.** `FROM` is a list of table references joined left to right
+  (R-28760-53843): `,`, `JOIN`, `INNER JOIN` and `CROSS JOIN` with an optional
+  `ON` condition, and `LEFT [OUTER] JOIN` with an `ON` condition. The four inner
+  forms are the same join (R-46256-57243, R-25071-21202). A table reference is a
+  table name with an optional alias (`t AS x` or `t x`).
+- **Rows.** An inner join is the cartesian product of its inputs, left columns
+  first (R-44414-54710, R-59089-25828), filtered by the `ON` condition when there is
+  one (R-38465-03616, R-49872-03192). A left join adds, for each left row that no
+  right row matches, the left row with NULL in every right column (R-24610-05866).
+  The `WHERE` filter then applies to the joined rows, so a condition on the right
+  table in `WHERE` removes the padded rows, and the same condition in `ON` keeps
+  them.
+- **Resolved form.** `Resolved.Query` holds a source: the first table position and a
+  list of joins, each with its kind, its table position and its optional `ON`
+  condition. A joined row is the concatenation of the cells of its tables, and an
+  expression names a column by its position in that concatenation. The evaluation
+  of expressions, groups, projection, order and window of "Queries" does not
+  change; the single-table query is the special case with no joins.
+- **Order.** The model's fixed order is the nested order of the source: left rows in
+  rowid order, and for each left row the matching right rows in rowid order. As for
+  one table, this order is not a claim about SQLite's order: rows without
+  `ORDER BY`, and ties under it, are compared as multisets (ADR 0005).
+- **Comparisons.** `ON` conditions are expressions as in `WHERE`, with the same
+  affinity rules and restrictions, applied to the operands as written.
+
+### Names
+
+- **Sources.** Each table reference has a name: its alias, or else its table name.
+  A qualified name `x.c` names column `c` of the source named `x`; with an alias,
+  the table name no longer names the source (`SELECT t.a FROM t AS x` is
+  `no such column: t.a`). A qualifier that names no source is `no such column: x.c`.
+- **Unqualified names.** An unqualified column name is resolved in all sources. In
+  exactly one source, it names that column. In two or more, it is SQLite's
+  `ambiguous column name: c`, also inside `ON`.
+- **Result columns.** `*` is every column of every source, in order, each named by
+  its column name; `x.*` is every column of source `x`, and `x.*` for a name that
+  names no source is `no such table: x`. A qualified bare column `x.c` is named `c`.
+- **Clauses.** Qualified and unqualified names work the same in `WHERE`, `ON`,
+  `GROUP BY`, `ORDER BY`, aggregates and result columns.
+
+### Verification target
+
+Queries change no state, so the execution semantics, `statementReady` and the
+verification target do not change. Writes keep one table: `UPDATE … FROM` and
+joins in `DELETE` stay refused.
+
+### Testing
+
+- **Authored coverage cases.** Each join form; an inner join with no match, one
+  match and several matches per row; a left join with unmatched left rows, with a
+  right-table condition in `ON` and the same condition in `WHERE`; three tables;
+  a self-join with aliases; qualified and unqualified names, `*` and `x.*`;
+  aggregates and `GROUP BY` over a join; `ORDER BY` a qualified name; the prepare
+  errors `ambiguous column name`, `no such column: x.c` and `no such table: x`.
+- **Mutants.** Each must change the verdict of a case: a left join drops unmatched
+  rows; a left join pads with the left row's values instead of NULL; `ON` is applied
+  after the padding (as `WHERE`); an unqualified name takes the first source
+  instead of the ambiguous error; an alias leaves the table name usable; `*` omits
+  the columns of the right source.
+- **Proofs.** The single-table query is the special case with no joins, so the
+  existing query laws carry over; a joined row has the sum of the widths of its
+  tables.
+
+### Open questions
+
+1. **`USING` and `NATURAL`.** Decided; see "Owner decisions".
+2. **`RIGHT` and `FULL` joins.** Decided; see "Owner decisions".
+3. **Two sources with the same name.** Decided; see "Owner decisions".
+4. **Size.** Decided; see "Owner decisions".
+
+### Owner decisions
+
+1. **`USING` and `NATURAL`.** Decided on 2026-10-14: both are modeled, in a slice
+   4b right after slice 4; slice 4 refuses them as model restrictions. SQLite merges
+   the named columns: the right column is omitted from `*` (R-57047-10461), and an
+   unqualified name refers to the left one; `t.a` and `u.a` still name both columns.
+   `USING (a)` compares the left-most column `a` of the left input with the right
+   column, and an unqualified `a` that names two left columns stays
+   `ambiguous column name: a`. A name in `USING` that is not in both inputs is
+   `cannot join using column a - column not present in both tables`; `NATURAL` with
+   `ON` or `USING` is `a NATURAL join may not have an ON or USING clause`; `NATURAL`
+   without a common column is a cross join. Slice 4b adds no evaluation: its joins
+   are inner and left joins with a generated `ON` condition.
+2. **`RIGHT` and `FULL` joins.** Decided on 2026-10-14: both are modeled, in a slice
+   4c right after slice 4b; slices 4 and 4b refuse them as model restrictions. A
+   right join adds, for each right row that no left row matches, the right row with
+   NULL in every left column (R-15753-04279); a full join adds both kinds of row
+   (R-18902-30764). With `USING`, an unqualified name of a merged column in a right or
+   full join is the value of whichever input is present, as `coalesce(left, right)`:
+   checked on 3.51.0, `SELECT a FROM t FULL JOIN u USING (a)` gives the right row's
+   `a` for a right row that no left row matches. Slice 4c comes after 4b so that
+   this rule is decided with the rest of `USING`.
+3. **Two sources with the same name.** Decided on 2026-10-14: a model restriction.
+   `FROM t, t` and `FROM t AS x, u AS x` are refused with the range of the second
+   source; a self-join names its sources with different aliases. SQLite prepares such
+   a query and reports a column of both with the schema name, as
+   `ambiguous column name: main.t.a`, which the model does not reproduce.
+4. **Size.** Decided on 2026-10-14: no limit beyond SQLite's. A join of 64 tables
+   runs; a 65th table is SQLite's prepare error `at most 64 tables in a join`
+   (checked on 3.51.0). The authored coverage cases, which have kernel proofs, stay
+   small: two or three tables with a few rows each.
