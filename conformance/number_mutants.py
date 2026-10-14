@@ -65,3 +65,21 @@ TARGETS: dict[str, tuple[str, ...]] = {
 """The authored case that each mutant changes: the case of
 `conformance.authored_numbers` that tests the rule. A mutant copy classifies only its
 target, which keeps the measurement short."""
+
+GUARDS: dict[str, str] = {
+    "overflow_stays_integer": "rule:ArithmeticOperator.integer",
+    "integer_division_as_real": "rule:ArithmeticOperator.integer",
+    "real_division_by_zero_not_null": "rule:ArithmeticOperator.real",
+    "nan_not_null": "rule:realValue",
+    "real_remainder_in_doubles": "rule:ArithmeticOperator.real",
+    "cast_integer_rounds": "rule:Value.toInt64",
+    "sum_naive": "rule:SumState.addDouble",
+    "sum_overflow_ignored": "rule:SumState.sumValue",
+    "avg_integer": "rule:SumState.averageValue",
+    "coalesce_last": "rule:Expr.eval",
+    "spaces_not_skipped": "rule:dropSpaces",
+    "exponent_ignored": "rule:atofExponentPart",
+    "coalesce_argument_count_removed": "rule:callIssue",
+}
+"""What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
+changes. `conformance.mutant_guards` checks every entry."""

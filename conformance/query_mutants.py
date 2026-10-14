@@ -76,3 +76,24 @@ TARGETS: dict[str, tuple[str, ...]] = {
 """The authored case that each mutant changes: the case of
 `conformance.authored_queries` that tests the rule. A mutant copy classifies only its
 target, which keeps the measurement short."""
+
+GUARDS: dict[str, str] = {
+    "null_equals_null": "rule:Comparison.apply",
+    "integer_as_double": "rule:Value.scaled",
+    "text_without_case": "rule:Value.bytes",
+    "descending_ignored": "rule:compareTerm",
+    "null_last_ascending": "rule:compareTerm",
+    "count_counts_null": "rule:Aggregate.eval",
+    "extremum_over_null": "rule:extremum",
+    "empty_aggregate_no_row": "rule:queryGroups",
+    "limit_one_too_high": "rule:Query.run",
+    "offset_ignored": "rule:Query.run",
+    "no_such_column": "rule:resolveOperand",
+    "no_such_table": "rule:resolveSelect",
+    "no_misuse_of_aggregate": "rule:aggregateIssue",
+    "no_aggregate_in_group_by": "rule:resolveSelect",
+    "no_order_by_out_of_range": "rule:resolveSelect",
+    "no_group_by_out_of_range": "rule:resolveSelect",
+}
+"""What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
+changes. `conformance.mutant_guards` checks every entry."""

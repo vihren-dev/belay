@@ -43,3 +43,13 @@ TARGETS: dict[str, tuple[str, ...]] = {
     "constant_not_evaluated": ("insert-constant-expressions",),
 }
 """The authored case of `conformance.authored_writes` that each mutant changes."""
+
+GUARDS: dict[str, str] = {
+    "update_returning_old_values": "rule:statementOutput",
+    "update_returning_every_row": "rule:statementOutput",
+    "returning_rows_on_failure": "rule:statementOutput",
+    "returning_names_ignore_definition": "rule:returningColumn",
+    "constant_not_evaluated": "rule:constantValue",
+}
+"""What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
+changes. `conformance.mutant_guards` checks every entry."""

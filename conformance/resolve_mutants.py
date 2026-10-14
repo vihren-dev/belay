@@ -70,6 +70,22 @@ replacement. A removed prepare-error condition lets the statement continue where
 the match allows it (`no_table_exists` creates the table again), or makes it a
 model restriction where nothing can continue (`no_such_table`)."""
 
+GUARDS: dict[str, str] = {
+    "non_ascii_fold": "rule:normalizeIdentifier",
+    "affinity_order": "rule:affinityOf",
+    "desc_rowid_alias": "rule:applyConstraint",
+    "rollback_keeps_catalog": "rule:resolveStatement",
+    "table_index_same_name": "rule:resolveCreateTable",
+    "constant_column_limit": "rule:resolveAddColumn",
+    "no_table_exists": "rule:resolveCreateTable",
+    "no_too_many_columns": "rule:resolveAddColumn",
+    "no_duplicate_column": "rule:resolveAddColumn",
+    "no_such_table": "rule:resolveAddColumn",
+    "commit_without_transaction": "rule:advance",
+}
+"""What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
+changes. `conformance.mutant_guards` checks every entry."""
+
 BUILD_TIMEOUT_SECONDS = 600
 """One Lake build of a copy; a fresh base build takes about 12 seconds."""
 RUN_TIMEOUT_SECONDS = 300

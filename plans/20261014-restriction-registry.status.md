@@ -51,7 +51,10 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Values.lean`,
   has one example script per id (35); `tests/conformance_restriction_examples_test.py`
   (harness suite, about 2 s) runs each through the frontend and the resolver;
   `returning-target` is listed as frontend-blocked until slice 3c.
+- 2026-10-14: mutant links. Each mutant table has `GUARDS`; `conformance/mutant_guards.py`
+  checks that a `rule:` guard names the declaration that contains the mutant's text, and
+  that restriction and obligation guards exist. All 45 existing mutants guard rules.
 
 ## Remaining
 
-- Mutant links; obligation mutants, boundary cases and the scheduled suite.
+- Obligation mutants, boundary cases and the scheduled suite.
