@@ -31,7 +31,7 @@ def idle : Observation := ⟨before, before, false, none⟩
 def begun : Observation := ⟨before, before, true, none⟩
 def written : Observation := ⟨after, before, true, none⟩
 def committed : Observation := ⟨after, after, false, none⟩
-def insertNew : Resolved.Statement := .insert 1 [[.integer 9]] [[0]]
+def insertNew : Resolved.Statement := .insert 1 [[.integer 9]] [[0]] []
 def writeScript : List Resolved.Statement := [.begin, insertNew]
 
 theorem pending_write : trace count writeScript initial = [idle, begun, written] := by

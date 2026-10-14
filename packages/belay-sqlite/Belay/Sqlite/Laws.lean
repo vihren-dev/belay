@@ -60,11 +60,11 @@ theorem literal_cases (statement : Resolved.Statement) (database : Database) (po
     cases h : database at_ <;> simp [literalStep, step, h]
   | addColumn at_ column =>
     cases h : database at_ <;> simp [literalStep, step, h]
-  | insert at_ rows keys =>
+  | insert at_ rows keys _ =>
     cases h : database at_ <;> simp only [literalStep, checkedWrite, h]
     all_goals try (split <;> simp_all)
     all_goals simp
-  | update at_ assignments filter keys =>
+  | update at_ assignments filter keys _ =>
     cases h : database at_ <;> simp only [literalStep, checkedWrite, h]
     all_goals try (split <;> simp_all)
     all_goals simp

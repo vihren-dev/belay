@@ -86,7 +86,24 @@ def test_numbers_map_arithmetic_cast_and_call_chains(parse_sql: Callable[..., Tr
         "callPair": {"name": "Coalesce", "first": column("b"), "rest": {"numeric": {"text": "3"}}}}}}
 
 
-def test_query_expressions_stay_refused_in_writes(parse_sql: Callable[..., Tree]) -> None:
-    """Comparisons and aggregates are query syntax: a VALUES row keeps refusing them."""
-    with pytest.raises(SqlError, match="Unsupported expression"):
-        statements(parse_sql("INSERT INTO t VALUES (a < 1);"))
+def test_writes_map_query_expressions_and_returning(parse_sql: Callable[..., Tree]) -> None:
+    """VALUES items, SET values and the WHERE expression are query expressions, and RETURNING
+    wraps the write with its result columns as in SELECT (slice 3a)."""
+    [insert, update] = [item.value for item in statements(parse_sql(
+        "INSERT INTO t VALUES (1 + 2) RETURNING *, a AS x; UPDATE t SET a = CAST(b AS INT) WHERE a < 1 RETURNING a;"))]
+    write = insert["returning"]["write"]["insert"]
+    assert write["rows"] == [[{"arithmetic": {"operator": "add", "left": {"numeric": {"text": "1"}},
+                                              "right": {"numeric": {"text": "2"}}}}]]
+    assert insert["returning"]["columns"] == ["star", {"expression": {"value": column("a"), "alias": "x", "text": "a"}}]
+    write = update["returning"]["write"]["update"]
+    assert write["assignments"] == [["a", {"cast": {"operand": column("b"), "typeName": "INT"}}]]
+    assert write["filter"] == {"compare": {"operator": "lt", "left": column("a"), "right": {"numeric": {"text": "1"}}}}
+    assert update["returning"]["columns"] == [{"expression": {"value": column("a"), "alias": None, "text": "a"}}]
+
+
+def test_upsert_stays_refused(parse_sql: Callable[..., Tree]) -> None:
+    """An UPSERT clause has no constructor and is refused at its range."""
+    sql = "INSERT INTO t VALUES (1) ON CONFLICT DO NOTHING;"
+    with pytest.raises(SqlError, match="UPSERT") as raised:
+        statements(parse_sql(sql))
+    assert sql.encode()[raised.value.start:raised.value.end].decode() == "ON CONFLICT DO NOTHING"

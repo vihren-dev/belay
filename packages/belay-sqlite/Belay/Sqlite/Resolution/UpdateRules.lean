@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.PrepareSpec
+import Belay.Sqlite.Resolution.OperandIssues
 
 set_option doc.verso true
 
@@ -60,8 +61,9 @@ resolver; after the table lookup, the SET values, the SET columns, the filter an
 stored values give errors that name no catalog object. -/
 theorem resolveUpdate_named (context : ResolveContext) (catalog after : Catalog) (index : Nat)
     (tableName : String) (assignments : List (String × Syntax.Expr)) (filter : Option Syntax.Expr)
+    (returning : List Syntax.ResultColumn)
     (error : PrepareError) (named : error.namesObject = true)
-    (ok : resolveUpdate context catalog index tableName assignments filter = .ok (.prepareError error, after)) :
+    (ok : resolveUpdate context catalog index tableName assignments filter returning = .ok (.prepareError error, after)) :
     error = .noSuchTable tableName ∧ catalog.findTable tableName = none ∧ after = catalog := by
   unfold resolveUpdate at ok
   simp only [prepareError, restrict, issueResolution] at ok
@@ -77,6 +79,8 @@ theorem resolveUpdate_named (context : ResolveContext) (catalog after : Catalog)
        simp_all [ValueIssue.namesNoObject]; done)
     | (rename_i _ _ cause; have := resolveFilter_issue _ _ _ _ cause
        simp_all [ValueIssue.namesNoObject]; done)
+    | (rename_i _ _ cause; have := resolveReturning_issue _ _ _ _ cause
+       simp_all [ValueIssue.namesNoObject]; done)
     | (rename_i _ _ cause; have := resolveAll_issue _ _ _ (fun _ _ _ h => storedValue_issue _ _ _ _ h) cause
        simp_all [ValueIssue.namesNoObject]; done)
 
@@ -84,8 +88,9 @@ theorem resolveUpdate_named (context : ResolveContext) (catalog after : Catalog)
 {lit}`no such table`, and the catalog is unchanged. -/
 theorem resolveUpdate_missing (context : ResolveContext) (catalog : Catalog) (index : Nat)
     (tableName : String) (assignments : List (String × Syntax.Expr)) (filter : Option Syntax.Expr)
+    (returning : List Syntax.ResultColumn)
     (missing : catalog.findTable tableName = none) :
-    resolveUpdate context catalog index tableName assignments filter =
+    resolveUpdate context catalog index tableName assignments filter returning =
       .ok (.prepareError (.noSuchTable tableName), catalog) := by
   unfold resolveUpdate
   simp [missing, prepareError]

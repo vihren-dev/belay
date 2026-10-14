@@ -1,0 +1,45 @@
+"""Mutants of writes with output (ADR 0012, slice 3a).
+
+The task of slice 3a lists the changes that the conformance suite must notice. Each
+mutant is one text change in a copy of the model, which
+`conformance.resolve_mutants.measure` builds and runs against its target case of
+`conformance.authored_writes`.
+"""
+
+OUTPUTS = "verifier-conformance/VerifierConformance/Outputs.lean"
+"""The outputs of statements, with the RETURNING rows."""
+RETURNING = "belay-sqlite/Belay/Sqlite/Resolution/Returning.lean"
+"""The resolution of RETURNING columns."""
+EXPRESSIONS = "belay-sqlite/Belay/Sqlite/Resolution/QueryExprs.lean"
+"""The constant values of writes."""
+
+MUTANTS: dict[str, tuple[str, str, str]] = {
+    "update_returning_old_values": (OUTPUTS,
+        "(chosen.map fun row => (LiteralData.assign assignments row).values)", "(chosen.map fun row => row.values)"),
+    "update_returning_every_row": (OUTPUTS,
+        "      return ⟨names, returnedRows returning (chosen.map",
+        "      return ⟨names, returnedRows returning (table.rows.map"),
+    "returning_rows_on_failure": (OUTPUTS,
+        "    if successful then some ⟨names, returnedRows returning rows, some rows.length⟩\n"
+        "    else if constraintFailure then some ⟨names, [], some 0⟩ else none",
+        "    if successful then some ⟨names, returnedRows returning rows, some rows.length⟩\n"
+        "    else if constraintFailure then some ⟨names, returnedRows returning rows, some 0⟩ else none"),
+    "returning_names_ignore_definition": (RETURNING,
+        "      .ok [(resolved, alias.getD (defined.getD text))]", "      .ok [(resolved, alias.getD text)]"),
+    "constant_not_evaluated": (EXPRESSIONS,
+        "  (resolveOperand dqs [] true expression).map fun operand => operand.1.eval []",
+        "  (resolveOperand dqs [] true expression).map fun operand => match operand.1 with\n"
+        "    | .arithmetic _ left _ => left.eval []\n    | other => other.eval []"),
+}
+"""Each mutant: the file under `packages/`, the exact text it changes, and the
+replacement. The names follow the list in the task of slice 3a; `constant_not_evaluated`
+stores the left operand of an arithmetic constant, so `1 + 2` would be stored as 1."""
+
+TARGETS: dict[str, tuple[str, ...]] = {
+    "update_returning_old_values": ("update-returning-new-values",),
+    "update_returning_every_row": ("update-returning-new-values",),
+    "returning_rows_on_failure": ("returning-not-null-failure",),
+    "returning_names_ignore_definition": ("returning-defined-names",),
+    "constant_not_evaluated": ("insert-constant-expressions",),
+}
+"""The authored case of `conformance.authored_writes` that each mutant changes."""

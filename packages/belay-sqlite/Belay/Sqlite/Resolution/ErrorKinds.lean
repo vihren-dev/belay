@@ -93,19 +93,6 @@ theorem defaultValue_issue (dqs : Bool) (column : CatalogColumn) (issue : ValueI
   · cases failed
   · exact literalValue_issue _ _ _ failed
 
-/-- For every column list, an issue of {name}`assignedValue` names no catalog object.
-Proof sketch: a column reference is a restriction, and every other branch is
-{name}`literalValue`, which {name}`literalValue_issue` covers. -/
-theorem assignedValue_issue (columns : List CatalogColumn) (dqs : Bool) (expression : Syntax.Expr)
-    (issue : ValueIssue) (failed : assignedValue columns dqs expression = .error issue) :
-    issue.namesNoObject := by
-  unfold assignedValue at failed
-  split at failed
-  · split at failed
-    · cases failed; trivial
-    · exact literalValue_issue _ _ _ failed
-  all_goals exact literalValue_issue _ _ _ failed
-
 /-- For every affinity, value and path, an issue of {name}`storedValue` names no
 catalog object: the formula states this conclusion, although the function only
 fails with a model restriction. Proof sketch: the only failing branch is a restriction. -/

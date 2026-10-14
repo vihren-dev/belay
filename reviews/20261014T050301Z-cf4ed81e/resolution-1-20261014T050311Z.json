@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-14T05:03:11+00:00",
+  "finding": "20261014T050301Z-cf4ed81e#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "RETURNING is removed from the refused clauses and its rules are described with the supported form"
+}

@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.PrepareSpec
+import Belay.Sqlite.Resolution.OperandIssues
 
 set_option doc.verso true
 
@@ -53,16 +54,16 @@ theorem resolveCreateTable_used (context : ResolveContext) (catalog : Catalog) (
     cases entry : object.entry <;> cases object <;> simp_all [PrepareError.namesObject]
 
 /-- For every setting and VALUES rows, an issue of the INSERT value conversion names no
-catalog object. Proof sketch: each row's issue is an issue of {name}`literalValue`
+catalog object. Proof sketch: each row's issue is an issue of {name}`constantValue`
 with a prefixed path, by {name}`resolveAll_issue` twice. -/
 theorem insertValues_issue (dqs : Bool) (rows : List (List Syntax.Expr)) (issue : ValueIssue)
-    (failed : resolveAll (fun row values => (resolveAll (fun _ => literalValue dqs) values).mapError
+    (failed : resolveAll (fun row values => (resolveAll (fun _ => constantValue dqs) values).mapError
       (·.under [row])) rows = .error issue) : issue.namesNoObject := by
   refine resolveAll_issue _ _ _ (fun row values inner h => ?_) failed
   simp only [Except.mapError] at h
   split at h <;> cases h
   exact ValueIssue.under_namesNoObject _ _
-    (resolveAll_issue _ _ _ (fun _ _ _ h => literalValue_issue _ _ _ h) (by assumption))
+    (resolveAll_issue _ _ _ (fun _ _ _ h => constantValue_issue _ _ _ h) (by assumption))
 
 /-- For every column list and names, an error of {name}`insertPositions` names no
 catalog object. Proof sketch: induction on the names; the only error is
@@ -85,8 +86,9 @@ resolver; the branches after the table lookup give errors that name no catalog
 object, by the lemmas on column lists, values and full rows. -/
 theorem resolveInsert_named (context : ResolveContext) (catalog after : Catalog) (index : Nat)
     (tableName : String) (names : Option (List String)) (rows : List (List Syntax.Expr))
+    (returning : List Syntax.ResultColumn)
     (error : PrepareError) (named : error.namesObject = true)
-    (ok : resolveInsert context catalog index tableName names rows = .ok (.prepareError error, after)) :
+    (ok : resolveInsert context catalog index tableName names rows returning = .ok (.prepareError error, after)) :
     error = .noSuchTable tableName ∧ catalog.findTable tableName = none ∧ after = catalog := by
   unfold resolveInsert at ok
   simp only [prepareError, restrict, issueResolution] at ok
@@ -97,6 +99,8 @@ theorem resolveInsert_named (context : ResolveContext) (catalog after : Catalog)
     | (simp [PrepareError.namesObject] at named; done)
     | (simp_all; done)
     | (rename_i cause; simp [insertPositions_error _ _ _ _ cause] at named; done)
+    | (rename_i _ _ cause; have := resolveReturning_issue _ _ _ _ cause
+       simp_all [ValueIssue.namesNoObject]; done)
     | (rename_i _ _ cause; have := insertValues_issue _ _ _ cause
        simp_all [ValueIssue.namesNoObject]; done)
     | (rename_i _ _ cause; have := resolveAll_issue _ _ _
@@ -110,9 +114,10 @@ table has the folded name, the resolution is {lit}`no such table`, and the catal
 is unchanged. -/
 theorem resolveInsert_missing (context : ResolveContext) (catalog : Catalog) (index : Nat)
     (tableName : String) (names : Option (List String)) (rows : List (List Syntax.Expr))
+    (returning : List Syntax.ResultColumn)
     (same : ∀ row ∈ rows, row.length = (rows.head?.map List.length).getD 0)
     (missing : catalog.findTable tableName = none) :
-    resolveInsert context catalog index tableName names rows = .ok (.prepareError (.noSuchTable tableName), catalog) := by
+    resolveInsert context catalog index tableName names rows returning = .ok (.prepareError (.noSuchTable tableName), catalog) := by
   have consistent : (rows.any fun row => row.length != (rows.head?.map List.length).getD 0) = false := by
     simpa using same
   unfold resolveInsert

@@ -22,6 +22,11 @@ inductive ValueIssue where
   | restriction (path : List Nat) (reason : String)
   deriving Repr, DecidableEq
 
+/-- Prefix the paths of model restrictions with the node's position. -/
+def ValueIssue.under (prefix_ : List Nat) : ValueIssue → ValueIssue
+  | .restriction path reason => .restriction (prefix_ ++ path) reason
+  | .prepare error => .prepare error
+
 /-- The value of a numeric literal's text: an integer, a REAL value that the first
 scope does not model, or a hexadecimal literal too large for 64 bits. -/
 inductive NumericValue where
@@ -92,21 +97,25 @@ def numericLiteral (text : String) (negated : Bool) (path : List Nat) : Except V
   | .real => .error (.restriction path "REAL values are not modeled; use an integer, text, blob or NULL value")
   | .hexTooBig => .error (.prepare (.hexLiteralTooBig (hexErrorText text negated)))
 
+/-- Whether literal characters, without separators, start with {lit}`0x` or {lit}`0X`. -/
+def startsHex (chars : List Char) : Bool := chars.take 2 == ['0', 'x'] || chars.take 2 == ['0', 'X']
+
+/-- The REAL value of a numeric literal's characters without separators
+({lit}`codeReal`): {name}`atof` of the text, negated when {lit}`negated` is true. -/
+def realLiteral (chars : List Char) (negated : Bool) : Value :=
+  let value := (atof (String.ofList chars).toUTF8.toList).1
+  .real (if negated then -value else value).toBits
+
 /-- The value of a numeric literal in a query ({lit}`codeInteger` and {lit}`codeReal`):
-an integer as in {name}`numericValue`; a REAL by {name}`atof` of the text without
-separators, negated when {lit}`negated` is true; and the {lit}`hex literal too big`
-error for a hexadecimal literal outside 64 bits, also after negation. -/
+an integer as in {name}`numericValue`; a REAL by {name}`realLiteral`; and the
+{lit}`hex literal too big` error for a hexadecimal literal outside 64 bits, also
+after negation. -/
 def queryNumeric (text : String) (negated : Bool) : Except ValueIssue Value :=
   let chars := text.toList.filter (· ≠ '_')
-  let hex := chars.take 2 == ['0', 'x'] || chars.take 2 == ['0', 'X']
-  match numericValue text negated with
-  | .integer value => .ok (.integer value)
-  | .hexTooBig => .error (.prepare (.hexLiteralTooBig (hexErrorText text negated)))
-  | .real =>
-    if hex then .error (.prepare (.hexLiteralTooBig (hexErrorText text negated)))
-    else
-      let value := (atof (String.ofList chars).toUTF8.toList).1
-      .ok (.real (if negated then -value else value).toBits)
+  match numericValue text negated, startsHex chars with
+  | .integer value, _ => .ok (.integer value)
+  | .hexTooBig, _ | .real, true => .error (.prepare (.hexLiteralTooBig (hexErrorText text negated)))
+  | .real, false => .ok (realLiteral chars negated)
 
 /-- The stored value of a literal expression in a VALUES row or a SET assignment,
 where no column is in scope. NULL, string and blob literals keep their bytes.

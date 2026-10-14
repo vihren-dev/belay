@@ -66,8 +66,9 @@ theorem resolveAddColumn_step (context : ResolveContext) (catalog after : Catalo
 every branch of the resolver returns the input catalog. -/
 theorem resolveInsert_same (context : ResolveContext) (catalog after : Catalog) (index : Nat)
     (tableName : String) (names : Option (List String)) (rows : List (List Syntax.Expr))
+    (returning : List Syntax.ResultColumn)
     (statement : Resolved.Statement)
-    (ok : resolveInsert context catalog index tableName names rows = .ok (statement, after)) :
+    (ok : resolveInsert context catalog index tableName names rows returning = .ok (statement, after)) :
     after = catalog := by
   unfold resolveInsert at ok
   simp only [prepareError, restrict, issueResolution] at ok
@@ -78,8 +79,9 @@ theorem resolveInsert_same (context : ResolveContext) (catalog after : Catalog) 
 every branch of the resolver returns the input catalog. -/
 theorem resolveUpdate_same (context : ResolveContext) (catalog after : Catalog) (index : Nat)
     (tableName : String) (assignments : List (String × Syntax.Expr)) (filter : Option Syntax.Expr)
+    (returning : List Syntax.ResultColumn)
     (statement : Resolved.Statement)
-    (ok : resolveUpdate context catalog index tableName assignments filter = .ok (statement, after)) :
+    (ok : resolveUpdate context catalog index tableName assignments filter returning = .ok (statement, after)) :
     after = catalog := by
   unfold resolveUpdate at ok
   simp only [prepareError, restrict, issueResolution] at ok
@@ -134,15 +136,24 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
   | insert table columns rows =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    exact keep _ (resolveInsert_same _ _ _ _ _ _ _ _ (by assumption) ▸ .same)
+    exact keep _ (resolveInsert_same _ _ _ _ _ _ _ _ _ (by assumption) ▸ .same)
   | update table assignments filter =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    exact keep _ (resolveUpdate_same _ _ _ _ _ _ _ _ (by assumption) ▸ .same)
+    exact keep _ (resolveUpdate_same _ _ _ _ _ _ _ _ _ (by assumption) ▸ .same)
   | select results table filter groupBy orderBy limit offset =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveSelect_same _ _ _ _ _ _ _ _ _ _ _ _ (by assumption) ▸ .same)
+  | returning write columns =>
+    cases write
+    all_goals simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    all_goals first
+      | (cases ok; done)
+      | (split at ok <;> cases ok
+         first
+           | exact keep _ (resolveInsert_same _ _ _ _ _ _ _ _ _ (returningPaths_ok _ _ (by assumption)) ▸ .same)
+           | exact keep _ (resolveUpdate_same _ _ _ _ _ _ _ _ _ (returningPaths_ok _ _ (by assumption)) ▸ .same))
 
 /-- For every context, starting catalog and script with a successful resolution: if
 the starting catalog has unique folded names, so does the resulting catalog.
