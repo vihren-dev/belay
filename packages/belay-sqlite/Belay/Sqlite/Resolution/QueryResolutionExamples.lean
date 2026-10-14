@@ -32,14 +32,14 @@ def queryOf (statement : Syntax.Statement) : Option Resolved.Query :=
   match resolvedOne statement with
   | some (.query query) => some query
   | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some .begin | some .commit
-  | some .rollback | some (.insert ..) | some (.update ..) | some (.prepareError _) | none => none
+  | some .rollback | some (.insert ..) | some (.update ..) | some (.delete ..) | some (.prepareError _) | none => none
 
 /-- The prepare error of a resolution, if it is one. -/
 def errorOf (statement : Syntax.Statement) : Option PrepareError :=
   match resolvedOne statement with
   | some (.prepareError error) => some error
   | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some .begin | some .commit
-  | some .rollback | some (.insert ..) | some (.update ..) | some (.query _) | none => none
+  | some .rollback | some (.insert ..) | some (.update ..) | some (.delete ..) | some (.query _) | none => none
 
 /-- Whether the statement is a model restriction. -/
 def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration catalog [statement])

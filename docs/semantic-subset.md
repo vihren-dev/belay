@@ -20,9 +20,12 @@ The frontend maps these statements, and refuses every other statement as
   `TRANSACTION`;
 - `INSERT INTO table [(columns)] VALUES` with one or more rows;
 - `UPDATE table SET column = value, … [WHERE expression]`;
-- `RETURNING columns` after `INSERT … VALUES` and `UPDATE`, with result columns as in
-  `SELECT`, over each written row (slice 3a); an aggregate is SQLite's prepare error,
-  and a rowid name in `RETURNING` is a model restriction;
+- `DELETE FROM table [WHERE expression]`, which removes each row for which the
+  expression is true (slice 3c);
+- `RETURNING columns` after `INSERT … VALUES`, `UPDATE` and `DELETE`, with result
+  columns as in `SELECT`, over each written or deleted row (slices 3a and 3c); an
+  aggregate is SQLite's prepare error, and a rowid name in `RETURNING` is a model
+  restriction;
 - `SELECT columns FROM table [WHERE …] [GROUP BY …] [ORDER BY … [ASC|DESC]]
   [LIMIT n [OFFSET m]]` from one table, whose result columns are `*` or
   expressions with an optional alias (ADR 0012, slice 1).
@@ -100,9 +103,7 @@ The registry is `RestrictionKind` in
 messages in `RestrictionText.lean`. Every id has one row in this table;
 `tests/restriction_registry_test.py` checks that the table and the registry list the
 same ids. `conformance/restriction_examples.py` has, for every id, a schema and a
-migration that the resolver refuses with that id, and a test runs each one. The
-exception is `returning-target`: the frontend refuses its example (DELETE ...
-RETURNING) before resolution, and the test checks that refusal. Syntax
+migration that the resolver refuses with that id, and a test runs each one. Syntax
 that the frontend refuses before resolution, such as `DISTINCT` or
 an UPSERT, has no id. `just restriction-costs` counts, for each id and for each kind
 of frontend refusal, the cases of the claimed corpora that it keeps out of scope.
@@ -124,7 +125,6 @@ of frontend refusal, the cases of the claimed corpora that it keeps out of scope
 | `insert-column-twice` | A column named twice in INSERT is not modeled | ADR 0008 |
 | `update-column-twice` | A column assigned twice in UPDATE is not modeled | ADR 0008 |
 | `rowid-in-returning` | A rowid in RETURNING is not modeled | ADR 0012 slice 3a |
-| `returning-target` | RETURNING is modeled only on INSERT and UPDATE | ADR 0012 slice 3a |
 | `system-table` | Queries of SQLite's own tables, such as `sqlite_schema`, are not modeled | ADR 0012 slice 1 |
 | `unmodeled-function` | Only `COUNT(*)`, `COUNT`, `MIN`, `MAX`, `SUM` and `AVG` of one argument, and `COALESCE` of two or more arguments are modeled as functions | ADR 0012 slices 1 and 2 |
 | `aggregate-in-expression` | An aggregate inside an expression is not modeled | ADR 0012 slice 1 |

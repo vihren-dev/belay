@@ -119,6 +119,7 @@ theorem step_extends (statement : Resolved.Statement) (database : Database) (pos
   | rollback => exact DatabaseExtends.refl database
   | insert _ _ _ _ => exact DatabaseExtends.refl database
   | update _ _ _ _ _ => exact DatabaseExtends.refl database
+  | delete _ _ _ => exact DatabaseExtends.refl database
   | prepareError _ => exact DatabaseExtends.refl database
 
 /-- For every script containing only CREATE/ADD, idle starting database and

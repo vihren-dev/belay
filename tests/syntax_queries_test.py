@@ -101,6 +101,29 @@ def test_writes_map_query_expressions_and_returning(parse_sql: Callable[..., Tre
     assert update["returning"]["columns"] == [{"expression": {"value": column("a"), "alias": None, "text": "a"}}]
 
 
+def test_delete_maps_filter_and_returning(parse_sql: Callable[..., Tree]) -> None:
+    """`syntax_writes.delete`: DELETE keeps its table and optional WHERE expression, and RETURNING
+    wraps it with its result columns, as for UPDATE (slice 3c)."""
+    [plain, returned] = [item.value for item in statements(parse_sql(
+        "DELETE FROM t; DELETE FROM t WHERE a ISNULL RETURNING a;"))]
+    assert plain == {"delete": {"table": "t", "filter": None}}
+    write = returned["returning"]["write"]["delete"]
+    assert write == {"table": "t", "filter": {"isNull": {"operand": column("a"), "negated": False}}}
+    assert returned["returning"]["columns"] == [{"expression": {"value": column("a"), "alias": None, "text": "a"}}]
+
+
+@pytest.mark.parametrize(("sql", "refused"), [
+    ("WITH x AS (SELECT 1) DELETE FROM t;", "WITH x AS (SELECT 1)"),
+    ("DELETE FROM t INDEXED BY i;", "INDEXED BY i"), ("DELETE FROM main.t;", "main.t"),
+])
+def test_delete_forms_outside_the_slice_are_refused(parse_sql: Callable[..., Tree], sql: str, refused: str) -> None:
+    """`syntax_writes.delete` refuses WITH, INDEXED BY and a schema-qualified table at their range."""
+    with pytest.raises(SqlError) as raised:
+        statements(parse_sql(sql))
+    assert raised.value.status == "UNSUPPORTED"
+    assert sql.encode()[raised.value.start:raised.value.end].decode() == refused
+
+
 def test_upsert_stays_refused(parse_sql: Callable[..., Tree]) -> None:
     """An UPSERT clause has no constructor and is refused at its range."""
     sql = "INSERT INTO t VALUES (1) ON CONFLICT DO NOTHING;"

@@ -118,6 +118,10 @@ inductive Statement where
   the {lit}`RETURNING` columns are as for INSERT. -/
   | update (table : Nat) (assignments : List (Nat × Expr)) (filter : Option Expr)
       (keys : List (List Nat)) (returning : List (Expr × String))
+  /-- Remove every row where the optional filter condition is true (every row without a
+  filter). The {lit}`RETURNING` columns are evaluated on each removed row; the
+  execution semantics does not read them. -/
+  | delete (table : Nat) (filter : Option Expr) (returning : List (Expr × String))
   /-- SQLite refuses to prepare the statement with this error. -/
   | prepareError (error : PrepareError)
   /-- Run a query: it reads the database, changes nothing, and has result rows. -/

@@ -25,7 +25,6 @@ def RestrictionKind.id : RestrictionKind → String
   | .insertColumnTwice => "insert-column-twice"
   | .updateColumnTwice => "update-column-twice"
   | .rowidInReturning => "rowid-in-returning"
-  | .returningTarget => "returning-target"
   | .systemTable => "system-table"
   | .unmodeledFunction => "unmodeled-function"
   | .aggregateInExpression => "aggregate-in-expression"
@@ -59,7 +58,6 @@ def RestrictionKind.message : RestrictionKind → String
   | .insertColumnTwice => "a column named twice in INSERT is not modeled; name each column once"
   | .updateColumnTwice => "a column assigned twice in UPDATE is not modeled; assign each column once"
   | .rowidInReturning => "a rowid in RETURNING is not modeled; return the table's columns"
-  | .returningTarget => "RETURNING is modeled only on INSERT and UPDATE; remove it"
   | .systemTable => "queries of SQLite's own tables, such as sqlite_schema, are not modeled; query an application table"
   | .unmodeledFunction => "only COUNT(*), COUNT, MIN, MAX, SUM and AVG of one argument, and COALESCE of two or more arguments are modeled as functions"
   | .aggregateInExpression => "an aggregate inside an expression is not modeled; use the aggregate as a whole result column"
@@ -77,7 +75,7 @@ def RestrictionKind.message : RestrictionKind → String
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .rowidAlias, .createTableConstraints, .unmodeledDefault, .createIndexRuns, .addColumnConstraint, .timeValue, .keyAffinity, .keyValue, .rowDependentKey, .insertColumnTwice, .updateColumnTwice, .rowidInReturning, .returningTarget, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .valueAsCondition, .mixedAffinityComparison, .textToNumber, .numberToText, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum]
+  [.schemaStatement, .engineTable, .rowidColumnName, .rowidAlias, .createTableConstraints, .unmodeledDefault, .createIndexRuns, .addColumnConstraint, .timeValue, .keyAffinity, .keyValue, .rowDependentKey, .insertColumnTwice, .updateColumnTwice, .rowidInReturning, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .valueAsCondition, .mixedAffinityComparison, .textToNumber, .numberToText, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

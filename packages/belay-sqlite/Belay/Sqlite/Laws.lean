@@ -10,7 +10,8 @@ namespace Belay.Sqlite.Conformance
 /-- Classify statements that leave transaction control to their surrounding script. -/
 def nonControl : Resolved.Statement → Bool
   | .begin | .commit | .rollback => false
-  | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .update .. | .prepareError _ | .query _ => true
+  | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .update .. | .delete .. | .prepareError _
+  | .query _ => true
 
 /-- Each statement in the body is non-control and succeeds at its position.
 The remaining body starts from its resulting database. An empty body requires
@@ -68,6 +69,8 @@ theorem literal_cases (statement : Resolved.Statement) (database : Database) (po
     cases h : database at_ <;> simp only [literalStep, checkedWrite, h]
     all_goals try (split <;> simp_all)
     all_goals simp
+  | delete at_ filter _ =>
+    cases h : database at_ <;> simp [literalStep, h]
   | createIndex _ _ _ => simp [literalStep, step]
   | query query =>
     simp only [literalStep, step]
