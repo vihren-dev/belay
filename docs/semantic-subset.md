@@ -20,6 +20,8 @@ The frontend maps these statements, and refuses every other statement as
   `TRANSACTION`;
 - `INSERT INTO table [(columns)] VALUES` with one or more rows;
 - `UPDATE table SET column = value, … [WHERE expression]`;
+- `RETURNING columns` after `INSERT … VALUES` and `UPDATE`, with result columns as in
+  `SELECT`, over each written row (slice 3a);
 - `SELECT columns FROM table [WHERE …] [GROUP BY …] [ORDER BY … [ASC|DESC]]
   [LIMIT n [OFFSET m]]` from one table, whose result columns are `*` or
   expressions with an optional alias (ADR 0012, slice 1).

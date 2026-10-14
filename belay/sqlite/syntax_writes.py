@@ -1,15 +1,20 @@
 """Map transaction control, INSERT and UPDATE to statement syntax.
 
-INSERT keeps its optional column list and its VALUES rows; UPDATE keeps its
-assignments and its optional WHERE expression. Conflict clauses, RETURNING,
-UPSERT, FROM, SELECT sources and named or non-deferred transactions have no
-constructor and are refused with their source range.
+INSERT keeps its optional column list, its VALUES rows and its RETURNING columns;
+UPDATE keeps its assignments, its optional WHERE expression and its RETURNING
+columns. Values, assignments and the filter are query expressions
+(`syntax_queries.query_expression`); Lean decides which of them the model admits in a
+write. A write with RETURNING is a `returning` node around the write, with its
+result columns as in SELECT; a write without RETURNING is the write alone.
+Conflict clauses, UPSERT, FROM, SELECT sources and named or
+non-deferred transactions have no constructor and are refused with their source range.
 """
 
 from .located import Located, constructor, leaf, pair, sequence
 from .sql_tree import Node, Tree
 from .syntax_definitions import absent, left_list, require
-from .syntax_expressions import expression, name
+from .syntax_expressions import name
+from .syntax_queries import query_expression, result_columns
 
 
 def transaction(tree: Tree, command: Node) -> Located:
@@ -44,20 +49,31 @@ def value_rows(tree: Tree, node: Node) -> Located:
         listed.append(parts[3])
         current = parts[0]
     listed.append(require(tree, current, ["VALUES", "LP", "nexprlist", "RP"])[2])
-    rows = [sequence([expression(tree, item[-1]) for item in
+    rows = [sequence([query_expression(tree, item[-1]) for item in
                       left_list(tree, row, {1: ["expr"], 3: ["nexprlist", "COMMA", "expr"]})], row.start, row.end)
             for row in reversed(listed)]
     return sequence(rows, node.start, node.end)
 
 
+def returning(tree: Tree, command: Node, write: Located, parts: list[Node]) -> Located:
+    """The write, or a `returning` node around it with the columns of the parts
+    `RETURNING selcollist`."""
+    if not parts:
+        return write
+    return constructor("returning", [("write", write), ("columns", result_columns(tree, parts[1]))],
+                       command.start, command.end)
+
+
 def insert(tree: Tree, command: Node) -> Located:
-    """Map INSERT INTO table [(columns)] VALUES rows."""
+    """Map INSERT INTO table [(columns)] VALUES rows [RETURNING columns]."""
     with_, operation, _, target, columns, source, upsert = require(
         tree, command, ["with", "insert_cmd", "INTO", "xfullname", "idlist_opt", "select", "upsert"])
     absent(tree, with_, "A WITH clause")
     _, conflict = require(tree, operation, ["INSERT", "orconf"])
     absent(tree, conflict, "An OR conflict clause")
-    absent(tree, upsert, "An UPSERT or RETURNING clause")
+    upsert_parts = tree.children(upsert)
+    if upsert_parts and [part.symbol for part in upsert_parts] != ["RETURNING", "selcollist"]:
+        raise tree.unsupported(upsert, "An UPSERT clause is not modeled; remove it")
     (table,) = require(tree, target, ["nm"])
     if columns.children:
         _, listed, _ = require(tree, columns, ["LP", "idlist", "RP"])
@@ -65,12 +81,13 @@ def insert(tree: Tree, command: Node) -> Located:
         column_list = sequence(names, columns.start, columns.end)
     else:
         column_list = leaf(None, columns.start, columns.end)
-    return constructor("insert", [("table", name(tree, table)), ("columns", column_list),
-                                  ("rows", value_rows(tree, source))], command.start, command.end)
+    write = constructor("insert", [("table", name(tree, table)), ("columns", column_list),
+                                   ("rows", value_rows(tree, source))], command.start, command.end)
+    return returning(tree, command, write, upsert_parts)
 
 
 def update(tree: Tree, command: Node) -> Located:
-    """Map UPDATE table SET assignments [WHERE expression]."""
+    """Map UPDATE table SET assignments [WHERE expression] [RETURNING columns]."""
     with_, _, conflict, target, indexed, _, assignments, from_, where = require(
         tree, command, ["with", "UPDATE", "orconf", "xfullname", "indexed_opt", "SET", "setlist", "from",
                         "where_opt_ret"])
@@ -79,14 +96,16 @@ def update(tree: Tree, command: Node) -> Located:
     absent(tree, indexed, "INDEXED BY")
     absent(tree, from_, "UPDATE FROM")
     (table,) = require(tree, target, ["nm"])
-    items = [pair(name(tree, item[-3]), expression(tree, item[-1]), item[-3].start, item[-1].end)
+    items = [pair(name(tree, item[-3]), query_expression(tree, item[-1]), item[-3].start, item[-1].end)
              for item in left_list(tree, assignments, {3: ["nm", "EQ", "expr"],
                                                        5: ["setlist", "COMMA", "nm", "EQ", "expr"]})]
-    if where.children:
-        _, predicate = require(tree, where, ["WHERE", "expr"])
-        filter_ = expression(tree, predicate)
-    else:
-        filter_ = leaf(None, where.start, where.end)
-    return constructor("update", [("table", name(tree, table)),
-                                  ("assignments", sequence(items, assignments.start, assignments.end)),
-                                  ("filter", filter_)], command.start, command.end)
+    parts = tree.children(where)
+    symbols = [part.symbol for part in parts]
+    if symbols not in ([], ["WHERE", "expr"], ["RETURNING", "selcollist"], ["WHERE", "expr", "RETURNING", "selcollist"]):
+        raise tree.unsupported(where, "Unsupported UPDATE clause; write [WHERE expression] [RETURNING columns]")
+    filter_ = query_expression(tree, parts[1]) if symbols[:1] == ["WHERE"] else leaf(None, where.start, where.end)
+    returned = parts[-2:] if symbols[-2:] == ["RETURNING", "selcollist"] else []
+    write = constructor("update", [("table", name(tree, table)),
+                                   ("assignments", sequence(items, assignments.start, assignments.end)),
+                                   ("filter", filter_)], command.start, command.end)
+    return returning(tree, command, write, returned)

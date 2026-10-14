@@ -35,6 +35,19 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Resolved.lean`,
   can import `QueryExprs`. `OperandIssues.lean` proves that issues of
   `resolveOperand` name no catalog object, for the prepare-error rules of INSERT and
   UPDATE; `queryNumeric` became one match so that the proof can split it.
+- 2026-10-14: `RETURNING`. `Syntax.Statement.returning` wraps an INSERT or UPDATE with
+  its result columns, so a write without `RETURNING` keeps its JSON record exactly
+  (the retained regression evidence compares it byte for byte; Lean's derived JSON
+  decoder needs every constructor field, so an optional field did not work).
+  `Resolved` writes carry `returning : List (Expr × String)`; `Returning.lean`
+  resolves the columns last, as SQLite does (values and filter errors come first),
+  with `*`, `SELECT` naming, aggregates as misuse and rowid names as a restriction.
+  `Outputs.statementOutput` gives the rows over the inserted rows or the new values
+  of the selected rows, and names with no rows on a constraint failure. The frontend
+  maps `RETURNING` and query expressions in writes. The verdict passes; corpus-v5
+  has 217 AGREE (210 before).
+- 2026-10-14: the amendment for slice 3b is proposed in #111 (docs only, for the
+  owner); it lists six open questions.
 
 ## Remaining
 

@@ -87,7 +87,7 @@ namespace Resolved
 
 /-- One statement after name resolution. For example, an INSERT into the table at
 catalog position 0 with one full row and no unique keys is
-{lean}`Statement.insert 0 [[Value.null]] []`. -/
+{lean}`Statement.insert 0 [[Value.null]] [] []`. -/
 inductive Statement where
   /-- Create the named table at the catalog position, which is the end of the catalog. -/
   | createTable (position : Nat) (name : String) (table : CatalogTable)
@@ -103,13 +103,15 @@ inductive Statement where
   | rollback
   /-- Insert full rows, with one converted value for each column in table order.
   {name}`Statement.insert` also carries the column positions of each unique key of
-  the table, which the statement must keep unique. -/
-  | insert (table : Nat) (rows : List (List Value)) (keys : List (List Nat))
+  the table, which the statement must keep unique, and its {lit}`RETURNING` columns:
+  an expression over the written row and its name each, none without
+  {lit}`RETURNING`. The execution semantics does not read them. -/
+  | insert (table : Nat) (rows : List (List Value)) (keys : List (List Nat)) (returning : List (Expr × String))
   /-- Set each column position to its value in the rows where the optional filter
-  column equals the filter value; with no filter, in every row. The unique keys are
-  as for INSERT. -/
+  column equals the filter value; with no filter, in every row. The unique keys and
+  the {lit}`RETURNING` columns are as for INSERT. -/
   | update (table : Nat) (assignments : List (Nat × Value)) (filter : Option (Nat × Value))
-      (keys : List (List Nat))
+      (keys : List (List Nat)) (returning : List (Expr × String))
   /-- SQLite refuses to prepare the statement with this error. -/
   | prepareError (error : PrepareError)
   /-- Run a query: it reads the database, changes nothing, and has result rows. -/

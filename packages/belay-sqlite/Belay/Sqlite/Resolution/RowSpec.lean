@@ -91,8 +91,10 @@ split the resolver down to its successful branch; each row is a result of
 {name}`fullRow` by {name}`resolveAllFrom_ok`, and {name}`fullRow_rowWidth` gives the rule. -/
 theorem resolveInsert_rowWidth (context : ResolveContext) (catalog after : Catalog) (index : Nat)
     (tableName : String) (names : Option (List String)) (rows : List (List Syntax.Expr))
+    (returning : List Syntax.ResultColumn)
     (position : Nat) (full : List (List Value)) (keys : List (List Nat))
-    (ok : resolveInsert context catalog index tableName names rows = .ok (.insert position full keys, after)) :
+    (columns : List (Resolved.Expr × String))
+    (ok : resolveInsert context catalog index tableName names rows returning = .ok (.insert position full keys columns, after)) :
     after = catalog ∧ ∃ table, catalog.findTable tableName = some (position, table) ∧
       keys = catalog.uniqueKeys position table ∧ ∀ row ∈ full, ∃ positions written, RowWidth context.profile.dqsDml table.columns positions written row := by
   unfold resolveInsert at ok
@@ -119,6 +121,8 @@ theorem resolveInsert_rowWidth (context : ResolveContext) (catalog after : Catal
   rename_i rows_ok
   split at ok
   · cases ok
+  split at ok
+  · split at ok <;> cases ok
   cases ok
   refine ⟨rfl, table, found, rfl, fun row member => ?_⟩
   unfold resolveAll at rows_ok

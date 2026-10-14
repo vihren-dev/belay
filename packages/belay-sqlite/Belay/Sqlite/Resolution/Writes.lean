@@ -1,6 +1,6 @@
 import Belay.Sqlite.Resolution.Definitions
 import Belay.Sqlite.Resolution.KeyDomain
-import Belay.Sqlite.Resolution.QueryExprs
+import Belay.Sqlite.Resolution.Returning
 
 set_option doc.verso true
 
@@ -67,7 +67,8 @@ def fullRow (dqs : Bool) (columns : List CatalogColumn) (positions : List Nat) (
 
 /-- Resolve INSERT. Path 1 is the column list and path 2 the rows. -/
 def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : String)
-    (names : Option (List String)) (rows : List (List Syntax.Expr)) : StatementResolution :=
+    (names : Option (List String)) (rows : List (List Syntax.Expr))
+    (returning : List Syntax.ResultColumn) : StatementResolution :=
   let width := (rows.head?.map List.length).getD 0
   if rows.any (·.length != width) then prepareError catalog .valuesDiffer else
   match catalog.findTable tableName with
@@ -96,7 +97,9 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
             match keyDomainRestriction table.columns keys (fun row => [2, row])
                 (full.map (·.mapIdx fun position value => (position, value))) with
             | some (path, reason) => restrict index path reason
-            | none => .ok (.insert position full keys, catalog)
+            | none => match resolveReturning context.profile.dqsDml table.columns returning with
+              | .error issue => issueResolution catalog index [3] issue
+              | .ok columns => .ok (.insert position full keys columns, catalog)
 
 /-- Resolve the optional WHERE of UPDATE: none, or one column compared with an
 integer. Other filters, and a comparison that would convert values, are model
@@ -130,9 +133,11 @@ def resolveFilter (context : ResolveContext) (columns : List CatalogColumn) :
   | some (.arithmetic ..) | some (.cast ..) | some (.callPair ..) =>
     .error (.restriction [] "only a column equality filter is modeled; write WHERE column = integer")
 
-/-- Resolve UPDATE. Path 1 is the assignment list and path 2 the filter. -/
+/-- Resolve UPDATE. Path 1 is the assignment list, path 2 the filter and path 3 the
+{lit}`RETURNING` columns, which resolve last. -/
 def resolveUpdate (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : String)
-    (assignments : List (String × Syntax.Expr)) (filter : Option Syntax.Expr) : StatementResolution :=
+    (assignments : List (String × Syntax.Expr)) (filter : Option Syntax.Expr)
+    (returning : List Syntax.ResultColumn) : StatementResolution :=
   match catalog.findTable tableName with
   | none => prepareError catalog (.noSuchTable tableName)
   | some (position, table) =>
@@ -157,6 +162,8 @@ def resolveUpdate (context : ResolveContext) (catalog : Catalog) (index : Nat) (
               let keys := catalog.uniqueKeys position table
               match keyDomainRestriction table.columns keys (fun _ => [1]) [positions.zip stored] with
               | some (path, reason) => restrict index path reason
-              | none => .ok (.update position (positions.zip stored) resolvedFilter keys, catalog)
+              | none => match resolveReturning context.profile.dqsDml table.columns returning with
+                | .error issue => issueResolution catalog index [3] issue
+                | .ok columns => .ok (.update position (positions.zip stored) resolvedFilter keys columns, catalog)
 
 end Belay.Sqlite
