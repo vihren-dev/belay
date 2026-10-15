@@ -682,3 +682,20 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of the completed T14 representation and codec changes.
+
+
+- 2026-10-15: Independent review 20261015T080621Z-cb3c4d6e reports no
+  required fixes and two recommended changes. Both are fixed: Native names
+  and documents the keyword-default list, and writtenDefault lists every
+  expression constructor explicitly. The review records mark both findings
+  fixed. This changes structure and documentation, not evaluation rules.
+
+  The rebuilt runtime and all 796 public documentation checks pass. The
+  focused INTEGER admission and source-spelling mutation tests pass in
+  29.22 seconds. Evidence is in build/t14-default-review-fix-build-20261015.log
+  and build/t14-default-review-fix-tests-20261015.log. The correction receives
+  its own independent review next.
+
+Decisions waiting for the owner:
+
+- Final review of the completed T14 representation and codec changes.

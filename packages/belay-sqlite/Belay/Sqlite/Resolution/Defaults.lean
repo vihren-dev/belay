@@ -37,7 +37,10 @@ def writtenDefault (written : Syntax.DefaultExpression) : Except ValueIssue Valu
     if written.sourceText.startsWith "[" || written.sourceText.startsWith "`" then
       .ok (.text name.toUTF8.toList)
     else literalDefault written.expression
-  | _ => literalDefault written.expression
+  | .null | .numeric _ | .string _ | .blob _ | .currentTime _
+  | .negate _ | .positive _ | .equals .. | .compare .. | .and .. | .or .. | .not _
+  | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast .. | .callPair .. =>
+    literalDefault written.expression
 
 /-- The value of a column's DEFAULT before affinity applies; NULL when it is
 omitted. {name}`literalDefault` identifies unsupported expressions. INSERT's

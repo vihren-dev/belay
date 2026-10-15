@@ -67,6 +67,11 @@ def insertKey (key : List Nat) : List (List Nat) → List (List Nat)
 /-- Keys in lexicographic order, so declaration order does not affect a comparison. -/
 def sortKeys (keys : List (List Nat)) : List (List Nat) := keys.foldr insertKey []
 
+/-- Keyword defaults whose spelling ignores ASCII case. SQLite treats each as a
+keyword; quoted literals retain their delimiters and compare exactly instead. -/
+def defaultKeywords : List String :=
+  ["null", "true", "false", "current_timestamp", "current_time", "current_date"]
+
 /-- Whether a catalog column matches its native metadata: the same name, the same
 declared type text, NOT NULL, and the same default spelling. Keyword defaults
 ignore ASCII case; all other defaults keep their exact source spelling. -/
@@ -76,8 +81,7 @@ def columnMatches (column : CatalogColumn) (native : NativeColumn) : Bool :=
   match column.defaultValue, native.defaultValue with
   | none, none => true
   | some written, some text =>
-    if ["null", "true", "false", "current_timestamp", "current_time", "current_date"].contains
-        (normalizeIdentifier written.sourceText) then
+    if defaultKeywords.contains (normalizeIdentifier written.sourceText) then
       normalizeIdentifier written.sourceText == normalizeIdentifier text
     else written.sourceText == text
   | _, _ => false
