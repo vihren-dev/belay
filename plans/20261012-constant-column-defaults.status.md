@@ -1200,3 +1200,67 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of completed T14 after the remaining acceptance work.
+
+
+- 2026-10-15: Fetched remote state and integrated main a2f480bd through
+  PR 127 into the T14 working revision. The sandbox fetch could not resolve
+  GitHub; the permitted network fetch succeeded and found no newer main.
+  The only merge conflict was the core module count. Walking the actual public
+  imports gives 72 modules, including main's join modules and T14's default
+  modules; the package test now records 72. No conflicts remain. Judge code,
+  claims, frozen corpora and the lock match main exactly.
+
+  Runtime, conformance and checked-public-documentation builds are running
+  with a 900-second limit in build/t14-joins-integrated-build-20261015.log.
+  Prior test results do not establish acceptance of the integrated revision.
+  Its model, package and protected-verdict checks remain necessary.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14 after integration and installed acceptance.
+
+
+- 2026-10-15: The integrated runtime, conformance runtime and checked
+  public documentation build successfully. Outputs are retained at
+  build/t14-joins-integrated, build/t14-joins-integrated-2 and
+  build/t14-joins-integrated-3. Full model, standalone package/ownership and
+  protected-verdict checks are running against these outputs. Their logs are
+  build/t14-joins-integrated-model-20261015.log,
+  build/t14-joins-integrated-package-20261015.log and
+  build/t14-joins-integrated-verdict-20261015.log. Integration remains
+  uncommitted until its checks pass.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14 after installed acceptance.
+
+
+- 2026-10-15: Integrated package validation passes all 13 tests in
+  21.91 seconds, including the isolated package builds, import closure,
+  ownership and frontend boundaries. The protected verdict passes, including
+  all 20 corpus-v15 RIGHT/FULL cases. T14's previous agreement gains remain
+  and no disagreement or harness error appears. The full 185-test model run
+  remains active.
+
+  Inspected the public example boundary for the next unit. The existing
+  approved invoice contract requires an exactly nullable note column, so it
+  cannot certify a NOT NULL DEFAULT note. The new example will use a separate
+  contract and retain all existing approved examples. The installed CLI suite
+  discovers cases through belay.toml; bundle and cache acceptance must also
+  exercise the new case through the delivered project interfaces.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14 after installed acceptance.
+
+
+- 2026-10-15: The integrated full model suite passes all 185 tests in
+  527.38 seconds, within the unchanged 600-second limit. This validates the
+  combined default and RIGHT/FULL join interfaces, including all ten native
+  ADD parameter groups. Together with the runtime/documentation builds,
+  13 package/frontend checks and protected verdict, the integration is ready
+  to commit and review. Main's protected judge files remain unchanged.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14 after the public example and installed acceptance.

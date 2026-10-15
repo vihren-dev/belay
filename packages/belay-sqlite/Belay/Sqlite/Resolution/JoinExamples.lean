@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.Examples
+import Belay.Sqlite.QueryJoins
 
 set_option doc.verso true
 
@@ -65,9 +66,7 @@ def joinU : Resolved.Join := { kind := .inner, table := 1, condition := some (.c
 -- 65 tables are SQLite's limit error.
 #guard resolvedOne [.star] (table "t") ((List.range 64).map fun item =>
   joined [] { table := "t", alias := some s!"t{item}" }) == some (.prepareError .tooManyTables)
--- RIGHT joins, also with USING, another operator and two sources with the same name are restrictions.
-#guard restrictedOne [.star] (table "t") [joined ["right", "OUTER"] (table "u") (some onA)]
-#guard restrictedOne [.star] (table "t") [{ joined ["RIGHT"] (table "u") with usingColumns := some ["a"] }]
+-- Another operator and two sources with the same name are restrictions.
 #guard restrictedOne [.star] (table "t") [joined ["OUTER", "LEFT"] (table "u") (some onA)]
 #guard restrictedOne [.star] (table "t") [joined ["INNER"] (table "t")]
 -- Lean reads the operator keywords without ASCII case.
@@ -89,9 +88,9 @@ def right : Table :=
 def equal : Option Resolved.Expr := some (.compare .eq (.column 0) (.column 1))
 
 -- An inner join keeps the matching row; a left join also pads the unmatched left row.
-#guard Resolved.joinRows (Resolved.sourceRows left) { kind := .inner, table := 1, condition := equal } right ==
+#guard Resolved.joinRows 1 (Resolved.sourceRows left) { kind := .inner, table := 1, condition := equal } right ==
   [[.integer 1, .integer 1]]
-#guard Resolved.joinRows (Resolved.sourceRows left) { kind := .left, table := 1, condition := equal } right ==
+#guard Resolved.joinRows 1 (Resolved.sourceRows left) { kind := .left, table := 1, condition := equal } right ==
   [[.integer 1, .integer 1], [.integer 2, .null]]
 
 end Belay.Sqlite.Resolution.JoinExamples

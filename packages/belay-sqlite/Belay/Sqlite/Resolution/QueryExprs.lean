@@ -1,5 +1,5 @@
 import Belay.Sqlite.Resolution.Values
-import Belay.Sqlite.Resolution.Scope
+import Belay.Sqlite.Resolution.MergedNames
 import Belay.Sqlite.Resolution.QueryAffinity
 import Belay.Sqlite.QueryEval
 
@@ -93,8 +93,9 @@ def condition (path : List Nat) : Except ValueIssue Operand → Except ValueIssu
   | .error issue => .error (issue.under path)
 
 /-- Resolve an expression over the sources in scope. An unqualified identifier is the
-column with its folded name in exactly one source ({name}`Scope.matches`), and SQLite's
-{lit}`ambiguous column name: %s` in two or more. With none: a rowid name
+operand of its name ({name}`Scope.resolveName`, {name}`Scope.nameOperand`): one column,
+or the coalesce of the columns that full joins merged; two columns that no join merged
+are SQLite's {lit}`ambiguous column name: %s`. With none: a rowid name
 ({name}`rowidName`) is a model restriction when a table is in scope, because SQLite reads
 the rowid; a name written in double quotes is a string literal when {lit}`dqs` is on;
 else it is SQLite's {lit}`no such column: %s`. A qualified name {lit}`x.c` is column
@@ -105,13 +106,13 @@ conditions. An aggregate gives {name}`aggregateIssue`. A numeric literal has the
 plus keeps the value without its affinity, as SQLite generates them; a {lit}`CAST` has
 the affinity of its type name. -/
 def resolveOperand (dqs : Bool) (scope : Scope) (misuse : Bool) : Syntax.Expr → Except ValueIssue Operand
-  | .identifier name doubleQuoted => match scope.matches name with
-    | [position] => .ok (.column position, (scope.columns[position]?.map CatalogColumn.affinity))
-    | [] =>
+  | .identifier name doubleQuoted => match scope.resolveName name with
+    | .found _ reads => .ok (scope.nameOperand reads)
+    | .missing =>
       if rowidName name && !scope.isEmpty then .error (.restriction [] .rowidName)
       else if doubleQuoted && dqs then .ok (.literal (.text name.toUTF8.toList), none)
       else .error (.prepare (.noSuchColumn name))
-    | _ :: _ :: _ => .error (.prepare (.ambiguousColumn name))
+    | .ambiguous => .error (.prepare (.ambiguousColumn name))
   | .qualified source column => match scope.qualified source column with
     | some position => .ok (.column position, (scope.columns[position]?.map CatalogColumn.affinity))
     | none =>

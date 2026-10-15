@@ -84,13 +84,19 @@ inductive SortKey where
   | output (index : Nat)
   deriving Repr, DecidableEq
 
-/-- The kind of a resolved join: inner, or left outer. -/
+/-- The kind of a resolved join: inner, or left, right or full outer. -/
 inductive JoinKind where
   /-- An inner join: the rows of the product for which the condition is true. -/
   | inner
   /-- A left outer join: the inner join, and each left row that no right row matches,
   with NULL in every right column. -/
   | left
+  /-- A right outer join: the inner join, and each right row that no row of the left
+  input matches, with NULL in every column of the left input. -/
+  | right
+  /-- A full outer join: the inner join and the added rows of both a left and a right
+  join. -/
+  | full
   deriving Repr, DecidableEq
 
 /-- One resolved join after the first table: its kind, the catalog position of the

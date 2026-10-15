@@ -1,14 +1,16 @@
 """Each mutant of `conformance.query_mutants`, `conformance.number_mutants`,
 `conformance.write_mutants`, `conformance.row_write_mutants`,
-`conformance.delete_mutants`, `conformance.join_mutants` and `conformance.using_mutants` changes the verdict of an authored case.
+`conformance.delete_mutants`, `conformance.join_mutants`, `conformance.using_mutants`,
+`conformance.right_mutants` and `conformance.merged_mutants` changes the verdict of an authored case.
 
 ADR 0012 requires that the conformance suite tests each rule of query semantics and
 resolution, and slices 2 to 3b add the number and write rules: a changed copy of the
 model that no case notices shows a missing case. The cases are the authored cases of
 `conformance.authored_queries`, `conformance.authored_numbers`,
 `conformance.authored_writes`, `conformance.authored_row_writes`,
-`conformance.authored_deletes`, `conformance.authored_joins` and
-`conformance.authored_using`, recorded natively
+`conformance.authored_deletes`, `conformance.authored_joins`,
+`conformance.authored_using`, `conformance.authored_right` and `conformance.authored_merged`,
+recorded natively
 with their outputs. Two measurements, one for queries and numbers and one for writes and joins,
 each build one base copy for their mutants, which keeps each test within its time
 limit on a hosted runner; every case must agree with the base copy. Each mutant copy then classifies the case that the mutant names
@@ -19,9 +21,13 @@ from pathlib import Path
 
 import pytest
 
-from conformance import authored_deletes, authored_joins, authored_using, authored_numbers, authored_queries, authored_row_writes, authored_writes
+from conformance import (authored_deletes, authored_joins, authored_merged, authored_numbers, authored_queries,
+                         authored_right,
+                         authored_row_writes, authored_using, authored_writes)
 from conformance.native_replay import prepare
-from conformance import delete_mutants, join_mutants, using_mutants, number_mutants, query_mutants, row_write_mutants, write_mutants
+from conformance import (delete_mutants, join_mutants, merged_mutants, number_mutants, query_mutants, right_mutants,
+                         row_write_mutants,
+                         using_mutants, write_mutants)
 from conformance.case_format import Json
 from conformance.record_parser import runtime_library
 from conformance.resolve_mutants import measure
@@ -69,10 +75,14 @@ def test_every_write_and_join_mutant_changes_a_verdict(runtime_root: Path) -> No
     """The authored write and join cases notice every changed rule of writes with output, of
     row-dependent writes, of DELETE and of joins (`conformance.write_mutants`,
     `conformance.row_write_mutants`, `conformance.delete_mutants`, `conformance.join_mutants`,
-    `conformance.using_mutants`), so these rules are tested. The joins share this measurement, which is the shorter one,
-    to keep each test within its time limit."""
+    `conformance.using_mutants`, `conformance.right_mutants`, `conformance.merged_mutants`), so
+    these rules are tested. The joins
+    share this measurement, which is the shorter one, to keep each test within its time
+    limit."""
     measure_set(runtime_root, authored_writes.records() + authored_row_writes.records() + authored_deletes.records()
-                + authored_joins.records() + authored_using.records(),
+                + authored_joins.records() + authored_using.records() + authored_right.records()
+                + authored_merged.records(),
                 [(write_mutants.MUTANTS, write_mutants.TARGETS), (row_write_mutants.MUTANTS, row_write_mutants.TARGETS),
                  (delete_mutants.MUTANTS, delete_mutants.TARGETS), (join_mutants.MUTANTS, join_mutants.TARGETS),
-                 (using_mutants.MUTANTS, using_mutants.TARGETS)])
+                 (using_mutants.MUTANTS, using_mutants.TARGETS), (right_mutants.MUTANTS, right_mutants.TARGETS),
+                 (merged_mutants.MUTANTS, merged_mutants.TARGETS)])

@@ -88,6 +88,10 @@ inductive PrepareError where
   | joinUsingColumn (name : String)
   /-- {lit}`a NATURAL join may not have an ON or USING clause`. -/
   | naturalJoinCondition
+  /-- {lit}`ambiguous reference to %s in USING()`: in a {lit}`FROM` with a right or full
+  join, a merged name of which a left table after the first has a column that its own
+  join does not merge, as written. -/
+  | ambiguousUsingReference (name : String)
   deriving Repr, DecidableEq
 
 /-- A model restriction: SQLite accepts the SQL, but the model does not describe

@@ -10,6 +10,8 @@ from conformance.resolve_mutants import SQLITE
 
 SCOPE = SQLITE + "Resolution/Scope.lean"
 """The names in scope, with the merged columns."""
+MERGED_LEFT = SQLITE + "Resolution/MergedLeft.lean"
+"""The left side of the generated condition."""
 JOIN_USING = SQLITE + "Resolution/JoinUsing.lean"
 """The merged names and the generated condition of USING and NATURAL joins."""
 
@@ -19,15 +21,14 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "      (!source.merged.contains ·.1)).map",
         "found ++ ((source.columns.mapIdx fun index column => (index, column)).filter\n"
         "      (fun _ => true)).map"),
-    "unqualified_sees_merged": (SCOPE,
-        "(((columnPosition source.columns name).filter\n      (!source.merged.contains ·)).map",
-        "(((columnPosition source.columns name).filter\n      (fun _ => true)).map"),
-    "condition_uses_right_most": (JOIN_USING, "  scope.findSome? fun source =>", "  scope.reverse.findSome? fun source =>"),
+    "unqualified_sees_merged": (SCOPE, "      if source.merged.contains index then match source.mergeRule with",
+        "      if false then match source.mergeRule with"),
+    "condition_uses_right_most": (MERGED_LEFT, "  scope.findSome? fun source =>", "  scope.reverse.findSome? fun source =>"),
     "natural_without_common_no_rows": (JOIN_USING, "  | [] => none\n  | first :: rest => some (rest.foldl .and first)",
         "  | [] => some (.equals (.numeric \"0\") (.numeric \"1\"))\n  | first :: rest => some (rest.foldl .and first)"),
     "missing_using_column_accepted": (JOIN_USING,
-        "  if (columnPosition right.columns name).isSome && (left.leftMost name).isSome then .ok name",
-        "  if true then .ok name"),
+        "  if (columnPosition right.columns name).isSome && (left.leftMost name).isSome then\n",
+        "  if true then\n"),
     "natural_with_on_accepted": (JOIN_USING,
         "    if join.condition.isSome || join.usingColumns.isSome then .error (.prepare .naturalJoinCondition)",
         "    if false then .error (.prepare .naturalJoinCondition)"),
@@ -47,7 +48,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 """The authored case of `conformance.authored_using` that each mutant changes."""
 
 GUARDS: dict[str, str] = {
-    "star_keeps_merged": "rule:Scope.visible", "unqualified_sees_merged": "rule:Scope.matches",
+    "star_keeps_merged": "rule:Scope.visible", "unqualified_sees_merged": "rule:Scope.resolveStep",
     "condition_uses_right_most": "rule:Scope.leftMost", "natural_without_common_no_rows": "rule:mergedCondition",
     "missing_using_column_accepted": "rule:usingNameChecked", "natural_with_on_accepted": "rule:mergedNames",
 }

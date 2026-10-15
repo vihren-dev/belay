@@ -1,7 +1,7 @@
 import Belay.Sqlite.Model
 import Belay.Sqlite.Resolution.ReadDefaults
 import Belay.Sqlite.Resolution.Resolved
-import Belay.Sqlite.QueryEval
+import Belay.Sqlite.QueryJoins
 
 set_option doc.verso true
 

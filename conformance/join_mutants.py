@@ -7,10 +7,10 @@ builds and runs against its target case of `conformance.authored_joins`.
 
 from conformance.resolve_mutants import SQLITE
 
-QUERY_EVAL = SQLITE + "QueryEval.lean"
-"""The evaluation of queries, with the rows of joins."""
-QUERY_EXPRS = SQLITE + "Resolution/QueryExprs.lean"
-"""The resolution of names in expressions."""
+QUERY_JOINS = SQLITE + "QueryJoins.lean"
+"""The rows of joins."""
+SCOPE = SQLITE + "Resolution/Scope.lean"
+"""The resolution of unqualified names over the sources."""
 SOURCES = SQLITE + "Resolution/Sources.lean"
 """The resolution of the tables of FROM and their names."""
 QUERIES = SQLITE + "Resolution/Queries.lean"
@@ -20,17 +20,15 @@ PADDED = "    if (joinMatches row join table).isEmpty then [row ++ List.replicat
 """The left join's row for a left row without a match."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "left_join_drops_unmatched": (QUERY_EVAL, PADDED, "    if (joinMatches row join table).isEmpty then []"),
-    "left_join_pads_left_values": (QUERY_EVAL, PADDED,
+    "left_join_drops_unmatched": (QUERY_JOINS, PADDED, "    if (joinMatches row join table).isEmpty then []"),
+    "left_join_pads_left_values": (QUERY_JOINS, PADDED,
         "    if (joinMatches row join table).isEmpty then\n"
         "      [row ++ (row ++ List.replicate table.shape.columns.length (.null : Value)).take table.shape.columns.length]"),
-    "on_after_padding": (QUERY_EVAL, PADDED,
+    "on_after_padding": (QUERY_JOINS, PADDED,
         "    if (joinMatches row join table).isEmpty then\n"
         "      [row ++ List.replicate table.shape.columns.length .null].filter fun joined =>\n"
         "        join.condition.all fun condition => truthy (condition.eval joined)"),
-    "unqualified_takes_first_source": (QUERY_EXPRS,
-        "    | _ :: _ :: _ => .error (.prepare (.ambiguousColumn name))",
-        "    | position :: _ :: _ => .ok (.column position, (scope.columns[position]?.map CatalogColumn.affinity))"),
+    "unqualified_takes_first_source": (SCOPE, "      else .ambiguous)", "      else .found first reads)"),
     "alias_keeps_table_name": (SOURCES,
         "{ name := reference.alias.getD reference.table, columns := table.columns }",
         "{ name := reference.table, columns := table.columns }"),
@@ -54,7 +52,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 
 GUARDS: dict[str, str] = {
     "left_join_drops_unmatched": "rule:joinRow", "left_join_pads_left_values": "rule:joinRow",
-    "on_after_padding": "rule:joinRow", "unqualified_takes_first_source": "rule:resolveOperand",
+    "on_after_padding": "rule:joinRow", "unqualified_takes_first_source": "rule:Scope.resolveStep",
     "alias_keeps_table_name": "rule:resolveTableReference", "star_omits_joined_columns": "rule:resolveResultColumn",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
