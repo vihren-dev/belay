@@ -571,7 +571,7 @@ joins in `DELETE` stay refused.
 
 ## Amendment 3: RIGHT and FULL joins (slices 4c and 4d)
 
-Date: 2026-10-15. Status: PROPOSED.
+Date: 2026-10-15. Status: ACCEPTED (2026-10-15, #124).
 Related: Amendment 2, owner decision 2, which this amendment corrects; ADR 0005 for
 the comparison of rows; the slice 4b task, plans/20261015-using-natural.task.md.
 
