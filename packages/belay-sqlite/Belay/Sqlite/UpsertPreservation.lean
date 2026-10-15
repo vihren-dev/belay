@@ -40,10 +40,9 @@ theorem LiteralData.handlingClause_mem {keys : List (List Nat)} {clauses : List 
     obtain ⟨_, rfl⟩ := image
     exact List.mem_of_find?_eq_some row
 
-/-- For every valid table and {lit}`DO UPDATE` of a row of the table: assume
-{name}`LiteralData.aliasReady` and that every row of the result has a bounded rowid. If
-{name}`LiteralData.updateExisting` succeeds, its table has the same shape and is
-{name}`Table.Valid`. Proof sketch: a false filter keeps the table; otherwise the changed
+/-- For every valid table and {lit}`DO UPDATE` of a row of the table: assume that every
+row of the result has a bounded rowid. If {name}`LiteralData.updateExisting` succeeds,
+its table has the same shape and is {name}`Table.Valid`. Proof sketch: a false filter keeps the table; otherwise the changed
 row is {name}`LiteralData.assignFrom` of a valid row, its alias cell is an integer (no
 {name}`LiteralData.aliasCellMismatch`), and {name}`Table.RowsValid.replaceRow` applies. -/
 theorem LiteralData.updateExisting_valid {keys : List (List Nat)} {table next : Table}
