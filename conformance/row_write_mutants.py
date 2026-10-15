@@ -31,7 +31,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "values.set position (storeValue (positionAffinity columns position) (expression.eval row.values))) row.values }",
         "values.set position (expression.eval row.values)) row.values }"),
     "no_store_of_constants": (UPDATES,
-        "  else .literal (storeValue (columnAffinity columns position) (resolved.eval []))",
+        "  else .literal (storeValue (columnAffinity scope.columns position) (resolved.eval []))",
         "  else .literal (resolved.eval [])"),
     "cast_as_store_affinity": (WRITES,
         "    .ok (storeValue column.affinity value)) columns", "    .ok (castValue column.affinity value)) columns"),

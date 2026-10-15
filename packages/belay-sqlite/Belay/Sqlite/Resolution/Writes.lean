@@ -81,7 +81,7 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
             match keyDomainRestriction table.columns keys (fun row => [2, row])
                 (full.map (·.mapIdx fun position value => (position, value))) with
             | some (path, reason) => restrict index path reason
-            | none => match resolveReturning context.profile.dqsDml table.columns returning with
+            | none => match resolveReturning context.profile.dqsDml (Scope.single tableName table.columns) returning with
               | .error issue => issueResolution catalog index [3] issue
               | .ok columns => .ok (.insert position full keys columns, catalog)
 

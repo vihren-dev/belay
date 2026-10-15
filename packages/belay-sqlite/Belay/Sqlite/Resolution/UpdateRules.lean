@@ -8,13 +8,13 @@ the rule and its references. -/
 
 namespace Belay.Sqlite
 
-/-- For every setting, column list, key columns, item and assignment, the issues of
+/-- For every setting, scope, key columns, item and assignment, the issues of
 {name}`resolveAssignment` name no catalog object. Proof sketch: the expression's issues
 are issues of {name}`resolveOperand`; the column lookup fails only with
 {name}`PrepareError.noSuchColumn`, and the key check only with a restriction. -/
-theorem resolveAssignment_issues (dqs : Bool) (columns : List CatalogColumn) (keyColumns : List Nat)
+theorem resolveAssignment_issues (dqs : Bool) (scope : Scope) (keyColumns : List Nat)
     (item : Nat) (assignment : String × Syntax.Expr) :
-    IssuesNameNoObject (resolveAssignment dqs columns keyColumns item assignment) := by
+    IssuesNameNoObject (resolveAssignment dqs scope keyColumns item assignment) := by
   obtain ⟨name, value⟩ := assignment
   unfold resolveAssignment
   apply bind_issues (under_issues _ (resolveOperand_issue _ _ _ _))
@@ -27,19 +27,19 @@ theorem resolveAssignment_issues (dqs : Bool) (columns : List CatalogColumn) (ke
     split at failed <;> cases failed
     trivial
 
-/-- For every setting, column list and optional filter, the issues of the filter of
+/-- For every setting, scope and optional filter, the issues of the filter of
 UPDATE, resolved as a condition, name no catalog object. Proof sketch: by
 {name}`condition_issues` over {name}`resolveOperand_issue`. -/
-theorem updateFilter_issues (dqs : Bool) (columns : List CatalogColumn) (filter : Option Syntax.Expr) :
+theorem updateFilter_issues (dqs : Bool) (scope : Scope) (filter : Option Syntax.Expr) :
     IssuesNameNoObject (match filter with
       | none => (.ok none : Except ValueIssue (Option Resolved.Expr))
-      | some term => some <$> condition [] (resolveOperand dqs columns true term)) := by
+      | some term => some <$> condition [] (resolveOperand dqs scope true term)) := by
   cases filter with
   | none => intro issue failed; cases failed
   | some term =>
     intro issue failed
-    have issues := condition_issues [] (resolveOperand_issue dqs columns true term)
-    cases h : condition [] (resolveOperand dqs columns true term) with
+    have issues := condition_issues [] (resolveOperand_issue dqs scope true term)
+    cases h : condition [] (resolveOperand dqs scope true term) with
     | error cause => simp [h, Functor.map, Except.map] at failed; subst failed; exact issues _ h
     | ok _ => simp [h, Functor.map, Except.map] at failed
 

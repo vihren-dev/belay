@@ -9,6 +9,8 @@ boundary case of `conformance.authored_obligations`: with the conjunct the case 
 `MODEL_UNSUPPORTED`, without it the case disagrees with native SQLite. Every other
 conjunct names in `COVERED_ELSEWHERE` what keeps such states out before the obligation
 is checked. The mutants run in the scheduled suite (owner decision of 2026-10-14).
+`statementReady` admits every DELETE: DELETE compares no key values and cannot fail a
+constraint, and its filter has SQLite's comparison rules, so it adds no conjunct.
 """
 
 from conformance.resolve_mutants import SQLITE

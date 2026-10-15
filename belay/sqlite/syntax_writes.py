@@ -1,8 +1,8 @@
-"""Map transaction control, INSERT and UPDATE to statement syntax.
+"""Map transaction control, INSERT, UPDATE and DELETE to statement syntax.
 
 INSERT keeps its optional column list, its VALUES rows and its RETURNING columns;
 UPDATE keeps its assignments, its optional WHERE expression and its RETURNING
-columns. Values, assignments and the filter are query expressions
+columns; DELETE keeps its optional WHERE expression and its RETURNING columns. Values, assignments and the filter are query expressions
 (`syntax_queries.query_expression`); Lean decides which of them the model admits in a
 write. A write with RETURNING is a `returning` node around the write, with its
 result columns as in SELECT; a write without RETURNING is the write alone.
@@ -99,13 +99,31 @@ def update(tree: Tree, command: Node) -> Located:
     items = [pair(name(tree, item[-3]), query_expression(tree, item[-1]), item[-3].start, item[-1].end)
              for item in left_list(tree, assignments, {3: ["nm", "EQ", "expr"],
                                                        5: ["setlist", "COMMA", "nm", "EQ", "expr"]})]
-    parts = tree.children(where)
-    symbols = [part.symbol for part in parts]
-    if symbols not in ([], ["WHERE", "expr"], ["RETURNING", "selcollist"], ["WHERE", "expr", "RETURNING", "selcollist"]):
-        raise tree.unsupported(where, "Unsupported UPDATE clause; write [WHERE expression] [RETURNING columns]")
-    filter_ = query_expression(tree, parts[1]) if symbols[:1] == ["WHERE"] else leaf(None, where.start, where.end)
-    returned = parts[-2:] if symbols[-2:] == ["RETURNING", "selcollist"] else []
+    filter_, returned = filter_and_returning(tree, where, "UPDATE")
     write = constructor("update", [("table", name(tree, table)),
                                    ("assignments", sequence(items, assignments.start, assignments.end)),
                                    ("filter", filter_)], command.start, command.end)
+    return returning(tree, command, write, returned)
+
+
+def filter_and_returning(tree: Tree, where: Node, statement: str) -> tuple[Located, list[Node]]:
+    """The optional WHERE filter and the `RETURNING selcollist` parts of a `where_opt_ret`
+    node, which UPDATE and DELETE share; a missing filter is a null leaf."""
+    parts = tree.children(where)
+    symbols = [part.symbol for part in parts]
+    if symbols not in ([], ["WHERE", "expr"], ["RETURNING", "selcollist"], ["WHERE", "expr", "RETURNING", "selcollist"]):
+        raise tree.unsupported(where, f"Unsupported {statement} clause; write [WHERE expression] [RETURNING columns]")
+    filter_ = query_expression(tree, parts[1]) if symbols[:1] == ["WHERE"] else leaf(None, where.start, where.end)
+    return filter_, (parts[-2:] if symbols[-2:] == ["RETURNING", "selcollist"] else [])
+
+
+def delete(tree: Tree, command: Node) -> Located:
+    """Map DELETE FROM table [WHERE expression] [RETURNING columns]."""
+    with_, _, _, target, indexed, where = require(
+        tree, command, ["with", "DELETE", "FROM", "xfullname", "indexed_opt", "where_opt_ret"])
+    absent(tree, with_, "A WITH clause")
+    absent(tree, indexed, "INDEXED BY")
+    (table,) = require(tree, target, ["nm"])
+    filter_, returned = filter_and_returning(tree, where, "DELETE")
+    write = constructor("delete", [("table", name(tree, table)), ("filter", filter_)], command.start, command.end)
     return returning(tree, command, write, returned)

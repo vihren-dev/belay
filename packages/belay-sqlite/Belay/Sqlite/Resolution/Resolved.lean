@@ -70,6 +70,24 @@ inductive PrepareError where
   /-- {lit}`wrong number of arguments to function %s()`, with the function name as
   written ({lit}`resolveExprStep`). -/
   | wrongArgumentCount (function : String)
+  /-- {lit}`ambiguous column name: %s`: an unqualified name that names a column of two or
+  more sources of a join, as written. -/
+  | ambiguousColumn (name : String)
+  /-- {lit}`no such table: %s` for {lit}`source.*` with a name that names no source of
+  the query, as written. Unlike {name}`PrepareError.noSuchTable`, it names no catalog
+  object. -/
+  | noSuchSource (name : String)
+  /-- {lit}`at most 64 tables in a join`. -/
+  | tooManyTables
+  /-- {lit}`RETURNING may not use "TABLE.*" wildcards`: a {lit}`source.*` column in
+  {lit}`RETURNING`, for every source name. -/
+  | returningSourceStar
+  /-- {lit}`cannot join using column %s - column not present in both tables`: a name of
+  {lit}`USING` that is not a column of both the left input and the joined table, as
+  written. -/
+  | joinUsingColumn (name : String)
+  /-- {lit}`a NATURAL join may not have an ON or USING clause`. -/
+  | naturalJoinCondition
   deriving Repr, DecidableEq
 
 /-- A model restriction: SQLite accepts the SQL, but the model does not describe
@@ -118,6 +136,10 @@ inductive Statement where
   the {lit}`RETURNING` columns are as for INSERT. -/
   | update (table : Nat) (assignments : List (Nat × Expr)) (filter : Option Expr)
       (keys : List (List Nat)) (returning : List (Expr × String))
+  /-- Remove every row where the optional filter condition is true (every row without a
+  filter). The {lit}`RETURNING` columns are evaluated on each removed row; the
+  execution semantics does not read them. -/
+  | delete (table : Nat) (filter : Option Expr) (returning : List (Expr × String))
   /-- SQLite refuses to prepare the statement with this error. -/
   | prepareError (error : PrepareError)
   /-- Run a query: it reads the database, changes nothing, and has result rows. -/

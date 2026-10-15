@@ -10,8 +10,8 @@ from .located import Json, Located
 from .profiles import ExecutionProfile
 from .sql_tree import Node, Tree
 from .syntax_definitions import add_column, create_index, create_table
-from .syntax_queries import select
-from .syntax_writes import insert, transaction, update
+from .syntax_select import select
+from .syntax_writes import delete, insert, transaction, update
 
 SCRIPT_RECORD_VERSION = 3
 """The version of the structural record that Lean's `decodeScriptRecord` accepts."""
@@ -47,10 +47,12 @@ def statement(tree: Tree, command: Node) -> Located:
         return insert(tree, command)
     if symbols[:2] == ["with", "UPDATE"]:
         return update(tree, command)
+    if symbols[:2] == ["with", "DELETE"]:
+        return delete(tree, command)
     if symbols == ["select"]:
         return select(tree, command)
     raise tree.unsupported(command, "This statement is not modeled; the model runs CREATE TABLE, CREATE INDEX, "
-                           "ALTER TABLE ADD COLUMN, BEGIN, COMMIT, ROLLBACK, INSERT, UPDATE and SELECT")
+                           "ALTER TABLE ADD COLUMN, BEGIN, COMMIT, ROLLBACK, INSERT, UPDATE, DELETE and SELECT")
 
 
 def statements(tree: Tree) -> tuple[Located, ...]:

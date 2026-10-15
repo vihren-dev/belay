@@ -3,10 +3,7 @@
 Every restriction id of `RestrictionKind.id` (`Resolution/RestrictionText.lean`) has
 an example here: a schema and a migration that the resolver refuses with that id.
 The examples show that each restriction can be reached from SQL, and they show users
-what each restriction refuses. A restriction that the frontend blocks today has its
-example in `FRONTEND_BLOCKED` instead, with the reason; the example must then be a
-frontend refusal, so that the test notices when the frontend starts to accept it.
-`resolve_example` runs one example through the frontend and the resolver, as
+what each restriction refuses. `resolve_example` runs one example through the frontend and the resolver, as
 `migration_check.inputs` does for `verify`.
 """
 
@@ -37,8 +34,14 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "row-dependent-key": ("CREATE TABLE t(a INTEGER UNIQUE);", "UPDATE t SET a = a + 1;"),
     "insert-column-twice": ("CREATE TABLE t(a INTEGER);", "INSERT INTO t(a, a) VALUES (1, 2);"),
     "update-column-twice": ("CREATE TABLE t(a INTEGER);", "UPDATE t SET a = 1, a = 2;"),
-    "rowid-in-returning": ("CREATE TABLE t(a INTEGER);", "INSERT INTO t VALUES (1) RETURNING rowid;"),
-    "returning-target": ("CREATE TABLE t(a INTEGER);", "DELETE FROM t RETURNING a;"),
+    "rowid-name": ("CREATE TABLE t(a INTEGER);", "SELECT rowid FROM t;"),
+    "right-or-full-join": ("CREATE TABLE t(a INTEGER); CREATE TABLE u(a INTEGER);",
+                           "SELECT * FROM t RIGHT JOIN u ON t.a = u.a;"),
+    "join-operator": ("CREATE TABLE t(a INTEGER); CREATE TABLE u(a INTEGER);",
+                      "SELECT * FROM t OUTER LEFT JOIN u ON t.a = u.a;"),
+    "duplicate-source": ("CREATE TABLE t(a INTEGER);", "SELECT 1 FROM t, t;"),
+    "later-table-in-on": ("CREATE TABLE t(a INTEGER); CREATE TABLE u(a INTEGER); CREATE TABLE v(a INTEGER);",
+                          "SELECT t.a FROM t JOIN u ON v.a = 1 JOIN v;"),
     "system-table": ("CREATE TABLE t(a INTEGER);", "SELECT name FROM sqlite_schema;"),
     "unmodeled-function": ("CREATE TABLE t(a INTEGER);", "SELECT abs(a) FROM t;"),
     "aggregate-in-expression": ("CREATE TABLE t(a INTEGER);", "SELECT count(*) + 1 FROM t;"),
@@ -55,13 +58,6 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "windowed-group-sum": ("CREATE TABLE t(a INTEGER);", "SELECT sum(a) FROM t GROUP BY a LIMIT 1;"),
 }
 """For each restriction id: a schema and a migration that the resolver refuses with it."""
-
-FRONTEND_BLOCKED: dict[str, str] = {
-    "returning-target": "The frontend maps RETURNING only on INSERT and UPDATE; DELETE is refused before "
-                        "resolution until slice 3c of ADR 0012 adds it.",
-}
-"""Restrictions whose example the frontend refuses today, with the reason. The syntax
-type allows the form, so the resolver keeps the restriction."""
 
 PROFILE = "3.51.0"
 """The execution profile of the examples."""

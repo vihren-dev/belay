@@ -1,5 +1,6 @@
 import Belay.Sqlite.Resolution.Queries
 import Belay.Sqlite.Resolution.Updates
+import Belay.Sqlite.Resolution.Deletes
 
 set_option doc.verso true
 
@@ -60,15 +61,17 @@ def resolveStatement (context : ResolveContext) (state : ResolveState) (index : 
   | .insert table columns rows => state.withCatalog (resolveInsert context state.catalog index table columns rows [])
   | .update table assignments filter =>
     state.withCatalog (resolveUpdate context state.catalog index table assignments filter [])
-  | .select columns table filter groupBy orderBy limit offset =>
-    state.withCatalog (resolveSelect context state.catalog index columns table filter groupBy orderBy limit offset)
+  | .select columns source joins filter groupBy orderBy limit offset =>
+    state.withCatalog
+      (resolveSelect context state.catalog index columns source joins filter groupBy orderBy limit offset)
+  | .delete table filter => state.withCatalog (resolveDelete context state.catalog index table filter [])
   | .returning write columns => match write with
     | .insert table names rows =>
       state.withCatalog (returningPaths (resolveInsert context state.catalog index table names rows columns))
     | .update table assignments filter =>
       state.withCatalog (returningPaths (resolveUpdate context state.catalog index table assignments filter columns))
-    | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .select .. | .returning .. =>
-      .error { statement := index, path := [0], kind := .returningTarget }
+    | .delete table filter =>
+      state.withCatalog (returningPaths (resolveDelete context state.catalog index table filter columns))
 
 /-- Resolve the statements from a zero-based index and a state, in order. -/
 def resolveFrom (context : ResolveContext) (index : Nat) (state : ResolveState) :

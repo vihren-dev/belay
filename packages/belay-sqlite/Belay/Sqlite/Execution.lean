@@ -74,7 +74,7 @@ and CREATE INDEX fail with {lean}`ExecutionError.unmodeled`: {lit}`resolve` give
 no such statement for a conforming database, and the supported-subset check
 excludes CREATE INDEX. A query changes nothing; it fails with
 {lean}`ExecutionError.integerOverflow` when {name}`Resolved.Query.fails` holds for its
-table, and otherwise succeeds. Its result rows are not part of the outcome. SQL execution handles transaction control and writes
+source rows ({name}`Resolved.Query.source`), and otherwise succeeds. Its result rows are not part of the outcome. SQL execution handles transaction control and writes
 separately. The default position is zero. -/
 def step (statement : Resolved.Statement) (database : Database) (position : Nat := 0) : Outcome :=
   match statement with
@@ -85,10 +85,10 @@ def step (statement : Resolved.Statement) (database : Database) (position : Nat 
     | none => .failure position .unmodeled database
     | some table => .success (database.set at_ (table.appendColumns [column]))
   | .prepareError error => .failure position (.prepare error) database
-  | .query query => match database query.table with
-    | some table => if query.fails table then .failure position .integerOverflow database else .success database
+  | .query query => match query.source database with
+    | some rows => if query.fails rows then .failure position .integerOverflow database else .success database
     | none => .success database
-  | .createIndex .. | .begin | .commit | .rollback | .insert .. | .update .. =>
+  | .createIndex .. | .begin | .commit | .rollback | .insert .. | .update .. | .delete .. =>
     .failure position .unmodeled database
 
 end Belay.Sqlite

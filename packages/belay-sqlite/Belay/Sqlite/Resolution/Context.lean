@@ -49,6 +49,7 @@ def constantDefaultExpression : Syntax.Expr → Bool
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ => true
   | .identifier name doubleQuoted => !doubleQuoted && booleanKeywordName name
   | .negate operand | .positive operand => constantDefaultExpression operand
+  | .qualified .. => false
   | .equals left right => constantDefaultExpression left && constantDefaultExpression right
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. => true
   | .arithmetic .. | .cast .. | .callPair .. => true
@@ -65,7 +66,7 @@ def constantDefault (expression : Syntax.Expr) : Bool :=
   | .identifier .. => true
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .positive _
   | .equals .. | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call ..
-  | .arithmetic .. | .cast .. | .callPair .. => constantDefaultExpression expression
+  | .arithmetic .. | .cast .. | .callPair .. | .qualified .. => constantDefaultExpression expression
 
 /-- Whether the constraint is PRIMARY KEY. -/
 def Syntax.ColumnConstraint.isPrimaryKey : Syntax.ColumnConstraint → Bool

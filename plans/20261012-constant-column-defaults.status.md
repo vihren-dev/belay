@@ -771,3 +771,47 @@ Decisions waiting for the owner:
 
 - Final review after ADD COLUMN execution, preservation and installed
   acceptance are complete. No new design decision is required now.
+
+
+- 2026-10-15: Integrated main 32da9f9a into the working change. Resolved
+  conflicts in default classification, INSERT defaults, prediction and package
+  ownership. The new qualified-name expression is explicitly rejected as a
+  default; literal and source-spelling behavior is retained. The core import
+  count now includes both the merged query modules and the default helpers.
+
+  The conformance runtime and checked public documentation build successfully.
+  The judge, claims and corpora 12 through 14 exactly match main. Model,
+  harness, frozen and protected-verdict checks are running; this is not yet
+  an accepted or independently reviewed integration. Logs are
+  build/t14-main-integration-20261015.log, build/t14-main-tests-20261015.log
+  and build/t14-main-verdict-20261015.log. The first build attempt lacked
+  sandbox access to the Nix daemon; the authorized daemon-access run passed.
+
+Decisions waiting for the owner:
+
+- Final review after complete ADD COLUMN and installed acceptance.
+
+
+- 2026-10-15: Integration validation now passes all 884 public documentation
+  checks, 146 frozen tests in 54.83 seconds and 182 harness tests in 5.77
+  seconds. The protected verdict passes, including all 15 DELETE cases,
+  21 join cases and 22 USING/NATURAL cases. The 169-test model suite remains
+  active. Integration is uncommitted pending that result and independent review.
+
+Decisions waiting for the owner:
+
+- Final review of the completed T14 change, after the remaining acceptance.
+
+
+- 2026-10-15: The integrated model suite passes all 169 tests in 302.60
+  seconds. All three standalone package tests pass in 6.43 seconds, including
+  the 69-module import closure and the isolated consumer. Together with the
+  passing harness, frozen suite, documentation and protected verdict above,
+  this completes local macOS integration checks. Independent review follows
+  the integration commit. Evidence is in build/t14-main-tests-20261015.log
+  and build/t14-main-package-20261015.log. This is not Linux or installed
+  ADD COLUMN acceptance; those task gates remain open.
+
+Decisions waiting for the owner:
+
+- Final review of the completed T14 representation and codec changes.

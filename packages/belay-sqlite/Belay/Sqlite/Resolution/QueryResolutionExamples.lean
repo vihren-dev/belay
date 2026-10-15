@@ -18,7 +18,7 @@ def catalog : Catalog :=
 /-- A {lit}`SELECT` from {lit}`t` with the given parts. -/
 def select (columns : List ResultColumn) (filter : Option Expr := none) (groupBy : List Expr := [])
     (orderBy : List OrderTerm := []) (limit offset : Option Expr := none) : Syntax.Statement :=
-  .select columns "t" filter groupBy orderBy limit offset
+  .select columns { table := "t", alias := none } [] filter groupBy orderBy limit offset
 
 /-- A result column written as an expression without an alias. -/
 def written (value : Expr) (text : String) : ResultColumn := .expression value none text
@@ -32,14 +32,14 @@ def queryOf (statement : Syntax.Statement) : Option Resolved.Query :=
   match resolvedOne statement with
   | some (.query query) => some query
   | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some .begin | some .commit
-  | some .rollback | some (.insert ..) | some (.update ..) | some (.prepareError _) | none => none
+  | some .rollback | some (.insert ..) | some (.update ..) | some (.delete ..) | some (.prepareError _) | none => none
 
 /-- The prepare error of a resolution, if it is one. -/
 def errorOf (statement : Syntax.Statement) : Option PrepareError :=
   match resolvedOne statement with
   | some (.prepareError error) => some error
   | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some .begin | some .commit
-  | some .rollback | some (.insert ..) | some (.update ..) | some (.query _) | none => none
+  | some .rollback | some (.insert ..) | some (.update ..) | some (.delete ..) | some (.query _) | none => none
 
 /-- Whether the statement is a model restriction. -/
 def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration catalog [statement])
@@ -52,7 +52,7 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
   (·.names) == some ["n", "count(*)"]
 -- Names that SQLite refuses while it prepares the query.
 #guard errorOf (select [written (.identifier "missing" false) "missing"]) == some (.noSuchColumn "missing")
-#guard errorOf (.select [.star] "absent" none [] [] none none) == some (.noSuchTable "absent")
+#guard errorOf (.select [.star] { table := "absent", alias := none } [] none [] [] none none) == some (.noSuchTable "absent")
 #guard errorOf (select [.star] (filter := some (.equals (.callStar "count") (.numeric "1")))) ==
   some (.misuseOfAggregate "count")
 #guard errorOf (select [written (.call "MAX" (.call "min" (.identifier "b" false))) "MAX(min(b))"]) ==
@@ -62,7 +62,7 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
 #guard errorOf (select [written (.callStar "COUNT") "COUNT(*)"] (groupBy := [.numeric "1"])) == some .aggregateInGroupBy
 #guard restrictedOne (select [written (.call "group_concat" (.identifier "b" false)) "group_concat(b)"])
 -- SQLite's own tables are not in the catalog; querying one is a model restriction.
-#guard restrictedOne (.select [.star] "sqlite_master" none [] [] none none)
+#guard restrictedOne (.select [.star] { table := "sqlite_master", alias := none } [] none [] [] none none)
 -- A declared type that is a standard type name is kept in capitals, as SQLite reports it.
 #guard reportedType (some "int") == some "INT" && reportedType (some "VarChar(10)") == some "VarChar(10)"
 -- A double-quoted name that names no column is a string literal.
@@ -130,5 +130,14 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
 #guard (queryOf (select [.expression (.identifier "b" false) (some "k") "b"]
   (orderBy := [{ expression := .identifier "K" false, descending := true }]))).map (·.orderBy) ==
   some [(.output 0, true)]
+
+-- A rowid name that is not a column is a restriction in every expression, since SQLite
+-- reads the rowid: in a result column, in WHERE, in a SET value and in a DELETE filter.
+#guard restrictedOne (select [written (.identifier "rowid" false) "rowid"])
+#guard restrictedOne (select [.star] (filter := some (.equals (.identifier "oid" false) (.numeric "1"))))
+#guard restrictedOne (.update "t" [("b", .identifier "_rowid_" false)] none)
+#guard restrictedOne (.delete "t" (some (.equals (.identifier "rowid" true) (.numeric "1"))))
+-- In VALUES no table is in scope, and SQLite reports `no such column: rowid`.
+#guard errorOf (.insert "t" none [[.identifier "rowid" false, .null]]) == some (.noSuchColumn "rowid")
 
 end Belay.Sqlite.Resolution.QueryResolutionExamples

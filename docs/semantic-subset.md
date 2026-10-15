@@ -20,12 +20,25 @@ The frontend maps these statements, and refuses every other statement as
   `TRANSACTION`;
 - `INSERT INTO table [(columns)] VALUES` with one or more rows;
 - `UPDATE table SET column = value, … [WHERE expression]`;
-- `RETURNING columns` after `INSERT … VALUES` and `UPDATE`, with result columns as in
-  `SELECT`, over each written row (slice 3a); an aggregate is SQLite's prepare error,
-  and a rowid name in `RETURNING` is a model restriction;
-- `SELECT columns FROM table [WHERE …] [GROUP BY …] [ORDER BY … [ASC|DESC]]
-  [LIMIT n [OFFSET m]]` from one table, whose result columns are `*` or
-  expressions with an optional alias (ADR 0012, slice 1).
+- `DELETE FROM table [WHERE expression]`, which removes each row for which the
+  expression is true (slice 3c);
+- `RETURNING columns` after `INSERT … VALUES`, `UPDATE` and `DELETE`, with result
+  columns as in `SELECT`, over each written or deleted row (slices 3a and 3c); an
+  aggregate and `source.*` are SQLite's prepare errors, and a rowid name in
+  `RETURNING` is a model restriction;
+- `SELECT columns FROM tables [WHERE …] [GROUP BY …] [ORDER BY … [ASC|DESC]]
+  [LIMIT n [OFFSET m]]`, whose result columns are `*`, `source.*` or expressions
+  with an optional alias (ADR 0012, slice 1). `FROM` is one table, or tables joined
+  left to right with `,`, `JOIN`, `INNER JOIN`, `CROSS JOIN` (with an optional `ON`)
+  and `LEFT [OUTER] JOIN … ON`; each table may have an alias (`t AS x` or `t x`), and
+  a column may be qualified as `source.column` (slice 4). An unqualified name that
+  names a column of two sources is SQLite's `ambiguous column name`. An inner or left
+  join may have `USING (columns)` instead of `ON`, or start with `NATURAL`
+  (slice 4b): the join compares each named column, or each column name of the joined
+  table that the left tables also have, with the left-most such left column, and `*`
+  and unqualified names no longer see the right column of each pair. A `USING` name
+  that is not in both inputs and `NATURAL` with `ON` or `USING` are SQLite's prepare
+  errors.
 
 Expressions are `NULL`, numeric, string and blob literals, the time keywords,
 names, unary `-` and `+`, and `=`. Inside a `SELECT`, they may also be the other
@@ -44,8 +57,9 @@ constraints, collations, `CHECK`, `REFERENCES`, generated columns, conflict
 clauses, `UPSERT`, `WITH`, `FROM` in writes, sort modifiers in keys,
 partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
 options, `AS SELECT`, views, triggers, virtual tables, `EXPLAIN`, `PRAGMA`,
-compound `SELECT`, `DISTINCT`, `HAVING`, joins, table aliases, `table.*`,
-`NULLS FIRST` and `NULLS LAST`, and other functions are refused. Names keep
+compound `SELECT`, `DISTINCT`, `HAVING`, subqueries and table-valued functions in
+`FROM`, schema-qualified tables and columns, `NULLS FIRST` and `NULLS LAST`, and
+other functions are refused. Names keep
 their case as written; quotes are removed as SQLite removes them. Numeric literals
 and declared types keep their text.
 
@@ -88,7 +102,9 @@ column, literal, `COALESCE`, or `CAST` to TEXT or BLOB used as a condition; an a
 outside `GROUP BY` in an aggregate query; `ORDER BY` terms of an aggregate query
 other than result column numbers and aliases; a result column alias in `WHERE`
 or inside an `ORDER BY` expression; a query of SQLite's own tables, such as
-`sqlite_schema`; `SUM` in a query with `GROUP BY` and `LIMIT` or `OFFSET`; and
+`sqlite_schema`; `RIGHT` or `FULL` joins (until slice 4c); other join operators, such as `OUTER LEFT JOIN`; two sources with
+the same name; an `ON` condition that names a
+table joined after it; `SUM` in a query with `GROUP BY` and `LIMIT` or `OFFSET`; and
 `LIMIT` or `OFFSET` other than
 an integer literal, or a negative `OFFSET`. Each restriction message says what to
 change.
@@ -102,9 +118,7 @@ The registry is `RestrictionKind` in
 messages in `RestrictionText.lean`. Every id has one row in this table;
 `tests/restriction_registry_test.py` checks that the table and the registry list the
 same ids. `conformance/restriction_examples.py` has, for every id, a schema and a
-migration that the resolver refuses with that id, and a test runs each one. The
-exception is `returning-target`: the frontend refuses its example (DELETE ...
-RETURNING) before resolution, and the test checks that refusal. Syntax
+migration that the resolver refuses with that id, and a test runs each one. Syntax
 that the frontend refuses before resolution, such as `DISTINCT` or
 an UPSERT, has no id. `just restriction-costs` counts, for each id and for each kind
 of frontend refusal, the cases of the claimed corpora that it keeps out of scope.
@@ -125,8 +139,11 @@ of frontend refusal, the cases of the claimed corpora that it keeps out of scope
 | `row-dependent-key` | A SET value that reads the row is not modeled for a column of a unique key | ADR 0012 amendment 1 (question 1) |
 | `insert-column-twice` | A column named twice in INSERT is not modeled | ADR 0008 |
 | `update-column-twice` | A column assigned twice in UPDATE is not modeled | ADR 0008 |
-| `rowid-in-returning` | A rowid in RETURNING is not modeled | ADR 0012 slice 3a |
-| `returning-target` | RETURNING is modeled only on INSERT and UPDATE | ADR 0012 slice 3a |
+| `rowid-name` | A rowid name that is not a column is not modeled in an expression over a table; in VALUES it resolves as any other name | ADR 0012 slice 3a; extended 2026-10-14 |
+| `right-or-full-join` | RIGHT and FULL joins are not modeled until slice 4c | ADR 0012 amendment 2 (question 2) |
+| `join-operator` | A join operator with other keywords, or in another order, such as `OUTER LEFT JOIN`, is not modeled | ADR 0012 amendment 2 |
+| `duplicate-source` | Two sources of a query with the same name are not modeled | ADR 0012 amendment 2 (question 3) |
+| `later-table-in-on` | An ON condition that names a table joined after it is not modeled | ADR 0012 amendment 2 |
 | `system-table` | Queries of SQLite's own tables, such as `sqlite_schema`, are not modeled | ADR 0012 slice 1 |
 | `unmodeled-function` | Only `COUNT(*)`, `COUNT`, `MIN`, `MAX`, `SUM` and `AVG` of one argument, and `COALESCE` of two or more arguments are modeled as functions | ADR 0012 slices 1 and 2 |
 | `aggregate-in-expression` | An aggregate inside an expression is not modeled | ADR 0012 slice 1 |
