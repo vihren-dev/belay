@@ -1,6 +1,6 @@
 # Status: USING and NATURAL joins (slice 4b)
 
-Created 2026-10-15. Status: IN PROGRESS.
+Created 2026-10-15. Status: DONE.
 Task: [task](20261015-using-natural.task.md).
 Specification: [ADR 0012, Amendment 2, "Owner decisions", item 1](../docs/adr-0012-query-semantics.md).
 
@@ -35,7 +35,7 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Scope.lean`,
   mutants 143/157 s, model 192/212 s, frozen 136/136 s. The coverage and round-trip
   tests recorded each authored case set natively twice; a module fixture now records it
   once (11 s for the 8 sets), and the model suite takes 198 s.
-
-## Remaining
-
-- Full checks, CI time, PR A; then PR B (claim corpus 14, `mustAgree`).
+- 2026-10-15: pull request A merged as #122.
+- 2026-10-15: pull request B: corpus 14 (22 cases) is claimed, and the cases that agree
+  since #122 join `mustAgree`: 3 in v3 and 7 in v5, all `e_select`. New judge lock.
+  Slice 4b is DONE; slice 4c (RIGHT and FULL joins) follows.
