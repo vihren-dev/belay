@@ -73,9 +73,9 @@ example : (step (.addColumn 0 { name := "shell", declaredType := some "TEXT" })
 /-- The supported-subset check refuses ADD COLUMN of {name}`timestamp`, a model
 restriction, because SQLite accepts the column but the model does not describe its
 default. Resolution never gives such a statement for a statement that runs. The
-proof unfolds the check. -/
+proof computes the check in the kernel. -/
 example : statementReady (.addColumn 0 timestamp) (fun _ => none) = false := by
-  simp [statementReady, timestamp, CatalogColumn.plain]
+  decide +kernel
 
 /-- {name}`step` runs a CREATE TABLE of a keyed table, which is not plain: it
 stores an empty table with that shape at the new position, as SQLite does. The
@@ -86,12 +86,11 @@ example : (step (.createTable 0 "items" { columns := [textKey], primaryKey := [0
     statementReady (.createTable 0 "items" { columns := [textKey], primaryKey := [0] }) (fun _ => none) = false := by
   decide +kernel
 
-/-- {name}`step` runs an ADD COLUMN of {name}`timestamp`, which is not plain: it
-appends the column to the table at position 0. The supported-subset check
-{name}`statementReady` refuses the statement instead. The proof computes both in
-the kernel. -/
+/-- ADD COLUMN of {name}`timestamp` has unsupported default evaluation.
+{name}`step` retains the original table, and {name}`statementReady` refuses the
+statement. The proof computes both in the kernel. -/
 example : (step (.addColumn 0 timestamp) (fun position => if position = 0 then some table else none)).database 0 =
-      some (table.appendColumns [(timestamp, .null)]) ∧
+      some table ∧
     statementReady (.addColumn 0 timestamp) (fun position => if position = 0 then some table else none) = false := by
   decide +kernel
 

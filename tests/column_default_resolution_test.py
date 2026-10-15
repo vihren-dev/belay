@@ -38,8 +38,8 @@ def test_default_preparation_boundary(version: str, sql: str, expression: str,
         tmp_path: Path, lean_sysroot: Path, lean_libraries: tuple[Path, Path]) -> None:
     """Our constant predicate and ADD resolver preserve native preparation success.
 
-    Supported-domain refusal remains required for these unmodeled defaults;
-    successful preparation must not become an invented preparation error.
+    Unmodeled defaults may produce a supported-domain refusal; modeled defaults
+    resolve successfully. Neither may invent a preparation error.
     """
     connection = Connection(load_library(library_path(library_binary(version)), version),
                             tmp_path / "native.db")
@@ -50,7 +50,7 @@ def test_default_preparation_boundary(version: str, sql: str, expression: str,
         code = connection.library.sqlite3_prepare_v2(connection.handle, source,
             len(source), c.byref(statement), c.byref(tail))
         assert code in (0, 1), connection.library.sqlite3_errmsg(connection.handle)
-        expected = "none" if code == 0 else "some true"
+        expected = "false" if code == 0 else "true"
     finally:
         if statement.value:
             connection.library.sqlite3_finalize(statement)
@@ -60,8 +60,8 @@ open Belay.Sqlite
 example : constantDefault ({expression}) = {str(code == 0).lower()} := by decide +kernel
  def catalog : Catalog := [{{ name := "t", entry := .table {{
   columns := [{{name := "id", declaredType := some "BLOB"}}] }} }}]
-#eval (resolveAddColumn {{ profile := Profile.documented "{version}" "", mode := .execution }}
+#eval ((resolveAddColumn {{ profile := Profile.documented "{version}" "", mode := .execution }}
     catalog 0 "t" {{ name := "added", declaredType := some "BLOB", constraints := [.default ({expression}) "unused in preparation classification"] }}).toOption.map
-  (fun pair => pair.1 == .prepareError (.defaultNotConstant "added"))
+  (fun pair => pair.1 == .prepareError (.defaultNotConstant "added"))).getD false
 '''
     assert compile_checks(source, tmp_path, lean_sysroot, lean_libraries).strip() == expected

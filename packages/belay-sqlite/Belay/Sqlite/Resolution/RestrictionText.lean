@@ -54,7 +54,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .createTableConstraints => "constraints and defaults in a CREATE TABLE that runs are not modeled; create the table with plain columns"
   | .unmodeledDefault => "default expression is not modeled; use a literal default"
   | .createIndexRuns => "a CREATE INDEX that runs is not modeled; remove the CREATE INDEX statement"
-  | .addColumnConstraint => "only a nullable column without a default can be added"
+  | .addColumnConstraint => "the added column requires unmodeled default evaluation"
   | .timeValue => "time values are not modeled; write the time as a text literal"
   | .keyAffinity => "unique keys over TEXT or REAL columns are not modeled; write only to tables whose key columns have INTEGER, NUMERIC or BLOB affinity"
   | .keyValue => "only integer and NULL values are modeled in unique key columns; write an integer or NULL key value"

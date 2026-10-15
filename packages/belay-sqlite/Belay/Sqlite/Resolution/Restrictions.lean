@@ -25,7 +25,7 @@ inductive RestrictionKind where
   | unmodeledDefault
   /-- A CREATE INDEX that runs is not modeled (ADR 0008). -/
   | createIndexRuns
-  /-- Only a nullable column without a default can be added (ADR 0008). -/
+  /-- The added column requires unmodeled default evaluation. -/
   | addColumnConstraint
   /-- Time values are not modeled (ADR 0008). -/
   | timeValue

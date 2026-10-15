@@ -73,7 +73,8 @@ def databaseOf (catalog : Catalog) (natives : List NativeTable) : Database :=
 def primaryCode : Option (Nat × ExecutionError) → Nat
   | none => 0
   | some (_, .constraintViolation) => 19
-  | some _ => 1
+  | some (_, .unmodeled) | some (_, .prepare _) | some (_, .transactionAlreadyActive)
+  | some (_, .noActiveTransaction) | some (_, .integerOverflow) | some (_, .nullColumnDefault) => 1
 
 /-- The phase in which SQLite reports a modeled error: a prepare error of resolution
 in {lit}`sqlite3_prepare_v2`, and every other modeled error in {lit}`sqlite3_step`. -/
@@ -81,7 +82,7 @@ def errorPhase : Option (Nat × ExecutionError) → Option ErrorPhase
   | none => none
   | some (_, .prepare _) => some .prepare
   | some (_, .unmodeled) | some (_, .transactionAlreadyActive) | some (_, .noActiveTransaction)
-  | some (_, .constraintViolation) | some (_, .integerOverflow) => some .step
+  | some (_, .constraintViolation) | some (_, .integerOverflow) | some (_, .nullColumnDefault) => some .step
 
 /-- Compare the visible and committed views under their catalogs, the transaction
 status, the primary code and, when the recorder observed it, the error phase; never

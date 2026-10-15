@@ -104,7 +104,15 @@ theorem step_extends (statement : Resolved.Statement) (database : Database) (pos
     simp only [step]
     cases h : database at_ with
     | none => exact DatabaseExtends.refl database
-    | some table => exact DatabaseExtends.add database at_ table [(column, .null)] h
+    | some table =>
+      simp only []
+      cases readDefaultValue column with
+      | error _ => exact DatabaseExtends.refl database
+      | ok value =>
+        simp only []
+        split
+        · exact DatabaseExtends.refl database
+        · exact DatabaseExtends.add database at_ table [(column, value)] h
   | createIndex _ _ _ => exact DatabaseExtends.refl database
   | query query =>
     have same : (step (.query query) database position).database = database := by

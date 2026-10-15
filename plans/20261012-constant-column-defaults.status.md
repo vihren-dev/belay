@@ -1049,3 +1049,121 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of completed T14; implementation and acceptance are unfinished.
+
+
+- 2026-10-15: The harness run passed 181 tests and failed its old count
+  of unsupported cases. Fresh per-case replay confirms that the four NOT NULL
+  ADD cases now agree: empty and populated tables, with and without explicit
+  DEFAULT NULL. Updated the expected counts and added checks for these names.
+  The resolution coverage test also expected the populated-table failure to
+  remain unsupported. Both coverage files now pass all four tests. Evidence:
+  build/t14-add-defaults-boundaries-20261015.json and
+  build/t14-add-defaults-boundary-check-20261015.log.
+
+  The preparation boundary test expected every accepted default to remain
+  unsupported. It now checks whether resolution invents a preparation error,
+  allowing both modeled literals and supported-domain refusals for other
+  accepted expressions. All 26 pinned-engine preparation cases pass in
+  build/t14-add-defaults-resolution-check-20261015.log. Native observations,
+  frozen corpora, judge claims and the judge lock are unchanged.
+
+  The original full model process remains active and retains the obsolete
+  assertions it collected at startup. Its result is pending. Atuin, generated
+  inputs, test ownership and frontend checks are also running in
+  build/t14-add-defaults-consumers-20261015.log. These test corrections and
+  the ADD implementation remain uncommitted pending regression acceptance.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14; acceptance remains unfinished.
+
+
+- 2026-10-15: Consumer checks passed 39 tests and failed one stale Atuin
+  expectation that a literal default is unsupported. Retained the unsupported
+  check with CURRENT_TIMESTAMP and added a separate kernel test that a changed
+  literal default rejects the unchanged proof. Both default tests pass in
+  8.62 seconds. Evidence: build/t14-add-defaults-consumers-20261015.log and
+  build/t14-add-defaults-atuin-default-check-20261015.log.
+
+  The protected Nix verdict passes with unchanged claims, corpora and lock.
+  Corpora v3, v4, v5 and v6 now have 60, 30, 327 and 38 agreeing cases,
+  respectively; no corpus has a disagreement or harness error. Other counts
+  remain unchanged. Evidence: build/t14-add-defaults-verdict-20261015.log.
+  The full model run remains active in its final native-default groups.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14; full regression acceptance remains pending.
+
+
+- 2026-10-15: The original full model run finished with 177 passes and
+  four failures in 540.53 seconds. All 170 new native-default cases passed.
+  Three failures were the coverage and preparation expectations corrected
+  above. The fourth was a trace-mutation test: adding NOT NULL now disagrees
+  with the unchanged trace instead of being unsupported. Updated that verdict
+  and retained its negative kernel check. A fresh full run is active in
+  build/t14-add-defaults-full-model-corrected-20261015.log, with the same
+  600-second limit. The combined frozen and harness suites are running in
+  build/t14-add-defaults-frozen-harness-20261015.log. No full passing result
+  is claimed before these processes finish.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14; acceptance and independent review remain.
+
+
+- 2026-10-15: All 328 frozen and harness tests pass in 71.79 seconds,
+  including the corrected authored boundary checks. Evidence:
+  build/t14-add-defaults-frozen-harness-20261015.log. The corrected full
+  model run remains active, with its earlier failed assertions now passing.
+
+  Self-review found that primaryCode still used a catch-all for execution
+  errors. Listed all constructors explicitly, including nullColumnDefault,
+  as required by review condition R5. The error codes are unchanged. The
+  conformance rebuild is running in
+  build/t14-add-defaults-exhaustive-build-20261015.log. It needs focused
+  error/trace checks before the implementation commit.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14; implementation review and acceptance remain.
+
+
+- 2026-10-15: The exhaustive error-code mapping builds successfully. All
+  21 focused pipeline, phase, trace, failed-catalog and authored-boundary
+  tests pass in 14.11 seconds against that runtime. The protected Nix verdict
+  also passes for this final mapping, with the same counts as the previous
+  run and unchanged judge inputs. Evidence:
+  build/t14-add-defaults-exhaustive-check-20261015.log and
+  build/t14-add-defaults-exhaustive-verdict-20261015.log. The corrected full
+  model run is still active without failures; no final pass is claimed yet.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14; final regression and independent review remain.
+
+
+- 2026-10-15: The corrected full model suite passed all 181 tests in
+  523.24 seconds, within the unchanged 600-second limit. It includes all
+  170 native ADD COLUMN cases and their kernel checks. Evidence:
+  build/t14-add-defaults-full-model-corrected-20261015.log. This full run
+  used the output-corrected runtime. The final, behavior-preserving exhaustive
+  error mapping separately passed its rebuild, 21 focused checks and the
+  protected verdict, as recorded above.
+
+  This implementation checkpoint adds literal ADD COLUMN execution, populated
+  NOT NULL failure, unchanged catalogs after failure, row and projection
+  preservation, and the native output-name rule. All 328 frozen/harness tests
+  pass. Consumer checks passed 39 tests; their one obsolete default expectation
+  was corrected and both replacement default scenarios pass. Public runtime
+  and checked documentation builds passed before the mapping-only change.
+  No approved source, baseline, corpus, claim or judge-lock file changed.
+
+  The implementation is ready for independent review. T14 remains incomplete:
+  integrate main through the new joins, add the public NOT NULL DEFAULT case,
+  verify the offline installed example on both platforms, and obtain final
+  owner review. Existing evidence does not claim those results.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14, after the remaining acceptance work.
