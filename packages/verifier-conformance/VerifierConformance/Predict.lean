@@ -74,6 +74,12 @@ def stepJson (state : ResolveState) (observation : Observation) : Json :=
     ("phase", toJson (errorPhase observation.error)),
     ("primaryCode", toJson (primaryCode observation.error))]
 
+/-- Encode a trace with the catalog at each observation. A failed statement
+uses its preceding resolution state through {name}`observationState`; successful
+statements use their resulting state. The initial observation has index zero. -/
+def predictedSteps (states : List ResolveState) (observed : List Observation) : List Json :=
+  observed.mapIdx fun index observation => stepJson (observationState states index observation) observation
+
 /-- The model's prediction. A model restriction puts the case out of scope. A schema
 that resolution refuses although SQLite prepared it gives an empty initial step, which
 the judge reports as a disagreement. Otherwise the case is in scope when the reached
@@ -94,8 +100,7 @@ def predict (p : PredictInput) : Json :=
     let count := stateBound states
     let start : SqlState := { database := databaseOf resolution.startCatalog (p.initial.map NamedRows.native) }
     let observed := trace count resolution.resolved start.database
-    let steps := (List.range observed.length).filterMap fun index => observed[index]?.map
-      (stepJson (states[index]?.getD (states.getLastD { catalog := resolution.startCatalog })))
+    let steps := predictedSteps states observed
     let supported := supportedSqlFrom 0 resolution.resolved start && !observed.any invalidObservation
     Json.mkObj [("supported", toJson supported), ("steps", toJson steps),
       ("outputs", toJson (outputTraceFrom 0 resolution.resolved start))]

@@ -43,7 +43,8 @@
     "tests/column_default_value_test.py",
     "tests/column_default_admission_test.py",
     "tests/column_default_read_test.py",
-    "tests/column_extension_test.py"
+    "tests/column_extension_test.py",
+    "tests/failed_catalog_observation_test.py"
   ],
   "frozen": [
     "tests/conformance_progress_views_test.py",

@@ -36,14 +36,24 @@ inductive Verdict where
   deriving Repr, DecidableEq
 
 /-- The resolution state before the first statement and after each statement, until
-the first model restriction. Observation {lit}`j` of a trace uses state {lit}`j`: a
-statement that fails leaves the catalog as it was, in resolution and in SQLite. -/
+the first model restriction. These states assume successful execution of each
+resolved statement. Execution can fail after resolution, so observation consumers
+select the preceding state for a failed statement. -/
 def resolveStates (context : ResolveContext) (index : Nat) (state : ResolveState) :
     List Syntax.Statement → List ResolveState
   | [] => [state]
   | statement :: rest => match resolveStatement context state index statement with
     | .ok (_, next) => state :: resolveStates context (index + 1) next rest
     | .error _ => [state]
+
+/-- Select the catalog state for a zero-based trace observation. Index zero
+is the initial observation. Success uses the state at the observation index;
+a failed statement uses the preceding state, preserving its visible catalog and
+saved transaction catalog. At index zero the preceding index is also zero.
+An absent index uses the last state, or an empty catalog for an empty state list. -/
+def observationState (states : List ResolveState) (index : Nat) (observation : Observation) : ResolveState :=
+  let selected := if observation.error.isSome then index - 1 else index
+  states[selected]?.getD (states.getLastD { catalog := [] })
 
 /-- The number of catalog positions that any of the states uses, in its catalog or in
 its saved catalog: the bound up to which a trace observes tables. -/
@@ -87,7 +97,7 @@ def compareSteps (states : List ResolveState) (position : Nat) :
     List Observation → List NativeObservation → Verdict
   | [], [] => .agree
   | model :: models, native :: natives =>
-    let state := states[position + 1]?.getD (states.getLastD { catalog := [] })
+    let state := observationState states (position + 1) model
     if matchesObservation state model native then compareSteps states (position + 1) models natives
     else .disagree (some position)
   | _, _ => .disagree (some position)

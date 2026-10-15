@@ -926,3 +926,26 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of completed T14.
+
+
+- 2026-10-15: Conformance comparison and prediction now select the preceding
+  resolution state for a failed statement. Successful observations use the
+  resulting state. The shared helper retains both the visible catalog and
+  the saved transaction catalog. Resolution-state documentation now explains
+  that resolution alone assumes successful execution.
+
+  A compiled regression uses distinct catalogs to detect the wrong selection
+  in compareSteps and predictedSteps, checks a successful prefix, and rejects
+  changed native tables. These are synthetic consumer checks, not native ADD
+  acceptance. The regression and all 11 existing pipeline tests pass in 11.88
+  seconds. The runtime builds and the protected verdict passes with unchanged
+  counts. Public documentation remains checked. Evidence is in
+  build/t14-failed-catalog-build-20261015.log,
+  build/t14-failed-catalog-tests-20261015.log and
+  build/t14-failed-catalog-verdict-20261015.log. The judge and frozen evidence
+  are unchanged. Independent review follows this prerequisite commit.
+  ADD COLUMN default execution and its native tests remain next.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14.
