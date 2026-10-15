@@ -31,6 +31,11 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Scope.lean`,
 - 2026-10-15: review of the model commit (1 must, 1 should, fixed): explicit
   `NameResolution` cases in the `GROUP BY` terms; explicit statement cases in
   `MergedNameExamples.error`.
+- 2026-10-15: 26 authored cases (`conformance/authored_merged.py`, all AGREE), six
+  mutants (`conformance/merged_mutants.py`, in the write and join measurement), and the
+  corpus 16 writer. A coalesce compared with an INTEGER column is the existing
+  restriction `text-to-number`, as for any value without affinity; the chain cases join
+  a column without a declared type.
 
 ## Remaining
 
