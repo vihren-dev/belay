@@ -37,8 +37,9 @@ def resolveAssignment (dqs : Bool) (scope : Scope) (keyColumns : List Nat) (item
 
 /-- Resolve UPDATE. Path 1 is the assignment list, path 2 the filter and path 3 the
 {lit}`RETURNING` columns, which resolve last. The assignments resolve in order, then
-the filter as a condition; then a column assigned twice and the key domain are model
-restrictions. -/
+the filter as a condition; then a column assigned twice is a model restriction. A
+{lit}`SET` value that reads the row for a key column is the restriction
+{name}`RestrictionKind.rowDependentKey` of its assignment. -/
 def resolveUpdate (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : String)
     (assignments : List (String × Syntax.Expr)) (filter : Option Syntax.Expr)
     (returning : List Syntax.ResultColumn) : StatementResolution :=

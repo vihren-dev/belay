@@ -11,20 +11,24 @@ from conformance.resolve_mutants import SQLITE
 LITERAL_DATA = SQLITE + "LiteralData.lean"
 """The key equality of the execution semantics."""
 
-GENERAL = "  | first, second => compareValues first second == .eq"
-"""The case of two cells that are not NULL."""
+BODY = "  first != .null && second != .null && compareValues first second == .eq"
+"""The body of `keyCellsEqual`."""
+
+FOLD = "(fun b => if 65 ≤ b && b ≤ 90 then b + 32 else b)"
+"""ASCII lower case of one byte."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "key_text_without_case": (LITERAL_DATA, GENERAL,
-        "  | .text first, .text second =>\n"
-        "    first.map (fun b => if 65 ≤ b && b ≤ 90 then b + 32 else b) =="
-        " second.map (fun b => if 65 ≤ b && b ≤ 90 then b + 32 else b)\n" + GENERAL),
-    "storage_classes_ignored": (LITERAL_DATA, GENERAL,
-        "  | first, second => first.scaled == second.scaled && first.bytes == second.bytes"),
-    "integer_real_unequal": (LITERAL_DATA, GENERAL,
-        "  | .integer _, .real _ | .real _, .integer _ => false\n" + GENERAL),
-    "null_cells_equal": (LITERAL_DATA, "  | .null, _ | _, .null => false",
-        "  | .null, .null => true\n  | .null, _ | _, .null => false"),
+    "key_text_without_case": (LITERAL_DATA, BODY,
+        "  first != .null && second != .null && (match first, second with\n"
+        f"    | .text a, .text b => a.map {FOLD} == b.map {FOLD}\n"
+        "    | _, _ => compareValues first second == .eq)"),
+    "storage_classes_ignored": (LITERAL_DATA, BODY,
+        "  first != .null && second != .null && first.scaled == second.scaled && first.bytes == second.bytes"),
+    "integer_real_unequal": (LITERAL_DATA, BODY,
+        BODY + " && (match first, second with\n"
+        "    | .integer _, .real _ | .real _, .integer _ => false\n"
+        "    | _, _ => true)"),
+    "null_cells_equal": (LITERAL_DATA, BODY, "  (first == .null && second == .null) ||\n" + BODY),
     "first_key_column_only": (LITERAL_DATA,
         "  key.all fun position => match read first position, read second position with",
         "  (key.take 1).all fun position => match read first position, read second position with"),

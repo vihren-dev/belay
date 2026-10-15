@@ -28,9 +28,8 @@ SQLite's comparison with the BINARY collation ({name}`compareValues`), so number
 value, TEXT and BLOB by bytes, and values of different storage classes never.
 {assert}`keyCellsEqual (.text [97]) (.text [97]) = true`, and two NULL cells never
 conflict. -/
-def keyCellsEqual : Value → Value → Bool
-  | .null, _ | _, .null => false
-  | first, second => compareValues first second == .eq
+def keyCellsEqual (first second : Value) : Bool :=
+  first != .null && second != .null && compareValues first second == .eq
 
 /-- For each key position, require both reads to be key cells that conflict
 ({name}`keyCellsEqual`). A missing or NULL cell makes the comparison false, so two rows

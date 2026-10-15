@@ -36,6 +36,8 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/LiteralData.lean`, `RowUpdat
   `conformance_pipeline_test` agree, one more legacy authored case agrees
   (`conformance_authored_test`), and the row-write mutant `no_store_of_constants`, which
   only the key-domain check could notice, is removed as an equivalent mutant.
+- 2026-10-15: review of the slice commit (1 must, 1 should, fixed): `keyCellsEqual` has
+  no catch-all match; the `resolveUpdate` docstring names the remaining restrictions.
 
 ## Remaining
 
