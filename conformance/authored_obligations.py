@@ -1,12 +1,13 @@
-"""Boundary cases of the admission obligations (task of 2026-10-14, restriction registry).
+"""Boundary cases of the former key obligations (task of 2026-10-14, restriction registry).
 
-Each case starts from a native state just outside the model's data domain: a REAL value
-that equals an integer, stored in a unique key column without affinity, where the model
-compares key values only as integers (`LiteralData.keyEqual`). Resolution accepts the statement, so only the obligation conjunct that
-`conformance.obligation_mutants` names for the case keeps it `MODEL_UNSUPPORTED`; the
-mutant that removes the conjunct makes the case disagree with native SQLite, which
-compares INTEGER and REAL values numerically. Native SQLite is the only source of
-outcomes. The cases use `conformance.authored_queries.QueryCase` and its recorder.
+Each case starts from a native state that the model's integer keys could not describe: a
+REAL value that equals an integer, stored in a unique key column without affinity. Until
+slice 5a the admission obligations kept the cases `MODEL_UNSUPPORTED`, and the mutants of
+`conformance.obligation_mutants` made them disagree. Since slice 5a (ADR 0012, amendment
+4) the model compares keys as SQLite does, and the cases agree with native SQLite, which
+compares INTEGER and REAL values numerically. They are frozen as corpus 10. Native
+SQLite is the only source of outcomes. The cases use
+`conformance.authored_queries.QueryCase` and its recorder.
 """
 
 from conformance.authored_queries import QueryCase, records as query_records
@@ -20,7 +21,7 @@ KEYED = "CREATE TABLE k(id INTEGER, u UNIQUE); INSERT INTO k VALUES(1, 1.0), (2,
 
 
 def definitions() -> list[QueryCase]:
-    """The boundary cases, one for each obligation conjunct with a mutant."""
+    """The boundary cases of the former key obligations of INSERT and UPDATE."""
     case = QueryCase
     return [
         case("insert-key-real-equals-integer", KEYED, "INSERT INTO k VALUES(3, 1);", (NUMERIC_COMPARISON,),

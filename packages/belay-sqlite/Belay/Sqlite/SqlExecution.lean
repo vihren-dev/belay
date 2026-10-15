@@ -71,8 +71,8 @@ reached-statement script support check. -/
 def statementReady (statement : Resolved.Statement) (database : Database) : Bool :=
   match statement with
   | .insert at_ rows keys _ => (database at_).all fun table => LiteralData.insertReady keys table rows
-  | .update at_ assignments filter keys _ => (database at_).all fun table =>
-      LiteralData.updateReady keys table assignments filter
+  | .update at_ assignments _ keys _ => (database at_).all fun table =>
+      LiteralData.updateReady keys table assignments
   | .delete .. => true
   | .createTable _ _ table => table.plain
   | .addColumn _ column => column.plain

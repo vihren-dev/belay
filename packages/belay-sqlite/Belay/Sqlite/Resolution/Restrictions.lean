@@ -29,10 +29,6 @@ inductive RestrictionKind where
   | addColumnConstraint
   /-- Time values are not modeled (ADR 0008). -/
   | timeValue
-  /-- Unique keys over TEXT or REAL columns are not modeled (ADR 0008). -/
-  | keyAffinity
-  /-- Only integer and NULL values are modeled in unique key columns (ADR 0008). -/
-  | keyValue
   /-- A {lit}`SET` value that reads the row is not modeled for a column of a unique key
   (ADR 0012, amendment 1, owner decision on question 1). -/
   | rowDependentKey

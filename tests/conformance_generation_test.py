@@ -39,12 +39,12 @@ def test_stateful_modes(runtime_root: Path, error_seeking: bool) -> None:
 
 @pytest.mark.parametrize("literal,verdict", [
     ("'1'", "AGREE"), ("' 1'", "AGREE"), ("'1.0'", "AGREE"), ("0.0", "AGREE"), ("-0.0", "AGREE"),
-    ("1e20", "MODEL_UNSUPPORTED"), ("9223372036854775808", "MODEL_UNSUPPORTED"),
+    ("1e20", "AGREE"), ("9223372036854775808", "AGREE"),
 ])
 def test_affinity_boundaries_in_a_unique_key(runtime_root: Path, literal: str, verdict: str) -> None:
     """Store-time affinity (`StoreValue.storeValue`) in a unique INTEGER key: a value that is
-    stored as an integer agrees with native SQLite; a value that stays REAL is outside the
-    model's key domain (restriction `key-value`)."""
+    stored as an integer and a value that stays REAL both agree with native SQLite, which
+    compares the stored key cells (`LiteralData.keyCellsEqual`, slice 5a)."""
     native = record_sql("CREATE TABLE t(id INTEGER,UNIQUE(id));",
                         f"INSERT INTO t(id) VALUES({literal});", name=f"boundary-{literal}")
     case, answer = prepare(native, runtime_library(runtime_root))

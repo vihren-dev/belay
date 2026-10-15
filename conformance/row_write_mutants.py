@@ -30,9 +30,6 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "no_store_affinity": (ROW_UPDATE,
         "values.set position (storeValue (positionAffinity columns position) (expression.eval row.values))) row.values }",
         "values.set position (expression.eval row.values)) row.values }"),
-    "no_store_of_constants": (UPDATES,
-        "  else .literal (storeValue (columnAffinity scope.columns position) (resolved.eval []))",
-        "  else .literal (resolved.eval [])"),
     "cast_as_store_affinity": (WRITES,
         "    .ok (storeValue column.affinity value)) columns", "    .ok (castValue column.affinity value)) columns"),
     "real_column_keeps_integer": (STORE,
@@ -46,16 +43,16 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
 replacement. The names follow the list of the amendment: SET values read the new row; a
-NULL filter selects the row; no store affinity (at execution and for constants); `castValue`
+NULL filter selects the row; no store affinity at execution; `castValue`
 as store affinity; a REAL column keeps an integer; a TEXT column keeps a number; a failed
 UPDATE keeps the rows that it changed; the change count counts every row. The execution
 stores every assigned value again, so a constant that resolution does not store differs
-only in the key-domain check: `no_store_of_constants` makes the text `'7'` for a key
-column a restriction."""
+in no observable way since slice 5a removed the key-domain check, and that change has no
+mutant."""
 
 TARGETS: dict[str, tuple[str, ...]] = {
     "set_reads_new_row": ("update-swap",), "null_filter_selects": ("update-null-filter",),
-    "no_store_affinity": ("update-stores-row-value",), "no_store_of_constants": ("update-key-number-text",),
+    "no_store_affinity": ("update-stores-row-value",),
     "cast_as_store_affinity": ("store-other-text",), "real_column_keeps_integer": ("store-integer-into-real",),
     "text_column_keeps_number": ("store-whole-real",), "failed_update_keeps_rows": ("update-not-null-failure",),
     "change_count_every_row": ("update-no-match",),
@@ -64,7 +61,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 
 GUARDS: dict[str, str] = {
     "set_reads_new_row": "rule:assign", "null_filter_selects": "rule:selected",
-    "no_store_affinity": "rule:assign", "no_store_of_constants": "rule:assignedExpression",
+    "no_store_affinity": "rule:assign",
     "cast_as_store_affinity": "rule:fullRow", "real_column_keeps_integer": "rule:realRead",
     "text_column_keeps_number": "rule:storeValue", "failed_update_keeps_rows": "rule:checkedWrite",
     "change_count_every_row": "rule:statementOutput",

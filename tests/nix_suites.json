@@ -114,9 +114,6 @@
     "tests/conformance_resolve_mutants_test.py",
     "tests/conformance_query_mutants_test.py"
   ],
-  "obligations": [
-    "tests/conformance_obligation_mutants_test.py"
-  ],
   "writers": [
     "tests/conformance_corpus_writers_test.py"
   ]

@@ -59,7 +59,9 @@ expressions over the table's columns, evaluated on the old row, and the `WHERE` 
 `UPDATE` any condition of a `SELECT` (slice 3b). Each written value is then stored as SQLite
 stores it in a column of that affinity (slice 3b): for example, the text `'12'`
 becomes the integer 12 in an INTEGER column, and an integer becomes text in a TEXT
-column. A REAL value can be stored in any column that is not part of a unique key. Named
+column. A unique key may have columns of any affinity (slice 5a): two rows conflict when
+no key cell is NULL and each pair of stored cells is equal under SQLite's BINARY
+comparison, so `1` and `1.0` conflict, while `'a'` and `'A'`, and `1` and `'1'`, do not. Named
 constraints, collations, `CHECK`, `REFERENCES`, generated columns, conflict
 clauses, `UPSERT`, `WITH`, `FROM` in writes, sort modifiers in keys,
 partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
@@ -100,9 +102,7 @@ the whole request is `UNSUPPORTED` at the byte range of the refused node. In the
 migration these are, among others: `CREATE INDEX`; `CREATE TABLE` with
 constraints or defaults; `ADD COLUMN` with a constraint or default; rowid column
 names; time values; a `SET` value that reads the row for a column of a unique key; a
-column named twice; writes to a table with a
-unique key over a TEXT or REAL column; and key values other than integers and
-NULL. In a `SELECT`: a comparison whose affinity rule would convert a value; a
+column named twice. In a `SELECT`: a comparison whose affinity rule would convert a value; a
 column, literal, `COALESCE`, or `CAST` to TEXT or BLOB used as a condition; an aggregate inside an expression; a result column
 outside `GROUP BY` in an aggregate query; `ORDER BY` terms of an aggregate query
 other than result column numbers and aliases; a result column alias in `WHERE`
@@ -139,8 +139,6 @@ of frontend refusal, the cases of the claimed corpora that it keeps out of scope
 | `create-index-runs` | A CREATE INDEX that runs is not modeled | ADR 0008 |
 | `add-column-constraint` | Only a nullable column without a default can be added | ADR 0008 |
 | `time-value` | Time values are not modeled | ADR 0008 |
-| `key-affinity` | Unique keys over TEXT or REAL columns are not modeled | ADR 0008 |
-| `key-value` | Only integer and NULL values are modeled in unique key columns | ADR 0008 |
 | `row-dependent-key` | A SET value that reads the row is not modeled for a column of a unique key | ADR 0012 amendment 1 (question 1) |
 | `insert-column-twice` | A column named twice in INSERT is not modeled | ADR 0008 |
 | `update-column-twice` | A column assigned twice in UPDATE is not modeled | ADR 0008 |

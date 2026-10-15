@@ -35,15 +35,6 @@ def resolveAssignment (dqs : Bool) (scope : Scope) (keyColumns : List Nat) (item
       .error (.restriction [item, 1] .rowDependentKey)
     else .ok (position, assignedExpression scope position value operand.1)
 
-/-- The written key values of a resolved UPDATE: the literal assignments, as positions
-and values, for the key-domain check ({name}`keyDomainRestriction`). An assignment to a
-key column is always a literal, because {name}`resolveAssignment` refuses others. -/
-def literalAssignments (assignments : List (Nat × Resolved.Expr)) : List (Nat × Value) :=
-  assignments.filterMap fun
-    | (position, .literal value) => some (position, value)
-    | (_, .column _) | (_, .compare ..) | (_, .and ..) | (_, .or ..) | (_, .not _) | (_, .isNull ..)
-    | (_, .arithmetic ..) | (_, .cast ..) | (_, .coalesce ..) => none
-
 /-- Resolve UPDATE. Path 1 is the assignment list, path 2 the filter and path 3 the
 {lit}`RETURNING` columns, which resolve last. The assignments resolve in order, then
 the filter as a condition; then a column assigned twice and the key domain are model
@@ -69,10 +60,8 @@ def resolveUpdate (context : ResolveContext) (catalog : Catalog) (index : Nat) (
         let positions := resolved.map Prod.fst
         if positions.eraseDups.length != positions.length then
           restrict index [1] .updateColumnTwice
-        else match keyDomainRestriction table.columns keys (fun _ => [1]) [literalAssignments resolved] with
-          | some (path, reason) => restrict index path reason
-          | none => match resolveReturning dqs scope returning with
-            | .error issue => issueResolution catalog index [3] issue
-            | .ok columns => .ok (.update position resolved resolvedFilter keys columns, catalog)
+        else match resolveReturning dqs scope returning with
+          | .error issue => issueResolution catalog index [3] issue
+          | .ok columns => .ok (.update position resolved resolvedFilter keys columns, catalog)
 
 end Belay.Sqlite
