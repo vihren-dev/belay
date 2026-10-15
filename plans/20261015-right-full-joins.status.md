@@ -26,6 +26,9 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/QueryEval.lean`,
   moved code. Lean examples in `Resolution/RightJoinExamples.lean`.
 - 2026-10-15: review of the model commit (1 must, fixed): explicit join kinds in
   `joinFormIssue`.
+- 2026-10-15: 20 authored cases (`conformance/authored_right.py`, all AGREE), four
+  mutants (`conformance/right_mutants.py`, in the write and join measurement), and the
+  corpus 15 writer.
 
 ## Remaining
 
