@@ -848,3 +848,68 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of the completed T14 representation and codec changes.
+
+
+- 2026-10-15: Replaced NULL-only row extension with Row.appendValues and
+  column/value pairs in Table.appendColumns. The table operation applies each
+  new column's affinity. Generalized extension composition, old-cell and rowid
+  preservation, stored-form validity and the new-column projection. Existing
+  execution supplies NULL explicitly, so SQL behavior is unchanged in this unit.
+  Updated application and candidate proof consumers; no approved source changed.
+
+  The runtime and checked documentation compile. The new compiled regression
+  checks affinity conversion, row order, rowids, old and new projections, keys,
+  empty inputs and changed values. Its first attempt had a record-indentation
+  error; the corrected fixture and all 16 generated-input checks pass. Another
+  25 shape, ownership and frontend checks pass. The protected verdict passes
+  with unchanged counts and lock. The full model suite is still running.
+
+  The allowed-failure bundle check passes. Atuin's CLI check exposed inference
+  of the old column-list argument; the candidate now supplies its column/value
+  list explicitly. Its rebuilt consumer remains to be rechecked. Logs are
+  build/t14-value-extension-20261015.log,
+  build/t14-value-extension-tests-20261015.log,
+  build/t14-value-extension-consumers-20261015.log,
+  build/t14-value-extension-cli-20261015.log and
+  build/t14-value-extension-verdict-20261015.log. This unit remains uncommitted
+  until the remaining tests and subsequent independent review are complete.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14. No new design decision is needed for this unit.
+
+
+- 2026-10-15: Atuin needed both a column/value extension witness and an
+  explicit column/value argument for Conforms.appendAt. Without the latter,
+  Lean exhausted its heartbeat limit during inference. Both are corrected;
+  no timeout was raised. The public Atuin verification test passes in 12.58
+  seconds (build/t14-value-extension-atuin-explicit-20261015.log).
+
+  The sandboxed model run completed with 169 passes and one failure in
+  test_stateful_modes[True]. Its add_unpadded mutation still searched for the
+  old appendColumns call. Updated that source anchor to the pair syntax;
+  the injected mutant still adds metadata without extending rows. Both
+  stateful modes are being rerun. The first focused invocation selected the
+  CLI runtime, which has no conformance runner. Its corrected invocation
+  uses the conformance runtime; no environment component is missing.
+  Evidence: build/t14-value-extension-model-20261015.log and
+  build/t14-value-extension-mutation-checked-20261015.log.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14. The current unit still awaits its checks
+  and independent review.
+
+
+- 2026-10-15: Both stateful modes pass in 14.31 seconds after the mutation
+  anchor correction, including detection of missing appended cells. The other
+  169 tests passed in the earlier full model run. This is a focused correction
+  result, not a second complete suite run. All 884 public documentation checks,
+  the runtime, generated-input checks, Atuin verification, allowed-failure
+  bundle and protected verdict pass. Approved source files, baselines, judge
+  and frozen evidence are unchanged. The structural unit is ready for its
+  commit and independent review. ADD COLUMN default execution remains next.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14.

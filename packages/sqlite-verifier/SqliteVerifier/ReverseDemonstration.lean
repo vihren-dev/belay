@@ -24,14 +24,14 @@ theorem reverse_runs (database : Database) (admitted : Admitted profile startCat
   obtain ⟨table, present, _, _, absent⟩ := admitted_invoices admitted
   have readInvoice : (database.set 1 { shape := { columns := [message] }, rows := [] }) 0 = some table := by
     simp [Database.set, present]
-  have readAudit : (database.set 0 (table.appendColumns [note])) 1 = none := by
+  have readAudit : (database.set 0 (table.appendColumns [(note, .null)])) 1 = none := by
     simp [Database.set, absent]
   simp only [note, message] at readInvoice readAudit
   have reversed : runSql reverseScript database = .success ((database.set 1
-      { shape := { columns := [message] }, rows := [] }).set 0 (table.appendColumns [note])) := by
+      { shape := { columns := [message] }, rows := [] }).set 0 (table.appendColumns [(note, .null)])) := by
     simp [runSql, runSqlFrom, advance, literalStep, SqlState.finish, reverseScript, step, absent, readInvoice,
       note, message]
-  have forward : runSql script database = .success ((database.set 0 (table.appendColumns [note])).set 1
+  have forward : runSql script database = .success ((database.set 0 (table.appendColumns [(note, .null)])).set 1
       { shape := { columns := [message] }, rows := [] }) := by
     simp [runSql, runSqlFrom, advance, literalStep, SqlState.finish, script, step, present, readAudit,
       note, message]

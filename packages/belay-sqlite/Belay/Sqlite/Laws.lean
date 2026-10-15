@@ -115,15 +115,15 @@ and its row mapping. -/
 theorem add_column_shape
     (success : advance position (.addColumn at_ column) state = .next next) :
     ∃ table, state.database at_ = some table ∧
-      next.database at_ = some (table.appendColumns [column]) ∧
-      (table.appendColumns [column]).rows.length = table.rows.length ∧
-      (table.appendColumns [column]).rows.map Row.rowid = table.rows.map Row.rowid ∧
-      (table.appendColumns [column]).rows.map Row.values =
+      next.database at_ = some (table.appendColumns [(column, .null)]) ∧
+      (table.appendColumns [(column, .null)]).rows.length = table.rows.length ∧
+      (table.appendColumns [(column, .null)]).rows.map Row.rowid = table.rows.map Row.rowid ∧
+      (table.appendColumns [(column, .null)]).rows.map Row.values =
         table.rows.map (fun row => row.values ++ [.null]) := by
   simp only [advance, literalStep, step] at success
   repeat (split at * <;> simp_all)
   all_goals subst_vars
-  all_goals simp_all [Database.set, Table.appendColumns, Row.appendNulls, List.map_map]
+  all_goals simp_all [Database.set, Table.appendColumns, Row.appendValues, List.map_map, storeValue_null]
 
 #print axioms rollback
 #print axioms statement_atomicity

@@ -67,7 +67,7 @@ table's {name}`Table.appendColumns` at the same position, preserving its keys. T
 proof computes this fixed execution in the kernel. -/
 example : (step (.addColumn 0 { name := "shell", declaredType := some "TEXT" })
     (fun position => if position = 0 then some table else none)).database 0 =
-    some (table.appendColumns [{ name := "shell", declaredType := some "TEXT" }]) := by
+    some (table.appendColumns [({ name := "shell", declaredType := some "TEXT" }, .null)]) := by
   decide +kernel
 
 /-- The supported-subset check refuses ADD COLUMN of {name}`timestamp`, a model
@@ -91,7 +91,7 @@ appends the column to the table at position 0. The supported-subset check
 {name}`statementReady` refuses the statement instead. The proof computes both in
 the kernel. -/
 example : (step (.addColumn 0 timestamp) (fun position => if position = 0 then some table else none)).database 0 =
-      some (table.appendColumns [timestamp]) ∧
+      some (table.appendColumns [(timestamp, .null)]) ∧
     statementReady (.addColumn 0 timestamp) (fun position => if position = 0 then some table else none) = false := by
   decide +kernel
 

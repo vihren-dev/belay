@@ -83,7 +83,7 @@ def step (statement : Resolved.Statement) (database : Database) (position : Nat 
     | none => .success (database.set at_ { shape := table, rows := [] })
   | .addColumn at_ column => match database at_ with
     | none => .failure position .unmodeled database
-    | some table => .success (database.set at_ (table.appendColumns [column]))
+    | some table => .success (database.set at_ (table.appendColumns [(column, .null)]))
   | .prepareError error => .failure position (.prepare error) database
   | .query query => match query.source database with
     | some rows => if query.fails rows then .failure position .integerOverflow database else .success database
