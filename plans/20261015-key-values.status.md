@@ -1,6 +1,6 @@
 # Status: key values (slice 5a)
 
-Created 2026-10-15. Status: IN PROGRESS.
+Created 2026-10-15. Status: DONE.
 Task: [task](20261015-key-values.task.md).
 Specification: [ADR 0012, Amendment 4, "Key values (slice 5a)"](../docs/adr-0012-query-semantics.md).
 
@@ -38,7 +38,8 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/LiteralData.lean`, `RowUpdat
   only the key-domain check could notice, is removed as an equivalent mutant.
 - 2026-10-15: review of the slice commit (1 must, 1 should, fixed): `keyCellsEqual` has
   no catch-all match; the `resolveUpdate` docstring names the remaining restrictions.
-
-## Remaining
-
-- CI time, PR A; then PR B (claim corpus 17, `mustAgree`).
+- 2026-10-15: CI time (local, `--check` rebuilds, main vs branch): mutants 186/193 s,
+  model 187/199 s, frozen 137/138 s. Pull request A merged as #132.
+- 2026-10-15: pull request B: corpus 17 (17 cases) is claimed, and the cases that agree
+  since #132 join `mustAgree`: 2 in v10 (the former obligation boundary cases), 1 in v4
+  and 7 in v5. New judge lock. Slice 5a is DONE; slice 5b (rowid aliases) follows.
