@@ -7,8 +7,8 @@ builds and runs against its target case of `conformance.authored_joins`.
 
 from conformance.resolve_mutants import SQLITE
 
-QUERY_EVAL = SQLITE + "QueryEval.lean"
-"""The evaluation of queries, with the rows of joins."""
+QUERY_JOINS = SQLITE + "QueryJoins.lean"
+"""The rows of joins."""
 QUERY_EXPRS = SQLITE + "Resolution/QueryExprs.lean"
 """The resolution of names in expressions."""
 SOURCES = SQLITE + "Resolution/Sources.lean"
@@ -20,11 +20,11 @@ PADDED = "    if (joinMatches row join table).isEmpty then [row ++ List.replicat
 """The left join's row for a left row without a match."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "left_join_drops_unmatched": (QUERY_EVAL, PADDED, "    if (joinMatches row join table).isEmpty then []"),
-    "left_join_pads_left_values": (QUERY_EVAL, PADDED,
+    "left_join_drops_unmatched": (QUERY_JOINS, PADDED, "    if (joinMatches row join table).isEmpty then []"),
+    "left_join_pads_left_values": (QUERY_JOINS, PADDED,
         "    if (joinMatches row join table).isEmpty then\n"
         "      [row ++ (row ++ List.replicate table.shape.columns.length (.null : Value)).take table.shape.columns.length]"),
-    "on_after_padding": (QUERY_EVAL, PADDED,
+    "on_after_padding": (QUERY_JOINS, PADDED,
         "    if (joinMatches row join table).isEmpty then\n"
         "      [row ++ List.replicate table.shape.columns.length .null].filter fun joined =>\n"
         "        join.condition.all fun condition => truthy (condition.eval joined)"),
