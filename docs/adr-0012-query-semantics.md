@@ -557,6 +557,8 @@ joins in `DELETE` stay refused.
    checked on 3.51.0, `SELECT a FROM t FULL JOIN u USING (a)` gives the right row's
    `a` for a right row that no left row matches. Slice 4c comes after 4b so that
    this rule is decided with the rest of `USING`.
+   Amendment 3 corrects this decision: in a right join the name is the right column,
+   and only in a full join is it `coalesce(left, right)`.
 3. **Two sources with the same name.** Decided on 2026-10-14: a model restriction.
    `FROM t, t` and `FROM t AS x, u AS x` are refused with the range of the second
    source; a self-join names its sources with different aliases. SQLite prepares such
@@ -566,3 +568,93 @@ joins in `DELETE` stay refused.
    runs; a 65th table is SQLite's prepare error `at most 64 tables in a join`
    (checked on 3.51.0). The authored coverage cases, which have kernel proofs, stay
    small: two or three tables with a few rows each.
+
+## Amendment 3: RIGHT and FULL joins (slices 4c and 4d)
+
+Date: 2026-10-15. Status: PROPOSED.
+Related: Amendment 2, owner decision 2, which this amendment corrects; ADR 0005 for
+the comparison of rows; the slice 4b task, plans/20261015-using-natural.task.md.
+
+### Context
+
+Owner decision 2 of Amendment 2 says that with `USING` an unqualified name of a merged
+column in a right or full join is `coalesce(left, right)`. Native SQLite 3.51.0
+differs, and the model follows SQLite (owner decision, 2026-10-15):
+
+- In a `RIGHT JOIN … USING`, the name is the right column, with its affinity. With
+  `t(a INTEGER)` and `r(a REAL)`, `SELECT a FROM t RIGHT JOIN r USING (a)` gives the
+  REAL `1.0`, and `WHERE a = '3'` matches an INTEGER `3`.
+- In a `FULL JOIN … USING`, the name is `coalesce(left, right)`, which has no
+  affinity: `WHERE a = '3'` does not match an INTEGER `3`.
+- When `FROM` has a `RIGHT` or `FULL` join anywhere, the left side of the generated
+  condition of every `USING` and `NATURAL` join, also one before the right join, is
+  the coalesce of every column of that name in the left input, not the left-most
+  column. A left table whose column of that name is not a `USING` or `NATURAL` column
+  of its own join makes the query SQLite's prepare error
+  `ambiguous reference to a in USING()`: `t JOIN u ON 1 RIGHT JOIN v USING (a)` and
+  `t JOIN u ON 1 JOIN v USING (a) RIGHT JOIN r ON 1` both fail.
+
+These rules change the names of slice 4b only when a right or full join is present, so
+they are a slice of their own (4d), after the rows of right and full joins (4c).
+
+### Rows (slice 4c)
+
+- **Forms.** `RIGHT [OUTER] JOIN` and `FULL [OUTER] JOIN` with an `ON` condition, or
+  with none, in any position of the join list.
+- **Rows.** A right join is the inner join of its left input (all earlier sources) and
+  the joined table, plus, for each row of the joined table that no row of the left input
+  matches, that row with NULL in every column of the left input (R-15753-04279). A full
+  join adds both the unmatched left rows of a left join and the unmatched right rows
+  (R-18902-30764). `WHERE`, groups, aggregates, projection, `ORDER BY` and the window
+  work on the joined rows as before.
+- **Order.** The model's fixed order is the order of the inner part, then the unmatched
+  right rows in rowid order. As for every join, rows without `ORDER BY`, and ties under
+  it, are compared as multisets (ADR 0005).
+- **Names.** Qualified and unqualified names, `*` and `x.*` work as for inner and left
+  joins; a qualified column of a padded table is NULL.
+- **Restrictions.** In slice 4c, `USING` or `NATURAL` anywhere in a `FROM` that has a
+  `RIGHT` or `FULL` join is a model restriction until slice 4d. An `ON` condition that
+  names a later table stays the restriction `later-table-in-on`; with a later right
+  join, SQLite refuses it with `ON clause references tables to its right`.
+
+### Names with USING and NATURAL (slice 4d)
+
+- **RIGHT.** In a right join with `USING` or `NATURAL`, an unqualified merged name, and
+  the merged column of `*`, is the right column, with its value and affinity; `*` names
+  it by the left column's name as declared.
+- **FULL.** In a full join, it is `coalesce(left, right)`, with no affinity.
+- **Generated condition.** When `FROM` has a right or full join, the left side of each
+  generated equality is the left column if exactly one left table has the name, and
+  otherwise the coalesce of all of them, in order; every such table after the first
+  must merge the name by its own `USING` or `NATURAL`, or the query is
+  `ambiguous reference to a in USING()`.
+- **Errors.** The prepare errors of slice 4b apply unchanged.
+
+### Testing
+
+- **Slice 4c cases.** Right and full joins with matched and unmatched rows on both
+  sides, with no `ON`, with `ON` true for no row, after an inner and a left join, before
+  a left join, two full joins in a row; `WHERE` on a padded column; aggregates
+  (`count(t.a)` against `count(*)`); qualified names of padded tables; `*` and `x.*`;
+  the restriction for `USING` with a right join.
+- **Slice 4c mutants.** A right join drops unmatched right rows; a right join pads the
+  right row's own columns instead of the left input's; an unmatched right row is
+  decided per left row instead of over the whole left input; a full join omits the
+  unmatched left rows.
+- **Slice 4d cases and mutants.** The examples of "Context": the right column and its
+  affinity, the coalesce and its missing affinity, the coalesced left side of a later
+  `USING`, and `ambiguous reference to a in USING()`, each with a mutant that uses the
+  slice 4b rule instead.
+- **Proofs.** A joined row of a right or full join has the width of its tables; a full
+  join keeps every left row and every right row; a query without right or full joins
+  evaluates as before.
+
+### Owner decisions
+
+1. **Correction of Amendment 2, decision 2.** Decided on 2026-10-15: the model
+   conforms to SQLite, and the specification is amended where it differs. Its
+   sentence on `coalesce(left, right)` is replaced by "Names with USING and NATURAL
+   (slice 4d)".
+2. **Split.** Decided on 2026-10-15: slice 4c models the rows of right and full joins
+   with `ON`; slice 4d models `USING` and `NATURAL` in a `FROM` with a right or full
+   join, which slice 4c refuses as a model restriction.
