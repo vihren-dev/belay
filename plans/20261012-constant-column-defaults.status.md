@@ -1545,3 +1545,18 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final T14 review after the corrected hosted CI run.
+
+
+- 2026-10-15: The second hosted run of PR 130 passed Verdict and source
+  checks, then failed 22 kernel tests because their shared structural record
+  still declared version 2. The codec requires version 3 after the default
+  syntax change, so these tests stopped before their intended attack checks.
+  Updated tests/kernel_gate_support.py to the current version. The complete
+  sandboxed kernel suite now passes all 33 tests in
+  build/t14-kernel-record3-20261015.log. This changes the test fixture only;
+  production codec and gate behavior are unchanged. Independent review and
+  a fresh hosted run are required before claiming CI acceptance.
+
+Decisions waiting for the owner:
+
+- Final review of PR 130 after corrected hosted CI.
