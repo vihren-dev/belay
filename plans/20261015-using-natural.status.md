@@ -26,6 +26,8 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Scope.lean`,
   registry. Lean examples in `Resolution/UsingExamples.lean`. The INTEGER and TEXT case
   moved from the native cases to a Lean example: the comparison is the restriction
   `mixed-affinity-comparison`, as for a written `ON`, so no native case can agree.
+- 2026-10-15: review of the model commit (1 must, 1 should, fixed): a proof sketch for
+  `usingNames_checked`; explicit statement cases in `UsingExamples.queryOver`.
 
 ## Remaining
 

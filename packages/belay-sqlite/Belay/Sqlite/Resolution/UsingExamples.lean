@@ -25,7 +25,8 @@ def over (results : List ResultColumn) (source : TableReference) (joins : List J
 def queryOver (results : List ResultColumn) (source : TableReference) (joins : List Join) : Option Resolved.Query :=
   match over results source joins with
   | some (.query query) => some query
-  | _ => none
+  | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some .begin | some .commit
+  | some .rollback | some (.insert ..) | some (.update ..) | some (.delete ..) | some (.prepareError _) | none => none
 
 /-- A join with {lit}`USING` and the names. -/
 def usingJoin (operator : List String) (name : String) (names : List String) : Join :=

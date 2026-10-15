@@ -78,7 +78,9 @@ theorem mergeJoin_written (left : Scope) (right : Source) (item : Nat) (join : S
   simp [mergeJoin, mergedNames, noUsing, bind, Except.bind]
 
 /-- For every left scope, joined source and list of names that each name a column of
-the joined source and of the left input, {name}`usingNameChecked` accepts them all, in order. -/
+the joined source and of the left input, {name}`usingNameChecked` accepts them all, in order. Proof sketch:
+induction on the names; the assumption for the first name makes its check succeed, and
+the assumption for the other names gives the induction hypothesis. -/
 theorem usingNames_checked (left : Scope) (right : Source) (names : List String)
     (both : ∀ name ∈ names, (columnPosition right.columns name).isSome ∧ (left.leftMost name).isSome) :
     names.mapM (usingNameChecked left right) = .ok names := by
