@@ -38,8 +38,10 @@ def booleanKeywordName (name : String) : Bool :=
   ["true", "false"].contains (normalizeIdentifier name)
 
 /-- SQLite's constant-default preparation check for the forms classified here:
-literals, time keywords, signs and equality. Unquoted TRUE and FALSE are constant
-keywords; other nested identifiers are column references. For example,
+literals, time keywords, signs, equality and qualified column references.
+Unquoted TRUE and FALSE are constant keywords; other nested identifiers are
+column references. SQLite refuses qualified column references as nonconstant
+defaults. This is a SQLite rule. For example,
 {lean}`constantDefaultExpression (.equals (.numeric "1") (.numeric "1"))` is true.
 For the other expression forms, return true to leave their existing model
 restriction in control; true does not establish that SQLite accepts those forms.

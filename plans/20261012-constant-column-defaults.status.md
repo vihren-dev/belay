@@ -815,3 +815,24 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of the completed T14 representation and codec changes.
+
+
+- 2026-10-15: Independent review 20261015T104503Z-50999f9f reports no
+  required fixes and one documentation recommendation. Updated the default
+  classifier's docstring to state that qualified column references are
+  nonconstant defaults under SQLite's rule. The implementation is unchanged.
+  Checked documentation is rebuilt before committing this correction.
+
+Decisions waiting for the owner:
+
+- Final review of the completed T14 change.
+
+
+- 2026-10-15: All 884 checked public declarations compile after the
+  classifier documentation correction. The recommendation is recorded as
+  fixed. Evidence: build/t14-main-review-docs-20261015.log. Independent review
+  of the correction follows its commit; no behavior changed.
+
+Decisions waiting for the owner:
+
+- Final review of the completed T14 change.
