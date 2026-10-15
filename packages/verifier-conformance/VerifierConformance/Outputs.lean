@@ -68,10 +68,12 @@ def returnedRows (returning : List (Resolved.Expr × String)) (written : List (L
 Transitions and failure status come from production advance, never a second
 evaluator. A successful INSERT changes one row per VALUES row and a successful
 UPDATE changes each row that its filter selects; their {lit}`RETURNING` rows are
-{name}`returnedRows` of the inserted rows, or of the new values of the selected rows. A
+{name}`returnedRows` of the cells of the inserted rows (with the rowid of a NULL rowid
+alias), or of the new values of the selected rows. A
 successful DELETE changes each row that its filter selects, and its {lit}`RETURNING` rows
 are {name}`returnedRows` of the old values of those rows. A write that fails a
-constraint returns its {lit}`RETURNING` names and no rows. A query has its result column
+constraint or a rowid alias ({lit}`datatype mismatch`) returns its {lit}`RETURNING` names
+and no rows. A query has its result column
 names and the rows of {name}`Resolved.Query.run` over the table before it, and no
 change count; a query whose table is missing has no output. A query that fails with
 {lit}`integer overflow` has its column names and no rows when it has no
@@ -81,17 +83,21 @@ def statementOutput (statement : Resolved.Statement) (before : SqlState)
     (transition : SqlTransition) : Option StatementOutput :=
   let successful := match transition with | .next _ => true | _ => false
   let constraintFailure := match transition with
-    | .halt (.failure _ .constraintViolation _) => true
-    | .halt (.pending _ _ (some (_, .constraintViolation))) => true
+    | .halt (.failure _ .constraintViolation _) | .halt (.failure _ .datatypeMismatch _) => true
+    | .halt (.pending _ _ (some (_, .constraintViolation))) | .halt (.pending _ _ (some (_, .datatypeMismatch))) =>
+      true
     | _ => false
   let overflow := match transition with
     | .halt (.failure _ .integerOverflow _) => true
     | .halt (.pending _ _ (some (_, .integerOverflow))) => true
     | _ => false
   match statement with
-  | .insert _ rows _ returning =>
+  | .insert at_ rows _ returning =>
     let names := returning.map (·.2)
-    if successful then some ⟨names, returnedRows returning rows, some rows.length⟩
+    if successful then do
+      let table ← before.database at_
+      let written := ((LiteralData.inserted table rows).rows.drop table.rows.length).map (·.values)
+      return ⟨names, returnedRows returning written, some rows.length⟩
     else if constraintFailure then some ⟨names, [], some 0⟩ else none
   | .update at_ assignments filter _ returning =>
     let names := returning.map (·.2)

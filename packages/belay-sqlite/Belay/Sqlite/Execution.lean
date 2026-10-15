@@ -27,6 +27,10 @@ inductive ExecutionError where
   /-- A query's {lit}`SUM` overflows the 64-bit integers: SQLite's {lit}`integer overflow`,
   reported while the statement runs. -/
   | integerOverflow
+  /-- A value for a rowid alias that is not an integer after INTEGER affinity, or a NULL
+  assigned to it by UPDATE: SQLite's {lit}`datatype mismatch` ({lit}`SQLITE_MISMATCH`),
+  reported while the statement runs. -/
+  | datatypeMismatch
   deriving Repr, DecidableEq
 
 /-- The final database and transaction status. Use {lean}`Outcome.success`

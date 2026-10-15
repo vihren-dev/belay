@@ -96,7 +96,7 @@ theorem migrationCorrect (profile : Profile) (columns : 2 ≤ profile.limits.col
         | succ other => simp [middleCatalog, startCatalog, Catalog.tableAt])
     have finalConforms : Conforms profile nextCatalog ((database.set 0 (table.appendColumns [note])).set 1
         { shape := { columns := [message] }, rows := [] }) :=
-      middleConforms.set nextValid (by exact ⟨by simp, by simp⟩) (by
+      middleConforms.set nextValid (by exact ⟨by simp, fun _ member => by simp at member⟩) (by
         intro other
         match other with
         | 0 => simp [nextCatalog, middleCatalog, Catalog.tableAt]

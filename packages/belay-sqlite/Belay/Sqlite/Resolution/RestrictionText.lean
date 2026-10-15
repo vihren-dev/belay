@@ -13,7 +13,6 @@ def RestrictionKind.id : RestrictionKind → String
   | .schemaStatement => "schema-statement"
   | .engineTable => "engine-table"
   | .rowidColumnName => "rowid-column-name"
-  | .rowidAlias => "rowid-alias"
   | .createTableConstraints => "create-table-constraints"
   | .unmodeledDefault => "unmodeled-default"
   | .createIndexRuns => "create-index-runs"
@@ -47,7 +46,6 @@ def RestrictionKind.message : RestrictionKind → String
   | .schemaStatement => "a schema contains only CREATE TABLE and CREATE INDEX statements; move the other statement to the script"
   | .engineTable => "engine-managed tables other than sqlite_stat1 and sqlite_stat4 are not modeled; remove the table from the schema"
   | .rowidColumnName => "column names rowid, _rowid_ and oid are not modeled; rename the column"
-  | .rowidAlias => "INTEGER PRIMARY KEY rowid aliases are not modeled; declare the key column with another type, such as BIGINT"
   | .createTableConstraints => "constraints and defaults in a CREATE TABLE that runs are not modeled; create the table with plain columns"
   | .unmodeledDefault => "only the CURRENT_TIMESTAMP default is modeled; remove the other default"
   | .createIndexRuns => "a CREATE INDEX that runs is not modeled; remove the CREATE INDEX statement"
@@ -77,7 +75,7 @@ def RestrictionKind.message : RestrictionKind → String
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .rowidAlias, .createTableConstraints, .unmodeledDefault, .createIndexRuns, .addColumnConstraint, .timeValue, .rowDependentKey, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .duplicateSource, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .valueAsCondition, .mixedAffinityComparison, .textToNumber, .numberToText, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum]
+  [.schemaStatement, .engineTable, .rowidColumnName, .createTableConstraints, .unmodeledDefault, .createIndexRuns, .addColumnConstraint, .timeValue, .rowDependentKey, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .duplicateSource, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .valueAsCondition, .mixedAffinityComparison, .textToNumber, .numberToText, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

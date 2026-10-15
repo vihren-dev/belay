@@ -69,21 +69,56 @@ def nextRowid (rows : List Row) : Int :=
   | [] => 1
   | first :: rest => (rest.foldl (fun largest row => max largest row.rowid) first.rowid) + 1
 
-/-- Append one row with {name}`nextRowid` and the supplied cells. Retain columns,
-keys and old row order; this function accepts any supplied value list. -/
+/-- The rowid of a new row with the supplied cells: its rowid alias cell when the table
+has an alias and the cell is an integer; otherwise {name}`nextRowid`, as for a table
+without an alias or a NULL alias. -/
+def newRowid (table : Table) (values : List Value) : Int :=
+  match table.shape.rowidAlias.bind (values[·]?) with
+  | some (.integer value) => value
+  | some .null | some (.real _) | some (.text _) | some (.blob _) | none => nextRowid table.rows
+
+/-- The cells of a new row with the rowid: the alias cell, if the table has an alias, is
+the integer rowid, so a NULL alias takes the new rowid; other cells stay. -/
+def newCells (table : Table) (values : List Value) (rowid : Int) : List Value :=
+  match table.shape.rowidAlias with
+  | some position => values.set position (.integer rowid)
+  | none => values
+
+/-- Whether the supplied cells give a rowid alias that SQLite refuses with
+{lit}`datatype mismatch`: the table has an alias and its cell is neither NULL nor an
+integer. Without an alias no cells do. -/
+def aliasMismatch (shape : CatalogTable) (values : List Value) : Bool :=
+  match shape.rowidAlias.bind (values[·]?) with
+  | some (.real _) | some (.text _) | some (.blob _) => true
+  | some .null | some (.integer _) | none => false
+
+/-- Append one row with {name}`newRowid` and {name}`newCells` of the supplied cells.
+Retain columns, keys and old row order; this function accepts any supplied value list. -/
 def insertRow (table : Table) (values : List Value) : Table :=
-  { table with rows := table.rows ++ [{ rowid := nextRowid table.rows, values := values }] }
+  let rowid := newRowid table values
+  { table with rows := table.rows ++ [{ rowid, values := newCells table values rowid }] }
 
 /-- Append the rows in order with {name}`insertRow`, as one INSERT with several
 VALUES rows does. No rows leave the table unchanged. -/
 def inserted (table : Table) (rows : List (List Value)) : Table := rows.foldl insertRow table
 
-/-- Require {name}`tableReady` before the write, one value per column in each row,
-{name}`storedForm` on every column/value pair, and a bounded rowid for every inserted
-row. This admits evaluation; the inserted table's constraint truth is checked
-separately. -/
+/-- Whether the rows of the table have distinct rowids. A write whose result has two rows
+with one rowid fails, as SQLite's unique constraint of a rowid alias fails: only an
+explicit alias value can repeat a rowid. -/
+def rowidsDistinct (table : Table) : Bool := decide (table.rows.map Row.rowid).Nodup
+
+/-- Whether the rowid alias of a table, if it has one, is a column with INTEGER affinity:
+{name}`newCells` then writes an integer in stored form. SQLite declares every alias
+{lit}`INTEGER`, so every table that it stores passes. Without an alias it passes. -/
+def aliasReady (shape : CatalogTable) : Bool :=
+  shape.rowidAlias.all fun position => (shape.columns[position]?).any (·.affinity == .integer)
+
+/-- Require {name}`tableReady` before the write, {name}`aliasReady`, one value per column
+in each row, {name}`storedForm` on every column/value pair, and a bounded rowid for
+every inserted row. This admits evaluation; the inserted table's constraint truth is
+checked separately. -/
 def insertReady (keys : List (List Nat)) (table : Table) (rows : List (List Value)) : Bool :=
-  tableReady keys table &&
+  tableReady keys table && aliasReady table.shape &&
   rows.all (fun values => values.length == table.shape.columns.length &&
     (table.shape.columns.zip values).all (fun (column, value) => storedForm column.affinity value)) &&
   (inserted table rows).rows.all (fun row => boundedInteger row.rowid)

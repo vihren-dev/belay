@@ -17,8 +17,6 @@ inductive RestrictionKind where
   | engineTable
   /-- Column names {lit}`rowid`, {lit}`_rowid_` and {lit}`oid` are not modeled (ADR 0008). -/
   | rowidColumnName
-  /-- INTEGER PRIMARY KEY rowid aliases are not modeled (ADR 0008). -/
-  | rowidAlias
   /-- Constraints and defaults in a CREATE TABLE that runs are not modeled (ADR 0008). -/
   | createTableConstraints
   /-- Only the {lit}`CURRENT_TIMESTAMP` default is modeled (ADR 0008). -/

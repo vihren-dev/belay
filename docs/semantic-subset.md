@@ -83,8 +83,11 @@ and `CREATE INDEX`, in an order that SQLite can run: an index follows its table.
 A schema statement that SQLite refuses to prepare, for example a second table
 with the same name, is `INPUT_ERROR` with SQLite's message. The description may
 contain keys, `NOT NULL`, the `CURRENT_TIMESTAMP` default, indexes and the exact
-native `sqlite_stat1` and `sqlite_stat4` tables. Other defaults, other reserved
-names and `INTEGER PRIMARY KEY` rowid aliases are model restrictions.
+native `sqlite_stat1` and `sqlite_stat4` tables, and `INTEGER PRIMARY KEY` rowid
+aliases (slice 5b): the column is the rowid; INSERT of NULL or no value gives the next
+rowid, another value must be an integer after INTEGER affinity, else SQLite's
+`datatype mismatch`, and UPDATE of the alias moves the row. Other defaults and other
+reserved names are model restrictions.
 
 ## Resolution
 
@@ -133,7 +136,6 @@ of frontend refusal, the cases of the claimed corpora that it keeps out of scope
 | `schema-statement` | A schema contains only CREATE TABLE and CREATE INDEX statements | ADR 0008 |
 | `engine-table` | Engine-managed tables other than sqlite_stat1 and sqlite_stat4 are not modeled | ADR 0008 |
 | `rowid-column-name` | Column names `rowid`, `_rowid_` and `oid` are not modeled | ADR 0008 |
-| `rowid-alias` | INTEGER PRIMARY KEY rowid aliases are not modeled | ADR 0008 |
 | `create-table-constraints` | Constraints and defaults in a CREATE TABLE that runs are not modeled | ADR 0008 |
 | `unmodeled-default` | Only the `CURRENT_TIMESTAMP` default is modeled | ADR 0008 |
 | `create-index-runs` | A CREATE INDEX that runs is not modeled | ADR 0008 |

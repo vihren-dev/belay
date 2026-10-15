@@ -44,12 +44,12 @@ def statisticsColumns : String → Option (List String)
   | _ => none
 
 /-- Admit a table entry under the limits: at least one column and at most the
-column limit, no two columns with one folded name, no rowid column name, no rowid
-alias, and keys that satisfy {name}`supportedKey`. -/
+column limit, no two columns with one folded name, no rowid column name, and keys that
+satisfy {name}`supportedKey`. A rowid alias is admitted (slice 5b). -/
 def CatalogTable.supported (limits : Limits) (table : CatalogTable) : Bool :=
   !table.columns.isEmpty && table.columns.length ≤ limits.columns &&
     (table.columns.map (normalizeIdentifier ·.name)).eraseDups.length == table.columns.length &&
-    !table.columns.any (rowidName ·.name) && table.rowidAlias.isNone &&
+    !table.columns.any (rowidName ·.name) &&
     (table.primaryKey.isEmpty || supportedKey table.columns.length table.primaryKey) &&
     table.uniqueKeys.all (supportedKey table.columns.length)
 
@@ -93,15 +93,26 @@ def Row.Stored (columns : List CatalogColumn) (row : Row) : Prop :=
     columns[position]? = some column → row.values[position]? = some value →
     storeValue column.affinity value = value
 
+/-- For the given rowid alias and row: when the table has a rowid alias at a position,
+the row's cell there is the integer rowid of the row. Without an alias it requires
+nothing. SQLite stores an alias as the rowid itself, so every database that SQLite reaches
+meets it (ADR 0012, amendment 4, slice 5b). -/
+def Row.Aliased (alias : Option Nat) (row : Row) : Prop :=
+  ∀ position, alias = some position → row.values[position]? = some (.integer row.rowid)
+
+/-- For the given table, require of every stored row: it satisfies {name}`validRowid`,
+has one cell per column, is {name}`Row.Stored` for the table's columns, and is
+{name}`Row.Aliased` for the table's rowid alias. With no rows it imposes nothing. -/
+def Table.RowsValid (table : Table) : Prop :=
+  ∀ row ∈ table.rows, validRowid row.rowid ∧ row.values.length = table.shape.columns.length ∧
+    row.Stored table.shape.columns ∧ row.Aliased table.shape.rowidAlias
+
 /-- For the given table, require both conditions:
 * Its physical rowids have no duplicates.
-* Every stored row satisfies {name}`validRowid`, has one cell per column, and is
-  {name}`Row.Stored` for the table's columns.
+* Its rows satisfy {name}`Table.RowsValid`.
 With no rows, both conditions impose nothing; column support is a catalog check. -/
 def Table.Valid (table : Table) : Prop :=
-  (table.rows.map Row.rowid).Nodup ∧
-  ∀ row ∈ table.rows, validRowid row.rowid ∧ row.values.length = table.shape.columns.length ∧
-    row.Stored table.shape.columns
+  (table.rows.map Row.rowid).Nodup ∧ table.RowsValid
 
 /-- For the given profile, catalog and database, require {name}`Catalog.Valid` under
 the profile's limits. For every catalog position:

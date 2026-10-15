@@ -62,13 +62,11 @@ theorem literal_cases (statement : Resolved.Statement) (database : Database) (po
   | addColumn at_ column =>
     cases h : database at_ <;> simp [literalStep, step, h]
   | insert at_ rows keys _ =>
-    cases h : database at_ <;> simp only [literalStep, checkedWrite, h]
-    all_goals try (split <;> simp_all)
-    all_goals simp
+    cases h : database at_ <;> simp only [literalStep, insertOutcome, checkedWrite, h]
+    all_goals (repeat' split) <;> simp
   | update at_ assignments filter keys _ =>
     cases h : database at_ <;> simp only [literalStep, checkedWrite, h]
-    all_goals try (split <;> simp_all)
-    all_goals simp
+    all_goals (repeat' split) <;> simp
   | delete at_ filter _ =>
     cases h : database at_ <;> simp [literalStep, h]
   | createIndex _ _ _ => simp [literalStep, step]

@@ -58,9 +58,12 @@ def tableT : Catalog := catalogOf (migration [] [.createTable "t" [column "a", c
 #guard [some "CHARINT", some "FLOATING POINT", some "VARCHAR(10)", some "DOUBLE", none,
   some "real blob", some "DECIMAL"].map affinityOf == [.integer, .integer, .text, .real, .blob, .blob, .numeric]
 
--- Rowid alias: INTEGER PRIMARY KEY is an alias (a model restriction); DESC and BIGINT are not.
-#guard restricted (schema [.createTable "t" [{ name := "x", declaredType := some "integer", constraints := [.primaryKey false] }] []])
-#guard restricted (schema [.createTable "t" [column "x" (some "INTEGER")] [.primaryKey ["x"]]])
+-- Rowid alias (slice 5b): INTEGER PRIMARY KEY, as a column or a table constraint, is an
+-- alias, and the schema runs; DESC and BIGINT are not aliases.
+#guard (catalogOf (schema [.createTable "t" [{ name := "x", declaredType := some "integer", constraints := [.primaryKey false] }] []])).map
+  (fun object => match object.entry with | .table table => table.rowidAlias | .index _ => none) == [some 0]
+#guard (catalogOf (schema [.createTable "t" [column "x" (some "INTEGER")] [.primaryKey ["x"]]])).map (·.entry)
+  == [.table { columns := [{ name := "x", declaredType := some "INTEGER" }], primaryKey := [0], rowidAlias := some 0 }]
 #guard (catalogOf (schema [.createTable "t" [{ name := "x", declaredType := some "INTEGER", constraints := [.primaryKey true] }] []])).map (·.entry)
   == [.table { columns := [{ name := "x", declaredType := some "INTEGER" }], primaryKey := [0] }]
 #guard !restricted (schema [.createTable "t" [{ name := "x", declaredType := some "BIGINT", constraints := [.primaryKey false] }] []])
@@ -166,9 +169,5 @@ def keyed : Catalog := catalogOf (schema [.createTable "k" [column "a" (some "IN
 #guard resolveSchemaAndScript defaults [] [.createTable "t" [column "rowid"] []]
   matches .error (.scriptRestricted { statement := 0, path := [1], .. })
 #guard (PrepareError.valueCount "t" 2 1).message == "table t has 2 columns but 1 values were supplied"
-
--- Restriction messages say what to do next.
-#guard reason (schema [.createTable "t" [{ name := "x", declaredType := some "INTEGER", constraints := [.primaryKey false] }] []])
-  == "INTEGER PRIMARY KEY rowid aliases are not modeled; declare the key column with another type, such as BIGINT"
 
 end Belay.Sqlite.Resolution.Examples

@@ -36,7 +36,8 @@ represents an empty table. -/
 def table : Table := { shape := { columns := [textKey], primaryKey := [0] }, rows := [⟨-9, [.null]⟩] }
 
 #guard keyed.supported limits
-#guard ({ columns := [textKey], primaryKey := [0], rowidAlias := some 0 } : CatalogTable).supported limits == false
+-- A rowid alias is admitted (slice 5b); writes to it check its affinity (aliasReady).
+#guard ({ columns := [textKey], primaryKey := [0], rowidAlias := some 0 } : CatalogTable).supported limits
 #guard ({ columns := [textKey], uniqueKeys := [[1]] } : CatalogTable).supported limits == false
 #guard ({ columns := [textKey, { textKey with name := "ID" }] } : CatalogTable).supported limits == false
 #guard ({ columns := [timestamp] } : CatalogTable).supported limits
@@ -55,12 +56,12 @@ def statisticsTable : CatalogTable := { columns := ["tbl", "idx", "stat"].map fu
 negative rowid and NULL cell. The proof reduces widths and bounds, and computes the
 stored form of the row. -/
 example : table.Valid := by
-  simp only [Table.Valid, table, validRowid]
+  simp only [Table.Valid, Table.RowsValid, table, validRowid]
   refine ⟨by simp, ?_⟩
   intro row member
   simp only [List.mem_singleton] at member
   subst row
-  exact ⟨by decide, by simp, Row.Stored.of_storedForm (by decide +kernel)⟩
+  exact ⟨by decide, by simp, Row.Stored.of_storedForm (by decide +kernel), fun _ alias => by simp at alias⟩
 
 /-- Adding a plain {lit}`shell` column to the table at position 0 returns that
 table's {name}`Table.appendColumns` at the same position, preserving its keys. The

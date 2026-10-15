@@ -34,7 +34,8 @@ def stored (candidate : CatalogTable) : Database :=
 theorem catalog_valid : catalog.Valid profile.limits := by decide +kernel
 theorem original_conforms : Conforms profile catalog (stored shape) :=
   (Catalog.emptyDatabase_conforms catalog_valid).replaceRows
-    (old := { shape := shape, rows := [] }) (position := 0) (by decide +kernel) (by rfl) ⟨by simp, by simp⟩
+    (old := { shape := shape, rows := [] }) (position := 0) (by decide +kernel) (by rfl)
+    ⟨by simp, fun _ member => by simp at member⟩
 theorem shape_rejected (candidate : CatalogTable) (different : candidate ≠ shape) :
     ¬Conforms profile catalog (stored candidate) := by
   intro conforms

@@ -25,13 +25,17 @@ ROW_UPDATE = SQLITE + "RowUpdate.lean"
 
 OBLIGATIONS: dict[str, tuple[str, str, str]] = {
     "insert-table-ready": (LITERAL_DATA, "insertReady", "tableReady keys table"),
+    "insert-alias-ready": (LITERAL_DATA, "insertReady", "aliasReady table.shape"),
     "insert-row-width": (LITERAL_DATA, "insertReady", "values.length == table.shape.columns.length"),
     "insert-stored-form": (LITERAL_DATA, "insertReady",
                         "(table.shape.columns.zip values).all (fun (column, value) => storedForm column.affinity value)"),
     "insert-rowid-bounded": (LITERAL_DATA, "insertReady",
                              "(inserted table rows).rows.all (fun row => boundedInteger row.rowid)"),
     "update-table-ready": (ROW_UPDATE, "updateReady", "tableReady keys table"),
+    "update-alias-ready": (ROW_UPDATE, "updateReady", "aliasReady table.shape"),
     "update-assigned-column": (ROW_UPDATE, "updateReady", "(table.shape.columns[position]?).isSome"),
+    "update-rowid-bounded": (ROW_UPDATE, "updateReady",
+                             "(updated table assignments filter).rows.all (fun row => boundedInteger row.rowid)"),
     "create-table-plain": (EXECUTION, "statementReady", "table.plain"),
     "add-column-plain": (EXECUTION, "statementReady", "column.plain"),
     "create-index-refused": (EXECUTION, "statementReady", "| .createIndex .. => false"),
@@ -40,6 +44,13 @@ OBLIGATIONS: dict[str, tuple[str, str, str]] = {
 that contains it, and its exact text there."""
 
 COVERED_ELSEWHERE: dict[str, str] = {
+    "insert-alias-ready": "reason:SQLite makes a column a rowid alias only when its declared type is INTEGER, "
+                          "which has INTEGER affinity (aliasesRowid), so every native table passes",
+    "update-alias-ready": "reason:SQLite makes a column a rowid alias only when its declared type is INTEGER, "
+                          "which has INTEGER affinity (aliasesRowid), so every native table passes",
+    "update-rowid-bounded": "reason:an alias holds a 64-bit integer in every native state, and a SET value for the "
+                            "alias is a constant that SQLite's integers bound; a larger value is a REAL and a "
+                            "datatype mismatch",
     "insert-row-width": "reason:resolution gives one value per column (RowSpec.fullRow_rowWidth)",
     "insert-stored-form": "reason:resolution stores every written value with storeValue, which is idempotent "
                           "(StoreValueLaws.storeValue_storeValue)",

@@ -62,35 +62,6 @@ theorem LiteralData.rowid_lt_next (member : row ∈ rows) : row.rowid < nextRowi
     simp only [nextRowid]
     omega
 
-/-- For every table and value list, assume {name}`Table.Valid`, a valid newly
-allocated rowid, one supplied value per column, and the new row in
-{name}`Row.Stored` form for the table's columns. Then {name}`LiteralData.insertRow`
-satisfies {name}`Table.Valid`. Old row checks are vacuous for an empty table;
-new row bounds and width still apply. This says nothing about key constraints.
-The proof makes the new rowid fresh using {name}`LiteralData.rowid_lt_next`,
-then handles the old rows and the appended row separately. -/
-theorem Table.Valid.insertRow (valid : table.Valid)
-    (bounded : validRowid (LiteralData.nextRowid table.rows))
-    (width : values.length = table.shape.columns.length)
-    (stored : Row.Stored table.shape.columns { rowid := LiteralData.nextRowid table.rows, values }) :
-    (LiteralData.insertRow table values).Valid := by
-  refine ⟨?_, ?_⟩
-  · have fresh : LiteralData.nextRowid table.rows ∉ table.rows.map Row.rowid := by
-      intro member
-      obtain ⟨row, member, equal⟩ := List.mem_map.mp member
-      have smaller := LiteralData.rowid_lt_next member
-      omega
-    simp only [LiteralData.insertRow, List.map_append, List.map_cons, List.map_nil, List.nodup_append]
-    refine ⟨valid.1, by simp, ?_⟩
-    intro identity member other freshMember equal
-    simp only [List.mem_singleton] at freshMember
-    exact fresh ((equal.trans freshMember) ▸ member)
-  · intro row member
-    simp only [LiteralData.insertRow, List.mem_append, List.mem_singleton] at member
-    rcases member with old | rfl
-    · exact valid.2 row old
-    · exact ⟨bounded, width, stored⟩
-
 /-- For every key, old row list and added row, assume {name}`LiteralData.uniqueRows`
 on the old list and false {name}`LiteralData.keyEqual` from every old row to the
 addition. Then uniqueness holds after appending that row. For no old rows, both
@@ -109,17 +80,19 @@ theorem LiteralData.uniqueRows_append (unique : uniqueRows key rows = true)
     rfl
 
 /-- For every key list, table and value list, assume old {name}`LiteralData.constraints`,
-NOT NULL checks on zipped new column/cell pairs, and a false key comparison
-between every old row and the new row for every key. Then the table after
+NOT NULL checks on the zipped new column/cell pairs of {name}`LiteralData.newCells`,
+and a false key comparison between every old row and the new row for every key. Then
+the table after
 {name}`LiteralData.insertRow` satisfies the same check. With no keys the freshness
 requirement is vacuous; with no old rows each key's pairwise check is vacuous.
 Row width and allocation bounds are not assumed. The proof separates old and new
 NOT NULL checks, then applies {name}`LiteralData.uniqueRows_append` to each key. -/
 theorem LiteralData.insertRow_constraints (old : constraints keys table = true)
-    (nonnull : (table.shape.columns.zip values).all (fun (column, value) =>
+    (nonnull : (table.shape.columns.zip (newCells table values (newRowid table values))).all (fun (column, value) =>
       !column.notNull || value != .null) = true)
     (fresh : ∀ key ∈ keys, ∀ row ∈ table.rows,
-      keyEqual key row { rowid := nextRowid table.rows, values := values } = false) :
+      keyEqual key row { rowid := newRowid table values, values := newCells table values (newRowid table values) } =
+        false) :
     constraints keys (insertRow table values) = true := by
   simp only [constraints, Bool.and_eq_true] at old ⊢
   constructor

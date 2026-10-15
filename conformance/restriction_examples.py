@@ -23,7 +23,6 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "schema-statement": ("CREATE TABLE t(a INTEGER); INSERT INTO t VALUES (1);", "SELECT a FROM t;"),
     "engine-table": ("CREATE TABLE t(a INTEGER); CREATE TABLE sqlite_sequence(name, seq);", "SELECT a FROM t;"),
     "rowid-column-name": ("CREATE TABLE t(a INTEGER);", "CREATE TABLE u(rowid TEXT);"),
-    "rowid-alias": ("CREATE TABLE t(a INTEGER);", "CREATE TABLE u(id INTEGER PRIMARY KEY);"),
     "create-table-constraints": ("CREATE TABLE t(a INTEGER);", "CREATE TABLE u(a INTEGER NOT NULL);"),
     "unmodeled-default": ("CREATE TABLE t(a INTEGER DEFAULT 5);", "SELECT a FROM t;"),
     "create-index-runs": ("CREATE TABLE t(a INTEGER);", "CREATE INDEX i ON t(a);"),

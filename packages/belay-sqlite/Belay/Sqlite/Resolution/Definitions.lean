@@ -98,7 +98,6 @@ def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : N
     | .error error => prepareError catalog error
     | .ok table =>
       if columns.any (rowidName ·.name) then restrict index [1] .rowidColumnName
-      else if table.rowidAlias.isSome then restrict index [1] .rowidAlias
       else if context.mode == .execution && (!constraints.isEmpty || columns.any (!·.constraints.isEmpty)) then
         restrict index [1] .createTableConstraints
       else if columns.any (!·.constraints.all Syntax.ColumnConstraint.modeledDefault) then
