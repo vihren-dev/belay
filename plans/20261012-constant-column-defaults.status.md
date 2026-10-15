@@ -699,3 +699,13 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of the completed T14 representation and codec changes.
+
+
+- 2026-10-15: Correction 503960a1 passes independent review
+  20261015T081030Z-503960a1 with no findings. The literal catalog and omitted
+  INSERT checkpoint is reviewed. ADD COLUMN execution, preservation and
+  installed acceptance remain; T14 is still in progress.
+
+Decisions waiting for the owner:
+
+- Final review of the completed T14 representation and codec changes.
