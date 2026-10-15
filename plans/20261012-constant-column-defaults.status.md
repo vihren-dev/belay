@@ -1315,3 +1315,21 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of completed T14, including the example contract and baseline.
+
+
+- 2026-10-15: Example commit 4403518d passed independent review with no
+  must issues and two R13 should findings. Added the example and its baseline
+  path to examples/README.md and its changed-default gate test to the
+  docs/data-path.md test table. Also added the same pinned lean-toolchain file
+  used by the other proofs projects, as the review observation suggested.
+
+  All 28 documentation and project checks pass. The rebuilt runtime passes
+  the separate-cache and no-cache scenario in 10.22 seconds with the explicit
+  toolchain. Evidence: build/t14-default-example-doc-check-20261015.log,
+  build/t14-default-example-complete-build-20261015.log and
+  build/t14-default-example-toolchain-check-20261015.log. Both review findings
+  are recorded as fixed. The correction now needs independent review.
+
+Decisions waiting for the owner:
+
+- Final T14 review after actual offline installed acceptance on both platforms.
