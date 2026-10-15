@@ -1,6 +1,6 @@
 # Rowid aliases, slice 5b of ADR 0012
 
-Created 2026-10-15. Status: IN PROGRESS.
+Created 2026-10-15. Status: DONE (pull requests #134 and B).
 Specification: [ADR 0012](../docs/adr-0012-query-semantics.md), "Amendment 4: Unique keys
 and conflicts (slices 5a to 5d)", "Rowid aliases (slice 5b)", with the owner decisions of
 2026-10-15 (#131). Related: slice 5a ([task](20261015-key-values.task.md)); slices 5c and

@@ -1,6 +1,6 @@
 # Status: rowid aliases (slice 5b)
 
-Created 2026-10-15. Status: IN PROGRESS.
+Created 2026-10-15. Status: DONE.
 Task: [task](20261015-rowid-aliases.task.md).
 Specification: [ADR 0012, Amendment 4, "Rowid aliases (slice 5b)"](../docs/adr-0012-query-semantics.md).
 
@@ -44,13 +44,13 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Model.lean`, `Declarations.l
   `UpdatePreservation.lean` (each file below 200 lines), with proof sketches; the
   docstring of `RowsValid.updated` states its premises; the error code and the
   failed-write outputs of the conformance layer enumerate every `ExecutionError`.
-
-## Remaining
-
-- Full checks, CI time, PR A; then PR B (claim corpus 18, `mustAgree`).
-
+- 2026-10-15: CI time (local, `--check` rebuilds, main vs branch): mutants 195/210 s,
+  model 197/214 s, frozen 136/136 s. Pull request A opened as #134.
 - 2026-10-15: the verdict of the corpus 18 claim found that native SQLite records the
   implicit key index of `INTEGER PRIMARY KEY DESC` as descending, and the prediction
   rendered it ascending. `CatalogTable.primaryKeyDescending` now records `DESC` on a
   column primary key; `Predict` exports it and `predict_render` writes the index key as
-  descending. `test-full` passes.
+  descending (on #134, with a catalog test). `test-full` passes.
+- 2026-10-15: pull request B, stacked on #134: corpus 18 (24 cases, all AGREE) is claimed,
+  and the 49 cases of v5 that agree with rowid aliases join `mustAgree`. New judge lock.
+  Slice 5b is DONE; slice 5c (UPSERT) follows.
