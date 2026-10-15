@@ -30,13 +30,15 @@ def integerLiteral : Syntax.Expr → Option Int
   | .qualified .. => none
 
 /-- One resolved result column with its names: {lit}`*` gives every column of every
-source that is not merged ({name}`Scope.visible`) under its defined name, {lit}`x.*` every column of source {lit}`x`
-({name}`sourceStarColumns`); an aggregate is a whole result column; any other expression
+source that is not merged ({name}`Scope.visible`) under its defined name, a merged pair as
+its unqualified name ({name}`Scope.starOperand`), {lit}`x.*` every column of source
+{lit}`x` ({name}`sourceStarColumns`); an aggregate is a whole result column; any other expression
 is a scalar. A name is the {lit}`AS` alias, else the defined name of a referenced column
 ({name}`definedName`), else the source text as written. -/
 def resolveResultColumn (dqs : Bool) (scope : Scope) (column : Nat) :
     Syntax.ResultColumn → Except ValueIssue (List (Resolved.Output × String))
-  | .star => .ok (scope.visible.map fun (position, defined) => (.scalar (.column position), defined.name))
+  | .star => .ok (scope.visible.map fun (position, defined) =>
+      (.scalar (scope.starOperand position defined).1, defined.name))
   | .sourceStar source => (sourceStarColumns scope source).map fun columns =>
       columns.map fun (expression, name) => (.scalar expression, name)
   | .expression value alias text => do
@@ -122,10 +124,11 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
       | some (.scalar expression, _) => .ok expression
       | some (.aggregate _, _) | none => .error (.prepare .aggregateInGroupBy)
     let terms ← resolveAll (fun item term => match term with
-      | .identifier name _ => match scope.matches name, aliasIndex aliases name with
-        | [position], _ => .ok (.column position)
-        | [], some column => grouped column
-        | _, _ => (resolveOperand dqs scope true term).map (·.1) |>.mapError (·.under [4, item])
+      | .identifier name _ => match scope.resolveName name, aliasIndex aliases name with
+        | .found _ reads, _ => .ok (scope.nameOperand reads).1
+        | .missing, some column => grouped column
+        | .missing, none | .ambiguous, _ =>
+          (resolveOperand dqs scope true term).map (·.1) |>.mapError (·.under [4, item])
       | .callStar name | .call name _ =>
         .error (if aggregateCall term then .prepare .aggregateInGroupBy else (callIssue name).under [4, item])
       | .numeric _ | .negate _ => match namedResult aliases term with

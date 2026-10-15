@@ -48,5 +48,6 @@ def PrepareError.message : PrepareError → String
   | .returningSourceStar => "RETURNING may not use \"TABLE.*\" wildcards"
   | .joinUsingColumn name => s!"cannot join using column {name} - column not present in both tables"
   | .naturalJoinCondition => "a NATURAL join may not have an ON or USING clause"
+  | .ambiguousUsingReference name => s!"ambiguous reference to {name} in USING()"
 
 end Belay.Sqlite

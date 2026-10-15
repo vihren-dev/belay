@@ -20,11 +20,12 @@ def Resolved.Expr.readsBelow (bound : Nat) : Resolved.Expr → Bool
     left.readsBelow bound && right.readsBelow bound
   | .not operand | .isNull operand _ | .cast _ operand => operand.readsBelow bound
 
-/-- The columns of {lit}`source.*` with their positions in the concatenated row and their
-names, or SQLite's {lit}`no such table: source` when no source has the name. -/
+/-- The columns of {lit}`source.*` with their expansions ({name}`Scope.starOperand`) and
+their names, or SQLite's {lit}`no such table: source` when no source has the name. -/
 def sourceStarColumns (scope : Scope) (source : String) : Except ValueIssue (List (Resolved.Expr × String)) :=
   match scope.source? source with
-  | some (offset, columns) => .ok (columns.mapIdx fun position column => (.column (offset + position), column.name))
+  | some (offset, columns) => .ok (columns.mapIdx fun position column =>
+      ((scope.starOperand (offset + position) column).1, column.name))
   | none => .error (.prepare (.noSuchSource source))
 
 /-- The number of tables in a join that SQLite accepts ({lit}`SQLITE_MAX_SRCLIST`). -/
@@ -87,33 +88,29 @@ def Syntax.Join.rightOrFull (join : Syntax.Join) : Bool :=
   | some (.right, _) | some (.full, _) => true
   | some (.inner, _) | some (.left, _) | none => false
 
-/-- Whether the join has {lit}`USING` or {lit}`NATURAL`. -/
-def Syntax.Join.merges (join : Syntax.Join) : Bool :=
-  join.usingColumns.isSome || (joinOperator join.operator).any (·.2)
+/-- The rule by which the join changes an unqualified name of a column that it merges:
+an inner or left join keeps the left result, a right join takes its own column, and a
+full join coalesces them. -/
+def Syntax.Join.mergeRule (join : Syntax.Join) : MergeRule :=
+  match joinOperator join.operator with
+  | some (.right, _) => .takeRight
+  | some (.full, _) => .coalesce
+  | some (.inner, _) | some (.left, _) | none => .keepLeft
 
-/-- The model restriction of {lit}`USING` and {lit}`NATURAL` in a {lit}`FROM` with a
-{lit}`RIGHT` or {lit}`FULL` join, if there is one: at the first join that merges. SQLite
-then compares the coalesce of the left columns, also for a join before the right join
-(ADR 0012, amendment 3), which the model describes in slice 4d. -/
-def mergeWithRightIssue (joins : List Syntax.Join) : Option ValueIssue :=
-  if joins.any Syntax.Join.rightOrFull then
-    (findPosition (fun (_, join) => join.merges) (joins.mapIdx fun item join => (item, join))).map fun (item, _) =>
-      .restriction [2, item, 0] .usingWithRightJoin
-  else none
-
-/-- The joined sources of the joins in order, with their merged columns, and the
-condition of each join with its path ({name}`mergeJoin`), after the sources of
-{lit}`left`; {lit}`item` is the position of the first join. A join form that the model
-does not describe ({name}`joinFormIssue`) is a model restriction, checked before the
-join's {lit}`USING` and {lit}`NATURAL` errors. -/
-def mergeJoins (left : Scope) (item : Nat) :
+/-- The joined sources of the joins in order, with their merged columns and merge rules,
+and the condition of each join with its path ({name}`mergeJoin`), after the sources of
+{lit}`left`; {lit}`coalesced` says whether the {lit}`FROM` has a right or full join;
+{lit}`item` is the position of the first join. A join form that the model does not
+describe ({name}`joinFormIssue`) is a model restriction, checked before the join's
+{lit}`USING` and {lit}`NATURAL` errors. -/
+def mergeJoins (coalesced : Bool) (left : Scope) (item : Nat) :
     List (Syntax.Join × Source) → Except ValueIssue (Scope × List (Option (List Nat × Syntax.Expr)))
   | [] => .ok (left, [])
   | (join, right) :: rest => do
     if let some issue := joinFormIssue item join then throw issue
     let natural := (joinOperator join.operator).any (·.2)
-    let (merged, condition) ← mergeJoin left right natural item join
-    let (scope, conditions) ← mergeJoins (left ++ [merged]) (item + 1) rest
+    let (merged, condition) ← mergeJoin left right natural coalesced join.mergeRule item join
+    let (scope, conditions) ← mergeJoins coalesced (left ++ [merged]) (item + 1) rest
     .ok (scope, condition :: conditions)
 
 /-- The kind of a resolved join, from its operator. {name}`joinFormIssue` refuses an
@@ -131,9 +128,9 @@ joined tables with the condition of each join and its path, and the scope of all
 sources, in order. As in SQLite, every table resolves before the forms of the joins:
 more than {name}`maximumJoinTables` tables is SQLite's
 {lit}`at most 64 tables in a join`, then a missing table is {lit}`no such table`; two
-sources with the same folded name are a model restriction, and so is {lit}`USING` or
-{lit}`NATURAL` with a right or full join ({name}`mergeWithRightIssue`); then each join in
-order ({name}`mergeJoins`). -/
+sources with the same folded name are a model restriction; then each join in order
+({name}`mergeJoins`), whose generated conditions coalesce the left columns when any join
+is a right or full join. -/
 def resolveTables (catalog : Catalog) (source : Syntax.TableReference) (joins : List Syntax.Join) :
     Except ValueIssue (Nat × List (Nat × Option (List Nat × Syntax.Expr)) × Scope) := do
   if joins.length + 1 > maximumJoinTables then throw (.prepare .tooManyTables)
@@ -143,8 +140,7 @@ def resolveTables (catalog : Catalog) (source : Syntax.TableReference) (joins : 
   if let some (item, _) := findPosition (fun (item, source) => sources.take item |>.any fun earlier =>
       normalizeIdentifier earlier.name == normalizeIdentifier source.name) (sources.mapIdx fun item source => (item, source)) then
     throw (.restriction (if item == 0 then [1] else [2, item - 1, 1]) .duplicateSource)
-  if let some issue := mergeWithRightIssue joins then throw issue
-  let (scope, conditions) ← mergeJoins [firstSource] 0 (joins.zip (joined.map Prod.snd))
+  let (scope, conditions) ← mergeJoins (joins.any Syntax.Join.rightOrFull) [firstSource] 0 (joins.zip (joined.map Prod.snd))
   .ok (first, (joined.map Prod.fst).zip conditions, scope)
 
 /-- Resolve the condition of the join at {lit}`item`, written or generated, with the path
