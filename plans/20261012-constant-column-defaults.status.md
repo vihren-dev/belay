@@ -1274,3 +1274,44 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of completed T14 after the remaining acceptance work.
+
+
+- 2026-10-15: Added examples/constant_default with a separate contract,
+  baseline and proofs project. It adds priority INTEGER NOT NULL DEFAULT 7,
+  preserves all invoice rowids and amounts, and requires successful execution
+  for every admitted starting table. It uses the delivered generated target
+  and project interfaces. Existing approved example files are unchanged.
+
+  The public verify command returns VERIFIED after fixing the initial Lean
+  layout and explicit reduction errors; failed runs are retained separately.
+  Evidence: build/t14-constant-default-example3-20261015.log. The packaged
+  runtime builds at build/t14-default-example. Added a bundle-suite test that
+  changes DEFAULT 7 to DEFAULT 8 and checks both public gates reject the
+  original certificate. Existing discovery covers the new positive CLI case
+  and separate author/verifier caches, a warm verifier and no cache. These
+  checks are running in build/t14-default-example-gates-20261015.log.
+
+  The example remains uncommitted and has not passed independent review or
+  offline installed acceptance. Its new baseline is part of the eventual
+  owner-reviewed T14 change, not an update to an existing approval.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14, including the new example contract and baseline.
+
+
+- 2026-10-15: The new example passes all three public-gate scenarios in
+  19.26 seconds: positive source verification; prepare followed by verification
+  with an independent cold cache, warm cache and no cache; and rejection of
+  DEFAULT 8 by both source and bundle gates when the contract requires 7.
+  All 34 documentation, ownership, frontend and project-config checks pass
+  in 2.11 seconds. Evidence: build/t14-default-example-gates-20261015.log
+  and build/t14-default-example-source-checks-20261015.log.
+
+  The example and its rejection test are ready for an implementation commit
+  and independent review. These are packaged-runtime checks on macOS, not
+  offline installed or Linux acceptance.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14, including the example contract and baseline.
