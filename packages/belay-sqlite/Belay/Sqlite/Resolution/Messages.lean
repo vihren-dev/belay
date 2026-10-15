@@ -42,5 +42,9 @@ def PrepareError.message : PrepareError → String
   | .orderByOutOfRange term columns => s!"{ordinal term} ORDER BY term out of range - should be between 1 and {columns}"
   | .groupByOutOfRange term columns => s!"{ordinal term} GROUP BY term out of range - should be between 1 and {columns}"
   | .wrongArgumentCount function => s!"wrong number of arguments to function {function}()"
+  | .ambiguousColumn name => s!"ambiguous column name: {name}"
+  | .noSuchSource name => s!"no such table: {name}"
+  | .tooManyTables => "at most 64 tables in a join"
+  | .returningSourceStar => "RETURNING may not use \"TABLE.*\" wildcards"
 
 end Belay.Sqlite

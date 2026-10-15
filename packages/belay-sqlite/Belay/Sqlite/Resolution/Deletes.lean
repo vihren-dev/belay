@@ -19,12 +19,13 @@ def resolveDelete (context : ResolveContext) (catalog : Catalog) (index : Nat) (
     if reservedName tableName then restrict index [0] .systemTable
     else prepareError catalog (.noSuchTable tableName)
   | some (position, table) =>
+    let scope := Scope.single tableName table.columns
     let resolvedCondition : Except ValueIssue (Option Resolved.Expr) := match filter with
       | none => .ok none
-      | some term => some <$> condition [] (resolveOperand dqs table.columns true term)
+      | some term => some <$> condition [] (resolveOperand dqs scope true term)
     match resolvedCondition with
     | .error issue => issueResolution catalog index [1] issue
-    | .ok resolvedFilter => match resolveReturning dqs table.columns returning with
+    | .ok resolvedFilter => match resolveReturning dqs scope returning with
       | .error issue => issueResolution catalog index [3] issue
       | .ok columns => .ok (.delete position resolvedFilter columns, catalog)
 

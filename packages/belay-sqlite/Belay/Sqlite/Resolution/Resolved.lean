@@ -70,6 +70,18 @@ inductive PrepareError where
   /-- {lit}`wrong number of arguments to function %s()`, with the function name as
   written ({lit}`resolveExprStep`). -/
   | wrongArgumentCount (function : String)
+  /-- {lit}`ambiguous column name: %s`: an unqualified name that names a column of two or
+  more sources of a join, as written. -/
+  | ambiguousColumn (name : String)
+  /-- {lit}`no such table: %s` for {lit}`source.*` with a name that names no source of
+  the query, as written. Unlike {name}`PrepareError.noSuchTable`, it names no catalog
+  object. -/
+  | noSuchSource (name : String)
+  /-- {lit}`at most 64 tables in a join`. -/
+  | tooManyTables
+  /-- {lit}`RETURNING may not use "TABLE.*" wildcards`: a {lit}`source.*` column in
+  {lit}`RETURNING`, for every source name. -/
+  | returningSourceStar
   deriving Repr, DecidableEq
 
 /-- A model restriction: SQLite accepts the SQL, but the model does not describe

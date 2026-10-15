@@ -10,7 +10,7 @@ from .located import Json, Located
 from .profiles import ExecutionProfile
 from .sql_tree import Node, Tree
 from .syntax_definitions import add_column, create_index, create_table
-from .syntax_queries import select
+from .syntax_select import select
 from .syntax_writes import delete, insert, transaction, update
 
 SCRIPT_RECORD_VERSION = 2

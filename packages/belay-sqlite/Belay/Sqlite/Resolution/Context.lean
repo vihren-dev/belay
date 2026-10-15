@@ -39,7 +39,7 @@ defaults instead ({lit}`Syntax.ColumnConstraint.modeledDefault`). -/
 def constantDefault : Syntax.Expr → Bool
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. => true
   | .negate operand | .positive operand => constantDefault operand
-  | .equals .. => false
+  | .equals .. | .qualified .. => false
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. => true
   | .arithmetic .. | .cast .. | .callPair .. => true
 
@@ -67,7 +67,7 @@ def Syntax.ColumnConstraint.modeledDefault : Syntax.ColumnConstraint → Bool
   | .default (.identifier ..) | .default (.negate _) | .default (.positive _)
   | .default (.equals ..) | .default (.compare ..) | .default (.and ..) | .default (.or ..)
   | .default (.not _) | .default (.isNull ..) | .default (.callStar _) | .default (.call ..)
-  | .default (.arithmetic ..) | .default (.cast ..) | .default (.callPair ..) => false
+  | .default (.arithmetic ..) | .default (.cast ..) | .default (.callPair ..) | .default (.qualified ..) => false
   | .notNull | .primaryKey _ | .unique => true
 
 /-- A prepare error leaves the catalog unchanged. -/

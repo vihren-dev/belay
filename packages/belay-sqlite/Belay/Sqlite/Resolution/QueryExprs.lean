@@ -1,5 +1,5 @@
 import Belay.Sqlite.Resolution.Values
-import Belay.Sqlite.Resolution.Catalog
+import Belay.Sqlite.Resolution.Scope
 import Belay.Sqlite.Resolution.QueryAffinity
 import Belay.Sqlite.QueryEval
 
@@ -46,7 +46,8 @@ def aggregateCall : Syntax.Expr → Bool
   | .callStar name => normalizeIdentifier name == "count"
   | .call name _ => (aggregateNamed name).isSome
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .negate _ | .positive _
-  | .equals .. | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast .. | .callPair .. => false
+  | .equals .. | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast .. | .callPair ..
+  | .qualified .. => false
 
 /-- The restriction for a function call that the model does not evaluate. -/
 def unmodeledFunction : ValueIssue :=
@@ -66,18 +67,18 @@ def pairIssue (name : String) : ValueIssue :=
   if normalizeIdentifier name == "count" then .prepare (.wrongArgumentCount name) else unmodeledFunction
 
 /-- Whether an expression names a result column alias: an identifier that names no
-column of the table but, after ASCII folding, is one of {lit}`aliases`. SQLite
+column in scope but, after ASCII folding, is one of {lit}`aliases`. SQLite
 resolves such a name in {lit}`WHERE` and inside {lit}`ORDER BY` expressions to the
 aliased result expression, before the double-quoted string fallback. -/
-def namesAlias (columns : List CatalogColumn) (aliases : List String) : Syntax.Expr → Bool
-  | .identifier name _ => (columnPosition columns name).isNone &&
+def namesAlias (scope : Scope) (aliases : List String) : Syntax.Expr → Bool
+  | .identifier name _ => (scope.matches name).isEmpty &&
       aliases.any (normalizeIdentifier · == normalizeIdentifier name)
   | .equals left right | .compare _ left right | .and left right | .or left right =>
-    namesAlias columns aliases left || namesAlias columns aliases right
-  | .arithmetic _ left right | .callPair _ left right => namesAlias columns aliases left || namesAlias columns aliases right
+    namesAlias scope aliases left || namesAlias scope aliases right
+  | .arithmetic _ left right | .callPair _ left right => namesAlias scope aliases left || namesAlias scope aliases right
   | .not operand | .isNull operand _ | .call _ operand | .negate operand | .positive operand | .cast operand _ =>
-    namesAlias columns aliases operand
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ => false
+    namesAlias scope aliases operand
+  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ | .qualified .. => false
 
 /-- The restriction for a result column alias inside an expression. -/
 def aliasInExpression : ValueIssue :=
@@ -91,67 +92,78 @@ def condition (path : List Nat) : Except ValueIssue Operand → Except ValueIssu
     else .error (.restriction path .valueAsCondition)
   | .error issue => .error (issue.under path)
 
-/-- Resolve an expression over the columns of the source table. An identifier is the
-first column with its folded name; otherwise it is a string literal when it was
-written in double quotes and {lit}`dqs` is on, else SQLite's
-{lit}`no such column: %s`. The operands of {lit}`AND`, {lit}`OR` and {lit}`NOT` must be
+/-- Resolve an expression over the sources in scope. An unqualified identifier is the
+column with its folded name in exactly one source ({name}`Scope.matches`), and SQLite's
+{lit}`ambiguous column name: %s` in two or more. With none: a rowid name
+({name}`rowidName`) is a model restriction when a table is in scope, because SQLite reads
+the rowid; a name written in double quotes is a string literal when {lit}`dqs` is on;
+else it is SQLite's {lit}`no such column: %s`. A qualified name {lit}`x.c` is column
+{lit}`c` of the source named {lit}`x` ({name}`Scope.qualified`), else
+{lit}`no such column: x.c`. The operands of {lit}`AND`, {lit}`OR` and {lit}`NOT` must be
 conditions. An aggregate gives {name}`aggregateIssue`. A numeric literal has the value of
 {name}`queryNumeric`; unary minus of another expression is {lit}`0 - operand` and unary
 plus keeps the value without its affinity, as SQLite generates them; a {lit}`CAST` has
 the affinity of its type name. -/
-def resolveOperand (dqs : Bool) (columns : List CatalogColumn) (misuse : Bool) : Syntax.Expr → Except ValueIssue Operand
-  | .identifier name doubleQuoted => match columnPosition columns name with
-    | some position => .ok (.column position, (columns[position]?.map CatalogColumn.affinity))
-    | none =>
-      if doubleQuoted && dqs then .ok (.literal (.text name.toUTF8.toList), none)
+def resolveOperand (dqs : Bool) (scope : Scope) (misuse : Bool) : Syntax.Expr → Except ValueIssue Operand
+  | .identifier name doubleQuoted => match scope.matches name with
+    | [position] => .ok (.column position, (scope.columns[position]?.map CatalogColumn.affinity))
+    | [] =>
+      if rowidName name && !scope.isEmpty then .error (.restriction [] .rowidName)
+      else if doubleQuoted && dqs then .ok (.literal (.text name.toUTF8.toList), none)
       else .error (.prepare (.noSuchColumn name))
+    | _ :: _ :: _ => .error (.prepare (.ambiguousColumn name))
+  | .qualified source column => match scope.qualified source column with
+    | some position => .ok (.column position, (scope.columns[position]?.map CatalogColumn.affinity))
+    | none =>
+      if rowidName column && (scope.source? source).isSome then .error (.restriction [] .rowidName)
+      else .error (.prepare (.noSuchColumn s!"{source}.{column}"))
   | .equals left right => do
-    let a ← (resolveOperand dqs columns misuse left).mapError (·.under [0])
-    let b ← (resolveOperand dqs columns misuse right).mapError (·.under [1])
+    let a ← (resolveOperand dqs scope misuse left).mapError (·.under [0])
+    let b ← (resolveOperand dqs scope misuse right).mapError (·.under [1])
     match affinityIssue a b with
     | some (path, reason) => .error (.restriction path reason)
     | none => .ok (.compare .eq a.1 b.1, none)
   | .compare operator left right => do
-    let a ← (resolveOperand dqs columns misuse left).mapError (·.under [1])
-    let b ← (resolveOperand dqs columns misuse right).mapError (·.under [2])
+    let a ← (resolveOperand dqs scope misuse left).mapError (·.under [1])
+    let b ← (resolveOperand dqs scope misuse right).mapError (·.under [2])
     match affinityIssue a b with
     | some (path, reason) => .error (.restriction (path.map (· + 1)) reason)
     | none => .ok (.compare operator a.1 b.1, none)
   | .and left right => do
-    let a ← condition [0] (resolveOperand dqs columns misuse left)
-    let b ← condition [1] (resolveOperand dqs columns misuse right)
+    let a ← condition [0] (resolveOperand dqs scope misuse left)
+    let b ← condition [1] (resolveOperand dqs scope misuse right)
     .ok (.and a b, none)
   | .or left right => do
-    let a ← condition [0] (resolveOperand dqs columns misuse left)
-    let b ← condition [1] (resolveOperand dqs columns misuse right)
+    let a ← condition [0] (resolveOperand dqs scope misuse left)
+    let b ← condition [1] (resolveOperand dqs scope misuse right)
     .ok (.or a b, none)
   | .not operand => do
-    let a ← condition [0] (resolveOperand dqs columns misuse operand)
+    let a ← condition [0] (resolveOperand dqs scope misuse operand)
     .ok (.not a, none)
   | .isNull operand negated => do
-    let a ← (resolveOperand dqs columns misuse operand).mapError (·.under [0])
+    let a ← (resolveOperand dqs scope misuse operand).mapError (·.under [0])
     .ok (.isNull a.1 negated, none)
   | .arithmetic operator left right => do
-    let a ← (resolveOperand dqs columns misuse left).mapError (·.under [1])
-    let b ← (resolveOperand dqs columns misuse right).mapError (·.under [2])
+    let a ← (resolveOperand dqs scope misuse left).mapError (·.under [1])
+    let b ← (resolveOperand dqs scope misuse right).mapError (·.under [2])
     .ok (.arithmetic operator a.1 b.1, none)
   | .cast operand typeName => do
-    let a ← (resolveOperand dqs columns misuse operand).mapError (·.under [0])
+    let a ← (resolveOperand dqs scope misuse operand).mapError (·.under [0])
     let affinity := affinityOf (some typeName)
     .ok (.cast affinity a.1, some affinity)
   | .callPair name first rest =>
     if normalizeIdentifier name == "coalesce" then do
-      let a ← (resolveOperand dqs columns misuse first).mapError (·.under [1])
-      let b ← (resolveOperand dqs columns misuse rest).mapError (·.under [2])
+      let a ← (resolveOperand dqs scope misuse first).mapError (·.under [1])
+      let b ← (resolveOperand dqs scope misuse rest).mapError (·.under [2])
       .ok (.coalesce a.1 b.1, none)
     else .error (pairIssue name)
   | .numeric text => (queryNumeric text false).map fun value => (.literal value, none)
   | .negate (.numeric text) => (queryNumeric text true).map fun value => (.literal value, none)
   | .negate operand => do
-    let a ← (resolveOperand dqs columns misuse operand).mapError (·.under [0])
+    let a ← (resolveOperand dqs scope misuse operand).mapError (·.under [0])
     .ok (.arithmetic .subtract (.literal (.integer 0)) a.1, none)
   | .positive operand => do
-    let a ← (resolveOperand dqs columns misuse operand).mapError (·.under [0])
+    let a ← (resolveOperand dqs scope misuse operand).mapError (·.under [0])
     .ok (a.1, none)
   | call@(.callStar name) | call@(.call name _) =>
     .error (if aggregateCall call then aggregateIssue misuse name else callIssue name)
@@ -160,22 +172,24 @@ def resolveOperand (dqs : Bool) (columns : List CatalogColumn) (misuse : Bool) :
   | .blob bytes => .ok (.literal (.blob bytes), none)
   | .currentTime _ => .error (.restriction [] .timeValue)
 
-/-- Whether an expression names a column of the table: an identifier with the folded
-name of a column, anywhere in the expression. A write value that names a column
+/-- Whether an expression names a column in scope: an identifier with the folded name of
+a column, or a qualified name of one, anywhere in the expression. A write value that names a column
 depends on the row. -/
-def mentionsColumn (columns : List CatalogColumn) : Syntax.Expr → Bool
-  | .identifier name _ => (columnPosition columns name).isSome
+def mentionsColumn (scope : Scope) : Syntax.Expr → Bool
+  | .identifier name _ => !(scope.matches name).isEmpty
+  | .qualified source column => (scope.qualified source column).isSome
   | .equals left right | .compare _ left right | .and left right | .or left right
-  | .arithmetic _ left right | .callPair _ left right => mentionsColumn columns left || mentionsColumn columns right
+  | .arithmetic _ left right | .callPair _ left right => mentionsColumn scope left || mentionsColumn scope right
   | .not operand | .isNull operand _ | .call _ operand | .negate operand | .positive operand | .cast operand _ =>
-    mentionsColumn columns operand
+    mentionsColumn scope operand
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ => false
 
 /-- The value of a constant expression in a write (ADR 0012, slice 3a): the expression
 resolved as a query expression with no column in scope and an aggregate as SQLite's
 {lit}`misuse of aggregate function`, then evaluated. So {lit}`1 + 2` is 3 and
-{lit}`CAST('7' AS INTEGER)` is 7; an identifier is a double-quoted string or
-{lit}`no such column`, as in a {lit}`VALUES` row. -/
+{lit}`CAST('7' AS INTEGER)` is 7; an identifier, a rowid name included, is a
+double-quoted string or {lit}`no such column`, as in a {lit}`VALUES` row, where no table
+is in scope. -/
 def constantValue (dqs : Bool) (expression : Syntax.Expr) : Except ValueIssue Value :=
   (resolveOperand dqs [] true expression).map fun operand => operand.1.eval []
 

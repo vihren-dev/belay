@@ -450,7 +450,7 @@ filter of 3b, its change count and its `RETURNING` rows. Items 4 to 6 do not cha
 
 ## Amendment 2: Joins (slice 4)
 
-Date: 2026-10-14. Status: PROPOSED.
+Date: 2026-10-14. Status: ACCEPTED (2026-10-14, #119).
 Related: "Slices", item 4; "Queries"; the slice 1 task,
 plans/20261013-single-table-queries.task.md.
 

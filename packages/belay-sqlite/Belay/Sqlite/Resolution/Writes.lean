@@ -35,7 +35,7 @@ def defaultValue (column : CatalogColumn) : Except ValueIssue Value :=
   | some .null | some (.numeric _) | some (.string _) | some (.blob _) | some (.identifier ..)
   | some (.negate _) | some (.positive _) | some (.equals ..) | some (.compare ..) | some (.and ..)
   | some (.or ..) | some (.not _) | some (.isNull ..) | some (.callStar _) | some (.call ..)
-  | some (.arithmetic ..) | some (.cast ..) | some (.callPair ..) => .error (.restriction [] .unmodeledDefault)
+  | some (.arithmetic ..) | some (.cast ..) | some (.callPair ..) | some (.qualified ..) => .error (.restriction [] .unmodeledDefault)
 
 /-- Turn a value issue into the statement's resolution: a prepare error keeps the
 catalog, a restriction refuses the script. -/
@@ -94,7 +94,7 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
             match keyDomainRestriction table.columns keys (fun row => [2, row])
                 (full.map (·.mapIdx fun position value => (position, value))) with
             | some (path, reason) => restrict index path reason
-            | none => match resolveReturning context.profile.dqsDml table.columns returning with
+            | none => match resolveReturning context.profile.dqsDml (Scope.single tableName table.columns) returning with
               | .error issue => issueResolution catalog index [3] issue
               | .ok columns => .ok (.insert position full keys columns, catalog)
 

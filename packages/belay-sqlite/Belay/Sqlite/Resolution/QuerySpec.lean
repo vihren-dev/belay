@@ -23,15 +23,19 @@ theorem namedResult_integer (names : List (Option String)) (term : Syntax.Expr) 
   | identifier name doubleQuoted => exact absurd rfl (notIdentifier name doubleQuoted)
   | _ => simp only [namedResult, literal, Option.map_some]; split <;> rfl
 
-/-- For every context, catalog, statement index and {lit}`SELECT`: when the catalog
-has no table with the folded name and the name is not reserved for SQLite's own
-tables, resolution gives SQLite's {lit}`no such table: %s` and keeps the catalog. -/
+/-- For every context, catalog, statement index and {lit}`SELECT` with at most
+{name}`maximumJoinTables` tables: when the catalog has no table with the folded name of
+the first table and that name is not reserved for SQLite's own tables, resolution gives
+SQLite's {lit}`no such table: %s` and keeps the catalog. -/
 theorem resolveSelect_noSuchTable (context : ResolveContext) (catalog : Catalog) (index : Nat)
-    (results : List Syntax.ResultColumn) (tableName : String) (filter : Option Syntax.Expr)
-    (groupBy : List Syntax.Expr) (orderBy : List Syntax.OrderTerm) (limit offset : Option Syntax.Expr)
-    (missing : catalog.findTable tableName = none) (application : reservedName tableName = false) :
-    resolveSelect context catalog index results tableName filter groupBy orderBy limit offset =
-      .ok (.prepareError (.noSuchTable tableName), catalog) := by
-  simp [resolveSelect, missing, application, prepareError]
+    (results : List Syntax.ResultColumn) (source : Syntax.TableReference) (joins : List Syntax.Join)
+    (filter : Option Syntax.Expr) (groupBy : List Syntax.Expr) (orderBy : List Syntax.OrderTerm)
+    (limit offset : Option Syntax.Expr) (tables : joins.length + 1 ≤ maximumJoinTables)
+    (missing : catalog.findTable source.table = none) (application : reservedName source.table = false) :
+    resolveSelect context catalog index results source joins filter groupBy orderBy limit offset =
+      .ok (.prepareError (.noSuchTable source.table), catalog) := by
+  have notMore : ¬ joins.length + 1 > maximumJoinTables := by omega
+  simp [resolveSelect, resolveTables, resolveTableReference, missing, application, notMore, issueResolution,
+    prepareError, bind, Except.bind]
 
 end Belay.Sqlite

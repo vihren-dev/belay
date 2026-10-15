@@ -25,7 +25,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "    if successful then some ⟨names, returnedRows returning rows, some rows.length⟩\n"
         "    else if constraintFailure then some ⟨names, returnedRows returning rows, some 0⟩ else none"),
     "returning_names_ignore_definition": (RETURNING,
-        "      .ok [(resolved, alias.getD (defined.getD text))]", "      .ok [(resolved, alias.getD text)]"),
+        "      .ok [(resolved, alias.getD ((definedName scope value).getD text))]", "      .ok [(resolved, alias.getD text)]"),
     "constant_not_evaluated": (EXPRESSIONS,
         "  (resolveOperand dqs [] true expression).map fun operand => operand.1.eval []",
         "  (resolveOperand dqs [] true expression).map fun operand => match operand.1 with\n"

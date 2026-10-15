@@ -11,39 +11,42 @@ SQLite's {lit}`misuse of aggregate function`. -/
 
 namespace Belay.Sqlite
 
-/-- Whether an expression names a rowid ({name}`rowidName`) that is not a column of
-the table. SQLite reads the rowid there, which a {lit}`RETURNING` column of the model
-does not. -/
-def mentionsRowid (columns : List CatalogColumn) : Syntax.Expr → Bool
-  | .identifier name _ => rowidName name && (columnPosition columns name).isNone
-  | .equals left right | .compare _ left right | .and left right | .or left right
-  | .arithmetic _ left right | .callPair _ left right => mentionsRowid columns left || mentionsRowid columns right
-  | .not operand | .isNull operand _ | .call _ operand | .negate operand | .positive operand | .cast operand _ =>
-    mentionsRowid columns operand
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ => false
+/-- The defined name of the column that a bare result expression names, as SQLite names
+a result column without an alias: the column's name as declared, for an unqualified name
+of one column or a qualified name; none for any other expression. -/
+def definedName (scope : Scope) : Syntax.Expr → Option String
+  | .identifier name _ => match scope.matches name with
+    | [position] => scope.columns[position]?.map CatalogColumn.name
+    | [] | _ :: _ :: _ => none
+  | .qualified source column => (scope.qualified source column).bind (scope.columns[·]?.map CatalogColumn.name)
+  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .positive _ | .equals ..
+  | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
+  | .cast .. | .callPair .. => none
 
 /-- One {lit}`RETURNING` column at position {lit}`item`: the expressions and names it
-gives. The paths of its issues start at the column's position. -/
-def returningColumn (dqs : Bool) (columns : List CatalogColumn) (item : Nat) :
+gives. The paths of its issues start at the column's position. A {lit}`source.*`
+column is SQLite's {name}`PrepareError.returningSourceStar`. -/
+def returningColumn (dqs : Bool) (scope : Scope) (item : Nat) :
     Syntax.ResultColumn → Except ValueIssue (List (Resolved.Expr × String))
-  | .star => .ok (columns.mapIdx fun position column => (.column position, column.name))
-  | .expression value alias text =>
-    if mentionsRowid columns value then
-      .error (.restriction [item, 0] .rowidInReturning)
-    else do
-      let (resolved, _) ← (resolveOperand dqs columns true value).mapError (·.under [item, 0])
-      let defined := match value with
-        | .identifier name _ => (columnPosition columns name).bind (columns[·]?.map CatalogColumn.name)
-        | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .positive _ | .equals ..
-        | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
-        | .cast .. | .callPair .. => none
-      .ok [(resolved, alias.getD (defined.getD text))]
+  | .star => .ok (scope.columns.mapIdx fun position column => (.column position, column.name))
+  | .sourceStar _ => .error (.prepare .returningSourceStar)
+  | .expression value alias text => do
+      let (resolved, _) ← (resolveOperand dqs scope true value).mapError (·.under [item, 0])
+      .ok [(resolved, alias.getD ((definedName scope value).getD text))]
 
-/-- The {lit}`RETURNING` columns of a write over the table's columns, in order, or the
-first issue. No {lit}`RETURNING` is the empty list. -/
-def resolveReturning (dqs : Bool) (columns : List CatalogColumn) (items : List Syntax.ResultColumn) :
+/-- Whether a result column is {lit}`source.*`. -/
+def Syntax.ResultColumn.isSourceStar : Syntax.ResultColumn → Bool
+  | .sourceStar _ => true
+  | .star | .expression .. => false
+
+/-- The {lit}`RETURNING` columns of a write over the table's scope, in order, or the
+first issue. No {lit}`RETURNING` is the empty list. SQLite expands the wildcards before
+it resolves names, so a {lit}`source.*` column anywhere is
+{name}`PrepareError.returningSourceStar` before the issue of any other column. -/
+def resolveReturning (dqs : Bool) (scope : Scope) (items : List Syntax.ResultColumn) :
     Except ValueIssue (List (Resolved.Expr × String)) :=
-  (items.mapIdx fun item column => returningColumn dqs columns item column).foldr
+  if items.any Syntax.ResultColumn.isSourceStar then .error (.prepare .returningSourceStar) else
+  (items.mapIdx fun item column => returningColumn dqs scope item column).foldr
     (fun next rest => do let first ← next; let others ← rest; .ok (first ++ others)) (.ok [])
 
 end Belay.Sqlite

@@ -120,10 +120,10 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveDelete_same _ _ _ _ _ _ _ _ (by assumption) ▸ .same)
-  | select results table filter groupBy orderBy limit offset =>
+  | select results source joins filter groupBy orderBy limit offset =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    exact keep _ (resolveSelect_same _ _ _ _ _ _ _ _ _ _ _ _ (by assumption) ▸ .same)
+    exact keep _ (resolveSelect_same _ _ _ _ _ _ _ _ _ _ _ _ _ (by assumption) ▸ .same)
   | returning write columns =>
     cases write
     all_goals simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
