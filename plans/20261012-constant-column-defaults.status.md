@@ -754,3 +754,20 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of the completed T14 representation and codec changes.
+
+
+- 2026-10-15: Fetched main 32da9f9a and synchronized the shared main
+  checkout. DELETE, INNER and LEFT joins, and USING and NATURAL joins are
+  delivered. RIGHT and FULL joins remain in open PR 125. These changes do not
+  deliver ADD COLUMN defaults: main still extends rows with NULL.
+
+  This task retains reviewed checkpoint 48d71277 and its pending review record.
+  It has not integrated the changes after c10fe001. The next integration must
+  preserve the new write syntax, query scope, codecs and approved corpora.
+  Existing test results remain evidence for their recorded revisions only.
+  No feature code, judge lock or frozen evidence changed during this sync.
+
+Decisions waiting for the owner:
+
+- Final review after ADD COLUMN execution, preservation and installed
+  acceptance are complete. No new design decision is required now.
