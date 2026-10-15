@@ -1190,3 +1190,13 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of completed T14 after integration and installed acceptance.
+
+
+- 2026-10-15: Diagnostic correction 8e646f05 passed independent review
+  with no findings. Implementation 6bf1bc22 and its correction are accepted
+  locally. The remaining work is main integration, the public default example,
+  installed acceptance on both platforms and final owner review.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14 after the remaining acceptance work.
