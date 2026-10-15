@@ -1483,3 +1483,46 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final T14 review after acceptance and a reviewable pull request.
+
+
+- 2026-10-15: Linux full model acceptance passes all 185 tests in
+  637.47 seconds. The model and regression logs are retained in
+  build/t14-linux-validation and match their remote SHA-256 hashes.
+  Integrated main 3875420d into the working change without conflicts.
+  Judge and integrity files match main exactly. This integration has not
+  passed its verdict or independent review yet.
+
+  Authorized garbage collection deleted four unreachable store paths and
+  freed 188.75 MiB. The log is build/t14-claim-integration-gc-20261015.log.
+  About 4.7 GiB remains free, below the 10 GiB build threshold. Further
+  expensive checks wait for targeted cleanup approval.
+
+Decisions waiting for the owner:
+
+- Targeted cleanup to restore build space.
+- Final T14 review after integrated acceptance and a reviewable pull request.
+
+
+- 2026-10-15: The owner approved the targeted cleanup. Removed the two
+  completed test directories /private/tmp/nix-shell.X0sqxy and
+  /private/tmp/nix-shell.1zPUTu. Deletions are recorded in
+  build/t14-approved-test-cleanup-20261015.jsonl. Nix garbage collection
+  removed 54 unreachable store paths and freed 4,554.41 MiB; its log is
+  build/t14-approved-test-gc-20261015.log. About 11 GiB is now free and
+  the resource check passes. Test logs and runtime archives are retained.
+
+Decisions waiting for the owner:
+
+- Final T14 review after integrated acceptance and a reviewable pull request.
+
+
+- 2026-10-15: The integrated corpus 16 verdict passes on macOS. All
+  26 new cases agree; no corpus reports DISAGREE or HARNESS_ERROR.
+  The result is build/t14-corpus16-verdict/counts.json and the build log is
+  build/t14-corpus16-verdict-20261015.log. The judge and integrity files
+  remain identical to main 3875420d. Production code is unchanged from
+  the revision accepted by the Linux and installed checks above.
+
+Decisions waiting for the owner:
+
+- Final T14 review after the integration review and hosted CI.

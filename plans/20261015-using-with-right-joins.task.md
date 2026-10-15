@@ -1,6 +1,6 @@
 # USING and NATURAL with RIGHT and FULL joins, slice 4d of ADR 0012
 
-Created 2026-10-15. Status: IN PROGRESS.
+Created 2026-10-15. Status: DONE (pull requests #127 and B).
 Specification: [ADR 0012](../docs/adr-0012-query-semantics.md), "Amendment 3: RIGHT and
 FULL joins (slices 4c and 4d)", "Names with USING and NATURAL (slice 4d)" (#124).
 Related: slice 4b ([task](20261015-using-natural.task.md)) and slice 4c
