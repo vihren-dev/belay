@@ -28,6 +28,9 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Scope.lean`,
   `mixed-affinity-comparison`, as for a written `ON`, so no native case can agree.
 - 2026-10-15: review of the model commit (1 must, 1 should, fixed): a proof sketch for
   `usingNames_checked`; explicit statement cases in `UsingExamples.queryOver`.
+- 2026-10-15: 22 authored cases (`conformance/authored_using.py`, all AGREE), six
+  mutants (`conformance/using_mutants.py`, in the write and join measurement), and the
+  corpus 14 writer.
 
 ## Remaining
 

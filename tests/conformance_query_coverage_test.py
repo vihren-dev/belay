@@ -1,8 +1,9 @@
-"""The authored coverage cases of queries, numbers and writes (ADR 0012, slices 1 to 4).
+"""The authored coverage cases of queries, numbers and writes (ADR 0012, slices 1 to 4b).
 
 The cases of `conformance.authored_queries`, `conformance.authored_numbers`,
 `conformance.authored_writes`, `conformance.authored_row_writes`,
-`conformance.authored_deletes` and `conformance.authored_joins` are
+`conformance.authored_deletes`, `conformance.authored_joins` and
+`conformance.authored_using` are
 recorded natively as version 5 records with statement outputs, name requirement
 identifiers of the pinned documentation, and replay through resolution, the
 execution semantics and query evaluation. Every case agrees with the model, and the
@@ -20,8 +21,9 @@ from types import ModuleType
 import pytest
 
 from conformance import (authored_deletes, authored_joins, authored_numbers, authored_obligations, authored_queries,
-                         authored_row_writes, authored_writes, delete_evidence, join_evidence, number_evidence,
-                         obligation_evidence, query_evidence, row_write_evidence, write_evidence)
+                         authored_row_writes, authored_using, authored_writes, delete_evidence, join_evidence,
+                         number_evidence, obligation_evidence, query_evidence, row_write_evidence, using_evidence,
+                         write_evidence)
 from conformance.model_check import compiled_many, prove
 from conformance.native_replay import prepare
 from conformance.record_parser import runtime_library
@@ -30,7 +32,7 @@ from conformance.requirement_coverage import resolved_ids
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kernel, pytest.mark.requires_lean,
               pytest.mark.requires_native("parser-library", "sqlite3")]
 ROOT = Path(__file__).resolve().parents[1]
-CASE_SETS = [authored_queries, authored_numbers, authored_writes, authored_row_writes, authored_deletes, authored_joins]
+CASE_SETS = [authored_queries, authored_numbers, authored_writes, authored_row_writes, authored_deletes, authored_joins, authored_using]
 """The authored case modules: each has `definitions` and `records`."""
 
 
@@ -63,8 +65,9 @@ def test_coverage_cases_agree_with_kernel_proofs(cases: ModuleType, runtime_root
                                                             (obligation_evidence, authored_obligations, 10),
                                                             (row_write_evidence, authored_row_writes, 11),
                                                             (delete_evidence, authored_deletes, 12),
-                                                            (join_evidence, authored_joins, 13)],
-                         ids=["queries", "numbers", "writes", "obligations", "row-writes", "deletes", "joins"])
+                                                            (join_evidence, authored_joins, 13),
+                                                            (using_evidence, authored_using, 14)],
+                         ids=["queries", "numbers", "writes", "obligations", "row-writes", "deletes", "joins", "using"])
 def test_coverage_corpus_round_trips(evidence: ModuleType, cases: ModuleType, version: int, tmp_path: Path) -> None:
     """The corpus writer writes a corpus of version 5 records that reads back unchanged and
     replays natively, and refuses to replace an existing directory."""
