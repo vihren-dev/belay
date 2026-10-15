@@ -46,5 +46,7 @@ def PrepareError.message : PrepareError → String
   | .noSuchSource name => s!"no such table: {name}"
   | .tooManyTables => "at most 64 tables in a join"
   | .returningSourceStar => "RETURNING may not use \"TABLE.*\" wildcards"
+  | .joinUsingColumn name => s!"cannot join using column {name} - column not present in both tables"
+  | .naturalJoinCondition => "a NATURAL join may not have an ON or USING clause"
 
 end Belay.Sqlite

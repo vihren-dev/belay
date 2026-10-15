@@ -45,12 +45,6 @@ inductive RestrictionKind where
   extended to queries and write expressions on 2026-10-14, where SQLite reads the
   rowid and the model would report {lit}`no such column`. -/
   | rowidName
-  /-- A join with {lit}`USING` is not modeled until slice 4b (ADR 0012, amendment 2,
-  owner decision on question 1). -/
-  | joinUsing
-  /-- A {lit}`NATURAL` join is not modeled until slice 4b (ADR 0012, amendment 2, owner
-  decision on question 1). -/
-  | naturalJoin
   /-- {lit}`RIGHT` and {lit}`FULL` joins are not modeled until slice 4c (ADR 0012,
   amendment 2, owner decision on question 2). -/
   | rightOrFullJoin

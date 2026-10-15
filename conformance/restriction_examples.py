@@ -35,8 +35,6 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "insert-column-twice": ("CREATE TABLE t(a INTEGER);", "INSERT INTO t(a, a) VALUES (1, 2);"),
     "update-column-twice": ("CREATE TABLE t(a INTEGER);", "UPDATE t SET a = 1, a = 2;"),
     "rowid-name": ("CREATE TABLE t(a INTEGER);", "SELECT rowid FROM t;"),
-    "join-using": ("CREATE TABLE t(a INTEGER); CREATE TABLE u(a INTEGER);", "SELECT * FROM t JOIN u USING (a);"),
-    "natural-join": ("CREATE TABLE t(a INTEGER); CREATE TABLE u(a INTEGER);", "SELECT * FROM t NATURAL JOIN u;"),
     "right-or-full-join": ("CREATE TABLE t(a INTEGER); CREATE TABLE u(a INTEGER);",
                            "SELECT * FROM t RIGHT JOIN u ON t.a = u.a;"),
     "join-operator": ("CREATE TABLE t(a INTEGER); CREATE TABLE u(a INTEGER);",

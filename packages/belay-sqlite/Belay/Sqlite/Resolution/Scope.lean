@@ -10,12 +10,17 @@ that row. -/
 namespace Belay.Sqlite
 
 /-- One named source: the name that qualifies its columns (the alias, or else the table
-name, as written) and its columns. -/
+name, as written), its columns, and the columns that a {lit}`USING` or {lit}`NATURAL`
+join merged into a left column. -/
 structure Source where
   /-- The name of the source. -/
   name : String
   /-- The columns of the source's table. -/
   columns : List CatalogColumn
+  /-- The positions in {name}`Source.columns` of the merged columns: {lit}`*` and
+  unqualified names do not see them, and qualified names and {lit}`x.*` do. Empty for a
+  source without {lit}`USING` or {lit}`NATURAL`, and for the table of a write. -/
+  merged : List Nat := []
   deriving Repr, DecidableEq
 
 /-- The sources in scope, in {lit}`FROM` order; empty where no table is in scope, as in
@@ -28,13 +33,22 @@ def Scope.single (name : String) (columns : List CatalogColumn) : Scope := [{ na
 /-- The columns of all sources, in the order of the concatenated row. -/
 def Scope.columns (scope : Scope) : List CatalogColumn := scope.flatMap (·.columns)
 
+/-- The columns that {lit}`*` reads, with their positions in the concatenated row: every
+column of every source that is not merged ({name}`Source.merged`). -/
+def Scope.visible (scope : Scope) : List (Nat × CatalogColumn) :=
+  (scope.foldl (fun (offset, found) source =>
+    (offset + source.columns.length, found ++ ((source.columns.mapIdx fun index column => (index, column)).filter
+      (!source.merged.contains ·.1)).map fun (index, column) => (offset + index, column)))
+    (0, [])).2
+
 /-- The positions in the concatenated row of the columns that an unqualified name
-names: the first column with the folded name in each source that has one. One position
-is a name; none is a missing name; two or more are SQLite's
-{lit}`ambiguous column name`. -/
+names: the first column with the folded name in each source that has one, unless that
+column is merged ({name}`Source.merged`). One position is a name; none is a missing
+name; two or more are SQLite's {lit}`ambiguous column name`. -/
 def Scope.matches (scope : Scope) (name : String) : List Nat :=
   (scope.foldl (fun (offset, found) source =>
-    (offset + source.columns.length, found ++ ((columnPosition source.columns name).map (offset + ·)).toList))
+    (offset + source.columns.length, found ++ (((columnPosition source.columns name).filter
+      (!source.merged.contains ·)).map (offset + ·)).toList))
     (0, [])).2
 
 /-- The offset in the concatenated row and the columns of the first source whose folded

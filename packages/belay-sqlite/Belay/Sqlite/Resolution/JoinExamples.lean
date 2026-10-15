@@ -65,10 +65,9 @@ def joinU : Resolved.Join := { kind := .inner, table := 1, condition := some (.c
 -- 65 tables are SQLite's limit error.
 #guard resolvedOne [.star] (table "t") ((List.range 64).map fun item =>
   joined [] { table := "t", alias := some s!"t{item}" }) == some (.prepareError .tooManyTables)
--- USING, NATURAL, RIGHT joins, another operator and two sources with the same name are restrictions.
-#guard restrictedOne [.star] (table "t") [{ joined [] (table "u") with usingColumns := some ["a"] }]
-#guard restrictedOne [.star] (table "t") [joined ["Natural"] (table "u")]
+-- RIGHT joins, also with USING, another operator and two sources with the same name are restrictions.
 #guard restrictedOne [.star] (table "t") [joined ["right", "OUTER"] (table "u") (some onA)]
+#guard restrictedOne [.star] (table "t") [{ joined ["RIGHT"] (table "u") with usingColumns := some ["a"] }]
 #guard restrictedOne [.star] (table "t") [joined ["OUTER", "LEFT"] (table "u") (some onA)]
 #guard restrictedOne [.star] (table "t") [joined ["INNER"] (table "t")]
 -- Lean reads the operator keywords without ASCII case.

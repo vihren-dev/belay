@@ -28,7 +28,7 @@ gives. The paths of its issues start at the column's position. A {lit}`source.*`
 column is SQLite's {name}`PrepareError.returningSourceStar`. -/
 def returningColumn (dqs : Bool) (scope : Scope) (item : Nat) :
     Syntax.ResultColumn → Except ValueIssue (List (Resolved.Expr × String))
-  | .star => .ok (scope.columns.mapIdx fun position column => (.column position, column.name))
+  | .star => .ok (scope.visible.map fun (position, column) => (.column position, column.name))
   | .sourceStar _ => .error (.prepare .returningSourceStar)
   | .expression value alias text => do
       let (resolved, _) ← (resolveOperand dqs scope true value).mapError (·.under [item, 0])
