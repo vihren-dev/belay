@@ -1264,3 +1264,13 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of completed T14 after the public example and installed acceptance.
+
+
+- 2026-10-15: Integration commit d83096eb passed independent review
+  20261015T145625Z-d83096eb with no findings. The reviewer confirmed the
+  72-module closure and conflict resolution. The integrated implementation
+  is ready for the public NOT NULL DEFAULT example and installed acceptance.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14 after the remaining acceptance work.
