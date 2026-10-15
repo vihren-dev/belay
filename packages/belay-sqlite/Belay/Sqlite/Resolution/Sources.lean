@@ -79,7 +79,7 @@ another join operator. -/
 def joinFormIssue (item : Nat) (join : Syntax.Join) : Option ValueIssue :=
   match joinOperator join.operator with
   | none => some (.restriction [2, item, 0] .joinOperator)
-  | some _ => none
+  | some (.inner, _) | some (.left, _) | some (.right, _) | some (.full, _) => none
 
 /-- Whether the join is a {lit}`RIGHT` or {lit}`FULL` join. -/
 def Syntax.Join.rightOrFull (join : Syntax.Join) : Bool :=

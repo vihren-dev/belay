@@ -24,6 +24,8 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/QueryEval.lean`,
   leaves the registry; `using-with-right-join` refuses `USING` and `NATURAL` in a `FROM`
   with a right or full join until slice 4d. The left-join mutants of slice 4 follow the
   moved code. Lean examples in `Resolution/RightJoinExamples.lean`.
+- 2026-10-15: review of the model commit (1 must, fixed): explicit join kinds in
+  `joinFormIssue`.
 
 ## Remaining
 
