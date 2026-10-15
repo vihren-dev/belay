@@ -1333,3 +1333,15 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final T14 review after actual offline installed acceptance on both platforms.
+
+
+- 2026-10-15: Correction 093ce798 passed independent review
+  20261015T150859Z-093ce798 with no findings. The public default example
+  and its gate checks are reviewed. Packaging the macOS runtime as an
+  offline archive is active in build/t14-default-offline-archive-20261015.log,
+  using the ordinary content-addressing and closure-verification path with
+  a 1,200-second outer limit. Installed acceptance is not yet established.
+
+Decisions waiting for the owner:
+
+- Final T14 review after installed acceptance on both platforms.
