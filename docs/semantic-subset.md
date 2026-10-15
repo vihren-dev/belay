@@ -30,7 +30,9 @@ The frontend maps these statements, and refuses every other statement as
   [LIMIT n [OFFSET m]]`, whose result columns are `*`, `source.*` or expressions
   with an optional alias (ADR 0012, slice 1). `FROM` is one table, or tables joined
   left to right with `,`, `JOIN`, `INNER JOIN`, `CROSS JOIN` (with an optional `ON`)
-  and `LEFT [OUTER] JOIN … ON`; each table may have an alias (`t AS x` or `t x`), and
+  and `LEFT [OUTER] JOIN … ON`, and `RIGHT [OUTER] JOIN` and `FULL [OUTER] JOIN`
+  with an optional `ON` (slice 4c), which add each right row that no row of the left
+  tables matches, with NULL in their columns; each table may have an alias (`t AS x` or `t x`), and
   a column may be qualified as `source.column` (slice 4). An unqualified name that
   names a column of two sources is SQLite's `ambiguous column name`. An inner or left
   join may have `USING (columns)` instead of `ON`, or start with `NATURAL`
@@ -38,7 +40,8 @@ The frontend maps these statements, and refuses every other statement as
   table that the left tables also have, with the left-most such left column, and `*`
   and unqualified names no longer see the right column of each pair. A `USING` name
   that is not in both inputs and `NATURAL` with `ON` or `USING` are SQLite's prepare
-  errors.
+  errors. In a query with a right or full join, `USING` and `NATURAL` are a model
+  restriction until slice 4d.
 
 Expressions are `NULL`, numeric, string and blob literals, the time keywords,
 names, unary `-` and `+`, and `=`. Inside a `SELECT`, they may also be the other
@@ -100,7 +103,8 @@ column, literal, `COALESCE`, or `CAST` to TEXT or BLOB used as a condition; an a
 outside `GROUP BY` in an aggregate query; `ORDER BY` terms of an aggregate query
 other than result column numbers and aliases; a result column alias in `WHERE`
 or inside an `ORDER BY` expression; a query of SQLite's own tables, such as
-`sqlite_schema`; `RIGHT` or `FULL` joins (until slice 4c); other join operators, such as `OUTER LEFT JOIN`; two sources with
+`sqlite_schema`; `USING` or `NATURAL` in a query with a `RIGHT` or `FULL` join (until
+slice 4d); other join operators, such as `OUTER LEFT JOIN`; two sources with
 the same name; an `ON` condition that names a
 table joined after it; `SUM` in a query with `GROUP BY` and `LIMIT` or `OFFSET`; and
 `LIMIT` or `OFFSET` other than
@@ -138,7 +142,7 @@ of frontend refusal, the cases of the claimed corpora that it keeps out of scope
 | `insert-column-twice` | A column named twice in INSERT is not modeled | ADR 0008 |
 | `update-column-twice` | A column assigned twice in UPDATE is not modeled | ADR 0008 |
 | `rowid-name` | A rowid name that is not a column is not modeled in an expression over a table; in VALUES it resolves as any other name | ADR 0012 slice 3a; extended 2026-10-14 |
-| `right-or-full-join` | RIGHT and FULL joins are not modeled until slice 4c | ADR 0012 amendment 2 (question 2) |
+| `using-with-right-join` | USING and NATURAL in a query with a RIGHT or FULL join are not modeled until slice 4d | ADR 0012 amendment 3 (decision 2) |
 | `join-operator` | A join operator with other keywords, or in another order, such as `OUTER LEFT JOIN`, is not modeled | ADR 0012 amendment 2 |
 | `duplicate-source` | Two sources of a query with the same name are not modeled | ADR 0012 amendment 2 (question 3) |
 | `later-table-in-on` | An ON condition that names a table joined after it is not modeled | ADR 0012 amendment 2 |

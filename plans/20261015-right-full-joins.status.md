@@ -16,7 +16,15 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/QueryEval.lean`,
   checked for the rows of right and full joins with and without `ON`, after inner and
   left joins, before a left join, two full joins, empty left and right tables,
   aggregates over padded rows, and `ON clause references tables to its right`.
+- 2026-10-15: the model: `Resolved.JoinKind` has `right` and `full`; the join evaluation
+  moved to `QueryJoins.lean`, where `joinRows` takes the width of the left input and adds
+  the rows of `unmatchedRight` for right and full joins, and `Query.source` folds the
+  widths of the tables. Laws: the width of every joined row, a left or full join keeps
+  every left row, and a right or full join keeps every right row. `right-or-full-join`
+  leaves the registry; `using-with-right-join` refuses `USING` and `NATURAL` in a `FROM`
+  with a right or full join until slice 4d. The left-join mutants of slice 4 follow the
+  moved code. Lean examples in `Resolution/RightJoinExamples.lean`.
 
 ## Remaining
 
-- Everything in the task's "Outcome".
+- Full checks, CI time, PR A; then PR B (claim corpus 15, `mustAgree`).

@@ -75,12 +75,31 @@ def joinOperator (words : List String) : Option (JoinOperatorKind × Bool) :=
   kind.map (·, natural)
 
 /-- The model restriction of a join form that the model does not describe, if it is one:
-another join operator, or a {lit}`RIGHT` or {lit}`FULL` join. -/
+another join operator. -/
 def joinFormIssue (item : Nat) (join : Syntax.Join) : Option ValueIssue :=
   match joinOperator join.operator with
   | none => some (.restriction [2, item, 0] .joinOperator)
-  | some (.right, _) | some (.full, _) => some (.restriction [2, item, 0] .rightOrFullJoin)
-  | some (.inner, _) | some (.left, _) => none
+  | some _ => none
+
+/-- Whether the join is a {lit}`RIGHT` or {lit}`FULL` join. -/
+def Syntax.Join.rightOrFull (join : Syntax.Join) : Bool :=
+  match joinOperator join.operator with
+  | some (.right, _) | some (.full, _) => true
+  | some (.inner, _) | some (.left, _) | none => false
+
+/-- Whether the join has {lit}`USING` or {lit}`NATURAL`. -/
+def Syntax.Join.merges (join : Syntax.Join) : Bool :=
+  join.usingColumns.isSome || (joinOperator join.operator).any (·.2)
+
+/-- The model restriction of {lit}`USING` and {lit}`NATURAL` in a {lit}`FROM` with a
+{lit}`RIGHT` or {lit}`FULL` join, if there is one: at the first join that merges. SQLite
+then compares the coalesce of the left columns, also for a join before the right join
+(ADR 0012, amendment 3), which the model describes in slice 4d. -/
+def mergeWithRightIssue (joins : List Syntax.Join) : Option ValueIssue :=
+  if joins.any Syntax.Join.rightOrFull then
+    (findPosition (fun (_, join) => join.merges) (joins.mapIdx fun item join => (item, join))).map fun (item, _) =>
+      .restriction [2, item, 0] .usingWithRightJoin
+  else none
 
 /-- The joined sources of the joins in order, with their merged columns, and the
 condition of each join with its path ({name}`mergeJoin`), after the sources of
@@ -97,22 +116,24 @@ def mergeJoins (left : Scope) (item : Nat) :
     let (scope, conditions) ← mergeJoins (left ++ [merged]) (item + 1) rest
     .ok (scope, condition :: conditions)
 
-/-- The kind of a resolved join: left for a left join operator and inner for an inner
-one. {name}`joinFormIssue` refuses every other operator before the kind is used, so
-their kind here is never read. -/
+/-- The kind of a resolved join, from its operator. {name}`joinFormIssue` refuses an
+operator that the model does not describe before the kind is used, so its kind here is
+never read. -/
 def Syntax.Join.resolvedKind (join : Syntax.Join) : Resolved.JoinKind :=
   match joinOperator join.operator with
   | some (.left, _) => .left
-  | some (.inner, _) => .inner
-  | some (.right, _) | some (.full, _) | none => .inner
+  | some (.right, _) => .right
+  | some (.full, _) => .full
+  | some (.inner, _) | none => .inner
 
 /-- Resolve the tables of {lit}`FROM`: the first table's position, the positions of the
 joined tables with the condition of each join and its path, and the scope of all
 sources, in order. As in SQLite, every table resolves before the forms of the joins:
 more than {name}`maximumJoinTables` tables is SQLite's
 {lit}`at most 64 tables in a join`, then a missing table is {lit}`no such table`; two
-sources with the same folded name are a model restriction; then each join in order
-({name}`mergeJoins`). -/
+sources with the same folded name are a model restriction, and so is {lit}`USING` or
+{lit}`NATURAL` with a right or full join ({name}`mergeWithRightIssue`); then each join in
+order ({name}`mergeJoins`). -/
 def resolveTables (catalog : Catalog) (source : Syntax.TableReference) (joins : List Syntax.Join) :
     Except ValueIssue (Nat × List (Nat × Option (List Nat × Syntax.Expr)) × Scope) := do
   if joins.length + 1 > maximumJoinTables then throw (.prepare .tooManyTables)
@@ -122,6 +143,7 @@ def resolveTables (catalog : Catalog) (source : Syntax.TableReference) (joins : 
   if let some (item, _) := findPosition (fun (item, source) => sources.take item |>.any fun earlier =>
       normalizeIdentifier earlier.name == normalizeIdentifier source.name) (sources.mapIdx fun item source => (item, source)) then
     throw (.restriction (if item == 0 then [1] else [2, item - 1, 1]) .duplicateSource)
+  if let some issue := mergeWithRightIssue joins then throw issue
   let (scope, conditions) ← mergeJoins [firstSource] 0 (joins.zip (joined.map Prod.snd))
   .ok (first, (joined.map Prod.fst).zip conditions, scope)
 
