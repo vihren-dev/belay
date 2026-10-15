@@ -1,6 +1,6 @@
 import Belay.Sqlite.SqlExecution
 import Belay.Sqlite.LiteralPreservation
-import Belay.Sqlite.AliasPreservation
+import Belay.Sqlite.UpdatePreservation
 import Belay.Sqlite.StoreValueLaws
 
 set_option doc.verso true

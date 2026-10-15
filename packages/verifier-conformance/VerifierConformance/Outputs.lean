@@ -64,6 +64,19 @@ each written row, in order. A write without {lit}`RETURNING` returns no rows. -/
 def returnedRows (returning : List (Resolved.Expr × String)) (written : List (List Value)) : List ResultRow :=
   if returning.isEmpty then [] else written.map fun row => returning.map fun (expression, _) => expression.eval row
 
+/-- The error with which a transition stops: the reason of a failure, or the error of a
+pending transaction; none for a transition that continues or succeeds. -/
+def haltError : SqlTransition → Option ExecutionError
+  | .next _ | .halt (.success _) => none
+  | .halt (.failure _ reason _) => some reason
+  | .halt (.pending _ _ error) => error.map (·.2)
+
+/-- Whether an execution error is a failed write, whose outputs are the {lit}`RETURNING`
+names, no rows and no change: a constraint failure or a rowid alias mismatch. -/
+def ExecutionError.failsWrite : ExecutionError → Bool
+  | .constraintViolation | .datatypeMismatch => true
+  | .unmodeled | .prepare _ | .transactionAlreadyActive | .noActiveTransaction | .integerOverflow => false
+
 /-- Observe the literal-DML domain; unsupported output capability is explicit.
 Transitions and failure status come from production advance, never a second
 evaluator. A successful INSERT changes one row per VALUES row and a successful
@@ -81,16 +94,9 @@ change count; a query whose table is missing has no output. A query that fails w
 before the failing one, in an order the model does not describe, so it has no output. -/
 def statementOutput (statement : Resolved.Statement) (before : SqlState)
     (transition : SqlTransition) : Option StatementOutput :=
-  let successful := match transition with | .next _ => true | _ => false
-  let constraintFailure := match transition with
-    | .halt (.failure _ .constraintViolation _) | .halt (.failure _ .datatypeMismatch _) => true
-    | .halt (.pending _ _ (some (_, .constraintViolation))) | .halt (.pending _ _ (some (_, .datatypeMismatch))) =>
-      true
-    | _ => false
-  let overflow := match transition with
-    | .halt (.failure _ .integerOverflow _) => true
-    | .halt (.pending _ _ (some (_, .integerOverflow))) => true
-    | _ => false
+  let successful := match transition with | .next _ => true | .halt _ => false
+  let constraintFailure := (haltError transition).any ExecutionError.failsWrite
+  let overflow := haltError transition == some .integerOverflow
   match statement with
   | .insert at_ rows _ returning =>
     let names := returning.map (·.2)

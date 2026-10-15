@@ -40,6 +40,10 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Model.lean`, `Declarations.l
   (`examples/atuin/AtuinWitness.lean`), the schema examples and the demonstration of the
   verifier package, and the shape test; the write and row-write mutants that named the
   changed INSERT output and `checkedWrite` follow the new text.
+- 2026-10-15: review of the slice commit (5 must, fixed): the UPDATE lemmas move to
+  `UpdatePreservation.lean` (each file below 200 lines), with proof sketches; the
+  docstring of `RowsValid.updated` states its premises; the error code and the
+  failed-write outputs of the conformance layer enumerate every `ExecutionError`.
 
 ## Remaining
 

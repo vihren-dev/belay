@@ -64,7 +64,8 @@ def primaryCode : Option (Nat × ExecutionError) → Nat
   | none => 0
   | some (_, .constraintViolation) => 19
   | some (_, .datatypeMismatch) => 20
-  | some _ => 1
+  | some (_, .unmodeled) | some (_, .prepare _) | some (_, .transactionAlreadyActive)
+  | some (_, .noActiveTransaction) | some (_, .integerOverflow) => 1
 
 /-- The phase in which SQLite reports a modeled error: a prepare error of resolution
 in {lit}`sqlite3_prepare_v2`, and every other modeled error in {lit}`sqlite3_step`. -/
