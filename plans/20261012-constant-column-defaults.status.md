@@ -744,3 +744,13 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of the completed T14 representation and codec changes.
+
+
+- 2026-10-15: Reader commit 2068d0e0 passes independent review
+  20261015T102813Z-2068d0e0 with no findings. The reviewed helper and its
+  stored-form lemmas are ready for ADD COLUMN integration. Execution and
+  catalog handling on a failed ADD remain unchanged at this checkpoint.
+
+Decisions waiting for the owner:
+
+- Final review of the completed T14 representation and codec changes.
