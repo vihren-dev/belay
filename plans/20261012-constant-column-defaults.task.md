@@ -80,6 +80,13 @@ through the frontend, codec and catalog; do not normalize the judge or copy
 recorded observations into predictions. Quoted boolean names must retain enough
 information to distinguish them from unquoted TRUE and FALSE.
 
+Default readback for old records must follow SQLite's literal-value path,
+which can differ from omitted INSERT values. For example, a TEXT column
+reads DEFAULT 1.50 as the text 1.50, and an oversized hexadecimal default
+can be read even though INSERT rejects its evaluation. The test suite covers
+these boundaries on both pinned engines, without changing INSERT semantics.
+Successful default readback preserves the stored-form invariant.
+
 Final owner review is required for column-representation, codec and any
 trust-relevant changes. No such production change is made in the native
 investigation checkpoint.

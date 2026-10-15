@@ -709,3 +709,38 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of the completed T14 representation and codec changes.
+
+
+- 2026-10-15: Both pinned engines confirm that ADD COLUMN readback differs
+  from omitted INSERT evaluation. TEXT DEFAULT 1.50 retains the spelling
+  1.50, and an oversized hexadecimal default remains readable. Negating
+  that hexadecimal text gives zero. The pinned sqlite3ValueFromExpr source
+  explains these paths. NOT NULL with a NULL default succeeds on an empty
+  table and fails during stepping on a populated table. Evidence is in
+  build/t14-add-default-boundaries-20261015.json and
+  build/t14-add-numeric-defaults-20261015.json.
+
+  ReadDefaults.lean implements readback using the existing numeric parser
+  and storeValue. INSERT evaluation is unchanged. The new regression first
+  failed when it used INSERT evaluation: 1.50 became 1.5 in a TEXT column.
+  With the reader, all 290 comparisons pass across both engines and five
+  affinities. They cover numeric spelling, separators, signed boundaries,
+  hexadecimal overflow, quoted booleans and ordinary literal classes.
+
+  The reader's two stored-form lemmas compile. The runtime and all 800 public
+  documentation checks pass. The 11 focused reader and closure checks pass
+  in 14.73 seconds, and all three standalone package checks pass in 9.08
+  seconds. Evidence is in build/t14-default-reader-build-20261015.log,
+  build/t14-default-reader-tests-20261015.log and
+  build/t14-default-reader-package-20261015.log. Package consumer tests also
+  exposed two old script-version assertions; both now use version 3. Actual
+  installed-runtime acceptance remains a later T14 gate.
+
+  This is the readback primitive, not ADD COLUMN execution. The next change
+  must replace NULL-only row extension, preserve old cells and rowids, and
+  retain the old catalog when ADD fails during execution. Independent review
+  follows this commit.
+
+Decisions waiting for the owner:
+
+- Final review of the completed T14 representation and codec changes.
