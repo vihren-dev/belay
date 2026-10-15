@@ -1,33 +1,28 @@
-"""Each mutant of `conformance.query_mutants`, `conformance.number_mutants`,
-`conformance.write_mutants`, `conformance.row_write_mutants`,
-`conformance.delete_mutants`, `conformance.join_mutants`, `conformance.using_mutants`,
-`conformance.right_mutants` and `conformance.merged_mutants` changes the verdict of an authored case.
+"""Each mutant of the query, number, key, write, row-write, DELETE and join mutant tables
+changes the verdict of an authored case.
 
 ADR 0012 requires that the conformance suite tests each rule of query semantics and
-resolution, and slices 2 to 3b add the number and write rules: a changed copy of the
-model that no case notices shows a missing case. The cases are the authored cases of
-`conformance.authored_queries`, `conformance.authored_numbers`,
-`conformance.authored_writes`, `conformance.authored_row_writes`,
-`conformance.authored_deletes`, `conformance.authored_joins`,
-`conformance.authored_using`, `conformance.authored_right` and `conformance.authored_merged`,
-recorded natively
-with their outputs. Two measurements, one for queries and numbers and one for writes and joins,
-each build one base copy for their mutants, which keeps each test within its time
-limit on a hosted runner; every case must agree with the base copy. Each mutant copy then classifies the case that the mutant names
-as its target, which keeps the elaboration of case terms short.
+resolution, and its slices add the number, write, join and key rules: a changed copy of
+the model that no case notices shows a missing case. The cases are the authored cases of
+`conformance.authored_queries`, `authored_numbers`, `authored_keys`, `authored_writes`,
+`authored_row_writes`, `authored_deletes`, `authored_joins`, `authored_using`,
+`authored_right` and `authored_merged`, recorded natively with their outputs. Two
+measurements, one for queries, numbers and keys and one for writes and joins, each build
+one base copy for their mutants, which keeps each test within its time limit on a hosted
+runner; every case must agree with the base copy. Each mutant copy then classifies the
+case that the mutant names as its target, which keeps the elaboration of case terms
+short.
 """
 
 from pathlib import Path
 
 import pytest
 
-from conformance import (authored_deletes, authored_joins, authored_merged, authored_numbers, authored_queries,
-                         authored_right,
-                         authored_row_writes, authored_using, authored_writes)
+from conformance import (authored_deletes, authored_joins, authored_keys, authored_merged, authored_numbers,
+                         authored_queries, authored_right, authored_row_writes, authored_using, authored_writes)
 from conformance.native_replay import prepare
-from conformance import (delete_mutants, join_mutants, merged_mutants, number_mutants, query_mutants, right_mutants,
-                         row_write_mutants,
-                         using_mutants, write_mutants)
+from conformance import (delete_mutants, join_mutants, key_mutants, merged_mutants, number_mutants, query_mutants,
+                         right_mutants, row_write_mutants, using_mutants, write_mutants)
 from conformance.case_format import Json
 from conformance.record_parser import runtime_library
 from conformance.resolve_mutants import measure
@@ -65,10 +60,12 @@ def measure_set(runtime_root: Path, records: list[dict[str, Json]], tables: list
 
 
 def test_every_query_and_number_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored query and number cases notice every changed rule of query semantics and
-    numbers (`conformance.query_mutants`, `conformance.number_mutants`), so these rules are tested."""
-    measure_set(runtime_root, authored_queries.records() + authored_numbers.records(),
-                [(query_mutants.MUTANTS, query_mutants.TARGETS), (number_mutants.MUTANTS, number_mutants.TARGETS)])
+    """The authored query, number and key cases notice every changed rule of query semantics,
+    numbers and unique key values (`conformance.query_mutants`, `conformance.number_mutants`,
+    `conformance.key_mutants`), so these rules are tested."""
+    measure_set(runtime_root, authored_queries.records() + authored_numbers.records() + authored_keys.records(),
+                [(query_mutants.MUTANTS, query_mutants.TARGETS), (number_mutants.MUTANTS, number_mutants.TARGETS),
+                 (key_mutants.MUTANTS, key_mutants.TARGETS)])
 
 
 def test_every_write_and_join_mutant_changes_a_verdict(runtime_root: Path) -> None:

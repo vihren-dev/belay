@@ -115,8 +115,6 @@ theorem resolveInsert_rowWidth (context : ResolveContext) (catalog after : Catal
   · split at ok <;> cases ok
   rename_i rows_ok
   split at ok
-  · cases ok
-  split at ok
   · split at ok <;> cases ok
   cases ok
   refine ⟨rfl, table, found, rfl, fun row member => ?_⟩

@@ -170,4 +170,8 @@ def Catalog.foldedNames (catalog : Catalog) : List String :=
 unique names. -/
 def Catalog.NamesUnique (catalog : Catalog) : Prop := catalog.foldedNames.Nodup
 
+/-- The affinity of the column at a position, or BLOB for a position outside the list. -/
+def columnAffinity (columns : List CatalogColumn) (position : Nat) : Affinity :=
+  (columns[position]?.map CatalogColumn.affinity).getD .blob
+
 end Belay.Sqlite

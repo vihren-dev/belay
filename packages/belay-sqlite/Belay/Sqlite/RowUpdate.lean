@@ -35,14 +35,12 @@ def updated (table : Table) (assignments : List (Nat × Resolved.Expr)) (filter 
   { table with rows := table.rows.map fun row =>
       if selected filter row then assign table.shape.columns assignments row else row }
 
-/-- Require {name}`tableReady` before the write, a column at every assigned position,
-and every key position {name}`comparisonReady` after {name}`updated`. This check does
-not establish the updated constraints, which {lit}`checkedWrite` checks. -/
-def updateReady (keys : List (List Nat)) (table : Table) (assignments : List (Nat × Resolved.Expr))
-    (filter : Option Resolved.Expr) : Bool :=
+/-- Require {name}`tableReady` before the write and a column at every assigned position.
+This check does not establish the updated constraints, which {lit}`checkedWrite`
+checks. -/
+def updateReady (keys : List (List Nat)) (table : Table) (assignments : List (Nat × Resolved.Expr)) : Bool :=
   tableReady keys table &&
-  assignments.all (fun (position, _) => (table.shape.columns[position]?).isSome) &&
-  keys.all (·.all (comparisonReady (updated table assignments filter)))
+  assignments.all (fun (position, _) => (table.shape.columns[position]?).isSome)
 
 end LiteralData
 end Belay.Sqlite

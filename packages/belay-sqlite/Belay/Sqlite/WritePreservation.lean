@@ -156,7 +156,7 @@ theorem literalStep_insert_conforms (conforms : Conforms profile catalog databas
     intro values member
     have check := List.all_eq_true.mp each values member
     simp only [Bool.and_eq_true, beq_iff_eq] at check
-    exact ⟨check.1.1, check.1.2⟩
+    exact ⟨check.1, check.2⟩
 
 /-- For every profile, catalog and database, and every UPDATE: if the database
 {name}`Conforms` to the catalog, so does the database of its step, at every statement

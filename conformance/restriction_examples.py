@@ -29,8 +29,6 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "create-index-runs": ("CREATE TABLE t(a INTEGER);", "CREATE INDEX i ON t(a);"),
     "add-column-constraint": ("CREATE TABLE t(a INTEGER);", "ALTER TABLE t ADD COLUMN b INTEGER NOT NULL DEFAULT 0;"),
     "time-value": ("CREATE TABLE t(a INTEGER, b TEXT DEFAULT CURRENT_TIMESTAMP);", "INSERT INTO t(a) VALUES (1);"),
-    "key-affinity": ("CREATE TABLE t(a TEXT UNIQUE);", "INSERT INTO t VALUES ('x');"),
-    "key-value": ("CREATE TABLE t(a INTEGER UNIQUE);", "INSERT INTO t VALUES (X'01');"),
     "row-dependent-key": ("CREATE TABLE t(a INTEGER UNIQUE);", "UPDATE t SET a = a + 1;"),
     "insert-column-twice": ("CREATE TABLE t(a INTEGER);", "INSERT INTO t(a, a) VALUES (1, 2);"),
     "update-column-twice": ("CREATE TABLE t(a INTEGER);", "UPDATE t SET a = 1, a = 2;"),

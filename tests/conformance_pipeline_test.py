@@ -38,7 +38,9 @@ def test_transaction_observation(ending: str, runtime_root: Path) -> None:
 
 
 def test_wrong_trace_and_unsupported(runtime_root: Path, tmp_path: Path) -> None:
-    """Wrong traces fail both tiers; data-domain and restricted definitions stay unsupported."""
+    """Wrong traces fail both tiers; restricted definitions stay unsupported; a key column that
+    holds text, which SQLite stores and the model compares as SQLite does (slice 5a), agrees
+    and has a kernel proof."""
     case = record(fixtures()[0], default_parser(runtime_root))
     wrong = deepcopy(case)
     wrong["nativeTrace"][-1]["visible"] = []
@@ -54,11 +56,11 @@ def test_wrong_trace_and_unsupported(runtime_root: Path, tmp_path: Path) -> None
     prove(result["caseLean"], runtime_root, tmp_path / "RestrictedDefinition.lean", case=invalid, expected=False)
     fixture = Fixture("CREATE TABLE records(id INTEGER,UNIQUE(id));",
         "UPDATE records SET id=2 WHERE id=1;",
-        {"records": [(1, ((3, b"not-a-number"),))]}, "unsupported-key-domain")
+        {"records": [(1, ((3, b"not-a-number"),))]}, "text-in-integer-key")
     domain = record(fixture, default_parser(runtime_root))
     result = compiled(domain, runtime_root, emit_lean=True)
-    assert result["verdict"] == "MODEL_UNSUPPORTED"
-    prove(result["caseLean"], runtime_root, tmp_path / "UnsupportedDomain.lean", case=domain, expected=False)
+    assert result["verdict"] == "AGREE", result
+    prove(result["caseLean"], runtime_root, tmp_path / "TextKey.lean", case=domain)
 
 
 def test_exact_storage_and_wide_rows(runtime_root: Path) -> None:

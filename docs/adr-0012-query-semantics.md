@@ -662,7 +662,7 @@ they are a slice of their own (4d), after the rows of right and full joins (4c).
 
 ## Amendment 4: Unique keys and conflicts (slices 5a to 5d)
 
-Date: 2026-10-15. Status: PROPOSED.
+Date: 2026-10-15. Status: ACCEPTED (2026-10-15, #131).
 Related: "Slices", item 5; Amendment 1 (keys, `rowDependentKey`); ADR 0008 (key domain
 and conflict mode); ADR 0005 for `RETURNING` and change counts.
 
@@ -761,9 +761,7 @@ conflict features, all checked on native 3.51.0: the UPSERT clause, the `OR` cla
 
 ### Open questions
 
-1. **Two key slices.** Recommendation: split the keys work into 5a (key values) and 5b
-   (rowid aliases). They change different parts of the model (key equality and its
-   obligations; the storage of a row), and either one alone is already a large slice.
+1. **Two key slices.** Decided; see "Owner decisions".
 
 ### Owner decisions
 
@@ -773,3 +771,6 @@ conflict features, all checked on native 3.51.0: the UPSERT clause, the `OR` cla
    more than one key; see "UPSERT (slice 5c)".
 3. **Keys first.** Decided on 2026-10-15: the key slices come before the conflict
    slices.
+4. **Two key slices.** Decided on 2026-10-15: the keys work is two slices, 5a (key
+   values) and 5b (rowid aliases). They change different parts of the model: key
+   equality and its obligations, and the storage of a row.

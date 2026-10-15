@@ -129,13 +129,11 @@ def keyed : Catalog := catalogOf (schema [.createTable "k" [column "a" (some "IN
 #guard statements (migration keyed [.insert "k" none [[.null, .null, .null, .null]], .update "k" [("a", .null)] none])
   == [.insert 0 [[.null, .null, .null, .null]] [[2], [1, 0], [0]] [], .update 0 [(0, .literal .null)] none [[2], [1, 0], [0]] []]
 
--- Key domain: key values are integers or NULL, and key columns are integer-comparable.
-#guard migration keyed [.insert "k" (some ["a", "d"]) [[.null, .null], [.string [120], .null]]]
-  matches .restricted { statement := 0, path := [2, 1], .. }
-#guard migration keyed [.update "k" [("d", .string [49]), ("c", .string [120])] none] matches .restricted { path := [1], .. }
-#guard !restricted (migration keyed [.update "k" [("d", .string [49])] none])
-#guard migration (catalogOf (schema [.createTable "s" [column "a"] [.unique ["a"]]])) [.insert "s" none [[.null]]]
-  matches .restricted { path := [], .. }
+-- Keys of every affinity and value run (slice 5a): text values and TEXT key columns.
+#guard !restricted (migration keyed [.insert "k" (some ["a", "d"]) [[.null, .null], [.string [120], .null]]])
+#guard !restricted (migration keyed [.update "k" [("d", .string [49]), ("c", .string [120])] none])
+#guard !restricted (migration (catalogOf (schema [.createTable "s" [column "a"] [.unique ["a"]]]))
+  [.insert "s" none [[.null]]])
 
 -- New tables and indexes take the next catalog position.
 #guard statements (schema [.createTable "t" [column "a"] [], .createIndex "i" false "t" ["a"], .createTable "u" [column "a"] []])

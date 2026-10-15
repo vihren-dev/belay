@@ -128,22 +128,6 @@ theorem LiteralData.insertRow_constraints (old : constraints keys table = true)
     intro key member
     exact uniqueRows_append (List.all_eq_true.mp old.2 key member) (fresh key member)
 
-/-- For every table, key position and value list, assume old
-{name}`LiteralData.comparisonReady` and an integer-or-NULL value at that position
-of the new row. Then the table after {name}`LiteralData.insertRow` remains
-comparison-ready at the position. An empty old table still needs the column
-affinity requirement. The proof retains the column test and separates old rows
-from the added row. -/
-theorem LiteralData.insertRow_comparison (old : comparisonReady table position = true)
-    (cell : (values[position]?).any integerOrNull = true) :
-    comparisonReady (insertRow table values) position = true := by
-  simp only [comparisonReady, Bool.and_eq_true] at old ⊢
-  refine ⟨old.1, ?_⟩
-  change (table.rows ++ [(⟨nextRowid table.rows, values⟩ : Row)]).all
-    (fun row => (read row position).any integerOrNull) = true
-  rw [List.all_append, old.2]
-  simp [read, cell]
-
 /-- For every column list and row: if {name}`LiteralData.storedForm` holds for every
 column/cell pair of the zip, the row is {name}`Row.Stored` for the columns. Use this to
 prove stored form of a concrete row by computation, or of an admitted inserted row.
@@ -173,5 +157,22 @@ theorem Row.Stored.storedForm {columns : List CatalogColumn} {row : Row} (stored
 columns and cells, so a concrete row's stored form can be proved with {lit}`decide`. -/
 instance Row.decidableStored (columns : List CatalogColumn) (row : Row) : Decidable (row.Stored columns) :=
   decidable_of_iff _ ⟨Row.Stored.of_storedForm, Row.Stored.storedForm⟩
+
+
+/-- For all integers, two integer key cells conflict ({name}`LiteralData.keyCellsEqual`)
+exactly when the integers are equal: the integer keys of the model before slice 5a are a
+special case of SQLite's key equality. Proof sketch: both cells rank as numbers and have
+no bytes, so the comparison is that of the integers times the same nonzero factor. -/
+theorem LiteralData.keyCellsEqual_integer (a b : Int) : keyCellsEqual (.integer a) (.integer b) = (a == b) := by
+  simp only [keyCellsEqual, compareValues, compareLex, compareOn, Value.rank, Value.scaled, Value.bytes]
+  have pos : (2 : Int) ^ 1074 ≠ 0 := Int.pow_ne_zero (by decide)
+  generalize (2 : Int) ^ 1074 = factor at *
+  by_cases h : a = b
+  · subst h; simp
+  · have ne : a * factor ≠ b * factor := fun e => h (Int.eq_of_mul_eq_mul_right pos e)
+    have c : compare (a * factor) (b * factor) ≠ .eq := fun e => ne (Std.LawfulEqCmp.eq_of_compare e)
+    have lhs : (compare (a * factor) (b * factor) == Ordering.eq) = false := by
+      cases hc : compare (a * factor) (b * factor) <;> simp_all
+    simp [lhs, h]
 
 end Belay.Sqlite

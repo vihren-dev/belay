@@ -88,9 +88,6 @@ manual and nightly runs check these suites, and so does a pull request with the
 `package` scope. Pull requests with a smaller scope do not, so that their CI time
 does not grow. The flake checks exclude them.
 
-- `scheduledTests.obligations`: mutants of the admission obligations; each must make
-  its boundary case of `conformance/authored_obligations.py` disagree with native
-  SQLite.
 - `scheduledTests.writers`: round trips of the corpus writers of the authored cases
   (`conformance/*_evidence.py`): each writes a new corpus, reads it back unchanged
   and replays it natively. The corpora they wrote are frozen, and `tests.frozen` and

@@ -1,10 +1,10 @@
-"""The authored coverage cases of queries, numbers and writes (ADR 0012, slices 1 to 4d).
+"""The authored coverage cases of queries, numbers and writes (ADR 0012, slices 1 to 5a).
 
 The cases of `conformance.authored_queries`, `conformance.authored_numbers`,
 `conformance.authored_writes`, `conformance.authored_row_writes`,
 `conformance.authored_deletes`, `conformance.authored_joins`,
-`conformance.authored_using`, `conformance.authored_right` and
-`conformance.authored_merged` are
+`conformance.authored_using`, `conformance.authored_right`,
+`conformance.authored_merged` and `conformance.authored_keys` are
 recorded natively as version 5 records with statement outputs, name requirement
 identifiers of the pinned documentation, and replay through resolution, the
 execution semantics and query evaluation. Every case agrees with the model, and the
@@ -21,8 +21,8 @@ from types import ModuleType
 
 import pytest
 
-from conformance import (authored_deletes, authored_joins, authored_merged, authored_numbers, authored_queries,
-                         authored_right, authored_row_writes, authored_using, authored_writes)
+from conformance import (authored_deletes, authored_joins, authored_keys, authored_merged, authored_numbers,
+                         authored_queries, authored_right, authored_row_writes, authored_using, authored_writes)
 from conformance.model_check import compiled_many, prove
 from conformance.native_replay import prepare
 from conformance.record_parser import runtime_library
@@ -32,7 +32,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kern
               pytest.mark.requires_native("parser-library", "sqlite3")]
 ROOT = Path(__file__).resolve().parents[1]
 CASE_SETS = [authored_queries, authored_numbers, authored_writes, authored_row_writes, authored_deletes, authored_joins,
-             authored_using, authored_right, authored_merged]
+             authored_using, authored_right, authored_merged, authored_keys]
 """The authored case modules: each has `definitions` and `records`."""
 
 

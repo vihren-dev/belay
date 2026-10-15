@@ -19,8 +19,6 @@ def RestrictionKind.id : RestrictionKind → String
   | .createIndexRuns => "create-index-runs"
   | .addColumnConstraint => "add-column-constraint"
   | .timeValue => "time-value"
-  | .keyAffinity => "key-affinity"
-  | .keyValue => "key-value"
   | .rowDependentKey => "row-dependent-key"
   | .insertColumnTwice => "insert-column-twice"
   | .updateColumnTwice => "update-column-twice"
@@ -55,8 +53,6 @@ def RestrictionKind.message : RestrictionKind → String
   | .createIndexRuns => "a CREATE INDEX that runs is not modeled; remove the CREATE INDEX statement"
   | .addColumnConstraint => "only a nullable column without a default can be added"
   | .timeValue => "time values are not modeled; write the time as a text literal"
-  | .keyAffinity => "unique keys over TEXT or REAL columns are not modeled; write only to tables whose key columns have INTEGER, NUMERIC or BLOB affinity"
-  | .keyValue => "only integer and NULL values are modeled in unique key columns; write an integer or NULL key value"
   | .rowDependentKey => "a SET value that reads the row is not modeled for a column of a unique key; assign a constant value"
   | .insertColumnTwice => "a column named twice in INSERT is not modeled; name each column once"
   | .updateColumnTwice => "a column assigned twice in UPDATE is not modeled; assign each column once"
@@ -81,7 +77,7 @@ def RestrictionKind.message : RestrictionKind → String
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .rowidAlias, .createTableConstraints, .unmodeledDefault, .createIndexRuns, .addColumnConstraint, .timeValue, .keyAffinity, .keyValue, .rowDependentKey, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .duplicateSource, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .valueAsCondition, .mixedAffinityComparison, .textToNumber, .numberToText, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum]
+  [.schemaStatement, .engineTable, .rowidColumnName, .rowidAlias, .createTableConstraints, .unmodeledDefault, .createIndexRuns, .addColumnConstraint, .timeValue, .rowDependentKey, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .duplicateSource, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .valueAsCondition, .mixedAffinityComparison, .textToNumber, .numberToText, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

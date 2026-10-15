@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model
+import Belay.Sqlite.Comparison
 
 set_option doc.verso true
 
@@ -22,28 +23,21 @@ def storedForm (affinity : Affinity) (value : Value) : Bool := storeValue affini
 so a malformed row cannot supply an invented value. -/
 def read (row : Row) (position : Nat) : Option Value := row.values[position]?
 
-/-- Admit NULL or a signed 64-bit integer for exact modeled comparisons.
-{assert}`integerOrNull Value.null = true`; every other stored class fails. -/
-def integerOrNull : Value → Bool
-  | .null => true
-  | .integer value => boundedInteger value
-  | _ => false
+/-- Whether two stored key cells conflict: neither is NULL, and they are equal under
+SQLite's comparison with the BINARY collation ({name}`compareValues`), so numbers by
+value, TEXT and BLOB by bytes, and values of different storage classes never.
+{assert}`keyCellsEqual (.text [97]) (.text [97]) = true`, and two NULL cells never
+conflict. -/
+def keyCellsEqual (first second : Value) : Bool :=
+  first != .null && second != .null && compareValues first second == .eq
 
-/-- Require a column at the position with INTEGER, NUMERIC or BLOB affinity, and
-{name}`read` at that position in every row to yield a value accepted by
-{name}`integerOrNull`. With no rows only the column requirement remains. Use
-this domain check before integer equality or key comparisons. -/
-def comparisonReady (table : Table) (position : Nat) : Bool :=
-  (table.shape.columns[position]?).any (fun column => [.integer, .numeric, .blob].contains column.affinity) &&
-  table.rows.all (fun row => (read row position).any integerOrNull)
-
-/-- For each key position, require both reads to be integers with equal values.
-A missing, NULL or other cell makes the comparison false, as needed for the
-admitted unique keys. An empty key compares equal vacuously;
-{assert}`keyEqual [] { rowid := 0, values := [] } { rowid := 1, values := [] } = true`. -/
+/-- For each key position, require both reads to be key cells that conflict
+({name}`keyCellsEqual`). A missing or NULL cell makes the comparison false, so two rows
+with a NULL in a key never conflict, as in SQLite. An empty key compares equal
+vacuously; {assert}`keyEqual [] { rowid := 0, values := [] } { rowid := 1, values := [] } = true`. -/
 def keyEqual (key : List Nat) (first second : Row) : Bool :=
   key.all fun position => match read first position, read second position with
-    | some (.integer a), some (.integer b) => a == b
+    | some a, some b => keyCellsEqual a b
     | _, _ => false
 
 /-- Reject each row that compares equal under {name}`keyEqual` to a later row.
@@ -62,11 +56,10 @@ def constraints (keys : List (List Nat)) (table : Table) : Bool :=
     (fun (column, value) => !column.notNull || value != .null)) &&
   keys.all (fun key => uniqueRows key table.rows)
 
-/-- Require {name}`comparisonReady` for every position of every key, and
-{name}`constraints` on the table. With no keys, comparison requirements are
-vacuous; constraints still apply. Use this check to admit literal DML. -/
+/-- Require {name}`constraints` on the table before a write: its NOT NULL cells and its
+unique keys hold. SQLite guarantees them for every table that it stores. -/
 def tableReady (keys : List (List Nat)) (table : Table) : Bool :=
-  keys.all (·.all (comparisonReady table)) && constraints keys table
+  constraints keys table
 
 /-- Return 1 for no rows, otherwise one more than the largest stored rowid,
 even when that largest rowid is negative; {assert}`nextRowid [] = 1`.
@@ -86,14 +79,13 @@ VALUES rows does. No rows leave the table unchanged. -/
 def inserted (table : Table) (rows : List (List Value)) : Table := rows.foldl insertRow table
 
 /-- Require {name}`tableReady` before the write, one value per column in each row,
-{name}`storedForm` on every column/value pair, a bounded rowid for every inserted
-row, and an integer-or-NULL value at every key position of each row. This admits
-evaluation; the inserted table's constraint truth is checked separately. -/
+{name}`storedForm` on every column/value pair, and a bounded rowid for every inserted
+row. This admits evaluation; the inserted table's constraint truth is checked
+separately. -/
 def insertReady (keys : List (List Nat)) (table : Table) (rows : List (List Value)) : Bool :=
   tableReady keys table &&
   rows.all (fun values => values.length == table.shape.columns.length &&
-    (table.shape.columns.zip values).all (fun (column, value) => storedForm column.affinity value) &&
-    keys.all (·.all fun position => (values[position]?).any integerOrNull)) &&
+    (table.shape.columns.zip values).all (fun (column, value) => storedForm column.affinity value)) &&
   (inserted table rows).rows.all (fun row => boundedInteger row.rowid)
 
 end LiteralData
