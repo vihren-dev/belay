@@ -960,3 +960,92 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of completed T14.
+
+
+- 2026-10-15: ADD COLUMN now constructs literal default metadata, uses
+  readDefaultValue during execution and appends its value through the reviewed
+  extension primitive. NOT NULL with a NULL readback fails on populated tables
+  with a distinct execution error and succeeds on empty tables. Unsupported
+  default evaluation remains a model restriction. Updated support predicates,
+  atomicity and preservation proofs, application examples and the mutation
+  anchor. Approved sources, baselines and judge files are unchanged.
+
+  Initial builds exposed missing proof case splits and application simplifications;
+  these are fixed. The runtime, conformance runtime and checked documentation
+  build successfully in build/t14-add-defaults-build4-20261015.log. Earlier
+  failed logs are retained separately. An initial combined command did not start
+  because automatic permission review timed out; separate edits and the permitted
+  build retry succeeded.
+
+  The new native suite has 170 comparisons across both pinned engines and all
+  five affinities. It covers literal values, NOT NULL/NULL on empty and populated
+  tables, a failed ADD after a successful prefix inside a transaction, and
+  rollback. The suite is running with kernel checks of each comparison in
+  build/t14-add-defaults-native-20261015.log. This feature is uncommitted and
+  has not passed native acceptance or independent review. Broader regressions,
+  an installed example and both-platform acceptance remain.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14.
+
+
+- 2026-10-15: The native suite stopped at the first affinity/version pair.
+  Its first 11 cases passed with kernel proofs, including NOT NULL DEFAULT 7.
+  NOT NULL DEFAULT NULL on a populated table disagreed. The resource guard
+  then stopped builds at 8.20 GiB free. Under the standing cleanup approval,
+  Nix garbage collection removed 10,698 unreachable paths and freed 12,641.55
+  MiB. The complete deletion log is build/t14-add-defaults-cleanup-20261015.log;
+  the resource guard passes again. No retained build link or evidence was removed.
+
+  The detailed failure shows matching rows, catalog, primary code 1 and step
+  phase. SQLite exposes an output column named by its internal RAISE expression.
+  The pinned sqlite3AlterFinishAddColumn calls sqlite3ErrorIfNotEmpty, which
+  compiles SELECT raise(ABORT, message) for NOT NULL with a NULL default. Added
+  that output-name rule to statementOutput for both empty and populated tables.
+  The native observation remains unchanged. The corrected runtime is building.
+  Evidence: build/t14-add-defaults-disagreement-20261015.json and
+  build/t14-add-defaults-output-build-20261015.log. The test now retains a JSON
+  failure record instead of relying on truncated assertion output.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14. Native acceptance remains incomplete.
+
+
+- 2026-10-15: The conformance runtime with the ADD empty-table-check output
+  rule builds successfully. Garbage collection required rebuilding several
+  application dependencies; no compilation failure occurred. The complete
+  native default suite is running again in
+  build/t14-add-defaults-native-output-20261015.log. Native acceptance is not
+  yet established, and the feature remains uncommitted.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14.
+
+
+- 2026-10-15: The corrected native ADD COLUMN suite passed all ten
+  parameter groups in 239.54 seconds on macOS. These groups cover 170 cases
+  across both pinned SQLite versions and five affinities, with kernel checks.
+  Evidence: build/t14-add-defaults-native-output-20261015.log.
+
+  Revalidated and removed 301 temporary pytest directories whose complete
+  contents were older than 24 hours, under the existing cleanup approval.
+  The inventory and per-directory deletion log are
+  build/t14-old-test-cleanup-20261015.json and
+  build/t14-old-test-cleanup-deleted-20261015.jsonl. Nix garbage collection
+  then removed 1,751 unreachable paths and freed 10,731.79 MiB; its full log
+  is build/t14-followup-gc-20261015.log. No retained build link was removed.
+  Free space rose to about 16 GiB and tools/check_resources.py passed.
+
+  The full model suite is running against build/t14-add-defaults-output,
+  with a 600-second limit. Its log is
+  build/t14-add-defaults-full-model-20261015.log. No full-suite result is
+  claimed yet. Feature changes remain uncommitted pending these checks.
+  Main has advanced to a2f480bd through PR 127; this task still needs
+  integration with those RIGHT/FULL join changes after its current checks.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14; implementation and acceptance are unfinished.
