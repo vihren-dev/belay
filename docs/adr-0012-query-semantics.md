@@ -197,7 +197,8 @@ specification, semantics, conformance cases, mutants and a judge change.
    `INSERT` and `UPDATE` with expressions instead of literals.
 4. **Joins.** Inner and left joins of tables, with qualified names and the
    `ambiguous column name` error.
-5. **Conflicts.** `ON CONFLICT` of `INSERT`.
+5. **Conflicts.** `ON CONFLICT` of `INSERT`. Amendment 4 splits it into unique keys
+   (5a, 5b) and conflicts (5c, 5d).
 6. **Functions.** Time and date functions, which need the controlled clock of
    ADR 0005, section 3.2, and the JSON functions `json_extract` and `json_each`.
 
@@ -658,3 +659,117 @@ they are a slice of their own (4d), after the rows of right and full joins (4c).
 2. **Split.** Decided on 2026-10-15: slice 4c models the rows of right and full joins
    with `ON`; slice 4d models `USING` and `NATURAL` in a `FROM` with a right or full
    join, which slice 4c refuses as a model restriction.
+
+## Amendment 4: Unique keys and conflicts (slices 5a to 5d)
+
+Date: 2026-10-15. Status: PROPOSED.
+Related: "Slices", item 5; Amendment 1 (keys, `rowDependentKey`); ADR 0008 (key domain
+and conflict mode); ADR 0005 for `RETURNING` and change counts.
+
+### Context
+
+Item 5 of "Slices" names `ON CONFLICT` of `INSERT`. Today the model has one conflict
+behavior: a duplicate key or a NULL in a NOT NULL column is SQLite's ABORT, and the
+statement fails with the database unchanged. Unique keys hold only integers and NULL
+(the restrictions `key-affinity` and `key-value`), and an `INTEGER PRIMARY KEY` rowid
+alias is the restriction `rowid-alias`. Those are the usual targets of a conflict
+clause, so the owner decided (2026-10-15) that a keys slice comes first. SQLite has three
+conflict features, all checked on native 3.51.0: the UPSERT clause, the `OR` clause of
+`INSERT`, and the `ON CONFLICT` clause of a constraint in `CREATE TABLE`.
+
+### Key values (slice 5a)
+
+- **Equality.** A unique key compares the stored values of its columns, after the
+  column's affinity (`storeValue`). Two rows conflict when no key cell is NULL and each
+  pair of cells is equal under SQLite's comparison with the BINARY collation
+  (`compareValues`): numbers by value, so integer `1` and real `1.0` conflict, also in a
+  column without affinity; TEXT and BLOB by bytes, so `'a'` and `'A'` do not; values of
+  different storage classes never, so `1` and `'1'` do not in a column without affinity.
+- **Forms.** Keys of every affinity, single or composite, from `PRIMARY KEY` (other than
+  a rowid alias), `UNIQUE` and `CREATE UNIQUE INDEX`. The restrictions `key-affinity` and
+  `key-value` leave the registry. A key whose column has a collation other than BINARY
+  stays refused, as collations are not decided here.
+- **Obligations.** The key conjuncts of `statementReady` that require integer or NULL
+  cells change to the new equality; obligation mutants and boundary cases follow them.
+
+### Rowid aliases (slice 5b)
+
+- **Form.** A column `INTEGER PRIMARY KEY` (not `DESC`) is the rowid of its table.
+  Reading it reads the rowid; its uniqueness is the rowid's.
+- **Values.** On `INSERT`, NULL or an omitted value gives the next rowid, as for a table
+  without an alias. Another value takes INTEGER affinity and must then be an integer:
+  `'5'` and `5.0` store `5`; `7.5` and `'x'` are SQLite's `datatype mismatch` error
+  (`SQLITE_MISMATCH`). A duplicate is `UNIQUE constraint failed`. `UPDATE` of the alias
+  moves the row to the new rowid, with the same rules. The restriction `rowid-alias`
+  leaves the registry; the rowid names (`rowid-name`) are not part of this slice.
+
+### UPSERT (slice 5c)
+
+- **Forms.** `INSERT INTO t … VALUES … ON CONFLICT [(columns)] DO NOTHING` and
+  `… DO UPDATE SET assignments [WHERE condition]`, with one or more such clauses; only
+  the last may omit its target. A target is a set of columns, in any order and compared
+  without ASCII case, equal to the columns of one key; another target is SQLite's
+  prepare error `ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE constraint`.
+- **Rows.** The rows of `VALUES` are processed in order, so a later row sees the rows
+  that earlier ones inserted or updated. A row that conflicts on the target key of a
+  clause is handled by the first such clause; a row that conflicts only on keys that no
+  clause targets is the ABORT error, unless a clause without target handles it. `DO
+  NOTHING` skips the row. `DO UPDATE` updates the one existing row of the conflict; its
+  values and `WHERE` read that row (by column name, table name or alias) and the
+  proposed row as `excluded.c`, after the column's affinity. A `WHERE` that is not true
+  skips the row. The updated row is checked against every key and NOT NULL; a failure is
+  the ABORT error of the statement.
+- **Output.** `RETURNING` returns each inserted row and each updated row with its new
+  values, not the skipped ones; the change count counts both.
+- **Restrictions.** A clause without target with `DO UPDATE` on a table with more than
+  one key is a model restriction: SQLite then chooses the conflicting key by its internal
+  order of indexes (owner decision, 2026-10-15). `INSERT … SELECT` stays refused.
+
+### `INSERT OR` and constraint algorithms (slice 5d)
+
+- **Algorithms.** `INSERT OR ABORT` is today's behavior. `OR FAIL` stops at the row with
+  the error and keeps the earlier rows of the statement (R-31882-08811). `OR ROLLBACK`
+  fails and rolls back the active transaction (R-31881-13880), or works as ABORT without
+  one (R-42089-41020). `OR IGNORE` skips each row that violates a key or NOT NULL
+  (R-50299-05307). `OR REPLACE` deletes every existing row that the new row conflicts
+  with, on any key, before it inserts the row (R-54702-17780); a NULL in a NOT NULL
+  column takes the column's default, or is ABORT without one (R-12527-00403); the deleted
+  rows are not counted (R-37019-57602). `RETURNING` returns the inserted rows.
+- **Constraint algorithms.** The `ON CONFLICT` clause of a `PRIMARY KEY`, `UNIQUE` or
+  `NOT NULL` constraint in `CREATE TABLE` is the default algorithm of that constraint;
+  an `OR` clause overrides it (R-33948-22286), and an UPSERT clause handles the conflicts
+  of its target before it.
+- **Out of scope.** `UPDATE OR`: which rows it skips or replaces depends on SQLite's
+  unspecified order of rows, as for row-dependent keys (Amendment 1).
+
+### Testing
+
+- **Cases.** Each rule above with native SQLite as the oracle: equal and unequal keys
+  of each affinity and storage class, composite keys and NULL; rowid alias values,
+  `datatype mismatch` and `UPDATE` of an alias; each UPSERT form, several clauses, a
+  later row that conflicts with an earlier one, `excluded`, `WHERE`, a second key that
+  fails after `DO UPDATE`, `RETURNING` and change counts; each `OR` algorithm, also in a
+  transaction, and each constraint algorithm with its precedence.
+- **Mutants.** For each slice, one per rule that a wrong model could change, such as a
+  key that compares text without bytes, a rowid alias that keeps `7.5`, a `DO UPDATE`
+  that updates the first row instead of the conflicting one, an `excluded` value without
+  affinity, `OR REPLACE` that deletes only one conflicting row, and `OR FAIL` that keeps
+  no row.
+- **Proofs.** Each write keeps `Conforms`; the integer keys of today are a special case
+  of the new equality; a statement without conflict clauses keeps its current
+  semantics.
+
+### Open questions
+
+1. **Two key slices.** Recommendation: split the keys work into 5a (key values) and 5b
+   (rowid aliases). They change different parts of the model (key equality and its
+   obligations; the storage of a row), and either one alone is already a large slice.
+
+### Owner decisions
+
+1. **Scope.** Decided on 2026-10-15: two conflict slices, the UPSERT clause (5c) and the
+   `OR` clause with constraint algorithms (5d).
+2. **No-target `DO UPDATE`.** Decided on 2026-10-15: a model restriction on a table with
+   more than one key; see "UPSERT (slice 5c)".
+3. **Keys first.** Decided on 2026-10-15: the key slices come before the conflict
+   slices.
