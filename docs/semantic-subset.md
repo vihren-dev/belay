@@ -61,9 +61,17 @@ stores it in a column of that affinity (slice 3b): for example, the text `'12'`
 becomes the integer 12 in an INTEGER column, and an integer becomes text in a TEXT
 column. A unique key may have columns of any affinity (slice 5a): two rows conflict when
 no key cell is NULL and each pair of stored cells is equal under SQLite's BINARY
-comparison, so `1` and `1.0` conflict, while `'a'` and `'A'`, and `1` and `'1'`, do not. Named
-constraints, collations, `CHECK`, `REFERENCES`, generated columns, conflict
-clauses, `UPSERT`, `WITH`, `FROM` in writes, sort modifiers in keys,
+comparison, so `1` and `1.0` conflict, while `'a'` and `'A'`, and `1` and `'1'`, do not.
+An `INSERT ... VALUES` may have `ON CONFLICT` clauses (slice 5c): `DO NOTHING`, or
+`DO UPDATE SET ... [WHERE ...]` whose values read the existing row by its column names
+and the proposed row as `excluded.c`. A target is a list of column names, in any order,
+that are the columns of one key. The rows are handled in order: the first clause whose
+target key has a conflicting row handles the row, and a row that no clause handles is
+inserted and checked against every key. A `DO UPDATE` without target on a table with
+more than one key is the restriction `conflict-without-target`. Named
+constraints, collations, `CHECK`, `REFERENCES`, generated columns, `OR` conflict
+clauses, the conflict clauses of constraints, a target with a direction, collation,
+`NULLS` order, qualified name or `WHERE`, `WITH`, `FROM` in writes, sort modifiers in keys,
 partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
 options, `AS SELECT`, views, triggers, virtual tables, `EXPLAIN`, `PRAGMA`,
 compound `SELECT`, `DISTINCT`, `HAVING`, subqueries and table-valued functions in
@@ -128,7 +136,7 @@ messages in `RestrictionText.lean`. Every id has one row in this table;
 same ids. `conformance/restriction_examples.py` has, for every id, a schema and a
 migration that the resolver refuses with that id, and a test runs each one. Syntax
 that the frontend refuses before resolution, such as `DISTINCT` or
-an UPSERT, has no id. `just restriction-costs` counts, for each id and for each kind
+`INSERT OR IGNORE`, has no id. `just restriction-costs` counts, for each id and for each kind
 of frontend refusal, the cases of the claimed corpora that it keeps out of scope.
 
 | Id | Restriction | Introduced by |
@@ -142,6 +150,7 @@ of frontend refusal, the cases of the claimed corpora that it keeps out of scope
 | `add-column-constraint` | Only a nullable column without a default can be added | ADR 0008 |
 | `time-value` | Time values are not modeled | ADR 0008 |
 | `row-dependent-key` | A SET value that reads the row is not modeled for a column of a unique key | ADR 0012 amendment 1 (question 1) |
+| `conflict-without-target` | DO UPDATE without a conflict target is not modeled for a table with more than one key | ADR 0012 amendment 4 (owner decision 2) |
 | `insert-column-twice` | A column named twice in INSERT is not modeled | ADR 0008 |
 | `update-column-twice` | A column assigned twice in UPDATE is not modeled | ADR 0008 |
 | `rowid-name` | A rowid name that is not a column is not modeled in an expression over a table; in VALUES it resolves as any other name | ADR 0012 slice 3a; extended 2026-10-14 |

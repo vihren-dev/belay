@@ -14,6 +14,7 @@ deriving instance Lean.FromJson, Lean.ToJson for Syntax.Expr, Syntax.ColumnConst
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ResultColumn, Syntax.OrderTerm
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ColumnDefinition, Syntax.TableConstraint
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.TableReference, Syntax.Join
+deriving instance Lean.FromJson, Lean.ToJson for Syntax.ConflictAction, Syntax.ConflictClause
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.Write
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.Statement
 deriving instance Lean.ToJson for PrepareError
@@ -39,6 +40,8 @@ deriving instance Lean.ToExpr for Syntax.ColumnDefinition
 deriving instance Lean.ToExpr for Syntax.TableConstraint
 deriving instance Lean.ToExpr for Syntax.TableReference
 deriving instance Lean.ToExpr for Syntax.Join
+deriving instance Lean.ToExpr for Syntax.ConflictAction
+deriving instance Lean.ToExpr for Syntax.ConflictClause
 deriving instance Lean.ToExpr for Syntax.Write
 deriving instance Lean.ToExpr for Syntax.Statement
 deriving instance Lean.ToExpr for Limits
@@ -56,6 +59,8 @@ deriving instance Lean.ToExpr for Resolved.SortKey
 deriving instance Lean.ToExpr for Resolved.JoinKind
 deriving instance Lean.ToExpr for Resolved.Join
 deriving instance Lean.ToExpr for Resolved.Query
+deriving instance Lean.ToExpr for Resolved.ConflictAction
+deriving instance Lean.ToExpr for Resolved.ConflictClause
 deriving instance Lean.ToExpr for Resolved.Statement
 
 /-- The supported version of {lit}`ScriptRecord`, the structural record of a schema

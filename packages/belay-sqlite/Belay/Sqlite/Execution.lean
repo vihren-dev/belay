@@ -92,7 +92,7 @@ def step (statement : Resolved.Statement) (database : Database) (position : Nat 
   | .query query => match query.source database with
     | some rows => if query.fails rows then .failure position .integerOverflow database else .success database
     | none => .success database
-  | .createIndex .. | .begin | .commit | .rollback | .insert .. | .update .. | .delete .. =>
+  | .createIndex .. | .begin | .commit | .rollback | .insert .. | .upsert .. | .update .. | .delete .. =>
     .failure position .unmodeled database
 
 end Belay.Sqlite

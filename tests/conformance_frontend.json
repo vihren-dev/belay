@@ -8,6 +8,7 @@
   "belay.sqlite.quoted_text",
   "belay.sqlite.sql_tree",
   "belay.sqlite.syntax",
+  "belay.sqlite.syntax_conflicts",
   "belay.sqlite.syntax_definitions",
   "belay.sqlite.syntax_expressions",
   "belay.sqlite.syntax_queries",

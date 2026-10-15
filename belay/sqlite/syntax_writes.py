@@ -6,12 +6,14 @@ columns; DELETE keeps its optional WHERE expression and its RETURNING columns. V
 (`syntax_queries.query_expression`); Lean decides which of them the model admits in a
 write. A write with RETURNING is a `returning` node around the write, with its
 result columns as in SELECT; a write without RETURNING is the write alone.
-Conflict clauses, UPSERT, FROM, SELECT sources and named or
+The ON CONFLICT clauses of INSERT are `syntax_conflicts.conflict_clauses`; an INSERT
+without them has an empty list. OR conflict clauses, FROM, SELECT sources and named or
 non-deferred transactions have no constructor and are refused with their source range.
 """
 
-from .located import Located, constructor, leaf, pair, sequence
+from .located import Located, constructor, leaf, sequence
 from .sql_tree import Node, Tree
+from .syntax_conflicts import assignment_list, conflict_clauses
 from .syntax_definitions import absent, left_list, require
 from .syntax_expressions import name
 from .syntax_queries import query_expression, result_columns
@@ -65,15 +67,13 @@ def returning(tree: Tree, command: Node, write: Located, parts: list[Node]) -> L
 
 
 def insert(tree: Tree, command: Node) -> Located:
-    """Map INSERT INTO table [(columns)] VALUES rows [RETURNING columns]."""
+    """Map INSERT INTO table [(columns)] VALUES rows [ON CONFLICT ...] [RETURNING columns]."""
     with_, operation, _, target, columns, source, upsert = require(
         tree, command, ["with", "insert_cmd", "INTO", "xfullname", "idlist_opt", "select", "upsert"])
     absent(tree, with_, "A WITH clause")
     _, conflict = require(tree, operation, ["INSERT", "orconf"])
     absent(tree, conflict, "An OR conflict clause")
-    upsert_parts = tree.children(upsert)
-    if upsert_parts and [part.symbol for part in upsert_parts] != ["RETURNING", "selcollist"]:
-        raise tree.unsupported(upsert, "An UPSERT clause is not modeled; remove it")
+    conflicts, returned = conflict_clauses(tree, upsert)
     (table,) = require(tree, target, ["nm"])
     if columns.children:
         _, listed, _ = require(tree, columns, ["LP", "idlist", "RP"])
@@ -82,8 +82,9 @@ def insert(tree: Tree, command: Node) -> Located:
     else:
         column_list = leaf(None, columns.start, columns.end)
     write = constructor("insert", [("table", name(tree, table)), ("columns", column_list),
-                                   ("rows", value_rows(tree, source))], command.start, command.end)
-    return returning(tree, command, write, upsert_parts)
+                                   ("rows", value_rows(tree, source)), ("conflicts", conflicts)],
+                        command.start, command.end)
+    return returning(tree, command, write, returned)
 
 
 def update(tree: Tree, command: Node) -> Located:
@@ -96,12 +97,9 @@ def update(tree: Tree, command: Node) -> Located:
     absent(tree, indexed, "INDEXED BY")
     absent(tree, from_, "UPDATE FROM")
     (table,) = require(tree, target, ["nm"])
-    items = [pair(name(tree, item[-3]), query_expression(tree, item[-1]), item[-3].start, item[-1].end)
-             for item in left_list(tree, assignments, {3: ["nm", "EQ", "expr"],
-                                                       5: ["setlist", "COMMA", "nm", "EQ", "expr"]})]
     filter_, returned = filter_and_returning(tree, where, "UPDATE")
     write = constructor("update", [("table", name(tree, table)),
-                                   ("assignments", sequence(items, assignments.start, assignments.end)),
+                                   ("assignments", assignment_list(tree, assignments)),
                                    ("filter", filter_)], command.start, command.end)
     return returning(tree, command, write, returned)
 

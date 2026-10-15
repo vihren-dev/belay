@@ -99,21 +99,21 @@ def tableT : Catalog := catalogOf (migration [] [.createTable "t" [column "a", c
   == [.prepareError (.noSuchTable "u"), .prepareError (.duplicateColumn "A"), .addColumn 0 { name := "c", declaredType := some "TEXT" }]
 
 -- INSERT: errors in SQLite's order, and full rows with defaults and converted literals.
-#guard statements (migration tableT [.insert "u" none [[.null]], .insert "t" (some ["z"]) [[.null]],
-    .insert "t" none [[.null]], .insert "t" (some ["a"]) [[.null, .null]], .insert "t" none [[.null], [.null, .null]]])
+#guard statements (migration tableT [.insert "u" none [[.null]] [], .insert "t" (some ["z"]) [[.null]] [],
+    .insert "t" none [[.null]] [], .insert "t" (some ["a"]) [[.null, .null]] [], .insert "t" none [[.null], [.null, .null]] []])
   == [.prepareError (.noSuchTable "u"), .prepareError (.tableHasNoColumn "t" "z"),
       .prepareError (.valueCount "t" 2 1), .prepareError (.valuesForColumns 2 1), .prepareError .valuesDiffer]
-#guard statements (migration tableT [.insert "t" (some ["B"]) [[.numeric "1_000"], [.numeric "0x10"], [.negate (.numeric "9223372036854775808")]]])
+#guard statements (migration tableT [.insert "t" (some ["B"]) [[.numeric "1_000"], [.numeric "0x10"], [.negate (.numeric "9223372036854775808")]] []])
   == [.insert 0 [[.null, .integer 1000], [.null, .integer 16], [.null, .integer (-9223372036854775808)]] [] []]
-#guard statements (migration tableT [.insert "t" (some ["b"]) [[.numeric "9223372036854775808"]]])
+#guard statements (migration tableT [.insert "t" (some ["b"]) [[.numeric "9223372036854775808"]] []])
   == [.insert 0 [[.null, .real (9223372036854775808.0 : Float).toBits]] [] []]
-#guard statements (migration tableT [.insert "t" (some ["b"]) [[.numeric "0x10000000000000000"]]])
+#guard statements (migration tableT [.insert "t" (some ["b"]) [[.numeric "0x10000000000000000"]] []])
   == [.prepareError (.hexLiteralTooBig "0x10000000000000000")]
 
 -- Double-quoted strings: a string literal when DQS_DML is on, else "no such column".
-#guard statements (migration tableT [.insert "t" (some ["a"]) [[.identifier "x" true]]])
+#guard statements (migration tableT [.insert "t" (some ["a"]) [[.identifier "x" true]] []])
   == [.insert 0 [[.text [120], .null]] [] []]
-#guard statements (migration tableT [.insert "t" (some ["a"]) [[.identifier "x" true]]] { defaults with dqsDml := false })
+#guard statements (migration tableT [.insert "t" (some ["a"]) [[.identifier "x" true]] []] { defaults with dqsDml := false })
   == [.prepareError (.noSuchColumn "x")]
 
 -- UPDATE: SET and WHERE names, and the modeled integer equality filter.
@@ -130,14 +130,14 @@ def keyed : Catalog := catalogOf (schema [.createTable "k" [column "a" (some "IN
   .createIndex "ka" true "k" ["a"], .createIndex "kb" false "k" ["b"]])
 
 -- Writes carry the unique keys: the primary key, UNIQUE constraints, then unique indexes.
-#guard statements (migration keyed [.insert "k" none [[.null, .null, .null, .null]], .update "k" [("a", .null)] none])
+#guard statements (migration keyed [.insert "k" none [[.null, .null, .null, .null]] [], .update "k" [("a", .null)] none])
   == [.insert 0 [[.null, .null, .null, .null]] [[2], [1, 0], [0]] [], .update 0 [(0, .literal .null)] none [[2], [1, 0], [0]] []]
 
 -- Keys of every affinity and value run (slice 5a): text values and TEXT key columns.
-#guard !restricted (migration keyed [.insert "k" (some ["a", "d"]) [[.null, .null], [.string [120], .null]]])
+#guard !restricted (migration keyed [.insert "k" (some ["a", "d"]) [[.null, .null], [.string [120], .null]] []])
 #guard !restricted (migration keyed [.update "k" [("d", .string [49]), ("c", .string [120])] none])
 #guard !restricted (migration (catalogOf (schema [.createTable "s" [column "a"] [.unique ["a"]]]))
-  [.insert "s" none [[.null]]])
+  [.insert "s" none [[.null]] []])
 
 -- New tables and indexes take the next catalog position.
 #guard statements (schema [.createTable "t" [column "a"] [], .createIndex "i" false "t" ["a"], .createTable "u" [column "a"] []])
@@ -160,10 +160,10 @@ def keyed : Catalog := catalogOf (schema [.createTable "k" [column "a" (some "IN
 #guard !restricted (schema [.createTable "sqlite_stat1" [column "tbl" none, column "idx" none, column "stat" none] []])
 
 -- A schema describes the starting catalog, then the script resolves against it.
-#guard (resolveSchemaAndScript defaults [.createTable "t" [column "a"] []] [.insert "t" none [[.null]]]).toOption.map
+#guard (resolveSchemaAndScript defaults [.createTable "t" [column "a"] []] [.insert "t" none [[.null]] []]).toOption.map
     (fun resolution => (resolution.startCatalog.length, resolution.resolved, resolution.nextCatalog.length))
   == some (1, [.insert 0 [[.null]] [] []], 1)
-#guard resolveSchemaAndScript defaults [.createTable "t" [column "a"] [], .insert "t" none [[.null]]] []
+#guard resolveSchemaAndScript defaults [.createTable "t" [column "a"] [], .insert "t" none [[.null]] []] []
   matches .error (.schemaRestricted { statement := 1, path := [], .. })
 #guard resolveSchemaAndScript defaults [.createTable "t" [column "a"] [], .createTable "T" [column "a"] []] []
   matches .error (.schemaPrepareError 1 (.tableExists "T"))

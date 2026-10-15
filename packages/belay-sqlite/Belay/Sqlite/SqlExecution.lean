@@ -1,5 +1,6 @@
 import Belay.Sqlite.Execution
 import Belay.Sqlite.RowDelete
+import Belay.Sqlite.Upsert
 
 set_option doc.verso true
 
@@ -59,7 +60,8 @@ def insertOutcome (database : Database) (at_ : Nat) (keys : List (List Nat)) (ta
     else .failure position .constraintViolation database
   | none => checkedWrite database at_ keys (LiteralData.inserted table rows) position
 
-/-- Apply INSERT/UPDATE with ABORT constraints over the statement's keys, and DELETE,
+/-- Apply INSERT/UPDATE with ABORT constraints over the statement's keys, INSERT with
+{lit}`ON CONFLICT` clauses row by row ({name}`LiteralData.upsertRun`), and DELETE,
 which removes rows and cannot fail a constraint. A position without a table fails as
 {lean}`ExecutionError.unmodeled`; a failed constraint retains the input database.
 Other statements use {name}`step`. This
@@ -69,6 +71,11 @@ def literalStep (statement : Resolved.Statement) (database : Database) (position
   | .insert at_ rows keys _ => match database at_ with
     | none => .failure position .unmodeled database
     | some table => insertOutcome database at_ keys table rows position
+  | .upsert at_ rows clauses keys _ => match database at_ with
+    | none => .failure position .unmodeled database
+    | some table => match LiteralData.upsertRun keys clauses table rows with
+      | .ok (result, _) => .success (database.set at_ result)
+      | .error reason => .failure position reason database
   | .update at_ assignments filter keys _ => match database at_ with
     | none => .failure position .unmodeled database
     | some table =>
@@ -89,6 +96,7 @@ reached-statement script support check. -/
 def statementReady (statement : Resolved.Statement) (database : Database) : Bool :=
   match statement with
   | .insert at_ rows keys _ => (database at_).all fun table => LiteralData.insertReady keys table rows
+  | .upsert at_ rows clauses keys _ => (database at_).all fun table => LiteralData.upsertReady keys table clauses rows
   | .update at_ assignments filter keys _ => (database at_).all fun table =>
       LiteralData.updateReady keys table assignments filter
   | .delete .. => true
@@ -113,8 +121,8 @@ def advance (position : Nat) (statement : Resolved.Statement) (state : SqlState)
   | .rollback => match state.snapshot with
     | none => .halt (.failure position .noActiveTransaction state.database)
     | some original => .next { database := original }
-  | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .update .. | .delete .. | .prepareError _
-  | .query _ =>
+  | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .upsert .. | .update .. | .delete ..
+  | .prepareError _ | .query _ =>
     match literalStep statement state.database position with
     | .success database => .next { state with database := database }
     | .failure failed reason database => .halt (state.finish (.failure failed reason database))

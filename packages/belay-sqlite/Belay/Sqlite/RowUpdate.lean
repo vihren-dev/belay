@@ -21,13 +21,21 @@ NULL or false condition does not select the row. -/
 def selected (filter : Option Resolved.Expr) (row : Row) : Bool :=
   filter.all fun condition => Resolved.truthy (condition.eval row.values)
 
-/-- The new row of a selected row: each assignment sets its position to the value of
-its expression on the old row (R-36239-04077, R-40598-36595), stored with the
-column's affinity ({name}`storeValue`). The rowid and every other cell stay
-(R-40472-60438); a position beyond the row's width changes nothing. -/
-def assign (columns : List CatalogColumn) (assignments : List (Nat × Resolved.Expr)) (row : Row) : Row :=
+/-- The new row of an assigned row: each assignment sets its position to the value of
+its expression on the context, stored with the column's affinity ({name}`storeValue`).
+The rowid and every other cell stay; a position beyond the row's width changes nothing.
+UPDATE uses the old row as the context ({lit}`assign`); {lit}`DO UPDATE` uses the old
+row followed by the proposed row. -/
+def assignFrom (columns : List CatalogColumn) (assignments : List (Nat × Resolved.Expr)) (context : List Value)
+    (row : Row) : Row :=
   { row with values := assignments.foldl (fun values (position, expression) =>
-      values.set position (storeValue (positionAffinity columns position) (expression.eval row.values))) row.values }
+      values.set position (storeValue (positionAffinity columns position) (expression.eval context))) row.values }
+
+/-- The new row of a selected row of UPDATE: {name}`assignFrom` with the old row as the
+context, so each value reads the old row (R-36239-04077, R-40598-36595), and the rowid
+and every other cell stay (R-40472-60438). -/
+def assign (columns : List CatalogColumn) (assignments : List (Nat × Resolved.Expr)) (row : Row) : Row :=
+  assignFrom columns assignments row.values row
 
 /-- The rowid of an assigned row: its rowid alias cell, when the table has an alias and the
 cell is an integer, so UPDATE of the alias moves the row (slice 5b); the old rowid

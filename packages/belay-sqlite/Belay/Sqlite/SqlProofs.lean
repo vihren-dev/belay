@@ -19,16 +19,19 @@ def SchemaOnly (script : List Resolved.Statement) : Prop :=
     | .commit => False
     | .rollback => False
     | .insert .. => False
+    | .upsert .. => False
     | .update .. => False
     | .delete .. => False
     | .prepareError _ => False
     | .query _ => False
 
-/-- No statement in the script is INSERT, UPDATE or DELETE. This is a syntax guard, not
+/-- No statement in the script is INSERT (with or without {lit}`ON CONFLICT`), UPDATE or
+DELETE. This is a syntax guard, not
 a success claim; the empty script satisfies it. -/
 def NoWrites (script : List Resolved.Statement) : Prop :=
   ∀ statement ∈ script, match statement with
     | .insert .. => False
+    | .upsert .. => False
     | .update .. => False
     | .delete .. => False
     | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ | .query _ => True
@@ -42,7 +45,8 @@ def ModeledDefinitions (script : List Resolved.Statement) : Prop :=
     | .createTable _ _ table => table.plain = true
     | .addColumn _ column => column.plain = true
     | .createIndex .. => False
-    | .insert .. | .update .. | .delete .. | .begin | .commit | .rollback | .prepareError _ | .query _ => True
+    | .insert .. | .upsert .. | .update .. | .delete .. | .begin | .commit | .rollback | .prepareError _
+    | .query _ => True
 
 /-- For every position and connection state, a {name}`NoWrites` script with
 {name}`ModeledDefinitions` passes the reached-statement support check, because

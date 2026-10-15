@@ -1,5 +1,5 @@
 import Belay.Sqlite.Resolution.Catalog
-import Belay.Sqlite.Resolution.QueryForm
+import Belay.Sqlite.Resolution.ConflictForm
 import Belay.Sqlite.Resolution.RestrictionText
 
 set_option doc.verso true
@@ -92,6 +92,9 @@ inductive PrepareError where
   join, a merged name of which a left table after the first has a column that its own
   join does not merge, as written. -/
   | ambiguousUsingReference (name : String)
+  /-- {lit}`ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE constraint`: a
+  target whose columns are not the columns of one key of the table. -/
+  | conflictTargetMismatch
   deriving Repr, DecidableEq
 
 /-- A model restriction: SQLite accepts the SQL, but the model does not describe
@@ -139,6 +142,11 @@ inductive Statement where
   of {lit}`.literal` values and the filter {lit}`column = integer`. The unique keys and
   the {lit}`RETURNING` columns are as for INSERT. -/
   | update (table : Nat) (assignments : List (Nat × Expr)) (filter : Option Expr)
+      (keys : List (List Nat)) (returning : List (Expr × String))
+  /-- INSERT with {lit}`ON CONFLICT` clauses: the rows and the keys as for
+  {name}`Statement.insert`, and the clauses in written order. Each row is inserted, or
+  handled by the first clause whose target key has a conflicting row. -/
+  | upsert (table : Nat) (rows : List (List Value)) (clauses : List ConflictClause)
       (keys : List (List Nat)) (returning : List (Expr × String))
   /-- Remove every row where the optional filter condition is true (every row without a
   filter). The {lit}`RETURNING` columns are evaluated on each removed row; the

@@ -16,7 +16,7 @@ assignments; each sets another position, which keeps the cell. -/
 theorem LiteralData.assign_unassigned (columns : List CatalogColumn) (assignments : List (Nat × Resolved.Expr))
     (row : Row) (position : Nat) (unassigned : ∀ assignment ∈ assignments, assignment.1 ≠ position) :
     (assign columns assignments row).values[position]? = row.values[position]? := by
-  unfold assign
+  unfold assign assignFrom
   suffices ∀ (values : List Value), (assignments.foldl (fun values (position, expression) => values.set position
       (storeValue (positionAffinity columns position) (expression.eval row.values))) values)[position]? =
       values[position]? from this row.values
@@ -67,30 +67,40 @@ theorem Row.Stored.setStored {columns : List CatalogColumn} {rowid : Int} {value
   · rw [List.getElem?_set_ne (Ne.symm same)] at cellAt
     exact stored index column cell columnAt cellAt
 
-/-- For every column list, assignments and row: {name}`LiteralData.assign` keeps the
-rowid, the number of cells, and {name}`Row.Stored`. Proof sketch: induction on the
-assignments, each a {lit}`set` of a stored value ({name}`Row.Stored.setStored`). -/
-theorem LiteralData.assign_valid (columns : List CatalogColumn) (assignments : List (Nat × Resolved.Expr))
-    (row : Row) (stored : row.Stored columns) :
-    (assign columns assignments row).rowid = row.rowid ∧
-    (assign columns assignments row).values.length = row.values.length ∧
-    (assign columns assignments row).Stored columns := by
+/-- For every column list, assignments, context and row: {name}`LiteralData.assignFrom`
+keeps the rowid, the number of cells, and {name}`Row.Stored`. Proof sketch: induction on
+the assignments, each a {lit}`set` of a stored value ({name}`Row.Stored.setStored`). -/
+theorem LiteralData.assignFrom_valid (columns : List CatalogColumn) (assignments : List (Nat × Resolved.Expr))
+    (context : List Value) (row : Row) (stored : row.Stored columns) :
+    (assignFrom columns assignments context row).rowid = row.rowid ∧
+    (assignFrom columns assignments context row).values.length = row.values.length ∧
+    (assignFrom columns assignments context row).Stored columns := by
   refine ⟨rfl, ?_⟩
-  unfold assign
+  unfold assignFrom
   suffices ∀ (values : List Value), Row.Stored columns { rowid := row.rowid, values } →
       (assignments.foldl (fun values (position, expression) => values.set position
-        (storeValue (positionAffinity columns position) (expression.eval row.values))) values).length = values.length ∧
+        (storeValue (positionAffinity columns position) (expression.eval context))) values).length = values.length ∧
       Row.Stored columns { rowid := row.rowid, values := assignments.foldl (fun values (position, expression) =>
-        values.set position (storeValue (positionAffinity columns position) (expression.eval row.values))) values } from
+        values.set position (storeValue (positionAffinity columns position) (expression.eval context))) values } from
     this row.values stored
   induction assignments with
   | nil => intro values stored; exact ⟨rfl, stored⟩
   | cons assignment rest ih =>
     intro values stored
     obtain ⟨position, expression⟩ := assignment
-    have next := ih _ (Row.Stored.setStored stored position (expression.eval row.values))
+    have next := ih _ (Row.Stored.setStored stored position (expression.eval context))
     simp only [List.foldl_cons] at next ⊢
     exact ⟨next.1.trans (List.length_set ..), next.2⟩
+
+/-- For every column list, assignments and row: {name}`LiteralData.assign` keeps the
+rowid, the number of cells, and {name}`Row.Stored`. Proof sketch: the case of
+{name}`LiteralData.assignFrom_valid` with the row as the context. -/
+theorem LiteralData.assign_valid (columns : List CatalogColumn) (assignments : List (Nat × Resolved.Expr))
+    (row : Row) (stored : row.Stored columns) :
+    (assign columns assignments row).rowid = row.rowid ∧
+    (assign columns assignments row).values.length = row.values.length ∧
+    (assign columns assignments row).Stored columns :=
+  assignFrom_valid columns assignments row.values row stored
 
 /-- For every valid table, assignments and filter: assume no
 {name}`LiteralData.updateMismatch` and a bounded rowid for every updated row. Then

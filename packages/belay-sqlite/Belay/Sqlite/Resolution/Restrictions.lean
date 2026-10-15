@@ -30,6 +30,9 @@ inductive RestrictionKind where
   /-- A {lit}`SET` value that reads the row is not modeled for a column of a unique key
   (ADR 0012, amendment 1, owner decision on question 1). -/
   | rowDependentKey
+  /-- {lit}`ON CONFLICT DO UPDATE` without a target on a table with more than one key:
+  SQLite then chooses the key of the conflict by its internal order of indexes. -/
+  | conflictWithoutTarget
   /-- A column named twice in INSERT is not modeled (ADR 0008). -/
   | insertColumnTwice
   /-- A column assigned twice in UPDATE is not modeled (ADR 0008). -/

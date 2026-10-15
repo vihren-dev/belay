@@ -32,14 +32,14 @@ def queryOf (statement : Syntax.Statement) : Option Resolved.Query :=
   match resolvedOne statement with
   | some (.query query) => some query
   | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some .begin | some .commit
-  | some .rollback | some (.insert ..) | some (.update ..) | some (.delete ..) | some (.prepareError _) | none => none
+  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.prepareError _) | none => none
 
 /-- The prepare error of a resolution, if it is one. -/
 def errorOf (statement : Syntax.Statement) : Option PrepareError :=
   match resolvedOne statement with
   | some (.prepareError error) => some error
   | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some .begin | some .commit
-  | some .rollback | some (.insert ..) | some (.update ..) | some (.delete ..) | some (.query _) | none => none
+  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.query _) | none => none
 
 /-- Whether the statement is a model restriction. -/
 def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration catalog [statement])
@@ -101,11 +101,11 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
 #guard (queryOf (select [.star] (filter := some (.arithmetic .add (.identifier "Abc" false) (.numeric "1"))))).isSome
 -- Constant expressions in writes (slice 3a) are computed and stored at resolution; a SET
 -- value that names a column stays an expression over the old row (slice 3b).
-#guard resolvedOne (.insert "t" none [[.arithmetic .add (.numeric "1") (.numeric "2"), .string [120]]]) ==
+#guard resolvedOne (.insert "t" none [[.arithmetic .add (.numeric "1") (.numeric "2"), .string [120]]] []) ==
   some (.insert 0 [[.integer 3, .text [120]]] [] [])
 #guard resolvedOne (.update "t" [("Abc", .cast (.string [55]) "INTEGER")] none) ==
   some (.update 0 [(0, .literal (.integer 7))] none [] [])
-#guard errorOf (.insert "t" none [[.callStar "count", .null]]) == some (.misuseOfAggregate "count")
+#guard errorOf (.insert "t" none [[.callStar "count", .null]] []) == some (.misuseOfAggregate "count")
 #guard resolvedOne (.update "t" [("b", .arithmetic .add (.identifier "Abc" false) (.numeric "1"))] none) ==
   some (.update 0 [(1, .arithmetic .add (.column 0) (.literal (.integer 1)))] none [] [])
 -- The filter is a condition, resolved as in SELECT: `WHERE Abc = 1 + 2`.
@@ -114,12 +114,12 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
   (some (.compare .eq (.column 0) (.arithmetic .add (.literal (.integer 1)) (.literal (.integer 2))))) [] [])
 -- RETURNING (slice 3a): `*` and named expressions over the written row; an aggregate is
 -- a misuse, a rowid a restriction, and an error in the values comes first.
-#guard (resolvedOne (.returning (.insert "t" none [[.numeric "1", .string [120]]]) [.star, .expression (.identifier "B" false) none "B"]))
+#guard (resolvedOne (.returning (.insert "t" none [[.numeric "1", .string [120]]] []) [.star, .expression (.identifier "B" false) none "B"]))
   == some (.insert 0 [[.integer 1, .text [120]]] [] [(.column 0, "Abc"), (.column 1, "b"), (.column 1, "b")])
-#guard errorOf (.returning (.insert "t" none [[.numeric "1", .string [120]]]) [written (.callStar "count") "count(*)"]) ==
+#guard errorOf (.returning (.insert "t" none [[.numeric "1", .string [120]]] []) [written (.callStar "count") "count(*)"]) ==
   some (.misuseOfAggregate "count")
 #guard restrictedOne (.returning (.update "t" [("b", .string [120])] none) [written (.identifier "rowid" false) "rowid"])
-#guard errorOf (.returning (.insert "t" none [[.identifier "missing" false, .null]]) [written (.identifier "other" false) "other"]) ==
+#guard errorOf (.returning (.insert "t" none [[.identifier "missing" false, .null]] []) [written (.identifier "other" false) "other"]) ==
   some (.noSuchColumn "missing")
 -- GROUP BY resolves a name to a source column before a result alias, so an alias
 -- of an aggregate does not hide the column `b`.
@@ -138,6 +138,6 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
 #guard restrictedOne (.update "t" [("b", .identifier "_rowid_" false)] none)
 #guard restrictedOne (.delete "t" (some (.equals (.identifier "rowid" true) (.numeric "1"))))
 -- In VALUES no table is in scope, and SQLite reports `no such column: rowid`.
-#guard errorOf (.insert "t" none [[.identifier "rowid" false, .null]]) == some (.noSuchColumn "rowid")
+#guard errorOf (.insert "t" none [[.identifier "rowid" false, .null]] []) == some (.noSuchColumn "rowid")
 
 end Belay.Sqlite.Resolution.QueryResolutionExamples

@@ -1,5 +1,5 @@
 import Belay.Sqlite.Resolution.Definitions
-import Belay.Sqlite.Resolution.Returning
+import Belay.Sqlite.Resolution.Upserts
 
 set_option doc.verso true
 
@@ -9,19 +9,6 @@ A resolved INSERT row has one value for each table column in table order: a name
 column gets the written value and every other column its default. -/
 
 namespace Belay.Sqlite
-
-/-- Resolve the items in order from a starting position, and stop at the first issue. -/
-def resolveAllFrom (resolveOne : Nat → α → Except ValueIssue β) (start : Nat) :
-    List α → Except ValueIssue (List β)
-  | [] => .ok []
-  | item :: rest => do
-    let value ← resolveOne start item
-    let values ← resolveAllFrom resolveOne (start + 1) rest
-    return value :: values
-
-/-- Resolve a list in order from position zero, and stop at the first issue. -/
-def resolveAll (resolveOne : Nat → α → Except ValueIssue β) (items : List α) : Except ValueIssue (List β) :=
-  resolveAllFrom resolveOne 0 items
 
 /-- The value of a column's DEFAULT when INSERT omits the column: NULL without a
 default. The only default that a catalog holds is {lit}`CURRENT_TIMESTAMP`
@@ -61,9 +48,12 @@ def fullRow (columns : List CatalogColumn) (positions : List Nat) (row : List Va
       | none => defaultValue column
     .ok (storeValue column.affinity value)) columns
 
-/-- Resolve INSERT. Path 1 is the column list and path 2 the rows. -/
+/-- Resolve INSERT. Path 1 is the column list, path 2 the rows, path 3 the
+{lit}`ON CONFLICT` clauses ({name}`resolveConflict`) and path 4 the {lit}`RETURNING`
+columns. An INSERT without clauses is {name}`Resolved.Statement.insert`, one with
+clauses {name}`Resolved.Statement.upsert`. -/
 def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : String)
-    (names : Option (List String)) (rows : List (List Syntax.Expr))
+    (names : Option (List String)) (rows : List (List Syntax.Expr)) (conflicts : List Syntax.ConflictClause)
     (returning : List Syntax.ResultColumn) : StatementResolution :=
   let width := (rows.head?.map List.length).getD 0
   if rows.any (·.length != width) then prepareError catalog .valuesDiffer else
@@ -90,8 +80,13 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
           | .error issue => issueResolution catalog index [2] issue
           | .ok full =>
             let keys := catalog.uniqueKeys position table
-            match resolveReturning context.profile.dqsDml (Scope.single tableName table.columns) returning with
+            match resolveAll (resolveConflict context.profile.dqsDml tableName table keys) conflicts with
             | .error issue => issueResolution catalog index [3] issue
-            | .ok columns => .ok (.insert position full keys columns, catalog)
+            | .ok clauses =>
+              match resolveReturning context.profile.dqsDml (Scope.single tableName table.columns) returning with
+              | .error issue => issueResolution catalog index [4] issue
+              | .ok columns =>
+                if clauses.isEmpty then .ok (.insert position full keys columns, catalog)
+                else .ok (.upsert position full clauses keys columns, catalog)
 
 end Belay.Sqlite

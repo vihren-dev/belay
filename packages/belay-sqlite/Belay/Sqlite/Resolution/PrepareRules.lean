@@ -1,5 +1,5 @@
 import Belay.Sqlite.Resolution.PrepareSpec
-import Belay.Sqlite.Resolution.OperandIssues
+import Belay.Sqlite.Resolution.UpsertRules
 
 set_option doc.verso true
 
@@ -86,9 +86,10 @@ resolver; the branches after the table lookup give errors that name no catalog
 object, by the lemmas on column lists, values and full rows. -/
 theorem resolveInsert_named (context : ResolveContext) (catalog after : Catalog) (index : Nat)
     (tableName : String) (names : Option (List String)) (rows : List (List Syntax.Expr))
-    (returning : List Syntax.ResultColumn)
+    (conflicts : List Syntax.ConflictClause) (returning : List Syntax.ResultColumn)
     (error : PrepareError) (named : error.namesObject = true)
-    (ok : resolveInsert context catalog index tableName names rows returning = .ok (.prepareError error, after)) :
+    (ok : resolveInsert context catalog index tableName names rows conflicts returning =
+      .ok (.prepareError error, after)) :
     error = .noSuchTable tableName ∧ catalog.findTable tableName = none ∧ after = catalog := by
   unfold resolveInsert at ok
   simp only [prepareError, restrict, issueResolution] at ok
@@ -100,6 +101,8 @@ theorem resolveInsert_named (context : ResolveContext) (catalog after : Catalog)
     | (simp_all; done)
     | (rename_i cause; simp [insertPositions_error _ _ _ _ cause] at named; done)
     | (rename_i _ _ cause; have := resolveReturning_issue _ _ _ _ cause
+       simp_all [ValueIssue.namesNoObject]; done)
+    | (rename_i _ _ cause; have := resolveAll_issue _ _ _ (fun _ _ _ h => resolveConflict_issues _ _ _ _ _ _ _ h) cause
        simp_all [ValueIssue.namesNoObject]; done)
     | (rename_i _ _ cause; have := insertValues_issue _ _ _ cause
        simp_all [ValueIssue.namesNoObject]; done)
@@ -114,10 +117,11 @@ table has the folded name, the resolution is {lit}`no such table`, and the catal
 is unchanged. -/
 theorem resolveInsert_missing (context : ResolveContext) (catalog : Catalog) (index : Nat)
     (tableName : String) (names : Option (List String)) (rows : List (List Syntax.Expr))
-    (returning : List Syntax.ResultColumn)
+    (conflicts : List Syntax.ConflictClause) (returning : List Syntax.ResultColumn)
     (same : ∀ row ∈ rows, row.length = (rows.head?.map List.length).getD 0)
     (missing : catalog.findTable tableName = none) :
-    resolveInsert context catalog index tableName names rows returning = .ok (.prepareError (.noSuchTable tableName), catalog) := by
+    resolveInsert context catalog index tableName names rows conflicts returning =
+      .ok (.prepareError (.noSuchTable tableName), catalog) := by
   have consistent : (rows.any fun row => row.length != (rows.head?.map List.length).getD 0) = false := by
     simpa using same
   unfold resolveInsert

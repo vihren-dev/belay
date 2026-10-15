@@ -82,7 +82,10 @@ Transitions and failure status come from production advance, never a second
 evaluator. A successful INSERT changes one row per VALUES row and a successful
 UPDATE changes each row that its filter selects; their {lit}`RETURNING` rows are
 {name}`returnedRows` of the cells of the inserted rows (with the rowid of a NULL rowid
-alias), or of the new values of the selected rows. A
+alias), or of the new values of the selected rows. A successful INSERT with
+{lit}`ON CONFLICT` clauses changes each row that it inserted or updated, and its
+{lit}`RETURNING` rows are {name}`returnedRows` of those rows in row order
+({name}`LiteralData.upsertRun`); skipped rows are not counted. A
 successful DELETE changes each row that its filter selects, and its {lit}`RETURNING` rows
 are {name}`returnedRows` of the old values of those rows. A write that fails a
 constraint or a rowid alias ({lit}`datatype mismatch`) returns its {lit}`RETURNING` names
@@ -104,6 +107,13 @@ def statementOutput (statement : Resolved.Statement) (before : SqlState)
       let table ← before.database at_
       let written := ((LiteralData.inserted table rows).rows.drop table.rows.length).map (·.values)
       return ⟨names, returnedRows returning written, some rows.length⟩
+    else if constraintFailure then some ⟨names, [], some 0⟩ else none
+  | .upsert at_ rows clauses keys returning =>
+    let names := returning.map (·.2)
+    if successful then do
+      let table ← before.database at_
+      let (_, written) ← (LiteralData.upsertRun keys clauses table rows).toOption
+      return ⟨names, returnedRows returning (written.map (·.values)), some written.length⟩
     else if constraintFailure then some ⟨names, [], some 0⟩ else none
   | .update at_ assignments filter _ returning =>
     let names := returning.map (·.2)

@@ -28,10 +28,10 @@ def ResolveState.withCatalog (state : ResolveState) (result : StatementResolutio
   result.map fun (statement, catalog) => (statement, { state with catalog := catalog })
 
 /-- The path of a restriction of a write inside {lit}`Syntax.Statement.returning`: the
-write's {lit}`RETURNING` columns (child 3 of the resolved write) are child 1 of the
+write's {lit}`RETURNING` columns (child 4 of the resolved write) are child 1 of the
 wrapper, and every other part is inside the write, child 0. -/
 def returningPath : List Nat → List Nat
-  | 3 :: rest => 1 :: rest
+  | 4 :: rest => 1 :: rest
   | path => 0 :: path
 
 /-- A write's resolution with its restriction paths inside the {lit}`RETURNING` wrapper. -/
@@ -58,7 +58,8 @@ def resolveStatement (context : ResolveContext) (state : ResolveState) (index : 
   | .createIndex name unique table columns =>
     state.withCatalog (resolveCreateIndex context state.catalog index name unique table columns)
   | .addColumn table column => state.withCatalog (resolveAddColumn context state.catalog index table column)
-  | .insert table columns rows => state.withCatalog (resolveInsert context state.catalog index table columns rows [])
+  | .insert table columns rows conflicts =>
+    state.withCatalog (resolveInsert context state.catalog index table columns rows conflicts [])
   | .update table assignments filter =>
     state.withCatalog (resolveUpdate context state.catalog index table assignments filter [])
   | .select columns source joins filter groupBy orderBy limit offset =>
@@ -66,8 +67,8 @@ def resolveStatement (context : ResolveContext) (state : ResolveState) (index : 
       (resolveSelect context state.catalog index columns source joins filter groupBy orderBy limit offset)
   | .delete table filter => state.withCatalog (resolveDelete context state.catalog index table filter [])
   | .returning write columns => match write with
-    | .insert table names rows =>
-      state.withCatalog (returningPaths (resolveInsert context state.catalog index table names rows columns))
+    | .insert table names rows conflicts =>
+      state.withCatalog (returningPaths (resolveInsert context state.catalog index table names rows conflicts columns))
     | .update table assignments filter =>
       state.withCatalog (returningPaths (resolveUpdate context state.catalog index table assignments filter columns))
     | .delete table filter =>

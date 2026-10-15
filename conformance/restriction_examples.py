@@ -29,6 +29,8 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "add-column-constraint": ("CREATE TABLE t(a INTEGER);", "ALTER TABLE t ADD COLUMN b INTEGER NOT NULL DEFAULT 0;"),
     "time-value": ("CREATE TABLE t(a INTEGER, b TEXT DEFAULT CURRENT_TIMESTAMP);", "INSERT INTO t(a) VALUES (1);"),
     "row-dependent-key": ("CREATE TABLE t(a INTEGER UNIQUE);", "UPDATE t SET a = a + 1;"),
+    "conflict-without-target": ("CREATE TABLE t(a INTEGER UNIQUE, b INTEGER UNIQUE);",
+                                "INSERT INTO t VALUES (1, 2) ON CONFLICT DO UPDATE SET b = 3;"),
     "insert-column-twice": ("CREATE TABLE t(a INTEGER);", "INSERT INTO t(a, a) VALUES (1, 2);"),
     "update-column-twice": ("CREATE TABLE t(a INTEGER);", "UPDATE t SET a = 1, a = 2;"),
     "rowid-name": ("CREATE TABLE t(a INTEGER);", "SELECT rowid FROM t;"),
