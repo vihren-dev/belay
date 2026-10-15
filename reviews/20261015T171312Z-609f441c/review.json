@@ -1,0 +1,38 @@
+{
+  "caller": "claude",
+  "commit": "609f441cda661984ebf5ac92c53f0a62a5474354",
+  "date": "2026-10-15T17:13:12+00:00",
+  "exit": 0,
+  "files": [
+    "conformance/key_mutants.py",
+    "packages/belay-sqlite/Belay/Sqlite/LiteralData.lean",
+    "packages/belay-sqlite/Belay/Sqlite/Resolution/Updates.lean",
+    "plans/20261015-key-values.status.md",
+    "reviews/20261015T170616Z-605b9788/resolution-1-20261015T171235Z.json",
+    "reviews/20261015T170616Z-605b9788/resolution-2-20261015T171235Z.json",
+    "reviews/20261015T170616Z-605b9788/review.json"
+  ],
+  "findings": [],
+  "id": "20261015T171312Z-609f441c",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "fa2475f44035",
+    "R7": "0a38ead152b1",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
