@@ -127,7 +127,8 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
       | .identifier name _ => match scope.resolveName name, aliasIndex aliases name with
         | .found _ reads, _ => .ok (scope.nameOperand reads).1
         | .missing, some column => grouped column
-        | _, _ => (resolveOperand dqs scope true term).map (·.1) |>.mapError (·.under [4, item])
+        | .missing, none | .ambiguous, _ =>
+          (resolveOperand dqs scope true term).map (·.1) |>.mapError (·.under [4, item])
       | .callStar name | .call name _ =>
         .error (if aggregateCall term then .prepare .aggregateInGroupBy else (callIssue name).under [4, item])
       | .numeric _ | .negate _ => match namedResult aliases term with

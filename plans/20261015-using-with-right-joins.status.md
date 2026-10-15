@@ -28,6 +28,10 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Scope.lean`,
   the merged name too (a native DISAGREE of the first version); the task's item 3 is
   corrected and `Scope.starOperand` follows SQLite's rule for `*` and `x.*`. The
   mutants of slices 4 and 4b follow the moved name resolution.
+- 2026-10-15: review of the model commit (1 must, 1 should, fixed): explicit
+  `NameResolution` cases in the `GROUP BY` terms; explicit statement cases in
+  `MergedNameExamples.error`.
+
 ## Remaining
 
 - Full checks, CI time, PR A; then PR B (claim corpus 16, `mustAgree`).

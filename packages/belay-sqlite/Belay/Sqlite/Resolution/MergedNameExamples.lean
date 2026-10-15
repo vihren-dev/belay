@@ -30,7 +30,8 @@ def query (results : List ResultColumn) (source : TableReference) (joins : List 
 def error (results : List ResultColumn) (source : TableReference) (joins : List Join) : Option PrepareError :=
   match (statements (migration merging [.select results source joins none [] [] none none])).head? with
   | some (.prepareError error) => some error
-  | _ => none
+  | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some .begin | some .commit
+  | some .rollback | some (.insert ..) | some (.update ..) | some (.delete ..) | some (.query _) | none => none
 
 /-- The result columns of {lit}`SELECT a` over the joins from {lit}`t`. -/
 def bareA (joins : List Join) : Option (List Resolved.Output) := (query [bare "a"] (table "t") joins).map (·.columns)
