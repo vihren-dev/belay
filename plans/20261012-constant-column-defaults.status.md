@@ -1345,3 +1345,48 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final T14 review after installed acceptance on both platforms.
+
+
+- 2026-10-15: The macOS offline archive was built successfully. Content
+  addressing took 58.46 seconds, closure export and verification 25.61 seconds,
+  and compression 25.30 seconds. The archive and checksum are retained in
+  build/t14-default-installed-darwin. The complete packaging log is
+  build/t14-default-offline-archive-20261015.log.
+
+  Free space fell to 7.4 GiB. Under existing cleanup authorization, Nix
+  garbage collection removed 2,501 unreachable paths and freed 7,987.03 MiB.
+  The deletion log is build/t14-post-archive-gc-20261015.log; the archive and
+  evidence were retained. Space returned to about 12 GiB and the resource
+  check passes. Actual archive installation and the three default scenarios
+  are now running with --runtime-variant installed in
+  build/t14-default-installed-darwin-check-20261015.log. No installed pass
+  is claimed until this process finishes.
+
+Decisions waiting for the owner:
+
+- Final T14 review after installed acceptance on both platforms.
+
+
+- 2026-10-15: The first actual macOS installation failed before all three
+  selected scenarios. Nix 2.18.1 copied the archive's entries with dummy -x
+  names under copy --all, then rejected the missing named Bash path. The
+  archive narinfo contains the correct original path. Cleanup had removed
+  that original path, exposing a failure that existing store contents could
+  hide. Evidence: build/t14-default-installed-darwin-check-20261015.log.
+
+  Changed install.sh to copy the runtime-path declared by the archive and
+  its closure explicitly, retaining offline mode and signature checks. The
+  installer path test now exports a unique test-owned runtime to a local
+  cache, removes only that test-owned store path, and verifies installation
+  under a path with spaces and URI-special bytes. Both installer tests pass
+  in 1.81 seconds in build/t14-installer-root-regression-20261015.log. This
+  corrects the repository installer; it does not count the failed full-runtime
+  installation as accepted. Rebuilt-archive acceptance remains necessary.
+
+  Read-only Linux readiness reports x86_64, Nix available and about 25 GiB
+  free. Python is not on the login PATH; validation uses the pinned Nix
+  development environment. No source transfer or Linux build has run yet.
+
+Decisions waiting for the owner:
+
+- Final T14 review after actual installed acceptance on both platforms.
