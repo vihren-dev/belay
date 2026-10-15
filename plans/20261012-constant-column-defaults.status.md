@@ -836,3 +836,15 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of the completed T14 change.
+
+
+- 2026-10-15: Correction fbc79054 passes independent review
+  20261015T104646Z-fbc79054 with no findings. Integration 50999f9f and its
+  documentation correction are accepted local checkpoints. The next work is
+  value-based row extension, ADD COLUMN execution and failure catalog handling,
+  with preservation proofs and installed acceptance. No task completion or
+  final owner approval is claimed.
+
+Decisions waiting for the owner:
+
+- Final review of the completed T14 representation and codec changes.
