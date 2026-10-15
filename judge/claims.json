@@ -27,7 +27,10 @@
     "DISAGREE",
     "HARNESS_ERROR"
    ],
-   "mustAgree": [],
+   "mustAgree": [
+    "insert-key-real-equals-integer",
+    "update-key-real-equals-integer"
+   ],
    "path": "conformance/corpus-v10"
   },
   "corpus-v11": {
@@ -212,6 +215,32 @@
    ],
    "path": "conformance/corpus-v16"
   },
+  "corpus-v17": {
+   "forbidden": [
+    "DISAGREE",
+    "HARNESS_ERROR"
+   ],
+   "mustAgree": [
+    "key-composite-duplicate",
+    "key-composite-null",
+    "key-duplicate-within-insert",
+    "key-index-text",
+    "key-numeric-text",
+    "key-primary-null",
+    "key-primary-text",
+    "key-real-integer",
+    "key-real-other-text",
+    "key-real-text",
+    "key-returning-failed",
+    "key-text-case",
+    "key-text-duplicate",
+    "key-untyped-classes",
+    "key-untyped-real",
+    "key-update-duplicate",
+    "key-update-unique"
+   ],
+   "path": "conformance/corpus-v17"
+  },
   "corpus-v2": {
    "forbidden": [
     "DISAGREE",
@@ -334,6 +363,7 @@
     "real-integer-conversion",
     "string-is-numeric",
     "text-numeric-conversion",
+    "text-primary-key-failure",
     "untyped-storage",
     "validity-duplicate-column",
     "validity-identifier-case",
@@ -365,12 +395,16 @@
     "altercol:altercol-1.10.3:48",
     "altercol:altercol-1.11.1:51",
     "altercol:altercol-1.11.3:53",
+    "altercol:altercol-1.14.1:66",
     "altercol:altercol-1.14.3:68",
     "altercol:altercol-1.2.0:5",
     "altercol:altercol-1.2.1:6",
     "altercol:altercol-1.2.3:8",
+    "altercol:altercol-1.7.1:31",
     "altercol:altercol-1.7.3:33",
+    "altercol:altercol-1.8.1:36",
     "altercol:altercol-1.8.3:38",
+    "altercol:altercol-1.9.1:41",
     "altercol:altercol-1.9.3:43",
     "alterdropcol:alterdropcol-4.1.3:26",
     "alterdropcol:alterdropcol-4.2.3:36",
@@ -481,6 +515,7 @@
     "index:index-10.6:53",
     "index:index-10.7:54",
     "index:index-10.8:55",
+    "index:index-13.4:72",
     "index:index-14.10:83",
     "index:index-14.11:84",
     "index:index-14.2:75",
@@ -640,6 +675,7 @@
     "selectH:selectH-5.0:14",
     "string-is-numeric",
     "text-numeric-conversion",
+    "text-primary-key-failure",
     "trans3:trans3-1.1:0",
     "triggerE:triggerE-1.0:0",
     "untyped-storage",
@@ -654,6 +690,7 @@
     "update:update-3.5.2:8",
     "update:update-3.5:6",
     "update:update-3.6:10",
+    "upsert4:upsert4-1.2.0:9",
     "upsert4:upsert4-1.2.6:15",
     "upsert4:upsert4-7.1.0:104",
     "validity-duplicate-column",

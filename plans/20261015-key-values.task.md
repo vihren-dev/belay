@@ -1,6 +1,6 @@
 # Key values, slice 5a of ADR 0012
 
-Created 2026-10-15. Status: IN PROGRESS.
+Created 2026-10-15. Status: DONE (pull requests #132 and B).
 Specification: [ADR 0012](../docs/adr-0012-query-semantics.md), "Amendment 4: Unique keys
 and conflicts (slices 5a to 5d)", "Key values (slice 5a)", with the owner decisions of
 2026-10-15 (#131). Related: slice 3a and Amendment 1 (the key obligations and
