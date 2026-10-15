@@ -1,6 +1,6 @@
 # USING and NATURAL joins, slice 4b of ADR 0012
 
-Created 2026-10-15. Status: IN PROGRESS.
+Created 2026-10-15. Status: DONE (pull requests #122 and B).
 Specification: [ADR 0012](../docs/adr-0012-query-semantics.md), "Amendment 2: Joins
 (slice 4)", "Owner decisions", item 1 (2026-10-14). Related: slice 4
 ([task](20261014-joins.task.md), #120 and #121), which refuses `USING` and `NATURAL`
