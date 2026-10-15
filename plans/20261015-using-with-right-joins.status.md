@@ -1,6 +1,6 @@
 # Status: USING and NATURAL with RIGHT and FULL joins (slice 4d)
 
-Created 2026-10-15. Status: IN PROGRESS.
+Created 2026-10-15. Status: DONE.
 Task: [task](20261015-using-with-right-joins.task.md).
 Specification: [ADR 0012, Amendment 3, "Names with USING and NATURAL (slice 4d)"](../docs/adr-0012-query-semantics.md).
 
@@ -36,7 +36,8 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Scope.lean`,
   corpus 16 writer. A coalesce compared with an INTEGER column is the existing
   restriction `text-to-number`, as for any value without affinity; the chain cases join
   a column without a declared type.
-
-## Remaining
-
-- Full checks, CI time, PR A; then PR B (claim corpus 16, `mustAgree`).
+- 2026-10-15: CI time (local, `--check` rebuilds, main vs branch): mutants 166/183 s,
+  model 214/237 s, frozen 137/138 s. Pull request A merged as #127.
+- 2026-10-15: pull request B: corpus 16 (26 cases) is claimed. No case of the claimed
+  corpora newly agrees: none uses USING with a right or full join. New judge lock. Slice
+  4d is DONE, and with it the joins of ADR 0012 item 4.

@@ -177,6 +177,41 @@
    ],
    "path": "conformance/corpus-v15"
   },
+  "corpus-v16": {
+   "forbidden": [
+    "DISAGREE",
+    "HARNESS_ERROR"
+   ],
+   "mustAgree": [
+    "merged-ambiguous-reference",
+    "merged-ambiguous-reference-before-right",
+    "merged-ambiguous-reference-natural",
+    "merged-ambiguous-third",
+    "merged-chain-middle-star",
+    "merged-full-coalesce",
+    "merged-full-group-by",
+    "merged-full-name",
+    "merged-full-source-star",
+    "merged-full-star",
+    "merged-full-then-full",
+    "merged-full-then-inner",
+    "merged-full-then-right",
+    "merged-full-where-number",
+    "merged-full-where-text",
+    "merged-left-then-full",
+    "merged-missing-column",
+    "merged-natural-full",
+    "merged-natural-right",
+    "merged-right-column",
+    "merged-right-name",
+    "merged-right-qualified",
+    "merged-right-source-star",
+    "merged-right-star",
+    "merged-right-then-full",
+    "merged-right-then-using"
+   ],
+   "path": "conformance/corpus-v16"
+  },
   "corpus-v2": {
    "forbidden": [
     "DISAGREE",
