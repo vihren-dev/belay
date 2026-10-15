@@ -949,3 +949,14 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of completed T14.
+
+
+- 2026-10-15: Failure-catalog commit d26739b3 passes independent review
+  20261015T110601Z-d26739b3 with no findings. Both conformance consumers now
+  retain the pre-statement catalogs on failure. The next unit can connect
+  default readback and value-based extension to ADD COLUMN execution, with
+  native cases for successful and failed additions inside and outside transactions.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14.
