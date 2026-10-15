@@ -49,12 +49,14 @@ def nativeTableOf (catalog : Catalog) (position : Nat) (name : String) (table : 
   indexes := catalogIndexes catalog position
   rows := table.rows
 
-/-- The table at a catalog position in SQLite's catalog terms, and whether its primary
-key is the rowid, which decides whether SQLite makes an index for that key. -/
+/-- The table at a catalog position in SQLite's catalog terms, whether its primary key
+is the rowid, which decides whether SQLite makes an index for that key, and whether that
+key is descending, which the index records. -/
 def predictedTable (catalog : Catalog) (position : Nat) (table : Table) : Option Json :=
   catalog[position]?.map fun object => Json.mkObj [
     ("table", toJson (nativeTableOf catalog position object.name table)),
-    ("rowidPrimaryKey", toJson table.shape.rowidAlias.isSome)]
+    ("rowidPrimaryKey", toJson table.shape.rowidAlias.isSome),
+    ("primaryKeyDescending", toJson table.shape.primaryKeyDescending)]
 
 /-- Starting rows as a native table without metadata: {name}`databaseOf` reads only
 the name and the rows. -/

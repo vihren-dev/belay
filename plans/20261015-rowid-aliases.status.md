@@ -48,3 +48,9 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Model.lean`, `Declarations.l
 ## Remaining
 
 - Full checks, CI time, PR A; then PR B (claim corpus 18, `mustAgree`).
+
+- 2026-10-15: the verdict of the corpus 18 claim found that native SQLite records the
+  implicit key index of `INTEGER PRIMARY KEY DESC` as descending, and the prediction
+  rendered it ascending. `CatalogTable.primaryKeyDescending` now records `DESC` on a
+  column primary key; `Predict` exports it and `predict_render` writes the index key as
+  descending. `test-full` passes.

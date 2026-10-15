@@ -63,7 +63,7 @@ theorem Row.Aliased.newCells {table : Table} {values : List Value} {rowid : Int}
   simp only [LiteralData.aliasReady, alias, Option.all_some, Option.any_eq_true] at ready
   obtain ⟨_, foundAt, _⟩ := ready
   have inside : position < values.length := width ▸ (List.getElem?_eq_some_iff.mp foundAt).1
-  simp [LiteralData.newCells, alias, List.getElem?_set_self, inside]
+  simp [LiteralData.newCells, alias, inside]
 
 /-- For every table and cell list: assume {name}`Table.RowsValid`,
 {name}`LiteralData.aliasReady`, a valid new rowid, one value per column and the cells in

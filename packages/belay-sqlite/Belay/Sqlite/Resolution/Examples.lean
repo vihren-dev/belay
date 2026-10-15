@@ -59,13 +59,14 @@ def tableT : Catalog := catalogOf (migration [] [.createTable "t" [column "a", c
   some "real blob", some "DECIMAL"].map affinityOf == [.integer, .integer, .text, .real, .blob, .blob, .numeric]
 
 -- Rowid alias (slice 5b): INTEGER PRIMARY KEY, as a column or a table constraint, is an
--- alias, and the schema runs; DESC and BIGINT are not aliases.
+-- alias, and the schema runs; DESC and BIGINT are not aliases, and DESC makes the key
+-- descending.
 #guard (catalogOf (schema [.createTable "t" [{ name := "x", declaredType := some "integer", constraints := [.primaryKey false] }] []])).map
   (fun object => match object.entry with | .table table => table.rowidAlias | .index _ => none) == [some 0]
 #guard (catalogOf (schema [.createTable "t" [column "x" (some "INTEGER")] [.primaryKey ["x"]]])).map (·.entry)
   == [.table { columns := [{ name := "x", declaredType := some "INTEGER" }], primaryKey := [0], rowidAlias := some 0 }]
 #guard (catalogOf (schema [.createTable "t" [{ name := "x", declaredType := some "INTEGER", constraints := [.primaryKey true] }] []])).map (·.entry)
-  == [.table { columns := [{ name := "x", declaredType := some "INTEGER" }], primaryKey := [0] }]
+  == [.table { columns := [{ name := "x", declaredType := some "INTEGER" }], primaryKey := [0], primaryKeyDescending := true }]
 #guard !restricted (schema [.createTable "t" [{ name := "x", declaredType := some "BIGINT", constraints := [.primaryKey false] }] []])
 
 -- ASCII-only folding: "Ab" and "aB" are one name; "É" and "é" are two.
