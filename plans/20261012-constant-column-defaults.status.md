@@ -1167,3 +1167,26 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of completed T14, after the remaining acceptance work.
+
+
+- 2026-10-15: Implementation commit 6bf1bc22 passed independent review
+  with no must findings and one should finding, R10. Review
+  20261015T143830Z-6bf1bc22 asks for a next step in the unsupported-default
+  message. Added guidance to use a literal default or no default. The
+  correction needs compilation and focused restriction checks before commit.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14 after integration and installed acceptance.
+
+
+- 2026-10-15: The R10 diagnostic correction compiles and all 33 restriction
+  examples pass in 1.43 seconds. Recorded finding
+  20261015T143830Z-6bf1bc22#1 as fixed. Evidence:
+  build/t14-default-message-build-20261015.log and
+  build/t14-default-message-check-20261015.log. The correction changes only
+  diagnostic wording and now goes through its own independent review.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14 after integration and installed acceptance.
