@@ -1390,3 +1390,96 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final T14 review after actual installed acceptance on both platforms.
+
+
+- 2026-10-15: Installer correction 8f31b13c passed independent review
+  20261015T151828Z-8f31b13c with no findings. Authorized garbage collection
+  before the archive rebuild removed 10,494 unreachable paths and freed
+  899.43 MiB; the log is build/t14-installer-rebuild-gc-20261015.log.
+  The resource check passes. The macOS runtime rebuild is active in
+  build/t14-fixed-installer-build-20261015.log.
+
+  Prepared and transferred a tracked-source archive of 8f31b13c to vihren
+  at /var/tmp/sqlite-verifier-t14-20261015.JWpxSi/source.tar.gz. Local and
+  remote SHA-256 both equal
+  123a56d4df463c0aef21fd9016969119eddb168ea1fc4cb7c84e037e928b6181.
+  The archive excludes untracked outputs and the product repository. The
+  Linux runtime, conformance and documentation build is active in the
+  extracted source directory, using the pinned Nix environment and resource
+  guard. Its log is source/build/t14-linux-build.log under that directory.
+  No Linux validation result is claimed yet.
+
+Decisions waiting for the owner:
+
+- Final T14 review after actual installed acceptance on both platforms.
+
+
+- 2026-10-15: The Linux runtime, conformance runtime and checked public
+  documentation builds pass. The complete model suite is running with a
+  900-second outer acceptance limit in source/build/t14-linux-model.log.
+  This does not change a CI timeout. Linux offline packaging is also active
+  in source/build/t14-linux-archive.log.
+
+  The corrected macOS runtime builds at build/t14-fixed-installer. A new
+  offline archive is being built in build/t14-fixed-installed-darwin; its log
+  is build/t14-fixed-offline-archive-20261015.log. The previous failed archive
+  and logs remain retained. Neither platform has passed installed acceptance
+  yet.
+
+Decisions waiting for the owner:
+
+- Final T14 review after actual installed acceptance on both platforms.
+
+
+- 2026-10-15: The corrected macOS offline archive is complete: content
+  addressing 71.82 seconds, closure export/verification 28.66 seconds, and
+  compression 24.09 seconds. Packaging reduced free space below the guard.
+  Authorized garbage collection removed 77 unreachable paths and freed
+  5,575.18 MiB; the full log is build/t14-fixed-archive-gc-20261015.log.
+  The resource check then passed. Installed acceptance of the corrected
+  archive is active in build/t14-fixed-installed-darwin-check-20261015.log.
+
+  Linux offline packaging also passes: content addressing 87.58 seconds,
+  closure export/verification 60.15 seconds and compression 27.80 seconds.
+  The archive is source/build/t14-linux-installed/sqlite-verifier-x86_64-linux.tar.gz
+  under /var/tmp/sqlite-verifier-t14-20261015.JWpxSi. With about 22 GiB free
+  and a passing guard, its actual installed checks are running in
+  source/build/t14-linux-installed-check.log. Linux full model and affected
+  harness/frozen/package/installer regressions remain active in their own logs.
+
+Decisions waiting for the owner:
+
+- Final T14 review after actual installed acceptance on both platforms.
+
+
+- 2026-10-15: Actual offline-installed acceptance passes on both platforms.
+  macOS passes all three selected scenarios in 78.67 seconds; Linux passes
+  them in 23.14 seconds. Each run extracts and installs its real archive into
+  a fresh path containing spaces, Unicode and URI-special bytes, then uses
+  its installed launcher. The scenarios verify the positive example, prepare
+  with an independent author cache and verify with cold/warm verifier caches
+  and no cache, and reject DEFAULT 8 through both gates with the original
+  DEFAULT 7 contract and certificate. The failed first macOS installation
+  remains retained separately and is not counted as a pass.
+
+  Evidence: build/t14-fixed-installed-darwin-check-20261015.log and
+  build/t14-linux-validation/t14-linux-installed-check.log. Linux full model
+  and affected regressions are still running; final acceptance and owner
+  review wait for those results.
+
+Decisions waiting for the owner:
+
+- Final T14 review after the remaining Linux regression results.
+
+
+- 2026-10-15: Remote synchronization confirms PR 128 merged as 3875420d.
+  The clean main workspace is updated. This task remains integrated through
+  PR 127; the new corpus 16 claim still needs integration and verdict checks.
+  Linux affected regressions pass 342 tests in 223.69 seconds, recorded in
+  source/build/t14-linux-regressions.log on vihren under
+  /var/tmp/sqlite-verifier-t14-20261015.JWpxSi. The full Linux model run
+  remains active. Installed acceptance passed on both platforms as above.
+
+Decisions waiting for the owner:
+
+- Final T14 review after acceptance and a reviewable pull request.
