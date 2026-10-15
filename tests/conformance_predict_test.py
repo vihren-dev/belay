@@ -32,9 +32,12 @@ DECLARATIONS = {
     "unique constraint": "CREATE TABLE t(a INTEGER, b TEXT, UNIQUE(a, b));",
     "indexes": "CREATE TABLE t(a INTEGER, b TEXT); CREATE INDEX t_a ON t(a); CREATE UNIQUE INDEX t_b ON t(b);",
     "primary key constraint": "CREATE TABLE t(a TEXT, b TEXT, PRIMARY KEY(b, a));",
+    "row id alias": "CREATE TABLE t(id INTEGER PRIMARY KEY, a TEXT);",
+    "descending primary key": "CREATE TABLE t(id INTEGER PRIMARY KEY DESC, a TEXT);",
 }
 """Table shapes that resolution accepts in a schema and the model represents. A row id
-alias (`INTEGER PRIMARY KEY`) is a model restriction."""
+alias (`INTEGER PRIMARY KEY`) has no key index; `INTEGER PRIMARY KEY DESC` is not an alias,
+and its key index is descending."""
 
 
 def predict(runtime_root: Path, *records: dict[str, object]) -> list[dict[str, object]]:
