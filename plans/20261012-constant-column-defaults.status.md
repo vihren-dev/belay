@@ -913,3 +913,16 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final review of completed T14.
+
+
+- 2026-10-15: Structural commit 5ec2c001 passes independent review
+  20261015T110054Z-5ec2c001 with no findings. The row/value extension,
+  stored-form validity and projection proofs are ready for ADD COLUMN
+  execution. The next unit must call readDefaultValue, distinguish empty
+  from populated tables for NOT NULL with NULL, and preserve the original
+  catalog when execution fails. No installed default-example acceptance or
+  final owner approval is claimed.
+
+Decisions waiting for the owner:
+
+- Final review of completed T14.
