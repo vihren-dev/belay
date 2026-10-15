@@ -91,6 +91,10 @@ does not grow. The flake checks exclude them.
 - `scheduledTests.obligations`: mutants of the admission obligations; each must make
   its boundary case of `conformance/authored_obligations.py` disagree with native
   SQLite.
+- `scheduledTests.writers`: round trips of the corpus writers of the authored cases
+  (`conformance/*_evidence.py`): each writes a new corpus, reads it back unchanged
+  and replays it natively. The corpora they wrote are frozen, and `tests.frozen` and
+  the verdict check them on every pull request.
 
 Each target runs ordinary pytest on a cache miss. Its explicit source files,
 Python/pytest, native tools, Lean artifacts and command determine its Nix identity.
