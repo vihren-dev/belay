@@ -1,6 +1,6 @@
 # RIGHT and FULL joins, slice 4c of ADR 0012
 
-Created 2026-10-15. Status: IN PROGRESS.
+Created 2026-10-15. Status: DONE (pull requests #125 and B).
 Specification: [ADR 0012](../docs/adr-0012-query-semantics.md), "Amendment 3: RIGHT and
 FULL joins (slices 4c and 4d)", "Rows (slice 4c)", with the owner decisions of
 2026-10-15 (#124). Related: slice 4 ([task](20261014-joins.task.md)) and slice 4b

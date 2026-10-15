@@ -1,6 +1,6 @@
 # Status: RIGHT and FULL joins (slice 4c)
 
-Created 2026-10-15. Status: IN PROGRESS.
+Created 2026-10-15. Status: DONE.
 Task: [task](20261015-right-full-joins.task.md).
 Specification: [ADR 0012, Amendment 3, "Rows (slice 4c)"](../docs/adr-0012-query-semantics.md).
 
@@ -29,7 +29,8 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/QueryEval.lean`,
 - 2026-10-15: 20 authored cases (`conformance/authored_right.py`, all AGREE), four
   mutants (`conformance/right_mutants.py`, in the write and join measurement), and the
   corpus 15 writer.
-
-## Remaining
-
-- Full checks, CI time, PR A; then PR B (claim corpus 15, `mustAgree`).
+- 2026-10-15: CI time (local, `--check` rebuilds, main vs branch): mutants 159/168 s,
+  model 202/213 s, frozen 139/138 s. Pull request A merged as #125.
+- 2026-10-15: pull request B: corpus 15 (20 cases) is claimed. No case of the claimed
+  corpora newly agrees: none uses a right or full join. New judge lock. Slice 4c is
+  DONE; slice 4d (USING and NATURAL with right and full joins) follows.

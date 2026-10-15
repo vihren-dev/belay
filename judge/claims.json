@@ -148,6 +148,35 @@
    ],
    "path": "conformance/corpus-v14"
   },
+  "corpus-v15": {
+   "forbidden": [
+    "DISAGREE",
+    "HARNESS_ERROR"
+   ],
+   "mustAgree": [
+    "full-aggregates",
+    "full-empty-right",
+    "full-group-by",
+    "full-on",
+    "full-on-false",
+    "full-outer",
+    "right-after-inner",
+    "right-after-left",
+    "right-before-left",
+    "right-empty-left",
+    "right-of-comma",
+    "right-on",
+    "right-on-first-table",
+    "right-order-by",
+    "right-outer-keywords",
+    "right-source-star",
+    "right-unqualified",
+    "right-where-padded",
+    "right-without-on",
+    "two-full"
+   ],
+   "path": "conformance/corpus-v15"
+  },
   "corpus-v2": {
    "forbidden": [
     "DISAGREE",
