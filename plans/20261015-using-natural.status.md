@@ -31,6 +31,10 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Scope.lean`,
 - 2026-10-15: 22 authored cases (`conformance/authored_using.py`, all AGREE), six
   mutants (`conformance/using_mutants.py`, in the write and join measurement), and the
   corpus 14 writer.
+- 2026-10-15: CI time (local, `--check` rebuilds, main vs branch): harness 21/22 s,
+  mutants 143/157 s, model 192/212 s, frozen 136/136 s. The coverage and round-trip
+  tests recorded each authored case set natively twice; a module fixture now records it
+  once (11 s for the 8 sets), and the model suite takes 198 s.
 
 ## Remaining
 
