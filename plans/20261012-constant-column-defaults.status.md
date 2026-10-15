@@ -1526,3 +1526,22 @@ Decisions waiting for the owner:
 Decisions waiting for the owner:
 
 - Final T14 review after the integration review and hosted CI.
+
+
+- 2026-10-15: Draft PR 130 is open at 6e826ccd. Hosted Verdict passes.
+  Hosted Linux CI found one stale obligation-inventory entry: add-column-plain
+  still pointed to column.plain after T14 replaced it with readDefaultValue.
+  Renamed the entry to add-column-default-readback and bound it to the actual
+  admission check. Its existing add-column-constraint coverage still applies,
+  because resolution refuses failed default readback before execution.
+
+  The complete source suite passes 521 tests and 58 subtests in 42.17 seconds
+  with two Linux-only pidfd checks skipped on macOS. The passing log is
+  build/t14-source-ci-fix-full-runtime-20261015.log. Two earlier local commands
+  selected incomplete runtime roots; their setup failures are retained in
+  separate logs and are not counted as passes. This correction changes only
+  the obligation inventory, not production semantics or protected judge inputs.
+
+Decisions waiting for the owner:
+
+- Final T14 review after the corrected hosted CI run.
