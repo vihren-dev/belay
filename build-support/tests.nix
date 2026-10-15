@@ -292,4 +292,10 @@ in {
     runtime = conformance;
     tools = modelTools;
   };
+  # The round trips of the corpus writers of the authored cases; a scheduled suite.
+  writers = suite "writers" {
+    inputs = modelInputs;
+    runtime = conformance;
+    tools = modelTools;
+  };
 }

@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-CONFORMANCE_SUITES = ("model", "frozen", "harness", "sample", "upstream")
+CONFORMANCE_SUITES = ("model", "frozen", "harness", "sample", "upstream", "writers")
 """The Nix suites that receive the narrowed frontend inputs; the others receive the application and frontend."""
 LOCAL_PACKAGES = ("belay", "conformance", "migration_check", "tests", "tools")
 """Repository packages whose imports are followed; other imports are standard or pinned libraries."""

@@ -39,16 +39,3 @@ def test_coverage_cases_record_phases_and_agree(runtime_root: Path) -> None:
     phases = {record["name"]: record["trace"][-1]["phase"] for record in recorded}
     assert phases["commit-without-transaction"] == phases["add-not-null-to-rows"] == "step"
     assert phases["table-exists"] == phases["add-limit-before-duplicate"] == "prepare"
-
-
-def test_coverage_corpus_round_trips(tmp_path: Path) -> None:
-    """`conformance.resolution_evidence.publish` writes a corpus of version 5 records that reads
-    back unchanged and replays natively, and refuses to replace an existing directory."""
-    from conformance.corpus import load
-    from conformance.resolution_evidence import publish
-    manifest = publish(tmp_path / "corpus")
-    assert manifest["nativeVersion"] == 5 and manifest["corpusVersion"] == 6
-    assert manifest["recordedCases"] == len(definitions())
-    assert load(tmp_path / "corpus")[0] == manifest
-    with pytest.raises(ValueError, match="already exists"):
-        publish(tmp_path / "corpus")
