@@ -55,7 +55,9 @@ follows this slice.
   resolved form of the same join with the written `ON` condition; the names of `*`;
   an unqualified merged name; the ambiguity with a third source; the errors and their
   order; `NATURAL` without a common column; `USING` with a left-most column of an
-  earlier source.
+  earlier source; a comparison of an INTEGER and a TEXT column, which is the same model
+  restriction (`mixed-affinity-comparison`) for `USING` as for the written `ON` (native
+  SQLite converts `'02'` to match `2`, which the model does not describe).
 - A proof that a `USING` or `NATURAL` join resolves to a join of the same kind whose
   condition is the conjunction of the generated equalities, so the join laws of
   `QueryJoinLaws.lean` apply unchanged.
@@ -64,8 +66,7 @@ follows this slice.
   qualified and unqualified merged names in result columns, `WHERE`, `GROUP BY` and
   `ORDER BY`; a merged name in a left join for a padded row; three tables with the
   left-most column of an earlier source (`FROM t, u NATURAL JOIN v`); a self-join with
-  `USING`; a comparison between an INTEGER and a TEXT column (`'02'` matches `2`); the
-  ambiguity with a third source; both prepare errors and their order with
+  `USING`; the ambiguity with a third source; both prepare errors and their order with
   `no such table`.
 - Mutants, each changing the verdict of an authored case: `*` keeps the merged right
   column; an unqualified merged name reads the right column; the condition uses the

@@ -17,7 +17,16 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Scope.lean`,
   column (`FROM t, u NATURAL JOIN v`); the comparison affinity (`'02'` matches `2`);
   `NATURAL` without a common column; a repeated `USING` name; both prepare errors and
   their order after `no such table`.
+- 2026-10-15: the model: `Source.merged` hides merged columns from `*`
+  (`Scope.visible`) and unqualified names; `Resolution/JoinUsing.lean` generates the
+  condition as qualified syntax, so a written `ON` and `USING` resolve the same, with
+  three proofs (`mergeJoin_written`, `mergeJoin_using`, `mergeJoin_natural`);
+  `resolveTables` resolves every table before the join forms; the errors
+  `joinUsingColumn` and `naturalJoinCondition`; `join-using` and `natural-join` leave the
+  registry. Lean examples in `Resolution/UsingExamples.lean`. The INTEGER and TEXT case
+  moved from the native cases to a Lean example: the comparison is the restriction
+  `mixed-affinity-comparison`, as for a written `ON`, so no native case can agree.
 
 ## Remaining
 
-- Everything in the task's "Outcome".
+- Full checks, CI time, PR A; then PR B (claim corpus 14, `mustAgree`).

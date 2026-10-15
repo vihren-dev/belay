@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.Writes
+import Belay.Sqlite.Resolution.JoinUsing
 
 set_option doc.verso true
 
@@ -73,18 +74,28 @@ def joinOperator (words : List String) : Option (JoinOperatorKind × Bool) :=
     | _ => none
   kind.map (·, natural)
 
-/-- The model restriction of a join form that slice 4 does not describe, if it is one:
-another join operator, {lit}`NATURAL`, {lit}`USING`, or a {lit}`RIGHT` or {lit}`FULL`
-join. -/
+/-- The model restriction of a join form that the model does not describe, if it is one:
+another join operator, or a {lit}`RIGHT` or {lit}`FULL` join. -/
 def joinFormIssue (item : Nat) (join : Syntax.Join) : Option ValueIssue :=
   match joinOperator join.operator with
   | none => some (.restriction [2, item, 0] .joinOperator)
-  | some (_, true) => some (.restriction [2, item, 0] .naturalJoin)
-  | some (kind, false) =>
-    if join.usingColumns.isSome then some (.restriction [2, item, 3] .joinUsing)
-    else match kind with
-      | .right | .full => some (.restriction [2, item, 0] .rightOrFullJoin)
-      | .inner | .left => none
+  | some (.right, _) | some (.full, _) => some (.restriction [2, item, 0] .rightOrFullJoin)
+  | some (.inner, _) | some (.left, _) => none
+
+/-- The joined sources of the joins in order, with their merged columns, and the
+condition of each join with its path ({name}`mergeJoin`), after the sources of
+{lit}`left`; {lit}`item` is the position of the first join. A join form that the model
+does not describe ({name}`joinFormIssue`) is a model restriction, checked before the
+join's {lit}`USING` and {lit}`NATURAL` errors. -/
+def mergeJoins (left : Scope) (item : Nat) :
+    List (Syntax.Join × Source) → Except ValueIssue (Scope × List (Option (List Nat × Syntax.Expr)))
+  | [] => .ok (left, [])
+  | (join, right) :: rest => do
+    if let some issue := joinFormIssue item join then throw issue
+    let natural := (joinOperator join.operator).any (·.2)
+    let (merged, condition) ← mergeJoin left right natural item join
+    let (scope, conditions) ← mergeJoins (left ++ [merged]) (item + 1) rest
+    .ok (scope, condition :: conditions)
 
 /-- The kind of a resolved join: left for a left join operator and inner for an inner
 one. {name}`joinFormIssue` refuses every other operator before the kind is used, so
@@ -96,36 +107,35 @@ def Syntax.Join.resolvedKind (join : Syntax.Join) : Resolved.JoinKind :=
   | some (.right, _) | some (.full, _) | none => .inner
 
 /-- Resolve the tables of {lit}`FROM`: the first table's position, the positions of the
-joined tables, and the scope of all sources, in order. More than
-{name}`maximumJoinTables` tables is SQLite's {lit}`at most 64 tables in a join`; a join form
-that the model does not describe ({name}`joinFormIssue`) and two sources with the same
-folded name are model restrictions. -/
+joined tables with the condition of each join and its path, and the scope of all
+sources, in order. As in SQLite, every table resolves before the forms of the joins:
+more than {name}`maximumJoinTables` tables is SQLite's
+{lit}`at most 64 tables in a join`, then a missing table is {lit}`no such table`; two
+sources with the same folded name are a model restriction; then each join in order
+({name}`mergeJoins`). -/
 def resolveTables (catalog : Catalog) (source : Syntax.TableReference) (joins : List Syntax.Join) :
-    Except ValueIssue (Nat × List Nat × Scope) := do
+    Except ValueIssue (Nat × List (Nat × Option (List Nat × Syntax.Expr)) × Scope) := do
   if joins.length + 1 > maximumJoinTables then throw (.prepare .tooManyTables)
   let (first, firstSource) ← resolveTableReference catalog [1] source
-  let joined ← resolveAll (fun item (join : Syntax.Join) => do
-    let resolved ← resolveTableReference catalog [2, item, 1] join.source
-    match joinFormIssue item join with
-    | some issue => throw issue
-    | none => .ok resolved) joins
-  let scope := firstSource :: joined.map Prod.snd
-  match findPosition (fun (item, source) => scope.take item |>.any fun earlier =>
-      normalizeIdentifier earlier.name == normalizeIdentifier source.name) (scope.mapIdx fun item source => (item, source)) with
-  | some (item, _) => throw (.restriction (if item == 0 then [1] else [2, item - 1, 1]) .duplicateSource)
-  | none => .ok (first, joined.map Prod.fst, scope)
+  let joined ← resolveAll (fun item (join : Syntax.Join) => resolveTableReference catalog [2, item, 1] join.source) joins
+  let sources := firstSource :: joined.map Prod.snd
+  if let some (item, _) := findPosition (fun (item, source) => sources.take item |>.any fun earlier =>
+      normalizeIdentifier earlier.name == normalizeIdentifier source.name) (sources.mapIdx fun item source => (item, source)) then
+    throw (.restriction (if item == 0 then [1] else [2, item - 1, 1]) .duplicateSource)
+  let (scope, conditions) ← mergeJoins [firstSource] 0 (joins.zip (joined.map Prod.snd))
+  .ok (first, (joined.map Prod.fst).zip conditions, scope)
 
-/-- Resolve the {lit}`ON` condition of the join at {lit}`item` over the whole scope, as
-SQLite does, then require that it reads only the tables up to the joined one, which the
-model evaluates while it joins ({name}`RestrictionKind.laterTableInOn`). -/
-def resolveJoinCondition (dqs : Bool) (scope : Scope) (item : Nat) (join : Syntax.Join) :
-    Except ValueIssue (Option Resolved.Expr) :=
-  match join.condition with
+/-- Resolve the condition of the join at {lit}`item`, written or generated, with the path
+of its issues, over the whole scope, as SQLite does; then require that it reads only the
+tables up to the joined one, which the model evaluates while it joins
+({name}`RestrictionKind.laterTableInOn`). -/
+def resolveJoinCondition (dqs : Bool) (scope : Scope) (item : Nat) :
+    Option (List Nat × Syntax.Expr) → Except ValueIssue (Option Resolved.Expr)
   | none => .ok none
-  | some term => do
-    let resolved ← condition [2, item, 2] (resolveOperand dqs scope true term)
+  | some (path, term) => do
+    let resolved ← condition path (resolveOperand dqs scope true term)
     let bound := (scope.take (item + 2)).foldl (fun width source => width + source.columns.length) 0
     if resolved.readsBelow bound then .ok (some resolved)
-    else throw (.restriction [2, item, 2] .laterTableInOn)
+    else throw (.restriction path .laterTableInOn)
 
 end Belay.Sqlite

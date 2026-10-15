@@ -30,13 +30,13 @@ def integerLiteral : Syntax.Expr → Option Int
   | .qualified .. => none
 
 /-- One resolved result column with its names: {lit}`*` gives every column of every
-source under its defined name, {lit}`x.*` every column of source {lit}`x`
+source that is not merged ({name}`Scope.visible`) under its defined name, {lit}`x.*` every column of source {lit}`x`
 ({name}`sourceStarColumns`); an aggregate is a whole result column; any other expression
 is a scalar. A name is the {lit}`AS` alias, else the defined name of a referenced column
 ({name}`definedName`), else the source text as written. -/
 def resolveResultColumn (dqs : Bool) (scope : Scope) (column : Nat) :
     Syntax.ResultColumn → Except ValueIssue (List (Resolved.Output × String))
-  | .star => .ok (scope.columns.mapIdx fun position defined => (.scalar (.column position), defined.name))
+  | .star => .ok (scope.visible.map fun (position, defined) => (.scalar (.column position), defined.name))
   | .sourceStar source => (sourceStarColumns scope source).map fun columns =>
       columns.map fun (expression, name) => (.scalar expression, name)
   | .expression value alias text => do
@@ -106,7 +106,7 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
     let (first, tables, scope) ← resolveTables catalog source joins
     let outputs := (← resolveAll (resolveResultColumn dqs scope) results).flatten
     let aliases := results.flatMap fun
-      | .star => scope.columns.map fun _ => none
+      | .star => scope.visible.map fun _ => none
       | .sourceStar name => ((scope.source? name).map (·.2.map fun _ => none)).getD []
       | .expression _ alias _ => [alias]
     let condition ← match filter with
@@ -114,7 +114,7 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
       | some term =>
         if namesAlias scope (aliases.filterMap id) term then throw (aliasInExpression.under [3])
         else some <$> condition [3] (resolveOperand dqs scope true term)
-    let conditions ← resolveAll (resolveJoinCondition dqs scope) joins
+    let conditions ← resolveAll (fun item (_, term) => resolveJoinCondition dqs scope item term) tables
     let aggregate := !groupBy.isEmpty || outputs.any fun (output, _) => match output with
       | .aggregate _ => true
       | .scalar _ => false
@@ -152,7 +152,7 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
     if offsetValue.any (· < 0) then throw (.restriction [7] .negativeOffset)
     if windowSkipsFailure groupBy limit offset (outputs.map (·.1)) then
       throw (.restriction [6] .windowedGroupSum)
-    let resolvedJoins := (joins.zip (tables.zip conditions)).map fun (join, table, on) =>
+    let resolvedJoins := (joins.zip ((tables.map Prod.fst).zip conditions)).map fun (join, table, on) =>
       ({ kind := join.resolvedKind, table, condition := on } : Resolved.Join)
     return { table := first, joins := resolvedJoins, filter := condition, aggregate, groupBy := terms,
              columns := outputs.map (·.1), names := outputs.map (·.2), orderBy := order,
