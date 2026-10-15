@@ -34,9 +34,13 @@ Related: slice 4b ([task](20261015-using-natural.task.md)) and slice 4c
    `t RIGHT JOIN r USING (a)` with `r.a` REAL gives `1.0`; `t FULL JOIN u USING (a)
    FULL JOIN w USING (a)` gives `coalesce(t.a, u.a, w.a)`; `t RIGHT JOIN u USING (a)
    FULL JOIN w USING (a)` gives `coalesce(u.a, w.a)`.
-3. **`*`.** The merged column of `*` is the unqualified name of item 2, at the place of
-   the left-most column and named by its name as declared; `x.*` and qualified names
-   still read each table's own column.
+3. **`*` and `x.*`.** SQLite expands a column of `*` or `x.*` to its unqualified name
+   (item 2) when the column's table is to the left of a right or full join and a later
+   join merges the column's name, and to the qualified column otherwise (checked on
+   native 3.51.0; corrected on 2026-10-15 from "`x.*` reads each table's own column").
+   So the merged column of `*` and of `t.*` for the left table `t` shows the right
+   column or the coalesce, named by the left column's name as declared, while the
+   qualified name `t.a` and `x.*` of the right table read the table's own column.
 4. **Generated condition.** When the `FROM` has a right or full join anywhere, the left
    side of each generated equality of every `USING` and `NATURAL` join, also one before
    the right join, is the left column if exactly one left table has the name, and
@@ -71,7 +75,8 @@ Related: slice 4b ([task](20261015-using-natural.task.md)) and slice 4c
   uses the left column; a full join's merged name uses the left column instead of the
   coalesce; the coalesce keeps the left column's affinity; the generated condition of a
   later `USING` uses the left-most column instead of the coalesce; a left table that
-  does not merge the name is accepted instead of `ambiguous reference to a in USING()`.
+  does not merge the name is accepted instead of `ambiguous reference to a in USING()`;
+  `*` and `x.*` show each table's own column instead of the merged name.
 - The restriction registry, example, documentation and mutant link tests after the
   restriction leaves.
 

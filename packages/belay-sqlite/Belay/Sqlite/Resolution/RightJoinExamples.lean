@@ -3,8 +3,7 @@ import Belay.Sqlite.Resolution.UsingExamples
 set_option doc.verso true
 
 /-! Examples of {lit}`RIGHT` and {lit}`FULL` joins (ADR 0012, amendment 3; slice 4c),
-checked by {lit}`#guard`: the resolved kinds, the rows of the joins, and the restriction
-of {lit}`USING` and {lit}`NATURAL` in a query with a right or full join. -/
+checked by {lit}`#guard`: the resolved kinds and the rows of the joins. -/
 
 namespace Belay.Sqlite.Resolution.RightJoinExamples
 open Belay.Sqlite Syntax Resolution.Examples Resolution.JoinExamples Resolution.UsingExamples
@@ -54,13 +53,5 @@ def fullQuery : Resolved.Query :=
 -- The source of a query folds the joins with the width of the tables so far.
 #guard (fullQuery.source fun | 0 => some JoinExamples.left | 1 => some rightTwo | _ => none) ==
   some [[.integer 1, .integer 1], [.integer 2, .null], [.null, .integer 3]]
--- USING and NATURAL with a right or full join are a restriction, also before the right join.
-#guard reason (migration sources [.select [.star] (table "t") [usingJoin ["RIGHT"] "u" ["a"]] none [] [] none none]) ==
-  RestrictionKind.usingWithRightJoin.message
-#guard reason (migration sources [.select [.star] (table "t")
-  [usingJoin [] "u" ["a"], joined ["FULL"] (table "v") (some (.equals (qualified "t" "a") (qualified "v" "a")))]
-  none [] [] none none]) == RestrictionKind.usingWithRightJoin.message
-#guard reason (migration sources [.select [.star] (table "t") [joined ["NATURAL", "RIGHT"] (table "u")]
-  none [] [] none none]) == RestrictionKind.usingWithRightJoin.message
 
 end Belay.Sqlite.Resolution.RightJoinExamples

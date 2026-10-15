@@ -13,11 +13,12 @@ namespace Belay.Sqlite
 
 /-- The defined name of the column that a bare result expression names, as SQLite names
 a result column without an alias: the column's name as declared, for an unqualified name
-of one column or a qualified name; none for any other expression. -/
+that reads one column ({name}`Scope.resolveName`) or a qualified name; none for any other
+expression, such as a merged name of a full join, which SQLite names as written. -/
 def definedName (scope : Scope) : Syntax.Expr → Option String
-  | .identifier name _ => match scope.matches name with
-    | [position] => scope.columns[position]?.map CatalogColumn.name
-    | [] | _ :: _ :: _ => none
+  | .identifier name _ => match scope.resolveName name with
+    | .found _ [position] => scope.columns[position]?.map CatalogColumn.name
+    | .found .. | .missing | .ambiguous => none
   | .qualified source column => (scope.qualified source column).bind (scope.columns[·]?.map CatalogColumn.name)
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .positive _ | .equals ..
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
@@ -28,7 +29,7 @@ gives. The paths of its issues start at the column's position. A {lit}`source.*`
 column is SQLite's {name}`PrepareError.returningSourceStar`. -/
 def returningColumn (dqs : Bool) (scope : Scope) (item : Nat) :
     Syntax.ResultColumn → Except ValueIssue (List (Resolved.Expr × String))
-  | .star => .ok (scope.visible.map fun (position, column) => (.column position, column.name))
+  | .star => .ok (scope.visible.map fun (position, column) => ((scope.starOperand position column).1, column.name))
   | .sourceStar _ => .error (.prepare .returningSourceStar)
   | .expression value alias text => do
       let (resolved, _) ← (resolveOperand dqs scope true value).mapError (·.under [item, 0])

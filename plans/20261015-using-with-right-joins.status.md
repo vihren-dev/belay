@@ -17,7 +17,17 @@ Relevant files: `packages/belay-sqlite/Belay/Sqlite/Resolution/Scope.lean`,
   inner, left then full), the REAL right column, the coalesce without affinity in
   `WHERE`, `GROUP BY` and `ORDER BY`, `*` of right and full joins, the coalesced left
   side of a later `USING`, and `ambiguous reference to a in USING()`.
-
+- 2026-10-15: the model: `Source.mergeRule` and `Scope.resolveName` give an
+  unqualified name its column, the right column or a coalesce
+  (`Resolution/MergedNames.lean`, no affinity for a coalesce); `MergedLeft.lean`
+  coalesces the left side of a generated condition when the `FROM` has a right or full
+  join, with `ambiguous reference to a in USING()`; `using-with-right-join` leaves the
+  registry. Proof `resolveName_single`: without right and full joins a name reads one
+  column, as in slice 4b; the `mergeJoin` theorems state the slice 4b condition for a
+  `FROM` without them. Found while recording: SQLite expands `t.*` of the left table to
+  the merged name too (a native DISAGREE of the first version); the task's item 3 is
+  corrected and `Scope.starOperand` follows SQLite's rule for `*` and `x.*`. The
+  mutants of slices 4 and 4b follow the moved name resolution.
 ## Remaining
 
-- Everything in the task's "Outcome".
+- Full checks, CI time, PR A; then PR B (claim corpus 16, `mustAgree`).
