@@ -200,8 +200,9 @@ specification, semantics, conformance cases, mutants and a judge change.
 5. **Conflicts.** `ON CONFLICT` of `INSERT`. Amendment 4 splits it into unique keys
    (5a, 5b) and conflicts (5c, 5d).
 6. **Functions.** Time and date functions, which need the controlled clock of
-   ADR 0005, section 3.2, and the JSON functions `json_extract` and `json_each`. Amendment 5 splits it into queries without `FROM` (6a), JSON scalar functions (6b), `json_each`
-   (6c) and date and time functions (6d).
+   ADR 0005, section 3.2, and the JSON functions `json_extract` and `json_each`.
+   Amendment 5 splits it into queries without `FROM` (6a), JSON slices (6b to 6d) and
+   time slices (6e to 6g).
 
 The order puts the shared value and expression work first and the functions
 with the most separate rules last. A slice may change the order of later slices
@@ -776,7 +777,7 @@ conflict features, all checked on native 3.51.0: the UPSERT clause, the `OR` cla
    values) and 5b (rowid aliases). They change different parts of the model: key
    equality and its obligations, and the storage of a row.
 
-## Amendment 5: Functions and queries without FROM (slices 6a to 6d)
+## Amendment 5: Functions and queries without FROM (slices 6a to 6g)
 
 Date: 2026-10-16. Status: ACCEPTED (2026-10-16, #141).
 Related: "Slices", item 6; "Not decided here" (table-valued functions); ADR 0005,
@@ -808,12 +809,14 @@ All facts below were checked on native SQLite 3.51.0.
 - **Model.** A source with one empty row at the Queries level; resolution has a scope
   with no sources. No new evaluator.
 - **Why first.** It is small, it admits the upstream tests that call functions without a
-  table, and it gives slices 6b to 6d their cases.
+  table, and it gives slices 6b to 6g their cases.
 
-### JSON scalar functions (slice 6b)
+### JSON reading and `json_extract` (slice 6b)
 
-- **Functions.** `json_extract(json, path, ...)`, the operators `->` and `->>`,
-  `json_type`, `json_valid`, `json_array_length` and `json` (owner decision 1).
+- **Functions.** `json_extract(json, path, ...)` and the operators `->` and `->>`.
+- **Reading.** The model reads JSON text as SQLite does, also JSON5 (unquoted keys,
+  hexadecimal numbers, trailing commas; owner decision 4). A BLOB argument, which SQLite
+  reads as JSONB, is a model restriction.
 - **Values.** A JSON scalar is an SQL value: an integer or a real as the JSON number
   text gives it, a string as text, `true` and `false` as 1 and 0, and `null` as NULL. An
   object or an array is JSON text. A path that selects nothing is NULL. Several paths
@@ -825,11 +828,13 @@ All facts below were checked on native SQLite 3.51.0.
   JSON text exactly as SQLite does; its rules are part of this slice.
 - **Errors.** Malformed JSON is `malformed JSON`, and a bad path is
   `bad JSON path: '%s'`, both reported while the statement runs.
-- **JSON5 and JSONB.** The model reads JSON5 text as SQLite does (unquoted keys,
-  hexadecimal numbers, trailing commas). A BLOB argument, which SQLite reads as JSONB, is
-  a model restriction (owner decision 4).
 
-### `json_each` in FROM (slice 6c)
+### Further JSON functions (slice 6c)
+
+- **Functions.** `json_type`, `json_valid`, `json_array_length` and `json` (owner
+  decision 1), over the reading and the text rendering of slice 6b.
+
+### `json_each` in FROM (slice 6d)
 
 - **Form.** `json_each(json [, path])` as a source of `FROM`, alone, after tables in a
   comma list or an inner join. Its arguments may read the columns of earlier sources,
@@ -846,27 +851,36 @@ All facts below were checked on native SQLite 3.51.0.
   their rules are part of this slice.
 - **Restrictions.** A `LEFT` or `RIGHT` join with `json_each` stays refused.
 
-### Date and time functions (slice 6d)
+### The clock (slice 6e)
 
-- **Functions.** `date`, `time`, `datetime`, `julianday`, `unixepoch` and `strftime`,
-  the keywords `CURRENT_TIME`, `CURRENT_DATE` and `CURRENT_TIMESTAMP`, and a
-  `CURRENT_TIMESTAMP` default. The restriction `time-value` leaves the registry.
-- **The clock.** The recorder supplies one clock value to each statement and stores it
+- **Input.** The recorder supplies one clock value to each statement and stores it
   (ADR 0005, section 3.2); within a statement, `now` does not change. The execution
   semantics takes the clock value of each statement as an input, and a migration must be
   correct for every clock value: the verification target quantifies over the clock value
   of each statement (owner decision 2).
-- **Calendar.** Time values, modifiers and formats follow SQLite's algorithm, including
-  its normalization: `date('2024-01-31', '+1 month')` is `2024-03-02`. A time value that
-  SQLite cannot read gives NULL. The slice includes all of SQLite's modifiers and formats
-  (owner decision 3). `localtime` and `utc` use the time zone of the execution profile,
-  which the profile records; the recorder runs SQLite in UTC (owner decision 6).
+- **Forms.** The keywords `CURRENT_TIME`, `CURRENT_DATE` and `CURRENT_TIMESTAMP`, and a
+  `CURRENT_TIMESTAMP` default, which give the statement's clock value as text. The
+  restriction `time-value` leaves the registry.
+
+### Date and time functions (slice 6f)
+
+- **Functions.** `date`, `time`, `datetime`, `julianday`, `unixepoch` and `strftime`
+  with all of SQLite's formats (owner decision 3), over every time value that SQLite
+  reads, `now` included. A time value that SQLite cannot read gives NULL.
+- **Restrictions.** A modifier argument is a model restriction until slice 6g.
+
+### Date and time modifiers (slice 6g)
+
+- **Modifiers.** All of SQLite's modifiers (owner decision 3), with SQLite's
+  normalization: `date('2024-01-31', '+1 month')` is `2024-03-02`. `localtime` and `utc`
+  use the time zone of the execution profile, which the profile records; the recorder
+  runs SQLite in UTC (owner decision 6).
 
 ### Order
 
-6a first, then 6b, 6c and 6d. 6c needs 6b's JSON reading, and 6d is the only slice that
-changes the inputs of the execution semantics. With the owner decisions, 6b and 6d are
-large; their tasks may split them further, as Amendment 4 split slice 5.
+6a first. 6c and 6d need the JSON reading of 6b. 6e changes the inputs of the execution
+semantics and the verification target; 6f needs it for `now`, and 6g needs 6f. The JSON
+slices and the time slices do not depend on each other, so their order may change.
 
 ### Testing
 
@@ -890,8 +904,8 @@ None; see "Owner decisions".
 
 ### Owner decisions
 
-1. **JSON functions.** Decided on 2026-10-16: slice 6b includes `json_extract`, `->`,
-   `->>`, `json_type`, `json_valid`, `json_array_length` and `json`.
+1. **JSON functions.** Decided on 2026-10-16: `json_extract`, `->`, `->>`, `json_type`,
+   `json_valid`, `json_array_length` and `json` (slices 6b and 6c).
 2. **Clock.** Decided on 2026-10-16: a migration must be correct for every clock value;
    the verification target quantifies over the clock value of each statement.
 3. **Modifiers and formats.** Decided on 2026-10-16: all of SQLite's date and time
@@ -902,3 +916,6 @@ None; see "Owner decisions".
    `parent` as SQLite does.
 6. **Time zone.** Decided on 2026-10-16: the time zone is part of the execution profile;
    `localtime` and `utc` use it, and the recorder runs SQLite in UTC.
+7. **Split.** Decided on 2026-10-16: the JSON work is three slices (6b reading and
+   `json_extract`, 6c further functions, 6d `json_each`), and the time work three (6e the
+   clock, 6f the functions, 6g the modifiers).
