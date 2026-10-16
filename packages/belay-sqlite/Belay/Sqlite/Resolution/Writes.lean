@@ -51,8 +51,8 @@ def fullRow (columns : List CatalogColumn) (positions : List Nat) (row : List Va
 /-- The {lit}`ON CONFLICT` algorithm of each key of {name}`Catalog.uniqueKeys`, in its
 order: the primary key's, each UNIQUE constraint's, and ABORT for each unique index. -/
 def Catalog.keyAlgorithms (catalog : Catalog) (position : Nat) (table : CatalogTable) : List ConflictAlgorithm :=
-  (if table.primaryKey.isEmpty then [] else [table.primaryKeyAlgorithm]) ++
-    (table.uniqueKeys.mapIdx fun index _ => table.uniqueAlgorithm index) ++
+  (if table.primaryKey.isEmpty then [] else [table.primaryKeyAlgorithm.getD .abort]) ++
+    (table.keyedUniqueAlgorithms.map (·.getD .abort)) ++
     catalog.filterMap fun object => match object.entry with
       | .index index => if index.table == position && index.unique then some .abort else none
       | .table _ => none

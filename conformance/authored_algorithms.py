@@ -21,10 +21,13 @@ CONSTRAINTS = ("CREATE TABLE ci(k INTEGER UNIQUE ON CONFLICT IGNORE, v); "
                "CREATE TABLE cn(k UNIQUE, v NOT NULL ON CONFLICT IGNORE); "
                "CREATE TABLE cf(k INTEGER, v, UNIQUE(k) ON CONFLICT FAIL); "
                "CREATE TABLE cm(k INTEGER UNIQUE ON CONFLICT REPLACE, u INTEGER UNIQUE, v); "
+               "CREATE TABLE cu(k UNIQUE ON CONFLICT REPLACE, v, UNIQUE(k)); "
                "INSERT INTO ci VALUES(1, 'a'); INSERT INTO cr VALUES(1, 'a'); INSERT INTO cn VALUES(1, 'a'); "
-               "INSERT INTO cf VALUES(1, 'a'); INSERT INTO cm VALUES(1, 1, 'a'), (2, 2, 'b');")
+               "INSERT INTO cf VALUES(1, 'a'); INSERT INTO cm VALUES(1, 1, 'a'), (2, 2, 'b'); "
+               "INSERT INTO cu VALUES(1, 'a');")
 """Tables whose constraints have ON CONFLICT algorithms: a column and a table constraint,
-a rowid alias, NOT NULL, and a REPLACE key beside an ABORT key."""
+a rowid alias, NOT NULL, a REPLACE key beside an ABORT key, and two constraints of one
+index, whose explicit algorithm applies."""
 
 FAIL = "R-31882-08811"
 """SQLite: the FAIL algorithm does not back out the prior changes of the failing statement."""
@@ -113,6 +116,8 @@ def definitions() -> list[QueryCase]:
         case("constraint-upsert-target-first", CONSTRAINTS,
              "INSERT INTO ci VALUES(1, 'b') ON CONFLICT(k) DO UPDATE SET v = 'u' RETURNING *;",
              (CONSTRAINT,), ("algorithm", "constraint", "upsert")),
+        case("constraint-merged-index", CONSTRAINTS, "INSERT INTO cu VALUES(1, 'b') RETURNING *;",
+             (CONSTRAINT, REPLACE), ("algorithm", "constraint", "merged")),
     ]
 
 

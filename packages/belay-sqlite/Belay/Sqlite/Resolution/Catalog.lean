@@ -39,25 +39,24 @@ structure CatalogTable where
   /-- Whether the primary key is declared {lit}`PRIMARY KEY DESC` on its column, which
   makes SQLite's implicit key index descending. Use {lean}`false` for any other key. -/
   primaryKeyDescending : Bool := false
-  /-- The {lit}`ON CONFLICT` algorithm of the primary key; ABORT without one. -/
-  primaryKeyAlgorithm : ConflictAlgorithm := .abort
+  /-- The {lit}`ON CONFLICT` algorithm of the primary key, none without the clause. -/
+  primaryKeyAlgorithm : Option ConflictAlgorithm := none
   /-- The column positions of each UNIQUE constraint, in written order. -/
   uniqueKeys : List (List Nat) := []
   /-- The {lit}`ON CONFLICT` algorithm of each UNIQUE constraint, in the order of
-  {lit}`uniqueKeys`; a constraint without an entry is ABORT. -/
-  uniqueAlgorithms : List ConflictAlgorithm := []
+  {lit}`uniqueKeys`, none without the clause; a constraint without an entry has none. -/
+  uniqueAlgorithms : List (Option ConflictAlgorithm) := []
   deriving Repr, DecidableEq
 
-/-- The {lit}`ON CONFLICT` algorithm of the UNIQUE constraint at the position, ABORT for a
-constraint without an entry. -/
-def CatalogTable.uniqueAlgorithm (table : CatalogTable) (index : Nat) : ConflictAlgorithm :=
-  table.uniqueAlgorithms.getD index .abort
+/-- The {lit}`ON CONFLICT` algorithm of the UNIQUE constraint at the position, none for a
+constraint without the clause or without an entry. -/
+def CatalogTable.uniqueAlgorithm (table : CatalogTable) (index : Nat) : Option ConflictAlgorithm :=
+  table.uniqueAlgorithms.getD index none
 
-/-- The algorithms of the UNIQUE constraints with one more constraint of the algorithm, so
-the entry of each constraint stays at its position. -/
-def CatalogTable.appendUniqueAlgorithm (table : CatalogTable) (algorithm : Option ConflictAlgorithm) :
-    List ConflictAlgorithm :=
-  (table.uniqueKeys.mapIdx fun index _ => table.uniqueAlgorithm index) ++ [algorithm.getD .abort]
+/-- The algorithms of the UNIQUE constraints, one for each key of
+{name}`CatalogTable.uniqueKeys`. -/
+def CatalogTable.keyedUniqueAlgorithms (table : CatalogTable) : List (Option ConflictAlgorithm) :=
+  table.uniqueKeys.mapIdx fun index _ => table.uniqueAlgorithm index
 
 /-- One index entry: the catalog position of its table and its key columns. -/
 structure CatalogIndex where

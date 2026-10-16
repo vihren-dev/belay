@@ -95,6 +95,9 @@ inductive PrepareError where
   /-- {lit}`ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE constraint`: a
   target whose columns are not the columns of one key of the table. -/
   | conflictTargetMismatch
+  /-- {lit}`conflicting ON CONFLICT clauses specified`: two constraints of one index with
+  different explicit {lit}`ON CONFLICT` algorithms. -/
+  | conflictingAlgorithms
   deriving Repr, DecidableEq
 
 /-- A model restriction: SQLite accepts the SQL, but the model does not describe
