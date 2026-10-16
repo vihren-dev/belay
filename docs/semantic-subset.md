@@ -68,9 +68,14 @@ and the proposed row as `excluded.c`. A target is a list of column names, in any
 that are the columns of one key. The rows are handled in order: the first clause whose
 target key has a conflicting row handles the row, and a row that no clause handles is
 inserted and checked against every key. A `DO UPDATE` without target on a table with
-more than one key is the restriction `conflict-without-target`. Named
-constraints, collations, `CHECK`, `REFERENCES`, generated columns, `OR` conflict
-clauses, the conflict clauses of constraints, a target with a direction, collation,
+more than one key is the restriction `conflict-without-target`. `INSERT OR ROLLBACK`,
+`ABORT`, `FAIL`, `IGNORE` and `REPLACE`, and `REPLACE INTO`, apply the algorithm to every
+key and NOT NULL failure of a row (slice 5d): FAIL keeps the earlier rows, IGNORE skips
+the row, REPLACE deletes every row that conflicts on any key (a NULL in a NOT NULL column
+is ABORT), and ROLLBACK rolls back the open transaction. A rowid alias mismatch and the
+row of `DO UPDATE` are always ABORT. Named
+constraints, collations, `CHECK`, `REFERENCES`, generated columns, `UPDATE OR`, the
+conflict clauses of constraints, a target with a direction, collation,
 `NULLS` order, qualified name or `WHERE`, `WITH`, `FROM` in writes, sort modifiers in keys,
 partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
 options, `AS SELECT`, views, triggers, virtual tables, `EXPLAIN`, `PRAGMA`,
@@ -136,7 +141,7 @@ messages in `RestrictionText.lean`. Every id has one row in this table;
 same ids. `conformance/restriction_examples.py` has, for every id, a schema and a
 migration that the resolver refuses with that id, and a test runs each one. Syntax
 that the frontend refuses before resolution, such as `DISTINCT` or
-`INSERT OR IGNORE`, has no id. `just restriction-costs` counts, for each id and for each kind
+`UPDATE OR IGNORE`, has no id. `just restriction-costs` counts, for each id and for each kind
 of frontend refusal, the cases of the claimed corpora that it keeps out of scope.
 
 | Id | Restriction | Introduced by |

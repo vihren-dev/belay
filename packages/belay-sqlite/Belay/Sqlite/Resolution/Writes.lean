@@ -48,13 +48,25 @@ def fullRow (columns : List CatalogColumn) (positions : List Nat) (row : List Va
       | none => defaultValue column
     .ok (storeValue column.affinity value)) columns
 
+/-- The algorithm of each constraint of an INSERT into the table with the keys: the
+statement's {lit}`OR` algorithm for every key and NOT NULL column, else ABORT. -/
+def insertPolicy (table : CatalogTable) (keys : List (List Nat)) (algorithm : Option ConflictAlgorithm) :
+    Resolved.ConflictPolicy :=
+  { keys := keys.map fun _ => algorithm.getD .abort,
+    notNull := table.columns.map fun _ => algorithm.getD .abort }
+
+/-- Whether every algorithm of the policy is ABORT, the behavior of a plain INSERT. -/
+def Resolved.ConflictPolicy.aborts (policy : Resolved.ConflictPolicy) : Bool :=
+  policy.keys.all (· == .abort) && policy.notNull.all (· == .abort)
+
 /-- Resolve INSERT. Path 1 is the column list, path 2 the rows, path 3 the
 {lit}`ON CONFLICT` clauses ({name}`resolveConflict`) and path 4 the {lit}`RETURNING`
-columns. An INSERT without clauses is {name}`Resolved.Statement.insert`, one with
-clauses {name}`Resolved.Statement.upsert`. -/
+columns. An INSERT without clauses whose algorithms are all ABORT
+({name}`insertPolicy`) is {name}`Resolved.Statement.insert`; any other INSERT is
+{name}`Resolved.Statement.upsert`. -/
 def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : String)
     (names : Option (List String)) (rows : List (List Syntax.Expr)) (conflicts : List Syntax.ConflictClause)
-    (returning : List Syntax.ResultColumn) : StatementResolution :=
+    (algorithm : Option ConflictAlgorithm) (returning : List Syntax.ResultColumn) : StatementResolution :=
   let width := (rows.head?.map List.length).getD 0
   if rows.any (·.length != width) then prepareError catalog .valuesDiffer else
   match catalog.findTable tableName with
@@ -86,7 +98,8 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
               match resolveReturning context.profile.dqsDml (Scope.single tableName table.columns) returning with
               | .error issue => issueResolution catalog index [4] issue
               | .ok columns =>
-                if clauses.isEmpty then .ok (.insert position full keys columns, catalog)
-                else .ok (.upsert position full clauses keys columns, catalog)
+                let policy := insertPolicy table keys algorithm
+                if clauses.isEmpty && policy.aborts then .ok (.insert position full keys columns, catalog)
+                else .ok (.upsert position full clauses keys columns policy, catalog)
 
 end Belay.Sqlite

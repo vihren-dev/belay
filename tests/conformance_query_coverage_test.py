@@ -1,11 +1,12 @@
-"""The authored coverage cases of queries, numbers and writes (ADR 0012, slices 1 to 5c).
+"""The authored coverage cases of queries, numbers and writes (ADR 0012, slices 1 to 5d).
 
 The cases of `conformance.authored_queries`, `conformance.authored_numbers`,
 `conformance.authored_writes`, `conformance.authored_row_writes`,
 `conformance.authored_deletes`, `conformance.authored_joins`,
 `conformance.authored_using`, `conformance.authored_right`,
 `conformance.authored_merged`, `conformance.authored_keys`,
-`conformance.authored_aliases` and `conformance.authored_upserts` are
+`conformance.authored_aliases`, `conformance.authored_upserts` and
+`conformance.authored_algorithms` are
 recorded natively as version 5 records with statement outputs, name requirement
 identifiers of the pinned documentation, and replay through resolution, the
 execution semantics and query evaluation. Every case agrees with the model, and the
@@ -22,9 +23,9 @@ from types import ModuleType
 
 import pytest
 
-from conformance import (authored_aliases, authored_deletes, authored_joins, authored_keys, authored_merged,
-                         authored_numbers, authored_queries, authored_right, authored_row_writes, authored_upserts,
-                         authored_using, authored_writes)
+from conformance import (authored_algorithms, authored_aliases, authored_deletes, authored_joins, authored_keys,
+                         authored_merged, authored_numbers, authored_queries, authored_right, authored_row_writes,
+                         authored_upserts, authored_using, authored_writes)
 from conformance.model_check import compiled_many, prove
 from conformance.native_replay import prepare
 from conformance.record_parser import runtime_library
@@ -34,7 +35,8 @@ pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kern
               pytest.mark.requires_native("parser-library", "sqlite3")]
 ROOT = Path(__file__).resolve().parents[1]
 CASE_SETS = [authored_queries, authored_numbers, authored_writes, authored_row_writes, authored_deletes, authored_joins,
-             authored_using, authored_right, authored_merged, authored_keys, authored_aliases, authored_upserts]
+             authored_using, authored_right, authored_merged, authored_keys, authored_aliases, authored_upserts,
+             authored_algorithms]
 """The authored case modules: each has `definitions` and `records`."""
 
 

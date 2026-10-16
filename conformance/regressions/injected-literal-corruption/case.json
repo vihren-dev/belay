@@ -69,7 +69,8 @@
             }
           ]
         ],
-        "conflicts": []
+        "conflicts": [],
+        "algorithm": null
       }
     }
   ],
