@@ -16,6 +16,7 @@ elaboration of case terms short.
 """
 
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 
@@ -26,7 +27,6 @@ from conformance import (algorithm_mutants, alias_mutants, authored_algorithms, 
 from conformance.native_replay import prepare
 from conformance import (delete_mutants, join_mutants, key_mutants, merged_mutants, number_mutants, query_mutants,
                          right_mutants, row_write_mutants, using_mutants, write_mutants)
-from conformance.case_format import Json
 from conformance.record_parser import runtime_library
 from conformance.resolve_mutants import measure
 
@@ -41,21 +41,24 @@ Targets = dict[str, tuple[str, ...]]
 """The target cases of each mutant."""
 
 
-def measure_set(runtime_root: Path, records: list[dict[str, Json]], tables: list[tuple[Mutants, Targets]]) -> None:
-    """Every case of the records agrees with the unchanged model, and every mutant of the mutant
-    tables changes the verdict of its target case."""
-    library = runtime_library(runtime_root)
-    cases = []
-    for record in records:
-        case, answer = prepare(record, library)
-        assert case is not None, (record["name"], answer)
-        cases.append(case)
+def measure_set(runtime_root: Path, modules: list[ModuleType], tables: list[tuple[Mutants, Targets]]) -> None:
+    """Every target case of the mutant tables, recorded natively from the case modules, agrees
+    with the unchanged model, and every mutant changes the verdict of its target case. Only the
+    target cases are recorded and classified: the coverage test kernel-checks every case."""
     mutants: Mutants = {}
     targets: Targets = {}
     for table, table_targets in tables:
         assert not set(table) & set(mutants), "mutant names must be unique"
         mutants |= table
         targets |= table_targets
+    wanted = {name for names in targets.values() for name in names}
+    library = runtime_library(runtime_root)
+    cases = []
+    for module in modules:
+        for record in module.records([case for case in module.definitions() if case.name in wanted]):
+            case, answer = prepare(record, library)
+            assert case is not None, (record["name"], answer)
+            cases.append(case)
     result = measure(cases, ROOT, runtime_root, mutants, targets)
     assert set(result) == set(mutants)
     survivors = [name for name, item in result.items() if not item["killed"]]
@@ -66,7 +69,7 @@ def test_every_query_and_number_mutant_changes_a_verdict(runtime_root: Path) -> 
     """The authored query and number cases notice every changed rule of query semantics and
     numbers (`conformance.query_mutants`, `conformance.number_mutants`), so these rules are
     tested."""
-    measure_set(runtime_root, authored_queries.records() + authored_numbers.records(),
+    measure_set(runtime_root, [authored_queries, authored_numbers],
                 [(query_mutants.MUTANTS, query_mutants.TARGETS), (number_mutants.MUTANTS, number_mutants.TARGETS)])
 
 
@@ -75,8 +78,7 @@ def test_every_key_alias_upsert_and_algorithm_mutant_changes_a_verdict(runtime_r
     rule of unique key values, rowid aliases and conflict handling (`conformance.key_mutants`,
     `conformance.alias_mutants`, `conformance.upsert_mutants`, `conformance.algorithm_mutants`),
     so these rules are tested."""
-    measure_set(runtime_root, authored_keys.records() + authored_aliases.records() + authored_upserts.records()
-                + authored_algorithms.records(),
+    measure_set(runtime_root, [authored_keys, authored_aliases, authored_upserts, authored_algorithms],
                 [(key_mutants.MUTANTS, key_mutants.TARGETS), (alias_mutants.MUTANTS, alias_mutants.TARGETS),
                  (upsert_mutants.MUTANTS, upsert_mutants.TARGETS),
                  (algorithm_mutants.MUTANTS, algorithm_mutants.TARGETS)])
@@ -88,9 +90,8 @@ def test_every_write_and_join_mutant_changes_a_verdict(runtime_root: Path) -> No
     `conformance.row_write_mutants`, `conformance.delete_mutants`, `conformance.join_mutants`,
     `conformance.using_mutants`, `conformance.right_mutants`, `conformance.merged_mutants`), so
     these rules are tested."""
-    measure_set(runtime_root, authored_writes.records() + authored_row_writes.records() + authored_deletes.records()
-                + authored_joins.records() + authored_using.records() + authored_right.records()
-                + authored_merged.records(),
+    measure_set(runtime_root, [authored_writes, authored_row_writes, authored_deletes, authored_joins, authored_using,
+                               authored_right, authored_merged],
                 [(write_mutants.MUTANTS, write_mutants.TARGETS), (row_write_mutants.MUTANTS, row_write_mutants.TARGETS),
                  (delete_mutants.MUTANTS, delete_mutants.TARGETS), (join_mutants.MUTANTS, join_mutants.TARGETS),
                  (using_mutants.MUTANTS, using_mutants.TARGETS), (right_mutants.MUTANTS, right_mutants.TARGETS),
