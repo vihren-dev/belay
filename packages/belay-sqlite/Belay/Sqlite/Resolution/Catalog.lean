@@ -36,8 +36,9 @@ structure CatalogTable where
   primaryKey : List Nat := []
   /-- The position of the column that is an alias for the rowid, if any. -/
   rowidAlias : Option Nat := none
-  /-- Whether the primary key is declared {lit}`PRIMARY KEY DESC` on its column, which
-  makes SQLite's implicit key index descending. Use {lean}`false` for any other key. -/
+  /-- Whether SQLite's implicit key index of the primary key is descending: the key is
+  declared {lit}`PRIMARY KEY DESC` on its column and has no earlier UNIQUE constraint of
+  the same column, whose ascending index SQLite keeps. Use {lean}`false` for any other key. -/
   primaryKeyDescending : Bool := false
   /-- The {lit}`ON CONFLICT` algorithm of the primary key, none without the clause. -/
   primaryKeyAlgorithm : Option ConflictAlgorithm := none
