@@ -39,8 +39,8 @@ def empty : Database := fun position =>
 -- fails with it.
 #guard fromless.mustFail [[]] && queryJsonReady fromless empty
 #guard match step (.query fromless) empty with
-  | .failure 0 .functionError _ => true
-  | _ => false
+  | .failure position reason _ => position == 0 && reason == .functionError
+  | .success _ | .pending .. => false
 -- Under LIMIT 0 SQLite evaluates nothing; OFFSET 1 skips the result column; WHERE 0
 -- leaves no row. The model does not describe the first two, and the third succeeds.
 #guard !{ fromless with limit := some 0 }.mustFail [[]] && !queryJsonReady { fromless with limit := some 0 } empty

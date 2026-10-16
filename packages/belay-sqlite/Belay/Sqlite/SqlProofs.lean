@@ -117,7 +117,8 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDe
       cases statement with
       | query query =>
         simp [statementReady, queryJsonReady, Resolved.Query.mayFail_of_callsJson query _ first]
-      | _ => simp_all [statementReady]
+      | createTable | createIndex | addColumn | begin | commit | rollback | insert | upsert | update | delete
+      | prepareError => simp_all [statementReady]
     simp only [supportedSqlFrom, ready, Bool.true_and]
     cases advance position statement state with
     | halt outcome => rfl
