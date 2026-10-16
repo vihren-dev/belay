@@ -20,6 +20,8 @@ structure CatalogColumn where
   declaredType : Option String
   /-- Whether the column declares NOT NULL. -/
   notNull : Bool := false
+  /-- The {lit}`ON CONFLICT` algorithm of the NOT NULL constraint; ABORT without one. -/
+  notNullAlgorithm : ConflictAlgorithm := .abort
   /-- The DEFAULT expression as written; omit it for no default. -/
   defaultValue : Option Syntax.Expr := none
   deriving Repr, DecidableEq
@@ -37,9 +39,25 @@ structure CatalogTable where
   /-- Whether the primary key is declared {lit}`PRIMARY KEY DESC` on its column, which
   makes SQLite's implicit key index descending. Use {lean}`false` for any other key. -/
   primaryKeyDescending : Bool := false
+  /-- The {lit}`ON CONFLICT` algorithm of the primary key; ABORT without one. -/
+  primaryKeyAlgorithm : ConflictAlgorithm := .abort
   /-- The column positions of each UNIQUE constraint, in written order. -/
   uniqueKeys : List (List Nat) := []
+  /-- The {lit}`ON CONFLICT` algorithm of each UNIQUE constraint, in the order of
+  {lit}`uniqueKeys`; a constraint without an entry is ABORT. -/
+  uniqueAlgorithms : List ConflictAlgorithm := []
   deriving Repr, DecidableEq
+
+/-- The {lit}`ON CONFLICT` algorithm of the UNIQUE constraint at the position, ABORT for a
+constraint without an entry. -/
+def CatalogTable.uniqueAlgorithm (table : CatalogTable) (index : Nat) : ConflictAlgorithm :=
+  table.uniqueAlgorithms.getD index .abort
+
+/-- The algorithms of the UNIQUE constraints with one more constraint of the algorithm, so
+the entry of each constraint stays at its position. -/
+def CatalogTable.appendUniqueAlgorithm (table : CatalogTable) (algorithm : Option ConflictAlgorithm) :
+    List ConflictAlgorithm :=
+  (table.uniqueKeys.mapIdx fun index _ => table.uniqueAlgorithm index) ++ [algorithm.getD .abort]
 
 /-- One index entry: the catalog position of its table and its key columns. -/
 structure CatalogIndex where

@@ -48,12 +48,34 @@ def fullRow (columns : List CatalogColumn) (positions : List Nat) (row : List Va
       | none => defaultValue column
     .ok (storeValue column.affinity value)) columns
 
-/-- The algorithm of each constraint of an INSERT into the table with the keys: the
-statement's {lit}`OR` algorithm for every key and NOT NULL column, else ABORT. -/
-def insertPolicy (table : CatalogTable) (keys : List (List Nat)) (algorithm : Option ConflictAlgorithm) :
+/-- The {lit}`ON CONFLICT` algorithm of each key of {name}`Catalog.uniqueKeys`, in its
+order: the primary key's, each UNIQUE constraint's, and ABORT for each unique index. -/
+def Catalog.keyAlgorithms (catalog : Catalog) (position : Nat) (table : CatalogTable) : List ConflictAlgorithm :=
+  (if table.primaryKey.isEmpty then [] else [table.primaryKeyAlgorithm]) ++
+    (table.uniqueKeys.mapIdx fun index _ => table.uniqueAlgorithm index) ++
+    catalog.filterMap fun object => match object.entry with
+      | .index index => if index.table == position && index.unique then some .abort else none
+      | .table _ => none
+
+/-- The algorithm of each constraint of an INSERT into the table: the statement's
+{lit}`OR` algorithm when it has one (R-33948-22286), else the algorithm of the
+constraint ({lit}`constraints` for the keys, {name}`CatalogColumn.notNullAlgorithm` for
+NOT NULL). -/
+def insertPolicy (table : CatalogTable) (constraints : List ConflictAlgorithm) (algorithm : Option ConflictAlgorithm) :
     Resolved.ConflictPolicy :=
-  { keys := keys.map fun _ => algorithm.getD .abort,
-    notNull := table.columns.map fun _ => algorithm.getD .abort }
+  { keys := constraints.map fun own => algorithm.getD own,
+    notNull := table.columns.map fun column => algorithm.getD column.notNullAlgorithm }
+
+/-- Whether the policy gives two keys different algorithms other than REPLACE, whose order
+SQLite decides internally ({name}`RestrictionKind.mixedConflictAlgorithms`). -/
+def Resolved.ConflictPolicy.mixed (policy : Resolved.ConflictPolicy) : Bool :=
+  (policy.keys.filter (· != .replace)).eraseDups.length > 1
+
+/-- Whether a NOT NULL column with a default has REPLACE, which would store the default
+({name}`RestrictionKind.replaceDefault`). -/
+def replacesDefault (table : CatalogTable) (policy : Resolved.ConflictPolicy) : Bool :=
+  (table.columns.zip policy.notNull).any fun (column, algorithm) =>
+    column.notNull && column.defaultValue.isSome && algorithm == .replace
 
 /-- Whether every algorithm of the policy is ABORT, the behavior of a plain INSERT. -/
 def Resolved.ConflictPolicy.aborts (policy : Resolved.ConflictPolicy) : Bool :=
@@ -98,8 +120,10 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
               match resolveReturning context.profile.dqsDml (Scope.single tableName table.columns) returning with
               | .error issue => issueResolution catalog index [4] issue
               | .ok columns =>
-                let policy := insertPolicy table keys algorithm
-                if clauses.isEmpty && policy.aborts then .ok (.insert position full keys columns, catalog)
+                let policy := insertPolicy table (catalog.keyAlgorithms position table) algorithm
+                if policy.mixed then restrict index [] .mixedConflictAlgorithms
+                else if replacesDefault table policy then restrict index [] .replaceDefault
+                else if clauses.isEmpty && policy.aborts then .ok (.insert position full keys columns, catalog)
                 else .ok (.upsert position full clauses keys columns policy, catalog)
 
 end Belay.Sqlite

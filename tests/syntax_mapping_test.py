@@ -38,13 +38,15 @@ def test_definitions_keep_names_types_and_constraints_as_written(parse_sql: Call
            "CREATE UNIQUE INDEX i ON `Big T`(a, B); ALTER TABLE t ADD COLUMN z INT DEFAULT y;")
     assert mapped(parse_sql, sql) == [
         {"createTable": {"name": "Big T", "columns": [
-            column("a", "VARCHAR ( 10 )", ["notNull", {"primaryKey": {"descending": True}}]),
-            column("B", "Some", ["unique"]),
+            column("a", "VARCHAR ( 10 )", [{"notNull": {"algorithm": None}},
+                                           {"primaryKey": {"descending": True, "algorithm": None}}]),
+            column("B", "Some", [{"unique": {"algorithm": None}}]),
             column("c", None, [{"default": {"value": {"negate": {"operand": {"numeric": {"text": "1"}}}}}}]),
             column("d", None, [{"default": {"value": {"currentTime": {"keyword": "CURRENT_TIMESTAMP"}}}}]),
             column("e", None, [{"default": {"value": {"string": {"bytes": list(b"x'y")}}}}]),
             column("f", None)],
-            "constraints": [{"primaryKey": {"columns": ["a"]}}, {"unique": {"columns": ["c", "d"]}}]}},
+            "constraints": [{"primaryKey": {"columns": ["a"], "algorithm": None}},
+                            {"unique": {"columns": ["c", "d"], "algorithm": None}}]}},
         {"createIndex": {"name": "i", "unique": True, "table": "Big T", "columns": ["a", "B"]}},
         {"addColumn": {"table": "t", "column": column("z", "INT", [
             {"default": {"value": {"identifier": {"name": "y", "doubleQuoted": False}}}}])}}]

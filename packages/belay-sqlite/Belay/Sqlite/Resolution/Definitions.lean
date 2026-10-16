@@ -29,16 +29,19 @@ def updateLast (items : List α) (change : α → α) : List α :=
 /-- Apply one column constraint of the last column of a table being created. -/
 def applyConstraint (tableName : String) (definition : Syntax.ColumnDefinition)
     (table : CatalogTable) : Syntax.ColumnConstraint → Except PrepareError CatalogTable
-  | .primaryKey descending =>
+  | .primaryKey descending algorithm =>
     if !table.primaryKey.isEmpty then .error (.multiplePrimaryKeys tableName) else
     let position := table.columns.length - 1
     let alias := if aliasesRowid definition.declaredType && !descending then some position else none
-    .ok { table with primaryKey := [position], rowidAlias := alias, primaryKeyDescending := descending }
+    .ok { table with primaryKey := [position], rowidAlias := alias, primaryKeyDescending := descending,
+                     primaryKeyAlgorithm := algorithm.getD .abort }
   | .default value =>
     if !constantDefault value then .error (.defaultNotConstant definition.name) else
     .ok { table with columns := updateLast table.columns fun column => { column with defaultValue := some value } }
-  | .notNull => .ok { table with columns := updateLast table.columns fun column => { column with notNull := true } }
-  | .unique => .ok { table with uniqueKeys := table.uniqueKeys ++ [[table.columns.length - 1]] }
+  | .notNull algorithm => .ok { table with columns := updateLast table.columns fun column =>
+      { column with notNull := true, notNullAlgorithm := algorithm.getD .abort } }
+  | .unique algorithm => .ok { table with uniqueKeys := table.uniqueKeys ++ [[table.columns.length - 1]],
+                                          uniqueAlgorithms := table.appendUniqueAlgorithm algorithm }
 
 /-- Add the column definitions in written order: {lit}`too many columns on %s` when
 a column would exceed the limit, then {lit}`duplicate column name: %s`, then each
@@ -60,16 +63,19 @@ column of declared type INTEGER is a rowid alias, whatever its sort order. -/
 def addTableConstraints (tableName : String) (table : CatalogTable) :
     List Syntax.TableConstraint → Except PrepareError CatalogTable
   | [] => .ok table
-  | .primaryKey names :: rest => do
+  | .primaryKey names algorithm :: rest => do
     if !table.primaryKey.isEmpty then throw (.multiplePrimaryKeys tableName)
     let positions ← keyPositions table.columns names
     let alias := match positions with
       | [position] => if aliasesRowid (table.columns[position]?.bind (·.declaredType)) then some position else none
       | _ => none
-    addTableConstraints tableName { table with primaryKey := positions, rowidAlias := alias } rest
-  | .unique names :: rest => do
+    addTableConstraints tableName
+      { table with primaryKey := positions, rowidAlias := alias, primaryKeyAlgorithm := algorithm.getD .abort } rest
+  | .unique names algorithm :: rest => do
     let positions ← keyPositions table.columns names
-    addTableConstraints tableName { table with uniqueKeys := table.uniqueKeys ++ [positions] } rest
+    addTableConstraints tableName
+      { table with uniqueKeys := table.uniqueKeys ++ [positions], uniqueAlgorithms := table.appendUniqueAlgorithm algorithm }
+      rest
 
 /-- The exact statistics tables that ANALYZE creates, which a catalog description may contain. -/
 def statisticsTable (name : String) (columns : List Syntax.ColumnDefinition)

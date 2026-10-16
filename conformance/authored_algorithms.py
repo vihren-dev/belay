@@ -16,6 +16,16 @@ TABLES = ("CREATE TABLE t(k INTEGER UNIQUE, u INTEGER UNIQUE, v TEXT NOT NULL); 
           "INSERT INTO t VALUES(1, 1, 'a'), (2, 2, 'b'); INSERT INTO i VALUES(1, 'a');")
 """A table with two keys and a NOT NULL column, and a table with a rowid alias."""
 
+CONSTRAINTS = ("CREATE TABLE ci(k INTEGER UNIQUE ON CONFLICT IGNORE, v); "
+               "CREATE TABLE cr(k INTEGER PRIMARY KEY ON CONFLICT REPLACE, v); "
+               "CREATE TABLE cn(k UNIQUE, v NOT NULL ON CONFLICT IGNORE); "
+               "CREATE TABLE cf(k INTEGER, v, UNIQUE(k) ON CONFLICT FAIL); "
+               "CREATE TABLE cm(k INTEGER UNIQUE ON CONFLICT REPLACE, u INTEGER UNIQUE, v); "
+               "INSERT INTO ci VALUES(1, 'a'); INSERT INTO cr VALUES(1, 'a'); INSERT INTO cn VALUES(1, 'a'); "
+               "INSERT INTO cf VALUES(1, 'a'); INSERT INTO cm VALUES(1, 1, 'a'), (2, 2, 'b');")
+"""Tables whose constraints have ON CONFLICT algorithms: a column and a table constraint,
+a rowid alias, NOT NULL, and a REPLACE key beside an ABORT key."""
+
 FAIL = "R-31882-08811"
 """SQLite: the FAIL algorithm does not back out the prior changes of the failing statement."""
 ROLLBACK = "R-31881-13880"
@@ -30,6 +40,10 @@ REPLACE_NULL = "R-12527-00403"
 """SQLite: REPLACE of a NULL in a NOT NULL column uses the default, or ABORT without one."""
 REPLACE_COUNT = "R-37019-57602"
 """SQLite: the rows that REPLACE deletes do not increment the change counter."""
+CONSTRAINT = "R-34093-09213"
+"""SQLite: PRIMARY KEY, UNIQUE and NOT NULL constraints may have another default algorithm."""
+REPLACE_INTO = "R-00267-47727"
+"""SQLite: INSERT can be replaced by REPLACE or INSERT OR action to name another algorithm."""
 OVERRIDE = "R-33948-22286"
 """SQLite: the algorithm of the OR clause overrides the algorithm of a constraint."""
 
@@ -58,7 +72,7 @@ def definitions() -> list[QueryCase]:
         case("or-replace-two-rows", TABLES, "INSERT OR REPLACE INTO t VALUES(1, 2, 'r') RETURNING *;",
              (REPLACE, REPLACE_COUNT), ("algorithm", "replace")),
         case("replace-into", TABLES, "REPLACE INTO t VALUES(2, 7, 's'), (8, 8, 'e') RETURNING *;",
-             (REPLACE, REPLACE_COUNT), ("algorithm", "replace")),
+             (REPLACE_INTO, REPLACE, REPLACE_COUNT), ("algorithm", "replace")),
         case("or-replace-alias", TABLES, "INSERT OR REPLACE INTO i VALUES(1, 'z') RETURNING *;", (REPLACE,),
              ("algorithm", "replace", "alias")),
         case("or-replace-null-alias", TABLES, "INSERT OR REPLACE INTO i VALUES(NULL, 'n') RETURNING *;", (REPLACE,),
@@ -82,6 +96,23 @@ def definitions() -> list[QueryCase]:
         case("or-replace-untargeted", TABLES,
              "INSERT OR REPLACE INTO t VALUES(9, 2, 'y') ON CONFLICT(k) DO NOTHING RETURNING *;",
              (REPLACE,), ("algorithm", "replace", "upsert")),
+        case("constraint-ignore", CONSTRAINTS, "INSERT INTO ci VALUES(1, 'b'), (2, 'c') RETURNING *;",
+             (CONSTRAINT, IGNORE), ("algorithm", "constraint", "ignore")),
+        case("constraint-replace-alias", CONSTRAINTS, "INSERT INTO cr VALUES(1, 'b') RETURNING *;",
+             (CONSTRAINT, REPLACE), ("algorithm", "constraint", "replace", "alias")),
+        case("constraint-not-null-ignore", CONSTRAINTS, "INSERT INTO cn VALUES(2, NULL), (3, 'c') RETURNING *;",
+             (CONSTRAINT, IGNORE), ("algorithm", "constraint", "not-null")),
+        case("constraint-fail-table", CONSTRAINTS, "INSERT INTO cf VALUES(2, 'b'), (1, 'c');",
+             (CONSTRAINT, FAIL), ("algorithm", "constraint", "fail")),
+        case("constraint-or-overrides", CONSTRAINTS, "INSERT OR ABORT INTO ci VALUES(1, 'b');",
+             (OVERRIDE,), ("algorithm", "constraint", "override")),
+        case("constraint-replace-after-abort", CONSTRAINTS, "INSERT INTO cm VALUES(1, 2, 'x');",
+             (CONSTRAINT, REPLACE), ("algorithm", "constraint", "order")),
+        case("constraint-replace-other", CONSTRAINTS, "INSERT INTO cm VALUES(1, 9, 'y') RETURNING *;",
+             (CONSTRAINT, REPLACE), ("algorithm", "constraint", "replace")),
+        case("constraint-upsert-target-first", CONSTRAINTS,
+             "INSERT INTO ci VALUES(1, 'b') ON CONFLICT(k) DO UPDATE SET v = 'u' RETURNING *;",
+             (CONSTRAINT,), ("algorithm", "constraint", "upsert")),
     ]
 
 

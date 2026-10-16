@@ -12,7 +12,7 @@ range.
 
 from .located import Located, constructor, leaf, pair, sequence, structure
 from .sql_tree import Node, Tree
-from .syntax_definitions import absent, left_list, require
+from .syntax_definitions import absent, left_list, require, resolve_type
 from .syntax_expressions import name
 from .syntax_queries import query_expression
 
@@ -78,18 +78,6 @@ def conflict_clauses(tree: Tree, upsert: Node) -> tuple[Located, list[Node]]:
             action = update_action(tree, parts[5], parts[6], parts[2].start, parts[6].end)
         clauses.append(structure([("target", target), ("action", action)], parts[0].start, parts[-2].end))
         current = parts[-1]
-
-
-ALGORITHMS = {"ROLLBACK": "rollback", "ABORT": "abort", "FAIL": "fail", "IGNORE": "ignore", "REPLACE": "replace"}
-"""SQLite's conflict algorithm keywords and the Lean constructors of `ConflictAlgorithm`."""
-
-
-def resolve_type(tree: Tree, node: Node) -> Located:
-    """Map a `resolvetype` node, `raisetype`, `IGNORE` or `REPLACE`, to its algorithm."""
-    (part,) = tree.children(node)
-    if part.symbol == "raisetype":
-        (part,) = tree.children(part)
-    return leaf(ALGORITHMS[part.symbol], node.start, node.end)
 
 
 def insert_algorithm(tree: Tree, operation: Node) -> Located:
