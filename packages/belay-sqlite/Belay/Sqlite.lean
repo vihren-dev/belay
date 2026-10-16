@@ -17,6 +17,7 @@ import Belay.Sqlite.SchemaPreservation
 import Belay.Sqlite.LiteralPreservation
 import Belay.Sqlite.WritePreservation
 import Belay.Sqlite.DeletePreservation
+import Belay.Sqlite.UpsertConforms
 import Belay.Sqlite.ModelProjection
 import Belay.Sqlite.Laws
 import Belay.Sqlite.Resolution

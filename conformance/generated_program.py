@@ -59,7 +59,8 @@ def command(kind: str, table: str = "", *, column: str = "v", value: SqlValue = 
         return ({"addColumn": {"table": table, "column": column_syntax(column, affinity)}},
                 f"ALTER TABLE {table} ADD {column} {affinity.upper()};")
     if kind == "insert":
-        return ({"insert": {"table": table, "columns": ["id", "v"], "rows": [[literal_syntax(key), literal_syntax(value)]]}},
+        return ({"insert": {"table": table, "columns": ["id", "v"], "rows": [[literal_syntax(key), literal_syntax(value)]],
+                            "conflicts": []}},
                 f"INSERT INTO {table}(id,v) VALUES({literal(key)},{literal(value)});")
     filter_: Json = {"equals": {"left": {"identifier": {"name": "id", "doubleQuoted": False}},
                                 "right": literal_syntax(key)}}

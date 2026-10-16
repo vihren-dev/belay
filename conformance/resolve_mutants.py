@@ -99,11 +99,15 @@ MAX_REC_DEPTH = 100000
 
 
 def classifier(terms: list[str]) -> str:
-    """A Lean program that prints the verdict of each case term, one per line."""
-    cases = ",\n".join("  " + term.replace("\n", "\n  ") for term in terms)
+    """A Lean program that prints the verdict of each case term, one per line. Each term is
+    its own definition, so Lean's heartbeat limit, which applies to one declaration, bounds
+    the elaboration of one case and not of all of them."""
+    definitions = "".join(f"def case{index} : Case :=\n  " + term.replace("\n", "\n  ") + "\n"
+                          for index, term in enumerate(terms))
+    names = ", ".join(f"case{index}" for index in range(len(terms)))
     return ("import VerifierConformance.Case\nopen Belay.Sqlite Belay.Sqlite.Conformance\n"
             f"set_option maxRecDepth {MAX_REC_DEPTH}\n"
-            f"def cases : List Case := [\n{cases}]\n"
+            f"{definitions}def cases : List Case := [{names}]\n"
             "def main : IO Unit := for c in cases do IO.println (reprStr (classifyCase c))\n")
 
 

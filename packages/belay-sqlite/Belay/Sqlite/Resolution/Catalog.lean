@@ -34,6 +34,9 @@ structure CatalogTable where
   primaryKey : List Nat := []
   /-- The position of the column that is an alias for the rowid, if any. -/
   rowidAlias : Option Nat := none
+  /-- Whether the primary key is declared {lit}`PRIMARY KEY DESC` on its column, which
+  makes SQLite's implicit key index descending. Use {lean}`false` for any other key. -/
+  primaryKeyDescending : Bool := false
   /-- The column positions of each UNIQUE constraint, in written order. -/
   uniqueKeys : List (List Nat) := []
   deriving Repr, DecidableEq

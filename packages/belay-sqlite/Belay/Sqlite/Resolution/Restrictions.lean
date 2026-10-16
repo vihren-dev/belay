@@ -17,8 +17,6 @@ inductive RestrictionKind where
   | engineTable
   /-- Column names {lit}`rowid`, {lit}`_rowid_` and {lit}`oid` are not modeled (ADR 0008). -/
   | rowidColumnName
-  /-- INTEGER PRIMARY KEY rowid aliases are not modeled (ADR 0008). -/
-  | rowidAlias
   /-- Constraints and defaults in a CREATE TABLE that runs are not modeled (ADR 0008). -/
   | createTableConstraints
   /-- Only the {lit}`CURRENT_TIMESTAMP` default is modeled (ADR 0008). -/
@@ -32,6 +30,9 @@ inductive RestrictionKind where
   /-- A {lit}`SET` value that reads the row is not modeled for a column of a unique key
   (ADR 0012, amendment 1, owner decision on question 1). -/
   | rowDependentKey
+  /-- {lit}`ON CONFLICT DO UPDATE` without a target on a table with more than one key:
+  SQLite then chooses the key of the conflict by its internal order of indexes. -/
+  | conflictWithoutTarget
   /-- A column named twice in INSERT is not modeled (ADR 0008). -/
   | insertColumnTwice
   /-- A column assigned twice in UPDATE is not modeled (ADR 0008). -/

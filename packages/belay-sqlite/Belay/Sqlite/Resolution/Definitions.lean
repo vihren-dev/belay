@@ -33,7 +33,7 @@ def applyConstraint (tableName : String) (definition : Syntax.ColumnDefinition)
     if !table.primaryKey.isEmpty then .error (.multiplePrimaryKeys tableName) else
     let position := table.columns.length - 1
     let alias := if aliasesRowid definition.declaredType && !descending then some position else none
-    .ok { table with primaryKey := [position], rowidAlias := alias }
+    .ok { table with primaryKey := [position], rowidAlias := alias, primaryKeyDescending := descending }
   | .default value =>
     if !constantDefault value then .error (.defaultNotConstant definition.name) else
     .ok { table with columns := updateLast table.columns fun column => { column with defaultValue := some value } }
@@ -98,7 +98,6 @@ def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : N
     | .error error => prepareError catalog error
     | .ok table =>
       if columns.any (rowidName ·.name) then restrict index [1] .rowidColumnName
-      else if table.rowidAlias.isSome then restrict index [1] .rowidAlias
       else if context.mode == .execution && (!constraints.isEmpty || columns.any (!·.constraints.isEmpty)) then
         restrict index [1] .createTableConstraints
       else if columns.any (!·.constraints.all Syntax.ColumnConstraint.modeledDefault) then

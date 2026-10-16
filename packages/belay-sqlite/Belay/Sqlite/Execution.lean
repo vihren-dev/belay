@@ -27,6 +27,10 @@ inductive ExecutionError where
   /-- A query's {lit}`SUM` overflows the 64-bit integers: SQLite's {lit}`integer overflow`,
   reported while the statement runs. -/
   | integerOverflow
+  /-- A value for a rowid alias that is not an integer after INTEGER affinity, or a NULL
+  assigned to it by UPDATE: SQLite's {lit}`datatype mismatch` ({lit}`SQLITE_MISMATCH`),
+  reported while the statement runs. -/
+  | datatypeMismatch
   deriving Repr, DecidableEq
 
 /-- The final database and transaction status. Use {lean}`Outcome.success`
@@ -88,7 +92,7 @@ def step (statement : Resolved.Statement) (database : Database) (position : Nat 
   | .query query => match query.source database with
     | some rows => if query.fails rows then .failure position .integerOverflow database else .success database
     | none => .success database
-  | .createIndex .. | .begin | .commit | .rollback | .insert .. | .update .. | .delete .. =>
+  | .createIndex .. | .begin | .commit | .rollback | .insert .. | .upsert .. | .update .. | .delete .. =>
     .failure position .unmodeled database
 
 end Belay.Sqlite

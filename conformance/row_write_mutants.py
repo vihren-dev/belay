@@ -22,14 +22,14 @@ OUTPUTS = "verifier-conformance/VerifierConformance/Outputs.lean"
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "set_reads_new_row": (ROW_UPDATE,
-        "values.set position (storeValue (positionAffinity columns position) (expression.eval row.values))) row.values }",
+        "values.set position (storeValue (positionAffinity columns position) (expression.eval context))) row.values }",
         "values.set position (storeValue (positionAffinity columns position) (expression.eval values))) row.values }"),
     "null_filter_selects": (ROW_UPDATE,
         "  filter.all fun condition => Resolved.truthy (condition.eval row.values)",
         "  filter.all fun condition => !Resolved.falsy (condition.eval row.values)"),
     "no_store_affinity": (ROW_UPDATE,
-        "values.set position (storeValue (positionAffinity columns position) (expression.eval row.values))) row.values }",
-        "values.set position (expression.eval row.values)) row.values }"),
+        "values.set position (storeValue (positionAffinity columns position) (expression.eval context))) row.values }",
+        "values.set position (expression.eval context)) row.values }"),
     "cast_as_store_affinity": (WRITES,
         "    .ok (storeValue column.affinity value)) columns", "    .ok (castValue column.affinity value)) columns"),
     "real_column_keeps_integer": (STORE,
@@ -37,8 +37,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "text_column_keeps_number": (STORE,
         "  | .text, .integer _ | .text, .real _ => .text value.textBytes", "  | .text, .integer _ | .text, .real _ => value"),
     "failed_update_keeps_rows": (EXECUTION,
-        "  else .failure position .constraintViolation database",
-        "  else .failure position .constraintViolation (database.set at_ result)"),
+        "    .success (database.set at_ result)\n  else .failure position .constraintViolation database",
+        "    .success (database.set at_ result)\n  else .failure position .constraintViolation (database.set at_ result)"),
     "change_count_every_row": (OUTPUTS, "        some chosen.length⟩", "        some table.rows.length⟩"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
@@ -60,8 +60,8 @@ TARGETS: dict[str, tuple[str, ...]] = {
 """The authored case of `conformance.authored_row_writes` that each mutant changes."""
 
 GUARDS: dict[str, str] = {
-    "set_reads_new_row": "rule:assign", "null_filter_selects": "rule:selected",
-    "no_store_affinity": "rule:assign",
+    "set_reads_new_row": "rule:assignFrom", "null_filter_selects": "rule:selected",
+    "no_store_affinity": "rule:assignFrom",
     "cast_as_store_affinity": "rule:fullRow", "real_column_keeps_integer": "rule:realRead",
     "text_column_keeps_number": "rule:storeValue", "failed_update_keeps_rows": "rule:checkedWrite",
     "change_count_every_row": "rule:statementOutput",

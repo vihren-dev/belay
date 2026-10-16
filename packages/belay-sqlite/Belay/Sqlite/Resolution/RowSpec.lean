@@ -77,7 +77,8 @@ theorem fullRow_rowWidth (columns : List CatalogColumn) (positions : List Nat)
       cases step
       simp [hvalue, Except.map]
 
-/-- For a successful resolution of INSERT to an insert statement, the catalog is
+/-- For a successful resolution of INSERT, with any {lit}`ON CONFLICT` clauses, to an
+insert statement, the catalog is
 unchanged, the statement names the position of the table that the name finds and
 carries that table's {name}`Catalog.uniqueKeys`, and for every resolved row there are table positions of the written columns and a
 written row such that the resolved row satisfies {name}`RowWidth` for the table's
@@ -86,10 +87,11 @@ split the resolver down to its successful branch; each row is a result of
 {name}`fullRow` by {name}`resolveAllFrom_ok`, and {name}`fullRow_rowWidth` gives the rule. -/
 theorem resolveInsert_rowWidth (context : ResolveContext) (catalog after : Catalog) (index : Nat)
     (tableName : String) (names : Option (List String)) (rows : List (List Syntax.Expr))
-    (returning : List Syntax.ResultColumn)
+    (conflicts : List Syntax.ConflictClause) (returning : List Syntax.ResultColumn)
     (position : Nat) (full : List (List Value)) (keys : List (List Nat))
     (columns : List (Resolved.Expr × String))
-    (ok : resolveInsert context catalog index tableName names rows returning = .ok (.insert position full keys columns, after)) :
+    (ok : resolveInsert context catalog index tableName names rows conflicts returning =
+      .ok (.insert position full keys columns, after)) :
     after = catalog ∧ ∃ table, catalog.findTable tableName = some (position, table) ∧
       keys = catalog.uniqueKeys position table ∧ ∀ row ∈ full, ∃ positions written, RowWidth table.columns positions written row := by
   unfold resolveInsert at ok
@@ -116,6 +118,10 @@ theorem resolveInsert_rowWidth (context : ResolveContext) (catalog after : Catal
   rename_i rows_ok
   split at ok
   · split at ok <;> cases ok
+  split at ok
+  · split at ok <;> cases ok
+  split at ok
+  case isFalse => cases ok
   cases ok
   refine ⟨rfl, table, found, rfl, fun row member => ?_⟩
   unfold resolveAll at rows_ok

@@ -51,8 +51,8 @@ conjunction, keeps each check, and weakens the width bound by transitivity. -/
 theorem CatalogTable.supported_mono {table : CatalogTable} (supported : table.supported limits = true)
     (more : limits.columns ≤ other.columns) : table.supported other = true := by
   simp only [CatalogTable.supported, Bool.and_eq_true, decide_eq_true_eq] at supported ⊢
-  obtain ⟨⟨⟨⟨⟨⟨nonempty, width⟩, names⟩, rowid⟩, alias⟩, primary⟩, unique⟩ := supported
-  exact ⟨⟨⟨⟨⟨⟨nonempty, Nat.le_trans width more⟩, names⟩, rowid⟩, alias⟩, primary⟩, unique⟩
+  obtain ⟨⟨⟨⟨⟨nonempty, width⟩, names⟩, rowid⟩, primary⟩, unique⟩ := supported
+  exact ⟨⟨⟨⟨⟨nonempty, Nat.le_trans width more⟩, names⟩, rowid⟩, primary⟩, unique⟩
 
 /-- For every catalog and two limits, if the catalog is valid under the first and
 the second allows at least as many columns, it is valid under the second. Use it
@@ -84,7 +84,7 @@ theorem Catalog.emptyDatabase_conforms (valid : catalog.Valid profile.limits) :
     | some shape =>
       simp only [Catalog.emptyDatabase, found, Option.map_some, Option.some.injEq] at present
       subst table
-      exact ⟨by simp, by simp⟩
+      exact ⟨by simp, fun _ member => by simp at member⟩
 
 /-- For every conforming database and stored table, the catalog entry at that
 position is the table's shape. The table-presence premise excludes absence. Use

@@ -51,7 +51,8 @@ def test_definitions_keep_names_types_and_constraints_as_written(parse_sql: Call
 
 
 def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., Tree]) -> None:
-    """INSERT keeps its optional columns and rows; UPDATE keeps assignments and its filter."""
+    """INSERT keeps its optional columns and rows, with no ON CONFLICT clauses; UPDATE keeps
+    assignments and its filter."""
     sql = ("BEGIN DEFERRED TRANSACTION; INSERT INTO t VALUES (0x1F, \"q\"), (NULL, X'00ff'); "
            "INSERT INTO t(a) VALUES (+1_000); UPDATE t SET a = -2.5, b = 'é' WHERE id == 3; "
            "UPDATE t SET a = 1; END; ROLLBACK TRANSACTION;")
@@ -59,9 +60,9 @@ def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., 
         "begin",
         {"insert": {"table": "t", "columns": None, "rows": [
             [{"numeric": {"text": "0x1F"}}, {"identifier": {"name": "q", "doubleQuoted": True}}],
-            ["null", {"blob": {"bytes": [0, 255]}}]]}},
+            ["null", {"blob": {"bytes": [0, 255]}}]], "conflicts": []}},
         {"insert": {"table": "t", "columns": ["a"], "rows": [
-            [{"positive": {"operand": {"numeric": {"text": "1_000"}}}}]]}},
+            [{"positive": {"operand": {"numeric": {"text": "1_000"}}}}]], "conflicts": []}},
         {"update": {"table": "t", "assignments": [
             ["a", {"negate": {"operand": {"numeric": {"text": "2.5"}}}}],
             ["b", {"string": {"bytes": list("é".encode())}}]],

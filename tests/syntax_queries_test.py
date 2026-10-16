@@ -141,11 +141,3 @@ def test_joins_map_sources_kinds_and_conditions(parse_sql: Callable[..., Tree]) 
         {"operator": [], "source": {"table": "v", "alias": None}, "condition": None, "usingColumns": None},
         {"operator": ["NATURAL"], "source": {"table": "w", "alias": None}, "condition": None, "usingColumns": None},
         {"operator": ["CROSS"], "source": {"table": "y", "alias": None}, "condition": None, "usingColumns": ["b"]}]
-
-
-def test_upsert_stays_refused(parse_sql: Callable[..., Tree]) -> None:
-    """An UPSERT clause has no constructor and is refused at its range."""
-    sql = "INSERT INTO t VALUES (1) ON CONFLICT DO NOTHING;"
-    with pytest.raises(SqlError, match="UPSERT") as raised:
-        statements(parse_sql(sql))
-    assert sql.encode()[raised.value.start:raised.value.end].decode() == "ON CONFLICT DO NOTHING"

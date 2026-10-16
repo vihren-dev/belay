@@ -118,6 +118,7 @@ theorem step_extends (statement : Resolved.Statement) (database : Database) (pos
   | commit => exact DatabaseExtends.refl database
   | rollback => exact DatabaseExtends.refl database
   | insert _ _ _ _ => exact DatabaseExtends.refl database
+  | upsert _ _ _ _ _ => exact DatabaseExtends.refl database
   | update _ _ _ _ _ => exact DatabaseExtends.refl database
   | delete _ _ _ => exact DatabaseExtends.refl database
   | prepareError _ => exact DatabaseExtends.refl database

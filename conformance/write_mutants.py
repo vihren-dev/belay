@@ -20,9 +20,9 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "update_returning_every_row": (OUTPUTS,
         "      let written := chosen.map fun row =>", "      let written := table.rows.map fun row =>"),
     "returning_rows_on_failure": (OUTPUTS,
-        "    if successful then some ⟨names, returnedRows returning rows, some rows.length⟩\n"
+        "      return ⟨names, returnedRows returning written, some rows.length⟩\n"
         "    else if constraintFailure then some ⟨names, [], some 0⟩ else none",
-        "    if successful then some ⟨names, returnedRows returning rows, some rows.length⟩\n"
+        "      return ⟨names, returnedRows returning written, some rows.length⟩\n"
         "    else if constraintFailure then some ⟨names, returnedRows returning rows, some 0⟩ else none"),
     "returning_names_ignore_definition": (RETURNING,
         "      .ok [(resolved, alias.getD ((definedName scope value).getD text))]", "      .ok [(resolved, alias.getD text)]"),

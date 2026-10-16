@@ -45,27 +45,27 @@ def column_row(position: int, column: dict[str, Json], primary_key: list[int]) -
 
 
 def index_entry(names: list[str], keys: list[int], name: str, unique: bool, origin: str,
-                number: int) -> dict[str, Json]:
-    """One `PRAGMA index_list` entry with its `index_xinfo` key rows."""
+                number: int, descending: bool) -> dict[str, Json]:
+    """One `PRAGMA index_list` entry with its `index_xinfo` key rows, descending or ascending."""
     return {"entry": [integer_cell(number), text_cell(name), integer_cell(int(unique)), text_cell(origin),
                       integer_cell(0)],
-            "columns": [[integer_cell(rank), integer_cell(key), text_cell(names[key]), integer_cell(0),
-                         text_cell(BINARY), integer_cell(1)] for rank, key in enumerate(keys)]}
+            "columns": [[integer_cell(rank), integer_cell(key), text_cell(names[key]),
+                         integer_cell(int(descending)), text_cell(BINARY), integer_cell(1)] for rank, key in enumerate(keys)]}
 
 
-def indexes(table: dict[str, Json], rowid_primary_key: bool) -> list[dict[str, Json]]:
+def indexes(table: dict[str, Json], rowid_primary_key: bool, descending_key: bool) -> list[dict[str, Json]]:
     """Declared indexes, and the implicit unique indexes of UNIQUE constraints and of a primary
-    key that is not the row id."""
+    key that is not the row id; a `PRIMARY KEY DESC` key gives a descending index."""
     name = str(table["name"])
     names = [str(column["name"]) for column in table["columns"]]
     primary = [int(key) for key in table["primaryKey"]]
-    implicit = [("u", [int(key) for key in unique]) for unique in table["uniqueKeys"]]
+    implicit = [("u", [int(key) for key in unique], False) for unique in table["uniqueKeys"]]
     if primary and not rowid_primary_key:
-        implicit.append(("pk", primary))
-    entries = [index_entry(names, keys, f"sqlite_autoindex_{name}_{number}", True, origin, number)
-               for number, (origin, keys) in enumerate(implicit, start=1)]
+        implicit.append(("pk", primary, descending_key))
+    entries = [index_entry(names, keys, f"sqlite_autoindex_{name}_{number}", True, origin, number, descending)
+               for number, (origin, keys, descending) in enumerate(implicit, start=1)]
     entries += [index_entry(names, [int(key) for key in index["columns"]], str(index["name"]),
-                            bool(index["unique"]), "c", len(entries) + number)
+                            bool(index["unique"]), "c", len(entries) + number, False)
                 for number, index in enumerate(table["indexes"])]
     return entries
 
@@ -76,7 +76,7 @@ def table_record(predicted: dict[str, Json]) -> dict[str, Json]:
     primary = [int(key) for key in table["primaryKey"]]
     return {"name": table["name"], "kind": "table", "withoutRowid": False, "foreignKeys": [],
             "columns": [column_row(position, column, primary) for position, column in enumerate(table["columns"])],
-            "indexes": indexes(table, bool(predicted["rowidPrimaryKey"])),
+            "indexes": indexes(table, bool(predicted["rowidPrimaryKey"]), bool(predicted["primaryKeyDescending"])),
             "rows": [{"identity": [integer_cell(int(row["rowid"]))], "values": [value_cell(v) for v in row["values"]]}
                      for row in table["rows"]]}
 

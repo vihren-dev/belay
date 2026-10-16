@@ -46,12 +46,12 @@ theorem conforms (rows : List Row) (valid : (history rows).Valid) :
 
 /-- Empty history satisfies storage validity and complete decoder-definedness. -/
 theorem empty_admitted : Admitted Generated.profile SchemaBinding.start Interpretation.admitted emptyState :=
-  ⟨conforms [] (by simp [history, Table.Valid]), ⟨[], by decide +kernel⟩⟩
+  ⟨conforms [] (by simp [history, Table.Valid, Table.RowsValid]), ⟨[], by decide +kernel⟩⟩
 
 /-- A populated witness rules out preservation arguments covering only empty histories. -/
 theorem populated_admitted :
     Admitted Generated.profile SchemaBinding.start Interpretation.admitted populatedState :=
-  ⟨conforms historyRows (by simp [history, historyRows, Table.Valid, validRowid]; decide +kernel),
+  ⟨conforms historyRows (by simp [history, historyRows, Table.Valid, Table.RowsValid, Row.Aliased, validRowid]; decide +kernel),
     ⟨businessRows, by decide +kernel⟩⟩
 
 /-- Business observation contains both histories, without physical rowids. -/

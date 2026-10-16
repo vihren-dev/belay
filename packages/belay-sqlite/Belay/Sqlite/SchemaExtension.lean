@@ -17,8 +17,13 @@ theorem Table.Valid.appendColumns {table : Table} {columns : List CatalogColumn}
   · simpa [Table.appendColumns, Row.appendNulls, List.map_map, Function.comp_def] using valid.1
   · intro row member
     obtain ⟨original, oldMember, rfl⟩ := List.mem_map.mp member
-    obtain ⟨rowid, width, stored⟩ := valid.2 original oldMember
-    refine ⟨rowid, by simp [Row.appendNulls, Table.appendColumns, width], ?_⟩
+    obtain ⟨rowid, width, stored, aliased⟩ := valid.2 original oldMember
+    refine ⟨rowid, by simp [Row.appendNulls, Table.appendColumns, width], ?_, ?_⟩
+    rotate_left
+    · intro position alias
+      have cell := aliased position alias
+      have old : position < original.values.length := (List.getElem?_eq_some_iff.mp cell).1
+      simpa [Table.appendColumns, Row.appendNulls, List.getElem?_append_left old] using cell
     intro position column value columnAt cellAt
     simp only [Table.appendColumns, Row.appendNulls] at columnAt cellAt
     by_cases old : position < original.values.length

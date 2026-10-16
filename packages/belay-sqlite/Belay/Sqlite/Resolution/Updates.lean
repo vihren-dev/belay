@@ -10,32 +10,7 @@ a unique key: that is a model restriction. -/
 
 namespace Belay.Sqlite
 
-/-- The resolved value of one {lit}`SET` assignment for the column at
-{lit}`position`: the literal of its stored value ({name}`storeValue`) when the
-expression names no column, otherwise the expression, which the execution evaluates on
-the old row and stores. -/
-def assignedExpression (scope : Scope) (position : Nat) (expression : Syntax.Expr)
-    (resolved : Resolved.Expr) : Resolved.Expr :=
-  if mentionsColumn scope expression then resolved
-  else .literal (storeValue (columnAffinity scope.columns position) (resolved.eval []))
-
-/-- Resolve one {lit}`SET` assignment at item {lit}`item`, in SQLite's order
-({lit}`sqlite3Update`): the expression first, then the column name. The column name
-must name a column of the table ({lit}`no such column: %s`). A value that reads the
-row for a column of a unique key ({lit}`keyColumns`) is a model restriction. Paths are
-relative to the assignment list. -/
-def resolveAssignment (dqs : Bool) (scope : Scope) (keyColumns : List Nat) (item : Nat) :
-    String × Syntax.Expr → Except ValueIssue (Nat × Resolved.Expr)
-  | (name, value) =>
-    (resolveOperand dqs scope true value).mapError (·.under [item, 1]) >>= fun operand =>
-    (match columnPosition scope.columns name with
-      | some position => .ok position
-      | none => .error (.prepare (.noSuchColumn name))) >>= fun position =>
-    if mentionsColumn scope value && keyColumns.contains position then
-      .error (.restriction [item, 1] .rowDependentKey)
-    else .ok (position, assignedExpression scope position value operand.1)
-
-/-- Resolve UPDATE. Path 1 is the assignment list, path 2 the filter and path 3 the
+/-- Resolve UPDATE. Path 1 is the assignment list, path 2 the filter and path 4 the
 {lit}`RETURNING` columns, which resolve last. The assignments resolve in order, then
 the filter as a condition; then a column assigned twice is a model restriction. A
 {lit}`SET` value that reads the row for a key column is the restriction
@@ -62,7 +37,7 @@ def resolveUpdate (context : ResolveContext) (catalog : Catalog) (index : Nat) (
         if positions.eraseDups.length != positions.length then
           restrict index [1] .updateColumnTwice
         else match resolveReturning dqs scope returning with
-          | .error issue => issueResolution catalog index [3] issue
+          | .error issue => issueResolution catalog index [4] issue
           | .ok columns => .ok (.update position resolved resolvedFilter keys columns, catalog)
 
 end Belay.Sqlite
