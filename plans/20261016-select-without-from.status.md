@@ -29,6 +29,12 @@ without FROM (slice 6a)".
   queries measurement: 80 s locally), the corpus 21 writer. Tests that used `SELECT 1;` as
   unsupported SQL use `SELECT DISTINCT 1;`.
 
+- 2026-10-16: the slice commit went in before `test-full` passed (my error); its checks
+  then failed in two tests: the profile test still used `SELECT 1;` as unsupported SQL,
+  and one more legacy authored case now agrees (22 instead of 21). Fixed in a refactor
+  commit, with the review finding on the semantic-subset wording (a false `WHERE` keeps
+  no source row, but `count(*) WHERE 0` is one row). `test-full` passes.
+
 ## Remaining
 
 - Full checks, review, CI time, pull request A; then pull request B (claim corpus 21,
