@@ -50,8 +50,34 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D3 and D7, step 
   reverted, because they add a stale-field hazard (`{ column with name := … }`) for no
   gain. The lever is identifiers as bytes (`List UInt8`) in Syntax and the catalog,
   recorded for ADR 0013 step 8. `affinityOf` and the declared-type helpers moved to
-  `Resolution/DeclaredType.lean` (the review finding on `Catalog.lean`'s length).
+  `Resolution/TypeAffinity.lean` (the review finding on `Catalog.lean`'s length).
   Core modules 129.
+
+- 2026-10-17: items 1 to 4 and 10.
+  - Calls are `Syntax.Expr.call name (arguments : List Expr)`; `callEmpty`, `callPair`,
+    `more` and `Resolved.Expr.arguments` are gone, with `argumentsOf`, `moreArguments` and
+    `pairCall`. `resolveOperand` is mutual with `resolveArguments` (structural recursion
+    through the nested list reduces under `decide +kernel`, tested), and keeps the old
+    checks for zero, one and two or more arguments, so no verdict moves; argument issue
+    paths are `[1, k]`. `Syntax` types derive `BEq` instead of `DecidableEq`, which Lean
+    4.34.1 cannot derive through a nested list. `resolveOperand_issue` is a mutual
+    structural recursion with `resolveArguments_issue`.
+  - `equals` merged into `compare .eq`; the dead `equals` branch of the frontend's
+    `syntax_expressions.expression` is gone.
+  - `Syntax.Write` and `Statement.returning` are gone; each write has a `returning` field,
+    and its resolver restricts at its own field (`insertReturningField` 5,
+    `updateReturningField` 3, `deleteReturningField` 2). `returningPath`,
+    `returningPaths` and `returningPaths_ok` are gone. The fixtures `charint_key`,
+    `integer_key_desc` and `injected-literal-corruption` gain `"returning": []`
+    (regression hash updated), as earlier slices migrated them.
+  - `identifier` carries `QuoteKind`; an unquoted `TRUE` or `FALSE` that names no column is
+    1 or 0, and a bracket or backtick one is `no such column` (checked natively). The
+    restriction `boolean-name` and `writtenDefault`'s `sourceText` test are gone.
+  - `at_` is `target` (table position) or `atPosition` (spec hypotheses).
+  - Items 7 and 8 moved to later steps (task file).
+  - All three Lean packages build; `test-source` passes. `test-full` waits for disk: free
+    space is 9.4 GiB, under the 10 GiB guard; only nix-shell directories older than three
+    hours may be removed without asking, and none is old enough yet.
 
 ## Remaining
 

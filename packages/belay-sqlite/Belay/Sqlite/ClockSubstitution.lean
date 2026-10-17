@@ -42,7 +42,7 @@ def DateFunction.readsNow (function : DateFunction) (arguments : Arguments) : Bo
   | some (.literal value) => namesClock value
   | none | some (.column _) | some (.compare ..) | some (.and ..) | some (.or ..) | some (.not _)
   | some (.isNull ..) | some (.arithmetic ..) | some (.cast ..) | some (.coalesce ..) | some (.json ..)
-  | some (.arguments _) | some (.now _) | some (.date ..) => true
+  | some (.now _) | some (.date ..) => true
 
 mutual
 /-- Whether the expression reads the statement's clock: it has a time keyword, or a date
@@ -53,7 +53,7 @@ def Expr.readsClock : Expr → Bool
   | .compare _ left right | .and left right | .or left right | .arithmetic _ left right | .coalesce left right =>
     left.readsClock || right.readsClock
   | .not operand | .isNull operand _ | .cast _ operand => operand.readsClock
-  | .json _ arguments | .arguments arguments => arguments.readsClock
+  | .json _ arguments => arguments.readsClock
   | .date function arguments _ => arguments.readsClock || function.readsNow arguments
 
 /-- Whether an argument reads the statement's clock. -/
@@ -79,7 +79,6 @@ def Expr.atClock (clock : Int) : Expr → Expr
   | .cast affinity operand => .cast affinity (operand.atClock clock)
   | .coalesce first rest => .coalesce (first.atClock clock) (rest.atClock clock)
   | .json function arguments => .json function (arguments.atClock clock)
-  | .arguments arguments => .arguments (arguments.atClock clock)
   | .date function arguments stored =>
     .date function (arguments.atClock clock) (if function.readsNow arguments then clock else stored)
 

@@ -1,7 +1,7 @@
 import Belay.Sqlite.Declarations
 import Belay.Sqlite.Resolution.Syntax
 import Belay.Sqlite.Resolution.ColumnDefault
-import Belay.Sqlite.Resolution.DeclaredType
+import Belay.Sqlite.Resolution.TypeAffinity
 
 set_option doc.verso true
 
@@ -9,7 +9,7 @@ set_option doc.verso true
 one namespace, as in {lit}`sqlite_schema`. Names keep their case as written;
 lookup compares SQLite's ASCII-folded form ({name}`Belay.Sqlite.normalizeIdentifier`).
 Columns keep their declared type text, and the affinity function
-({lit}`affinityOf`, in {lit}`DeclaredType.lean`) computes the affinity from it. -/
+({lit}`affinityOf`, in {lit}`TypeAffinity.lean`) computes the affinity from it. -/
 
 namespace Belay.Sqlite
 

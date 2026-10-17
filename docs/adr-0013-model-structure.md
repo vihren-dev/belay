@@ -277,17 +277,27 @@ before it.
 
 | Step | Decision | Deletes | Depends on | Verdicts |
 |---|---|---|---|---|
-| 1 | D3 Syntax IR, resolved defaults, folded names, cached affinity; D7 classifiers | `arguments`, `more`, `callPair`, `callEmpty`, `Write`, `returningPaths`, `boolean-name`, dead default checks, 13 full-list `Statement` arms | — | unchanged (one case leaves `boolean-name` and must agree) |
+| 1 | D3 Syntax IR (calls, comparisons, writes, quoting), resolved defaults | `arguments`, `more`, `callPair`, `callEmpty`, `Write`, `returningPaths`, `boolean-name`, `writtenDefault` | — | unchanged (one case leaves `boolean-name` and must agree) |
 | 2 | D1 execution carries the catalog; concrete database | `Table.shape`, copied keys, `resolveStates`, the unused preservation chain, example plumbing | — | unchanged |
 | 3 | D2 single-pass evaluation; one classifier pass; readiness returns results | `JsonFaults`, most of `JsonReady`, `Query.fails`, two of three executions | 2 | unchanged |
 | 4 | D4 affinity applied; registries split | `Operand`, four restrictions | 1 | restricted cases become predictions; measured first |
-| 5 | D5 one source model, direct `USING` | `EachSource`, `splitSources`, generated-Syntax `USING`, two or three restrictions | 1, 4 | restricted cases become predictions |
+| 5 | D5 one source model, direct `USING`, join operators parsed once | `EachSource`, `splitSources`, generated-Syntax `USING`, two or three restrictions | 1, 4 | restricted cases become predictions |
 | 6 | D6 clock parameter; one HMS and printf port | `clocked`, `ClockCell`, `atClock` family, `StatementClockLaws`, `ClockText` duplicates | 2, 3 | unchanged |
-| 7 | D8 `PrepareError` split, NaN invariant, suffixes, API lemmas, position-free effects | `_issues` family, `failedDatabase`, example boilerplate | 2 | unchanged |
-| 8 | Deduplication: JSON twins, `json_valid` grammar, byte helpers, a byte-string literal macro | about 400 lines | — | unchanged |
+| 7 | D8 `PrepareError` split, NaN invariant, suffixes, API lemmas, position-free effects; D7 `Statement.kind` | `_issues` family, `failedDatabase`, example boilerplate, full-list `Statement` arms | 2 | unchanged |
+| 8 | Deduplication: JSON twins, `json_valid` grammar, byte helpers, a byte-string literal macro; identifiers as bytes | about 400 lines | — | unchanged |
 
 Steps 1, 2 and 8 can start at once. Step 7 may be done in parts earlier where a step
 touches its files anyway.
+
+Implementation notes (2026-10-17, step 1):
+
+- Caching folded names in the catalog was measured and dropped: on one case the kernel
+  proof takes 1.35 s, 1.03 s with no identifier folding at all, and 1.34 s with stored
+  folded names, because every lookup still inspects the `String` it looks up. The lever
+  is identifiers as bytes (`List UInt8`), moved to step 8.
+- `Expr.any` and `Expr.map` (D7) come with steps 3 and 6, which replace the traversals
+  they would serve; `Statement.kind` with step 7, which restructures the dispatch it
+  classifies; parsing join operators once with step 5.
 
 ## Consequences
 

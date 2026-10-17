@@ -60,7 +60,7 @@ def Expr.eval (row : List Value) : Expr → Value
     | .ok value => value
     | .error _ => .null
   | .date function arguments clock => function.value clock (arguments.eval row)
-  | .arguments _ | .now _ => .null
+  | .now _ => .null
 
 /-- The values of the arguments of a call over one row, in written order. -/
 def Arguments.eval (row : List Value) : Arguments → List Value

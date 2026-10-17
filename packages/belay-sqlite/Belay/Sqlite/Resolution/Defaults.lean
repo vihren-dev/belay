@@ -19,29 +19,14 @@ def literalDefault : Syntax.Expr → Except ValueIssue Value
   | .negate (.numeric text) => queryNumeric text true
   | .string bytes => .ok (.text bytes)
   | .blob bytes => .ok (.blob bytes)
-  | .identifier name quoted =>
-    if !quoted && normalizeIdentifier name == "true" then .ok (.integer 1)
-    else if !quoted && normalizeIdentifier name == "false" then .ok (.integer 0)
+  | .identifier name quote =>
+    if quote == .none && normalizeIdentifier name == "true" then .ok (.integer 1)
+    else if quote == .none && normalizeIdentifier name == "false" then .ok (.integer 0)
     else .ok (.text name.toUTF8.toList)
   | .currentTime _ => .error (.restriction [] .unmodeledDefault)
-  | .negate _ | .positive _ | .equals .. | .compare .. | .and .. | .or .. | .not _
-  | .isNull .. | .callStar _ | .callEmpty _ | .call .. | .arithmetic .. | .cast .. | .callPair .. | .more .. | .qualified .. =>
+  | .negate _ | .positive _ | .compare .. | .and .. | .or .. | .not _
+  | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast .. | .qualified .. =>
     .error (.restriction [] .unmodeledDefault)
-
-/-- Evaluate a written default before affinity applies. Bracket and backtick
-quotes make an identifier a text literal, including {lit}`[true]`; the expression's
-double-quote flag handles {lit}`"true"`. Use {name}`literalDefault` for expressions
-whose identifier quote distinction is already represented there. -/
-def writtenDefault (written : Syntax.DefaultExpression) : Except ValueIssue Value :=
-  match written.expression with
-  | .identifier name _ =>
-    if written.sourceText.startsWith "[" || written.sourceText.startsWith "`" then
-      .ok (.text name.toUTF8.toList)
-    else literalDefault written.expression
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _
-  | .negate _ | .positive _ | .equals .. | .compare .. | .and .. | .or .. | .not _
-  | .isNull .. | .callStar _ | .callEmpty _ | .call .. | .arithmetic .. | .cast .. | .callPair .. | .more .. | .qualified .. =>
-    literalDefault written.expression
 
 /-- The value that an INSERT gives an omitted column, before affinity applies: NULL without a
 default, the stored INSERT value of a literal default, SQLite's {lit}`hex literal too big`

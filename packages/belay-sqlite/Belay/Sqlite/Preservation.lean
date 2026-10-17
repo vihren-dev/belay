@@ -95,20 +95,20 @@ primitive branches and table-update witnesses. -/
 theorem step_extends (statement : Resolved.Statement) (database : Database) (position : Nat) :
     DatabaseExtends database (step statement database position).database := by
   cases statement with
-  | createTable at_ name table =>
+  | createTable target name table =>
     simp only [step]
-    cases h : database at_ with
-    | none => exact DatabaseExtends.create database at_ { shape := table, rows := [] } h
+    cases h : database target with
+    | none => exact DatabaseExtends.create database target { shape := table, rows := [] } h
     | some table => exact DatabaseExtends.refl database
-  | addColumn at_ column =>
+  | addColumn target column =>
     simp only [step]
-    cases h : database at_ with
+    cases h : database target with
     | none => exact DatabaseExtends.refl database
     | some table =>
       simp only []
       split
       · split
-        · exact DatabaseExtends.add database at_ table [(column, .null)] h
+        · exact DatabaseExtends.add database target table [(column, .null)] h
         · exact DatabaseExtends.refl database
       · cases readDefaultValue column with
         | error _ => exact DatabaseExtends.refl database
@@ -116,7 +116,7 @@ theorem step_extends (statement : Resolved.Statement) (database : Database) (pos
           simp only []
           split
           · exact DatabaseExtends.refl database
-          · exact DatabaseExtends.add database at_ table [(column, value)] h
+          · exact DatabaseExtends.add database target table [(column, value)] h
   | createIndex _ _ _ => exact DatabaseExtends.refl database
   | query query =>
     have same : (step (.query query) database position).database = database := by

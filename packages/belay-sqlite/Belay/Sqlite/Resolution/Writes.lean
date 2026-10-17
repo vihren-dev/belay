@@ -60,7 +60,7 @@ def Resolved.ConflictPolicy.aborts (policy : Resolved.ConflictPolicy) : Bool :=
   policy.keys.all (· == .abort) && policy.notNull.all (· == .abort)
 
 /-- Resolve INSERT. Path 1 is the column list, path 2 the rows, path 3 the
-{lit}`ON CONFLICT` clauses ({name}`resolveConflict`) and path 4 the {lit}`RETURNING`
+{lit}`ON CONFLICT` clauses ({name}`resolveConflict`) and path 5 the {lit}`RETURNING`
 columns. An INSERT without clauses whose algorithms are all ABORT
 ({name}`insertPolicy`) is {name}`Resolved.Statement.insert`; any other INSERT is
 {name}`Resolved.Statement.upsert`. -/
@@ -96,7 +96,7 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
             | .error issue => issueResolution catalog index [3] issue
             | .ok clauses =>
               match resolveReturning context.profile.dqsDml (Scope.single tableName table.columns) returning with
-              | .error issue => issueResolution catalog index [4] issue
+              | .error issue => issueResolution catalog index [insertReturningField] issue
               | .ok columns =>
                 let policy := insertPolicy table (catalog.keyAlgorithms position table) algorithm
                 if policy.mixed then restrict index [] .mixedConflictAlgorithms

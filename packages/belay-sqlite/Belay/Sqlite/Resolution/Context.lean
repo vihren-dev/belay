@@ -35,33 +35,35 @@ literals, time keywords, signs, equality and qualified column references.
 Unquoted TRUE and FALSE are constant keywords; other nested identifiers are
 column references. SQLite refuses qualified column references as nonconstant
 defaults. This is a SQLite rule. For example,
-{lean}`constantDefaultExpression (.equals (.numeric "1") (.numeric "1"))` is true.
+{lean}`constantDefaultExpression (.compare .eq (.numeric "1") (.numeric "1"))` is true.
 For the other expression forms, return true to leave their existing model
 restriction in control; true does not establish that SQLite accepts those forms.
 These checks describe SQLite preparation errors. Supported-domain admission and
 default evaluation are separate. -/
 def constantDefaultExpression : Syntax.Expr → Bool
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ => true
-  | .identifier name doubleQuoted => !doubleQuoted && booleanKeywordName name
+  | .identifier name quote => quote == .none && booleanKeywordName name
   | .negate operand | .positive operand => constantDefaultExpression operand
   | .qualified .. => false
-  | .equals left right => constantDefaultExpression left && constantDefaultExpression right
-  | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .callEmpty _ | .call .. => true
-  | .arithmetic .. | .cast .. | .callPair .. | .more .. => true
+  | .compare .eq left right => constantDefaultExpression left && constantDefaultExpression right
+  | .compare .ne .. | .compare .lt .. | .compare .le .. | .compare .gt .. | .compare .ge ..
+  | .compare .is .. | .compare .isNot .. => true
+  | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. => true
+  | .arithmetic .. | .cast .. => true
 
 /-- SQLite's constant-default preparation check for a written DEFAULT, with the
 classification scope of {name}`constantDefaultExpression`. A bare identifier is permitted:
 TRUE and FALSE are boolean keywords, and other names are stored as text. Other
 expressions use {name}`constantDefaultExpression`, including its permissive
 classification of forms that remain model restrictions. For example,
-{lean}`constantDefault (.identifier "hello" false)` is true. Omit the DEFAULT
+{lean}`constantDefault (.identifier "hello" .none)` is true. Omit the DEFAULT
 constraint when a column needs no default. -/
 def constantDefault (expression : Syntax.Expr) : Bool :=
   match expression with
   | .identifier .. => true
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .positive _
-  | .equals .. | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .callEmpty _ | .call ..
-  | .arithmetic .. | .cast .. | .callPair .. | .more .. | .qualified .. => constantDefaultExpression expression
+  | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call ..
+  | .arithmetic .. | .cast .. | .qualified .. => constantDefaultExpression expression
 
 /-- Whether the constraint is PRIMARY KEY. -/
 def Syntax.ColumnConstraint.isPrimaryKey : Syntax.ColumnConstraint → Bool

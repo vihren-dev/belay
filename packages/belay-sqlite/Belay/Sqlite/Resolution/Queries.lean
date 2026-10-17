@@ -22,12 +22,12 @@ def integerLiteral : Syntax.Expr → Option Int
   | .numeric text => (numericValue text false).integer?
   | .negate operand => match operand with
     | .numeric text => (numericValue text true).integer?
-    | .null | .string _ | .blob _ | .currentTime _ | .identifier .. | .negate _ | .positive _ | .equals ..
-    | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .callEmpty _ | .call .. | .arithmetic .. | .cast ..
-    | .callPair .. | .more .. | .qualified .. => none
-  | .null | .string _ | .blob _ | .currentTime _ | .identifier .. | .positive _ | .equals .. | .compare ..
-  | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .callEmpty _ | .call .. | .arithmetic .. | .cast .. | .callPair ..
-  | .more .. | .qualified .. => none
+    | .null | .string _ | .blob _ | .currentTime _ | .identifier .. | .negate _ | .positive _
+    | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast ..
+    | .qualified .. => none
+  | .null | .string _ | .blob _ | .currentTime _ | .identifier .. | .positive _ | .compare ..
+  | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast ..
+  | .qualified .. => none
 
 /-- One resolved result column with its names: {lit}`*` gives every column of every
 source that is not merged ({name}`Scope.visible`) under its defined name, a merged pair as
@@ -47,18 +47,18 @@ def resolveResultColumn (dqs : Bool) (scope : Scope) (column : Nat) :
     | .callStar name =>
       if normalizeIdentifier name == "count" then .ok (named (.aggregate .countRows) none)
       else throw ((callIssue name).under [0, column, 0])
-    | .call name operand => match aggregateNamed name with
+    | .call name [operand] => match aggregateNamed name with
       | some aggregate =>
-        let (resolved, _) ← (resolveOperand dqs scope true operand).mapError (·.under [0, column, 0, 1])
+        let (resolved, _) ← (resolveOperand dqs scope true operand).mapError (·.under [0, column, 0, 1, 0])
         .ok (named (.aggregate (aggregate resolved)) none)
       | none =>
         if scalarFunctionName name then do
           let (resolved, _) ← (resolveOperand dqs scope false value).mapError (·.under [0, column, 0])
           .ok (named (.scalar resolved) none)
         else throw ((callIssue name).under [0, column, 0])
-    | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .qualified .. | .negate _
-    | .positive _ | .equals .. | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast ..
-    | .callEmpty _ | .callPair .. | .more .. =>
+    | .call _ [] | .call _ (_ :: _ :: _) | .null | .numeric _ | .string _ | .blob _ | .currentTime _
+    | .identifier .. | .qualified .. | .negate _ | .positive _ | .compare .. | .and .. | .or .. | .not _
+    | .isNull .. | .arithmetic .. | .cast .. =>
       let (resolved, _) ← (resolveOperand dqs scope false value).mapError (·.under [0, column, 0])
       .ok (named (.scalar resolved) (definedName scope value))
 
@@ -80,9 +80,9 @@ range; {lean}`(none : Option (Except Unit Nat))` is any other term. -/
 def namedResult (names : List (Option String)) : Syntax.Expr → Option (Except Unit Nat)
   | .identifier name _ => (aliasIndex names name).map .ok
   | term@.null | term@(.numeric _) | term@(.string _) | term@(.blob _) | term@(.currentTime _)
-  | term@(.negate _) | term@(.positive _) | term@(.equals ..) | term@(.compare ..) | term@(.and ..)
-  | term@(.or ..) | term@(.not _) | term@(.isNull ..) | term@(.callStar _) | term@(.callEmpty _) | term@(.call ..)
-  | term@(.arithmetic ..) | term@(.cast ..) | term@(.callPair ..) | term@(.more ..) | term@(.qualified ..) =>
+  | term@(.negate _) | term@(.positive _) | term@(.compare ..) | term@(.and ..)
+  | term@(.or ..) | term@(.not _) | term@(.isNull ..) | term@(.callStar _) | term@(.call ..)
+  | term@(.arithmetic ..) | term@(.cast ..) | term@(.qualified ..) =>
     (integerLiteral term).map fun (number : Int) =>
       if 1 ≤ number ∧ number ≤ (names.length : Int) then .ok (number.toNat - 1) else .error ()
 
@@ -134,15 +134,15 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
         | .missing, some column => grouped column
         | .missing, none | .ambiguous, _ =>
           (resolveOperand dqs scope true term).map (·.1) |>.mapError (·.under [4, item])
-      | .callStar name | .callEmpty name | .call name _ =>
+      | .callStar name | .call name [] | .call name [_] =>
         .error (if aggregateCall term then .prepare .aggregateInGroupBy else (callIssue name).under [4, item])
       | .numeric _ | .negate _ => match namedResult aliases term with
         | some (.ok column) => grouped column
         | some (.error ()) => .error (.prepare (.groupByOutOfRange (item + 1) outputs.length))
         | none => .error (.restriction [4, item] .groupByTerm)
       | .qualified .. => (resolveOperand dqs scope true term).map (·.1) |>.mapError (·.under [4, item])
-      | .null | .string _ | .blob _ | .currentTime _ | .positive _ | .equals .. | .compare .. | .and .. | .or ..
-      | .not _ | .isNull .. | .arithmetic .. | .cast .. | .callPair .. | .more .. =>
+      | .call _ (_ :: _ :: _) | .null | .string _ | .blob _ | .currentTime _ | .positive _ | .compare ..
+      | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast .. =>
         .error (.restriction [4, item] .groupByTerm)) groupBy
     if aggregate && !outputs.all (groupedOutput terms ·.1) then
       throw (.restriction [0] .bareColumn)

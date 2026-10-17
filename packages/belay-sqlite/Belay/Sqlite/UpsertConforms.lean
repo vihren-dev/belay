@@ -87,15 +87,15 @@ step keeps the database; otherwise {name}`LiteralData.upsertRun_valid` gives the
 and validity of the final table and of the table before a failing row, and
 {name}`Conforms.replaceRows` stores the one that the step keeps. -/
 theorem literalStep_upsert_conforms (conforms : Conforms profile catalog database)
-    (ready : statementReady (.upsert at_ rows clauses keys returning policy) database = true) (position : Nat) :
-    Conforms profile catalog (literalStep (.upsert at_ rows clauses keys returning policy) database position).database := by
-  cases present : database at_ with
+    (ready : statementReady (.upsert target rows clauses keys returning policy) database = true) (position : Nat) :
+    Conforms profile catalog (literalStep (.upsert target rows clauses keys returning policy) database position).database := by
+  cases present : database target with
   | none => simp only [literalStep, present]; exact conforms
   | some table =>
     simp only [literalStep, present]
     simp only [statementReady, present, Option.all_some, LiteralData.upsertReady, Bool.and_eq_true] at ready
     obtain ⟨⟨⟨⟨⟨_, aliasOk⟩, each⟩, _⟩, bounded⟩, _⟩ := ready
-    have run := LiteralData.upsertRun_valid ((conforms.2 at_).2 table present) aliasOk
+    have run := LiteralData.upsertRun_valid ((conforms.2 target).2 table present) aliasOk
       (fun values member => by
         have check := List.all_eq_true.mp each values member
         simp only [Bool.and_eq_true, beq_iff_eq] at check

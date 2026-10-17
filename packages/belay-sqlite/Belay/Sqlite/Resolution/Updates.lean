@@ -10,7 +10,7 @@ a unique key: that is a model restriction. -/
 
 namespace Belay.Sqlite
 
-/-- Resolve UPDATE. Path 1 is the assignment list, path 2 the filter and path 4 the
+/-- Resolve UPDATE. Path 1 is the assignment list, path 2 the filter and path 3 the
 {lit}`RETURNING` columns, which resolve last. The assignments resolve in order, then
 the filter as a condition; then a column assigned twice is a model restriction. A
 {lit}`SET` value that reads the row for a key column is the restriction
@@ -39,7 +39,7 @@ def resolveUpdate (context : ResolveContext) (catalog : Catalog) (index : Nat) (
         if positions.eraseDups.length != positions.length then
           restrict index [1] .updateColumnTwice
         else match resolveReturning dqs scope returning with
-          | .error issue => issueResolution catalog index [4] issue
+          | .error issue => issueResolution catalog index [updateReturningField] issue
           | .ok columns =>
             if (catalog.keyAlgorithms position table).all (· == .abort) &&
                 table.columns.all (·.notNullAlgorithm == .abort) then

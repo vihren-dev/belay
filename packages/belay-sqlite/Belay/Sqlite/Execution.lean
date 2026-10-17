@@ -108,21 +108,21 @@ otherwise succeeds. Its result rows are not part of the outcome. SQL execution h
 separately. The default position is zero. -/
 def step (statement : Resolved.Statement) (database : Database) (position : Nat := 0) : Outcome :=
   match statement with
-  | .createTable at_ _ table => match database at_ with
+  | .createTable target _ table => match database target with
     | some _ => .failure position .unmodeled database
-    | none => .success (database.set at_ { shape := table, rows := [] })
-  | .addColumn at_ column => match database at_ with
+    | none => .success (database.set target { shape := table, rows := [] })
+  | .addColumn target column => match database target with
     | none => .failure position .unmodeled database
     | some table =>
       if column.clockDefault then
-        if table.rows.isEmpty then .success (database.set at_ (table.appendColumns [(column, .null)]))
+        if table.rows.isEmpty then .success (database.set target (table.appendColumns [(column, .null)]))
         else .failure position .nonConstantColumnDefault database
       else match readDefaultValue column with
       | .error _ => .failure position .unmodeled database
       | .ok value =>
         if column.notNull && value == .null && !table.rows.isEmpty then
           .failure position .nullColumnDefault database
-        else .success (database.set at_ (table.appendColumns [(column, value)]))
+        else .success (database.set target (table.appendColumns [(column, value)]))
   | .prepareError error => .failure position (.prepare error) database
   | .query query => match query.source database with
     | some rows =>

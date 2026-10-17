@@ -4,8 +4,8 @@ INSERT keeps its optional column list, its VALUES rows and its RETURNING columns
 UPDATE keeps its assignments, its optional WHERE expression and its RETURNING
 columns; DELETE keeps its optional WHERE expression and its RETURNING columns. Values, assignments and the filter are query expressions
 (`syntax_queries.query_expression`); Lean decides which of them the model admits in a
-write. A write with RETURNING is a `returning` node around the write, with its
-result columns as in SELECT; a write without RETURNING is the write alone.
+write. Each write has a `returning` field with its RETURNING result columns as in
+SELECT, empty without RETURNING (ADR 0013, D3).
 The ON CONFLICT clauses of INSERT are `syntax_conflicts.conflict_clauses`; an INSERT
 without them has an empty list. The algorithm of `INSERT OR algorithm` and `REPLACE INTO`
 is `syntax_conflicts.insert_algorithm`. `UPDATE OR`, FROM, SELECT sources and named or
@@ -58,13 +58,12 @@ def value_rows(tree: Tree, node: Node) -> Located:
     return sequence(rows, node.start, node.end)
 
 
-def returning(tree: Tree, command: Node, write: Located, parts: list[Node]) -> Located:
-    """The write, or a `returning` node around it with the columns of the parts
-    `RETURNING selcollist`."""
+def returning(tree: Tree, command: Node, parts: list[Node]) -> Located:
+    """The `returning` field of a write: the result columns of the parts
+    `RETURNING selcollist`, or an empty list without them."""
     if not parts:
-        return write
-    return constructor("returning", [("write", write), ("columns", result_columns(tree, parts[1]))],
-                       command.start, command.end)
+        return sequence([], command.end, command.end)
+    return result_columns(tree, parts[1])
 
 
 def insert(tree: Tree, command: Node) -> Located:
@@ -82,11 +81,10 @@ def insert(tree: Tree, command: Node) -> Located:
         column_list = sequence(names, columns.start, columns.end)
     else:
         column_list = leaf(None, columns.start, columns.end)
-    write = constructor("insert", [("table", name(tree, table)), ("columns", column_list),
-                                   ("rows", value_rows(tree, source)), ("conflicts", conflicts),
-                                   ("algorithm", algorithm)],
-                        command.start, command.end)
-    return returning(tree, command, write, returned)
+    return constructor("insert", [("table", name(tree, table)), ("columns", column_list),
+                                  ("rows", value_rows(tree, source)), ("conflicts", conflicts),
+                                  ("algorithm", algorithm), ("returning", returning(tree, command, returned))],
+                       command.start, command.end)
 
 
 def update(tree: Tree, command: Node) -> Located:
@@ -100,10 +98,10 @@ def update(tree: Tree, command: Node) -> Located:
     absent(tree, from_, "UPDATE FROM")
     (table,) = require(tree, target, ["nm"])
     filter_, returned = filter_and_returning(tree, where, "UPDATE")
-    write = constructor("update", [("table", name(tree, table)),
-                                   ("assignments", assignment_list(tree, assignments)),
-                                   ("filter", filter_)], command.start, command.end)
-    return returning(tree, command, write, returned)
+    return constructor("update", [("table", name(tree, table)),
+                                  ("assignments", assignment_list(tree, assignments)),
+                                  ("filter", filter_), ("returning", returning(tree, command, returned))],
+                       command.start, command.end)
 
 
 def filter_and_returning(tree: Tree, where: Node, statement: str) -> tuple[Located, list[Node]]:
@@ -125,5 +123,5 @@ def delete(tree: Tree, command: Node) -> Located:
     absent(tree, indexed, "INDEXED BY")
     (table,) = require(tree, target, ["nm"])
     filter_, returned = filter_and_returning(tree, where, "DELETE")
-    write = constructor("delete", [("table", name(tree, table)), ("filter", filter_)], command.start, command.end)
-    return returning(tree, command, write, returned)
+    return constructor("delete", [("table", name(tree, table)), ("filter", filter_),
+                                  ("returning", returning(tree, command, returned))], command.start, command.end)

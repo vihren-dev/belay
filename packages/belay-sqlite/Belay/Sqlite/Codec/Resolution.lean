@@ -11,12 +11,12 @@ namespace Belay.Sqlite
 
 deriving instance Lean.FromJson, Lean.ToJson for Comparison, ArithmeticOperator
 deriving instance Lean.FromJson, Lean.ToJson for ConflictAlgorithm
+deriving instance Lean.FromJson, Lean.ToJson for Syntax.QuoteKind
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.Expr, Syntax.DefaultExpression, Syntax.ColumnConstraint
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ResultColumn, Syntax.OrderTerm
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ColumnDefinition, Syntax.TableConstraint
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.TableReference, Syntax.Join
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ConflictAction, Syntax.ConflictClause
-deriving instance Lean.FromJson, Lean.ToJson for Syntax.Write
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.Statement
 deriving instance Lean.ToJson for PrepareError
 
@@ -34,6 +34,7 @@ deriving instance Lean.ToExpr for Comparison
 deriving instance Lean.ToExpr for ArithmeticOperator
 deriving instance Lean.ToExpr for Affinity
 deriving instance Lean.ToExpr for ConflictAlgorithm
+deriving instance Lean.ToExpr for Syntax.QuoteKind
 deriving instance Lean.ToExpr for Syntax.Expr
 deriving instance Lean.ToExpr for Syntax.ResultColumn
 deriving instance Lean.ToExpr for Syntax.OrderTerm
@@ -45,7 +46,6 @@ deriving instance Lean.ToExpr for Syntax.TableReference
 deriving instance Lean.ToExpr for Syntax.Join
 deriving instance Lean.ToExpr for Syntax.ConflictAction
 deriving instance Lean.ToExpr for Syntax.ConflictClause
-deriving instance Lean.ToExpr for Syntax.Write
 deriving instance Lean.ToExpr for Syntax.Statement
 deriving instance Lean.ToExpr for Limits
 deriving instance Lean.ToExpr for Profile

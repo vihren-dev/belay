@@ -17,7 +17,7 @@ from belay.sqlite.syntax import statements
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_native]
 
-NAME = {"identifier": {"name": "b", "doubleQuoted": False}}
+NAME = {"identifier": {"name": "b", "quote": "none"}}
 """The unqualified name `b`."""
 
 

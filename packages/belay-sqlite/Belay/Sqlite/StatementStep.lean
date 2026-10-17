@@ -51,10 +51,10 @@ inductive SqlTransition where
 /-- Store a write's result when it satisfies the constraints of the given keys and its
 rowids are distinct ({name}`LiteralData.rowidsDistinct`), or fail at the position with
 {lean}`ExecutionError.constraintViolation` and the input database. -/
-def checkedWrite (database : Database) (at_ : Nat) (keys : List (List Nat)) (result : Table)
+def checkedWrite (database : Database) (target : Nat) (keys : List (List Nat)) (result : Table)
     (position : Nat) : Outcome :=
   if LiteralData.constraints keys result && LiteralData.rowidsDistinct result then
-    .success (database.set at_ result)
+    .success (database.set target result)
   else .failure position .constraintViolation database
 
 /-- The outcome of INSERT: SQLite inserts the rows in order, and refuses a rowid alias
@@ -62,7 +62,7 @@ that is not an integer before the constraints of its row
 ({name}`LiteralData.aliasMismatch`), so the first such row is
 {lean}`ExecutionError.datatypeMismatch` unless the rows before it already fail; with no
 such row, {name}`checkedWrite` of all rows. A failure keeps the input database. -/
-def insertOutcome (database : Database) (at_ : Nat) (keys : List (List Nat)) (table : Table)
+def insertOutcome (database : Database) (target : Nat) (keys : List (List Nat)) (table : Table)
     (rows : List (List Value)) (position : Nat) : Outcome :=
   match rows.findIdx? (LiteralData.aliasMismatch table.shape) with
   | some index =>
@@ -70,7 +70,7 @@ def insertOutcome (database : Database) (at_ : Nat) (keys : List (List Nat)) (ta
     if LiteralData.constraints keys before && LiteralData.rowidsDistinct before then
       .failure position .datatypeMismatch database
     else .failure position .constraintViolation database
-  | none => checkedWrite database at_ keys (LiteralData.inserted table rows) position
+  | none => checkedWrite database target keys (LiteralData.inserted table rows) position
 
 /-- Apply INSERT/UPDATE with ABORT constraints over the statement's keys, INSERT with
 {lit}`ON CONFLICT` clauses row by row ({name}`LiteralData.upsertRun`), and DELETE,
@@ -80,22 +80,22 @@ Other statements use {name}`step`. This
 computation does not establish the separate stored-value support obligation. -/
 def literalStep (statement : Resolved.Statement) (database : Database) (position : Nat) : Outcome :=
   match statement with
-  | .insert at_ rows keys _ => match database at_ with
+  | .insert target rows keys _ => match database target with
     | none => .failure position .unmodeled database
-    | some table => insertOutcome database at_ keys table rows position
-  | .upsert at_ rows clauses keys _ policy => match database at_ with
+    | some table => insertOutcome database target keys table rows position
+  | .upsert target rows clauses keys _ policy => match database target with
     | none => .failure position .unmodeled database
     | some table => match LiteralData.upsertRun keys policy clauses table rows with
-      | .ok (result, _) => .success (database.set at_ result)
-      | .error (reason, reached, _) => .failure position reason (LiteralData.failedDatabase database at_ reason reached)
-  | .update at_ assignments filter keys _ => match database at_ with
+      | .ok (result, _) => .success (database.set target result)
+      | .error (reason, reached, _) => .failure position reason (LiteralData.failedDatabase database target reason reached)
+  | .update target assignments filter keys _ => match database target with
     | none => .failure position .unmodeled database
     | some table =>
       if LiteralData.updateMismatch table assignments filter then .failure position .datatypeMismatch database
-      else checkedWrite database at_ keys (LiteralData.updated table assignments filter) position
-  | .delete at_ filter _ => match database at_ with
+      else checkedWrite database target keys (LiteralData.updated table assignments filter) position
+  | .delete target filter _ => match database target with
     | none => .failure position .unmodeled database
-    | some table => .success (database.set at_ (LiteralData.deleted table filter))
+    | some table => .success (database.set target (LiteralData.deleted table filter))
   | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ | .query _
   | .clocked .. =>
     step statement database position
@@ -109,13 +109,13 @@ statements. Other statement forms pass. Use it through the reached-statement scr
 support check. -/
 def statementReady (statement : Resolved.Statement) (database : Database) : Bool :=
   match statement with
-  | .insert at_ rows keys returning => (database at_).all fun table => LiteralData.insertReady keys table rows &&
+  | .insert target rows keys returning => (database target).all fun table => LiteralData.insertReady keys table rows &&
       !(returningExpressions returning).any Resolved.Expr.callsJson
-  | .upsert at_ rows clauses keys returning policy => (database at_).all fun table =>
+  | .upsert target rows clauses keys returning policy => (database target).all fun table =>
       LiteralData.upsertReady keys policy table clauses rows && upsertJsonReady clauses returning
-  | .update at_ assignments filter keys returning => (database at_).all fun table =>
+  | .update target assignments filter keys returning => (database target).all fun table =>
       LiteralData.updateReady keys table assignments filter && updateJsonReady table assignments filter returning
-  | .delete at_ filter returning => (database at_).all fun table => deleteJsonReady table filter returning
+  | .delete target filter returning => (database target).all fun table => deleteJsonReady table filter returning
   | .createTable _ _ table => table.plain
   | .addColumn _ column => column.clockDefault || (readDefaultValue column).toOption.isSome
   | .createIndex .. => false

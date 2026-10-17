@@ -39,10 +39,6 @@ inductive Expr where
   | coalesce (first rest : Expr)
   /-- A call of a JSON function with its arguments in written order. -/
   | json (function : JsonFunction) (arguments : Arguments)
-  /-- The resolved arguments after the second of a call of three or more arguments, which
-  resolution passes from a {lit}`Syntax.Expr.more` node to its call. A resolved
-  statement does not contain it; its value is NULL. -/
-  | arguments (list : Arguments)
   /-- {lit}`CURRENT_TIME`, {lit}`CURRENT_DATE` or {lit}`CURRENT_TIMESTAMP`: the statement's clock
   value as text. The execution replaces it with that text before it evaluates a statement
   ({lit}`Statement.atClock`). -/

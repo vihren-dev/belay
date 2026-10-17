@@ -16,7 +16,7 @@ WRITES = SQLITE + "Resolution/Writes.lean"
 """The resolution of INSERT, which gives each constraint its algorithm."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "fail_keeps_no_row": (RUN, "  | .constraintFail => database.set at_ reached", "  | .constraintFail => database"),
+    "fail_keeps_no_row": (RUN, "  | .constraintFail => database.set target reached", "  | .constraintFail => database"),
     "ignore_stops": (RUN, "  | .ignore => .ok (table, none)", "  | .ignore => .error (failureError .abort)"),
     "replace_first_key_only": (RUN,
         "  { table with rows := table.rows.filter fun row => !((List.range keys.length).any fun index =>",

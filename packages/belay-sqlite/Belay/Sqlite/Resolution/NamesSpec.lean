@@ -58,9 +58,9 @@ theorem resolveAddColumn_step (context : ResolveContext) (catalog after : Catalo
     | (cases ok; exact .same)
     | (cases ok; done)
     | cases ok
-  obtain ⟨object, at_, _, _⟩ := Catalog.findTable_some _ _ _ _ (by assumption)
-  simp only [at_, Option.map_some, Option.getD_some]
-  exact .replace _ object _ at_
+  obtain ⟨object, atPosition, _, _⟩ := Catalog.findTable_some _ _ _ _ (by assumption)
+  simp only [atPosition, Option.map_some, Option.getD_some]
+  exact .replace _ object _ atPosition
 
 /-- The resolution state keeps unique names: the current catalog has unique folded
 names, and so does the catalog that an open transaction saved, if there is one. -/
@@ -107,15 +107,15 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveAddColumn_step _ _ _ _ _ _ _ (by assumption))
-  | insert table columns rows conflicts algorithm =>
+  | insert table columns rows conflicts algorithm returning =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ (by assumption) ▸ .same)
-  | update table assignments filter =>
+  | update table assignments filter returning =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveUpdate_same _ _ _ _ _ _ _ _ _ (by assumption) ▸ .same)
-  | delete table filter =>
+  | delete table filter returning =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveDelete_same _ _ _ _ _ _ _ _ (by assumption) ▸ .same)
@@ -123,16 +123,6 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveSelect_same _ _ _ _ _ _ _ _ _ _ _ _ _ (by assumption) ▸ .same)
-  | returning write columns =>
-    cases write
-    all_goals simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
-    all_goals first
-      | (cases ok; done)
-      | (split at ok <;> cases ok
-         first
-           | exact keep _ (resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ (returningPaths_ok _ _ (by assumption)) ▸ .same)
-           | exact keep _ (resolveUpdate_same _ _ _ _ _ _ _ _ _ (returningPaths_ok _ _ (by assumption)) ▸ .same)
-           | exact keep _ (resolveDelete_same _ _ _ _ _ _ _ _ (returningPaths_ok _ _ (by assumption)) ▸ .same))
 
 /-- For every context, starting catalog and script with a successful resolution: if
 the starting catalog has unique folded names, so does the resulting catalog.

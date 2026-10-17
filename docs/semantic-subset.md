@@ -207,7 +207,6 @@ of frontend refusal, the cases of the claimed corpora that it keeps out of scope
 | `table-after-function` | A table after a `json_each` source in FROM is not modeled | ADR 0012 slice 6d |
 | `function-join` | Only an inner join without NATURAL or USING is modeled with `json_each` | ADR 0012 slice 6d |
 | `later-source-in-arguments` | An argument of `json_each` that reads a later source is not modeled | ADR 0012 slice 6d |
-| `boolean-name` | `TRUE` or `FALSE` that names no column is not modeled | ADR 0012 slice 6e2 |
 
 ## Execution
 

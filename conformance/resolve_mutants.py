@@ -32,7 +32,7 @@ SQLITE = "belay-sqlite/Belay/Sqlite/"
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "non_ascii_fold": (SQLITE + "Declarations.lean",
         "if 'A' ≤ c ∧ c ≤ 'Z' then", "if 'A' ≤ c ∧ c ≤ 'Z' ∨ 'À' ≤ c ∧ c ≤ 'Þ' ∧ c ≠ '×' then"),
-    "affinity_order": (SQLITE + "Resolution/Catalog.lean",
+    "affinity_order": (SQLITE + "Resolution/TypeAffinity.lean",
         'if containsText upper "INT" then .integer\n    else if ["CHAR", "CLOB", "TEXT"].any (containsText upper) then .text',
         'if ["CHAR", "CLOB", "TEXT"].any (containsText upper) then .text\n    else if containsText upper "INT" then .integer'),
     "desc_rowid_alias": (SQLITE + "Resolution/Definitions.lean",

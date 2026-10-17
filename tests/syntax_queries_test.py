@@ -18,7 +18,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
 
 def column(name: str) -> dict[str, object]:
     """The JSON of an identifier written without double quotes."""
-    return {"identifier": {"name": name, "doubleQuoted": False}}
+    return {"identifier": {"name": name, "quote": "none"}}
 
 
 def test_select_keeps_columns_text_and_clauses(parse_sql: Callable[..., Tree]) -> None:
@@ -30,7 +30,7 @@ def test_select_keeps_columns_text_and_clauses(parse_sql: Callable[..., Tree]) -
         "columns": ["star",
                     {"expression": {"value": column("a"), "alias": "x", "text": "a"}},
                     {"expression": {"value": {"callStar": {"name": "count"}}, "alias": None, "text": "count(*)"}},
-                    {"expression": {"value": {"call": {"name": "min", "operand": column("b")}},
+                    {"expression": {"value": {"call": {"name": "min", "arguments": [column("b")]}},
                                     "alias": None, "text": "min(b)"}},
                     {"expression": {"value": {"compare": {"operator": "ne", "left": column("b"),
                                                           "right": {"numeric": {"text": "1"}}}},
@@ -73,29 +73,29 @@ def test_query_syntax_outside_the_slice_is_unsupported_at_its_range(
 
 
 def test_writes_map_query_expressions_and_returning(parse_sql: Callable[..., Tree]) -> None:
-    """VALUES items, SET values and the WHERE expression are query expressions, and RETURNING
-    wraps the write with its result columns as in SELECT (slice 3a)."""
+    """VALUES items, SET values and the WHERE expression are query expressions, and the
+    write's `returning` field holds its RETURNING result columns as in SELECT (slice 3a;
+    ADR 0013, D3)."""
     [insert, update] = [item.value for item in statements(parse_sql(
         "INSERT INTO t VALUES (1 + 2) RETURNING *, a AS x; UPDATE t SET a = CAST(b AS INT) WHERE a < 1 RETURNING a;"))]
-    write = insert["returning"]["write"]["insert"]
+    write = insert["insert"]
     assert write["rows"] == [[{"arithmetic": {"operator": "add", "left": {"numeric": {"text": "1"}},
                                               "right": {"numeric": {"text": "2"}}}}]]
-    assert insert["returning"]["columns"] == ["star", {"expression": {"value": column("a"), "alias": "x", "text": "a"}}]
-    write = update["returning"]["write"]["update"]
+    assert write["returning"] == ["star", {"expression": {"value": column("a"), "alias": "x", "text": "a"}}]
+    write = update["update"]
     assert write["assignments"] == [["a", {"cast": {"operand": column("b"), "typeName": "INT"}}]]
     assert write["filter"] == {"compare": {"operator": "lt", "left": column("a"), "right": {"numeric": {"text": "1"}}}}
-    assert update["returning"]["columns"] == [{"expression": {"value": column("a"), "alias": None, "text": "a"}}]
+    assert write["returning"] == [{"expression": {"value": column("a"), "alias": None, "text": "a"}}]
 
 
 def test_delete_maps_filter_and_returning(parse_sql: Callable[..., Tree]) -> None:
-    """`syntax_writes.delete`: DELETE keeps its table and optional WHERE expression, and RETURNING
-    wraps it with its result columns, as for UPDATE (slice 3c)."""
+    """`syntax_writes.delete`: DELETE keeps its table, its optional WHERE expression and its
+    RETURNING result columns, empty without the clause, as for UPDATE (slice 3c)."""
     [plain, returned] = [item.value for item in statements(parse_sql(
         "DELETE FROM t; DELETE FROM t WHERE a ISNULL RETURNING a;"))]
-    assert plain == {"delete": {"table": "t", "filter": None}}
-    write = returned["returning"]["write"]["delete"]
-    assert write == {"table": "t", "filter": {"isNull": {"operand": column("a"), "negated": False}}}
-    assert returned["returning"]["columns"] == [{"expression": {"value": column("a"), "alias": None, "text": "a"}}]
+    assert plain == {"delete": {"table": "t", "filter": None, "returning": []}}
+    assert returned == {"delete": {"table": "t", "filter": {"isNull": {"operand": column("a"), "negated": False}},
+                                   "returning": [{"expression": {"value": column("a"), "alias": None, "text": "a"}}]}}
 
 
 @pytest.mark.parametrize(("sql", "refused"), [
@@ -120,7 +120,7 @@ def test_joins_map_sources_kinds_and_conditions(parse_sql: Callable[..., Tree]) 
     assert select["source"] == {"table": "t", "alias": "x", "arguments": None}
     assert select["columns"][0]["expression"]["value"] == {"qualified": {"source": "x", "column": "a"}}
     assert select["columns"][1] == {"sourceStar": {"source": "u"}}
-    on = {"equals": {"left": {"qualified": {"source": "x", "column": "a"}},
+    on = {"compare": {"operator": "eq", "left": {"qualified": {"source": "x", "column": "a"}},
                      "right": {"qualified": {"source": "u", "column": "a"}}}}
     assert select["joins"] == [
         {"operator": ["Left"], "source": {"table": "u", "alias": None, "arguments": None}, "condition": on, "usingColumns": None},
@@ -142,7 +142,7 @@ def test_table_valued_functions_map_with_their_arguments(parse_sql: Callable[...
          "arguments": [{"qualified": {"source": "t", "column": "j"}}, {"string": {"bytes": list(b"$.a")}}]},
         {"table": "json_each", "alias": None, "arguments": [{"string": {"bytes": list(b"[1]")}}]},
         {"table": "json_each", "alias": None, "arguments": []}]
-    assert select["joins"][1]["condition"] == {"equals": {"left": {"numeric": {"text": "1"}},
+    assert select["joins"][1]["condition"] == {"compare": {"operator": "eq", "left": {"numeric": {"text": "1"}},
                                                           "right": {"numeric": {"text": "1"}}}}
 
 
@@ -154,7 +154,8 @@ def test_fallback_keywords_are_column_names(parse_sql: Callable[..., Tree]) -> N
     select = query["select"]
     assert [column["expression"]["value"] for column in select["columns"]] == [
         column("key"), column("path"), column("id"), column("Replace")]
-    assert select["filter"] == {"equals": {"left": column("key"), "right": {"numeric": {"text": "1"}}}}
+    assert select["filter"] == {"compare": {"operator": "eq", "left": column("key"),
+                                            "right": {"numeric": {"text": "1"}}}}
 
 
 def test_select_without_from_has_no_source(parse_sql: Callable[..., Tree]) -> None:
@@ -163,5 +164,6 @@ def test_select_without_from_has_no_source(parse_sql: Callable[..., Tree]) -> No
     [statement] = [item.value for item in statements(parse_sql("SELECT 1 WHERE 1 = 1 LIMIT 2;"))]
     select = statement["select"]
     assert select["source"] is None and select["joins"] == []
-    assert select["filter"] == {"equals": {"left": {"numeric": {"text": "1"}}, "right": {"numeric": {"text": "1"}}}}
+    assert select["filter"] == {"compare": {"operator": "eq", "left": {"numeric": {"text": "1"}},
+                                            "right": {"numeric": {"text": "1"}}}}
     assert select["limit"] == {"numeric": {"text": "2"}}

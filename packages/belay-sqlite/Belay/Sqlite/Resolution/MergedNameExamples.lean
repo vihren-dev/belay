@@ -37,7 +37,7 @@ def error (results : List ResultColumn) (source : TableReference) (joins : List 
 def bareA (joins : List Join) : Option (List Resolved.Output) := (query [bare "a"] (table "t") joins).map (·.columns)
 
 /-- {lit}`t.b = r.e`, a written condition of two TEXT columns. -/
-def onText : Expr := .equals (qualified "t" "b") (qualified "r" "e")
+def onText : Expr := .compare .eq (qualified "t" "b") (qualified "r" "e")
 
 -- An inner or left join keeps the left column; a right join takes its own; a full join coalesces.
 #guard bareA [usingJoin [] "r" ["a"]] == some [.scalar (.column 0)]

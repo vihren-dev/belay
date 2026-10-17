@@ -36,29 +36,29 @@ def readNumericDefault (affinity : Affinity) (token : String) (negated : Bool) :
 
 /-- The value that old rows read for a written default after ADD COLUMN, stored with the
 affinity: numeric tokens use {name}`readNumericDefault`; other literal forms use
-{name}`writtenDefault`. Time and compound expressions are model restrictions. -/
+{name}`literalDefault`. Time and compound expressions are model restrictions. -/
 def writtenReadBack (affinity : Affinity) (written : Syntax.DefaultExpression) : Except ValueIssue Value :=
   match written.expression with
   | .numeric text | .positive (.numeric text) => .ok (readNumericDefault affinity text false)
   | .negate (.numeric text) => .ok (readNumericDefault affinity text true)
   | .null | .string _ | .blob _ | .currentTime _ | .identifier ..
-  | .negate _ | .positive _ | .equals .. | .compare .. | .and .. | .or .. | .not _
-  | .isNull .. | .callStar _ | .callEmpty _ | .call .. | .arithmetic .. | .cast .. | .callPair .. | .more .. | .qualified .. =>
-    (writtenDefault written).map (storeValue affinity)
+  | .negate _ | .positive _ | .compare .. | .and .. | .or .. | .not _
+  | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast .. | .qualified .. =>
+    (literalDefault written.expression).map (storeValue affinity)
 
 /-- The resolved default of a written DEFAULT for a column of the affinity
 ({name}`ColumnDefault`), evaluated once: a time keyword is {lean}`DefaultForm.clock`; a
-literal keeps its INSERT value ({name}`writtenDefault`, or its {lit}`hex literal too big`
+literal keeps its INSERT value ({name}`literalDefault`, or its {lit}`hex literal too big`
 error) and its read-back value ({name}`writtenReadBack`). A default that the model does
 not describe is {lean}`(none : Option ColumnDefault)`; resolution refuses it with a
 model restriction ({lit}`modeledDefault`). -/
 def resolveColumnDefault (affinity : Affinity) (written : Syntax.DefaultExpression) : Option ColumnDefault :=
   let form : Option DefaultForm := match written.expression with
     | .currentTime keyword => some (.clock (timeKeywordNamed keyword))
-    | .null | .numeric _ | .string _ | .blob _ | .identifier .. | .negate _ | .positive _ | .equals ..
-    | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .callEmpty _ | .call ..
-    | .arithmetic .. | .cast .. | .callPair .. | .more .. | .qualified .. =>
-      match writtenDefault written, writtenReadBack affinity written with
+    | .null | .numeric _ | .string _ | .blob _ | .identifier .. | .negate _ | .positive _
+    | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call ..
+    | .arithmetic .. | .cast .. | .qualified .. =>
+      match literalDefault written.expression, writtenReadBack affinity written with
       | .ok value, .ok readBack => some (.literal (.value value) readBack)
       | .error (.prepare (.hexLiteralTooBig text)), .ok readBack => some (.literal (.hexLiteralTooBig text) readBack)
       | .ok _, .error _ | .error _, _ => none

@@ -21,8 +21,8 @@ CASES = [
     ("X'00ff'", ".blob [0, 255]"),
     ("-9223372036854775808", '.negate (.numeric "9223372036854775808")'),
     ("+7", '.positive (.numeric "7")'),
-    ("TRUE", '.identifier "TRUE" false'), ("FaLsE", '.identifier "FaLsE" false'),
-    ("hello", '.identifier "hello" false'), ('"true"', '.identifier "true" true'),
+    ("TRUE", '.identifier "TRUE" .none'), ("FaLsE", '.identifier "FaLsE" .none'),
+    ("hello", '.identifier "hello" .none'), ('"true"', '.identifier "true" .double'),
 ]
 """Written defaults exercise literal classes, signed boundaries and identifier quoting."""
 

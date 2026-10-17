@@ -122,17 +122,17 @@ def constrained (constraint : ColumnConstraint) : ColumnDefinition :=
   == [.prepareError (.hexLiteralTooBig "0x10000000000000000")]
 
 -- Double-quoted strings: a string literal when DQS_DML is on, else "no such column".
-#guard statements (migration tableT [.insert "t" (some ["a"]) [[.identifier "x" true]] []])
+#guard statements (migration tableT [.insert "t" (some ["a"]) [[.identifier "x" .double]] []])
   == [.insert 0 [[.text [120], .null]] [] []]
-#guard statements (migration tableT [.insert "t" (some ["a"]) [[.identifier "x" true]] []] { defaults with dqsDml := false })
+#guard statements (migration tableT [.insert "t" (some ["a"]) [[.identifier "x" .double]] []] { defaults with dqsDml := false })
   == [.prepareError (.noSuchColumn "x")]
 
 -- UPDATE: SET and WHERE names, and the modeled integer equality filter.
-#guard statements (migration tableT [.update "t" [("z", .null)] none, .update "t" [("a", .null)] (some (.equals (.identifier "z" false) (.numeric "1"))),
-    .update "t" [("A", .string [111])] (some (.equals (.identifier "b" false) (.numeric "7")))])
+#guard statements (migration tableT [.update "t" [("z", .null)] none, .update "t" [("a", .null)] (some (.compare .eq (.identifier "z" .none) (.numeric "1"))),
+    .update "t" [("A", .string [111])] (some (.compare .eq (.identifier "b" .none) (.numeric "7")))])
   == [.prepareError (.noSuchColumn "z"), .prepareError (.noSuchColumn "z"),
       .update 0 [(0, .literal (.text [111]))] (some (.compare .eq (.column 1) (.literal (.integer 7)))) [] []]
-#guard restricted (migration tableT [.update "t" [("a", .null)] (some (.equals (.identifier "a" false) (.numeric "1")))])
+#guard restricted (migration tableT [.update "t" [("a", .null)] (some (.compare .eq (.identifier "a" .none) (.numeric "1")))])
 
 /-- A table with keys over integer-comparable columns: a primary key, a UNIQUE
 constraint, a unique index and an index that is not unique. -/

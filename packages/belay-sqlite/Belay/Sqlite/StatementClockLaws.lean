@@ -110,17 +110,17 @@ sketch: each expression that {name}`Statement.atClock` changes is one that
 theorem Statement.atClock_of_readsClock (clock : Int) (statement : Statement) (free : statement.readsClock = false) :
     statement.atClock clock = statement := by
   cases statement with
-  | insert at_ rows keys returning =>
+  | insert target rows keys returning =>
     simp [Statement.atClock, Statement.expressionsAtClock, returningAtClock_of_readsClock _ _ free]
-  | upsert at_ rows clauses keys returning policy =>
+  | upsert target rows clauses keys returning policy =>
     simp only [Statement.readsClock, Bool.or_eq_false_iff] at free
     simp [Statement.atClock, Statement.expressionsAtClock, clauses_atClock _ _ free.1,
       returningAtClock_of_readsClock _ _ free.2]
-  | update at_ assignments filter keys returning =>
+  | update target assignments filter keys returning =>
     simp only [Statement.readsClock, Bool.or_eq_false_iff] at free
     simp [Statement.atClock, Statement.expressionsAtClock, assignments_atClock _ _ free.1.1,
       option_atClock _ _ free.1.2, returningAtClock_of_readsClock _ _ free.2]
-  | delete at_ filter returning =>
+  | delete target filter returning =>
     simp only [Statement.readsClock, Bool.or_eq_false_iff] at free
     simp [Statement.atClock, Statement.expressionsAtClock, option_atClock _ _ free.1,
       returningAtClock_of_readsClock _ _ free.2]

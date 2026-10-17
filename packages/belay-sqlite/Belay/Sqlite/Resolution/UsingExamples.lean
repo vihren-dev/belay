@@ -33,11 +33,11 @@ def usingJoin (operator : List String) (name : String) (names : List String) : J
   { joined operator (table name) with usingColumns := some names }
 
 /-- An unqualified column as a result column. -/
-def bare (name : String) : ResultColumn := .expression (.identifier name false) none name
+def bare (name : String) : ResultColumn := .expression (.identifier name .none) none name
 
 -- USING and NATURAL resolve to the join with the written ON condition `t.a = u.A`.
 #guard (queryOver [.star] (table "t") [usingJoin [] "u" ["a"]]).map (·.joins) ==
-  (queryOver [.star] (table "t") [joined [] (table "u") (some (.equals (qualified "t" "a") (qualified "u" "A")))]).map (·.joins)
+  (queryOver [.star] (table "t") [joined [] (table "u") (some (.compare .eq (qualified "t" "a") (qualified "u" "A")))]).map (·.joins)
 #guard (queryOver [.star] (table "t") [joined ["NATURAL"] (table "u")]).map (·.joins) ==
   (queryOver [.star] (table "t") [usingJoin [] "u" ["a"]]).map (·.joins)
 #guard (queryOver [.star] (table "t") [usingJoin ["LEFT"] "u" ["a"]]).map (·.joins) ==
@@ -62,7 +62,7 @@ def bare (name : String) : ResultColumn := .expression (.identifier name false) 
 #guard reason (migration sources [.select [.star] (some (table "t")) [usingJoin [] "w" ["a"]] none [] [] none none]) ==
   RestrictionKind.mixedAffinityComparison.message
 #guard reason (migration sources [.select [.star] (some (table "t"))
-  [joined [] (table "w") (some (.equals (qualified "t" "a") (qualified "w" "a")))] none [] [] none none]) ==
+  [joined [] (table "w") (some (.compare .eq (qualified "t" "a") (qualified "w" "a")))] none [] [] none none]) ==
   RestrictionKind.mixedAffinityComparison.message
 -- A merged name stays ambiguous with a third source that has the name.
 #guard over [bare "a"] (table "t") [usingJoin [] "u" ["a"]] |>.isSome

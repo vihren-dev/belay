@@ -50,7 +50,7 @@ def test_definitions_keep_names_types_and_constraints_as_written(parse_sql: Call
                             {"unique": {"columns": ["c", "d"], "algorithm": None}}]}},
         {"createIndex": {"name": "i", "unique": True, "table": "Big T", "columns": ["a", "B"]}},
         {"addColumn": {"table": "t", "column": column("z", "INT", [
-            {"default": {"sourceText": "y", "value": {"identifier": {"name": "y", "doubleQuoted": False}}}}])}}]
+            {"default": {"sourceText": "y", "value": {"identifier": {"name": "y", "quote": "none"}}}}])}}]
 
 
 def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., Tree]) -> None:
@@ -62,16 +62,17 @@ def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., 
     assert mapped(parse_sql, sql) == [
         "begin",
         {"insert": {"table": "t", "columns": None, "rows": [
-            [{"numeric": {"text": "0x1F"}}, {"identifier": {"name": "q", "doubleQuoted": True}}],
-            ["null", {"blob": {"bytes": [0, 255]}}]], "conflicts": [], "algorithm": None}},
+            [{"numeric": {"text": "0x1F"}}, {"identifier": {"name": "q", "quote": "double"}}],
+            ["null", {"blob": {"bytes": [0, 255]}}]], "conflicts": [], "algorithm": None, "returning": []}},
         {"insert": {"table": "t", "columns": ["a"], "rows": [
-            [{"positive": {"operand": {"numeric": {"text": "1_000"}}}}]], "conflicts": [], "algorithm": None}},
+            [{"positive": {"operand": {"numeric": {"text": "1_000"}}}}]], "conflicts": [], "algorithm": None,
+            "returning": []}},
         {"update": {"table": "t", "assignments": [
             ["a", {"negate": {"operand": {"numeric": {"text": "2.5"}}}}],
             ["b", {"string": {"bytes": list("é".encode())}}]],
-            "filter": {"equals": {"left": {"identifier": {"name": "id", "doubleQuoted": False}},
-                                  "right": {"numeric": {"text": "3"}}}}}},
-        {"update": {"table": "t", "assignments": [["a", {"numeric": {"text": "1"}}]], "filter": None}},
+            "filter": {"compare": {"operator": "eq", "left": {"identifier": {"name": "id", "quote": "none"}},
+                                  "right": {"numeric": {"text": "3"}}}}, "returning": []}},
+        {"update": {"table": "t", "assignments": [["a", {"numeric": {"text": "1"}}]], "filter": None, "returning": []}},
         "commit", "rollback"]
 
 

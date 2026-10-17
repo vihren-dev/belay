@@ -8,9 +8,9 @@ over the table's columns. -/
 
 namespace Belay.Sqlite
 
-/-- Resolve DELETE. Path 1 is the filter and path 4 the {lit}`RETURNING` columns, as for
-the other writes ({lit}`returningPath`). SQLite's own tables are a model restriction,
-as in {lit}`SELECT`. -/
+/-- Resolve DELETE. Path 1 is the filter and path {name}`deleteReturningField` the
+{lit}`RETURNING` columns. SQLite's own tables are a model restriction, as in
+{lit}`SELECT`. -/
 def resolveDelete (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : String)
     (filter : Option Syntax.Expr) (returning : List Syntax.ResultColumn) : StatementResolution :=
   let dqs := context.profile.dqsDml
@@ -26,7 +26,7 @@ def resolveDelete (context : ResolveContext) (catalog : Catalog) (index : Nat) (
     match resolvedCondition with
     | .error issue => issueResolution catalog index [1] issue
     | .ok resolvedFilter => match resolveReturning dqs scope returning with
-      | .error issue => issueResolution catalog index [4] issue
+      | .error issue => issueResolution catalog index [deleteReturningField] issue
       | .ok columns => .ok (.delete position resolvedFilter columns, catalog)
 
 end Belay.Sqlite

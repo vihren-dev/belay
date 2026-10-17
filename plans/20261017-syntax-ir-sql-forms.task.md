@@ -52,21 +52,19 @@ the same verdict for every case of every frozen corpus except the one named abov
 6. **Folded names and affinity in the catalog.** Measured instead of done (status file,
    2026-10-17): caching folded names gives no kernel gain, because every lookup still
    inspects the looked-up name's `String`. Identifiers as bytes move to step 8.
-7. **Join operators.** `Syntax.Join` carries a parsed operator (kind and `NATURAL` flag);
-   `joinOperator` is called once, in the frontend mapping or at the start of resolution,
-   not in six places.
-8. **Classifiers (D7).** `Resolved.Statement.kind` gives control, definition, write,
-   query, prepare error or clocked, and every match that today lists all constructors
-   to say "otherwise" uses it (`Laws.nonControl`, `SqlProofs.NoWrites` and
-   `ModeledDefinitions`, the forwarding arms of `step`, `literalStep` and `advance`,
-   `SchemaScript`, `TransactionSpec`, `StatementClock`). `Expr.any` and `Expr.map` over the
-   mutual block replace `callsJson`, `readsClock`, `atClock` and `readsBelow`; `eval`,
-   `literal?`, `mayBeText` and `isCondition` stay hand-written.
+7. **Join operators.** Moved to step 5 (one source model), which rewrites join
+   resolution; parsing operators once now would be rewritten there.
+8. **Classifiers (D7).** Moved: `Resolved.Statement.kind` to steps 2 and 7, which
+   restructure the dispatch of `step`, `literalStep` and `advance` and the predicates
+   `SchemaOnly`, `NoWrites` and `ModeledDefinitions` that the examples' proofs unfold;
+   `Expr.any` and `Expr.map` to steps 3 and 6, which replace `callsJson`, `readsClock` and
+   `atClock`.
 9. **Fixtures.** The 16 fixtures of `conformance/cases/*.json` and the regression fixture
    carry the new Syntax JSON; `tests/syntax_*_test.py` and the resolution examples state
    the new forms.
-10. **Names.** The table-position binder is `table` or `tablePosition` everywhere `at_` is
-    today.
+10. **Names.** The table-position binder is `target` everywhere `at_` was (`table` is the
+    catalog table and `tablePosition` a library function), and the hypothesis `at_` of the
+    resolution specs is `atPosition`.
 
 ## Verification
 

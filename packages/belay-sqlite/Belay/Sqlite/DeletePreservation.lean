@@ -24,11 +24,11 @@ position. No admission premise is needed. Proof sketch: without a table the step
 the database; otherwise it stores {name}`LiteralData.deleted`, which
 {name}`Table.Valid.deleted` covers, with the same shape. -/
 theorem literalStep_delete_conforms (conforms : Conforms profile catalog database) (position : Nat) :
-    Conforms profile catalog (literalStep (.delete at_ filter returning) database position).database := by
-  cases present : database at_ with
+    Conforms profile catalog (literalStep (.delete target filter returning) database position).database := by
+  cases present : database target with
   | none => simp only [literalStep, present]; exact conforms
   | some table =>
     simp only [literalStep, present, Outcome.database]
-    exact conforms.replaceRows present rfl (((conforms.2 at_).2 table present).deleted filter)
+    exact conforms.replaceRows present rfl (((conforms.2 target).2 table present).deleted filter)
 
 end Belay.Sqlite

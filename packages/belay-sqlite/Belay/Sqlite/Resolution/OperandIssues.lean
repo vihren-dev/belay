@@ -42,106 +42,122 @@ theorem dateCall_issues (function : Resolved.DateFunction) (arguments : Resolved
   intro issue failed
   cases failed
 
-/-- For every misuse flag, name and resolved operands, the issues of {name}`pairCall`
-with the issue {name}`pairIssue` name no catalog object. Proof sketch: its errors are that
-issue, which {name}`callIssues` covers, and those of {name}`jsonCall_issues` and
-{name}`dateCall_issues`. -/
-theorem pairCall_issues (misuse : Bool) (name : String) (first rest : Resolved.Expr) :
-    IssuesNameNoObject (pairCall name first rest (pairIssue name)) := by
-  intro issue failed
-  unfold pairCall at failed
-  dsimp only at failed
+/-- For every name, resolved argument list and issue that names no catalog object, the issues
+of {name}`functionCall` name no catalog object. Proof sketch: its errors are the given
+issue and those of {name}`jsonCall_issues`; {name}`dateCall` cannot fail. -/
+theorem functionCall_issues (name : String) (arguments : Resolved.Arguments) (issue : ValueIssue)
+    (named : issue.namesNoObject) : IssuesNameNoObject (functionCall name arguments issue) := by
+  intro failure failed
+  unfold functionCall at failed
   split at failed
   · cases failed
   · split at failed
-    · exact jsonCall_issues name _ _ issue failed
-    · exact dateCall_issues _ _ issue failed
-    · cases failed; exact (callIssues misuse name).2.2
+    · exact jsonCall_issues name _ _ failure failed
+    · exact dateCall_issues _ _ failure failed
+    · cases failed; exact named
 
+/-- For every pair of operands, build function and path shift, the affinity check of a
+comparison fails only with a restriction. -/
+theorem compare_issues (a b : Operand) (build : Resolved.Expr → Resolved.Expr → Resolved.Expr)
+    (shift : List Nat → List Nat) : IssuesNameNoObject (match affinityIssue a b with
+      | some (path, reason) => (Except.error (.restriction (shift path) reason) : Except ValueIssue Operand)
+      | none => .ok (build a.1 b.1, none)) := by
+  intro issue failed
+  split at failed <;> cases failed; trivial
+
+mutual
 /-- For every setting, column list, flag and expression, the issues of
-{name}`resolveOperand` name no catalog object. Proof sketch: induction on the
-expression. A compound expression sequences its operands with {name}`bind_issues`,
-{name}`under_issues` and {name}`condition_issues`, and fails itself only with a
-restriction; a leaf gives {lit}`no such column`, {lit}`ambiguous column name`, a restriction,
-{name}`queryNumeric_issues`, {name}`callIssues` or {name}`dateCall_issues`. -/
-theorem resolveOperand_issue (dqs : Bool) (scope : Scope) (misuse : Bool)
-    (expression : Syntax.Expr) : IssuesNameNoObject (resolveOperand dqs scope misuse expression) := by
-  have pair_match : ∀ (a b : Operand) (build : Resolved.Expr → Resolved.Expr → Resolved.Expr)
-      (shift : List Nat → List Nat), IssuesNameNoObject (match affinityIssue a b with
-        | some (path, reason) => (Except.error (.restriction (shift path) reason) : Except ValueIssue Operand)
-        | none => .ok (build a.1 b.1, none)) := by
-    intro a b build shift issue failed
-    split at failed <;> cases failed; trivial
-  induction expression with
-  | null | string _ | blob _ | currentTime _ =>
+{name}`resolveOperand` name no catalog object. Proof sketch: structural recursion on the
+expression, with {lit}`resolveArguments_issue` for the arguments of a call. A compound
+expression sequences its operands with {name}`bind_issues`, {name}`under_issues` and
+{name}`condition_issues`, and fails itself only with a restriction; a leaf gives
+{lit}`no such column`, {lit}`ambiguous column name`, a restriction,
+{name}`queryNumeric_issues`, {name}`callIssues` or {name}`functionCall_issues`. -/
+theorem resolveOperand_issue (dqs : Bool) (scope : Scope) (misuse : Bool) :
+    (expression : Syntax.Expr) → IssuesNameNoObject (resolveOperand dqs scope misuse expression)
+  | .null | .string _ | .blob _ | .currentTime _ => by
     intro issue failed; simp only [resolveOperand] at failed; cases failed <;> trivial
-  | numeric text => exact map_issues _ (queryNumeric_issues _ _)
-  | identifier name doubleQuoted =>
+  | .numeric text => map_issues _ (queryNumeric_issues _ _)
+  | .identifier name doubleQuoted => by
     intro issue failed
     simp only [resolveOperand] at failed
     repeat' split at failed
     all_goals (cases failed <;> simp [ValueIssue.namesNoObject, PrepareError.namesObject])
-  | qualified source column =>
+  | .qualified source column => by
     intro issue failed
     simp only [resolveOperand] at failed
     repeat' split at failed
     all_goals (cases failed <;> simp [ValueIssue.namesNoObject, PrepareError.namesObject])
-  | callStar name =>
+  | .callStar name => by
     intro issue failed
     simp only [resolveOperand] at failed
     cases failed
     split
     · exact (callIssues misuse name).1
     · exact (callIssues misuse name).2.1
-  | call name operand ih =>
+  | .call name arguments => by
+    have resolved := resolveArguments_issue dqs scope misuse 0 arguments
     intro issue failed
     simp only [resolveOperand] at failed
     split at failed
-    · exact bind_issues (under_issues _ ih) (fun _ => jsonCall_issues name _ _) issue failed
     · split at failed
-      · exact bind_issues (under_issues _ ih) (fun _ => dateCall_issues _ _) issue failed
+      · exact dateCall_issues _ _ issue failed
+      · cases failed; exact (callIssues misuse name).2.1
+    · split at failed
+      · exact bind_issues resolved (fun _ => functionCall_issues _ _ _ (callIssues misuse name).2.1) issue failed
       · cases failed
         split
         · exact (callIssues misuse name).1
         · exact (callIssues misuse name).2.1
-  | callEmpty name =>
-    intro issue failed
-    simp only [resolveOperand] at failed
-    split at failed
-    · exact dateCall_issues _ _ issue failed
-    · cases failed; exact (callIssues misuse name).2.1
-  | equals left right ihl ihr =>
-    exact bind_issues (under_issues _ ihl) fun a => bind_issues (under_issues _ ihr) fun b =>
-      pair_match a b (Resolved.Expr.compare .eq) id
-  | compare operator left right ihl ihr =>
-    exact bind_issues (under_issues _ ihl) fun a => bind_issues (under_issues _ ihr) fun b =>
-      pair_match a b (Resolved.Expr.compare operator) (List.map (· + 1))
-  | and left right ihl ihr =>
-    exact bind_issues (condition_issues _ ihl) fun _ => bind_issues (condition_issues _ ihr) fun _ =>
-      fun _ failed => by cases failed
-  | or left right ihl ihr =>
-    exact bind_issues (condition_issues _ ihl) fun _ => bind_issues (condition_issues _ ihr) fun _ =>
-      fun _ failed => by cases failed
-  | not operand ih => exact bind_issues (condition_issues _ ih) fun _ _ failed => by cases failed
-  | isNull operand negated ih => exact bind_issues (under_issues _ ih) fun _ _ failed => by cases failed
-  | arithmetic operator left right ihl ihr =>
-    exact bind_issues (under_issues _ ihl) fun _ => bind_issues (under_issues _ ihr) fun _ _ failed => by cases failed
-  | cast operand typeName ih => exact bind_issues (under_issues _ ih) fun _ _ failed => by cases failed
-  | positive operand ih => exact bind_issues (under_issues _ ih) fun _ _ failed => by cases failed
-  | callPair name first rest ihf ihr =>
-    intro issue failed
-    simp only [resolveOperand] at failed
-    split at failed
-    · exact bind_issues (under_issues _ ihf) (fun _ => bind_issues (under_issues _ ihr) fun _ =>
-        pairCall_issues misuse name _ _) issue failed
-    · cases failed; exact (callIssues misuse name).2.2
-  | more first rest ihf ihr =>
-    exact bind_issues (under_issues _ ihf) fun _ => bind_issues (under_issues _ ihr) fun _ _ failed => by
+    · split at failed
+      · exact bind_issues resolved (fun _ => functionCall_issues _ _ _ (callIssues misuse name).2.2) issue failed
+      · cases failed; exact (callIssues misuse name).2.2
+  | .compare operator left right =>
+    bind_issues (under_issues _ (resolveOperand_issue dqs scope misuse left)) fun a =>
+      bind_issues (under_issues _ (resolveOperand_issue dqs scope misuse right)) fun b =>
+        compare_issues a b (Resolved.Expr.compare operator) (List.map (· + 1))
+  | .and left right =>
+    bind_issues (condition_issues _ (resolveOperand_issue dqs scope misuse left)) fun _ =>
+      bind_issues (condition_issues _ (resolveOperand_issue dqs scope misuse right)) fun _ =>
+        fun _ failed => by cases failed
+  | .or left right =>
+    bind_issues (condition_issues _ (resolveOperand_issue dqs scope misuse left)) fun _ =>
+      bind_issues (condition_issues _ (resolveOperand_issue dqs scope misuse right)) fun _ =>
+        fun _ failed => by cases failed
+  | .not operand =>
+    bind_issues (condition_issues _ (resolveOperand_issue dqs scope misuse operand)) fun _ _ failed => by
       cases failed
-  | negate operand ih =>
+  | .isNull operand negated =>
+    bind_issues (under_issues _ (resolveOperand_issue dqs scope misuse operand)) fun _ _ failed => by
+      cases failed
+  | .arithmetic operator left right =>
+    bind_issues (under_issues _ (resolveOperand_issue dqs scope misuse left)) fun _ =>
+      bind_issues (under_issues _ (resolveOperand_issue dqs scope misuse right)) fun _ _ failed => by
+        cases failed
+  | .cast operand typeName =>
+    bind_issues (under_issues _ (resolveOperand_issue dqs scope misuse operand)) fun _ _ failed => by
+      cases failed
+  | .positive operand =>
+    bind_issues (under_issues _ (resolveOperand_issue dqs scope misuse operand)) fun _ _ failed => by
+      cases failed
+  | .negate operand => by
+    have ih := resolveOperand_issue dqs scope misuse operand
     cases operand with
     | numeric text => exact map_issues _ (queryNumeric_issues _ _)
     | _ => exact bind_issues (under_issues _ ih) fun _ _ failed => by cases failed
+
+/-- For every setting, column list, flag, start index and argument list, the issues of
+{name}`resolveArguments` name no catalog object. Proof sketch: structural recursion on the
+list, with {name}`resolveOperand_issue` for each argument. -/
+theorem resolveArguments_issue (dqs : Bool) (scope : Scope) (misuse : Bool) :
+    (index : Nat) → (arguments : List Syntax.Expr) →
+      IssuesNameNoObject (resolveArguments dqs scope misuse index arguments)
+  | _, [] => fun _ failed => by cases failed
+  | index, argument :: rest =>
+    bind_issues (under_issues _ (resolveOperand_issue dqs scope misuse argument)) fun _ =>
+      bind_issues (resolveArguments_issue dqs scope misuse (index + 1) rest) fun _ _ failed => by
+        cases failed
+end
 
 /-- For every list of computations whose issues name no catalog object, the issues of
 their concatenation in order name none. Proof sketch: induction on the list, with

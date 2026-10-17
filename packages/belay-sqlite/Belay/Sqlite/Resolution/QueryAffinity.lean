@@ -25,7 +25,7 @@ def numericAffinity : Affinity → Bool
 def Resolved.Expr.literal? : Resolved.Expr → Option Value
   | .literal value => some value
   | .column _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast .. | .coalesce ..
-  | .json .. | .arguments _ | .now _ | .date .. => none
+  | .json .. | .now _ | .date .. => none
 
 /-- Whether a value is TEXT. -/
 def Value.isText : Value → Bool
@@ -48,7 +48,6 @@ def Resolved.Expr.mayBeText : Resolved.Expr → Bool
   | .coalesce first rest => first.mayBeText || rest.mayBeText
   | .cast affinity _ => !numericAffinity affinity
   | .json .. | .now _ | .date .. => true
-  | .arguments _ => false
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. => false
 
 /-- Why the affinity rule of a comparison would convert one operand, given the

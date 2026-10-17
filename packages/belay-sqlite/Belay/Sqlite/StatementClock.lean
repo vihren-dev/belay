@@ -65,18 +65,18 @@ def ClockCell.fill (clock : Int) (rows : List (List Value)) (cell : ClockCell) :
 /-- The expressions of a statement at a clock value ({name}`Expr.atClock`). A clocked
 INSERT keeps its cells; {lit}`Statement.atClock` fills them first. -/
 def Statement.expressionsAtClock (clock : Int) : Statement → Statement
-  | .insert at_ rows keys returning => .insert at_ rows keys (returningAtClock clock returning)
-  | .upsert at_ rows clauses keys returning policy =>
-    .upsert at_ rows (clauses.map (·.atClock clock)) keys (returningAtClock clock returning) policy
-  | .update at_ assignments filter keys returning =>
-    .update at_ (assignments.map fun (position, value) => (position, value.atClock clock))
+  | .insert target rows keys returning => .insert target rows keys (returningAtClock clock returning)
+  | .upsert target rows clauses keys returning policy =>
+    .upsert target rows (clauses.map (·.atClock clock)) keys (returningAtClock clock returning) policy
+  | .update target assignments filter keys returning =>
+    .update target (assignments.map fun (position, value) => (position, value.atClock clock))
       (filter.map (·.atClock clock)) keys (returningAtClock clock returning)
-  | .delete at_ filter returning => .delete at_ (filter.map (·.atClock clock)) (returningAtClock clock returning)
+  | .delete target filter returning => .delete target (filter.map (·.atClock clock)) (returningAtClock clock returning)
   | .query inner => .query (inner.atClock clock)
   | .clocked statement cells => .clocked statement cells
-  | .createTable at_ name table => .createTable at_ name table
-  | .createIndex at_ name index => .createIndex at_ name index
-  | .addColumn at_ column => .addColumn at_ column
+  | .createTable target name table => .createTable target name table
+  | .createIndex target name index => .createIndex target name index
+  | .addColumn target column => .addColumn target column
   | .begin => .begin
   | .commit => .commit
   | .rollback => .rollback
@@ -85,9 +85,9 @@ def Statement.expressionsAtClock (clock : Int) : Statement → Statement
 /-- An INSERT with its cells set to their values at a clock value ({name}`ClockCell.fill`);
 any other statement unchanged. -/
 def Statement.fillCells (clock : Int) (cells : List ClockCell) : Statement → Statement
-  | .insert at_ rows keys returning => .insert at_ (cells.foldl (ClockCell.fill clock) rows) keys returning
-  | .upsert at_ rows clauses keys returning policy =>
-    .upsert at_ (cells.foldl (ClockCell.fill clock) rows) clauses keys returning policy
+  | .insert target rows keys returning => .insert target (cells.foldl (ClockCell.fill clock) rows) keys returning
+  | .upsert target rows clauses keys returning policy =>
+    .upsert target (cells.foldl (ClockCell.fill clock) rows) clauses keys returning policy
   | statement@(.update ..) | statement@(.delete ..) | statement@(.query _) | statement@(.clocked ..)
   | statement@(.createTable ..) | statement@(.createIndex ..) | statement@(.addColumn ..) | statement@.begin
   | statement@.commit | statement@.rollback | statement@(.prepareError _) => statement
