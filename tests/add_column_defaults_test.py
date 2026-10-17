@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from conformance.execution_profile import measured_profile
-from conformance.model_check import compiled_many, prove
+from conformance.model_check import compiled_many, prove_all
 from conformance.native_connection import Connection, library_path
 from conformance.native_library import library_binary, load_library
 from conformance.native_record import record_sql
@@ -19,18 +19,13 @@ pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kern
 LITERALS = ["NULL", "7", "1.50", "'7'", "X'00ff'", "TRUE", "[true]",
             "-9223372036854775808", "0x1ffffffffffffffff", "-0x1ffffffffffffffff"]
 """Defaults cover storage classes, source spelling and the readback/INSERT distinction."""
+AFFINITIES = ["INTEGER", "NUMERIC", "REAL", "TEXT", "BLOB"]
+"""Each affinity of an added column; one test covers all of them, so that the cases share one
+classification and the proofs run in parallel batches."""
 
 
-@pytest.mark.parametrize("version", ["3.51.0", "3.46.0"])
-@pytest.mark.parametrize("affinity", ["INTEGER", "NUMERIC", "REAL", "TEXT", "BLOB"])
-def test_added_defaults_match_native(version: str, affinity: str, runtime_root: Path, tmp_path: Path) -> None:
-    """Resolution, execution and comparison retain default values, old rows and catalogs after ADD fails."""
-    binary = library_path(library_binary(version))
-    connection = Connection(load_library(binary, version), tmp_path / "profile.db")
-    try:
-        profile = measured_profile(connection, name="added-defaults", format_version=3)
-    finally:
-        connection.close()
+def added_cases(affinity: str) -> list[tuple[str, str]]:
+    """The setup and SQL of the ADD COLUMN cases of one affinity."""
     empty = "CREATE TABLE t(id BLOB);"
     populated = empty + "INSERT INTO t VALUES(7),(8);"
     cases = [(populated, f"ALTER TABLE t ADD COLUMN added {affinity} DEFAULT {value}; SELECT * FROM t;")
@@ -45,10 +40,24 @@ def test_added_defaults_match_native(version: str, affinity: str, runtime_root: 
                     f"ALTER TABLE t ADD COLUMN added {affinity} NOT NULL DEFAULT NULL; COMMIT;"),
         (populated, f"BEGIN; ALTER TABLE t ADD COLUMN added {affinity} DEFAULT 7; ROLLBACK; SELECT * FROM t;"),
     ])
+    return cases
+
+
+@pytest.mark.parametrize("version", ["3.51.0", "3.46.0"])
+def test_added_defaults_match_native(version: str, runtime_root: Path, tmp_path: Path) -> None:
+    """Resolution, execution and comparison retain default values, old rows and catalogs after ADD fails."""
+    binary = library_path(library_binary(version))
+    connection = Connection(load_library(binary, version), tmp_path / "profile.db")
+    try:
+        profile = measured_profile(connection, name="added-defaults", format_version=3)
+    finally:
+        connection.close()
+    cases = [case for affinity in AFFINITIES for case in added_cases(affinity)]
+    library = runtime_library(runtime_root)
     prepared = []
     for index, (setup, sql) in enumerate(cases):
         record = record_sql(setup, sql, name=f"add-default-{index}", library=binary, outputs=True, profile=profile)
-        case, error = prepare(record, runtime_library(runtime_root))
+        case, error = prepare(record, library)
         assert case is not None, (sql, error)
         prepared.append(case)
     answers = compiled_many(prepared, runtime_root, emit_lean=True)
@@ -60,4 +69,4 @@ def test_added_defaults_match_native(version: str, affinity: str, runtime_root: 
                 "verdict": answer["verdict"], "position": answer.get("position"),
                 "case": prepared[index]}, indent=2))
             pytest.fail(f"ADD COLUMN disagrees for {cases[index][1]}; details: {diagnostic}")
-        prove(answer["caseLean"], runtime_root, tmp_path / f"Added{index}.lean", case=prepared[index])
+    prove_all([answer["caseLean"] for answer in answers], runtime_root, tmp_path, cases=prepared, name="Added")

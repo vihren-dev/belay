@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from conformance.authored_queries import QueryCase, records
-from conformance.model_check import compiled_many, prove
+from conformance.model_check import compiled_many, prove, prove_all
 from conformance.native_replay import prepare
 from conformance.record_parser import runtime_library
 
@@ -17,9 +17,13 @@ LITERALS = ["NULL", "7", "1.5", "'7'", "'λ'", "X'00ff'", "-9223372036854775808"
 """Default syntax covers each storage class, a signed boundary and quoted boolean spelling."""
 
 
-@pytest.mark.parametrize("affinity", ["INTEGER", "NUMERIC", "REAL", "TEXT", "BLOB"])
-def test_literal_catalog_defaults(affinity: str, runtime_root: Path, tmp_path: Path) -> None:
-    """Catalog admission and INSERT agree with native rows, affinity conversions and NOT NULL failures."""
+AFFINITIES = ["INTEGER", "NUMERIC", "REAL", "TEXT", "BLOB"]
+"""Each affinity of a column with a default; one test covers all of them, so that the cases
+share one classification and the proofs run in parallel batches."""
+
+
+def default_cases(affinity: str) -> list[QueryCase]:
+    """The cases of catalog defaults of one affinity."""
     cases = [QueryCase(f"default-{affinity}-{index}",
         f"CREATE TABLE t(id BLOB, added {affinity} DEFAULT {literal});",
         "INSERT INTO t(id) VALUES(7),(8) RETURNING *;", (), ("default", "omitted", affinity))
@@ -34,6 +38,13 @@ def test_literal_catalog_defaults(affinity: str, runtime_root: Path, tmp_path: P
         QueryCase(f"hex-error-{affinity}", f"CREATE TABLE t(id BLOB, added {affinity} DEFAULT 0x1ffffffffffffffff);",
                   "INSERT INTO t(id) VALUES(7);", (), ("default", "prepare-error")),
     ])
+    return cases
+
+
+def test_literal_catalog_defaults(runtime_root: Path, tmp_path: Path) -> None:
+    """Catalog admission and INSERT agree with native rows, affinity conversions and NOT NULL
+    failures, for each affinity."""
+    cases = [case for affinity in AFFINITIES for case in default_cases(affinity)]
     library = runtime_library(runtime_root)
     prepared = []
     for record in records(cases, part="column-defaults"):
@@ -44,7 +55,7 @@ def test_literal_catalog_defaults(affinity: str, runtime_root: Path, tmp_path: P
     assert len(answers) == len(cases)
     for index, answer in enumerate(answers):
         assert answer["verdict"] == "AGREE", (cases[index].name, answer)
-        prove(answer["caseLean"], runtime_root, tmp_path / f"Default{index}.lean", case=prepared[index])
+    prove_all([answer["caseLean"] for answer in answers], runtime_root, tmp_path, cases=prepared, name="Default")
 
 
 def test_changed_default_spelling_is_detected(runtime_root: Path, tmp_path: Path) -> None:

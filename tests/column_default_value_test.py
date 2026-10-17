@@ -27,38 +27,47 @@ CASES = [
 """Written defaults exercise literal classes, signed boundaries and identifier quoting."""
 
 
+AFFINITIES = ["INTEGER", "NUMERIC", "REAL", "TEXT", "BLOB"]
+"""Each affinity of the column; one Lean program checks all of them for a version."""
+
+
 @pytest.mark.parametrize("version", ["3.51.0", "3.46.0"])
-@pytest.mark.parametrize("affinity", ["INTEGER", "NUMERIC", "REAL", "TEXT", "BLOB"])
-def test_omitted_default_values(version: str, affinity: str, tmp_path: Path,
+def test_omitted_default_values(version: str, tmp_path: Path,
         lean_sysroot: Path, lean_libraries: tuple[Path, Path]) -> None:
-    """fullRow evaluates omitted defaults and applies the delivered storeValue conversion.
+    """fullRow evaluates omitted defaults and applies the delivered storeValue conversion,
+    for each affinity of `AFFINITIES`.
 
     SQL catalog admission and ADD COLUMN execution are separate acceptance checks.
     """
     connection = Connection(load_library(library_path(library_binary(version)), version),
                             tmp_path / "native.db")
-    expected: list[list[Json]] = []
+    expected: list[list[list[Json]]] = []
     try:
-        for index, (sql, _) in enumerate(CASES):
-            connection.execute_script(
-                f"CREATE TABLE t{index}(id BLOB, added {affinity} DEFAULT {sql});"
-                f"INSERT INTO t{index}(id) VALUES(7);")
-            rows = connection.query(f"SELECT id,added FROM t{index};")
-            assert len(rows) == 1, (sql, rows)
-            expected.append([cell_wire(cell) for cell in rows[0]])
+        for affinity in AFFINITIES:
+            per_affinity: list[list[Json]] = []
+            for index, (sql, _) in enumerate(CASES):
+                table = f"t_{affinity}_{index}"
+                connection.execute_script(
+                    f"CREATE TABLE {table}(id BLOB, added {affinity} DEFAULT {sql});"
+                    f"INSERT INTO {table}(id) VALUES(7);")
+                rows = connection.query(f"SELECT id,added FROM {table};")
+                assert len(rows) == 1, (sql, rows)
+                per_affinity.append([cell_wire(cell) for cell in rows[0]])
+            expected.append(per_affinity)
     finally:
         connection.close()
     expressions = ", ".join(f"⟨({expression}), {quoted_string(sql)}⟩" for sql, expression in CASES)
+    affinities = ", ".join(quoted_string(affinity) for affinity in AFFINITIES)
     source = f'''import Belay.Sqlite.Codec
 import Belay.Sqlite.Resolution.Writes
 open Belay.Sqlite Lean
 #eval do
   let inputs : List Syntax.DefaultExpression := [{expressions}]
-  let rows ← inputs.mapM fun expression => do
+  let tables ← [{affinities}].mapM fun affinity => inputs.mapM fun expression => do
     let columns : List CatalogColumn := [{{name := "id", declaredType := some "BLOB"}},
-      {{name := "added", declaredType := some {quoted_string(affinity)}, defaultValue := some expression}}]
+      {{name := "added", declaredType := some affinity, defaultValue := some expression}}]
     IO.ofExcept ((fullRow columns [0] [.integer 7]).mapError reprStr)
-  IO.println (toJson rows).compress
+  IO.println (toJson tables).compress
 '''
     actual = json.loads(compile_checks(source, tmp_path, lean_sysroot, lean_libraries))
     assert actual == expected, {"defaults": [sql for sql, _ in CASES], "actual": actual, "expected": expected}

@@ -17,9 +17,7 @@ on the same cases. The corpus writers that publish each set as a new corpus are
 checked in `tests/conformance_corpus_writers_test.py`, a scheduled suite.
 """
 
-from concurrent.futures import ThreadPoolExecutor
 import json
-import os
 from pathlib import Path
 from types import ModuleType
 
@@ -30,7 +28,7 @@ from conformance import (authored_algorithms, authored_aliases, authored_default
                          authored_json_functions, authored_keys, authored_merged, authored_numbers,
                          authored_queries, authored_right, authored_row_writes, authored_upserts, authored_using,
                          authored_writes)
-from conformance.model_check import compiled_many, prove_batch
+from conformance.model_check import compiled_many, prove_all
 from conformance.native_replay import prepare
 from conformance.record_parser import runtime_library
 from conformance.requirement_coverage import resolved_ids
@@ -44,9 +42,6 @@ CASE_SETS = [authored_queries, authored_numbers, authored_writes, authored_row_w
              authored_json_functions, authored_json_each,
              authored_default_writes]
 """The authored case modules: each has `definitions` and `records`."""
-PROOF_BATCH = 8
-"""Cases per kernel proof file: Lean loads the imports once for each file, about 0.7 s, which
-is most of the time of a one-case proof."""
 
 
 @pytest.mark.parametrize("cases", CASE_SETS, ids=lambda module: module.__name__.rsplit(".", 1)[-1])
@@ -67,8 +62,4 @@ def test_coverage_cases_agree_with_kernel_proofs(cases: ModuleType, runtime_root
         prepared.append(case)
     answers = compiled_many(prepared, runtime_root, emit_lean=True)
     assert {answer["verdict"] for answer in answers} == {"AGREE"}, answers
-    starts = range(0, len(prepared), PROOF_BATCH)
-    with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as pool:
-        list(pool.map(lambda start: prove_batch(
-            [answer["caseLean"] for answer in answers[start:start + PROOF_BATCH]], runtime_root,
-            tmp_path / f"Cases{start}.lean", cases=prepared[start:start + PROOF_BATCH]), starts))
+    prove_all([answer["caseLean"] for answer in answers], runtime_root, tmp_path, cases=prepared)

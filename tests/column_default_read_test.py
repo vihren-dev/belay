@@ -33,31 +33,40 @@ READ_CASES = CASES + [
 """Readback differs from INSERT for numeric text and overflowing hexadecimal literals."""
 
 
+AFFINITIES = ["INTEGER", "NUMERIC", "REAL", "TEXT", "BLOB"]
+"""Each affinity of the added column; one Lean program checks all of them for a version."""
+
+
 @pytest.mark.parametrize("version", ["3.51.0", "3.46.0"])
-@pytest.mark.parametrize("affinity", ["INTEGER", "NUMERIC", "REAL", "TEXT", "BLOB"])
-def test_added_default_readback(version: str, affinity: str, tmp_path: Path,
+def test_added_default_readback(version: str, tmp_path: Path,
         lean_sysroot: Path, lean_libraries: tuple[Path, Path]) -> None:
-    """The default reader matches SQLite values for old rows, including affinity and numeric boundaries."""
+    """The default reader matches SQLite values for old rows, including affinity and numeric
+    boundaries, for each affinity of `AFFINITIES`."""
     connection = Connection(load_library(library_path(library_binary(version)), version), tmp_path / "native.db")
-    expected: list[Json] = []
+    expected: list[list[Json]] = []
     try:
-        for index, (literal, _) in enumerate(READ_CASES):
-            connection.execute_script(f"CREATE TABLE t{index}(id BLOB); INSERT INTO t{index} VALUES(7);"
-                f"ALTER TABLE t{index} ADD COLUMN added {affinity} DEFAULT {literal};")
-            expected.append(cell_wire(connection.query(f"SELECT added FROM t{index};")[0][0]))
+        for affinity in AFFINITIES:
+            per_affinity: list[Json] = []
+            for index, (literal, _) in enumerate(READ_CASES):
+                table = f"t_{affinity}_{index}"
+                connection.execute_script(f"CREATE TABLE {table}(id BLOB); INSERT INTO {table} VALUES(7);"
+                    f"ALTER TABLE {table} ADD COLUMN added {affinity} DEFAULT {literal};")
+                per_affinity.append(cell_wire(connection.query(f"SELECT added FROM {table};")[0][0]))
+            expected.append(per_affinity)
     finally:
         connection.close()
     inputs = ", ".join(f"⟨({expression}), {quoted_string(literal)}⟩" for literal, expression in READ_CASES)
+    affinities = ", ".join(quoted_string(affinity) for affinity in AFFINITIES)
     source = f'''import Belay.Sqlite.Codec
 import Belay.Sqlite.Resolution.ReadDefaults
 open Belay.Sqlite Lean
 #eval do
   let inputs : List Syntax.DefaultExpression := [{inputs}]
-  let values := inputs.map fun written =>
-    let column : CatalogColumn := {{name := "added", declaredType := some {quoted_string(affinity)},
+  let tables := [{affinities}].map fun affinity => inputs.map fun written =>
+    let column : CatalogColumn := {{name := "added", declaredType := some affinity,
                                    defaultValue := some written}}
     (readDefaultValue column).toOption
-  IO.println (toJson values).compress
+  IO.println (toJson tables).compress
 '''
     actual = json.loads(compile_checks(source, tmp_path, lean_sysroot, lean_libraries))
     assert actual == expected, {"literals": [literal for literal, _ in READ_CASES], "actual": actual, "expected": expected}
