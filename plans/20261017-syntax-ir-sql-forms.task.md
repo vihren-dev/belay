@@ -49,11 +49,9 @@ the same verdict for every case of every frozen corpus except the one named abov
    `CatalogColumn.clockDefault`, `constantDefaultExpression`, `constantDefault` and
    `PrepareError.defaultNotConstant` do not exist, or exist only inside that resolution.
    Execution and the omitted-cell rules read the stored values.
-6. **Folded names and affinity in the catalog.** `CatalogObject` and `CatalogColumn`
-   store their folded name beside the name as written, and `CatalogColumn` stores its
-   affinity. `Catalog.find`, `columnPosition`, `Catalog.supported` and `tablesMatch`
-   compare folded names with `==`; `affinityOf` runs at resolution only. Messages use
-   the name as written.
+6. **Folded names and affinity in the catalog.** Measured instead of done (status file,
+   2026-10-17): caching folded names gives no kernel gain, because every lookup still
+   inspects the looked-up name's `String`. Identifiers as bytes move to step 8.
 7. **Join operators.** `Syntax.Join` carries a parsed operator (kind and `NATURAL` flag);
    `joinOperator` is called once, in the frontend mapping or at the start of resolution,
    not in six places.

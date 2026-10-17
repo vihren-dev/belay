@@ -40,6 +40,19 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D3 and D7, step 
   to `ClockText`. The `constant_default` contract states the resolved default (baseline
   re-hashed). Core modules 128. `test-full` and `test-nix` pass.
 
+- 2026-10-17: item 6, measured and not done as written. On one three-statement case
+  (`clock-default-affinity`) the kernel proof takes 1.35 s; with identifier folding
+  removed entirely it takes 1.03 s, so folding is about a quarter of the proof. Storing
+  each catalog name's folded form (`CatalogObject.folded`, `CatalogColumn.folded`) gave
+  1.34 s, and a byte-level `normalizeIdentifier` that returns the name unchanged after a
+  byte scan gave 1.33 s: the cost is inspecting a `String`'s contents in the kernel at
+  all, which every lookup still does for the name it looks up. The cached fields were
+  reverted, because they add a stale-field hazard (`{ column with name := … }`) for no
+  gain. The lever is identifiers as bytes (`List UInt8`) in Syntax and the catalog,
+  recorded for ADR 0013 step 8. `affinityOf` and the declared-type helpers moved to
+  `Resolution/DeclaredType.lean` (the review finding on `Catalog.lean`'s length).
+  Core modules 129.
+
 ## Remaining
 
 - Items 1 to 10 of the task, as reviewed commits; pull request A; pull request B if the
