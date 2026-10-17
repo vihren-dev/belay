@@ -29,7 +29,7 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D3 and D7, step 
 
 ## Progress
 
-- 2026-10-17: ADR 0013 proposed (#158); task and status files.
+- 2026-10-17: ADR 0013 proposed (#158) and accepted by the owner; task and status files.
 
 ## Remaining
 

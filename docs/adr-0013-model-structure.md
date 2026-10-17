@@ -1,6 +1,6 @@
 # ADR 0013: Model structure after ADR 0012
 
-Date: 2026-10-17. Status: PROPOSED.
+Date: 2026-10-17. Status: ACCEPTED on 2026-10-17 (#158).
 Implementation: [first task](../plans/20261017-syntax-ir-sql-forms.task.md) (step 1);
 later steps get their own task files.
 Audience: designers and reviewers.
@@ -350,10 +350,11 @@ instance is worth its proof.
 
 ## Owner decisions
 
-1. **D1 to D3, D6 to D8.** Proposed 2026-10-17; awaiting the owner. These change no
-   corpus verdict.
-2. **D4 and D5.** Proposed 2026-10-17; awaiting the owner. These turn restricted cases
-   into predictions, so each is measured over every corpus before it is committed, and
-   its pull request B lists the newly agreeing cases.
-3. **D7 as the reading of ADR 0006.** Proposed 2026-10-17; awaiting the owner. It changes
-   a repository rule, not only code.
+1. **D1 to D3, D6 to D8.** Decided on 2026-10-17: accepted. These change no corpus
+   verdict.
+2. **D4 and D5.** Decided on 2026-10-17: accepted. These turn restricted cases into
+   predictions, so each is measured over every corpus before it is committed, and its
+   pull request B lists the newly agreeing cases.
+3. **D7 as the reading of ADR 0006.** Decided on 2026-10-17: accepted.
+4. **Order.** Decided on 2026-10-17: implement the steps in order, as one stack of pull
+   requests on the ADR 0012 stack.
