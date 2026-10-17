@@ -56,7 +56,7 @@ rules this slice uses; slice 6d (`json_each`) follows.
 - Mutants, each changing the verdict of an authored case: a large integer typed `real`;
   `json_valid` accepting JSON5 without flag 2; `json_valid` failing on malformed text; the
   flags error ignored; `json_array_length` of an object as its member count; `json`
-  re-rendering numbers.
+  returning its argument as written (re-rendering numbers is the mutant of slice 6b).
 
 ## Key points for the implementer
 
