@@ -8,10 +8,9 @@ the model that no case notices shows a missing case. The cases are the authored 
 `authored_row_writes`, `authored_deletes`, `authored_joins`, `authored_using`,
 `authored_right`, `authored_merged`, `authored_aliases`, `authored_upserts`,
 `authored_algorithms`, `authored_fromless` and `authored_json`, recorded natively with their
-outputs. Three measurements, one for
-queries and numbers, one for writes and joins, and one for keys, rowid aliases, UPSERT and
-conflict algorithms, each build one base copy for their mutants, which keeps each test
-within its time limit on a hosted runner; every case must agree with the base copy. Each
+outputs. Four measurements, one for queries and numbers, one for JSON, one for writes and
+joins, and one for keys, rowid aliases, UPSERT and conflict algorithms, each build one base
+copy for their mutants, which keeps each test within its time limit on a hosted runner; every case must agree with the base copy. Each
 mutant copy then classifies the case that the mutant names as its target, which keeps the
 elaboration of case terms short.
 """
@@ -67,13 +66,20 @@ def measure_set(runtime_root: Path, modules: list[ModuleType], tables: list[tupl
 
 
 def test_every_query_and_number_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored query, number, query-without-FROM and JSON cases notice every changed rule
-    of query semantics, numbers and JSON (`conformance.query_mutants`,
-    `conformance.number_mutants`, `conformance.fromless_mutants`, `conformance.json_mutants`),
-    so these rules are tested."""
-    measure_set(runtime_root, [authored_queries, authored_numbers, authored_fromless, authored_json],
+    """The authored query, number and query-without-FROM cases notice every changed rule of
+    query semantics and numbers (`conformance.query_mutants`, `conformance.number_mutants`,
+    `conformance.fromless_mutants`), so these rules are tested."""
+    measure_set(runtime_root, [authored_queries, authored_numbers, authored_fromless],
                 [(query_mutants.MUTANTS, query_mutants.TARGETS), (number_mutants.MUTANTS, number_mutants.TARGETS),
-                 (fromless_mutants.MUTANTS, fromless_mutants.TARGETS), (json_mutants.MUTANTS, json_mutants.TARGETS)])
+                 (fromless_mutants.MUTANTS, fromless_mutants.TARGETS)])
+
+
+def test_every_json_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored JSON cases notice every changed rule of the JSON functions
+    (`conformance.json_mutants`), so these rules are tested. The JSON mutants have their own
+    measurement: with the query mutants, the measurement took 265 s of its 300 s limit on a
+    hosted runner, and went over it once."""
+    measure_set(runtime_root, [authored_json], [(json_mutants.MUTANTS, json_mutants.TARGETS)])
 
 
 def test_every_key_alias_upsert_and_algorithm_mutant_changes_a_verdict(runtime_root: Path) -> None:
