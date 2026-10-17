@@ -2,8 +2,9 @@ import Belay.Sqlite.Resolution.Values
 
 set_option doc.verso true
 
-/-! Literal defaults shared by INSERT and column extension. The catalog retains
-written syntax; these functions evaluate it without adding resolved metadata. -/
+/-! Literal defaults shared by INSERT and column extension. Resolution evaluates a written
+default once ({lit}`resolveColumnDefault`) and stores the result in the catalog
+({lit}`ColumnDefault`); {lit}`defaultValue` reads the stored INSERT value. -/
 namespace Belay.Sqlite
 
 /-- The value of an admitted literal DEFAULT before column affinity applies.
@@ -42,13 +43,16 @@ def writtenDefault (written : Syntax.DefaultExpression) : Except ValueIssue Valu
   | .isNull .. | .callStar _ | .callEmpty _ | .call .. | .arithmetic .. | .cast .. | .callPair .. | .more .. | .qualified .. =>
     literalDefault written.expression
 
-/-- The value of a column's DEFAULT before affinity applies; NULL when it is
-omitted. {name}`literalDefault` identifies unsupported expressions. INSERT's
-full-row construction applies the column's affinity after evaluating this value.
-Omit the default field for an ordinary nullable column. -/
+/-- The value that an INSERT gives an omitted column, before affinity applies: NULL without a
+default, the stored INSERT value of a literal default, SQLite's {lit}`hex literal too big`
+for an oversized hexadecimal default, and a model restriction for a time keyword default,
+whose value the execution gives instead ({lit}`omittedCell`). INSERT's full-row
+construction applies the column's affinity after this value. -/
 def defaultValue (column : CatalogColumn) : Except ValueIssue Value :=
   match column.defaultValue with
   | none => .ok .null
-  | some written => writtenDefault written
+  | some { form := .literal (.value value) _, .. } => .ok value
+  | some { form := .literal (.hexLiteralTooBig text) _, .. } => .error (.prepare (.hexLiteralTooBig text))
+  | some { form := .clock _, .. } => .error (.restriction [] .unmodeledDefault)
 
 end Belay.Sqlite

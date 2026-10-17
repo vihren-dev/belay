@@ -63,9 +63,10 @@ open Belay.Sqlite Lean
 #eval do
   let inputs : List Syntax.DefaultExpression := [{inputs}]
   let tables := [{affinities}].map fun affinity => inputs.map fun written =>
-    let column : CatalogColumn := {{name := "added", declaredType := some affinity,
-                                   defaultValue := some written}}
-    (readDefaultValue column).toOption
+    (resolveColumnDefault (affinityOf (some affinity)) written).bind fun resolved =>
+      let column : CatalogColumn := {{name := "added", declaredType := some affinity,
+                                     defaultValue := some resolved}}
+      (readDefaultValue column).toOption
   IO.println (toJson tables).compress
 '''
     actual = json.loads(compile_checks(source, tmp_path, lean_sysroot, lean_libraries))

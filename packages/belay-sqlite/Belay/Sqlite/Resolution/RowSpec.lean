@@ -78,7 +78,8 @@ theorem fullCells_rowWidth (columns : List CatalogColumn) (positions : List Nat)
     split at step
     · cases step
       exact absurd (plain _ (List.mem_of_getElem? hcell)) (by simp)
-    · cases hdefault : defaultValue columns[index] with
+    all_goals
+      cases hdefault : defaultValue columns[index] with
       | error cause => rw [hdefault] at step; cases step
       | ok default =>
         rw [hdefault] at step

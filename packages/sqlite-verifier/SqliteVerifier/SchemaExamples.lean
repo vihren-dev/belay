@@ -20,7 +20,7 @@ default. It illustrates metadata that a schema may describe but that a new colum
 of a statement that runs may not have; {assert}`timestamp.plain = false`. -/
 def timestamp : CatalogColumn := {
   name := "installed_on", declaredType := some "TIMESTAMP"
-  notNull := true, defaultValue := some ⟨.currentTime "CURRENT_TIMESTAMP", "CURRENT_TIMESTAMP"⟩ }
+  notNull := true, defaultValue := some { form := .clock .timestamp, sourceText := "CURRENT_TIMESTAMP" } }
 
 /-- A table keyed on {lit}`id`, with a unique index named {lit}`key_index` on the same
 column at catalog position 1, illustrating keys and the shared namespace. -/

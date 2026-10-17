@@ -34,29 +34,54 @@ def readNumericDefault (affinity : Affinity) (token : String) (negated : Bool) :
       else .text bytes
   storeValue affinity value
 
+/-- The value that old rows read for a written default after ADD COLUMN, stored with the
+affinity: numeric tokens use {name}`readNumericDefault`; other literal forms use
+{name}`writtenDefault`. Time and compound expressions are model restrictions. -/
+def writtenReadBack (affinity : Affinity) (written : Syntax.DefaultExpression) : Except ValueIssue Value :=
+  match written.expression with
+  | .numeric text | .positive (.numeric text) => .ok (readNumericDefault affinity text false)
+  | .negate (.numeric text) => .ok (readNumericDefault affinity text true)
+  | .null | .string _ | .blob _ | .currentTime _ | .identifier ..
+  | .negate _ | .positive _ | .equals .. | .compare .. | .and .. | .or .. | .not _
+  | .isNull .. | .callStar _ | .callEmpty _ | .call .. | .arithmetic .. | .cast .. | .callPair .. | .more .. | .qualified .. =>
+    (writtenDefault written).map (storeValue affinity)
+
+/-- The resolved default of a written DEFAULT for a column of the affinity
+({name}`ColumnDefault`), evaluated once: a time keyword is {lean}`DefaultForm.clock`; a
+literal keeps its INSERT value ({name}`writtenDefault`, or its {lit}`hex literal too big`
+error) and its read-back value ({name}`writtenReadBack`). A default that the model does
+not describe is {lean}`(none : Option ColumnDefault)`; resolution refuses it with a
+model restriction ({lit}`modeledDefault`). -/
+def resolveColumnDefault (affinity : Affinity) (written : Syntax.DefaultExpression) : Option ColumnDefault :=
+  let form : Option DefaultForm := match written.expression with
+    | .currentTime keyword => some (.clock (timeKeywordNamed keyword))
+    | .null | .numeric _ | .string _ | .blob _ | .identifier .. | .negate _ | .positive _ | .equals ..
+    | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .callEmpty _ | .call ..
+    | .arithmetic .. | .cast .. | .callPair .. | .more .. | .qualified .. =>
+      match writtenDefault written, writtenReadBack affinity written with
+      | .ok value, .ok readBack => some (.literal (.value value) readBack)
+      | .error (.prepare (.hexLiteralTooBig text)), .ok readBack => some (.literal (.hexLiteralTooBig text) readBack)
+      | .ok _, .error _ | .error _, _ => none
+  form.map fun form => { form, sourceText := written.sourceText }
+
 /-- Whether the column's default is a time keyword, such as {lit}`DEFAULT CURRENT_TIMESTAMP`,
 whose value depends on the statement's clock. ADD COLUMN with such a default fails on a
 populated table ({lit}`Cannot add a column with non-constant default`), and INSERT gives an
 omitted value the statement's clock text. -/
 def CatalogColumn.clockDefault (column : CatalogColumn) : Bool :=
   match column.defaultValue with
-  | some { expression := .currentTime _, .. } => true
-  | _ => false
+  | some { form := .clock _, .. } => true
+  | some { form := .literal .., .. } | none => false
 
-/-- Read a column's default for a field absent from an old record, applying its
-column affinity. No default supplies NULL. Numeric tokens use
-{name}`readNumericDefault`; other literal forms use {name}`writtenDefault`.
-Time and compound expressions remain model restrictions. For omitted INSERT
-values use {name}`defaultValue`, whose numeric errors have different semantics. -/
+/-- Read a column's default for a field absent from an old record, stored with the
+column's affinity: NULL without a default, the stored read-back value of a literal
+default, and a model restriction for a time keyword default, which ADD COLUMN handles
+apart ({name}`CatalogColumn.clockDefault`). For omitted INSERT values use
+{name}`defaultValue`, whose numeric errors have different semantics. -/
 def readDefaultValue (column : CatalogColumn) : Except ValueIssue Value :=
   match column.defaultValue with
   | none => .ok .null
-  | some written => match written.expression with
-    | .numeric text | .positive (.numeric text) => .ok (readNumericDefault column.affinity text false)
-    | .negate (.numeric text) => .ok (readNumericDefault column.affinity text true)
-    | .null | .string _ | .blob _ | .currentTime _ | .identifier ..
-    | .negate _ | .positive _ | .equals .. | .compare .. | .and .. | .or .. | .not _
-    | .isNull .. | .callStar _ | .callEmpty _ | .call .. | .arithmetic .. | .cast .. | .callPair .. | .more .. | .qualified .. =>
-      (writtenDefault written).map (storeValue column.affinity)
+  | some { form := .literal _ readBack, .. } => .ok (storeValue column.affinity readBack)
+  | some { form := .clock _, .. } => .error (.restriction [] .unmodeledDefault)
 
 end Belay.Sqlite

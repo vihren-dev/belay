@@ -15,7 +15,7 @@ def amount : CatalogColumn := { name := "amount", declaredType := some "INTEGER"
 /-- Required priority initialized to seven; the written default is retained. -/
 def priority : CatalogColumn := {
   name := "priority", declaredType := some "INTEGER"
-  notNull := true, defaultValue := some ⟨.numeric "7", "7"⟩ }
+  notNull := true, defaultValue := some { form := .literal (.value (.integer 7)) (.integer 7), sourceText := "7" } }
 
 /-- For every starting and resulting observation, success preserves all rowids and
 amounts and requires the amount and priority columns with their exact metadata.

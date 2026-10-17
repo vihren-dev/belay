@@ -20,22 +20,15 @@ theorem readNumericDefault_stored (affinity : Affinity) (token : String) (negate
 
 /-- For every column and value, if {name}`readDefaultValue` returns that value,
 storing it with the column's affinity leaves it unchanged. An error return
-satisfies no premise. The proof separates absent and numeric defaults from
-other evaluated literals, then uses {name}`storeValue_storeValue`. -/
+satisfies no premise. The proof splits the stored default forms: no default reads NULL,
+and a literal default reads its value stored with the affinity
+({name}`storeValue_storeValue`). -/
 theorem readDefaultValue_stored (column : CatalogColumn) (value : Value)
     (accepted : readDefaultValue column = .ok value) : storeValue column.affinity value = value := by
-  have mapped (result : Except ValueIssue Value)
-      (returned : result.map (storeValue column.affinity) = .ok value) :
-      storeValue column.affinity value = value := by
-    cases result with
-    | error issue => cases returned
-    | ok input => cases returned; exact storeValue_storeValue _ _
   unfold readDefaultValue at accepted
   split at accepted
   · cases accepted; exact storeValue_null _
-  · split at accepted
-    all_goals first
-      | (cases accepted; exact readNumericDefault_stored _ _ _)
-      | exact mapped _ accepted
+  · cases accepted; exact storeValue_storeValue _ _
+  · cases accepted
 
 end Belay.Sqlite

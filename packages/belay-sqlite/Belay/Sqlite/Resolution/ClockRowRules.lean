@@ -28,7 +28,8 @@ theorem omittedCell_issue (column : CatalogColumn) (issue : ValueIssue)
   unfold omittedCell at failed
   split at failed
   · cases failed
-  · cases hdefault : defaultValue column with
+  all_goals
+    cases hdefault : defaultValue column with
     | error cause => rw [hdefault] at failed; cases failed; exact defaultValue_issue _ _ hdefault
     | ok _ => rw [hdefault] at failed; cases failed
 

@@ -31,6 +31,15 @@ inductive TimeKeyword where
   | timestamp
   deriving Repr, DecidableEq
 
+/-- The time keyword of a keyword as written, which SQLite compares without ASCII case:
+{lit}`CURRENT_TIME`, {lit}`CURRENT_DATE`, or else {lit}`CURRENT_TIMESTAMP`, the only other
+keyword that the frontend maps to {lit}`Syntax.Expr.currentTime`. -/
+def timeKeywordNamed (keyword : String) : TimeKeyword :=
+  match keyword.toLower with
+  | "current_time" => .time
+  | "current_date" => .date
+  | _ => .timestamp
+
 /-- Whether {lit}`validJulianDay` accepts a clock: from 0 to {lit}`INT_464269060799999`
 Julian-day milliseconds, that is 9999-12-31 23:59:59.999. -/
 def validJulianDay (clock : Int) : Bool := 0 ≤ clock && clock ≤ 464269060799999

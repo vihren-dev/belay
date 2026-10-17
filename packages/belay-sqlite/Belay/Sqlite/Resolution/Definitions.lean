@@ -38,7 +38,10 @@ def applyConstraint (tableName : String) (definition : Syntax.ColumnDefinition)
     setPrimaryKey table [position] alias descending algorithm
   | .default value sourceText =>
     if !constantDefault value then .error (.defaultNotConstant definition.name) else
-    .ok { table with columns := updateLast table.columns fun column => { column with defaultValue := some ⟨value, sourceText⟩ } }
+    -- A default that the model does not describe leaves no default here; resolution then
+    -- refuses the statement with {lit}`unmodeledDefault` ({lit}`modeledDefault`).
+    .ok { table with columns := updateLast table.columns fun column =>
+      { column with defaultValue := resolveColumnDefault column.affinity ⟨value, sourceText⟩ } }
   | .notNull algorithm => .ok { table with columns := updateLast table.columns fun column =>
       { column with notNull := true, notNullAlgorithm := algorithm.getD .abort } }
   | .unique algorithm => addUniqueKey table [table.columns.length - 1] algorithm
@@ -130,13 +133,16 @@ def resolveCreateIndex (context : ResolveContext) (catalog : Catalog) (index : N
 /-- Construct added-column metadata after PRIMARY KEY and UNIQUE have been
 rejected. NOT NULL sets nullability and its {lit}`ON CONFLICT` algorithm (ABORT without
 one), as in CREATE TABLE, and each written DEFAULT replaces the preceding default, as in
-SQLite. Key constraints leave this metadata unchanged;
-callers must reject them before using this helper. -/
-def addedColumn (definition : Syntax.ColumnDefinition) : CatalogColumn :=
-  definition.constraints.foldl (fun column constraint => match constraint with
-    | .notNull algorithm => { column with notNull := true, notNullAlgorithm := algorithm.getD .abort }
-    | .default expression sourceText => { column with defaultValue := some ⟨expression, sourceText⟩ }
-    | .primaryKey .. | .unique _ => column)
+SQLite, resolved once ({name}`resolveColumnDefault`). A DEFAULT that the model does not
+describe gives {lean}`(none : Option CatalogColumn)`. Key constraints leave this metadata
+unchanged; callers must reject them before using this helper. -/
+def addedColumn (definition : Syntax.ColumnDefinition) : Option CatalogColumn :=
+  definition.constraints.foldlM (fun column constraint => match constraint with
+    | .notNull algorithm => some { column with notNull := true, notNullAlgorithm := algorithm.getD .abort }
+    | .default expression sourceText =>
+      (resolveColumnDefault column.affinity ⟨expression, sourceText⟩).map fun resolved =>
+        { column with defaultValue := some resolved }
+    | .primaryKey .. | .unique _ => some column)
     { name := definition.name, declaredType := reportedType definition.declaredType }
 
 /-- Resolve ALTER TABLE ADD COLUMN. Path 1 is the column definition. -/
@@ -158,8 +164,9 @@ def resolveAddColumn (context : ResolveContext) (catalog : Catalog) (index : Nat
     else if definition.constraints.any Syntax.ColumnConstraint.isUnique then prepareError catalog .cannotAddUnique
     else if rowidName definition.name then restrict index [1] .rowidColumnName
     else
-      let column := addedColumn definition
-      if !column.clockDefault && (readDefaultValue column).toOption.isNone then restrict index [1] .addColumnConstraint else
+      match addedColumn definition with
+      | none => restrict index [1] .addColumnConstraint
+      | some column =>
       let object := { name := (catalog[position]?.map (·.name)).getD tableName,
                       entry := .table { table with columns := table.columns ++ [column] } }
       .ok (.addColumn position column, catalog.set position object)

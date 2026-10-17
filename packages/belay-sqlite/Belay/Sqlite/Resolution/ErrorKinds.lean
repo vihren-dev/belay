@@ -62,18 +62,11 @@ theorem ValueIssue.under_namesNoObject (prefix_ : List Nat) (issue : ValueIssue)
   cases issue <;> simp_all [ValueIssue.under, ValueIssue.namesNoObject]
 
 /-- For every column, an issue of {name}`defaultValue` names no catalog object.
-Proof sketch: split the default forms. Failures are model restrictions or
+Proof sketch: split the stored default forms. Failures are a model restriction or
 {name}`PrepareError.hexLiteralTooBig`, which names no catalog object. -/
 theorem defaultValue_issue (column : CatalogColumn) (issue : ValueIssue)
     (failed : defaultValue column = .error issue) : issue.namesNoObject := by
   unfold defaultValue at failed
-  split at failed
-  · cases failed
-  · unfold writtenDefault at failed
-    repeat' first | split at failed | unfold literalDefault at failed
-    all_goals first
-      | (cases failed <;> trivial)
-      | (unfold queryNumeric at failed; dsimp only at failed
-         split at failed <;> cases failed <;> rfl)
+  split at failed <;> cases failed <;> trivial
 
 end Belay.Sqlite

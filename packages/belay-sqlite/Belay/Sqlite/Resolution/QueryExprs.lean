@@ -177,6 +177,6 @@ def resolveOperand (dqs : Bool) (scope : Scope) (misuse : Bool) : Syntax.Expr â†
   | .null => .ok (.literal .null, none)
   | .string bytes => .ok (.literal (.text bytes), none)
   | .blob bytes => .ok (.literal (.blob bytes), none)
-  | .currentTime keyword => .ok (.now (Resolved.timeKeywordNamed keyword), none)
+  | .currentTime keyword => .ok (.now (timeKeywordNamed keyword), none)
 
 end Belay.Sqlite

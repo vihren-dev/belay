@@ -10,15 +10,6 @@ evaluation never reads the clock. -/
 
 namespace Belay.Sqlite.Resolved
 
-/-- The time keyword of a keyword as written, which SQLite compares without ASCII case:
-{lit}`CURRENT_TIME`, {lit}`CURRENT_DATE`, or else {lit}`CURRENT_TIMESTAMP`, the only other
-keyword that the frontend maps to {lit}`Syntax.Expr.currentTime`. -/
-def timeKeywordNamed (keyword : String) : TimeKeyword :=
-  match keyword.toLower with
-  | "current_time" => .time
-  | "current_date" => .date
-  | _ => .timestamp
-
 /-- The text forms of a time value that read the clock in {lit}`parseDateOrTime`, as
 lowercase ASCII bytes: {lit}`now`, {lit}`subsec` and {lit}`subsecond`. -/
 def clockTimeValues : List (List UInt8) :=

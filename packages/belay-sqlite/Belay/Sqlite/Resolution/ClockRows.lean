@@ -36,8 +36,8 @@ column's affinity; or NULL and the time keyword of a default that is one, such a
 {lit}`DEFAULT CURRENT_TIMESTAMP`. -/
 def omittedCell (column : CatalogColumn) : Except ValueIssue RowCell :=
   match column.defaultValue with
-  | some { expression := .currentTime keyword, .. } => .ok (.null, some (.now (Resolved.timeKeywordNamed keyword)))
-  | _ => (defaultValue column).map fun value => (storeValue column.affinity value, none)
+  | some { form := .clock keyword, .. } => .ok (.null, some (.now keyword))
+  | some { form := .literal .., .. } | none => (defaultValue column).map fun value => (storeValue column.affinity value, none)
 
 /-- One full row of cells in table order: the written cell of a named column, its value
 stored with the column's affinity, or the cell of an omitted column ({name}`omittedCell`). -/

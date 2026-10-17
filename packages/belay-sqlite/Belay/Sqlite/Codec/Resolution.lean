@@ -49,6 +49,10 @@ deriving instance Lean.ToExpr for Syntax.Write
 deriving instance Lean.ToExpr for Syntax.Statement
 deriving instance Lean.ToExpr for Limits
 deriving instance Lean.ToExpr for Profile
+deriving instance Lean.ToExpr for TimeKeyword
+deriving instance Lean.ToExpr for DefaultInsert
+deriving instance Lean.ToExpr for DefaultForm
+deriving instance Lean.ToExpr for ColumnDefault
 deriving instance Lean.ToExpr for CatalogColumn
 deriving instance Lean.ToExpr for CatalogTable
 deriving instance Lean.ToExpr for CatalogIndex
@@ -56,7 +60,6 @@ deriving instance Lean.ToExpr for CatalogEntry
 deriving instance Lean.ToExpr for CatalogObject
 deriving instance Lean.ToExpr for PrepareError
 deriving instance Lean.ToExpr for Resolved.JsonFunction
-deriving instance Lean.ToExpr for TimeKeyword
 deriving instance Lean.ToExpr for Resolved.DateFunction
 deriving instance Lean.ToExpr for Resolved.Expr, Resolved.Arguments
 deriving instance Lean.ToExpr for Resolved.Aggregate

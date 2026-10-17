@@ -31,6 +31,15 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D3 and D7, step 
 
 - 2026-10-17: ADR 0013 proposed (#158) and accepted by the owner; task and status files.
 
+- 2026-10-17: item 5. The catalog stores a resolved `ColumnDefault`
+  (`Resolution/ColumnDefault.lean`: the INSERT value or its `hex literal too big` error,
+  the read-back value, or a time keyword, with the source text), computed once by
+  `resolveColumnDefault` at CREATE TABLE and ADD COLUMN; `defaultValue`,
+  `readDefaultValue` and `clockDefault` read it. `addedColumn` gives none for a default the
+  model does not describe, which stays `add-column-constraint`. `timeKeywordNamed` moved
+  to `ClockText`. The `constant_default` contract states the resolved default (baseline
+  re-hashed). Core modules 128. `test-full` and `test-nix` pass.
+
 ## Remaining
 
 - Items 1 to 10 of the task, as reviewed commits; pull request A; pull request B if the

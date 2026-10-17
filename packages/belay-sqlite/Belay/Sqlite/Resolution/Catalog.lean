@@ -1,5 +1,6 @@
 import Belay.Sqlite.Declarations
 import Belay.Sqlite.Resolution.Syntax
+import Belay.Sqlite.Resolution.ColumnDefault
 
 set_option doc.verso true
 
@@ -22,8 +23,9 @@ structure CatalogColumn where
   notNull : Bool := false
   /-- The {lit}`ON CONFLICT` algorithm of the NOT NULL constraint; ABORT without one. -/
   notNullAlgorithm : ConflictAlgorithm := .abort
-  /-- The DEFAULT expression and its source spelling; omit it for no default. -/
-  defaultValue : Option Syntax.DefaultExpression := none
+  /-- The resolved DEFAULT with its source spelling ({name}`ColumnDefault`); omit it for no
+  default. -/
+  defaultValue : Option ColumnDefault := none
   deriving Repr, DecidableEq
 
 /-- One table entry. Keys are lists of column positions. Use
