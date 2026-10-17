@@ -22,6 +22,11 @@ def flagsValue : Value → Int
   | .text bytes | .blob bytes => (atoi64 bytes).1
   | .null => 0
 
+/-- Whether SQLite accepts the flags of {lit}`json_valid`: 1 to 15, the values of its four
+flag bits; any other value is the error {lit}`FLAGS parameter to json_valid() must be
+between 1 and 15`. -/
+def flagsAccepted (flags : Int) : Bool := 1 ≤ flags && flags ≤ 15
+
 /-- Whether a text argument is valid JSON for the flags: false when the flags accept no
 text (bits 1 and 2 clear) or the text is malformed; true for standard JSON
 ({name}`standardJson`); and true for JSON5 text only with bit 2. -/
@@ -30,12 +35,12 @@ def textValid (flags : Int) (bytes : List UInt8) : Bool :=
   else if (parseJsonText bytes).isNone then Bool.false
   else standardJson bytes || flags / 2 % 2 == 1
 
-/-- {lit}`json_valid(json, flags)`: the flags error for flags outside 1 to 15, checked
-first; then NULL for a NULL argument, and 1 or 0 for a text, INTEGER or REAL argument,
+/-- {lit}`json_valid(json, flags)`: the flags error for flags that SQLite does not accept
+({name}`flagsAccepted`), checked first; then NULL for a NULL argument, and 1 or 0 for a text, INTEGER or REAL argument,
 read as its text. A BLOB argument is not modelled. -/
 def jsonValid (json flags : Value) : Except JsonError Value :=
   let flags := flagsValue flags
-  if flags < 1 || flags > 15 then .error .badFlags
+  if !flagsAccepted flags then .error .badFlags
   else match json with
     | .null => .ok .null
     | .blob _ => .error .blobArgument

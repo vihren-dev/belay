@@ -22,7 +22,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "      .ok (.integer (if (valueText json).any (textValid flags ·) then 1 else 0))",
         "      if (valueText json).any (fun bytes => (parseJsonText bytes).isNone) then .error .malformed\n"
         "      else .ok (.integer (if (valueText json).any (textValid flags ·) then 1 else 0))"),
-    "json_valid_flags_ignored": (VALID, "  if flags < 1 || flags > 15 then .error .badFlags",
+    "json_valid_flags_ignored": (VALID, "  if !flagsAccepted flags then .error .badFlags",
         "  if false then .error .badFlags"),
     "json_object_length": (FUNCTIONS, "    | .textraw _ | .object _ => .integer 0",
         "    | .textraw _ => .integer 0\n    | .object members => .integer members.length"),
