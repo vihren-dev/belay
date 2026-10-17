@@ -26,7 +26,9 @@ def eachJsonReady (query : Resolved.Query) (database : Database) : Bool :=
       | .error _ => false
 
 /-- For every query without {lit}`json_each` sources and every database, no
-{lit}`json_each` source may fail ({name}`eachJsonReady`). -/
+{lit}`json_each` source may fail ({name}`eachJsonReady`). Proof sketch: with no source,
+{name}`Resolved.Query.eachInputs` gives no input for a present table and none for a
+missing one, so both cases of the table rows reduce to true. -/
 theorem eachJsonReady_plain (query : Resolved.Query) (database : Database) (plain : query.functions = []) :
     eachJsonReady query database = true := by
   unfold eachJsonReady Resolved.Query.eachInputs

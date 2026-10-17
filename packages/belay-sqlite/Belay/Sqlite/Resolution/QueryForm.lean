@@ -150,10 +150,8 @@ structure Join where
   deriving Repr, DecidableEq
 
 /-- A {lit}`json_each(json [, path])` source after the tables of {lit}`FROM` (ADR 0012,
-amendment 5, slice 6d), joined as an inner join: its arguments, which read the joined row
-before it, and its optional {lit}`ON` condition, which reads the joined row with its cells.
-For each row before it, it adds the rows of {lit}`json_each` over the values of its
-arguments. -/
+amendment 5, slice 6d), an inner join: its arguments over the joined row before it, and
+its optional {lit}`ON` condition over the joined row with its cells. -/
 structure EachSource where
   /-- The JSON argument. -/
   json : Expr

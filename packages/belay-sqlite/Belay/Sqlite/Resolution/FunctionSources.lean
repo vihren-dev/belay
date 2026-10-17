@@ -22,6 +22,10 @@ def eachColumns : List CatalogColumn :=
 {name}`eachColumns`. -/
 def eachHidden : List Nat := [8, 9]
 
+/-- The largest number of arguments of {lit}`json_each` that SQLite accepts: the JSON and
+the path ({lit}`too many arguments on json_each() - max 2`). -/
+def maximumEachArguments : Nat := 2
+
 /-- A {lit}`json_each` source of {lit}`FROM` before resolution: the path of its reference,
 the reference with its arguments, and its {lit}`ON` condition with the path of that
 condition. -/
@@ -38,13 +42,14 @@ structure FunctionItem where
 
 /-- The function item of a reference at {lit}`path`, or the issue of a form that the
 model does not describe: another function or no argument ({name}`RestrictionKind.tableFunction`),
-and three or more arguments, which SQLite refuses. A table has no item. -/
+and more than {name}`maximumEachArguments` arguments, which SQLite refuses. A table has no
+item. -/
 def functionItem (path : List Nat) (reference : Syntax.TableReference)
     (condition : Option (List Nat × Syntax.Expr)) : Option (Except ValueIssue FunctionItem) :=
   reference.arguments.map fun arguments =>
     if normalizeIdentifier reference.table != "json_each" || arguments.isEmpty then
       .error (.restriction path .tableFunction)
-    else if arguments.length > 2 then .error (.prepare .tooManyEachArguments)
+    else if arguments.length > maximumEachArguments then .error (.prepare .tooManyEachArguments)
     else .ok { path, reference, arguments, condition }
 
 /-- The item of the join at {lit}`item` when its source is a function: an inner join
@@ -73,7 +78,9 @@ def splitSources (source : Option Syntax.TableReference) (joins : List Syntax.Jo
   .ok (tables, joins.take tableCount, first ++ rest)
 
 /-- For every table reference and joins whose sources are all tables (no arguments),
-{name}`splitSources` gives the reference and all joins as tables and no function item. -/
+{name}`splitSources` gives the reference and all joins as tables and no function item.
+Proof sketch: by induction on the joins, {lit}`takeWhile` keeps every join, so no join is
+left for the function items; then {name}`splitSources` simplifies to its result. -/
 theorem splitSources_tables (source : Syntax.TableReference) (joins : List Syntax.Join)
     (table : source.arguments = none) (tables : joins.all (·.source.arguments.isNone) = true) :
     splitSources (some source) joins = .ok (some source, joins, []) := by
