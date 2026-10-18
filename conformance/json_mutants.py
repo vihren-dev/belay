@@ -30,7 +30,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "json_missing_path_error": (JSON + "Extract.lean", "  | .notFound => .ok none",
         "  | .notFound => .error .malformed"),
     "json_error_ignored": (SQLITE + "Execution.lean",
-        "      else if query.mustFail rows then .failure position .functionError database",
+        "      else if run.fault == .must then .failure position .functionError database",
         "      else if false then .failure position .functionError database"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the

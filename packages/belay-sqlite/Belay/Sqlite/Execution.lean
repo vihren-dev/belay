@@ -2,7 +2,7 @@ import Belay.Sqlite.Model
 import Belay.Sqlite.Resolution.ReadDefaults
 import Belay.Sqlite.Resolution.Resolved
 import Belay.Sqlite.QueryFunctions
-import Belay.Sqlite.JsonFaults
+import Belay.Sqlite.QueryRun
 
 set_option doc.verso true
 
@@ -101,10 +101,10 @@ CREATE TABLE at a position other than the end of the catalog (or over rows that 
 match the catalog), ADD COLUMN at a position without a table,
 and CREATE INDEX fail with {lean}`ExecutionError.unmodeled`: {lit}`resolve` gives
 no such statement for a conforming database, and the supported-subset check
-excludes CREATE INDEX. A query changes nothing; it fails with
-{lean}`ExecutionError.integerOverflow` when {name}`Resolved.Query.fails` holds for its
-source rows ({name}`Resolved.Query.source`), else with
-{lean}`ExecutionError.functionError` when {name}`Resolved.Query.mustFail` holds, and
+excludes CREATE INDEX. A query changes nothing: its run over its source rows
+({name}`Resolved.Query.run`, {name}`Resolved.Query.source`) fails with
+{lean}`ExecutionError.integerOverflow` when it overflows, else with
+{lean}`ExecutionError.functionError` when its fault is {lean}`Resolved.Fault.must`, and
 otherwise succeeds. Its result rows are not part of the outcome. SQL execution handles transaction control and writes
 separately. The default position is zero. -/
 def step (statement : Resolved.Statement) (database : Database) (position : Nat := 0) : Outcome :=
@@ -128,8 +128,9 @@ def step (statement : Resolved.Statement) (database : Database) (position : Nat 
   | .prepareError error => .failure position (.prepare error) database
   | .query query => match query.source database with
     | some rows =>
-      if query.fails rows then .failure position .integerOverflow database
-      else if query.mustFail rows then .failure position .functionError database
+      let run := query.run rows
+      if run.overflow then .failure position .integerOverflow database
+      else if run.fault == .must then .failure position .functionError database
       else .success database
     | none => .success database
   | .createIndex .. | .begin | .commit | .rollback | .insert .. | .upsert .. | .update .. | .delete .. | .clocked .. =>

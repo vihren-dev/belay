@@ -1,3 +1,4 @@
+import Belay.Sqlite.QueryEval
 import Belay.Sqlite.Resolution.Examples
 
 set_option doc.verso true
@@ -147,7 +148,7 @@ def bare (columns : List ResultColumn) (filter : Option Expr := none) (groupBy :
 
 /-- The rows of a resolved query over its source of one row with no cells. -/
 def bareRows (statement : Syntax.Statement) : Option (List (List Value)) :=
-  (queryOf statement).map fun query => query.run [[]]
+  (queryOf statement).map fun query => query.results [[]]
 
 /-- The condition {lit}`1 = 0`, which is false. -/
 def never : Expr := .compare .eq (.numeric "1") (.numeric "0")

@@ -27,8 +27,8 @@ because the model does not describe when SQLite evaluates a constant. -/
 def constantCell (dqs : Bool) (expression : Syntax.Expr) : Except ValueIssue RowCell :=
   resolveOperand dqs [] true expression >>= fun operand =>
     if operand.1.readsClock then
-      if operand.1.callsJson then .error (.restriction [] .constantFunctionError) else .ok (.null, some operand.1)
-    else if operand.1.mayFail [] then .error (.restriction [] .constantFunctionError)
+      if operand.1.any Resolved.Expr.isJsonCall then .error (.restriction [] .constantFunctionError) else .ok (.null, some operand.1)
+    else if operand.1.mayFailOn [] then .error (.restriction [] .constantFunctionError)
     else .ok (operand.1.eval [], none)
 
 /-- The cell of an omitted column: its default ({name}`defaultValue`) stored with the
