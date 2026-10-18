@@ -46,7 +46,7 @@ theorem payload {database : Database} (conforms : Conforms Generated.profile Sch
   obtain ⟨table, present, shape, valid⟩ := conforms.table (position := 0) (shape := SchemaBinding.history)
     (by decide +kernel)
   refine ⟨table, present, shape, valid, ?_, ?_⟩
-  · simp only [runSql_eq, script_bound, runSqlFrom_cons, advance_addColumn, advance_createTable, advance_prepareError,
+  · simp only [runSql_eq, script_bound, runSqlFrom_cons, advance_addColumn,
       effect_addColumn_ok 0 present (column := added) (value := .null) rfl rfl rfl, SqlState.publish_ok, runSqlFrom_nil]
     rfl
   · rw [next_bound]

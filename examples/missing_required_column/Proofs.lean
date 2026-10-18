@@ -20,10 +20,9 @@ theorem migrationViolated : ¬Generated.expected := by
   have created := effect_createTable_ok 0 database "audit" audit 1
     (by simp [same, Generated.startCatalog]) (by simp [same, length, Generated.startCatalog])
   rw [script_bound, runSqlAt_of_readsClock _ _ _ (by decide)] at run
-  simp only [runSql_eq, runSqlFrom_cons, advance_addColumn, advance_createTable, advance_prepareError, created, SqlState.publish_ok,
-    runSqlFrom_nil] at run
-  simp only [SqlState.finish] at run
-  subst run
+  simp only [runSql_eq, runSqlFrom_cons, advance_createTable, created, SqlState.publish_ok, runSqlFrom_nil,
+    SqlState.finish] at run
+  cases run
   rw [same]
   show ¬((Generated.startCatalog.createTable "audit" audit).columnsOf "invoices" =
     some [{ name := "amount", declaredType := some "INTEGER" }, { name := "note", declaredType := some "TEXT" }])

@@ -93,7 +93,7 @@ theorem script_runs (admitted : Admitted profile startCatalog (fun _ => True) da
   have added := effect_addColumn_ok 0 present (column := note) (value := .null) rfl rfl rfl
   have created := effect_createTable_ok 0 (database.addColumn 0 note .null) "audit" { columns := [message] } 1
     middleLength.1.symm (middleLength.2.trans middleLength.1.symm)
-  simp only [runSql_eq, script, runSqlFrom_cons, advance_addColumn, advance_createTable, advance_prepareError, added, created, SqlState.publish_ok,
+  simp only [runSql_eq, script, runSqlFrom_cons, advance_addColumn, advance_createTable, added, created, SqlState.publish_ok,
     runSqlFrom_nil]
   rfl
 
