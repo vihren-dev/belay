@@ -1,11 +1,12 @@
 import Belay.Sqlite.Resolution.Values
 import Belay.Sqlite.Resolution.Scope
 import Belay.Sqlite.Resolution.Syntax
+import Belay.Sqlite.Resolution.MergedNames
 
 set_option doc.verso true
 
-/-! The left side of a generated {lit}`USING` or {lit}`NATURAL` equality (ADR 0012,
-amendments 2 and 3). Without right and full joins in the {lit}`FROM`, it is the left-most
+/-! The left side of the equality of a {lit}`USING` or {lit}`NATURAL` join (ADR 0012,
+amendments 2 and 3; ADR 0013, D5). Without right and full joins in the {lit}`FROM`, it is the left-most
 left column of the name (slice 4b). With one anywhere, also after the join, SQLite
 compares the coalesce of every left column of the name, and requires every left table
 after the first with the name to merge it by its own join, else
@@ -35,21 +36,20 @@ def usingReferenceChecked (left : Scope) (name : String) : Except ValueIssue Str
   if ((left.namedColumns name).drop 1).all (·.2.2) then .ok name
   else .error (.prepare (.ambiguousUsingReference name))
 
-/-- The coalesce of qualified columns, as written syntax: {lit}`COALESCE(s.c, …)` of the
-first column and the others in order; one column is its qualified name. -/
-def qualifiedCoalesce : String × String × Bool → List (String × String × Bool) → Syntax.Expr
-  | (source, column, _), [] => .qualified source column
-  | (source, column, _), next :: rest =>
-    .call "coalesce" [.qualified source column, qualifiedCoalesce next rest]
+/-- The positions in the joined row of the scope of every column of the folded name, in
+order. -/
+def Scope.namedPositions (scope : Scope) (name : String) : List Nat :=
+  (scope.foldl (fun (offset, found) source =>
+    (offset + source.columns.length, found ++ ((columnPosition source.columns name).map (offset + ·)).toList))
+    (0, [])).2
 
-/-- The left side of the generated equality of a merged name, as written syntax: with
-{lit}`coalesced` (a right or full join in the {lit}`FROM`), the coalesce of every left
-column of the name ({name}`qualifiedCoalesce`); else the left-most left column
-({name}`Scope.leftMost`). None when the left input has no column of the name. -/
-def mergedLeft (coalesced : Bool) (left : Scope) (name : String) : Option Syntax.Expr :=
-  if coalesced then match left.namedColumns name with
-    | [] => none
-    | first :: rest => some (qualifiedCoalesce first rest)
-  else (left.leftMost name).map fun (source, column) => .qualified source column
+/-- The left side of the equality of a merged name, resolved, with its affinity
+({name}`Scope.nameOperand`): with {lit}`coalesced` (a right or full join in the
+{lit}`FROM`), every left column of the name, so their coalesce when there are several;
+else the left-most left column. None when the left input has no column of the name. -/
+def mergedLeft (coalesced : Bool) (left : Scope) (name : String) : Option Operand :=
+  match left.namedPositions name with
+  | [] => none
+  | first :: rest => some (left.nameOperand (if coalesced then first :: rest else [first]))
 
 end Belay.Sqlite

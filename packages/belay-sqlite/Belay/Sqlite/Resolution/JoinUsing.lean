@@ -7,9 +7,9 @@ amendment 3; slices 4b and 4d). Each is its join with a generated {lit}`ON` cond
 each merged name {lit}`c`, {lit}`left.c = right.c`, where {lit}`left.c` is the left side
 of {lit}`MergedLeft.lean`. The right column of each pair is merged
 ({name}`Belay.Sqlite.ScopeSource.merged`), and the join's kind gives the
-{name}`Belay.Sqlite.MergeRule` of unqualified names. The condition is written syntax,
-so it resolves with the comparison rules and restrictions of a written {lit}`ON`
-condition. -/
+{name}`Belay.Sqlite.MergeRule` of unqualified names. The condition is resolved from the
+positions of the merged columns, with the comparison affinity that the same written
+{lit}`ON` condition would have. -/
 
 namespace Belay.Sqlite
 
@@ -41,35 +41,58 @@ def mergedNames (coalesced : Bool) (left : Scope) (right : ScopeSource) (natural
     | none => .ok none
     | some names => (names.mapM (usingNameChecked coalesced left right)).map some
 
-/-- The generated condition of the merged names: the conjunction, in order, of
-{lit}`left = right.c` for each name {lit}`c`, with the left side of {name}`mergedLeft`
-and the qualified column of the joined source; none for no name, which is a cross
-join. -/
-def mergedCondition (coalesced : Bool) (left : Scope) (right : ScopeSource) (names : List String) : Option Syntax.Expr :=
+/-- The condition of a join before the written {lit}`ON` condition resolves: none, the
+written condition with the path of its issues, or the condition of the merged names of
+{lit}`USING` or {lit}`NATURAL`, which is resolved already. -/
+inductive JoinCondition where
+  /-- No condition: a cross join. -/
+  | none
+  /-- The written {lit}`ON` condition, with the path of its issues. -/
+  | written (path : List Nat) (term : Syntax.Expr)
+  /-- The resolved condition of the merged names ({lit}`mergedCondition`). -/
+  | merged (condition : Resolved.Expr)
+
+/-- The written {lit}`ON` condition of the join at {lit}`item`, at child 2. -/
+def JoinCondition.ofWritten (item : Nat) : Option Syntax.Expr → JoinCondition
+  | Option.none => .none
+  | some term => .written [2, item, 2] term
+
+/-- The condition of the merged names, or none for no name. -/
+def JoinCondition.ofMerged : Option Resolved.Expr → JoinCondition
+  | Option.none => .none
+  | some condition => .merged condition
+
+/-- The condition of the merged names, resolved: the conjunction, in order, of
+{lit}`left = right.c` for each name {lit}`c`, with the left side of {name}`mergedLeft` and
+the column of the joined source after the left input, compared with their affinity
+({name}`comparisonAffinity`); none for no name, which is a cross join. It is the condition
+that SQLite generates, so it has the comparison rules of a written {lit}`ON` condition. -/
+def mergedCondition (coalesced : Bool) (left : Scope) (right : ScopeSource) (names : List String) :
+    Option Resolved.Expr :=
+  let offset := left.foldl (fun width source => width + source.columns.length) 0
   let equalities := names.filterMap fun name => do
-    let leftSide ← mergedLeft coalesced left name
-    let position ← columnPosition right.columns name
-    let joined ← right.columns[position]?
-    some (Syntax.Expr.compare .eq leftSide (.qualified right.name joined.name))
+    let (leftSide, affinity) ← mergedLeft coalesced left name
+    let index ← columnPosition right.columns name
+    let joined ← right.columns[index]?
+    some (Resolved.Expr.compare .eq (comparisonAffinity affinity (some joined.affinity)) leftSide
+      (.column (offset + index)))
   match equalities with
   | [] => none
   | first :: rest => some (rest.foldl .and first)
 
 /-- The joined source with its merged columns and the merge rule of its join, which also
 tells later expansions of {lit}`*` whether a right or full join follows, and the
-join's condition with the path of its issues: the written {lit}`ON` condition at child 2,
-or the condition of the merged names ({name}`mergedCondition`) at child 3 for
-{lit}`USING` and child 0 for {lit}`NATURAL`. The left input is every earlier source;
-{lit}`coalesced` says whether the {lit}`FROM` has a right or full join; {lit}`item` is the
-join's position. -/
+join's condition: the written {lit}`ON` condition at child 2, or the condition of the merged
+names ({name}`mergedCondition`) for {lit}`USING` and {lit}`NATURAL`. The left input is every
+earlier source; {lit}`coalesced` says whether the {lit}`FROM` has a right or full join;
+{lit}`item` is the join's position. -/
 def mergeJoin (left : Scope) (right : ScopeSource) (natural coalesced : Bool) (rule : MergeRule) (item : Nat)
-    (join : Syntax.Join) : Except ValueIssue (ScopeSource × Option (List Nat × Syntax.Expr)) := do
+    (join : Syntax.Join) : Except ValueIssue (ScopeSource × JoinCondition) := do
   match ← mergedNames coalesced left right natural join with
-  | none => .ok ({ right with mergeRule := rule }, join.condition.map ([2, item, 2], ·))
+  | none => .ok ({ right with mergeRule := rule }, .ofWritten item join.condition)
   | some names =>
     let merged := names.filterMap (columnPosition right.columns ·)
-    .ok ({ right with merged, mergeRule := rule },
-      (mergedCondition coalesced left right names).map ((if natural then [2, item, 0] else [2, item, 3]), ·))
+    .ok ({ right with merged, mergeRule := rule }, .ofMerged (mergedCondition coalesced left right names))
 
 /-- For every left scope, joined source, flag, rule, item and join that has neither
 {lit}`NATURAL` nor {lit}`USING`, {name}`mergeJoin` merges no column, records the rule, and
@@ -78,7 +101,7 @@ slice 4. -/
 theorem mergeJoin_written (left : Scope) (right : ScopeSource) (coalesced : Bool) (rule : MergeRule) (item : Nat)
     (join : Syntax.Join) (noUsing : join.usingColumns = none) :
     mergeJoin left right false coalesced rule item join =
-      .ok ({ right with mergeRule := rule }, join.condition.map ([2, item, 2], ·)) := by
+      .ok ({ right with mergeRule := rule }, .ofWritten item join.condition) := by
   simp [mergeJoin, mergedNames, noUsing, bind, Except.bind]
 
 /-- For every left scope, joined source and list of names that each name a column of
@@ -101,13 +124,13 @@ theorem usingNames_checked (left : Scope) (right : ScopeSource) (names : List St
 each name a column of the joined source and of the left input, in a {lit}`FROM` without
 right and full joins, {name}`mergeJoin` merges the joined columns of those names under
 the rule and gives the conjunction of their equalities with the left-most left columns
-({name}`mergedCondition`) at child 3, as in slice 4b. -/
+({name}`mergedCondition`), as in slice 4b. -/
 theorem mergeJoin_using (left : Scope) (right : ScopeSource) (rule : MergeRule) (item : Nat) (join : Syntax.Join)
     (names : List String) (written : join.usingColumns = some names)
     (both : ∀ name ∈ names, (columnPosition right.columns name).isSome ∧ (left.leftMost name).isSome) :
     mergeJoin left right false false rule item join =
       .ok ({ right with merged := names.filterMap (columnPosition right.columns ·), mergeRule := rule },
-        (mergedCondition false left right names).map ([2, item, 3], ·)) := by
+        .ofMerged (mergedCondition false left right names)) := by
   unfold mergeJoin mergedNames
   simp only [Bool.false_eq_true, ite_false, written]
   rw [usingNames_checked left right names both]
@@ -117,14 +140,14 @@ theorem mergeJoin_using (left : Scope) (right : ScopeSource) (rule : MergeRule) 
 {lit}`ON` and {lit}`USING`, in a {lit}`FROM` without right and full joins, {name}`mergeJoin`
 merges the columns of the joined source whose names the left input also has, under the
 rule, and gives the conjunction of their equalities with the left-most left columns
-({name}`mergedCondition`) at child 0, as in slice 4b; with no common name, there is no
-condition, a cross join. -/
+({name}`mergedCondition`), as in slice 4b; with no common name, there is no condition, a
+cross join. -/
 theorem mergeJoin_natural (left : Scope) (right : ScopeSource) (rule : MergeRule) (item : Nat) (join : Syntax.Join)
     (noOn : join.condition = none) (noUsing : join.usingColumns = none) :
     let names := right.columns.filterMap fun column => (left.leftMost column.name).map fun _ => column.name
     mergeJoin left right true false rule item join =
       .ok ({ right with merged := names.filterMap (columnPosition right.columns ·), mergeRule := rule },
-        (mergedCondition false left right names).map ([2, item, 0], ·)) := by
+        .ofMerged (mergedCondition false left right names)) := by
   simp [mergeJoin, mergedNames, noOn, noUsing, bind, Except.bind]
 
 end Belay.Sqlite

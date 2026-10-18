@@ -110,7 +110,10 @@ def resolveFunctions (dqs : Bool) (scope : Scope) (items : List FunctionItem) :
       let (resolved, _) ← (resolveOperand dqs scope true argument).mapError (·.under (item.path ++ [2, position]))
       if resolved.readsBelow bound then .ok resolved
       else .error (.restriction (item.path ++ [2, position]) .laterSourceInArguments)) item.arguments
-    let condition ← resolveJoinCondition dqs scope (firstFunction + index - 1) item.condition
+    let condition ← resolveJoinCondition dqs scope (firstFunction + index - 1)
+      (match item.condition with
+        | some (path, term) => .written path term
+        | none => .none)
     match arguments with
     | json :: path => .ok { kind := .inner, source := .each json path.head?, condition }
     | [] => .error (.restriction item.path .tableFunction)) items
@@ -119,7 +122,7 @@ def resolveFunctions (dqs : Bool) (scope : Scope) (items : List FunctionItem) :
 with the function items after them; two sources with the same folded name are a model
 restriction, as for tables. -/
 def resolveSources (catalog : Catalog) (source : Option Syntax.TableReference) (joins : List Syntax.Join) :
-    Except ValueIssue (Option Nat × List (Nat × Option (List Nat × Syntax.Expr)) × Scope × List FunctionItem) := do
+    Except ValueIssue (Option Nat × List (Nat × Resolved.JoinKind × JoinCondition) × Scope × List FunctionItem) := do
   let (tables, tableJoins, items) ← splitSources source joins
   let (first, joined, scope) ← resolveTables catalog tables tableJoins
   let full := scope ++ items.map FunctionItem.source

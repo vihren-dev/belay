@@ -121,7 +121,7 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
       | some term =>
         if namesAlias scope (aliases.filterMap id) term then throw (aliasInExpression.under [3])
         else some <$> condition [3] (resolveOperand dqs scope true term)
-    let conditions ← resolveAll (fun item (_, term) => resolveJoinCondition dqs scope item term) tables
+    let conditions ← resolveAll (fun item (_, _, term) => resolveJoinCondition dqs scope item term) tables
     let functions ← resolveFunctions dqs scope items
     let aggregate := !groupBy.isEmpty || outputs.any fun (output, _) => match output with
       | .aggregate _ => true
@@ -161,8 +161,8 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
     if offsetValue.any (· < 0) then throw (.restriction [7] .negativeOffset)
     if windowSkipsFailure groupBy limit offset (outputs.map (·.1)) then
       throw (.restriction [6] .windowedGroupSum)
-    let resolvedJoins := (joins.zip ((tables.map Prod.fst).zip conditions)).map fun (join, table, on) =>
-      ({ kind := join.resolvedKind, source := .table table, condition := on } : Resolved.QuerySource)
+    let resolvedJoins := (tables.zip conditions).map fun ((table, kind, _), on) =>
+      ({ kind, source := .table table, condition := on } : Resolved.QuerySource)
     let firstSource := first.toList.map Resolved.QuerySource.first
     return { sources := firstSource ++ resolvedJoins ++ functions, filter := condition, aggregate, groupBy := terms,
              columns := outputs.map (·.1), names := outputs.map (·.2), orderBy := order,

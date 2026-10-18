@@ -67,13 +67,16 @@ def joinU : Resolved.QuerySource :=
 -- 65 tables are SQLite's limit error.
 #guard resolvedOne [.star] (table "t") ((List.range 64).map fun item =>
   joined [] { table := "t", alias := some s!"t{item}" }) == some (.prepareError .tooManyTables)
--- Another operator and two sources with the same name are restrictions.
-#guard restrictedOne [.star] (table "t") [joined ["OUTER", "LEFT"] (table "u") (some onA)]
+-- An operator that SQLite refuses (`unknown join type`) and two sources with the same name
+-- are restrictions.
+#guard restrictedOne [.star] (table "t") [joined ["LEFT", "INNER"] (table "u") (some onA)]
 #guard restrictedOne [.star] (table "t") [joined ["INNER"] (table "t")]
--- Lean reads the operator keywords without ASCII case.
+-- Lean reads the operator keywords as SQLite's sqlite3JoinType does: without ASCII case, in
+-- any order and repeated (checked natively).
 #guard joinOperator ["Left", "outer"] == some (.left, false)
-#guard joinOperator ["NATURAL", "cross"] == some (.inner, true)
-#guard joinOperator ["left", "inner"] == none
+#guard joinOperator ["OUTER", "LEFT"] == some (.left, false) && joinOperator ["left", "left"] == some (.left, false)
+#guard joinOperator ["NATURAL", "cross"] == some (.inner, true) && joinOperator ["outer", "natural", "full"] == some (.full, true)
+#guard joinOperator ["left", "inner"] == none && joinOperator ["outer"] == none && joinOperator ["sideways"] == none
 
 /-- A table of two rows, with {lit}`a` 1 and 2. -/
 def left : Table :=
