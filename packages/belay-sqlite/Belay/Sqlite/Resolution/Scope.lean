@@ -72,40 +72,6 @@ def Scope.matches (scope : Scope) (name : String) : List Nat :=
       (!source.merged.contains ·)).map (offset + ·)).toList))
     (0, [])).2
 
-/-- The offset in the concatenated row and the columns of the first source whose folded
-name is the given name, where the first source of the scope starts at {lit}`offset`. -/
-def Scope.sourceFrom (name : String) (offset : Nat) : Scope → Option (Nat × List CatalogColumn)
-  | [] => none
-  | source :: rest =>
-    if normalizeIdentifier source.name == normalizeIdentifier name then some (offset, source.columns)
-    else Scope.sourceFrom name (offset + source.columns.length) rest
-
-/-- The offset in the concatenated row and the columns of the first source whose folded
-name is the given name, as {lit}`source.*` and qualified names need. -/
-def Scope.source? (scope : Scope) (name : String) : Option (Nat × List CatalogColumn) :=
-  Scope.sourceFrom name 0 scope
-
-/-- The offset in the concatenated row and the first source whose folded name is the
-given name, where the first source of the scope starts at {lit}`offset`. -/
-def Scope.recordFrom (name : String) (offset : Nat) : Scope → Option (Nat × ScopeSource)
-  | [] => none
-  | source :: rest =>
-    if normalizeIdentifier source.name == normalizeIdentifier name then some (offset, source)
-    else Scope.recordFrom name (offset + source.columns.length) rest
-
-/-- The columns of {lit}`source.*` with their positions in the concatenated row: every
-column of the first source with the name that is not hidden ({name}`ScopeSource.hidden`),
-merged columns included; none when no source has the name. -/
-def Scope.starColumns? (scope : Scope) (name : String) : Option (List (Nat × CatalogColumn)) :=
-  (Scope.recordFrom name 0 scope).map fun (offset, source) =>
-    ((source.columns.mapIdx fun index column => (index, column)).filter (!source.hidden.contains ·.1)).map
-      fun (index, column) => (offset + index, column)
-
-/-- The position in the concatenated row of {lit}`source.column`, or none when no source
-has the name or the source has no such column. -/
-def Scope.qualified (scope : Scope) (source column : String) : Option Nat :=
-  (scope.source? source).bind fun (offset, columns) => (columnPosition columns column).map (offset + ·)
-
 /-- The resolution of an unqualified name over a scope: no column, two columns that no
 join merges, or the position of the first column of the name with the positions whose
 coalesce the name reads; one position is that column itself. -/
@@ -143,6 +109,37 @@ of the folded name gives that column; a later one changes the result only when i
 merged the name; a later one that did not merge it makes the name ambiguous. -/
 def Scope.resolveName (scope : Scope) (name : String) : NameResolution :=
   (scope.foldl (Scope.resolveStep name) (0, .missing)).2
+
+/-- Whether a source of the scope has the folded name. -/
+def Scope.hasSource (scope : Scope) (name : String) : Bool :=
+  scope.any fun source => normalizeIdentifier source.name == normalizeIdentifier name
+
+/-- One step of {lit}`Scope.resolveQualified`: {name}`Scope.resolveStep` for a source with the
+folded name {lit}`sourceName`, and only the offset of the next source for any other. -/
+def Scope.qualifiedStep (sourceName column : String) (state : Nat × NameResolution) (source : ScopeSource) :
+    Nat × NameResolution :=
+  if normalizeIdentifier source.name == normalizeIdentifier sourceName then Scope.resolveStep column state source
+  else (state.1 + source.columns.length, state.2)
+
+/-- Resolve the qualified name {lit}`source.column` as SQLite does (checked on native 3.51.0):
+as an unqualified name ({name}`Scope.resolveName`) over only the sources with the folded
+name {lit}`source`, so a column of two such sources that no join merged is SQLite's
+{lit}`ambiguous column name`, and merged columns are visible. -/
+def Scope.resolveQualified (scope : Scope) (source column : String) : NameResolution :=
+  (scope.foldl (Scope.qualifiedStep source column) (0, .missing)).2
+
+/-- The columns of {lit}`source.*` with their positions in the concatenated row: every
+column that is not hidden ({name}`ScopeSource.hidden`) of every source with the folded
+name, in order, merged columns included; none when no source has the name. -/
+def Scope.starColumns? (scope : Scope) (name : String) : Option (List (Nat × CatalogColumn)) :=
+  if scope.hasSource name then
+    some (scope.foldl (fun (offset, found) source =>
+      (offset + source.columns.length,
+        if normalizeIdentifier source.name == normalizeIdentifier name then
+          found ++ ((source.columns.mapIdx fun index column => (index, column)).filter (!source.hidden.contains ·.1)).map
+            fun (index, column) => (offset + index, column)
+        else found)) (0, [])).2
+  else none
 
 /-- Whether a name resolution reads only its first column: missing, ambiguous, or found
 with the one position of its first column. -/

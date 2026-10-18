@@ -224,7 +224,6 @@ should shrink.
 | Id | Restriction | Introduced by |
 | --- | --- | --- |
 | `rowid-name` | A rowid name that is not a column is not modeled in an expression over a table; in VALUES it resolves as any other name | ADR 0012 slice 3a; extended 2026-10-14 |
-| `duplicate-source` | Two sources of a query with the same name are not modeled | ADR 0012 amendment 2 (question 3) |
 
 ## Execution
 

@@ -4,8 +4,8 @@ import Belay.Sqlite.QueryRun
 set_option doc.verso true
 
 /-! Examples of the source list in written order (ADR 0013, D5), checked by {lit}`#guard`:
-{lit}`json_each` before a table, {lit}`LEFT JOIN json_each` with a correlated argument, and
-the forms that stay restricted. Each row list was checked on native SQLite 3.51.0 with
+{lit}`json_each` before a table, {lit}`LEFT JOIN json_each` with a correlated argument, the
+forms that stay restricted, and two sources with the same name. Each row list was checked on native SQLite 3.51.0 with
 the same schema and rows. -/
 
 namespace Belay.Sqlite.Resolution.SourceListExamples
@@ -55,5 +55,33 @@ def named (source column : String) : ResultColumn := .expression (qualified sour
 #guard restrictedOne [.star] (each "e" (qualified "t" "b")) [joined ["NATURAL"] (table "u")]
 -- An argument that reads a later source is restricted, also when the later source is a table.
 #guard restrictedOne [.star] (each "e" (qualified "t" "b")) [joined [] (table "t")]
+
+/-- The resolution of {lit}`SELECT results FROM t, t`, two sources with the same name. -/
+def overTwice (results : List ResultColumn) (joins : List Join := [joined [] (table "t")]) : Option Resolved.Statement :=
+  resolvedOne results (table "t") joins
+
+-- `SELECT count(*) FROM t, t` counts every pair of rows: 4.
+#guard rowsOf [.expression (.callStar "count") none "count(*)"] (table "t") [joined [] (table "t")] ==
+  some [[.integer 4]]
+-- Over two sources named `t`, a name, a qualified name, `t.*` and `*` are ambiguous; the
+-- expansion of a star names the schema, the source and the declared column.
+#guard overTwice [.expression (.identifier "a" .none) none "a"] == some (.prepareError (.ambiguousColumn "a"))
+#guard overTwice [.expression (qualified "t" "a") none "t.a"] == some (.prepareError (.ambiguousColumn "t.a"))
+#guard overTwice [.sourceStar "t"] == some (.prepareError (.ambiguousColumn "main.t.a"))
+#guard overTwice [.star] == some (.prepareError (.ambiguousColumn "main.t.a"))
+-- A source is named by its alias, else by the table name as declared: `FROM T, t`.
+#guard resolvedOne [.star] (table "T") [joined [] (table "t")] == some (.prepareError (.ambiguousColumn "main.t.a"))
+-- `FROM t JOIN t USING (a)`: `t.a` is the left column, `t.b` and `*` are ambiguous.
+#guard (match overTwice [.expression (qualified "t" "a") none "t.a"] [{ joined [] (table "t") with usingColumns := some ["a"] }] with
+  | some (.query query) => query.columns == [.scalar (.column 0)]
+  | _ => false)
+#guard overTwice [.expression (qualified "t" "b") none "t.b"] [{ joined [] (table "t") with usingColumns := some ["a"] }] ==
+  some (.prepareError (.ambiguousColumn "t.b"))
+#guard overTwice [.star] [{ joined [] (table "t") with usingColumns := some ["a"] }] ==
+  some (.prepareError (.ambiguousColumn "main.t.b"))
+-- `SELECT t.c FROM t, u AS t`: only the second source named `t` has `c`.
+#guard (match resolvedOne [.expression (qualified "t" "c") none "t.c"] (table "t") [joined [] { table := "u", alias := some "t" }] with
+  | some (.query query) => query.columns == [.scalar (.column 3)]
+  | _ => false)
 
 end Belay.Sqlite.Resolution.SourceListExamples

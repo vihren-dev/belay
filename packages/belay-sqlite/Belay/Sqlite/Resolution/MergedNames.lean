@@ -1,5 +1,6 @@
 import Belay.Sqlite.Resolution.Scope
 import Belay.Sqlite.Resolution.QueryAffinity
+import Belay.Sqlite.Resolution.Values
 
 set_option doc.verso true
 
@@ -36,14 +37,23 @@ def Scope.sourceOf (scope : Scope) (position : Nat) : Nat :=
 {lit}`x.*`, as SQLite expands it (checked on native 3.51.0): when the column's source is
 to the left of a right or full join and a later join merges the column's name, the
 expansion is the unqualified name ({name}`Scope.resolveName`), so the column shows the
-right column or the coalesce of a merged pair; otherwise the column itself. -/
-def Scope.starOperand (scope : Scope) (position : Nat) (column : CatalogColumn) : Operand :=
-  let later := scope.drop (scope.sourceOf position + 1)
+right column or the coalesce of a merged pair; otherwise the qualified name of the column
+({name}`Scope.resolveQualified`), which is the column itself unless two sources have the
+name, and then SQLite's {lit}`ambiguous column name: main.x.c` for a column that no join
+merged. -/
+def Scope.starOperand (scope : Scope) (position : Nat) (column : CatalogColumn) : Except ValueIssue Operand :=
+  let index := scope.sourceOf position
+  let later := scope.drop (index + 1)
   let rightAfter := later.any fun source => source.mergeRule != .keepLeft
   let mergedLater := later.any fun source => (columnPosition source.columns column.name).any (source.merged.contains ·)
   if rightAfter && mergedLater then match scope.resolveName column.name with
-    | .found _ reads => scope.nameOperand reads
-    | .missing | .ambiguous => scope.nameOperand [position]
-  else scope.nameOperand [position]
+    | .found _ reads => .ok (scope.nameOperand reads)
+    | .missing | .ambiguous => .ok (scope.nameOperand [position])
+  else
+    let name := (scope[index]?.map (·.name)).getD ""
+    match scope.resolveQualified name column.name with
+    | .found _ reads => .ok (scope.nameOperand reads)
+    | .missing => .ok (scope.nameOperand [position])
+    | .ambiguous => .error (.prepare (.ambiguousColumn s!"main.{name}.{column.name}"))
 
 end Belay.Sqlite

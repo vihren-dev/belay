@@ -30,11 +30,11 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "        join.condition.all fun condition => truthy (condition.eval joined)"),
     "unqualified_takes_first_source": (SCOPE, "      else .ambiguous)", "      else .found first reads)"),
     "alias_keeps_table_name": (SOURCES,
-        "{ name := reference.alias.getD reference.table, columns := table.columns }",
-        "{ name := reference.table, columns := table.columns }"),
+        "    .ok (position, { name := reference.alias.getD declared, columns := table.columns })",
+        "    .ok (position, { name := declared, columns := table.columns })"),
     "star_omits_joined_columns": (QUERIES,
-        "      .ok (scope.visible.map fun (position, defined) =>",
-        "      .ok ((Scope.visible (scope.take 1)).map fun (position, defined) =>"),
+        "      scope.visible.mapM fun (position, defined) =>",
+        "      (Scope.visible (scope.take 1)).mapM fun (position, defined) =>"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
 replacement. The names follow the list in the amendment: a left join drops the

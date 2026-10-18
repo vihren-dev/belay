@@ -25,13 +25,11 @@ inductive RestrictionRegistry where
   deriving Repr, DecidableEq
 
 /-- The registry of each restriction kind. The *unrepresented* kinds and their reasons:
-* {lit}`rowidName`: a resolved expression has no read of the physical rowid.
-* {lit}`duplicateSource`: the names of a query over two sources with the same name are
-  not yet resolved as SQLite resolves them (ADR 0013, D5). -/
+* {lit}`rowidName`: a resolved expression has no read of the physical rowid. -/
 def RestrictionKind.registry : RestrictionKind → RestrictionRegistry
   | .rowDependentKey | .conflictWithoutTarget | .mixedConflictAlgorithms | .windowedGroupSum
   | .constantFunctionError => .undecided
-  | .rowidName | .duplicateSource => .unrepresented
+  | .rowidName => .unrepresented
   | .schemaStatement | .engineTable | .rowidColumnName | .createTableConstraints
   | .unmodeledDefault | .createIndexRuns | .addColumnConstraint | .constraintAlgorithmUpdate
   | .replaceDefault | .insertColumnTwice | .updateColumnTwice | .joinOperator | .systemTable

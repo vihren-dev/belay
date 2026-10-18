@@ -53,9 +53,6 @@ inductive RestrictionKind where
   {lit}`INNER OUTER JOIN`, is not modeled: the model has no such prepare error (ADR 0012,
   amendment 2; ADR 0013, amendment 2). -/
   | joinOperator
-  /-- Two sources of a query with the same name are not modeled (ADR 0012, amendment 2,
-  owner decision on question 3). -/
-  | duplicateSource
   /-- An {lit}`ON` condition that names a source joined after it is not modeled: SQLite
   moves it to {lit}`WHERE` for a {lit}`FROM` without outer joins and refuses it otherwise,
   with a prepare error that the model does not have (ADR 0012, amendment 2; ADR 0013,

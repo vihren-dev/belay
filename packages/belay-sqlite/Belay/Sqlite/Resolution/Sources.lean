@@ -32,20 +32,23 @@ end
 ({name}`Scope.starOperand`) and their names, or SQLite's {lit}`no such table: source` when no source has the name. -/
 def sourceStarColumns (scope : Scope) (source : String) : Except ValueIssue (List (Resolved.Expr × String)) :=
   match scope.starColumns? source with
-  | some columns => .ok (columns.map fun (position, column) => ((scope.starOperand position column).1, column.name))
+  | some columns => columns.mapM fun (position, column) => (·.1, column.name) <$> scope.starOperand position column
   | none => .error (.prepare (.noSuchSource source))
 
 /-- The number of tables in a join that SQLite accepts ({lit}`SQLITE_MAX_SRCLIST`). -/
 def maximumJoinTables : Nat := 64
 
 /-- The source of one table reference at {lit}`path`: the table's catalog position and the
-source with its name (the alias, else the table name). A missing table is SQLite's
+source with its name (the alias, else the table name as declared, as SQLite names it in
+messages). A missing table is SQLite's
 {lit}`no such table: %s`; one of SQLite's own tables is a model restriction, as in a
 query of one table. -/
 def resolveTableReference (catalog : Catalog) (path : List Nat) (reference : Syntax.TableReference) :
     Except ValueIssue (Nat × ScopeSource) :=
   match catalog.findTable reference.table with
-  | some (position, table) => .ok (position, { name := reference.alias.getD reference.table, columns := table.columns })
+  | some (position, table) =>
+    let declared := (catalog[position]?.map (·.name)).getD reference.table
+    .ok (position, { name := reference.alias.getD declared, columns := table.columns })
   | none =>
     if reservedName reference.table then .error (.restriction path .systemTable)
     else .error (.prepare (.noSuchTable reference.table))

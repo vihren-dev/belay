@@ -33,10 +33,18 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D5 and amendment
   RIGHT/FULL, NATURAL and USING; `later-table-in-on`, `function-join` and
   `later-source-in-arguments` are *unsupported*. The `join-operator` example is now
   `INNER OUTER JOIN`, which SQLite refuses. Verdict: no case changes.
+- 2026-10-18: review of the written-order commit: a NATURAL join after `json_each` would
+  match its hidden columns, which SQLite skips; restricted under `function-join`
+  (`refactor:` commit, review clean).
+- 2026-10-18: duplicate sources resolve. Qualified names resolve over the sources with
+  the name (`Scope.resolveQualified`), `x.*` expands every such source, and `*` and `x.*`
+  give `ambiguous column name: main.x.c` as SQLite does; a table's source name is the
+  declared name. `duplicate-source` leaves the registry. Verdict: the 3 v5 cases
+  `e_select-1.4.3.7.1/2/3` now agree; no other case changes.
 
 ## Remaining
 
-- Duplicate sources with SQLite's ambiguity rules; the `subquery` kind; source offsets in
+- The `subquery` kind; source offsets in
   the scope (outcome 6).
 - Measurement over every corpus, full checks, review, CI time, pull
   requests A and B.

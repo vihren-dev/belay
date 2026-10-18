@@ -55,8 +55,7 @@ def functionJoinChecked (afterFunction : Bool) (item : Nat) (join : Syntax.Join)
 /-- Resolve the sources of {lit}`FROM` in written order: the pending sources and the scope
 of all of them. More than {name}`maximumJoinTables` sources is SQLite's
 {lit}`at most 64 tables in a join`; then each reference resolves in order
-({name}`resolveReference`, {name}`functionJoinChecked`); two sources with the same folded
-name are a model restriction; then each join in order ({name}`mergeJoins`), whose
+({name}`resolveReference`, {name}`functionJoinChecked`); then each join in order ({name}`mergeJoins`), whose
 generated conditions coalesce the left columns when any join is a right or full join. No
 {lit}`FROM` gives no source and the empty scope. -/
 def resolveSources (catalog : Catalog) (source : Option Syntax.TableReference) (joins : List Syntax.Join) :
@@ -70,10 +69,6 @@ def resolveSources (catalog : Catalog) (source : Option Syntax.TableReference) (
     let earlier := source :: (joins.take item).map (·.source)
     functionJoinChecked (earlier.any (·.arguments.isSome)) item join operator
     .ok resolved) (joins.zip operators)
-  let sources := firstSource :: joined.map Prod.snd
-  if let some (item, _) := findPosition (fun (item, source) => sources.take item |>.any fun earlier =>
-      normalizeIdentifier earlier.name == normalizeIdentifier source.name) (sources.mapIdx fun item source => (item, source)) then
-    throw (.restriction (if item == 0 then [1] else [2, item - 1, 1]) .duplicateSource)
   let (scope, conditions) ← mergeJoins (operators.any rightOrFull) [firstSource] 0
     (joins.zip (operators.zip (joined.map Prod.snd)))
   let first : PendingSource := { item := firstItem, kind := .inner, condition := .none }

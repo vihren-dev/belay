@@ -39,7 +39,7 @@ is a scalar. A name is the {lit}`AS` alias, else the defined name of a reference
 def resolveResultColumn (dqs : Bool) (scope : Scope) (column : Nat) :
     Syntax.ResultColumn → Except ValueIssue (List (Resolved.Output × String))
   | .star => if scope.isEmpty then .error (.prepare .noTablesSpecified) else
-      .ok (scope.visible.map fun (position, defined) => (.scalar (scope.starOperand position defined).1, defined.name))
+      scope.visible.mapM fun (position, defined) => (.scalar ·.1, defined.name) <$> scope.starOperand position defined
   | .sourceStar source => (sourceStarColumns scope source).map fun columns =>
       columns.map fun (expression, name) => (.scalar expression, name)
   | .expression value alias text => do

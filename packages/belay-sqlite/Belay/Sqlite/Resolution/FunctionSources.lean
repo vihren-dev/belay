@@ -27,13 +27,13 @@ def maximumEachArguments : Nat := 2
 written, or the issue of a form that the model does not describe: another function or no
 argument ({name}`RestrictionKind.tableFunction`), and more than
 {name}`maximumEachArguments` arguments, which SQLite refuses. Its name is the alias, else
-the function name as written; two of its columns are hidden. -/
+{lit}`json_each`, as SQLite names it in messages; two of its columns are hidden. -/
 def eachReference (path : List Nat) (reference : Syntax.TableReference) (arguments : List Syntax.Expr) :
     Except ValueIssue ScopeSource :=
   if normalizeIdentifier reference.table != "json_each" || arguments.isEmpty then
     .error (.restriction path .tableFunction)
   else if arguments.length > maximumEachArguments then .error (.prepare .tooManyEachArguments)
-  else .ok { name := reference.alias.getD reference.table, columns := eachColumns, hidden := eachHidden }
+  else .ok { name := reference.alias.getD "json_each", columns := eachColumns, hidden := eachHidden }
 
 /-- Resolve the arguments of the {lit}`json_each` source at {lit}`index` of the scope, whose
 reference is at {lit}`path`: each argument resolves over the whole scope, as SQLite does,

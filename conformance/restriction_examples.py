@@ -40,7 +40,6 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "rowid-name": ("CREATE TABLE t(a INTEGER);", "SELECT rowid FROM t;"),
     "join-operator": ("CREATE TABLE t(a INTEGER); CREATE TABLE u(a INTEGER);",
                       "SELECT * FROM t INNER OUTER JOIN u ON t.a = u.a;"),
-    "duplicate-source": ("CREATE TABLE t(a INTEGER);", "SELECT 1 FROM t, t;"),
     "later-table-in-on": ("CREATE TABLE t(a INTEGER); CREATE TABLE u(a INTEGER); CREATE TABLE v(a INTEGER);",
                           "SELECT t.a FROM t JOIN u ON v.a = 1 JOIN v;"),
     "system-table": ("CREATE TABLE t(a INTEGER);", "SELECT name FROM sqlite_schema;"),

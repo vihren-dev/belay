@@ -67,10 +67,8 @@ def joinU : Resolved.QuerySource :=
 -- 65 tables are SQLite's limit error.
 #guard resolvedOne [.star] (table "t") ((List.range 64).map fun item =>
   joined [] { table := "t", alias := some s!"t{item}" }) == some (.prepareError .tooManyTables)
--- An operator that SQLite refuses (`unknown join type`) and two sources with the same name
--- are restrictions.
+-- An operator that SQLite refuses (`unknown join type`) is a restriction.
 #guard restrictedOne [.star] (table "t") [joined ["LEFT", "INNER"] (table "u") (some onA)]
-#guard restrictedOne [.star] (table "t") [joined ["INNER"] (table "t")]
 -- Lean reads the operator keywords as SQLite's sqlite3JoinType does: without ASCII case, in
 -- any order and repeated (checked natively).
 #guard joinOperator ["Left", "outer"] == some (.left, false)

@@ -29,17 +29,20 @@ def definedName (scope : Scope) : Syntax.Expr → Option String
   | .identifier name _ => match scope.resolveName name with
     | .found _ [position] => scope.columns[position]?.map CatalogColumn.name
     | .found .. | .missing | .ambiguous => none
-  | .qualified source column => (scope.qualified source column).bind (scope.columns[·]?.map CatalogColumn.name)
+  | .qualified source column => match scope.resolveQualified source column with
+    | .found _ [position] => scope.columns[position]?.map CatalogColumn.name
+    | .found .. | .missing | .ambiguous => none
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
   | .cast .. => none
 
 /-- One {lit}`RETURNING` column at position {lit}`item`: the expressions and names it
-gives. The paths of its issues start at the column's position. A {lit}`source.*`
-column is SQLite's {name}`PrepareError.returningSourceStar`. -/
+gives. The paths of its issues start at the column's position. {lit}`*` is every visible
+column of the one table of the write; a {lit}`source.*` column is SQLite's
+{name}`PrepareError.returningSourceStar`. -/
 def returningColumn (dqs : Bool) (scope : Scope) (item : Nat) :
     Syntax.ResultColumn → Except ValueIssue (List (Resolved.Expr × String))
-  | .star => .ok (scope.visible.map fun (position, column) => ((scope.starOperand position column).1, column.name))
+  | .star => .ok (scope.visible.map fun (position, column) => (.column position, column.name))
   | .sourceStar _ => .error (.prepare .returningSourceStar)
   | .expression value alias text => do
       let (resolved, _) ← (resolveOperand dqs scope true value).mapError (·.under [item, 0])
