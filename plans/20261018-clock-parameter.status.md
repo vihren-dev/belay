@@ -1,6 +1,6 @@
 # Status: the clock is an evaluation parameter (ADR 0013, step 6)
 
-Created 2026-10-18. Status: open.
+Created 2026-10-18. Status: DONE.
 Task file: [task](20261018-clock-parameter.task.md).
 Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D6.
 
@@ -51,6 +51,11 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D6.
   the new definition (also probed at 15 edge clocks against the old one). Examples: a
   clock-reading `VALUES` item stored with its column's affinity. Verdict unchanged.
 
+- 2026-10-18: all three suites pass on the tip after three test fixes (a RETURNING mutant
+  replacement and the generated Lean of three tests). CI time against step 5:
+  `tests.harness` 21 s to 23 s, `tests.model` 337 s to 335 s, `tests.frozen` 142 s to
+  140 s, scheduled mutants 419 s to 395 s. Pull request #166.
+
 ## Remaining
 
-- Full checks, verdict comparison, review, CI time, pull request.
+- None. Step 7 of ADR 0013 follows.

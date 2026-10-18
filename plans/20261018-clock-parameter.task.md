@@ -1,6 +1,6 @@
 # The clock is an evaluation parameter (ADR 0013, step 6)
 
-Created 2026-10-18. Status: open.
+Created 2026-10-18. Status: DONE (pull request #166).
 Status file: [status](20261018-clock-parameter.status.md).
 Specification: [ADR 0013](../docs/adr-0013-model-structure.md), decision D6, "Order" step 6
 (one HMS and printf port). Verdict: unchanged.
