@@ -20,9 +20,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "fromless_two_rows": (FUNCTIONS, "{ rows := [[]], width := 0, fault := .none }",
         "{ rows := [[], []], width := 0, fault := .none }"),
     "fromless_where_ignored": (QUERIES,
-        "    return { sources := firstSource ++ resolvedJoins ++ functions, filter := condition,",
-        "    return { sources := firstSource ++ resolvedJoins ++ functions,\n"
-        "             filter := if first.isNone then none else condition,"),
+        "    return { sources, filter := condition,",
+        "    return { sources, filter := if sources.isEmpty then none else condition,"),
     "fromless_star_accepted": (QUERIES, "  | .star => if scope.isEmpty then .error (.prepare .noTablesSpecified) else",
         "  | .star => if false then .error (.prepare .noTablesSpecified) else"),
 }

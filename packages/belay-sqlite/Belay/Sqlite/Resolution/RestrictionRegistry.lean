@@ -26,18 +26,17 @@ inductive RestrictionRegistry where
 
 /-- The registry of each restriction kind. The *unrepresented* kinds and their reasons:
 * {lit}`rowidName`: a resolved expression has no read of the physical rowid.
-* {lit}`duplicateSource`, {lit}`laterTableInOn`, {lit}`tableAfterFunction`, {lit}`functionJoin`
-  and {lit}`laterSourceInArguments`: the sources of a query are tables followed by
-  {lit}`json_each` sources, not one list in written order (ADR 0013, D5). -/
+* {lit}`duplicateSource`: the names of a query over two sources with the same name are
+  not yet resolved as SQLite resolves them (ADR 0013, D5). -/
 def RestrictionKind.registry : RestrictionKind → RestrictionRegistry
   | .rowDependentKey | .conflictWithoutTarget | .mixedConflictAlgorithms | .windowedGroupSum
   | .constantFunctionError => .undecided
-  | .rowidName | .duplicateSource | .laterTableInOn | .tableAfterFunction | .functionJoin
-  | .laterSourceInArguments => .unrepresented
+  | .rowidName | .duplicateSource => .unrepresented
   | .schemaStatement | .engineTable | .rowidColumnName | .createTableConstraints
   | .unmodeledDefault | .createIndexRuns | .addColumnConstraint | .constraintAlgorithmUpdate
   | .replaceDefault | .insertColumnTwice | .updateColumnTwice | .joinOperator | .systemTable
   | .unmodeledFunction | .aggregateInExpression | .aliasInExpression | .groupByTerm | .bareColumn
-  | .aggregateOrderBy | .windowValue | .negativeOffset | .tableFunction => .unsupported
+  | .aggregateOrderBy | .windowValue | .negativeOffset | .tableFunction | .laterTableInOn | .functionJoin
+  | .laterSourceInArguments => .unsupported
 
 end Belay.Sqlite

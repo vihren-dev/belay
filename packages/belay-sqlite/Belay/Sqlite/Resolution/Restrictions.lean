@@ -49,17 +49,17 @@ inductive RestrictionKind where
   extended to queries and write expressions on 2026-10-14, where SQLite reads the
   rowid and the model would report {lit}`no such column`. -/
   | rowidName
-  /-- A join operator other than {lit}`,`, {lit}`[INNER] JOIN`, {lit}`CROSS JOIN`,
-  {lit}`LEFT [OUTER] JOIN`, {lit}`RIGHT [OUTER] JOIN` and {lit}`FULL [OUTER] JOIN`, each
-  with an optional leading {lit}`NATURAL`, is not modeled, for example
-  {lit}`OUTER LEFT JOIN` (ADR 0012, amendment 2). -/
+  /-- A join operator that SQLite refuses with {lit}`unknown join type`, such as
+  {lit}`INNER OUTER JOIN`, is not modeled: the model has no such prepare error (ADR 0012,
+  amendment 2; ADR 0013, amendment 2). -/
   | joinOperator
   /-- Two sources of a query with the same name are not modeled (ADR 0012, amendment 2,
   owner decision on question 3). -/
   | duplicateSource
-  /-- An {lit}`ON` condition that names a table joined after it is not modeled: SQLite
-  resolves it against the whole {lit}`FROM`, and the model evaluates it while it joins
-  (ADR 0012, amendment 2). -/
+  /-- An {lit}`ON` condition that names a source joined after it is not modeled: SQLite
+  moves it to {lit}`WHERE` for a {lit}`FROM` without outer joins and refuses it otherwise,
+  with a prepare error that the model does not have (ADR 0012, amendment 2; ADR 0013,
+  amendment 2). -/
   | laterTableInOn
   /-- Queries of SQLite's own tables, such as {lit}`sqlite_schema`, are not modeled (ADR 0012 slice 1). -/
   | systemTable
@@ -85,11 +85,13 @@ inductive RestrictionKind where
   | constantFunctionError
   /-- Only {lit}`json_each` with one or two arguments is modeled as a table-valued function in {lit}`FROM` (ADR 0012 slice 6d). -/
   | tableFunction
-  /-- A table after a {lit}`json_each` source in {lit}`FROM` is not modeled (ADR 0012 slice 6d). -/
-  | tableAfterFunction
-  /-- Only an inner join without {lit}`NATURAL` or {lit}`USING` is modeled with {lit}`json_each` (ADR 0012 slice 6d). -/
+  /-- {lit}`json_each` as the right operand of a right or full join, or with {lit}`NATURAL`
+  or {lit}`USING`, is not modeled: a correlated source has no fixed rows to keep unmatched,
+  and {lit}`NATURAL` skips hidden columns (ADR 0012 slice 6d; ADR 0013, amendment 2). -/
   | functionJoin
-  /-- An argument of {lit}`json_each` that reads a later source is not modeled (ADR 0012 slice 6d). -/
+  /-- An argument of {lit}`json_each` that reads a later source is not modeled: SQLite
+  evaluates it only because its planner reorders inner joins, and the model joins in
+  written order (ADR 0012 slice 6d; ADR 0013, amendment 2). -/
   | laterSourceInArguments
   deriving Repr, DecidableEq
 

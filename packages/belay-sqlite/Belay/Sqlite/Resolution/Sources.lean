@@ -122,39 +122,16 @@ def mergeJoins (coalesced : Bool) (left : Scope) (item : Nat) :
     let (scope, conditions) ← mergeJoins coalesced (left ++ [merged]) (item + 1) rest
     .ok (scope, (kind, condition) :: conditions)
 
-/-- Resolve the tables of {lit}`FROM`: the first table's position, the positions of the
-joined tables with the condition of each join and its path, and the scope of all
-sources, in order. As in SQLite, every table resolves before the forms of the joins:
-more than {name}`maximumJoinTables` tables is SQLite's
-{lit}`at most 64 tables in a join`, then a missing table is {lit}`no such table`; two
-sources with the same folded name are a model restriction; then each join in order
-({name}`mergeJoins`), whose generated conditions coalesce the left columns when any join
-is a right or full join. -/
-def resolveTables (catalog : Catalog) (source : Option Syntax.TableReference) (joins : List Syntax.Join) :
-    Except ValueIssue (Option Nat × List (Nat × Resolved.JoinKind × JoinCondition) × Scope) := do
-  let some source := source | .ok (none, [], [])
-  if joins.length + 1 > maximumJoinTables then throw (.prepare .tooManyTables)
-  let (first, firstSource) ← resolveTableReference catalog [1] source
-  let joined ← resolveAll (fun item (join : Syntax.Join) => resolveTableReference catalog [2, item, 1] join.source) joins
-  let sources := firstSource :: joined.map Prod.snd
-  if let some (item, _) := findPosition (fun (item, source) => sources.take item |>.any fun earlier =>
-      normalizeIdentifier earlier.name == normalizeIdentifier source.name) (sources.mapIdx fun item source => (item, source)) then
-    throw (.restriction (if item == 0 then [1] else [2, item - 1, 1]) .duplicateSource)
-  let operators := joins.map (joinOperator ·.operator)
-  let (scope, conditions) ← mergeJoins (operators.any rightOrFull) [firstSource] 0
-    (joins.zip (operators.zip (joined.map Prod.snd)))
-  .ok (some first, (joined.map Prod.fst).zip conditions, scope)
-
-/-- Resolve the condition of the join at {lit}`item`: a merged condition is resolved
-already; a written one resolves over the whole scope, as SQLite does, and then must read
-only the tables up to the joined one, which the model evaluates while it joins
+/-- Resolve the condition of the source at {lit}`index` of the scope: a merged condition is
+resolved already; a written one resolves over the whole scope, as SQLite does, and then
+must read only the sources up to this one, which the model evaluates while it joins
 ({name}`RestrictionKind.laterTableInOn`). -/
-def resolveJoinCondition (dqs : Bool) (scope : Scope) (item : Nat) : JoinCondition → Except ValueIssue (Option Resolved.Expr)
+def resolveJoinCondition (dqs : Bool) (scope : Scope) (index : Nat) : JoinCondition → Except ValueIssue (Option Resolved.Expr)
   | .none => .ok none
   | .merged condition => .ok (some condition)
   | .written path term => do
     let resolved ← condition path (resolveOperand dqs scope true term)
-    let bound := (scope.take (item + 2)).foldl (fun width source => width + source.columns.length) 0
+    let bound := (scope.take (index + 1)).foldl (fun width source => width + source.columns.length) 0
     if resolved.readsBelow bound then .ok (some resolved)
     else throw (.restriction path .laterTableInOn)
 

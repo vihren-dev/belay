@@ -39,7 +39,7 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "update-column-twice": ("CREATE TABLE t(a INTEGER);", "UPDATE t SET a = 1, a = 2;"),
     "rowid-name": ("CREATE TABLE t(a INTEGER);", "SELECT rowid FROM t;"),
     "join-operator": ("CREATE TABLE t(a INTEGER); CREATE TABLE u(a INTEGER);",
-                      "SELECT * FROM t OUTER LEFT JOIN u ON t.a = u.a;"),
+                      "SELECT * FROM t INNER OUTER JOIN u ON t.a = u.a;"),
     "duplicate-source": ("CREATE TABLE t(a INTEGER);", "SELECT 1 FROM t, t;"),
     "later-table-in-on": ("CREATE TABLE t(a INTEGER); CREATE TABLE u(a INTEGER); CREATE TABLE v(a INTEGER);",
                           "SELECT t.a FROM t JOIN u ON v.a = 1 JOIN v;"),
@@ -55,8 +55,7 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "windowed-group-sum": ("CREATE TABLE t(a INTEGER);", "SELECT sum(a) FROM t GROUP BY a LIMIT 1;"),
     "constant-function-error": ("CREATE TABLE t(a);", "INSERT INTO t VALUES (json_extract('x', '$'));"),
     "table-function": ("CREATE TABLE t(a);", "SELECT * FROM json_tree('[1]');"),
-    "table-after-function": ("CREATE TABLE t(a);", "SELECT * FROM json_each('[1]'), t;"),
-    "function-join": ("CREATE TABLE t(a);", "SELECT * FROM t LEFT JOIN json_each('[1]');"),
+    "function-join": ("CREATE TABLE t(a);", "SELECT * FROM t RIGHT JOIN json_each('[1]');"),
     "later-source-in-arguments": ("CREATE TABLE t(a);", "SELECT * FROM t, json_each(b.value) AS a, json_each('[1]') AS b;"),
 }
 """For each restriction id: a schema and a migration that the resolver refuses with it."""

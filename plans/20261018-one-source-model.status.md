@@ -24,7 +24,19 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D5 and amendment
   left joins; `LEFT JOIN json_each(t.b)` is correlated. The owner chose the full D5
   (owner decision 6); ADR 0013 amendment 2 records the details.
 
+- 2026-10-18: commit `nzxzowqv` (one source list, one join); its suites pass and its
+  verdict equals step 4's. Commit `tkpkwzqz`: join operators parsed once
+  (`joinOperator`), and `USING`/`NATURAL` equalities resolved from positions; review clean.
+- 2026-10-18: sources resolve in written order (`Resolution/SourceList.lean`): tables and
+  `json_each` in any order, `LEFT JOIN json_each`, ON conditions then `json_each`
+  arguments after `WHERE`. `table-after-function` is gone; `function-join` covers only
+  RIGHT/FULL, NATURAL and USING; `later-table-in-on`, `function-join` and
+  `later-source-in-arguments` are *unsupported*. The `join-operator` example is now
+  `INNER OUTER JOIN`, which SQLite refuses. Verdict: no case changes.
+
 ## Remaining
 
-- Implementation, measurement over every corpus, full checks, review, CI time, pull
+- Duplicate sources with SQLite's ambiguity rules; the `subquery` kind; source offsets in
+  the scope (outcome 6).
+- Measurement over every corpus, full checks, review, CI time, pull
   requests A and B.

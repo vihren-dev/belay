@@ -1,5 +1,5 @@
 import Belay.Sqlite.Resolution.StatementCatalog
-import Belay.Sqlite.Resolution.FunctionSources
+import Belay.Sqlite.Resolution.SourceList
 
 set_option doc.verso true
 
@@ -110,7 +110,7 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
     (limit offset : Option Syntax.Expr) : StatementResolution :=
   let dqs := context.profile.dqsDml
   let resolved : Except ValueIssue Resolved.Query := do
-    let (first, tables, scope, items) ← resolveSources catalog source joins
+    let (pending, scope) ← resolveSources catalog source joins
     let outputs := (← resolveAll (resolveResultColumn dqs scope) results).flatten
     let aliases := results.flatMap fun
       | .star => scope.visible.map fun _ => none
@@ -121,8 +121,7 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
       | some term =>
         if namesAlias scope (aliases.filterMap id) term then throw (aliasInExpression.under [3])
         else some <$> condition [3] (resolveOperand dqs scope true term)
-    let conditions ← resolveAll (fun item (_, _, term) => resolveJoinCondition dqs scope item term) tables
-    let functions ← resolveFunctions dqs scope items
+    let sources ← resolvePendingSources dqs scope pending
     let aggregate := !groupBy.isEmpty || outputs.any fun (output, _) => match output with
       | .aggregate _ => true
       | .scalar _ => false
@@ -161,10 +160,7 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
     if offsetValue.any (· < 0) then throw (.restriction [7] .negativeOffset)
     if windowSkipsFailure groupBy limit offset (outputs.map (·.1)) then
       throw (.restriction [6] .windowedGroupSum)
-    let resolvedJoins := (tables.zip conditions).map fun ((table, kind, _), on) =>
-      ({ kind, source := .table table, condition := on } : Resolved.QuerySource)
-    let firstSource := first.toList.map Resolved.QuerySource.first
-    return { sources := firstSource ++ resolvedJoins ++ functions, filter := condition, aggregate, groupBy := terms,
+    return { sources, filter := condition, aggregate, groupBy := terms,
              columns := outputs.map (·.1), names := outputs.map (·.2), orderBy := order,
              offset := (offsetValue.getD 0).toNat,
              limit := limitValue.bind fun value => if value < 0 then none else some value.toNat }

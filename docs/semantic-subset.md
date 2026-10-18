@@ -194,7 +194,7 @@ should shrink.
 | `replace-default` | REPLACE of a NOT NULL column with a default is not modeled | ADR 0012 amendment 4, slice 5d |
 | `insert-column-twice` | A column named twice in INSERT is not modeled | ADR 0008 |
 | `update-column-twice` | A column assigned twice in UPDATE is not modeled | ADR 0008 |
-| `join-operator` | A join operator with other keywords, or in another order, such as `OUTER LEFT JOIN`, is not modeled | ADR 0012 amendment 2 |
+| `join-operator` | A join operator that SQLite refuses with `unknown join type`, such as `INNER OUTER JOIN`, is not modeled | ADR 0012 amendment 2; ADR 0013 amendment 2 |
 | `system-table` | Queries of SQLite's own tables, such as `sqlite_schema`, are not modeled | ADR 0012 slice 1 |
 | `unmodeled-function` | Only `COUNT(*)`, `COUNT`, `MIN`, `MAX`, `SUM` and `AVG` of one argument, `COALESCE` of two or more arguments, `json_extract`, `->`, `->>`, `json_type`, `json_valid`, `json_array_length` and `json` are modeled as functions | ADR 0012 slices 1, 2, 6b and 6c |
 | `aggregate-in-expression` | An aggregate inside an expression is not modeled | ADR 0012 slice 1 |
@@ -205,6 +205,9 @@ should shrink.
 | `window-value` | Only an integer literal is modeled as LIMIT or OFFSET | ADR 0012 slice 1 |
 | `negative-offset` | A negative OFFSET is not modeled | ADR 0012 slice 1 |
 | `table-function` | Only `json_each` with one or two arguments is modeled as a table-valued function in FROM | ADR 0012 slice 6d |
+| `later-table-in-on` | An ON condition that names a source joined after it is not modeled: SQLite moves it to WHERE without outer joins and refuses it otherwise | ADR 0012 amendment 2; ADR 0013 amendment 2 |
+| `function-join` | `json_each` as the right operand of RIGHT or FULL JOIN, or with NATURAL or USING, is not modeled | ADR 0012 slice 6d; ADR 0013 amendment 2 |
+| `later-source-in-arguments` | An argument of `json_each` that reads a later source is not modeled, because the model joins in written order | ADR 0012 slice 6d; ADR 0013 amendment 2 |
 
 #### Undecided
 
@@ -222,10 +225,6 @@ should shrink.
 | --- | --- | --- |
 | `rowid-name` | A rowid name that is not a column is not modeled in an expression over a table; in VALUES it resolves as any other name | ADR 0012 slice 3a; extended 2026-10-14 |
 | `duplicate-source` | Two sources of a query with the same name are not modeled | ADR 0012 amendment 2 (question 3) |
-| `later-table-in-on` | An ON condition that names a table joined after it is not modeled | ADR 0012 amendment 2 |
-| `table-after-function` | A table after a `json_each` source in FROM is not modeled | ADR 0012 slice 6d |
-| `function-join` | Only an inner join without NATURAL or USING is modeled with `json_each` | ADR 0012 slice 6d |
-| `later-source-in-arguments` | An argument of `json_each` that reads a later source is not modeled | ADR 0012 slice 6d |
 
 ## Execution
 
