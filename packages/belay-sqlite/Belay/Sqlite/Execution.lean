@@ -101,6 +101,23 @@ def CatalogTable.plain (table : CatalogTable) : Bool :=
   table.columns.all CatalogColumn.plain && table.primaryKey.isEmpty && table.uniqueKeys.isEmpty &&
     table.rowidAlias.isNone
 
+/-- A query over a database at a clock value: its source rows ({name}`Resolved.Query.source`)
+and its run over them ({name}`Resolved.Query.run`); none when a table is missing. -/
+def Resolved.Query.runOn (query : Resolved.Query) (clock : Int) (database : Database) :
+    Option (Resolved.SourceRows × Resolved.QueryRun) :=
+  (query.source clock database).map fun source => (source, query.run clock source.rows)
+
+/-- The effect of a query with its run ({name}`Resolved.Query.runOn`): it changes nothing; it
+fails with {lean}`ExecutionError.integerOverflow` when it overflows, else with
+{lean}`ExecutionError.functionError` when its fault is {lean}`Resolved.Fault.must`, and
+otherwise succeeds, also without a run. -/
+def queryEffect (database : Database) : Option (Resolved.SourceRows × Resolved.QueryRun) → Effect
+  | some (_, run) =>
+    if run.overflow then .error (.integerOverflow, database)
+    else if run.fault == .must then .error (.functionError, database)
+    else .ok database
+  | none => .ok database
+
 /-- The effect of CREATE TABLE, ADD COLUMN, a query or a prepare error, without a position
 (ADR 0006): the database after it, or the error with the database that it keeps, the
 input database for every error here. SQLite refuses a statement with its prepare
@@ -141,13 +158,7 @@ def step (clock : Int) (statement : Resolved.Statement) (database : Database) : 
           .error (.nullColumnDefault, database)
         else .ok (database.addColumn target column value)
   | .prepareError error => .error (.prepare error, database)
-  | .query query => match query.source clock database with
-    | some source =>
-      let run := query.run clock source.rows
-      if run.overflow then .error (.integerOverflow, database)
-      else if run.fault == .must then .error (.functionError, database)
-      else .ok database
-    | none => .ok database
+  | .query query => queryEffect database (query.runOn clock database)
   | .createIndex .. | .begin | .commit | .rollback | .insert .. | .upsert .. | .update .. | .delete .. =>
     .error (.unmodeled, database)
 

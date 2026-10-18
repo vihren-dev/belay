@@ -81,7 +81,7 @@ GUARDS: dict[str, str] = {
     "no_too_many_columns": "rule:resolveAddColumn",
     "no_duplicate_column": "rule:resolveAddColumn",
     "no_such_table": "rule:resolveAddColumn",
-    "commit_without_transaction": "rule:advance",
+    "commit_without_transaction": "rule:advanceWith",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
 changes. `conformance.mutant_guards` checks every entry."""

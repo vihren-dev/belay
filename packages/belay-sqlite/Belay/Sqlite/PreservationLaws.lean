@@ -118,11 +118,9 @@ theorem step_extends (clock : Int) (statement : Resolved.Statement) (database : 
   | createIndex _ _ _ => exact DatabaseExtends.refl database
   | query query =>
     have same : effectDatabase (step clock (.query query) database) = database := by
-      simp only [step]
-      split
-      · repeat' split
-        all_goals rfl
-      · rfl
+      simp only [step, queryEffect]
+      repeat' split
+      all_goals rfl
     rw [same]
     exact DatabaseExtends.refl database
   | begin => exact DatabaseExtends.refl database

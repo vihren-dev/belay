@@ -30,8 +30,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "json_missing_path_error": (JSON + "Extract.lean", "  | .notFound => .ok none",
         "  | .notFound => .error .malformed"),
     "json_error_ignored": (SQLITE + "Execution.lean",
-        "      else if run.fault == .must then .error (.functionError, database)",
-        "      else if false then .error (.functionError, database)"),
+        "    else if run.fault == .must then .error (.functionError, database)",
+        "    else if false then .error (.functionError, database)"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
 replacement. The names follow the list in the task of slice 6b: `true` as text; a
@@ -51,7 +51,7 @@ GUARDS: dict[str, str] = {
     "json_true_as_text": "rule:sqlValueOfNode", "json_arrow_scalar_unquoted": "rule:arrowJson",
     "json_last_duplicate_key": "rule:findMember", "json_numbers_rerendered": "rule:renderNode",
     "json5_not_normalized": "rule:renderNode", "json_from_end_as_first": "rule:readPathIndex",
-    "json_missing_path_error": "rule:lookupOutcome", "json_error_ignored": "rule:step",
+    "json_missing_path_error": "rule:lookupOutcome", "json_error_ignored": "rule:queryEffect",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
 changes. `conformance.mutant_guards` checks every entry."""

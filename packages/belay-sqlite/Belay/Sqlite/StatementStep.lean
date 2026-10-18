@@ -31,83 +31,106 @@ def checkedWrite (database : Database) (target : Nat) (keys : List (List Nat)) (
 that is not an integer before the constraints of its row
 ({name}`LiteralData.aliasMismatch`), so the first such row is
 {lean}`ExecutionError.datatypeMismatch` unless the rows before it already fail; with no
-such row, {name}`checkedWrite` of all rows. A failure keeps the input database. -/
+such row, {name}`checkedWrite` of the table with all rows inserted ({lit}`result`, which is
+{name}`LiteralData.inserted`). A failure keeps the input database. -/
 def insertOutcome (database : Database) (target : Nat) (keys : List (List Nat)) (table : Table)
-    (rows : List (List Value)) : Effect :=
+    (rows : List (List Value)) (result : Table) : Effect :=
   match rows.findIdx? (LiteralData.aliasMismatch table.shape) with
   | some index =>
     let before := LiteralData.inserted table (rows.take index)
     if LiteralData.constraints keys before && LiteralData.rowidsDistinct before then
       .error (.datatypeMismatch, database)
     else .error (.constraintViolation, database)
-  | none => checkedWrite database target keys (LiteralData.inserted table rows)
+  | none => checkedWrite database target keys result
 
-/-- Apply INSERT/UPDATE with ABORT constraints over the table's keys
-({name}`Database.keys`), INSERT with
-{lit}`ON CONFLICT` clauses row by row ({name}`LiteralData.upsertRun`), each over the rows
-at the clock value ({name}`Resolved.rowsAt`), and DELETE,
-which removes rows and cannot fail a constraint. A position without a table fails as
-{lean}`ExecutionError.unmodeled`. An error carries the database that the statement
-reached: the rows before the failing row of an INSERT with clauses or algorithms, and the
-input database for every other error. Other statements use {name}`step`. This
-computation does not establish the separate stored-value support obligation. -/
-def literalStep (clock : Int) (statement : Resolved.Statement) (database : Database) : Effect :=
+/-- What running one statement on a database gives: its effect, and whether the model
+describes it on the database (the support check). Both read the same computation of the
+write or the query. -/
+structure StatementRun where
+  /-- The effect of the statement ({lit}`literalStep`). -/
+  effect : Effect
+  /-- Whether the model describes the statement on the database ({lit}`statementReady`). -/
+  ready : Bool
+
+/-- Run one statement at a clock value, computing each write and query once for its
+effect and its support check (ADR 0013, D8). The effect: INSERT and UPDATE with ABORT
+constraints over the table's keys ({name}`Database.keys`), INSERT with {lit}`ON CONFLICT`
+clauses or algorithms row by row ({name}`LiteralData.upsertSteps`), each over the rows at
+the clock value ({name}`Resolved.rowsAt`), DELETE, which removes rows and cannot fail a
+constraint, a query ({name}`queryEffect`), and {name}`step` for every other statement. A
+position without a table fails as {lean}`ExecutionError.unmodeled`. An error carries the
+database that the statement reached: the rows before the failing row of an INSERT with
+clauses or algorithms, and the input database for every other error. The support check:
+INSERT and UPDATE pass the data domain of the table, every write and query the JSON
+checks of {lit}`JsonReady`; a position without a table passes and fails during execution
+instead. CREATE TABLE must be plain; ADD COLUMN must have modeled default readback; CREATE
+INDEX fails: these are model restrictions, because SQLite accepts such statements. Other
+statement forms pass. -/
+def runStatement (clock : Int) (statement : Resolved.Statement) (database : Database) : StatementRun :=
   match statement with
-  | .insert target rows _ => match database.table target with
-    | none => .error (.unmodeled, database)
+  | .insert target rows returning => match database.table target with
+    | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
-      insertOutcome database target (database.keys target table) table (Resolved.rowsAt clock table.shape.columns rows)
-  | .upsert target rows clauses _ algorithm => match database.table target with
-    | none => .error (.unmodeled, database)
+      let keys := database.keys target table
+      let values := Resolved.rowsAt clock table.shape.columns rows
+      let result := LiteralData.inserted table values
+      { effect := insertOutcome database target keys table values result,
+        ready := LiteralData.insertReady keys table values result &&
+          !(returningExpressions returning).any (·.any Resolved.Expr.isJsonCall) }
+  | .upsert target rows clauses returning algorithm => match database.table target with
+    | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
+      let keys := database.keys target table
       let policy := database.catalog.writePolicy target table.shape algorithm
-      match LiteralData.upsertRun clock (database.keys target table) policy clauses table
-          (Resolved.rowsAt clock table.shape.columns rows) with
-      | .ok (result, _) => .ok (database.setRows target result.rows)
-      | .error (reason, reached, _) => .error (reason, database.setRows target reached.rows)
-  | .update target assignments filter _ => match database.table target with
-    | none => .error (.unmodeled, database)
+      let values := Resolved.rowsAt clock table.shape.columns rows
+      let steps := LiteralData.upsertSteps clock keys policy clauses table values
+      { effect := match LiteralData.upsertSummary table steps with
+          | .ok (result, _) => .ok (database.setRows target result.rows)
+          | .error (reason, reached, _) => .error (reason, database.setRows target reached.rows),
+        ready := LiteralData.upsertReady keys table clauses values steps && upsertJsonReady clauses returning }
+  | .update target assignments filter returning => match database.table target with
+    | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
-      if LiteralData.updateMismatch clock table assignments filter then .error (.datatypeMismatch, database)
-      else checkedWrite database target (database.keys target table) (LiteralData.updated clock table assignments filter)
-  | .delete target filter _ => match database.table target with
-    | none => .error (.unmodeled, database)
-    | some table => .ok (database.setRows target (LiteralData.deleted clock table filter).rows)
-  | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ | .query _ =>
-    step clock statement database
-
-/-- Check that the model describes the statement against the current table.
-INSERT/UPDATE must pass the data domain of the table, and every write and query the
-JSON checks of {lit}`JsonReady` at the statement's clock value; a position without a table
-passes and fails during execution instead. CREATE TABLE must be plain; ADD COLUMN must have modeled default
-readback; CREATE INDEX fails: these are model restrictions, because SQLite accepts such
-statements. Other statement forms pass. Use it through the reached-statement script
-support check. -/
-def statementReady (clock : Int) (statement : Resolved.Statement) (database : Database) : Bool :=
-  match statement with
-  | .insert target rows returning => (database.table target).all fun table =>
-      LiteralData.insertReady (database.keys target table) table (Resolved.rowsAt clock table.shape.columns rows) &&
-        !(returningExpressions returning).any (·.any Resolved.Expr.isJsonCall)
-  | .upsert target rows clauses returning algorithm => (database.table target).all fun table =>
-      LiteralData.upsertReady clock (database.keys target table) (database.catalog.writePolicy target table.shape algorithm)
-        table clauses (Resolved.rowsAt clock table.shape.columns rows) && upsertJsonReady clauses returning
-  | .update target assignments filter returning => (database.table target).all fun table =>
-      LiteralData.updateReady clock (database.keys target table) table assignments filter &&
-        updateJsonReady clock table assignments filter returning
-  | .delete target filter returning => (database.table target).all fun table => deleteJsonReady clock table filter returning
-  | .createTable _ _ table => table.plain
-  | .addColumn _ column => column.clockDefault || (readDefaultValue column).toOption.isSome
-  | .createIndex .. => false
+      let keys := database.keys target table
+      let result := LiteralData.updated clock table assignments filter
+      { effect := if LiteralData.updateMismatch clock table assignments filter then .error (.datatypeMismatch, database)
+          else checkedWrite database target keys result,
+        ready := LiteralData.updateReady keys table assignments result &&
+          updateJsonReady clock table assignments filter returning }
+  | .delete target filter returning => match database.table target with
+    | none => { effect := .error (.unmodeled, database), ready := true }
+    | some table =>
+      { effect := .ok (database.setRows target (LiteralData.deleted clock table filter).rows),
+        ready := deleteJsonReady clock table filter returning }
   | .query query =>
-    (query.source clock database).all fun source => source.fault != .may && (query.run clock source.rows).fault != .may
-  | .begin | .commit | .rollback | .prepareError _ => true
+    let ran := query.runOn clock database
+    { effect := queryEffect database ran,
+      ready := ran.all fun (source, run) => source.fault != .may && run.fault != .may }
+  | .createTable _ _ table => { effect := step clock statement database, ready := table.plain }
+  | .addColumn _ column =>
+    { effect := step clock statement database,
+      ready := column.clockDefault || (readDefaultValue column).toOption.isSome }
+  | .createIndex .. => { effect := step clock statement database, ready := false }
+  | .begin | .commit | .rollback | .prepareError _ => { effect := step clock statement database, ready := true }
 
-/-- Evaluate one statement at its supplied zero-based position. BEGIN records a
+/-- The effect of one statement at a clock value ({name}`runStatement`). This computation
+does not establish the separate stored-value support obligation. -/
+def literalStep (clock : Int) (statement : Resolved.Statement) (database : Database) : Effect :=
+  (runStatement clock statement database).effect
+
+/-- Whether the model describes the statement on the database ({name}`runStatement`). Use
+it through the reached-statement script support check. -/
+def statementReady (clock : Int) (statement : Resolved.Statement) (database : Database) : Bool :=
+  (runStatement clock statement database).ready
+
+/-- One statement at its supplied zero-based position with its effect. BEGIN records a
 snapshot; COMMIT clears it; ROLLBACK restores it. Repeated BEGIN or transaction
 closure without a snapshot halts with an error. Other statements use
-{name}`literalStep` at the clock value of the position ({name}`SqlState.clock`); an error retains any open transaction, except a ROLLBACK failure,
+the effect, which {lit}`advance` computes at the clock value of the position
+({name}`SqlState.clock`); an error retains any open transaction, except a ROLLBACK failure,
 which rolls it back ({name}`SqlState.failed`). -/
-def advance (position : Nat) (statement : Resolved.Statement) (state : SqlState) : SqlTransition :=
+def advanceWith (position : Nat) (statement : Resolved.Statement) (state : SqlState) (effect : Effect) :
+    SqlTransition :=
   match statement with
   | .begin => match state.snapshot with
     | some _ => .halt (state.finish (.failure position .transactionAlreadyActive state.database))
@@ -120,7 +143,12 @@ def advance (position : Nat) (statement : Resolved.Statement) (state : SqlState)
     | some original => .next { state with database := original, snapshot := none }
   | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .upsert .. | .update .. | .delete ..
   | .prepareError _ | .query _ =>
-    state.publish position (literalStep (state.clock position) statement state.database)
+    state.publish position effect
+
+/-- Evaluate one statement at its supplied zero-based position ({name}`advanceWith` of its
+effect at the clock value of the position, {name}`literalStep`). -/
+def advance (position : Nat) (statement : Resolved.Statement) (state : SqlState) : SqlTransition :=
+  advanceWith position statement state (literalStep (state.clock position) statement state.database)
 
 /-- Execute the script from a supplied position and connection state. A halt stops
 the script; a continuing transition advances the position. EOF finishes the
@@ -139,15 +167,15 @@ def runSql (script : List Resolved.Statement) (database : Database) : Outcome :=
   runSqlFrom 0 script { database := database }
 
 /-- Check {name}`statementReady` at every reached statement and follow the actual
-transition. After a halt, unreachable statements impose no obligation. An empty
-script passes. -/
+transition, both from one run of the statement ({name}`runStatement`). After a halt,
+unreachable statements impose no obligation. An empty script passes. -/
 def supportedSqlFrom (position : Nat) (script : List Resolved.Statement) (state : SqlState) : Bool :=
   match script with
   | [] => true
   | statement :: rest =>
-    let clock := state.clock position
-    statementReady clock statement state.database &&
-    match advance position statement state with
+    let run := runStatement (state.clock position) statement state.database
+    run.ready &&
+    match advanceWith position statement state run.effect with
     | .halt _ => true
     | .next next => supportedSqlFrom (position + 1) rest next
 

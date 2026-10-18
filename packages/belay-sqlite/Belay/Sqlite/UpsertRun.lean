@@ -95,42 +95,66 @@ def upsertRow (clock : Int) (keys : List (List Nat)) (policy : Resolved.Conflict
       | .nothing => .ok (table, none)
       | .update assignments filter => updateExisting clock keys table assignments filter existing proposed
 
-/-- The rows in order ({name}`upsertRow`): the final table and the inserted and updated
-rows in row order; or the first error with the table before its row and the rows
-written before it, which a FAIL failure keeps. -/
-def upsertRun (clock : Int) (keys : List (List Nat)) (policy : Resolved.ConflictPolicy) (clauses : List Resolved.ConflictClause)
-    (table : Table) : List (List Value) → Except (ExecutionError × Table × List Row) (Table × List Row)
+/-- One reached row of an INSERT with clauses or algorithms: the table before the row, the
+row's values, and the result of {name}`upsertRow` for it. -/
+structure UpsertStep where
+  /-- The table before the row. -/
+  before : Table
+  /-- The values of the row. -/
+  values : List Value
+  /-- The table after the row and the row that it wrote, or the statement's error. -/
+  result : Except ExecutionError (Table × Option Row)
+
+/-- The reached rows of an INSERT with clauses or algorithms, in order: each row with the
+table before it and its {name}`upsertRow` result, up to and with the first row that
+fails. -/
+def upsertSteps (clock : Int) (keys : List (List Nat)) (policy : Resolved.ConflictPolicy)
+    (clauses : List Resolved.ConflictClause) (table : Table) : List (List Value) → List UpsertStep
+  | [] => []
+  | values :: rest =>
+    let result := upsertRow clock keys policy clauses table values
+    { before := table, values, result } :: match result with
+      | .error _ => []
+      | .ok (next, _) => upsertSteps clock keys policy clauses next rest
+
+/-- The result of the reached rows ({name}`upsertSteps`) over the table: the final table
+and the inserted and updated rows in row order; or the first error with the table before
+its row and the rows written before it, which a FAIL failure keeps. -/
+def upsertSummary (table : Table) : List UpsertStep → Except (ExecutionError × Table × List Row) (Table × List Row)
   | [] => .ok (table, [])
-  | values :: rest => match upsertRow clock keys policy clauses table values with
-    | .error reason => .error (reason, table, [])
-    | .ok (next, written) => match upsertRun clock keys policy clauses next rest with
+  | step :: rest => match step.result with
+    | .error reason => .error (reason, step.before, [])
+    | .ok (next, written) => match upsertSummary next rest with
       | .error (reason, reached, later) => .error (reason, reached, written.toList ++ later)
       | .ok (final, later) => .ok (final, written.toList ++ later)
 
-/-- Whether every reached row has a bounded proposed rowid, and every table after a row
-has bounded rowids. SQLite chooses a random rowid after the largest one, which the model
-does not describe. -/
-def upsertBounded (clock : Int) (keys : List (List Nat)) (policy : Resolved.ConflictPolicy)
-    (clauses : List Resolved.ConflictClause) (table : Table) : List (List Value) → Bool
-  | [] => true
-  | values :: rest => boundedInteger (newRowid table values) &&
-    match upsertRow clock keys policy clauses table values with
+/-- The rows in order ({name}`upsertRow`): the {name}`upsertSummary` of the reached rows
+({name}`upsertSteps`). -/
+def upsertRun (clock : Int) (keys : List (List Nat)) (policy : Resolved.ConflictPolicy) (clauses : List Resolved.ConflictClause)
+    (table : Table) (rows : List (List Value)) : Except (ExecutionError × Table × List Row) (Table × List Row) :=
+  upsertSummary table (upsertSteps clock keys policy clauses table rows)
+
+/-- Whether every reached row ({name}`UpsertStep`) has a bounded proposed rowid, and every
+table after a row has bounded rowids. SQLite chooses a random rowid after the largest one,
+which the model does not describe. -/
+def upsertBounded (steps : List UpsertStep) : Bool :=
+  steps.all fun step => boundedInteger (newRowid step.before step.values) && match step.result with
     | .error _ => true
-    | .ok (next, _) => next.rows.all (fun row => boundedInteger row.rowid) && upsertBounded clock keys policy clauses next rest
+    | .ok (next, _) => next.rows.all (fun row => boundedInteger row.rowid)
 
 /-- Require {name}`tableReady` before the write, {name}`aliasReady`, one stored value per
 column in each row, a column at every position that a {lit}`DO UPDATE` assigns, and
-{name}`upsertBounded`. This check does not establish the constraints of the result,
+{name}`upsertBounded` of the reached rows. This check does not establish the constraints of the result,
 which {name}`checkedRow` checks. -/
-def upsertReady (clock : Int) (keys : List (List Nat)) (policy : Resolved.ConflictPolicy) (table : Table)
-    (clauses : List Resolved.ConflictClause) (rows : List (List Value)) : Bool :=
+def upsertReady (keys : List (List Nat)) (table : Table) (clauses : List Resolved.ConflictClause)
+    (rows : List (List Value)) (steps : List UpsertStep) : Bool :=
   tableReady keys table && aliasReady table.shape &&
   rows.all (fun values => values.length == table.shape.columns.length &&
     (table.shape.columns.zip values).all (fun (column, value) => storedForm column.affinity value)) &&
   clauses.all (fun clause => match clause.action with
     | .nothing => true
     | .update assignments _ => assignments.all fun (position, _) => (table.shape.columns[position]?).isSome) &&
-  upsertBounded clock keys policy clauses table rows
+  upsertBounded steps
 
 end LiteralData
 end Belay.Sqlite

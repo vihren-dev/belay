@@ -65,13 +65,14 @@ def updateMismatch (clock : Int) (table : Table) (assignments : List (Nat × Res
         | some .null | some (.real _) | some (.text _) | some (.blob _) | none => true
 
 /-- Require {name}`tableReady` before the write, {name}`aliasReady`, a column at every
-assigned position, and a bounded rowid for every updated row. This check does not
-establish the updated constraints, which {lit}`checkedWrite` checks. -/
-def updateReady (clock : Int) (keys : List (List Nat)) (table : Table) (assignments : List (Nat × Resolved.Expr))
-    (filter : Option Resolved.Expr) : Bool :=
+assigned position, and a bounded rowid for every row of the updated table ({lit}`result`,
+which the execution computes: {name}`updated`). This check does not establish the updated
+constraints, which {lit}`checkedWrite` checks. -/
+def updateReady (keys : List (List Nat)) (table : Table) (assignments : List (Nat × Resolved.Expr))
+    (result : Table) : Bool :=
   tableReady keys table && aliasReady table.shape &&
   assignments.all (fun (position, _) => (table.shape.columns[position]?).isSome) &&
-  (updated clock table assignments filter).rows.all (fun row => boundedInteger row.rowid)
+  result.rows.all (fun row => boundedInteger row.rowid)
 
 end LiteralData
 end Belay.Sqlite

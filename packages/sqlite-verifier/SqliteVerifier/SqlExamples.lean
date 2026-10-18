@@ -90,7 +90,8 @@ example : LiteralData.storedForm .numeric (.text [49, 50]) = false := by decide 
 example : LiteralData.storedForm .numeric
     (.text "2026-09-25 00:00:00".toUTF8.toList) = true := by decide +kernel
 example : LiteralData.insertReady keys { original with rows := [⟨9223372036854775807, [.null, .text []]⟩] }
-    [[.integer 2, .text []]] = false := by decide +kernel
+    [[.integer 2, .text []]] (LiteralData.inserted { original with rows := [⟨9223372036854775807, [.null, .text []]⟩] }
+      [[.integer 2, .text []]]) = false := by decide +kernel
 example : LiteralData.constraints keys (LiteralData.inserted original [[.null, .text []]]) = true := by decide +kernel
 example : ¬ SchemaOnly script := by simp [SchemaOnly, script]
 

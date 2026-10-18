@@ -26,39 +26,44 @@ theorem literalStep_success_catalog {clock : Int} {statement : Resolved.Statemen
     result.catalog = statement.applyCatalog database.catalog ∧ statement.isControl = false := by
   cases statement with
   | createTable target name table =>
-    simp only [literalStep, step] at success
+    simp only [literalStep, runStatement, step] at success
     split at success
     · cases success; exact ⟨rfl, rfl⟩
     · cases success
   | addColumn target column =>
-    simp only [literalStep, step] at success
+    simp only [literalStep, runStatement, step] at success
     split at success
     · cases success
     · repeat' split at success
       all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
   | insert target rows returning =>
-    simp only [literalStep, insertOutcome, checkedWrite] at success
+    simp only [literalStep, runStatement, insertOutcome, checkedWrite] at success
     repeat' split at success
     all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
   | upsert target rows clauses returning algorithm =>
-    simp only [literalStep] at success
+    simp only [literalStep, runStatement] at success
     repeat' split at success
     all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
   | update target assignments filter returning =>
-    simp only [literalStep, checkedWrite] at success
+    simp only [literalStep, runStatement, checkedWrite] at success
     repeat' split at success
     all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
   | delete target filter returning =>
-    simp only [literalStep] at success
+    simp only [literalStep, runStatement] at success
     split at success
     · cases success
     · cases success; exact ⟨rfl, rfl⟩
   | query query =>
-    simp only [literalStep, step] at success
-    repeat' split at success
-    all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
+    simp only [literalStep, runStatement] at success
+    cases ran : query.runOn clock database with
+    | none => simp only [ran, queryEffect] at success; cases success; exact ⟨rfl, rfl⟩
+    | some pair =>
+      obtain ⟨_, run⟩ := pair
+      simp only [ran, queryEffect] at success
+      repeat' split at success
+      all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
   | createIndex | begin | commit | rollback | prepareError =>
-    simp [literalStep, step] at success
+    simp [literalStep, runStatement, step] at success
 
 /-- For every position, statement, connection states and resolution state: if the
 connection state agrees with the resolution state ({name}`SqlState.Agrees`) and
@@ -73,7 +78,7 @@ theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {sql ne
   obtain ⟨catalog, saved⟩ := agrees
   cases statement with
   | begin =>
-    simp only [advance] at continued
+    simp only [advance, advanceWith] at continued
     split at continued
     · cases continued
     · rename_i none_
@@ -82,13 +87,13 @@ theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {sql ne
       simp only [Option.map_none] at saved
       simp [SqlState.Agrees, ResolveState.after, ← saved, catalog]
   | commit =>
-    simp only [advance] at continued
+    simp only [advance, advanceWith] at continued
     split at continued
     · cases continued
     · cases continued
       exact ⟨catalog, rfl⟩
   | rollback =>
-    simp only [advance] at continued
+    simp only [advance, advanceWith] at continued
     split at continued
     · cases continued
     · rename_i original some_
@@ -97,7 +102,7 @@ theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {sql ne
       simp only [Option.map_some] at saved
       simp [SqlState.Agrees, ResolveState.after, ← saved]
   | createTable | createIndex | addColumn | insert | update | upsert | delete | prepareError | query =>
-    simp only [advance] at continued
+    simp only [advance, advanceWith] at continued
     obtain ⟨result, stepped, rfl⟩ := Conformance.SqlState.publish_next continued
     obtain ⟨changed, control⟩ := literalStep_success_catalog stepped
     rw [state.after_of_isControl control]
@@ -118,17 +123,17 @@ theorem advance_halt_error {position : Nat} {statement : Resolved.Statement} {sq
     cases h : sql.snapshot <;> simp [SqlState.finish, Outcome.error?, h]
   cases statement with
   | begin =>
-    simp only [advance] at halted
+    simp only [advance, advanceWith] at halted
     split at halted
     · cases halted; exact finished _ _ _
     · cases halted
   | commit | rollback =>
-    simp only [advance] at halted
+    simp only [advance, advanceWith] at halted
     split at halted
     · cases halted; simp [Outcome.error?]
     · cases halted
   | createTable | createIndex | addColumn | insert | update | upsert | delete | prepareError | query =>
-    simp only [advance] at halted
+    simp only [advance, advanceWith] at halted
     obtain ⟨_, _, _, rfl⟩ := Conformance.SqlState.publish_halt halted
     simp [SqlState.failed_error]
 

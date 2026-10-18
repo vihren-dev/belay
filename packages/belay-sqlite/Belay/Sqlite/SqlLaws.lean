@@ -58,7 +58,7 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDe
       | query query =>
         obtain ⟨plain, noEach⟩ : (query.expressions.all fun x => !x.any Resolved.Expr.isJsonCall) = true ∧
             query.sources.all (!·.source.isEach) = true := first.2 query rfl
-        simp only [statementReady]
+        simp only [statementReady, runStatement, Resolved.Query.runOn]
         cases found : query.source (state.clock position) state.database with
         | none => rfl
         | some source =>
@@ -66,9 +66,10 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDe
           by_cases must : query.mustFail (state.clock position) source.rows = true <;>
             simp [Resolved.Query.run, Resolved.Query.mayFail_of_plain _ query _ plain, clean, must]
       | createTable | createIndex | addColumn | begin | commit | rollback | insert | upsert | update | delete
-      | prepareError => simp_all [statementReady]
-    simp only [supportedSqlFrom, ready, Bool.true_and]
-    cases advance position statement state with
+      | prepareError => simp_all [statementReady, runStatement]
+    have run : (runStatement (state.clock position) statement state.database).ready = true := ready
+    simp only [supportedSqlFrom, run, Bool.true_and]
+    cases advanceWith position statement state (runStatement (state.clock position) statement state.database).effect with
     | halt outcome => rfl
     | next next => exact ih tail tailModeled
 
@@ -87,7 +88,7 @@ fails with the reason and the kept database, the kept database is the input data
 Proof sketch: every error branch of {name}`step` keeps its input. -/
 theorem step_error_keeps {clock : Int} {statement : Resolved.Statement} {database kept : Database}
     {reason : ExecutionError} (failed : step clock statement database = .error (reason, kept)) : kept = database := by
-  cases statement <;> simp only [step] at failed
+  cases statement <;> simp only [step, queryEffect] at failed
   all_goals (repeat' split at failed)
   all_goals first | (cases failed; rfl) | cases failed
 
@@ -104,11 +105,11 @@ theorem advance_schemaOnly
       | .error (reason, _) => .halt (.failure position reason database) := by
   have first := guard statement (by simp)
   have literal : literalStep 0 statement database = step 0 statement database := by
-    cases statement <;> simp_all [literalStep]
+    cases statement <;> simp_all [literalStep, runStatement]
   have control : statement.isControl = false := by cases statement <;> simp_all [Resolved.Statement.isControl]
   have ordinary : advance position statement { database := database } =
       ({ database := database } : SqlState).publish position (step 0 statement database) := by
-    cases statement <;> simp_all [advance, Resolved.Statement.isControl]
+    cases statement <;> simp_all [advance, advanceWith, Resolved.Statement.isControl]
   rw [ordinary]
   cases stepped : step 0 statement database with
   | ok result => rfl

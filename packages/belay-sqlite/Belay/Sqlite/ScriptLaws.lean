@@ -41,7 +41,7 @@ every other arm of {name}`advance` is this publication. -/
 theorem advance_effect (position : Nat) (statement : Resolved.Statement) (state : SqlState)
     (ordinary : statement.isControl = false) :
     advance position statement state = state.publish position (literalStep (state.clock position) statement state.database) := by
-  cases statement <;> simp_all [advance, Resolved.Statement.isControl]
+  cases statement <;> simp_all [advance, advanceWith, Resolved.Statement.isControl]
 
 /-- For every position, state and CREATE TABLE, {name}`advance` publishes its effect
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
@@ -131,7 +131,7 @@ theorem effect_createTable_ok (clock : Int) (database : Database) (name : String
     literalStep clock (.createTable target name table) database =
       .ok { catalog := database.catalog.createTable name table, rows := database.rows ++ [[]] } := by
   subst atEnd
-  simp [literalStep, step, rows]
+  simp [literalStep, runStatement, step, rows]
 
 /-- For every clock value, database, position, table, column and value: when the table is
 at the position, the column has no time default, its default reads as the value
@@ -144,7 +144,7 @@ theorem effect_addColumn_ok (clock : Int) {database : Database} {target : Nat} {
     (constant : column.clockDefault = false) (read : readDefaultValue column = .ok value)
     (allowed : (column.notNull && value == .null && !table.rows.isEmpty) = false) :
     literalStep clock (.addColumn target column) database = .ok (database.addColumn target column value) := by
-  simp [literalStep, step, present, constant, read, allowed]
+  simp [literalStep, runStatement, step, present, constant, read, allowed]
 
 /-- For every clock value, database, position, table, rows and {lit}`RETURNING` columns:
 when the table is at the position, no row at the clock value ({name}`Resolved.rowsAt`) has
@@ -163,6 +163,6 @@ theorem effect_write_ok (clock : Int) {database : Database} {target : Nat} {tabl
       LiteralData.rowidsDistinct (LiteralData.inserted table (Resolved.rowsAt clock table.shape.columns rows))) = true) :
     literalStep clock (.insert target rows returning) database =
       .ok (database.setRows target (LiteralData.inserted table (Resolved.rowsAt clock table.shape.columns rows)).rows) := by
-  simp only [literalStep, present, insertOutcome, aligned, checkedWrite, checked, ite_true]
+  simp only [literalStep, runStatement, present, insertOutcome, aligned, checkedWrite, checked, ite_true]
 
 end Belay.Sqlite

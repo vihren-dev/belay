@@ -62,7 +62,16 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D8 and D7.
   demonstrations and `examples/` use these lemmas and no longer unfold the execution.
   The failure mutants now change `SqlState.publish` (`abort_keeps_rows` replaces
   `failed_update_keeps_rows`). The core has 129 modules. Verdict unchanged.
+- 2026-10-18: readiness returns results (outcome 6). `runStatement` computes each write and
+  query once and gives a `StatementRun` with its effect and its support check;
+  `literalStep` and `statementReady` read its fields, and `supportedSqlFrom` and the
+  harness's `passFrom` use one run for both (`advanceWith`). `insertReady` and
+  `updateReady` take the table that the write computed; the INSERT with clauses runs as a
+  trace of reached rows (`upsertSteps`), of which `upsertRun` is the summary and
+  `upsertBounded` the rowid check; a query's effect is `queryEffect` of its run
+  (`Query.runOn`). The harness's `statementOutput` still recomputes the written rows for
+  its outputs. Verdict unchanged.
 
 ## Remaining
 
-- Readiness returns results (outcome 6); full checks, CI time, pull request.
+- Full checks, CI time, pull request.

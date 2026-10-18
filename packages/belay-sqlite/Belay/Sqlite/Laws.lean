@@ -32,9 +32,9 @@ theorem body_rollback (success : SuccessfulBody clock position body database) :
     runSqlFrom position (body ++ [.rollback]) { database, snapshot := some original, clock } =
       .success original := by
   induction success with
-  | nil => simp [runSqlFrom, advance, SqlState.finish]
+  | nil => simp [runSqlFrom, advance, advanceWith, SqlState.finish]
   | @cons position statement database next rest ordinary success tail ih =>
-    cases statement <;> simp_all [Resolved.Statement.isControl, runSqlFrom, advance, SqlState.publish]
+    cases statement <;> simp_all [Resolved.Statement.isControl, runSqlFrom, advance, advanceWith, SqlState.publish]
 
 /-- For any body and database, if {name}`SuccessfulBody` holds at position 1 at the clock
 value 0, BEGIN followed by the body and ROLLBACK returns success with that database.
@@ -43,7 +43,7 @@ The proof unfolds BEGIN and applies {name}`body_rollback` with the initial
 database as the transaction snapshot. -/
 theorem rollback (success : SuccessfulBody (fun _ => 0) 1 body database) :
     runSql (.begin :: body ++ [.rollback]) database = .success database := by
-  simpa [runSql, runSqlFrom, advance] using body_rollback (original := database) success
+  simpa [runSql, runSqlFrom, advance, advanceWith] using body_rollback (original := database) success
 
 /-- For every state, position, effect and outcome: if {name}`SqlState.publish` of the
 effect halts with the outcome, the effect is an error with some reason and reached
@@ -85,7 +85,7 @@ theorem statement_atomicity (halted : advance position statement state = .halt o
     (atomic : outcome.error? ≠ some .constraintFail ∧ outcome.error? ≠ some .constraintRollback) :
     outcome.database = state.database ∧
     outcome.persistedDatabase = state.snapshot.getD state.database := by
-  cases statement <;> simp only [advance] at halted
+  cases statement <;> simp only [advance, advanceWith] at halted
   all_goals try (solve | (clear atomic; cases h : state.snapshot <;> simp_all [SqlState.finish,
     Outcome.database, Outcome.persistedDatabase, Option.getD]))
   all_goals first
@@ -111,7 +111,7 @@ theorem constraint_rollback (halted : advance position statement state = .halt o
     (rolled : outcome.error? = some .constraintRollback) :
     outcome.database = state.snapshot.getD state.database ∧
     outcome.persistedDatabase = state.snapshot.getD state.database := by
-  cases statement <;> simp only [advance] at halted
+  cases statement <;> simp only [advance, advanceWith] at halted
   all_goals try (solve | cases h : state.snapshot <;> simp_all [SqlState.finish,
     Outcome.database, Outcome.persistedDatabase, Option.getD, Outcome.error?])
   all_goals first
@@ -141,7 +141,7 @@ theorem add_column_shape (constant : column.clockDefault = false)
       (table.appendColumns [(column, value)]).rows.map Row.rowid = table.rows.map Row.rowid ∧
       (table.appendColumns [(column, value)]).rows.map Row.values =
         table.rows.map (fun row => row.values ++ [storeValue column.affinity value]) := by
-  simp only [advance, literalStep, step, SqlState.publish] at success
+  simp only [advance, advanceWith, literalStep, runStatement, step, SqlState.publish] at success
   repeat (split at * <;> simp_all)
   all_goals subst_vars
   all_goals simp_all [Database.table_addColumn, Table.appendColumns, Row.appendValues, List.map_map]

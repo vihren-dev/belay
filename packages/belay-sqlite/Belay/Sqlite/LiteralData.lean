@@ -115,13 +115,14 @@ def aliasReady (shape : CatalogTable) : Bool :=
 
 /-- Require {name}`tableReady` before the write, {name}`aliasReady`, one value per column
 in each row, {name}`storedForm` on every column/value pair, and a bounded rowid for
-every inserted row. This admits evaluation; the inserted table's constraint truth is
-checked separately. -/
-def insertReady (keys : List (List Nat)) (table : Table) (rows : List (List Value)) : Bool :=
+every row of the table with the rows inserted ({lit}`result`, which the execution
+computes: {name}`inserted`). This admits evaluation; the inserted table's constraint truth
+is checked separately. -/
+def insertReady (keys : List (List Nat)) (table : Table) (rows : List (List Value)) (result : Table) : Bool :=
   tableReady keys table && aliasReady table.shape &&
   rows.all (fun values => values.length == table.shape.columns.length &&
     (table.shape.columns.zip values).all (fun (column, value) => storedForm column.affinity value)) &&
-  (inserted table rows).rows.all (fun row => boundedInteger row.rowid)
+  result.rows.all (fun row => boundedInteger row.rowid)
 
 end LiteralData
 end Belay.Sqlite

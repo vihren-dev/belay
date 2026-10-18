@@ -28,8 +28,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         " (clause, ·)"),
     "target_checks_every_key": (UPSERT, "  | some key => [key]", "  | some _ => keys"),
     "later_row_ignores_earlier": (RUN,
-        "    | .ok (next, written) => match upsertRun clock keys policy clauses next rest with",
-        "    | .ok (_, written) => match upsertRun clock keys policy clauses table rest with"),
+        "      | .ok (next, _) => upsertSteps clock keys policy clauses next rest",
+        "      | .ok _ => upsertSteps clock keys policy clauses table rest"),
     "skipped_row_counted": (OUTPUTS,
         "      return ⟨names, returnedRows clock returning (written.map (·.values)), some written.length⟩",
         "      return ⟨names, returnedRows clock returning (written.map (·.values)), some rows.length⟩"),
@@ -55,7 +55,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 GUARDS: dict[str, str] = {
     "update_first_row": "rule:upsertRow", "excluded_reads_existing": "rule:updateExisting",
     "last_clause_handles": "rule:handlingClause", "target_checks_every_key": "rule:clauseKeys",
-    "later_row_ignores_earlier": "rule:upsertRun", "skipped_row_counted": "rule:statementOutput",
+    "later_row_ignores_earlier": "rule:upsertSteps", "skipped_row_counted": "rule:statementOutput",
     "update_not_checked": "rule:updateExisting",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
