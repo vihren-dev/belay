@@ -172,6 +172,15 @@ that the frontend refuses before resolution, such as `DISTINCT` or
 `UPDATE OR IGNORE`, has no id. `just restriction-costs` counts, for each id and for each kind
 of frontend refusal, the cases of the claimed corpora that it keeps out of scope.
 
+The registry has three parts (ADR 0013, D4), which `RestrictionKind.registry` in
+`RestrictionRegistry.lean` gives for each id. *Unsupported* SQL is not yet modeled.
+*Undecided* SQL has a result that depends on an internal order of SQLite, which the model
+does not predict. *Unrepresented* SQL is SQL that the resolved form cannot express,
+although evaluation could decide it: these are the model's own limitations, and the part
+should shrink.
+
+#### Unsupported
+
 | Id | Restriction | Introduced by |
 | --- | --- | --- |
 | `schema-statement` | A schema contains only CREATE TABLE and CREATE INDEX statements | ADR 0008 |
@@ -181,17 +190,11 @@ of frontend refusal, the cases of the claimed corpora that it keeps out of scope
 | `unmodeled-default` | Only literal defaults and the time keywords are modeled | ADR 0008 |
 | `create-index-runs` | A CREATE INDEX that runs is not modeled | ADR 0008 |
 | `add-column-constraint` | The added column requires unmodeled default evaluation | ADR 0008 |
-| `row-dependent-key` | A SET value that reads the row is not modeled for a column of a unique key | ADR 0012 amendment 1 (question 1) |
-| `conflict-without-target` | DO UPDATE without a conflict target is not modeled for a table with more than one key | ADR 0012 amendment 4 (owner decision 2) |
-| `mixed-conflict-algorithms` | Keys of one INSERT with different conflict algorithms other than REPLACE are not modeled | ADR 0012 amendment 4, slice 5d |
 | `constraint-algorithm-update` | UPDATE of a table with ON CONFLICT constraint algorithms is not modeled | ADR 0012 amendment 4, slice 5d |
 | `replace-default` | REPLACE of a NOT NULL column with a default is not modeled | ADR 0012 amendment 4, slice 5d |
 | `insert-column-twice` | A column named twice in INSERT is not modeled | ADR 0008 |
 | `update-column-twice` | A column assigned twice in UPDATE is not modeled | ADR 0008 |
-| `rowid-name` | A rowid name that is not a column is not modeled in an expression over a table; in VALUES it resolves as any other name | ADR 0012 slice 3a; extended 2026-10-14 |
 | `join-operator` | A join operator with other keywords, or in another order, such as `OUTER LEFT JOIN`, is not modeled | ADR 0012 amendment 2 |
-| `duplicate-source` | Two sources of a query with the same name are not modeled | ADR 0012 amendment 2 (question 3) |
-| `later-table-in-on` | An ON condition that names a table joined after it is not modeled | ADR 0012 amendment 2 |
 | `system-table` | Queries of SQLite's own tables, such as `sqlite_schema`, are not modeled | ADR 0012 slice 1 |
 | `unmodeled-function` | Only `COUNT(*)`, `COUNT`, `MIN`, `MAX`, `SUM` and `AVG` of one argument, `COALESCE` of two or more arguments, `json_extract`, `->`, `->>`, `json_type`, `json_valid`, `json_array_length` and `json` are modeled as functions | ADR 0012 slices 1, 2, 6b and 6c |
 | `aggregate-in-expression` | An aggregate inside an expression is not modeled | ADR 0012 slice 1 |
@@ -201,9 +204,25 @@ of frontend refusal, the cases of the claimed corpora that it keeps out of scope
 | `aggregate-order-by` | An aggregate query is modeled with ORDER BY result column numbers or aliases only | ADR 0012 slice 1 |
 | `window-value` | Only an integer literal is modeled as LIMIT or OFFSET | ADR 0012 slice 1 |
 | `negative-offset` | A negative OFFSET is not modeled | ADR 0012 slice 1 |
+| `table-function` | Only `json_each` with one or two arguments is modeled as a table-valued function in FROM | ADR 0012 slice 6d |
+
+#### Undecided
+
+| Id | Restriction | Introduced by |
+| --- | --- | --- |
+| `row-dependent-key` | A SET value that reads the row is not modeled for a column of a unique key | ADR 0012 amendment 1 (question 1) |
+| `conflict-without-target` | DO UPDATE without a conflict target is not modeled for a table with more than one key | ADR 0012 amendment 4 (owner decision 2) |
+| `mixed-conflict-algorithms` | Keys of one INSERT with different conflict algorithms other than REPLACE are not modeled | ADR 0012 amendment 4, slice 5d |
 | `windowed-group-sum` | SUM in a grouped query with LIMIT or OFFSET is not modeled, because SQLite may stop before an overflowing group | ADR 0012 slice 2 |
 | `constant-function-error` | A constant value in VALUES or SET whose JSON function fails is not modeled, because the model does not describe when SQLite evaluates it | ADR 0012 slice 6b |
-| `table-function` | Only `json_each` with one or two arguments is modeled as a table-valued function in FROM | ADR 0012 slice 6d |
+
+#### Unrepresented
+
+| Id | Restriction | Introduced by |
+| --- | --- | --- |
+| `rowid-name` | A rowid name that is not a column is not modeled in an expression over a table; in VALUES it resolves as any other name | ADR 0012 slice 3a; extended 2026-10-14 |
+| `duplicate-source` | Two sources of a query with the same name are not modeled | ADR 0012 amendment 2 (question 3) |
+| `later-table-in-on` | An ON condition that names a table joined after it is not modeled | ADR 0012 amendment 2 |
 | `table-after-function` | A table after a `json_each` source in FROM is not modeled | ADR 0012 slice 6d |
 | `function-join` | Only an inner join without NATURAL or USING is modeled with `json_each` | ADR 0012 slice 6d |
 | `later-source-in-arguments` | An argument of `json_each` that reads a later source is not modeled | ADR 0012 slice 6d |
