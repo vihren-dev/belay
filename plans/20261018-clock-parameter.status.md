@@ -1,0 +1,31 @@
+# Status: the clock is an evaluation parameter (ADR 0013, step 6)
+
+Created 2026-10-18. Status: open.
+Task file: [task](20261018-clock-parameter.task.md).
+Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D6.
+
+## Relevant files
+
+- Clock: `packages/belay-sqlite/Belay/Sqlite/ClockText.lean`, `ClockSubstitution.lean`,
+  `StatementClock.lean`, `StatementClockLaws.lean`, `SchemaClock.lean`,
+  `SqlExecution.lean`, `Resolution/ClockCell.lean`, `ClockRows.lean`, `ClockRowRules.lean`.
+- Evaluation: `ExprEval.lean`, `QueryEval.lean`, `QueryRun.lean`, `QueryJoins.lean`,
+  `QueryFunctions.lean`, `JsonReady.lean`, `Execution.lean`, `StatementStep.lean`,
+  `RowUpdate.lean`, `RowDelete.lean`, `Upsert.lean`, `UpsertRun.lean`.
+- Date: `Date/Functions.lean`, `Date/Parse.lean`, `Date/DateTime.lean`.
+- Harness: `packages/verifier-conformance/VerifierConformance/Case.lean`, `Predict.lean`,
+  `Outputs.lean`.
+- Users of the clock lemmas: `packages/sqlite-verifier/SqliteVerifier/ContractProofs.lean`,
+  `FailureDemonstration.lean`, `ApplicationKeyDemonstration.lean`,
+  `examples/constant_default/Proofs.lean`, `examples/missing_required_column/Proofs.lean`,
+  `examples/atuin/Proofs.lean`.
+
+## Progress
+
+- 2026-10-18: code map. The clock reaches the date functions only through
+  `DateTime.current` (`parseDateOrTime` for `now`, `subsec`, `subsecond`, and no
+  argument). The approved files and `Contract.lean` use none of the changed names.
+
+## Remaining
+
+- Implementation, full checks, verdict comparison, review, CI time, pull request.
