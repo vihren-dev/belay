@@ -1,5 +1,5 @@
 import Belay.Sqlite.UpsertExamples
-import Belay.Sqlite.UpsertConforms
+import Belay.Sqlite.UpsertRun
 
 set_option doc.verso true
 
@@ -24,7 +24,10 @@ def run (algorithm : ConflictAlgorithm) (rows : List (List Value)) :
 /-- The values of the table of a run: the final table, or the table before the failing
 row. -/
 def valuesOf (algorithm : ConflictAlgorithm) (rows : List (List Value)) : List (List Value) :=
-  (LiteralData.runTable (run algorithm rows)).rows.map (·.values)
+  let final := match run algorithm rows with
+    | .ok (table, _) => table
+    | .error (_, table, _) => table
+  final.rows.map (·.values)
 
 /-- The error of a run, or none. -/
 def errorOf (algorithm : ConflictAlgorithm) (rows : List (List Value)) : Option ExecutionError :=
