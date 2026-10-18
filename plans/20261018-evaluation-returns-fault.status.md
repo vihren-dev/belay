@@ -1,6 +1,6 @@
 # Status: evaluation returns its fault (ADR 0013, step 3)
 
-Created 2026-10-18. Status: open.
+Created 2026-10-18. Status: DONE.
 Task file: [task](20261018-evaluation-returns-fault.task.md).
 Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D2.
 
@@ -39,6 +39,8 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D2.
   22 s, `tests.model` 335 s to 332 s, `tests.frozen` 140 s to 140 s, scheduled mutants
   411 s to 412 s.
 
+- 2026-10-18: pull request #161, stacked on #160.
+
 ## Remaining
 
-- Pull request A.
+- None. Steps 4 and 5 follow; they change verdicts and are measured first.

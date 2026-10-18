@@ -1,6 +1,6 @@
 # Evaluation returns its fault (ADR 0013, step 3)
 
-Created 2026-10-18. Status: open.
+Created 2026-10-18. Status: DONE (pull request #161; no verdict changed; outcome 4 deferred to step 7).
 Status file: [status](20261018-evaluation-returns-fault.status.md).
 Specification: [ADR 0013](../docs/adr-0013-model-structure.md), decision D2, "Order" step 3
 (depends on step 2), and the D7 note that `Expr.any` comes with this step.
