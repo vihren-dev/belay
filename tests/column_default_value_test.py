@@ -69,10 +69,10 @@ open Belay.Sqlite Lean
       | throw (IO.userError "the model does not describe the default")
     let columns : List CatalogColumn := [{{name := "id", declaredType := some "BLOB"}},
       {{name := "added", declaredType := some affinity, defaultValue := some resolved}}]
-    IO.ofExcept (((fullCells columns [0] [.value (.integer 7)]).map fun (cells : List Resolved.Cell) =>
+    IO.ofExcept (((fullCells columns [0] [Resolved.Cell.value (.integer 7)]).map fun (cells : List Resolved.Cell) =>
       cells.map fun cell => match cell with
-        | .value value => value
-        | .expression _ => Value.null).mapError reprStr)
+        | Resolved.Cell.value value => value
+        | Resolved.Cell.expression _ => Value.null).mapError reprStr)
   IO.println (toJson tables).compress
 '''
     actual = json.loads(compile_checks(source, tmp_path, lean_sysroot, lean_libraries))
@@ -110,7 +110,7 @@ open Belay.Sqlite Lean
     | throw (IO.userError "the model does not describe the default")
   let columns : List CatalogColumn := [{{name := "id", declaredType := none}},
     {{name := "added", declaredType := none, defaultValue := some resolved}}]
-  match fullCells columns [0] [.value (.integer 7)] with
+  match fullCells columns [0] [Resolved.Cell.value (.integer 7)] with
   | .error (.prepare error) =>
     IO.println (toJson ["prepare", error.message]).compress
   | _ => throw (IO.userError "expected the default's preparation error")
