@@ -1,6 +1,6 @@
 # One source model (ADR 0013, step 5)
 
-Created 2026-10-18. Status: open.
+Created 2026-10-18. Status: DONE (pull request #164 and its claim).
 Status file: [status](20261018-one-source-model.status.md).
 Specification: [ADR 0013](../docs/adr-0013-model-structure.md), decision D5, amendment 2,
 "Order" step 5, owner decisions 2 and 6.

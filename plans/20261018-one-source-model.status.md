@@ -1,6 +1,6 @@
 # Status: one source model (ADR 0013, step 5)
 
-Created 2026-10-18. Status: open.
+Created 2026-10-18. Status: DONE.
 Task file: [task](20261018-one-source-model.task.md).
 Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D5 and amendment 2.
 
@@ -52,7 +52,12 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D5 and amendment
   now changes the left-most choice of `mergedLeft`. Owner decision 7: no `subquery`
   restriction kind (ADR 0013 and the task file amended).
 
+- 2026-10-18: all three suites pass on the tip. CI time against step 4: `tests.harness`
+  22 s to 21 s, `tests.model` 334 s to 337 s, `tests.frozen` 141 s to 142 s, scheduled
+  mutants 411 s to 419 s. Pull request A is #164. Pull request B adds the 3 newly
+  agreeing entries to `mustAgree` (corpus v5: 978 cases); the judge lock changes only in
+  its judge entry.
+
 ## Remaining
 
-- Measurement over every corpus, full checks, review, CI time, pull
-  requests A and B.
+- None. Step 6 of ADR 0013 follows.
