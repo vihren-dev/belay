@@ -2,6 +2,7 @@ import Belay.Sqlite.NumberConvert
 import Belay.Sqlite.RealText
 import Belay.Sqlite.Arithmetic
 import Belay.Sqlite.Summation
+import Belay.Sqlite.Comparison
 
 set_option doc.verso true
 
@@ -81,5 +82,11 @@ def integerOf (text : String) : Int := (atoi64 text.toUTF8.toList).1
 -- AVG never fails: the overflowing sum continues in doubles.
 #guard [(sumOf []).averageValue, (sumOf [.integer int64Maximum, .integer 1]).averageValue] ==
   [.null, .real 4886405595696988160]
+
+-- A NaN double is NULL as a value (realValue), as SQLite stores it. The model never creates a
+-- NaN REAL; one written by hand is not NULL: only NULL is, and `x IS NULL` is false for it.
+#guard realValue (0.0 / 0.0) == .null
+#guard !(Value.real 0x7FF8000000000000).isNull && (Value.null).isNull
+#guard Comparison.apply .is (.real 0x7FF8000000000000) .null == .integer 0
 
 end Belay.Sqlite.NumberExamples

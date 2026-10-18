@@ -27,9 +27,11 @@ inductive Value where
   | null
   /-- An integer cell; native representability requires a separate range check. -/
   | integer (value : Int)
-  /-- A REAL cell's exact IEEE bits, preserving distinctions such as signed zero. The
-  model builds every REAL that it computes through {lit}`realValue`, which gives NULL for
-  a NaN, as SQLite does; a REAL is never NaN. -/
+  /-- A REAL cell's exact IEEE bits, preserving distinctions such as signed zero. Any bits
+  are accepted, but the model never creates a NaN: it builds every REAL that it computes
+  through {lit}`realValue`, which gives NULL for a NaN, as SQLite does, or from the bits of
+  a REAL that it was given. A NaN REAL exists only when one is written by hand or comes
+  in, and SQLite never stores one. -/
   | real (bits : UInt64)
   /-- A text cell's bytes; no encoding conversion is performed here. -/
   | text (bytes : List UInt8)
@@ -37,8 +39,8 @@ inductive Value where
   | blob (bytes : List UInt8)
   deriving Repr, DecidableEq
 
-/-- Whether the value is NULL. A REAL is never NaN ({lean}`Value.real`), so NULL is the only
-value that is NULL in a comparison and in arithmetic. -/
+/-- Whether the value is NULL. Only NULL is: a REAL is not, also with NaN bits, which the
+model never creates ({lean}`Value.real`). -/
 def Value.isNull : Value → Bool
   | .null => true
   | .integer _ | .real _ | .text _ | .blob _ => false
