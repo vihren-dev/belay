@@ -476,3 +476,7 @@ instance is worth its proof.
    function. `Table.Valid` does not state it: Lean's `Float` is opaque to proofs, so no
    lemma could show that a computed REAL is not NaN, and the conjunct would only add
    premises to the ADD COLUMN lemmas.
+9. **Identifiers as bytes in step 8.** Decided on 2026-10-19: step 8 includes identifiers as
+   bytes (`List UInt8`) together with the deduplication. Table, column and index names
+   change type in the Syntax IR, the catalog, the codec and the public API, and the
+   approved files of the examples are rewritten and rehashed, as in step 2.
