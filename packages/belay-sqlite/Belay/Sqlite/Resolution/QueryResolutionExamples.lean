@@ -170,5 +170,11 @@ def never : Expr := .compare .eq (.numeric "1") (.numeric "0")
   some [[.integer 1, .integer 0]]
 #guard errorOf (bare [written (.identifier "TRUE" .bracket) "[TRUE]"]) == some (.noSuchColumn "TRUE")
 #guard errorOf (bare [written (.identifier "false" .backtick) "`false`"]) == some (.noSuchColumn "false")
+-- `x IS [NOT] TRUE|FALSE` is SQLite's truth test (checked natively): exact for a condition,
+-- whose value is 0, 1 or NULL; `2 IS TRUE`, which is 1 in SQLite, stays a restriction.
+#guard bareRows (bare [written (.compare .is (.compare .lt (.numeric "1") (.numeric "2")) (.identifier "TRUE" .none))
+    "(1 < 2) IS TRUE", written (.compare .isNot (.compare .gt (.numeric "1") (.numeric "2"))
+    (.identifier "TRUE" .none)) "(1 > 2) IS NOT TRUE"]) == some [[.integer 1, .integer 1]]
+#guard restrictedOne (bare [written (.compare .is (.numeric "2") (.identifier "TRUE" .none)) "2 IS TRUE"])
 
 end Belay.Sqlite.Resolution.QueryResolutionExamples

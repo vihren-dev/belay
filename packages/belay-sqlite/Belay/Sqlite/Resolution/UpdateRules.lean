@@ -1,5 +1,5 @@
 import Belay.Sqlite.Resolution.PrepareSpec
-import Belay.Sqlite.Resolution.OperandIssues
+import Belay.Sqlite.Resolution.ReturningIssues
 
 set_option doc.verso true
 

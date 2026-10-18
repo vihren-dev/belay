@@ -18,6 +18,8 @@ RESOLUTION = SQLITE + "Resolution/Queries.lean"
 """The resolution of a SELECT."""
 EXPRESSIONS = SQLITE + "Resolution/QueryExprs.lean"
 """The resolution of query expressions."""
+FORMS = SQLITE + "Resolution/ExprForms.lean"
+"""The call and condition forms of expression resolution."""
 SOURCES = SQLITE + "Resolution/Sources.lean"
 """The resolution of the tables of FROM."""
 
@@ -50,7 +52,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "      else .error (.prepare (.noSuchColumn name))", "      else .ok (.literal .null, none)"),
     "no_such_table": (SOURCES,
         "    else .error (.prepare (.noSuchTable reference.table))", "    else .error (.restriction path .systemTable)"),
-    "no_misuse_of_aggregate": (EXPRESSIONS,
+    "no_misuse_of_aggregate": (FORMS,
         "  if misuse then .prepare (.misuseOfAggregate function)", "  if false then .prepare (.misuseOfAggregate function)"),
     "no_aggregate_in_group_by": (RESOLUTION,
         ".error (if aggregateCall term then .prepare .aggregateInGroupBy else (callIssue name).under [4, item])",

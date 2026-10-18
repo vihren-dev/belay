@@ -1,6 +1,6 @@
 # Syntax IR around SQL forms (ADR 0013, step 1): status
 
-Created 2026-10-17. Status: open.
+Created 2026-10-17. Status: DONE.
 Task: [20261017-syntax-ir-sql-forms.task.md](20261017-syntax-ir-sql-forms.task.md).
 Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D3 and D7, step 1.
 
@@ -79,7 +79,16 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D3 and D7, step 
     space is 9.4 GiB, under the 10 GiB guard; only nix-shell directories older than three
     hours may be removed without asking, and none is old enough yet.
 
+- 2026-10-18: review of the step commit (two "must" findings), fixed in a `refactor:`
+  commit. An unquoted `TRUE` or `FALSE` on the right of `IS` or `IS NOT` is SQLite's
+  truth test (`2 IS TRUE` is 1, `2 = TRUE` and `TRUE IS 2` are 0; checked natively):
+  resolution gives the exact comparison when the left operand is a condition and keeps
+  `value-as-condition` otherwise (`truthTest`), so `expr2-1.4.1:5` (`0 IS NOT FALSE`)
+  stays unsupported and no verdict changes; no PR B is needed. `ExprForms.lean` and
+  `ReturningIssues.lean` split two files over 200 lines. Core modules 131. The disk
+  guard needed `nix-store --gc` (owner approval, 12.3 GiB freed). `test-full`, `test-nix`
+  and `test-scheduled` pass.
+
 ## Remaining
 
-- Items 1 to 10 of the task, as reviewed commits; pull request A; pull request B if the
-  `boolean-name` case agrees.
+- Pull request A.
