@@ -21,12 +21,14 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "  scope.flatMap fun source => source.placedColumns fun index => !source.hidden.contains index"),
     "unqualified_sees_merged": (SCOPE, "    if source.merged.contains index then match source.mergeRule with",
         "    if false then match source.mergeRule with"),
-    "condition_uses_right_most": (MERGED_LEFT, "  scope.findSome? fun source =>", "  scope.reverse.findSome? fun source =>"),
+    "condition_uses_right_most": (MERGED_LEFT,
+        "  | first :: rest => some (left.nameOperand (if coalesced then first :: rest else [first]))",
+        "  | first :: rest => some (left.nameOperand (if coalesced then first :: rest else [rest.getLastD first]))"),
     "natural_without_common_no_rows": (JOIN_USING, "  | [] => none\n  | first :: rest => some (rest.foldl .and first)",
         "  | [] => some (.compare .eq none (.literal (.integer 0)) (.literal (.integer 1)))\n"
         "  | first :: rest => some (rest.foldl .and first)"),
     "missing_using_column_accepted": (JOIN_USING,
-        "  if (columnPosition right.columns name).isSome && (left.leftMost name).isSome then\n",
+        "  if (columnPosition right.columns name).isSome && left.hasColumn name then\n",
         "  if true then\n"),
     "natural_with_on_accepted": (JOIN_USING,
         "    if join.condition.isSome || join.usingColumns.isSome then .error (.prepare .naturalJoinCondition)",
@@ -48,7 +50,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 
 GUARDS: dict[str, str] = {
     "star_keeps_merged": "rule:Scope.visible", "unqualified_sees_merged": "rule:Scope.resolveStep",
-    "condition_uses_right_most": "rule:Scope.leftMost", "natural_without_common_no_rows": "rule:mergedCondition",
+    "condition_uses_right_most": "rule:mergedLeft", "natural_without_common_no_rows": "rule:mergedCondition",
     "missing_using_column_accepted": "rule:usingNameChecked", "natural_with_on_accepted": "rule:mergedNames",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant

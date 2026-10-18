@@ -19,7 +19,7 @@ the left input; else SQLite's {name}`PrepareError.joinUsingColumn`. With
 {name}`usingReferenceChecked`. -/
 def usingNameChecked (coalesced : Bool) (left : Scope) (right : ScopeSource) (name : String) :
     Except ValueIssue String :=
-  if (columnPosition right.columns name).isSome && (left.leftMost name).isSome then
+  if (columnPosition right.columns name).isSome && left.hasColumn name then
     if coalesced then usingReferenceChecked left name else .ok name
   else .error (.prepare (.joinUsingColumn name))
 
@@ -35,7 +35,7 @@ def mergedNames (coalesced : Bool) (left : Scope) (right : ScopeSource) (natural
   if natural then
     if join.condition.isSome || join.usingColumns.isSome then .error (.prepare .naturalJoinCondition)
     else
-      let names := right.columns.filterMap fun column => (left.leftMost column.name).map fun _ => column.name
+      let names := right.columns.filterMap fun column => if left.hasColumn column.name then some column.name else none
       if coalesced then (names.mapM (usingReferenceChecked left)).map some else .ok (some names)
   else match join.usingColumns with
     | none => .ok none
@@ -109,7 +109,7 @@ the joined source and of the left input, {name}`usingNameChecked` without
 assumption for the first name makes its check succeed, and the assumption for the other
 names gives the induction hypothesis. -/
 theorem usingNames_checked (left : Scope) (right : ScopeSource) (names : List String)
-    (both : ∀ name ∈ names, (columnPosition right.columns name).isSome ∧ (left.leftMost name).isSome) :
+    (both : ∀ name ∈ names, (columnPosition right.columns name).isSome ∧ left.hasColumn name) :
     names.mapM (usingNameChecked false left right) = .ok names := by
   induction names with
   | nil => rfl
@@ -126,7 +126,7 @@ the rule and gives the conjunction of their equalities with the left-most left c
 ({name}`mergedCondition`), as in slice 4b. -/
 theorem mergeJoin_using (left : Scope) (right : ScopeSource) (rule : MergeRule) (item : Nat) (join : Syntax.Join)
     (names : List String) (written : join.usingColumns = some names)
-    (both : ∀ name ∈ names, (columnPosition right.columns name).isSome ∧ (left.leftMost name).isSome) :
+    (both : ∀ name ∈ names, (columnPosition right.columns name).isSome ∧ left.hasColumn name) :
     mergeJoin left right false false rule item join =
       .ok ({ right with merged := names.filterMap (columnPosition right.columns ·), mergeRule := rule },
         .ofMerged (mergedCondition false left right names)) := by
@@ -143,7 +143,7 @@ rule, and gives the conjunction of their equalities with the left-most left colu
 cross join. -/
 theorem mergeJoin_natural (left : Scope) (right : ScopeSource) (rule : MergeRule) (item : Nat) (join : Syntax.Join)
     (noOn : join.condition = none) (noUsing : join.usingColumns = none) :
-    let names := right.columns.filterMap fun column => (left.leftMost column.name).map fun _ => column.name
+    let names := right.columns.filterMap fun column => if left.hasColumn column.name then some column.name else none
     mergeJoin left right true false rule item join =
       .ok ({ right with merged := names.filterMap (columnPosition right.columns ·), mergeRule := rule },
         .ofMerged (mergedCondition false left right names)) := by

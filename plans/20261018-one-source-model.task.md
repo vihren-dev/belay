@@ -33,8 +33,8 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), decision D5, ame
    `function-join` covers only `json_each` as the right operand of `RIGHT` or `FULL`, or
    with `USING` or `NATURAL`; `LEFT JOIN json_each` is modeled. `later-table-in-on`,
    `later-source-in-arguments` and `function-join` move to the *unsupported* registry with
-   their reasons (amendment 2). A new *unsupported* kind `subquery` is reserved for
-   `Source.subquery`, with no SQL that reaches it while the frontend refuses subqueries.
+   their reasons (amendment 2). No restriction kind `subquery` is added: the frontend
+   refuses subqueries before resolution (owner decision 7).
 6. **Scope.** Each source of the scope keeps its offset in the joined row; no fold
    recomputes it.
 

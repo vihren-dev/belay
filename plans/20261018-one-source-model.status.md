@@ -45,11 +45,14 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D5 and amendment
   `Scope.place`); the scope folds that recomputed offsets are gone (outcome 6). Mutant
   anchors moved; `natural_without_common_no_rows` now writes a resolved expression,
   since the merged condition is no longer Syntax. Verdict unchanged.
+- 2026-10-18: suites on the offsets commit: `test-full` passes; `test-nix` failed on the
+  core module count (136 with `SourceList.lean`), and `test-scheduled` on the surviving
+  mutant `condition_uses_right_most`, because `Scope.leftMost` was only an existence
+  check after direct `USING`. `leftMost` is replaced by `Scope.hasColumn`, and the mutant
+  now changes the left-most choice of `mergedLeft`. Owner decision 7: no `subquery`
+  restriction kind (ADR 0013 and the task file amended).
 
 ## Remaining
 
-- The `subquery` kind: the ADR (D5) and amendment 2 disagree on whether SQL can reach
-  it, and `tests/conformance_restriction_examples_test.py` refuses a kind no SQL reaches;
-  asked the owner.
 - Measurement over every corpus, full checks, review, CI time, pull
   requests A and B.

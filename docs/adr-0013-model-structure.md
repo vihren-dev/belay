@@ -364,7 +364,8 @@ placeholder for subqueries.
   nested inductive through the source list, and on Lean 4.34.1 `deriving DecidableEq` does
   not accept it (see D3). `Resolved.Source.subquery` is a constructor without fields, which
   resolution never builds: the frontend refuses a subquery in `FROM` before resolution.
-  The subquery ADR decides its payload.
+  The subquery ADR decides its payload. For the same reason D5 adds no restriction kind
+  `subquery` (owner decision 7): the frontend refusal stays until the subquery ADR.
 - **One source list.** `Query.sources` is a list of sources in written order, each with
   its join kind and optional `ON` condition; `Query.table`, `joins` and `functions` go. A
   query without `FROM` has no sources. A `json_each` source may come before or after a
@@ -464,3 +465,8 @@ instance is worth its proof.
    `Database` as a function.
 6. **Scope of D5.** Decided on 2026-10-18: the full D5 now, with a subquery placeholder
    without payload (amendment 2), instead of only the join operators and direct `USING`.
+7. **No `subquery` restriction yet.** Decided on 2026-10-18: D5 adds no restriction kind
+   `subquery`. The frontend refuses a subquery in `FROM` before resolution, so no SQL
+   could reach such a kind, and the registry keeps only kinds that SQL reaches. The
+   subquery ADR adds the kind, or the semantics, when the frontend passes subqueries to
+   resolution (amendment 2).

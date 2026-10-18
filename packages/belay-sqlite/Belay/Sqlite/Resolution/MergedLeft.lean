@@ -14,14 +14,6 @@ after the first with the name to merge it by its own join, else
 
 namespace Belay.Sqlite
 
-/-- The name of the left-most source of the scope with a column of the folded name, and
-that column's name as declared; none when no source has one. A merged column has a
-column of the same name in an earlier source, so the result is never merged. -/
-def Scope.leftMost (scope : Scope) (name : String) : Option (String × String) :=
-  scope.findSome? fun source =>
-    (columnPosition source.columns name).bind fun position =>
-      source.columns[position]?.map fun column => (source.name, column.name)
-
 /-- Every column of the folded name in the scope, in order: the source's name, the
 column's name as declared, and whether the source's join merged it. -/
 def Scope.namedColumns (scope : Scope) (name : String) : List (String × String × Bool) :=
@@ -40,6 +32,10 @@ def usingReferenceChecked (left : Scope) (name : String) : Except ValueIssue Str
 order. -/
 def Scope.namedPositions (scope : Scope) (name : String) : List Nat :=
   scope.flatMap fun source => ((columnPosition source.columns name).map (source.offset + ·)).toList
+
+/-- Whether a source of the scope has a column of the folded name. -/
+def Scope.hasColumn (scope : Scope) (name : String) : Bool :=
+  !(scope.namedPositions name).isEmpty
 
 /-- The left side of the equality of a merged name, resolved, with its affinity
 ({name}`Scope.nameOperand`): with {lit}`coalesced` (a right or full join in the
