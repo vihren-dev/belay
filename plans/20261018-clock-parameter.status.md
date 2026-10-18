@@ -44,8 +44,13 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D6.
   stores (`Cell.valueAt`, `rowsAt`). `Statement.clocked`, `ClockCell`, `ClockRows.lean`
   (now `InsertCells.lean`) and `ClockRowRules.lean` (now `InsertCellRules.lean`) are gone;
   `RowWidth` is stated over cells. The core has 134 modules. Verdict unchanged.
+- 2026-10-18: `TimeKeyword.value` is the keyword's date and time function without
+  arguments (`TimeKeyword.dateFunction`, in `Date/Functions.lean`); the duplicate time of
+  day and text functions of `ClockText.lean` are gone, and `ClockText.lean` keeps the
+  keywords and the shared `date.c` parts. The natively checked keyword examples hold on
+  the new definition (also probed at 15 edge clocks against the old one). Examples: a
+  clock-reading `VALUES` item stored with its column's affinity. Verdict unchanged.
 
 ## Remaining
 
-- Time keywords through the date functions and the `ClockText` duplicates; examples.
 - Full checks, verdict comparison, review, CI time, pull request.

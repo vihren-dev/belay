@@ -59,6 +59,15 @@ def rowsAfter (clock : Clock) (script : List Syntax.Statement) : Option (List (L
 #guard rowsAfter (fun _ => 0) [.insert "t" (some ["a"]) [[.currentTime "CURRENT_TIMESTAMP"]] []] ==
   some [[.null, .null]]
 
+-- A VALUES item that reads the clock is stored with its column's affinity: the text of
+-- `strftime('%s', 'now')` stays TEXT in a and becomes an INTEGER in b (checked natively).
+#guard rowsAfter newYear [.insert "t" (some ["a", "b"])
+    [[.call "strftime" [.string "%s".toUTF8.toList, .string "now".toUTF8.toList],
+      .call "strftime" [.string "%s".toUTF8.toList, .string "now".toUTF8.toList]]] []] ==
+  some [[textOf "1735689599", .integer 1735689599]]
+-- Each time keyword is its date and time function without arguments.
+example (clock : Int) : TimeKeyword.timestamp.value clock = Resolved.DateFunction.datetime.value clock [] := rfl
+
 -- SQLite reads a time value up to its first NUL: `date('now' || char(0) || 'x')` is the date
 -- of the statement's clock, and `date('nowx')` is NULL.
 #guard rowsAfter newYear [.insert "t" (some ["a", "b"])

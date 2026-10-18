@@ -1,9 +1,10 @@
-import Belay.Sqlite.ClockText
+import Belay.Sqlite.Date.Functions
 
 set_option doc.verso true
 
 /-! Checked examples of {lit}`CURRENT_TIME`, {lit}`CURRENT_DATE` and
-{lit}`CURRENT_TIMESTAMP`. Each expected value is the result of the pinned native SQLite
+{lit}`CURRENT_TIMESTAMP` ({lit}`TimeKeyword.value`, the date and time functions without
+arguments). Each expected value is the result of the pinned native SQLite
 3.51.0 when its VFS method {lit}`xCurrentTimeInt64` returns the given clock in Julian-day
 milliseconds. -/
 
