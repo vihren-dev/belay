@@ -104,7 +104,8 @@ def Case.clock (c : Case) : Clock := fun position => c.clocks.getD position 0
 
 /-- Resolve the case under its recorded profile, then check the initial state first,
 admission second, and the complete execution trace and outputs last. Each statement
-runs at its recorded clock value ({name}`scriptAtClock`); a script that reads the clock is
+runs at its recorded clock value as {name}`runSqlAt` gives it ({name}`scriptClock`); a script
+that reads the clock is
 unsupported for a record without clock values. A model restriction is unsupported; a schema that SQLite prepared but resolution refuses is
 a disagreement. -/
 def classifyCase (c : Case) : Verdict :=
@@ -113,9 +114,9 @@ def classifyCase (c : Case) : Verdict :=
   | .error (.schemaRestricted _) | .error (.scriptRestricted _) => .modelUnsupported
   | .error (.schemaPrepareError ..) => .disagree none
   | .ok unclocked =>
-    let resolution := { unclocked with resolved := scriptAtClock c.clock unclocked.resolved }
+    let resolution := unclocked
     let initial := databaseOf resolution.startCatalog c.initial
-    let pass := passFrom 0 resolution.resolved { database := initial }
+    let pass := passFrom 0 resolution.resolved { database := initial, clock := scriptClock c.clock resolution.resolved }
     let observed := pass.observations
     let outputs := pass.outputs
     match observed, c.nativeTrace with

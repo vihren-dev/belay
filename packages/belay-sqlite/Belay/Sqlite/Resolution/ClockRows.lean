@@ -9,7 +9,7 @@ set_option doc.verso true
 slice 6e2). A {lit}`VALUES` item with a time keyword and an omitted column whose default is
 a time keyword cannot get a value at resolution: the cell holds NULL, and its expression
 becomes a {lit}`Resolved.ClockCell`, which the execution fills at the statement's clock
-value ({lit}`Statement.atClock`). Every other cell gets its value as before. -/
+value ({lit}`Statement.unclock`). Every other cell gets its value as before. -/
 
 namespace Belay.Sqlite
 
@@ -28,8 +28,8 @@ def constantCell (dqs : Bool) (expression : Syntax.Expr) : Except ValueIssue Row
   resolveOperand dqs [] true expression >>= fun operand =>
     if operand.1.readsClock then
       if operand.1.any Resolved.Expr.isJsonCall then .error (.restriction [] .constantFunctionError) else .ok (.null, some operand.1)
-    else if operand.1.mayFailOn [] then .error (.restriction [] .constantFunctionError)
-    else .ok (operand.1.eval [], none)
+    else if operand.1.mayFailOn 0 [] then .error (.restriction [] .constantFunctionError)
+    else .ok (operand.1.eval 0 [], none)
 
 /-- The cell of an omitted column: its default ({name}`defaultValue`) stored with the
 column's affinity; or NULL and the time keyword of a default that is one, such as

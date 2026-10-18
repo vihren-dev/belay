@@ -171,7 +171,7 @@ inductive Statement where
   /-- An INSERT ({lit}`insert` or {lit}`upsert`) with cells whose values read the
   statement's clock. Its rows hold NULL in those cells; the execution sets each cell to
   its value at the statement's clock value before it runs the statement
-  ({lit}`Statement.atClock`). -/
+  ({lit}`Statement.unclock`). -/
   | clocked (statement : Statement) (cells : List ClockCell)
   deriving Repr, DecidableEq
 

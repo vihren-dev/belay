@@ -18,7 +18,7 @@ def Expr.any (test : Expr → Bool) : Expr → Bool
     test expression || left.any test || right.any test
   | expression@(.not operand) | expression@(.isNull operand _) | expression@(.cast _ operand) =>
     test expression || operand.any test
-  | expression@(.json _ arguments) | expression@(.date _ arguments _) => test expression || arguments.any test
+  | expression@(.json _ arguments) | expression@(.date _ arguments) => test expression || arguments.any test
 
 /-- Whether the test holds for one of the arguments or their subexpressions
 ({name}`Expr.any`). -/

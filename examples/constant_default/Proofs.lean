@@ -77,7 +77,7 @@ theorem migrationCorrect : Generated.expected := by
     · have located : tablePosition Generated.startCatalog "invoices" = some 0 := by decide +kernel
       simpa [Interpretation.current, projectedInterpretation, observeTable, located, present,
         Requirements.contract] using originalRead.symm
-  · simp [scriptReadsClock, script_bound, Resolved.Statement.readsClock]
+  · simp [scriptReadsClock, script_bound, Resolved.Statement.readsClock, Resolved.Statement.clockExpressions]
 
 #print axioms migrationCorrect
 end Proofs

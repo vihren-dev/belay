@@ -25,13 +25,13 @@ theorem reverse_runs (database : Database) (admitted : Admitted profile startCat
   obtain ⟨same, length, table, present, _, _⟩ := admitted_invoices admitted
   let created : Database :=
     { catalog := database.catalog.createTable "audit" { columns := [message] }, rows := database.rows ++ [[]] }
-  have audit : step (.createTable 1 "audit" { columns := [message] }) database 0 = .success created := by
+  have audit : step 0 (.createTable 1 "audit" { columns := [message] }) database 0 = .success created := by
     simp [step, same, length, startCatalog, created]
   have invoice : created.table 0 = some table := Database.table_createTable _ _ present
-  have added : step (.addColumn 0 note) created 1 = .success (created.addColumn 0 note .null) := by
+  have added : step 0 (.addColumn 0 note) created 1 = .success (created.addColumn 0 note .null) := by
     simp [step, invoice, CatalogColumn.clockDefault, readDefaultValue, note]
   have reversed : runSql reverseScript database = .success (created.addColumn 0 note .null) := by
-    simp [runSql, runSqlFrom, advance, literalStep, SqlState.finish, reverseScript, audit, added]
+    simp [runSql, runSqlFrom, advance, literalStep, Resolved.Statement.unclock, SqlState.finish, reverseScript, audit, added]
   rw [reversed, script_runs admitted, Database.addColumn_createTable database note .null _ _
     (by simp [same, startCatalog]) (by simp [same, length, startCatalog])]
   rfl

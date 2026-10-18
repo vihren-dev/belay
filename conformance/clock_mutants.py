@@ -9,23 +9,23 @@ mutant is one text change in a copy of the model, which
 from conformance.resolve_mutants import SQLITE
 
 EXECUTION = SQLITE + "SqlExecution.lean"
-"""The script under a clock assignment."""
+"""The clock assignment with which a script runs."""
 TEXT = SQLITE + "ClockText.lean"
 """The text of the time keywords."""
 STATEMENT = SQLITE + "StatementClock.lean"
-"""A statement at a clock value."""
+"""A clocked INSERT ready to run at a clock value."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "clock_one_for_script": (EXECUTION,
-        "  script.mapIdx fun position (statement : Resolved.Statement) => statement.atClock (clock position)",
-        "  script.mapIdx fun _ (statement : Resolved.Statement) => statement.atClock (clock 0)"),
+        "  if (script[position]?).any Resolved.Statement.readsClock then clock position else 0",
+        "  if (script[position]?).any Resolved.Statement.readsClock then clock 0 else 0"),
     "clock_date_with_time": (TEXT, "    | .date => .text (dateText (civilDateOfClock clock))",
         "    | .date => .text (timestampTextOfClock clock)"),
     "clock_seconds_rounded": (TEXT, "(dayMilliseconds.tmod 60000).tdiv 1000)",
         "((dayMilliseconds.tmod 60000) + 500).tdiv 1000)"),
     "clock_default_at_resolution": (STATEMENT,
-        "  | .clocked statement cells => (statement.fillCells clock cells).expressionsAtClock clock",
-        "  | .clocked statement cells => (statement.fillCells defaultDateClock cells).expressionsAtClock clock"),
+        "  | .clocked statement cells => statement.fillCells clock cells",
+        "  | .clocked statement cells => statement.fillCells defaultDateClock cells"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the replacement. The
 names follow the list in the task of slice 6e2: one clock value, the first statement's, for
@@ -41,8 +41,8 @@ TARGETS: dict[str, tuple[str, ...]] = {
 """The authored case of `conformance.authored_clock` that each mutant changes."""
 
 GUARDS: dict[str, str] = {
-    "clock_one_for_script": "rule:scriptAtClock", "clock_date_with_time": "rule:TimeKeyword.value",
-    "clock_seconds_rounded": "rule:timeOfDayOfClock", "clock_default_at_resolution": "rule:Statement.atClock",
+    "clock_one_for_script": "rule:scriptClock", "clock_date_with_time": "rule:TimeKeyword.value",
+    "clock_seconds_rounded": "rule:timeOfDayOfClock", "clock_default_at_resolution": "rule:Statement.unclock",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
 changes. `conformance.mutant_guards` checks every entry."""

@@ -67,7 +67,7 @@ execution sets it. SQLite accepts any number of arguments, so the call never fai
 arguments after the time value are modifiers (slice 6g). -/
 def dateCall (function : Resolved.DateFunction) (arguments : Resolved.Arguments) :
     Except ValueIssue Operand :=
-  .ok (.date function arguments 0, none)
+  .ok (.date function arguments, none)
 
 /-- Whether a folded name names a scalar function of the model that resolution resolves
 from its arguments: a JSON function or a date and time function. -/

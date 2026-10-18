@@ -117,20 +117,21 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDe
     have firstModeled := modeled statement (by simp)
     have tail : NoWrites rest := fun item member => guard item (by simp [member])
     have tailModeled : ModeledDefinitions rest := fun item member => modeled item (by simp [member])
-    have ready : statementReady statement state.database = true := by
+    have ready : statementReady (state.clock position) (statement.unclock (state.clock position))
+        state.database = true := by
       cases statement with
       | query query =>
         obtain ⟨plain, noEach⟩ : (query.expressions.all fun x => !x.any Resolved.Expr.isJsonCall) = true ∧
             query.sources.all (!·.source.isEach) = true := first
-        simp only [statementReady]
-        cases found : query.source state.database with
+        simp only [statementReady, Resolved.Statement.unclock]
+        cases found : query.source (state.clock position) state.database with
         | none => rfl
         | some source =>
-          have clean := Resolved.source_fault_of_plain state.database query.sources _ source noEach rfl found
-          by_cases must : query.mustFail source.rows = true <;>
-            simp [Resolved.Query.run, Resolved.Query.mayFail_of_plain query _ plain, clean, must]
+          have clean := Resolved.source_fault_of_plain _ state.database query.sources _ source noEach rfl found
+          by_cases must : query.mustFail (state.clock position) source.rows = true <;>
+            simp [Resolved.Query.run, Resolved.Query.mayFail_of_plain _ query _ plain, clean, must]
       | createTable | createIndex | addColumn | begin | commit | rollback | insert | upsert | update | delete
-      | prepareError | clocked => simp_all [statementReady]
+      | prepareError | clocked => simp_all [statementReady, Resolved.Statement.unclock]
     simp only [supportedSqlFrom, ready, Bool.true_and]
     cases advance position statement state with
     | halt outcome => rfl
@@ -152,12 +153,12 @@ exclude transaction control and literal-write constructors. -/
 theorem advance_schemaOnly
     (guard : SchemaOnly [statement]) :
     advance position statement { database := database } =
-      match step statement database position with
+      match step 0 statement database position with
       | .success result => .next { database := result }
       | .failure index reason result => .halt (.failure index reason result)
       | .pending persisted visible error => .halt (.pending persisted visible error) := by
   have first := guard statement (by simp)
-  cases statement <;> simp_all [advance, literalStep, SqlState.finish]
+  cases statement <;> simp_all [advance, literalStep, SqlState.finish, Resolved.Statement.unclock]
   all_goals rfl
 
 /-- For every idle starting database and position, appending a suffix to a
@@ -180,7 +181,7 @@ theorem runSqlFrom_schemaOnly_append (guard : SchemaOnly initial) :
       exact guard statement (by simp)
     have tail : SchemaOnly rest := fun item member => guard item (by simp [member])
     simp only [List.cons_append, runSqlFrom, advance_schemaOnly first]
-    cases executed : step statement database position with
+    cases executed : step 0 statement database position with
     | failure index reason result => rfl
     | pending persisted visible error => rfl
     | success result => simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using

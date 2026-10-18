@@ -15,14 +15,14 @@ catalog: both are absent, or both are present with equal catalogs. -/
 def SqlState.Agrees (sql : SqlState) (state : ResolveState) : Prop :=
   sql.database.catalog = state.catalog ∧ sql.snapshot.map (·.catalog) = state.saved
 
-/-- For every statement, database, result and position: if {name}`literalStep` succeeds
+/-- For every clock value, statement, database, result and position: if {name}`literalStep` succeeds
 with the result, then the result's catalog is {name}`Resolved.Statement.applyCatalog` of
 the statement on the database's catalog, and the statement is not transaction control.
 Proof sketch: CREATE TABLE and ADD COLUMN call the catalog functions, writes store rows
 only ({name}`Database.setRows`), a query returns the database, and every other statement
 fails. -/
-theorem literalStep_success_catalog {statement : Resolved.Statement} {database result : Database} {position : Nat}
-    (success : literalStep statement database position = .success result) :
+theorem literalStep_success_catalog {clock : Int} {statement : Resolved.Statement} {database result : Database}
+    {position : Nat} (success : literalStep clock statement database position = .success result) :
     result.catalog = statement.applyCatalog database.catalog ∧ statement.isControl = false := by
   cases statement with
   | createTable target name table =>
@@ -102,6 +102,9 @@ theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {sql ne
     · rename_i result stepped
       cases continued
       obtain ⟨changed, control⟩ := literalStep_success_catalog stepped
+      obtain ⟨sameCatalog, sameControl⟩ := Resolved.Statement.unclock_catalog (sql.clock position) _
+      rw [sameControl] at control
+      rw [sameCatalog] at changed
       rw [state.after_of_isControl control]
       exact ⟨changed.trans (catalog ▸ rfl), saved⟩
     · cases continued
@@ -133,7 +136,7 @@ theorem advance_halt_error {position : Nat} {statement : Resolved.Statement} {sq
     · cases halted
   | createTable | createIndex | addColumn | insert | update | upsert | delete | prepareError | query | clocked =>
     simp only [advance] at halted
-    rcases Conformance.literal_cases _ sql.database position with ⟨_, h⟩ | ⟨_, h⟩ | ⟨_, h⟩ <;>
+    rcases Conformance.literal_cases _ _ sql.database position with ⟨_, h⟩ | ⟨_, h⟩ | ⟨_, h⟩ <;>
       rw [h] at halted <;> cases halted <;> simp [SqlState.failed_error]
 
 end Belay.Sqlite

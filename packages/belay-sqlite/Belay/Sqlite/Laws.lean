@@ -15,41 +15,43 @@ def nonControl : Resolved.Statement → Bool
   | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .upsert .. | .update .. | .delete ..
   | .prepareError _ | .query _ | .clocked .. => true
 
-/-- Each statement in the body is non-control and succeeds at its position.
-The remaining body starts from its resulting database. An empty body requires
-nothing of the database. Use this predicate to state successful-body laws. -/
-inductive SuccessfulBody : Nat → List Resolved.Statement → Database → Prop where
+/-- Each statement in the body is non-control and succeeds at its position, at the clock
+value of the clock assignment for that position, as {name}`advance` runs it. The remaining
+body starts from its resulting database. An empty body requires nothing of the database.
+Use this predicate to state successful-body laws. -/
+inductive SuccessfulBody (clock : Nat → Int) : Nat → List Resolved.Statement → Database → Prop where
   /-- Every position and database admit an empty successful body; no statement premise is required. -/
-  | nil : SuccessfulBody position [] database
+  | nil : SuccessfulBody clock position [] database
   /-- A non-control statement that succeeds, followed by a successful tail, forms a successful body. -/
   | cons (ordinary : nonControl statement = true)
-      (success : literalStep statement database position = .success next)
-      (tail : SuccessfulBody (position + 1) rest next) :
-      SuccessfulBody position (statement :: rest) database
+      (success : literalStep (clock position) (statement.unclock (clock position)) database position = .success next)
+      (tail : SuccessfulBody clock (position + 1) rest next) :
+      SuccessfulBody clock position (statement :: rest) database
 
-/-- For any position, body, current database and original snapshot, if
+/-- For any clock assignment, position, body, current database and original snapshot, if
 {name}`SuccessfulBody` holds, running the body followed by ROLLBACK with that
-snapshot returns success with exactly the original database.
+snapshot and clock assignment returns success with exactly the original database.
 
 The proof inducts over the successful body. Each non-control step preserves
 the snapshot; the final ROLLBACK restores it. -/
-theorem body_rollback (success : SuccessfulBody position body database) :
-    runSqlFrom position (body ++ [.rollback]) ⟨database, some original⟩ = .success original := by
+theorem body_rollback (success : SuccessfulBody clock position body database) :
+    runSqlFrom position (body ++ [.rollback]) { database, snapshot := some original, clock } =
+      .success original := by
   induction success with
   | nil => simp [runSqlFrom, advance, SqlState.finish]
   | @cons statement database position next rest ordinary success tail ih =>
     cases statement <;> simp_all [nonControl, runSqlFrom, advance]
 
-/-- For any body and database, if {name}`SuccessfulBody` holds at position 1,
-BEGIN followed by the body and ROLLBACK returns success with that database.
+/-- For any body and database, if {name}`SuccessfulBody` holds at position 1 at the clock
+value 0, BEGIN followed by the body and ROLLBACK returns success with that database.
 
 The proof unfolds BEGIN and applies {name}`body_rollback` with the initial
 database as the transaction snapshot. -/
-theorem rollback (success : SuccessfulBody 1 body database) :
+theorem rollback (success : SuccessfulBody (fun _ => 0) 1 body database) :
     runSql (.begin :: body ++ [.rollback]) database = .success database := by
   simpa [runSql, runSqlFrom, advance] using body_rollback (original := database) success
 
-/-- For every statement, database and position, {name}`literalStep` returns one of:
+/-- For every clock value, statement, database and position, {name}`literalStep` returns one of:
 * success with some database;
 * a failure at that position with some reason and the unchanged input database;
 * a FAIL failure ({name}`ExecutionError.constraintFail`) at that position with some
@@ -57,10 +59,10 @@ theorem rollback (success : SuccessfulBody 1 body database) :
 
 The proof splits on the statement and table lookup, then follows each validation
 branch. Each failure branch other than FAIL retains the input database. -/
-theorem literal_cases (statement : Resolved.Statement) (database : Database) (position : Nat) :
-    (∃ result, literalStep statement database position = .success result) ∨
-    (∃ reason, literalStep statement database position = .failure position reason database) ∨
-    (∃ after, literalStep statement database position = .failure position .constraintFail after) := by
+theorem literal_cases (clock : Int) (statement : Resolved.Statement) (database : Database) (position : Nat) :
+    (∃ result, literalStep clock statement database position = .success result) ∨
+    (∃ reason, literalStep clock statement database position = .failure position reason database) ∨
+    (∃ after, literalStep clock statement database position = .failure position .constraintFail after) := by
   cases statement with
   | createTable target name table =>
     simp only [literalStep, step]
@@ -95,10 +97,10 @@ theorem literal_cases (statement : Resolved.Statement) (database : Database) (po
   | clocked _ _ => simp [literalStep, step]
   | query query =>
     simp only [literalStep, step]
-    cases query.source database with
+    cases query.source clock database with
     | none => simp
     | some rows =>
-      cases h : (query.run rows.rows).overflow <;> cases h' : (query.run rows.rows).fault <;> simp [h, h']
+      cases h : (query.run clock rows.rows).overflow <;> cases h' : (query.run clock rows.rows).fault <;> simp [h, h']
   | prepareError _ => simp [literalStep, step]
   | begin => simp [literalStep, step]
   | commit => simp [literalStep, step]
@@ -117,7 +119,8 @@ theorem statement_atomicity (halted : advance position statement state = .halt o
     (atomic : outcome.error? ≠ some .constraintFail ∧ outcome.error? ≠ some .constraintRollback) :
     outcome.database = state.database ∧
     outcome.persistedDatabase = state.snapshot.getD state.database := by
-  have possibilities := literal_cases statement state.database position
+  have possibilities := literal_cases (state.clock position) (statement.unclock (state.clock position))
+    state.database position
   cases statement <;> simp only [advance] at halted
   all_goals try (solve | (clear atomic; cases h : state.snapshot <;> simp_all [SqlState.finish,
     Outcome.database, Outcome.persistedDatabase, Option.getD]))
@@ -144,7 +147,8 @@ theorem constraint_rollback (halted : advance position statement state = .halt o
     (rolled : outcome.error? = some .constraintRollback) :
     outcome.database = state.snapshot.getD state.database ∧
     outcome.persistedDatabase = state.snapshot.getD state.database := by
-  have possibilities := literal_cases statement state.database position
+  have possibilities := literal_cases (state.clock position) (statement.unclock (state.clock position))
+    state.database position
   cases statement <;> simp only [advance] at halted
   all_goals try (solve | cases h : state.snapshot <;> simp_all [SqlState.finish,
     Outcome.database, Outcome.persistedDatabase, Option.getD, Outcome.error?])
@@ -175,7 +179,7 @@ theorem add_column_shape (constant : column.clockDefault = false)
       (table.appendColumns [(column, value)]).rows.map Row.rowid = table.rows.map Row.rowid ∧
       (table.appendColumns [(column, value)]).rows.map Row.values =
         table.rows.map (fun row => row.values ++ [storeValue column.affinity value]) := by
-  simp only [advance, literalStep, step] at success
+  simp only [advance, literalStep, step, Resolved.Statement.unclock] at success
   repeat (split at * <;> simp_all)
   all_goals subst_vars
   all_goals simp_all [Database.table_addColumn, Table.appendColumns, Row.appendValues, List.map_map]

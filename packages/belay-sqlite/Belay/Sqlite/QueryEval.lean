@@ -22,25 +22,25 @@ def extremum (better : Value → Value → Bool) (values : List Value) : Value :
   (values.filter (!·.isNull)).foldl (fun best value => if best.isNull || better value best then value else best) .null
 
 /-- The value of an aggregate over the rows of one group. -/
-def Aggregate.eval (rows : List (List Value)) : Aggregate → Value
+def Aggregate.eval (clock : Int) (rows : List (List Value)) : Aggregate → Value
   | .countRows => .integer rows.length
-  | .count operand => .integer (rows.filter fun row => !(operand.eval row).isNull).length
-  | .min operand => extremum (fun a b => compareValues a b == .lt) (rows.map operand.eval)
-  | .max operand => extremum (fun a b => compareValues a b == .gt) (rows.map operand.eval)
-  | .sum operand => ((sumOf (rows.map operand.eval)).sumValue).getD .null
-  | .avg operand => (sumOf (rows.map operand.eval)).averageValue
+  | .count operand => .integer (rows.filter fun row => !(operand.eval clock row).isNull).length
+  | .min operand => extremum (fun a b => compareValues a b == .lt) (rows.map (operand.eval clock))
+  | .max operand => extremum (fun a b => compareValues a b == .gt) (rows.map (operand.eval clock))
+  | .sum operand => ((sumOf (rows.map (operand.eval clock))).sumValue).getD .null
+  | .avg operand => (sumOf (rows.map (operand.eval clock))).averageValue
 
 /-- Whether an aggregate fails over the rows of one group: {lit}`SUM` with an integer
 overflow that no later REAL input cleared. Every other aggregate never fails. -/
-def Aggregate.fails (rows : List (List Value)) : Aggregate → Bool
-  | .sum operand => ((sumOf (rows.map operand.eval)).sumValue).isNone
+def Aggregate.fails (clock : Int) (rows : List (List Value)) : Aggregate → Bool
+  | .sum operand => ((sumOf (rows.map (operand.eval clock))).sumValue).isNone
   | .countRows | .count _ | .min _ | .max _ | .avg _ => false
 
 /-- The groups of rows by the values of the grouping terms, in the order in which
 each group first appears. Two rows are in one group when each term's values compare
 as equal. -/
-def groups (terms : List Expr) (rows : List (List Value)) : List (List (List Value)) :=
-  let key := fun row => terms.map (·.eval row)
+def groups (clock : Int) (terms : List Expr) (rows : List (List Value)) : List (List (List Value)) :=
+  let key := fun row => terms.map (·.eval clock row)
   let same := fun first second => (List.zip (key first) (key second)).all fun (a, b) => compareValues a b == .eq
   (rows.foldl (fun found row => match found.findIdx? (fun group => group.head?.any (same row)) with
     | some index => found.modify index (· ++ [row])
@@ -76,27 +76,27 @@ abbrev Record := List Value × List Value
 
 /-- The groups of an aggregate query: all rows as one group without {lit}`GROUP BY`,
 also when there are none; else the groups of the grouping terms. -/
-def queryGroups (query : Query) (rows : List (List Value)) : List (List (List Value)) :=
-  if query.groupBy.isEmpty then [rows] else groups query.groupBy rows
+def queryGroups (clock : Int) (query : Query) (rows : List (List Value)) : List (List (List Value)) :=
+  if query.groupBy.isEmpty then [rows] else groups clock query.groupBy rows
 
 /-- The result rows and sort values of a query, one per source row, or one per group
 of an aggregate query. -/
-def records (query : Query) (rows : List (List Value)) : List Record :=
+def records (clock : Int) (query : Query) (rows : List (List Value)) : List Record :=
   let sortValues := fun (output : List Value) (source : List Value) =>
     query.orderBy.map fun (key, _) => match key with
-      | .expression expression => expression.eval source
+      | .expression expression => expression.eval clock source
       | .output index => output.getD index .null
   if query.aggregate then
-    (queryGroups query rows).map fun group =>
+    (queryGroups clock query rows).map fun group =>
       let output := query.columns.map fun
-        | .scalar expression => expression.eval (group.headD [])
-        | .aggregate aggregate => aggregate.eval group
+        | .scalar expression => expression.eval clock (group.headD [])
+        | .aggregate aggregate => aggregate.eval clock group
       (output, sortValues output (group.headD []))
   else
     rows.map fun row =>
       let output := query.columns.map fun
-        | .scalar expression => expression.eval row
-        | .aggregate aggregate => aggregate.eval [row]
+        | .scalar expression => expression.eval clock row
+        | .aggregate aggregate => aggregate.eval clock [row]
       (output, sortValues output row)
 
 /-- The rows of the table in rowid order, as the source of a query. -/
@@ -104,16 +104,16 @@ def sourceRows (table : Table) : List (List Value) :=
   (stableSort (fun a b => decide (a.rowid ≤ b.rowid)) table.rows).map Row.values
 
 /-- The rows that the {lit}`WHERE` condition keeps: those where it is true. -/
-def filtered (query : Query) (rows : List (List Value)) : List (List Value) :=
-  rows.filter fun row => query.filter.all fun condition => truthy (condition.eval row)
+def filtered (clock : Int) (query : Query) (rows : List (List Value)) : List (List Value) :=
+  rows.filter fun row => query.filter.all fun condition => truthy (condition.eval clock row)
 
 /-- The result rows of a query over its source rows ({lit}`Query.source`): filter,
 groups and columns, a stable sort by the {lit}`ORDER BY` terms, then the window.
 {lit}`Query.run` gives them with the fault of the query. -/
-def Query.results (query : Query) (rows : List (List Value)) : List (List Value) :=
+def Query.results (clock : Int) (query : Query) (rows : List (List Value)) : List (List Value) :=
   let directions := query.orderBy.map Prod.snd
   let sorted := stableSort (fun a b => (compareSort directions a.2 b.2).isLE)
-    (records query (filtered query rows))
+    (records clock query (filtered clock query rows))
   let window := sorted.drop query.offset
   (match query.limit with | some limit => window.take limit | none => window).map Prod.fst
 

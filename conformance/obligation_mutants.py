@@ -35,7 +35,7 @@ OBLIGATIONS: dict[str, tuple[str, str, str]] = {
     "update-alias-ready": (ROW_UPDATE, "updateReady", "aliasReady table.shape"),
     "update-assigned-column": (ROW_UPDATE, "updateReady", "(table.shape.columns[position]?).isSome"),
     "update-rowid-bounded": (ROW_UPDATE, "updateReady",
-                             "(updated table assignments filter).rows.all (fun row => boundedInteger row.rowid)"),
+                             "(updated clock table assignments filter).rows.all (fun row => boundedInteger row.rowid)"),
     "create-table-plain": (EXECUTION, "statementReady", "table.plain"),
     "add-column-default-readback": (EXECUTION, "statementReady", "(readDefaultValue column).toOption.isSome"),
     "create-index-refused": (EXECUTION, "statementReady", "| .createIndex .. => false"),

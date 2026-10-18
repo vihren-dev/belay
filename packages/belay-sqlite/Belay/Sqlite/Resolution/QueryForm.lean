@@ -41,13 +41,11 @@ inductive Expr where
   /-- A call of a JSON function with its arguments in written order. -/
   | json (function : JsonFunction) (arguments : Arguments)
   /-- {lit}`CURRENT_TIME`, {lit}`CURRENT_DATE` or {lit}`CURRENT_TIMESTAMP`: the statement's clock
-  value as text. The execution replaces it with that text before it evaluates a statement
-  ({lit}`Statement.atClock`). -/
+  value as text, which evaluation computes from the clock value it is given. -/
   | now (keyword : TimeKeyword)
-  /-- A call of a date and time function with its arguments in written order, and the
-  statement's clock value, which {lit}`now` gives. Resolution stores 0; the execution sets
-  the statement's clock value before it evaluates a statement ({lit}`Statement.atClock`). -/
-  | date (function : DateFunction) (arguments : Arguments) (clock : Int)
+  /-- A call of a date and time function with its arguments in written order; {lit}`now`
+  and a call without a time value read the clock value that evaluation is given. -/
+  | date (function : DateFunction) (arguments : Arguments)
   deriving Repr, DecidableEq
 
 /-- The arguments of a call in written order, as a list that is mutual with

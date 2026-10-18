@@ -66,7 +66,7 @@ example : table.Valid := by
 /-- Adding a plain {lit}`shell` column to the table at position 0 returns that
 table's {name}`Table.appendColumns` at the same position, preserving its keys. The
 proof computes this fixed execution in the kernel. -/
-example : (step (.addColumn 0 { name := "shell", declaredType := some "TEXT" })
+example : (step 0 (.addColumn 0 { name := "shell", declaredType := some "TEXT" })
     (.ofTables [("t", table)])).database.table 0 =
     some (table.appendColumns [({ name := "shell", declaredType := some "TEXT" }, .null)]) := by
   decide +kernel
@@ -74,25 +74,25 @@ example : (step (.addColumn 0 { name := "shell", declaredType := some "TEXT" })
 /-- The supported-subset check admits ADD COLUMN of {name}`timestamp`, whose default is
 {lit}`CURRENT_TIMESTAMP`: the model describes it (ADR 0012, amendment 5, slice 6e2). The
 proof computes the check in the kernel. -/
-example : statementReady (.addColumn 0 timestamp) ({} : Database) = true := by
+example : statementReady 0 (.addColumn 0 timestamp) ({} : Database) = true := by
   decide +kernel
 
 /-- {name}`step` runs a CREATE TABLE of a keyed table, which is not plain: it
 stores an empty table with that shape at the new position, as SQLite does. The
 supported-subset check {name}`statementReady` refuses the statement instead,
 because the model restricts such tables. The proof computes both in the kernel. -/
-example : (step (.createTable 0 "items" { columns := [textKey], primaryKey := [0] }) ({} : Database)).database.table 0 =
+example : (step 0 (.createTable 0 "items" { columns := [textKey], primaryKey := [0] }) ({} : Database)).database.table 0 =
       some { shape := { columns := [textKey], primaryKey := [0] }, rows := [] } ∧
-    statementReady (.createTable 0 "items" { columns := [textKey], primaryKey := [0] }) ({} : Database) = false := by
+    statementReady 0 (.createTable 0 "items" { columns := [textKey], primaryKey := [0] }) ({} : Database) = false := by
   decide +kernel
 
 /-- ADD COLUMN of {name}`timestamp` on a table with a row fails as SQLite does, with
 {lit}`Cannot add a column with non-constant default`, because its default reads the clock:
 {name}`step` gives {name}`ExecutionError.nonConstantColumnDefault` and retains the original
 table. The proof computes both in the kernel. -/
-example : (step (.addColumn 0 timestamp) (.ofTables [("t", table)])).database.table 0 =
+example : (step 0 (.addColumn 0 timestamp) (.ofTables [("t", table)])).database.table 0 =
       some table ∧
-    (match step (.addColumn 0 timestamp) (.ofTables [("t", table)]) with
+    (match step 0 (.addColumn 0 timestamp) (.ofTables [("t", table)]) with
       | .failure _ reason _ => reason == .nonConstantColumnDefault
       | .success _ | .pending .. => false) = true := by
   decide +kernel

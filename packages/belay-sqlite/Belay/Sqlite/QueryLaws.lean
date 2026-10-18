@@ -136,10 +136,12 @@ theorem sort_sorted (directions : List Bool) (items : List Record) :
     rw [Std.OrientedCmp.eq_swap (cmp := compareSort directions) (a := b.2)]
     cases compareSort directions a.2 b.2 <;> rfl
 
-/-- For every query and list of rows, a row is in {name}`filtered` exactly when it
-is in the list and the {lit}`WHERE` condition, if any, is true for it. -/
-theorem mem_filtered (query : Query) (rows : List (List Value)) (row : List Value) :
-    row ∈ filtered query rows ↔ row ∈ rows ∧ query.filter.all (fun condition => truthy (condition.eval row)) = true := by
+/-- For every clock value, query and list of rows, a row is in {name}`filtered` exactly
+when it is in the list and the {lit}`WHERE` condition, if any, is true for it at the clock
+value. -/
+theorem mem_filtered (clock : Int) (query : Query) (rows : List (List Value)) (row : List Value) :
+    row ∈ filtered clock query rows ↔
+      row ∈ rows ∧ query.filter.all (fun condition => truthy (condition.eval clock row)) = true := by
   simp [filtered]
 
 /-- For every list of records, offset and limit, the window keeps the records after
@@ -149,8 +151,9 @@ theorem window_length (items : List Record) (offset limit : Nat) :
     ((items.drop offset).take limit).length = min limit (items.length - offset) := by
   simp
 
-/-- For every group of rows, {lit}`COUNT(*)` is the number of rows in the group. -/
-theorem countRows_eval (group : List (List Value)) :
-    Aggregate.countRows.eval group = .integer group.length := rfl
+/-- For every clock value and group of rows, {lit}`COUNT(*)` is the number of rows in the
+group. -/
+theorem countRows_eval (clock : Int) (group : List (List Value)) :
+    Aggregate.countRows.eval clock group = .integer group.length := rfl
 
 end Belay.Sqlite.Resolved

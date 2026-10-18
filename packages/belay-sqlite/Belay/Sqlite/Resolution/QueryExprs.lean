@@ -4,7 +4,7 @@ import Belay.Sqlite.Resolution.ExprForms
 import Belay.Sqlite.Resolution.SyntaxScope
 import Belay.Sqlite.ExprEval
 import Belay.Sqlite.Resolution.ExprAny
-import Belay.Sqlite.ClockSubstitution
+import Belay.Sqlite.ClockReads
 
 set_option doc.verso true
 

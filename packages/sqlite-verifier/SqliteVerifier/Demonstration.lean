@@ -86,12 +86,12 @@ theorem script_runs (admitted : Admitted profile startCatalog (fun _ => True) da
   have middleLength : (database.addColumn 0 note .null).catalog.length = 1 ∧
       (database.addColumn 0 note .null).rows.length = 1 := by
     simp [Database.addColumn, Catalog.length_addColumn, same, length, startCatalog]
-  have added : step (.addColumn 0 note) database 0 = .success (database.addColumn 0 note .null) := by
+  have added : step 0 (.addColumn 0 note) database 0 = .success (database.addColumn 0 note .null) := by
     simp [step, present, CatalogColumn.clockDefault, readDefaultValue, note]
-  have created : step (.createTable 1 "audit" { columns := [message] }) (database.addColumn 0 note .null) 1 =
+  have created : step 0 (.createTable 1 "audit" { columns := [message] }) (database.addColumn 0 note .null) 1 =
       .success (migrated database) := by
     simp [step, middleLength, migrated]
-  simp [runSql, runSqlFrom, advance, literalStep, SqlState.finish, script, added, created]
+  simp [runSql, runSqlFrom, advance, literalStep, Resolved.Statement.unclock, SqlState.finish, script, added, created]
 
 /-- The complete {name}`VerificationConditions` hold for the supplied catalogs,
 script and preservation contract, for every admitted starting database and every

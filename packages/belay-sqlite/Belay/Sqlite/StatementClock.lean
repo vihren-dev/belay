@@ -1,92 +1,22 @@
 import Belay.Sqlite.Resolution.Resolved
-import Belay.Sqlite.ClockSubstitution
+import Belay.Sqlite.Resolution.StatementCatalog
+import Belay.Sqlite.ClockReads
 import Belay.Sqlite.StoreValue
 import Belay.Sqlite.QueryEval
 
 set_option doc.verso true
 
-/-! A resolved statement at a clock value (ADR 0012, amendment 5, slice 6e2): every time
-keyword of its expressions becomes the text that SQLite gives for it at the clock value
-({lit}`Expr.atClock`), and every cell of a {lit}`Statement.clocked`
-INSERT gets its value at the clock value, stored with its affinity. The execution applies
-the clock value of each statement in this way before it runs the statement, so the steps
-of the execution never read the clock. -/
+/-! The clock of a resolved statement (ADR 0012, amendment 5, slice 6e2; ADR 0013, D6): the
+cells of a {lit}`Statement.clocked` INSERT at the statement's clock value, and whether a
+statement reads the clock at all. Evaluation takes the clock value as a parameter, so a
+statement is never rewritten for a clock value. -/
 
 namespace Belay.Sqlite.Resolved
 
-/-- An aggregate at a clock value. -/
-def Aggregate.atClock (clock : Int) : Aggregate → Aggregate
-  | .countRows => .countRows
-  | .count operand => .count (operand.atClock clock)
-  | .min operand => .min (operand.atClock clock)
-  | .max operand => .max (operand.atClock clock)
-  | .sum operand => .sum (operand.atClock clock)
-  | .avg operand => .avg (operand.atClock clock)
-
-/-- A result column at a clock value. -/
-def Output.atClock (clock : Int) : Output → Output
-  | .scalar term => .scalar (term.atClock clock)
-  | .aggregate function => .aggregate (function.atClock clock)
-
-/-- An {lit}`ORDER BY` key at a clock value. -/
-def SortKey.atClock (clock : Int) : SortKey → SortKey
-  | .expression term => .expression (term.atClock clock)
-  | .output index => .output index
-
-/-- A source of {lit}`FROM` at a clock value: its arguments and its {lit}`ON` condition at the
-clock value. -/
-def QuerySource.atClock (clock : Int) (join : QuerySource) : QuerySource :=
-  { join with
-    source := match join.source with
-      | .each json path => .each (json.atClock clock) (path.map (·.atClock clock))
-      | source@(.table _) | source@.subquery => source
-    condition := join.condition.map (·.atClock clock) }
-
-/-- A query at a clock value: each of its expressions at the clock value. -/
-def Query.atClock (clock : Int) (query : Query) : Query :=
-  { query with
-    sources := query.sources.map (·.atClock clock)
-    filter := query.filter.map (·.atClock clock)
-    groupBy := query.groupBy.map (·.atClock clock)
-    columns := query.columns.map (·.atClock clock)
-    orderBy := query.orderBy.map fun (key, descending) => (key.atClock clock, descending) }
-
-/-- The {lit}`RETURNING` columns at a clock value. -/
-def returningAtClock (clock : Int) (returning : List (Expr × String)) : List (Expr × String) :=
-  returning.map fun (expression, name) => (expression.atClock clock, name)
-
-/-- An {lit}`ON CONFLICT` clause at a clock value. -/
-def ConflictClause.atClock (clock : Int) (clause : ConflictClause) : ConflictClause :=
-  { clause with action := match clause.action with
-    | .nothing => .nothing
-    | .update assignments filter =>
-      .update (assignments.map fun (position, value) => (position, value.atClock clock))
-        (filter.map (·.atClock clock)) }
-
-/-- The rows of an INSERT with each cell set to its value at a clock value: the value of
+/-- The rows of an INSERT with one cell set to its value at a clock value: the value of
 the cell's expression, which reads no column, stored with the cell's affinity. -/
 def ClockCell.fill (clock : Int) (rows : List (List Value)) (cell : ClockCell) : List (List Value) :=
-  rows.modify cell.row fun row => row.set cell.column (storeValue cell.affinity ((cell.value.atClock clock).eval []))
-
-/-- The expressions of a statement at a clock value ({name}`Expr.atClock`). A clocked
-INSERT keeps its cells; {lit}`Statement.atClock` fills them first. -/
-def Statement.expressionsAtClock (clock : Int) : Statement → Statement
-  | .insert target rows returning => .insert target rows (returningAtClock clock returning)
-  | .upsert target rows clauses returning algorithm =>
-    .upsert target rows (clauses.map (·.atClock clock)) (returningAtClock clock returning) algorithm
-  | .update target assignments filter returning =>
-    .update target (assignments.map fun (position, value) => (position, value.atClock clock))
-      (filter.map (·.atClock clock)) (returningAtClock clock returning)
-  | .delete target filter returning => .delete target (filter.map (·.atClock clock)) (returningAtClock clock returning)
-  | .query inner => .query (inner.atClock clock)
-  | .clocked statement cells => .clocked statement cells
-  | .createTable target name table => .createTable target name table
-  | .createIndex target name index => .createIndex target name index
-  | .addColumn target column => .addColumn target column
-  | .begin => .begin
-  | .commit => .commit
-  | .rollback => .rollback
-  | .prepareError error => .prepareError error
+  rows.modify cell.row fun row => row.set cell.column (storeValue cell.affinity (cell.value.eval clock []))
 
 /-- An INSERT with its cells set to their values at a clock value ({name}`ClockCell.fill`);
 any other statement unchanged. -/
@@ -98,57 +28,76 @@ def Statement.fillCells (clock : Int) (cells : List ClockCell) : Statement → S
   | statement@(.createTable ..) | statement@(.createIndex ..) | statement@(.addColumn ..) | statement@.begin
   | statement@.commit | statement@.rollback | statement@(.prepareError _) => statement
 
-/-- A statement at a clock value: a clocked INSERT with its cells filled in
-({name}`Statement.fillCells`), then every statement with its expressions at the clock value
-({name}`Statement.expressionsAtClock`). -/
-def Statement.atClock (clock : Int) : Statement → Statement
-  | .clocked statement cells => (statement.fillCells clock cells).expressionsAtClock clock
+/-- A statement ready to run at a clock value: a clocked INSERT with its cells filled in
+({name}`Statement.fillCells`); any other statement unchanged. -/
+def Statement.unclock (clock : Int) : Statement → Statement
+  | .clocked statement cells => statement.fillCells clock cells
+  | statement@(.insert ..) | statement@(.upsert ..) | statement@(.update ..) | statement@(.delete ..)
+  | statement@(.query _) | statement@(.createTable ..) | statement@(.createIndex ..) | statement@(.addColumn ..)
+  | statement@.begin | statement@.commit | statement@.rollback | statement@(.prepareError _) => statement
+
+/-- For every clock value and statement, the statement ready to run
+({name}`Statement.unclock`) has the catalog effect ({name}`Statement.applyCatalog`) and the
+transaction-control flag ({name}`Statement.isControl`) of the statement. Proof sketch: only a
+clocked INSERT changes, into its INSERT with filled cells, which has the effect and flag
+that the clocked INSERT takes from it. -/
+theorem Statement.unclock_catalog (clock : Int) (statement : Statement) :
+    (statement.unclock clock).applyCatalog = statement.applyCatalog ∧
+      (statement.unclock clock).isControl = statement.isControl := by
+  cases statement with
+  | clocked inner cells =>
+    cases inner <;> exact ⟨rfl, rfl⟩
+  | _ => exact ⟨rfl, rfl⟩
+
+/-- The expressions of an aggregate result column: its operand, none for {lit}`COUNT(*)`. -/
+def Aggregate.expressions : Aggregate → List Expr
+  | .countRows => []
+  | .count operand | .min operand | .max operand | .sum operand | .avg operand => [operand]
+
+/-- The expressions of a result column. -/
+def Output.expressions : Output → List Expr
+  | .scalar term => [term]
+  | .aggregate function => function.expressions
+
+/-- Every expression of a query: the arguments and {lit}`ON` condition of each source,
+{lit}`WHERE`, {lit}`GROUP BY`, the result columns and the {lit}`ORDER BY` expressions. -/
+def Query.clockExpressions (query : Query) : List Expr :=
+  query.sources.flatMap (fun join => (match join.source with
+    | .each json path => json :: path.toList
+    | .table _ | .subquery => []) ++ join.condition.toList) ++
+  query.filter.toList ++ query.groupBy ++ query.columns.flatMap Output.expressions ++
+  query.orderBy.flatMap fun (key, _) => match key with
+    | .expression term => [term]
+    | .output _ => []
+
+/-- The expressions of an {lit}`ON CONFLICT` clause: the values and the filter of
+{lit}`DO UPDATE`. -/
+def ConflictClause.clockExpressions (clause : ConflictClause) : List Expr :=
+  match clause.action with
+  | .nothing => []
+  | .update assignments filter => assignments.map (·.2) ++ filter.toList
+
+/-- Every expression of a statement that evaluation reads: the {lit}`RETURNING` columns,
+the values and filters of writes, the clauses of an upsert and the expressions of a query
+({name}`Query.clockExpressions`). A clocked INSERT gives the expressions of its cells and
+of its statement; a schema or transaction statement and a prepare error have none. -/
+def Statement.clockExpressions : Statement → List Expr
+  | .insert _ _ returning => returning.map (·.1)
+  | .upsert _ _ clauses returning _ => clauses.flatMap ConflictClause.clockExpressions ++ returning.map (·.1)
+  | .update _ assignments filter returning => assignments.map (·.2) ++ filter.toList ++ returning.map (·.1)
+  | .delete _ filter returning => filter.toList ++ returning.map (·.1)
+  | .query inner => inner.clockExpressions
+  | .clocked statement cells => cells.map (·.value) ++ statement.clockExpressions
+  | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ => []
+
+/-- Whether a statement reads the clock: a clocked INSERT, or a statement with an
+expression that reads it ({name}`Expr.readsClock`). The execution gives a statement that
+does not the clock value 0, which it does not read ({lit}`runSqlAt`). -/
+def Statement.readsClock : Statement → Bool
+  | .clocked .. => true
   | statement@(.insert ..) | statement@(.upsert ..) | statement@(.update ..) | statement@(.delete ..)
   | statement@(.query _) | statement@(.createTable ..) | statement@(.createIndex ..) | statement@(.addColumn ..)
   | statement@.begin | statement@.commit | statement@.rollback | statement@(.prepareError _) =>
-    statement.expressionsAtClock clock
-
-/-- Whether a result column reads the clock. -/
-def Output.readsClock : Output → Bool
-  | .scalar term => term.readsClock
-  | .aggregate .countRows => false
-  | .aggregate (.count operand) | .aggregate (.min operand) | .aggregate (.max operand)
-  | .aggregate (.sum operand) | .aggregate (.avg operand) => operand.readsClock
-
-/-- Whether an {lit}`ORDER BY` key reads the clock. -/
-def SortKey.readsClock : SortKey → Bool
-  | .expression term => term.readsClock
-  | .output _ => false
-
-/-- Whether some expression of a query reads the clock. -/
-def Query.readsClock (query : Query) : Bool :=
-  query.sources.any (fun join => join.condition.any Expr.readsClock || match join.source with
-    | .each json path => json.readsClock || path.any Expr.readsClock
-    | .table _ | .subquery => false) ||
-  query.filter.any Expr.readsClock || query.groupBy.any Expr.readsClock || query.columns.any Output.readsClock ||
-  query.orderBy.any (·.1.readsClock)
-
-/-- Whether some {lit}`RETURNING` column reads the clock. -/
-def returningReadsClock (returning : List (Expr × String)) : Bool :=
-  returning.any (·.1.readsClock)
-
-/-- Whether an {lit}`ON CONFLICT` clause reads the clock. -/
-def ConflictClause.readsClock (clause : ConflictClause) : Bool :=
-  match clause.action with
-  | .nothing => false
-  | .update assignments filter => assignments.any (·.2.readsClock) || filter.any Expr.readsClock
-
-/-- Whether a statement reads the clock: a clocked INSERT, or a statement with an
-expression that reads it. A statement that does not is unchanged at every clock value
-({lit}`Statement.atClock_of_readsClock`). -/
-def Statement.readsClock : Statement → Bool
-  | .insert _ _ returning => returningReadsClock returning
-  | .upsert _ _ clauses returning _ => clauses.any ConflictClause.readsClock || returningReadsClock returning
-  | .update _ assignments filter returning =>
-    assignments.any (·.2.readsClock) || filter.any Expr.readsClock || returningReadsClock returning
-  | .delete _ filter returning => filter.any Expr.readsClock || returningReadsClock returning
-  | .query inner => inner.readsClock
-  | .clocked .. => true
-  | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ => false
+    statement.clockExpressions.any Expr.readsClock
 
 end Belay.Sqlite.Resolved

@@ -13,41 +13,41 @@ namespace Belay.Sqlite.Resolved
 
 /-- Whether the {lit}`ON` condition of the join is true for the joined row; a join
 without a condition matches every row. -/
-def QuerySource.matches (join : QuerySource) (joined : List Value) : Bool :=
-  join.condition.all fun condition => truthy (condition.eval joined)
+def QuerySource.matches (clock : Int) (join : QuerySource) (joined : List Value) : Bool :=
+  join.condition.all fun condition => truthy (condition.eval clock joined)
 
 /-- The rows of a join for one left row: the concatenation with each row of the joined
 source, in its order, for which the {lit}`ON` condition is true (R-44414-54710,
 R-38465-03616). -/
-def joinMatches (row : List Value) (join : QuerySource) (candidates : List (List Value)) : List (List Value) :=
+def joinMatches (clock : Int) (row : List Value) (join : QuerySource) (candidates : List (List Value)) : List (List Value) :=
   candidates.filterMap fun cells =>
     let joined := row ++ cells
-    if join.matches joined then some joined else none
+    if join.matches clock joined then some joined else none
 
 /-- The rows that one left row gives in a join with a source of {lit}`width` columns: its
 {name}`joinMatches`; for a left or full join without a match, one row with NULL in every
 column of the source (R-24610-05866). -/
-def joinRow (join : QuerySource) (width : Nat) (candidates : List (List Value)) (row : List Value) :
+def joinRow (clock : Int) (join : QuerySource) (width : Nat) (candidates : List (List Value)) (row : List Value) :
     List (List Value) :=
   match join.kind with
-  | .inner | .right => joinMatches row join candidates
+  | .inner | .right => joinMatches clock row join candidates
   | .left | .full =>
-    if (joinMatches row join candidates).isEmpty then [row ++ List.replicate width .null]
-    else joinMatches row join candidates
+    if (joinMatches clock row join candidates).isEmpty then [row ++ List.replicate width .null]
+    else joinMatches clock row join candidates
 
 /-- The rows of the joined source that no left row matches. -/
-def unmatchedRight (left : List (List Value)) (join : QuerySource) (candidates : List (List Value)) :
+def unmatchedRight (clock : Int) (left : List (List Value)) (join : QuerySource) (candidates : List (List Value)) :
     List (List Value) :=
-  candidates.filter fun cells => !left.any fun row => join.matches (row ++ cells)
+  candidates.filter fun cells => !left.any fun row => join.matches clock (row ++ cells)
 
 /-- The rows of a join of a table, whose rows are {lit}`candidates` with {lit}`width` cells,
 after the rows so far, which have {lit}`leftWidth` cells: the rows of {name}`joinRow` for
 each left row, in order; for a right or full join, then each row of {name}`unmatchedRight`
 with NULL in the {lit}`leftWidth` cells of the left input (R-15753-04279, R-18902-30764). -/
-def joinRows (leftWidth : Nat) (left : List (List Value)) (join : QuerySource) (width : Nat)
+def joinRows (clock : Int) (leftWidth : Nat) (left : List (List Value)) (join : QuerySource) (width : Nat)
     (candidates : List (List Value)) : List (List Value) :=
-  left.flatMap (joinRow join width candidates) ++ match join.kind with
-    | .right | .full => (unmatchedRight left join candidates).map (List.replicate leftWidth .null ++ ·)
+  left.flatMap (joinRow clock join width candidates) ++ match join.kind with
+    | .right | .full => (unmatchedRight clock left join candidates).map (List.replicate leftWidth .null ++ ·)
     | .inner | .left => []
 
 end Belay.Sqlite.Resolved

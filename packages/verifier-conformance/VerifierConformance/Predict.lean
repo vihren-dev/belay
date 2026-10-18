@@ -97,8 +97,9 @@ def predict (p : PredictInput) : Json :=
         ("phase", toJson (none : Option ErrorPhase))]])]
   | .ok unclocked =>
     let clock : Clock := fun position => p.clocks.getD position 0
-    let resolution := { unclocked with resolved := scriptAtClock clock unclocked.resolved }
-    let start : SqlState := { database := databaseOf resolution.startCatalog (p.initial.map NamedRows.native) }
+    let resolution := unclocked
+    let start : SqlState := { database := databaseOf resolution.startCatalog (p.initial.map NamedRows.native),
+                              clock := scriptClock clock resolution.resolved }
     let pass := passFrom 0 resolution.resolved start
     let steps := pass.observations.map stepJson
     let supported := !(p.clocks.isEmpty && scriptReadsClock unclocked.resolved) &&

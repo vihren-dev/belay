@@ -25,7 +25,20 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D6.
 - 2026-10-18: code map. The clock reaches the date functions only through
   `DateTime.current` (`parseDateOrTime` for `now`, `subsec`, `subsecond`, and no
   argument). The approved files and `Contract.lean` use none of the changed names.
+- 2026-10-18: the clock is an evaluation parameter. `Expr.evaluate`, the query, join and
+  write functions, `step`, `literalStep` and `statementReady` take the clock value;
+  `SqlState.clock` is the clock assignment, and `advance` passes the value of its
+  position. `runSqlAt` runs with `scriptClock`: the assignment's value for a statement
+  that reads the clock, else 0, so the one-outcome lemma for a script without clock reads
+  follows from the gate, not from a congruence proof over every execution function.
+  `ClockReads.lean` (classifier with `Expr.any`; `namesClock` now cuts at NUL, as
+  `parseDateOrTime` does) replaces `ClockSubstitution.lean`; `StatementClockLaws.lean`,
+  the `atClock` family and `scriptAtClock` are gone. A clocked INSERT is filled at step
+  time (`Statement.unclock`). The harness runs the gated assignment. Verdict unchanged,
+  entry for entry.
 
 ## Remaining
 
-- Implementation, full checks, verdict comparison, review, CI time, pull request.
+- INSERT rows as expressions (no `clocked`, `ClockCell`, `ClockRows`, `ClockRowRules`);
+  time keywords through the date functions and the `ClockText` duplicates; examples.
+- Full checks, verdict comparison, review, CI time, pull request.

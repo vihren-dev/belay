@@ -73,7 +73,7 @@ theorem failureMigrationCorrect (profile : Profile) (columns : 2 ≤ profile.lim
       have failed : runSql failureScript database = .failure 2 (.prepare (.tableExists "audit")) result := by
         simp only [runSql, failureScript]
         rw [runSqlFrom_schemaOnly_append (initial := script) (by simp [SchemaOnly, script]), executed]
-        simp [runSqlFrom, advance, literalStep, SqlState.finish, script, step, CatalogColumn.clockDefault]
+        simp [runSqlFrom, advance, literalStep, Resolved.Statement.unclock, SqlState.finish, script, step, CatalogColumn.clockDefault]
       rw [failed]
       refine ⟨trivial, ?_⟩
       intro original observed

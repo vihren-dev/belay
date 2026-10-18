@@ -7,8 +7,8 @@ builds and runs against its target case of `conformance.authored_date_functions`
 
 from conformance.resolve_mutants import SQLITE
 
-SUBSTITUTION = SQLITE + "ClockSubstitution.lean"
-"""An expression at the statement's clock value."""
+EVALUATION = SQLITE + "ExprEval.lean"
+"""The value of an expression at the statement's clock value."""
 FUNCTIONS = SQLITE + "Date/Functions.lean"
 """The values of the six functions."""
 STRFTIME = SQLITE + "Date/Strftime.lean"
@@ -19,9 +19,9 @@ DATE_TIME = SQLITE + "Date/DateTime.lean"
 """Numeric time values."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "now_without_statement_clock": (SUBSTITUTION,
-        "    .date function (arguments.atClock clock) (if function.readsNow arguments then clock else stored)",
-        "    .date function (arguments.atClock clock) stored"),
+    "now_without_statement_clock": (EVALUATION,
+        "    (function.value clock values, fault)",
+        "    (function.value 0 values, fault)"),
     "julianday_as_integer": (FUNCTIONS,
         "      | .julianday => realValue (Float.ofInt x.computeJulianDay.julianMilliseconds / 86400000.0)",
         "      | .julianday => .integer (x.computeJulianDay.julianMilliseconds / 86400000)"),
@@ -50,7 +50,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 """The authored case of `conformance.authored_date_functions` that each mutant changes."""
 
 GUARDS: dict[str, str] = {
-    "now_without_statement_clock": "rule:Expr.atClock", "julianday_as_integer": "rule:Resolved.DateFunction.value",
+    "now_without_statement_clock": "rule:Expr.evaluate", "julianday_as_integer": "rule:Resolved.DateFunction.value",
     "week_from_monday_as_sunday": "rule:StrftimeSpecifier.text", "time_zone_ignored": "rule:parseTimezone",
     "number_as_unix_seconds": "rule:DateTime.ofRawNumber",
 }

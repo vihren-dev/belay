@@ -85,13 +85,13 @@ theorem DatabaseExtends.add (database : Database) (position : Nat) (table : Tabl
   · exact ⟨old, (Database.table_addColumn_other database column value same).trans oldPresent,
       TableExtends.refl old⟩
 
-/-- For every statement, database and position, the primitive {name}`step`
+/-- For every clock value, statement, database and position, the primitive {name}`step`
 result extends the input database. CREATE/ADD extend existing tables or retain
 errors; other constructors return an unchanged error. This is a primitive schema
 fact, not a preservation law for literal SQL writes. The proof follows the
 primitive branches and table-update witnesses. -/
-theorem step_extends (statement : Resolved.Statement) (database : Database) (position : Nat) :
-    DatabaseExtends database (step statement database position).database := by
+theorem step_extends (clock : Int) (statement : Resolved.Statement) (database : Database) (position : Nat) :
+    DatabaseExtends database (step clock statement database position).database := by
   cases statement with
   | createTable target name table =>
     simp only [step]
@@ -117,7 +117,7 @@ theorem step_extends (statement : Resolved.Statement) (database : Database) (pos
           · exact DatabaseExtends.add database target table column value h
   | createIndex _ _ _ => exact DatabaseExtends.refl database
   | query query =>
-    have same : (step (.query query) database position).database = database := by
+    have same : (step clock (.query query) database position).database = database := by
       simp only [step]
       split
       · repeat' split
@@ -150,8 +150,8 @@ theorem runSqlFrom_extends (guard : SchemaOnly script) :
       subst item
       exact guard statement (by simp)
     have tail : SchemaOnly rest := fun item member => guard item (by simp [member])
-    have first := step_extends statement database position
-    cases h : step statement database position with
+    have first := step_extends 0 statement database position
+    cases h : step 0 statement database position with
     | failure index reason result => simpa [runSqlFrom, advance_schemaOnly head, h] using first
     | success result =>
       simp only [h, Outcome.database] at first

@@ -1,15 +1,15 @@
 import Belay.Sqlite.StatementStep
-import Belay.Sqlite.StatementClockLaws
 
 set_option doc.verso true
 
 /-! Script-directed SQL execution of resolved statements with the clock (ADR 0012, amendment
-5, slice 6e2). Each statement sees one clock value, which a clock assignment gives for its
-position; the execution applies it to each statement ({lit}`Statement.atClock`) and then
-runs the script as {lit}`runSql` of {lit}`StatementStep.lean` does. The execution relation relates a
-script to the outcome of every clock assignment, so a verification target quantifies over
-every clock value of every statement (ADR 0012, owner decision 8). A script that does not
-read the clock has the outcome of {lit}`runSql` at every clock assignment. -/
+5, slice 6e2; ADR 0013, D6). Each statement sees one clock value, which a clock assignment
+gives for its position; evaluation takes it as a parameter ({lit}`SqlState.clock`). The
+execution relation relates a script to the outcome of every clock assignment, so a
+verification target quantifies over every clock value of every statement (ADR 0012, owner
+decision 8). A statement that reads no clock ({lit}`Resolved.Statement.readsClock`) runs at
+the clock value 0, which it does not read, so a script that reads no clock has the outcome
+of {lit}`runSql` at every clock assignment. -/
 
 namespace Belay.Sqlite
 
@@ -18,23 +18,24 @@ sees, in SQLite's Julian-day milliseconds (what the VFS method {lit}`xCurrentTim
 returns). Use {lean}`(fun _ => 0 : Clock)` when no statement reads the clock. -/
 abbrev Clock := Nat → Int
 
-/-- A script under a clock assignment: each statement at the clock value of its position
-({name}`Resolved.Statement.atClock`). The statements of the result read no clock. -/
-def scriptAtClock (clock : Clock) (script : List Resolved.Statement) : List Resolved.Statement :=
-  script.mapIdx fun position (statement : Resolved.Statement) => statement.atClock (clock position)
+/-- The clock assignment with which a script runs: the clock value of the assignment for a
+statement that reads the clock ({name}`Resolved.Statement.readsClock`), and 0 for every
+other position. -/
+def scriptClock (clock : Clock) (script : List Resolved.Statement) : Clock := fun position =>
+  if (script[position]?).any Resolved.Statement.readsClock then clock position else 0
 
 /-- Execute a resolved script from position zero outside a transaction under a clock
-assignment: {name}`runSql` of the script under the clock assignment ({name}`scriptAtClock`). -/
+assignment, with the clock values of {name}`scriptClock`. -/
 def runSqlAt (clock : Clock) (script : List Resolved.Statement) (database : Database) : Outcome :=
-  runSql (scriptAtClock clock script) database
+  runSqlFrom 0 script { database := database, clock := scriptClock clock script }
 
 /-- For the supplied script and database, and every clock assignment, the reached-statement
-data check {name}`supportedSqlFrom` of the script under the clock assignment
-({name}`scriptAtClock`) returns true. This does not assert native refinement or successful
+data check {name}`supportedSqlFrom` of the script with the clock values of
+{name}`scriptClock` returns true. This does not assert native refinement or successful
 execution. A verification target proves this obligation for every admitted database; it
 is not an extra unproved premise. -/
 def SupportedSql (script : List Resolved.Statement) (database : Database) : Prop :=
-  ∀ clock : Clock, supportedSqlFrom 0 (scriptAtClock clock script) { database := database } = true
+  ∀ clock : Clock, supportedSqlFrom 0 script { database := database, clock := scriptClock clock script } = true
 
 /-- Relate each profile, script and starting database to the outcome of every clock
 assignment ({name}`runSqlAt`). Every profile currently has this same semantics; the profile
@@ -64,30 +65,32 @@ theorem ProfileExecutes.result (execution : ProfileExecutes profile script datab
 def scriptReadsClock (script : List Resolved.Statement) : Bool :=
   script.any Resolved.Statement.readsClock
 
-/-- For every clock assignment and every script that does not read the clock, the script
-under the clock assignment is the script itself. Proof sketch: the two lists have the same
-length, and each statement is unchanged at its clock value
-({name}`Resolved.Statement.atClock_of_readsClock`). -/
-theorem scriptAtClock_of_readsClock (clock : Clock) (script : List Resolved.Statement)
-    (free : scriptReadsClock script = false) : scriptAtClock clock script = script := by
-  simp only [scriptAtClock, scriptReadsClock, List.any_eq_false, Bool.not_eq_true] at free ⊢
-  apply List.ext_getElem (by simp)
-  intro index _ _
-  simp only [List.getElem_mapIdx]
-  exact Resolved.Statement.atClock_of_readsClock _ _ (free _ (List.getElem_mem _))
+/-- For every clock assignment and every script that does not read the clock, the clock
+assignment of the script ({name}`scriptClock`) is 0 at every position. Proof sketch: a
+position in the script holds a statement that does not read the clock, and a position
+past its end has no statement. -/
+theorem scriptClock_of_readsClock (clock : Clock) (script : List Resolved.Statement)
+    (free : scriptReadsClock script = false) : scriptClock clock script = fun _ => 0 := by
+  funext position
+  simp only [scriptReadsClock, List.any_eq_false, Bool.not_eq_true] at free
+  simp only [scriptClock]
+  cases found : script[position]? with
+  | none => rfl
+  | some statement => simp [free statement (List.mem_of_getElem? found)]
 
 /-- For every clock assignment, database and script that does not read the clock, the
 execution under the clock assignment is {name}`runSql`. -/
 theorem runSqlAt_of_readsClock (clock : Clock) (script : List Resolved.Statement) (database : Database)
     (free : scriptReadsClock script = false) : runSqlAt clock script database = runSql script database := by
-  rw [runSqlAt, scriptAtClock_of_readsClock clock script free]
+  rw [runSqlAt, scriptClock_of_readsClock clock script free]
+  rfl
 
 /-- For every script that does not read the clock and every database: if the support check
 {name}`supportedSqlFrom` passes, the script is supported at every clock assignment. -/
 theorem SupportedSql.of_readsClock {script : List Resolved.Statement} {database : Database}
     (free : scriptReadsClock script = false) (supported : supportedSqlFrom 0 script { database := database } = true) :
     SupportedSql script database := fun clock => by
-  rw [scriptAtClock_of_readsClock clock script free]
+  rw [scriptClock_of_readsClock clock script free]
   exact supported
 
 /-- For every related execution of a script that does not read the clock, its outcome is

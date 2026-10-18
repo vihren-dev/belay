@@ -34,7 +34,8 @@ theorem migrationCorrect : Generated.expected := by
   · intro database admitted outcome execution
     obtain ⟨history, present, shape, valid, executed, conforms⟩ := AtuinFacts.payload admitted.1
     have same : runSql Generated.resolved database = outcome :=
-      execution.result_of_readsClock (by simp [scriptReadsClock, AtuinFacts.script_bound, Resolved.Statement.readsClock])
+      execution.result_of_readsClock (by simp [scriptReadsClock, AtuinFacts.script_bound, Resolved.Statement.readsClock,
+        Resolved.Statement.clockExpressions])
     rw [executed] at same
     subst outcome
     refine ⟨True.intro, ?_⟩

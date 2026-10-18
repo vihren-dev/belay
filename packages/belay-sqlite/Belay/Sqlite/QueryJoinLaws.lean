@@ -14,19 +14,19 @@ namespace Belay.Sqlite.Resolved
 and every database, the source rows of the query are the rows of its table in rowid order
 ({name}`sourceRows`), or none when the table is missing: the query of one table is the
 special case of a join. -/
-theorem Query.source_single (query : Query) (database : Database) (table : Nat)
+theorem Query.source_single (clock : Int) (query : Query) (database : Database) (table : Nat)
     (single : query.sources = [{ kind := .inner, source := .table table, condition := none }]) :
-    (query.source database).map (·.rows) = (database.table table).map sourceRows := by
+    (query.source clock database).map (·.rows) = (database.table table).map sourceRows := by
   simp only [Query.source, single, List.foldlM, QuerySource.join]
   cases database.table table with
   | none => rfl
   | some found =>
     simp [joinRows, joinRow, joinMatches, QuerySource.matches, bind, Option.bind, pure]
 
-/-- For every query without sources ({lit}`SELECT` without {lit}`FROM`) and every database,
+/-- For every clock value, query without sources ({lit}`SELECT` without {lit}`FROM`) and every database,
 the source is one row with no cells, without a fault. -/
-theorem Query.source_none (query : Query) (database : Database) (none_ : query.sources = []) :
-    query.source database = some { rows := [[]], width := 0, fault := .none } := by
+theorem Query.source_none (clock : Int) (query : Query) (database : Database) (none_ : query.sources = []) :
+    query.source clock database = some { rows := [[]], width := 0, fault := .none } := by
   simp only [Query.source, none_, List.foldlM]
   rfl
 
@@ -42,9 +42,9 @@ theorem sourceRows_width {table : Table} (valid : table.Valid) :
 /-- For every width, left row of that width, join, and candidate rows of {lit}`columns`
 cells each, every row of {name}`joinMatches` has the width plus {lit}`columns` cells. Proof
 sketch: a match is the left row followed by a candidate. -/
-theorem joinMatches_width {width : Nat} {row : List Value} {candidates : List (List Value)} {columns : Nat} (join : QuerySource) (valid : ∀ cells ∈ candidates, cells.length = columns)
+theorem joinMatches_width (clock : Int) {width : Nat} {row : List Value} {candidates : List (List Value)} {columns : Nat} (join : QuerySource) (valid : ∀ cells ∈ candidates, cells.length = columns)
     (rowWidth : row.length = width) :
-    ∀ joined ∈ joinMatches row join candidates, joined.length = width + columns := by
+    ∀ joined ∈ joinMatches clock row join candidates, joined.length = width + columns := by
   intro joined member
   obtain ⟨cells, cellsMember, built⟩ := List.mem_filterMap.mp member
   dsimp only at built
@@ -54,17 +54,17 @@ theorem joinMatches_width {width : Nat} {row : List Value} {candidates : List (L
 /-- For every width, left row of that width, join, and candidate rows of {lit}`columns`
 cells each, every row of {name}`joinRow` has the width plus {lit}`columns` cells: a match by
 {name}`joinMatches_width`, or the left row padded with one NULL per column. -/
-theorem joinRow_width {width : Nat} {leftRow : List Value} {candidates : List (List Value)} {columns : Nat} (join : QuerySource) (valid : ∀ cells ∈ candidates, cells.length = columns)
+theorem joinRow_width (clock : Int) {width : Nat} {leftRow : List Value} {candidates : List (List Value)} {columns : Nat} (join : QuerySource) (valid : ∀ cells ∈ candidates, cells.length = columns)
     (rowWidth : leftRow.length = width) :
-    ∀ row ∈ joinRow join columns candidates leftRow, row.length = width + columns := by
+    ∀ row ∈ joinRow clock join columns candidates leftRow, row.length = width + columns := by
   intro row joined
-  have matched := joinMatches_width join valid rowWidth
+  have matched := joinMatches_width clock join valid rowWidth
   unfold joinRow at joined
   cases kind : join.kind <;> simp only [kind] at joined
   · exact matched row joined
   all_goals first
     | exact matched row joined
-    | by_cases empty : (joinMatches leftRow join candidates).isEmpty
+    | by_cases empty : (joinMatches clock leftRow join candidates).isEmpty
       · simp only [empty, ite_true, List.mem_singleton] at joined
         subst joined
         simp [rowWidth]
@@ -77,14 +77,14 @@ row is a left row followed by a candidate or by NULL padding, or, for a right or
 NULL padding of the width followed by a candidate. Proof sketch: a row of the first part has
 the width by {name}`joinRow_width`; an added right row is a candidate after the width's
 NULLs. Use {name}`sourceRows_width` for the rows of a valid table. -/
-theorem joinRows_width {width : Nat} {left : List (List Value)} {candidates : List (List Value)} {columns : Nat} (join : QuerySource)
+theorem joinRows_width (clock : Int) {width : Nat} {left : List (List Value)} {candidates : List (List Value)} {columns : Nat} (join : QuerySource)
     (valid : ∀ cells ∈ candidates, cells.length = columns) (widths : ∀ row ∈ left, row.length = width) :
-    ∀ row ∈ joinRows width left join columns candidates, row.length = width + columns := by
+    ∀ row ∈ joinRows clock width left join columns candidates, row.length = width + columns := by
   intro row member
   unfold joinRows at member
   rcases List.mem_append.mp member with joined | added
   · obtain ⟨leftRow, leftMember, joined⟩ := List.mem_flatMap.mp joined
-    exact joinRow_width join valid (widths leftRow leftMember) row joined
+    exact joinRow_width clock join valid (widths leftRow leftMember) row joined
   · cases kind : join.kind <;> simp only [kind, List.not_mem_nil] at added
     all_goals
       obtain ⟨cells, unmatched, rfl⟩ := List.mem_map.mp added
@@ -93,19 +93,19 @@ theorem joinRows_width {width : Nat} {left : List (List Value)} {candidates : Li
 /-- For every left or full join, width, left rows and candidate rows, every left row is a
 prefix of some row of {name}`joinRows`: such a join drops no left row. Proof sketch: a left row with
 matches is the prefix of its first match; otherwise it is the prefix of its padded row. -/
-theorem joinRows_left_keeps {width : Nat} {left : List (List Value)} {candidates : List (List Value)} {columns : Nat} (join : QuerySource)
+theorem joinRows_left_keeps (clock : Int) {width : Nat} {left : List (List Value)} {candidates : List (List Value)} {columns : Nat} (join : QuerySource)
     (kind : join.kind = .left ∨ join.kind = .full) :
-    ∀ leftRow ∈ left, ∃ row ∈ joinRows width left join columns candidates, leftRow <+: row := by
+    ∀ leftRow ∈ left, ∃ row ∈ joinRows clock width left join columns candidates, leftRow <+: row := by
   intro leftRow member
-  have joined : ∀ row ∈ joinRow join columns candidates leftRow, row ∈ joinRows width left join columns candidates :=
+  have joined : ∀ row ∈ joinRow clock join columns candidates leftRow, row ∈ joinRows clock width left join columns candidates :=
     fun row inner => List.mem_append_left _ (List.mem_flatMap.mpr ⟨leftRow, member, inner⟩)
-  have padded : joinRow join columns candidates leftRow = if (joinMatches leftRow join candidates).isEmpty
-      then [leftRow ++ List.replicate columns .null] else joinMatches leftRow join candidates := by
+  have padded : joinRow clock join columns candidates leftRow = if (joinMatches clock leftRow join candidates).isEmpty
+      then [leftRow ++ List.replicate columns .null] else joinMatches clock leftRow join candidates := by
     rcases kind with kind | kind <;> simp [joinRow, kind]
-  by_cases empty : (joinMatches leftRow join candidates).isEmpty
+  by_cases empty : (joinMatches clock leftRow join candidates).isEmpty
   · refine ⟨leftRow ++ List.replicate columns .null, joined _ ?_, List.prefix_append _ _⟩
     simp [padded, empty]
-  · obtain ⟨row, rowMember⟩ := List.exists_mem_of_ne_nil (joinMatches leftRow join candidates) (by simpa using empty)
+  · obtain ⟨row, rowMember⟩ := List.exists_mem_of_ne_nil (joinMatches clock leftRow join candidates) (by simpa using empty)
     obtain ⟨cells, _, built⟩ := List.mem_filterMap.mp rowMember
     dsimp only at built
     split at built <;> cases built
@@ -117,22 +117,22 @@ theorem joinRows_left_keeps {width : Nat} {left : List (List Value)} {candidates
 suffix of some row of {name}`joinRows`: such a join drops no row of its source. Proof sketch: a
 row that some left row matches ends that left row's match; a row that no left row matches
 is in {name}`unmatchedRight` and ends its padded row. -/
-theorem joinRows_right_keeps {width : Nat} {left : List (List Value)} {candidates : List (List Value)} {columns : Nat} (join : QuerySource)
+theorem joinRows_right_keeps (clock : Int) {width : Nat} {left : List (List Value)} {candidates : List (List Value)} {columns : Nat} (join : QuerySource)
     (kind : join.kind = .right ∨ join.kind = .full) :
-    ∀ cells ∈ candidates, ∃ row ∈ joinRows width left join columns candidates, cells <:+ row := by
+    ∀ cells ∈ candidates, ∃ row ∈ joinRows clock width left join columns candidates, cells <:+ row := by
   intro cells member
-  by_cases found : left.any fun row => join.matches (row ++ cells)
+  by_cases found : left.any fun row => join.matches clock (row ++ cells)
   · obtain ⟨leftRow, leftMember, matched⟩ := List.any_eq_true.mp found
-    have isMatch : leftRow ++ cells ∈ joinMatches leftRow join candidates :=
+    have isMatch : leftRow ++ cells ∈ joinMatches clock leftRow join candidates :=
       List.mem_filterMap.mpr ⟨cells, member, by simp [matched]⟩
-    have inRow : leftRow ++ cells ∈ joinRow join columns candidates leftRow := by
-      have nonempty : (joinMatches leftRow join candidates).isEmpty = false :=
+    have inRow : leftRow ++ cells ∈ joinRow clock join columns candidates leftRow := by
+      have nonempty : (joinMatches clock leftRow join candidates).isEmpty = false :=
         List.isEmpty_eq_false_iff_exists_mem.mpr ⟨_, isMatch⟩
       rcases kind with kind | kind <;> simp only [joinRow, kind, nonempty, Bool.false_eq_true, ite_false] <;>
         exact isMatch
     exact ⟨leftRow ++ cells, List.mem_append_left _ (List.mem_flatMap.mpr ⟨leftRow, leftMember, inRow⟩),
       List.suffix_append _ _⟩
-  · have unmatched : cells ∈ unmatchedRight left join candidates := List.mem_filter.mpr ⟨member, by simpa using found⟩
+  · have unmatched : cells ∈ unmatchedRight clock left join candidates := List.mem_filter.mpr ⟨member, by simpa using found⟩
     refine ⟨List.replicate width .null ++ cells, ?_, List.suffix_append _ _⟩
     unfold joinRows
     rcases kind with kind | kind <;> simp only [kind] <;>

@@ -36,7 +36,7 @@ def queryOf : Option Resolved.Statement → Option Resolved.Query
 {name}`database`; none when it does not resolve to a query or a table is missing. -/
 def rowsOf (results : List ResultColumn) (source : TableReference) (joins : List Join) : Option (List (List Value)) :=
   (queryOf (resolvedOne results source joins)).bind fun query =>
-    (query.source database).map fun source => query.results source.rows
+    (query.source 0 database).map fun source => query.results 0 source.rows
 
 /-- A result column of {lit}`x.c`. -/
 def named (source column : String) : ResultColumn := .expression (qualified source column) none s!"{source}.{column}"

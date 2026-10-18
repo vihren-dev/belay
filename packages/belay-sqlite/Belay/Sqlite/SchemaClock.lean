@@ -14,7 +14,7 @@ theorem SchemaOnly.readsClock (guard : SchemaOnly script) : scriptReadsClock scr
   simp only [scriptReadsClock, List.any_eq_false]
   intro statement member
   have first := guard statement member
-  cases statement <;> simp_all [Resolved.Statement.readsClock]
+  cases statement <;> simp_all [Resolved.Statement.readsClock, Resolved.Statement.clockExpressions]
 
 /-- For every {name}`SchemaOnly` script with {name}`ModeledDefinitions` and every database,
 the script is supported at every clock assignment ({name}`SupportedSql`). It follows from

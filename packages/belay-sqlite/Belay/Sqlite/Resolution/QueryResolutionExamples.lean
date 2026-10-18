@@ -157,7 +157,7 @@ def bare (columns : List ResultColumn) (filter : Option Expr := none) (groupBy :
 
 /-- The rows of a resolved query over its source of one row with no cells. -/
 def bareRows (statement : Syntax.Statement) : Option (List (List Value)) :=
-  (queryOf statement).map fun query => query.results [[]]
+  (queryOf statement).map fun query => query.results 0 [[]]
 
 /-- The condition {lit}`1 = 0`, which is false. -/
 def never : Expr := .compare .eq (.numeric "1") (.numeric "0")

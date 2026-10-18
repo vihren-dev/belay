@@ -106,8 +106,9 @@ excludes CREATE INDEX. A query changes nothing: its run over its source rows
 {lean}`ExecutionError.integerOverflow` when it overflows, else with
 {lean}`ExecutionError.functionError` when its fault is {lean}`Resolved.Fault.must`, and
 otherwise succeeds. Its result rows are not part of the outcome. SQL execution handles transaction control and writes
-separately. The default position is zero. -/
-def step (statement : Resolved.Statement) (database : Database) (position : Nat := 0) : Outcome :=
+separately. {lit}`clock` is the statement's clock value, which a query's expressions may
+read. The default position is zero. -/
+def step (clock : Int) (statement : Resolved.Statement) (database : Database) (position : Nat := 0) : Outcome :=
   match statement with
   | .createTable target name table =>
     if target == database.catalog.length && database.rows.length == database.catalog.length then
@@ -126,9 +127,9 @@ def step (statement : Resolved.Statement) (database : Database) (position : Nat 
           .failure position .nullColumnDefault database
         else .success (database.addColumn target column value)
   | .prepareError error => .failure position (.prepare error) database
-  | .query query => match query.source database with
+  | .query query => match query.source clock database with
     | some source =>
-      let run := query.run source.rows
+      let run := query.run clock source.rows
       if run.overflow then .failure position .integerOverflow database
       else if run.fault == .must then .failure position .functionError database
       else .success database

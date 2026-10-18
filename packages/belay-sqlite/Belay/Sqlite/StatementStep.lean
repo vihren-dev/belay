@@ -2,23 +2,28 @@ import Belay.Sqlite.Execution
 import Belay.Sqlite.RowDelete
 import Belay.Sqlite.UpsertRun
 import Belay.Sqlite.JsonReady
+import Belay.Sqlite.StatementClock
 
 set_option doc.verso true
 
-/-! The steps of script-directed SQL execution of resolved statements, without the
-clock, which {lit}`SqlExecution.lean` adds. BEGIN records the
+/-! The steps of script-directed SQL execution of resolved statements. Each statement runs
+at the clock value that the state's clock assignment gives for its position;
+{lit}`SqlExecution.lean` chooses the assignment. BEGIN records the
 committed snapshot; an explicit COMMIT/ROLLBACK, or an INSERT that fails with the
 ROLLBACK algorithm, changes transaction state. Other statement errors stop execution
 without inferring connection closure, framework cleanup, or transaction rollback. -/
 namespace Belay.Sqlite
 
-/-- The current connection view and optional transaction snapshot. Supply a
-database and omit the snapshot for an idle connection. -/
+/-- The current connection view, optional transaction snapshot and clock assignment.
+Supply a database and omit the snapshot for an idle connection. -/
 structure SqlState where
   /-- Current connection-visible storage. -/
   database : Database
   /-- Pre-BEGIN committed storage; omit it outside a transaction. -/
   snapshot : Option Database := none
+  /-- The clock value of the statement at each zero-based position, in SQLite's Julian-day
+  milliseconds; 0 at every position by default, for a script that reads no clock. -/
+  clock : Nat → Int := fun _ => 0
 
 /-- Attach an open transaction to a terminal result. A success becomes pending
 without an error; a failure becomes pending with its position/error. An existing
@@ -84,7 +89,7 @@ which removes rows and cannot fail a constraint. A position without a table fail
 {lean}`ExecutionError.unmodeled`; a failed constraint retains the input database.
 Other statements use {name}`step`. This
 computation does not establish the separate stored-value support obligation. -/
-def literalStep (statement : Resolved.Statement) (database : Database) (position : Nat) : Outcome :=
+def literalStep (clock : Int) (statement : Resolved.Statement) (database : Database) (position : Nat) : Outcome :=
   match statement with
   | .insert target rows _ => match database.table target with
     | none => .failure position .unmodeled database
@@ -93,53 +98,54 @@ def literalStep (statement : Resolved.Statement) (database : Database) (position
     | none => .failure position .unmodeled database
     | some table =>
       let policy := database.catalog.writePolicy target table.shape algorithm
-      match LiteralData.upsertRun (database.keys target table) policy clauses table rows with
+      match LiteralData.upsertRun clock (database.keys target table) policy clauses table rows with
       | .ok (result, _) => .success (database.setRows target result.rows)
       | .error (reason, reached, _) => .failure position reason (LiteralData.failedDatabase database target reason reached)
   | .update target assignments filter _ => match database.table target with
     | none => .failure position .unmodeled database
     | some table =>
-      if LiteralData.updateMismatch table assignments filter then .failure position .datatypeMismatch database
-      else checkedWrite database target (database.keys target table) (LiteralData.updated table assignments filter)
+      if LiteralData.updateMismatch clock table assignments filter then .failure position .datatypeMismatch database
+      else checkedWrite database target (database.keys target table) (LiteralData.updated clock table assignments filter)
         position
   | .delete target filter _ => match database.table target with
     | none => .failure position .unmodeled database
-    | some table => .success (database.setRows target (LiteralData.deleted table filter).rows)
+    | some table => .success (database.setRows target (LiteralData.deleted clock table filter).rows)
   | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ | .query _
   | .clocked .. =>
-    step statement database position
+    step clock statement database position
 
 /-- Check that the model describes the statement against the current table.
 INSERT/UPDATE must pass the data domain of the table, and every write and query the
-JSON checks of {lit}`JsonReady`; a position without a table passes and fails during
-execution instead. CREATE TABLE must be plain; ADD COLUMN must have modeled default
+JSON checks of {lit}`JsonReady` at the statement's clock value; a position without a table
+passes and fails during execution instead. CREATE TABLE must be plain; ADD COLUMN must have modeled default
 readback; CREATE INDEX fails: these are model restrictions, because SQLite accepts such
 statements. Other statement forms pass. Use it through the reached-statement script
 support check. -/
-def statementReady (statement : Resolved.Statement) (database : Database) : Bool :=
+def statementReady (clock : Int) (statement : Resolved.Statement) (database : Database) : Bool :=
   match statement with
   | .insert target rows returning => (database.table target).all fun table =>
       LiteralData.insertReady (database.keys target table) table rows &&
         !(returningExpressions returning).any (·.any Resolved.Expr.isJsonCall)
   | .upsert target rows clauses returning algorithm => (database.table target).all fun table =>
-      LiteralData.upsertReady (database.keys target table) (database.catalog.writePolicy target table.shape algorithm)
+      LiteralData.upsertReady clock (database.keys target table) (database.catalog.writePolicy target table.shape algorithm)
         table clauses rows && upsertJsonReady clauses returning
   | .update target assignments filter returning => (database.table target).all fun table =>
-      LiteralData.updateReady (database.keys target table) table assignments filter &&
-        updateJsonReady table assignments filter returning
-  | .delete target filter returning => (database.table target).all fun table => deleteJsonReady table filter returning
+      LiteralData.updateReady clock (database.keys target table) table assignments filter &&
+        updateJsonReady clock table assignments filter returning
+  | .delete target filter returning => (database.table target).all fun table => deleteJsonReady clock table filter returning
   | .createTable _ _ table => table.plain
   | .addColumn _ column => column.clockDefault || (readDefaultValue column).toOption.isSome
   | .createIndex .. => false
   | .clocked .. => false
   | .query query =>
-    (query.source database).all fun source => source.fault != .may && (query.run source.rows).fault != .may
+    (query.source clock database).all fun source => source.fault != .may && (query.run clock source.rows).fault != .may
   | .begin | .commit | .rollback | .prepareError _ => true
 
 /-- Evaluate one statement at its supplied zero-based position. BEGIN records a
 snapshot; COMMIT clears it; ROLLBACK restores it. Repeated BEGIN or transaction
 closure without a snapshot halts with an error. Other statements use
-{name}`literalStep`; an error retains any open transaction, except a ROLLBACK failure,
+{name}`literalStep` at the clock value of the position ({name}`SqlState.clock`), a clocked
+INSERT with its cells filled in first ({name}`Resolved.Statement.unclock`); an error retains any open transaction, except a ROLLBACK failure,
 which rolls it back ({name}`SqlState.failed`). -/
 def advance (position : Nat) (statement : Resolved.Statement) (state : SqlState) : SqlTransition :=
   match statement with
@@ -151,10 +157,11 @@ def advance (position : Nat) (statement : Resolved.Statement) (state : SqlState)
     | some _ => .next { state with snapshot := none }
   | .rollback => match state.snapshot with
     | none => .halt (.failure position .noActiveTransaction state.database)
-    | some original => .next { database := original }
+    | some original => .next { state with database := original, snapshot := none }
   | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .upsert .. | .update .. | .delete ..
   | .prepareError _ | .query _ | .clocked .. =>
-    match literalStep statement state.database position with
+    let clock := state.clock position
+    match literalStep clock (statement.unclock clock) state.database position with
     | .success database => .next { state with database := database }
     | .failure failed reason database => .halt (state.failed failed reason database)
     | .pending persisted visible error => .halt (state.finish (.pending persisted visible error))
@@ -181,7 +188,9 @@ script passes. -/
 def supportedSqlFrom (position : Nat) (script : List Resolved.Statement) (state : SqlState) : Bool :=
   match script with
   | [] => true
-  | statement :: rest => statementReady statement state.database &&
+  | statement :: rest =>
+    let clock := state.clock position
+    statementReady clock (statement.unclock clock) state.database &&
     match advance position statement state with
     | .halt _ => true
     | .next next => supportedSqlFrom (position + 1) rest next

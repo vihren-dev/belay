@@ -83,7 +83,7 @@ def insertChecked (keys : List (List Nat)) (algorithms : List ConflictAlgorithm)
 
 /-- One row of an INSERT with clauses or algorithms: the table after it and the row that
 it inserted or updated, none for a skipped row; or the error of the statement. -/
-def upsertRow (keys : List (List Nat)) (policy : Resolved.ConflictPolicy) (clauses : List Resolved.ConflictClause)
+def upsertRow (clock : Int) (keys : List (List Nat)) (policy : Resolved.ConflictPolicy) (clauses : List Resolved.ConflictClause)
     (table : Table) (values : List Value) : Except ExecutionError (Table × Option Row) :=
   if aliasMismatch table.shape values then .error .datatypeMismatch else
   let proposed := proposedRow table values
@@ -93,36 +93,36 @@ def upsertRow (keys : List (List Nat)) (policy : Resolved.ConflictPolicy) (claus
     | none => insertChecked keys policy.keys table proposed
     | some (clause, existing) => match clause.action with
       | .nothing => .ok (table, none)
-      | .update assignments filter => updateExisting keys table assignments filter existing proposed
+      | .update assignments filter => updateExisting clock keys table assignments filter existing proposed
 
 /-- The rows in order ({name}`upsertRow`): the final table and the inserted and updated
 rows in row order; or the first error with the table before its row and the rows
 written before it, which a FAIL failure keeps. -/
-def upsertRun (keys : List (List Nat)) (policy : Resolved.ConflictPolicy) (clauses : List Resolved.ConflictClause)
+def upsertRun (clock : Int) (keys : List (List Nat)) (policy : Resolved.ConflictPolicy) (clauses : List Resolved.ConflictClause)
     (table : Table) : List (List Value) → Except (ExecutionError × Table × List Row) (Table × List Row)
   | [] => .ok (table, [])
-  | values :: rest => match upsertRow keys policy clauses table values with
+  | values :: rest => match upsertRow clock keys policy clauses table values with
     | .error reason => .error (reason, table, [])
-    | .ok (next, written) => match upsertRun keys policy clauses next rest with
+    | .ok (next, written) => match upsertRun clock keys policy clauses next rest with
       | .error (reason, reached, later) => .error (reason, reached, written.toList ++ later)
       | .ok (final, later) => .ok (final, written.toList ++ later)
 
 /-- Whether every reached row has a bounded proposed rowid, and every table after a row
 has bounded rowids. SQLite chooses a random rowid after the largest one, which the model
 does not describe. -/
-def upsertBounded (keys : List (List Nat)) (policy : Resolved.ConflictPolicy)
+def upsertBounded (clock : Int) (keys : List (List Nat)) (policy : Resolved.ConflictPolicy)
     (clauses : List Resolved.ConflictClause) (table : Table) : List (List Value) → Bool
   | [] => true
   | values :: rest => boundedInteger (newRowid table values) &&
-    match upsertRow keys policy clauses table values with
+    match upsertRow clock keys policy clauses table values with
     | .error _ => true
-    | .ok (next, _) => next.rows.all (fun row => boundedInteger row.rowid) && upsertBounded keys policy clauses next rest
+    | .ok (next, _) => next.rows.all (fun row => boundedInteger row.rowid) && upsertBounded clock keys policy clauses next rest
 
 /-- Require {name}`tableReady` before the write, {name}`aliasReady`, one stored value per
 column in each row, a column at every position that a {lit}`DO UPDATE` assigns, and
 {name}`upsertBounded`. This check does not establish the constraints of the result,
 which {name}`checkedRow` checks. -/
-def upsertReady (keys : List (List Nat)) (policy : Resolved.ConflictPolicy) (table : Table)
+def upsertReady (clock : Int) (keys : List (List Nat)) (policy : Resolved.ConflictPolicy) (table : Table)
     (clauses : List Resolved.ConflictClause) (rows : List (List Value)) : Bool :=
   tableReady keys table && aliasReady table.shape &&
   rows.all (fun values => values.length == table.shape.columns.length &&
@@ -130,7 +130,7 @@ def upsertReady (keys : List (List Nat)) (policy : Resolved.ConflictPolicy) (tab
   clauses.all (fun clause => match clause.action with
     | .nothing => true
     | .update assignments _ => assignments.all fun (position, _) => (table.shape.columns[position]?).isSome) &&
-  upsertBounded keys policy clauses table rows
+  upsertBounded clock keys policy clauses table rows
 
 /-- The database after a failed INSERT with clauses or algorithms: with the table before
 the failing row at the position for a FAIL failure, which keeps the earlier rows; the

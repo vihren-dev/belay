@@ -28,9 +28,10 @@ def passFrom (position : Nat) (script : List Resolved.Statement) (state : SqlSta
   match script with
   | [] => { observations := [observeState state], outputs := [], supported := true }
   | statement :: rest =>
-    let ready := statementReady statement state.database
+    let clock := state.clock position
+    let ready := statementReady clock (statement.unclock clock) state.database
     let transition := advance position statement state
-    let output := statementOutput statement state transition
+    let output := statementOutput clock (statement.unclock clock) state transition
     match transition with
     | .next next =>
       let later := passFrom (position + 1) rest next
