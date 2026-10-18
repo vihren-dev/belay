@@ -354,6 +354,41 @@ Implementation notes (2026-10-18, steps 3 and 4):
   stay. The registries are a classifier of the restriction kinds, so the ids and the
   prediction JSON do not change.
 
+### Amendment 2 (2026-10-18): D5 in detail
+
+The code map for step 5 found that D5's `subquery (Query)` cannot be written as stated, and
+that the ADR is silent on four SQLite rules. The owner chose the full D5 now, with a
+placeholder for subqueries.
+
+- **The subquery placeholder has no payload.** `subquery (Query)` would make `Query` a
+  nested inductive through the source list, and on Lean 4.34.1 `deriving DecidableEq` does
+  not accept it (see D3). `Resolved.Source.subquery` is a constructor without fields, which
+  resolution never builds: the frontend refuses a subquery in `FROM` before resolution.
+  The subquery ADR decides its payload.
+- **One source list.** `Query.sources` is a list of sources in written order, each with
+  its join kind and optional `ON` condition; `Query.table`, `joins` and `functions` go. A
+  query without `FROM` has no sources. A `json_each` source may come before or after a
+  table, and joins with `LEFT JOIN`, a correlated left join that pads its columns with
+  NULL when the source gives no row.
+- **Restrictions that stay, now in the *unsupported* registry with exact reasons.** A
+  `json_each` argument that reads a later source (`later-source-in-arguments`): SQLite
+  evaluates it only because its planner reorders inner joins, and written order is the
+  model's order. `json_each` as the right operand of `RIGHT` or `FULL`, and with `USING` or
+  `NATURAL` (`function-join`): a correlated source has no fixed rows to keep unmatched,
+  and `NATURAL` skips hidden columns. An `ON` condition that reads a later table
+  (`later-table-in-on`): SQLite moves it to `WHERE` for a `FROM` without outer joins and
+  refuses it otherwise, with a prepare error the model does not have yet.
+- **Duplicate sources resolve.** Checked natively: `SELECT count(*) FROM x3, x3` is 4, and
+  an unqualified or qualified name, `x3.*` and `*` over two sources named `x3` are SQLite's
+  `ambiguous column name`. `duplicate-source` leaves the registry.
+- **Join operators are parsed once**, as SQLite's `sqlite3JoinType` does: the words in any
+  order and repeated, so `OUTER LEFT JOIN` is a left join (checked natively). A
+  combination that SQLite refuses keeps `join-operator`.
+- **`USING` and `NATURAL` give their equalities directly** from the positions of the
+  merged columns, with the comparison affinity of those columns (none for a merged
+  `COALESCE`), instead of generated Syntax that is resolved again. The errors and their
+  order do not change.
+
 ## Consequences
 
 - **Cost of a new form.** A new expression form changes its evaluator arm, its resolver
@@ -427,3 +462,5 @@ instance is worth its proof.
 5. **Scope of D1.** Decided on 2026-10-18: the full D1 now, with the contract change and
    the rewritten approved files of amendment 1, instead of an internal step that keeps
    `Database` as a function.
+6. **Scope of D5.** Decided on 2026-10-18: the full D5 now, with a subquery placeholder
+   without payload (amendment 2), instead of only the join operators and direct `USING`.
