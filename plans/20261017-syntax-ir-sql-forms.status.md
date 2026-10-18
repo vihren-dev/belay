@@ -89,6 +89,12 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D3 and D7, step 
   guard needed `nix-store --gc` (owner approval, 12.3 GiB freed). `test-full`, `test-nix`
   and `test-scheduled` pass.
 
+- 2026-10-18: the second review found that a condition also includes arithmetic and
+  numeric casts, so `(1 + 1) IS TRUE` was predicted 0 where SQLite gives 1 (checked
+  natively). The owner approved the fix after the two-round stop: `isTruthValue` admits
+  only comparisons, AND, OR, NOT and IS NULL, with two new restriction examples. The
+  three suites pass, and the third review has no findings.
+
 ## Remaining
 
 - Pull request A.
