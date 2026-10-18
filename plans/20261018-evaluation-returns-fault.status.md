@@ -33,6 +33,12 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D2.
   with `passFrom_final` and `passFrom_supported`. The model suite: 326 s (335 s
   before). Outcome 4 is deferred by that measurement (task file).
 
+- 2026-10-18: the three suites pass on the tip (the model inputs of
+  `build-support/tests.nix` gained `Pass.lean`). Both reviews are clean. The verdict
+  counts and report equal step 2's. CI time against step 2: `tests.harness` 22 s to
+  22 s, `tests.model` 335 s to 332 s, `tests.frozen` 140 s to 140 s, scheduled mutants
+  411 s to 412 s.
+
 ## Remaining
 
-- Implementation, full checks, verdict measurement, review, CI time, pull request A.
+- Pull request A.
