@@ -10,8 +10,8 @@ every left row, and a right or full join keeps every row of its source. -/
 
 namespace Belay.Sqlite.Resolved
 
-/-- For every query whose only source is a table, as an inner join without a condition,
-and every database, the source rows of the query are the rows of its table in rowid order
+/-- For every clock value, query whose only source is a table, as an inner join without a
+condition, and every database, the source rows of the query at the clock value are the rows of its table in rowid order
 ({name}`sourceRows`), or none when the table is missing: the query of one table is the
 special case of a join. -/
 theorem Query.source_single (clock : Int) (query : Query) (database : Database) (table : Nat)
@@ -23,8 +23,8 @@ theorem Query.source_single (clock : Int) (query : Query) (database : Database) 
   | some found =>
     simp [joinRows, joinRow, joinMatches, QuerySource.matches, bind, Option.bind, pure]
 
-/-- For every clock value, query without sources ({lit}`SELECT` without {lit}`FROM`) and every database,
-the source is one row with no cells, without a fault. -/
+/-- For every clock value, query without sources ({lit}`SELECT` without {lit}`FROM`) and
+every database, the source is one row with no cells, without a fault. -/
 theorem Query.source_none (clock : Int) (query : Query) (database : Database) (none_ : query.sources = []) :
     query.source clock database = some { rows := [[]], width := 0, fault := .none } := by
   simp only [Query.source, none_, List.foldlM]
@@ -39,8 +39,8 @@ theorem sourceRows_width {table : Table} (valid : table.Valid) :
   obtain ⟨row, sorted, rfl⟩ := List.mem_map.mp member
   exact (valid.2 row ((stableSort_perm _ _).mem_iff.mp sorted)).2.1
 
-/-- For every width, left row of that width, join, and candidate rows of {lit}`columns`
-cells each, every row of {name}`joinMatches` has the width plus {lit}`columns` cells. Proof
+/-- For every clock value, width, left row of that width, join, and candidate rows of
+{lit}`columns` cells each, every row of {name}`joinMatches` at the clock value has the width plus {lit}`columns` cells. Proof
 sketch: a match is the left row followed by a candidate. -/
 theorem joinMatches_width (clock : Int) {width : Nat} {row : List Value} {candidates : List (List Value)} {columns : Nat} (join : QuerySource) (valid : ∀ cells ∈ candidates, cells.length = columns)
     (rowWidth : row.length = width) :
@@ -51,8 +51,8 @@ theorem joinMatches_width (clock : Int) {width : Nat} {row : List Value} {candid
   split at built <;> cases built
   simp [rowWidth, valid cells cellsMember]
 
-/-- For every width, left row of that width, join, and candidate rows of {lit}`columns`
-cells each, every row of {name}`joinRow` has the width plus {lit}`columns` cells: a match by
+/-- For every clock value, width, left row of that width, join, and candidate rows of
+{lit}`columns` cells each, every row of {name}`joinRow` at the clock value has the width plus {lit}`columns` cells: a match by
 {name}`joinMatches_width`, or the left row padded with one NULL per column. -/
 theorem joinRow_width (clock : Int) {width : Nat} {leftRow : List Value} {candidates : List (List Value)} {columns : Nat} (join : QuerySource) (valid : ∀ cells ∈ candidates, cells.length = columns)
     (rowWidth : leftRow.length = width) :
@@ -71,8 +71,8 @@ theorem joinRow_width (clock : Int) {width : Nat} {leftRow : List Value} {candid
       · simp only [empty, Bool.false_eq_true, ite_false] at joined
         exact matched row joined
 
-/-- For every width, left rows of that width, join, and candidate rows of {lit}`columns`
-cells each, every row of {name}`joinRows` has the width plus {lit}`columns` cells: a joined
+/-- For every clock value, width, left rows of that width, join, and candidate rows of
+{lit}`columns` cells each, every row of {name}`joinRows` at the clock value has the width plus {lit}`columns` cells: a joined
 row is a left row followed by a candidate or by NULL padding, or, for a right or full join,
 NULL padding of the width followed by a candidate. Proof sketch: a row of the first part has
 the width by {name}`joinRow_width`; an added right row is a candidate after the width's
@@ -90,8 +90,8 @@ theorem joinRows_width (clock : Int) {width : Nat} {left : List (List Value)} {c
       obtain ⟨cells, unmatched, rfl⟩ := List.mem_map.mp added
       simp [valid cells (List.mem_filter.mp unmatched).1]
 
-/-- For every left or full join, width, left rows and candidate rows, every left row is a
-prefix of some row of {name}`joinRows`: such a join drops no left row. Proof sketch: a left row with
+/-- For every clock value, left or full join, width, left rows and candidate rows, every
+left row is a prefix of some row of {name}`joinRows` at the clock value: such a join drops no left row. Proof sketch: a left row with
 matches is the prefix of its first match; otherwise it is the prefix of its padded row. -/
 theorem joinRows_left_keeps (clock : Int) {width : Nat} {left : List (List Value)} {candidates : List (List Value)} {columns : Nat} (join : QuerySource)
     (kind : join.kind = .left ∨ join.kind = .full) :
@@ -113,8 +113,8 @@ theorem joinRows_left_keeps (clock : Int) {width : Nat} {left : List (List Value
     simp only [padded, empty, Bool.false_eq_true, ite_false]
     exact rowMember
 
-/-- For every right or full join, width, left rows and candidate rows, every candidate is a
-suffix of some row of {name}`joinRows`: such a join drops no row of its source. Proof sketch: a
+/-- For every clock value, right or full join, width, left rows and candidate rows, every
+candidate is a suffix of some row of {name}`joinRows` at the clock value: such a join drops no row of its source. Proof sketch: a
 row that some left row matches ends that left row's match; a row that no left row matches
 is in {name}`unmatchedRight` and ends its padded row. -/
 theorem joinRows_right_keeps (clock : Int) {width : Nat} {left : List (List Value)} {candidates : List (List Value)} {columns : Nat} (join : QuerySource)

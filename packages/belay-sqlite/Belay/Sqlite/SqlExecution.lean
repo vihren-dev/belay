@@ -79,7 +79,9 @@ theorem scriptClock_of_readsClock (clock : Clock) (script : List Resolved.Statem
   | some statement => simp [free statement (List.mem_of_getElem? found)]
 
 /-- For every clock assignment, database and script that does not read the clock, the
-execution under the clock assignment is {name}`runSql`. -/
+execution under the clock assignment is {name}`runSql`. Proof sketch:
+{name}`scriptClock_of_readsClock` turns the script's assignment into 0 at every position,
+which is the default clock assignment of the state that {name}`runSql` starts from. -/
 theorem runSqlAt_of_readsClock (clock : Clock) (script : List Resolved.Statement) (database : Database)
     (free : scriptReadsClock script = false) : runSqlAt clock script database = runSql script database := by
   rw [runSqlAt, scriptClock_of_readsClock clock script free]

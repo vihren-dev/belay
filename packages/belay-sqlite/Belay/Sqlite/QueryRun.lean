@@ -73,9 +73,9 @@ def Query.mayFail (clock : Int) (query : Query) (rows : List (List Value)) : Boo
     anyMayFail clock ([] :: rows) query.filter.toList ||
     anyMayFail clock kept query.keptExpressions
 
-/-- For every row and expression without a JSON call at any depth
-({name}`Expr.isJsonCall`, {name}`Expr.any`), the fault of the expression over the row is
-{lean}`Fault.none`. Proof sketch: induction over the mutual expression and argument types;
+/-- For every clock value, row and expression without a JSON call at any depth
+({name}`Expr.isJsonCall`, {name}`Expr.any`), the fault of the expression over the row at
+the clock value is {lean}`Fault.none`. Proof sketch: induction over the mutual expression and argument types;
 every node joins or softens the faults of its parts, which are all {lean}`Fault.none`. -/
 theorem Expr.fault_of_plain (clock : Int) (row : List Value) (expression : Expr)
     (plain : expression.any Expr.isJsonCall = false) : (expression.evaluate clock row).2 = .none := by
@@ -83,9 +83,9 @@ theorem Expr.fault_of_plain (clock : Int) (row : List Value) (expression : Expr)
     (motive_2 := fun arguments => arguments.any Expr.isJsonCall = false → (arguments.evaluate clock row).2 = .none) <;>
     simp_all [Expr.any, Arguments.any, Expr.isJsonCall, Expr.evaluate, Arguments.evaluate, Fault.join, Fault.soften]
 
-/-- For all rows and every query without a JSON call in any of its expressions
-({name}`Query.expressions`), no JSON call of the query may fail over the rows
-({name}`Query.mayFail`). Proof sketch: each expression that {name}`Query.mayFail`
+/-- For every clock value, all rows and every query without a JSON call in any of its
+expressions ({name}`Query.expressions`), no JSON call of the query may fail over the rows at
+the clock value ({name}`Query.mayFail`). Proof sketch: each expression that {name}`Query.mayFail`
 evaluates is one of {name}`Query.expressions`, so {name}`Expr.fault_of_plain` applies to
 it. -/
 theorem Query.mayFail_of_plain (clock : Int) (query : Query) (rows : List (List Value))

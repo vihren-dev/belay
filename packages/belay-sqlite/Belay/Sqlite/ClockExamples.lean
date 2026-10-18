@@ -59,6 +59,12 @@ def rowsAfter (clock : Clock) (script : List Syntax.Statement) : Option (List (L
 #guard rowsAfter (fun _ => 0) [.insert "t" (some ["a"]) [[.currentTime "CURRENT_TIMESTAMP"]] []] ==
   some [[.null, .null]]
 
+-- SQLite reads a time value up to its first NUL: `date('now' || char(0) || 'x')` is the date
+-- of the statement's clock, and `date('nowx')` is NULL.
+#guard rowsAfter newYear [.insert "t" (some ["a", "b"])
+    [[.call "date" [.string [110, 111, 119, 0, 120]], .call "date" [.string [110, 111, 119, 120]]]] []] ==
+  some [[textOf "2024-12-31", .null]]
+
 /-- The resolved script {lit}`INSERT INTO t(a, b) VALUES ('x', 1)`, which reads no clock. -/
 def clockFree : List Resolved.Statement := [.insert 0 [[.text [120], .integer 1]] []]
 

@@ -54,7 +54,7 @@ without {lit}`FROM`; none when a table is missing. -/
 def Query.source (clock : Int) (query : Query) (database : Database) : Option SourceRows :=
   query.sources.foldlM (QuerySource.join clock database) { rows := [[]], width := 0, fault := .none }
 
-/-- For every database, list of sources without a {lit}`json_each` source and state whose
+/-- For every clock value, database, list of sources without a {lit}`json_each` source and state whose
 fault is {lean}`Fault.none`, a successful fold of {name}`QuerySource.join` ends with the fault
 {lean}`Fault.none`. Proof sketch: induction on the sources; a table source keeps the fault,
 and a subquery stops the fold. -/
