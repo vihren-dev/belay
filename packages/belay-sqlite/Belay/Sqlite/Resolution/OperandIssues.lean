@@ -56,15 +56,6 @@ theorem functionCall_issues (name : String) (arguments : Resolved.Arguments) (is
     · exact dateCall_issues _ _ failure failed
     · cases failed; exact named
 
-/-- For every pair of operands, build function and path shift, the affinity check of a
-comparison fails only with a restriction. -/
-theorem compare_issues (a b : Operand) (build : Resolved.Expr → Resolved.Expr → Resolved.Expr)
-    (shift : List Nat → List Nat) : IssuesNameNoObject (match affinityIssue a b with
-      | some (path, reason) => (Except.error (.restriction (shift path) reason) : Except ValueIssue Operand)
-      | none => .ok (build a.1 b.1, none)) := by
-  intro issue failed
-  split at failed <;> cases failed; trivial
-
 mutual
 /-- For every setting, column list, flag and expression, the issues of
 {name}`resolveOperand` name no catalog object. Proof sketch: structural recursion on the
@@ -116,9 +107,7 @@ theorem resolveOperand_issue (dqs : Bool) (scope : Scope) (misuse : Bool) :
     bind_issues (under_issues _ (resolveOperand_issue dqs scope misuse left)) fun a =>
       bind_issues (under_issues _ (resolveOperand_issue dqs scope misuse right)) fun b => by
         intro issue failed
-        split at failed
-        · split at failed <;> cases failed; trivial
-        · exact compare_issues a b (Resolved.Expr.compare operator) (List.map (· + 1)) issue failed
+        split at failed <;> cases failed
   | .and left right =>
     bind_issues (condition_issues _ (resolveOperand_issue dqs scope misuse left)) fun _ =>
       bind_issues (condition_issues _ (resolveOperand_issue dqs scope misuse right)) fun _ =>

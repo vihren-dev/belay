@@ -62,7 +62,12 @@ slice 2), `json_extract` with one or more paths and the operators `->` and `->>`
 or none, which is `now` (slice 6f), and any modifiers, in UTC (slice 6g). A
 `FROM` may end with `json_each(json [, path])` sources, joined by a comma or an inner
 `JOIN` with an optional `ON` condition, whose arguments read the sources before them
-(slice 6d). In a write, a `VALUES` item may be any of these expressions that names no
+(slice 6d). A comparison applies SQLite's comparison affinity (ADR 0013, D4): with an
+INTEGER, REAL or NUMERIC operand, text that looks like a number compares as that number;
+with a TEXT column and no affinity on the other side, a number compares as its text. Any
+value is a condition: an integer or REAL is true when it is not zero, and text or a blob
+when its numeric prefix is not zero, so `'1ab'` is true and `'abc'` is not. In a write, a
+`VALUES` item may be any of these expressions that names no
 column: resolution computes its value (slice 3a). A `SET` value may be any of these
 expressions over the table's columns, evaluated on the old row, and the `WHERE` of an
 `UPDATE` any condition of a `SELECT` (slice 3b). Each written value is then stored as SQLite
@@ -142,8 +147,7 @@ the whole request is `UNSUPPORTED` at the byte range of the refused node. In the
 migration these are, among others: `CREATE INDEX`; `CREATE TABLE` with
 constraints or defaults; `ADD COLUMN` with an unmodeled default expression; rowid column
 names; time values; a `SET` value that reads the row for a column of a unique key; a
-column named twice. In a `SELECT`: a comparison whose affinity rule would convert a value; a
-column, literal, `COALESCE`, or `CAST` to TEXT or BLOB used as a condition; an aggregate inside an expression; a result column
+column named twice. In a `SELECT`: an aggregate inside an expression; a result column
 outside `GROUP BY` in an aggregate query; `ORDER BY` terms of an aggregate query
 other than result column numbers and aliases; a result column alias in `WHERE`
 or inside an `ORDER BY` expression; a query of SQLite's own tables, such as
@@ -192,10 +196,6 @@ of frontend refusal, the cases of the claimed corpora that it keeps out of scope
 | `unmodeled-function` | Only `COUNT(*)`, `COUNT`, `MIN`, `MAX`, `SUM` and `AVG` of one argument, `COALESCE` of two or more arguments, `json_extract`, `->`, `->>`, `json_type`, `json_valid`, `json_array_length` and `json` are modeled as functions | ADR 0012 slices 1, 2, 6b and 6c |
 | `aggregate-in-expression` | An aggregate inside an expression is not modeled | ADR 0012 slice 1 |
 | `alias-in-expression` | A result column alias inside WHERE or an ORDER BY expression is not modeled | ADR 0012 slice 1 |
-| `value-as-condition` | A value used as a condition is not modeled | ADR 0012 slice 1 |
-| `mixed-affinity-comparison` | A comparison of columns with different kinds of affinity is not modeled | ADR 0012 slice 1 |
-| `text-to-number` | A text value compared with a numeric column would be converted to a number | ADR 0012 slice 1 |
-| `number-to-text` | A number compared with a TEXT column would be converted to text | ADR 0012 slice 1 |
 | `group-by-term` | Only a column name or a result column number is modeled in GROUP BY | ADR 0012 slice 1 |
 | `bare-column` | A result column outside GROUP BY in an aggregate query is not modeled | ADR 0012 slice 1 |
 | `aggregate-order-by` | An aggregate query is modeled with ORDER BY result column numbers or aliases only | ADR 0012 slice 1 |

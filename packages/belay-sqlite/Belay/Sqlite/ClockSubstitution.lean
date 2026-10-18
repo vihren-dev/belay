@@ -50,7 +50,7 @@ and time function that may read {lit}`now` ({name}`DateFunction.readsNow`). -/
 def Expr.readsClock : Expr → Bool
   | .column _ | .literal _ => false
   | .now _ => true
-  | .compare _ left right | .and left right | .or left right | .arithmetic _ left right | .coalesce left right =>
+  | .compare _ _ left right | .and left right | .or left right | .arithmetic _ left right | .coalesce left right =>
     left.readsClock || right.readsClock
   | .not operand | .isNull operand _ | .cast _ operand => operand.readsClock
   | .json _ arguments => arguments.readsClock
@@ -70,7 +70,7 @@ def Expr.atClock (clock : Int) : Expr → Expr
   | .now keyword => .literal (keyword.value clock)
   | .column position => .column position
   | .literal value => .literal value
-  | .compare operator left right => .compare operator (left.atClock clock) (right.atClock clock)
+  | .compare operator affinity left right => .compare operator affinity (left.atClock clock) (right.atClock clock)
   | .and left right => .and (left.atClock clock) (right.atClock clock)
   | .or left right => .or (left.atClock clock) (right.atClock clock)
   | .not operand => .not (operand.atClock clock)

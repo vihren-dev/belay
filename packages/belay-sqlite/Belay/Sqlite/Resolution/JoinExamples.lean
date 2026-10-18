@@ -39,7 +39,7 @@ def restrictedOne (results : List ResultColumn) (source : TableReference) (joins
 
 /-- The resolved join of {lit}`u` on {lit}`t.a = u.a`: the cell of {lit}`u.a` follows the two
 cells of {lit}`t`. -/
-def joinU : Resolved.Join := { kind := .inner, table := 1, condition := some (.compare .eq (.column 0) (.column 2)) }
+def joinU : Resolved.Join := { kind := .inner, table := 1, condition := some (.compare .eq (some .numeric) (.column 0) (.column 2)) }
 
 -- An inner join: `*` names the columns of both tables, and ON reads the joined row.
 #guard resolvedOne [.star] (table "t") [joined [] (table "u") (some onA)] ==
@@ -85,7 +85,7 @@ def right : Table :=
     rows := [{ rowid := 1, values := [.integer 1] }] }
 
 /-- The join condition {lit}`left.a = right.a` over the joined row. -/
-def equal : Option Resolved.Expr := some (.compare .eq (.column 0) (.column 1))
+def equal : Option Resolved.Expr := some (.compare .eq none (.column 0) (.column 1))
 
 -- An inner join keeps the matching row; a left join also pads the unmatched left row.
 #guard Resolved.joinRows 1 (Resolved.sourceRows left) { kind := .inner, table := 1, condition := equal } right ==

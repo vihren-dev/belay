@@ -26,7 +26,7 @@ def database : Database := .ofTables [("t", table)]
     [(.column 1, "v"), (.arithmetic .add (.column 0) (.literal (.integer 1)), "k + 1")]] { database }).outputs ==
   [some ⟨["v", "k + 1"], [[.text [101], .integer 6]], some 1⟩]
 -- UPDATE ... SET v = 'z' WHERE k = 1 RETURNING v returns the new values of the two matched rows.
-#guard (passFrom 0 [.update 0 [(1, .literal (.text [122]))] (some (.compare .eq (.column 0) (.literal (.integer 1))))
+#guard (passFrom 0 [.update 0 [(1, .literal (.text [122]))] (some (.compare .eq none (.column 0) (.literal (.integer 1))))
     [(.column 1, "v")]] { database }).outputs ==
   [some ⟨["v"], [[.text [122]], [.text [122]]], some 2⟩]
 

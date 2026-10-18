@@ -131,8 +131,10 @@ def constrained (constraint : ColumnConstraint) : ColumnDefinition :=
 #guard statements (migration tableT [.update "t" [("z", .null)] none, .update "t" [("a", .null)] (some (.compare .eq (.identifier "z" .none) (.numeric "1"))),
     .update "t" [("A", .string [111])] (some (.compare .eq (.identifier "b" .none) (.numeric "7")))])
   == [.prepareError (.noSuchColumn "z"), .prepareError (.noSuchColumn "z"),
-      .update 0 [(0, .literal (.text [111]))] (some (.compare .eq (.column 1) (.literal (.integer 7)))) []]
-#guard restricted (migration tableT [.update "t" [("a", .null)] (some (.compare .eq (.identifier "a" .none) (.numeric "1")))])
+      .update 0 [(0, .literal (.text [111]))] (some (.compare .eq (some .integer) (.column 1) (.literal (.integer 7)))) []]
+-- A TEXT column against a number compares with TEXT affinity (R-29161-32953).
+#guard statements (migration tableT [.update "t" [("a", .null)] (some (.compare .eq (.identifier "a" .none) (.numeric "1")))])
+  == [.update 0 [(0, .literal .null)] (some (.compare .eq (some .text) (.column 0) (.literal (.integer 1)))) []]
 
 /-- A table with keys over integer-comparable columns: a primary key, a UNIQUE
 constraint, a unique index and an index that is not unique. -/

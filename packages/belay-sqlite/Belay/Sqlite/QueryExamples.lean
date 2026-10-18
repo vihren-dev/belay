@@ -29,7 +29,7 @@ def plain : Query where
 
 #guard plain.results (sourceRows table) == [[.text [97]], [.text [98]], [.text [99]], [.text [100]]]
 -- WHERE k = 1 keeps the rows whose comparison is true; NULL = 1 is NULL, not true.
-#guard { plain with filter := some (.compare .eq (.column 0) (.literal (.integer 1))) }.results (sourceRows table) ==
+#guard { plain with filter := some (.compare .eq none (.column 0) (.literal (.integer 1))) }.results (sourceRows table) ==
   [[.text [97]], [.text [98]]]
 -- ORDER BY k DESC puts NULL last; the tie between rowids 1 and 2 keeps rowid order.
 #guard { plain with orderBy := [(.expression (.column 0), true)] }.results (sourceRows table) ==

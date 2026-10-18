@@ -69,14 +69,6 @@ inductive RestrictionKind where
   | aggregateInExpression
   /-- A result column alias inside WHERE or an ORDER BY expression is not modeled (ADR 0012 slice 1). -/
   | aliasInExpression
-  /-- A value used as a condition is not modeled (ADR 0012 slice 1). -/
-  | valueAsCondition
-  /-- A comparison of columns with different kinds of affinity is not modeled (ADR 0012 slice 1). -/
-  | mixedAffinityComparison
-  /-- A text value compared with a numeric column would be converted to a number (ADR 0012 slice 1). -/
-  | textToNumber
-  /-- A number compared with a TEXT column would be converted to text (ADR 0012 slice 1). -/
-  | numberToText
   /-- Only a column name or a result column number is modeled in GROUP BY (ADR 0012 slice 1). -/
   | groupByTerm
   /-- A result column outside GROUP BY in an aggregate query is not modeled (ADR 0012 slice 1). -/

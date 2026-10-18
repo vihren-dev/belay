@@ -32,10 +32,6 @@ def RestrictionKind.id : RestrictionKind → String
   | .unmodeledFunction => "unmodeled-function"
   | .aggregateInExpression => "aggregate-in-expression"
   | .aliasInExpression => "alias-in-expression"
-  | .valueAsCondition => "value-as-condition"
-  | .mixedAffinityComparison => "mixed-affinity-comparison"
-  | .textToNumber => "text-to-number"
-  | .numberToText => "number-to-text"
   | .groupByTerm => "group-by-term"
   | .bareColumn => "bare-column"
   | .aggregateOrderBy => "aggregate-order-by"
@@ -73,10 +69,6 @@ def RestrictionKind.message : RestrictionKind → String
   | .unmodeledFunction => "only COUNT(*), COUNT, MIN, MAX, SUM and AVG of one argument, COALESCE of two or more arguments, json_extract, ->, ->>, json_type, json_valid, json_array_length and json are modeled as functions"
   | .aggregateInExpression => "an aggregate inside an expression is not modeled; use the aggregate as a whole result column"
   | .aliasInExpression => "a result column alias inside WHERE or an ORDER BY expression is not modeled; write the column expression"
-  | .valueAsCondition => "a value used as a condition is not modeled; write a comparison"
-  | .mixedAffinityComparison => "a comparison of columns with different kinds of affinity is not modeled; compare columns with the same kind"
-  | .textToNumber => "a text value compared with a numeric column would be converted to a number; write a number"
-  | .numberToText => "a number compared with a TEXT column would be converted to text; write a text value"
   | .groupByTerm => "only a column name or a result column number is modeled in GROUP BY"
   | .bareColumn => "a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it"
   | .aggregateOrderBy => "an aggregate query is modeled with ORDER BY result column numbers or aliases only"
@@ -91,7 +83,7 @@ def RestrictionKind.message : RestrictionKind → String
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .createTableConstraints, .unmodeledDefault, .createIndexRuns, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .duplicateSource, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .valueAsCondition, .mixedAffinityComparison, .textToNumber, .numberToText, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .tableAfterFunction, .functionJoin, .laterSourceInArguments]
+  [.schemaStatement, .engineTable, .rowidColumnName, .createTableConstraints, .unmodeledDefault, .createIndexRuns, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .duplicateSource, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .tableAfterFunction, .functionJoin, .laterSourceInArguments]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

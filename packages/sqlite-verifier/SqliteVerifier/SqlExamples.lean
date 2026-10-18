@@ -35,7 +35,7 @@ def keys : List (List Nat) := [[0]]
 /-- The file itself supplies both transaction control and literal writes. -/
 def script : List Resolved.Statement := [.begin, .addColumn 0 note,
   .insert 0 [[.integer 2, .text [99], .null]] [],
-  .commit, .update 0 [(1, .literal (.text [100]))] (some (.compare .eq (.column 0) (.literal (.integer 2)))) []]
+  .commit, .update 0 [(1, .literal (.text [100]))] (some (.compare .eq (some .integer) (.column 0) (.literal (.integer 2)))) []]
 
 /-- Return true exactly for a pending transaction; success and failure return
 false. Use it to check transaction status. -/

@@ -52,20 +52,52 @@ def Fault.ofJson : Except Json.JsonError Value → Fault
   | .error .blobArgument => .may
   | .ok _ => .none
 
-/-- Whether a value is true as a condition: a number that is not zero. -/
+/-- Whether a REAL is not zero, as a condition. -/
+def realTruthy (bits : UInt64) : Bool := (realScaled bits).any (· != 0)
+
+/-- Whether a value is true as a condition, as SQLite's {lit}`sqlite3VdbeBooleanValue` gives
+it: an integer that is not zero, a REAL that is not zero, and TEXT or BLOB whose numeric
+prefix ({name}`atof`) is not zero; NULL is not true. So {lit}`'1ab'` and {lit}`'0.9'` are
+true and {lit}`'abc'` is not. -/
 def truthy : Value → Bool
   | .integer value => value != 0
-  | .real bits => (realScaled bits).any (· != 0)
-  | .null | .text _ | .blob _ => false
+  | .real bits => realTruthy bits
+  | .text bytes | .blob bytes => realTruthy (atof bytes).1.toBits
+  | .null => false
 
 /-- Whether a value is false as a condition: not NULL and not true. -/
 def falsy (value : Value) : Bool := !value.isNull && !truthy value
+
+/-- A comparison operand after a numeric affinity: TEXT that looks like a number becomes
+that number ({name}`numericText`); every other value stays, so an integer never goes
+through a double. -/
+def numericOperand : Value → Value
+  | .text bytes => numericText bytes
+  | value@(.null) | value@(.integer _) | value@(.real _) | value@(.blob _) => value
+
+/-- Whether a value is TEXT. -/
+def _root_.Belay.Sqlite.Value.isText : Value → Bool
+  | .text _ => true
+  | .null | .integer _ | .real _ | .blob _ => false
+
+/-- The operands of a comparison after SQLite applies its affinity (the comparison
+opcodes of {lit}`sqlite3VdbeExec`): with INTEGER, REAL or NUMERIC, each TEXT operand that
+looks like a number becomes that number ({name}`numericOperand`); with TEXT, when an operand
+is TEXT, each number becomes its text ({name}`storeValue`), which the order would also give
+otherwise; with BLOB or none, the operands stay. -/
+def comparisonOperands : Option Affinity → Value → Value → Value × Value
+  | some .integer, left, right | some .real, left, right | some .numeric, left, right =>
+    (numericOperand left, numericOperand right)
+  | some .text, left, right =>
+    if left.isText || right.isText then (storeValue .text left, storeValue .text right) else (left, right)
+  | some .blob, left, right | none, left, right => (left, right)
 
 mutual
 /-- The value of an expression over the cells of one row, in column order, with its
 {name}`Fault`. A column past the end of the row reads as NULL. {lit}`AND` is false when an
 operand is false, else NULL when an operand is NULL, else true; {lit}`OR` is the dual;
-{lit}`NOT` keeps NULL. Arithmetic and {lit}`CAST` follow {name}`ArithmeticOperator.apply`
+{lit}`NOT` keeps NULL; a comparison applies its affinity first
+({name}`comparisonOperands`). Arithmetic and {lit}`CAST` follow {name}`ArithmeticOperator.apply`
 and {name}`castValue`; {lit}`COALESCE` gives its first operand unless that is NULL. A JSON
 function gives the value of {name}`Json.apply` over the values of its arguments, and NULL
 with {name}`Fault.ofJson` when it fails. The fault of {lit}`AND`, {lit}`OR` and
@@ -77,9 +109,10 @@ here: the execution replaces it with the statement's clock text first
 def Expr.evaluate (row : List Value) : Expr → Value × Fault
   | .column position => (row.getD position .null, .none)
   | .literal value => (value, .none)
-  | .compare operator left right =>
+  | .compare operator affinity left right =>
     let (a, first) := left.evaluate row
     let (b, second) := right.evaluate row
+    let (a, b) := comparisonOperands affinity a b
     (operator.apply a b, first.join second)
   | .and left right =>
     let (a, first) := left.evaluate row

@@ -68,14 +68,22 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
 #guard reportedType (some "int") == some "INT" && reportedType (some "VarChar(10)") == some "VarChar(10)"
 -- A double-quoted name that names no column is a string literal.
 #guard (queryOf (select [written (.identifier "x" .double) "\"x\""])).isSome
--- Comparisons whose affinity rule would convert a value are model restrictions.
-#guard restrictedOne (select [.star] (filter := some (.compare .eq (.identifier "b" .none) (.numeric "5"))))
-#guard restrictedOne (select [.star] (filter := some (.compare .eq (.identifier "Abc" .none) (.string [53]))))
-#guard restrictedOne (select [.star] (filter := some (.compare .eq (.identifier "Abc" .none) (.identifier "b" .none))))
-#guard (queryOf (select [.star] (filter := some (.compare .eq (.identifier "Abc" .none) (.numeric "5"))))).isSome
+-- A comparison carries SQLite's comparison affinity (R-58138-64688, R-29161-32953): TEXT
+-- for a TEXT column against a number, INTEGER for an INTEGER column against text, and
+-- NUMERIC for an INTEGER column against a TEXT column.
+#guard (queryOf (select [.star] (filter := some (.compare .eq (.identifier "b" .none) (.numeric "5"))))).map
+  (·.filter) == some (some (.compare .eq (some .text) (.column 1) (.literal (.integer 5))))
+#guard (queryOf (select [.star] (filter := some (.compare .eq (.identifier "Abc" .none) (.string [53]))))).map
+  (·.filter) == some (some (.compare .eq (some .integer) (.column 0) (.literal (.text [53]))))
+#guard (queryOf (select [.star] (filter := some (.compare .eq (.identifier "Abc" .none) (.identifier "b" .none))))).map
+  (·.filter) == some (some (.compare .eq (some .numeric) (.column 0) (.column 1)))
+-- `+x` has no affinity, so `+Abc = '5'` compares the values as they are.
+#guard (queryOf (select [.star] (filter := some (.compare .eq (.positive (.identifier "Abc" .none)) (.string [53]))))).map
+  (·.filter) == some (some (.compare .eq none (.column 0) (.literal (.text [53]))))
 -- The restrictions of slice 1.
 #guard restrictedOne (select [written (.identifier "b" .none) "b", written (.callStar "count") "count(*)"])
-#guard restrictedOne (select [.star] (filter := some (.identifier "Abc" .none)))
+-- A value is a condition, as SQLite takes its truth.
+#guard (queryOf (select [.star] (filter := some (.identifier "Abc" .none)))).map (·.filter) == some (some (.column 0))
 #guard restrictedOne (select [.star] (offset := some (.negate (.numeric "1"))))
 -- SQLite resolves a result column alias in WHERE and in ORDER BY expressions; the
 -- model restricts it, even when the alias is written in double quotes.
@@ -95,9 +103,10 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
   some (.wrongArgumentCount "count")
 #guard errorOf (select [written (.negate (.numeric "0x8000000000000000")) "-0x8000000000000000"]) ==
   some (.hexLiteralTooBig "-0x8000000000000000")
--- A COALESCE with a column may be TEXT, which a numeric column would convert: a restriction.
-#guard restrictedOne (select [.star] (filter := some (.compare .eq (.identifier "Abc" .none)
-  (.call "coalesce" [.identifier "b" .none, .numeric "0"]))))
+-- A COALESCE has no affinity, so the comparison has the INTEGER affinity of the column.
+#guard (queryOf (select [.star] (filter := some (.compare .eq (.identifier "Abc" .none)
+  (.call "coalesce" [.identifier "b" .none, .numeric "0"]))))).map (·.filter) ==
+  some (some (.compare .eq (some .integer) (.column 0) (.coalesce (.column 1) (.literal (.integer 0)))))
 -- Arithmetic gives a number, so it can be a condition.
 #guard (queryOf (select [.star] (filter := some (.arithmetic .add (.identifier "Abc" .none) (.numeric "1"))))).isSome
 -- Constant expressions in writes (slice 3a) are computed and stored at resolution; a SET
@@ -112,7 +121,7 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
 -- The filter is a condition, resolved as in SELECT: `WHERE Abc = 1 + 2`.
 #guard resolvedOne (.update "t" [("b", .string [120])] (some (.compare .eq (.identifier "Abc" .none)
   (.arithmetic .add (.numeric "1") (.numeric "2"))))) == some (.update 0 [(1, .literal (.text [120]))]
-  (some (.compare .eq (.column 0) (.arithmetic .add (.literal (.integer 1)) (.literal (.integer 2))))) [])
+  (some (.compare .eq (some .integer) (.column 0) (.arithmetic .add (.literal (.integer 1)) (.literal (.integer 2))))) [])
 -- RETURNING (slice 3a): `*` and named expressions over the written row; an aggregate is
 -- a misuse, a rowid a restriction, and an error in the values comes first.
 #guard (resolvedOne ((.insert "t" none [[.numeric "1", .string [120]]] [] none [.star, .expression (.identifier "B" .none) none "B"])))
@@ -171,15 +180,26 @@ def never : Expr := .compare .eq (.numeric "1") (.numeric "0")
   some [[.integer 1, .integer 0]]
 #guard errorOf (bare [written (.identifier "TRUE" .bracket) "[TRUE]"]) == some (.noSuchColumn "TRUE")
 #guard errorOf (bare [written (.identifier "false" .backtick) "`false`"]) == some (.noSuchColumn "false")
--- `x IS [NOT] TRUE|FALSE` is SQLite's truth test (checked natively): exact for a condition,
--- whose value is 0, 1 or NULL; `2 IS TRUE`, which is 1 in SQLite, stays a restriction.
+-- `x IS [NOT] TRUE|FALSE` is SQLite's truth test of any operand (checked natively): `2 IS TRUE`,
+-- `(1 + 1) IS TRUE` and `CAST(2 AS INTEGER) IS TRUE` are 1, `2 IS 1` is 0, and NULL is neither
+-- TRUE nor FALSE.
 #guard bareRows (bare [written (.compare .is (.compare .lt (.numeric "1") (.numeric "2")) (.identifier "TRUE" .none))
     "(1 < 2) IS TRUE", written (.compare .isNot (.compare .gt (.numeric "1") (.numeric "2"))
     (.identifier "TRUE" .none)) "(1 > 2) IS NOT TRUE"]) == some [[.integer 1, .integer 1]]
-#guard restrictedOne (bare [written (.compare .is (.numeric "2") (.identifier "TRUE" .none)) "2 IS TRUE"])
-#guard restrictedOne (bare [written (.compare .is (.arithmetic .add (.numeric "1") (.numeric "1"))
-  (.identifier "TRUE" .none)) "(1 + 1) IS TRUE"])
-#guard restrictedOne (bare [written (.compare .is (.cast (.numeric "2") "INTEGER") (.identifier "TRUE" .none))
-  "CAST(2 AS INTEGER) IS TRUE"])
+#guard bareRows (bare [written (.compare .is (.numeric "2") (.identifier "TRUE" .none)) "2 IS TRUE",
+    written (.compare .is (.arithmetic .add (.numeric "1") (.numeric "1")) (.identifier "TRUE" .none)) "(1 + 1) IS TRUE",
+    written (.compare .is (.cast (.numeric "2") "INTEGER") (.identifier "TRUE" .none)) "CAST(2 AS INTEGER) IS TRUE",
+    written (.compare .is (.numeric "2") (.numeric "1")) "2 IS 1"]) ==
+  some [[.integer 1, .integer 1, .integer 1, .integer 0]]
+#guard bareRows (bare [written (.compare .is .null (.identifier "TRUE" .none)) "NULL IS TRUE",
+    written (.compare .is .null (.identifier "FALSE" .none)) "NULL IS FALSE",
+    written (.compare .isNot .null (.identifier "FALSE" .none)) "NULL IS NOT FALSE",
+    written (.compare .isNot (.numeric "0") (.identifier "FALSE" .none)) "0 IS NOT FALSE"]) ==
+  some [[.integer 0, .integer 0, .integer 1, .integer 0]]
+-- A TEXT condition is true when its numeric prefix is not zero.
+#guard bareRows (bare [written (.compare .is (.string "1ab".toUTF8.toList) (.identifier "TRUE" .none)) "'1ab' IS TRUE",
+    written (.compare .is (.string "abc".toUTF8.toList) (.identifier "TRUE" .none)) "'abc' IS TRUE",
+    written (.compare .is (.string "0.9".toUTF8.toList) (.identifier "TRUE" .none)) "'0.9' IS TRUE"]) ==
+  some [[.integer 1, .integer 0, .integer 1]]
 
 end Belay.Sqlite.Resolution.QueryResolutionExamples
