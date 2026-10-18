@@ -17,13 +17,14 @@ JOIN_USING = SQLITE + "Resolution/JoinUsing.lean"
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "star_keeps_merged": (SCOPE,
-        "      fun (index, _) => !source.merged.contains index && !source.hidden.contains index).map",
-        "      fun (index, _) => !source.hidden.contains index).map"),
-    "unqualified_sees_merged": (SCOPE, "      if source.merged.contains index then match source.mergeRule with",
-        "      if false then match source.mergeRule with"),
+        "  scope.flatMap fun source => source.placedColumns fun index => !source.merged.contains index && !source.hidden.contains index",
+        "  scope.flatMap fun source => source.placedColumns fun index => !source.hidden.contains index"),
+    "unqualified_sees_merged": (SCOPE, "    if source.merged.contains index then match source.mergeRule with",
+        "    if false then match source.mergeRule with"),
     "condition_uses_right_most": (MERGED_LEFT, "  scope.findSome? fun source =>", "  scope.reverse.findSome? fun source =>"),
     "natural_without_common_no_rows": (JOIN_USING, "  | [] => none\n  | first :: rest => some (rest.foldl .and first)",
-        "  | [] => some (.compare .eq (.numeric \"0\") (.numeric \"1\"))\n  | first :: rest => some (rest.foldl .and first)"),
+        "  | [] => some (.compare .eq none (.literal (.integer 0)) (.literal (.integer 1)))\n"
+        "  | first :: rest => some (rest.foldl .and first)"),
     "missing_using_column_accepted": (JOIN_USING,
         "  if (columnPosition right.columns name).isSome && (left.leftMost name).isSome then\n",
         "  if true then\n"),

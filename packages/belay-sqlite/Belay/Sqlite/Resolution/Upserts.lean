@@ -18,7 +18,7 @@ columns. Every column of {lit}`excluded` is merged ({name}`ScopeSource.merged`),
 unqualified name reads the table's column and only {lit}`excluded.column` reads the
 proposed row, as in SQLite. -/
 def upsertScope (tableName : String) (columns : List CatalogColumn) : Scope :=
-  [{ name := tableName, columns }, { name := "excluded", columns, merged := List.range columns.length }]
+  [{ name := tableName, columns }, { name := "excluded", columns, offset := columns.length, merged := List.range columns.length }]
 
 /-- The key that a conflict target names: the first key whose columns are the target's
 columns, in any order. An unknown name is {lit}`no such column: %s`; a target that is

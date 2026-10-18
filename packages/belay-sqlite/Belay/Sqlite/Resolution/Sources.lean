@@ -134,7 +134,7 @@ def resolveJoinCondition (dqs : Bool) (scope : Scope) (index : Nat) : JoinCondit
   | .merged condition => .ok (some condition)
   | .written path term => do
     let resolved ← condition path (resolveOperand dqs scope true term)
-    let bound := (scope.take (index + 1)).foldl (fun width source => width + source.columns.length) 0
+    let bound := scope.cellsBefore (index + 1)
     if resolved.readsBelow bound then .ok (some resolved)
     else throw (.restriction path .laterTableInOn)
 

@@ -16,10 +16,10 @@ MERGED_LEFT = SQLITE + "Resolution/MergedLeft.lean"
 """The left side of a generated condition."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "right_merged_uses_left": (SCOPE, "        | .takeRight => .found first [offset + index]",
-        "        | .takeRight => .found first reads"),
-    "full_merged_uses_left": (SCOPE, "        | .coalesce => .found first (reads ++ [offset + index])",
-        "        | .coalesce => .found first reads"),
+    "right_merged_uses_left": (SCOPE, "      | .takeRight => .found first [source.offset + index]",
+        "      | .takeRight => .found first reads"),
+    "full_merged_uses_left": (SCOPE, "      | .coalesce => .found first (reads ++ [source.offset + index])",
+        "      | .coalesce => .found first reads"),
     "coalesce_keeps_affinity": (MERGED_NAMES, "  | reads => (coalesceColumns reads, none)",
         "  | reads => (coalesceColumns reads,\n"
         "      (reads.head?.bind (scope.columns[·]?)).map CatalogColumn.affinity)"),

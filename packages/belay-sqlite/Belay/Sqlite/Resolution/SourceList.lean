@@ -69,8 +69,9 @@ def resolveSources (catalog : Catalog) (source : Option Syntax.TableReference) (
     let earlier := source :: (joins.take item).map (·.source)
     functionJoinChecked (earlier.any (·.arguments.isSome)) item join operator
     .ok resolved) (joins.zip operators)
-  let (scope, conditions) ← mergeJoins (operators.any rightOrFull) [firstSource] 0
-    (joins.zip (operators.zip (joined.map Prod.snd)))
+  let placed := Scope.place (firstSource :: joined.map Prod.snd)
+  let (scope, conditions) ← mergeJoins (operators.any rightOrFull) (placed.take 1) 0
+    (joins.zip (operators.zip (placed.drop 1)))
   let first : PendingSource := { item := firstItem, kind := .inner, condition := .none }
   .ok (first :: ((joined.map Prod.fst).zip conditions).map fun (item, kind, condition) => { item, kind, condition },
     scope)

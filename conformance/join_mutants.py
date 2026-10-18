@@ -28,7 +28,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "    if (joinMatches row join candidates).isEmpty then\n"
         "      [row ++ List.replicate width .null].filter fun joined =>\n"
         "        join.condition.all fun condition => truthy (condition.eval joined)"),
-    "unqualified_takes_first_source": (SCOPE, "      else .ambiguous)", "      else .found first reads)"),
+    "unqualified_takes_first_source": (SCOPE, "    else .ambiguous\n", "    else .found first reads\n"),
     "alias_keeps_table_name": (SOURCES,
         "    .ok (position, { name := reference.alias.getD declared, columns := table.columns })",
         "    .ok (position, { name := declared, columns := table.columns })"),

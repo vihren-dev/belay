@@ -64,18 +64,17 @@ def JoinCondition.ofMerged : Option Resolved.Expr → JoinCondition
 
 /-- The condition of the merged names, resolved: the conjunction, in order, of
 {lit}`left = right.c` for each name {lit}`c`, with the left side of {name}`mergedLeft` and
-the column of the joined source after the left input, compared with their affinity
+the column of the joined source at its offset ({name}`ScopeSource.offset`), compared with their affinity
 ({name}`comparisonAffinity`); none for no name, which is a cross join. It is the condition
 that SQLite generates, so it has the comparison rules of a written {lit}`ON` condition. -/
 def mergedCondition (coalesced : Bool) (left : Scope) (right : ScopeSource) (names : List String) :
     Option Resolved.Expr :=
-  let offset := left.foldl (fun width source => width + source.columns.length) 0
   let equalities := names.filterMap fun name => do
     let (leftSide, affinity) ← mergedLeft coalesced left name
     let index ← columnPosition right.columns name
     let joined ← right.columns[index]?
     some (Resolved.Expr.compare .eq (comparisonAffinity affinity (some joined.affinity)) leftSide
-      (.column (offset + index)))
+      (.column (right.offset + index)))
   match equalities with
   | [] => none
   | first :: rest => some (rest.foldl .and first)

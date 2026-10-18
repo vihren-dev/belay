@@ -39,9 +39,7 @@ def usingReferenceChecked (left : Scope) (name : String) : Except ValueIssue Str
 /-- The positions in the joined row of the scope of every column of the folded name, in
 order. -/
 def Scope.namedPositions (scope : Scope) (name : String) : List Nat :=
-  (scope.foldl (fun (offset, found) source =>
-    (offset + source.columns.length, found ++ ((columnPosition source.columns name).map (offset + ·)).toList))
-    (0, [])).2
+  scope.flatMap fun source => ((columnPosition source.columns name).map (source.offset + ·)).toList
 
 /-- The left side of the equality of a merged name, resolved, with its affinity
 ({name}`Scope.nameOperand`): with {lit}`coalesced` (a right or full join in the

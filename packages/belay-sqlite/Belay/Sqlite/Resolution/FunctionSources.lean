@@ -42,7 +42,7 @@ and then must read only the sources before it
 second, if any, the path. -/
 def resolveEachArguments (dqs : Bool) (scope : Scope) (index : Nat) (path : List Nat)
     (arguments : List Syntax.Expr) : Except ValueIssue Resolved.Source := do
-  let bound := (scope.take index).foldl (fun width source => width + source.columns.length) 0
+  let bound := scope.cellsBefore index
   let resolved ← resolveAll (fun position argument => do
     let (resolved, _) ← (resolveOperand dqs scope true argument).mapError (·.under (path ++ [2, position]))
     if resolved.readsBelow bound then .ok resolved

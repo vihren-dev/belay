@@ -29,9 +29,7 @@ def Scope.nameOperand (scope : Scope) : List Nat → Operand
 /-- The index of the source whose cells hold the position of the concatenated row; the
 number of sources for a position after the last cell. -/
 def Scope.sourceOf (scope : Scope) (position : Nat) : Nat :=
-  (scope.foldl (fun (offset, index, found) source =>
-    if found.isNone && position < offset + source.columns.length then (offset + source.columns.length, index + 1, some index)
-    else (offset + source.columns.length, index + 1, found)) (0, 0, none)).2.2.getD scope.length
+  (scope.findIdx? fun source => position < source.offset + source.columns.length).getD scope.length
 
 /-- The operand of the column at the position in the expansion of {lit}`*` or
 {lit}`x.*`, as SQLite expands it (checked on native 3.51.0): when the column's source is

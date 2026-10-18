@@ -41,10 +41,15 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D5 and amendment
   give `ambiguous column name: main.x.c` as SQLite does; a table's source name is the
   declared name. `duplicate-source` leaves the registry. Verdict: the 3 v5 cases
   `e_select-1.4.3.7.1/2/3` now agree; no other case changes.
+- 2026-10-18: each scope source keeps its offset (`ScopeSource.offset`, set by
+  `Scope.place`); the scope folds that recomputed offsets are gone (outcome 6). Mutant
+  anchors moved; `natural_without_common_no_rows` now writes a resolved expression,
+  since the merged condition is no longer Syntax. Verdict unchanged.
 
 ## Remaining
 
-- The `subquery` kind; source offsets in
-  the scope (outcome 6).
+- The `subquery` kind: the ADR (D5) and amendment 2 disagree on whether SQL can reach
+  it, and `tests/conformance_restriction_examples_test.py` refuses a kind no SQL reaches;
+  asked the owner.
 - Measurement over every corpus, full checks, review, CI time, pull
   requests A and B.
