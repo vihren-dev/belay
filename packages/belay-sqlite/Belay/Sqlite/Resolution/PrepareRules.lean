@@ -1,6 +1,6 @@
 import Belay.Sqlite.Resolution.PrepareSpec
 import Belay.Sqlite.Resolution.UpsertRules
-import Belay.Sqlite.Resolution.ClockRowRules
+import Belay.Sqlite.Resolution.InsertCellRules
 
 set_option doc.verso true
 
@@ -94,7 +94,7 @@ theorem resolveInsert_named (context : ResolveContext) (catalog after : Catalog)
       .ok (.prepareError error, after)) :
     error = .noSuchTable tableName ∧ catalog.findTable tableName = none ∧ after = catalog := by
   unfold resolveInsert at ok
-  simp only [prepareError, restrict, issueResolution, withClockCells] at ok
+  simp only [prepareError, restrict, issueResolution] at ok
   repeat' split at ok
   all_goals (try (cases ok; done))
   all_goals cases ok

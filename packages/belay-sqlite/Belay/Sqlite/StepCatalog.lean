@@ -57,7 +57,7 @@ theorem literalStep_success_catalog {clock : Int} {statement : Resolved.Statemen
     simp only [literalStep, step] at success
     repeat' split at success
     all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
-  | createIndex | begin | commit | rollback | prepareError | clocked =>
+  | createIndex | begin | commit | rollback | prepareError =>
     simp [literalStep, step] at success
 
 /-- For every position, statement, connection states and resolution state: if the
@@ -96,15 +96,12 @@ theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {sql ne
       rw [some_] at saved
       simp only [Option.map_some] at saved
       simp [SqlState.Agrees, ResolveState.after, ← saved]
-  | createTable | createIndex | addColumn | insert | update | upsert | delete | prepareError | query | clocked =>
+  | createTable | createIndex | addColumn | insert | update | upsert | delete | prepareError | query =>
     simp only [advance] at continued
     split at continued
     · rename_i result stepped
       cases continued
       obtain ⟨changed, control⟩ := literalStep_success_catalog stepped
-      obtain ⟨sameCatalog, sameControl⟩ := Resolved.Statement.unclock_catalog (sql.clock position) _
-      rw [sameControl] at control
-      rw [sameCatalog] at changed
       rw [state.after_of_isControl control]
       exact ⟨changed.trans (catalog ▸ rfl), saved⟩
     · cases continued
@@ -134,7 +131,7 @@ theorem advance_halt_error {position : Nat} {statement : Resolved.Statement} {sq
     split at halted
     · cases halted; simp [Outcome.error?]
     · cases halted
-  | createTable | createIndex | addColumn | insert | update | upsert | delete | prepareError | query | clocked =>
+  | createTable | createIndex | addColumn | insert | update | upsert | delete | prepareError | query =>
     simp only [advance] at halted
     rcases Conformance.literal_cases _ _ sql.database position with ⟨_, h⟩ | ⟨_, h⟩ | ⟨_, h⟩ <;>
       rw [h] at halted <;> cases halted <;> simp [SqlState.failed_error]

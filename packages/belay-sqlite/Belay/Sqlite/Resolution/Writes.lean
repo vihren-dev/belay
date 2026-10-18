@@ -1,6 +1,6 @@
 import Belay.Sqlite.Resolution.Definitions
 import Belay.Sqlite.Resolution.Upserts
-import Belay.Sqlite.Resolution.ClockRows
+import Belay.Sqlite.Resolution.InsertCells
 
 set_option doc.verso true
 
@@ -69,7 +69,7 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
                 if policy.mixed then restrict index [] .mixedConflictAlgorithms
                 else if replacesDefault table policy then restrict index [] .replaceDefault
                 else if clauses.isEmpty && policy.aborts then
-                  .ok (withClockCells table.columns full (.insert position · columns), catalog)
-                else .ok (withClockCells table.columns full (.upsert position · clauses columns algorithm), catalog)
+                  .ok (.insert position full columns, catalog)
+                else .ok (.upsert position full clauses columns algorithm, catalog)
 
 end Belay.Sqlite

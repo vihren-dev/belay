@@ -66,7 +66,7 @@ def rowsAfter (clock : Clock) (script : List Syntax.Statement) : Option (List (L
   some [[textOf "2024-12-31", .null]]
 
 /-- The resolved script {lit}`INSERT INTO t(a, b) VALUES ('x', 1)`, which reads no clock. -/
-def clockFree : List Resolved.Statement := [.insert 0 [[.text [120], .integer 1]] []]
+def clockFree : List Resolved.Statement := [.insert 0 [[.value (.text [120]), .value (.integer 1)]] []]
 
 -- It is the resolution of the statement.
 #guard statements (migration catalogT [.insert "t" (some ["a", "b"]) [[.string [120], .numeric "1"]] []]) == clockFree

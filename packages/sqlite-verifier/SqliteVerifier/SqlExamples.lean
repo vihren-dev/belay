@@ -34,7 +34,7 @@ def keys : List (List Nat) := [[0]]
 
 /-- The file itself supplies both transaction control and literal writes. -/
 def script : List Resolved.Statement := [.begin, .addColumn 0 note,
-  .insert 0 [[.integer 2, .text [99], .null]] [],
+  .insert 0 [[.value (.integer 2), .value (.text [99]), .value .null]] [],
   .commit, .update 0 [(1, .literal (.text [100]))] (some (.compare .eq (some .integer) (.column 0) (.literal (.integer 2)))) []]
 
 /-- Return true exactly for a pending transaction; success and failure return
@@ -61,22 +61,22 @@ example : ((runSql script database).database.table 0).map Table.rows = some [
 
 /-- The unique-key failure stops after ADD, while BEGIN remains open. -/
 def rejected : List Resolved.Statement := [.begin, .addColumn 0 note,
-  .insert 0 [[.integer 1, .text [], .null]] [], .rollback]
+  .insert 0 [[.value (.integer 1), .value (.text []), .value .null]] [], .rollback]
 
 example : error (runSql rejected database) = some (2, .constraintViolation) ∧
     openTransaction (runSql rejected database) = true := by decide +kernel
 example : ((runSql rejected database).database.table 0).map (fun table => table.shape.columns) = some (columns ++ [note]) ∧
     ((runSql rejected database).persistedDatabase.table 0).map (fun table => table.shape.columns) = some columns := by
   decide +kernel
-example : ((runSql [.begin, .insert 0 [[.integer 2, .text []]] [], .rollback] database).database.table 0) =
+example : ((runSql [.begin, .insert 0 [[.value (.integer 2), .value (.text [])]] [], .rollback] database).database.table 0) =
     some original := by decide +kernel
 example : error (runSql [.commit] database) = some (0, .noActiveTransaction) := by decide +kernel
 example : error (runSql [.begin, .begin] database) = some (1, .transactionAlreadyActive) := by decide +kernel
 example : openTransaction (runSql [.begin] database) = true := by decide +kernel
-example : error (runSql [.insert 0 [[.integer 2, .null]] []] database) = some (0, .constraintViolation) := by
+example : error (runSql [.insert 0 [[.value (.integer 2), .value .null]] []] database) = some (0, .constraintViolation) := by
   decide +kernel
 -- Two rows of one INSERT that share a key fail together, and the table is unchanged.
-example : error (runSql [.insert 0 [[.integer 3, .text []], [.integer 3, .text []]] []] database) =
+example : error (runSql [.insert 0 [[.value (.integer 3), .value (.text [])], [.value (.integer 3), .value (.text [])]] []] database) =
     some (0, .constraintViolation) := by decide +kernel
 -- A prepare error that resolution decided stops the script at its position.
 example : error (runSql [.begin, .prepareError (.noSuchTable "t")] database) =

@@ -10,7 +10,7 @@ OUTPUTS = "verifier-conformance/VerifierConformance/Outputs.lean"
 """The outputs of statements, with the RETURNING rows."""
 RETURNING = "belay-sqlite/Belay/Sqlite/Resolution/Returning.lean"
 """The resolution of RETURNING columns."""
-CELLS = "belay-sqlite/Belay/Sqlite/Resolution/ClockRows.lean"
+CELLS = "belay-sqlite/Belay/Sqlite/Resolution/InsertCells.lean"
 """The constant values of INSERT rows."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
@@ -27,9 +27,9 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "returning_names_ignore_definition": (RETURNING,
         "      .ok [(resolved, alias.getD ((definedName scope value).getD text))]", "      .ok [(resolved, alias.getD text)]"),
     "constant_not_evaluated": (CELLS,
-        "    else .ok (operand.1.eval 0 [], none)",
-        "    else .ok (match operand.1 with\n"
-        "      | .arithmetic _ left _ => left.eval 0 []\n      | other => other.eval 0 [], none)"),
+        "    else .ok (.value (operand.1.eval 0 []))",
+        "    else .ok (.value (match operand.1 with\n"
+        "      | .arithmetic _ left _ => left.eval 0 []\n      | other => other.eval 0 []))"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
 replacement. The names follow the list in the task of slice 3a; `constant_not_evaluated`

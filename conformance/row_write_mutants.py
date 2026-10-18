@@ -11,7 +11,7 @@ ROW_UPDATE = SQLITE + "RowUpdate.lean"
 """The execution of UPDATE."""
 STORE = SQLITE + "StoreValue.lean"
 """Store-time affinity."""
-ROWS = SQLITE + "Resolution/ClockRows.lean"
+ROWS = SQLITE + "Resolution/InsertCells.lean"
 """The rows of INSERT, which store each value."""
 UPDATES = SQLITE + "Resolution/Updates.lean"
 """The resolution of UPDATE, which stores each constant value."""
@@ -31,7 +31,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "values.set position (storeValue (positionAffinity columns position) (expression.eval clock context))) row.values }",
         "values.set position (expression.eval clock context)) row.values }"),
     "cast_as_store_affinity": (ROWS,
-        "      .ok (storeValue column.affinity value, clock)", "      .ok (castValue column.affinity value, clock)"),
+        "  | .value written => .value (storeValue affinity written)",
+        "  | .value written => .value (castValue affinity written)"),
     "real_column_keeps_integer": (STORE,
         "  | .integer whole => .real (positiveZero (Float.ofInt whole).toBits)", "  | .integer whole => .integer whole"),
     "text_column_keeps_number": (STORE,
@@ -63,7 +64,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 GUARDS: dict[str, str] = {
     "set_reads_new_row": "rule:assignFrom", "null_filter_selects": "rule:selected",
     "no_store_affinity": "rule:assignFrom",
-    "cast_as_store_affinity": "rule:fullCells", "real_column_keeps_integer": "rule:realRead",
+    "cast_as_store_affinity": "rule:Resolved.Cell.stored", "real_column_keeps_integer": "rule:realRead",
     "text_column_keeps_number": "rule:storeValue", "failed_update_keeps_rows": "rule:checkedWrite",
     "change_count_every_row": "rule:statementOutput",
 }

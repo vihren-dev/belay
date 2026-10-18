@@ -74,7 +74,6 @@ def SchemaOnly (script : List Resolved.Statement) : Prop :=
     | .delete .. => False
     | .prepareError _ => False
     | .query _ => False
-    | .clocked .. => False
 
 /-- No statement in the script is INSERT (with or without {lit}`ON CONFLICT`, or with
 cells that read the clock), UPDATE or DELETE, and no query has a JSON call in its expressions
@@ -86,7 +85,6 @@ def NoWrites (script : List Resolved.Statement) : Prop :=
     | .upsert .. => False
     | .update .. => False
     | .delete .. => False
-    | .clocked .. => False
     | .query query =>
       query.expressions.all (!·.any Resolved.Expr.isJsonCall) = true ∧ query.sources.all (!·.source.isEach) = true
     | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ => True
@@ -101,7 +99,7 @@ def ModeledDefinitions (script : List Resolved.Statement) : Prop :=
     | .createTable _ _ table => table.plain = true
     | .addColumn _ column => (column.clockDefault || (readDefaultValue column).toOption.isSome) = true
     | .createIndex .. => False
-    | .insert .. | .upsert .. | .update .. | .delete .. | .clocked .. | .begin | .commit | .rollback | .prepareError _
+    | .insert .. | .upsert .. | .update .. | .delete .. | .begin | .commit | .rollback | .prepareError _
     | .query _ => True
 
 /-- For every position and connection state, a {name}`NoWrites` script with
@@ -117,13 +115,12 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDe
     have firstModeled := modeled statement (by simp)
     have tail : NoWrites rest := fun item member => guard item (by simp [member])
     have tailModeled : ModeledDefinitions rest := fun item member => modeled item (by simp [member])
-    have ready : statementReady (state.clock position) (statement.unclock (state.clock position))
-        state.database = true := by
+    have ready : statementReady (state.clock position) statement state.database = true := by
       cases statement with
       | query query =>
         obtain ⟨plain, noEach⟩ : (query.expressions.all fun x => !x.any Resolved.Expr.isJsonCall) = true ∧
             query.sources.all (!·.source.isEach) = true := first
-        simp only [statementReady, Resolved.Statement.unclock]
+        simp only [statementReady]
         cases found : query.source (state.clock position) state.database with
         | none => rfl
         | some source =>
@@ -131,7 +128,7 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDe
           by_cases must : query.mustFail (state.clock position) source.rows = true <;>
             simp [Resolved.Query.run, Resolved.Query.mayFail_of_plain _ query _ plain, clean, must]
       | createTable | createIndex | addColumn | begin | commit | rollback | insert | upsert | update | delete
-      | prepareError | clocked => simp_all [statementReady, Resolved.Statement.unclock]
+      | prepareError => simp_all [statementReady]
     simp only [supportedSqlFrom, ready, Bool.true_and]
     cases advance position statement state with
     | halt outcome => rfl
@@ -158,7 +155,7 @@ theorem advance_schemaOnly
       | .failure index reason result => .halt (.failure index reason result)
       | .pending persisted visible error => .halt (.pending persisted visible error) := by
   have first := guard statement (by simp)
-  cases statement <;> simp_all [advance, literalStep, SqlState.finish, Resolved.Statement.unclock]
+  cases statement <;> simp_all [advance, literalStep, SqlState.finish]
   all_goals rfl
 
 /-- For every idle starting database and position, appending a suffix to a

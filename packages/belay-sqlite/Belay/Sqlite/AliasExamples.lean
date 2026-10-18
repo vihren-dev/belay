@@ -32,7 +32,7 @@ def errorOf : Outcome → Option ExecutionError
   | .success _ | .pending .. => none
 
 /-- INSERT of the rows into the table. -/
-def insert (rows : List (List Value)) : Outcome := literalStep 0 (.insert 0 rows []) database 0
+def insert (rows : List (List Value)) : Outcome := literalStep 0 (.insert 0 (rows.map (·.map .value)) []) database 0
 
 /-- UPDATE of the alias to the value. -/
 def update (value : Value) : Outcome := literalStep 0 (.update 0 [(0, .literal value)] none []) database 0

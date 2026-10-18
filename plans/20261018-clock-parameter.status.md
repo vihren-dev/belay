@@ -36,9 +36,16 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D6.
   the `atClock` family and `scriptAtClock` are gone. A clocked INSERT is filled at step
   time (`Statement.unclock`). The harness runs the gated assignment. Verdict unchanged,
   entry for entry.
+- 2026-10-18: review of the clock commit: four "must" findings (a NUL time value test,
+  clock quantifiers in five plain-words statements, a proof sketch), fixed in a
+  `refactor:` commit; its review is clean.
+- 2026-10-18: INSERT rows are rows of `Resolved.Cell`: a stored value, or an expression
+  that reads the clock, which `literalStep` evaluates at the statement's clock value and
+  stores (`Cell.valueAt`, `rowsAt`). `Statement.clocked`, `ClockCell`, `ClockRows.lean`
+  (now `InsertCells.lean`) and `ClockRowRules.lean` (now `InsertCellRules.lean`) are gone;
+  `RowWidth` is stated over cells. The core has 134 modules. Verdict unchanged.
 
 ## Remaining
 
-- INSERT rows as expressions (no `clocked`, `ClockCell`, `ClockRows`, `ClockRowRules`);
-  time keywords through the date functions and the `ClockText` duplicates; examples.
+- Time keywords through the date functions and the `ClockText` duplicates; examples.
 - Full checks, verdict comparison, review, CI time, pull request.

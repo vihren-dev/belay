@@ -129,14 +129,16 @@ def statementOutput (clock : Int) (statement : Resolved.Statement) (before : Sql
     let names := returning.map (·.2)
     if successful then do
       let table ← before.database.table target
-      let written := ((LiteralData.inserted table rows).rows.drop table.rows.length).map (·.values)
+      let values := Resolved.rowsAt clock table.shape.columns rows
+      let written := ((LiteralData.inserted table values).rows.drop table.rows.length).map (·.values)
       return ⟨names, returnedRows clock returning written, some rows.length⟩
     else if constraintFailure then some ⟨names, [], some 0⟩ else none
   | .upsert target rows clauses returning algorithm =>
     let names := returning.map (·.2)
     let run := (before.database.table target).map fun table =>
       LiteralData.upsertRun clock (before.database.keys target table)
-        (before.database.catalog.writePolicy target table.shape algorithm) clauses table rows
+        (before.database.catalog.writePolicy target table.shape algorithm) clauses table
+        (Resolved.rowsAt clock table.shape.columns rows)
     if successful then do
       let (_, written) ← (← run).toOption
       return ⟨names, returnedRows clock returning (written.map (·.values)), some written.length⟩
@@ -163,7 +165,6 @@ def statementOutput (clock : Int) (statement : Resolved.Statement) (before : Sql
     else if (overflow && query.groupBy.isEmpty) || functionFailure then some ⟨query.names, [], none⟩
     else none
   | .addColumn _ column => some ⟨addColumnOutputNames column, [], none⟩
-  | .clocked .. => none
   | .createTable .. | .createIndex .. | .begin | .commit | .rollback | .prepareError _ =>
     some ⟨[], [], none⟩
 

@@ -113,8 +113,7 @@ def classifyCase (c : Case) : Verdict :=
   match resolveSchemaAndScript profile c.schema c.script with
   | .error (.schemaRestricted _) | .error (.scriptRestricted _) => .modelUnsupported
   | .error (.schemaPrepareError ..) => .disagree none
-  | .ok unclocked =>
-    let resolution := unclocked
+  | .ok resolution =>
     let initial := databaseOf resolution.startCatalog c.initial
     let pass := passFrom 0 resolution.resolved { database := initial, clock := scriptClock c.clock resolution.resolved }
     let observed := pass.observations
@@ -122,7 +121,7 @@ def classifyCase (c : Case) : Verdict :=
     match observed, c.nativeTrace with
     | first :: rest, expected :: expectations =>
       if !matchesObservation first expected then .disagree none
-      else if (c.clocks.isEmpty && scriptReadsClock unclocked.resolved) ||
+      else if (c.clocks.isEmpty && scriptReadsClock resolution.resolved) ||
           !pass.supported || observed.any invalidObservation ||
           c.parameters.any (fun values => !values.isEmpty) || (c.outputs.isSome && outputs.any Option.isNone) then
         .modelUnsupported

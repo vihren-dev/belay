@@ -14,12 +14,11 @@ namespace Belay.Sqlite
 /-- The resolution state after the statement: BEGIN saves the catalog unless a catalog is
 already saved, COMMIT drops the saved catalog, ROLLBACK restores it, and every other
 statement applies {name}`Resolved.Statement.applyCatalog` to the catalog and keeps the
-saved one. A clocked statement is the statement it wraps. -/
+saved one. -/
 def ResolveState.after (state : ResolveState) : Resolved.Statement → ResolveState
   | .begin => { state with saved := state.saved.getD state.catalog }
   | .commit => { state with saved := none }
   | .rollback => { catalog := state.saved.getD state.catalog, saved := none }
-  | .clocked statement _ => state.after statement
   | statement@(.createTable ..) | statement@(.createIndex ..) | statement@(.addColumn ..)
   | statement@(.insert ..) | statement@(.update ..) | statement@(.upsert ..) | statement@(.delete ..)
   | statement@(.prepareError _) | statement@(.query _) =>
@@ -27,14 +26,13 @@ def ResolveState.after (state : ResolveState) : Resolved.Statement → ResolveSt
 
 /-- For every state and statement that is not transaction control
 ({name}`Resolved.Statement.isControl`), {name}`ResolveState.after` applies the statement's
-catalog change and keeps the saved catalog. Proof sketch: induction on the statement:
-BEGIN, COMMIT and ROLLBACK contradict the premise, a clocked statement follows from the
-statement it wraps, and every other constructor is the definition. -/
+catalog change and keeps the saved catalog. Proof sketch: case analysis on the statement:
+BEGIN, COMMIT and ROLLBACK contradict the premise, and every other constructor is the
+definition. -/
 theorem ResolveState.after_of_isControl (state : ResolveState) {statement : Resolved.Statement}
     (ordinary : statement.isControl = false) :
     state.after statement = { state with catalog := statement.applyCatalog state.catalog } := by
-  induction statement with
-  | clocked inner _ ih => exact ih ordinary
+  cases statement with
   | begin | commit | rollback => cases ordinary
   | createTable | createIndex | addColumn | insert | update | upsert | delete | prepareError | query => rfl
 

@@ -13,7 +13,7 @@ EXECUTION = SQLITE + "SqlExecution.lean"
 TEXT = SQLITE + "ClockText.lean"
 """The text of the time keywords."""
 STATEMENT = SQLITE + "StatementClock.lean"
-"""A clocked INSERT ready to run at a clock value."""
+"""The cells of INSERT rows at a clock value."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "clock_one_for_script": (EXECUTION,
@@ -24,8 +24,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "clock_seconds_rounded": (TEXT, "(dayMilliseconds.tmod 60000).tdiv 1000)",
         "((dayMilliseconds.tmod 60000) + 500).tdiv 1000)"),
     "clock_default_at_resolution": (STATEMENT,
-        "  | .clocked statement cells => statement.fillCells clock cells",
-        "  | .clocked statement cells => statement.fillCells defaultDateClock cells"),
+        "  | .expression term => storeValue affinity (term.eval clock [])",
+        "  | .expression term => storeValue affinity (term.eval defaultDateClock [])"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the replacement. The
 names follow the list in the task of slice 6e2: one clock value, the first statement's, for
@@ -42,7 +42,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 
 GUARDS: dict[str, str] = {
     "clock_one_for_script": "rule:scriptClock", "clock_date_with_time": "rule:TimeKeyword.value",
-    "clock_seconds_rounded": "rule:timeOfDayOfClock", "clock_default_at_resolution": "rule:Statement.unclock",
+    "clock_seconds_rounded": "rule:timeOfDayOfClock", "clock_default_at_resolution": "rule:Cell.valueAt",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
 changes. `conformance.mutant_guards` checks every entry."""

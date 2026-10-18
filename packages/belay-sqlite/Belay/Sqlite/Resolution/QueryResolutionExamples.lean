@@ -33,14 +33,14 @@ def queryOf (statement : Syntax.Statement) : Option Resolved.Query :=
   match resolvedOne statement with
   | some (.query query) => some query
   | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some .begin | some .commit
-  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.prepareError _) | some (.clocked ..) | none => none
+  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.prepareError _) | none => none
 
 /-- The prepare error of a resolution, if it is one. -/
 def errorOf (statement : Syntax.Statement) : Option PrepareError :=
   match resolvedOne statement with
   | some (.prepareError error) => some error
   | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some .begin | some .commit
-  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.query _) | some (.clocked ..) | none => none
+  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.query _) | none => none
 
 /-- Whether the statement is a model restriction. -/
 def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration catalog [statement])
@@ -112,7 +112,7 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
 -- Constant expressions in writes (slice 3a) are computed and stored at resolution; a SET
 -- value that names a column stays an expression over the old row (slice 3b).
 #guard resolvedOne (.insert "t" none [[.arithmetic .add (.numeric "1") (.numeric "2"), .string [120]]] []) ==
-  some (.insert 0 [[.integer 3, .text [120]]] [])
+  some (.insert 0 [[.value (.integer 3), .value (.text [120])]] [])
 #guard resolvedOne (.update "t" [("Abc", .cast (.string [55]) "INTEGER")] none) ==
   some (.update 0 [(0, .literal (.integer 7))] none [])
 #guard errorOf (.insert "t" none [[.callStar "count", .null]] []) == some (.misuseOfAggregate "count")
@@ -125,7 +125,7 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
 -- RETURNING (slice 3a): `*` and named expressions over the written row; an aggregate is
 -- a misuse, a rowid a restriction, and an error in the values comes first.
 #guard (resolvedOne ((.insert "t" none [[.numeric "1", .string [120]]] [] none [.star, .expression (.identifier "B" .none) none "B"])))
-  == some (.insert 0 [[.integer 1, .text [120]]] [(.column 0, "Abc"), (.column 1, "b"), (.column 1, "b")])
+  == some (.insert 0 [[.value (.integer 1), .value (.text [120])]] [(.column 0, "Abc"), (.column 1, "b"), (.column 1, "b")])
 #guard errorOf ((.insert "t" none [[.numeric "1", .string [120]]] [] none [written (.callStar "count") "count(*)"])) ==
   some (.misuseOfAggregate "count")
 #guard restrictedOne ((.update "t" [("b", .string [120])] none [written (.identifier "rowid" .none) "rowid"]))

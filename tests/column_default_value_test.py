@@ -59,7 +59,7 @@ def test_omitted_default_values(version: str, tmp_path: Path,
     expressions = ", ".join(f"⟨({expression}), {quoted_string(sql)}⟩" for sql, expression in CASES)
     affinities = ", ".join(quoted_string(affinity) for affinity in AFFINITIES)
     source = f'''import Belay.Sqlite.Codec
-import Belay.Sqlite.Resolution.ClockRows
+import Belay.Sqlite.Resolution.InsertCells
 import Belay.Sqlite.Resolution.ReadDefaults
 open Belay.Sqlite Lean
 #eval do
@@ -69,7 +69,10 @@ open Belay.Sqlite Lean
       | throw (IO.userError "the model does not describe the default")
     let columns : List CatalogColumn := [{{name := "id", declaredType := some "BLOB"}},
       {{name := "added", declaredType := some affinity, defaultValue := some resolved}}]
-    IO.ofExcept (((fullCells columns [0] [(.integer 7, none)]).map fun (cells : List RowCell) => cells.map Prod.fst).mapError reprStr)
+    IO.ofExcept (((fullCells columns [0] [.value (.integer 7)]).map fun (cells : List Resolved.Cell) =>
+      cells.map fun cell => match cell with
+        | .value value => value
+        | .expression _ => Value.null).mapError reprStr)
   IO.println (toJson tables).compress
 '''
     actual = json.loads(compile_checks(source, tmp_path, lean_sysroot, lean_libraries))
@@ -98,7 +101,7 @@ def test_oversized_hex_default_prepare_error(version: str, negated: bool, tmp_pa
     if negated:
         expression = f".negate ({expression})"
     source = f'''import Belay.Sqlite.Codec
-import Belay.Sqlite.Resolution.ClockRows
+import Belay.Sqlite.Resolution.InsertCells
 import Belay.Sqlite.Resolution.ReadDefaults
 import Belay.Sqlite.Resolution.Messages
 open Belay.Sqlite Lean
@@ -107,7 +110,7 @@ open Belay.Sqlite Lean
     | throw (IO.userError "the model does not describe the default")
   let columns : List CatalogColumn := [{{name := "id", declaredType := none}},
     {{name := "added", declaredType := none, defaultValue := some resolved}}]
-  match fullCells columns [0] [(.integer 7, none)] with
+  match fullCells columns [0] [.value (.integer 7)] with
   | .error (.prepare error) =>
     IO.println (toJson ["prepare", error.message]).compress
   | _ => throw (IO.userError "expected the default's preparation error")

@@ -72,7 +72,7 @@ deriving instance Lean.ToExpr for Resolved.Query
 deriving instance Lean.ToExpr for Resolved.ConflictAction
 deriving instance Lean.ToExpr for Resolved.ConflictClause
 deriving instance Lean.ToExpr for Resolved.ConflictPolicy
-deriving instance Lean.ToExpr for Resolved.ClockCell
+deriving instance Lean.ToExpr for Resolved.Cell
 deriving instance Lean.ToExpr for Resolved.Statement
 
 /-- The supported version of {lit}`ScriptRecord`, the structural record of a schema

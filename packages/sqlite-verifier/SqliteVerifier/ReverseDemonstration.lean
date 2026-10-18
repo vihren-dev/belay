@@ -31,7 +31,7 @@ theorem reverse_runs (database : Database) (admitted : Admitted profile startCat
   have added : step 0 (.addColumn 0 note) created 1 = .success (created.addColumn 0 note .null) := by
     simp [step, invoice, CatalogColumn.clockDefault, readDefaultValue, note]
   have reversed : runSql reverseScript database = .success (created.addColumn 0 note .null) := by
-    simp [runSql, runSqlFrom, advance, literalStep, Resolved.Statement.unclock, SqlState.finish, reverseScript, audit, added]
+    simp [runSql, runSqlFrom, advance, literalStep, SqlState.finish, reverseScript, audit, added]
   rw [reversed, script_runs admitted, Database.addColumn_createTable database note .null _ _
     (by simp [same, startCatalog]) (by simp [same, length, startCatalog])]
   rfl

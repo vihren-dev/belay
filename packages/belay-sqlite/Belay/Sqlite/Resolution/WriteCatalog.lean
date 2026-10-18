@@ -13,8 +13,8 @@ namespace Belay.Sqlite
 /-- For every successful resolution of INSERT, the catalog is unchanged and the resolved
 statement applied to the input catalog gives the input catalog again
 ({name}`Resolved.Statement.applyCatalog`); the statement is not transaction control ({name}`Resolved.Statement.isControl`).
-Proof sketch: every branch of the resolver returns the input catalog and a write, a
-clocked write or a prepare error. -/
+Proof sketch: every branch of the resolver returns the input catalog and a write or a
+prepare error. -/
 theorem resolveInsert_same (context : ResolveContext) (catalog after : Catalog) (index : Nat)
     (tableName : String) (names : Option (List String)) (rows : List (List Syntax.Expr))
     (conflicts : List Syntax.ConflictClause) (algorithm : Option ConflictAlgorithm)
@@ -27,14 +27,13 @@ theorem resolveInsert_same (context : ResolveContext) (catalog after : Catalog) 
   repeat' split at ok
   all_goals first
     | (cases ok; exact ⟨rfl, rfl, rfl⟩)
-    | (cases ok; refine ⟨rfl, ?_, ?_⟩ <;> simp only [withClockCells] <;> split <;> rfl)
     | (cases ok)
 
 /-- For every successful resolution of UPDATE, the catalog is unchanged and the resolved
 statement applied to the input catalog gives the input catalog again
 ({name}`Resolved.Statement.applyCatalog`); the statement is not transaction control ({name}`Resolved.Statement.isControl`).
-Proof sketch: every branch of the resolver returns the input catalog and a write, a
-clocked write or a prepare error. -/
+Proof sketch: every branch of the resolver returns the input catalog and a write or a
+prepare error. -/
 theorem resolveUpdate_same (context : ResolveContext) (catalog after : Catalog) (index : Nat)
     (tableName : String) (assignments : List (String × Syntax.Expr)) (filter : Option Syntax.Expr)
     (returning : List Syntax.ResultColumn)
@@ -46,14 +45,13 @@ theorem resolveUpdate_same (context : ResolveContext) (catalog after : Catalog) 
   repeat' split at ok
   all_goals first
     | (cases ok; exact ⟨rfl, rfl, rfl⟩)
-    | (cases ok; refine ⟨rfl, ?_, ?_⟩ <;> simp only [withClockCells] <;> split <;> rfl)
     | (cases ok)
 
 /-- For every successful resolution of DELETE, the catalog is unchanged and the resolved
 statement applied to the input catalog gives the input catalog again
 ({name}`Resolved.Statement.applyCatalog`); the statement is not transaction control ({name}`Resolved.Statement.isControl`).
-Proof sketch: every branch of the resolver returns the input catalog and a write, a
-clocked write or a prepare error. -/
+Proof sketch: every branch of the resolver returns the input catalog and a write or a
+prepare error. -/
 theorem resolveDelete_same (context : ResolveContext) (catalog after : Catalog) (index : Nat)
     (tableName : String) (filter : Option Syntax.Expr) (returning : List Syntax.ResultColumn)
     (statement : Resolved.Statement)
@@ -64,7 +62,6 @@ theorem resolveDelete_same (context : ResolveContext) (catalog after : Catalog) 
   repeat' split at ok
   all_goals first
     | (cases ok; exact ⟨rfl, rfl, rfl⟩)
-    | (cases ok; refine ⟨rfl, ?_, ?_⟩ <;> simp only [withClockCells] <;> split <;> rfl)
     | (cases ok)
 
 end Belay.Sqlite

@@ -91,7 +91,7 @@ theorem script_runs (admitted : Admitted profile startCatalog (fun _ => True) da
   have created : step 0 (.createTable 1 "audit" { columns := [message] }) (database.addColumn 0 note .null) 1 =
       .success (migrated database) := by
     simp [step, middleLength, migrated]
-  simp [runSql, runSqlFrom, advance, literalStep, Resolved.Statement.unclock, SqlState.finish, script, added, created]
+  simp [runSql, runSqlFrom, advance, literalStep, SqlState.finish, script, added, created]
 
 /-- The complete {name}`VerificationConditions` hold for the supplied catalogs,
 script and preservation contract, for every admitted starting database and every

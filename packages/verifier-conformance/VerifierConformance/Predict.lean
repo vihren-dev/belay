@@ -95,14 +95,13 @@ def predict (p : PredictInput) : Json :=
       Json.mkObj [("visible", toJson ([] : List Json)), ("persisted", toJson ([] : List Json)),
         ("transactionOpen", toJson false), ("primaryCode", toJson (0 : Nat)),
         ("phase", toJson (none : Option ErrorPhase))]])]
-  | .ok unclocked =>
+  | .ok resolution =>
     let clock : Clock := fun position => p.clocks.getD position 0
-    let resolution := unclocked
     let start : SqlState := { database := databaseOf resolution.startCatalog (p.initial.map NamedRows.native),
                               clock := scriptClock clock resolution.resolved }
     let pass := passFrom 0 resolution.resolved start
     let steps := pass.observations.map stepJson
-    let supported := !(p.clocks.isEmpty && scriptReadsClock unclocked.resolved) &&
+    let supported := !(p.clocks.isEmpty && scriptReadsClock resolution.resolved) &&
       pass.supported && !pass.observations.any invalidObservation
     Json.mkObj [("supported", toJson supported), ("steps", toJson steps), ("outputs", toJson pass.outputs)]
 

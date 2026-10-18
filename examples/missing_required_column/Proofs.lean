@@ -23,7 +23,7 @@ theorem migrationViolated : ¬Generated.expected := by
     simp [same, length, Generated.startCatalog]
   rw [script_bound] at run
   simp [runSqlAt, scriptClock, Resolved.Statement.readsClock, Resolved.Statement.clockExpressions,
-    Resolved.Statement.unclock, runSqlFrom, advance, literalStep, created, SqlState.finish] at run
+    runSqlFrom, advance, literalStep, created, SqlState.finish] at run
   subst run
   rw [same]
   show ¬((Generated.startCatalog.createTable "audit" audit).columnsOf "invoices" =

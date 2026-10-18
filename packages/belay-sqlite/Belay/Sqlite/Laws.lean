@@ -13,7 +13,7 @@ namespace Belay.Sqlite.Conformance
 def nonControl : Resolved.Statement → Bool
   | .begin | .commit | .rollback => false
   | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .upsert .. | .update .. | .delete ..
-  | .prepareError _ | .query _ | .clocked .. => true
+  | .prepareError _ | .query _ => true
 
 /-- Each statement in the body is non-control and succeeds at its position, at the clock
 value of the clock assignment for that position, as {name}`advance` runs it. The remaining
@@ -24,7 +24,7 @@ inductive SuccessfulBody (clock : Nat → Int) : Nat → List Resolved.Statement
   | nil : SuccessfulBody clock position [] database
   /-- A non-control statement that succeeds, followed by a successful tail, forms a successful body. -/
   | cons (ordinary : nonControl statement = true)
-      (success : literalStep (clock position) (statement.unclock (clock position)) database position = .success next)
+      (success : literalStep (clock position) statement database position = .success next)
       (tail : SuccessfulBody clock (position + 1) rest next) :
       SuccessfulBody clock position (statement :: rest) database
 
@@ -94,7 +94,6 @@ theorem literal_cases (clock : Int) (statement : Resolved.Statement) (database :
   | delete target filter _ =>
     cases h : database.table target <;> simp [literalStep, h]
   | createIndex _ _ _ => simp [literalStep, step]
-  | clocked _ _ => simp [literalStep, step]
   | query query =>
     simp only [literalStep, step]
     cases query.source clock database with
@@ -119,8 +118,7 @@ theorem statement_atomicity (halted : advance position statement state = .halt o
     (atomic : outcome.error? ≠ some .constraintFail ∧ outcome.error? ≠ some .constraintRollback) :
     outcome.database = state.database ∧
     outcome.persistedDatabase = state.snapshot.getD state.database := by
-  have possibilities := literal_cases (state.clock position) (statement.unclock (state.clock position))
-    state.database position
+  have possibilities := literal_cases (state.clock position) statement state.database position
   cases statement <;> simp only [advance] at halted
   all_goals try (solve | (clear atomic; cases h : state.snapshot <;> simp_all [SqlState.finish,
     Outcome.database, Outcome.persistedDatabase, Option.getD]))
@@ -147,8 +145,7 @@ theorem constraint_rollback (halted : advance position statement state = .halt o
     (rolled : outcome.error? = some .constraintRollback) :
     outcome.database = state.snapshot.getD state.database ∧
     outcome.persistedDatabase = state.snapshot.getD state.database := by
-  have possibilities := literal_cases (state.clock position) (statement.unclock (state.clock position))
-    state.database position
+  have possibilities := literal_cases (state.clock position) statement state.database position
   cases statement <;> simp only [advance] at halted
   all_goals try (solve | cases h : state.snapshot <;> simp_all [SqlState.finish,
     Outcome.database, Outcome.persistedDatabase, Option.getD, Outcome.error?])
@@ -179,7 +176,7 @@ theorem add_column_shape (constant : column.clockDefault = false)
       (table.appendColumns [(column, value)]).rows.map Row.rowid = table.rows.map Row.rowid ∧
       (table.appendColumns [(column, value)]).rows.map Row.values =
         table.rows.map (fun row => row.values ++ [storeValue column.affinity value]) := by
-  simp only [advance, literalStep, step, Resolved.Statement.unclock] at success
+  simp only [advance, literalStep, step] at success
   repeat (split at * <;> simp_all)
   all_goals subst_vars
   all_goals simp_all [Database.table_addColumn, Table.appendColumns, Row.appendValues, List.map_map]

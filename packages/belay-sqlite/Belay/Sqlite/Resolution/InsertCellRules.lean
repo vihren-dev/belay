@@ -3,7 +3,7 @@ import Belay.Sqlite.Resolution.OperandIssues
 
 set_option doc.verso true
 
-/-! Laws of the INSERT rows whose cells may read the clock ({lit}`ClockRows.lean`): their
+/-! Laws of the cells of INSERT rows ({lit}`InsertCells.lean`): their
 issues name no catalog object. -/
 
 namespace Belay.Sqlite
@@ -36,7 +36,7 @@ theorem omittedCell_issue (column : CatalogColumn) (issue : ValueIssue)
 /-- For all inputs, an issue of {name}`fullCells` names no catalog object. Proof sketch: by
 {name}`resolveAll_issue`, the issue comes from one column, where only {name}`omittedCell`
 can fail. -/
-theorem fullCells_issue (columns : List CatalogColumn) (positions : List Nat) (row : List RowCell)
+theorem fullCells_issue (columns : List CatalogColumn) (positions : List Nat) (row : List Resolved.Cell)
     (issue : ValueIssue) (failed : fullCells columns positions row = .error issue) : issue.namesNoObject := by
   unfold fullCells at failed
   refine resolveAll_issue _ _ _ (fun position column issue h => ?_) failed

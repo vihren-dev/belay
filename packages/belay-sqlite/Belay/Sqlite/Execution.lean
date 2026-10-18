@@ -134,7 +134,7 @@ def step (clock : Int) (statement : Resolved.Statement) (database : Database) (p
       else if run.fault == .must then .failure position .functionError database
       else .success database
     | none => .success database
-  | .createIndex .. | .begin | .commit | .rollback | .insert .. | .upsert .. | .update .. | .delete .. | .clocked .. =>
+  | .createIndex .. | .begin | .commit | .rollback | .insert .. | .upsert .. | .update .. | .delete .. =>
     .failure position .unmodeled database
 
 end Belay.Sqlite

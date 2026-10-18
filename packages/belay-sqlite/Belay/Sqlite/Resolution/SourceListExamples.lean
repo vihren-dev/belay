@@ -30,7 +30,7 @@ def queryOf : Option Resolved.Statement → Option Resolved.Query
   | some (.query query) => some query
   | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some .begin | some .commit
   | some .rollback | some (.insert ..) | some (.update ..) | some (.upsert ..) | some (.delete ..)
-  | some (.prepareError _) | some (.clocked ..) | none => none
+  | some (.prepareError _) | none => none
 
 /-- The result rows of a {lit}`SELECT` with these result columns and sources over
 {name}`database`; none when it does not resolve to a query or a table is missing. -/

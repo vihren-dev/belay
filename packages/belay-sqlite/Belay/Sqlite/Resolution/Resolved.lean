@@ -1,7 +1,7 @@
 import Belay.Sqlite.Resolution.Catalog
 import Belay.Sqlite.Resolution.ConflictPolicy
 import Belay.Sqlite.Resolution.RestrictionText
-import Belay.Sqlite.Resolution.ClockCell
+import Belay.Sqlite.Resolution.QueryForm
 
 set_option doc.verso true
 
@@ -123,8 +123,20 @@ def Restriction.reason (restriction : Restriction) : String := restriction.kind.
 
 namespace Resolved
 
+/-- One cell of a resolved INSERT row: a value that resolution computed and stored with the
+column's affinity, or an expression that reads the statement's clock, such as a
+{lit}`VALUES` item {lit}`CURRENT_TIMESTAMP` or an omitted column with that default, which the
+execution evaluates at the statement's clock value and stores with the column's affinity.
+An expression cell reads no column. Use {lean}`Cell.value` for a known value. -/
+inductive Cell where
+  /-- A value, stored with the column's affinity. -/
+  | value (value : Value)
+  /-- An expression that reads the clock and no column. -/
+  | expression (expression : Expr)
+  deriving Repr, DecidableEq
+
 /-- One statement after name resolution. For example, an INSERT into the table at
-catalog position 0 with one full row is {lean}`Statement.insert 0 [[Value.null]] []`.
+catalog position 0 with one full row is {lean}`Statement.insert 0 [[Cell.value Value.null]] []`.
 A write names its table by catalog position; execution reads the table's columns, keys
 and conflict algorithms from the catalog of the database it runs on. -/
 inductive Statement where
@@ -140,11 +152,11 @@ inductive Statement where
   | commit
   /-- Roll the transaction back. -/
   | rollback
-  /-- Insert full rows, with one converted value for each column in table order, and
+  /-- Insert full rows, with one cell for each column in table order ({name}`Cell`), and
   keep every unique key of the table ({name}`Catalog.uniqueKeys`) unique. The
   {lit}`RETURNING` columns are an expression over the written row and its name each,
   none without {lit}`RETURNING`; the execution semantics does not read them. -/
-  | insert (table : Nat) (rows : List (List Value)) (returning : List (Expr × String))
+  | insert (table : Nat) (rows : List (List Cell)) (returning : List (Expr × String))
   /-- In every row where the optional filter condition is true (every row without a
   filter), set each column position to its expression, evaluated on the old row and
   stored with the column's affinity. A literal update of slice 3a is the special case
@@ -158,7 +170,7 @@ inductive Statement where
   {name}`Catalog.writePolicy` of that algorithm. Each row is handled by the first clause
   whose target key has a conflicting row, or else by the algorithms of the constraints
   that it fails. -/
-  | upsert (table : Nat) (rows : List (List Value)) (clauses : List ConflictClause)
+  | upsert (table : Nat) (rows : List (List Cell)) (clauses : List ConflictClause)
       (returning : List (Expr × String)) (algorithm : Option ConflictAlgorithm)
   /-- Remove every row where the optional filter condition is true (every row without a
   filter). The {lit}`RETURNING` columns are evaluated on each removed row; the
@@ -168,11 +180,6 @@ inductive Statement where
   | prepareError (error : PrepareError)
   /-- Run a query: it reads the database, changes nothing, and has result rows. -/
   | query (query : Query)
-  /-- An INSERT ({lit}`insert` or {lit}`upsert`) with cells whose values read the
-  statement's clock. Its rows hold NULL in those cells; the execution sets each cell to
-  its value at the statement's clock value before it runs the statement
-  ({lit}`Statement.unclock`). -/
-  | clocked (statement : Statement) (cells : List ClockCell)
   deriving Repr, DecidableEq
 
 end Resolved

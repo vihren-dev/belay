@@ -133,7 +133,6 @@ theorem step_extends (clock : Int) (statement : Resolved.Statement) (database : 
   | update _ _ _ _ => exact DatabaseExtends.refl database
   | delete _ _ _ => exact DatabaseExtends.refl database
   | prepareError _ => exact DatabaseExtends.refl database
-  | clocked _ _ => exact DatabaseExtends.refl database
 
 /-- For every script containing only CREATE/ADD, idle starting database and
 position, the computed SQL result extends the starting database. Invalid schema

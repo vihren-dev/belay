@@ -115,15 +115,15 @@ def constrained (constraint : ColumnConstraint) : ColumnDefinition :=
   == [.prepareError (.noSuchTable "u"), .prepareError (.tableHasNoColumn "t" "z"),
       .prepareError (.valueCount "t" 2 1), .prepareError (.valuesForColumns 2 1), .prepareError .valuesDiffer]
 #guard statements (migration tableT [.insert "t" (some ["B"]) [[.numeric "1_000"], [.numeric "0x10"], [.negate (.numeric "9223372036854775808")]] []])
-  == [.insert 0 [[.null, .integer 1000], [.null, .integer 16], [.null, .integer (-9223372036854775808)]] []]
+  == [.insert 0 [[.value .null, .value (.integer 1000)], [.value .null, .value (.integer 16)], [.value .null, .value (.integer (-9223372036854775808))]] []]
 #guard statements (migration tableT [.insert "t" (some ["b"]) [[.numeric "9223372036854775808"]] []])
-  == [.insert 0 [[.null, .real (9223372036854775808.0 : Float).toBits]] []]
+  == [.insert 0 [[.value .null, .value (.real (9223372036854775808.0 : Float).toBits)]] []]
 #guard statements (migration tableT [.insert "t" (some ["b"]) [[.numeric "0x10000000000000000"]] []])
   == [.prepareError (.hexLiteralTooBig "0x10000000000000000")]
 
 -- Double-quoted strings: a string literal when DQS_DML is on, else "no such column".
 #guard statements (migration tableT [.insert "t" (some ["a"]) [[.identifier "x" .double]] []])
-  == [.insert 0 [[.text [120], .null]] []]
+  == [.insert 0 [[.value (.text [120]), .value .null]] []]
 #guard statements (migration tableT [.insert "t" (some ["a"]) [[.identifier "x" .double]] []] { defaults with dqsDml := false })
   == [.prepareError (.noSuchColumn "x")]
 
@@ -147,7 +147,7 @@ def keyed : Catalog := catalogOf (schema [.createTable "k" [column "a" (some "IN
 #guard (keyed.findTable "k").map (fun (position, table) => keyed.uniqueKeys position table) ==
   some [[2], [1, 0], [0]]
 #guard statements (migration keyed [.insert "k" none [[.null, .null, .null, .null]] [], .update "k" [("a", .null)] none])
-  == [.insert 0 [[.null, .null, .null, .null]] [], .update 0 [(0, .literal .null)] none []]
+  == [.insert 0 [[.value .null, .value .null, .value .null, .value .null]] [], .update 0 [(0, .literal .null)] none []]
 
 -- Keys of every affinity and value run (slice 5a): text values and TEXT key columns.
 #guard !restricted (migration keyed [.insert "k" (some ["a", "d"]) [[.null, .null], [.string [120], .null]] []])
@@ -178,7 +178,7 @@ def keyed : Catalog := catalogOf (schema [.createTable "k" [column "a" (some "IN
 -- A schema describes the starting catalog, then the script resolves against it.
 #guard (resolveSchemaAndScript defaults [.createTable "t" [column "a"] []] [.insert "t" none [[.null]] []]).toOption.map
     (fun resolution => (resolution.startCatalog.length, resolution.resolved, resolution.nextCatalog.length))
-  == some (1, [.insert 0 [[.null]] []], 1)
+  == some (1, [.insert 0 [[.value .null]] []], 1)
 #guard resolveSchemaAndScript defaults [.createTable "t" [column "a"] [], .insert "t" none [[.null]] []] []
   matches .error (.schemaRestricted { statement := 1, path := [], .. })
 #guard resolveSchemaAndScript defaults [.createTable "t" [column "a"] [], .createTable "T" [column "a"] []] []
