@@ -1,6 +1,7 @@
 import Belay.Sqlite.Resolution.Profile
 import Belay.Sqlite.Resolution.Resolved
 import Belay.Sqlite.NumberConvert
+import Belay.Sqlite.Arithmetic
 
 set_option doc.verso true
 
@@ -96,7 +97,7 @@ def startsHex (chars : List Char) : Bool := chars.take 2 == ['0', 'x'] || chars.
 ({lit}`codeReal`): {name}`atof` of the text, negated when {lit}`negated` is true. -/
 def realLiteral (chars : List Char) (negated : Bool) : Value :=
   let value := (atof (String.ofList chars).toUTF8.toList).1
-  .real (if negated then -value else value).toBits
+  realValue (if negated then -value else value)
 
 /-- The value of a numeric literal in a query ({lit}`codeInteger` and {lit}`codeReal`):
 an integer as in {name}`numericValue`; a REAL by {name}`realLiteral`; and the

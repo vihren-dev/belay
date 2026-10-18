@@ -1,5 +1,6 @@
 import Belay.Sqlite.Declarations
 import Belay.Sqlite.NumberConvert
+import Belay.Sqlite.Arithmetic
 import Belay.Sqlite.Json.Render
 import Belay.Sqlite.Json.Unescape
 
@@ -39,7 +40,7 @@ def decOrHexToI64 (bytes : List UInt8) : Int × Int :=
 when the payload is not a whole number. -/
 def payloadReal (payload : List UInt8) : Except JsonError Value :=
   let (value, code) := atof payload
-  if code ≤ 0 then .error .malformed else .ok (.real value.toBits)
+  if code ≤ 0 then .error .malformed else .ok (realValue value)
 
 /-- The SQL value of an integer payload (the {lit}`JSONB_INT` and {lit}`JSONB_INT5` case):
 an INTEGER when it fits in 64 bits, the smallest integer for
@@ -55,7 +56,7 @@ def integerValue (payload : List UInt8) : Except JsonError Value :=
     if code == 0 then
       if value < 0 then
         let magnitude := (UInt64.ofInt value).toFloat
-        .ok (.real (if negative then -magnitude else magnitude).toBits)
+        .ok (realValue (if negative then -magnitude else magnitude))
       else .ok (.integer (if negative then -value else value))
     else if code == 3 && negative then .ok (.integer (-(2 ^ 63)))
     else if code == 1 then .error .malformed

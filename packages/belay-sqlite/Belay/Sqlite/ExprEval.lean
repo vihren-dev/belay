@@ -140,7 +140,7 @@ def Expr.evaluate (clock : Int) (row : List Value) : Expr → Value × Fault
   | .coalesce first rest =>
     let (value, fault) := first.evaluate clock row
     let (other, later) := rest.evaluate clock row
-    (if value.isNullCell then other else value, (fault.join later).soften)
+    (if value.isNull then other else value, (fault.join later).soften)
   | .json function arguments =>
     let (values, fault) := arguments.evaluate clock row
     let result := Json.apply function values

@@ -22,8 +22,8 @@ changes `judge/` or `integrity/`; `Contract.lean` and the approved files do not 
    `PrepareError.message` gives the same text, and the JSON of the gate and the resolver
    is the same.
 2. **No NaN real.** A `Value.real` cannot hold NaN: every real is built by `realValue`,
-   or by a function that states why its result is not NaN, and `Table.Valid` states it.
-   `isNull` and `isNullCell` are one function.
+   or by a function that states why its result is not NaN. `isNull` and `isNullCell` are
+   one function. `Table.Valid` does not state it (owner decision 8).
 3. **Suffixes.** Proof files of `belay-sqlite` end in `Laws` (executable model), `Spec`
    (resolution) or `Examples` (`#guard` files); a package README states the meaning.
 4. **API lemmas.** The library states `runSqlFrom_cons`, `advance_effect`,

@@ -27,6 +27,13 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D8 and D7.
 - 2026-10-18: `Resolved.Statement.kind` (outcome 7, in `StatementCatalog.lean`):
   `isControl`, `SchemaOnly` and `NoWrites` classify through it, and `nonControl` is gone.
   `prepareError?` stays a match because it returns the error.
+- 2026-10-18: owner decision 8 (ADR 0013): every computed REAL is built through
+  `realValue` (literals, the most negative integer default, JSON payloads) or keeps the
+  bits of a REAL (`integerAffinity`, `realRead`, documented); `Value.isNull` (in
+  `Declarations.lean`) replaces `isNull` by rank and `isNullCell`; `Table.Valid` does not
+  change, because `Float` is opaque to proofs. The task's outcome 2 is amended by the
+  decision. Verdict counts unchanged (the step 5 reports were collected by the GC;
+  `build/agent-logs/report-s7b.json` keeps this one for later diffs).
 
 ## Remaining
 

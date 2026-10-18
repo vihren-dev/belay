@@ -470,3 +470,9 @@ instance is worth its proof.
    could reach such a kind, and the registry keeps only kinds that SQL reaches. The
    subquery ADR adds the kind, or the semantics, when the frontend passes subqueries to
    resolution (amendment 2).
+8. **The NaN rule of D8 without a `Table.Valid` conjunct.** Decided on 2026-10-18: every
+   REAL that the model computes is built through `realValue`, which gives NULL for a NaN
+   as SQLite does, or keeps the bits of a REAL; `isNull` and `isNullCell` are one
+   function. `Table.Valid` does not state it: Lean's `Float` is opaque to proofs, so no
+   lemma could show that a computed REAL is not NaN, and the conjunct would only add
+   premises to the ADD COLUMN lemmas.

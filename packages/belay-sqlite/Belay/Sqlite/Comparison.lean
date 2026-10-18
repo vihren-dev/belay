@@ -58,9 +58,6 @@ lexicographic combination of keyed comparisons. -/
 instance : Std.TransCmp compareValues := by
   unfold compareValues; exact inferInstance
 
-/-- Whether the value is NULL in a comparison: a NULL, or a NaN REAL. -/
-def Value.isNull (value : Value) : Bool := value.rank == 0
-
 
 /-- Whether an ordering satisfies the operator, for operands that are not NULL. -/
 def Comparison.holds : Comparison → Ordering → Bool
