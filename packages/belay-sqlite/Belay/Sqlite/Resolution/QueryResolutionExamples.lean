@@ -162,8 +162,8 @@ def bareRows (statement : Syntax.Statement) : Option (List (List Value)) :=
 /-- The condition {lit}`1 = 0`, which is false. -/
 def never : Expr := .compare .eq (.numeric "1") (.numeric "0")
 
--- A SELECT without FROM has no table and one row, or none when WHERE is not true.
-#guard (queryOf (bare [written (.numeric "1") "1"])).map (·.table) == some none
+-- A SELECT without FROM has no source and one row, or none when WHERE is not true.
+#guard (queryOf (bare [written (.numeric "1") "1"])).map (·.sources) == some []
 #guard bareRows (bare [written (.arithmetic .add (.numeric "1") (.numeric "2")) "1 + 2"]) == some [[.integer 3]]
 #guard bareRows (bare [written (.numeric "1") "1"] (filter := some never)) == some []
 -- Aggregates read the rows that pass WHERE, and GROUP BY gives one group.

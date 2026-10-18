@@ -43,7 +43,7 @@ source with its name (the alias, else the table name). A missing table is SQLite
 {lit}`no such table: %s`; one of SQLite's own tables is a model restriction, as in a
 query of one table. -/
 def resolveTableReference (catalog : Catalog) (path : List Nat) (reference : Syntax.TableReference) :
-    Except ValueIssue (Nat × Source) :=
+    Except ValueIssue (Nat × ScopeSource) :=
   match catalog.findTable reference.table with
   | some (position, table) => .ok (position, { name := reference.alias.getD reference.table, columns := table.columns })
   | none =>
@@ -111,7 +111,7 @@ and the condition of each join with its path ({name}`mergeJoin`), after the sour
 describe ({name}`joinFormIssue`) is a model restriction, checked before the join's
 {lit}`USING` and {lit}`NATURAL` errors. -/
 def mergeJoins (coalesced : Bool) (left : Scope) (item : Nat) :
-    List (Syntax.Join × Source) → Except ValueIssue (Scope × List (Option (List Nat × Syntax.Expr)))
+    List (Syntax.Join × ScopeSource) → Except ValueIssue (Scope × List (Option (List Nat × Syntax.Expr)))
   | [] => .ok (left, [])
   | (join, right) :: rest => do
     if let some issue := joinFormIssue item join then throw issue

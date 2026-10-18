@@ -94,7 +94,7 @@ theorem splitSources_tables (source : Syntax.TableReference) (joins : List Synta
 
 /-- The source in scope of a function item: its name (the alias, else the function name
 as written) and the columns of {lit}`json_each`, two of them hidden. -/
-def FunctionItem.source (item : FunctionItem) : Source :=
+def FunctionItem.source (item : FunctionItem) : ScopeSource :=
   { name := item.reference.alias.getD item.reference.table, columns := eachColumns, hidden := eachHidden }
 
 /-- Resolve the function items over the whole scope, in which they are the last sources:
@@ -102,7 +102,7 @@ each argument must read only the sources before its function
 ({name}`RestrictionKind.laterSourceInArguments`), and each {lit}`ON` condition only the
 sources up to its function ({name}`resolveJoinCondition`). -/
 def resolveFunctions (dqs : Bool) (scope : Scope) (items : List FunctionItem) :
-    Except ValueIssue (List Resolved.EachSource) :=
+    Except ValueIssue (List Resolved.QuerySource) :=
   let firstFunction := scope.length - items.length
   resolveAll (fun index item => do
     let bound := (scope.take (firstFunction + index)).foldl (fun width source => width + source.columns.length) 0
@@ -112,7 +112,7 @@ def resolveFunctions (dqs : Bool) (scope : Scope) (items : List FunctionItem) :
       else .error (.restriction (item.path ++ [2, position]) .laterSourceInArguments)) item.arguments
     let condition ← resolveJoinCondition dqs scope (firstFunction + index - 1) item.condition
     match arguments with
-    | json :: path => .ok { json, path := path.head?, condition }
+    | json :: path => .ok { kind := .inner, source := .each json path.head?, condition }
     | [] => .error (.restriction item.path .tableFunction)) items
 
 /-- Resolve the sources of {lit}`FROM`: the tables ({name}`resolveTables`), then the scope

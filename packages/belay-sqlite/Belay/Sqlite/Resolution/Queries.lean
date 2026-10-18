@@ -162,8 +162,9 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
     if windowSkipsFailure groupBy limit offset (outputs.map (·.1)) then
       throw (.restriction [6] .windowedGroupSum)
     let resolvedJoins := (joins.zip ((tables.map Prod.fst).zip conditions)).map fun (join, table, on) =>
-      ({ kind := join.resolvedKind, table, condition := on } : Resolved.Join)
-    return { table := first, joins := resolvedJoins, functions, filter := condition, aggregate, groupBy := terms,
+      ({ kind := join.resolvedKind, source := .table table, condition := on } : Resolved.QuerySource)
+    let firstSource := first.toList.map Resolved.QuerySource.first
+    return { sources := firstSource ++ resolvedJoins ++ functions, filter := condition, aggregate, groupBy := terms,
              columns := outputs.map (·.1), names := outputs.map (·.2), orderBy := order,
              offset := (offsetValue.getD 0).toNat,
              limit := limitValue.bind fun value => if value < 0 then none else some value.toNat }

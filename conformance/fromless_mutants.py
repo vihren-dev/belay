@@ -9,18 +9,19 @@ gives an aggregate over zero rows no row (`empty_aggregate_no_row`).
 
 from conformance.resolve_mutants import SQLITE
 
-JOINS = SQLITE + "QueryJoins.lean"
-"""The source rows of a query."""
+FUNCTIONS = SQLITE + "QueryFunctions.lean"
+"""The source rows of a query, joined from the one row with no cells."""
 QUERIES = SQLITE + "Resolution/Queries.lean"
 """The resolution of a SELECT."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "fromless_no_row": (JOINS, "  let some table := query.table | pure [[]]", "  let some table := query.table | pure []"),
-    "fromless_two_rows": (JOINS, "  let some table := query.table | pure [[]]",
-        "  let some table := query.table | pure [[], []]"),
+    "fromless_no_row": (FUNCTIONS, "{ rows := [[]], width := 0, fault := .none }",
+        "{ rows := [], width := 0, fault := .none }"),
+    "fromless_two_rows": (FUNCTIONS, "{ rows := [[]], width := 0, fault := .none }",
+        "{ rows := [[], []], width := 0, fault := .none }"),
     "fromless_where_ignored": (QUERIES,
-        "    return { table := first, joins := resolvedJoins, functions, filter := condition,",
-        "    return { table := first, joins := resolvedJoins, functions,\n"
+        "    return { sources := firstSource ++ resolvedJoins ++ functions, filter := condition,",
+        "    return { sources := firstSource ++ resolvedJoins ++ functions,\n"
         "             filter := if first.isNone then none else condition,"),
     "fromless_star_accepted": (QUERIES, "  | .star => if scope.isEmpty then .error (.prepare .noTablesSpecified) else",
         "  | .star => if false then .error (.prepare .noTablesSpecified) else"),
@@ -37,7 +38,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 """The authored case of `conformance.authored_fromless` that each mutant changes."""
 
 GUARDS: dict[str, str] = {
-    "fromless_no_row": "rule:Query.tableSource", "fromless_two_rows": "rule:Query.tableSource",
+    "fromless_no_row": "rule:Query.source", "fromless_two_rows": "rule:Query.source",
     "fromless_where_ignored": "rule:resolveSelect", "fromless_star_accepted": "rule:resolveResultColumn",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant

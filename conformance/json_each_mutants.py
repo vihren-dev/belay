@@ -28,7 +28,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "each_member_id_at_value": (EACH,
         "    let row ← eachRow context key value offset (context.rootPath ++ memberPathStep text)",
         "    let row ← eachRow context key value (offset + jsonbSize label) (context.rootPath ++ memberPathStep text)"),
-    "each_not_correlated": (FUNCTIONS, "  match each.cells row with", "  match each.cells [] with"),
+    "each_not_correlated": (FUNCTIONS, "(row, Json.eachRows (json.eval row) (path.map (·.eval row)))",
+        "(row, Json.eachRows (json.eval []) (path.map (·.eval [])))"),
     "each_hidden_in_star": (SCOPE,
         "      fun (index, _) => !source.merged.contains index && !source.hidden.contains index).map",
         "      fun (index, _) => !source.merged.contains index).map"),
@@ -50,7 +51,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 GUARDS: dict[str, str] = {
     "each_id_as_index": "rule:itemRows", "each_array_key_as_text": "rule:itemRows",
     "each_container_atom": "rule:eachRow", "each_member_id_at_value": "rule:memberRows",
-    "each_not_correlated": "rule:EachSource.join", "each_hidden_in_star": "rule:Scope.visible",
+    "each_not_correlated": "rule:QuerySource.join", "each_hidden_in_star": "rule:Scope.visible",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
 changes. `conformance.mutant_guards` checks every entry."""

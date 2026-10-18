@@ -98,7 +98,7 @@ theorem literal_cases (statement : Resolved.Statement) (database : Database) (po
     cases query.source database with
     | none => simp
     | some rows =>
-      cases h : (query.run rows).overflow <;> cases h' : (query.run rows).fault <;> simp [h, h']
+      cases h : (query.run rows.rows).overflow <;> cases h' : (query.run rows.rows).fault <;> simp [h, h']
   | prepareError _ => simp [literalStep, step]
   | begin => simp [literalStep, step]
   | commit => simp [literalStep, step]

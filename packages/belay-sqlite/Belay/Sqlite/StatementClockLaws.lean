@@ -65,17 +65,18 @@ value is the query. Proof sketch: each part that {name}`Query.atClock` maps is a
 theorem Query.atClock_of_readsClock (clock : Int) (query : Query) (free : query.readsClock = false) :
     query.atClock clock = query := by
   simp only [Query.readsClock, Bool.or_eq_false_iff] at free
-  obtain ⟨⟨⟨⟨⟨joins, functions⟩, filter⟩, groupBy⟩, columns⟩, orderBy⟩ := free
-  have keptJoins : query.joins.map (fun join => { join with condition := join.condition.map (·.atClock clock) }) =
-      query.joins := map_of_fixed fun join member => by
-    simp [option_atClock _ _ (quietOf (p := fun (join : Join) => join.condition.any Expr.readsClock) joins member)]
-  have keptFunctions : query.functions.map (fun each =>
-      ({ json := each.json.atClock clock, path := each.path.map (·.atClock clock),
-         condition := each.condition.map (·.atClock clock) } : EachSource)) = query.functions :=
-    map_of_fixed fun each member => by
-      have quiet := quietOf functions member
+  obtain ⟨⟨⟨⟨sources, filter⟩, groupBy⟩, columns⟩, orderBy⟩ := free
+  have keptSources : query.sources.map (·.atClock clock) = query.sources := map_of_fixed fun join member => by
+    have quiet := quietOf sources member
+    simp only [Bool.or_eq_false_iff] at quiet
+    obtain ⟨kind, source, condition⟩ := join
+    cases source with
+    | each json path =>
       simp only [Bool.or_eq_false_iff] at quiet
-      simp [Expr.atClock_of_readsClock _ _ quiet.1.1, option_atClock _ _ quiet.1.2, option_atClock _ _ quiet.2]
+      simp [QuerySource.atClock, Expr.atClock_of_readsClock _ _ quiet.2.1, option_atClock _ _ quiet.2.2,
+        option_atClock _ _ quiet.1]
+    | table _ => simp [QuerySource.atClock, option_atClock _ _ quiet.1]
+    | subquery => simp [QuerySource.atClock, option_atClock _ _ quiet.1]
   have keptColumns : query.columns.map (·.atClock clock) = query.columns := map_of_fixed fun output member => by
     have quiet := quietOf columns member
     cases output with
@@ -86,7 +87,7 @@ theorem Query.atClock_of_readsClock (clock : Int) (query : Query) (free : query.
     map_of_fixed fun (key, descending) member => by
       have quiet := quietOf orderBy member
       cases key <;> simp_all [SortKey.atClock, SortKey.readsClock, Expr.atClock_of_readsClock]
-  simp only [Query.atClock, keptJoins, keptFunctions, keptColumns, keptOrder, option_atClock _ _ filter,
+  simp only [Query.atClock, keptSources, keptColumns, keptOrder, option_atClock _ _ filter,
     expressions_atClock _ _ groupBy]
 
 /-- For every clock value and {lit}`ON CONFLICT` clauses that do not read the clock, the

@@ -33,13 +33,19 @@ def SortKey.atClock (clock : Int) : SortKey → SortKey
   | .expression term => .expression (term.atClock clock)
   | .output index => .output index
 
+/-- A source of {lit}`FROM` at a clock value: its arguments and its {lit}`ON` condition at the
+clock value. -/
+def QuerySource.atClock (clock : Int) (join : QuerySource) : QuerySource :=
+  { join with
+    source := match join.source with
+      | .each json path => .each (json.atClock clock) (path.map (·.atClock clock))
+      | source@(.table _) | source@.subquery => source
+    condition := join.condition.map (·.atClock clock) }
+
 /-- A query at a clock value: each of its expressions at the clock value. -/
 def Query.atClock (clock : Int) (query : Query) : Query :=
   { query with
-    joins := query.joins.map fun join => { join with condition := join.condition.map (·.atClock clock) }
-    functions := query.functions.map fun each =>
-      { json := each.json.atClock clock, path := each.path.map (·.atClock clock),
-        condition := each.condition.map (·.atClock clock) }
+    sources := query.sources.map (·.atClock clock)
     filter := query.filter.map (·.atClock clock)
     groupBy := query.groupBy.map (·.atClock clock)
     columns := query.columns.map (·.atClock clock)
@@ -116,9 +122,9 @@ def SortKey.readsClock : SortKey → Bool
 
 /-- Whether some expression of a query reads the clock. -/
 def Query.readsClock (query : Query) : Bool :=
-  query.joins.any (·.condition.any Expr.readsClock) ||
-  query.functions.any (fun each => each.json.readsClock || each.path.any Expr.readsClock ||
-    each.condition.any Expr.readsClock) ||
+  query.sources.any (fun join => join.condition.any Expr.readsClock || match join.source with
+    | .each json path => json.readsClock || path.any Expr.readsClock
+    | .table _ | .subquery => false) ||
   query.filter.any Expr.readsClock || query.groupBy.any Expr.readsClock || query.columns.any Output.readsClock ||
   query.orderBy.any (·.1.readsClock)
 

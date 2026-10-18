@@ -1,6 +1,5 @@
 import Belay.Sqlite.QueryRun
 import Belay.Sqlite.RowUpdate
-import Belay.Sqlite.QueryFunctions
 import Belay.Sqlite.Resolution.ConflictForm
 
 set_option doc.verso true
@@ -14,25 +13,6 @@ in every column, because SQLite evaluates a constant {lit}`WHERE` term once befo
 reads the rows. -/
 
 namespace Belay.Sqlite
-
-/-- Whether no {lit}`json_each` source of the query may fail: for each source, over every
-row before it ({name}`Resolved.Query.eachInputs`), its rows have no error, which SQLite
-reports only when it scans the source for a row. True when a table is missing. -/
-def eachJsonReady (query : Resolved.Query) (database : Database) : Bool :=
-  (query.eachInputs database).all fun inputs => inputs.all fun (each, rows) =>
-    rows.all fun row => match each.cells row with
-      | .ok _ => true
-      | .error _ => false
-
-/-- For every query without {lit}`json_each` sources and every database, no
-{lit}`json_each` source may fail ({name}`eachJsonReady`). Proof sketch: with no source,
-{name}`Resolved.Query.eachInputs` gives no input for a present table and none for a
-missing one, so both cases of the table rows reduce to true. -/
-theorem eachJsonReady_plain (query : Resolved.Query) (database : Database) (plain : query.functions = []) :
-    eachJsonReady query database = true := by
-  unfold eachJsonReady Resolved.Query.eachInputs
-  rw [plain]
-  cases query.tableSource database <;> rfl
 
 /-- The {lit}`RETURNING` expressions of a write. -/
 def returningExpressions (returning : List (Resolved.Expr × String)) : List Resolved.Expr :=

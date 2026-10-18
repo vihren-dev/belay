@@ -24,19 +24,19 @@ inductive MergeRule where
 /-- One named source: the name that qualifies its columns (the alias, or else the table
 name, as written), its columns, and the columns that a {lit}`USING` or {lit}`NATURAL`
 join merged into a left column. -/
-structure Source where
+structure ScopeSource where
   /-- The name of the source. -/
   name : String
   /-- The columns of the source's table. -/
   columns : List CatalogColumn
-  /-- The positions in {name}`Source.columns` of the merged columns: {lit}`*` and
+  /-- The positions in {name}`ScopeSource.columns` of the merged columns: {lit}`*` and
   unqualified names do not see them, and qualified names and {lit}`x.*` do. Empty for a
   source without {lit}`USING` or {lit}`NATURAL`, and for the table of a write. -/
   merged : List Nat := []
   /-- How the source's join changes an unqualified name of a merged column; the rule of
   an inner join for a source that merges nothing. -/
   mergeRule : MergeRule := .keepLeft
-  /-- The positions in {name}`Source.columns` of the hidden columns, which {lit}`*` and
+  /-- The positions in {name}`ScopeSource.columns` of the hidden columns, which {lit}`*` and
   {lit}`x.*` do not show and names do see: the {lit}`json` and {lit}`root` columns of
   {lit}`json_each`. Empty for a table. -/
   hidden : List Nat := []
@@ -44,7 +44,7 @@ structure Source where
 
 /-- The sources in scope, in {lit}`FROM` order; empty where no table is in scope, as in
 a {lit}`VALUES` row. -/
-abbrev Scope := List Source
+abbrev Scope := List ScopeSource
 
 /-- The scope of one table under its name, as a write or a query of one table has. -/
 def Scope.single (name : String) (columns : List CatalogColumn) : Scope := [{ name, columns }]
@@ -53,8 +53,8 @@ def Scope.single (name : String) (columns : List CatalogColumn) : Scope := [{ na
 def Scope.columns (scope : Scope) : List CatalogColumn := scope.flatMap (·.columns)
 
 /-- The columns that {lit}`*` reads, with their positions in the concatenated row: every
-column of every source that is not merged ({name}`Source.merged`) or hidden
-({name}`Source.hidden`). -/
+column of every source that is not merged ({name}`ScopeSource.merged`) or hidden
+({name}`ScopeSource.hidden`). -/
 def Scope.visible (scope : Scope) : List (Nat × CatalogColumn) :=
   (scope.foldl (fun (offset, found) source =>
     (offset + source.columns.length, found ++ ((source.columns.mapIdx fun index column => (index, column)).filter
@@ -64,7 +64,7 @@ def Scope.visible (scope : Scope) : List (Nat × CatalogColumn) :=
 
 /-- The positions in the concatenated row of the columns that an unqualified name
 names: the first column with the folded name in each source that has one, unless that
-column is merged ({name}`Source.merged`). One position is a name; none is a missing
+column is merged ({name}`ScopeSource.merged`). One position is a name; none is a missing
 name; two or more are SQLite's {lit}`ambiguous column name`. -/
 def Scope.matches (scope : Scope) (name : String) : List Nat :=
   (scope.foldl (fun (offset, found) source =>
@@ -87,14 +87,14 @@ def Scope.source? (scope : Scope) (name : String) : Option (Nat × List CatalogC
 
 /-- The offset in the concatenated row and the first source whose folded name is the
 given name, where the first source of the scope starts at {lit}`offset`. -/
-def Scope.recordFrom (name : String) (offset : Nat) : Scope → Option (Nat × Source)
+def Scope.recordFrom (name : String) (offset : Nat) : Scope → Option (Nat × ScopeSource)
   | [] => none
   | source :: rest =>
     if normalizeIdentifier source.name == normalizeIdentifier name then some (offset, source)
     else Scope.recordFrom name (offset + source.columns.length) rest
 
 /-- The columns of {lit}`source.*` with their positions in the concatenated row: every
-column of the first source with the name that is not hidden ({name}`Source.hidden`),
+column of the first source with the name that is not hidden ({name}`ScopeSource.hidden`),
 merged columns included; none when no source has the name. -/
 def Scope.starColumns? (scope : Scope) (name : String) : Option (List (Nat × CatalogColumn)) :=
   (Scope.recordFrom name 0 scope).map fun (offset, source) =>
@@ -124,7 +124,7 @@ inductive NameResolution where
 cell, after the result so far. A column of the name in the first source with one gives
 it; a later one changes the result only when the source's join merged it, by its
 {name}`MergeRule`, and makes the name ambiguous otherwise. -/
-def Scope.resolveStep (name : String) (state : Nat × NameResolution) (source : Source) : Nat × NameResolution :=
+def Scope.resolveStep (name : String) (state : Nat × NameResolution) (source : ScopeSource) : Nat × NameResolution :=
   let (offset, result) := state
   (offset + source.columns.length, match columnPosition source.columns name, result with
     | none, result => result

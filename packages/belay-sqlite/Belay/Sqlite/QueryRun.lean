@@ -39,22 +39,27 @@ def Query.keptExpressions (query : Query) : List Expr :=
   query.columns.flatMap Output.scalars ++ query.columns.flatMap Output.operands ++ query.groupBy ++
     query.orderBy.flatMap (·.1.expressions)
 
-/-- The expressions of a {lit}`json_each` source: its arguments and its {lit}`ON`
-condition. -/
-def EachSource.expressions (each : EachSource) : List Expr :=
-  each.json :: each.path.toList ++ each.condition.toList
+/-- The expressions of a source of {lit}`FROM`: the arguments of a {lit}`json_each` source,
+and the {lit}`ON` condition. -/
+def QuerySource.expressions (join : QuerySource) : List Expr :=
+  (match join.source with
+    | .each json path => json :: path.toList
+    | .table _ | .subquery => []) ++ join.condition.toList
 
-/-- Every expression of a query: {lit}`WHERE`, the {lit}`ON` conditions, the expressions of
-its {lit}`json_each` sources and {name}`Query.keptExpressions`. -/
+/-- Whether the query joins sources: it has more than one, or a {lit}`json_each` source. -/
+def Query.joined (query : Query) : Bool :=
+  query.sources.length > 1 || query.sources.any (·.source.isEach)
+
+/-- Every expression of a query: {lit}`WHERE`, the expressions of its sources
+({name}`QuerySource.expressions`) and {name}`Query.keptExpressions`. -/
 def Query.expressions (query : Query) : List Expr :=
-  query.filter.toList ++ query.joins.filterMap (·.condition) ++ query.functions.flatMap EachSource.expressions ++
-    query.keptExpressions
+  query.filter.toList ++ query.sources.flatMap QuerySource.expressions ++ query.keptExpressions
 
 /-- Whether some JSON call of the query may fail over its source rows. The row with no
-cells, {lit}`[]`, reads NULL in every column. A query with joins or {lit}`json_each`
-sources and a JSON call may fail, because SQLite may evaluate a condition over a part of
+cells, {lit}`[]`, reads NULL in every column. A query that joins sources
+({name}`Query.joined`) and has a JSON call may fail, because SQLite may evaluate a condition over a part of
 a joined row. The failures of {lit}`json_each` itself are not JSON calls of an
-expression; {lit}`JsonReady.lean` checks them. Otherwise:
+expression; {lit}`Query.source` gives their fault. Otherwise:
 * {lit}`WHERE` over every source row and over {lit}`[]`, because SQLite evaluates a
   constant term once before it reads the rows (checked: {lit}`DELETE FROM t WHERE
   json_extract('x', '$')` fails over an empty table);
@@ -62,7 +67,7 @@ expression; {lit}`JsonReady.lean` checks them. Otherwise:
   over every row that passes {lit}`WHERE`, and in an aggregate query also over {lit}`[]`,
   because SQLite evaluates the result row of an empty group over NULL cells. -/
 def Query.mayFail (query : Query) (rows : List (List Value)) : Bool :=
-  if !query.joins.isEmpty || !query.functions.isEmpty then query.expressions.any (·.any Expr.isJsonCall)
+  if query.joined then query.expressions.any (·.any Expr.isJsonCall)
   else
     let kept := filtered query rows ++ if query.aggregate then [[]] else []
     anyMayFail ([] :: rows) query.filter.toList ||
@@ -94,13 +99,12 @@ theorem Query.mayFail_of_plain (query : Query) (rows : List (List Value))
       simp [Expr.mayFailOn, Expr.fault_of_plain _ _ (plain expression (by simp_all [Query.expressions]))]
 
 /-- Whether SQLite certainly reports a JSON failure of the query over its source rows,
-which the model describes only for a query without {lit}`FROM` (no table and no
-{lit}`json_each` source) and without {lit}`LIMIT 0` (checked natively): its {lit}`WHERE`
+which the model describes only for a query without {lit}`FROM` (no source) and without {lit}`LIMIT 0` (checked natively): its {lit}`WHERE`
 fails on the one row; or the row passes {lit}`WHERE` and an aggregate operand fails, also
 with {lit}`OFFSET`; or the row passes, no {lit}`OFFSET` skips it, and a scalar result column
 fails. -/
 def Query.mustFail (query : Query) (rows : List (List Value)) : Bool :=
-  query.table.isNone && query.functions.isEmpty && query.limit != some 0 && rows.any fun row =>
+  query.sources.isEmpty && query.limit != some 0 && rows.any fun row =>
     query.filter.any (·.mustFailOn row) ||
     (query.filter.all (fun condition => truthy (condition.eval row)) &&
       ((query.columns.flatMap Output.operands).any (·.mustFailOn row) ||

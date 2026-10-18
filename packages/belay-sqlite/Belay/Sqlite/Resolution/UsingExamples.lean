@@ -36,12 +36,12 @@ def usingJoin (operator : List String) (name : String) (names : List String) : J
 def bare (name : String) : ResultColumn := .expression (.identifier name .none) none name
 
 -- USING and NATURAL resolve to the join with the written ON condition `t.a = u.A`.
-#guard (queryOver [.star] (table "t") [usingJoin [] "u" ["a"]]).map (·.joins) ==
-  (queryOver [.star] (table "t") [joined [] (table "u") (some (.compare .eq (qualified "t" "a") (qualified "u" "A")))]).map (·.joins)
-#guard (queryOver [.star] (table "t") [joined ["NATURAL"] (table "u")]).map (·.joins) ==
-  (queryOver [.star] (table "t") [usingJoin [] "u" ["a"]]).map (·.joins)
-#guard (queryOver [.star] (table "t") [usingJoin ["LEFT"] "u" ["a"]]).map (·.joins) ==
-  some [{ kind := .left, table := 1, condition := some (.compare .eq (some .numeric) (.column 0) (.column 2)) }]
+#guard (queryOver [.star] (table "t") [usingJoin [] "u" ["a"]]).map (·.sources.drop 1) ==
+  (queryOver [.star] (table "t") [joined [] (table "u") (some (.compare .eq (qualified "t" "a") (qualified "u" "A")))]).map (·.sources.drop 1)
+#guard (queryOver [.star] (table "t") [joined ["NATURAL"] (table "u")]).map (·.sources.drop 1) ==
+  (queryOver [.star] (table "t") [usingJoin [] "u" ["a"]]).map (·.sources.drop 1)
+#guard (queryOver [.star] (table "t") [usingJoin ["LEFT"] "u" ["a"]]).map (·.sources.drop 1) ==
+  some [{ kind := .left, source := .table 1, condition := some (.compare .eq (some .numeric) (.column 0) (.column 2)) }]
 -- `*` omits the merged right column; an unqualified `a` names the left one, `u.a` the right one.
 #guard (queryOver [.star] (table "t") [usingJoin [] "u" ["a"]]).map (·.names) == some ["a", "b", "c"]
 #guard (queryOver [.star] (table "u") [usingJoin [] "t" ["a"]]).map (·.names) == some ["A", "c", "b"]
@@ -50,21 +50,21 @@ def bare (name : String) : ResultColumn := .expression (.identifier name .none) 
   (·.columns) == some [.scalar (.column 0), .scalar (.column 2)]
 -- NATURAL compares each common name with the left-most left column: `t.a` and `t.b`, not `u.A`.
 #guard (queryOver [.star] (table "t") [joined [] (table "u") (some onA), joined ["NATURAL"] (table "v")]).map
-  (fun query => (query.joins.map (·.condition), query.names)) ==
+  (fun query => ((query.sources.drop 1).map (·.condition), query.names)) ==
   some ([some (.compare .eq (some .numeric) (.column 0) (.column 2)),
     some (.and (.compare .eq (some .numeric) (.column 0) (.column 4)) (.compare .eq (some .blob) (.column 1) (.column 5)))],
         ["a", "b", "A", "c", "d"])
 -- Without a common column NATURAL is a cross join; a repeated USING name is accepted.
-#guard (queryOver [.star] (table "t") [joined ["NATURAL"] (table "z")]).map (·.joins) ==
-  some [{ kind := .inner, table := 3, condition := none }]
+#guard (queryOver [.star] (table "t") [joined ["NATURAL"] (table "z")]).map (·.sources.drop 1) ==
+  some [{ kind := .inner, source := .table 3, condition := none }]
 #guard (queryOver [.star] (table "t") [usingJoin [] "u" ["a", "A"]]).map (·.names) == some ["a", "b", "c"]
 -- The generated comparison has the rules of a written one: INTEGER `t.a` against the
 -- untyped (BLOB) `w.a` compares with NUMERIC affinity, for USING as for ON.
-#guard (queryOver [.star] (table "t") [usingJoin [] "w" ["a"]]).map (·.joins) ==
-  some [{ kind := .inner, table := 4, condition := some (.compare .eq (some .numeric) (.column 0) (.column 2)) }]
-#guard (queryOver [.star] (table "t") [usingJoin [] "w" ["a"]]).map (·.joins) ==
+#guard (queryOver [.star] (table "t") [usingJoin [] "w" ["a"]]).map (·.sources.drop 1) ==
+  some [{ kind := .inner, source := .table 4, condition := some (.compare .eq (some .numeric) (.column 0) (.column 2)) }]
+#guard (queryOver [.star] (table "t") [usingJoin [] "w" ["a"]]).map (·.sources.drop 1) ==
   (queryOver [.star] (table "t") [joined [] (table "w") (some (.compare .eq (qualified "t" "a") (qualified "w" "a")))]).map
-    (·.joins)
+    (·.sources.drop 1)
 -- A merged name stays ambiguous with a third source that has the name.
 #guard over [bare "a"] (table "t") [usingJoin [] "u" ["a"]] |>.isSome
 #guard over [bare "a"] (table "t") [usingJoin [] "u" ["a"], joined [] (table "v")] ==

@@ -20,7 +20,7 @@ def selected : Expr := .json .extract (.cons (text "{\"a\":1}") (.cons (text "$.
 
 /-- {lit}`SELECT json_extract('x', '$')`: a query without {lit}`FROM`. -/
 def fromless : Query where
-  table := none
+  sources := []
   filter := none
   aggregate := false
   groupBy := []
@@ -52,12 +52,12 @@ def empty : Database :=
 #guard !statementReady (.query { fromless with columns := [.scalar (.and (.literal (.integer 0)) malformed)] }) empty
 -- A constant WHERE term is evaluated once before the rows, also over an empty table;
 -- a result column is not.
-#guard !statementReady (.query { fromless with table := some 0, filter := some malformed, columns := [] }) empty
-#guard statementReady (.query { fromless with table := some 0 }) empty
+#guard !statementReady (.query { fromless with sources := [.first 0], filter := some malformed, columns := [] }) empty
+#guard statementReady (.query { fromless with sources := [.first 0] }) empty
 -- An aggregate query evaluates its result row over NULL cells when no row passes WHERE.
 #guard
   let columns : List Output := [.scalar malformed, .aggregate .countRows]
-  !statementReady (.query { fromless with table := some 0, aggregate := true, columns := columns }) empty
+  !statementReady (.query { fromless with sources := [.first 0], aggregate := true, columns := columns }) empty
 -- The model gives a write no JSON error: a DELETE whose WHERE may fail is not ready.
 #guard (empty.table 0).all fun table => !deleteJsonReady table (some malformed) [] && deleteJsonReady table (some selected) []
 

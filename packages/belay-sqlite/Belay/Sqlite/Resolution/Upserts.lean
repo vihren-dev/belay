@@ -14,7 +14,7 @@ the filter of its action {lit}`[i, 1, 0]` and {lit}`[i, 1, 1]`. -/
 namespace Belay.Sqlite
 
 /-- The scope of {lit}`DO UPDATE`: the table, then {lit}`excluded` with the same
-columns. Every column of {lit}`excluded` is merged ({name}`Source.merged`), so an
+columns. Every column of {lit}`excluded` is merged ({name}`ScopeSource.merged`), so an
 unqualified name reads the table's column and only {lit}`excluded.column` reads the
 proposed row, as in SQLite. -/
 def upsertScope (tableName : String) (columns : List CatalogColumn) : Scope :=

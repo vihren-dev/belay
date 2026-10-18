@@ -133,7 +133,7 @@ def statementReady (statement : Resolved.Statement) (database : Database) : Bool
   | .createIndex .. => false
   | .clocked .. => false
   | .query query =>
-    (query.source database).all (fun rows => (query.run rows).fault != .may) && eachJsonReady query database
+    (query.source database).all fun source => source.fault != .may && (query.run source.rows).fault != .may
   | .begin | .commit | .rollback | .prepareError _ => true
 
 /-- Evaluate one statement at its supplied zero-based position. BEGIN records a

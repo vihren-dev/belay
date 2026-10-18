@@ -127,8 +127,8 @@ def step (statement : Resolved.Statement) (database : Database) (position : Nat 
         else .success (database.addColumn target column value)
   | .prepareError error => .failure position (.prepare error) database
   | .query query => match query.source database with
-    | some rows =>
-      let run := query.run rows
+    | some source =>
+      let run := query.run source.rows
       if run.overflow then .failure position .integerOverflow database
       else if run.fault == .must then .failure position .functionError database
       else .success database

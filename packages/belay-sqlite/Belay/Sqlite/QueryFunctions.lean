@@ -3,45 +3,82 @@ import Belay.Sqlite.Json.Each
 
 set_option doc.verso true
 
-/-! The {lit}`json_each` sources of a query (ADR 0012, amendment 5, slice 6d). Each joins
-the rows before it as SQLite's nested loop does: for each row, the rows of
-{lit}`json_each` over the values of its arguments on that row, each appended to the row,
-that the {lit}`ON` condition keeps. A source whose {lit}`json_each` fails gives no rows
-here; the supported-subset check refuses a statement in which it may fail
-({lit}`JsonReady.lean`). -/
+/-! The source rows of a query (ADR 0013, D5): its sources joined in written order, as
+SQLite's nested loop does, from the one row with no cells. A table gives its rows in rowid
+order; {lit}`json_each` gives its rows over the values of its arguments on each row so far
+(ADR 0012, amendment 5, slice 6d). A {lit}`json_each` call that fails gives no rows here,
+and makes the fault of the source {lit}`may`: SQLite reports it when it scans the
+source, so the supported-subset check refuses a statement in which it may fail. -/
 
 namespace Belay.Sqlite.Resolved
 
-/-- The rows of {lit}`json_each` over the values of the source's arguments on a row, or
-its error. -/
-def EachSource.cells (each : EachSource) (row : List Value) : Except Json.JsonError (List (List Value)) :=
-  Json.eachRows (each.json.eval row) (each.path.map (·.eval row))
+/-- The number of columns of {lit}`json_each`: {lit}`key`, {lit}`value`, {lit}`type`,
+{lit}`atom`, {lit}`id`, {lit}`parent`, {lit}`fullkey`, {lit}`path`, and the hidden {lit}`json`
+and {lit}`root`. -/
+def eachWidth : Nat := 10
 
-/-- The joined rows of one row with the source: the row followed by each row of
-{name}`EachSource.cells` that the {lit}`ON` condition keeps; none when it fails. -/
-def EachSource.join (each : EachSource) (row : List Value) : List (List Value) :=
-  match each.cells row with
-  | .ok cells => (cells.map (row ++ ·)).filter fun joined => each.condition.all fun condition =>
-      truthy (condition.eval joined)
-  | .error _ => []
+/-- The rows of the sources so far: the joined rows, the number of cells of each, and the
+fault of the {lit}`json_each` calls among them. -/
+structure SourceRows where
+  /-- The joined rows. -/
+  rows : List (List Value)
+  /-- The number of cells of a joined row. -/
+  width : Nat
+  /-- {lean}`Fault.may` when a {lit}`json_each` call over a row so far fails, else
+  {lean}`Fault.none`. -/
+  fault : Fault
 
-/-- The rows of the sources up to and including the {lit}`json_each` sources: the
-{name}`EachSource.join` of each row before each source, in order. -/
-def joinFunctions (rows : List (List Value)) (functions : List EachSource) : List (List Value) :=
-  functions.foldl (fun rows each => rows.flatMap each.join) rows
+/-- The rows so far joined with one more source ({name}`joinRows`); none for a table that
+the database does not have, or a subquery, which the model does not run yet. The rows of
+a {lit}`json_each` source are its rows over each row so far ({name}`joinRow`); resolution
+refuses it as the right operand of a right or full join, where this gives the rows of an
+inner or left join. -/
+def QuerySource.join (database : Database) (state : SourceRows) (join : QuerySource) : Option SourceRows :=
+  match join.source with
+  | .table position => (database.table position).map fun table =>
+    { rows := joinRows state.width state.rows join table.shape.columns.length (sourceRows table),
+      width := state.width + table.shape.columns.length, fault := state.fault }
+  | .each json path =>
+    let results := state.rows.map fun row => (row, Json.eachRows (json.eval row) (path.map (·.eval row)))
+    let failed := results.any fun (_, result) => match result with
+      | .ok _ => false
+      | .error _ => true
+    some { rows := results.flatMap (fun (row, result) => joinRow join eachWidth (result.toOption.getD []) row),
+           width := state.width + eachWidth,
+           fault := if failed then state.fault.join .may else state.fault }
+  | .subquery => none
 
-/-- The source rows of a query over a database: the rows of its tables
-({name}`Query.tableSource`) joined with its {lit}`json_each` sources in order
-({name}`joinFunctions`); none when a table is missing. A query without {lit}`json_each`
-has the rows of its tables. -/
-def Query.source (query : Query) (database : Database) : Option (List (List Value)) :=
-  (query.tableSource database).map (joinFunctions · query.functions)
+/-- The source rows of a query over a database: its sources joined in written order
+({name}`QuerySource.join`) from the one row with no cells, which is the source of a query
+without {lit}`FROM`; none when a table is missing. -/
+def Query.source (query : Query) (database : Database) : Option SourceRows :=
+  query.sources.foldlM (QuerySource.join database) { rows := [[]], width := 0, fault := .none }
 
-/-- Each {lit}`json_each` source of a query with the rows before it, on which SQLite
-evaluates its arguments; none when a table is missing. -/
-def Query.eachInputs (query : Query) (database : Database) : Option (List (EachSource × List (List Value))) :=
-  (query.tableSource database).map fun rows =>
-    (query.functions.foldl (fun (rows, found) each => (rows.flatMap each.join, found ++ [(each, rows)]))
-      (rows, [])).2
+/-- For every database, list of sources without a {lit}`json_each` source and state whose
+fault is {lean}`Fault.none`, a successful fold of {name}`QuerySource.join` ends with the fault
+{lean}`Fault.none`. Proof sketch: induction on the sources; a table source keeps the fault,
+and a subquery stops the fold. -/
+theorem source_fault_of_plain (database : Database) :
+    ∀ (sources : List QuerySource) (state result : SourceRows), sources.all (!·.source.isEach) = true →
+      state.fault = .none → sources.foldlM (QuerySource.join database) state = some result → result.fault = .none
+  | [], state, result, _, clean, done => by
+    simp only [List.foldlM, pure] at done
+    cases done
+    exact clean
+  | join :: rest, state, result, plain, clean, done => by
+    simp only [List.all_cons, Bool.and_eq_true] at plain
+    simp only [List.foldlM, bind, Option.bind] at done
+    obtain ⟨kind, source, condition⟩ := join
+    cases source with
+    | table position =>
+      simp only [QuerySource.join] at done
+      cases found : database.table position with
+      | none => simp [found] at done
+      | some table =>
+        simp only [found, Option.map_some] at done
+        refine source_fault_of_plain database rest _ result plain.2 ?_ done
+        exact clean
+    | each json path => simp [Source.isEach] at plain
+    | subquery => simp [QuerySource.join] at done
 
 end Belay.Sqlite.Resolved
