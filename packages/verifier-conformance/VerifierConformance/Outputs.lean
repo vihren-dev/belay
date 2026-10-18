@@ -166,16 +166,4 @@ def statementOutput (statement : Resolved.Statement) (before : SqlState)
   | .createTable .. | .createIndex .. | .begin | .commit | .rollback | .prepareError _ =>
     some ⟨[], [], none⟩
 
-/-- Follow reached production transitions and stop at their first failure. -/
-def outputTraceFrom (position : Nat) (script : List Resolved.Statement) (state : SqlState) :
-    List (Option StatementOutput) :=
-  match script with
-  | [] => []
-  | statement :: rest =>
-    let transition := advance position statement state
-    statementOutput statement state transition ::
-      match transition with
-      | .next next => outputTraceFrom (position + 1) rest next
-      | .halt _ => []
-
 end Belay.Sqlite.Conformance

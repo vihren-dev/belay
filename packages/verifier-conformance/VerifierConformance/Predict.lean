@@ -99,11 +99,10 @@ def predict (p : PredictInput) : Json :=
     let clock : Clock := fun position => p.clocks.getD position 0
     let resolution := { unclocked with resolved := scriptAtClock clock unclocked.resolved }
     let start : SqlState := { database := databaseOf resolution.startCatalog (p.initial.map NamedRows.native) }
-    let observed := trace resolution.resolved start.database
-    let steps := observed.map stepJson
+    let pass := passFrom 0 resolution.resolved start
+    let steps := pass.observations.map stepJson
     let supported := !(p.clocks.isEmpty && scriptReadsClock unclocked.resolved) &&
-      supportedSqlFrom 0 resolution.resolved start && !observed.any invalidObservation
-    Json.mkObj [("supported", toJson supported), ("steps", toJson steps),
-      ("outputs", toJson (outputTraceFrom 0 resolution.resolved start))]
+      pass.supported && !pass.observations.any invalidObservation
+    Json.mkObj [("supported", toJson supported), ("steps", toJson steps), ("outputs", toJson pass.outputs)]
 
 end Belay.Sqlite.Conformance

@@ -44,37 +44,4 @@ def observeOutcome (outcome : Outcome) : Observation :=
 def observeState (state : SqlState) : Observation :=
   observeOutcome (state.finish (.success state.database))
 
-/-- Include the initial snapshot and each executed statement; a halt ends the trace. -/
-def traceFrom (position : Nat) (script : List Resolved.Statement)
-    (state : SqlState) : List Observation :=
-  observeState state ::
-    match script with
-    | [] => []
-    | statement :: rest => match advance position statement state with
-      | .next next => traceFrom (position + 1) rest next
-      | .halt outcome => [observeOutcome outcome]
-
-/-- A complete case begins outside a transaction, just like runSql. -/
-def trace (script : List Resolved.Statement) (initial : Database) : List Observation :=
-  traceFrom 0 script { database := initial }
-
-/-- Instrumentation ends at precisely the production evaluator's outcome. -/
-theorem traceFrom_final (position : Nat)
-    (script : List Resolved.Statement) (state : SqlState) :
-    (traceFrom position script state).getLast? =
-      some (observeOutcome (runSqlFrom position script state)) := by
-  induction script generalizing position state with
-  | nil => simp [traceFrom, runSqlFrom, observeState]
-  | cons statement rest ih =>
-    cases h : advance position statement state with
-    | next next =>
-      simp [traceFrom, runSqlFrom, h, List.getLast?_cons, ih]
-    | halt outcome => simp [traceFrom, runSqlFrom, h]
-
-/-- Concrete conformance traces and verifier proofs refer to the same execution. -/
-theorem trace_final (script : List Resolved.Statement) (initial : Database) :
-    (trace script initial).getLast? =
-      some (observeOutcome (runSql script initial)) :=
-  traceFrom_final 0 script { database := initial }
-
 end Belay.Sqlite.Conformance
