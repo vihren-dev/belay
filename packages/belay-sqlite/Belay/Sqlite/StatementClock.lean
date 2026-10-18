@@ -65,12 +65,12 @@ def ClockCell.fill (clock : Int) (rows : List (List Value)) (cell : ClockCell) :
 /-- The expressions of a statement at a clock value ({name}`Expr.atClock`). A clocked
 INSERT keeps its cells; {lit}`Statement.atClock` fills them first. -/
 def Statement.expressionsAtClock (clock : Int) : Statement → Statement
-  | .insert target rows keys returning => .insert target rows keys (returningAtClock clock returning)
-  | .upsert target rows clauses keys returning policy =>
-    .upsert target rows (clauses.map (·.atClock clock)) keys (returningAtClock clock returning) policy
-  | .update target assignments filter keys returning =>
+  | .insert target rows returning => .insert target rows (returningAtClock clock returning)
+  | .upsert target rows clauses returning algorithm =>
+    .upsert target rows (clauses.map (·.atClock clock)) (returningAtClock clock returning) algorithm
+  | .update target assignments filter returning =>
     .update target (assignments.map fun (position, value) => (position, value.atClock clock))
-      (filter.map (·.atClock clock)) keys (returningAtClock clock returning)
+      (filter.map (·.atClock clock)) (returningAtClock clock returning)
   | .delete target filter returning => .delete target (filter.map (·.atClock clock)) (returningAtClock clock returning)
   | .query inner => .query (inner.atClock clock)
   | .clocked statement cells => .clocked statement cells
@@ -85,9 +85,9 @@ def Statement.expressionsAtClock (clock : Int) : Statement → Statement
 /-- An INSERT with its cells set to their values at a clock value ({name}`ClockCell.fill`);
 any other statement unchanged. -/
 def Statement.fillCells (clock : Int) (cells : List ClockCell) : Statement → Statement
-  | .insert target rows keys returning => .insert target (cells.foldl (ClockCell.fill clock) rows) keys returning
-  | .upsert target rows clauses keys returning policy =>
-    .upsert target (cells.foldl (ClockCell.fill clock) rows) clauses keys returning policy
+  | .insert target rows returning => .insert target (cells.foldl (ClockCell.fill clock) rows) returning
+  | .upsert target rows clauses returning algorithm =>
+    .upsert target (cells.foldl (ClockCell.fill clock) rows) clauses returning algorithm
   | statement@(.update ..) | statement@(.delete ..) | statement@(.query _) | statement@(.clocked ..)
   | statement@(.createTable ..) | statement@(.createIndex ..) | statement@(.addColumn ..) | statement@.begin
   | statement@.commit | statement@.rollback | statement@(.prepareError _) => statement
@@ -136,9 +136,9 @@ def ConflictClause.readsClock (clause : ConflictClause) : Bool :=
 expression that reads it. A statement that does not is unchanged at every clock value
 ({lit}`Statement.atClock_of_readsClock`). -/
 def Statement.readsClock : Statement → Bool
-  | .insert _ _ _ returning => returningReadsClock returning
-  | .upsert _ _ clauses _ returning _ => clauses.any ConflictClause.readsClock || returningReadsClock returning
-  | .update _ assignments filter _ returning =>
+  | .insert _ _ returning => returningReadsClock returning
+  | .upsert _ _ clauses returning _ => clauses.any ConflictClause.readsClock || returningReadsClock returning
+  | .update _ assignments filter returning =>
     assignments.any (·.2.readsClock) || filter.any Expr.readsClock || returningReadsClock returning
   | .delete _ filter returning => filter.any Expr.readsClock || returningReadsClock returning
   | .query inner => inner.readsClock

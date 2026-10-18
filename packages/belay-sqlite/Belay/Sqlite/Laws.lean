@@ -1,5 +1,6 @@
 import Belay.Sqlite.SqlProofs
 import Belay.Sqlite.SqlExecution
+import Belay.Sqlite.DatabaseFacts
 
 set_option doc.verso true
 
@@ -62,10 +63,11 @@ theorem literal_cases (statement : Resolved.Statement) (database : Database) (po
     (∃ after, literalStep statement database position = .failure position .constraintFail after) := by
   cases statement with
   | createTable target name table =>
-    cases h : database target <;> simp [literalStep, step, h]
+    simp only [literalStep, step]
+    split <;> simp
   | addColumn target column =>
     simp only [literalStep, step]
-    cases database target with
+    cases database.table target with
     | none => simp
     | some table =>
       simp only []
@@ -76,19 +78,19 @@ theorem literal_cases (statement : Resolved.Statement) (database : Database) (po
         | ok value =>
           simp only []
           split <;> simp
-  | insert target rows keys _ =>
-    cases h : database target <;> simp only [literalStep, insertOutcome, checkedWrite, h]
+  | insert target rows _ =>
+    cases h : database.table target <;> simp only [literalStep, insertOutcome, checkedWrite, h]
     all_goals (repeat' split) <;> simp
-  | upsert target rows clauses keys _ policy =>
-    cases h : database target <;> simp only [literalStep, h]
+  | upsert target rows clauses _ algorithm =>
+    cases h : database.table target <;> simp only [literalStep, h]
     all_goals (repeat' split) <;> try simp
     rename_i reason _ _ _
     cases reason <;> simp [LiteralData.failedDatabase]
-  | update target assignments filter keys _ =>
-    cases h : database target <;> simp only [literalStep, checkedWrite, h]
+  | update target assignments filter _ =>
+    cases h : database.table target <;> simp only [literalStep, checkedWrite, h]
     all_goals (repeat' split) <;> simp
   | delete target filter _ =>
-    cases h : database target <;> simp [literalStep, h]
+    cases h : database.table target <;> simp [literalStep, h]
   | createIndex _ _ _ => simp [literalStep, step]
   | clocked _ _ => simp [literalStep, step]
   | query query =>
@@ -165,9 +167,9 @@ The proof follows the successful ADD branch and unfolds column extension
 and its row mapping. -/
 theorem add_column_shape (constant : column.clockDefault = false)
     (success : advance position (.addColumn target column) state = .next next) :
-    ∃ table value, state.database target = some table ∧
+    ∃ table value, state.database.table target = some table ∧
       readDefaultValue column = .ok value ∧
-      next.database target = some (table.appendColumns [(column, value)]) ∧
+      next.database.table target = some (table.appendColumns [(column, value)]) ∧
       (table.appendColumns [(column, value)]).rows.length = table.rows.length ∧
       (table.appendColumns [(column, value)]).rows.map Row.rowid = table.rows.map Row.rowid ∧
       (table.appendColumns [(column, value)]).rows.map Row.values =
@@ -175,7 +177,7 @@ theorem add_column_shape (constant : column.clockDefault = false)
   simp only [advance, literalStep, step] at success
   repeat (split at * <;> simp_all)
   all_goals subst_vars
-  all_goals simp_all [Database.set, Table.appendColumns, Row.appendValues, List.map_map]
+  all_goals simp_all [Database.table_addColumn, Table.appendColumns, Row.appendValues, List.map_map]
 
 #print axioms rollback
 #print axioms statement_atomicity

@@ -1,8 +1,9 @@
-"""The table shape is the catalog entry: conformance rejects drift, and old shape types are gone.
+"""The database carries the one schema truth, and conformance checks the row lists against it.
 
-`Belay.Sqlite.Conforms` requires every stored table's shape to equal its catalog
-entry under the profile (`Model.lean`); the codec transports rows and values
-(`Codec.lean`). The replaced model types of ADR 0008 must not exist.
+`Belay.Sqlite.Database` stores the catalog beside the rows, and `Belay.Sqlite.Conforms`
+requires that catalog to be the given one under the profile and the rows to have one
+list per catalog object, with none at an index (`Model.lean`). The codec transports rows
+and values (`Codec.lean`). The replaced model types of ADR 0008 must not exist.
 """
 
 import json
@@ -26,23 +27,19 @@ def stamp : CatalogColumn :=
   { name := "stamp", declaredType := some "TIMESTAMP", defaultValue := some { form := .clock .timestamp, sourceText := "CURRENT_TIMESTAMP" } }
 def data : CatalogColumn := { name := "data", declaredType := none }
 def shape : CatalogTable := { columns := [idColumn, stamp, data], primaryKey := [0], uniqueKeys := [[1], [0, 2]] }
-def catalog : Catalog := [{ name := "items", entry := .table shape },
+def catalogWith (table : CatalogTable) : Catalog := [{ name := "items", entry := .table table },
   { name := "by_stamp", entry := .index { table := 0, columns := [1, 0], unique := true } }]
+def catalog : Catalog := catalogWith shape
 def profile : Profile := Profile.documented "3.51.0" "build"
-def stored (candidate : CatalogTable) : Database :=
-  catalog.emptyDatabase.set 0 { shape := candidate, rows := [] }
+def stored (candidate : CatalogTable) : Database := (catalogWith candidate).emptyDatabase
 theorem catalog_valid : catalog.Valid profile.limits := by decide +kernel
-theorem original_conforms : Conforms profile catalog (stored shape) :=
-  (Catalog.emptyDatabase_conforms catalog_valid).replaceRows
-    (old := { shape := shape, rows := [] }) (position := 0) (by decide +kernel) (by rfl)
-    ⟨by simp, fun _ member => by simp at member⟩
+theorem original_conforms : Conforms profile catalog (stored shape) := Catalog.emptyDatabase_conforms catalog_valid
 theorem shape_rejected (candidate : CatalogTable) (different : candidate ≠ shape) :
     ¬Conforms profile catalog (stored candidate) := by
   intro conforms
-  have equal := conforms.shape (show stored candidate 0 = some { shape := candidate, rows := [] } by
-    simp [stored, Database.set])
-  have same : shape = candidate := by simpa [Catalog.tableAt, catalog] using equal
-  exact different same.symm
+  have equal := conforms.1
+  simp [stored, catalog, catalogWith, Catalog.emptyDatabase] at equal
+  exact different equal
 def alternatives : List CatalogTable := [
   { shape with columns := shape.columns.reverse },
   { shape with columns := [{ idColumn with name := "other" }, stamp, data] },
@@ -61,10 +58,20 @@ theorem all_changes_rejected : ∀ candidate ∈ alternatives,
   simp only [alternatives, List.mem_cons, List.not_mem_nil, or_false] at member
   rcases member with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
     decide +kernel
-example : ¬Conforms profile catalog (fun _ => none) := by
+-- A database without the catalog, one with a missing row list, and one with rows at the
+-- index position do not conform.
+example : ¬Conforms profile catalog {} := by
   intro conforms
-  have equal := (conforms.2 0).1
-  simp [Catalog.tableAt, catalog] at equal
+  have equal := conforms.1
+  simp [catalog, catalogWith] at equal
+example : ¬Conforms profile catalog { catalog, rows := [[]] } := by
+  intro conforms
+  have equal := conforms.2.2.1
+  simp [catalog, catalogWith] at equal
+example : ¬Conforms profile catalog { catalog, rows := [[], [⟨1, [.null, .null, .null]⟩]] } := by
+  intro conforms
+  have empty := (conforms.2.2.2 1).1 rfl
+  simp at empty
 #guard !(catalog ++ catalog).supported profile.limits
 example : catalog.tableAt 0 = some shape := rfl
 example : catalog.tableAt 1 = none := rfl
@@ -93,7 +100,7 @@ def compile_checks(source: str, directory: Path, sysroot: Path, libraries: tuple
 
 
 def test_whole_shape_conformance(tmp_path: Path, lean_sysroot: Path, lean_libraries: tuple[Path, Path]) -> None:
-    """Model Conforms rejects ten metadata changes despite unchanged empty rows."""
+    """Model Conforms rejects ten catalog changes and three row lists that do not match the catalog."""
     compile_checks(SHAPE_CHECKS, tmp_path, lean_sysroot, lean_libraries)
 
 

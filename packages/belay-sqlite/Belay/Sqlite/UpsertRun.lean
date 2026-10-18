@@ -137,7 +137,7 @@ the failing row at the position for a FAIL failure, which keeps the earlier rows
 input database for every other failure. -/
 def failedDatabase (database : Database) (target : Nat) (reason : ExecutionError) (reached : Table) : Database :=
   match reason with
-  | .constraintFail => database.set target reached
+  | .constraintFail => database.setRows target reached.rows
   | .unmodeled | .prepare _ | .transactionAlreadyActive | .noActiveTransaction | .constraintViolation
   | .constraintRollback | .integerOverflow | .datatypeMismatch | .functionError | .nullColumnDefault
   | .nonConstantColumnDefault => database

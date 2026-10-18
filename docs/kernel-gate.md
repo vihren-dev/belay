@@ -58,7 +58,7 @@ The state is discarded after that invocation; no proof result is cached.
 
 The expected proposition is constructed directly as
 `SqliteVerifier.VerificationConditions`, applied to `Requirements.LogicalState`,
-the three protected SQL constants, `Interpretation.admitted`,
+the protected constants `Generated.startCatalog` and `Generated.resolved`, `Interpretation.admitted`,
 `Requirements.contract`, `Interpretation.current`, `NextInterpretation.next`, and
 `NextInterpretation.failures`, followed by the sealed execution profile. The logical state's concrete universe is inferred
 by the kernel. Input constants and `Proofs.migrationCorrect` must be closed,

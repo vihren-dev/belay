@@ -105,8 +105,8 @@ theorem clockCells_empty (columns : List CatalogColumn) (rows : List (List RowCe
 
 /-- For a successful resolution of INSERT, with any {lit}`ON CONFLICT` clauses, to an
 insert statement, the catalog is
-unchanged, the statement names the position of the table that the name finds and
-carries that table's {name}`Catalog.uniqueKeys`, and for every resolved row there are table positions of the written columns and a
+unchanged, the statement names the position of the table that the name finds, and
+for every resolved row there are table positions of the written columns and a
 written row such that the resolved row satisfies {name}`RowWidth` for the table's
 columns. So every resolved row has one value for each table column. Proof sketch:
 split the resolver down to its successful branch; each row is a result of
@@ -115,12 +115,12 @@ theorem resolveInsert_rowWidth (context : ResolveContext) (catalog after : Catal
     (tableName : String) (names : Option (List String)) (rows : List (List Syntax.Expr))
     (conflicts : List Syntax.ConflictClause) (algorithm : Option ConflictAlgorithm)
     (returning : List Syntax.ResultColumn)
-    (position : Nat) (full : List (List Value)) (keys : List (List Nat))
+    (position : Nat) (full : List (List Value))
     (columns : List (Resolved.Expr × String))
     (ok : resolveInsert context catalog index tableName names rows conflicts algorithm returning =
-      .ok (.insert position full keys columns, after)) :
+      .ok (.insert position full columns, after)) :
     after = catalog ∧ ∃ table, catalog.findTable tableName = some (position, table) ∧
-      keys = catalog.uniqueKeys position table ∧ ∀ row ∈ full, ∃ positions written, RowWidth table.columns positions written row := by
+      ∀ row ∈ full, ∃ positions written, RowWidth table.columns positions written row := by
   unfold resolveInsert at ok
   simp only [prepareError, restrict, issueResolution, withClockCells] at ok
   split at ok
@@ -157,7 +157,7 @@ theorem resolveInsert_rowWidth (context : ResolveContext) (catalog after : Catal
   case isFalse => cases ok
   rename_i empty
   cases ok
-  refine ⟨rfl, table, found, rfl, fun row member => ?_⟩
+  refine ⟨rfl, table, found, fun row member => ?_⟩
   unfold resolveAll at rows_ok
   obtain ⟨cellRow, cellMember, rowEq⟩ := List.mem_map.mp member
   subst rowEq

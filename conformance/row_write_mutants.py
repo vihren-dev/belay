@@ -37,8 +37,9 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "text_column_keeps_number": (STORE,
         "  | .text, .integer _ | .text, .real _ => .text value.textBytes", "  | .text, .integer _ | .text, .real _ => value"),
     "failed_update_keeps_rows": (EXECUTION,
-        "    .success (database.set target result)\n  else .failure position .constraintViolation database",
-        "    .success (database.set target result)\n  else .failure position .constraintViolation (database.set target result)"),
+        "    .success (database.setRows target result.rows)\n  else .failure position .constraintViolation database",
+        "    .success (database.setRows target result.rows)\n  else .failure position .constraintViolation"
+        " (database.setRows target result.rows)"),
     "change_count_every_row": (OUTPUTS, "        some chosen.length⟩", "        some table.rows.length⟩"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the

@@ -43,7 +43,7 @@ def resolveUpdate (context : ResolveContext) (catalog : Catalog) (index : Nat) (
           | .ok columns =>
             if (catalog.keyAlgorithms position table).all (· == .abort) &&
                 table.columns.all (·.notNullAlgorithm == .abort) then
-              .ok (.update position resolved resolvedFilter keys columns, catalog)
+              .ok (.update position resolved resolvedFilter columns, catalog)
             else restrict index [] .constraintAlgorithmUpdate
 
 end Belay.Sqlite

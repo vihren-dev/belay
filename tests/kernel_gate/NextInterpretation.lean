@@ -6,5 +6,5 @@ namespace NextInterpretation
 def next := Interpretation.current
 /-- The empty script cannot fail; the declared failure representation is still sound. -/
 def failures : SqliteVerifier.FailureRepresentation Requirements.LogicalState :=
-  ⟨fun _ _ => [], fun _ _ => Interpretation.current⟩
+  ⟨fun _ _ => Interpretation.current⟩
 end NextInterpretation

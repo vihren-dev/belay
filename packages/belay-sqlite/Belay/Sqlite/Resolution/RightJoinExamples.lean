@@ -51,7 +51,7 @@ def fullQuery : Resolved.Query :=
 #guard Resolved.joinRows 2 (rowsWith .inner rightTwo) rightOnSecond rightTwo ==
   [[.integer 1, .integer 1, .integer 1], [.null, .null, .integer 3]]
 -- The source of a query folds the joins with the width of the tables so far.
-#guard (fullQuery.source fun | 0 => some JoinExamples.left | 1 => some rightTwo | _ => none) ==
+#guard (fullQuery.source (.ofTables [("l", JoinExamples.left), ("r", rightTwo)])) ==
   some [[.integer 1, .integer 1], [.integer 2, .null], [.null, .integer 3]]
 
 end Belay.Sqlite.Resolution.RightJoinExamples

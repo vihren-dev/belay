@@ -60,7 +60,7 @@ impossible failure representations. The proof reuses the existing success
 certificate and the generic extension observation law; it never enumerates or
 assumes the stored invoice rows. -/
 theorem migrationCorrect (profile : Profile) (columns : 2 ≤ profile.limits.columns) :
-    VerificationConditions Demonstration.startCatalog Demonstration.nextCatalog
+    VerificationConditions Demonstration.startCatalog
       Demonstration.script admitted requirements (current profile) (next profile) unreachableFailures profile := by
   have checked := Demonstration.migrationCorrect profile columns
   obtain ⟨startValid, _, _⟩ := Demonstration.catalogs_valid columns
@@ -84,7 +84,7 @@ theorem migrationCorrect (profile : Profile) (columns : 2 ≤ profile.limits.col
       (runSql Demonstration.script database) (ProfileExecutes.of_readsClock (by decide))
     obtain ⟨old, oldRead, _⟩ := (checked.beforeSound database (checked.starting database oldAdmission)).2
     have oldPost := originalObligations.2 old oldRead
-    obtain ⟨table, present, shape, valid, _⟩ := Demonstration.admitted_invoices oldAdmission
+    obtain ⟨_, _, table, present, shape, valid⟩ := Demonstration.admitted_invoices oldAdmission
     have covered : Covers table (invoiceKeyNames ++ invoiceProtectedFields) := by
       intro name member
       simp only [invoiceKeyNames, invoiceProtectedFields, List.mem_append, List.mem_singleton, or_self] at member

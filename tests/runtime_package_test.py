@@ -161,7 +161,7 @@ def test_installed_model_and_codec_consumer(runtime_root: Path, tmp_path: Path,
     """An unrelated installed consumer compiles core, codec and application imports from both roots."""
     source = tmp_path / 'NeutralConsumer.lean'
     source.write_text('import Belay.Sqlite\nimport Belay.Sqlite.Codec.Resolution\nimport SqliteVerifier\n'
-        '#check Belay.Sqlite.Conforms.set\n#check Belay.Sqlite.TableExtends.project\n'
+        '#check Belay.Sqlite.Conforms.setRows\n#check Belay.Sqlite.TableExtends.project\n'
         '#check SqliteVerifier.VerificationConditions\n'
         'def record : Belay.Sqlite.ScriptRecord := ⟨3, "3.51.0", "build", [], []⟩\n'
         '#eval match Belay.Sqlite.decodeScriptRecord (Lean.toJson record) with\n'

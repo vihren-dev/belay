@@ -1,4 +1,5 @@
 import Belay.Sqlite.SqlProofs
+import Belay.Sqlite.DatabaseFacts
 
 set_option doc.verso true
 
@@ -17,8 +18,8 @@ def TableExtends (before after : Table) : Prop :=
 table present after execution that satisfies {name}`TableExtends`. An empty before
 database imposes no requirement. New tables are allowed. -/
 def DatabaseExtends (before after : Database) : Prop :=
-  ∀ position table, before position = some table →
-    ∃ result, after position = some result ∧ TableExtends table result
+  ∀ position table, before.table position = some table →
+    ∃ result, after.table position = some result ∧ TableExtends table result
 
 /-- For every table, appending no columns gives the same table, including its
 rows and keys. The proof unfolds the table and row operations. -/
@@ -61,31 +62,28 @@ theorem DatabaseExtends.trans (first : DatabaseExtends before middle)
   obtain ⟨result, present'', growth'⟩ := second position intermediate present'
   exact ⟨result, present'', growth.trans growth'⟩
 
-/-- For every database and position without a table, setting a table at that
-position extends the database. Existing tables at other positions are unchanged;
-no condition is imposed on the new table. The proof separates equal and distinct
-positions. -/
-theorem DatabaseExtends.create (database : Database) (position : Nat) (table : Table)
-    (absent : database position = none) : DatabaseExtends database (database.set position table) := by
-  intro other old present
-  by_cases same : other = position
-  · subst other
-    simp [absent] at present
-  · exact ⟨old, by simp [Database.set, same, present], TableExtends.refl old⟩
+/-- For every database, name and catalog table, CREATE TABLE ({name}`Catalog.createTable`
+with an empty row list appended) extends the database: every table present before is
+present and unchanged. No condition is imposed on the new table. -/
+theorem DatabaseExtends.create (database : Database) (name : String) (table : CatalogTable) :
+    DatabaseExtends database
+      { catalog := database.catalog.createTable name table, rows := database.rows ++ [[]] } :=
+  fun _ old present => ⟨old, Database.table_createTable name table present, TableExtends.refl old⟩
 
-/-- For every present table and any column/value list, setting its extension at
-its existing position extends the database. Other tables are unchanged. The proof
-uses the supplied presence equality for the selected position. -/
-theorem DatabaseExtends.add (database : Database) (position : Nat) (table : Table)
-    (columns : List (CatalogColumn × Value)) (present : database position = some table) :
-    DatabaseExtends database (database.set position (table.appendColumns columns)) := by
+/-- For every present table, column and value, {name}`Database.addColumn` at its position
+extends the database. Other tables are unchanged. The proof separates the selected
+position from the others. -/
+theorem DatabaseExtends.add (database : Database) (position : Nat) (table : Table) (column : CatalogColumn)
+    (value : Value) (present : database.table position = some table) :
+    DatabaseExtends database (database.addColumn position column value) := by
   intro other old oldPresent
   by_cases same : other = position
   · subst other
     have equal : old = table := Option.some.inj (oldPresent.symm.trans present)
     subst old
-    exact ⟨table.appendColumns columns, by simp [Database.set], ⟨columns, rfl⟩⟩
-  · exact ⟨old, by simp [Database.set, same, oldPresent], TableExtends.refl old⟩
+    exact ⟨table.appendColumns [(column, value)], Database.table_addColumn column value present, ⟨_, rfl⟩⟩
+  · exact ⟨old, (Database.table_addColumn_other database column value same).trans oldPresent,
+      TableExtends.refl old⟩
 
 /-- For every statement, database and position, the primitive {name}`step`
 result extends the input database. CREATE/ADD extend existing tables or retain
@@ -97,18 +95,18 @@ theorem step_extends (statement : Resolved.Statement) (database : Database) (pos
   cases statement with
   | createTable target name table =>
     simp only [step]
-    cases h : database target with
-    | none => exact DatabaseExtends.create database target { shape := table, rows := [] } h
-    | some table => exact DatabaseExtends.refl database
+    split
+    · exact DatabaseExtends.create database name table
+    · exact DatabaseExtends.refl database
   | addColumn target column =>
     simp only [step]
-    cases h : database target with
+    cases h : database.table target with
     | none => exact DatabaseExtends.refl database
     | some table =>
       simp only []
       split
       · split
-        · exact DatabaseExtends.add database target table [(column, .null)] h
+        · exact DatabaseExtends.add database target table column .null h
         · exact DatabaseExtends.refl database
       · cases readDefaultValue column with
         | error _ => exact DatabaseExtends.refl database
@@ -116,7 +114,7 @@ theorem step_extends (statement : Resolved.Statement) (database : Database) (pos
           simp only []
           split
           · exact DatabaseExtends.refl database
-          · exact DatabaseExtends.add database target table [(column, value)] h
+          · exact DatabaseExtends.add database target table column value h
   | createIndex _ _ _ => exact DatabaseExtends.refl database
   | query query =>
     have same : (step (.query query) database position).database = database := by
@@ -130,9 +128,9 @@ theorem step_extends (statement : Resolved.Statement) (database : Database) (pos
   | begin => exact DatabaseExtends.refl database
   | commit => exact DatabaseExtends.refl database
   | rollback => exact DatabaseExtends.refl database
-  | insert _ _ _ _ => exact DatabaseExtends.refl database
+  | insert _ _ _ => exact DatabaseExtends.refl database
   | upsert _ _ _ _ _ => exact DatabaseExtends.refl database
-  | update _ _ _ _ _ => exact DatabaseExtends.refl database
+  | update _ _ _ _ => exact DatabaseExtends.refl database
   | delete _ _ _ => exact DatabaseExtends.refl database
   | prepareError _ => exact DatabaseExtends.refl database
   | clocked _ _ => exact DatabaseExtends.refl database

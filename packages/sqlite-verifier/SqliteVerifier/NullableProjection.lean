@@ -31,7 +31,7 @@ the field exists or that its values are NULL. -/
 def observeNullable (catalog : Catalog) (tableName : String) (fields : List String) (added : Option String)
     (database : Database) : Option NullableView := do
   let position ← tablePosition catalog tableName
-  (database position).map fun table =>
+  (database.table position).map fun table =>
     ⟨table.project fields, added.map fun name => table.project [name]⟩
 
 

@@ -1,5 +1,5 @@
 import Belay.Sqlite.Resolution.Catalog
-import Belay.Sqlite.Resolution.ConflictForm
+import Belay.Sqlite.Resolution.ConflictPolicy
 import Belay.Sqlite.Resolution.RestrictionText
 import Belay.Sqlite.Resolution.ClockCell
 
@@ -124,8 +124,9 @@ def Restriction.reason (restriction : Restriction) : String := restriction.kind.
 namespace Resolved
 
 /-- One statement after name resolution. For example, an INSERT into the table at
-catalog position 0 with one full row and no unique keys is
-{lean}`Statement.insert 0 [[Value.null]] [] []`. -/
+catalog position 0 with one full row is {lean}`Statement.insert 0 [[Value.null]] []`.
+A write names its table by catalog position; execution reads the table's columns, keys
+and conflict algorithms from the catalog of the database it runs on. -/
 inductive Statement where
   /-- Create the named table at the catalog position, which is the end of the catalog. -/
   | createTable (position : Nat) (name : String) (table : CatalogTable)
@@ -139,25 +140,26 @@ inductive Statement where
   | commit
   /-- Roll the transaction back. -/
   | rollback
-  /-- Insert full rows, with one converted value for each column in table order.
-  {name}`Statement.insert` also carries the column positions of each unique key of
-  the table, which the statement must keep unique, and its {lit}`RETURNING` columns:
-  an expression over the written row and its name each, none without
-  {lit}`RETURNING`. The execution semantics does not read them. -/
-  | insert (table : Nat) (rows : List (List Value)) (keys : List (List Nat)) (returning : List (Expr × String))
+  /-- Insert full rows, with one converted value for each column in table order, and
+  keep every unique key of the table ({name}`Catalog.uniqueKeys`) unique. The
+  {lit}`RETURNING` columns are an expression over the written row and its name each,
+  none without {lit}`RETURNING`; the execution semantics does not read them. -/
+  | insert (table : Nat) (rows : List (List Value)) (returning : List (Expr × String))
   /-- In every row where the optional filter condition is true (every row without a
   filter), set each column position to its expression, evaluated on the old row and
   stored with the column's affinity. A literal update of slice 3a is the special case
   of {lit}`.literal` values and the filter {lit}`column = integer`. The unique keys and
   the {lit}`RETURNING` columns are as for INSERT. -/
   | update (table : Nat) (assignments : List (Nat × Expr)) (filter : Option Expr)
-      (keys : List (List Nat)) (returning : List (Expr × String))
+      (returning : List (Expr × String))
   /-- INSERT with {lit}`ON CONFLICT` clauses or a conflict algorithm other than ABORT: the
-  rows and the keys as for {name}`Statement.insert`, the clauses in written order, and the
-  algorithm of each constraint. Each row is handled by the first clause whose target key
-  has a conflicting row, or else by the algorithms of the constraints that it fails. -/
+  rows as for {name}`Statement.insert`, the clauses in written order, and the statement's
+  {lit}`OR` algorithm, if any. The algorithm of each constraint is
+  {name}`Catalog.writePolicy` of that algorithm. Each row is handled by the first clause
+  whose target key has a conflicting row, or else by the algorithms of the constraints
+  that it fails. -/
   | upsert (table : Nat) (rows : List (List Value)) (clauses : List ConflictClause)
-      (keys : List (List Nat)) (returning : List (Expr × String)) (policy : ConflictPolicy)
+      (returning : List (Expr × String)) (algorithm : Option ConflictAlgorithm)
   /-- Remove every row where the optional filter condition is true (every row without a
   filter). The {lit}`RETURNING` columns are evaluated on each removed row; the
   execution semantics does not read them. -/

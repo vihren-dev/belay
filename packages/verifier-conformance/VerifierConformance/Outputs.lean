@@ -125,24 +125,26 @@ def statementOutput (statement : Resolved.Statement) (before : SqlState)
   let overflow := haltError transition == some .integerOverflow
   let functionFailure := haltError transition == some .functionError
   match statement with
-  | .insert target rows _ returning =>
+  | .insert target rows returning =>
     let names := returning.map (·.2)
     if successful then do
-      let table ← before.database target
+      let table ← before.database.table target
       let written := ((LiteralData.inserted table rows).rows.drop table.rows.length).map (·.values)
       return ⟨names, returnedRows returning written, some rows.length⟩
     else if constraintFailure then some ⟨names, [], some 0⟩ else none
-  | .upsert target rows clauses keys returning policy =>
+  | .upsert target rows clauses returning algorithm =>
     let names := returning.map (·.2)
-    let run := (before.database target).map fun table => LiteralData.upsertRun keys policy clauses table rows
+    let run := (before.database.table target).map fun table =>
+      LiteralData.upsertRun (before.database.keys target table)
+        (before.database.catalog.writePolicy target table.shape algorithm) clauses table rows
     if successful then do
       let (_, written) ← (← run).toOption
       return ⟨names, returnedRows returning (written.map (·.values)), some written.length⟩
     else if constraintFailure then some ⟨names, [], some ((run.map keptCount).getD 0)⟩ else none
-  | .update target assignments filter _ returning =>
+  | .update target assignments filter returning =>
     let names := returning.map (·.2)
     if successful then do
-      let table ← before.database target
+      let table ← before.database.table target
       let chosen := table.rows.filter (LiteralData.selected filter)
       let written := chosen.map fun row => (LiteralData.assign table.shape.columns assignments row).values
       return ⟨names, returnedRows returning written,
@@ -151,7 +153,7 @@ def statementOutput (statement : Resolved.Statement) (before : SqlState)
   | .delete target filter returning =>
     let names := returning.map (·.2)
     if successful then do
-      let table ← before.database target
+      let table ← before.database.table target
       let chosen := table.rows.filter (LiteralData.selected filter)
       return ⟨names, returnedRows returning (chosen.map (·.values)), some chosen.length⟩
     else none

@@ -4,25 +4,34 @@ import Belay.Sqlite.StoreValue
 
 set_option doc.verso true
 
-/-! Stored tables and the database, keyed by catalog position. No coercions, SQL
-expressions or native-engine correctness are assumed here. The catalog keeps the
-names; {lit}`Conforms` relates a database to a catalog and the
-limits of a profile, and deliberately overapproximates native data. -/
+/-! The database: a catalog and the stored rows of each catalog object. No coercions,
+SQL expressions or native-engine correctness are assumed here. The catalog is the only
+record of the schema; {lit}`Database.table` pairs a table's catalog entry with its rows,
+and {lit}`Conforms` relates a database to a catalog and the limits of a profile, and
+deliberately overapproximates native data. -/
 
 namespace Belay.Sqlite
 
-/-- Stored rows and the catalog entry of their table. Use an empty row list for an
-empty table; the catalog position that keys the database supplies the name. -/
+/-- A table as a database shows it: its catalog entry and its stored rows. The database
+does not store this structure; {lit}`Database.table` builds it from the catalog. Use an
+empty row list for an empty table. -/
 structure Table where
-  /-- Columns and keys, equal to the catalog entry of the table. -/
+  /-- Columns and keys: the catalog entry of the table. -/
   shape : CatalogTable
   /-- Stored rows in observation order, including physical rowids. -/
   rows : List Row
   deriving Repr, DecidableEq
 
-/-- Tables by catalog position; {lean}`(fun _ => none : Database)` stores no tables.
-A position that holds an index or no object holds no table. -/
-abbrev Database := Nat → Option Table
+/-- The schema and the stored rows. {lit}`rows` has one entry for each catalog object,
+at the object's position; an index object has no rows. {lean}`({} : Database)` is the
+empty database. -/
+structure Database where
+  /-- The schema: every table and index, in creation order. -/
+  catalog : Catalog := []
+  /-- The stored rows of the object at each catalog position, in observation order,
+  including physical rowids. -/
+  rows : List (List Row) := []
+  deriving Repr, DecidableEq
 
 /-- The table at a catalog position, or {lean}`(none : Option CatalogTable)` for a
 position that holds an index or is past the end. -/
@@ -31,6 +40,24 @@ def Catalog.tableAt (catalog : Catalog) (position : Nat) : Option CatalogTable :
   | some { entry := .table table, .. } => some table
   | some { entry := .index _, .. } => none
   | none => none
+
+/-- The table at a catalog position: its catalog entry with its stored rows, or
+{lean}`(none : Option Table)` for a position that holds an index or is past the end. -/
+def Database.table (database : Database) (position : Nat) : Option Table :=
+  (database.catalog.tableAt position).map fun shape => { shape, rows := database.rows.getD position [] }
+
+/-- A database with the named tables at positions 0, 1, … in order, each with its
+entry and rows: {lean}`Database.ofTables [("t", { shape := { columns := [] }, rows := [] })]`
+has one empty table without columns. Use {lit}`Catalog.emptyDatabase` for a catalog with
+indexes. -/
+def Database.ofTables (tables : List (String × Table)) : Database :=
+  { catalog := tables.map fun (name, table) => { name, entry := .table table.shape },
+    rows := tables.map (·.2.rows) }
+
+/-- Store the rows at the position and keep the catalog and every other position. A
+position past the end of {lit}`rows` is unchanged. -/
+def Database.setRows (database : Database) (position : Nat) (rows : List Row) : Database :=
+  { database with rows := database.rows.set position rows }
 
 /-- Whether a key is nonempty, names no column twice and names only positions below
 the width: {assert}`supportedKey 2 [1, 0] = true`. -/
@@ -114,40 +141,50 @@ With no rows, both conditions impose nothing; column support is a catalog check.
 def Table.Valid (table : Table) : Prop :=
   (table.rows.map Row.rowid).Nodup ∧ table.RowsValid
 
-/-- For the given profile, catalog and database, require {name}`Catalog.Valid` under
-the profile's limits. For every catalog position:
-* The stored table's shape equals {name}`Catalog.tableAt`, including absence.
-* Every table stored there satisfies {name}`Table.Valid`.
-For a position without a table the second item is vacuous, but the first still
-requires that no table is stored. Native representability and constraint truth
-are separate claims. -/
+/-- For the given profile and database, require each of these:
+* The catalog satisfies {name}`Catalog.Valid` under the profile's limits.
+* {lit}`rows` has exactly one entry for each catalog object.
+* At a position without a table (an index), the stored row list is empty.
+* Every table that {name}`Database.table` gives satisfies {name}`Table.Valid`.
+Native representability and constraint truth are separate claims. -/
+def Database.Valid (profile : Profile) (database : Database) : Prop :=
+  database.catalog.Valid profile.limits ∧ database.rows.length = database.catalog.length ∧ ∀ position,
+    (database.catalog.tableAt position = none → database.rows.getD position [] = []) ∧
+    ∀ table, database.table position = some table → table.Valid
+
+/-- For the given profile, catalog and database, require both:
+* The database's catalog is the given catalog.
+* The database satisfies {name}`Database.Valid` under the profile. -/
 def Conforms (profile : Profile) (catalog : Catalog) (database : Database) : Prop :=
-  catalog.Valid profile.limits ∧ ∀ position,
-    (database position).map Table.shape = catalog.tableAt position ∧
-    ∀ table, database position = some table → table.Valid
+  database.catalog = catalog ∧ database.Valid profile
 
-/-- A database with an empty table at each table position of the catalog. Show
-{name}`Conforms`, including catalog validity, separately. -/
+/-- A database with the catalog and no rows at any position. Show {name}`Conforms`,
+including catalog validity, separately. -/
 def Catalog.emptyDatabase (catalog : Catalog) : Database :=
-  fun position => (catalog.tableAt position).map fun shape => { shape, rows := [] }
-
-/-- Store the given table at exactly the given position; retain every other lookup. -/
-def Database.set (database : Database) (position : Nat) (table : Table) : Database :=
-  fun other => if other = position then some table else database other
+  { catalog, rows := catalog.map fun _ => [] }
 
 /-- Append the supplied cells and preserve the physical rowid. An empty list
 leaves the row unchanged. This primitive applies no affinity or width checks. -/
 def Row.appendValues (row : Row) (values : List Value) : Row :=
   { row with values := row.values ++ values }
 
-/-- Append each column and its supplied value to every row. Apply each new
-column's affinity to its value; preserve existing cells, rowids, row order and
-keys. Supply {lean}`Value.null` for a column without a default. An empty list
-leaves the table unchanged. -/
+/-- Append each column and its supplied value to every row of the table view. Apply each
+new column's affinity to its value; preserve existing cells, rowids, row order and keys.
+Supply {lean}`Value.null` for a column without a default. An empty list leaves the table
+unchanged. {lit}`Database.addColumn` does this to a stored table. -/
 def Table.appendColumns (table : Table) (columns : List (CatalogColumn × Value)) : Table :=
   { table with
     shape.columns := table.shape.columns ++ columns.map Prod.fst
     rows := table.rows.map (·.appendValues (columns.map fun (column, value) => storeValue column.affinity value)) }
+
+/-- ADD COLUMN in the database: append the column to the table at the position
+({name}`Catalog.addColumn`) and the value, with the column's affinity applied, to each of
+its rows. Rowids, row order, the other cells and every other position are unchanged.
+Supply {lean}`Value.null` for a column without a default. -/
+def Database.addColumn (database : Database) (position : Nat) (column : CatalogColumn) (value : Value) :
+    Database :=
+  { catalog := database.catalog.addColumn position column,
+    rows := database.rows.modify position (·.map (·.appendValues [storeValue column.affinity value])) }
 
 /-- For every row, retain its rowid and select cells in requested-name order. A
 name selects the first column with the same folded name, as SQLite's name lookup

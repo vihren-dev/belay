@@ -25,7 +25,7 @@ table, yields {name}`Option.none`; a present empty table yields
 def observeTable (catalog : Catalog) (name : String) (fields : List String) (database : Database) :
     Option LogicalRows := do
   let position ← tablePosition catalog name
-  (database position).map (·.project fields)
+  (database.table position).map (·.project fields)
 
 /-- Build an {name}`Interpretation` whose invariant requires {name}`Conforms` and a
 table stored at the catalog position of the name that satisfies {name}`Covers`
@@ -35,14 +35,13 @@ validity. -/
 def projectedInterpretation (profile : Profile) (catalog : Catalog) (name : String) (fields : List String) :
     Interpretation LogicalRows where
   invariant database := Conforms profile catalog database ∧ ∃ position table,
-    tablePosition catalog name = some position ∧ database position = some table ∧ Covers table fields
+    tablePosition catalog name = some position ∧ database.table position = some table ∧ Covers table fields
   observe := observeTable catalog name fields
 
-/-- Give every failure position and reason an empty catalog and an interpretation
-with false invariant and absent observation. Use this for success-only proofs;
-the verification conditions still require proving modeled failures unreachable. -/
+/-- Give every failure position and reason an interpretation with false invariant and
+absent observation. Use this for success-only proofs; the verification conditions still
+require proving modeled failures unreachable. -/
 def unreachableFailures : FailureRepresentation Logical where
-  catalog := fun _ _ => []
   interpretation := fun _ _ => ⟨fun _ => False, fun _ => none⟩
 
 /-- For every logical contract, profile, failure position and reason, the
@@ -50,8 +49,7 @@ corresponding {name}`unreachableFailures` representation is sound. Every databas
 obligation is vacuous because its invariant is false; this does not establish a
 failure invariant. The proof eliminates that impossible assumption. -/
 theorem unreachableFailures_sound (contract : LogicalContract Logical) (profile : Profile) (position reason) :
-    SoundRepresentation contract profile ((unreachableFailures (Logical := Logical)).catalog position reason)
-      (unreachableFailures.interpretation position reason) := by
+    SoundRepresentation contract profile ((unreachableFailures (Logical := Logical)).interpretation position reason) := by
   intro database impossible
   exact False.elim impossible
 
@@ -63,10 +61,10 @@ The proof extracts the stored valid table and applies the supplied premise. -/
 theorem projectedInterpretation_sound (contract : LogicalContract LogicalRows) (profile : Profile)
     (catalog : Catalog) (name : String) (fields : List String)
     (valid : ∀ table, table.Valid → Covers table fields → contract.valid (table.project fields)) :
-    SoundRepresentation contract profile catalog (projectedInterpretation profile catalog name fields) := by
+    SoundRepresentation contract profile (projectedInterpretation profile catalog name fields) := by
   intro database invariant
   obtain ⟨conforms, position, table, located, present, covered⟩ := invariant
-  exact ⟨conforms, table.project fields, by simp [projectedInterpretation, observeTable, located, present],
-    valid table ((conforms.2 position).2 table present) covered⟩
+  exact ⟨conforms.2, table.project fields, by simp [projectedInterpretation, observeTable, located, present],
+    valid table ((conforms.2.2.2 position).2 table present) covered⟩
 
 end SqliteVerifier

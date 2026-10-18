@@ -6,9 +6,9 @@ set_option doc.verso true
 open Belay.Sqlite SqliteVerifier
 namespace Proofs
 /-- The fixture's observation covers every admitted empty-catalog database. -/
-theorem sound : SoundRepresentation Requirements.contract Generated.profile [] Interpretation.current := by
+theorem sound : SoundRepresentation Requirements.contract Generated.profile Interpretation.current := by
   intro database conforms
-  exact ⟨conforms, (), rfl, True.intro⟩
+  exact ⟨conforms.2, (), rfl, True.intro⟩
 /-- The complete {name}`Generated.expected` target holds for this empty script.
 The proof provides an admitted witness, sound representations, explicit SQL support
 and the computed successful outcome at every clock assignment, because the script reads no

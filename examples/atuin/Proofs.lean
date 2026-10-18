@@ -13,11 +13,11 @@ open Belay.Sqlite SqliteVerifier
 /-- Complete decoding establishes valid business objects for any represented
 catalog under any profile. -/
 theorem mapping (profile : Profile) (catalog : Catalog) :
-    SoundRepresentation Requirements.contract profile catalog
+    SoundRepresentation Requirements.contract profile
       ⟨HistoryMapping.representation profile catalog, HistoryMapping.observe⟩ := by
   intro database invariant
   obtain ⟨conforms, histories, observed⟩ := invariant
-  exact ⟨conforms, histories, observed, HistoryMapping.observe_valid observed⟩
+  exact ⟨conforms.2, histories, observed, HistoryMapping.observe_valid observed⟩
 
 /-- The complete generated verification target holds for every admitted business
 history. The proof provides a populated starting witness, sound decoding, support

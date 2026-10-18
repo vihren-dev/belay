@@ -98,31 +98,32 @@ def catalogIndexes (catalog : Catalog) (position : Nat) : List NativeIndex :=
 def sameIndexes (model native : List NativeIndex) : Bool :=
   model.length == native.length && model.all (native.contains ·)
 
-/-- Whether the catalog table at a position, its object name and the model's stored
-table match a native table: name, columns, keys, indexes and rows. -/
+/-- Whether the catalog table at a position, its object name and its stored rows match
+a native table: name, columns, keys, indexes and rows. -/
 def tableMatches (catalog : Catalog) (position : Nat) (name : String) (table : CatalogTable)
-    (stored : Option Table) (native : NativeTable) : Bool :=
+    (rows : List Row) (native : NativeTable) : Bool :=
   name == native.name && table.columns.length == native.columns.length &&
   (table.columns.zip native.columns).all (fun (column, observed) => columnMatches column observed) &&
   table.primaryKey == native.primaryKey && sortKeys table.uniqueKeys == sortKeys native.uniqueKeys &&
   sameIndexes (catalogIndexes catalog position) native.indexes &&
-  match stored with
-  | some model => model.shape == table && sortRows model.rows == sortRows native.rows
-  | none => false
+  sortRows rows == sortRows native.rows
 
-/-- Whether the model's tables under a catalog match the native tables: every
-catalog table has exactly one native table with its folded name that matches it,
-no native table is outside the catalog, and the model stores a table exactly at
-the catalog's table positions. -/
-def tablesMatch (catalog : Catalog) (model : Tables) (natives : List NativeTable) : Bool :=
-  let tables := catalog.zipIdx.filterMap fun (object, position) => match object.entry with
+/-- Whether a model database matches the native tables: every catalog table has exactly
+one native table with its folded name that matches it, no native table is outside the
+catalog, the database has one row list for each catalog object, and an index object holds
+no rows. -/
+def tablesMatch (database : Database) (natives : List NativeTable) : Bool :=
+  let tables := database.catalog.zipIdx.filterMap fun (object, position) => match object.entry with
     | .table table => some (position, object.name, table)
     | .index _ => none
   natives.length == tables.length &&
   tables.all (fun (position, name, table) =>
     match natives.filter (fun native => normalizeIdentifier native.name == normalizeIdentifier name) with
-    | [native] => tableMatches catalog position name table (model[position]?.join) native
+    | [native] => tableMatches database.catalog position name table (database.rows.getD position []) native
     | _ => false) &&
-  model.zipIdx.all (fun (stored, position) => stored.isSome == (catalog.tableAt position).isSome)
+  database.rows.length == database.catalog.length &&
+  database.catalog.zipIdx.all (fun (object, position) => match object.entry with
+    | .index _ => (database.rows.getD position []).isEmpty
+    | .table _ => true)
 
 end Belay.Sqlite.Conformance

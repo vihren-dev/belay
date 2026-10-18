@@ -65,25 +65,19 @@ def NamedRows.native (table : NamedRows) : NativeTable where
   indexes := []
   rows := table.rows
 
-/-- Every table of one view, under the catalog of that view. -/
-def predictedTables (catalog : Catalog) (tables : Tables) : Json :=
-  toJson ((List.range tables.length).filterMap fun position =>
-    tables[position]?.bind id |>.bind (predictedTable catalog position))
+/-- Every table of one database, under its catalog, in catalog order. -/
+def predictedTables (database : Database) : Json :=
+  toJson ((List.range database.catalog.length).filterMap fun position =>
+    (database.table position).bind (predictedTable database.catalog position))
 
-/-- One predicted step under its resolution state: both table views, the transaction
-state and SQLite's primary code. -/
-def stepJson (state : ResolveState) (observation : Observation) : Json :=
-  Json.mkObj [("visible", predictedTables state.catalog observation.visible),
-    ("persisted", predictedTables (state.saved.getD state.catalog) observation.persisted),
+/-- One predicted step: both databases, the transaction state and SQLite's primary
+code. -/
+def stepJson (observation : Observation) : Json :=
+  Json.mkObj [("visible", predictedTables observation.visible),
+    ("persisted", predictedTables observation.persisted),
     ("transactionOpen", toJson observation.transactionOpen),
     ("phase", toJson (errorPhase observation.error)),
     ("primaryCode", toJson (primaryCode observation.error))]
-
-/-- Encode a trace with the catalog at each observation. A failed statement
-uses its preceding resolution state through {name}`observationState`; successful
-statements use their resulting state. The initial observation has index zero. -/
-def predictedSteps (states : List ResolveState) (observed : List Observation) : List Json :=
-  observed.mapIdx fun index observation => stepJson (observationState states index observation) observation
 
 /-- The model's prediction. A model restriction puts the case out of scope. A schema
 that resolution refuses although SQLite prepared it gives an empty initial step, which
@@ -104,11 +98,9 @@ def predict (p : PredictInput) : Json :=
   | .ok unclocked =>
     let clock : Clock := fun position => p.clocks.getD position 0
     let resolution := { unclocked with resolved := scriptAtClock clock unclocked.resolved }
-    let states := resolveStates { profile, mode := .execution } 0 { catalog := resolution.startCatalog } p.script
-    let count := stateBound states
     let start : SqlState := { database := databaseOf resolution.startCatalog (p.initial.map NamedRows.native) }
-    let observed := trace count resolution.resolved start.database
-    let steps := predictedSteps states observed
+    let observed := trace resolution.resolved start.database
+    let steps := observed.map stepJson
     let supported := !(p.clocks.isEmpty && scriptReadsClock unclocked.resolved) &&
       supportedSqlFrom 0 resolution.resolved start && !observed.any invalidObservation
     Json.mkObj [("supported", toJson supported), ("steps", toJson steps),

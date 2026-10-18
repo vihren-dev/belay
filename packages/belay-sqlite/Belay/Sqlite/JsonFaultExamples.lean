@@ -31,8 +31,8 @@ def fromless : Query where
   limit := none
 
 /-- An empty table {lit}`t(a)` at catalog position 0. -/
-def empty : Database := fun position =>
-  if position = 0 then some { shape := { columns := [{ name := "a", declaredType := none }] }, rows := [] } else none
+def empty : Database :=
+  .ofTables [("t", { shape := { columns := [{ name := "a", declaredType := none }] }, rows := [] })]
 
 #guard selected.eval [] == .integer 1 && malformed.eval [] == .null
 -- SQLite certainly reports the failure of a result column without FROM, and the step
@@ -59,6 +59,6 @@ def empty : Database := fun position =>
   let columns : List Output := [.scalar malformed, .aggregate .countRows]
   !queryJsonReady { fromless with table := some 0, aggregate := true, columns := columns } empty
 -- The model gives a write no JSON error: a DELETE whose WHERE may fail is not ready.
-#guard (empty 0).all fun table => !deleteJsonReady table (some malformed) [] && deleteJsonReady table (some selected) []
+#guard (empty.table 0).all fun table => !deleteJsonReady table (some malformed) [] && deleteJsonReady table (some selected) []
 
 end Belay.Sqlite.Resolved.JsonFaultExamples

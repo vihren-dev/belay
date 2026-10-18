@@ -37,7 +37,7 @@ theorem observeApplicationRows_valid
   cases located : tablePosition catalog name with
   | none => simp [observeApplicationRows, located] at read
   | some position =>
-    cases stored : database position with
+    cases stored : database.table position with
     | none => simp [observeApplicationRows, located, stored] at read
     | some table =>
       exact projectApplicationRows_valid (by simpa [observeApplicationRows, located, stored] using read)
@@ -46,7 +46,7 @@ theorem observeApplicationRows_valid
 assume each successful projection of every valid table satisfies the contract's
 logical validity. Then {name}`applicationKeyInterpretation` is a
 {name}`SoundRepresentation`: every database satisfying its invariant conforms
-to the catalog and has a defined observation satisfying {name}`LogicalContract.valid`.
+to the catalog, so it is valid, and has a defined observation satisfying {name}`LogicalContract.valid`.
 An impossible invariant leaves those database obligations vacuous; an empty
 table still needs the validity premise for its empty record list.
 Use this with application-specific contracts.
@@ -55,31 +55,31 @@ theorem applicationKeyInterpretation_sound (contract : LogicalContract Applicati
     (profile : Profile) (catalog : Catalog) (name : String) (keyNames fields : List String)
     (valid : ∀ table, table.Valid → ∀ records,
       projectApplicationRows table keyNames fields = some records → contract.valid records) :
-    SoundRepresentation contract profile catalog
+    SoundRepresentation contract profile
       (applicationKeyInterpretation profile catalog name keyNames fields) := by
   intro database invariant
   obtain ⟨conforms, records, read⟩ := invariant
-  refine ⟨conforms, records, read, ?_⟩
+  refine ⟨conforms.2, records, read, ?_⟩
   cases located : tablePosition catalog name with
   | none => simp [observeApplicationRows, located] at read
   | some position =>
-    cases stored : database position with
+    cases stored : database.table position with
     | none => simp [observeApplicationRows, located, stored] at read
     | some table =>
-      exact valid table ((conforms.2 position).2 table stored) records
+      exact valid table ((conforms.2.2.2 position).2 table stored) records
         (by simpa [observeApplicationRows, located, stored] using read)
 
 /-- For every profile, catalog, table name and key/field lists, the application-key
 interpretation is a {name}`SoundRepresentation` for {name}`applicationKeyPreservation`:
-every database satisfying its invariant conforms to the catalog and has a
-defined observation satisfying {name}`ApplicationKeyRows.Valid`, with distinct,
+every database satisfying its invariant conforms to the catalog, so it is
+valid, and has a defined observation satisfying {name}`ApplicationKeyRows.Valid`, with distinct,
 nonempty key tuples containing no NULL. No extra contract-validity premise is
 needed because every defined read has valid keys. An impossible invariant
 leaves its database obligations vacuous.
 The proof uses the general soundness theorem and projection validity. -/
 theorem applicationKeyPreservation_sound (profile : Profile) (catalog : Catalog) (name : String)
     (keyNames fields : List String) :
-    SoundRepresentation applicationKeyPreservation profile catalog
+    SoundRepresentation applicationKeyPreservation profile
       (applicationKeyInterpretation profile catalog name keyNames fields) := by
   apply applicationKeyInterpretation_sound
   intro table _ records read
@@ -108,7 +108,7 @@ unchanged, including an absent read caused by invalid keys. With no old rows onl
 widths are vacuous. Use this for existing-table observations. The proof selects
 the retained table and applies its projection extension law. -/
 theorem DatabaseExtends.observeApplicationRows (extension : DatabaseExtends before after)
-    (located : tablePosition catalog name = some position) (present : before position = some table)
+    (located : tablePosition catalog name = some position) (present : before.table position = some table)
     (width : ∀ row ∈ table.rows, row.values.length = table.shape.columns.length)
     (covered : Covers table (keyNames ++ fields)) :
     SqliteVerifier.observeApplicationRows catalog name keyNames fields after =

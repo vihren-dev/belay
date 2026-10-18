@@ -48,13 +48,18 @@ inductive SqlTransition where
   /-- Stop with this error or terminal result. -/
   | halt (outcome : Outcome)
 
+/-- The unique keys of the table at the position in the database's catalog
+({name}`Catalog.uniqueKeys`), which every write to it keeps unique. -/
+def Database.keys (database : Database) (target : Nat) (table : Table) : List (List Nat) :=
+  database.catalog.uniqueKeys target table.shape
+
 /-- Store a write's result when it satisfies the constraints of the given keys and its
 rowids are distinct ({name}`LiteralData.rowidsDistinct`), or fail at the position with
 {lean}`ExecutionError.constraintViolation` and the input database. -/
 def checkedWrite (database : Database) (target : Nat) (keys : List (List Nat)) (result : Table)
     (position : Nat) : Outcome :=
   if LiteralData.constraints keys result && LiteralData.rowidsDistinct result then
-    .success (database.set target result)
+    .success (database.setRows target result.rows)
   else .failure position .constraintViolation database
 
 /-- The outcome of INSERT: SQLite inserts the rows in order, and refuses a rowid alias
@@ -72,7 +77,8 @@ def insertOutcome (database : Database) (target : Nat) (keys : List (List Nat)) 
     else .failure position .constraintViolation database
   | none => checkedWrite database target keys (LiteralData.inserted table rows) position
 
-/-- Apply INSERT/UPDATE with ABORT constraints over the statement's keys, INSERT with
+/-- Apply INSERT/UPDATE with ABORT constraints over the table's keys
+({name}`Database.keys`), INSERT with
 {lit}`ON CONFLICT` clauses row by row ({name}`LiteralData.upsertRun`), and DELETE,
 which removes rows and cannot fail a constraint. A position without a table fails as
 {lean}`ExecutionError.unmodeled`; a failed constraint retains the input database.
@@ -80,22 +86,25 @@ Other statements use {name}`step`. This
 computation does not establish the separate stored-value support obligation. -/
 def literalStep (statement : Resolved.Statement) (database : Database) (position : Nat) : Outcome :=
   match statement with
-  | .insert target rows keys _ => match database target with
+  | .insert target rows _ => match database.table target with
     | none => .failure position .unmodeled database
-    | some table => insertOutcome database target keys table rows position
-  | .upsert target rows clauses keys _ policy => match database target with
+    | some table => insertOutcome database target (database.keys target table) table rows position
+  | .upsert target rows clauses _ algorithm => match database.table target with
     | none => .failure position .unmodeled database
-    | some table => match LiteralData.upsertRun keys policy clauses table rows with
-      | .ok (result, _) => .success (database.set target result)
+    | some table =>
+      let policy := database.catalog.writePolicy target table.shape algorithm
+      match LiteralData.upsertRun (database.keys target table) policy clauses table rows with
+      | .ok (result, _) => .success (database.setRows target result.rows)
       | .error (reason, reached, _) => .failure position reason (LiteralData.failedDatabase database target reason reached)
-  | .update target assignments filter keys _ => match database target with
+  | .update target assignments filter _ => match database.table target with
     | none => .failure position .unmodeled database
     | some table =>
       if LiteralData.updateMismatch table assignments filter then .failure position .datatypeMismatch database
-      else checkedWrite database target keys (LiteralData.updated table assignments filter) position
-  | .delete target filter _ => match database target with
+      else checkedWrite database target (database.keys target table) (LiteralData.updated table assignments filter)
+        position
+  | .delete target filter _ => match database.table target with
     | none => .failure position .unmodeled database
-    | some table => .success (database.set target (LiteralData.deleted table filter))
+    | some table => .success (database.setRows target (LiteralData.deleted table filter).rows)
   | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ | .query _
   | .clocked .. =>
     step statement database position
@@ -109,13 +118,16 @@ statements. Other statement forms pass. Use it through the reached-statement scr
 support check. -/
 def statementReady (statement : Resolved.Statement) (database : Database) : Bool :=
   match statement with
-  | .insert target rows keys returning => (database target).all fun table => LiteralData.insertReady keys table rows &&
-      !(returningExpressions returning).any Resolved.Expr.callsJson
-  | .upsert target rows clauses keys returning policy => (database target).all fun table =>
-      LiteralData.upsertReady keys policy table clauses rows && upsertJsonReady clauses returning
-  | .update target assignments filter keys returning => (database target).all fun table =>
-      LiteralData.updateReady keys table assignments filter && updateJsonReady table assignments filter returning
-  | .delete target filter returning => (database target).all fun table => deleteJsonReady table filter returning
+  | .insert target rows returning => (database.table target).all fun table =>
+      LiteralData.insertReady (database.keys target table) table rows &&
+        !(returningExpressions returning).any Resolved.Expr.callsJson
+  | .upsert target rows clauses returning algorithm => (database.table target).all fun table =>
+      LiteralData.upsertReady (database.keys target table) (database.catalog.writePolicy target table.shape algorithm)
+        table clauses rows && upsertJsonReady clauses returning
+  | .update target assignments filter returning => (database.table target).all fun table =>
+      LiteralData.updateReady (database.keys target table) table assignments filter &&
+        updateJsonReady table assignments filter returning
+  | .delete target filter returning => (database.table target).all fun table => deleteJsonReady table filter returning
   | .createTable _ _ table => table.plain
   | .addColumn _ column => column.clockDefault || (readDefaultValue column).toOption.isSome
   | .createIndex .. => false

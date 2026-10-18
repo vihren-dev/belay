@@ -38,13 +38,12 @@ def createT : Syntax.Statement :=
 def catalogT : Catalog := catalogOf (schema [createT])
 
 /-- The empty table of {name}`createT` at position 0. -/
-def emptyT : Database := fun position =>
-  if position = 0 then (catalogT.tableAt 0).map fun shape => { shape, rows := [] } else none
+def emptyT : Database := catalogT.emptyDatabase
 
 /-- The values of the rows of table 0 after a script, or none when it fails. -/
 def rowsAfter (clock : Clock) (script : List Syntax.Statement) : Option (List (List Value)) :=
   match runSqlAt clock (statements (migration catalogT script)) emptyT with
-  | .success database => (database 0).map (·.rows.map (·.values))
+  | .success database => (database.table 0).map (·.rows.map (·.values))
   | .failure .. | .pending .. => none
 
 -- Two INSERTs see the clock values of their positions; the omitted column b gets the
@@ -61,7 +60,7 @@ def rowsAfter (clock : Clock) (script : List Syntax.Statement) : Option (List (L
   some [[.null, .null]]
 
 /-- The resolved script {lit}`INSERT INTO t(a, b) VALUES ('x', 1)`, which reads no clock. -/
-def clockFree : List Resolved.Statement := [.insert 0 [[.text [120], .integer 1]] [] []]
+def clockFree : List Resolved.Statement := [.insert 0 [[.text [120], .integer 1]] []]
 
 -- It is the resolution of the statement.
 #guard statements (migration catalogT [.insert "t" (some ["a", "b"]) [[.string [120], .numeric "1"]] []]) == clockFree

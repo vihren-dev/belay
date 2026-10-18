@@ -54,8 +54,8 @@ tables so far; none when a table is missing. A query of one table has the rows o
 {lit}`json_each` sources join these rows ({lit}`Query.source`). -/
 def Query.tableSource (query : Query) (database : Database) : Option (List (List Value)) := do
   let some table := query.table | pure [[]]
-  let first ← database table
-  let (rows, _) ← query.joins.foldlM (fun (rows, width) join => (database join.table).map fun table =>
+  let first ← database.table table
+  let (rows, _) ← query.joins.foldlM (fun (rows, width) join => (database.table join.table).map fun table =>
     (joinRows width rows join table, width + table.shape.columns.length)) (sourceRows first, first.shape.columns.length)
   pure rows
 

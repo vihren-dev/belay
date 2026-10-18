@@ -16,9 +16,9 @@ database, the source rows of the query are the rows of its table in rowid order
 special case of a join. -/
 theorem Query.source_single (query : Query) (database : Database) (table : Nat) (first : query.table = some table)
     (single : query.joins = []) (plain : query.functions = []) :
-    query.source database = (database table).map sourceRows := by
+    query.source database = (database.table table).map sourceRows := by
   simp only [Query.source, Query.tableSource, first, single, plain, joinFunctions]
-  cases database table <;> rfl
+  cases database.table table <;> rfl
 
 /-- For every query without a table and without {lit}`json_each` sources ({lit}`SELECT`
 without {lit}`FROM`) and every database, the source is one row with no cells. -/

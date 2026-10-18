@@ -76,68 +76,93 @@ witness; additional invariants require a separate proof. The proof separates
 positions with and without a table; empty rows satisfy row validity. -/
 theorem Catalog.emptyDatabase_conforms (valid : catalog.Valid profile.limits) :
     Conforms profile catalog catalog.emptyDatabase := by
-  refine ⟨valid, fun position => ⟨?_, ?_⟩⟩
-  · cases found : catalog.tableAt position <;> simp [Catalog.emptyDatabase, found]
-  · intro table present
-    cases found : catalog.tableAt position with
-    | none => simp [Catalog.emptyDatabase, found] at present
-    | some shape =>
-      simp only [Catalog.emptyDatabase, found, Option.map_some, Option.some.injEq] at present
-      subst table
-      exact ⟨by simp, fun _ member => by simp at member⟩
+  have empty : ∀ position, (catalog.map fun _ => ([] : List Row)).getD position [] = [] := by
+    intro position
+    simp only [List.getD_eq_getElem?_getD, List.getElem?_map]
+    cases catalog[position]? <;> rfl
+  refine ⟨rfl, valid, by simp [Catalog.emptyDatabase], fun position => ⟨fun _ => empty position, ?_⟩⟩
+  intro table present
+  cases found : catalog.tableAt position with
+  | none => simp [Catalog.emptyDatabase, Database.table, found] at present
+  | some shape =>
+    simp only [Catalog.emptyDatabase, Database.table, found, Option.map_some, Option.some.injEq] at present
+    subst table
+    simp only [empty]
+    exact ⟨by simp, fun _ member => by simp at member⟩
 
-/-- For every conforming database and stored table, the catalog entry at that
+/-- For every conforming database and table in its view, the catalog entry at that
 position is the table's shape. The table-presence premise excludes absence. Use
-this to read all declared metadata; the proof selects the conformance equality. -/
+this to read all declared metadata; the proof unfolds {name}`Database.table`. -/
 theorem Conforms.shape (conforms : Conforms profile catalog database)
-    (present : database position = some table) : catalog.tableAt position = some table.shape := by
-  simpa [present] using (conforms.2 position).1.symm
+    (present : database.table position = some table) : catalog.tableAt position = some table.shape := by
+  obtain ⟨same, _⟩ := conforms
+  subst same
+  unfold Database.table at present
+  cases found : database.catalog.tableAt position with
+  | none => simp [found] at present
+  | some shape =>
+    simp only [found, Option.map_some, Option.some.injEq] at present
+    subst present
+    rfl
 
 /-- For every profile, catalog, database, position and shape, assume
-{name}`Conforms` and a table entry with that shape at the position. Then some
-stored table at the position has exactly that shape and satisfies
-{name}`Table.Valid`. A position without a table cannot meet the premise.
-The proof uses the shape equality and rules out absence. -/
+{name}`Conforms` and a table entry with that shape at the position. Then the view has
+a table at the position with exactly that shape, and it satisfies {name}`Table.Valid`.
+A position without a table cannot meet the premise. -/
 theorem Conforms.table {shape : CatalogTable} (conforms : Conforms profile catalog database)
     (lookup : catalog.tableAt position = some shape) :
-    ∃ table, database position = some table ∧ table.shape = shape ∧ table.Valid := by
-  obtain ⟨equal, valid⟩ := conforms.2 position
-  cases present : database position with
-  | none => simp [present, lookup] at equal
-  | some table => exact ⟨table, rfl, by simpa [present, lookup] using equal, valid table present⟩
+    ∃ table, database.table position = some table ∧ table.shape = shape ∧ table.Valid := by
+  obtain ⟨same, _, _, each⟩ := conforms
+  subst same
+  have present : database.table position = some { shape, rows := database.rows.getD position [] } := by
+    simp [Database.table, lookup]
+  exact ⟨_, present, rfl, (each position).2 _ present⟩
 
-/-- For every original/next catalog, database, position and table, assume original
-{name}`Conforms`, a valid next catalog and a valid replacement table. For every
-position, assume the next catalog has the replacement's shape at the changed
-position and the original entries elsewhere. Then setting the table conforms to
-the next catalog. The old table need not exist. Use this for one-table updates.
+/-- For every conforming database, position, table in its view and rows: if the table
+with the rows satisfies {name}`Table.Valid`, then storing the rows at the position
+({name}`Database.setRows`) conforms to the same catalog. Use this for one-table writes.
 The proof separates the changed position from the others. -/
-theorem Conforms.set {catalog nextCatalog : Catalog} {database : Database} {position : Nat}
-    {table : Table} (conforms : Conforms profile catalog database) (catalogValid : nextCatalog.Valid profile.limits)
-    (tableValid : table.Valid)
-    (lookup : ∀ other, nextCatalog.tableAt other =
-      if other = position then some table.shape else catalog.tableAt other) :
-    Conforms profile nextCatalog (database.set position table) := by
-  refine ⟨catalogValid, ?_⟩
-  intro other
-  by_cases same : other = position
-  · subst other
-    simp only [Database.set, ↓reduceIte, Option.map_some, lookup]
-    exact ⟨trivial, fun result equal => by
-      cases equal
-      exact tableValid⟩
-  · simpa only [Database.set, same, ↓reduceIte, lookup] using conforms.2 other
+theorem Conforms.setRows {database : Database} {position : Nat} {table : Table} {rows : List Row}
+    (conforms : Conforms profile catalog database) (present : database.table position = some table)
+    (valid : ({ table with rows } : Table).Valid) : Conforms profile catalog (database.setRows position rows) := by
+  obtain ⟨same, catalogValid, length, each⟩ := conforms
+  subst same
+  have found : database.catalog.tableAt position = some table.shape := by
+    cases h : database.catalog.tableAt position with
+    | none => simp [Database.table, h] at present
+    | some shape =>
+      simp only [Database.table, h, Option.map_some, Option.some.injEq] at present
+      rw [← present]
+  have below : position < database.rows.length := by
+    unfold Catalog.tableAt at found
+    cases h : database.catalog[position]? with
+    | none => simp [h] at found
+    | some _ => exact length ▸ (List.getElem?_eq_some_iff.mp h).1
+  refine ⟨rfl, catalogValid, by simp [Database.setRows, length], fun other => ⟨?_, ?_⟩⟩
+  · intro absent
+    change database.catalog.tableAt other = none at absent
+    by_cases equal : other = position
+    · subst other
+      simp [absent] at found
+    · simpa [Database.setRows, List.getD_eq_getElem?_getD, List.getElem?_set_ne (Ne.symm equal)] using
+        (each other).1 absent
+  · intro result found
+    by_cases equal : other = position
+    · subst other
+      rw [Database.table_setRows rows present below] at found
+      cases found
+      exact valid
+    · rw [Database.table_setRows_other database rows equal] at found
+      exact (each other).2 result found
 
-/-- For every database, two distinct positions and two tables, setting the tables
-in either order gives the same database. Table validity and rows are unrestricted;
-use this equality for independent updates. The proof compares every lookup. -/
-theorem Database.set_comm (database : Database) (first second : Nat)
-    (firstTable secondTable : Table) (different : first ≠ second) :
-    (database.set first firstTable).set second secondTable =
-      (database.set second secondTable).set first firstTable := by
-  funext position
-  by_cases a : position = first <;> by_cases b : position = second <;>
-    simp_all [Database.set]
+/-- For every database, two distinct positions and two row lists, storing the rows in
+either order gives the same database. Use this equality for independent writes. -/
+theorem Database.setRows_comm (database : Database) (first second : Nat)
+    (firstRows secondRows : List Row) (different : first ≠ second) :
+    (database.setRows first firstRows).setRows second secondRows =
+      (database.setRows second secondRows).setRows first firstRows := by
+  simp only [Database.setRows, Database.mk.injEq, true_and]
+  exact List.set_comm _ _ different
 
 /-- For every before/after table and name list, assume {name}`TableExtends` and
 {name}`Covers` before. Then coverage holds after; with no names it is vacuous.

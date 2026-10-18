@@ -102,20 +102,20 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
 -- Constant expressions in writes (slice 3a) are computed and stored at resolution; a SET
 -- value that names a column stays an expression over the old row (slice 3b).
 #guard resolvedOne (.insert "t" none [[.arithmetic .add (.numeric "1") (.numeric "2"), .string [120]]] []) ==
-  some (.insert 0 [[.integer 3, .text [120]]] [] [])
+  some (.insert 0 [[.integer 3, .text [120]]] [])
 #guard resolvedOne (.update "t" [("Abc", .cast (.string [55]) "INTEGER")] none) ==
-  some (.update 0 [(0, .literal (.integer 7))] none [] [])
+  some (.update 0 [(0, .literal (.integer 7))] none [])
 #guard errorOf (.insert "t" none [[.callStar "count", .null]] []) == some (.misuseOfAggregate "count")
 #guard resolvedOne (.update "t" [("b", .arithmetic .add (.identifier "Abc" .none) (.numeric "1"))] none) ==
-  some (.update 0 [(1, .arithmetic .add (.column 0) (.literal (.integer 1)))] none [] [])
+  some (.update 0 [(1, .arithmetic .add (.column 0) (.literal (.integer 1)))] none [])
 -- The filter is a condition, resolved as in SELECT: `WHERE Abc = 1 + 2`.
 #guard resolvedOne (.update "t" [("b", .string [120])] (some (.compare .eq (.identifier "Abc" .none)
   (.arithmetic .add (.numeric "1") (.numeric "2"))))) == some (.update 0 [(1, .literal (.text [120]))]
-  (some (.compare .eq (.column 0) (.arithmetic .add (.literal (.integer 1)) (.literal (.integer 2))))) [] [])
+  (some (.compare .eq (.column 0) (.arithmetic .add (.literal (.integer 1)) (.literal (.integer 2))))) [])
 -- RETURNING (slice 3a): `*` and named expressions over the written row; an aggregate is
 -- a misuse, a rowid a restriction, and an error in the values comes first.
 #guard (resolvedOne ((.insert "t" none [[.numeric "1", .string [120]]] [] none [.star, .expression (.identifier "B" .none) none "B"])))
-  == some (.insert 0 [[.integer 1, .text [120]]] [] [(.column 0, "Abc"), (.column 1, "b"), (.column 1, "b")])
+  == some (.insert 0 [[.integer 1, .text [120]]] [(.column 0, "Abc"), (.column 1, "b"), (.column 1, "b")])
 #guard errorOf ((.insert "t" none [[.numeric "1", .string [120]]] [] none [written (.callStar "count") "count(*)"])) ==
   some (.misuseOfAggregate "count")
 #guard restrictedOne ((.update "t" [("b", .string [120])] none [written (.identifier "rowid" .none) "rowid"]))
