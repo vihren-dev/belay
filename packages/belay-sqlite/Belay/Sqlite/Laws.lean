@@ -9,12 +9,6 @@ row preservation when a column is added. -/
 set_option maxHeartbeats 2000000
 namespace Belay.Sqlite.Conformance
 
-/-- Classify statements that leave transaction control to their surrounding script. -/
-def nonControl : Resolved.Statement → Bool
-  | .begin | .commit | .rollback => false
-  | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .upsert .. | .update .. | .delete ..
-  | .prepareError _ | .query _ => true
-
 /-- Each statement in the body is non-control and succeeds at its position, at the clock
 value of the clock assignment for that position, as {name}`advance` runs it. The remaining
 body starts from its resulting database. An empty body requires nothing of the database.
@@ -23,7 +17,7 @@ inductive SuccessfulBody (clock : Nat → Int) : Nat → List Resolved.Statement
   /-- Every position and database admit an empty successful body; no statement premise is required. -/
   | nil : SuccessfulBody clock position [] database
   /-- A non-control statement that succeeds, followed by a successful tail, forms a successful body. -/
-  | cons (ordinary : nonControl statement = true)
+  | cons (ordinary : statement.isControl = false)
       (success : literalStep (clock position) statement database position = .success next)
       (tail : SuccessfulBody clock (position + 1) rest next) :
       SuccessfulBody clock position (statement :: rest) database
@@ -39,8 +33,8 @@ theorem body_rollback (success : SuccessfulBody clock position body database) :
       .success original := by
   induction success with
   | nil => simp [runSqlFrom, advance, SqlState.finish]
-  | @cons statement database position next rest ordinary success tail ih =>
-    cases statement <;> simp_all [nonControl, runSqlFrom, advance]
+  | @cons position statement database next rest ordinary success tail ih =>
+    cases statement <;> simp_all [Resolved.Statement.isControl, runSqlFrom, advance]
 
 /-- For any body and database, if {name}`SuccessfulBody` holds at position 1 at the clock
 value 0, BEGIN followed by the body and ROLLBACK returns success with that database.

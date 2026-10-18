@@ -20,11 +20,36 @@ def Statement.applyCatalog : Statement → Catalog → Catalog
   | .begin, catalog | .commit, catalog | .rollback, catalog | .insert .., catalog | .update .., catalog
   | .upsert .., catalog | .delete .., catalog | .prepareError _, catalog | .query _, catalog => catalog
 
-/-- Whether the statement is transaction control: BEGIN, COMMIT or ROLLBACK. These change the saved catalog of a transaction instead of the
+/-- The form of a resolved statement, for the rules that only classify statements (ADR
+0013, D7). -/
+inductive Statement.Kind where
+  /-- CREATE TABLE or ADD COLUMN: a definition that changes a table. -/
+  | definition
+  /-- CREATE INDEX. -/
+  | index
+  /-- BEGIN, COMMIT or ROLLBACK: transaction control. -/
+  | control
+  /-- INSERT, INSERT with {lit}`ON CONFLICT` or a conflict algorithm, UPDATE or DELETE. -/
+  | write
+  /-- A query. -/
+  | query
+  /-- A statement that SQLite refuses to prepare. -/
+  | prepareError
+  deriving Repr, DecidableEq
+
+/-- The form of the statement ({name}`Statement.Kind`). Every rule that only asks which form
+a statement has reads it, so a new statement form gets a form here first. -/
+@[simp] def Statement.kind : Statement → Statement.Kind
+  | .createTable .. | .addColumn .. => .definition
+  | .createIndex .. => .index
+  | .begin | .commit | .rollback => .control
+  | .insert .. | .upsert .. | .update .. | .delete .. => .write
+  | .query _ => .query
+  | .prepareError _ => .prepareError
+
+/-- Whether the statement is transaction control ({name}`Statement.Kind.control`): BEGIN,
+COMMIT or ROLLBACK. These change the saved catalog of a transaction instead of the
 catalog; every other statement is not control. -/
-def Statement.isControl : Statement → Bool
-  | .begin | .commit | .rollback => true
-  | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .update .. | .upsert .. | .delete ..
-  | .prepareError _ | .query _ => false
+def Statement.isControl (statement : Statement) : Bool := statement.kind == .control
 
 end Belay.Sqlite.Resolved

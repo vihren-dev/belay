@@ -1,4 +1,5 @@
 import Belay.Sqlite.SqlExecution
+import Belay.Sqlite.Resolution.StatementCatalog
 
 set_option doc.verso true
 
@@ -62,32 +63,18 @@ guard, not a validity or success claim. The empty script satisfies it; CREATE
 INDEX, transaction control, literal writes and prepare errors do not. Use it for
 schema preservation laws. -/
 def SchemaOnly (script : List Resolved.Statement) : Prop :=
-  ∀ statement ∈ script, match statement with
-    | .createTable .. | .addColumn .. => True
-    | .createIndex .. => False
-    | .begin => False
-    | .commit => False
-    | .rollback => False
-    | .insert .. => False
-    | .upsert .. => False
-    | .update .. => False
-    | .delete .. => False
-    | .prepareError _ => False
-    | .query _ => False
+  ∀ statement ∈ script, statement.kind = .definition
 
 /-- No statement in the script is INSERT (with or without {lit}`ON CONFLICT`, or with
 cells that read the clock), UPDATE or DELETE, and no query has a JSON call in its expressions
 ({name}`Resolved.Query.expressions`, {name}`Resolved.Expr.isJsonCall` at any depth) or a {lit}`json_each`
-source. This is a syntax guard, not a success claim; the empty script satisfies it. -/
+source. This is a syntax guard, not a success claim; the empty script satisfies it. Each
+statement:
+* is not a write ({name}`Resolved.Statement.Kind.write`), and
+* if it is a query, has no JSON call and no {lit}`json_each` source. -/
 def NoWrites (script : List Resolved.Statement) : Prop :=
-  ∀ statement ∈ script, match statement with
-    | .insert .. => False
-    | .upsert .. => False
-    | .update .. => False
-    | .delete .. => False
-    | .query query =>
-      query.expressions.all (!·.any Resolved.Expr.isJsonCall) = true ∧ query.sources.all (!·.source.isEach) = true
-    | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ => True
+  ∀ statement ∈ script, statement.kind ≠ .write ∧ ∀ query, statement = .query query →
+    query.expressions.all (!·.any Resolved.Expr.isJsonCall) = true ∧ query.sources.all (!·.source.isEach) = true
 
 /-- Each definition in the script is one that the model describes: each CREATE
 TABLE creates a {name}`CatalogTable.plain` table, each ADD COLUMN has a time default
@@ -119,7 +106,7 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDe
       cases statement with
       | query query =>
         obtain ⟨plain, noEach⟩ : (query.expressions.all fun x => !x.any Resolved.Expr.isJsonCall) = true ∧
-            query.sources.all (!·.source.isEach) = true := first
+            query.sources.all (!·.source.isEach) = true := first.2 query rfl
         simp only [statementReady]
         cases found : query.source (state.clock position) state.database with
         | none => rfl
@@ -191,7 +178,7 @@ example : Belay.Sqlite.SchemaOnly [] := by
   simp at member
 example : ¬ Belay.Sqlite.SchemaOnly [Belay.Sqlite.Resolved.Statement.begin] := by
   intro guard
-  exact guard .begin (by simp)
+  exact absurd (guard .begin (by simp)) (by decide)
 ```
 -/
 

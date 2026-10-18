@@ -24,6 +24,9 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D8 and D7.
   5 of which name a catalog object; only `noSuchTable` of a `FROM` table reaches
   `ValueIssue` among those. The `_issue` lemma family has no users outside
   `Resolution/`.
+- 2026-10-18: `Resolved.Statement.kind` (outcome 7, in `StatementCatalog.lean`):
+  `isControl`, `SchemaOnly` and `NoWrites` classify through it, and `nonControl` is gone.
+  `prepareError?` stays a match because it returns the error.
 
 ## Remaining
 
