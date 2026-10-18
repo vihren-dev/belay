@@ -110,7 +110,7 @@ def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : N
         restrict index [1] .createTableConstraints
       else if columns.any (!·.constraints.all Syntax.ColumnConstraint.modeledDefault) then
         restrict index [1] .unmodeledDefault
-      else .ok (.createTable catalog.length name table, catalog ++ [{ name := name, entry := .table table }])
+      else .ok (.createTable catalog.length name table, catalog.createTable name table)
 
 /-- Resolve CREATE INDEX of a catalog description. The execution semantics does not
 model CREATE INDEX, so a CREATE INDEX that runs is a model restriction. -/
@@ -127,8 +127,9 @@ def resolveCreateIndex (context : ResolveContext) (catalog : Catalog) (index : N
     | some (_, { entry := .index _, .. }) => prepareError catalog (.indexExists name)
     | none => match keyPositions table.columns columns with
       | .error error => prepareError catalog error
-      | .ok positions => .ok (.createIndex catalog.length name { table := position, columns := positions, unique },
-          catalog ++ [{ name := name, entry := .index { table := position, columns := positions, unique } }])
+      | .ok positions =>
+        let created := { table := position, columns := positions, unique }
+        .ok (.createIndex catalog.length name created, catalog.createIndex name created)
 
 /-- Construct added-column metadata after PRIMARY KEY and UNIQUE have been
 rejected. NOT NULL sets nullability and its {lit}`ON CONFLICT` algorithm (ABORT without
@@ -166,9 +167,6 @@ def resolveAddColumn (context : ResolveContext) (catalog : Catalog) (index : Nat
     else
       match addedColumn definition with
       | none => restrict index [1] .addColumnConstraint
-      | some column =>
-      let object := { name := (catalog[position]?.map (·.name)).getD tableName,
-                      entry := .table { table with columns := table.columns ++ [column] } }
-      .ok (.addColumn position column, catalog.set position object)
+      | some column => .ok (.addColumn position column, catalog.addColumn position column)
 
 end Belay.Sqlite

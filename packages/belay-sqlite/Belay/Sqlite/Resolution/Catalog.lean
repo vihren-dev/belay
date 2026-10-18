@@ -133,6 +133,26 @@ def Catalog.uniqueKeys (catalog : Catalog) (position : Nat) (table : CatalogTabl
       | .index index => if index.table == position && index.unique then some index.columns else none
       | .table _ => none
 
+/-- Add the table with the name at the end of the catalog, at position
+{lean}`catalog.length`, as CREATE TABLE does. The resolver and the execution of CREATE
+TABLE both use it, so they give the same catalog. -/
+def Catalog.createTable (catalog : Catalog) (name : String) (table : CatalogTable) : Catalog :=
+  catalog ++ [{ name, entry := .table table }]
+
+/-- Add the index with the name at the end of the catalog, as CREATE INDEX does. -/
+def Catalog.createIndex (catalog : Catalog) (name : String) (index : CatalogIndex) : Catalog :=
+  catalog ++ [{ name, entry := .index index }]
+
+/-- Append the column to the table at the position, keeping the table's name and every
+other object, as ALTER TABLE ADD COLUMN does. A position that holds an index or no
+object is unchanged. The resolver and the execution of ADD COLUMN both use it. -/
+def Catalog.addColumn (catalog : Catalog) (position : Nat) (column : CatalogColumn) : Catalog :=
+  match catalog[position]? with
+  | some { name, entry := .table table } =>
+    catalog.set position { name, entry := .table { table with columns := table.columns ++ [column] } }
+  | some { entry := .index _, .. } => catalog
+  | none => catalog
+
 /-- Whether the folded name starts with {lit}`sqlite_`, which SQLite reserves. -/
 def reservedName (name : String) : Bool := (normalizeIdentifier name).startsWith "sqlite_"
 

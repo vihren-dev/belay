@@ -59,8 +59,10 @@ theorem resolveAddColumn_step (context : ResolveContext) (catalog after : Catalo
     | (cases ok; done)
     | cases ok
   obtain ⟨object, atPosition, _, _⟩ := Catalog.findTable_some _ _ _ _ (by assumption)
-  simp only [atPosition, Option.map_some, Option.getD_some]
-  exact .replace _ object _ atPosition
+  obtain ⟨name, entry⟩ := object
+  cases (by assumption : entry = .table _)
+  simp only [Catalog.addColumn, atPosition]
+  exact .replace _ _ _ atPosition
 
 /-- The resolution state keeps unique names: the current catalog has unique folded
 names, and so does the catalog that an open transaction saved, if there is one. -/
