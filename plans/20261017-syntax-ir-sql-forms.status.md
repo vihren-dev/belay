@@ -95,6 +95,10 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D3 and D7, step 
   only comparisons, AND, OR, NOT and IS NULL, with two new restriction examples. The
   three suites pass, and the third review has no findings.
 
+- 2026-10-18: pull request #159, stacked on #158 (CI time: `tests.harness` 23 s to 22 s,
+  `tests.model` 333 s to 335 s, `tests.frozen` 141 s to 142 s, scheduled mutants 409 s to
+  404 s). The verdict counts equal the base; only the text of 250 restricted cases changes.
+
 ## Remaining
 
-- Pull request A.
+- None. Step 2 of ADR 0013 follows.

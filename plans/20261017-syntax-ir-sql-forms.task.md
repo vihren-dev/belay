@@ -1,6 +1,6 @@
 # Syntax IR around SQL forms (ADR 0013, step 1)
 
-Created 2026-10-17. Status: DONE (pull request A; no verdict changed, so no pull request B).
+Created 2026-10-17. Status: DONE (pull request #159; no verdict changed, so no pull request B).
 Status file: [status](20261017-syntax-ir-sql-forms.status.md).
 Specification: [ADR 0013](../docs/adr-0013-model-structure.md), decisions D3 and D7,
 "Order" step 1. Related: [ADR 0008](../docs/adr-0008-syntax-and-resolution-in-lean.md)
