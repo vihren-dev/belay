@@ -15,18 +15,18 @@ to position {lit}`k` leaves every other position as it was), are in
 namespace Belay.Sqlite
 
 /-- For every script and database, {name}`runSql` runs the script from position zero in
-the idle state of the database. -/
+the idle state of the database. Proof sketch: the definition. -/
 theorem runSql_eq (script : List Resolved.Statement) (database : Database) :
     runSql script database = runSqlFrom 0 script { database := database } := rfl
 
 /-- For every position and state, the run of no statement finishes the state with its
-database ({name}`SqlState.finish`). -/
+database ({name}`SqlState.finish`). Proof sketch: the definition. -/
 @[simp] theorem runSqlFrom_nil (position : Nat) (state : SqlState) :
     runSqlFrom position [] state = state.finish (.success state.database) := rfl
 
 /-- For every position, statement, rest of the script and state, the run advances the
 first statement ({name}`advance`): a halt is the outcome, and a next state runs the
-rest from the next position. -/
+rest from the next position. Proof sketch: the definition. -/
 theorem runSqlFrom_cons (position : Nat) (statement : Resolved.Statement) (rest : List Resolved.Statement)
     (state : SqlState) :
     runSqlFrom position (statement :: rest) state = match advance position statement state with
@@ -35,67 +35,70 @@ theorem runSqlFrom_cons (position : Nat) (statement : Resolved.Statement) (rest 
 
 /-- For every position, state and statement that is not transaction control
 ({name}`Resolved.Statement.isControl`), {name}`advance` publishes the statement's effect
-({name}`literalStep`) at the clock value of the position ({name}`SqlState.publish`). -/
+({name}`literalStep`) at the clock value of the position ({name}`SqlState.publish`). Proof
+sketch: case analysis on the statement; transaction control contradicts the premise, and
+every other arm of {name}`advance` is this publication. -/
 theorem advance_effect (position : Nat) (statement : Resolved.Statement) (state : SqlState)
     (ordinary : statement.isControl = false) :
     advance position statement state = state.publish position (literalStep (state.clock position) statement state.database) := by
   cases statement <;> simp_all [advance, Resolved.Statement.isControl]
 
 /-- For every position, state and CREATE TABLE, {name}`advance` publishes its effect
-({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). -/
+({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
 @[simp] theorem advance_createTable (step : Nat) (state : SqlState) (target : Nat) (name : String) (table : CatalogTable) :
     advance step (.createTable target name table) state = state.publish step (literalStep (state.clock step) (.createTable target name table) state.database) := rfl
 
 /-- For every position, state and CREATE INDEX, {name}`advance` publishes its effect
-({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). -/
+({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
 @[simp] theorem advance_createIndex (step : Nat) (state : SqlState) (target : Nat) (name : String) (index : CatalogIndex) :
     advance step (.createIndex target name index) state = state.publish step (literalStep (state.clock step) (.createIndex target name index) state.database) := rfl
 
 /-- For every position, state and ADD COLUMN, {name}`advance` publishes its effect
-({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). -/
+({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
 @[simp] theorem advance_addColumn (step : Nat) (state : SqlState) (target : Nat) (column : CatalogColumn) :
     advance step (.addColumn target column) state = state.publish step (literalStep (state.clock step) (.addColumn target column) state.database) := rfl
 
 /-- For every position, state and INSERT, {name}`advance` publishes its effect
-({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). -/
+({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
 @[simp] theorem advance_insert (step : Nat) (state : SqlState) (target : Nat) (rows : List (List Resolved.Cell)) (returning : List (Resolved.Expr × String)) :
     advance step (.insert target rows returning) state = state.publish step (literalStep (state.clock step) (.insert target rows returning) state.database) := rfl
 
 /-- For every position, state and INSERT with clauses or an algorithm, {name}`advance` publishes its effect
-({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). -/
+({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
 @[simp] theorem advance_upsert (step : Nat) (state : SqlState) (target : Nat) (rows : List (List Resolved.Cell)) (clauses : List Resolved.ConflictClause)
     (returning : List (Resolved.Expr × String)) (algorithm : Option ConflictAlgorithm) :
     advance step (.upsert target rows clauses returning algorithm) state = state.publish step (literalStep (state.clock step) (.upsert target rows clauses returning algorithm) state.database) := rfl
 
 /-- For every position, state and UPDATE, {name}`advance` publishes its effect
-({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). -/
+({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
 @[simp] theorem advance_update (step : Nat) (state : SqlState) (target : Nat) (assignments : List (Nat × Resolved.Expr)) (filter : Option Resolved.Expr)
     (returning : List (Resolved.Expr × String)) :
     advance step (.update target assignments filter returning) state = state.publish step (literalStep (state.clock step) (.update target assignments filter returning) state.database) := rfl
 
 /-- For every position, state and DELETE, {name}`advance` publishes its effect
-({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). -/
+({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
 @[simp] theorem advance_delete (step : Nat) (state : SqlState) (target : Nat) (filter : Option Resolved.Expr) (returning : List (Resolved.Expr × String)) :
     advance step (.delete target filter returning) state = state.publish step (literalStep (state.clock step) (.delete target filter returning) state.database) := rfl
 
 /-- For every position, state and a query, {name}`advance` publishes its effect
-({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). -/
+({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
 @[simp] theorem advance_query (step : Nat) (state : SqlState) (query : Resolved.Query) :
     advance step (.query query) state = state.publish step (literalStep (state.clock step) (.query query) state.database) := rfl
 
 /-- For every position, state and a statement that SQLite refuses, {name}`advance` publishes its effect
-({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). -/
+({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
 @[simp] theorem advance_prepareError (step : Nat) (state : SqlState) (error : PrepareError) :
     advance step (.prepareError error) state = state.publish step (literalStep (state.clock step) (.prepareError error) state.database) := rfl
 
 /-- For every state, position and database, publishing an effect that succeeds with the
-database continues with the state that has that database. -/
+database continues with the state that has that database. Proof sketch: the definition. -/
 @[simp] theorem SqlState.publish_ok (state : SqlState) (position : Nat) (database : Database) :
     state.publish position (.ok database) = .next { state with database } := rfl
 
 /-- For every idle database, position, reason other than FAIL and reached database,
 publishing an effect that fails halts with the failure at the position over the idle
-database: an idle state keeps its database for every error but FAIL. -/
+database: an idle state keeps its database for every error but FAIL. Proof sketch: the
+FAIL test fails, and {name}`SqlState.failed_idle` gives the plain failure. -/
 theorem SqlState.publish_error_idle (database : Database) (position : Nat) (reason : ExecutionError)
     (reached : Database) (notFail : reason ≠ .constraintFail) :
     ({ database := database } : SqlState).publish position (.error (reason, reached)) =
@@ -105,7 +108,8 @@ theorem SqlState.publish_error_idle (database : Database) (position : Nat) (reas
 /-- For every idle database, position, prepare error and reached database, publishing
 the prepare error halts with the failure at the position over the idle database
 ({name}`SqlState.publish_error_idle` for this error, which {lit}`simp` can use without a
-side goal). -/
+side goal). Proof sketch: {name}`SqlState.publish_error_idle`; a prepare error is not
+FAIL. -/
 @[simp] theorem SqlState.publish_prepare_idle (database : Database) (position : Nat) (error : PrepareError)
     (reached : Database) :
     ({ database := database } : SqlState).publish position (.error (.prepare error, reached)) =
@@ -113,13 +117,15 @@ side goal). -/
   SqlState.publish_error_idle database position _ reached (by simp)
 
 /-- For every clock value, database and prepare error, the effect of the statement that
-SQLite refuses to prepare is that error over the database. -/
+SQLite refuses to prepare is that error over the database. Proof sketch: the definition
+of {name}`step`. -/
 @[simp] theorem effect_prepareError (clock : Int) (database : Database) (error : PrepareError) :
     literalStep clock (.prepareError error) database = .error (.prepare error, database) := rfl
 
 /-- For every clock value, database, name and table: when the catalog position is the end
 of the catalog and the database has one row list for each catalog object, CREATE TABLE
-succeeds with the table added to the catalog ({name}`Catalog.createTable`) and no rows. -/
+succeeds with the table added to the catalog ({name}`Catalog.createTable`) and no rows.
+Proof sketch: {name}`literalStep` is {name}`step` here, whose position check holds. -/
 theorem effect_createTable_ok (clock : Int) (database : Database) (name : String) (table : CatalogTable)
     (target : Nat) (atEnd : target = database.catalog.length) (rows : database.rows.length = database.catalog.length) :
     literalStep clock (.createTable target name table) database =
@@ -131,7 +137,8 @@ theorem effect_createTable_ok (clock : Int) (database : Database) (name : String
 at the position, the column has no time default, its default reads as the value
 ({name}`readDefaultValue`), and the column is not NOT NULL with a NULL value over rows,
 ADD COLUMN succeeds with the column appended and the value in every row
-({name}`Database.addColumn`). -/
+({name}`Database.addColumn`). Proof sketch: {name}`literalStep` is {name}`step` here, and
+the premises select its successful branch. -/
 theorem effect_addColumn_ok (clock : Int) {database : Database} {target : Nat} {table : Table}
     {column : CatalogColumn} {value : Value} (present : database.table target = some table)
     (constant : column.clockDefault = false) (read : readDefaultValue column = .ok value)
@@ -142,8 +149,11 @@ theorem effect_addColumn_ok (clock : Int) {database : Database} {target : Nat} {
 /-- For every clock value, database, position, table, rows and {lit}`RETURNING` columns:
 when the table is at the position, no row at the clock value ({name}`Resolved.rowsAt`) has
 a rowid alias that SQLite refuses ({name}`LiteralData.aliasMismatch`), and the table with
-the rows inserted ({name}`LiteralData.inserted`) keeps its unique keys and distinct rowids,
-INSERT succeeds with the table's rows replaced by those rows ({name}`Database.setRows`). -/
+the rows inserted ({name}`LiteralData.inserted`) meets {name}`LiteralData.constraints` (its
+NOT NULL cells and its unique keys) and has distinct rowids, INSERT succeeds with the
+table's rows replaced by those rows ({name}`Database.setRows`). Proof sketch: the
+premises select the successful branches of {name}`insertOutcome` and
+{name}`checkedWrite`. -/
 theorem effect_write_ok (clock : Int) {database : Database} {target : Nat} {table : Table}
     {rows : List (List Resolved.Cell)} {returning : List (Resolved.Expr × String)}
     (present : database.table target = some table)

@@ -10,16 +10,16 @@ from conformance.resolve_mutants import SQLITE
 
 RUN = SQLITE + "UpsertRun.lean"
 """The rows of an INSERT with conflict algorithms."""
-EXECUTION = SQLITE + "StatementStep.lean"
-"""The SQL step, which rolls back a transaction."""
+STATE = SQLITE + "SqlState.lean"
+"""The connection state: the failure of a statement and the publication of its effect."""
 POLICY = SQLITE + "Resolution/ConflictPolicy.lean"
 """The conflict policy of INSERT, which gives each constraint its algorithm."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "fail_keeps_no_row": (EXECUTION,
+    "fail_keeps_no_row": (STATE,
         "    .halt (state.failed position reason (if reason = .constraintFail then reached else state.database))",
         "    .halt (state.failed position reason state.database)"),
-    "abort_keeps_rows": (EXECUTION,
+    "abort_keeps_rows": (STATE,
         "    .halt (state.failed position reason (if reason = .constraintFail then reached else state.database))",
         "    .halt (state.failed position reason reached)"),
     "ignore_stops": (RUN, "  | .ignore => .ok (table, none)", "  | .ignore => .error (failureError .abort)"),
@@ -28,7 +28,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "  { table with rows := table.rows.filter fun row => !((List.range 1).any fun index =>"),
     "replace_blocks": (RUN, "    algorithmAt algorithms index != .replace && conflictsAt keys table proposed index",
         "    conflictsAt keys table proposed index"),
-    "rollback_keeps_transaction": (EXECUTION, "  if reason = .constraintRollback then match state.snapshot with",
+    "rollback_keeps_transaction": (STATE, "  if reason = .constraintRollback then match state.snapshot with",
         "  if false then match state.snapshot with"),
     "not_null_ignores_algorithm": (RUN,
         "  | some column => failedConstraint table (algorithmAt policy.notNull column)",
