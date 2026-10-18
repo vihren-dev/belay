@@ -1,6 +1,6 @@
 # Status: execution carries the catalog (ADR 0013, step 2)
 
-Created 2026-10-18. Status: open.
+Created 2026-10-18. Status: DONE.
 Task file: [task](20261018-execution-carries-catalog.task.md).
 Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D1 and amendment 1.
 
@@ -62,6 +62,8 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D1 and amendment
   22 s, `tests.model` 335 s to 335 s, `tests.frozen` 142 s to 140 s, scheduled mutants
   404 s to 411 s.
 
+- 2026-10-18: pull request #160, stacked on #159.
+
 ## Remaining
 
-- Pull request A.
+- None. Step 3 of ADR 0013 follows.

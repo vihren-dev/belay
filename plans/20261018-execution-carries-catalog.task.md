@@ -1,6 +1,6 @@
 # Execution carries the catalog (ADR 0013, step 2)
 
-Created 2026-10-18. Status: open.
+Created 2026-10-18. Status: DONE (pull request #160; no verdict changed, so no pull request B).
 Status file: [status](20261018-execution-carries-catalog.status.md).
 Specification: [ADR 0013](../docs/adr-0013-model-structure.md), decision D1, amendment 1,
 "Order" step 2, owner decision 5. Related: [ADR 0011](../docs/adr-0011-product-trust-and-development-integrity.md)
