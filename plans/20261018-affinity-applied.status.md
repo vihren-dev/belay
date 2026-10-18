@@ -22,7 +22,17 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D4.
   (corpus v3: 2, v4: 8, v5: 50; value-as-condition 54, text-to-number 3,
   mixed-affinity-comparison 3).
 
+- 2026-10-18: measured over every frozen corpus before the commit: 58 restricted
+  entries agree (v3: 2, v4: 7, v5: 49), `e_select-0.2.0011.1` (v4, v5) meets
+  `bare-column` instead, and no case disagrees. The comparison stores its affinity, so
+  `+x` needs no node (ADR implementation notes). The registries are
+  `RestrictionKind.registry` (`Resolution/RestrictionRegistry.lean`); the docs table has
+  a part for each. `tests/cli_refusal_test.py` uses `rowid-name` as its expression
+  example. Reviews: one "should" (a file over 200 lines), fixed by moving the truth-test
+  examples to `TruthTestExamples.lean`; the other reviews are clean. The three suites
+  pass. CI time against step 3: `tests.harness` 22 s to 22 s, `tests.model` 332 s to
+  334 s, `tests.frozen` 140 s to 141 s, scheduled mutants 412 s to 411 s.
+
 ## Remaining
 
-- Implementation, measurement over every corpus, full checks, review, CI time, pull
-  requests A and B.
+- Pull requests A and B.
