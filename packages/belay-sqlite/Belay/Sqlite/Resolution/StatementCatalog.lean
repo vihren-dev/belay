@@ -50,6 +50,9 @@ a statement has reads it, so a new statement form gets a form here first. -/
 /-- Whether the statement is transaction control ({name}`Statement.Kind.control`): BEGIN,
 COMMIT or ROLLBACK. These change the saved catalog of a transaction instead of the
 catalog; every other statement is not control. -/
-def Statement.isControl (statement : Statement) : Bool := statement.kind == .control
+def Statement.isControl (statement : Statement) : Bool :=
+  match statement.kind with
+  | .control => true
+  | .definition | .index | .write | .query | .prepareError => false
 
 end Belay.Sqlite.Resolved

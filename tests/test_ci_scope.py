@@ -28,7 +28,7 @@ class CiScopeTest(unittest.TestCase):
                     (["reviews/20261011T085534Z-6bb34bbf/notes.json"], "test"),
                     (["reviews/review.json"], "test"),
                     (["parser/upstream/README.md"], "package"),
-                    (["packages/belay-sqlite/Belay/Sqlite/Preservation.lean"], "packaging"),
+                    (["packages/belay-sqlite/Belay/Sqlite/PreservationLaws.lean"], "packaging"),
                     (["tests/coverage_test.py"], "test"), (["unknown/file"], "test"),
                     (["migration_check/prepare.py"], "test"), (["tools/review.py"], "test"),
                     (["belay/sqlite/sql_model.py"], "packaging"),

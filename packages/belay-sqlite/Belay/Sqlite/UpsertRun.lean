@@ -132,15 +132,5 @@ def upsertReady (clock : Int) (keys : List (List Nat)) (policy : Resolved.Confli
     | .update assignments _ => assignments.all fun (position, _) => (table.shape.columns[position]?).isSome) &&
   upsertBounded clock keys policy clauses table rows
 
-/-- The database after a failed INSERT with clauses or algorithms: with the table before
-the failing row at the position for a FAIL failure, which keeps the earlier rows; the
-input database for every other failure. -/
-def failedDatabase (database : Database) (target : Nat) (reason : ExecutionError) (reached : Table) : Database :=
-  match reason with
-  | .constraintFail => database.setRows target reached.rows
-  | .unmodeled | .prepare _ | .transactionAlreadyActive | .noActiveTransaction | .constraintViolation
-  | .constraintRollback | .integerOverflow | .datatypeMismatch | .functionError | .nullColumnDefault
-  | .nonConstantColumnDefault => database
-
 end LiteralData
 end Belay.Sqlite

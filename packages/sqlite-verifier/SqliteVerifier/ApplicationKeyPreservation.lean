@@ -1,4 +1,4 @@
-import Belay.Sqlite.ModelProjection
+import Belay.Sqlite.ModelProjectionLaws
 import SqliteVerifier.ApplicationKeys
 
 set_option doc.verso true

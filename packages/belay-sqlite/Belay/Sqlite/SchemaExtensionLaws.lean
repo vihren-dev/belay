@@ -1,6 +1,6 @@
-import Belay.Sqlite.ModelFacts
+import Belay.Sqlite.ModelLaws
 import Belay.Sqlite.StoreValueLaws
-import Belay.Sqlite.DatabaseFacts
+import Belay.Sqlite.DatabaseLaws
 
 set_option doc.verso true
 

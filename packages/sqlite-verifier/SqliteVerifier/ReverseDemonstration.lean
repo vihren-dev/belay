@@ -23,16 +23,17 @@ successful orders; ADD COLUMN and CREATE TABLE commute
 theorem reverse_runs (database : Database) (admitted : Admitted profile startCatalog (fun _ => True) database) :
     runSql reverseScript database = runSql script database := by
   obtain ⟨same, length, table, present, _, _⟩ := admitted_invoices admitted
-  let created : Database :=
-    { catalog := database.catalog.createTable "audit" { columns := [message] }, rows := database.rows ++ [[]] }
-  have audit : step 0 (.createTable 1 "audit" { columns := [message] }) database 0 = .success created := by
-    simp [step, same, length, startCatalog, created]
-  have invoice : created.table 0 = some table := Database.table_createTable _ _ present
-  have added : step 0 (.addColumn 0 note) created 1 = .success (created.addColumn 0 note .null) := by
-    simp [step, invoice, CatalogColumn.clockDefault, readDefaultValue, note]
+  have audit := effect_createTable_ok 0 database "audit" { columns := [message] } 1
+    (by simp [same, startCatalog]) (by simp [same, length, startCatalog])
+  have invoice := Database.table_createTable "audit" { columns := [message] } present
+  generalize createdIs : ({ catalog := database.catalog.createTable "audit" { columns := [message] }, rows := database.rows ++ [[]] } : Database) =
+    created at audit invoice
+  have added := effect_addColumn_ok 0 invoice (column := note) (value := .null) rfl rfl rfl
   have reversed : runSql reverseScript database = .success (created.addColumn 0 note .null) := by
-    simp [runSql, runSqlFrom, advance, literalStep, SqlState.finish, reverseScript, audit, added]
-  rw [reversed, script_runs admitted, Database.addColumn_createTable database note .null _ _
+    simp only [runSql_eq, reverseScript, runSqlFrom_cons, advance_createTable, advance_addColumn, audit, added,
+      SqlState.publish_ok, runSqlFrom_nil]
+    rfl
+  rw [reversed, script_runs admitted, ← createdIs, Database.addColumn_createTable database note .null _ _
     (by simp [same, startCatalog]) (by simp [same, length, startCatalog])]
   rfl
 

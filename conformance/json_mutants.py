@@ -30,8 +30,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "json_missing_path_error": (JSON + "Extract.lean", "  | .notFound => .ok none",
         "  | .notFound => .error .malformed"),
     "json_error_ignored": (SQLITE + "Execution.lean",
-        "      else if run.fault == .must then .failure position .functionError database",
-        "      else if false then .failure position .functionError database"),
+        "      else if run.fault == .must then .error (.functionError, database)",
+        "      else if false then .error (.functionError, database)"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
 replacement. The names follow the list in the task of slice 6b: `true` as text; a

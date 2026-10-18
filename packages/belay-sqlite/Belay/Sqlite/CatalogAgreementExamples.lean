@@ -1,4 +1,4 @@
-import Belay.Sqlite.CatalogAgreement
+import Belay.Sqlite.CatalogAgreementLaws
 import Belay.Sqlite.Resolution.Examples
 
 set_option doc.verso true

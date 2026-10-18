@@ -63,6 +63,18 @@ inductive Outcome where
   /-- An open transaction's original storage, visible database and optional error. -/
   | pending (persisted visible : Database) (error : Option (Nat × ExecutionError))
 
+/-- What one statement does to the database, without its position (ADR 0006): the
+database after it, or the error with the database that the statement reached, which
+the script decides to keep or not ({lit}`SqlState.publish`). For example, a FAIL failure
+of an INSERT reaches the database with its earlier rows. -/
+abbrev Effect := Except (ExecutionError × Database) Database
+
+/-- The database of an effect: the database after it, or the database that its error
+reached. -/
+def effectDatabase : Effect → Database
+  | .ok database => database
+  | .error (_, database) => database
+
 /-- Read the resulting visible database from every outcome, including an open
 transaction. A separate accessor reads committed storage. -/
 def Outcome.database : Outcome → Database
@@ -89,8 +101,10 @@ def CatalogTable.plain (table : CatalogTable) : Bool :=
   table.columns.all CatalogColumn.plain && table.primaryKey.isEmpty && table.uniqueKeys.isEmpty &&
     table.rowidAlias.isNone
 
-/-- Perform CREATE TABLE or ADD COLUMN at the supplied position, or fail with the
-prepare error of a statement that SQLite refuses. CREATE TABLE adds the table to the catalog ({name}`Catalog.createTable`) with no
+/-- The effect of CREATE TABLE, ADD COLUMN, a query or a prepare error, without a position
+(ADR 0006): the database after it, or the error with the database that it keeps, the
+input database for every error here. SQLite refuses a statement with its prepare
+error. CREATE TABLE adds the table to the catalog ({name}`Catalog.createTable`) with no
 rows. ADD COLUMN reads the literal default and appends
 its affinity-applied value to each existing row. A NOT NULL column with a NULL
 default fails with {lean}`ExecutionError.nullColumnDefault` when rows exist, and one with
@@ -107,34 +121,34 @@ excludes CREATE INDEX. A query changes nothing: its run over its source rows
 {lean}`ExecutionError.functionError` when its fault is {lean}`Resolved.Fault.must`, and
 otherwise succeeds. Its result rows are not part of the outcome. SQL execution handles transaction control and writes
 separately. {lit}`clock` is the statement's clock value, which a query's expressions may
-read. The default position is zero. -/
-def step (clock : Int) (statement : Resolved.Statement) (database : Database) (position : Nat := 0) : Outcome :=
+read. -/
+def step (clock : Int) (statement : Resolved.Statement) (database : Database) : Effect :=
   match statement with
   | .createTable target name table =>
     if target == database.catalog.length && database.rows.length == database.catalog.length then
-      .success { catalog := database.catalog.createTable name table, rows := database.rows ++ [[]] }
-    else .failure position .unmodeled database
+      .ok { catalog := database.catalog.createTable name table, rows := database.rows ++ [[]] }
+    else .error (.unmodeled, database)
   | .addColumn target column => match database.table target with
-    | none => .failure position .unmodeled database
+    | none => .error (.unmodeled, database)
     | some table =>
       if column.clockDefault then
-        if table.rows.isEmpty then .success (database.addColumn target column .null)
-        else .failure position .nonConstantColumnDefault database
+        if table.rows.isEmpty then .ok (database.addColumn target column .null)
+        else .error (.nonConstantColumnDefault, database)
       else match readDefaultValue column with
-      | .error _ => .failure position .unmodeled database
+      | .error _ => .error (.unmodeled, database)
       | .ok value =>
         if column.notNull && value == .null && !table.rows.isEmpty then
-          .failure position .nullColumnDefault database
-        else .success (database.addColumn target column value)
-  | .prepareError error => .failure position (.prepare error) database
+          .error (.nullColumnDefault, database)
+        else .ok (database.addColumn target column value)
+  | .prepareError error => .error (.prepare error, database)
   | .query query => match query.source clock database with
     | some source =>
       let run := query.run clock source.rows
-      if run.overflow then .failure position .integerOverflow database
-      else if run.fault == .must then .failure position .functionError database
-      else .success database
-    | none => .success database
+      if run.overflow then .error (.integerOverflow, database)
+      else if run.fault == .must then .error (.functionError, database)
+      else .ok database
+    | none => .ok database
   | .createIndex .. | .begin | .commit | .rollback | .insert .. | .upsert .. | .update .. | .delete .. =>
-    .failure position .unmodeled database
+    .error (.unmodeled, database)
 
 end Belay.Sqlite

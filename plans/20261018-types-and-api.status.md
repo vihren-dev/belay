@@ -44,7 +44,25 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D8 and D7.
   "the error is not `.expression`" as their premise. `ToJson PrepareError` keeps the
   derived wire form (examples in `Codec/SourceExamples.lean`); messages are unchanged.
   The core has 127 modules. Verdict unchanged, entry for entry.
+- 2026-10-18: proof files of `belay-sqlite` end in `Laws`, `Spec` or `Examples`
+  (`PreservationLaws`, `DatabaseLaws`, `ModelLaws`, `SqlLaws`, `LiteralPreservationLaws`,
+  `SchemaExtensionLaws`, `SchemaPreservationLaws`, `StepCatalogLaws`, `ModelProjectionLaws`,
+  `SchemaClockLaws`, `DatabaseWriteLaws`, `CatalogAgreementLaws`; `PrepareSpec`,
+  `DefinitionSpec`, `UpdateSpec`, `WriteCatalogSpec`), and the package has a README.
+  `step` and `literalStep` return a position-free `Effect`; `SqlState.publish` is the one
+  publication path (FAIL keeps the reached rows, other errors the state's database,
+  ROLLBACK the snapshot), and `LiteralData.failedDatabase` is gone. `ScriptLaws.lean` has
+  `runSql_eq`, `runSqlFrom_nil`, `runSqlFrom_cons`, `advance_effect` (and an unconditional
+  `advance_*` lemma for each ordinary form, because `simp` cannot assign the proof of the
+  side condition), `SqlState.publish_ok`, `publish_error_idle`, `publish_prepare_idle`,
+  `effect_createTable_ok`, `effect_addColumn_ok`, `effect_write_ok` and
+  `effect_prepareError`; the frame lemma is `Database.table_setRows_other`.
+  `VerificationConditions.ofSchemaProjection` (`SqliteVerifier/SchemaProjection.lean`)
+  gives the conditions of a schema-only script that keeps one projection; the
+  demonstrations and `examples/` use these lemmas and no longer unfold the execution.
+  The failure mutants now change `SqlState.publish` (`abort_keeps_rows` replaces
+  `failed_update_keeps_rows`). The core has 129 modules. Verdict unchanged.
 
 ## Remaining
 
-- All outcomes, checks, reviews, CI time, pull requests.
+- Readiness returns results (outcome 6); full checks, CI time, pull request.

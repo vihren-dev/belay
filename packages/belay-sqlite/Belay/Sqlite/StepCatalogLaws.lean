@@ -15,14 +15,14 @@ catalog: both are absent, or both are present with equal catalogs. -/
 def SqlState.Agrees (sql : SqlState) (state : ResolveState) : Prop :=
   sql.database.catalog = state.catalog ∧ sql.snapshot.map (·.catalog) = state.saved
 
-/-- For every clock value, statement, database, result and position: if {name}`literalStep` succeeds
+/-- For every clock value, statement, database and result: if {name}`literalStep` succeeds
 with the result, then the result's catalog is {name}`Resolved.Statement.applyCatalog` of
 the statement on the database's catalog, and the statement is not transaction control.
 Proof sketch: CREATE TABLE and ADD COLUMN call the catalog functions, writes store rows
 only ({name}`Database.setRows`), a query returns the database, and every other statement
 fails. -/
 theorem literalStep_success_catalog {clock : Int} {statement : Resolved.Statement} {database result : Database}
-    {position : Nat} (success : literalStep clock statement database position = .success result) :
+    (success : literalStep clock statement database = .ok result) :
     result.catalog = statement.applyCatalog database.catalog ∧ statement.isControl = false := by
   cases statement with
   | createTable target name table =>
@@ -98,21 +98,17 @@ theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {sql ne
       simp [SqlState.Agrees, ResolveState.after, ← saved]
   | createTable | createIndex | addColumn | insert | update | upsert | delete | prepareError | query =>
     simp only [advance] at continued
-    split at continued
-    · rename_i result stepped
-      cases continued
-      obtain ⟨changed, control⟩ := literalStep_success_catalog stepped
-      rw [state.after_of_isControl control]
-      exact ⟨changed.trans (catalog ▸ rfl), saved⟩
-    · cases continued
-    · cases continued
+    obtain ⟨result, stepped, rfl⟩ := Conformance.SqlState.publish_next continued
+    obtain ⟨changed, control⟩ := literalStep_success_catalog stepped
+    rw [state.after_of_isControl control]
+    exact ⟨changed.trans (catalog ▸ rfl), saved⟩
 
 /-- For every position, statement, connection state and outcome: if {name}`advance` halts
 with the outcome, the outcome has an error ({name}`Outcome.error?`). A halt is never a
 success and never a pending transaction without an error. Proof sketch: split on the
 statement: BEGIN in a transaction finishes a failure, which keeps its error with or
 without a snapshot; COMMIT and ROLLBACK without a transaction fail; every other statement
-halts only on a failure of {lit}`literalStep` ({lit}`literal_cases`), whose error
+halts only on an error of {lit}`literalStep` ({lit}`SqlState.publish_halt`), whose error
 {name}`SqlState.failed_error` keeps. -/
 theorem advance_halt_error {position : Nat} {statement : Resolved.Statement} {sql : SqlState} {outcome : Outcome}
     (halted : advance position statement sql = .halt outcome) : outcome.error?.isSome := by
@@ -133,7 +129,7 @@ theorem advance_halt_error {position : Nat} {statement : Resolved.Statement} {sq
     · cases halted
   | createTable | createIndex | addColumn | insert | update | upsert | delete | prepareError | query =>
     simp only [advance] at halted
-    rcases Conformance.literal_cases _ _ sql.database position with ⟨_, h⟩ | ⟨_, h⟩ | ⟨_, h⟩ <;>
-      rw [h] at halted <;> cases halted <;> simp [SqlState.failed_error]
+    obtain ⟨_, _, _, rfl⟩ := Conformance.SqlState.publish_halt halted
+    simp [SqlState.failed_error]
 
 end Belay.Sqlite

@@ -1,5 +1,5 @@
-import Belay.Sqlite.SchemaPreservation
-import Belay.Sqlite.LiteralPreservation
+import Belay.Sqlite.SchemaPreservationLaws
+import Belay.Sqlite.LiteralPreservationLaws
 
 set_option doc.verso true
 
@@ -66,8 +66,8 @@ example : table.Valid := by
 /-- Adding a plain {lit}`shell` column to the table at position 0 returns that
 table's {name}`Table.appendColumns` at the same position, preserving its keys. The
 proof computes this fixed execution in the kernel. -/
-example : (step 0 (.addColumn 0 { name := "shell", declaredType := some "TEXT" })
-    (.ofTables [("t", table)])).database.table 0 =
+example : (effectDatabase (step 0 (.addColumn 0 { name := "shell", declaredType := some "TEXT" })
+    (.ofTables [("t", table)]))).table 0 =
     some (table.appendColumns [({ name := "shell", declaredType := some "TEXT" }, .null)]) := by
   decide +kernel
 
@@ -81,7 +81,8 @@ example : statementReady 0 (.addColumn 0 timestamp) ({} : Database) = true := by
 stores an empty table with that shape at the new position, as SQLite does. The
 supported-subset check {name}`statementReady` refuses the statement instead,
 because the model restricts such tables. The proof computes both in the kernel. -/
-example : (step 0 (.createTable 0 "items" { columns := [textKey], primaryKey := [0] }) ({} : Database)).database.table 0 =
+example : (effectDatabase (step 0 (.createTable 0 "items" { columns := [textKey], primaryKey := [0] })
+      ({} : Database))).table 0 =
       some { shape := { columns := [textKey], primaryKey := [0] }, rows := [] } ∧
     statementReady 0 (.createTable 0 "items" { columns := [textKey], primaryKey := [0] }) ({} : Database) = false := by
   decide +kernel
@@ -90,11 +91,11 @@ example : (step 0 (.createTable 0 "items" { columns := [textKey], primaryKey := 
 {lit}`Cannot add a column with non-constant default`, because its default reads the clock:
 {name}`step` gives {name}`ExecutionError.nonConstantColumnDefault` and retains the original
 table. The proof computes both in the kernel. -/
-example : (step 0 (.addColumn 0 timestamp) (.ofTables [("t", table)])).database.table 0 =
+example : (effectDatabase (step 0 (.addColumn 0 timestamp) (.ofTables [("t", table)]))).table 0 =
       some table ∧
     (match step 0 (.addColumn 0 timestamp) (.ofTables [("t", table)]) with
-      | .failure _ reason _ => reason == .nonConstantColumnDefault
-      | .success _ | .pending .. => false) = true := by
+      | .error (reason, _) => reason == .nonConstantColumnDefault
+      | .ok _ => false) = true := by
   decide +kernel
 
 end SqliteVerifier.SchemaExamples

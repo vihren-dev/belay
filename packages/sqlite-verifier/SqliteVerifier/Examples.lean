@@ -1,5 +1,5 @@
 import SqliteVerifier.ContractProofs
-import Belay.Sqlite.Preservation
+import Belay.Sqlite.PreservationLaws
 
 set_option doc.verso true
 

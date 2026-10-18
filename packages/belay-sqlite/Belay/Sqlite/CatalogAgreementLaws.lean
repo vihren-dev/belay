@@ -1,4 +1,4 @@
-import Belay.Sqlite.StepCatalog
+import Belay.Sqlite.StepCatalogLaws
 
 set_option doc.verso true
 

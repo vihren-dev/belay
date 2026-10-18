@@ -2,7 +2,7 @@ import Belay.Sqlite.Resolution.Resolve
 
 set_option doc.verso true
 
-/-! The prepare-error rule for UPDATE. See {lit}`PrepareRules.lean` for the rule and
+/-! The prepare-error rule for UPDATE. See {lit}`PrepareSpec.lean` for the rule and
 its references. -/
 
 namespace Belay.Sqlite

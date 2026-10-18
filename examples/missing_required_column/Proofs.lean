@@ -17,13 +17,12 @@ theorem migrationViolated : ¬Generated.expected := by
   apply SqliteVerifier.violates_required_catalog (successRequired := rfl)
   intro database admitted result run
   obtain ⟨same, _, length, _⟩ := admitted.1
-  have created : step 0 (.createTable 1 "audit" audit) database 0 =
-      .success { catalog := database.catalog.createTable "audit" audit, rows := database.rows ++ [[]] } := by
-    simp only [step]
-    simp [same, length, Generated.startCatalog]
-  rw [script_bound] at run
-  simp [runSqlAt, scriptClock, Resolved.Statement.readsClock, Resolved.Statement.clockExpressions,
-    runSqlFrom, advance, literalStep, created, SqlState.finish] at run
+  have created := effect_createTable_ok 0 database "audit" audit 1
+    (by simp [same, Generated.startCatalog]) (by simp [same, length, Generated.startCatalog])
+  rw [script_bound, runSqlAt_of_readsClock _ _ _ (by decide)] at run
+  simp only [runSql_eq, runSqlFrom_cons, advance_addColumn, advance_createTable, advance_prepareError, created, SqlState.publish_ok,
+    runSqlFrom_nil] at run
+  simp only [SqlState.finish] at run
   subst run
   rw [same]
   show ¬((Generated.startCatalog.createTable "audit" audit).columnsOf "invoices" =

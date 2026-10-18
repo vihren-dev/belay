@@ -1,4 +1,4 @@
-import Belay.Sqlite.LiteralPreservation
+import Belay.Sqlite.LiteralPreservationLaws
 
 set_option doc.verso true
 

@@ -1,4 +1,4 @@
-import Belay.Sqlite.DatabaseFacts
+import Belay.Sqlite.DatabaseLaws
 
 set_option doc.verso true
 

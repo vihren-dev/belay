@@ -11,8 +11,8 @@ from tests.runtime_support import run_command
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "packages/belay-sqlite"
-MODEL_ROOTS = ("Belay.Sqlite.SchemaExtension", "Belay.Sqlite.SchemaPreservation",
-               "Belay.Sqlite.LiteralPreservation", "Belay.Sqlite.ModelProjection",
+MODEL_ROOTS = ("Belay.Sqlite.SchemaExtensionLaws", "Belay.Sqlite.SchemaPreservationLaws",
+               "Belay.Sqlite.LiteralPreservationLaws", "Belay.Sqlite.ModelProjectionLaws",
                "Belay.Sqlite.Laws")
 """Mixed-file facts and conformance laws must have a structural import closure."""
 APPLICATION_MODULES = {"SqliteVerifier.Contract", "SqliteVerifier.ContractProofs",

@@ -1,6 +1,7 @@
 import Belay.Sqlite
 import SqliteVerifier.Contract
 import SqliteVerifier.Library
+import SqliteVerifier.SchemaProjection
 import SqliteVerifier.NullableProjection
 import SqliteVerifier.ApplicationKeys
 import SqliteVerifier.ApplicationKeyPreservation

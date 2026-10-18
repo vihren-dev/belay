@@ -22,20 +22,20 @@ def table : Table := { shape, rows := [{ rowid := 5, values := [.integer 5, .tex
 def database : Database := .ofTables [("t", table)]
 
 /-- The rows of the table after a write, or none for a failure. -/
-def rowsAfter : Outcome → Option (List Row)
-  | .success database => (database.table 0).map (·.rows)
-  | .failure .. | .pending .. => none
+def rowsAfter : Effect → Option (List Row)
+  | .ok database => (database.table 0).map (·.rows)
+  | .error _ => none
 
 /-- The error of a failed write, or none. -/
-def errorOf : Outcome → Option ExecutionError
-  | .failure _ reason _ => some reason
-  | .success _ | .pending .. => none
+def errorOf : Effect → Option ExecutionError
+  | .error (reason, _) => some reason
+  | .ok _ => none
 
 /-- INSERT of the rows into the table. -/
-def insert (rows : List (List Value)) : Outcome := literalStep 0 (.insert 0 (rows.map (·.map .value)) []) database 0
+def insert (rows : List (List Value)) : Effect := literalStep 0 (.insert 0 (rows.map (·.map .value)) []) database
 
 /-- UPDATE of the alias to the value. -/
-def update (value : Value) : Outcome := literalStep 0 (.update 0 [(0, .literal value)] none []) database 0
+def update (value : Value) : Effect := literalStep 0 (.update 0 [(0, .literal value)] none []) database
 
 -- A NULL alias takes the next rowid, also into its cell; an integer alias is the rowid.
 #guard rowsAfter (insert [[.null, .text [98]], [.integer (-3), .text [99]]]) ==

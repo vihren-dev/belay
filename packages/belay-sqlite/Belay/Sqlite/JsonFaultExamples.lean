@@ -39,8 +39,8 @@ def empty : Database :=
 -- fails with it.
 #guard fromless.mustFail 0 [[]] && statementReady 0 (.query fromless) empty
 #guard match step 0 (.query fromless) empty with
-  | .failure position reason _ => position == 0 && reason == .functionError
-  | .success _ | .pending .. => false
+  | .error (reason, _) => reason == .functionError
+  | .ok _ => false
 -- Under LIMIT 0 SQLite evaluates nothing; OFFSET 1 skips the result column; WHERE 0
 -- leaves no row. The model does not describe the first two, and the third succeeds.
 #guard !{ fromless with limit := some 0 }.mustFail 0 [[]] && !statementReady 0 (.query { fromless with limit := some 0 }) empty

@@ -1,5 +1,5 @@
 import SqliteVerifier.Library
-import Belay.Sqlite.ModelProjection
+import Belay.Sqlite.ModelProjectionLaws
 
 set_option doc.verso true
 

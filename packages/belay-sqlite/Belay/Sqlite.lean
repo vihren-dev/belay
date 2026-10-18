@@ -11,18 +11,19 @@ import Belay.Sqlite.Model
 import Belay.Sqlite.Execution
 import Belay.Sqlite.LiteralData
 import Belay.Sqlite.SqlExecution
-import Belay.Sqlite.SchemaClock
-import Belay.Sqlite.SqlProofs
-import Belay.Sqlite.Preservation
-import Belay.Sqlite.ModelFacts
-import Belay.Sqlite.SchemaExtension
-import Belay.Sqlite.SchemaPreservation
-import Belay.Sqlite.LiteralPreservation
+import Belay.Sqlite.SchemaClockLaws
+import Belay.Sqlite.SqlLaws
+import Belay.Sqlite.ScriptLaws
+import Belay.Sqlite.PreservationLaws
+import Belay.Sqlite.ModelLaws
+import Belay.Sqlite.SchemaExtensionLaws
+import Belay.Sqlite.SchemaPreservationLaws
+import Belay.Sqlite.LiteralPreservationLaws
 import Belay.Sqlite.RowUpdate
 import Belay.Sqlite.UpsertRun
-import Belay.Sqlite.ModelProjection
+import Belay.Sqlite.ModelProjectionLaws
 import Belay.Sqlite.Laws
-import Belay.Sqlite.CatalogAgreement
+import Belay.Sqlite.CatalogAgreementLaws
 import Belay.Sqlite.Resolution
 
 /-! SQLite states, supported execution, structural preservation facts, and name

@@ -1,4 +1,4 @@
-import Belay.Sqlite.SqlProofs
+import Belay.Sqlite.SqlLaws
 
 set_option doc.verso true
 

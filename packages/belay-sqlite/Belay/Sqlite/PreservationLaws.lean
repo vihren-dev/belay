@@ -1,5 +1,5 @@
-import Belay.Sqlite.SqlProofs
-import Belay.Sqlite.DatabaseFacts
+import Belay.Sqlite.SqlLaws
+import Belay.Sqlite.DatabaseLaws
 
 set_option doc.verso true
 
@@ -85,13 +85,13 @@ theorem DatabaseExtends.add (database : Database) (position : Nat) (table : Tabl
   · exact ⟨old, (Database.table_addColumn_other database column value same).trans oldPresent,
       TableExtends.refl old⟩
 
-/-- For every clock value, statement, database and position, the primitive {name}`step`
-result extends the input database. CREATE/ADD extend existing tables or retain
+/-- For every clock value, statement and database, the database of the primitive
+{name}`step` effect ({name}`effectDatabase`) extends the input database. CREATE/ADD extend existing tables or retain
 errors; other constructors return an unchanged error. This is a primitive schema
 fact, not a preservation law for literal SQL writes. The proof follows the
 primitive branches and table-update witnesses. -/
-theorem step_extends (clock : Int) (statement : Resolved.Statement) (database : Database) (position : Nat) :
-    DatabaseExtends database (step clock statement database position).database := by
+theorem step_extends (clock : Int) (statement : Resolved.Statement) (database : Database) :
+    DatabaseExtends database (effectDatabase (step clock statement database)) := by
   cases statement with
   | createTable target name table =>
     simp only [step]
@@ -117,7 +117,7 @@ theorem step_extends (clock : Int) (statement : Resolved.Statement) (database : 
           · exact DatabaseExtends.add database target table column value h
   | createIndex _ _ _ => exact DatabaseExtends.refl database
   | query query =>
-    have same : (step clock (.query query) database position).database = database := by
+    have same : effectDatabase (step clock (.query query) database) = database := by
       simp only [step]
       split
       · repeat' split
@@ -149,13 +149,12 @@ theorem runSqlFrom_extends (guard : SchemaOnly script) :
       subst item
       exact guard statement (by simp)
     have tail : SchemaOnly rest := fun item member => guard item (by simp [member])
-    have first := step_extends 0 statement database position
-    cases h : step 0 statement database position with
-    | failure index reason result => simpa [runSqlFrom, advance_schemaOnly head, h] using first
-    | success result =>
-      simp only [h, Outcome.database] at first
+    have first := step_extends 0 statement database
+    cases h : step 0 statement database with
+    | error failure => simpa [runSqlFrom, advance_schemaOnly head, h, Outcome.database] using DatabaseExtends.refl database
+    | ok result =>
+      simp only [h, effectDatabase] at first
       simpa [runSqlFrom, advance_schemaOnly head, h] using first.trans (ih tail (database := result))
-    | pending persisted visible error => simpa [runSqlFrom, advance_schemaOnly head, h] using first
 
 /-- For every schema-only script and starting database, {name}`runSql` preserves
 all existing tables, rows and old fields, including failure prefixes. The guard

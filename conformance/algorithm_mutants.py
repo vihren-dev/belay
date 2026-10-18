@@ -16,7 +16,12 @@ POLICY = SQLITE + "Resolution/ConflictPolicy.lean"
 """The conflict policy of INSERT, which gives each constraint its algorithm."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "fail_keeps_no_row": (RUN, "  | .constraintFail => database.setRows target reached.rows", "  | .constraintFail => database"),
+    "fail_keeps_no_row": (EXECUTION,
+        "    .halt (state.failed position reason (if reason = .constraintFail then reached else state.database))",
+        "    .halt (state.failed position reason state.database)"),
+    "abort_keeps_rows": (EXECUTION,
+        "    .halt (state.failed position reason (if reason = .constraintFail then reached else state.database))",
+        "    .halt (state.failed position reason reached)"),
     "ignore_stops": (RUN, "  | .ignore => .ok (table, none)", "  | .ignore => .error (failureError .abort)"),
     "replace_first_key_only": (RUN,
         "  { table with rows := table.rows.filter fun row => !((List.range keys.length).any fun index =>",
@@ -42,10 +47,11 @@ IGNORE stops at the row; REPLACE deletes only the rows of the first key, so a ro
 conflicts on two keys keeps one; a REPLACE key fails as ABORT; ROLLBACK keeps the
 transaction open; a NOT NULL failure ignores its algorithm; a key ignores the algorithm
 of its constraint; the OR clause does not override the constraint's algorithm; a NOT NULL
-column ignores the algorithm of its constraint."""
+column ignores the algorithm of its constraint. `abort_keeps_rows` (ADR 0013, step 7):
+an ABORT failure keeps the rows that the statement reached."""
 
 TARGETS: dict[str, tuple[str, ...]] = {
-    "fail_keeps_no_row": ("or-fail",), "ignore_stops": ("or-ignore",),
+    "fail_keeps_no_row": ("or-fail",), "abort_keeps_rows": ("or-abort",), "ignore_stops": ("or-ignore",),
     "replace_first_key_only": ("or-replace-two-rows",), "replace_blocks": ("replace-into",),
     "rollback_keeps_transaction": ("or-rollback-transaction",), "not_null_ignores_algorithm": ("or-ignore-not-null",),
     "constraint_algorithm_ignored": ("constraint-ignore",), "or_does_not_override": ("constraint-or-overrides",),
@@ -54,7 +60,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 """The authored case of `conformance.authored_algorithms` that each mutant changes."""
 
 GUARDS: dict[str, str] = {
-    "fail_keeps_no_row": "rule:failedDatabase", "ignore_stops": "rule:failedConstraint",
+    "fail_keeps_no_row": "rule:SqlState.publish", "abort_keeps_rows": "rule:SqlState.publish", "ignore_stops": "rule:failedConstraint",
     "replace_first_key_only": "rule:replaced", "replace_blocks": "rule:blockingKey",
     "rollback_keeps_transaction": "rule:SqlState.failed", "not_null_ignores_algorithm": "rule:upsertRow",
     "constraint_algorithm_ignored": "rule:insertPolicy", "or_does_not_override": "rule:insertPolicy",

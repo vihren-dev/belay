@@ -131,19 +131,41 @@ theorem supportedSqlFrom_schemaOnly (guard : SchemaOnly script) (modeled : Model
     have first := guard statement member
     cases statement <;> simp_all) modeled
 
+/-- For every clock value, statement, database, reason and kept database: if {name}`step`
+fails with the reason and the kept database, the kept database is the input database.
+Proof sketch: every error branch of {name}`step` keeps its input. -/
+theorem step_error_keeps {clock : Int} {statement : Resolved.Statement} {database kept : Database}
+    {reason : ExecutionError} (failed : step clock statement database = .error (reason, kept)) : kept = database := by
+  cases statement <;> simp only [step] at failed
+  all_goals (repeat' split at failed)
+  all_goals first | (cases failed; rfl) | cases failed
+
 /-- For every position and idle database, a guarded schema statement uses the
-primitive transition. The proof splits on the statement and uses the guard to
-exclude transaction control and literal-write constructors. -/
+primitive transition: success continues with the result, and an error halts with the
+error at the position over the input database. The proof splits on the statement, uses
+the guard to exclude transaction control and literal-write constructors, and
+{name}`step_error_keeps` for the database of an error. -/
 theorem advance_schemaOnly
     (guard : SchemaOnly [statement]) :
     advance position statement { database := database } =
-      match step 0 statement database position with
-      | .success result => .next { database := result }
-      | .failure index reason result => .halt (.failure index reason result)
-      | .pending persisted visible error => .halt (.pending persisted visible error) := by
+      match step 0 statement database with
+      | .ok result => .next { database := result }
+      | .error (reason, _) => .halt (.failure position reason database) := by
   have first := guard statement (by simp)
-  cases statement <;> simp_all [advance, literalStep, SqlState.finish]
-  all_goals rfl
+  have literal : literalStep 0 statement database = step 0 statement database := by
+    cases statement <;> simp_all [literalStep]
+  have control : statement.isControl = false := by cases statement <;> simp_all [Resolved.Statement.isControl]
+  have ordinary : advance position statement { database := database } =
+      ({ database := database } : SqlState).publish position (step 0 statement database) := by
+    cases statement <;> simp_all [advance, Resolved.Statement.isControl]
+  rw [ordinary]
+  cases stepped : step 0 statement database with
+  | ok result => rfl
+  | error failure =>
+    obtain ⟨reason, kept⟩ := failure
+    have same := step_error_keeps stepped
+    subst same
+    simp [SqlState.publish]
 
 /-- For every idle starting database and position, appending a suffix to a
 {name}`SchemaOnly` prefix resumes at its next position after success and retains
@@ -165,10 +187,9 @@ theorem runSqlFrom_schemaOnly_append (guard : SchemaOnly initial) :
       exact guard statement (by simp)
     have tail : SchemaOnly rest := fun item member => guard item (by simp [member])
     simp only [List.cons_append, runSqlFrom, advance_schemaOnly first]
-    cases executed : step 0 statement database position with
-    | failure index reason result => rfl
-    | pending persisted visible error => rfl
-    | success result => simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+    cases executed : step 0 statement database with
+    | error failure => rfl
+    | ok result => simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
         (ih tail (database := result) (position := position + 1))
 
 /-!

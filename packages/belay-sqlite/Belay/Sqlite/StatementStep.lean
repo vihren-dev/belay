@@ -53,19 +53,29 @@ inductive SqlTransition where
   /-- Stop with this error or terminal result. -/
   | halt (outcome : Outcome)
 
+/-- The transition of a statement's effect at its position, the one path that publishes
+the result of a statement (ADR 0013, D8): an effect that succeeds continues with its
+database; an error halts with the database that its algorithm keeps: the database that a
+FAIL failure reached ({lean}`ExecutionError.constraintFail`), which keeps the earlier rows,
+the input database for every other error, and the snapshot for ROLLBACK in a transaction
+({name}`SqlState.failed`). -/
+def SqlState.publish (state : SqlState) (position : Nat) : Effect → SqlTransition
+  | .ok database => .next { state with database }
+  | .error (reason, reached) =>
+    .halt (state.failed position reason (if reason = .constraintFail then reached else state.database))
+
 /-- The unique keys of the table at the position in the database's catalog
 ({name}`Catalog.uniqueKeys`), which every write to it keeps unique. -/
 def Database.keys (database : Database) (target : Nat) (table : Table) : List (List Nat) :=
   database.catalog.uniqueKeys target table.shape
 
 /-- Store a write's result when it satisfies the constraints of the given keys and its
-rowids are distinct ({name}`LiteralData.rowidsDistinct`), or fail at the position with
+rowids are distinct ({name}`LiteralData.rowidsDistinct`), or fail with
 {lean}`ExecutionError.constraintViolation` and the input database. -/
-def checkedWrite (database : Database) (target : Nat) (keys : List (List Nat)) (result : Table)
-    (position : Nat) : Outcome :=
+def checkedWrite (database : Database) (target : Nat) (keys : List (List Nat)) (result : Table) : Effect :=
   if LiteralData.constraints keys result && LiteralData.rowidsDistinct result then
-    .success (database.setRows target result.rows)
-  else .failure position .constraintViolation database
+    .ok (database.setRows target result.rows)
+  else .error (.constraintViolation, database)
 
 /-- The outcome of INSERT: SQLite inserts the rows in order, and refuses a rowid alias
 that is not an integer before the constraints of its row
@@ -73,49 +83,48 @@ that is not an integer before the constraints of its row
 {lean}`ExecutionError.datatypeMismatch` unless the rows before it already fail; with no
 such row, {name}`checkedWrite` of all rows. A failure keeps the input database. -/
 def insertOutcome (database : Database) (target : Nat) (keys : List (List Nat)) (table : Table)
-    (rows : List (List Value)) (position : Nat) : Outcome :=
+    (rows : List (List Value)) : Effect :=
   match rows.findIdx? (LiteralData.aliasMismatch table.shape) with
   | some index =>
     let before := LiteralData.inserted table (rows.take index)
     if LiteralData.constraints keys before && LiteralData.rowidsDistinct before then
-      .failure position .datatypeMismatch database
-    else .failure position .constraintViolation database
-  | none => checkedWrite database target keys (LiteralData.inserted table rows) position
+      .error (.datatypeMismatch, database)
+    else .error (.constraintViolation, database)
+  | none => checkedWrite database target keys (LiteralData.inserted table rows)
 
 /-- Apply INSERT/UPDATE with ABORT constraints over the table's keys
 ({name}`Database.keys`), INSERT with
 {lit}`ON CONFLICT` clauses row by row ({name}`LiteralData.upsertRun`), each over the rows
 at the clock value ({name}`Resolved.rowsAt`), and DELETE,
 which removes rows and cannot fail a constraint. A position without a table fails as
-{lean}`ExecutionError.unmodeled`; a failed constraint retains the input database.
-Other statements use {name}`step`. This
+{lean}`ExecutionError.unmodeled`. An error carries the database that the statement
+reached: the rows before the failing row of an INSERT with clauses or algorithms, and the
+input database for every other error. Other statements use {name}`step`. This
 computation does not establish the separate stored-value support obligation. -/
-def literalStep (clock : Int) (statement : Resolved.Statement) (database : Database) (position : Nat) : Outcome :=
+def literalStep (clock : Int) (statement : Resolved.Statement) (database : Database) : Effect :=
   match statement with
   | .insert target rows _ => match database.table target with
-    | none => .failure position .unmodeled database
+    | none => .error (.unmodeled, database)
     | some table =>
       insertOutcome database target (database.keys target table) table (Resolved.rowsAt clock table.shape.columns rows)
-        position
   | .upsert target rows clauses _ algorithm => match database.table target with
-    | none => .failure position .unmodeled database
+    | none => .error (.unmodeled, database)
     | some table =>
       let policy := database.catalog.writePolicy target table.shape algorithm
       match LiteralData.upsertRun clock (database.keys target table) policy clauses table
           (Resolved.rowsAt clock table.shape.columns rows) with
-      | .ok (result, _) => .success (database.setRows target result.rows)
-      | .error (reason, reached, _) => .failure position reason (LiteralData.failedDatabase database target reason reached)
+      | .ok (result, _) => .ok (database.setRows target result.rows)
+      | .error (reason, reached, _) => .error (reason, database.setRows target reached.rows)
   | .update target assignments filter _ => match database.table target with
-    | none => .failure position .unmodeled database
+    | none => .error (.unmodeled, database)
     | some table =>
-      if LiteralData.updateMismatch clock table assignments filter then .failure position .datatypeMismatch database
+      if LiteralData.updateMismatch clock table assignments filter then .error (.datatypeMismatch, database)
       else checkedWrite database target (database.keys target table) (LiteralData.updated clock table assignments filter)
-        position
   | .delete target filter _ => match database.table target with
-    | none => .failure position .unmodeled database
-    | some table => .success (database.setRows target (LiteralData.deleted clock table filter).rows)
+    | none => .error (.unmodeled, database)
+    | some table => .ok (database.setRows target (LiteralData.deleted clock table filter).rows)
   | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ | .query _ =>
-    step clock statement database position
+    step clock statement database
 
 /-- Check that the model describes the statement against the current table.
 INSERT/UPDATE must pass the data domain of the table, and every write and query the
@@ -161,11 +170,7 @@ def advance (position : Nat) (statement : Resolved.Statement) (state : SqlState)
     | some original => .next { state with database := original, snapshot := none }
   | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .upsert .. | .update .. | .delete ..
   | .prepareError _ | .query _ =>
-    let clock := state.clock position
-    match literalStep clock statement state.database position with
-    | .success database => .next { state with database := database }
-    | .failure failed reason database => .halt (state.failed failed reason database)
-    | .pending persisted visible error => .halt (state.finish (.pending persisted visible error))
+    state.publish position (literalStep (state.clock position) statement state.database)
 
 /-- Execute the script from a supplied position and connection state. A halt stops
 the script; a continuing transition advances the position. EOF finishes the

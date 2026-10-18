@@ -1,5 +1,5 @@
-import Belay.Sqlite.Preservation
-import Belay.Sqlite.DatabaseWrites
+import Belay.Sqlite.PreservationLaws
+import Belay.Sqlite.DatabaseWriteLaws
 
 set_option doc.verso true
 
