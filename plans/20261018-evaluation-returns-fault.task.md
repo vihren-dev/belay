@@ -33,6 +33,11 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), decision D2, "Or
 4. **Readiness returns results.** A write's readiness check that computes the written
    table (`insertReady`, `updateReady`, `upsertReady`) gives that table to execution,
    which does not compute it again.
+   Deferred (2026-10-18), by measurement: with one classifier pass, the model suite
+   takes 326 s against 335 s before step 3, so the repeated write computation is a small
+   part of a case's kernel time, and moving results between `statementReady` (a part of
+   the contract's `SupportedSql`) and `literalStep` would couple the two. Step 7, which
+   restructures the effects of statements, is the place for it.
 5. **Syntactic checks use one traversal.** `Expr.any` (and `Expr.map` where a step needs
    it) replaces `Expr.callsJson`; the remaining syntactic rules (JSON calls in joined
    queries, upsert clauses, RETURNING, `NoWrites`, clock cells) are stated with it.

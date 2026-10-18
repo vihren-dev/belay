@@ -24,6 +24,15 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D2.
 - 2026-10-18: code map done (the fault rules, the readiness reruns, the three classifier
   passes and the resolver's use of the predictors).
 
+- 2026-10-18: `Expr.evaluate` gives a value and a `Fault`; `Expr.eval` is its value.
+  `QueryRun.lean` replaces `JsonFaults.lean`: `Query.run` gives rows, fault and
+  overflow, and the query fault rules are stated over `evaluate`. `Expr.any` and
+  `Expr.isJsonCall` (`Resolution/ExprAny.lean`) replace `callsJson`. Every fault
+  example keeps its result. The three suites pass; the review is clean.
+- 2026-10-18: `passFrom` (`VerifierConformance/Pass.lean`) is the one classifier pass,
+  with `passFrom_final` and `passFrom_supported`. The model suite: 326 s (335 s
+  before). Outcome 4 is deferred by that measurement (task file).
+
 ## Remaining
 
 - Implementation, full checks, verdict measurement, review, CI time, pull request A.
