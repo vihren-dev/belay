@@ -54,7 +54,7 @@ def resolveOperand (dqs : Bool) (scope : Scope) (misuse : Bool) : Syntax.Expr �
     let a ← (resolveOperand dqs scope misuse left).mapError (·.under [1])
     let b ← (resolveOperand dqs scope misuse right).mapError (·.under [2])
     if truthTest operator right b.1 then
-      if a.1.isCondition then .ok (.compare operator a.1 b.1, none)
+      if a.1.isTruthValue then .ok (.compare operator a.1 b.1, none)
       else .error (.restriction [1] .valueAsCondition)
     else match affinityIssue a b with
     | some (path, reason) => .error (.restriction (path.map (· + 1)) reason)

@@ -16,6 +16,13 @@ def Resolved.Expr.isCondition : Resolved.Expr → Bool
   | .cast affinity _ => numericAffinity affinity
   | .column _ | .literal _ | .coalesce .. | .json .. | .now _ | .date .. => false
 
+/-- Whether a resolved expression's value is always 0, 1 or NULL: a comparison, a logical
+operator or {lit}`IS NULL`. Arithmetic and a numeric {lit}`CAST` are conditions
+({name}`Resolved.Expr.isCondition`) but can give other numbers, such as {lit}`1 + 1`. -/
+def Resolved.Expr.isTruthValue : Resolved.Expr → Bool
+  | .compare .. | .and .. | .or .. | .not _ | .isNull .. => true
+  | .arithmetic .. | .cast .. | .column _ | .literal _ | .coalesce .. | .json .. | .now _ | .date .. => false
+
 /-- The issue of an aggregate where only a row value can be: SQLite's
 {lit}`misuse of aggregate function` when {lit}`misuse` is true (in {lit}`WHERE`, or
 inside another aggregate), else a model restriction (inside an expression of a
@@ -73,8 +80,9 @@ def Syntax.Expr.unquotedBoolean : Syntax.Expr → Bool
 operand is an unquoted {lit}`TRUE` or {lit}`FALSE` that names no column, so it resolved to
 its keyword value. SQLite then tests the truth of the left operand ({lit}`TK_TRUTH`):
 {lit}`2 IS TRUE` is 1, although {lit}`2 IS 1` is 0. For a left operand whose value is 0, 1
-or NULL ({name}`Resolved.Expr.isCondition`) the test equals the comparison with the keyword
-value; resolution refuses any other left operand ({lit}`valueAsCondition`). -/
+or NULL ({name}`Resolved.Expr.isTruthValue`) the test equals the comparison with the keyword
+value; resolution refuses any other left operand ({lit}`valueAsCondition`), also
+{lit}`(1 + 1) IS TRUE`, which is 1 in SQLite. -/
 def truthTest (operator : Comparison) (right : Syntax.Expr) (resolved : Resolved.Expr) : Bool :=
   (operator == .is || operator == .isNot) && right.unquotedBoolean && resolved.literal?.isSome
 

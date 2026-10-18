@@ -176,5 +176,9 @@ def never : Expr := .compare .eq (.numeric "1") (.numeric "0")
     "(1 < 2) IS TRUE", written (.compare .isNot (.compare .gt (.numeric "1") (.numeric "2"))
     (.identifier "TRUE" .none)) "(1 > 2) IS NOT TRUE"]) == some [[.integer 1, .integer 1]]
 #guard restrictedOne (bare [written (.compare .is (.numeric "2") (.identifier "TRUE" .none)) "2 IS TRUE"])
+#guard restrictedOne (bare [written (.compare .is (.arithmetic .add (.numeric "1") (.numeric "1"))
+  (.identifier "TRUE" .none)) "(1 + 1) IS TRUE"])
+#guard restrictedOne (bare [written (.compare .is (.cast (.numeric "2") "INTEGER") (.identifier "TRUE" .none))
+  "CAST(2 AS INTEGER) IS TRUE"])
 
 end Belay.Sqlite.Resolution.QueryResolutionExamples
