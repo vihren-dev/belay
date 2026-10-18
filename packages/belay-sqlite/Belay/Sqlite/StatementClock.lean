@@ -1,7 +1,7 @@
 import Belay.Sqlite.Resolution.Resolved
 import Belay.Sqlite.ClockReads
 import Belay.Sqlite.StoreValue
-import Belay.Sqlite.QueryEval
+import Belay.Sqlite.JsonReady
 
 set_option doc.verso true
 
@@ -46,46 +46,18 @@ def Cell.expression? : Cell → Option Expr
   | .value _ => none
   | .expression term => some term
 
-/-- The expressions of an aggregate result column: its operand, none for {lit}`COUNT(*)`. -/
-def Aggregate.expressions : Aggregate → List Expr
-  | .countRows => []
-  | .count operand | .min operand | .max operand | .sum operand | .avg operand => [operand]
-
-/-- The expressions of a result column. -/
-def Output.expressions : Output → List Expr
-  | .scalar term => [term]
-  | .aggregate function => function.expressions
-
-/-- Every expression of a query: the arguments and {lit}`ON` condition of each source,
-{lit}`WHERE`, {lit}`GROUP BY`, the result columns and the {lit}`ORDER BY` expressions. -/
-def Query.clockExpressions (query : Query) : List Expr :=
-  query.sources.flatMap (fun join => (match join.source with
-    | .each json path => json :: path.toList
-    | .table _ | .subquery => []) ++ join.condition.toList) ++
-  query.filter.toList ++ query.groupBy ++ query.columns.flatMap Output.expressions ++
-  query.orderBy.flatMap fun (key, _) => match key with
-    | .expression term => [term]
-    | .output _ => []
-
-/-- The expressions of an {lit}`ON CONFLICT` clause: the values and the filter of
-{lit}`DO UPDATE`. -/
-def ConflictClause.clockExpressions (clause : ConflictClause) : List Expr :=
-  match clause.action with
-  | .nothing => []
-  | .update assignments filter => assignments.map (·.2) ++ filter.toList
-
 /-- Every expression of a statement that evaluation reads: the expression cells of INSERT
 rows ({name}`Cell.expression?`), the {lit}`RETURNING` columns, the values and filters of
-writes, the clauses of an upsert and the expressions of a query
-({name}`Query.clockExpressions`); a schema or transaction statement and a prepare error
+writes, the clauses of an upsert ({name}`ConflictClause.expressions`) and the expressions
+of a query ({name}`Query.expressions`); a schema or transaction statement and a prepare error
 have none. -/
 def Statement.clockExpressions : Statement → List Expr
   | .insert _ rows returning => rows.flatten.filterMap Cell.expression? ++ returning.map (·.1)
   | .upsert _ rows clauses returning _ =>
-    rows.flatten.filterMap Cell.expression? ++ clauses.flatMap ConflictClause.clockExpressions ++ returning.map (·.1)
+    rows.flatten.filterMap Cell.expression? ++ clauses.flatMap ConflictClause.expressions ++ returning.map (·.1)
   | .update _ assignments filter returning => assignments.map (·.2) ++ filter.toList ++ returning.map (·.1)
   | .delete _ filter returning => filter.toList ++ returning.map (·.1)
-  | .query inner => inner.clockExpressions
+  | .query inner => inner.expressions
   | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ => []
 
 /-- Whether a statement reads the clock: it has an expression that reads it
