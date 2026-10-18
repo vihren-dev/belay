@@ -11,8 +11,8 @@ execution reaches. -/
 namespace Belay.Sqlite
 
 /-- For every successful resolution of INSERT, the catalog is unchanged and the resolved
-statement leaves every catalog unchanged ({name}`Resolved.Statement.applyCatalog`) and is
-not transaction control ({name}`Resolved.Statement.isControl`).
+statement applied to the input catalog gives the input catalog again
+({name}`Resolved.Statement.applyCatalog`); the statement is not transaction control ({name}`Resolved.Statement.isControl`).
 Proof sketch: every branch of the resolver returns the input catalog and a write, a
 clocked write or a prepare error. -/
 theorem resolveInsert_same (context : ResolveContext) (catalog after : Catalog) (index : Nat)
@@ -31,8 +31,8 @@ theorem resolveInsert_same (context : ResolveContext) (catalog after : Catalog) 
     | (cases ok)
 
 /-- For every successful resolution of UPDATE, the catalog is unchanged and the resolved
-statement leaves every catalog unchanged ({name}`Resolved.Statement.applyCatalog`) and is
-not transaction control ({name}`Resolved.Statement.isControl`).
+statement applied to the input catalog gives the input catalog again
+({name}`Resolved.Statement.applyCatalog`); the statement is not transaction control ({name}`Resolved.Statement.isControl`).
 Proof sketch: every branch of the resolver returns the input catalog and a write, a
 clocked write or a prepare error. -/
 theorem resolveUpdate_same (context : ResolveContext) (catalog after : Catalog) (index : Nat)
@@ -50,8 +50,8 @@ theorem resolveUpdate_same (context : ResolveContext) (catalog after : Catalog) 
     | (cases ok)
 
 /-- For every successful resolution of DELETE, the catalog is unchanged and the resolved
-statement leaves every catalog unchanged ({name}`Resolved.Statement.applyCatalog`) and is
-not transaction control ({name}`Resolved.Statement.isControl`).
+statement applied to the input catalog gives the input catalog again
+({name}`Resolved.Statement.applyCatalog`); the statement is not transaction control ({name}`Resolved.Statement.isControl`).
 Proof sketch: every branch of the resolver returns the input catalog and a write, a
 clocked write or a prepare error. -/
 theorem resolveDelete_same (context : ResolveContext) (catalog after : Catalog) (index : Nat)

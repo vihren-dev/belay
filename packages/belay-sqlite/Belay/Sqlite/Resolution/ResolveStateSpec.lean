@@ -26,8 +26,10 @@ def ResolveState.after (state : ResolveState) : Resolved.Statement → ResolveSt
     { state with catalog := statement.applyCatalog state.catalog }
 
 /-- For every state and statement that is not transaction control
-({name}`Resolved.Statement.isControl`), {name}`ResolveState.after` applies the
-statement's catalog change and keeps the saved catalog. -/
+({name}`Resolved.Statement.isControl`), {name}`ResolveState.after` applies the statement's
+catalog change and keeps the saved catalog. Proof sketch: induction on the statement:
+BEGIN, COMMIT and ROLLBACK contradict the premise, a clocked statement follows from the
+statement it wraps, and every other constructor is the definition. -/
 theorem ResolveState.after_of_isControl (state : ResolveState) {statement : Resolved.Statement}
     (ordinary : statement.isControl = false) :
     state.after statement = { state with catalog := statement.applyCatalog state.catalog } := by
@@ -52,7 +54,8 @@ theorem resolveCreateTable_applyCatalog (context : ResolveContext) (catalog afte
 
 /-- For every successful resolution of CREATE INDEX, the catalog after it is
 {name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
-transaction control. Proof sketch: as for CREATE TABLE, with {name}`Catalog.createIndex`. -/
+transaction control. Proof sketch: as for CREATE TABLE, with {name}`Catalog.createIndex`.
+-/
 theorem resolveCreateIndex_applyCatalog (context : ResolveContext) (catalog after : Catalog) (index : Nat)
     (name : String) (unique : Bool) (tableName : String) (columns : List String)
     (statement : Resolved.Statement)
@@ -78,7 +81,8 @@ theorem resolveAddColumn_applyCatalog (context : ResolveContext) (catalog after 
 /-- For every context, state, index and statement that resolves, the next state is
 {name}`ResolveState.after` of the resolved statement. Proof sketch: transaction control
 resolves to itself; every other statement gives a resolved statement that is not control
-and the catalog of {name}`Resolved.Statement.applyCatalog`, by the lemma of its resolver. -/
+and the catalog of {name}`Resolved.Statement.applyCatalog`, by the lemma of its resolver.
+-/
 theorem resolveStatement_after (context : ResolveContext) (state next : ResolveState) (index : Nat)
     (statement : Syntax.Statement) (resolved : Resolved.Statement)
     (ok : resolveStatement context state index statement = .ok (resolved, next)) :
@@ -156,7 +160,9 @@ theorem resolveFrom_after (context : ResolveContext) :
 
 /-- For every context, catalog and script with a successful resolution, the resulting
 catalog is the catalog of the fold of {name}`ResolveState.after` over the resolved
-statements from the catalog outside a transaction. -/
+statements from the catalog outside a transaction. Proof sketch: unfold {name}`resolve`; a
+restriction contradicts the premise, and a resolution is the state of
+{name}`resolveFrom_after` from position zero outside a transaction. -/
 theorem resolve_after (context : ResolveContext) (catalog next : Catalog) (script : List Syntax.Statement)
     (resolved : List Resolved.Statement) (ok : resolve context catalog script = .resolved resolved next) :
     next = (resolved.foldl ResolveState.after { catalog }).catalog := by

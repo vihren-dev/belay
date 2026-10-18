@@ -28,8 +28,29 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D1 and amendment
 - 2026-10-18: code map done. The owner chose the full D1 (owner decision 5). ADR 0013
   amendment 1 records the contract change, the approved files, the shared catalog
   functions, the policy split and the verdict risk.
+- 2026-10-18: the unused preservation chain is deleted (645 lines; `AlgorithmExamples`
+  reads the final table itself). The three suites pass on that commit.
+- 2026-10-18: `Catalog.createTable`, `Catalog.createIndex` and `Catalog.addColumn` are the
+  catalog changes; the resolver calls them.
+- 2026-10-18: the step itself. `Database` is `{ catalog, rows }` with `Database.table` as
+  the view, `Database.setRows` and `Database.addColumn`; `DatabaseFacts.lean` states how
+  they change the view. Writes read their keys and policy from the state
+  (`Database.keys`, `Catalog.writePolicy` in the new `Resolution/ConflictPolicy.lean`);
+  UPSERT keeps its `OR` algorithm. Conformance observes databases; `resolveStates`,
+  `stateBound`, `observationState` and `Tables` are gone. The contract changes as
+  amendment 1 says. `Conforms.replaceRows`, `Conforms.set`, `Database.set_comm` and
+  `Catalog.appendAt` are replaced by `Conforms.setRows`, `Database.setRows_comm`,
+  `Conforms.addColumn` and `Conforms.createTable`. Only one approved file changes
+  (`examples/atuin/approved/HistoryMapping.lean`, `database.table position`); the
+  other approved files compile unchanged. `violates_required_catalog` takes its
+  catalog premise for admitted databases. The mutant anchors moved.
+  `just conformance-coverage` (`conformance/instrument_model.py`) was already stale
+  before this step (`c.names`); it is not part of any suite and is not changed here.
+- 2026-10-18: `runSqlAt_catalog` (outcome 2): resolution and execution give the same
+  catalog for every run without an error, with a checked use in
+  `CatalogAgreementExamples.lean`.
 
 ## Remaining
 
-- Implementation, full checks, verdict measurement, review, CI time, pull request A;
-  pull request B if a verdict changes.
+- Full checks of the last two commits, verdict measurement, review, CI time, pull
+  request A; pull request B if a verdict changes.

@@ -63,9 +63,9 @@ theorem literalStep_success_catalog {statement : Resolved.Statement} {database r
 /-- For every position, statement, connection states and resolution state: if the
 connection state agrees with the resolution state ({name}`SqlState.Agrees`) and
 {name}`advance` continues, then the next connection state agrees with
-{name}`ResolveState.after` of the statement. Proof sketch: BEGIN saves the database
-whose catalog the resolution saves, COMMIT drops both, ROLLBACK restores the snapshot
-whose catalog the resolution restores, and every other statement follows
+{name}`ResolveState.after` of the statement. Proof sketch: BEGIN saves the database whose
+catalog the resolution saves, COMMIT drops both, ROLLBACK restores the snapshot whose
+catalog the resolution restores, and every other statement follows
 {name}`literalStep_success_catalog`. -/
 theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {sql next : SqlState} {state : ResolveState}
     (agrees : sql.Agrees state) (continued : advance position statement sql = .next next) :
@@ -109,7 +109,11 @@ theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {sql ne
 
 /-- For every position, statement, connection state and outcome: if {name}`advance` halts
 with the outcome, the outcome has an error ({name}`Outcome.error?`). A halt is never a
-success and never a pending transaction without an error. -/
+success and never a pending transaction without an error. Proof sketch: split on the
+statement: BEGIN in a transaction finishes a failure, which keeps its error with or
+without a snapshot; COMMIT and ROLLBACK without a transaction fail; every other statement
+halts only on a failure of {lit}`literalStep` ({lit}`literal_cases`), whose error
+{name}`SqlState.failed_error` keeps. -/
 theorem advance_halt_error {position : Nat} {statement : Resolved.Statement} {sql : SqlState} {outcome : Outcome}
     (halted : advance position statement sql = .halt outcome) : outcome.error?.isSome := by
   have finished : ∀ index reason database,

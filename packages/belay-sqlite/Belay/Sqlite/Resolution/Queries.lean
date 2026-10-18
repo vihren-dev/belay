@@ -172,8 +172,8 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
   | .error issue => issueResolution catalog index [] issue
 
 /-- For every successful resolution of a {lit}`SELECT`, the catalog is unchanged and the
-resolved statement leaves every catalog unchanged ({lit}`Resolved.Statement.applyCatalog`) and
-is not transaction control.
+resolved statement applied to the input catalog gives the input catalog again
+({lit}`Resolved.Statement.applyCatalog`); the statement is not transaction control.
 Proof sketch: every branch of the resolver returns the input catalog and a query or a
 prepare error. -/
 theorem resolveSelect_same (context : ResolveContext) (catalog after : Catalog) (index : Nat)
