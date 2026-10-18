@@ -39,13 +39,16 @@ def resolveReference (catalog : Catalog) (path : List Nat) (reference : Syntax.T
   | none => (fun (position, source) => (.table position, source)) <$> resolveTableReference catalog path reference
   | some arguments => (fun source => (.each path arguments, source)) <$> eachReference path reference arguments
 
-/-- Whether the model refuses the join at {lit}`item` because its source is
-{lit}`json_each` ({name}`RestrictionKind.functionJoin`): as the right operand of a right or
-full join, or with {lit}`USING` or {lit}`NATURAL`. An operator that SQLite refuses is left
-to {name}`mergeJoins`. -/
-def functionJoinChecked (item : Nat) (join : Syntax.Join) (operator : Option (Resolved.JoinKind × Bool)) :
-    Except ValueIssue Unit :=
-  if join.source.arguments.isSome && (rightOrFull operator || join.usingColumns.isSome || operator.any (·.2)) then
+/-- Whether the model refuses the join at {lit}`item` for a {lit}`json_each` source
+({name}`RestrictionKind.functionJoin`): its source is {lit}`json_each` as the right operand
+of a right or full join, or with {lit}`USING` or {lit}`NATURAL`; or it is {lit}`NATURAL` and
+an earlier source is {lit}`json_each` ({lit}`afterFunction`), whose hidden columns SQLite
+skips. An operator that SQLite refuses is left to {name}`mergeJoins`. -/
+def functionJoinChecked (afterFunction : Bool) (item : Nat) (join : Syntax.Join)
+    (operator : Option (Resolved.JoinKind × Bool)) : Except ValueIssue Unit :=
+  let natural := operator.any (·.2)
+  if join.source.arguments.isSome && (rightOrFull operator || join.usingColumns.isSome || natural)
+      || afterFunction && natural then
     .error (.restriction [2, item, 0] .functionJoin)
   else .ok ()
 
@@ -64,7 +67,8 @@ def resolveSources (catalog : Catalog) (source : Option Syntax.TableReference) (
   let operators := joins.map (joinOperator ·.operator)
   let joined ← resolveAll (fun item ((join : Syntax.Join), operator) => do
     let resolved ← resolveReference catalog [2, item, 1] join.source
-    functionJoinChecked item join operator
+    let earlier := source :: (joins.take item).map (·.source)
+    functionJoinChecked (earlier.any (·.arguments.isSome)) item join operator
     .ok resolved) (joins.zip operators)
   let sources := firstSource :: joined.map Prod.snd
   if let some (item, _) := findPosition (fun (item, source) => sources.take item |>.any fun earlier =>

@@ -76,7 +76,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .windowedGroupSum => "SUM in a grouped query with LIMIT or OFFSET is not modeled, because SQLite may stop before an overflowing group; remove the window or the SUM"
   | .constantFunctionError => "a constant value in VALUES or SET whose JSON function fails is not modeled; correct the JSON text or the path"
   | .tableFunction => "only json_each with one or two arguments is modeled as a table-valued function in FROM; use json_each or a table"
-  | .functionJoin => "json_each as the right operand of RIGHT or FULL JOIN, or with NATURAL or USING, is not modeled; write JOIN or LEFT JOIN with ON"
+  | .functionJoin => "json_each as the right operand of RIGHT or FULL JOIN, with NATURAL or USING, or before a NATURAL JOIN, is not modeled; write JOIN or LEFT JOIN with ON"
   | .laterSourceInArguments => "an argument of json_each that reads a later source is not modeled; write the source before json_each"
 
 /-- Every restriction, in the order of the registry. -/

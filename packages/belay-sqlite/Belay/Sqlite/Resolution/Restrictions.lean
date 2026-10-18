@@ -86,8 +86,9 @@ inductive RestrictionKind where
   /-- Only {lit}`json_each` with one or two arguments is modeled as a table-valued function in {lit}`FROM` (ADR 0012 slice 6d). -/
   | tableFunction
   /-- {lit}`json_each` as the right operand of a right or full join, or with {lit}`NATURAL`
-  or {lit}`USING`, is not modeled: a correlated source has no fixed rows to keep unmatched,
-  and {lit}`NATURAL` skips hidden columns (ADR 0012 slice 6d; ADR 0013, amendment 2). -/
+  or {lit}`USING`, and a {lit}`NATURAL` join after {lit}`json_each`, are not modeled: a
+  correlated source has no fixed rows to keep unmatched, and {lit}`NATURAL` skips hidden
+  columns (ADR 0012 slice 6d; ADR 0013, amendment 2). -/
   | functionJoin
   /-- An argument of {lit}`json_each` that reads a later source is not modeled: SQLite
   evaluates it only because its planner reorders inner joins, and the model joins in

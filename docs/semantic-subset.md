@@ -206,7 +206,7 @@ should shrink.
 | `negative-offset` | A negative OFFSET is not modeled | ADR 0012 slice 1 |
 | `table-function` | Only `json_each` with one or two arguments is modeled as a table-valued function in FROM | ADR 0012 slice 6d |
 | `later-table-in-on` | An ON condition that names a source joined after it is not modeled: SQLite moves it to WHERE without outer joins and refuses it otherwise | ADR 0012 amendment 2; ADR 0013 amendment 2 |
-| `function-join` | `json_each` as the right operand of RIGHT or FULL JOIN, or with NATURAL or USING, is not modeled | ADR 0012 slice 6d; ADR 0013 amendment 2 |
+| `function-join` | `json_each` as the right operand of RIGHT or FULL JOIN, with NATURAL or USING, or before a NATURAL JOIN, is not modeled | ADR 0012 slice 6d; ADR 0013 amendment 2 |
 | `later-source-in-arguments` | An argument of `json_each` that reads a later source is not modeled, because the model joins in written order | ADR 0012 slice 6d; ADR 0013 amendment 2 |
 
 #### Undecided

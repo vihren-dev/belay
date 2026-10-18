@@ -30,7 +30,9 @@ def each (alias : String) (argument : Expr) : TableReference :=
 def rowsOf (results : List ResultColumn) (source : TableReference) (joins : List Join) : Option (List (List Value)) :=
   match resolvedOne results source joins with
   | some (.query query) => (query.source database).map fun source => query.results source.rows
-  | _ => none
+  | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some .begin | some .commit
+  | some .rollback | some (.insert ..) | some (.update ..) | some (.upsert ..) | some (.delete ..)
+  | some (.prepareError _) | some (.clocked ..) | none => none
 
 /-- A result column of {lit}`x.c`. -/
 def named (source column : String) : ResultColumn := .expression (qualified source column) none s!"{source}.{column}"
@@ -49,6 +51,8 @@ def named (source column : String) : ResultColumn := .expression (qualified sour
 #guard restrictedOne [.star] (table "t") [joined ["RIGHT"] (each "e" (qualified "t" "b"))]
 #guard restrictedOne [.star] (table "t") [joined ["NATURAL"] (each "e" (qualified "t" "b"))]
 #guard restrictedOne [.star] (table "t") [{ joined [] (each "e" (qualified "t" "b")) with usingColumns := some ["a"] }]
+-- NATURAL after json_each is restricted: SQLite skips the hidden columns `json` and `root`.
+#guard restrictedOne [.star] (each "e" (qualified "t" "b")) [joined ["NATURAL"] (table "u")]
 -- An argument that reads a later source is restricted, also when the later source is a table.
 #guard restrictedOne [.star] (each "e" (qualified "t" "b")) [joined [] (table "t")]
 
