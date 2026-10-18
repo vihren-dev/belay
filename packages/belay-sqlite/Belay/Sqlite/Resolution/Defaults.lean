@@ -11,7 +11,7 @@ namespace Belay.Sqlite
 NULL, numeric, text and blob literals are admitted, including a single sign on a
 numeric literal. Bare identifiers are text, except unquoted TRUE and FALSE,
 which are integers. An oversized hexadecimal literal gives SQLite's
-{name}`PrepareError.hexLiteralTooBig` preparation error, a SQLite rule. Time keywords and compound expressions are model restrictions.
+{name}`ExprError.hexLiteralTooBig` preparation error, a SQLite rule. Time keywords and compound expressions are model restrictions.
 For example, {assert}`literalDefault (.string [49]) = .ok (.text [49])`. -/
 def literalDefault : Syntax.Expr → Except ValueIssue Value
   | .null => .ok .null

@@ -23,7 +23,7 @@ def upsertScope (tableName : String) (columns : List CatalogColumn) : Scope :=
 /-- The key that a conflict target names: the first key whose columns are the target's
 columns, in any order. An unknown name is {lit}`no such column: %s`; a target that is
 no key, also one that repeats a column, is
-{name}`PrepareError.conflictTargetMismatch`. -/
+{name}`ExprError.conflictTargetMismatch`. -/
 def targetKey (columns : List CatalogColumn) (keys : List (List Nat)) (names : List String) :
     Except ValueIssue (List Nat) := do
   let positions ← resolveAll (fun _ name => match columnPosition columns name with

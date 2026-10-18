@@ -13,11 +13,12 @@ values and no time functions, so those are model restrictions. -/
 
 namespace Belay.Sqlite
 
-/-- Why an expression has no value: a SQLite prepare error, or a model restriction
-with the path of the node inside the expression. -/
+/-- Why an expression has no value: a SQLite prepare error of an expression
+({name}`ExprError`, which names no catalog object), or a model restriction with the path
+of the node inside the expression. -/
 inductive ValueIssue where
   /-- SQLite refuses to prepare the statement. -/
-  | prepare (error : PrepareError)
+  | prepare (error : ExprError)
   /-- The model does not describe the expression at this path, for the reason of the
   restriction kind. -/
   | restriction (path : List Nat) (kind : RestrictionKind)

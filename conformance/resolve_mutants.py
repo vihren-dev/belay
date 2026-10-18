@@ -51,15 +51,15 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "  | some (_, { entry := .table _, .. }) | none =>"),
     "no_too_many_columns": (SQLITE + "Resolution/Definitions.lean",
         "    else if table.columns.length + 1 > context.profile.limits.columns then\n"
-        "      prepareError catalog (.tooManyColumns tableName)\n", ""),
+        "      prepareError catalog (.expression (.tooManyColumns tableName))\n", ""),
     "no_duplicate_column": (SQLITE + "Resolution/Definitions.lean",
         "    else if (columnPosition table.columns definition.name).isSome then\n"
-        "      prepareError catalog (.duplicateColumn definition.name)\n", ""),
+        "      prepareError catalog (.expression (.duplicateColumn definition.name))\n", ""),
     "no_such_table": (SQLITE + "Resolution/Definitions.lean",
         "  | none => prepareError catalog (.noSuchTable tableName)\n  | some (position, table) =>\n"
-        "    if reservedName tableName then prepareError catalog (.tableMayNotBeAltered tableName)",
+        "    if reservedName tableName then prepareError catalog (.expression (.tableMayNotBeAltered tableName))",
         "  | none => restrict index [] .createIndexRuns\n  | some (position, table) =>\n"
-        "    if reservedName tableName then prepareError catalog (.tableMayNotBeAltered tableName)"),
+        "    if reservedName tableName then prepareError catalog (.expression (.tableMayNotBeAltered tableName))"),
     "commit_without_transaction": (SQLITE + "StatementStep.lean",
         "    | none => .halt (.failure position .noActiveTransaction state.database)\n"
         "    | some _ => .next { state with snapshot := none }",

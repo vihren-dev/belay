@@ -9,8 +9,8 @@ that names no column folds to the literal of its stored value. -/
 namespace Belay.Sqlite
 
 /-- Resolve the items in order from a starting position, and stop at the first issue. -/
-def resolveAllFrom (resolveOne : Nat → α → Except ValueIssue β) (start : Nat) :
-    List α → Except ValueIssue (List β)
+def resolveAllFrom (resolveOne : Nat → α → Except ε β) (start : Nat) :
+    List α → Except ε (List β)
   | [] => .ok []
   | item :: rest => do
     let value ← resolveOne start item
@@ -18,7 +18,7 @@ def resolveAllFrom (resolveOne : Nat → α → Except ValueIssue β) (start : N
     return value :: values
 
 /-- Resolve a list in order from position zero, and stop at the first issue. -/
-def resolveAll (resolveOne : Nat → α → Except ValueIssue β) (items : List α) : Except ValueIssue (List β) :=
+def resolveAll (resolveOne : Nat → α → Except ε β) (items : List α) : Except ε (List β) :=
   resolveAllFrom resolveOne 0 items
 
 /-- The resolved value of one {lit}`SET` assignment for the column at

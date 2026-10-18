@@ -13,8 +13,6 @@ import Belay.Sqlite.Resolution.ColumnSpec
 import Belay.Sqlite.Resolution.RowSpec
 import Belay.Sqlite.Resolution.CatalogSpec
 import Belay.Sqlite.Resolution.NamesSpec
-import Belay.Sqlite.Resolution.ErrorKinds
-import Belay.Sqlite.Resolution.PrepareSpec
 import Belay.Sqlite.Resolution.PrepareRules
 import Belay.Sqlite.Resolution.UpdateRules
 import Belay.Sqlite.Resolution.DefinitionRules

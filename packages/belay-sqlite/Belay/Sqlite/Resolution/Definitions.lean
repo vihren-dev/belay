@@ -15,7 +15,7 @@ namespace Belay.Sqlite
 
 /-- The positions of key columns, or {lit}`no such column: %s` for the first name
 that no column has. -/
-def keyPositions (columns : List CatalogColumn) : List String → Except PrepareError (List Nat)
+def keyPositions (columns : List CatalogColumn) : List String → Except ExprError (List Nat)
   | [] => .ok []
   | name :: rest => match columnPosition columns name with
     | some position => (keyPositions columns rest).map (position :: ·)
@@ -30,7 +30,7 @@ def updateLast (items : List α) (change : α → α) : List α :=
 
 /-- Apply one column constraint of the last column of a table being created. -/
 def applyConstraint (tableName : String) (definition : Syntax.ColumnDefinition)
-    (table : CatalogTable) : Syntax.ColumnConstraint → Except PrepareError CatalogTable
+    (table : CatalogTable) : Syntax.ColumnConstraint → Except ExprError CatalogTable
   | .primaryKey descending algorithm =>
     if !table.primaryKey.isEmpty then .error (.multiplePrimaryKeys tableName) else
     let position := table.columns.length - 1
@@ -50,7 +50,7 @@ def applyConstraint (tableName : String) (definition : Syntax.ColumnDefinition)
 a column would exceed the limit, then {lit}`duplicate column name: %s`, then each
 column constraint ({lit}`sqlite3AddColumn` and the constraint actions). -/
 def addDefinitions (limit : Nat) (tableName : String) (table : CatalogTable) :
-    List Syntax.ColumnDefinition → Except PrepareError CatalogTable
+    List Syntax.ColumnDefinition → Except ExprError CatalogTable
   | [] => .ok table
   | definition :: rest => do
     if table.columns.length + 1 > limit then throw (.tooManyColumns tableName)
@@ -64,7 +64,7 @@ def addDefinitions (limit : Nat) (tableName : String) (table : CatalogTable) :
 /-- Apply the table constraints in written order. A table PRIMARY KEY with one
 column of declared type INTEGER is a rowid alias, whatever its sort order. -/
 def addTableConstraints (tableName : String) (table : CatalogTable) :
-    List Syntax.TableConstraint → Except PrepareError CatalogTable
+    List Syntax.TableConstraint → Except ExprError CatalogTable
   | [] => .ok table
   | .primaryKey names algorithm :: rest => do
     if !table.primaryKey.isEmpty then throw (.multiplePrimaryKeys tableName)
@@ -96,14 +96,14 @@ def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : N
   let statistics := context.mode == .description && statisticsTable name columns constraints
   if reservedName name && !statistics then
     if context.mode == .description then restrict index [0] .engineTable
-    else prepareError catalog (.reservedName name)
+    else prepareError catalog (.expression (.reservedName name))
   else match catalog.find name with
   | some (_, { entry := .table _, .. }) => prepareError catalog (.tableExists name)
   | some (_, { entry := .index _, .. }) => prepareError catalog (.indexNameUsed name)
   | none =>
     match addDefinitions context.profile.limits.columns name { columns := [] } columns >>=
         (addTableConstraints name · constraints) with
-    | .error error => prepareError catalog error
+    | .error error => prepareError catalog (.expression error)
     | .ok table =>
       if columns.any (rowidName ·.name) then restrict index [1] .rowidColumnName
       else if context.mode == .execution && (!constraints.isEmpty || columns.any (!·.constraints.isEmpty)) then
@@ -120,13 +120,13 @@ def resolveCreateIndex (context : ResolveContext) (catalog : Catalog) (index : N
   match catalog.findTable tableName with
   | none => prepareError catalog (.noSuchTable tableName)
   | some (position, table) =>
-    if reservedName tableName then prepareError catalog (.tableMayNotBeIndexed tableName)
-    else if reservedName name then prepareError catalog (.reservedName name)
+    if reservedName tableName then prepareError catalog (.expression (.tableMayNotBeIndexed tableName))
+    else if reservedName name then prepareError catalog (.expression (.reservedName name))
     else match catalog.find name with
     | some (_, { entry := .table _, .. }) => prepareError catalog (.tableNameUsed name)
     | some (_, { entry := .index _, .. }) => prepareError catalog (.indexExists name)
     | none => match keyPositions table.columns columns with
-      | .error error => prepareError catalog error
+      | .error error => prepareError catalog (.expression error)
       | .ok positions =>
         let created := { table := position, columns := positions, unique }
         .ok (.createIndex catalog.length name created, catalog.createIndex name created)
@@ -152,17 +152,17 @@ def resolveAddColumn (context : ResolveContext) (catalog : Catalog) (index : Nat
   match catalog.findTable tableName with
   | none => prepareError catalog (.noSuchTable tableName)
   | some (position, table) =>
-    if reservedName tableName then prepareError catalog (.tableMayNotBeAltered tableName)
+    if reservedName tableName then prepareError catalog (.expression (.tableMayNotBeAltered tableName))
     else if table.columns.length + 1 > context.profile.limits.columns then
-      prepareError catalog (.tooManyColumns tableName)
+      prepareError catalog (.expression (.tooManyColumns tableName))
     else if (columnPosition table.columns definition.name).isSome then
-      prepareError catalog (.duplicateColumn definition.name)
+      prepareError catalog (.expression (.duplicateColumn definition.name))
     else if definition.constraints.any Syntax.ColumnConstraint.isPrimaryKey && !table.primaryKey.isEmpty then
-      prepareError catalog (.multiplePrimaryKeys tableName)
+      prepareError catalog (.expression (.multiplePrimaryKeys tableName))
     else if definition.constraints.any Syntax.ColumnConstraint.nonconstantDefault then
-      prepareError catalog (.defaultNotConstant definition.name)
-    else if definition.constraints.any Syntax.ColumnConstraint.isPrimaryKey then prepareError catalog .cannotAddPrimaryKey
-    else if definition.constraints.any Syntax.ColumnConstraint.isUnique then prepareError catalog .cannotAddUnique
+      prepareError catalog (.expression (.defaultNotConstant definition.name))
+    else if definition.constraints.any Syntax.ColumnConstraint.isPrimaryKey then prepareError catalog (.expression .cannotAddPrimaryKey)
+    else if definition.constraints.any Syntax.ColumnConstraint.isUnique then prepareError catalog (.expression .cannotAddUnique)
     else if rowidName definition.name then restrict index [1] .rowidColumnName
     else
       match addedColumn definition with

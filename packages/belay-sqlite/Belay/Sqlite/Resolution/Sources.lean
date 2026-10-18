@@ -38,20 +38,34 @@ def sourceStarColumns (scope : Scope) (source : String) : Except ValueIssue (Lis
 /-- The number of tables in a join that SQLite accepts ({lit}`SQLITE_MAX_SRCLIST`). -/
 def maximumJoinTables : Nat := 64
 
+/-- Why the sources of {lit}`FROM` do not resolve: an issue of an expression or of a join
+form ({name}`ValueIssue`), or SQLite's {lit}`no such table: %s` for a table that the
+catalog does not have, which names a catalog object and so is no value issue. -/
+inductive SourceIssue where
+  /-- An issue of an expression or of a join form. -/
+  | value (issue : ValueIssue)
+  /-- {lit}`no such table: %s`, with the table name as written. -/
+  | noSuchTable (name : String)
+  deriving Repr, DecidableEq
+
+/-- A value issue is a source issue ({name}`SourceIssue.value`), so the resolution of the
+sources can use the functions that give value issues. -/
+instance : MonadLift (Except ValueIssue) (Except SourceIssue) := ⟨Except.mapError .value⟩
+
 /-- The source of one table reference at {lit}`path`: the table's catalog position and the
 source with its name (the alias, else the table name as declared, as SQLite names it in
 messages). A missing table is SQLite's
 {lit}`no such table: %s`; one of SQLite's own tables is a model restriction, as in a
 query of one table. -/
 def resolveTableReference (catalog : Catalog) (path : List Nat) (reference : Syntax.TableReference) :
-    Except ValueIssue (Nat × ScopeSource) :=
+    Except SourceIssue (Nat × ScopeSource) :=
   match catalog.findTable reference.table with
   | some (position, table) =>
     let declared := (catalog[position]?.map (·.name)).getD reference.table
     .ok (position, { name := reference.alias.getD declared, columns := table.columns })
   | none =>
-    if reservedName reference.table then .error (.restriction path .systemTable)
-    else .error (.prepare (.noSuchTable reference.table))
+    if reservedName reference.table then .error (.value (.restriction path .systemTable))
+    else .error (.noSuchTable reference.table)
 
 /-- The flags that the keywords of a join operator set, as SQLite's {lit}`sqlite3JoinType`
 gives them: {lit}`NATURAL`, {lit}`LEFT`, {lit}`RIGHT`, {lit}`OUTER` and {lit}`INNER`

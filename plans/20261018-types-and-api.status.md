@@ -34,6 +34,16 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D8 and D7.
   change, because `Float` is opaque to proofs. The task's outcome 2 is amended by the
   decision. Verdict counts unchanged (the step 5 reports were collected by the GC;
   `build/agent-logs/report-s7b.json` keeps this one for later diffs).
+- 2026-10-18: `PrepareError` keeps the five errors that name a catalog object and
+  `expression (ExprError)`; `ExprError` has the 31 others, and `ValueIssue.prepare` carries
+  an `ExprError`. A missing `FROM` table is `SourceIssue.noSuchTable`, outside
+  `ValueIssue`. The definition helpers (`keyPositions`, `mergeAlgorithm`, `addUniqueKey`,
+  `setPrimaryKey`, `addDefinitions`, `addTableConstraints`, `insertPositions`) return
+  `ExprError`. `ErrorKinds`, `IssueLemmas`, `OperandIssues`, `ReturningIssues`,
+  `InsertCellRules`, `UpsertRules` and `PrepareSpec` are gone, and the prepare rules take
+  "the error is not `.expression`" as their premise. `ToJson PrepareError` keeps the
+  derived wire form (examples in `Codec/SourceExamples.lean`); messages are unchanged.
+  The core has 127 modules. Verdict unchanged, entry for entry.
 
 ## Remaining
 

@@ -97,4 +97,13 @@ run_cmd do
 #guard sample.map (·.resolved) == some Generated.resolved
 #guard sample.map (·.nextCatalog) == some Generated.nextCatalog
 
+-- A prepare error has SQLite's message and one flat JSON form, whether it names a catalog
+-- object or not.
+#guard (PrepareError.noSuchTable "t").message == "no such table: t"
+#guard (PrepareError.expression (.noSuchColumn "a")).message == "no such column: a"
+#guard (PrepareError.expression (.valueCount "t" 2 3)).message == "table t has 2 columns but 3 values were supplied"
+#guard (toJson (PrepareError.noSuchTable "t")).compress == "{\"noSuchTable\":{\"name\":\"t\"}}"
+#guard (toJson (PrepareError.expression (.noSuchColumn "a"))).compress == "{\"noSuchColumn\":{\"name\":\"a\"}}"
+#guard (toJson (PrepareError.expression .valuesDiffer)).compress == "\"valuesDiffer\""
+
 end Belay.Sqlite.Codec.SourceExamples

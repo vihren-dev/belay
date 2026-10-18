@@ -1,31 +1,23 @@
-import Belay.Sqlite.Resolution.PrepareSpec
-import Belay.Sqlite.Resolution.UpsertRules
-import Belay.Sqlite.Resolution.InsertCellRules
+import Belay.Sqlite.Resolution.Resolve
 
 set_option doc.verso true
 
-/-! The prepare-error rule for each statement. See the module
-{lit}`Belay.Sqlite.Resolution.PrepareSpec` for the rule and its references. -/
+/-! The prepare-error rule ({lit}`lang_createtable.html` R-01232-54838 and the
+{lit}`no such table` errors of {lit}`sqlite3LocateTable`): resolution gives a prepare
+error that names a catalog object exactly when the named object is missing or the name
+is already used. An error names a catalog object when it is not
+{lit}`PrepareError.expression`: every other error is an {lit}`ExprError`, which is the
+only kind of error that the resolution of expressions and clauses can give. For each
+statement, one theorem shows that such an error has its cause, and one shows that the
+cause gives the error. -/
 
 namespace Belay.Sqlite
-
-/-- For every column limit, name, columns and constraints, an error of the table
-definition steps of CREATE TABLE names no catalog object. Proof sketch: the error
-comes from {name}`addDefinitions_error` or from {name}`addTableConstraints_error`. -/
-theorem tableDefinition_error (limit : Nat) (name : String) (columns : List Syntax.ColumnDefinition)
-    (constraints : List Syntax.TableConstraint) (error : PrepareError)
-    (failed : (addDefinitions limit name { columns := [] } columns >>= (addTableConstraints name · constraints))
-      = .error error) : error.namesObject = false := by
-  simp only [bind, Except.bind] at failed
-  split at failed
-  · rename_i _ cause; cases failed; exact addDefinitions_error _ _ _ _ _ cause
-  · exact addTableConstraints_error _ _ _ _ failed
 
 /-- For every CREATE TABLE whose resolution is a prepare error that names a catalog
 object, the catalog has an object with the folded name, and the catalog is unchanged. -/
 theorem resolveCreateTable_named (context : ResolveContext) (catalog after : Catalog) (index : Nat)
     (name : String) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
-    (error : PrepareError) (named : error.namesObject = true)
+    (error : PrepareError) (named : ∀ cause, error ≠ .expression cause)
     (ok : resolveCreateTable context catalog index name columns constraints = .ok (.prepareError error, after)) :
     (catalog.find name).isSome = true ∧ after = catalog := by
   unfold resolveCreateTable at ok
@@ -34,8 +26,7 @@ theorem resolveCreateTable_named (context : ResolveContext) (catalog after : Cat
   all_goals (try (cases ok; done))
   all_goals cases ok
   all_goals first
-    | (simp [PrepareError.namesObject] at named; done)
-    | (rename_i cause; simp [tableDefinition_error _ _ _ _ _ cause] at named; done)
+    | exact absurd rfl (named _)
     | (simp_all; done)
 
 /-- For every CREATE TABLE of a name that SQLite does not reserve: when the catalog
@@ -44,7 +35,7 @@ catalog object, and the catalog is unchanged. -/
 theorem resolveCreateTable_used (context : ResolveContext) (catalog : Catalog) (index : Nat)
     (name : String) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
     (notReserved : reservedName name = false) (used : (catalog.find name).isSome = true) :
-    ∃ error, error.namesObject = true ∧
+    ∃ error, (∀ cause, error ≠ .expression cause) ∧
       resolveCreateTable context catalog index name columns constraints = .ok (.prepareError error, catalog) := by
   unfold resolveCreateTable
   simp only [notReserved, Bool.false_and, Bool.false_eq_true, ite_false, prepareError]
@@ -52,33 +43,7 @@ theorem resolveCreateTable_used (context : ResolveContext) (catalog : Catalog) (
   | none => simp [found] at used
   | some result =>
     obtain ⟨_, object⟩ := result
-    cases entry : object.entry <;> cases object <;> simp_all [PrepareError.namesObject]
-
-/-- For every setting and VALUES rows, an issue of the INSERT value conversion names no
-catalog object. Proof sketch: each row's issue is an issue of {name}`constantCell`
-with a prefixed path, by {name}`resolveAll_issue` twice. -/
-theorem insertValues_issue (dqs : Bool) (rows : List (List Syntax.Expr)) (issue : ValueIssue)
-    (failed : resolveAll (fun row values => (resolveAll (fun _ => constantCell dqs) values).mapError
-      (·.under [row])) rows = .error issue) : issue.namesNoObject := by
-  refine resolveAll_issue _ _ _ (fun row values inner h => ?_) failed
-  simp only [Except.mapError] at h
-  split at h <;> cases h
-  exact ValueIssue.under_namesNoObject _ _
-    (resolveAll_issue _ _ _ (fun _ _ _ h => constantCell_issue _ _ _ h) (by assumption))
-
-/-- For every column list and names, an error of {name}`insertPositions` names no
-catalog object. Proof sketch: induction on the names; the only error is
-{name}`PrepareError.tableHasNoColumn`. -/
-theorem insertPositions_error (tableName : String) (columns : List CatalogColumn) (names : List String)
-    (error : PrepareError) (failed : insertPositions tableName columns names = .error error) :
-    error.namesObject = false := by
-  induction names with
-  | nil => cases failed
-  | cons name rest ih =>
-    simp only [insertPositions] at failed
-    split at failed
-    · cases h : insertPositions tableName columns rest <;> simp_all [Except.map]
-    · cases failed; rfl
+    cases entry : object.entry <;> cases object <;> simp_all
 
 /-- For every INSERT whose resolution is a prepare error that names a catalog object:
 the error is {lit}`no such table` for the statement's table, no table has the folded
@@ -89,7 +54,7 @@ theorem resolveInsert_named (context : ResolveContext) (catalog after : Catalog)
     (tableName : String) (names : Option (List String)) (rows : List (List Syntax.Expr))
     (conflicts : List Syntax.ConflictClause) (algorithm : Option ConflictAlgorithm)
     (returning : List Syntax.ResultColumn)
-    (error : PrepareError) (named : error.namesObject = true)
+    (error : PrepareError) (named : ∀ cause, error ≠ .expression cause)
     (ok : resolveInsert context catalog index tableName names rows conflicts algorithm returning =
       .ok (.prepareError error, after)) :
     error = .noSuchTable tableName ∧ catalog.findTable tableName = none ∧ after = catalog := by
@@ -99,20 +64,8 @@ theorem resolveInsert_named (context : ResolveContext) (catalog after : Catalog)
   all_goals (try (cases ok; done))
   all_goals cases ok
   all_goals first
-    | (simp [PrepareError.namesObject] at named; done)
+    | exact absurd rfl (named _)
     | (simp_all; done)
-    | (rename_i cause; simp [insertPositions_error _ _ _ _ cause] at named; done)
-    | (rename_i _ _ cause; have := resolveReturning_issue _ _ _ _ cause
-       simp_all [ValueIssue.namesNoObject]; done)
-    | (rename_i _ _ cause; have := resolveAll_issue _ _ _ (fun _ _ _ h => resolveConflict_issues _ _ _ _ _ _ _ h) cause
-       simp_all [ValueIssue.namesNoObject]; done)
-    | (rename_i _ _ cause; have := insertValues_issue _ _ _ cause
-       simp_all [ValueIssue.namesNoObject]; done)
-    | (rename_i _ _ cause; have := resolveAll_issue _ _ _
-         (fun _ row _ h => fullCells_issue _ _ row _ h) cause
-       simp_all [ValueIssue.namesNoObject]; done)
-    | (rename_i cause; cases names <;> simp only at cause <;>
-        first | cases cause | simp [insertPositions_error _ _ _ _ cause] at named)
 
 /-- For every INSERT whose VALUES rows all have the width of the first row: when no
 table has the folded name, the resolution is {lit}`no such table`, and the catalog

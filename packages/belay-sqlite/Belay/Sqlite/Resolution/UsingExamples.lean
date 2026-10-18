@@ -68,18 +68,18 @@ def bare (name : String) : ResultColumn := .expression (.identifier name .none) 
 -- A merged name stays ambiguous with a third source that has the name.
 #guard over [bare "a"] (table "t") [usingJoin [] "u" ["a"]] |>.isSome
 #guard over [bare "a"] (table "t") [usingJoin [] "u" ["a"], joined [] (table "v")] ==
-  some (.prepareError (.ambiguousColumn "a"))
+  some (.prepareError (.expression (.ambiguousColumn "a")))
 -- SQLite's errors: a USING name not in both inputs, also a rowid name, and NATURAL with ON or USING.
-#guard over [.star] (table "t") [usingJoin [] "u" ["b"]] == some (.prepareError (.joinUsingColumn "b"))
-#guard over [.star] (table "t") [usingJoin [] "u" ["rowid"]] == some (.prepareError (.joinUsingColumn "rowid"))
+#guard over [.star] (table "t") [usingJoin [] "u" ["b"]] == some (.prepareError (.expression (.joinUsingColumn "b")))
+#guard over [.star] (table "t") [usingJoin [] "u" ["rowid"]] == some (.prepareError (.expression (.joinUsingColumn "rowid")))
 #guard over [.star] (table "t") [joined ["NATURAL"] (table "u") (some (.numeric "1"))] ==
-  some (.prepareError .naturalJoinCondition)
-#guard over [.star] (table "t") [usingJoin ["NATURAL"] "u" ["a"]] == some (.prepareError .naturalJoinCondition)
+  some (.prepareError (.expression .naturalJoinCondition))
+#guard over [.star] (table "t") [usingJoin ["NATURAL"] "u" ["a"]] == some (.prepareError (.expression .naturalJoinCondition))
 -- A missing table of a later join comes first; then the joins in order; then the result columns.
 #guard over [.star] (table "t") [usingJoin [] "u" ["q"], joined [] (table "zz")] ==
   some (.prepareError (.noSuchTable "zz"))
 #guard over [.star] (table "t") [usingJoin [] "u" ["q"], joined ["NATURAL"] (table "v") (some (.numeric "1"))] ==
-  some (.prepareError (.joinUsingColumn "q"))
-#guard over [bare "zz"] (table "t") [usingJoin [] "u" ["q"]] == some (.prepareError (.joinUsingColumn "q"))
+  some (.prepareError (.expression (.joinUsingColumn "q")))
+#guard over [bare "zz"] (table "t") [usingJoin [] "u" ["q"]] == some (.prepareError (.expression (.joinUsingColumn "q")))
 
 end Belay.Sqlite.Resolution.UsingExamples

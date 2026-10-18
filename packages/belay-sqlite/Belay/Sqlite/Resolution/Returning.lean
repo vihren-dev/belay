@@ -39,7 +39,7 @@ def definedName (scope : Scope) : Syntax.Expr → Option String
 /-- One {lit}`RETURNING` column at position {lit}`item`: the expressions and names it
 gives. The paths of its issues start at the column's position. {lit}`*` is every visible
 column of the one table of the write; a {lit}`source.*` column is SQLite's
-{name}`PrepareError.returningSourceStar`. -/
+{name}`ExprError.returningSourceStar`. -/
 def returningColumn (dqs : Bool) (scope : Scope) (item : Nat) :
     Syntax.ResultColumn → Except ValueIssue (List (Resolved.Expr × String))
   | .star => .ok (scope.visible.map fun (position, column) => (.column position, column.name))
@@ -56,7 +56,7 @@ def Syntax.ResultColumn.isSourceStar : Syntax.ResultColumn → Bool
 /-- The {lit}`RETURNING` columns of a write over the table's scope, in order, or the
 first issue. No {lit}`RETURNING` is the empty list. SQLite expands the wildcards before
 it resolves names, so a {lit}`source.*` column anywhere is
-{name}`PrepareError.returningSourceStar` before the issue of any other column. -/
+{name}`ExprError.returningSourceStar` before the issue of any other column. -/
 def resolveReturning (dqs : Bool) (scope : Scope) (items : List Syntax.ResultColumn) :
     Except ValueIssue (List (Resolved.Expr × String)) :=
   if items.any Syntax.ResultColumn.isSourceStar then .error (.prepare .returningSourceStar) else

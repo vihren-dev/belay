@@ -85,14 +85,14 @@ def onText : Expr := .compare .eq (qualified "t" "b") (qualified "r" "e")
         some (.compare .eq (some .integer) (.coalesce (.column 0) (.column 2)) (.column 4))]
 -- A left table that does not merge the name: also for a join before the right join, and for NATURAL.
 #guard error [.star] (table "t") [joined [] (table "r") (some onText), usingJoin ["RIGHT"] "w" ["a"]] ==
-  some (.ambiguousUsingReference "a")
+  some (.expression (.ambiguousUsingReference "a"))
 #guard error [.star] (table "t")
   [joined [] (table "r") (some onText), usingJoin [] "w" ["a"], joined ["RIGHT"] (table "u") (some onA)] ==
-  some (.ambiguousUsingReference "a")
+  some (.expression (.ambiguousUsingReference "a"))
 #guard error [.star] (table "t") [joined [] (table "r") (some onText), joined ["NATURAL", "FULL"] (table "w")] ==
-  some (.ambiguousUsingReference "a")
+  some (.expression (.ambiguousUsingReference "a"))
 -- The errors of slice 4b still come first in their join.
-#guard error [.star] (table "t") [usingJoin ["RIGHT"] "r" ["zz"]] == some (.joinUsingColumn "zz")
+#guard error [.star] (table "t") [usingJoin ["RIGHT"] "r" ["zz"]] == some (.expression (.joinUsingColumn "zz"))
 
 
 end Belay.Sqlite.Resolution.MergedNameExamples

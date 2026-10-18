@@ -14,7 +14,7 @@ positions of the merged columns, with the comparison affinity that the same writ
 namespace Belay.Sqlite
 
 /-- A name of {lit}`USING`, as written, when it names a column of the joined source and of
-the left input; else SQLite's {name}`PrepareError.joinUsingColumn`. With
+the left input; else SQLite's {name}`ExprError.joinUsingColumn`. With
 {lit}`coalesced` (a right or full join in the {lit}`FROM`), the name must then pass
 {name}`usingReferenceChecked`. -/
 def usingNameChecked (coalesced : Bool) (left : Scope) (right : ScopeSource) (name : String) :
@@ -26,9 +26,9 @@ def usingNameChecked (coalesced : Bool) (left : Scope) (right : ScopeSource) (na
 /-- The names that a join merges, as written: for {lit}`NATURAL`, every column of the
 joined source whose name also names a column of the left input, in the joined table's
 order; for {lit}`USING`, its names, each of which must name a column of both
-({name}`PrepareError.joinUsingColumn` otherwise). With {lit}`coalesced`, each name must
+({name}`ExprError.joinUsingColumn` otherwise). With {lit}`coalesced`, each name must
 also pass {name}`usingReferenceChecked`, in order. None for a join with neither, and
-SQLite's {name}`PrepareError.naturalJoinCondition` for {lit}`NATURAL` with {lit}`ON` or
+SQLite's {name}`ExprError.naturalJoinCondition` for {lit}`NATURAL` with {lit}`ON` or
 {lit}`USING`. -/
 def mergedNames (coalesced : Bool) (left : Scope) (right : ScopeSource) (natural : Bool) (join : Syntax.Join) :
     Except ValueIssue (Option (List String)) :=

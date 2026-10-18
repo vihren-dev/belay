@@ -69,19 +69,19 @@ def overTwice (results : List ResultColumn) (joins : List Join := [joined [] (ta
   some [[.integer 4]]
 -- Over two sources named `t`, a name, a qualified name, `t.*` and `*` are ambiguous; the
 -- expansion of a star names the schema, the source and the declared column.
-#guard overTwice [.expression (.identifier "a" .none) none "a"] == some (.prepareError (.ambiguousColumn "a"))
-#guard overTwice [.expression (qualified "t" "a") none "t.a"] == some (.prepareError (.ambiguousColumn "t.a"))
-#guard overTwice [.sourceStar "t"] == some (.prepareError (.ambiguousColumn "main.t.a"))
-#guard overTwice [.star] == some (.prepareError (.ambiguousColumn "main.t.a"))
+#guard overTwice [.expression (.identifier "a" .none) none "a"] == some (.prepareError (.expression (.ambiguousColumn "a")))
+#guard overTwice [.expression (qualified "t" "a") none "t.a"] == some (.prepareError (.expression (.ambiguousColumn "t.a")))
+#guard overTwice [.sourceStar "t"] == some (.prepareError (.expression (.ambiguousColumn "main.t.a")))
+#guard overTwice [.star] == some (.prepareError (.expression (.ambiguousColumn "main.t.a")))
 -- A source is named by its alias, else by the table name as declared: `FROM T, t`.
-#guard resolvedOne [.star] (table "T") [joined [] (table "t")] == some (.prepareError (.ambiguousColumn "main.t.a"))
+#guard resolvedOne [.star] (table "T") [joined [] (table "t")] == some (.prepareError (.expression (.ambiguousColumn "main.t.a")))
 -- `FROM t JOIN t USING (a)`: `t.a` is the left column, `t.b` and `*` are ambiguous.
 #guard (queryOf (overTwice [.expression (qualified "t" "a") none "t.a"]
   [{ joined [] (table "t") with usingColumns := some ["a"] }])).map (·.columns) == some [.scalar (.column 0)]
 #guard overTwice [.expression (qualified "t" "b") none "t.b"] [{ joined [] (table "t") with usingColumns := some ["a"] }] ==
-  some (.prepareError (.ambiguousColumn "t.b"))
+  some (.prepareError (.expression (.ambiguousColumn "t.b")))
 #guard overTwice [.star] [{ joined [] (table "t") with usingColumns := some ["a"] }] ==
-  some (.prepareError (.ambiguousColumn "main.t.b"))
+  some (.prepareError (.expression (.ambiguousColumn "main.t.b")))
 -- `SELECT t.c FROM t, u AS t`: only the second source named `t` has `c`.
 #guard (queryOf (resolvedOne [.expression (qualified "t" "c") none "t.c"] (table "t")
   [joined [] { table := "u", alias := some "t" }])).map (·.columns) == some [.scalar (.column 3)]

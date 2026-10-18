@@ -22,7 +22,7 @@ def Scope.namedColumns (scope : Scope) (name : String) : List (String × String 
 
 /-- A merged name, as written, when every left column of the name after the first is
 merged by its own source's join; else SQLite's
-{name}`PrepareError.ambiguousUsingReference`. SQLite checks it when the {lit}`FROM` has a
+{name}`ExprError.ambiguousUsingReference`. SQLite checks it when the {lit}`FROM` has a
 right or full join. -/
 def usingReferenceChecked (left : Scope) (name : String) : Except ValueIssue String :=
   if ((left.namedColumns name).drop 1).all (·.2.2) then .ok name

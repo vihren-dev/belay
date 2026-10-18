@@ -109,8 +109,11 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
     (filter : Option Syntax.Expr) (groupBy : List Syntax.Expr) (orderBy : List Syntax.OrderTerm)
     (limit offset : Option Syntax.Expr) : StatementResolution :=
   let dqs := context.profile.dqsDml
+  match resolveSources catalog source joins with
+  | .error (.noSuchTable name) => prepareError catalog (.noSuchTable name)
+  | .error (.value issue) => issueResolution catalog index [] issue
+  | .ok (pending, scope) =>
   let resolved : Except ValueIssue Resolved.Query := do
-    let (pending, scope) ← resolveSources catalog source joins
     let outputs := (← resolveAll (resolveResultColumn dqs scope) results).flatten
     let aliases := results.flatMap fun
       | .star => scope.visible.map fun _ => none

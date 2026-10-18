@@ -34,10 +34,11 @@ structure PendingSource where
 /-- The item and the source in scope of the reference at {lit}`path`: a table
 ({name}`resolveTableReference`), or {lit}`json_each` ({name}`eachReference`). -/
 def resolveReference (catalog : Catalog) (path : List Nat) (reference : Syntax.TableReference) :
-    Except ValueIssue (SourceItem × ScopeSource) :=
+    Except SourceIssue (SourceItem × ScopeSource) :=
   match reference.arguments with
   | none => (fun (position, source) => (.table position, source)) <$> resolveTableReference catalog path reference
-  | some arguments => (fun source => (.each path arguments, source)) <$> eachReference path reference arguments
+  | some arguments =>
+    (fun source => (.each path arguments, source)) <$> (eachReference path reference arguments).mapError .value
 
 /-- Whether the model refuses the join at {lit}`item` for a {lit}`json_each` source
 ({name}`RestrictionKind.functionJoin`): its source is {lit}`json_each` as the right operand
@@ -59,9 +60,9 @@ of all of them. More than {name}`maximumJoinTables` sources is SQLite's
 generated conditions coalesce the left columns when any join is a right or full join. No
 {lit}`FROM` gives no source and the empty scope. -/
 def resolveSources (catalog : Catalog) (source : Option Syntax.TableReference) (joins : List Syntax.Join) :
-    Except ValueIssue (List PendingSource × Scope) := do
+    Except SourceIssue (List PendingSource × Scope) := do
   let some source := source | .ok ([], [])
-  if joins.length + 1 > maximumJoinTables then throw (.prepare .tooManyTables)
+  if joins.length + 1 > maximumJoinTables then throw (.value (.prepare .tooManyTables))
   let (firstItem, firstSource) ← resolveReference catalog [1] source
   let operators := joins.map (joinOperator ·.operator)
   let joined ← resolveAll (fun item ((join : Syntax.Join), operator) => do

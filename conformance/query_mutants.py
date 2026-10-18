@@ -51,7 +51,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "no_such_column": (EXPRESSIONS,
         "      else .error (.prepare (.noSuchColumn name))", "      else .ok (.literal .null, none)"),
     "no_such_table": (SOURCES,
-        "    else .error (.prepare (.noSuchTable reference.table))", "    else .error (.restriction path .systemTable)"),
+        "    else .error (.noSuchTable reference.table)", "    else .error (.value (.restriction path .systemTable))"),
     "no_misuse_of_aggregate": (FORMS,
         "  if misuse then .prepare (.misuseOfAggregate function)", "  if false then .prepare (.misuseOfAggregate function)"),
     "no_aggregate_in_group_by": (RESOLUTION,

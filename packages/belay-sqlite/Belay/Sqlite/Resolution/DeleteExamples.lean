@@ -19,7 +19,7 @@ def abcIsOne : Syntax.Expr := .compare .eq (.identifier "Abc" .none) (.numeric "
   some (.delete 0 none [(.column 0, "Abc"), (.column 1, "b")])
 -- SQLite's prepare errors, and SQLite's own tables as a restriction.
 #guard errorOf (.delete "missing" none) == some (.noSuchTable "missing")
-#guard errorOf (.delete "t" (some (.compare .eq (.identifier "zz" .none) (.numeric "1")))) == some (.noSuchColumn "zz")
+#guard errorOf (.delete "t" (some (.compare .eq (.identifier "zz" .none) (.numeric "1")))) == some (.expression (.noSuchColumn "zz"))
 #guard restrictedOne (.delete "sqlite_schema" none)
 
 /-- A table with a row where {lit}`Abc` is 1 and a row where it is NULL. -/

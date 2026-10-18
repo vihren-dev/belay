@@ -14,8 +14,8 @@ open Belay.Sqlite Syntax Resolution.Examples Resolution.QueryResolutionExamples
 -- only a name, so `no such column` (checked natively).
 #guard bareRows (bare [written (.identifier "TRUE" .none) "TRUE", written (.identifier "false" .none) "false"]) ==
   some [[.integer 1, .integer 0]]
-#guard errorOf (bare [written (.identifier "TRUE" .bracket) "[TRUE]"]) == some (.noSuchColumn "TRUE")
-#guard errorOf (bare [written (.identifier "false" .backtick) "`false`"]) == some (.noSuchColumn "false")
+#guard errorOf (bare [written (.identifier "TRUE" .bracket) "[TRUE]"]) == some (.expression (.noSuchColumn "TRUE"))
+#guard errorOf (bare [written (.identifier "false" .backtick) "`false`"]) == some (.expression (.noSuchColumn "false"))
 -- `x IS [NOT] TRUE|FALSE` is SQLite's truth test of any operand (checked natively): `2 IS TRUE`,
 -- `(1 + 1) IS TRUE` and `CAST(2 AS INTEGER) IS TRUE` are 1, `2 IS 1` is 0, and NULL is neither
 -- TRUE nor FALSE.

@@ -18,7 +18,21 @@ deriving instance Lean.FromJson, Lean.ToJson for Syntax.ColumnDefinition, Syntax
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.TableReference, Syntax.Join
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ConflictAction, Syntax.ConflictClause
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.Statement
-deriving instance Lean.ToJson for PrepareError
+deriving instance Lean.ToJson for ExprError
+
+/-- A prepare error as JSON, in one flat form: an error that names a catalog object as its
+own constructor, and an {name}`ExprError` as that error's constructor, so the wire form
+does not show the split of the two types. For example, {lit}`no such table: t` is
+{lit}`{"noSuchTable": {"name": "t"}}` and {lit}`no such column: a` is
+{lit}`{"noSuchColumn": {"name": "a"}}`, the derived form of each constructor. -/
+instance : Lean.ToJson PrepareError where
+  toJson
+    | .tableExists name => Lean.Json.mkObj [("tableExists", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .indexNameUsed name => Lean.Json.mkObj [("indexNameUsed", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .tableNameUsed name => Lean.Json.mkObj [("tableNameUsed", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .indexExists name => Lean.Json.mkObj [("indexExists", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .noSuchTable name => Lean.Json.mkObj [("noSuchTable", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .expression error => Lean.toJson error
 
 /-- A model restriction as JSON: the statement index, the path, the message that users
 read as {lit}`reason`, and the stable id of its kind as {lit}`restriction`. -/
@@ -58,6 +72,7 @@ deriving instance Lean.ToExpr for CatalogTable
 deriving instance Lean.ToExpr for CatalogIndex
 deriving instance Lean.ToExpr for CatalogEntry
 deriving instance Lean.ToExpr for CatalogObject
+deriving instance Lean.ToExpr for ExprError
 deriving instance Lean.ToExpr for PrepareError
 deriving instance Lean.ToExpr for Resolved.JsonFunction
 deriving instance Lean.ToExpr for Resolved.DateFunction

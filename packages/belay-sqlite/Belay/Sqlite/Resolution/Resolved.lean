@@ -13,21 +13,14 @@ script: SQLite accepts that SQL, but the model does not describe it. -/
 
 namespace Belay.Sqlite
 
-/-- An error that {lit}`sqlite3_prepare_v2` reports for a statement in the first
-scope. Each constructor names the SQLite message format it corresponds to. This
-is a SQLite rule, not a model restriction: SQLite runs the earlier statements and
-then stops at this one. -/
-inductive PrepareError where
+/-- An error that {lit}`sqlite3_prepare_v2` reports that names no catalog object: an error
+of an expression, a clause or a definition, such as a name that is missing or ambiguous,
+a misused function, a term out of range, a duplicate column, or a form that SQLite
+refuses. {lit}`PrepareError.expression` carries them; resolution of expressions
+({lit}`ValueIssue`) can give only these. -/
+inductive ExprError where
   /-- {lit}`object name reserved for internal use: %s` ({lit}`sqlite3CheckObjectName`). -/
   | reservedName (name : String)
-  /-- {lit}`table %T already exists` ({lit}`sqlite3StartTable`). -/
-  | tableExists (name : String)
-  /-- {lit}`there is already an index named %s` ({lit}`sqlite3StartTable`). -/
-  | indexNameUsed (name : String)
-  /-- {lit}`there is already a table named %s` ({lit}`sqlite3CreateIndex`). -/
-  | tableNameUsed (name : String)
-  /-- {lit}`index %s already exists` ({lit}`sqlite3CreateIndex`). -/
-  | indexExists (name : String)
   /-- {lit}`too many columns on %s` ({lit}`sqlite3AddColumn`). -/
   | tooManyColumns (table : String)
   /-- {lit}`duplicate column name: %s` ({lit}`sqlite3AddColumn`). -/
@@ -36,10 +29,6 @@ inductive PrepareError where
   | multiplePrimaryKeys (table : String)
   /-- {lit}`default value of column [%s] is not constant` ({lit}`sqlite3AddDefaultValue`). -/
   | defaultNotConstant (column : String)
-  /-- {lit}`no such table: %s` ({lit}`sqlite3LocateTable`). -/
-  | noSuchTable (name : String)
-  /-- {lit}`no such column: %s` (name resolution of an expression or key). -/
-  | noSuchColumn (name : String)
   /-- {lit}`table %S has no column named %s` (INSERT column list). -/
   | tableHasNoColumn (table column : String)
   /-- {lit}`table %S has %d columns but %d values were supplied` (INSERT). -/
@@ -56,6 +45,11 @@ inductive PrepareError where
   | cannotAddPrimaryKey
   /-- {lit}`Cannot add a UNIQUE column` ({lit}`sqlite3AlterFinishAddColumn`). -/
   | cannotAddUnique
+  /-- {lit}`conflicting ON CONFLICT clauses specified`: two constraints of one index with
+  different explicit {lit}`ON CONFLICT` algorithms. -/
+  | conflictingAlgorithms
+  /-- {lit}`no such column: %s` (name resolution of an expression or key). -/
+  | noSuchColumn (name : String)
   /-- {lit}`hex literal too big: %s` (a hexadecimal literal with more than 16 digits). -/
   | hexLiteralTooBig (text : String)
   /-- {lit}`misuse of aggregate function %s()` (an aggregate in {lit}`WHERE`, or one
@@ -75,7 +69,7 @@ inductive PrepareError where
   more sources of a join, as written. -/
   | ambiguousColumn (name : String)
   /-- {lit}`no such table: %s` for {lit}`source.*` with a name that names no source of
-  the query, as written. Unlike {name}`PrepareError.noSuchTable`, it names no catalog
+  the query, as written. Unlike {lit}`PrepareError.noSuchTable`, it names no catalog
   object. -/
   | noSuchSource (name : String)
   /-- {lit}`at most 64 tables in a join`. -/
@@ -96,14 +90,30 @@ inductive PrepareError where
   /-- {lit}`ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE constraint`: a
   target whose columns are not the columns of one key of the table. -/
   | conflictTargetMismatch
-  /-- {lit}`conflicting ON CONFLICT clauses specified`: two constraints of one index with
-  different explicit {lit}`ON CONFLICT` algorithms. -/
-  | conflictingAlgorithms
   /-- {lit}`no tables specified`: {lit}`*` in a {lit}`SELECT` without {lit}`FROM`. -/
   | noTablesSpecified
   /-- {lit}`too many arguments on json_each() - max 2`: a {lit}`json_each` source in
   {lit}`FROM` with three or more arguments. -/
   | tooManyEachArguments
+  deriving Repr, DecidableEq
+
+/-- An error that {lit}`sqlite3_prepare_v2` reports for a statement in the first
+scope. Each constructor names the SQLite message format it corresponds to. This
+is a SQLite rule, not a model restriction: SQLite runs the earlier statements and
+then stops at this one. -/
+inductive PrepareError where
+  /-- {lit}`table %T already exists` ({lit}`sqlite3StartTable`). -/
+  | tableExists (name : String)
+  /-- {lit}`there is already an index named %s` ({lit}`sqlite3StartTable`). -/
+  | indexNameUsed (name : String)
+  /-- {lit}`there is already a table named %s` ({lit}`sqlite3CreateIndex`). -/
+  | tableNameUsed (name : String)
+  /-- {lit}`index %s already exists` ({lit}`sqlite3CreateIndex`). -/
+  | indexExists (name : String)
+  /-- {lit}`no such table: %s` ({lit}`sqlite3LocateTable`). -/
+  | noSuchTable (name : String)
+  /-- An error that names no catalog object ({name}`ExprError`). -/
+  | expression (error : ExprError)
   deriving Repr, DecidableEq
 
 /-- A model restriction: SQLite accepts the SQL, but the model does not describe

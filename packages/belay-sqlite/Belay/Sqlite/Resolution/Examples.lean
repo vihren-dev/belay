@@ -78,7 +78,7 @@ def constrained (constraint : ColumnConstraint) : ColumnDefinition :=
 #guard (catalogOf (schema [.createTable "t" [constrained (.unique (some .replace))] [.unique ["a"]]])).map (·.entry) ==
   [.table { columns := [{ name := "a", declaredType := none }], uniqueKeys := [[0]], uniqueAlgorithms := [some .replace] }]
 #guard statements (schema [.createTable "t" [constrained (.primaryKey false (some .ignore))] [.unique ["a"] (some .replace)]])
-  matches [.prepareError .conflictingAlgorithms]
+  matches [.prepareError (.expression .conflictingAlgorithms)]
 
 -- ASCII-only folding: "Ab" and "aB" are one name; "É" and "é" are two.
 #guard statements (migration [] [.createTable "Ab" [column "x"] [], .createTable "aB" [column "x"] []])
@@ -95,42 +95,42 @@ def constrained (constraint : ColumnConstraint) : ColumnDefinition :=
 #guard !(statements (migration [] [.createTable "t" [column "a", column "b", column "c"] []] lowered)
   matches [.prepareError _])
 #guard statements (migration [] [.createTable "t" [column "a", column "b", column "c", column "d"] []] lowered)
-  == [.prepareError (.tooManyColumns "t")]
+  == [.prepareError (.expression (.tooManyColumns "t"))]
 #guard statements (migration [] [.createTable "t" [column "a", column "b", column "c"] [], .addColumn "t" (column "d")] lowered)
-  matches [_, .prepareError (.tooManyColumns "t")]
+  matches [_, .prepareError (.expression (.tooManyColumns "t"))]
 
 -- Two errors in one statement: SQLite reports the first check that fails, column by column.
 #guard statements (migration [] [.createTable "t" [column "a", column "A", column "b", column "c"] []] lowered)
-  == [.prepareError (.duplicateColumn "A")]
+  == [.prepareError (.expression (.duplicateColumn "A"))]
 #guard statements (migration [] [.createTable "t" [column "a", column "b", column "c", column "c"] []] lowered)
-  == [.prepareError (.tooManyColumns "t")]
+  == [.prepareError (.expression (.tooManyColumns "t"))]
 
 -- ADD COLUMN: a missing table, a used name, and the appended column.
 #guard statements (migration tableT [.addColumn "u" (column "c"), .addColumn "T" (column "A"), .addColumn "t" (column "c")])
-  == [.prepareError (.noSuchTable "u"), .prepareError (.duplicateColumn "A"), .addColumn 0 { name := "c", declaredType := some "TEXT" }]
+  == [.prepareError (.noSuchTable "u"), .prepareError (.expression (.duplicateColumn "A")), .addColumn 0 { name := "c", declaredType := some "TEXT" }]
 
 -- INSERT: errors in SQLite's order, and full rows with defaults and converted literals.
 #guard statements (migration tableT [.insert "u" none [[.null]] [], .insert "t" (some ["z"]) [[.null]] [],
     .insert "t" none [[.null]] [], .insert "t" (some ["a"]) [[.null, .null]] [], .insert "t" none [[.null], [.null, .null]] []])
-  == [.prepareError (.noSuchTable "u"), .prepareError (.tableHasNoColumn "t" "z"),
-      .prepareError (.valueCount "t" 2 1), .prepareError (.valuesForColumns 2 1), .prepareError .valuesDiffer]
+  == [.prepareError (.noSuchTable "u"), .prepareError (.expression (.tableHasNoColumn "t" "z")),
+      .prepareError (.expression (.valueCount "t" 2 1)), .prepareError (.expression (.valuesForColumns 2 1)), .prepareError (.expression .valuesDiffer)]
 #guard statements (migration tableT [.insert "t" (some ["B"]) [[.numeric "1_000"], [.numeric "0x10"], [.negate (.numeric "9223372036854775808")]] []])
   == [.insert 0 [[.value .null, .value (.integer 1000)], [.value .null, .value (.integer 16)], [.value .null, .value (.integer (-9223372036854775808))]] []]
 #guard statements (migration tableT [.insert "t" (some ["b"]) [[.numeric "9223372036854775808"]] []])
   == [.insert 0 [[.value .null, .value (.real (9223372036854775808.0 : Float).toBits)]] []]
 #guard statements (migration tableT [.insert "t" (some ["b"]) [[.numeric "0x10000000000000000"]] []])
-  == [.prepareError (.hexLiteralTooBig "0x10000000000000000")]
+  == [.prepareError (.expression (.hexLiteralTooBig "0x10000000000000000"))]
 
 -- Double-quoted strings: a string literal when DQS_DML is on, else "no such column".
 #guard statements (migration tableT [.insert "t" (some ["a"]) [[.identifier "x" .double]] []])
   == [.insert 0 [[.value (.text [120]), .value .null]] []]
 #guard statements (migration tableT [.insert "t" (some ["a"]) [[.identifier "x" .double]] []] { defaults with dqsDml := false })
-  == [.prepareError (.noSuchColumn "x")]
+  == [.prepareError (.expression (.noSuchColumn "x"))]
 
 -- UPDATE: SET and WHERE names, and the modeled integer equality filter.
 #guard statements (migration tableT [.update "t" [("z", .null)] none, .update "t" [("a", .null)] (some (.compare .eq (.identifier "z" .none) (.numeric "1"))),
     .update "t" [("A", .string [111])] (some (.compare .eq (.identifier "b" .none) (.numeric "7")))])
-  == [.prepareError (.noSuchColumn "z"), .prepareError (.noSuchColumn "z"),
+  == [.prepareError (.expression (.noSuchColumn "z")), .prepareError (.expression (.noSuchColumn "z")),
       .update 0 [(0, .literal (.text [111]))] (some (.compare .eq (some .integer) (.column 1) (.literal (.integer 7)))) []]
 -- A TEXT column against a number compares with TEXT affinity (R-29161-32953).
 #guard statements (migration tableT [.update "t" [("a", .null)] (some (.compare .eq (.identifier "a" .none) (.numeric "1")))])
@@ -172,7 +172,7 @@ def keyed : Catalog := catalogOf (schema [.createTable "k" [column "a" (some "IN
 -- Statements that run keep the model scope; descriptions may contain the statistics tables.
 #guard restricted (migration [] [.createTable "t" [{ name := "a", declaredType := none, constraints := [.notNull] }] []])
 #guard restricted (migration tableT [.createIndex "i" false "t" ["a"]])
-#guard statements (migration [] [.createTable "sqlite_x" [column "a"] []]) == [.prepareError (.reservedName "sqlite_x")]
+#guard statements (migration [] [.createTable "sqlite_x" [column "a"] []]) == [.prepareError (.expression (.reservedName "sqlite_x"))]
 #guard !restricted (schema [.createTable "sqlite_stat1" [column "tbl" none, column "idx" none, column "stat" none] []])
 
 -- A schema describes the starting catalog, then the script resolves against it.
@@ -185,6 +185,6 @@ def keyed : Catalog := catalogOf (schema [.createTable "k" [column "a" (some "IN
   matches .error (.schemaPrepareError 1 (.tableExists "T"))
 #guard resolveSchemaAndScript defaults [] [.createTable "t" [column "rowid"] []]
   matches .error (.scriptRestricted { statement := 0, path := [1], .. })
-#guard (PrepareError.valueCount "t" 2 1).message == "table t has 2 columns but 1 values were supplied"
+#guard (ExprError.valueCount "t" 2 1).message == "table t has 2 columns but 1 values were supplied"
 
 end Belay.Sqlite.Resolution.Examples

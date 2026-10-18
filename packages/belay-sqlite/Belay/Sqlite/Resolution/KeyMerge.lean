@@ -12,9 +12,9 @@ explicit algorithms are SQLite's prepare error
 namespace Belay.Sqlite
 
 /-- The algorithm of two constraints that SQLite merges into one index: the explicit one,
-the same one twice, or {name}`PrepareError.conflictingAlgorithms` for two different
+the same one twice, or {name}`ExprError.conflictingAlgorithms` for two different
 explicit ones. -/
-def mergeAlgorithm (first second : Option ConflictAlgorithm) : Except PrepareError (Option ConflictAlgorithm) :=
+def mergeAlgorithm (first second : Option ConflictAlgorithm) : Except ExprError (Option ConflictAlgorithm) :=
   match first, second with
   | none, other => .ok other
   | some algorithm, none => .ok (some algorithm)
@@ -24,7 +24,7 @@ def mergeAlgorithm (first second : Option ConflictAlgorithm) : Except PrepareErr
 key (when it is no rowid alias) or of an earlier UNIQUE key is that key, with the merged
 algorithm ({name}`mergeAlgorithm`); any other key is appended. -/
 def addUniqueKey (table : CatalogTable) (positions : List Nat) (algorithm : Option ConflictAlgorithm) :
-    Except PrepareError CatalogTable :=
+    Except ExprError CatalogTable :=
   if table.rowidAlias.isNone && table.primaryKey == positions then do
     let merged ← mergeAlgorithm table.primaryKeyAlgorithm algorithm
     .ok { table with primaryKeyAlgorithm := merged }
@@ -40,7 +40,7 @@ is no rowid alias, with the columns, in order, of an earlier UNIQUE key, takes t
 place, with the merged algorithm ({name}`mergeAlgorithm`) and the ascending direction of
 that earlier index, which SQLite keeps also for {lit}`PRIMARY KEY DESC`. -/
 def setPrimaryKey (table : CatalogTable) (positions : List Nat) (alias : Option Nat) (descending : Bool)
-    (algorithm : Option ConflictAlgorithm) : Except PrepareError CatalogTable :=
+    (algorithm : Option ConflictAlgorithm) : Except ExprError CatalogTable :=
   let keyed := { table with primaryKey := positions, rowidAlias := alias, primaryKeyDescending := descending,
                             primaryKeyAlgorithm := algorithm }
   match alias, table.uniqueKeys.idxOf? positions with
