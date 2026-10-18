@@ -44,7 +44,7 @@ replacement. The names follow the list of the amendment: SET values read the new
 NULL filter selects the row; no store affinity at execution; `castValue`
 as store affinity; a REAL column keeps an integer; a TEXT column keeps a number; the
 change count counts every row. A failed UPDATE that keeps the rows it changed is the
-algorithms mutant `abort_keeps_rows`, since one publication path decides what every
+algorithms mutant `failure_keeps_rows`, since one publication path decides what every
 failure keeps (ADR 0013, D8). The execution
 stores every assigned value again, so a constant that resolution does not store differs
 in no observable way since slice 5a removed the key-domain check, and that change has no

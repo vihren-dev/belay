@@ -63,7 +63,7 @@ def test_default_preparation_boundary(version: str, tmp_path: Path, lean_sysroot
     checks = "".join(f'''example : constantDefault ({expression}) = {str(prepared).lower()} := by decide +kernel
 #eval ((resolveAddColumn {{ profile := Profile.documented "{version}" "", mode := .execution }}
     catalog 0 "t" {{ name := "added", declaredType := some "BLOB", constraints := [.default ({expression}) "unused in preparation classification"] }}).toOption.map
-  (fun pair => pair.1 == .prepareError (.defaultNotConstant "added"))).getD false
+  (fun pair => pair.1 == .prepareError (.expression (.defaultNotConstant "added")))).getD false
 ''' for (_, expression), prepared in zip(CASES, prepares, strict=True))
     source = f'''import Belay.Sqlite.Resolution.Definitions
 open Belay.Sqlite
