@@ -21,8 +21,8 @@ inductive MergeRule where
   | coalesce
   deriving Repr, DecidableEq
 
-/-- One named source: the name that qualifies its columns (the alias, or else the table
-name, as written), its columns, and the columns that a {lit}`USING` or {lit}`NATURAL`
+/-- One named source: the name that qualifies its columns (the alias as written, else the
+table name as declared, or {lit}`json_each` for that function), its columns, and the columns that a {lit}`USING` or {lit}`NATURAL`
 join merged into a left column. -/
 structure ScopeSource where
   /-- The name of the source. -/

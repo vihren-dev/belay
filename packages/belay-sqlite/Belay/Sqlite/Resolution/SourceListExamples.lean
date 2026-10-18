@@ -25,14 +25,18 @@ def database : Database :=
 def each (alias : String) (argument : Expr) : TableReference :=
   { table := "json_each", alias := some alias, arguments := some [argument] }
 
-/-- The result rows of a {lit}`SELECT` with these result columns and sources over
-{name}`database`; none when it does not resolve to a query or a table is missing. -/
-def rowsOf (results : List ResultColumn) (source : TableReference) (joins : List Join) : Option (List (List Value)) :=
-  match resolvedOne results source joins with
-  | some (.query query) => (query.source database).map fun source => query.results source.rows
+/-- The query of a resolved statement; none for any other statement and for no statement. -/
+def queryOf : Option Resolved.Statement → Option Resolved.Query
+  | some (.query query) => some query
   | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some .begin | some .commit
   | some .rollback | some (.insert ..) | some (.update ..) | some (.upsert ..) | some (.delete ..)
   | some (.prepareError _) | some (.clocked ..) | none => none
+
+/-- The result rows of a {lit}`SELECT` with these result columns and sources over
+{name}`database`; none when it does not resolve to a query or a table is missing. -/
+def rowsOf (results : List ResultColumn) (source : TableReference) (joins : List Join) : Option (List (List Value)) :=
+  (queryOf (resolvedOne results source joins)).bind fun query =>
+    (query.source database).map fun source => query.results source.rows
 
 /-- A result column of {lit}`x.c`. -/
 def named (source column : String) : ResultColumn := .expression (qualified source column) none s!"{source}.{column}"
@@ -72,16 +76,14 @@ def overTwice (results : List ResultColumn) (joins : List Join := [joined [] (ta
 -- A source is named by its alias, else by the table name as declared: `FROM T, t`.
 #guard resolvedOne [.star] (table "T") [joined [] (table "t")] == some (.prepareError (.ambiguousColumn "main.t.a"))
 -- `FROM t JOIN t USING (a)`: `t.a` is the left column, `t.b` and `*` are ambiguous.
-#guard (match overTwice [.expression (qualified "t" "a") none "t.a"] [{ joined [] (table "t") with usingColumns := some ["a"] }] with
-  | some (.query query) => query.columns == [.scalar (.column 0)]
-  | _ => false)
+#guard (queryOf (overTwice [.expression (qualified "t" "a") none "t.a"]
+  [{ joined [] (table "t") with usingColumns := some ["a"] }])).map (·.columns) == some [.scalar (.column 0)]
 #guard overTwice [.expression (qualified "t" "b") none "t.b"] [{ joined [] (table "t") with usingColumns := some ["a"] }] ==
   some (.prepareError (.ambiguousColumn "t.b"))
 #guard overTwice [.star] [{ joined [] (table "t") with usingColumns := some ["a"] }] ==
   some (.prepareError (.ambiguousColumn "main.t.b"))
 -- `SELECT t.c FROM t, u AS t`: only the second source named `t` has `c`.
-#guard (match resolvedOne [.expression (qualified "t" "c") none "t.c"] (table "t") [joined [] { table := "u", alias := some "t" }] with
-  | some (.query query) => query.columns == [.scalar (.column 3)]
-  | _ => false)
+#guard (queryOf (resolvedOne [.expression (qualified "t" "c") none "t.c"] (table "t")
+  [joined [] { table := "u", alias := some "t" }])).map (·.columns) == some [.scalar (.column 3)]
 
 end Belay.Sqlite.Resolution.SourceListExamples
