@@ -23,7 +23,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "      return ⟨names, returnedRows clock returning written, some rows.length⟩\n"
         "    else if constraintFailure then some ⟨names, [], some 0⟩ else none",
         "      return ⟨names, returnedRows clock returning written, some rows.length⟩\n"
-        "    else if constraintFailure then some ⟨names, returnedRows clock returning rows, some 0⟩ else none"),
+        "    else if constraintFailure then\n"
+        "      some ⟨names, returnedRows clock returning (Resolved.rowsAt clock [] rows), some 0⟩ else none"),
     "returning_names_ignore_definition": (RETURNING,
         "      .ok [(resolved, alias.getD ((definedName scope value).getD text))]", "      .ok [(resolved, alias.getD text)]"),
     "constant_not_evaluated": (CELLS,
