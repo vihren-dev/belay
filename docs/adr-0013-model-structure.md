@@ -299,6 +299,49 @@ Implementation notes (2026-10-17, step 1):
   they would serve; `Statement.kind` with step 7, which restructures the dispatch it
   classifies; parsing join operators once with step 5.
 
+### Amendment 1 (2026-10-18): D1 in detail
+
+The code map for step 2 found five facts that D1 did not state. The owner chose the full
+D1 on 2026-10-18, with the outcome carrying its catalog in the contract.
+
+- **The contract changes.** `Database` is a parameter of the trusted contract
+  (`Interpretation.invariant` and `observe`, `Admitted`, `SoundRepresentation`,
+  `LogicalContract.applicability`). The contract also passes `nextCatalog` and
+  `FailureRepresentation.catalog` beside the outcome, and the gate (`GateCore.lean`,
+  `BundleChecker.lean`, `GateInputs.lean`, `migration_check/compile.py`) builds the target
+  with `nextCatalog`. The forms after step 2:
+  - `structure Database where catalog : Catalog; rows : List (List Row)`, one row list per
+    catalog object (an index object holds none), deriving `Repr` and `DecidableEq`.
+    `Database.table position : Option Table` is a view that pairs `catalog.tableAt` with
+    the rows; `Table` stays as that view, so `Table.project`, `Table.Valid` and `Covers`
+    keep their meaning.
+  - `Database.Valid profile` replaces the catalog half of `Conforms`, and
+    `Conforms profile catalog database` is `database.catalog = catalog ∧ database.Valid
+    profile`.
+  - `SoundRepresentation` takes no catalog and requires `database.Valid`.
+    `VerificationConditions` takes no `nextCatalog`, and `FailureRepresentation` has no
+    `catalog`. `catalogRequirement` applies to the catalog of the result database.
+    `Generated.nextCatalog` stays a generated input, which an interpretation may name in its
+    invariant.
+- **The approved files change.** Seven files under `examples/*/approved/` use `Database`
+  (for example `database position` and `Table.project`). They are rewritten to the new forms, and the owner approves the new hashes in
+  the pull request.
+- **No shared catalog function exists yet.** The resolver changes the catalog with `++`
+  and `List.set`; `Catalog.appendAt` is in a proof file. Step 2 defines
+  `Catalog.createTable`, `Catalog.createIndex` and `Catalog.addColumn`, and both the
+  resolver and `step` call them.
+- **Part of the conflict policy is statement data.** `insertPolicy` combines the catalog's
+  algorithms with the statement's `INSERT OR` algorithm. The statement keeps the algorithm
+  (`Option ConflictAlgorithm`) and the conflict clause targets. Execution reads the keys
+  and the catalog's algorithms from the state.
+- **A verdict can change.** After `INSERT OR ROLLBACK` fails, the state is the snapshot,
+  but `observationState` takes the resolver catalog from before the failure. If the
+  transaction ran CREATE TABLE or ADD COLUMN before the failure, the two disagree today.
+  The step measures every corpus; a changed verdict gets a pull request B.
+
+The mutant anchors of `conformance/*_mutants.py` and the module list of
+`conformance/mutation_check.py` follow the moved code, as "Churn" below says.
+
 ## Consequences
 
 - **Cost of a new form.** A new expression form changes its evaluator arm, its resolver
@@ -308,7 +351,8 @@ Implementation notes (2026-10-17, step 1):
   (measured: about one third of today's cost on a three-statement case), and strings are
   folded once. The model test suite gets shorter per case; the number of cases keeps
   growing with slices.
-- **Verification target.** `Contract.lean` does not change. User proofs get shorter
+- **Verification target.** `Contract.lean` changes in step 2 (amendment 1): the result
+  database carries its catalog. User proofs get shorter
   through the API lemmas and `ofSchemaProjection`; the examples are rewritten to use
   them.
 - **Subqueries.** D5 gives `FROM` one source list with a reserved constructor, so the
@@ -368,3 +412,6 @@ instance is worth its proof.
 3. **D7 as the reading of ADR 0006.** Decided on 2026-10-17: accepted.
 4. **Order.** Decided on 2026-10-17: implement the steps in order, as one stack of pull
    requests on the ADR 0012 stack.
+5. **Scope of D1.** Decided on 2026-10-18: the full D1 now, with the contract change and
+   the rewritten approved files of amendment 1, instead of an internal step that keeps
+   `Database` as a function.
