@@ -50,7 +50,18 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D1 and amendment
   catalog for every run without an error, with a checked use in
   `CatalogAgreementExamples.lean`.
 
+- 2026-10-18: the suites found three generated or test sources on the old API
+  (`conformance/model_assertions.py`, the observation test, the refutation example)
+  and a resolve mutant that no case noticed any more: execution now gives the observed
+  catalog, so a wrong resolver catalog after ROLLBACK shows only in a later statement.
+  The authored case `rollback_then_add` (recorded natively, frozen in
+  `conformance/cases/`) notices it. Reviews: two rounds of proof-sketch, wording and
+  file-size findings, fixed in a `refactor:` commit whose review is clean.
+- 2026-10-18: the three suites pass. The verdict counts and the report equal step 1's,
+  so no pull request B is needed. CI time against step 1: `tests.harness` 22 s to
+  22 s, `tests.model` 335 s to 335 s, `tests.frozen` 142 s to 140 s, scheduled mutants
+  404 s to 411 s.
+
 ## Remaining
 
-- Full checks of the last two commits, verdict measurement, review, CI time, pull
-  request A; pull request B if a verdict changes.
+- Pull request A.
