@@ -22,6 +22,7 @@ import Belay.Sqlite.RowUpdate
 import Belay.Sqlite.UpsertRun
 import Belay.Sqlite.ModelProjection
 import Belay.Sqlite.Laws
+import Belay.Sqlite.CatalogAgreement
 import Belay.Sqlite.Resolution
 
 /-! SQLite states, supported execution, structural preservation facts, and name

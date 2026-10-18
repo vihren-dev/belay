@@ -1,3 +1,4 @@
+import Belay.Sqlite.Resolution.StatementCatalog
 import Belay.Sqlite.Resolution.FunctionSources
 
 set_option doc.verso true
@@ -170,18 +171,21 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
   | .ok query => .ok (.query query, catalog)
   | .error issue => issueResolution catalog index [] issue
 
-/-- For every successful resolution of a {lit}`SELECT`, the catalog is unchanged.
-Proof sketch: every branch of the resolver returns the input catalog. -/
+/-- For every successful resolution of a {lit}`SELECT`, the catalog is unchanged and the
+resolved statement leaves every catalog unchanged ({lit}`Resolved.Statement.applyCatalog`) and
+is not transaction control.
+Proof sketch: every branch of the resolver returns the input catalog and a query or a
+prepare error. -/
 theorem resolveSelect_same (context : ResolveContext) (catalog after : Catalog) (index : Nat)
     (results : List Syntax.ResultColumn) (source : Option Syntax.TableReference) (joins : List Syntax.Join)
     (filter : Option Syntax.Expr) (groupBy : List Syntax.Expr) (orderBy : List Syntax.OrderTerm)
     (limit offset : Option Syntax.Expr) (statement : Resolved.Statement)
     (ok : resolveSelect context catalog index results source joins filter groupBy orderBy limit offset =
       .ok (statement, after)) :
-    after = catalog := by
+    after = catalog ∧ statement.applyCatalog catalog = catalog ∧ statement.isControl = false := by
   unfold resolveSelect at ok
   simp only [prepareError, issueResolution] at ok
   repeat' split at ok
-  all_goals first | (cases ok; rfl) | (cases ok)
+  all_goals first | (cases ok; exact ⟨rfl, rfl, rfl⟩) | (cases ok)
 
 end Belay.Sqlite

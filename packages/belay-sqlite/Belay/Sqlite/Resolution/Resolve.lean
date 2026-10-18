@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.Queries
+import Belay.Sqlite.Resolution.StatementCatalog
 import Belay.Sqlite.Resolution.Updates
 import Belay.Sqlite.Resolution.Deletes
 
