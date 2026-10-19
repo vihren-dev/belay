@@ -143,3 +143,4 @@ def test_timeout_kills_process_group_and_retains_output(tmp_path: Path) -> None:
         time.sleep(0.02)
     else:
         pytest.fail(f"Grandchild {pid} survived the process-group timeout")
+

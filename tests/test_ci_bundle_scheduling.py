@@ -24,7 +24,7 @@ def test_bundle_failure_stops_complete_recipe_and_retains_artifacts(
     runtime = tmp_path / "runtime"
 
     def invoke(command: list[str], *, cwd: Path, environment: dict[str, str], timeout: float,
-               artifacts: Path) -> CommandResult:
+               artifacts: Path, echo: bool) -> CommandResult:
         """Replace only external build/version work; exercise real stream and artifact retention."""
         commands.append(command)
         if "tests.bundle" not in command:
@@ -34,16 +34,16 @@ def test_bundle_failure_stops_complete_recipe_and_retains_artifacts(
         if timed_out:
             script = "import time; print('bundle timeout stdout', flush=True); time.sleep(10)"
             return run_command([sys.executable, "-u", "-c", script], cwd=cwd, timeout=1,
-                               environment=environment, artifacts=artifacts)
+                               environment=environment, artifacts=artifacts, echo=echo)
         script = "import sys; print('bundle failure stdout'); print('bundle failure stderr', file=sys.stderr); sys.exit(7)"
         return run_command([sys.executable, "-c", script], cwd=cwd, timeout=5,
-                           environment=environment, artifacts=artifacts)
+                           environment=environment, artifacts=artifacts, echo=echo)
 
     with patch("tools.ci_checks.check_resources"), patch("tools.ci_checks.run_command", side_effect=invoke), \
          patch.dict("os.environ", {"SQLITE_VERIFIER_SYSTEM": "aarch64-darwin"}):
         with pytest.raises(CommandTimeout if timed_out else subprocess.CalledProcessError):
             run_checks(scope, "build", "aarch64-darwin", tmp_path)
-    assert limits == [900]
+    assert limits == [1500]
     assert "tests.bundle" in commands[-1]
     assert not any(command[0] == "just" for command in commands)
     phase = json.loads((tmp_path / "build/ci-phases.json").read_text())[-1]
@@ -54,7 +54,8 @@ def test_bundle_failure_stops_complete_recipe_and_retains_artifacts(
     assert "bundle " in artifact["stdout"]
     captured = capsys.readouterr()
     if timed_out:
-        assert "bundle timeout stdout" in captured.err
+        assert captured.out == "bundle timeout stdout\n"
+        assert "Phase bundle stopped after its 1500-second limit" in captured.err
     else:
         assert "bundle failure stdout" in captured.out and "bundle failure stderr" in captured.err
 

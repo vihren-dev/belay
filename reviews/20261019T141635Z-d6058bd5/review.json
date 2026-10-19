@@ -1,0 +1,35 @@
+{
+  "caller": "claude",
+  "commit": "d6058bd54da0e242c926524a4982d77fb9e6da7b",
+  "date": "2026-10-19T14:16:35+00:00",
+  "exit": 0,
+  "files": [
+    "justfile",
+    "reviews/20261019T141551Z-f77f9fea/resolution-1-20261019T141615Z.json",
+    "reviews/20261019T141551Z-f77f9fea/review.json",
+    "tests/test_recipe_limits.py"
+  ],
+  "findings": [],
+  "id": "20261019T141635Z-d6058bd5",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "fa2475f44035",
+    "R7": "0a38ead152b1",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

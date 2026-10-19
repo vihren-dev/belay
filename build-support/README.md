@@ -156,8 +156,11 @@ and is suitable for the standalone development shell, not project checks.
 `--no-build --all-systems` evaluates both platforms without running their tests.
 
 The installed Nix 2.18 cannot create result links from `flake check`, so `just test`
-builds `developmentTests`, retaining outputs under `build/nix-tests*`.
-`just test-full` builds all `tests`, retaining `build/nix-tests-full*` for CI.
+builds `developmentTestReports`, which links each suite of `developmentTests` under its
+name in `build/nix-tests` (for example `build/nix-tests/cli/junit.xml`).
+`just test-full` builds `testReports`, with all `tests` in `build/nix-tests-full`, and
+`just test-scheduled` builds `scheduledTestReports` in `build/nix-tests-scheduled`;
+CI keeps these folders.
 `just test-atuin`
 selects only Atuin. `just test-cases tests/kernel_gate_test.py` forces an ordinary
 pytest run. The non-flake `nix-build -A tests.kernel` entrypoints remain available.

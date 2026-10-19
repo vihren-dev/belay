@@ -40,7 +40,9 @@ CI retains `api-reference-SYSTEM` for 14 days, including when a later check
 fails. `just documentation-inventory` checks authored Verso coverage.
 Documentation dependencies stay outside the installed proof runtime.
 The complete job has a 75-minute limit. The reference phase keeps its
-30-minute limit. Individual compiler, suite and installer deadlines remain
+30-minute limit. The phase that runs the scope's `just` recipes has a 60-minute
+limit (`CHECKS_PHASE_LIMIT_SECONDS`): `just package` reruns the scheduled mutant suite
+when the model changes, and that took more than 30 minutes. Individual compiler, suite and installer deadlines remain
 unchanged; a job that reaches its aggregate limit fails.
 
 Each complete check invocation enters the pinned Nix environment once. `tools/ci_checks.py`
@@ -51,14 +53,15 @@ target with sandboxing enabled and fallback disabled. Its output is linked at
 before the complete recipe starts model or upstream test builders. Linux keeps
 the complete recipe's current schedule.
 
-The prebuild retains the 900-second Nix build deadline; the bundle tests keep
-their per-test limits, described below. The
+The prebuild has the 1500-second limit of the recipes that build test suites; the
+bundle tests keep their per-test limits, described below. The
 [dated evidence](../reports/20261007-darwin-bundle-scheduling/README.md)
 distinguishes the earlier hosted failures from the isolated local pass.
 
-`just test-full` builds independent Nix test targets
-with `nix-build -A tests`, among them these; the flake exposes the same derivations as
-`checks.<system>`:
+`just test-full` builds independent Nix test targets, the suites of `tests`, through
+`nix-build -A testReports`. Each suite's output, with its `junit.xml`, is at
+`build/nix-tests-full/SUITE`. These are among them; the flake exposes the same
+derivations as `checks.<system>`:
 
 - `tests.kernel`: real Lean compilation and proof-checker replay attacks.
 - `tests.model`: production SQL translation and concrete Lean model assertions,
@@ -81,7 +84,8 @@ with `nix-build -A tests`, among them these; the flake exposes the same derivati
   harness or documentation change reuses the result.
 
 `just test-scheduled` builds the scheduled suites of `tests/nix_scheduled_suites.json`
-with `nix-build -A scheduledTests`: `scheduledTests.mutants`, the mutants of the model, each
+with `nix-build -A scheduledTestReports` (outputs in `build/nix-tests-scheduled/SUITE`):
+`scheduledTests.mutants`, the mutants of the model, each
 built as a changed copy of the Lean packages, where every mutant must change the verdict of
 an authored model case; and `scheduledTests.writers`, the round trips of the corpus writers.
 Each mutant copy rebuilds the model modules that depend on its change, so the suite grows
@@ -135,7 +139,11 @@ judge lock. A module missing from its input list fails it with an import error.
 Each test has a 300-second limit (`pytest-timeout`), so a hung test fails with its
 own name. Nix runs several targets at the same time, so a target's total time
 depends on the other targets; its 1200-second limit only guards against a hang
-outside a test.
+outside a test. The recipes that build test suites stop `nix-build` after 1500
+seconds, so the suite limit ends first and names the suite.
+`tests/test_recipe_limits.py` checks this order. They run
+`timeout --foreground`, which keeps `nix-build` in the caller's process group, so
+the deadline of a CI phase also stops `nix-build`.
 
 The remaining cheap source cases run in one pytest invocation. Cases marked
 `requires_nix` (source identities, test-target commands, environment snapshots,
@@ -191,9 +199,15 @@ platform caches evicted each other. A path removed by mistake costs a rebuild in
 later run and cannot change a result. The step may fail without failing the job.
 
 Host JUnit reports, cached Nix test outputs and CI phase diagnostics are
-retained for 14 days. Pytest's exit status decides success. Individual subprocess
-and whole-command deadlines remain bounded (a timed-out test command's process
-group is killed). The hosted job limit is 75 minutes, including the reference phase, runtime,
+retained for 14 days. Pytest's exit status decides success. `tools/ci_checks.py`
+writes the output of each phase to the job log while the phase runs, and keeps it in
+`build/ci-phases/PHASE/`. After the checks phase, also when it fails,
+`tools/test_reports.py` writes a summary to the log and to the job summary page.
+For each JUnit report it gives the tests, failures and time, and whether the suite
+ran in this job or Nix reused it from an earlier build, by the report's timestamp. It
+also lists the ten slowest test cases that ran in this job. Individual subprocess and whole-command deadlines remain
+bounded: a timed-out command's process group is killed, and the output read before
+the kill is kept, also when a process outside the group keeps the pipes open. The hosted job limit is 75 minutes, including the reference phase, runtime,
 Darwin bundle, complete checks, setup and artifact retention. Child limits
 are individual upper bounds; their sum is not a promised job duration. Individual suite and command limits remain unchanged.
 Superseded ordinary runs are cancelled; release/manual runs are not.
