@@ -1,6 +1,6 @@
 # CHECK and named constraints, and CREATE TABLE with constraints in the script (ADR 0014, slice 4)
 
-Created 2026-10-19. Status: open.
+Created 2026-10-19. Status: DONE (pull requests #183 and #184).
 Status file: [status](20261019-check-constraints.status.md).
 Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D2 and owner decision 3; the
 [measurement](../experiments/schema-features/README.md).

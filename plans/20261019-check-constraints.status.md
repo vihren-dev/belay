@@ -1,6 +1,6 @@
 # Status: CHECK and named constraints (ADR 0014, slice 4)
 
-Created 2026-10-19. Status: open.
+Created 2026-10-19. Status: DONE.
 Task file: [task](20261019-check-constraints.task.md).
 Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D2.
 
@@ -62,4 +62,4 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D2.
 
 ## Remaining
 
-- Pull requests A and B.
+- 2026-10-19: pull requests #183 (A) and #184 (B). DONE.
