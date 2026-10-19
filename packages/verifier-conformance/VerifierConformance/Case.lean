@@ -38,13 +38,19 @@ inductive Verdict where
   | modelUnsupported
   deriving Repr, DecidableEq
 
+/-- The rows of a native table as the model stores them: as recorded, or for a
+{lit}`WITHOUT ROWID` table numbered 1, 2, ... in recorded order, since SQLite gives them no
+rowid and the model's rowids of such a table are its own (ADR 0014, D4). -/
+def storedRows (table : CatalogTable) (rows : List Row) : List Row :=
+  if table.withoutRowid then rows.zipIdx.map fun (row, index) => { row with rowid := index + 1 } else rows
+
 /-- The starting database: the catalog, and at each catalog table the rows of the native
-table with its folded name. A catalog table without a native table, and an index, hold no
-rows. -/
+table with its folded name ({name}`storedRows`). A catalog table without a native table,
+and an index, hold no rows. -/
 def databaseOf (catalog : Catalog) (natives : List NativeTable) : Database :=
   { catalog, rows := catalog.map fun object => match object.entry with
-    | .table _ => ((natives.find? fun native =>
-        native.name.sameName object.name).map (·.rows)).getD []
+    | .table table => storedRows table (((natives.find? fun native =>
+        native.name.sameName object.name).map (·.rows)).getD [])
     | .index _ => [] }
 
 /-- The primary result-code abstraction matches the granularity of ExecutionError. -/

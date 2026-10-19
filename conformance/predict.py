@@ -29,9 +29,16 @@ RUNNER_TIMEOUT_SECONDS = 600
 """One model run over all inputs of a corpus."""
 
 
+def row_id(identity: list[Json]) -> int:
+    """The rowid of a recorded row identity, or 0 for the primary-key cells of a `WITHOUT ROWID`
+    table, whose rows the model numbers itself (`databaseOf`)."""
+    cell = native_bindings.decode_cell(identity[0])[1] if len(identity) == 1 else None
+    return cell if type(cell) is int else 0
+
+
 def initial_rows(rows: dict[str, Json]) -> list[Json]:
     """The starting rows of each table by name, as stored rows with their row ids."""
-    return [{"name": name, "rows": [row_wire(native_bindings.decode_cell(row["identity"][0])[1],
+    return [{"name": name, "rows": [row_wire(row_id(row["identity"]),
                                              tuple(native_bindings.decode_cell(cell) for cell in row["values"]))
                                     for row in table_rows]}
             for name, table_rows in sorted(rows.items())]
