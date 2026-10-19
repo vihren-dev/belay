@@ -234,6 +234,22 @@ Each slice works in this way:
     and a column always has a collation.
   - An `ON CONFLICT` target without `COLLATE` matches a key of any collation; `COLLATE` in a
     target stays a frontend refusal.
+- Slice 4 (2026-10-19), details checked natively that D2 does not state:
+  - The CHECK constraints of a column live on the column, and those of table constraints
+    on the table. SQLite keeps one list in written order; the orders differ only in the
+    label that a row reports when several CHECK constraints fail, and every failure has
+    the same result code.
+  - The name of `CONSTRAINT name` stays in effect within a column definition, and from the
+    last column into the table constraints until a comma between two of them. The
+    frontend gives each CHECK its label.
+  - ADD COLUMN with a CHECK over rows fails with result code 1 (`SQLITE_ERROR`) at step,
+    not with a constraint error, and its SELECT over `pragma_quick_check` is an output
+    column. A CHECK of ADD COLUMN that does not resolve is a step error natively, which the
+    model leaves as the restriction `add-column-check-error`.
+  - A time keyword, a date and time function or a JSON function in a CHECK is the
+    restriction `check-function`.
+  - The support check admits every CREATE TABLE: a new table has no rows to violate a
+    constraint.
 
 ## Consequences
 

@@ -70,11 +70,12 @@ deriving instance Lean.ToExpr for DefaultInsert
 deriving instance Lean.ToExpr for DefaultForm
 deriving instance Lean.ToExpr for ColumnDefault
 deriving instance Lean.ToExpr for Collation
-deriving instance Lean.ToExpr for CatalogColumn
-deriving instance Lean.ToExpr for CatalogTable
 deriving instance Lean.ToExpr for Resolved.JsonFunction
 deriving instance Lean.ToExpr for Resolved.DateFunction
 deriving instance Lean.ToExpr for Resolved.Expr, Resolved.Arguments
+deriving instance Lean.ToExpr for CheckConstraint
+deriving instance Lean.ToExpr for CatalogColumn
+deriving instance Lean.ToExpr for CatalogTable
 deriving instance Lean.ToExpr for KeyTerm
 deriving instance Lean.ToExpr for IndexKey
 deriving instance Lean.ToExpr for CatalogIndex

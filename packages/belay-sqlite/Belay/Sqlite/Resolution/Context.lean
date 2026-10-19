@@ -68,23 +68,26 @@ def constantDefault (expression : Syntax.Expr) : Bool :=
 /-- Whether the constraint is PRIMARY KEY. -/
 def Syntax.ColumnConstraint.isPrimaryKey : Syntax.ColumnConstraint → Bool
   | .primaryKey .. => true
-  | .notNull _ | .unique _ | .default _ _ | .collate _ => false
+  | .notNull _ | .unique _ | .default _ _ | .collate _ | .check .. | .references .. => false
 
-/-- The name of a {lit}`COLLATE` constraint that names no collation ({name}`Collation.named?`),
-which SQLite refuses with {lit}`no such collation sequence`; none for every other constraint. -/
-def Syntax.ColumnConstraint.unknownCollation : Syntax.ColumnConstraint → Option Identifier
-  | .collate name => if (Collation.named? name).isSome then none else some name
-  | .notNull _ | .primaryKey .. | .unique _ | .default _ _ => none
+/-- The error that SQLite reports while it parses a constraint of the column, or none: a
+{lit}`COLLATE` that names no collation ({name}`Collation.named?`) is
+{lit}`no such collation sequence`, and a {lit}`REFERENCES` with more than one column is
+{name}`ExprError.foreignKeyOneColumn`. -/
+def Syntax.ColumnConstraint.parseError (column : Identifier) : Syntax.ColumnConstraint → Option ExprError
+  | .collate name => if (Collation.named? name).isSome then none else some (.noSuchCollation name)
+  | .references table columns => if columns.length > 1 then some (.foreignKeyOneColumn column table) else none
+  | .notNull _ | .primaryKey .. | .unique _ | .default _ _ | .check .. => none
 
 /-- Whether the constraint is UNIQUE. -/
 def Syntax.ColumnConstraint.isUnique : Syntax.ColumnConstraint → Bool
   | .unique _ => true
-  | .notNull _ | .primaryKey .. | .default _ _ | .collate _ => false
+  | .notNull _ | .primaryKey .. | .default _ _ | .collate _ | .check .. | .references .. => false
 
 /-- Whether the constraint is a DEFAULT that SQLite refuses as not constant. -/
 def Syntax.ColumnConstraint.nonconstantDefault : Syntax.ColumnConstraint → Bool
   | .default value _ => !constantDefault value
-  | .notNull _ | .primaryKey .. | .unique _ | .collate _ => false
+  | .notNull _ | .primaryKey .. | .unique _ | .collate _ | .check .. | .references .. => false
 
 /-- Whether the model describes a catalog default: a literal whose value or
 SQLite preparation error is modeled, or a time keyword such as {lit}`CURRENT_TIMESTAMP`, which is kept
@@ -95,7 +98,7 @@ def Syntax.ColumnConstraint.modeledDefault : Syntax.ColumnConstraint → Bool
   | .default expression _ => match literalDefault expression with
     | .ok _ | .error (.prepare _) => true
     | .error (.restriction ..) => false
-  | .notNull _ | .primaryKey .. | .unique _ | .collate _ => true
+  | .notNull _ | .primaryKey .. | .unique _ | .collate _ | .check .. | .references .. => true
 
 /-- A prepare error leaves the catalog unchanged. -/
 def prepareError (catalog : Catalog) (error : PrepareError) : StatementResolution :=

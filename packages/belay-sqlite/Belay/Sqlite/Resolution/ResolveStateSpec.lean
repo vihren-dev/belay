@@ -46,7 +46,7 @@ theorem resolveCreateTable_applyCatalog (context : ResolveContext) (catalog afte
     (ok : resolveCreateTable context catalog index name columns constraints options = .ok (statement, after)) :
     after = statement.applyCatalog catalog ∧ statement.isControl = false := by
   unfold resolveCreateTable at ok
-  simp only [prepareError, restrict] at ok
+  simp only [issueResolution, prepareError, restrict] at ok
   repeat' split at ok
   all_goals first | (cases ok; exact ⟨rfl, rfl⟩) | (cases ok)
 

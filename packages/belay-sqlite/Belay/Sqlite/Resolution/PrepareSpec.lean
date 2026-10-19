@@ -21,7 +21,7 @@ theorem resolveCreateTable_named (context : ResolveContext) (catalog after : Cat
     (ok : resolveCreateTable context catalog index name columns constraints options = .ok (.prepareError error, after)) :
     (catalog.find name).isSome = true ∧ after = catalog := by
   unfold resolveCreateTable at ok
-  simp only [prepareError, restrict] at ok
+  simp only [issueResolution, prepareError, restrict] at ok
   repeat' split at ok
   all_goals (try (cases ok; done))
   all_goals cases ok

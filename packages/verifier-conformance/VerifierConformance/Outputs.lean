@@ -76,7 +76,7 @@ names, no rows and no change: a constraint failure or a rowid alias mismatch. -/
 def ExecutionError.failsWrite : ExecutionError → Bool
   | .constraintViolation | .constraintFail | .constraintRollback | .datatypeMismatch => true
   | .unmodeled | .prepare _ | .transactionAlreadyActive | .noActiveTransaction | .integerOverflow
-  | .functionError | .nullColumnDefault | .nonConstantColumnDefault => false
+  | .functionError | .nullColumnDefault | .nonConstantColumnDefault | .checkColumnDefault => false
 
 /-- The change count of a failed INSERT with clauses or algorithms: the rows written
 before the failing row for a FAIL failure, which keeps them, and zero for every other
@@ -89,12 +89,18 @@ def keptCount : Except (ExecutionError × Table × List Row) (Table × List Row)
 {lit}`sqlite3AlterFinishAddColumn` calls {lit}`sqlite3ErrorIfNotEmpty` for a column with a
 time default ({name}`CatalogColumn.clockDefault`), and for a NOT NULL column without a
 non-NULL default. That helper compiles a SELECT of a RAISE expression (pinned SQLite
-{lit}`alter.c`), whose name is exposed even when the table is empty. Other modeled
-additions have no output columns. -/
+{lit}`alter.c`), whose name is exposed even when the table is empty. Otherwise a column with
+a CHECK constraint has the column of SQLite's SELECT over {lit}`pragma_quick_check`, which
+checks the existing rows (ADR 0014, slice 4; checked natively). Other modeled additions
+have no output columns. -/
 def addColumnOutputNames (column : CatalogColumn) : List String :=
   if column.clockDefault then ["raise(ABORT,'Cannot add a column with non-constant default')"]
   else if column.notNull && (readDefaultValue column).toOption == some .null then
     ["raise(ABORT,'Cannot add a NOT NULL column with default value NULL')"]
+  else if !column.checks.isEmpty then
+    ["CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') " ++
+      "WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') " ++
+      "ELSE raise(ABORT,'NOT NULL constraint failed') END"]
   else []
 
 /-- Observe the literal-DML domain; unsupported output capability is explicit.

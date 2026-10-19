@@ -172,8 +172,10 @@ def keyed : Catalog := catalogOf (schema [.createTable (name! "k") [column (name
 #guard statements (migration tableT [.createTable (name! "t") [column (name! "x")] [], .addColumn (name! "t") (column (name! "c"))])
   matches [.prepareError (.tableExists (name! "t")), .addColumn 0 _]
 
--- Statements that run keep the model scope; descriptions may contain the statistics tables.
-#guard restricted (migration [] [.createTable (name! "t") [{ name := (name! "a"), declaredType := none, constraints := [.notNull] }] []])
+-- A CREATE TABLE with constraints runs (ADR 0014, slice 4); descriptions may contain the
+-- statistics tables.
+#guard (catalogOf (migration [] [.createTable (name! "t") [{ name := (name! "a"), declaredType := none, constraints := [.notNull] }] []])).map
+  (·.entry) == [.table { columns := [{ name := name! "a", declaredType := none, notNull := true }] }]
 #guard statements (migration tableT [.createIndex (name! "i") false (name! "t") [key (name! "a")] none]) matches [.createIndex 1 ..]
 #guard statements (migration [] [.createTable (name! "sqlite_x") [column (name! "a")] []]) == [.prepareError (.expression (.reservedName (name! "sqlite_x")))]
 #guard !restricted (schema [.createTable (name! "sqlite_stat1") [column (name! "tbl") none, column (name! "idx") none, column (name! "stat") none] []])

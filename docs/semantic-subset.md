@@ -11,10 +11,11 @@ The frontend maps these statements, and refuses every other statement as
 `UNSUPPORTED` at its byte range:
 
 - `CREATE TABLE` with column definitions (name, declared type text, `NOT NULL`,
-  `PRIMARY KEY` with its sort order, `UNIQUE`, `COLLATE` (ADR 0014, slice 3), and
-  `DEFAULT` with a literal, a signed number, a time keyword or a name), table
-  `PRIMARY KEY` and `UNIQUE` constraints over plain column names, and the option `WITHOUT ROWID` (ADR 0014,
-  slice 2; `STRICT` is refused);
+  `PRIMARY KEY` with its sort order, `UNIQUE`, `COLLATE` (ADR 0014, slice 3), `CHECK`
+  and `REFERENCES` (slice 4), and `DEFAULT` with a literal, a signed number, a time
+  keyword or a name), table `PRIMARY KEY` and `UNIQUE` constraints over plain column
+  names, `CHECK` and `FOREIGN KEY` (slice 4), `CONSTRAINT name` before any constraint,
+  and the option `WITHOUT ROWID` (slice 2; `STRICT` is refused);
 - `CREATE [UNIQUE] INDEX` with key terms, each a column name or an expression with
   an optional `ASC` or `DESC`, and an optional `WHERE` filter (ADR 0014, slice 1);
 - `ALTER TABLE … ADD [COLUMN]` with one column definition;
@@ -93,8 +94,7 @@ row of `DO UPDATE` are always ABORT. In the schema, a `PRIMARY KEY`, `UNIQUE` or
 `NOT NULL` constraint may have `ON CONFLICT algorithm`, its algorithm when INSERT has no
 `OR` clause; keys with different algorithms other than REPLACE are the restriction
 `mixed-conflict-algorithms`, UPDATE of such a table is `constraint-algorithm-update`, and
-REPLACE of a NOT NULL column with a default is `replace-default`. Named
-constraints, `CHECK`, `REFERENCES`, generated columns, `UPDATE OR`, a target with a direction, collation,
+REPLACE of a NOT NULL column with a default is `replace-default`. Generated columns, `UPDATE OR`, a target with a direction, collation,
 `NULLS` order, qualified name or `WHERE`, `WITH`, `FROM` in writes, sort modifiers in keys,
 partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
 options, `AS SELECT`, views, triggers, virtual tables, `EXPLAIN`, `PRAGMA`,
@@ -143,6 +143,22 @@ no rowid alias, and `rowid`, `_rowid_` and `oid` that name no column are
 `PRIMARY KEY DESC`, and UPDATE and DELETE with `RETURNING` return them in that order; a
 table with a rowid returns them in rowid order.
 
+A CHECK constraint (ADR 0014, slice 4) is a condition over a row of its table, resolved
+when the table is defined, after the other checks of the definition, with SQLite's prepare
+errors: `no such column`, an aggregate as misuse, and the profile's `DQS_DDL`. INSERT,
+UPDATE and `DO UPDATE` check each written row: NOT NULL first, then CHECK, then the unique
+keys. A CHECK fails when its condition is false, read as a number; NULL passes. A failure
+is SQLite's constraint error with the statement's `OR` algorithm, else ABORT: IGNORE skips
+the row, REPLACE acts as ABORT, and SQLite ignores the conflict clause of a table CHECK.
+ADD COLUMN with a CHECK checks the existing rows with the new default and fails with
+result code 1 when one fails. A time keyword, a date and time function or a JSON function
+in a CHECK is the restriction `check-function`, and a CHECK of ADD COLUMN that SQLite
+cannot resolve is `add-column-check-error`, as SQLite reports it while the statement runs.
+Foreign keys are off in every modeled profile, as in SQLite by default: a `REFERENCES`
+clause or a `FOREIGN KEY` constraint has no effect apart from its prepare errors, and the
+catalog keeps no foreign key. A CREATE TABLE with constraints and defaults runs in the
+migration as in the schema.
+
 A collation (ADR 0014, slice 3) is `BINARY`, `NOCASE` or `RTRIM`, with ASCII case of the
 name ignored. `NOCASE` compares TEXT with the ASCII capitals folded, and `RTRIM` compares
 TEXT without trailing spaces; neither changes a value of another storage class. A column
@@ -183,8 +199,7 @@ successful prefix. Predicting an error alone never establishes `VIOLATED`.
 
 SQL that SQLite accepts but the model does not describe is a model restriction:
 the whole request is `UNSUPPORTED` at the byte range of the refused node. In the
-migration these are, among others: `CREATE TABLE` with
-constraints or defaults; `ADD COLUMN` with an unmodeled default expression; rowid column
+migration these are, among others: `ADD COLUMN` with an unmodeled default expression; rowid column
 names; time values; a `SET` value that reads the row for a column of a unique key; a
 column named twice. In a `SELECT`: an aggregate inside an expression; a result column
 outside `GROUP BY` in an aggregate query; `ORDER BY` terms of an aggregate query
@@ -225,11 +240,12 @@ should shrink.
 | `schema-statement` | A schema contains only CREATE TABLE and CREATE INDEX statements | ADR 0008 |
 | `engine-table` | Engine-managed tables other than sqlite_stat1 and sqlite_stat4 are not modeled | ADR 0008 |
 | `rowid-column-name` | Column names `rowid`, `_rowid_` and `oid` are not modeled | ADR 0008 |
-| `create-table-constraints` | Constraints and defaults in a CREATE TABLE that runs are not modeled | ADR 0008 |
 | `unmodeled-default` | Only literal defaults and the time keywords are modeled | ADR 0008 |
 | `index-string-term` | A string literal as a key term of CREATE INDEX, also a double-quoted name that is no column, is not modeled | ADR 0014, slice 1 |
 | `index-date-function` | A date and time function in a key term or the filter of CREATE INDEX is not modeled | ADR 0014, slice 1 |
 | `index-json-function` | A JSON function in a key term or the filter of CREATE INDEX is not modeled | ADR 0014, slice 1 |
+| `check-function` | A time keyword, a date and time function or a JSON function in a CHECK constraint is not modeled | ADR 0014, slice 4 |
+| `add-column-check-error` | A CHECK of ADD COLUMN that SQLite cannot resolve is not modeled, because SQLite reports it while the statement runs | ADR 0014, slice 4 |
 | `add-column-constraint` | The added column requires unmodeled default evaluation | ADR 0008 |
 | `constraint-algorithm-update` | UPDATE of a table with ON CONFLICT constraint algorithms is not modeled | ADR 0012 amendment 4, slice 5d |
 | `replace-default` | REPLACE of a NOT NULL column with a default is not modeled | ADR 0012 amendment 4, slice 5d |

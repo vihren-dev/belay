@@ -110,7 +110,9 @@ theorem step_extends (clock : Int) (statement : Resolved.Statement) (database : 
           simp only []
           split
           · exact DatabaseExtends.refl database
-          · exact DatabaseExtends.add database target table column value h
+          · split
+            · exact DatabaseExtends.refl database
+            · exact DatabaseExtends.add database target table column value h
   | createIndex target name index =>
     simp only [step]
     split

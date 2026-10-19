@@ -90,7 +90,7 @@ theorem script_runs (admitted : Admitted profile startCatalog (fun _ => True) da
   have middleLength : (database.addColumn 0 note .null).catalog.length = 1 ∧
       (database.addColumn 0 note .null).rows.length = 1 := by
     simp [Database.addColumn, Catalog.length_addColumn, same, length, startCatalog]
-  have added := effect_addColumn_ok 0 present (column := note) (value := .null) rfl rfl rfl
+  have added := effect_addColumn_ok 0 present (column := note) (value := .null) rfl rfl rfl (by simp [note])
   have created := effect_createTable_ok 0 (database.addColumn 0 note .null) (name! "audit") { columns := [message] } 1
     middleLength.1.symm (middleLength.2.trans middleLength.1.symm)
   simp only [runSql_eq, script, runSqlFrom_cons, advance_addColumn, advance_createTable, added, created, SqlState.publish_ok,
@@ -111,7 +111,7 @@ theorem migrationCorrect (profile : Profile) (columns : 2 ≤ profile.limits.col
   · exact ⟨startCatalog.emptyDatabase, Catalog.emptyDatabase_conforms startValid, trivial⟩
   · intros; trivial
   · simp [SchemaOnly, script]
-  · simp [ModeledDefinitions, script, CatalogTable.plain, CatalogColumn.plain, readDefaultValue, Except.toOption,
+  · simp [ModeledDefinitions, script, readDefaultValue, Except.toOption,
       note, message]
   · decide +kernel
   · decide +kernel

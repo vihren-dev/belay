@@ -23,6 +23,19 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D2.
   catalog; `CHECK ... ON CONFLICT` is a syntax error; `PRAGMA foreign_keys` is 0; the
   three foreign-key prepare errors; a missing referenced table is admitted.
 
+- 2026-10-19: outcomes 1 to 8 in one commit. Syntax `check` (with the label that the
+  frontend computes from the name in effect or the trimmed text), `references` and
+  `foreignKey`; `CheckConstraint` on columns and tables (`Resolution/Checks.lean`),
+  resolved last by `Resolution/TableChecks.lean`; the three foreign-key prepare errors;
+  `constraints` and `upsertRow` check CHECK after NOT NULL and before the keys, with the
+  statement's algorithm (`ConflictPolicy.check`); ADD COLUMN checks the rows with the new
+  default (`ExecutionError.checkColumnDefault`, code 1) and its `quick_check` output name.
+  The restriction `create-table-constraints` and `CatalogTable.plain` are gone; new
+  restrictions `check-function` and `add-column-check-error`. The frontend helpers moved to
+  `syntax_shapes.py`, and `AddColumn.lean` and `ReservedNames.lean` split two files over
+  200 lines. Authored corpus `authored_checks` (31 cases, all AGREE with kernel proofs
+  locally, corpus 32) and `check_mutants` (four).
+
 ## Remaining
 
-- All outcomes, checks, reviews, CI time, pull requests.
+- Checks, reviews, verdict, CI time, PR B, pull requests.

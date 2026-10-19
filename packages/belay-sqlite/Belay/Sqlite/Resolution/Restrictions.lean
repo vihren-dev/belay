@@ -17,8 +17,6 @@ inductive RestrictionKind where
   | engineTable
   /-- Column names {lit}`rowid`, {lit}`_rowid_` and {lit}`oid` are not modeled (ADR 0008). -/
   | rowidColumnName
-  /-- Constraints and defaults in a CREATE TABLE that runs are not modeled (ADR 0008). -/
-  | createTableConstraints
   /-- Only literal defaults and {lit}`CURRENT_TIMESTAMP` are modeled (ADR 0008, T14). -/
   | unmodeledDefault
   /-- A string literal as a key term of CREATE INDEX, also a double-quoted name that is no
@@ -34,6 +32,14 @@ inductive RestrictionKind where
   the name up only where it uses the collation, and its query planner decides some of
   those uses, so the model cannot tell whether the statement fails (ADR 0014, slice 3). -/
   | unknownCollation
+  /-- A time keyword, a date and time function or a JSON function in a CHECK constraint: the
+  first two can give another value on each evaluation, and the last can fail while a row is
+  written, which the model's check does not describe (ADR 0014, slice 4). -/
+  | checkFunction
+  /-- A CHECK of ADD COLUMN that SQLite cannot resolve: SQLite reports it while the statement
+  runs, as {lit}`error in table %s after add column: %s`, which the model does not describe
+  (ADR 0014, slice 4). -/
+  | addColumnCheckError
   /-- The added column requires unmodeled default evaluation. -/
   | addColumnConstraint
   /-- A {lit}`SET` value that reads the row is not modeled for a column of a unique key

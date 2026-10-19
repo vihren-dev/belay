@@ -28,7 +28,7 @@ theorem reverse_runs (database : Database) (admitted : Admitted profile startCat
   have invoice := Database.table_createTable (name! "audit") { columns := [message] } present
   generalize createdIs : ({ catalog := database.catalog.createTable (name! "audit") { columns := [message] }, rows := database.rows ++ [[]] } : Database) =
     created at audit invoice
-  have added := effect_addColumn_ok 0 invoice (column := note) (value := .null) rfl rfl rfl
+  have added := effect_addColumn_ok 0 invoice (column := note) (value := .null) rfl rfl rfl (by simp [note])
   have reversed : runSql reverseScript database = .success (created.addColumn 0 note .null) := by
     simp only [runSql_eq, reverseScript, runSqlFrom_cons, advance_createTable, advance_addColumn, audit, added,
       SqlState.publish_ok, runSqlFrom_nil]
@@ -47,7 +47,7 @@ theorem reverseMigrationCorrect (profile : Profile) (columns : 2 ≤ profile.lim
       requirements (current profile) (next profile) unreachableFailures profile :=
   (migrationCorrect profile columns).congr_runSql
     (fun _ _ => SupportedSql.schemaOnly (by simp [SchemaOnly, reverseScript])
-      (by simp [ModeledDefinitions, reverseScript, CatalogTable.plain, CatalogColumn.plain, readDefaultValue, Except.toOption, note, message]))
+      (by simp [ModeledDefinitions, reverseScript, readDefaultValue, Except.toOption, note, message]))
     reverse_runs (by decide) (by decide)
 
 #print axioms reverseMigrationCorrect

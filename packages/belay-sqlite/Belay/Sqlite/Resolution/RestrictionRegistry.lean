@@ -30,8 +30,9 @@ def RestrictionKind.registry : RestrictionKind → RestrictionRegistry
   | .rowDependentKey | .conflictWithoutTarget | .mixedConflictAlgorithms | .windowedGroupSum
   | .constantFunctionError | .unknownCollation => .undecided
   | .rowidName => .unrepresented
-  | .schemaStatement | .engineTable | .rowidColumnName | .createTableConstraints
-  | .unmodeledDefault | .indexStringTerm | .indexDateFunction | .indexJsonFunction | .addColumnConstraint | .constraintAlgorithmUpdate
+  | .schemaStatement | .engineTable | .rowidColumnName
+  | .unmodeledDefault | .indexStringTerm | .indexDateFunction | .indexJsonFunction | .checkFunction
+  | .addColumnCheckError | .addColumnConstraint | .constraintAlgorithmUpdate
   | .replaceDefault | .insertColumnTwice | .updateColumnTwice | .joinOperator | .systemTable
   | .unmodeledFunction | .aggregateInExpression | .aliasInExpression | .groupByTerm | .bareColumn
   | .aggregateOrderBy | .windowValue | .negativeOffset | .tableFunction | .laterTableInOn | .functionJoin

@@ -34,6 +34,24 @@ theorem resolveAddColumn_missing (context : ResolveContext) (catalog : Catalog) 
   unfold resolveAddColumn
   simp [missing, prepareError]
 
+/-- For every column name, constraint list and error: when the first parse error of the
+constraints ({name}`Syntax.ColumnConstraint.parseError`) is the error, it is no
+{name}`ExprError.duplicateColumn`. -/
+theorem findSome_parseError_ne_duplicate (column name : Identifier) (constraints : List Syntax.ColumnConstraint)
+    (error : ExprError) (found : constraints.findSome? (·.parseError column) = some error) :
+    error ≠ .duplicateColumn name := by
+  induction constraints with
+  | nil => simp at found
+  | cons constraint rest ih =>
+    rw [List.findSome?_cons] at found
+    cases parsed : constraint.parseError column with
+    | none => rw [parsed] at found; exact ih found
+    | some first =>
+      rw [parsed] at found
+      cases found
+      cases constraint <;> simp only [Syntax.ColumnConstraint.parseError] at parsed <;>
+        (repeat' split at parsed) <;> (try cases parsed) <;> simp
+
 /-- The duplicate-column rule of ADD COLUMN ({lit}`sqlite3AddColumn`): for every
 table that the folded name finds, whose name SQLite does not reserve and with fewer
 columns than the profile limit, the resolution is {lit}`duplicate column name` exactly
@@ -53,7 +71,8 @@ theorem resolveAddColumn_duplicate (context : ResolveContext) (catalog : Catalog
   · simp [used]
   · simp only [used]
     repeat' split
-    all_goals simp_all [restrict]
+    all_goals (try simp_all [restrict])
+    all_goals exact findSome_parseError_ne_duplicate _ _ _ _ (by assumption)
 
 /-- For every CREATE INDEX whose resolution is a prepare error
 that names a catalog object: either no table has the folded table name and the error

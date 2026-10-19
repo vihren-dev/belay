@@ -42,7 +42,9 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D2 and owner dec
    meaning.
 6. **ADD COLUMN with CHECK.** On a table with rows, SQLite checks the new column's CHECK
    over the existing rows and fails with `CHECK constraint failed` (no label), leaving the
-   catalog as it was; on an empty table it succeeds. Its result code is checked natively.
+   catalog as it was; on an empty table it succeeds. Natively this is result code 1
+   (`SQLITE_ERROR`) at step, not a constraint error; a failing CHECK of a write is 275
+   (`SQLITE_CONSTRAINT_CHECK`).
 7. **CREATE TABLE in the script.** A CREATE TABLE with constraints or defaults that runs in
    the script uses the catalog function of a described one, and the restriction
    `create-table-constraints` goes.

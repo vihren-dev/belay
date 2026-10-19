@@ -35,6 +35,9 @@ def ExprError.message : ExprError → String
   | .conflictingAlgorithms => "conflicting ON CONFLICT clauses specified"
   | .noSuchColumn name => s!"no such column: {name}"
   | .noSuchCollation name => s!"no such collation sequence: {name}"
+  | .foreignKeyOneColumn column table => s!"foreign key on {column} should reference only one column of table {table}"
+  | .foreignKeyColumnCount => "number of columns in foreign key does not match the number of columns in the referenced table"
+  | .unknownForeignKeyColumn name => s!"unknown column \"{name}\" in foreign key definition"
   | .qualifiedIndexTerm => "the \".\" operator prohibited in index expressions"
   | .nondeterministicIndex filter =>
     "non-deterministic functions prohibited in " ++ (if filter then "partial index WHERE clauses" else "index expressions")

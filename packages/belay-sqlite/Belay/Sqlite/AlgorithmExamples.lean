@@ -53,7 +53,7 @@ def mixed : List (List Value) :=
 -- REPLACE of a NULL in a NOT NULL column without a default is ABORT.
 #guard errorOf .replace [[.integer 7, .integer 7, .null]] == some .constraintViolation
 -- A REPLACE key is checked after an ABORT key: the row fails and deletes nothing.
-#guard (match LiteralData.upsertRun 0 keys ⟨[.replace, .abort], []⟩ [] table [[.integer 1, .integer 2, letter 120]] with
+#guard (match LiteralData.upsertRun 0 keys { keys := [.replace, .abort], notNull := [] } [] table [[.integer 1, .integer 2, letter 120]] with
   | .error (reason, _, _) => some reason
   | .ok _ => none) == some .constraintViolation
 

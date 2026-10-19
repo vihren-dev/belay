@@ -2,13 +2,14 @@ import Belay.Sqlite.Resolution.Context
 import Belay.Sqlite.Resolution.KeyMerge
 import Belay.Sqlite.Resolution.ReadDefaults
 import Belay.Sqlite.Resolution.IndexTerms
+import Belay.Sqlite.Resolution.TableChecks
 
 set_option doc.verso true
 
-/-! Name resolution of CREATE TABLE, CREATE INDEX and ALTER TABLE ADD COLUMN. The
-prepare checks follow the order of SQLite 3.51.0's {lit}`sqlite3StartTable`,
-{lit}`sqlite3AddColumn`, {lit}`sqlite3AddPrimaryKey`, {lit}`sqlite3CreateIndex` and
-{lit}`sqlite3AlterFinishAddColumn`, because SQLite reports the first error it finds.
+/-! Name resolution of CREATE TABLE and CREATE INDEX ({lit}`AddColumn.lean` resolves ALTER
+TABLE ADD COLUMN). The prepare checks follow the order of SQLite 3.51.0's
+{lit}`sqlite3StartTable`, {lit}`sqlite3AddColumn`, {lit}`sqlite3AddPrimaryKey`,
+{lit}`sqlite3EndTable` and {lit}`sqlite3CreateIndex`, because SQLite reports the first error it finds.
 Model restrictions follow the prepare checks: a statement that SQLite refuses needs
 no model. -/
 
@@ -49,6 +50,9 @@ def applyConstraint (tableName : Identifier) (definition : Syntax.ColumnDefiniti
   | .collate name => match Collation.named? name with
     | none => .error (.noSuchCollation name)
     | some collation => .ok { table with columns := updateLast table.columns fun column => { column with collation } }
+  | .check .. => .ok table
+  | .references referenced columns =>
+    if columns.length > 1 then .error (.foreignKeyOneColumn definition.name referenced) else .ok table
 
 /-- Add the column definitions in written order: {lit}`too many columns on %s` when
 a column would exceed the limit, then {lit}`duplicate column name: %s`, then each
@@ -66,7 +70,10 @@ def addDefinitions (limit : Nat) (tableName : Identifier) (table : CatalogTable)
     addDefinitions limit tableName constrained rest
 
 /-- Apply the table constraints in written order. A table PRIMARY KEY with one
-column of declared type INTEGER is a rowid alias, whatever its sort order. -/
+column of declared type INTEGER is a rowid alias, whatever its sort order. A CHECK waits
+for {name}`resolveTableChecks`. A {lit}`FOREIGN KEY` changes no catalog: SQLite checks the
+number of referenced columns, then each column, and keeps no foreign key with foreign
+keys off. -/
 def addTableConstraints (tableName : Identifier) (table : CatalogTable) :
     List Syntax.TableConstraint → Except ExprError CatalogTable
   | [] => .ok table
@@ -82,6 +89,12 @@ def addTableConstraints (tableName : Identifier) (table : CatalogTable) :
     let positions ← keyPositions table.columns names
     let keyed ← addUniqueKey table positions algorithm
     addTableConstraints tableName keyed rest
+  | .check .. :: rest => addTableConstraints tableName table rest
+  | .foreignKey columns _ referenced :: rest => do
+    if !referenced.isEmpty && referenced.length != columns.length then throw .foreignKeyColumnCount
+    if let some name := columns.find? (columnPosition table.columns · |>.isNone) then
+      throw (.unknownForeignKeyColumn name)
+    addTableConstraints tableName table rest
 
 /-- The exact statistics tables that ANALYZE creates, which a catalog description may contain. -/
 def statisticsTable (name : Identifier) (columns : List Syntax.ColumnDefinition)
@@ -98,9 +111,11 @@ def CatalogTable.asWithoutRowid (table : CatalogTable) : CatalogTable :=
     if table.primaryKey.contains position then { column with notNull := true } else column
   { table with withoutRowid := true, rowidAlias := none, columns }
 
-/-- Resolve CREATE TABLE. Path 1 is the column list and path 2 the table constraints. A
-{lit}`WITHOUT ROWID` table ({name}`CatalogTable.asWithoutRowid`) without a primary key is
-SQLite's {lit}`PRIMARY KEY missing on table %s`, after the errors of its definitions. -/
+/-- Resolve CREATE TABLE, of a catalog description or in a script. Path 1 is the column list
+and path 2 the table constraints. A {lit}`WITHOUT ROWID` table
+({name}`CatalogTable.asWithoutRowid`) without a primary key is SQLite's
+{lit}`PRIMARY KEY missing on table %s`, after the errors of its definitions; then the CHECK
+constraints resolve ({name}`resolveTableChecks`) under the profile's {lit}`DQS_DDL`. -/
 def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : Nat)
     (name : Identifier) (columns : List Syntax.ColumnDefinition)
     (constraints : List Syntax.TableConstraint) (options : Syntax.TableOptions := {}) : StatementResolution :=
@@ -119,12 +134,14 @@ def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : N
       let table := if options.withoutRowid then table.asWithoutRowid else table
       if options.withoutRowid && table.primaryKey.isEmpty then
         prepareError catalog (.expression (.primaryKeyMissing name))
-      else if columns.any (rowidName ·.name) then restrict index [1] .rowidColumnName
-      else if context.mode == .execution && (!constraints.isEmpty || columns.any (!·.constraints.isEmpty)) then
-        restrict index [1] .createTableConstraints
-      else if columns.any (!·.constraints.all Syntax.ColumnConstraint.modeledDefault) then
-        restrict index [1] .unmodeledDefault
-      else .ok (.createTable catalog.length name table, catalog.createTable name table)
+      else match resolveTableChecks context.profile.dqsDdl (Scope.single name table.columns !table.withoutRowid)
+          table columns constraints with
+      | .error issue => issueResolution catalog index [] issue
+      | .ok table =>
+        if columns.any (rowidName ·.name) then restrict index [1] .rowidColumnName
+        else if columns.any (!·.constraints.all Syntax.ColumnConstraint.modeledDefault) then
+          restrict index [1] .unmodeledDefault
+        else .ok (.createTable catalog.length name table, catalog.createTable name table)
 
 /-- Resolve CREATE INDEX, of a catalog description or in a script, in SQLite's order: the
 table, its reserved name, the index name, the name in use, the key terms
@@ -152,46 +169,5 @@ def resolveCreateIndex (context : ResolveContext) (catalog : Catalog) (index : N
         | .ok resolvedFilter =>
           let created := { table := position, keys, unique, filter := resolvedFilter }
           .ok (.createIndex catalog.length name created, catalog.createIndex name created)
-
-/-- Construct added-column metadata after PRIMARY KEY and UNIQUE have been
-rejected. NOT NULL sets nullability and its {lit}`ON CONFLICT` algorithm (ABORT without
-one), as in CREATE TABLE, and each written DEFAULT replaces the preceding default, as in
-SQLite, resolved once ({name}`resolveColumnDefault`). A DEFAULT that the model does not
-describe gives {lean}`(none : Option CatalogColumn)`. Key constraints leave this metadata
-unchanged; callers must reject them before using this helper. -/
-def addedColumn (definition : Syntax.ColumnDefinition) : Option CatalogColumn :=
-  definition.constraints.foldlM (fun column constraint => match constraint with
-    | .notNull algorithm => some { column with notNull := true, notNullAlgorithm := algorithm.getD .abort }
-    | .default expression sourceText =>
-      (resolveColumnDefault column.affinity ⟨expression, sourceText⟩).map fun resolved =>
-        { column with defaultValue := some resolved }
-    | .collate name => (Collation.named? name).map fun collation => { column with collation }
-    | .primaryKey .. | .unique _ => some column)
-    { name := definition.name, declaredType := reportedType definition.declaredType }
-
-/-- Resolve ALTER TABLE ADD COLUMN. Path 1 is the column definition. -/
-def resolveAddColumn (context : ResolveContext) (catalog : Catalog) (index : Nat)
-    (tableName : Identifier) (definition : Syntax.ColumnDefinition) : StatementResolution :=
-  match catalog.findTable tableName with
-  | none => prepareError catalog (.noSuchTable tableName)
-  | some (position, table) =>
-    if reservedName tableName then prepareError catalog (.expression (.tableMayNotBeAltered tableName))
-    else if table.columns.length + 1 > context.profile.limits.columns then
-      prepareError catalog (.expression (.tooManyColumns tableName))
-    else if (columnPosition table.columns definition.name).isSome then
-      prepareError catalog (.expression (.duplicateColumn definition.name))
-    else if let some name := definition.constraints.findSome? Syntax.ColumnConstraint.unknownCollation then
-      prepareError catalog (.expression (.noSuchCollation name))
-    else if definition.constraints.any Syntax.ColumnConstraint.isPrimaryKey && !table.primaryKey.isEmpty then
-      prepareError catalog (.expression (.multiplePrimaryKeys tableName))
-    else if definition.constraints.any Syntax.ColumnConstraint.nonconstantDefault then
-      prepareError catalog (.expression (.defaultNotConstant definition.name))
-    else if definition.constraints.any Syntax.ColumnConstraint.isPrimaryKey then prepareError catalog (.expression .cannotAddPrimaryKey)
-    else if definition.constraints.any Syntax.ColumnConstraint.isUnique then prepareError catalog (.expression .cannotAddUnique)
-    else if rowidName definition.name then restrict index [1] .rowidColumnName
-    else
-      match addedColumn definition with
-      | none => restrict index [1] .addColumnConstraint
-      | some column => .ok (.addColumn position column, catalog.addColumn position column)
 
 end Belay.Sqlite

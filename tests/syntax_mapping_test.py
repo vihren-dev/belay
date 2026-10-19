@@ -103,7 +103,7 @@ def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., 
     ("CREATE TABLE main.t(a);", ".t"), ("CREATE TABLE t(a) STRICT;", "STRICT"),
     ("CREATE TABLE t AS SELECT 1;", "AS SELECT 1"),
     ("CREATE TABLE t(a, UNIQUE(a COLLATE NOCASE));", "a COLLATE NOCASE"),
-    ("CREATE TABLE t(a CHECK (a));", "CHECK (a)"), ("CREATE TABLE t(a, PRIMARY KEY(a DESC));", "DESC"),
+    ("CREATE TABLE t(a, FOREIGN KEY (a DESC) REFERENCES p);", "DESC"), ("CREATE TABLE t(a, PRIMARY KEY(a DESC));", "DESC"),
     ("CREATE TABLE t(a DEFAULT (1));", "DEFAULT (1)"),
     ("ALTER TABLE t RENAME TO u;", "ALTER TABLE t RENAME TO u"), ("BEGIN IMMEDIATE;", "IMMEDIATE"),
     ("UPDATE OR REPLACE t SET a = 1;", "OR REPLACE"), ("INSERT INTO t SELECT 1;", "SELECT 1"),
@@ -124,7 +124,7 @@ def test_syntax_without_a_constructor_is_unsupported_at_its_range(
     ("ALTER TABLE t RENAME TO u;", "rewrite it with the modeled forms: CREATE TABLE"),
     ("UPDATE t SET (a, b) = (1, 2);", "rewrite it with the modeled forms: CREATE TABLE"),
     ("INSERT INTO t SELECT 1;", "write INSERT ... VALUES (...)"),
-    ("CREATE TABLE t(a CHECK (a));", "use NOT NULL, PRIMARY KEY, UNIQUE, COLLATE or DEFAULT with a literal"),
+    ("CREATE TABLE t(a DEFAULT (1));", "use NOT NULL, PRIMARY KEY, UNIQUE, COLLATE, CHECK, REFERENCES or DEFAULT with a literal"),
     ("VACUUM;", "the model runs CREATE TABLE"),
 ])
 def test_refusals_say_which_form_to_use(parse_sql: Callable[..., Tree], sql: str, advice: str) -> None:

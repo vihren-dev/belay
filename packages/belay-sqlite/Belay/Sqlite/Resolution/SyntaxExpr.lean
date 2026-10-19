@@ -113,6 +113,13 @@ inductive ColumnConstraint where
   | default (value : Expr) (sourceText : String)
   /-- {lit}`COLLATE name`, with the collation name as written (ADR 0014, slice 3). -/
   | collate (name : Identifier)
+  /-- {lit}`CHECK (condition)` with the label that SQLite reports when it fails: the name of
+  the {lit}`CONSTRAINT name` in effect, else the source text between the parentheses
+  without outer white space, dequoted when it starts with a quote (ADR 0014, slice 4). -/
+  | check (condition : Expr) (label : String)
+  /-- {lit}`REFERENCES table [(columns)]`, with its clauses dropped: with foreign keys off
+  only the number of columns matters, which SQLite checks (ADR 0014, slice 4). -/
+  | references (table : Identifier) (columns : List Identifier)
   deriving Repr, BEq
 
 /-- One column of CREATE TABLE or ADD COLUMN. Use {lean}`(none : Option String)`
@@ -132,6 +139,12 @@ inductive TableConstraint where
   | primaryKey (columns : List Identifier) (algorithm : Option ConflictAlgorithm := none)
   /-- {lit}`UNIQUE (columns) [ON CONFLICT algorithm]`. -/
   | unique (columns : List Identifier) (algorithm : Option ConflictAlgorithm := none)
+  /-- {lit}`CHECK (condition)` with its label, as for {name}`ColumnConstraint.check`. SQLite
+  ignores an {lit}`ON CONFLICT` clause of a table CHECK (ADR 0014, slice 4). -/
+  | check (condition : Expr) (label : String)
+  /-- {lit}`FOREIGN KEY (columns) REFERENCES table [(referenced)]`, with its clauses
+  dropped; {lit}`referenced` is empty without a column list (ADR 0014, slice 4). -/
+  | foreignKey (columns : List Identifier) (table : Identifier) (referenced : List Identifier)
   deriving Repr, BEq
 
 /-- One result column of a {lit}`SELECT`: {lit}`*`, or an expression with an

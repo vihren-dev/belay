@@ -33,12 +33,15 @@ structure ConflictClause where
 /-- The algorithm that applies to each constraint of an INSERT: the statement's
 {lit}`OR` algorithm, else the constraint's own, else ABORT. {lit}`keys` has one entry for
 each key of the statement, in its order, and {lit}`notNull` one for each column. A
-position without an entry is ABORT. -/
+position without an entry is ABORT. A CHECK constraint has no algorithm of its own, so
+{lit}`check` is the statement's, else ABORT (ADR 0014, D2). -/
 structure ConflictPolicy where
   /-- The algorithm of each key. -/
   keys : List ConflictAlgorithm
   /-- The algorithm of the NOT NULL constraint of each column. -/
   notNull : List ConflictAlgorithm
+  /-- The algorithm of every CHECK constraint; omit it for ABORT. -/
+  check : ConflictAlgorithm := .abort
   deriving Repr, DecidableEq
 
 end Belay.Sqlite.Resolved

@@ -51,6 +51,15 @@ inductive ExprError where
   /-- {lit}`no such collation sequence: %s`: a {lit}`COLLATE` name other than {lit}`BINARY`,
   {lit}`NOCASE` and {lit}`RTRIM` (ADR 0014, D3). -/
   | noSuchCollation (name : Identifier)
+  /-- {lit}`foreign key on %s should reference only one column of table %T`: a column's
+  {lit}`REFERENCES` with more than one referenced column (ADR 0014, slice 4). -/
+  | foreignKeyOneColumn (column table : Identifier)
+  /-- {lit}`number of columns in foreign key does not match the number of columns in the
+  referenced table`: a {lit}`FOREIGN KEY` with a column list of another length. -/
+  | foreignKeyColumnCount
+  /-- {lit}`unknown column "%s" in foreign key definition`: a {lit}`FOREIGN KEY` column that
+  the table does not have. -/
+  | unknownForeignKeyColumn (name : Identifier)
   /-- {lit}`the "." operator prohibited in index expressions`: a qualified name in a key
   term of CREATE INDEX ({lit}`notValidImpl`). -/
   | qualifiedIndexTerm

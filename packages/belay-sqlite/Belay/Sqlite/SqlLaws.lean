@@ -27,14 +27,13 @@ def NoWrites (script : List Resolved.Statement) : Prop :=
   ∀ statement ∈ script, statement.kind ≠ .write ∧ ∀ query, statement = .query query →
     query.expressions.all (!·.any Resolved.Expr.isJsonCall) = true ∧ query.sources.all (!·.source.isEach) = true
 
-/-- Each definition in the script is one that the model describes: each CREATE
-TABLE creates a {name}`CatalogTable.plain` table, each ADD COLUMN has a time default
-({name}`CatalogColumn.clockDefault`) or a successful {name}`readDefaultValue` result, and no
-statement is CREATE INDEX. Other
-statements are unrestricted; the empty script satisfies it. -/
+/-- Each definition in the script is one that the model describes: each ADD COLUMN has a time
+default ({name}`CatalogColumn.clockDefault`) or a successful {name}`readDefaultValue` result,
+and no statement is CREATE INDEX. Every CREATE TABLE and every other statement is
+unrestricted; the empty script satisfies it. -/
 def ModeledDefinitions (script : List Resolved.Statement) : Prop :=
   ∀ statement ∈ script, match statement with
-    | .createTable _ _ table => table.plain = true
+    | .createTable .. => True
     | .addColumn _ column => (column.clockDefault || (readDefaultValue column).toOption.isSome) = true
     | .createIndex .. => False
     | .insert .. | .upsert .. | .update .. | .delete .. | .begin | .commit | .rollback | .prepareError _

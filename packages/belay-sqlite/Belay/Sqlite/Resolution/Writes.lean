@@ -1,4 +1,4 @@
-import Belay.Sqlite.Resolution.Definitions
+import Belay.Sqlite.Resolution.AddColumn
 import Belay.Sqlite.Resolution.Upserts
 import Belay.Sqlite.Resolution.InsertCells
 

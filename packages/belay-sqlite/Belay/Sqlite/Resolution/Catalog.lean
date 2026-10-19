@@ -3,6 +3,8 @@ import Belay.Sqlite.Resolution.Syntax
 import Belay.Sqlite.Resolution.ColumnDefault
 import Belay.Sqlite.Resolution.TypeAffinity
 import Belay.Sqlite.Resolution.Keys
+import Belay.Sqlite.Resolution.Checks
+import Belay.Sqlite.Resolution.ReservedNames
 
 set_option doc.verso true
 
@@ -31,6 +33,9 @@ structure CatalogColumn where
   /-- The collation of the column ({lit}`COLLATE name`); {lit}`BINARY` without one (ADR 0014,
   D3). -/
   collation : Collation := .binary
+  /-- The CHECK constraints of the column definition, in written order; omit them for none
+  (ADR 0014, D2). -/
+  checks : List CheckConstraint := []
   deriving Repr, DecidableEq
 
 /-- One table entry. Keys are lists of column positions. Use
@@ -57,7 +62,17 @@ structure CatalogTable where
   /-- Whether the table is {lit}`WITHOUT ROWID` (ADR 0014, D4): it has no rowid, its rows
   are in primary-key order, and its key columns are NOT NULL. -/
   withoutRowid : Bool := false
+  /-- The CHECK constraints of the table constraints, in written order; omit them for none
+  (ADR 0014, D2). The CHECK constraints of a column are in {name}`CatalogColumn.checks`. -/
+  checks : List CheckConstraint := []
   deriving Repr, DecidableEq
+
+/-- Every CHECK constraint of the table: those of each column in column order, then those
+of the table constraints. SQLite keeps one list in written order; the two orders differ
+only in which label a row reports when several CHECK constraints fail, and every failure
+has the same result code. -/
+def CatalogTable.allChecks (table : CatalogTable) : List CheckConstraint :=
+  table.columns.flatMap (·.checks) ++ table.checks
 
 /-- The {lit}`ON CONFLICT` algorithm of the UNIQUE constraint at the position, none for a
 constraint without the clause or without an entry. -/
@@ -155,22 +170,6 @@ def Catalog.addColumn (catalog : Catalog) (position : Nat) (column : CatalogColu
     catalog.set position { name, entry := .table { table with columns := table.columns ++ [column] } }
   | some { entry := .index _, .. } => catalog
   | none => catalog
-
-/-- Whether the folded name starts with {lit}`sqlite_`, which SQLite reserves. -/
-def reservedName (name : Identifier) : Bool := (bytes! "sqlite_").isPrefixOf name.folded
-
-/-- The column names of SQLite's statistics tables, which a schema may contain, by the
-folded table name ({name}`Identifier.folded`). -/
-def statisticsColumns (folded : List UInt8) : Option (List Identifier) :=
-  if folded == bytes! "sqlite_stat1" then some [name! "tbl", name! "idx", name! "stat"]
-  else if folded == bytes! "sqlite_stat4" then
-    some [name! "tbl", name! "idx", name! "neq", name! "nlt", name! "ndlt", name! "sample"]
-  else none
-
-/-- Whether a column name is one of SQLite's rowid names, which the model keeps
-for the physical rowid. -/
-def rowidName (name : Identifier) : Bool :=
-  [bytes! "rowid", bytes! "_rowid_", bytes! "oid"].contains name.folded
 
 /-- The folded names of all catalog objects, in catalog order. -/
 def Catalog.foldedNames (catalog : Catalog) : List (List UInt8) :=

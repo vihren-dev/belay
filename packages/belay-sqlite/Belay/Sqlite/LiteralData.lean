@@ -64,13 +64,27 @@ def uniqueRows (key : UniqueKey) : List Row → Bool
   | [] => true
   | row :: rest => !(rest.any (keyEqual key row)) && uniqueRows key rest
 
-/-- Check NOT NULL cells and the pairwise uniqueness of every given key. NOT NULL
-checks inspect only zipped column/cell pairs; row width is checked separately.
-A table with no rows satisfies both checks. In the admitted domain these checks
-represent ABORT constraints, rather than admission restrictions. -/
+/-- Whether a row satisfies a CHECK constraint: its condition is not false on the row, so
+NULL passes (R-34109-39108). The value counts as a number, as {lit}`CAST AS NUMERIC` reads it
+({name}`Resolved.truthy`, R-55435-14303). The model admits only CHECK conditions that read no clock,
+so they evaluate at clock 0. -/
+def checkHolds (row : Row) (check : CheckConstraint) : Bool :=
+  let value := check.condition.eval 0 row.values
+  value.isNull || Resolved.truthy value
+
+/-- Whether a row satisfies every CHECK constraint of the table
+({name}`CatalogTable.allChecks`); a table without CHECK constraints accepts every row. -/
+def checksHold (shape : CatalogTable) (row : Row) : Bool :=
+  shape.allChecks.all (checkHolds row)
+
+/-- Check NOT NULL cells, the CHECK constraints of every row, and the pairwise uniqueness
+of every given key. NOT NULL checks inspect only zipped column/cell pairs; row width is
+checked separately. A table with no rows satisfies all three. In the admitted domain
+these checks represent ABORT constraints, rather than admission restrictions. -/
 def constraints (keys : List UniqueKey) (table : Table) : Bool :=
   table.rows.all (fun row => (table.shape.columns.zip row.values).all
     (fun (column, value) => !column.notNull || value != .null)) &&
+  table.rows.all (checksHold table.shape) &&
   keys.all (fun key => uniqueRows key table.rows)
 
 /-- Require {name}`constraints` on the table before a write: its NOT NULL cells and its

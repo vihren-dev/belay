@@ -16,8 +16,8 @@ The key does not add a NOT NULL annotation; {assert}`textKey.notNull = false`. -
 def textKey : CatalogColumn := { name := (name! "id"), declaredType := some "TEXT" }
 
 /-- An existing NOT NULL TIMESTAMP declaration with a retained {lit}`CURRENT_TIMESTAMP`
-default. It illustrates metadata that a schema may describe but that a new column
-of a statement that runs may not have; {assert}`timestamp.plain = false`. -/
+default. It illustrates metadata that a schema describes and that ADD COLUMN cannot add
+to a table with rows. -/
 def timestamp : CatalogColumn := {
   name := (name! "installed_on"), declaredType := some "TIMESTAMP"
   notNull := true, defaultValue := some { form := .clock .timestamp, sourceText := "CURRENT_TIMESTAMP" } }
@@ -41,7 +41,6 @@ def table : Table := { shape := { columns := [textKey], primaryKey := [0] }, row
 #guard ({ columns := [textKey], uniqueKeys := [[1]] } : CatalogTable).supported limits == false
 #guard ({ columns := [textKey, { textKey with name := (name! "ID") }] } : CatalogTable).supported limits == false
 #guard ({ columns := [timestamp] } : CatalogTable).supported limits
-#guard !timestamp.plain
 /-- The typeless columns of SQLite's {lit}`sqlite_stat1` table. -/
 def statisticsTable : CatalogTable := { columns := [name! "tbl", name! "idx", name! "stat"].map fun name => { name, declaredType := none } }
 
@@ -77,14 +76,14 @@ proof computes the check in the kernel. -/
 example : statementReady 0 (.addColumn 0 timestamp) ({} : Database) = true := by
   decide +kernel
 
-/-- {name}`step` runs a CREATE TABLE of a keyed table, which is not plain: it
-stores an empty table with that shape at the new position, as SQLite does. The
-supported-subset check {name}`statementReady` refuses the statement instead,
-because the model restricts such tables. The proof computes both in the kernel. -/
+/-- {name}`step` runs a CREATE TABLE of a keyed table: it stores an empty table with that
+shape at the new position, as SQLite does, and the supported-subset check
+{name}`statementReady` admits it, as an empty table holds every constraint. The proof
+computes both in the kernel. -/
 example : (effectDatabase (step 0 (.createTable 0 (name! "items") { columns := [textKey], primaryKey := [0] })
       ({} : Database))).table 0 =
       some { shape := { columns := [textKey], primaryKey := [0] }, rows := [] } ∧
-    statementReady 0 (.createTable 0 (name! "items") { columns := [textKey], primaryKey := [0] }) ({} : Database) = false := by
+    statementReady 0 (.createTable 0 (name! "items") { columns := [textKey], primaryKey := [0] }) ({} : Database) = true := by
   decide +kernel
 
 /-- ADD COLUMN of {name}`timestamp` on a table with a row fails as SQLite does, with

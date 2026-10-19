@@ -8,7 +8,7 @@ FIRST or LAST have no constructor and are refused with their source range.
 
 from .located import Located, constructor, leaf, sequence, structure
 from .sql_tree import Node, Tree
-from .syntax_definitions import absent, left_list, require
+from .syntax_shapes import absent, left_list, require
 from .syntax_queries import query_expression, result_columns
 from .syntax_sources import from_clause
 
