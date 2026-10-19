@@ -342,6 +342,18 @@ D1 on 2026-10-18, with the outcome carrying its catalog in the contract.
 The mutant anchors of `conformance/*_mutants.py` and the module list of
 `conformance/mutation_check.py` follow the moved code, as "Churn" below says.
 
+Implementation notes (2026-10-18, steps 3 and 4):
+
+- Step 3: one classifier pass instead of three changed the model suite from 335 s to
+  332 s, far from the third of the cost that "Consequences" expects; most of a case's
+  kernel time lies elsewhere, probably in resolution. Passing the written table from the
+  readiness checks to execution moves to step 7.
+- Step 4: the comparison stores its affinity, which resolution computes from the
+  affinities of its operands, so `+x` needs no `noAffinity` node: resolution gives it no
+  affinity. D4 removes `mayBeText` and `isCondition`, which D7 names among functions that
+  stay. The registries are a classifier of the restriction kinds, so the ids and the
+  prediction JSON do not change.
+
 ## Consequences
 
 - **Cost of a new form.** A new expression form changes its evaluator arm, its resolver

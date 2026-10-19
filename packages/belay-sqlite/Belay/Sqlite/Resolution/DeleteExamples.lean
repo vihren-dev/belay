@@ -14,7 +14,7 @@ def abcIsOne : Syntax.Expr := .compare .eq (.identifier "Abc" .none) (.numeric "
 
 -- The filter resolves as a SELECT condition; RETURNING `*` names the table's columns.
 #guard resolvedOne (.delete "t" (some abcIsOne)) ==
-  some (.delete 0 (some (.compare .eq (.column 0) (.literal (.integer 1)))) [])
+  some (.delete 0 (some (.compare .eq (some .integer) (.column 0) (.literal (.integer 1)))) [])
 #guard resolvedOne ((.delete "t" none [.star])) ==
   some (.delete 0 none [(.column 0, "Abc"), (.column 1, "b")])
 -- SQLite's prepare errors, and SQLite's own tables as a restriction.
@@ -29,7 +29,7 @@ def table : Table :=
     rows := [{ rowid := 1, values := [.integer 1, .text [97]] }, { rowid := 2, values := [.null, .text [98]] }] }
 
 -- The row where the filter is true is removed; the row where it is NULL is kept.
-#guard (LiteralData.deleted table (some (.compare .eq (.column 0) (.literal (.integer 1))))).rows ==
+#guard (LiteralData.deleted table (some (.compare .eq none (.column 0) (.literal (.integer 1))))).rows ==
   [{ rowid := 2, values := [.null, .text [98]] }]
 -- Without a filter every row is removed.
 #guard (LiteralData.deleted table none).rows == []

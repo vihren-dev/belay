@@ -158,24 +158,12 @@ def statementOutput (statement : Resolved.Statement) (before : SqlState)
       return ⟨names, returnedRows returning (chosen.map (·.values)), some chosen.length⟩
     else none
   | .query query =>
-    if successful then (query.source before.database).map fun rows => ⟨query.names, query.run rows, none⟩
+    if successful then (query.source before.database).map fun rows => ⟨query.names, (query.run rows).rows, none⟩
     else if (overflow && query.groupBy.isEmpty) || functionFailure then some ⟨query.names, [], none⟩
     else none
   | .addColumn _ column => some ⟨addColumnOutputNames column, [], none⟩
   | .clocked .. => none
   | .createTable .. | .createIndex .. | .begin | .commit | .rollback | .prepareError _ =>
     some ⟨[], [], none⟩
-
-/-- Follow reached production transitions and stop at their first failure. -/
-def outputTraceFrom (position : Nat) (script : List Resolved.Statement) (state : SqlState) :
-    List (Option StatementOutput) :=
-  match script with
-  | [] => []
-  | statement :: rest =>
-    let transition := advance position statement state
-    statementOutput statement state transition ::
-      match transition with
-      | .next next => outputTraceFrom (position + 1) rest next
-      | .halt _ => []
 
 end Belay.Sqlite.Conformance

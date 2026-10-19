@@ -54,6 +54,24 @@ def test_documentation_lists_every_id_once() -> None:
     assert set(documented) == set(registry_ids().values()), set(documented) ^ set(registry_ids().values())
 
 
+def registries() -> dict[str, str]:
+    """The registry of each constructor, read from `RestrictionKind.registry`."""
+    text = (RESOLUTION / "RestrictionRegistry.lean").read_text().split("def RestrictionKind.registry", 1)[1]
+    return {name: registry for names, registry in re.findall(r"((?:\s*\|\s*\.\w+)+)\s*=>\s*\.(\w+)", text)
+            for name in re.findall(r"\.(\w+)", names)}
+
+
+def test_each_id_is_documented_under_its_registry() -> None:
+    """`RestrictionKind.registry` gives every constructor one registry, and the documentation
+    lists each id in the table of that registry."""
+    assert set(registries()) == set(constructors()), set(registries()) ^ set(constructors())
+    text = (ROOT / "docs/semantic-subset.md").read_text().split("### Restriction registry", 1)[1].split("\n## ", 1)[0]
+    parts = dict(re.findall(r"#### (\w+)\n(.*?)(?=\n#### |\Z)", text, re.DOTALL))
+    for name, registry in registries().items():
+        identifier = registry_ids()[name]
+        assert f"| `{identifier}` |" in parts[registry.capitalize()], (identifier, registry)
+
+
 def test_every_id_has_one_example() -> None:
     """`conformance.restriction_examples` has an example for each registry id and for no other name."""
     ids = set(registry_ids().values())

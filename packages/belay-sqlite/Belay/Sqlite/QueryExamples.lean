@@ -1,4 +1,4 @@
-import Belay.Sqlite.QueryEval
+import Belay.Sqlite.QueryRun
 
 set_option doc.verso true
 
@@ -27,15 +27,15 @@ def plain : Query where
   offset := 0
   limit := none
 
-#guard plain.run (sourceRows table) == [[.text [97]], [.text [98]], [.text [99]], [.text [100]]]
+#guard plain.results (sourceRows table) == [[.text [97]], [.text [98]], [.text [99]], [.text [100]]]
 -- WHERE k = 1 keeps the rows whose comparison is true; NULL = 1 is NULL, not true.
-#guard { plain with filter := some (.compare .eq (.column 0) (.literal (.integer 1))) }.run (sourceRows table) ==
+#guard { plain with filter := some (.compare .eq none (.column 0) (.literal (.integer 1))) }.results (sourceRows table) ==
   [[.text [97]], [.text [98]]]
 -- ORDER BY k DESC puts NULL last; the tie between rowids 1 and 2 keeps rowid order.
-#guard { plain with orderBy := [(.expression (.column 0), true)] }.run (sourceRows table) ==
+#guard { plain with orderBy := [(.expression (.column 0), true)] }.results (sourceRows table) ==
   [[.text [100]], [.text [97]], [.text [98]], [.text [99]]]
 -- ORDER BY k with LIMIT 2 OFFSET 1: NULL first, then the window.
-#guard { plain with orderBy := [(.expression (.column 0), false)], offset := 1, limit := some 2 }.run (sourceRows table) ==
+#guard { plain with orderBy := [(.expression (.column 0), false)], offset := 1, limit := some 2 }.results (sourceRows table) ==
   [[.text [97]], [.text [98]]]
 /-- {lit}`SELECT k, COUNT(*), MIN(v), COUNT(k) FROM t GROUP BY k ORDER BY 1`. -/
 def grouped : Query where
@@ -49,11 +49,11 @@ def grouped : Query where
   offset := 0
   limit := none
 
-#guard grouped.run (sourceRows table) ==
+#guard grouped.results (sourceRows table) ==
   [[.null, .integer 1, .text [99], .integer 0], [.integer 1, .integer 2, .text [97], .integer 2],
    [.integer 2, .integer 1, .text [100], .integer 1]]
 -- An aggregate query without GROUP BY gives one row, also for an empty table.
-#guard { plain with aggregate := true, columns := [.aggregate .countRows, .aggregate (.max (.column 0))] }.run
+#guard { plain with aggregate := true, columns := [.aggregate .countRows, .aggregate (.max (.column 0))] }.results
   [] == [[.integer 0, .null]]
 
 /-- The three logical values as expressions: true, false and NULL. -/

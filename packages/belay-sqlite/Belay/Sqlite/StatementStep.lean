@@ -120,7 +120,7 @@ def statementReady (statement : Resolved.Statement) (database : Database) : Bool
   match statement with
   | .insert target rows returning => (database.table target).all fun table =>
       LiteralData.insertReady (database.keys target table) table rows &&
-        !(returningExpressions returning).any Resolved.Expr.callsJson
+        !(returningExpressions returning).any (·.any Resolved.Expr.isJsonCall)
   | .upsert target rows clauses returning algorithm => (database.table target).all fun table =>
       LiteralData.upsertReady (database.keys target table) (database.catalog.writePolicy target table.shape algorithm)
         table clauses rows && upsertJsonReady clauses returning
@@ -132,7 +132,8 @@ def statementReady (statement : Resolved.Statement) (database : Database) : Bool
   | .addColumn _ column => column.clockDefault || (readDefaultValue column).toOption.isSome
   | .createIndex .. => false
   | .clocked .. => false
-  | .query query => queryJsonReady query database
+  | .query query =>
+    (query.source database).all (fun rows => (query.run rows).fault != .may) && eachJsonReady query database
   | .begin | .commit | .rollback | .prepareError _ => true
 
 /-- Evaluate one statement at its supplied zero-based position. BEGIN records a

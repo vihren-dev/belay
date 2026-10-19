@@ -35,13 +35,13 @@ theorem under_issues {result : Except ValueIssue α} (path : List Nat) (issues :
 
 /-- For every path and operand computation: if its issues name no catalog object, so
 do the issues of {name}`condition`. Proof sketch: {name}`condition` passes an issue on
-under the path, and adds only a restriction. -/
+under the path and adds none. -/
 theorem condition_issues (path : List Nat) {result : Except ValueIssue Operand}
     (issues : IssuesNameNoObject result) : IssuesNameNoObject (condition path result) := by
   intro issue failed
   cases result with
   | error inner => cases failed; exact ValueIssue.under_namesNoObject _ _ (issues _ rfl)
-  | ok operand => simp only [condition] at failed; split at failed <;> cases failed; trivial
+  | ok operand => simp only [condition] at failed; cases failed
 
 /-- For every value computation and function: mapping the value keeps the issues.
 Proof sketch: a failed map is the failed computation. -/

@@ -85,7 +85,7 @@ def returned (clauses : List Resolved.ConflictClause) (rows : List (List Value))
 -- NOT NULL fails before conflict handling.
 #guard errorOf [nothingOnK] [[.integer 1, .integer 9, .null]] == some .constraintViolation
 -- RETURNING reads the inserted and the updated rows, not the skipped ones.
-#guard returned [setV [0] excludedV (some (.compare .ne (.column 0) (.literal (.integer 2))))]
+#guard returned [setV [0] excludedV (some (.compare .ne none (.column 0) (.literal (.integer 2))))]
     [[.integer 1, .integer 9, letter 120], [.integer 2, .integer 9, letter 121], [.integer 7, .integer 7, letter 122]] ==
   some [[.integer 1, .integer 1, letter 120], [.integer 7, .integer 7, letter 122]]
 

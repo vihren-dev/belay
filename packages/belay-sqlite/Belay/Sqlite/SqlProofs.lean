@@ -78,7 +78,7 @@ def SchemaOnly (script : List Resolved.Statement) : Prop :=
 
 /-- No statement in the script is INSERT (with or without {lit}`ON CONFLICT`, or with
 cells that read the clock), UPDATE or DELETE, and no query has a JSON call in its expressions
-({name}`Resolved.Query.expressions`, {name}`Resolved.Expr.callsJson`) or a {lit}`json_each`
+({name}`Resolved.Query.expressions`, {name}`Resolved.Expr.isJsonCall` at any depth) or a {lit}`json_each`
 source. This is a syntax guard, not a success claim; the empty script satisfies it. -/
 def NoWrites (script : List Resolved.Statement) : Prop :=
   ∀ statement ∈ script, match statement with
@@ -87,7 +87,7 @@ def NoWrites (script : List Resolved.Statement) : Prop :=
     | .update .. => False
     | .delete .. => False
     | .clocked .. => False
-    | .query query => query.expressions.all (!·.callsJson) = true ∧ query.functions = []
+    | .query query => query.expressions.all (!·.any Resolved.Expr.isJsonCall) = true ∧ query.functions = []
     | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ => True
 
 /-- Each definition in the script is one that the model describes: each CREATE
@@ -119,10 +119,13 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDe
     have ready : statementReady statement state.database = true := by
       cases statement with
       | query query =>
-        obtain ⟨plain, noFunctions⟩ : (query.expressions.all fun x => !x.callsJson) = true ∧ query.functions = [] :=
-          first
-        simp [statementReady, queryJsonReady, Resolved.Query.mayFail_of_callsJson query _ plain,
+        obtain ⟨plain, noFunctions⟩ :
+            (query.expressions.all fun x => !x.any Resolved.Expr.isJsonCall) = true ∧ query.functions = [] := first
+        simp [statementReady, Resolved.Query.run, Resolved.Query.mayFail_of_plain query _ plain,
           eachJsonReady_plain query _ noFunctions]
+        cases query.source state.database with
+        | none => rfl
+        | some rows => by_cases must : query.mustFail rows = true <;> simp [must]
       | createTable | createIndex | addColumn | begin | commit | rollback | insert | upsert | update | delete
       | prepareError | clocked => simp_all [statementReady]
     simp only [supportedSqlFrom, ready, Bool.true_and]

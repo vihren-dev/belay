@@ -1,5 +1,5 @@
 import Belay.Sqlite.JsonReady
-import Belay.Sqlite.Execution
+import Belay.Sqlite.StatementStep
 
 set_option doc.verso true
 
@@ -37,27 +37,27 @@ def empty : Database :=
 #guard selected.eval [] == .integer 1 && malformed.eval [] == .null
 -- SQLite certainly reports the failure of a result column without FROM, and the step
 -- fails with it.
-#guard fromless.mustFail [[]] && queryJsonReady fromless empty
+#guard fromless.mustFail [[]] && statementReady (.query fromless) empty
 #guard match step (.query fromless) empty with
   | .failure position reason _ => position == 0 && reason == .functionError
   | .success _ | .pending .. => false
 -- Under LIMIT 0 SQLite evaluates nothing; OFFSET 1 skips the result column; WHERE 0
 -- leaves no row. The model does not describe the first two, and the third succeeds.
-#guard !{ fromless with limit := some 0 }.mustFail [[]] && !queryJsonReady { fromless with limit := some 0 } empty
-#guard !{ fromless with offset := 1 }.mustFail [[]] && !queryJsonReady { fromless with offset := 1 } empty
+#guard !{ fromless with limit := some 0 }.mustFail [[]] && !statementReady (.query { fromless with limit := some 0 }) empty
+#guard !{ fromless with offset := 1 }.mustFail [[]] && !statementReady (.query { fromless with offset := 1 }) empty
 #guard !{ fromless with filter := some (.literal (.integer 0)) }.mayFail [[]]
 -- An aggregate operand fails also under OFFSET.
 #guard { fromless with aggregate := true, columns := [.aggregate (.count malformed)], offset := 1 }.mustFail [[]]
 -- SQLite may skip an operand of AND, so a failure under AND is not certain.
-#guard !queryJsonReady { fromless with columns := [.scalar (.and (.literal (.integer 0)) malformed)] } empty
+#guard !statementReady (.query { fromless with columns := [.scalar (.and (.literal (.integer 0)) malformed)] }) empty
 -- A constant WHERE term is evaluated once before the rows, also over an empty table;
 -- a result column is not.
-#guard !queryJsonReady { fromless with table := some 0, filter := some malformed, columns := [] } empty
-#guard queryJsonReady { fromless with table := some 0 } empty
+#guard !statementReady (.query { fromless with table := some 0, filter := some malformed, columns := [] }) empty
+#guard statementReady (.query { fromless with table := some 0 }) empty
 -- An aggregate query evaluates its result row over NULL cells when no row passes WHERE.
 #guard
   let columns : List Output := [.scalar malformed, .aggregate .countRows]
-  !queryJsonReady { fromless with table := some 0, aggregate := true, columns := columns } empty
+  !statementReady (.query { fromless with table := some 0, aggregate := true, columns := columns }) empty
 -- The model gives a write no JSON error: a DELETE whose WHERE may fail is not ready.
 #guard (empty.table 0).all fun table => !deleteJsonReady table (some malformed) [] && deleteJsonReady table (some selected) []
 

@@ -1,5 +1,4 @@
-import Belay.Sqlite.Model
-import Belay.Sqlite.Resolution.QueryForm
+import Belay.Sqlite.ExprEval
 import Belay.Sqlite.Comparison
 import Belay.Sqlite.Summation
 import Belay.Sqlite.Json.JsonApply
@@ -15,58 +14,6 @@ concatenation of the cells of its tables). The steps follow the ADR in order: th
 {lit}`ORDER BY` terms, and the {lit}`OFFSET` and {lit}`LIMIT` window. -/
 
 namespace Belay.Sqlite.Resolved
-
-/-- Whether a value is true as a condition: a number that is not zero. -/
-def truthy : Value → Bool
-  | .integer value => value != 0
-  | .real bits => (realScaled bits).any (· != 0)
-  | .null | .text _ | .blob _ => false
-
-/-- Whether a value is false as a condition: not NULL and not true. -/
-def falsy (value : Value) : Bool := !value.isNull && !truthy value
-
-mutual
-/-- The value of an expression over the cells of one row, in column order. A column
-past the end of the row reads as NULL. {lit}`AND` is false when an operand is false,
-else NULL when an operand is NULL, else true; {lit}`OR` is the dual; {lit}`NOT`
-keeps NULL. Arithmetic and {lit}`CAST` follow {name}`ArithmeticOperator.apply` and
-{name}`castValue`; {lit}`COALESCE` gives its first operand unless that is NULL. A JSON
-function gives the value of {name}`Json.apply` over the values of its arguments, and
-NULL when it fails: whether and where SQLite reports that failure is
-{lit}`Expr.mayFail` and {lit}`Expr.mustFail` of {lit}`JsonFaults`. A time keyword is NULL
-here: the execution replaces it with the statement's clock text first
-({lit}`Statement.atClock`). A date and time function gives the value of
-{lit}`DateFunction.value` at its stored clock value. -/
-def Expr.eval (row : List Value) : Expr → Value
-  | .column position => row.getD position .null
-  | .literal value => value
-  | .compare operator left right => operator.apply (left.eval row) (right.eval row)
-  | .and left right =>
-    let (a, b) := (left.eval row, right.eval row)
-    if falsy a || falsy b then truth false else if a.isNull || b.isNull then .null else truth true
-  | .or left right =>
-    let (a, b) := (left.eval row, right.eval row)
-    if truthy a || truthy b then truth true else if a.isNull || b.isNull then .null else truth false
-  | .not operand =>
-    let value := operand.eval row
-    if value.isNull then .null else truth (!truthy value)
-  | .isNull operand negated => truth ((operand.eval row).isNull != negated)
-  | .arithmetic operator left right => operator.apply (left.eval row) (right.eval row)
-  | .cast affinity operand => castValue affinity (operand.eval row)
-  | .coalesce first rest =>
-    let value := first.eval row
-    if value.isNullCell then rest.eval row else value
-  | .json function arguments => match Json.apply function (arguments.eval row) with
-    | .ok value => value
-    | .error _ => .null
-  | .date function arguments clock => function.value clock (arguments.eval row)
-  | .now _ => .null
-
-/-- The values of the arguments of a call over one row, in written order. -/
-def Arguments.eval (row : List Value) : Arguments → List Value
-  | .nil => []
-  | .cons head tail => head.eval row :: tail.eval row
-end
 
 /-- The first value of a list that no later value improves on, ignoring NULL; NULL
 when every value is NULL. A tie keeps the earlier value, as SQLite's {lit}`min()` and
@@ -161,22 +108,13 @@ def filtered (query : Query) (rows : List (List Value)) : List (List Value) :=
   rows.filter fun row => query.filter.all fun condition => truthy (condition.eval row)
 
 /-- The result rows of a query over its source rows ({lit}`Query.source`): filter,
-groups and columns, a stable sort by the {lit}`ORDER BY` terms, then the window. -/
-def Query.run (query : Query) (rows : List (List Value)) : List (List Value) :=
+groups and columns, a stable sort by the {lit}`ORDER BY` terms, then the window.
+{lit}`Query.run` gives them with the fault of the query. -/
+def Query.results (query : Query) (rows : List (List Value)) : List (List Value) :=
   let directions := query.orderBy.map Prod.snd
   let sorted := stableSort (fun a b => (compareSort directions a.2 b.2).isLE)
     (records query (filtered query rows))
   let window := sorted.drop query.offset
   (match query.limit with | some limit => window.take limit | none => window).map Prod.fst
-
-/-- Whether a query fails over its source rows, so that SQLite stops the statement with the
-{lit}`integer overflow` error: an aggregate query without {lit}`LIMIT 0` in which an
-aggregate of a result column fails ({name}`Aggregate.fails`) for some group. With
-{lit}`LIMIT 0`, SQLite skips the evaluation and returns no rows. -/
-def Query.fails (query : Query) (rows : List (List Value)) : Bool :=
-  query.aggregate && query.limit != some 0 && (queryGroups query (filtered query rows)).any fun group =>
-    query.columns.any fun
-      | .aggregate aggregate => aggregate.fails group
-      | .scalar _ => false
 
 end Belay.Sqlite.Resolved

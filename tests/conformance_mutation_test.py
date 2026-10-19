@@ -28,7 +28,7 @@ def test_model_mutation(runtime_root: Path, tmp_path: Path) -> None:
     for filename in ("packages/belay-sqlite/Belay/Sqlite/StatementStep.lean",
                      "packages/belay-sqlite/Belay/Sqlite/SqlExecution.lean",
                      *(f"packages/verifier-conformance/VerifierConformance/{name}.lean"
-                       for name in ("Trace", "Outputs", "Native", "Case"))):
+                       for name in ("Trace", "Outputs", "Pass", "Native", "Case"))):
         source = (ROOT / filename).read_text()
         source = "\n".join(line for line in source.splitlines() if not line.startswith("import "))
         source = source.replace("namespace Belay.Sqlite", "namespace Belay.Sqlite.Mutant")

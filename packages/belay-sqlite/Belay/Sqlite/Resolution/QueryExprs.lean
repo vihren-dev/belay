@@ -2,7 +2,8 @@ import Belay.Sqlite.Resolution.Values
 import Belay.Sqlite.Resolution.MergedNames
 import Belay.Sqlite.Resolution.ExprForms
 import Belay.Sqlite.Resolution.SyntaxScope
-import Belay.Sqlite.JsonFaults
+import Belay.Sqlite.ExprEval
+import Belay.Sqlite.Resolution.ExprAny
 import Belay.Sqlite.ClockSubstitution
 
 set_option doc.verso true
@@ -54,11 +55,10 @@ def resolveOperand (dqs : Bool) (scope : Scope) (misuse : Bool) : Syntax.Expr �
     let a ← (resolveOperand dqs scope misuse left).mapError (·.under [1])
     let b ← (resolveOperand dqs scope misuse right).mapError (·.under [2])
     if truthTest operator right b.1 then
-      if a.1.isTruthValue then .ok (.compare operator a.1 b.1, none)
-      else .error (.restriction [1] .valueAsCondition)
-    else match affinityIssue a b with
-    | some (path, reason) => .error (.restriction (path.map (· + 1)) reason)
-    | none => .ok (.compare operator a.1 b.1, none)
+      -- x IS [NOT] TRUE is (NOT NOT x) IS [NOT] 1, and x IS [NOT] FALSE is (NOT x) IS [NOT] 1.
+      let tested := if b.1.literal? == some (.integer 1) then .not (.not a.1) else .not a.1
+      .ok (.compare operator none tested (.literal (.integer 1)), none)
+    else .ok (.compare operator (comparisonAffinity a.2 b.2) a.1 b.1, none)
   | .and left right => do
     let a ← condition [0] (resolveOperand dqs scope misuse left)
     let b ← condition [1] (resolveOperand dqs scope misuse right)

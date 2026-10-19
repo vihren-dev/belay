@@ -14,7 +14,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kern
 def test_production_trace(tmp_path: Path, lean_sysroot: Path, lean_libraries: tuple[Path, Path]) -> None:
     """Snapshots preserve writes, commits, rollbacks, failure positions and stop-on-error."""
     proof = tmp_path / "TraceChecks.lean"
-    proof.write_text('''import VerifierConformance.Trace
+    proof.write_text('''import VerifierConformance.Pass
 open Belay.Sqlite Belay.Sqlite.Conformance
 
 def columns : List CatalogColumn := [{ name := "value", declaredType := some "INTEGER" }]

@@ -40,7 +40,7 @@ def rowsWith (kind : Resolved.JoinKind) (table : Table) (condition : Option Reso
 #guard Resolved.joinRows 1 [] (join .full) rightTwo == [[.null, .integer 1], [.null, .integer 3]]
 
 /-- A right join to table 2 on the second and third cells of the joined row. -/
-def rightOnSecond : Resolved.Join := { kind := .right, table := 2, condition := some (.compare .eq (.column 1) (.column 2)) }
+def rightOnSecond : Resolved.Join := { kind := .right, table := 2, condition := some (.compare .eq none (.column 1) (.column 2)) }
 
 /-- A query of every cell of {name}`JoinExamples.left` full joined with table 1. -/
 def fullQuery : Resolved.Query :=

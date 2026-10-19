@@ -1,19 +1,18 @@
 import Belay.Sqlite.Resolution.QueryForm
-import Belay.Sqlite.Resolution.Restrictions
 
 set_option doc.verso true
 
-/-! The affinity rules of a comparison in a query (ADR 0012, slices 1 and 2). A column
-reference has its column's affinity, a {lit}`CAST` has the affinity of its type, and
-every other expression has none ({lit}`sqlite3ExprAffinity`). A comparison whose
-affinity rule would convert a value is a model restriction, so that evaluation
-compares the values as they are. -/
+/-! The affinity rules of a comparison in a query (ADR 0013, D4). A column reference has
+its column's affinity, a {lit}`CAST` has the affinity of its type, and every other
+expression has none ({lit}`sqlite3ExprAffinity`). Resolution computes the affinity of each
+comparison from those of its operands, and evaluation applies it. -/
 
 namespace Belay.Sqlite
 
-/-- A resolved operand and its affinity in a comparison: a column reference has
-its column's affinity, a {lit}`CAST` the affinity of its type, every other expression
-has none. -/
+/-- A resolved operand and its affinity, which resolution keeps while it resolves an
+expression: a column reference has its column's affinity, a {lit}`CAST` the affinity of its
+type, every other expression, {lit}`+x` included, has none. The resolved expression keeps
+only the affinity of each comparison. -/
 abbrev Operand := Resolved.Expr × Option Affinity
 
 /-- Whether an affinity is INTEGER, REAL or NUMERIC. -/
@@ -27,54 +26,14 @@ def Resolved.Expr.literal? : Resolved.Expr → Option Value
   | .column _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast .. | .coalesce ..
   | .json .. | .now _ | .date .. => none
 
-/-- Whether a value is TEXT. -/
-def Value.isText : Value → Bool
-  | .text _ => true
-  | .null | .integer _ | .real _ | .blob _ => false
-
-/-- Whether TEXT affinity keeps a value unchanged: NULL, TEXT or BLOB. -/
-def Value.keepsText : Value → Bool
-  | .null | .text _ | .blob _ => true
-  | .integer _ | .real _ => false
-
-/-- Whether an expression without affinity may give a TEXT value: a TEXT literal, a
-column, a JSON function, a time keyword, a date and time function, or a {lit}`COALESCE`
-with such an operand. Comparisons, logical operators, arithmetic and {lit}`CAST` to
-INTEGER, REAL or NUMERIC give numbers or NULL. A {lit}`CAST` to TEXT or BLOB has an
-affinity, so this question does not arise for it; it counts as possibly TEXT. -/
-def Resolved.Expr.mayBeText : Resolved.Expr → Bool
-  | .literal value => value.isText
-  | .column _ => true
-  | .coalesce first rest => first.mayBeText || rest.mayBeText
-  | .cast affinity _ => !numericAffinity affinity
-  | .json .. | .now _ | .date .. => true
-  | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. => false
-
-/-- Why the affinity rule of a comparison would convert one operand, given the
-affinity of the other: when the other operand has INTEGER, REAL or NUMERIC
-affinity, an operand without affinity that may be TEXT ({name}`Resolved.Expr.mayBeText`)
-or a column of another affinity would get NUMERIC affinity (R-58138-64688); when the other operand is a TEXT column and this one has
-no affinity, a value other than a NULL, text or blob literal would get TEXT
-affinity (R-29161-32953). -/
-def conversion (target : Operand) (other : Option Affinity) : Option RestrictionKind :=
-  if other.any numericAffinity then
-    match target.2 with
-    | some affinity =>
-      if numericAffinity affinity then none
-      else some .mixedAffinityComparison
-    | none =>
-      if target.1.mayBeText then
-        some .textToNumber
-      else none
-  else if other == some .text && target.2.isNone && !((target.1.literal?.map Value.keepsText).getD false) then
-    some .numberToText
-  else none
-
-/-- Why the affinity rule of a comparison would convert an operand, with the path of
-that operand (R-10393-27560), checking the left operand first. -/
-def affinityIssue (left right : Operand) : Option (List Nat × RestrictionKind) :=
-  match conversion left right.2 with
-  | some reason => some ([0], reason)
-  | none => (conversion right left.2).map ([1], ·)
+/-- The affinity of a comparison of two operands with the given affinities, as SQLite's
+{lit}`sqlite3CompareAffinity` gives it: when both have one, NUMERIC if either is INTEGER,
+REAL or NUMERIC, else BLOB (R-58138-64688); else the affinity of the operand that has one
+(R-29161-32953); else none. {assert}`comparisonAffinity (some .text) none = some .text`. -/
+def comparisonAffinity : Option Affinity → Option Affinity → Option Affinity
+  | some left, some right => if numericAffinity left || numericAffinity right then some .numeric else some .blob
+  | some left, none => some left
+  | none, some right => some right
+  | none, none => none
 
 end Belay.Sqlite

@@ -1,5 +1,5 @@
 import VerifierConformance.Native
-import VerifierConformance.Outputs
+import VerifierConformance.Pass
 import Belay.Sqlite.Resolution.SchemaScript
 
 /-! ADR 0004's finite comparison authority. Native observations remain empirical
@@ -115,13 +115,14 @@ def classifyCase (c : Case) : Verdict :=
   | .ok unclocked =>
     let resolution := { unclocked with resolved := scriptAtClock c.clock unclocked.resolved }
     let initial := databaseOf resolution.startCatalog c.initial
-    let observed := trace resolution.resolved initial
-    let outputs := outputTraceFrom 0 resolution.resolved { database := initial }
+    let pass := passFrom 0 resolution.resolved { database := initial }
+    let observed := pass.observations
+    let outputs := pass.outputs
     match observed, c.nativeTrace with
     | first :: rest, expected :: expectations =>
       if !matchesObservation first expected then .disagree none
       else if (c.clocks.isEmpty && scriptReadsClock unclocked.resolved) ||
-          !supportedSqlFrom 0 resolution.resolved { database := initial } || observed.any invalidObservation ||
+          !pass.supported || observed.any invalidObservation ||
           c.parameters.any (fun values => !values.isEmpty) || (c.outputs.isSome && outputs.any Option.isNone) then
         .modelUnsupported
       else

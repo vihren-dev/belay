@@ -14,8 +14,8 @@ SUMMATION = SQLITE + "Summation.lean"
 """SUM and AVG."""
 NUMBER_TEXT = SQLITE + "NumberText.lean"
 """The parse of text to numbers."""
-EVALUATION = SQLITE + "QueryEval.lean"
-"""Evaluation of query expressions."""
+VALUES = SQLITE + "ExprEval.lean"
+"""The value and fault of an expression over one row."""
 EXPRESSIONS = SQLITE + "Resolution/QueryExprs.lean"
 """Resolution of query expressions."""
 FORMS = SQLITE + "Resolution/ExprForms.lean"
@@ -42,9 +42,9 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "sum_overflow_ignored": (SUMMATION, "  else if state.overflow then none", "  else if false then none"),
     "avg_integer": (SUMMATION,
         "    realValue (total / Float.ofNat state.count)", "    .integer (realToI64 (total / Float.ofNat state.count))"),
-    "coalesce_last": (EVALUATION,
-        "    if value.isNullCell then rest.eval row else value",
-        "    let other := rest.eval row\n    if other.isNullCell then value else other"),
+    "coalesce_last": (VALUES,
+        "    (if value.isNullCell then other else value, (fault.join later).soften)",
+        "    (if other.isNullCell then value else other, (fault.join later).soften)"),
     "spaces_not_skipped": (NUMBER_TEXT,
         "def dropSpaces (bytes : List UInt8) : List UInt8 := bytes.dropWhile isSpaceByte",
         "def dropSpaces (bytes : List UInt8) : List UInt8 := bytes"),
@@ -78,7 +78,7 @@ GUARDS: dict[str, str] = {
     "sum_naive": "rule:SumState.addDouble",
     "sum_overflow_ignored": "rule:SumState.sumValue",
     "avg_integer": "rule:SumState.averageValue",
-    "coalesce_last": "rule:Expr.eval",
+    "coalesce_last": "rule:Expr.evaluate",
     "spaces_not_skipped": "rule:dropSpaces",
     "exponent_ignored": "rule:atofExponentPart",
     "coalesce_argument_count_removed": "rule:callIssue",

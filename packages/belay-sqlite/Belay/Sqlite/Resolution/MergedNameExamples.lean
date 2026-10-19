@@ -72,15 +72,17 @@ def onText : Expr := .compare .eq (qualified "t" "b") (qualified "r" "e")
 -- With a right or full join, a later USING compares the coalesce of the left columns.
 #guard (query [.star] (table "t") [usingJoin ["FULL"] "r" ["a"], usingJoin [] "w" ["a"]]).map
   (·.joins.map (·.condition)) ==
-  some [some (.compare .eq (.column 0) (.column 2)),
-        some (.compare .eq (.coalesce (.column 0) (.column 2)) (.column 4))]
+  some [some (.compare .eq (some .numeric) (.column 0) (.column 2)),
+        some (.compare .eq (some .blob) (.coalesce (.column 0) (.column 2)) (.column 4))]
 -- Without one, it compares the left-most column, as in slice 4b.
 #guard (query [.star] (table "t") [usingJoin [] "r" ["a"], usingJoin [] "v" ["a"]]).map
   (·.joins.map (·.condition)) ==
-  some [some (.compare .eq (.column 0) (.column 2)), some (.compare .eq (.column 0) (.column 4))]
--- A coalesce has no affinity, so against an INTEGER column it would convert text: a restriction.
-#guard reason (migration merging [.select [.star] (some (table "t")) [usingJoin ["FULL"] "r" ["a"], usingJoin [] "v" ["a"]]
-  none [] [] none none]) == RestrictionKind.textToNumber.message
+  some [some (.compare .eq (some .numeric) (.column 0) (.column 2)), some (.compare .eq (some .numeric) (.column 0) (.column 4))]
+-- A coalesce has no affinity, so against an INTEGER column the comparison has INTEGER affinity.
+#guard (query [.star] (table "t") [usingJoin ["FULL"] "r" ["a"], usingJoin [] "v" ["a"]]).map
+  (·.joins.map (·.condition)) ==
+  some [some (.compare .eq (some .numeric) (.column 0) (.column 2)),
+        some (.compare .eq (some .integer) (.coalesce (.column 0) (.column 2)) (.column 4))]
 -- A left table that does not merge the name: also for a join before the right join, and for NATURAL.
 #guard error [.star] (table "t") [joined [] (table "r") (some onText), usingJoin ["RIGHT"] "w" ["a"]] ==
   some (.ambiguousUsingReference "a")

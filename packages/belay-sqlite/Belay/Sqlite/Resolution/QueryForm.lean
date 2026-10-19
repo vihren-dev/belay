@@ -21,8 +21,9 @@ inductive Expr where
   | column (position : Nat)
   /-- A literal value, after the affinity of a comparison is applied to it. -/
   | literal (value : Value)
-  /-- A comparison of two operands. -/
-  | compare (operator : Comparison) (left right : Expr)
+  /-- A comparison of two operands, with the affinity that SQLite applies to them
+  ({lit}`comparisonAffinity`); none applies no conversion. -/
+  | compare (operator : Comparison) (affinity : Option Affinity) (left right : Expr)
   /-- {lit}`AND`, with SQLite's three-valued logic. -/
   | and (left right : Expr)
   /-- {lit}`OR`, with SQLite's three-valued logic. -/

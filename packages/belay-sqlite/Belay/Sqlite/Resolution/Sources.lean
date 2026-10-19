@@ -17,7 +17,7 @@ expression reads only the tables whose cells come before it in the joined row. -
 def Resolved.Expr.readsBelow (bound : Nat) : Resolved.Expr → Bool
   | .column position => position < bound
   | .literal _ | .now _ => true
-  | .compare _ left right | .and left right | .or left right | .arithmetic _ left right | .coalesce left right =>
+  | .compare _ _ left right | .and left right | .or left right | .arithmetic _ left right | .coalesce left right =>
     left.readsBelow bound && right.readsBelow bound
   | .not operand | .isNull operand _ | .cast _ operand => operand.readsBelow bound
   | .json _ arguments | .date _ arguments _ => arguments.readsBelow bound

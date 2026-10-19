@@ -45,7 +45,7 @@ def resolveAssignment (dqs : Bool) (scope : Scope) (keyColumns : List Nat) (item
       | none => .error (.prepare (.noSuchColumn name))) >>= fun position =>
     if mentionsColumn scope value && keyColumns.contains position then
       .error (.restriction [item, 1] .rowDependentKey)
-    else if !mentionsColumn scope value && !operand.1.readsClock && operand.1.mayFail [] then
+    else if !mentionsColumn scope value && !operand.1.readsClock && operand.1.mayFailOn [] then
       .error (.restriction [item, 1] .constantFunctionError)
     else .ok (position, assignedExpression scope position value operand.1)
 
