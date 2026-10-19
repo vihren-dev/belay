@@ -59,7 +59,8 @@ theorem DatabaseExtends.create (database : Database) (name : Identifier) (table 
 
 /-- For every database, name and index, CREATE INDEX ({name}`Catalog.createIndex` with an
 empty row list appended) extends the database: every table present before is present and
-unchanged. -/
+unchanged. Proof sketch: {name}`Database.table_createIndex` keeps each present table at its
+position, and {name}`TableExtends.refl` extends it by no columns. -/
 theorem DatabaseExtends.index (database : Database) (name : Identifier) (index : CatalogIndex) :
     DatabaseExtends database
       { catalog := database.catalog.createIndex name index, rows := database.rows ++ [[]] } :=

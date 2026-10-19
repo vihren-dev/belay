@@ -80,12 +80,12 @@ def run (script : List Syntax.Statement) : Option Outcome :=
 /-- The position and reason of a failure, or none. -/
 def failure : Option Outcome → Option (Nat × ExecutionError)
   | some (.failure position reason _) => some (position, reason)
-  | _ => none
+  | some (.success _) | some (.pending ..) | none => none
 
 /-- The cells of the rows of {lit}`d` after a run that succeeds, or none. -/
 def rowsOfD : Option Outcome → Option (List (List Value))
   | some (.success database) => (database.table 0).map fun table => table.rows.map (·.values)
-  | _ => none
+  | some (.failure ..) | some (.pending ..) | none => none
 
 /-- INSERT of one row into {lit}`d`. -/
 def insertD (a : String) (b : Expr) : Syntax.Statement := .insert (name! "d") none [[.numeric a, b]] [] none []
