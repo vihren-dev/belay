@@ -141,7 +141,7 @@ def test_weakened_next_interpretation(invoke: Callable[..., dict[str, object]], 
     """Removing the protected amount interpretation is rejected independently of other attacks."""
     path = candidate / "NextInterpretation.lean"
     original = path.read_text()
-    changed = original.replace('["amount"]', '[]')
+    changed = original.replace('[name! "amount"]', '[]')
     assert changed != original
     path.write_text(changed)
     invoke("UNVERIFIED")

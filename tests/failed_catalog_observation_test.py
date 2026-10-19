@@ -21,14 +21,14 @@ open Belay.Sqlite Belay.Sqlite.Conformance
 
 def shape : CatalogTable := { columns := [{ name := name! "id", declaredType := none }] }
 def table : Table := { shape, rows := [{ rowid := 1, values := [.integer 7] }] }
-def catalog (name : String) : Catalog := [{ name, entry := .table shape }]
+def catalog (name : Identifier) : Catalog := [{ name, entry := .table shape }]
 -- Distinct names make use of the wrong catalog observable in JSON as well as comparison.
-def visible : Database := { catalog := catalog "visible", rows := [table.rows] }
-def committed : Database := { catalog := catalog "committed", rows := [table.rows] }
+def visible : Database := { catalog := catalog (name! "visible"), rows := [table.rows] }
+def committed : Database := { catalog := catalog (name! "committed"), rows := [table.rows] }
 def failed : Observation := ⟨visible, committed, true, some (0, .constraintViolation)⟩
 def expected : NativeObservation where
-  visible := [nativeTableOf visible.catalog 0 "visible" table]
-  persisted := [nativeTableOf committed.catalog 0 "committed" table]
+  visible := [nativeTableOf visible.catalog 0 (name! "visible") table]
+  persisted := [nativeTableOf committed.catalog 0 (name! "committed") table]
   transactionOpen := true
   primaryCode := 19
   extendedCode := 1299
