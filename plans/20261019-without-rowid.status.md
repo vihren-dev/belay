@@ -31,6 +31,13 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D4.
   renders the key cells as identity. Authored corpus `authored_without_rowid` (17 cases,
   corpus 30) and `without_rowid_mutants` (two). ADR 0014 records the hidden-rowid design.
 
+- 2026-10-19: checks. Fixes after the first suite runs: the starting rows of such a table
+  get the model's own rowids (`storedRows`; the prediction's rowid of key identities is 0),
+  and the scan-order mutant targets rows that the migration inserts out of key order.
+  `just test-full`, `just test-nix` and `just test-scheduled` pass. Verdict: 82 upstream
+  cases newly agree (v1 +1, v2 +1, v3 +7, v4 +9, v5 +64), none leaves AGREE; corpus 30
+  (17 cases) agrees in full.
+
 ## Remaining
 
-- Suites, verdict, review, CI time, pull requests A and B.
+- CI time, pull requests A and B.
