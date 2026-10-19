@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-19T12:53:20+00:00",
+  "finding": "20261019T125235Z-61f7160d#3",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Mode docstring: both modes admit constraints, defaults and indexes"
+}

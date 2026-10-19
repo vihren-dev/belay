@@ -9,9 +9,8 @@ namespace Belay.Sqlite
 
 /-- Whether the statements only describe a catalog, or are statements that the
 execution semantics runs. A description, such as the schema text that SQLite keeps,
-may contain the engine's statistics tables, constraints, defaults and indexes. The
-execution semantics models CREATE TABLE with plain columns only and no CREATE
-INDEX, so those are model restrictions for statements that it runs. -/
+may contain the engine's statistics tables, which a statement that runs may not create.
+Both modes admit constraints, defaults and indexes (ADR 0014). -/
 inductive Mode where
   /-- The statements describe a catalog; nothing runs them. -/
   | description

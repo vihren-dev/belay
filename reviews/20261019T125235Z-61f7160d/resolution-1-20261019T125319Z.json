@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-19T12:53:19+00:00",
+  "finding": "20261019T125235Z-61f7160d#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "proof sketch added to findSome_parseError_ne_duplicate"
+}

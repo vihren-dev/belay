@@ -36,7 +36,10 @@ theorem resolveAddColumn_missing (context : ResolveContext) (catalog : Catalog) 
 
 /-- For every column name, constraint list and error: when the first parse error of the
 constraints ({name}`Syntax.ColumnConstraint.parseError`) is the error, it is no
-{name}`ExprError.duplicateColumn`. -/
+{name}`ExprError.duplicateColumn`. Proof sketch: induction over the constraints; the first
+constraint with a parse error gives the error, and a case analysis on that constraint
+shows that a parse error is {lit}`no such collation sequence` or the foreign-key error,
+never a duplicate column. -/
 theorem findSome_parseError_ne_duplicate (column name : Identifier) (constraints : List Syntax.ColumnConstraint)
     (error : ExprError) (found : constraints.findSome? (·.parseError column) = some error) :
     error ≠ .duplicateColumn name := by

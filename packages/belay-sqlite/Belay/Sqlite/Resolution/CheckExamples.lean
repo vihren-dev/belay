@@ -56,6 +56,13 @@ def failure (script : List Syntax.Statement) : Option (Nat × ExecutionError) :=
   | some (.failure position reason _) => some (position, reason)
   | some (.success _) | some (.pending ..) | none => none
 
+/-- The position and reason of a failure, with the number of rows of the table at a catalog
+position in the database that the failure keeps; none for a run that does not fail. -/
+def failedRows (position : Nat) (script : List Syntax.Statement) : Option (Nat × ExecutionError × Option Nat) :=
+  match run script with
+  | some (.failure index reason database) => some (index, reason, (database.table position).map (·.rows.length))
+  | some (.success _) | some (.pending ..) | none => none
+
 /-- The cells of the rows of the table at a catalog position after a run that succeeds. -/
 def rowsAt (position : Nat) (script : List Syntax.Statement) : Option (List (List Value)) :=
   match run script with
@@ -76,9 +83,8 @@ def rowsAt (position : Nat) (script : List Syntax.Statement) : Option (List (Lis
 -- OR IGNORE skips the row; REPLACE acts as ABORT; FAIL keeps the rows before.
 #guard rowsAt 0 [insertInto (name! "k") [.numeric "0", .numeric "1"] (some .ignore)] == some []
 #guard failure [insertInto (name! "k") [.numeric "0", .numeric "1"] (some .replace)] == some (0, .constraintViolation)
-#guard (match run [.insert (name! "k") none [[.numeric "1", .numeric "1"], [.numeric "0", .numeric "1"]] [] (some .fail) []] with
-  | some (.failure 0 .constraintFail database) => (database.table 0).map (·.rows.length) == some 1
-  | some _ | none => false)
+#guard failedRows 0 [.insert (name! "k") none [[.numeric "1", .numeric "1"], [.numeric "0", .numeric "1"]] [] (some .fail) []] ==
+  some (0, .constraintFail, some 1)
 -- UPDATE and DO UPDATE check the new rows.
 #guard failure [insertInto (name! "c") [.numeric "1"],
   .update (name! "c") [(name! "a", .numeric "0")] none []] == some (1, .constraintViolation)

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-19T12:53:20+00:00",
+  "finding": "20261019T125235Z-61f7160d#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "CheckExamples: failedRows helper with explicit Outcome arms replaces the some _ arm"
+}
