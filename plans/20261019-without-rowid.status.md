@@ -38,6 +38,11 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D4.
   cases newly agree (v1 +1, v2 +1, v3 +7, v4 +9, v5 +64), none leaves AGREE; corpus 30
   (17 cases) agrees in full.
 
+- 2026-10-19: CI time (local, forced rebuilds), base #175 → slice 2: harness 23 → 22 s,
+  model 342 → 352 s, frozen 140 → 142 s, mutants 461 → 466 s. PR B: corpus 30 recorded
+  natively (17 cases) and claimed in full; the 82 upstream cases join `mustAgree`; new
+  judge lock.
+
 ## Remaining
 
-- CI time, pull requests A and B.
+- Pull requests A and B.
