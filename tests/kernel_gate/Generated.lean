@@ -5,6 +5,6 @@ import NextInterpretation
 namespace Generated
 /-- The author-facing expected proposition. -/
 def expected : Prop := SqliteVerifier.VerificationConditions
-  startCatalog nextCatalog resolved Interpretation.admitted Requirements.contract
+  startCatalog resolved Interpretation.admitted Requirements.contract
   Interpretation.current NextInterpretation.next NextInterpretation.failures profile
 end Generated

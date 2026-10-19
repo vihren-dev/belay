@@ -1,7 +1,7 @@
 """The admission obligations, and the evidence for each obligation conjunct.
 
 The verification target admits a write only when `LiteralData.insertReady` or
-`LiteralData.updateReady` holds, through `statementReady` (`SqlExecution.lean`). Each
+`LiteralData.updateReady` holds, through `statementReady` (`StatementStep.lean`). Each
 conjunct either keeps a state out of the model that the model would describe wrongly,
 or repeats a guarantee made elsewhere. `OBLIGATIONS` lists the conjuncts. A conjunct
 that a native state could violate after resolution would need a mutant that removes it
@@ -18,7 +18,7 @@ from conformance.resolve_mutants import SQLITE
 
 LITERAL_DATA = SQLITE + "LiteralData.lean"
 """The admission obligations of literal writes."""
-EXECUTION = SQLITE + "SqlExecution.lean"
+EXECUTION = SQLITE + "StatementStep.lean"
 """The admission obligation of each statement."""
 ROW_UPDATE = SQLITE + "RowUpdate.lean"
 """The admission obligation of UPDATE."""
@@ -37,7 +37,7 @@ OBLIGATIONS: dict[str, tuple[str, str, str]] = {
     "update-rowid-bounded": (ROW_UPDATE, "updateReady",
                              "(updated table assignments filter).rows.all (fun row => boundedInteger row.rowid)"),
     "create-table-plain": (EXECUTION, "statementReady", "table.plain"),
-    "add-column-plain": (EXECUTION, "statementReady", "column.plain"),
+    "add-column-default-readback": (EXECUTION, "statementReady", "(readDefaultValue column).toOption.isSome"),
     "create-index-refused": (EXECUTION, "statementReady", "| .createIndex .. => false"),
 }
 """Each conjunct of the admission obligations: the file under `packages/`, the declaration
@@ -63,7 +63,7 @@ COVERED_ELSEWHERE: dict[str, str] = {
     "update-table-ready": "reason:SQLite keeps the NOT NULL cells and unique keys of every table that it stores, "
                           "so every native state passes tableReady",
     "create-table-plain": "restriction:create-table-constraints",
-    "add-column-plain": "restriction:add-column-constraint",
+    "add-column-default-readback": "restriction:add-column-constraint",
     "create-index-refused": "restriction:create-index-runs",
 }
 """For each conjunct without a mutant: `restriction:ID`, the restriction that resolution

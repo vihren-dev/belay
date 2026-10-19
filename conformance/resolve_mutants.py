@@ -32,7 +32,7 @@ SQLITE = "belay-sqlite/Belay/Sqlite/"
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "non_ascii_fold": (SQLITE + "Declarations.lean",
         "if 'A' ≤ c ∧ c ≤ 'Z' then", "if 'A' ≤ c ∧ c ≤ 'Z' ∨ 'À' ≤ c ∧ c ≤ 'Þ' ∧ c ≠ '×' then"),
-    "affinity_order": (SQLITE + "Resolution/Catalog.lean",
+    "affinity_order": (SQLITE + "Resolution/TypeAffinity.lean",
         'if containsText upper "INT" then .integer\n    else if ["CHAR", "CLOB", "TEXT"].any (containsText upper) then .text',
         'if ["CHAR", "CLOB", "TEXT"].any (containsText upper) then .text\n    else if containsText upper "INT" then .integer'),
     "desc_rowid_alias": (SQLITE + "Resolution/Definitions.lean",
@@ -60,7 +60,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "    if reservedName tableName then prepareError catalog (.tableMayNotBeAltered tableName)",
         "  | none => restrict index [] .createIndexRuns\n  | some (position, table) =>\n"
         "    if reservedName tableName then prepareError catalog (.tableMayNotBeAltered tableName)"),
-    "commit_without_transaction": (SQLITE + "SqlExecution.lean",
+    "commit_without_transaction": (SQLITE + "StatementStep.lean",
         "    | none => .halt (.failure position .noActiveTransaction state.database)\n"
         "    | some _ => .next { state with snapshot := none }",
         "    | none => .next state\n    | some _ => .next { state with snapshot := none }"),

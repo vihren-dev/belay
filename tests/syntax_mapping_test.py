@@ -41,15 +41,16 @@ def test_definitions_keep_names_types_and_constraints_as_written(parse_sql: Call
             column("a", "VARCHAR ( 10 )", [{"notNull": {"algorithm": None}},
                                            {"primaryKey": {"descending": True, "algorithm": None}}]),
             column("B", "Some", [{"unique": {"algorithm": None}}]),
-            column("c", None, [{"default": {"value": {"negate": {"operand": {"numeric": {"text": "1"}}}}}}]),
-            column("d", None, [{"default": {"value": {"currentTime": {"keyword": "CURRENT_TIMESTAMP"}}}}]),
-            column("e", None, [{"default": {"value": {"string": {"bytes": list(b"x'y")}}}}]),
+            column("c", None, [{"default": {"sourceText": "-1", "value": {"negate": {"operand": {"numeric": {"text": "1"}}}}}}]),
+            column("d", None, [{"default": {"sourceText": "CURRENT_TIMESTAMP",
+                                            "value": {"currentTime": {"keyword": "CURRENT_TIMESTAMP"}}}}]),
+            column("e", None, [{"default": {"sourceText": "'x''y'", "value": {"string": {"bytes": list(b"x'y")}}}}]),
             column("f", None)],
             "constraints": [{"primaryKey": {"columns": ["a"], "algorithm": None}},
                             {"unique": {"columns": ["c", "d"], "algorithm": None}}]}},
         {"createIndex": {"name": "i", "unique": True, "table": "Big T", "columns": ["a", "B"]}},
         {"addColumn": {"table": "t", "column": column("z", "INT", [
-            {"default": {"value": {"identifier": {"name": "y", "doubleQuoted": False}}}}])}}]
+            {"default": {"sourceText": "y", "value": {"identifier": {"name": "y", "quote": "none"}}}}])}}]
 
 
 def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., Tree]) -> None:
@@ -61,16 +62,17 @@ def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., 
     assert mapped(parse_sql, sql) == [
         "begin",
         {"insert": {"table": "t", "columns": None, "rows": [
-            [{"numeric": {"text": "0x1F"}}, {"identifier": {"name": "q", "doubleQuoted": True}}],
-            ["null", {"blob": {"bytes": [0, 255]}}]], "conflicts": [], "algorithm": None}},
+            [{"numeric": {"text": "0x1F"}}, {"identifier": {"name": "q", "quote": "double"}}],
+            ["null", {"blob": {"bytes": [0, 255]}}]], "conflicts": [], "algorithm": None, "returning": []}},
         {"insert": {"table": "t", "columns": ["a"], "rows": [
-            [{"positive": {"operand": {"numeric": {"text": "1_000"}}}}]], "conflicts": [], "algorithm": None}},
+            [{"positive": {"operand": {"numeric": {"text": "1_000"}}}}]], "conflicts": [], "algorithm": None,
+            "returning": []}},
         {"update": {"table": "t", "assignments": [
             ["a", {"negate": {"operand": {"numeric": {"text": "2.5"}}}}],
             ["b", {"string": {"bytes": list("é".encode())}}]],
-            "filter": {"equals": {"left": {"identifier": {"name": "id", "doubleQuoted": False}},
-                                  "right": {"numeric": {"text": "3"}}}}}},
-        {"update": {"table": "t", "assignments": [["a", {"numeric": {"text": "1"}}]], "filter": None}},
+            "filter": {"compare": {"operator": "eq", "left": {"identifier": {"name": "id", "quote": "none"}},
+                                  "right": {"numeric": {"text": "3"}}}}, "returning": []}},
+        {"update": {"table": "t", "assignments": [["a", {"numeric": {"text": "1"}}]], "filter": None, "returning": []}},
         "commit", "rollback"]
 
 
@@ -142,8 +144,16 @@ def test_dequote_follows_sqlite() -> None:
 
 
 def test_record_names_the_profile_and_both_scripts(parse_sql: Callable[..., Tree]) -> None:
-    """The record carries version 2, the release and build, and the statement JSON."""
+    """The record carries version 3, the release and build, and the statement JSON."""
     schema = statements(parse_sql("CREATE TABLE t(a);"))
     record = script_record(DEFAULT_PROFILE, schema, statements(parse_sql("COMMIT;")))
-    assert record == {"version": 2, "release": "3.51.0", "sourceId": DEFAULT_PROFILE.source_id,
+    assert record == {"version": 3, "release": "3.51.0", "sourceId": DEFAULT_PROFILE.source_id,
                       "schema": [schema[0].value], "script": ["commit"]}
+
+
+@pytest.mark.parametrize("literal", ["X'00ff'", "x'00FF'", "- 7", "-7", '"true"', "[true]", "`true`", "'a''b'", "null"])
+def test_default_source_spelling(parse_sql: Callable[..., Tree], literal: str) -> None:
+    """Default syntax retains the text needed to predict SQLite catalog metadata."""
+    statement = mapped(parse_sql, f"CREATE TABLE t(v BLOB DEFAULT {literal});")[0]
+    constraint = statement["createTable"]["columns"][0]["constraints"][0]
+    assert constraint["default"]["sourceText"] == literal

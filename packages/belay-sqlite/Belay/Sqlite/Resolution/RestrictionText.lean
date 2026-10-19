@@ -17,7 +17,6 @@ def RestrictionKind.id : RestrictionKind → String
   | .unmodeledDefault => "unmodeled-default"
   | .createIndexRuns => "create-index-runs"
   | .addColumnConstraint => "add-column-constraint"
-  | .timeValue => "time-value"
   | .rowDependentKey => "row-dependent-key"
   | .conflictWithoutTarget => "conflict-without-target"
   | .mixedConflictAlgorithms => "mixed-conflict-algorithms"
@@ -56,10 +55,9 @@ def RestrictionKind.message : RestrictionKind → String
   | .engineTable => "engine-managed tables other than sqlite_stat1 and sqlite_stat4 are not modeled; remove the table from the schema"
   | .rowidColumnName => "column names rowid, _rowid_ and oid are not modeled; rename the column"
   | .createTableConstraints => "constraints and defaults in a CREATE TABLE that runs are not modeled; create the table with plain columns"
-  | .unmodeledDefault => "only the CURRENT_TIMESTAMP default is modeled; remove the other default"
+  | .unmodeledDefault => "default expression is not modeled; use a literal default"
   | .createIndexRuns => "a CREATE INDEX that runs is not modeled; remove the CREATE INDEX statement"
-  | .addColumnConstraint => "only a nullable column without a default can be added"
-  | .timeValue => "time values are not modeled; write the time as a text literal"
+  | .addColumnConstraint => "the default of the added column is not modeled; use a literal default or no default"
   | .rowDependentKey => "a SET value that reads the row is not modeled for a column of a unique key; assign a constant value"
   | .conflictWithoutTarget => "DO UPDATE without a conflict target is not modeled for a table with more than one key; name the target columns"
   | .mixedConflictAlgorithms => "keys with different conflict algorithms other than REPLACE are not modeled; use one algorithm, for example with INSERT OR"
@@ -93,7 +91,7 @@ def RestrictionKind.message : RestrictionKind → String
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .createTableConstraints, .unmodeledDefault, .createIndexRuns, .addColumnConstraint, .timeValue, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .duplicateSource, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .valueAsCondition, .mixedAffinityComparison, .textToNumber, .numberToText, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .tableAfterFunction, .functionJoin, .laterSourceInArguments]
+  [.schemaStatement, .engineTable, .rowidColumnName, .createTableConstraints, .unmodeledDefault, .createIndexRuns, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .duplicateSource, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .valueAsCondition, .mixedAffinityComparison, .textToNumber, .numberToText, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .tableAfterFunction, .functionJoin, .laterSourceInArguments]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

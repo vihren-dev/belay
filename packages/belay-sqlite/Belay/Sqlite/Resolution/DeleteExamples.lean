@@ -10,16 +10,16 @@ namespace Belay.Sqlite.Resolution.DeleteExamples
 open Belay.Sqlite Syntax Resolution.Examples Resolution.QueryResolutionExamples
 
 /-- The filter {lit}`Abc = 1` as written. -/
-def abcIsOne : Syntax.Expr := .equals (.identifier "Abc" false) (.numeric "1")
+def abcIsOne : Syntax.Expr := .compare .eq (.identifier "Abc" .none) (.numeric "1")
 
 -- The filter resolves as a SELECT condition; RETURNING `*` names the table's columns.
 #guard resolvedOne (.delete "t" (some abcIsOne)) ==
   some (.delete 0 (some (.compare .eq (.column 0) (.literal (.integer 1)))) [])
-#guard resolvedOne (.returning (.delete "t" none) [.star]) ==
+#guard resolvedOne ((.delete "t" none [.star])) ==
   some (.delete 0 none [(.column 0, "Abc"), (.column 1, "b")])
 -- SQLite's prepare errors, and SQLite's own tables as a restriction.
 #guard errorOf (.delete "missing" none) == some (.noSuchTable "missing")
-#guard errorOf (.delete "t" (some (.equals (.identifier "zz" false) (.numeric "1")))) == some (.noSuchColumn "zz")
+#guard errorOf (.delete "t" (some (.compare .eq (.identifier "zz" .none) (.numeric "1")))) == some (.noSuchColumn "zz")
 #guard restrictedOne (.delete "sqlite_schema" none)
 
 /-- A table with a row where {lit}`Abc` is 1 and a row where it is NULL. -/

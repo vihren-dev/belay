@@ -1,13 +1,15 @@
 import Belay.Sqlite.Declarations
 import Belay.Sqlite.Resolution.Syntax
+import Belay.Sqlite.Resolution.ColumnDefault
+import Belay.Sqlite.Resolution.TypeAffinity
 
 set_option doc.verso true
 
 /-! The catalog that name resolution reads and updates. Tables and indexes share
 one namespace, as in {lit}`sqlite_schema`. Names keep their case as written;
 lookup compares SQLite's ASCII-folded form ({name}`Belay.Sqlite.normalizeIdentifier`).
-Columns keep their declared type text, and the affinity function computes the
-affinity from it. -/
+Columns keep their declared type text, and the affinity function
+({lit}`affinityOf`, in {lit}`TypeAffinity.lean`) computes the affinity from it. -/
 
 namespace Belay.Sqlite
 
@@ -22,8 +24,9 @@ structure CatalogColumn where
   notNull : Bool := false
   /-- The {lit}`ON CONFLICT` algorithm of the NOT NULL constraint; ABORT without one. -/
   notNullAlgorithm : ConflictAlgorithm := .abort
-  /-- The DEFAULT expression as written; omit it for no default. -/
-  defaultValue : Option Syntax.Expr := none
+  /-- The resolved DEFAULT with its source spelling ({name}`ColumnDefault`); omit it for no
+  default. -/
+  defaultValue : Option ColumnDefault := none
   deriving Repr, DecidableEq
 
 /-- One table entry. Keys are lists of column positions. Use
@@ -117,53 +120,8 @@ def columnPosition (columns : List CatalogColumn) (name : String) : Option Nat :
   (findPosition (fun column => normalizeIdentifier column.name == normalizeIdentifier name)
     columns).map Prod.fst
 
-/-- Whether the characters of {lit}`needle` occur contiguously in {lit}`haystack`. -/
-def containsChars (needle : List Char) : List Char → Bool
-  | [] => needle.isEmpty
-  | first :: rest => needle.isPrefixOf (first :: rest) || containsChars needle rest
-
-/-- Whether {lit}`needle` occurs as a contiguous part of {lit}`haystack`. -/
-def containsText (haystack needle : String) : Bool :=
-  containsChars needle.toList haystack.toList
-
-/-- SQLite's column affinity of a declared type ({lit}`datatype3.html`, section 3.1),
-with ASCII case ignored, in the documented order (R-14349-34154):
-1. The text contains {lit}`INT`: INTEGER (R-07051-38416).
-2. Else it contains {lit}`CHAR`, {lit}`CLOB` or {lit}`TEXT`: TEXT (R-00243-07929).
-3. Else it contains {lit}`BLOB`, or there is no type: BLOB (R-63063-00748).
-4. Else it contains {lit}`REAL`, {lit}`FLOA` or {lit}`DOUB`: REAL (R-59153-45869).
-5. Otherwise: NUMERIC. -/
-def affinityOf : Option String → Affinity
-  | none => .blob
-  | some text =>
-    let upper := String.ofList (text.toList.map Char.toUpper)
-    if containsText upper "INT" then .integer
-    else if ["CHAR", "CLOB", "TEXT"].any (containsText upper) then .text
-    else if containsText upper "BLOB" then .blob
-    else if ["REAL", "FLOA", "DOUB"].any (containsText upper) then .real
-    else .numeric
-
 /-- The affinity of a catalog column, from its declared type text. -/
 def CatalogColumn.affinity (column : CatalogColumn) : Affinity := affinityOf column.declaredType
-
-/-- The standard type names that SQLite recognizes in a declared type, in capitals
-({lit}`sqlite3StdType`). -/
-def standardTypeNames : List String := ["ANY", "BLOB", "INT", "INTEGER", "REAL", "TEXT"]
-
-/-- A declared type as SQLite keeps and reports it: a type that is exactly one of
-{name}`standardTypeNames`, with ASCII case ignored, becomes that name in capitals
-({lit}`sqlite3AddColumn`); any other type text stays as written, so {lit}`int` is
-{lit}`INT` and {lit}`VarChar(10)` keeps its case. -/
-def reportedType : Option String → Option String
-  | none => none
-  | some text => some ((standardTypeNames.find? fun standard =>
-      normalizeIdentifier standard == normalizeIdentifier text).getD text)
-
-/-- Whether a declared type makes a single-column primary key an alias for the
-rowid: the text equals {lit}`INTEGER` with ASCII case ignored ({lit}`lang_createtable.html`,
-R-56094-57830). {lit}`INT` and {lit}`BIGINT` do not. -/
-def aliasesRowid (declaredType : Option String) : Bool :=
-  declaredType.map String.toUpper == some "INTEGER"
 
 /-- The column positions of each unique key of the table at a catalog position, in
 this order: the primary key when there is one, the UNIQUE constraints, and the
@@ -174,6 +132,26 @@ def Catalog.uniqueKeys (catalog : Catalog) (position : Nat) (table : CatalogTabl
     catalog.filterMap fun object => match object.entry with
       | .index index => if index.table == position && index.unique then some index.columns else none
       | .table _ => none
+
+/-- Add the table with the name at the end of the catalog, at position
+{lean}`catalog.length`, as CREATE TABLE does. The resolver and the execution of CREATE
+TABLE both use it, so they give the same catalog. -/
+def Catalog.createTable (catalog : Catalog) (name : String) (table : CatalogTable) : Catalog :=
+  catalog ++ [{ name, entry := .table table }]
+
+/-- Add the index with the name at the end of the catalog, as CREATE INDEX does. -/
+def Catalog.createIndex (catalog : Catalog) (name : String) (index : CatalogIndex) : Catalog :=
+  catalog ++ [{ name, entry := .index index }]
+
+/-- Append the column to the table at the position, keeping the table's name and every
+other object, as ALTER TABLE ADD COLUMN does. A position that holds an index or no
+object is unchanged. The resolver and the execution of ADD COLUMN both use it. -/
+def Catalog.addColumn (catalog : Catalog) (position : Nat) (column : CatalogColumn) : Catalog :=
+  match catalog[position]? with
+  | some { name, entry := .table table } =>
+    catalog.set position { name, entry := .table { table with columns := table.columns ++ [column] } }
+  | some { entry := .index _, .. } => catalog
+  | none => catalog
 
 /-- Whether the folded name starts with {lit}`sqlite_`, which SQLite reserves. -/
 def reservedName (name : String) : Bool := (normalizeIdentifier name).startsWith "sqlite_"

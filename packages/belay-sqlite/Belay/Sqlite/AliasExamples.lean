@@ -19,14 +19,11 @@ def shape : CatalogTable :=
 def table : Table := { shape, rows := [{ rowid := 5, values := [.integer 5, .text [97]] }] }
 
 /-- A database with the table at position 0. -/
-def database : Database := fun | 0 => some table | _ => none
-
-/-- The key of the alias, as resolution gives it. -/
-def keys : List (List Nat) := [[0]]
+def database : Database := .ofTables [("t", table)]
 
 /-- The rows of the table after a write, or none for a failure. -/
 def rowsAfter : Outcome → Option (List Row)
-  | .success database => (database 0).map (·.rows)
+  | .success database => (database.table 0).map (·.rows)
   | .failure .. | .pending .. => none
 
 /-- The error of a failed write, or none. -/
@@ -35,10 +32,10 @@ def errorOf : Outcome → Option ExecutionError
   | .success _ | .pending .. => none
 
 /-- INSERT of the rows into the table. -/
-def insert (rows : List (List Value)) : Outcome := literalStep (.insert 0 rows keys []) database 0
+def insert (rows : List (List Value)) : Outcome := literalStep (.insert 0 rows []) database 0
 
 /-- UPDATE of the alias to the value. -/
-def update (value : Value) : Outcome := literalStep (.update 0 [(0, .literal value)] none keys []) database 0
+def update (value : Value) : Outcome := literalStep (.update 0 [(0, .literal value)] none []) database 0
 
 -- A NULL alias takes the next rowid, also into its cell; an integer alias is the rowid.
 #guard rowsAfter (insert [[.null, .text [98]], [.integer (-3), .text [99]]]) ==

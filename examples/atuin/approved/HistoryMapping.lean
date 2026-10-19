@@ -10,7 +10,7 @@ open Belay.Sqlite SqliteVerifier HistoryModel
 table is at its position in the sealed starting catalog; positions do not change. -/
 def observe (database : Database) : Option (List History) := do
   let position ← tablePosition SchemaBinding.start "history"
-  let table ← database position
+  let table ← database.table position
   HistoryDecoding.decodeRows (table.project SchemaBinding.fields)
 
 /-- Catalog conformance under the profile and complete decoding establish the

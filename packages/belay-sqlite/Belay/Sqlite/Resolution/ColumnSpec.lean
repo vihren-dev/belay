@@ -37,9 +37,9 @@ theorem findPosition_eq_some_iff (test : α → Bool) (items : List α) (positio
       · intro match_
         have zero := earliest found match_
         subst zero
-        obtain ⟨at_, _, _⟩ := match_
-        simp only [List.getElem?_cons_zero, Option.some.injEq] at at_
-        subst at_
+        obtain ⟨atPosition, _, _⟩ := match_
+        simp only [List.getElem?_cons_zero, Option.some.injEq] at atPosition
+        subst atPosition
         simp [findPosition, passes]
     · have fails : test head = false := by simpa using passes
       constructor
@@ -48,19 +48,19 @@ theorem findPosition_eq_some_iff (test : α → Bool) (items : List α) (positio
         obtain ⟨⟨p, f⟩, inner, outer⟩ := h
         simp only [Prod.mk.injEq] at outer
         obtain ⟨rfl, rfl⟩ := outer
-        obtain ⟨at_, ok, earlier⟩ := (ih p).mp inner
-        refine ⟨by simpa using at_, ok, fun e he item hi => ?_⟩
+        obtain ⟨atPosition, ok, earlier⟩ := (ih p).mp inner
+        refine ⟨by simpa using atPosition, ok, fun e he item hi => ?_⟩
         cases e with
         | zero => simp only [List.getElem?_cons_zero, Option.some.injEq] at hi; subst hi; exact fails
         | succ e => exact earlier e (by omega) item (by simpa using hi)
-      · intro ⟨at_, ok, earlier⟩
+      · intro ⟨atPosition, ok, earlier⟩
         cases position with
         | zero =>
-          simp only [List.getElem?_cons_zero, Option.some.injEq] at at_
-          subst at_; simp [fails] at ok
+          simp only [List.getElem?_cons_zero, Option.some.injEq] at atPosition
+          subst atPosition; simp [fails] at ok
         | succ position =>
           simp only [findPosition, fails, Bool.false_eq_true, ite_false, Option.map_eq_some_iff]
-          refine ⟨(position, found), (ih position).mpr ⟨by simpa using at_, ok, fun e he item hi =>
+          refine ⟨(position, found), (ih position).mpr ⟨by simpa using atPosition, ok, fun e he item hi =>
             earlier (e + 1) (by omega) item (by simpa using hi)⟩, rfl⟩
 
 /-- The column reference rule ({lit}`lang_expr.html`, "Column Names"; SQLite's

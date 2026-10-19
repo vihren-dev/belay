@@ -39,7 +39,8 @@ def usingReferenceChecked (left : Scope) (name : String) : Except ValueIssue Str
 first column and the others in order; one column is its qualified name. -/
 def qualifiedCoalesce : String × String × Bool → List (String × String × Bool) → Syntax.Expr
   | (source, column, _), [] => .qualified source column
-  | (source, column, _), next :: rest => .callPair "coalesce" (.qualified source column) (qualifiedCoalesce next rest)
+  | (source, column, _), next :: rest =>
+    .call "coalesce" [.qualified source column, qualifiedCoalesce next rest]
 
 /-- The left side of the generated equality of a merged name, as written syntax: with
 {lit}`coalesced` (a right or full join in the {lit}`FROM`), the coalesce of every left

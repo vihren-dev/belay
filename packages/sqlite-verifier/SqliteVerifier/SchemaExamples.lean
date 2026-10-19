@@ -20,7 +20,7 @@ default. It illustrates metadata that a schema may describe but that a new colum
 of a statement that runs may not have; {assert}`timestamp.plain = false`. -/
 def timestamp : CatalogColumn := {
   name := "installed_on", declaredType := some "TIMESTAMP"
-  notNull := true, defaultValue := some (.currentTime "CURRENT_TIMESTAMP") }
+  notNull := true, defaultValue := some { form := .clock .timestamp, sourceText := "CURRENT_TIMESTAMP" } }
 
 /-- A table keyed on {lit}`id`, with a unique index named {lit}`key_index` on the same
 column at catalog position 1, illustrating keys and the shared namespace. -/
@@ -67,33 +67,34 @@ example : table.Valid := by
 table's {name}`Table.appendColumns` at the same position, preserving its keys. The
 proof computes this fixed execution in the kernel. -/
 example : (step (.addColumn 0 { name := "shell", declaredType := some "TEXT" })
-    (fun position => if position = 0 then some table else none)).database 0 =
-    some (table.appendColumns [{ name := "shell", declaredType := some "TEXT" }]) := by
+    (.ofTables [("t", table)])).database.table 0 =
+    some (table.appendColumns [({ name := "shell", declaredType := some "TEXT" }, .null)]) := by
   decide +kernel
 
-/-- The supported-subset check refuses ADD COLUMN of {name}`timestamp`, a model
-restriction, because SQLite accepts the column but the model does not describe its
-default. Resolution never gives such a statement for a statement that runs. The
-proof unfolds the check. -/
-example : statementReady (.addColumn 0 timestamp) (fun _ => none) = false := by
-  simp [statementReady, timestamp, CatalogColumn.plain]
+/-- The supported-subset check admits ADD COLUMN of {name}`timestamp`, whose default is
+{lit}`CURRENT_TIMESTAMP`: the model describes it (ADR 0012, amendment 5, slice 6e2). The
+proof computes the check in the kernel. -/
+example : statementReady (.addColumn 0 timestamp) ({} : Database) = true := by
+  decide +kernel
 
 /-- {name}`step` runs a CREATE TABLE of a keyed table, which is not plain: it
 stores an empty table with that shape at the new position, as SQLite does. The
 supported-subset check {name}`statementReady` refuses the statement instead,
 because the model restricts such tables. The proof computes both in the kernel. -/
-example : (step (.createTable 0 "items" { columns := [textKey], primaryKey := [0] }) (fun _ => none)).database 0 =
+example : (step (.createTable 0 "items" { columns := [textKey], primaryKey := [0] }) ({} : Database)).database.table 0 =
       some { shape := { columns := [textKey], primaryKey := [0] }, rows := [] } ∧
-    statementReady (.createTable 0 "items" { columns := [textKey], primaryKey := [0] }) (fun _ => none) = false := by
+    statementReady (.createTable 0 "items" { columns := [textKey], primaryKey := [0] }) ({} : Database) = false := by
   decide +kernel
 
-/-- {name}`step` runs an ADD COLUMN of {name}`timestamp`, which is not plain: it
-appends the column to the table at position 0. The supported-subset check
-{name}`statementReady` refuses the statement instead. The proof computes both in
-the kernel. -/
-example : (step (.addColumn 0 timestamp) (fun position => if position = 0 then some table else none)).database 0 =
-      some (table.appendColumns [timestamp]) ∧
-    statementReady (.addColumn 0 timestamp) (fun position => if position = 0 then some table else none) = false := by
+/-- ADD COLUMN of {name}`timestamp` on a table with a row fails as SQLite does, with
+{lit}`Cannot add a column with non-constant default`, because its default reads the clock:
+{name}`step` gives {name}`ExecutionError.nonConstantColumnDefault` and retains the original
+table. The proof computes both in the kernel. -/
+example : (step (.addColumn 0 timestamp) (.ofTables [("t", table)])).database.table 0 =
+      some table ∧
+    (match step (.addColumn 0 timestamp) (.ofTables [("t", table)]) with
+      | .failure _ reason _ => reason == .nonConstantColumnDefault
+      | .success _ | .pending .. => false) = true := by
   decide +kernel
 
 end SqliteVerifier.SchemaExamples

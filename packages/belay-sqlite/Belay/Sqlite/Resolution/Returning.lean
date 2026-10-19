@@ -11,6 +11,16 @@ SQLite's {lit}`misuse of aggregate function`. -/
 
 namespace Belay.Sqlite
 
+/-- The field of {lit}`Syntax.Statement.insert` that holds its {lit}`RETURNING` columns, the
+first step of the issue path of a {lit}`RETURNING` column. -/
+def insertReturningField : Nat := 5
+
+/-- The field of {lit}`Syntax.Statement.update` that holds its {lit}`RETURNING` columns. -/
+def updateReturningField : Nat := 3
+
+/-- The field of {lit}`Syntax.Statement.delete` that holds its {lit}`RETURNING` columns. -/
+def deleteReturningField : Nat := 2
+
 /-- The defined name of the column that a bare result expression names, as SQLite names
 a result column without an alias: the column's name as declared, for an unqualified name
 that reads one column ({name}`Scope.resolveName`) or a qualified name; none for any other
@@ -20,9 +30,9 @@ def definedName (scope : Scope) : Syntax.Expr → Option String
     | .found _ [position] => scope.columns[position]?.map CatalogColumn.name
     | .found .. | .missing | .ambiguous => none
   | .qualified source column => (scope.qualified source column).bind (scope.columns[·]?.map CatalogColumn.name)
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .positive _ | .equals ..
+  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
-  | .cast .. | .callPair .. | .more .. => none
+  | .cast .. => none
 
 /-- One {lit}`RETURNING` column at position {lit}`item`: the expressions and names it
 gives. The paths of its issues start at the column's position. A {lit}`source.*`

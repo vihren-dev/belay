@@ -9,10 +9,9 @@ namespace NextInterpretation
 def next : SqliteVerifier.Interpretation Requirements.LogicalState :=
   SqliteVerifier.projectedInterpretation Generated.profile Generated.nextCatalog "invoices" ["amount"]
 
-/-- Every declared failure representation uses the catalog of the committed prefix,
-without the unreached table, and the same invoice reader. -/
+/-- Every declared failure representation reads the committed prefix, whose catalog has
+no unreached table, with the same invoice reader. -/
 def failures : SqliteVerifier.FailureRepresentation Requirements.LogicalState where
-  catalog := fun _ _ => SqliteVerifier.Demonstration.nextCatalog
   interpretation := fun _ _ => SqliteVerifier.Demonstration.next Generated.profile
 
 end NextInterpretation

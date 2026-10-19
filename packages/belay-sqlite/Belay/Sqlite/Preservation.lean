@@ -1,4 +1,5 @@
 import Belay.Sqlite.SqlProofs
+import Belay.Sqlite.DatabaseFacts
 
 set_option doc.verso true
 
@@ -7,7 +8,7 @@ application values. They do not assume a fixed fixture or prove native refinemen
 
 namespace Belay.Sqlite
 
-/-- There exists a list of trailing columns whose NULL extension of the before
+/-- There exists a list of trailing column/value pairs whose affinity-applied extension of the before
 table equals the after table. This includes equality through an empty extension.
 Use it to preserve old cells and physical row identities. -/
 def TableExtends (before after : Table) : Prop :=
@@ -17,20 +18,20 @@ def TableExtends (before after : Table) : Prop :=
 table present after execution that satisfies {name}`TableExtends`. An empty before
 database imposes no requirement. New tables are allowed. -/
 def DatabaseExtends (before after : Database) : Prop :=
-  ∀ position table, before position = some table →
-    ∃ result, after position = some result ∧ TableExtends table result
+  ∀ position table, before.table position = some table →
+    ∃ result, after.table position = some result ∧ TableExtends table result
 
 /-- For every table, appending no columns gives the same table, including its
 rows and keys. The proof unfolds the table and row operations. -/
 theorem Table.appendColumns_nil (table : Table) : table.appendColumns [] = table := by
   cases table
-  simp [Table.appendColumns, Row.appendNulls]
+  simp [Table.appendColumns, Row.appendValues]
 
-/-- For every table and two column lists, consecutive NULL extensions equal one
+/-- For every table and two column/value lists, consecutive extensions equal one
 extension by their concatenation. The proof distributes row mapping over append. -/
-theorem Table.appendColumns_append (table : Table) (first second : List CatalogColumn) :
+theorem Table.appendColumns_append (table : Table) (first second : List (CatalogColumn × Value)) :
     (table.appendColumns first).appendColumns second = table.appendColumns (first ++ second) := by
-  simp [Table.appendColumns, Row.appendNulls, List.map_map,
+  simp [Table.appendColumns, Row.appendValues, List.map_map,
     List.append_assoc, Function.comp_def]
 
 /-- Every table extends itself, witnessed by an empty list of appended columns. -/
@@ -61,31 +62,28 @@ theorem DatabaseExtends.trans (first : DatabaseExtends before middle)
   obtain ⟨result, present'', growth'⟩ := second position intermediate present'
   exact ⟨result, present'', growth.trans growth'⟩
 
-/-- For every database and position without a table, setting a table at that
-position extends the database. Existing tables at other positions are unchanged;
-no condition is imposed on the new table. The proof separates equal and distinct
-positions. -/
-theorem DatabaseExtends.create (database : Database) (position : Nat) (table : Table)
-    (absent : database position = none) : DatabaseExtends database (database.set position table) := by
-  intro other old present
-  by_cases same : other = position
-  · subst other
-    simp [absent] at present
-  · exact ⟨old, by simp [Database.set, same, present], TableExtends.refl old⟩
+/-- For every database, name and catalog table, CREATE TABLE ({name}`Catalog.createTable`
+with an empty row list appended) extends the database: every table present before is
+present and unchanged. No condition is imposed on the new table. -/
+theorem DatabaseExtends.create (database : Database) (name : String) (table : CatalogTable) :
+    DatabaseExtends database
+      { catalog := database.catalog.createTable name table, rows := database.rows ++ [[]] } :=
+  fun _ old present => ⟨old, Database.table_createTable name table present, TableExtends.refl old⟩
 
-/-- For every present table and any column list, setting its NULL extension at
-its existing position extends the database. Other tables are unchanged. The proof
-uses the supplied presence equality for the selected position. -/
-theorem DatabaseExtends.add (database : Database) (position : Nat) (table : Table)
-    (columns : List CatalogColumn) (present : database position = some table) :
-    DatabaseExtends database (database.set position (table.appendColumns columns)) := by
+/-- For every present table, column and value, {name}`Database.addColumn` at its position
+extends the database. Other tables are unchanged. The proof separates the selected
+position from the others. -/
+theorem DatabaseExtends.add (database : Database) (position : Nat) (table : Table) (column : CatalogColumn)
+    (value : Value) (present : database.table position = some table) :
+    DatabaseExtends database (database.addColumn position column value) := by
   intro other old oldPresent
   by_cases same : other = position
   · subst other
     have equal : old = table := Option.some.inj (oldPresent.symm.trans present)
     subst old
-    exact ⟨table.appendColumns columns, by simp [Database.set], ⟨columns, rfl⟩⟩
-  · exact ⟨old, by simp [Database.set, same, oldPresent], TableExtends.refl old⟩
+    exact ⟨table.appendColumns [(column, value)], Database.table_addColumn column value present, ⟨_, rfl⟩⟩
+  · exact ⟨old, (Database.table_addColumn_other database column value same).trans oldPresent,
+      TableExtends.refl old⟩
 
 /-- For every statement, database and position, the primitive {name}`step`
 result extends the input database. CREATE/ADD extend existing tables or retain
@@ -95,16 +93,28 @@ primitive branches and table-update witnesses. -/
 theorem step_extends (statement : Resolved.Statement) (database : Database) (position : Nat) :
     DatabaseExtends database (step statement database position).database := by
   cases statement with
-  | createTable at_ name table =>
+  | createTable target name table =>
     simp only [step]
-    cases h : database at_ with
-    | none => exact DatabaseExtends.create database at_ { shape := table, rows := [] } h
-    | some table => exact DatabaseExtends.refl database
-  | addColumn at_ column =>
+    split
+    · exact DatabaseExtends.create database name table
+    · exact DatabaseExtends.refl database
+  | addColumn target column =>
     simp only [step]
-    cases h : database at_ with
+    cases h : database.table target with
     | none => exact DatabaseExtends.refl database
-    | some table => exact DatabaseExtends.add database at_ table [column] h
+    | some table =>
+      simp only []
+      split
+      · split
+        · exact DatabaseExtends.add database target table column .null h
+        · exact DatabaseExtends.refl database
+      · cases readDefaultValue column with
+        | error _ => exact DatabaseExtends.refl database
+        | ok value =>
+          simp only []
+          split
+          · exact DatabaseExtends.refl database
+          · exact DatabaseExtends.add database target table column value h
   | createIndex _ _ _ => exact DatabaseExtends.refl database
   | query query =>
     have same : (step (.query query) database position).database = database := by
@@ -118,11 +128,12 @@ theorem step_extends (statement : Resolved.Statement) (database : Database) (pos
   | begin => exact DatabaseExtends.refl database
   | commit => exact DatabaseExtends.refl database
   | rollback => exact DatabaseExtends.refl database
-  | insert _ _ _ _ => exact DatabaseExtends.refl database
+  | insert _ _ _ => exact DatabaseExtends.refl database
   | upsert _ _ _ _ _ => exact DatabaseExtends.refl database
-  | update _ _ _ _ _ => exact DatabaseExtends.refl database
+  | update _ _ _ _ => exact DatabaseExtends.refl database
   | delete _ _ _ => exact DatabaseExtends.refl database
   | prepareError _ => exact DatabaseExtends.refl database
+  | clocked _ _ => exact DatabaseExtends.refl database
 
 /-- For every script containing only CREATE/ADD, idle starting database and
 position, the computed SQL result extends the starting database. Invalid schema
@@ -156,16 +167,16 @@ theorem runSql_extends (guard : SchemaOnly script) (database : Database) :
   runSqlFrom_extends guard
 
 /-- For every table extension, the ordered list of after rowids equals the
-before list. The proof unfolds NULL extension; duplicate rowids are not excluded
+before list. The proof unfolds value extension; duplicate rowids are not excluded
 by this statement. -/
 theorem TableExtends.rowids (extension : TableExtends before after) :
     after.rows.map Row.rowid = before.rows.map Row.rowid := by
   obtain ⟨columns, rfl⟩ := extension
-  simp [Table.appendColumns, Row.appendNulls, List.map_map, Function.comp_def]
+  simp [Table.appendColumns, Row.appendValues, List.map_map, Function.comp_def]
 
 /-- For every table extension whose before rows each have the before column
 width, taking that many values from every after row gives the exact ordered
-before value lists. With no rows the claim is vacuous. The proof unfolds NULL
+before value lists. With no rows the claim is vacuous. The proof unfolds value
 extension and uses the width assumption for each row. -/
 theorem TableExtends.oldValues (extension : TableExtends before after)
     (width : ∀ row ∈ before.rows, row.values.length = before.shape.columns.length) :
@@ -175,6 +186,6 @@ theorem TableExtends.oldValues (extension : TableExtends before after)
   simp only [Table.appendColumns, List.map_map]
   apply List.map_congr_left
   intro row member
-  simp [Row.appendNulls, ← width row member]
+  simp [Row.appendValues, ← width row member]
 
 end Belay.Sqlite

@@ -1,5 +1,6 @@
 import Belay.Sqlite.Resolution.Context
 import Belay.Sqlite.Resolution.KeyMerge
+import Belay.Sqlite.Resolution.ReadDefaults
 
 set_option doc.verso true
 
@@ -35,9 +36,12 @@ def applyConstraint (tableName : String) (definition : Syntax.ColumnDefinition)
     let position := table.columns.length - 1
     let alias := if aliasesRowid definition.declaredType && !descending then some position else none
     setPrimaryKey table [position] alias descending algorithm
-  | .default value =>
+  | .default value sourceText =>
     if !constantDefault value then .error (.defaultNotConstant definition.name) else
-    .ok { table with columns := updateLast table.columns fun column => { column with defaultValue := some value } }
+    -- A default that the model does not describe leaves no default here; resolution then
+    -- refuses the statement with {lit}`unmodeledDefault` ({lit}`modeledDefault`).
+    .ok { table with columns := updateLast table.columns fun column =>
+      { column with defaultValue := resolveColumnDefault column.affinity ⟨value, sourceText⟩ } }
   | .notNull algorithm => .ok { table with columns := updateLast table.columns fun column =>
       { column with notNull := true, notNullAlgorithm := algorithm.getD .abort } }
   | .unique algorithm => addUniqueKey table [table.columns.length - 1] algorithm
@@ -106,7 +110,7 @@ def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : N
         restrict index [1] .createTableConstraints
       else if columns.any (!·.constraints.all Syntax.ColumnConstraint.modeledDefault) then
         restrict index [1] .unmodeledDefault
-      else .ok (.createTable catalog.length name table, catalog ++ [{ name := name, entry := .table table }])
+      else .ok (.createTable catalog.length name table, catalog.createTable name table)
 
 /-- Resolve CREATE INDEX of a catalog description. The execution semantics does not
 model CREATE INDEX, so a CREATE INDEX that runs is a model restriction. -/
@@ -123,8 +127,24 @@ def resolveCreateIndex (context : ResolveContext) (catalog : Catalog) (index : N
     | some (_, { entry := .index _, .. }) => prepareError catalog (.indexExists name)
     | none => match keyPositions table.columns columns with
       | .error error => prepareError catalog error
-      | .ok positions => .ok (.createIndex catalog.length name { table := position, columns := positions, unique },
-          catalog ++ [{ name := name, entry := .index { table := position, columns := positions, unique } }])
+      | .ok positions =>
+        let created := { table := position, columns := positions, unique }
+        .ok (.createIndex catalog.length name created, catalog.createIndex name created)
+
+/-- Construct added-column metadata after PRIMARY KEY and UNIQUE have been
+rejected. NOT NULL sets nullability and its {lit}`ON CONFLICT` algorithm (ABORT without
+one), as in CREATE TABLE, and each written DEFAULT replaces the preceding default, as in
+SQLite, resolved once ({name}`resolveColumnDefault`). A DEFAULT that the model does not
+describe gives {lean}`(none : Option CatalogColumn)`. Key constraints leave this metadata
+unchanged; callers must reject them before using this helper. -/
+def addedColumn (definition : Syntax.ColumnDefinition) : Option CatalogColumn :=
+  definition.constraints.foldlM (fun column constraint => match constraint with
+    | .notNull algorithm => some { column with notNull := true, notNullAlgorithm := algorithm.getD .abort }
+    | .default expression sourceText =>
+      (resolveColumnDefault column.affinity ⟨expression, sourceText⟩).map fun resolved =>
+        { column with defaultValue := some resolved }
+    | .primaryKey .. | .unique _ => some column)
+    { name := definition.name, declaredType := reportedType definition.declaredType }
 
 /-- Resolve ALTER TABLE ADD COLUMN. Path 1 is the column definition. -/
 def resolveAddColumn (context : ResolveContext) (catalog : Catalog) (index : Nat)
@@ -144,12 +164,9 @@ def resolveAddColumn (context : ResolveContext) (catalog : Catalog) (index : Nat
     else if definition.constraints.any Syntax.ColumnConstraint.isPrimaryKey then prepareError catalog .cannotAddPrimaryKey
     else if definition.constraints.any Syntax.ColumnConstraint.isUnique then prepareError catalog .cannotAddUnique
     else if rowidName definition.name then restrict index [1] .rowidColumnName
-    else if !definition.constraints.isEmpty then
-      restrict index [1] .addColumnConstraint
     else
-      let column : CatalogColumn := { name := definition.name, declaredType := reportedType definition.declaredType }
-      let object := { name := (catalog[position]?.map (·.name)).getD tableName,
-                      entry := .table { table with columns := table.columns ++ [column] } }
-      .ok (.addColumn position column, catalog.set position object)
+      match addedColumn definition with
+      | none => restrict index [1] .addColumnConstraint
+      | some column => .ok (.addColumn position column, catalog.addColumn position column)
 
 end Belay.Sqlite

@@ -71,11 +71,16 @@ def term(tree: Tree, node: Node) -> Located:
     raise tree.unsupported(node, f"Unsupported literal: {item.symbol}; write NULL, a number, a string or a blob")
 
 
+QUOTE_KINDS = {'"': "double", "[": "bracket", "`": "backtick"}
+"""The opening character of a quoted identifier and its `Syntax.QuoteKind` constructor; any
+other identifier is unquoted (`none`)."""
+
+
 def identifier(tree: Tree, node: Node) -> Located:
-    """Map an identifier token, and record whether it was written in double quotes."""
+    """Map an identifier token, and record how it was quoted (`Syntax.QuoteKind`)."""
     text = tree.text(node)
     return constructor("identifier", [("name", leaf(dequote(text), node.start, node.end)),
-                                      ("doubleQuoted", leaf(text.startswith('"'), node.start, node.end))],
+                                      ("quote", leaf(QUOTE_KINDS.get(text[:1], "none"), node.start, node.end))],
                        node.start, node.end)
 
 
@@ -104,7 +109,4 @@ def expression(tree: Tree, node: Node) -> Located:
     if symbols in (["MINUS", "expr"], ["PLUS", "expr"]):
         kind = "negate" if symbols[0] == "MINUS" else "positive"
         return constructor(kind, [("operand", expression(tree, children[1]))], node.start, node.end)
-    if symbols == ["expr", "EQ", "expr"]:
-        return constructor("equals", [("left", expression(tree, children[0])),
-                                      ("right", expression(tree, children[2]))], node.start, node.end)
-    raise tree.unsupported(node, "Unsupported expression; write a literal, a column name, a sign or an equality")
+    raise tree.unsupported(node, "Unsupported expression; write a literal, a column name or a sign")

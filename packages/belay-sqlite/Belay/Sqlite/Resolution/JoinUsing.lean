@@ -50,7 +50,7 @@ def mergedCondition (coalesced : Bool) (left : Scope) (right : Source) (names : 
     let leftSide ← mergedLeft coalesced left name
     let position ← columnPosition right.columns name
     let joined ← right.columns[position]?
-    some (Syntax.Expr.equals leftSide (.qualified right.name joined.name))
+    some (Syntax.Expr.compare .eq leftSide (.qualified right.name joined.name))
   match equalities with
   | [] => none
   | first :: rest => some (rest.foldl .and first)

@@ -32,113 +32,113 @@ def queryOf (statement : Syntax.Statement) : Option Resolved.Query :=
   match resolvedOne statement with
   | some (.query query) => some query
   | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some .begin | some .commit
-  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.prepareError _) | none => none
+  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.prepareError _) | some (.clocked ..) | none => none
 
 /-- The prepare error of a resolution, if it is one. -/
 def errorOf (statement : Syntax.Statement) : Option PrepareError :=
   match resolvedOne statement with
   | some (.prepareError error) => some error
   | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some .begin | some .commit
-  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.query _) | none => none
+  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.query _) | some (.clocked ..) | none => none
 
 /-- Whether the statement is a model restriction. -/
 def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration catalog [statement])
 
 -- `*` and a bare column take the defined names; an expression keeps its text.
 #guard (queryOf (select [.star])).map (·.names) == some ["Abc", "b"]
-#guard (queryOf (select [written (.identifier "ABC" false) "ABC",
-  written (.equals (.identifier "abc" false) (.numeric "1")) "abc = 1"])).map (·.names) == some ["Abc", "abc = 1"]
+#guard (queryOf (select [written (.identifier "ABC" .none) "ABC",
+  written (.compare .eq (.identifier "abc" .none) (.numeric "1")) "abc = 1"])).map (·.names) == some ["Abc", "abc = 1"]
 #guard (queryOf (select [.expression (.callStar "count") (some "n") "count(*)", written (.callStar "count") "count(*)"])).map
   (·.names) == some ["n", "count(*)"]
 -- Names that SQLite refuses while it prepares the query.
-#guard errorOf (select [written (.identifier "missing" false) "missing"]) == some (.noSuchColumn "missing")
+#guard errorOf (select [written (.identifier "missing" .none) "missing"]) == some (.noSuchColumn "missing")
 #guard errorOf (.select [.star] (some { table := "absent", alias := none }) [] none [] [] none none) == some (.noSuchTable "absent")
-#guard errorOf (select [.star] (filter := some (.equals (.callStar "count") (.numeric "1")))) ==
+#guard errorOf (select [.star] (filter := some (.compare .eq (.callStar "count") (.numeric "1")))) ==
   some (.misuseOfAggregate "count")
-#guard errorOf (select [written (.call "MAX" (.call "min" (.identifier "b" false))) "MAX(min(b))"]) ==
+#guard errorOf (select [written (.call "MAX" [.call "min" [.identifier "b" .none]]) "MAX(min(b))"]) ==
   some (.misuseOfAggregate "min")
 #guard errorOf (select [.star] (orderBy := [{ expression := .numeric "3", descending := false }])) ==
   some (.orderByOutOfRange 1 2)
 #guard errorOf (select [written (.callStar "COUNT") "COUNT(*)"] (groupBy := [.numeric "1"])) == some .aggregateInGroupBy
-#guard restrictedOne (select [written (.call "group_concat" (.identifier "b" false)) "group_concat(b)"])
+#guard restrictedOne (select [written (.call "group_concat" [.identifier "b" .none]) "group_concat(b)"])
 -- SQLite's own tables are not in the catalog; querying one is a model restriction.
 #guard restrictedOne (.select [.star] (some { table := "sqlite_master", alias := none }) [] none [] [] none none)
 -- A declared type that is a standard type name is kept in capitals, as SQLite reports it.
 #guard reportedType (some "int") == some "INT" && reportedType (some "VarChar(10)") == some "VarChar(10)"
 -- A double-quoted name that names no column is a string literal.
-#guard (queryOf (select [written (.identifier "x" true) "\"x\""])).isSome
+#guard (queryOf (select [written (.identifier "x" .double) "\"x\""])).isSome
 -- Comparisons whose affinity rule would convert a value are model restrictions.
-#guard restrictedOne (select [.star] (filter := some (.equals (.identifier "b" false) (.numeric "5"))))
-#guard restrictedOne (select [.star] (filter := some (.equals (.identifier "Abc" false) (.string [53]))))
-#guard restrictedOne (select [.star] (filter := some (.equals (.identifier "Abc" false) (.identifier "b" false))))
-#guard (queryOf (select [.star] (filter := some (.equals (.identifier "Abc" false) (.numeric "5"))))).isSome
+#guard restrictedOne (select [.star] (filter := some (.compare .eq (.identifier "b" .none) (.numeric "5"))))
+#guard restrictedOne (select [.star] (filter := some (.compare .eq (.identifier "Abc" .none) (.string [53]))))
+#guard restrictedOne (select [.star] (filter := some (.compare .eq (.identifier "Abc" .none) (.identifier "b" .none))))
+#guard (queryOf (select [.star] (filter := some (.compare .eq (.identifier "Abc" .none) (.numeric "5"))))).isSome
 -- The restrictions of slice 1.
-#guard restrictedOne (select [written (.identifier "b" false) "b", written (.callStar "count") "count(*)"])
-#guard restrictedOne (select [.star] (filter := some (.identifier "Abc" false)))
+#guard restrictedOne (select [written (.identifier "b" .none) "b", written (.callStar "count") "count(*)"])
+#guard restrictedOne (select [.star] (filter := some (.identifier "Abc" .none)))
 #guard restrictedOne (select [.star] (offset := some (.negate (.numeric "1"))))
 -- SQLite resolves a result column alias in WHERE and in ORDER BY expressions; the
 -- model restricts it, even when the alias is written in double quotes.
-#guard restrictedOne (select [.expression (.identifier "Abc" false) (some "d") "Abc"]
-  (filter := some (.equals (.identifier "d" true) (.numeric "0"))))
-#guard restrictedOne (select [.expression (.identifier "Abc" false) (some "d") "Abc"]
-  (orderBy := [{ expression := .isNull (.identifier "D" false) false, descending := false }]))
+#guard restrictedOne (select [.expression (.identifier "Abc" .none) (some "d") "Abc"]
+  (filter := some (.compare .eq (.identifier "d" .double) (.numeric "0"))))
+#guard restrictedOne (select [.expression (.identifier "Abc" .none) (some "d") "Abc"]
+  (orderBy := [{ expression := .isNull (.identifier "D" .none) false, descending := false }]))
 -- Numbers (slice 2): a REAL literal has SQLite's value; unary minus of a column is
 -- `0 - column`; a CAST has the affinity of its type name; COALESCE needs two arguments.
 #guard (queryOf (select [written (.numeric "1.5") "1.5"])).map (·.columns) == some [.scalar (.literal (.real 0x3FF8000000000000))]
-#guard (queryOf (select [written (.negate (.identifier "Abc" false)) "-Abc"])).map (·.columns) ==
+#guard (queryOf (select [written (.negate (.identifier "Abc" .none)) "-Abc"])).map (·.columns) ==
   some [.scalar (.arithmetic .subtract (.literal (.integer 0)) (.column 0))]
-#guard (queryOf (select [written (.cast (.identifier "b" false) "int") "CAST(b AS int)"])).map (·.columns) ==
+#guard (queryOf (select [written (.cast (.identifier "b" .none) "int") "CAST(b AS int)"])).map (·.columns) ==
   some [.scalar (.cast .integer (.column 1))]
-#guard errorOf (select [written (.call "Coalesce" (.identifier "b" false)) "Coalesce(b)"]) == some (.wrongArgumentCount "Coalesce")
-#guard errorOf (select [written (.callPair "count" (.identifier "b" false) (.identifier "b" false)) "count(b, b)"]) ==
+#guard errorOf (select [written (.call "Coalesce" [.identifier "b" .none]) "Coalesce(b)"]) == some (.wrongArgumentCount "Coalesce")
+#guard errorOf (select [written (.call "count" [.identifier "b" .none, .identifier "b" .none]) "count(b, b)"]) ==
   some (.wrongArgumentCount "count")
 #guard errorOf (select [written (.negate (.numeric "0x8000000000000000")) "-0x8000000000000000"]) ==
   some (.hexLiteralTooBig "-0x8000000000000000")
 -- A COALESCE with a column may be TEXT, which a numeric column would convert: a restriction.
-#guard restrictedOne (select [.star] (filter := some (.equals (.identifier "Abc" false)
-  (.callPair "coalesce" (.identifier "b" false) (.numeric "0")))))
+#guard restrictedOne (select [.star] (filter := some (.compare .eq (.identifier "Abc" .none)
+  (.call "coalesce" [.identifier "b" .none, .numeric "0"]))))
 -- Arithmetic gives a number, so it can be a condition.
-#guard (queryOf (select [.star] (filter := some (.arithmetic .add (.identifier "Abc" false) (.numeric "1"))))).isSome
+#guard (queryOf (select [.star] (filter := some (.arithmetic .add (.identifier "Abc" .none) (.numeric "1"))))).isSome
 -- Constant expressions in writes (slice 3a) are computed and stored at resolution; a SET
 -- value that names a column stays an expression over the old row (slice 3b).
 #guard resolvedOne (.insert "t" none [[.arithmetic .add (.numeric "1") (.numeric "2"), .string [120]]] []) ==
-  some (.insert 0 [[.integer 3, .text [120]]] [] [])
+  some (.insert 0 [[.integer 3, .text [120]]] [])
 #guard resolvedOne (.update "t" [("Abc", .cast (.string [55]) "INTEGER")] none) ==
-  some (.update 0 [(0, .literal (.integer 7))] none [] [])
+  some (.update 0 [(0, .literal (.integer 7))] none [])
 #guard errorOf (.insert "t" none [[.callStar "count", .null]] []) == some (.misuseOfAggregate "count")
-#guard resolvedOne (.update "t" [("b", .arithmetic .add (.identifier "Abc" false) (.numeric "1"))] none) ==
-  some (.update 0 [(1, .arithmetic .add (.column 0) (.literal (.integer 1)))] none [] [])
+#guard resolvedOne (.update "t" [("b", .arithmetic .add (.identifier "Abc" .none) (.numeric "1"))] none) ==
+  some (.update 0 [(1, .arithmetic .add (.column 0) (.literal (.integer 1)))] none [])
 -- The filter is a condition, resolved as in SELECT: `WHERE Abc = 1 + 2`.
-#guard resolvedOne (.update "t" [("b", .string [120])] (some (.equals (.identifier "Abc" false)
+#guard resolvedOne (.update "t" [("b", .string [120])] (some (.compare .eq (.identifier "Abc" .none)
   (.arithmetic .add (.numeric "1") (.numeric "2"))))) == some (.update 0 [(1, .literal (.text [120]))]
-  (some (.compare .eq (.column 0) (.arithmetic .add (.literal (.integer 1)) (.literal (.integer 2))))) [] [])
+  (some (.compare .eq (.column 0) (.arithmetic .add (.literal (.integer 1)) (.literal (.integer 2))))) [])
 -- RETURNING (slice 3a): `*` and named expressions over the written row; an aggregate is
 -- a misuse, a rowid a restriction, and an error in the values comes first.
-#guard (resolvedOne (.returning (.insert "t" none [[.numeric "1", .string [120]]] []) [.star, .expression (.identifier "B" false) none "B"]))
-  == some (.insert 0 [[.integer 1, .text [120]]] [] [(.column 0, "Abc"), (.column 1, "b"), (.column 1, "b")])
-#guard errorOf (.returning (.insert "t" none [[.numeric "1", .string [120]]] []) [written (.callStar "count") "count(*)"]) ==
+#guard (resolvedOne ((.insert "t" none [[.numeric "1", .string [120]]] [] none [.star, .expression (.identifier "B" .none) none "B"])))
+  == some (.insert 0 [[.integer 1, .text [120]]] [(.column 0, "Abc"), (.column 1, "b"), (.column 1, "b")])
+#guard errorOf ((.insert "t" none [[.numeric "1", .string [120]]] [] none [written (.callStar "count") "count(*)"])) ==
   some (.misuseOfAggregate "count")
-#guard restrictedOne (.returning (.update "t" [("b", .string [120])] none) [written (.identifier "rowid" false) "rowid"])
-#guard errorOf (.returning (.insert "t" none [[.identifier "missing" false, .null]] []) [written (.identifier "other" false) "other"]) ==
+#guard restrictedOne ((.update "t" [("b", .string [120])] none [written (.identifier "rowid" .none) "rowid"]))
+#guard errorOf ((.insert "t" none [[.identifier "missing" .none, .null]] [] none [written (.identifier "other" .none) "other"])) ==
   some (.noSuchColumn "missing")
 -- GROUP BY resolves a name to a source column before a result alias, so an alias
 -- of an aggregate does not hide the column `b`.
-#guard (queryOf (select [.expression (.callStar "count") (some "b") "count(*)"] (groupBy := [.identifier "b" false]))).map
+#guard (queryOf (select [.expression (.callStar "count") (some "b") "count(*)"] (groupBy := [.identifier "b" .none]))).map
   (·.groupBy) == some [.column 1]
 -- A negative LIMIT means no limit; ORDER BY an alias names the result column.
 #guard (queryOf (select [.star] (limit := some (.negate (.numeric "1"))))).map (·.limit) == some none
-#guard (queryOf (select [.expression (.identifier "b" false) (some "k") "b"]
-  (orderBy := [{ expression := .identifier "K" false, descending := true }]))).map (·.orderBy) ==
+#guard (queryOf (select [.expression (.identifier "b" .none) (some "k") "b"]
+  (orderBy := [{ expression := .identifier "K" .none, descending := true }]))).map (·.orderBy) ==
   some [(.output 0, true)]
 
 -- A rowid name that is not a column is a restriction in every expression, since SQLite
 -- reads the rowid: in a result column, in WHERE, in a SET value and in a DELETE filter.
-#guard restrictedOne (select [written (.identifier "rowid" false) "rowid"])
-#guard restrictedOne (select [.star] (filter := some (.equals (.identifier "oid" false) (.numeric "1"))))
-#guard restrictedOne (.update "t" [("b", .identifier "_rowid_" false)] none)
-#guard restrictedOne (.delete "t" (some (.equals (.identifier "rowid" true) (.numeric "1"))))
+#guard restrictedOne (select [written (.identifier "rowid" .none) "rowid"])
+#guard restrictedOne (select [.star] (filter := some (.compare .eq (.identifier "oid" .none) (.numeric "1"))))
+#guard restrictedOne (.update "t" [("b", .identifier "_rowid_" .none)] none)
+#guard restrictedOne (.delete "t" (some (.compare .eq (.identifier "rowid" .double) (.numeric "1"))))
 -- In VALUES no table is in scope, and SQLite reports `no such column: rowid`.
-#guard errorOf (.insert "t" none [[.identifier "rowid" false, .null]] []) == some (.noSuchColumn "rowid")
+#guard errorOf (.insert "t" none [[.identifier "rowid" .none, .null]] []) == some (.noSuchColumn "rowid")
 
 
 /-- A {lit}`SELECT` without {lit}`FROM` with the given parts (ADR 0012, amendment 5, slice 6a). -/
@@ -150,7 +150,7 @@ def bareRows (statement : Syntax.Statement) : Option (List (List Value)) :=
   (queryOf statement).map fun query => query.run [[]]
 
 /-- The condition {lit}`1 = 0`, which is false. -/
-def never : Expr := .equals (.numeric "1") (.numeric "0")
+def never : Expr := .compare .eq (.numeric "1") (.numeric "0")
 
 -- A SELECT without FROM has no table and one row, or none when WHERE is not true.
 #guard (queryOf (bare [written (.numeric "1") "1"])).map (·.table) == some none
@@ -162,7 +162,23 @@ def never : Expr := .equals (.numeric "1") (.numeric "0")
 #guard bareRows (bare [written (.numeric "1") "1"] (groupBy := [.numeric "1"])) == some [[.integer 1]]
 -- `*` is SQLite's `no tables specified`; a column, also qualified, is `no such column`.
 #guard errorOf (bare [.star]) == some .noTablesSpecified
-#guard errorOf (bare [written (.identifier "a" false) "a"]) == some (.noSuchColumn "a")
+#guard errorOf (bare [written (.identifier "a" .none) "a"]) == some (.noSuchColumn "a")
 #guard errorOf (bare [written (.qualified "t" "a") "t.a"]) == some (.noSuchColumn "t.a")
+-- An unquoted TRUE or FALSE that names no column is 1 or 0; in brackets or backticks it is
+-- only a name, so `no such column` (checked natively).
+#guard bareRows (bare [written (.identifier "TRUE" .none) "TRUE", written (.identifier "false" .none) "false"]) ==
+  some [[.integer 1, .integer 0]]
+#guard errorOf (bare [written (.identifier "TRUE" .bracket) "[TRUE]"]) == some (.noSuchColumn "TRUE")
+#guard errorOf (bare [written (.identifier "false" .backtick) "`false`"]) == some (.noSuchColumn "false")
+-- `x IS [NOT] TRUE|FALSE` is SQLite's truth test (checked natively): exact for a condition,
+-- whose value is 0, 1 or NULL; `2 IS TRUE`, which is 1 in SQLite, stays a restriction.
+#guard bareRows (bare [written (.compare .is (.compare .lt (.numeric "1") (.numeric "2")) (.identifier "TRUE" .none))
+    "(1 < 2) IS TRUE", written (.compare .isNot (.compare .gt (.numeric "1") (.numeric "2"))
+    (.identifier "TRUE" .none)) "(1 > 2) IS NOT TRUE"]) == some [[.integer 1, .integer 1]]
+#guard restrictedOne (bare [written (.compare .is (.numeric "2") (.identifier "TRUE" .none)) "2 IS TRUE"])
+#guard restrictedOne (bare [written (.compare .is (.arithmetic .add (.numeric "1") (.numeric "1"))
+  (.identifier "TRUE" .none)) "(1 + 1) IS TRUE"])
+#guard restrictedOne (bare [written (.compare .is (.cast (.numeric "2") "INTEGER") (.identifier "TRUE" .none))
+  "CAST(2 AS INTEGER) IS TRUE"])
 
 end Belay.Sqlite.Resolution.QueryResolutionExamples

@@ -10,7 +10,7 @@ namespace Belay.Sqlite
 /-- Whether a statement is BEGIN, COMMIT or ROLLBACK. -/
 def Syntax.Statement.transactionControl : Syntax.Statement → Bool
   | .begin | .commit | .rollback => true
-  | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .update .. | .delete .. | .select .. | .returning .. =>
+  | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .update .. | .delete .. | .select .. =>
     false
 
 /-- For every statement that is not BEGIN, COMMIT or ROLLBACK and that resolves, the

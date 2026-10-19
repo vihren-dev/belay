@@ -76,7 +76,7 @@ names, no rows and no change: a constraint failure or a rowid alias mismatch. -/
 def ExecutionError.failsWrite : ExecutionError → Bool
   | .constraintViolation | .constraintFail | .constraintRollback | .datatypeMismatch => true
   | .unmodeled | .prepare _ | .transactionAlreadyActive | .noActiveTransaction | .integerOverflow
-  | .functionError => false
+  | .functionError | .nullColumnDefault | .nonConstantColumnDefault => false
 
 /-- The change count of a failed INSERT with clauses or algorithms: the rows written
 before the failing row for a FAIL failure, which keeps them, and zero for every other
@@ -84,6 +84,18 @@ failure or a success. -/
 def keptCount : Except (ExecutionError × Table × List Row) (Table × List Row) → Nat
   | .error (reason, _, written) => if reason = .constraintFail then written.length else 0
   | .ok _ => 0
+
+/-- Output names of ADD COLUMN's empty-table check. SQLite's
+{lit}`sqlite3AlterFinishAddColumn` calls {lit}`sqlite3ErrorIfNotEmpty` for a column with a
+time default ({name}`CatalogColumn.clockDefault`), and for a NOT NULL column without a
+non-NULL default. That helper compiles a SELECT of a RAISE expression (pinned SQLite
+{lit}`alter.c`), whose name is exposed even when the table is empty. Other modeled
+additions have no output columns. -/
+def addColumnOutputNames (column : CatalogColumn) : List String :=
+  if column.clockDefault then ["raise(ABORT,'Cannot add a column with non-constant default')"]
+  else if column.notNull && (readDefaultValue column).toOption == some .null then
+    ["raise(ABORT,'Cannot add a NOT NULL column with default value NULL')"]
+  else []
 
 /-- Observe the literal-DML domain; unsupported output capability is explicit.
 Transitions and failure status come from production advance, never a second
@@ -113,33 +125,35 @@ def statementOutput (statement : Resolved.Statement) (before : SqlState)
   let overflow := haltError transition == some .integerOverflow
   let functionFailure := haltError transition == some .functionError
   match statement with
-  | .insert at_ rows _ returning =>
+  | .insert target rows returning =>
     let names := returning.map (·.2)
     if successful then do
-      let table ← before.database at_
+      let table ← before.database.table target
       let written := ((LiteralData.inserted table rows).rows.drop table.rows.length).map (·.values)
       return ⟨names, returnedRows returning written, some rows.length⟩
     else if constraintFailure then some ⟨names, [], some 0⟩ else none
-  | .upsert at_ rows clauses keys returning policy =>
+  | .upsert target rows clauses returning algorithm =>
     let names := returning.map (·.2)
-    let run := (before.database at_).map fun table => LiteralData.upsertRun keys policy clauses table rows
+    let run := (before.database.table target).map fun table =>
+      LiteralData.upsertRun (before.database.keys target table)
+        (before.database.catalog.writePolicy target table.shape algorithm) clauses table rows
     if successful then do
       let (_, written) ← (← run).toOption
       return ⟨names, returnedRows returning (written.map (·.values)), some written.length⟩
     else if constraintFailure then some ⟨names, [], some ((run.map keptCount).getD 0)⟩ else none
-  | .update at_ assignments filter _ returning =>
+  | .update target assignments filter returning =>
     let names := returning.map (·.2)
     if successful then do
-      let table ← before.database at_
+      let table ← before.database.table target
       let chosen := table.rows.filter (LiteralData.selected filter)
       let written := chosen.map fun row => (LiteralData.assign table.shape.columns assignments row).values
       return ⟨names, returnedRows returning written,
         some chosen.length⟩
     else if constraintFailure then some ⟨names, [], some 0⟩ else none
-  | .delete at_ filter returning =>
+  | .delete target filter returning =>
     let names := returning.map (·.2)
     if successful then do
-      let table ← before.database at_
+      let table ← before.database.table target
       let chosen := table.rows.filter (LiteralData.selected filter)
       return ⟨names, returnedRows returning (chosen.map (·.values)), some chosen.length⟩
     else none
@@ -147,7 +161,9 @@ def statementOutput (statement : Resolved.Statement) (before : SqlState)
     if successful then (query.source before.database).map fun rows => ⟨query.names, query.run rows, none⟩
     else if (overflow && query.groupBy.isEmpty) || functionFailure then some ⟨query.names, [], none⟩
     else none
-  | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ =>
+  | .addColumn _ column => some ⟨addColumnOutputNames column, [], none⟩
+  | .clocked .. => none
+  | .createTable .. | .createIndex .. | .begin | .commit | .rollback | .prepareError _ =>
     some ⟨[], [], none⟩
 
 /-- Follow reached production transitions and stop at their first failure. -/

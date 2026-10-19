@@ -26,19 +26,16 @@ structure PredictInput where
   schema : List Syntax.Statement
   script : List Syntax.Statement
   initial : List NamedRows
+  /-- The clock value of each statement, in SQLite's Julian-day milliseconds, as the judge
+  supplies it; empty when the judge supplies none. -/
+  clocks : List Int
   deriving FromJson
 
-/-- A catalog column as {lit}`PRAGMA table_xinfo` reports it. Resolution keeps only the
-{lit}`CURRENT_TIMESTAMP` default, so another default does not occur here. -/
+/-- A catalog column as {lit}`PRAGMA table_xinfo` reports it. Defaults retain
+source spelling independently of their evaluated value. -/
 def nativeColumn (column : CatalogColumn) : NativeColumn :=
   { name := column.name, declaredType := column.declaredType.getD "", notNull := column.notNull,
-    defaultValue := match column.defaultValue with
-      | some (.currentTime keyword) => some keyword
-      | none => none
-      | some .null | some (.numeric _) | some (.string _) | some (.blob _) | some (.identifier ..)
-      | some (.negate _) | some (.positive _) | some (.equals ..) | some (.compare ..) | some (.and ..)
-      | some (.or ..) | some (.not _) | some (.isNull ..) | some (.callStar _) | some (.call ..)
-      | some (.arithmetic ..) | some (.cast ..) | some (.callPair ..) | some (.more ..) | some (.qualified ..) => none }
+    defaultValue := column.defaultValue.map (·.sourceText) }
 
 /-- The table at a catalog position, under its catalog object name, as native metadata. -/
 def nativeTableOf (catalog : Catalog) (position : Nat) (name : String) (table : Table) : NativeTable where
@@ -68,16 +65,16 @@ def NamedRows.native (table : NamedRows) : NativeTable where
   indexes := []
   rows := table.rows
 
-/-- Every table of one view, under the catalog of that view. -/
-def predictedTables (catalog : Catalog) (tables : Tables) : Json :=
-  toJson ((List.range tables.length).filterMap fun position =>
-    tables[position]?.bind id |>.bind (predictedTable catalog position))
+/-- Every table of one database, under its catalog, in catalog order. -/
+def predictedTables (database : Database) : Json :=
+  toJson ((List.range database.catalog.length).filterMap fun position =>
+    (database.table position).bind (predictedTable database.catalog position))
 
-/-- One predicted step under its resolution state: both table views, the transaction
-state and SQLite's primary code. -/
-def stepJson (state : ResolveState) (observation : Observation) : Json :=
-  Json.mkObj [("visible", predictedTables state.catalog observation.visible),
-    ("persisted", predictedTables (state.saved.getD state.catalog) observation.persisted),
+/-- One predicted step: both databases, the transaction state and SQLite's primary
+code. -/
+def stepJson (observation : Observation) : Json :=
+  Json.mkObj [("visible", predictedTables observation.visible),
+    ("persisted", predictedTables observation.persisted),
     ("transactionOpen", toJson observation.transactionOpen),
     ("phase", toJson (errorPhase observation.error)),
     ("primaryCode", toJson (primaryCode observation.error))]
@@ -86,7 +83,8 @@ def stepJson (state : ResolveState) (observation : Observation) : Json :=
 that resolution refuses although SQLite prepared it gives an empty initial step, which
 the judge reports as a disagreement. Otherwise the case is in scope when the reached
 statements pass the support check and none is unmodeled, the rule that
-{name}`classifyCase` applies. -/
+{name}`classifyCase` applies; each statement runs at its supplied clock value, and a script
+that reads the clock is out of scope without clock values. -/
 def predict (p : PredictInput) : Json :=
   let profile := p.profile
   match resolveSchemaAndScript profile p.schema p.script with
@@ -97,14 +95,14 @@ def predict (p : PredictInput) : Json :=
       Json.mkObj [("visible", toJson ([] : List Json)), ("persisted", toJson ([] : List Json)),
         ("transactionOpen", toJson false), ("primaryCode", toJson (0 : Nat)),
         ("phase", toJson (none : Option ErrorPhase))]])]
-  | .ok resolution =>
-    let states := resolveStates { profile, mode := .execution } 0 { catalog := resolution.startCatalog } p.script
-    let count := stateBound states
+  | .ok unclocked =>
+    let clock : Clock := fun position => p.clocks.getD position 0
+    let resolution := { unclocked with resolved := scriptAtClock clock unclocked.resolved }
     let start : SqlState := { database := databaseOf resolution.startCatalog (p.initial.map NamedRows.native) }
-    let observed := trace count resolution.resolved start.database
-    let steps := (List.range observed.length).filterMap fun index => observed[index]?.map
-      (stepJson (states[index]?.getD (states.getLastD { catalog := resolution.startCatalog })))
-    let supported := supportedSqlFrom 0 resolution.resolved start && !observed.any invalidObservation
+    let observed := trace resolution.resolved start.database
+    let steps := observed.map stepJson
+    let supported := !(p.clocks.isEmpty && scriptReadsClock unclocked.resolved) &&
+      supportedSqlFrom 0 resolution.resolved start && !observed.any invalidObservation
     Json.mkObj [("supported", toJson supported), ("steps", toJson steps),
       ("outputs", toJson (outputTraceFrom 0 resolution.resolved start))]
 

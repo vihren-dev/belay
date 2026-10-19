@@ -22,8 +22,8 @@ continues after a prepare error as if that statement had no effect, so it contai
 the unreached table; execution stops before it. -/
 def failureNextCatalog : Catalog := nextCatalog ++ [{ name := "unreached", entry := .table { columns := [message] } }]
 
-/-- The invoice projection under {name}`failureNextCatalog`, the target's resulting
-catalog. Success never happens, so only its soundness matters. -/
+/-- The invoice projection under {name}`failureNextCatalog`, the catalog that resolution
+gives after every statement. Success never happens, so only its soundness matters. -/
 def failureNext (profile : Profile) : Interpretation LogicalRows :=
   projectedInterpretation profile failureNextCatalog "invoices" ["amount"]
 
@@ -37,17 +37,16 @@ def failureRequirements : LogicalContract LogicalRows :=
 /-- Read the resulting committed prefix, whose catalog is {name}`nextCatalog`, with the
 same actual invoice projection. -/
 def prefixRepresentation (profile : Profile) : FailureRepresentation LogicalRows where
-  catalog := fun _ _ => nextCatalog
   interpretation := fun _ _ => next profile
 
 /-- The complete {name}`VerificationConditions` for {name}`failureScript` hold for
 every admitted starting database and every profile that allows two columns. The
-target's resulting catalog is {name}`failureNextCatalog`. The first two statements
+after interpretation reads under {name}`failureNextCatalog`. The first two statements
 succeed; position two fails with SQLite's table-exists
 prepare error and preserves the invoice projection. The proof uses the successful
 prefix certificate and the guarded schema-prefix composition law. -/
 theorem failureMigrationCorrect (profile : Profile) (columns : 2 ≤ profile.limits.columns) :
-    VerificationConditions startCatalog failureNextCatalog failureScript (fun _ => True)
+    VerificationConditions startCatalog failureScript (fun _ => True)
       failureRequirements (current profile) (failureNext profile) (prefixRepresentation profile) profile := by
   have checked := migrationCorrect profile columns
   apply VerificationConditions.of_runSql (contract := failureRequirements)
@@ -58,11 +57,11 @@ theorem failureMigrationCorrect (profile : Profile) (columns : 2 ≤ profile.lim
     exact checked.afterSound
   · exact checked.starting
   · intro database _
-    exact supportedSqlFrom_noWrites (by simp [NoWrites, failureScript, script])
-      (by simp [ModeledDefinitions, failureScript, script, CatalogTable.plain, CatalogColumn.plain, note, message])
+    exact SupportedSql.of_readsClock (by decide) (supportedSqlFrom_noWrites (by simp [NoWrites, failureScript, script])
+      (by simp [ModeledDefinitions, failureScript, script, CatalogTable.plain, CatalogColumn.plain, readDefaultValue, Except.toOption, note, message]))
   · intro database admitted
     obtain ⟨logical, read, _⟩ := (checked.beforeSound database (checked.starting database admitted)).2
-    have obligations := checked.outcomes database admitted _ .evaluated
+    have obligations := checked.outcomes database admitted _ (ProfileExecutes.of_readsClock (by decide))
     simp only [runSql] at obligations
     cases executed : runSqlFrom 0 script { database := database } with
     | failure position reason result =>
@@ -74,7 +73,7 @@ theorem failureMigrationCorrect (profile : Profile) (columns : 2 ≤ profile.lim
       have failed : runSql failureScript database = .failure 2 (.prepare (.tableExists "audit")) result := by
         simp only [runSql, failureScript]
         rw [runSqlFrom_schemaOnly_append (initial := script) (by simp [SchemaOnly, script]), executed]
-        simp [runSqlFrom, advance, literalStep, SqlState.finish, script, step]
+        simp [runSqlFrom, advance, literalStep, SqlState.finish, script, step, CatalogColumn.clockDefault]
       rw [failed]
       refine ⟨trivial, ?_⟩
       intro original observed
@@ -83,6 +82,7 @@ theorem failureMigrationCorrect (profile : Profile) (columns : 2 ≤ profile.lim
     | pending persisted visible error =>
       have impossible := obligations.1
       simp [executed, requirements, requiresSuccess] at impossible
+  · decide
 
 #print axioms failureMigrationCorrect
 

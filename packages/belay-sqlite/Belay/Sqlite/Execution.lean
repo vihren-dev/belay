@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model
+import Belay.Sqlite.Resolution.ReadDefaults
 import Belay.Sqlite.Resolution.Resolved
 import Belay.Sqlite.QueryFunctions
 import Belay.Sqlite.JsonFaults
@@ -42,6 +43,13 @@ inductive ExecutionError where
   /-- A JSON function of a query fails: SQLite's {lit}`malformed JSON` or
   {lit}`bad JSON path`, reported while the statement runs. -/
   | functionError
+  /-- ADD COLUMN would give existing rows NULL in a NOT NULL column. SQLite reports
+  this during execution with primary code 1; an empty table permits the addition. -/
+  | nullColumnDefault
+  /-- ADD COLUMN with a time default ({lit}`CatalogColumn.clockDefault`) on a table with
+  rows: SQLite's {lit}`Cannot add a column with non-constant default`, reported while the
+  statement runs with primary code 1; an empty table permits the addition. -/
+  | nonConstantColumnDefault
   deriving Repr, DecidableEq
 
 /-- The final database and transaction status. Use {lean}`Outcome.success`
@@ -82,9 +90,15 @@ def CatalogTable.plain (table : CatalogTable) : Bool :=
     table.rowidAlias.isNone
 
 /-- Perform CREATE TABLE or ADD COLUMN at the supplied position, or fail with the
-prepare error of a statement that SQLite refuses. CREATE TABLE stores an empty
-table at its catalog position; ADD COLUMN appends NULL to each existing row.
-CREATE TABLE at an occupied position, ADD COLUMN at a position without a table,
+prepare error of a statement that SQLite refuses. CREATE TABLE adds the table to the catalog ({name}`Catalog.createTable`) with no
+rows. ADD COLUMN reads the literal default and appends
+its affinity-applied value to each existing row. A NOT NULL column with a NULL
+default fails with {lean}`ExecutionError.nullColumnDefault` when rows exist, and one with
+a time default with {lean}`ExecutionError.nonConstantColumnDefault`;
+an empty table succeeds. Unsupported default readback returns
+{lean}`ExecutionError.unmodeled` and is excluded by the support check.
+CREATE TABLE at a position other than the end of the catalog (or over rows that do not
+match the catalog), ADD COLUMN at a position without a table,
 and CREATE INDEX fail with {lean}`ExecutionError.unmodeled`: {lit}`resolve` gives
 no such statement for a conforming database, and the supported-subset check
 excludes CREATE INDEX. A query changes nothing; it fails with
@@ -95,12 +109,22 @@ otherwise succeeds. Its result rows are not part of the outcome. SQL execution h
 separately. The default position is zero. -/
 def step (statement : Resolved.Statement) (database : Database) (position : Nat := 0) : Outcome :=
   match statement with
-  | .createTable at_ _ table => match database at_ with
-    | some _ => .failure position .unmodeled database
-    | none => .success (database.set at_ { shape := table, rows := [] })
-  | .addColumn at_ column => match database at_ with
+  | .createTable target name table =>
+    if target == database.catalog.length && database.rows.length == database.catalog.length then
+      .success { catalog := database.catalog.createTable name table, rows := database.rows ++ [[]] }
+    else .failure position .unmodeled database
+  | .addColumn target column => match database.table target with
     | none => .failure position .unmodeled database
-    | some table => .success (database.set at_ (table.appendColumns [column]))
+    | some table =>
+      if column.clockDefault then
+        if table.rows.isEmpty then .success (database.addColumn target column .null)
+        else .failure position .nonConstantColumnDefault database
+      else match readDefaultValue column with
+      | .error _ => .failure position .unmodeled database
+      | .ok value =>
+        if column.notNull && value == .null && !table.rows.isEmpty then
+          .failure position .nullColumnDefault database
+        else .success (database.addColumn target column value)
   | .prepareError error => .failure position (.prepare error) database
   | .query query => match query.source database with
     | some rows =>
@@ -108,7 +132,7 @@ def step (statement : Resolved.Statement) (database : Database) (position : Nat 
       else if query.mustFail rows then .failure position .functionError database
       else .success database
     | none => .success database
-  | .createIndex .. | .begin | .commit | .rollback | .insert .. | .upsert .. | .update .. | .delete .. =>
+  | .createIndex .. | .begin | .commit | .rollback | .insert .. | .upsert .. | .update .. | .delete .. | .clocked .. =>
     .failure position .unmodeled database
 
 end Belay.Sqlite

@@ -1,5 +1,8 @@
 import Belay.Sqlite.Declarations
 import Belay.Sqlite.Operators
+import Belay.Sqlite.Resolution.JsonFunction
+import Belay.Sqlite.Resolution.DateFunction
+import Belay.Sqlite.ClockText
 
 set_option doc.verso true
 
@@ -9,27 +12,6 @@ Names are already table positions, and the affinity rules of a comparison are
 already applied to its literal operands, so evaluation needs no catalog. -/
 
 namespace Belay.Sqlite.Resolved
-
-/-- A JSON function of ADR 0012, amendment 5, slices 6b and 6c: {lit}`json_extract`, the
-operators {lit}`->` and {lit}`->>`, which SQLite's parser makes calls of the functions
-{lit}`->` and {lit}`->>`, {lit}`json_type`, {lit}`json_valid`, {lit}`json_array_length`
-and {lit}`json`. -/
-inductive JsonFunction where
-  /-- {lit}`json_extract(json, path, ...)`. -/
-  | extract
-  /-- {lit}`json -> path`: the selection as JSON text. -/
-  | arrowJson
-  /-- {lit}`json ->> path`: the selection as an SQL value. -/
-  | arrowValue
-  /-- {lit}`json_type(json [, path])`: the JSON type name. -/
-  | typeName
-  /-- {lit}`json_valid(json [, flags])`: 1 or 0. -/
-  | valid
-  /-- {lit}`json_array_length(json [, path])`: the number of elements. -/
-  | arrayLength
-  /-- {lit}`json(json)`: the rendered JSON text. -/
-  | json
-  deriving Repr, DecidableEq
 
 mutual
 /-- A scalar expression over one row of the source table. Its value is a stored
@@ -57,10 +39,14 @@ inductive Expr where
   | coalesce (first rest : Expr)
   /-- A call of a JSON function with its arguments in written order. -/
   | json (function : JsonFunction) (arguments : Arguments)
-  /-- The resolved arguments after the second of a call of three or more arguments, which
-  resolution passes from a {lit}`Syntax.Expr.more` node to its call. A resolved
-  statement does not contain it; its value is NULL. -/
-  | arguments (list : Arguments)
+  /-- {lit}`CURRENT_TIME`, {lit}`CURRENT_DATE` or {lit}`CURRENT_TIMESTAMP`: the statement's clock
+  value as text. The execution replaces it with that text before it evaluates a statement
+  ({lit}`Statement.atClock`). -/
+  | now (keyword : TimeKeyword)
+  /-- A call of a date and time function with its arguments in written order, and the
+  statement's clock value, which {lit}`now` gives. Resolution stores 0; the execution sets
+  the statement's clock value before it evaluates a statement ({lit}`Statement.atClock`). -/
+  | date (function : DateFunction) (arguments : Arguments) (clock : Int)
   deriving Repr, DecidableEq
 
 /-- The arguments of a call in written order, as a list that is mutual with

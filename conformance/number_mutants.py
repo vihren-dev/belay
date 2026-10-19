@@ -18,6 +18,8 @@ EVALUATION = SQLITE + "QueryEval.lean"
 """Evaluation of query expressions."""
 EXPRESSIONS = SQLITE + "Resolution/QueryExprs.lean"
 """Resolution of query expressions."""
+FORMS = SQLITE + "Resolution/ExprForms.lean"
+"""The call and condition forms of expression resolution."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "overflow_stays_integer": (ARITHMETIC,
@@ -47,7 +49,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "def dropSpaces (bytes : List UInt8) : List UInt8 := bytes.dropWhile isSpaceByte",
         "def dropSpaces (bytes : List UInt8) : List UInt8 := bytes"),
     "exponent_ignored": (NUMBER_TEXT, "    if marker == 101 || marker == 69 then", "    if false then"),
-    "coalesce_argument_count_removed": (EXPRESSIONS,
+    "coalesce_argument_count_removed": (FORMS,
         "  if normalizeIdentifier name == \"coalesce\" then .prepare (.wrongArgumentCount name) else unmodeledFunction",
         "  unmodeledFunction"),
 }

@@ -23,7 +23,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "      if false then match source.mergeRule with"),
     "condition_uses_right_most": (MERGED_LEFT, "  scope.findSome? fun source =>", "  scope.reverse.findSome? fun source =>"),
     "natural_without_common_no_rows": (JOIN_USING, "  | [] => none\n  | first :: rest => some (rest.foldl .and first)",
-        "  | [] => some (.equals (.numeric \"0\") (.numeric \"1\"))\n  | first :: rest => some (rest.foldl .and first)"),
+        "  | [] => some (.compare .eq (.numeric \"0\") (.numeric \"1\"))\n  | first :: rest => some (rest.foldl .and first)"),
     "missing_using_column_accepted": (JOIN_USING,
         "  if (columnPosition right.columns name).isSome && (left.leftMost name).isSome then\n",
         "  if true then\n"),

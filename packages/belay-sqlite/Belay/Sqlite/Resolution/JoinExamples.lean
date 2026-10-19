@@ -26,7 +26,7 @@ def joined (operator : List String) (source : TableReference) (condition : Optio
 def qualified (source column : String) : Expr := .qualified source column
 
 /-- {lit}`t.a = u.a`. -/
-def onA : Expr := .equals (qualified "t" "a") (qualified "u" "a")
+def onA : Expr := .compare .eq (qualified "t" "a") (qualified "u" "a")
 
 /-- The single statement of a resolution of a {lit}`SELECT *` with these sources. -/
 def resolvedOne (results : List ResultColumn) (source : TableReference) (joins : List Join)
@@ -47,21 +47,21 @@ def joinU : Resolved.Join := { kind := .inner, table := 1, condition := some (.c
                  columns := [.scalar (.column 0), .scalar (.column 1), .scalar (.column 2), .scalar (.column 3)],
                  names := ["a", "b", "a", "c"], orderBy := [], offset := 0, limit := none })
 -- An unqualified name of a column of both tables is SQLite's ambiguous column name.
-#guard resolvedOne [.expression (.identifier "a" false) none "a"] (table "t") [joined [] (table "u")] ==
+#guard resolvedOne [.expression (.identifier "a" .none) none "a"] (table "t") [joined [] (table "u")] ==
   some (.prepareError (.ambiguousColumn "a"))
 -- An alias hides the table name; an unknown qualifier names no column; `x.*` of no source.
 #guard resolvedOne [.expression (qualified "t" "a") none "t.a"] { table := "t", alias := some "x" } [] ==
   some (.prepareError (.noSuchColumn "t.a"))
 #guard resolvedOne [.sourceStar "zz"] (table "t") [] == some (.prepareError (.noSuchSource "zz"))
 -- `x.*` in RETURNING is SQLite's prepare error, after the errors of the write itself.
-#guard (statements (migration tables [.returning (.delete "t" none) [.star, .sourceStar "t"]])).head? ==
+#guard (statements (migration tables [(.delete "t" none [.star, .sourceStar "t"])])).head? ==
   some (.prepareError .returningSourceStar)
 -- SQLite expands the wildcards first: `t.*` wins over a missing name in an earlier column.
 #guard (statements (migration tables
-  [.returning (.delete "t" none) [.expression (.identifier "zz" false) none "zz", .sourceStar "t"]])).head? ==
+  [(.delete "t" none [.expression (.identifier "zz" .none) none "zz", .sourceStar "t"])])).head? ==
   some (.prepareError .returningSourceStar)
 #guard (statements (migration tables
-  [.returning (.delete "t" (some (.identifier "zz" false))) [.sourceStar "t"]])).head? ==
+  [(.delete "t" (some (.identifier "zz" .none)) [.sourceStar "t"])])).head? ==
   some (.prepareError (.noSuchColumn "zz"))
 -- 65 tables are SQLite's limit error.
 #guard resolvedOne [.star] (table "t") ((List.range 64).map fun item =>

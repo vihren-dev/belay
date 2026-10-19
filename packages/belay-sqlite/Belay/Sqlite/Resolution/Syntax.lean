@@ -15,7 +15,7 @@ inductive ConflictAction where
   | nothing
   /-- {lit}`DO UPDATE SET assignments [WHERE filter]`: update the existing row. -/
   | update (assignments : List (String × Expr)) (filter : Option Expr)
-  deriving Repr, DecidableEq
+  deriving Repr, BEq
 
 /-- One {lit}`ON CONFLICT [(target)] action` clause of INSERT. The target is a list of
 column names as written, or {lean}`(none : Option (List String))` for a clause without
@@ -25,19 +25,7 @@ structure ConflictClause where
   target : Option (List String)
   /-- The action. -/
   action : ConflictAction
-  deriving Repr, DecidableEq
-
-/-- A write that can carry {lit}`RETURNING`: an {lit}`INSERT`, {lit}`UPDATE` or
-{lit}`DELETE` with the fields of the statement of the same name. -/
-inductive Write where
-  /-- {lit}`INSERT [OR algorithm] INTO table [(columns)] VALUES rows [ON CONFLICT ...]`. -/
-  | insert (table : String) (columns : Option (List String)) (rows : List (List Expr))
-      (conflicts : List ConflictClause) (algorithm : Option ConflictAlgorithm := none)
-  /-- {lit}`UPDATE table SET assignments [WHERE filter]`. -/
-  | update (table : String) (assignments : List (String × Expr)) (filter : Option Expr)
-  /-- {lit}`DELETE FROM table [WHERE filter]`. -/
-  | delete (table : String) (filter : Option Expr)
-  deriving Repr, DecidableEq
+  deriving Repr, BEq
 
 /-- One statement as written. For example, {lit}`COMMIT` is
 {lean}`Statement.commit`. -/
@@ -60,13 +48,15 @@ inductive Statement where
   {lean}`(none : Option (List String))`, and an INSERT without clauses has
   {lean}`([] : List ConflictClause)`. The algorithm of {lit}`INSERT OR algorithm` or of
   {lit}`REPLACE INTO` is {lit}`algorithm`, {lean}`(none : Option ConflictAlgorithm)` without
-  one. -/
+  one. The {lit}`RETURNING` columns are {lit}`returning`, empty without the clause. -/
   | insert (table : String) (columns : Option (List String)) (rows : List (List Expr))
       (conflicts : List ConflictClause) (algorithm : Option ConflictAlgorithm := none)
-  /-- {lit}`UPDATE table SET assignments [WHERE filter]`. -/
+      (returning : List ResultColumn := [])
+  /-- {lit}`UPDATE table SET assignments [WHERE filter] [RETURNING columns]`. -/
   | update (table : String) (assignments : List (String × Expr)) (filter : Option Expr)
-  /-- {lit}`DELETE FROM table [WHERE filter]`. -/
-  | delete (table : String) (filter : Option Expr)
+      (returning : List ResultColumn := [])
+  /-- {lit}`DELETE FROM table [WHERE filter] [RETURNING columns]`. -/
+  | delete (table : String) (filter : Option Expr) (returning : List ResultColumn := [])
   /-- {lit}`SELECT columns FROM source joins [WHERE filter] [GROUP BY terms] [ORDER BY terms]
   [LIMIT limit [OFFSET offset]]`: the first table of {lit}`FROM` and the joins after it, in
   order; one table has no joins, and a {lit}`SELECT` without {lit}`FROM` has
@@ -75,10 +65,6 @@ inductive Statement where
   {lit}`LIMIT offset, limit` gives both expressions. -/
   | select (columns : List ResultColumn) (source : Option TableReference) (joins : List Join) (filter : Option Expr)
       (groupBy : List Expr) (orderBy : List OrderTerm) (limit : Option Expr) (offset : Option Expr)
-  /-- A write with {lit}`RETURNING columns`: an {lit}`INSERT`, {lit}`UPDATE` or
-  {lit}`DELETE` and its result columns. A write without {lit}`RETURNING` is the statement
-  alone, so its record does not change. -/
-  | returning (write : Write) (columns : List ResultColumn)
-  deriving Repr, DecidableEq
+  deriving Repr, BEq
 
 end Belay.Sqlite.Syntax

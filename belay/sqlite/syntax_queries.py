@@ -4,15 +4,14 @@ A result column keeps its source text, which SQLite uses as the column name; `*`
 `source.*` select columns. Inside a query, an expression may also be a qualified
 name `source.column`,  a comparison, AND, OR, NOT,
 IS NULL, arithmetic, unary minus or plus of any expression, CAST with its type
-name as written, or a function call with `*` or with one or more arguments, with
-the function name as written: Lean folds the name and decides the function. A call
-with two or more arguments is a `callPair`, whose arguments after the second are `more`
-nodes. The operators `->` and `->>`
-are a `callPair` of the function named `->` or `->>`, as SQLite's parser makes them
-calls of those functions (ADR 0012, amendment 5, slice 6b). Other statements keep
-the expressions of `syntax_expressions.expression`. A schema-qualified column and a
-call without arguments have no constructor and are refused with their source range;
-`syntax_select` maps the SELECT statement.
+name as written, or a function call with `*` (`callStar`) or with a list of zero or more
+arguments (`call`), with the function name as written: Lean folds the name and decides
+the function. The operators `->` and `->>` are a `call` of the function named `->` or
+`->>` with two arguments, as SQLite's parser makes them calls of those functions (ADR
+0012, amendment 5, slice 6b). `=` is a `compare` with the operator `eq`, as the other
+comparisons are (ADR 0013, D3). Other statements keep the expressions of
+`syntax_expressions.expression`. A schema-qualified column has no constructor and is
+refused with its source range; `syntax_select` maps the SELECT statement.
 """
 
 from .located import Located, constructor, leaf, sequence, structure
@@ -20,8 +19,8 @@ from .sql_tree import Node, Tree
 from .syntax_definitions import absent, left_list, require
 from .syntax_expressions import dequote, expression, name
 
-COMPARISONS = {"NE": "ne", "LT": "lt", "LE": "le", "GT": "gt", "GE": "ge"}
-"""Comparison tokens other than `=`, and their `Comparison` constructors in Lean."""
+COMPARISONS = {"EQ": "eq", "NE": "ne", "LT": "lt", "LE": "le", "GT": "gt", "GE": "ge"}
+"""Comparison tokens and their `Comparison` constructors in Lean."""
 CONNECTIVES = {"AND": "and", "OR": "or"}
 """Logical tokens and their `Syntax.Expr` constructors in Lean."""
 ARITHMETIC = {"PLUS": "add", "MINUS": "subtract", "STAR": "multiply", "SLASH": "divide", "REM": "remainder"}
@@ -35,8 +34,8 @@ def binary(tree: Tree, node: Node, kind: str, left: Node, right: Node) -> Locate
 
 
 def compare(tree: Tree, node: Node, operator: str, left: Node, right: Node, kind: str = "compare") -> Located:
-    """A comparison other than `=`, or an arithmetic operator: a constructor with an
-    operator and two operands."""
+    """A comparison or an arithmetic operator: a constructor with an operator and two
+    operands."""
     return constructor(kind, [("operator", leaf(operator, node.start, node.end)),
                                    ("left", query_expression(tree, left)),
                                    ("right", query_expression(tree, right))], node.start, node.end)
@@ -48,24 +47,17 @@ def is_null(tree: Tree, node: Node, operand: Node, negated: bool) -> Located:
                                   ("negated", leaf(negated, node.start, node.end))], node.start, node.end)
 
 
-def argument_rest(tree: Tree, start: int, end: int, arguments: list[Node]) -> Located:
-    """The arguments after the first over a byte range: the last argument, or a `more` node
-    of the next argument and the arguments after it."""
-    if len(arguments) == 1:
-        return query_expression(tree, arguments[0])
-    return constructor("more", [("first", query_expression(tree, arguments[0])),
-                                ("rest", argument_rest(tree, arguments[1].start, end, arguments[1:]))], start, end)
-
-
-def call_pairs(tree: Tree, start: int, end: int, function: Located, arguments: list[Node]) -> Located:
-    """Two or more arguments as a `callPair` over a byte range: the first argument, and the
-    others (`argument_rest`), so that `f(a, b, c)` and `f(a, g(b, c))` stay distinct."""
-    return constructor("callPair", [("name", function), ("first", query_expression(tree, arguments[0])),
-                                    ("rest", argument_rest(tree, arguments[1].start, end, arguments[1:]))], start, end)
+def call(tree: Tree, start: int, end: int, function: Located, arguments: list[Node]) -> Located:
+    """A call of the function with its arguments in written order; an argument's path is
+    its index in the list."""
+    items = [query_expression(tree, argument) for argument in arguments]
+    listed = sequence(items, items[0].start if items else end, items[-1].end if items else end)
+    return constructor("call", [("name", function), ("arguments", listed)], start, end)
 
 
 def function_call(tree: Tree, node: Node, children: list[Node]) -> Located:
-    """A call with `*` or with one or more arguments, with the function name as written."""
+    """A call with `*`, without arguments, or with one or more arguments, with the function
+    name as written."""
     function = name(tree, children[0])
     if [child.symbol for child in children] == ["ID", "LP", "STAR", "RP"]:
         return constructor("callStar", [("name", function)], node.start, node.end)
@@ -73,12 +65,9 @@ def function_call(tree: Tree, node: Node, children: list[Node]) -> Located:
         absent(tree, children[2], "DISTINCT in a function call")
         arguments = left_list(tree, children[3], {1: ["nexprlist"]})
         items = left_list(tree, arguments[0][0], {1: ["expr"], 3: ["nexprlist", "COMMA", "expr"]}) if arguments else []
-        if len(items) == 1:
-            return constructor("call", [("name", function), ("operand", query_expression(tree, items[0][-1]))],
-                               node.start, node.end)
-        if len(items) > 1:
-            return call_pairs(tree, node.start, node.end, function, [item[-1] for item in items])
-    raise tree.unsupported(node, "Only COUNT(*), COUNT, MIN, MAX, SUM and AVG of one argument, and COALESCE are modeled as functions")
+        return call(tree, node.start, node.end, function, [item[-1] for item in items])
+    raise tree.unsupported(node, "A function call with ORDER BY, FILTER or OVER is not modeled; "
+                                 "write the call with its arguments only")
 
 
 def query_expression(tree: Tree, node: Node) -> Located:
@@ -88,8 +77,6 @@ def query_expression(tree: Tree, node: Node) -> Located:
     if symbols == ["LP", "expr", "RP"]:
         return query_expression(tree, children[1])
     if len(symbols) == 3 and symbols[0] == symbols[2] == "expr":
-        if symbols[1] == "EQ":
-            return binary(tree, node, "equals", children[0], children[2])
         if symbols[1] in COMPARISONS:
             return compare(tree, node, COMPARISONS[symbols[1]], children[0], children[2])
         if symbols[1] == "IS":
@@ -100,8 +87,7 @@ def query_expression(tree: Tree, node: Node) -> Located:
             return compare(tree, node, ARITHMETIC[symbols[1]], children[0], children[2], "arithmetic")
     if symbols == ["expr", "PTR", "expr"]:
         operator = leaf(tree.text(children[1]), children[1].start, children[1].end)
-        return constructor("callPair", [("name", operator), ("first", query_expression(tree, children[0])),
-                                        ("rest", query_expression(tree, children[2]))], node.start, node.end)
+        return call(tree, node.start, node.end, operator, [children[0], children[2]])
     if symbols == ["expr", "IS", "NOT", "expr"]:
         return compare(tree, node, "isNot", children[0], children[3])
     if symbols in (["MINUS", "expr"], ["PLUS", "expr"]):

@@ -53,7 +53,7 @@ for keys alone; the key/domain checks remain. -/
 def observeApplicationRows (catalog : Catalog) (name : String) (keyNames fields : List String)
     (database : Database) : Option ApplicationKeyRows := do
   let position ← tablePosition catalog name
-  let table ← database position
+  let table ← database.table position
   projectApplicationRows table keyNames fields
 
 /-- Require {name}`Conforms` and a defined application-key observation as the

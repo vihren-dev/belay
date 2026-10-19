@@ -40,7 +40,8 @@ def cases() -> tuple[Case, ...]:
     """Exercise success, error prefixes, missing objects and the native column limit, and
     each first-scope resolution condition of ADR 0008 with a neighbor where it just does
     not apply: ASCII-only name folding, a table with an index's name, transaction
-    control without a transaction, and the column limit lowered to 5. The affinity
+    control without a transaction, a ROLLBACK whose restored catalog the next statement
+resolves against, and the column limit lowered to 5. The affinity
     of a `CHARINT` key and a `PRIMARY KEY DESC` that is not a rowid alias let the
     resolve mutants (`conformance.resolve_mutants`) change a verdict."""
     invoices = ExpectedTable("invoices", (("amount", "INTEGER"), ("label", "TEXT")),
@@ -93,6 +94,9 @@ def cases() -> tuple[Case, ...]:
              "some (0, .noActiveTransaction)", "cannot rollback - no transaction is active"),
         Case("begin_rollback", (invoices,), "BEGIN; ALTER TABLE invoices ADD note TEXT; ROLLBACK;", (invoices,),
              "none", ""),
+        Case("rollback_then_add", (invoices,),
+             "BEGIN; ALTER TABLE invoices ADD note TEXT; ROLLBACK; ALTER TABLE invoices ADD note TEXT;",
+             (annotated,), "none", ""),
         Case("lowered_limit_reached", (narrow,), "ALTER TABLE narrow ADD c4 TEXT;", (widened,), "none", "",
              limits=lowered),
         Case("lowered_limit_exceeded", (widened,), "ALTER TABLE narrow ADD c5 TEXT;", (widened,),

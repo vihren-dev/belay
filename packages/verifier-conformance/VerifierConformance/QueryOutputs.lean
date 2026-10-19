@@ -12,21 +12,21 @@ namespace Belay.Sqlite.Conformance.QueryOutputs
 open Resolved.QueryExamples in
 /-- A database with the example table of {lit}`Belay.Sqlite.Resolved.QueryExamples`
 at catalog position 0. -/
-def database : Database := fun position => if position = 0 then some table else none
+def database : Database := .ofTables [("t", table)]
 
 #guard match advance 0 (.query Resolved.QueryExamples.grouped) { database } with
-  | .next next => next.database 0 == database 0 && next.snapshot.isNone
+  | .next next => next.database.table 0 == database.table 0 && next.snapshot.isNone
   | .halt _ => false
 #guard outputTraceFrom 0 [.query Resolved.QueryExamples.plain] { database } ==
   [some ⟨["v"], [[.text [97]], [.text [98]], [.text [99]], [.text [100]]], none⟩]
 -- A query whose table is missing has no output.
 #guard outputTraceFrom 0 [.query { Resolved.QueryExamples.plain with table := some 5 }] { database } == [none]
 -- INSERT ... RETURNING v, k + 1 returns the inserted row.
-#guard outputTraceFrom 0 [.insert 0 [[.integer 5, .text [101]]] []
+#guard outputTraceFrom 0 [.insert 0 [[.integer 5, .text [101]]]
     [(.column 1, "v"), (.arithmetic .add (.column 0) (.literal (.integer 1)), "k + 1")]] { database } ==
   [some ⟨["v", "k + 1"], [[.text [101], .integer 6]], some 1⟩]
 -- UPDATE ... SET v = 'z' WHERE k = 1 RETURNING v returns the new values of the two matched rows.
-#guard outputTraceFrom 0 [.update 0 [(1, .literal (.text [122]))] (some (.compare .eq (.column 0) (.literal (.integer 1)))) []
+#guard outputTraceFrom 0 [.update 0 [(1, .literal (.text [122]))] (some (.compare .eq (.column 0) (.literal (.integer 1))))
     [(.column 1, "v")]] { database } ==
   [some ⟨["v"], [[.text [122]], [.text [122]]], some 2⟩]
 

@@ -60,7 +60,7 @@ example : ¬ applicationKeyPreservation.change (readRecords first)
 #guard projectApplicationRows { first with rows := [] } ["id"] ["payload"] = some []
 #guard (projectApplicationRows { first with rows := [⟨4, [.integer 1]⟩] }
   ["id"] ["payload"]).isNone
-#guard (observeApplicationRows [] "items" ["id"] ["payload"] (fun _ => none)).isNone
+#guard (observeApplicationRows [] "items" ["id"] ["payload"] {}).isNone
 #guard (projectApplicationRows first ["id"] []).map (List.map Prod.snd) = some [[], []]
 """
 

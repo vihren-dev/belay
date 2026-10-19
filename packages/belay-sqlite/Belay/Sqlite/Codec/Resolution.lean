@@ -11,12 +11,12 @@ namespace Belay.Sqlite
 
 deriving instance Lean.FromJson, Lean.ToJson for Comparison, ArithmeticOperator
 deriving instance Lean.FromJson, Lean.ToJson for ConflictAlgorithm
-deriving instance Lean.FromJson, Lean.ToJson for Syntax.Expr, Syntax.ColumnConstraint
+deriving instance Lean.FromJson, Lean.ToJson for Syntax.QuoteKind
+deriving instance Lean.FromJson, Lean.ToJson for Syntax.Expr, Syntax.DefaultExpression, Syntax.ColumnConstraint
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ResultColumn, Syntax.OrderTerm
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ColumnDefinition, Syntax.TableConstraint
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.TableReference, Syntax.Join
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ConflictAction, Syntax.ConflictClause
-deriving instance Lean.FromJson, Lean.ToJson for Syntax.Write
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.Statement
 deriving instance Lean.ToJson for PrepareError
 
@@ -34,9 +34,11 @@ deriving instance Lean.ToExpr for Comparison
 deriving instance Lean.ToExpr for ArithmeticOperator
 deriving instance Lean.ToExpr for Affinity
 deriving instance Lean.ToExpr for ConflictAlgorithm
+deriving instance Lean.ToExpr for Syntax.QuoteKind
 deriving instance Lean.ToExpr for Syntax.Expr
 deriving instance Lean.ToExpr for Syntax.ResultColumn
 deriving instance Lean.ToExpr for Syntax.OrderTerm
+deriving instance Lean.ToExpr for Syntax.DefaultExpression
 deriving instance Lean.ToExpr for Syntax.ColumnConstraint
 deriving instance Lean.ToExpr for Syntax.ColumnDefinition
 deriving instance Lean.ToExpr for Syntax.TableConstraint
@@ -44,10 +46,13 @@ deriving instance Lean.ToExpr for Syntax.TableReference
 deriving instance Lean.ToExpr for Syntax.Join
 deriving instance Lean.ToExpr for Syntax.ConflictAction
 deriving instance Lean.ToExpr for Syntax.ConflictClause
-deriving instance Lean.ToExpr for Syntax.Write
 deriving instance Lean.ToExpr for Syntax.Statement
 deriving instance Lean.ToExpr for Limits
 deriving instance Lean.ToExpr for Profile
+deriving instance Lean.ToExpr for TimeKeyword
+deriving instance Lean.ToExpr for DefaultInsert
+deriving instance Lean.ToExpr for DefaultForm
+deriving instance Lean.ToExpr for ColumnDefault
 deriving instance Lean.ToExpr for CatalogColumn
 deriving instance Lean.ToExpr for CatalogTable
 deriving instance Lean.ToExpr for CatalogIndex
@@ -55,6 +60,7 @@ deriving instance Lean.ToExpr for CatalogEntry
 deriving instance Lean.ToExpr for CatalogObject
 deriving instance Lean.ToExpr for PrepareError
 deriving instance Lean.ToExpr for Resolved.JsonFunction
+deriving instance Lean.ToExpr for Resolved.DateFunction
 deriving instance Lean.ToExpr for Resolved.Expr, Resolved.Arguments
 deriving instance Lean.ToExpr for Resolved.Aggregate
 deriving instance Lean.ToExpr for Resolved.Output
@@ -66,12 +72,13 @@ deriving instance Lean.ToExpr for Resolved.Query
 deriving instance Lean.ToExpr for Resolved.ConflictAction
 deriving instance Lean.ToExpr for Resolved.ConflictClause
 deriving instance Lean.ToExpr for Resolved.ConflictPolicy
+deriving instance Lean.ToExpr for Resolved.ClockCell
 deriving instance Lean.ToExpr for Resolved.Statement
 
 /-- The supported version of {lit}`ScriptRecord`, the structural record of a schema
-and a script: {assert}`scriptRecordVersion = 2`. Version 1 carried resolved
-statements, which the record no longer contains. -/
-def scriptRecordVersion : Nat := 2
+and a script: {assert}`scriptRecordVersion = 3`. Version 3 retains each default's
+source spelling. Earlier versions do not carry this metadata. -/
+def scriptRecordVersion : Nat := 3
 
 /-- The structural record of a schema and a script: the SQLite release and build of
 the profile, and the schema and script statements as written. Use an empty schema

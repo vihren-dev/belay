@@ -89,6 +89,7 @@ let
     claims
     (root + /tests/conformance_freeze_capture.py)
     (fs.fileFilter (file: file.hasExt "json") (root + /conformance/cases))
+    (root + /packages/belay-sqlite/Belay/Sqlite/StatementStep.lean)
     (root + /packages/belay-sqlite/Belay/Sqlite/SqlExecution.lean)
     (root + /packages/belay-sqlite/Belay/Sqlite/Execution.lean) (root + /packages/belay-sqlite/Belay/Sqlite/LiteralData.lean)
     (root + /packages/verifier-conformance/VerifierConformance/Trace.lean)
@@ -116,7 +117,7 @@ let
     "authored_transactions" "transaction_evidence" "authored_resolution" "resolution_evidence"
     "authored_queries" "query_evidence" "query_mutants" "authored_evidence" "authored_numbers" "number_evidence"
     "authored_writes" "write_evidence" "write_mutants"
-    "number_mutants" "restriction_examples" "authored_obligations" "obligation_mutants" "obligation_evidence" "authored_row_writes" "row_write_evidence" "row_write_mutants" "authored_deletes" "delete_evidence" "delete_mutants" "authored_joins" "join_evidence" "join_mutants" "authored_using" "using_evidence" "using_mutants" "authored_right" "right_evidence" "right_mutants" "authored_merged" "merged_evidence" "merged_mutants" "authored_keys" "key_evidence" "key_mutants" "authored_aliases" "alias_evidence" "alias_mutants" "authored_upserts" "upsert_evidence" "upsert_mutants" "authored_algorithms" "algorithm_evidence" "algorithm_mutants" "authored_fromless" "fromless_evidence" "fromless_mutants" "authored_json" "json_evidence" "json_mutants" "authored_json_functions" "json_function_evidence" "json_function_mutants" "authored_json_each" "json_each_evidence" "json_each_mutants"
+    "number_mutants" "restriction_examples" "authored_obligations" "obligation_mutants" "obligation_evidence" "authored_row_writes" "row_write_evidence" "row_write_mutants" "authored_deletes" "delete_evidence" "delete_mutants" "authored_joins" "join_evidence" "join_mutants" "authored_using" "using_evidence" "using_mutants" "authored_right" "right_evidence" "right_mutants" "authored_merged" "merged_evidence" "merged_mutants" "authored_keys" "key_evidence" "key_mutants" "authored_aliases" "alias_evidence" "alias_mutants" "authored_upserts" "upsert_evidence" "upsert_mutants" "authored_algorithms" "algorithm_evidence" "algorithm_mutants" "authored_fromless" "fromless_evidence" "fromless_mutants" "authored_json" "json_evidence" "json_mutants" "authored_json_functions" "json_function_evidence" "json_function_mutants" "authored_json_each" "json_each_evidence" "json_each_mutants" "authored_default_writes" "default_write_evidence" "authored_clock" "clock_evidence" "clock_mutants" "authored_date_functions" "date_function_evidence" "date_function_mutants" "authored_date_modifiers" "date_modifier_evidence" "date_modifier_mutants"
     "upstream_selection" "upstream_catalog" "upstream_sampling" "upstream_profiles" "upstream_functions" "upstream_result_values"
     "corpus_shards" "corpus_workers" "corpus_evidence" "corpus_acquisition" "locked_corpora" "freeze_corpus" "freeze_validation" "freeze_profiles" "workload" "workload_inputs"
     "upstream_assertions"
@@ -133,6 +134,10 @@ let
     (root + /reports/20261001-adr5-c5-authored.json)
     (root + /reports/20261001-adr5-c5-authored-records.jsonl.gz)
     (root + /reports/20261006-grouped-immediate-transactions)
+    (root + /conformance/corpus-v28)
+    (root + /conformance/corpus-v27)
+    (root + /conformance/corpus-v26)
+    (root + /conformance/corpus-v25)
     (root + /conformance/corpus-v24)
     (root + /conformance/corpus-v23)
     (root + /conformance/corpus-v22)

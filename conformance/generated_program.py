@@ -60,11 +60,12 @@ def command(kind: str, table: str = "", *, column: str = "v", value: SqlValue = 
                 f"ALTER TABLE {table} ADD {column} {affinity.upper()};")
     if kind == "insert":
         return ({"insert": {"table": table, "columns": ["id", "v"], "rows": [[literal_syntax(key), literal_syntax(value)]],
-                            "conflicts": [], "algorithm": None}},
+                            "conflicts": [], "algorithm": None, "returning": []}},
                 f"INSERT INTO {table}(id,v) VALUES({literal(key)},{literal(value)});")
-    filter_: Json = {"equals": {"left": {"identifier": {"name": "id", "doubleQuoted": False}},
+    filter_: Json = {"compare": {"operator": "eq", "left": {"identifier": {"name": "id", "quote": "none"}},
                                 "right": literal_syntax(key)}}
-    return ({"update": {"table": table, "assignments": [[column, literal_syntax(value)]], "filter": filter_}},
+    return ({"update": {"table": table, "assignments": [[column, literal_syntax(value)]], "filter": filter_,
+                        "returning": []}},
             f"UPDATE {table} SET {column}={literal(value)} WHERE id={key};")
 
 

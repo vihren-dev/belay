@@ -135,11 +135,12 @@ def upsertReady (keys : List (List Nat)) (policy : Resolved.ConflictPolicy) (tab
 /-- The database after a failed INSERT with clauses or algorithms: with the table before
 the failing row at the position for a FAIL failure, which keeps the earlier rows; the
 input database for every other failure. -/
-def failedDatabase (database : Database) (at_ : Nat) (reason : ExecutionError) (reached : Table) : Database :=
+def failedDatabase (database : Database) (target : Nat) (reason : ExecutionError) (reached : Table) : Database :=
   match reason with
-  | .constraintFail => database.set at_ reached
+  | .constraintFail => database.setRows target reached.rows
   | .unmodeled | .prepare _ | .transactionAlreadyActive | .noActiveTransaction | .constraintViolation
-  | .constraintRollback | .integerOverflow | .datatypeMismatch | .functionError => database
+  | .constraintRollback | .integerOverflow | .datatypeMismatch | .functionError | .nullColumnDefault
+  | .nonConstantColumnDefault => database
 
 end LiteralData
 end Belay.Sqlite

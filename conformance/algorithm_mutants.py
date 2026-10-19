@@ -10,13 +10,13 @@ from conformance.resolve_mutants import SQLITE
 
 RUN = SQLITE + "UpsertRun.lean"
 """The rows of an INSERT with conflict algorithms."""
-EXECUTION = SQLITE + "SqlExecution.lean"
+EXECUTION = SQLITE + "StatementStep.lean"
 """The SQL step, which rolls back a transaction."""
-WRITES = SQLITE + "Resolution/Writes.lean"
-"""The resolution of INSERT, which gives each constraint its algorithm."""
+POLICY = SQLITE + "Resolution/ConflictPolicy.lean"
+"""The conflict policy of INSERT, which gives each constraint its algorithm."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "fail_keeps_no_row": (RUN, "  | .constraintFail => database.set at_ reached", "  | .constraintFail => database"),
+    "fail_keeps_no_row": (RUN, "  | .constraintFail => database.setRows target reached.rows", "  | .constraintFail => database"),
     "ignore_stops": (RUN, "  | .ignore => .ok (table, none)", "  | .ignore => .error (failureError .abort)"),
     "replace_first_key_only": (RUN,
         "  { table with rows := table.rows.filter fun row => !((List.range keys.length).any fun index =>",
@@ -28,11 +28,11 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "not_null_ignores_algorithm": (RUN,
         "  | some column => failedConstraint table (algorithmAt policy.notNull column)",
         "  | some _ => failedConstraint table .abort"),
-    "constraint_algorithm_ignored": (WRITES, "  { keys := constraints.map fun own => algorithm.getD own,",
+    "constraint_algorithm_ignored": (POLICY, "  { keys := constraints.map fun own => algorithm.getD own,",
         "  { keys := constraints.map fun _ => algorithm.getD .abort,"),
-    "or_does_not_override": (WRITES, "  { keys := constraints.map fun own => algorithm.getD own,",
+    "or_does_not_override": (POLICY, "  { keys := constraints.map fun own => algorithm.getD own,",
         "  { keys := constraints.map fun own => own,"),
-    "not_null_constraint_ignored": (WRITES,
+    "not_null_constraint_ignored": (POLICY,
         "    notNull := table.columns.map fun column => algorithm.getD column.notNullAlgorithm }",
         "    notNull := table.columns.map fun _ => algorithm.getD .abort }"),
 }

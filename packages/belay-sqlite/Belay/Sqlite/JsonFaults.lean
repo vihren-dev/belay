@@ -29,12 +29,12 @@ mutual
 /-- Whether some JSON call of the expression fails over the row when every part of the
 expression is evaluated. -/
 def Expr.mayFail (row : List Value) : Expr → Bool
-  | .column _ | .literal _ => false
+  | .column _ | .literal _ | .now _ => false
   | .compare _ left right | .and left right | .or left right | .arithmetic _ left right | .coalesce left right =>
     left.mayFail row || right.mayFail row
   | .not operand | .isNull operand _ | .cast _ operand => operand.mayFail row
   | .json function arguments => arguments.mayFail row || anyFailure (Json.apply function (arguments.eval row))
-  | .arguments arguments => arguments.mayFail row
+  | .date _ arguments _ => arguments.mayFail row
 
 /-- Whether some argument may fail over the row ({name}`Expr.mayFail`). -/
 def Arguments.mayFail (row : List Value) : Arguments → Bool
@@ -47,12 +47,12 @@ mutual
 the row: a described failure of a call that is not under {lit}`AND`, {lit}`OR` or
 {lit}`COALESCE`, which SQLite may skip or fold away. -/
 def Expr.mustFail (row : List Value) : Expr → Bool
-  | .column _ | .literal _ | .and .. | .or .. | .coalesce .. => false
+  | .column _ | .literal _ | .now _ | .and .. | .or .. | .coalesce .. => false
   | .compare _ left right | .arithmetic _ left right => left.mustFail row || right.mustFail row
   | .not operand | .isNull operand _ | .cast _ operand => operand.mustFail row
   | .json function arguments =>
     arguments.mustFail row || describedFailure (Json.apply function (arguments.eval row))
-  | .arguments arguments => arguments.mustFail row
+  | .date _ arguments _ => arguments.mustFail row
 
 /-- Whether some argument certainly fails over the row ({name}`Expr.mustFail`). -/
 def Arguments.mustFail (row : List Value) : Arguments → Bool
@@ -64,12 +64,12 @@ mutual
 /-- Whether the expression has a JSON call, for example
 {lean}`(Expr.json .extract (.cons (.column 0) .nil)).callsJson`. -/
 def Expr.callsJson : Expr → Bool
-  | .column _ | .literal _ => false
+  | .column _ | .literal _ | .now _ => false
   | .compare _ left right | .and left right | .or left right | .arithmetic _ left right | .coalesce left right =>
     left.callsJson || right.callsJson
   | .not operand | .isNull operand _ | .cast _ operand => operand.callsJson
   | .json .. => true
-  | .arguments arguments => arguments.callsJson
+  | .date _ arguments _ => arguments.callsJson
 
 /-- Whether some argument has a JSON call ({name}`Expr.callsJson`). -/
 def Arguments.callsJson : Arguments → Bool

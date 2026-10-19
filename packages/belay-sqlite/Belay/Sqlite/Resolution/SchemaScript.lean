@@ -36,12 +36,12 @@ structure ResolvedScript where
   resolved : List Resolved.Statement
   /-- The catalog after every script statement succeeds. -/
   nextCatalog : Catalog
-  deriving Repr, DecidableEq
+  deriving Repr, BEq
 
 /-- Whether a schema statement can describe a catalog: CREATE TABLE or CREATE INDEX. -/
 def Syntax.Statement.describesCatalog : Syntax.Statement → Bool
   | .createTable .. | .createIndex .. => true
-  | .addColumn .. | .begin | .commit | .rollback | .insert .. | .update .. | .delete .. | .select .. | .returning .. =>
+  | .addColumn .. | .begin | .commit | .rollback | .insert .. | .update .. | .delete .. | .select .. =>
     false
 
 /-- The first schema statement that cannot describe a catalog, as a restriction. -/
@@ -53,7 +53,7 @@ def schemaStatementRestriction (schema : List Syntax.Statement) : Option Restric
 def Resolved.Statement.prepareError? : Resolved.Statement → Option PrepareError
   | .prepareError error => some error
   | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback
-  | .insert .. | .upsert .. | .update .. | .delete .. | .query _ => none
+  | .insert .. | .upsert .. | .update .. | .delete .. | .query _ | .clocked .. => none
 
 /-- The zero-based index and error of the first prepare error in a list of
 resolved statements, from a starting index. -/

@@ -1,5 +1,6 @@
 import Belay.Sqlite.SqlProofs
 import Belay.Sqlite.SqlExecution
+import Belay.Sqlite.DatabaseFacts
 
 set_option doc.verso true
 
@@ -12,7 +13,7 @@ namespace Belay.Sqlite.Conformance
 def nonControl : Resolved.Statement → Bool
   | .begin | .commit | .rollback => false
   | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .upsert .. | .update .. | .delete ..
-  | .prepareError _ | .query _ => true
+  | .prepareError _ | .query _ | .clocked .. => true
 
 /-- Each statement in the body is non-control and succeeds at its position.
 The remaining body starts from its resulting database. An empty body requires
@@ -61,24 +62,37 @@ theorem literal_cases (statement : Resolved.Statement) (database : Database) (po
     (∃ reason, literalStep statement database position = .failure position reason database) ∨
     (∃ after, literalStep statement database position = .failure position .constraintFail after) := by
   cases statement with
-  | createTable at_ name table =>
-    cases h : database at_ <;> simp [literalStep, step, h]
-  | addColumn at_ column =>
-    cases h : database at_ <;> simp [literalStep, step, h]
-  | insert at_ rows keys _ =>
-    cases h : database at_ <;> simp only [literalStep, insertOutcome, checkedWrite, h]
+  | createTable target name table =>
+    simp only [literalStep, step]
+    split <;> simp
+  | addColumn target column =>
+    simp only [literalStep, step]
+    cases database.table target with
+    | none => simp
+    | some table =>
+      simp only []
+      split
+      · split <;> simp
+      · cases readDefaultValue column with
+        | error _ => simp
+        | ok value =>
+          simp only []
+          split <;> simp
+  | insert target rows _ =>
+    cases h : database.table target <;> simp only [literalStep, insertOutcome, checkedWrite, h]
     all_goals (repeat' split) <;> simp
-  | upsert at_ rows clauses keys _ policy =>
-    cases h : database at_ <;> simp only [literalStep, h]
+  | upsert target rows clauses _ algorithm =>
+    cases h : database.table target <;> simp only [literalStep, h]
     all_goals (repeat' split) <;> try simp
     rename_i reason _ _ _
     cases reason <;> simp [LiteralData.failedDatabase]
-  | update at_ assignments filter keys _ =>
-    cases h : database at_ <;> simp only [literalStep, checkedWrite, h]
+  | update target assignments filter _ =>
+    cases h : database.table target <;> simp only [literalStep, checkedWrite, h]
     all_goals (repeat' split) <;> simp
-  | delete at_ filter _ =>
-    cases h : database at_ <;> simp [literalStep, h]
+  | delete target filter _ =>
+    cases h : database.table target <;> simp [literalStep, h]
   | createIndex _ _ _ => simp [literalStep, step]
+  | clocked _ _ => simp [literalStep, step]
   | query query =>
     simp only [literalStep, step]
     cases query.source database with
@@ -142,25 +156,28 @@ theorem constraint_rollback (halted : advance position statement state = .halt o
        simp_all [SqlState.finish, Outcome.database, Outcome.persistedDatabase, Option.getD, Outcome.error?] <;>
        subst halted <;> simp_all)
 
-/-- For any position, table position, column and states, if ADD COLUMN advances
-to the next state, some table exists at that table position in the original state.
+/-- For any position, table position, column without a time default
+({name}`CatalogColumn.clockDefault`) and states, if ADD COLUMN advances to the next state,
+some table exists at that table position in the original state.
 The next database contains that table with the column appended. This table has
-the same row count and rowids, and each original row gains one NULL value.
+the same row count and rowids, and each original row gains the affinity-applied
+value returned by {name}`readDefaultValue`.
 
 The proof follows the successful ADD branch and unfolds column extension
 and its row mapping. -/
-theorem add_column_shape
-    (success : advance position (.addColumn at_ column) state = .next next) :
-    ∃ table, state.database at_ = some table ∧
-      next.database at_ = some (table.appendColumns [column]) ∧
-      (table.appendColumns [column]).rows.length = table.rows.length ∧
-      (table.appendColumns [column]).rows.map Row.rowid = table.rows.map Row.rowid ∧
-      (table.appendColumns [column]).rows.map Row.values =
-        table.rows.map (fun row => row.values ++ [.null]) := by
+theorem add_column_shape (constant : column.clockDefault = false)
+    (success : advance position (.addColumn target column) state = .next next) :
+    ∃ table value, state.database.table target = some table ∧
+      readDefaultValue column = .ok value ∧
+      next.database.table target = some (table.appendColumns [(column, value)]) ∧
+      (table.appendColumns [(column, value)]).rows.length = table.rows.length ∧
+      (table.appendColumns [(column, value)]).rows.map Row.rowid = table.rows.map Row.rowid ∧
+      (table.appendColumns [(column, value)]).rows.map Row.values =
+        table.rows.map (fun row => row.values ++ [storeValue column.affinity value]) := by
   simp only [advance, literalStep, step] at success
   repeat (split at * <;> simp_all)
   all_goals subst_vars
-  all_goals simp_all [Database.set, Table.appendColumns, Row.appendNulls, List.map_map]
+  all_goals simp_all [Database.table_addColumn, Table.appendColumns, Row.appendValues, List.map_map]
 
 #print axioms rollback
 #print axioms statement_atomicity

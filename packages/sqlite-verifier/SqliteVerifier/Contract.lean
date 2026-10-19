@@ -17,7 +17,8 @@ structure LogicalContract (Logical : Type u) where
   valid : Logical → Prop
   /-- Required relation between every observed before/after pair on success. -/
   change : Logical → Logical → Prop
-  /-- Required predicate on the resulting catalog on success or an error-free pending outcome. -/
+  /-- Required predicate on the catalog of the resulting database on success or an
+  error-free pending outcome. -/
   catalogRequirement : Catalog → Prop
   /-- Required relation on observed before/result values at the actual failure position and error. -/
   failure : Logical → Nat → ExecutionError → Logical → Prop
@@ -33,22 +34,22 @@ structure Interpretation (Logical : Type u) where
   /-- Read an actual logical value; {lean}`Option.none` means the read is undefined. -/
   observe : Database → Option Logical
 
-/-- Select the catalog and interpretation for each zero-based failure position and
-error. They describe the resulting storage, including a committed prefix. -/
+/-- Select the interpretation for each zero-based failure position and error. It
+describes the resulting storage, including a committed prefix; the resulting database
+carries its own catalog. -/
 structure FailureRepresentation (Logical : Type u) where
-  /-- Result catalog selected for every failure position and error. -/
-  catalog : Nat → ExecutionError → Catalog
   /-- Result representation selected for every failure position and error. -/
   interpretation : Nat → ExecutionError → Interpretation Logical
 
-/-- For every database satisfying the interpretation invariant, require conformance
-to the given catalog under the profile and an observed logical value that the
-contract declares valid. A false invariant imposes no requirement. Use this for
-each before/after/failure representation. -/
-def SoundRepresentation (contract : LogicalContract Logical) (profile : Profile) (catalog : Catalog)
+/-- For every database satisfying the interpretation invariant, require
+{name}`Database.Valid` under the profile and an observed logical value that the contract
+declares valid. A false invariant imposes no requirement. The database's catalog is
+not fixed here: an interpretation that needs a catalog states it in its invariant, for
+example with {name}`Conforms`. Use this for each before/after/failure representation. -/
+def SoundRepresentation (contract : LogicalContract Logical) (profile : Profile)
     (interpretation : Interpretation Logical) : Prop :=
   ∀ database, interpretation.invariant database →
-    Conforms profile catalog database ∧ ∃ logical,
+    database.Valid profile ∧ ∃ logical,
       interpretation.observe database = some logical ∧ contract.valid logical
 
 /-- A database is admitted exactly when it conforms to the supplied catalog under
@@ -62,51 +63,50 @@ def Admitted (profile : Profile) (catalog : Catalog) (approvedConditions : Datab
 /-- For every original value actually observed before execution, impose the
 following result obligations. If no original value is observed, this predicate
 requires nothing. Success and an error-free pending transaction require the after
-invariant, the resulting-catalog requirement and an observed value related by the
-contract change predicate. Failure and a pending transaction with an error require
+invariant, the catalog requirement of the visible resulting database's catalog and an
+observed value related by the contract change predicate. Failure and a pending transaction with an error require
 the selected failure invariant and an observed value related by the failure
 predicate at that position/error. Committed storage is not inspected here. -/
-def OutcomeSatisfies (nextCatalog : Catalog) (contract : LogicalContract Logical)
+def OutcomeSatisfies (contract : LogicalContract Logical)
     (before after : Interpretation Logical) (failures : FailureRepresentation Logical)
     (database : Database) (outcome : Outcome) : Prop :=
   ∀ original, before.observe database = some original →
     match outcome with
     | .success result =>
-      after.invariant result ∧ contract.catalogRequirement nextCatalog ∧
+      after.invariant result ∧ contract.catalogRequirement result.catalog ∧
         ∃ logical, after.observe result = some logical ∧ contract.change original logical
     | .failure position reason result =>
       (failures.interpretation position reason).invariant result ∧ ∃ logical,
         (failures.interpretation position reason).observe result = some logical ∧
           contract.failure original position reason logical
     | .pending _ result none =>
-      after.invariant result ∧ contract.catalogRequirement nextCatalog ∧
+      after.invariant result ∧ contract.catalogRequirement result.catalog ∧
         ∃ logical, after.observe result = some logical ∧ contract.change original logical
     | .pending _ result (some (position, reason)) =>
       (failures.interpretation position reason).invariant result ∧ ∃ logical,
         (failures.interpretation position reason).observe result = some logical ∧
           contract.failure original position reason logical
 
-/-- The complete verification target for the bound starting and resulting catalogs,
-resolved script, approved conditions, representations and profile. Each field is
+/-- The complete verification target for the bound starting catalog, resolved script,
+approved conditions, representations and profile. Each field is
 required; a starting witness prevents inconsistent admission from making the
 universal obligations vacuous. Outcomes are those of {name}`ProfileExecutes`,
 including errors and open transactions. Supply an applicability predicate that
 states which outcomes the application allows. -/
-structure VerificationConditions (startCatalog nextCatalog : Catalog) (script : List Resolved.Statement)
+structure VerificationConditions (startCatalog : Catalog) (script : List Resolved.Statement)
     (approvedConditions : Database → Prop) (contract : LogicalContract Logical)
     (before after : Interpretation Logical) (failures : FailureRepresentation Logical)
     (profile : Profile) : Prop where
   /-- There exists a conforming database satisfying the approved starting condition. -/
   nonempty : ∃ database, Admitted profile startCatalog approvedConditions database
-  /-- Every database in the before invariant conforms and has an observed valid value. -/
-  beforeSound : SoundRepresentation contract profile startCatalog before
-  /-- Every database in the after invariant conforms and has an observed valid value. -/
-  afterSound : SoundRepresentation contract profile nextCatalog after
-  /-- For every position/error, the failure invariant implies conformance and an observed valid value;
+  /-- Every database in the before invariant is valid and has an observed valid value. -/
+  beforeSound : SoundRepresentation contract profile before
+  /-- Every database in the after invariant is valid and has an observed valid value. -/
+  afterSound : SoundRepresentation contract profile after
+  /-- For every position/error, the failure invariant implies validity and an observed valid value;
   an impossible failure invariant makes that instance vacuous. -/
   failuresSound : ∀ position reason,
-    SoundRepresentation contract profile (failures.catalog position reason)
-      (failures.interpretation position reason)
+    SoundRepresentation contract profile (failures.interpretation position reason)
   /-- Every admitted starting database satisfies the before invariant. -/
   starting : ∀ database, Admitted profile startCatalog approvedConditions database → before.invariant database
   /-- Every admitted starting database satisfies the checked SQL support obligation. -/
@@ -116,7 +116,7 @@ structure VerificationConditions (startCatalog nextCatalog : Catalog) (script : 
   outcomes : ∀ database, Admitted profile startCatalog approvedConditions database →
     ∀ outcome, ProfileExecutes profile script database outcome →
       contract.applicability database outcome ∧
-      OutcomeSatisfies nextCatalog contract before after failures database outcome
+      OutcomeSatisfies contract before after failures database outcome
 
 /-- For every database, accept precisely a successful outcome. Failures and all
 pending transactions are false. Use this when the application requires a closed,

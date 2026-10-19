@@ -6,28 +6,6 @@ set_option doc.verso true
 executable definitions; neither native row allocation nor frame rules are axioms. -/
 namespace Belay.Sqlite
 
-/-- For every profile, catalog, database, position and old/replacement tables,
-assume original {name}`Conforms`, the old table's presence, equal shapes, and
-replacement {name}`Table.Valid`. Then setting the replacement preserves
-conformance with that catalog. A position without a table cannot meet the
-assumptions. Use this theorem when a write changes only represented rows.
-The proof separates the updated position from the others. -/
-theorem Conforms.replaceRows {old replacement : Table} (conforms : Conforms profile catalog database)
-    (present : database position = some old) (shape : replacement.shape = old.shape)
-    (valid : replacement.Valid) :
-    Conforms profile catalog (database.set position replacement) := by
-  refine ⟨conforms.1, ?_⟩
-  intro other
-  by_cases same : other = position
-  · subst other
-    refine ⟨?_, ?_⟩
-    · simpa [Database.set, present, shape] using (conforms.2 position).1
-    · intro table stored
-      have equal : table = replacement := by simpa [Database.set] using stored.symm
-      subst table
-      exact valid
-  · simpa [Database.set, same] using conforms.2 other
-
 /-- For every row list and initial integer, the folded maximum is at least
 the initial value and every listed rowid. With no rows the second condition
 is vacuous and the first is equality. Use these bounds for row allocation.

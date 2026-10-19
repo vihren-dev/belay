@@ -17,7 +17,7 @@ def originalTable : Table :=
     rows := [⟨-4, [.integer 7]⟩, ⟨9, [.integer 7]⟩] }
 
 /-- One ordinary table at catalog position 0 provides a concrete execution witness. -/
-def initial : Database := fun position => if position = 0 then some originalTable else none
+def initial : Database := .ofTables [("invoices", originalTable)]
 
 /-- A useful multi-statement addition over an existing table. -/
 def additions : List Resolved.Statement :=
@@ -31,7 +31,7 @@ def failedPrefix : List Resolved.Statement :=
    .prepareError (.tableExists "invoices"),
    .createTable 1 "unreached" { columns := [{ name := "value", declaredType := none }] }]
 
-/-- Inspect the outcome without comparing database functions. -/
+/-- Inspect the position and error of an outcome. -/
 def failureInfo : Outcome → Option (Nat × ExecutionError)
   | .success _ => none
   | .failure position reason _ => some (position, reason)
@@ -58,27 +58,28 @@ example : ¬validRowid 9223372036854775808 := by unfold validRowid; decide
 
 -- Every old row is retained, NULL is materialized, and the new table is empty.
 #guard failureInfo (runSql additions initial) = none
-#guard ((runSql additions initial).database 0).map Table.rows =
+#guard ((runSql additions initial).database.table 0).map Table.rows =
   some [⟨-4, [.integer 7, .null]⟩, ⟨9, [.integer 7, .null]⟩]
-#guard ((runSql additions initial).database 1).map Table.rows = some []
-#guard ((runSql additions initial).database 0).map (·.project ["AMOUNT"]) =
+#guard ((runSql additions initial).database.table 1).map Table.rows = some []
+#guard ((runSql additions initial).database.table 0).map (·.project ["AMOUNT"]) =
   some [(-4, [some (.integer 7)]), (9, [some (.integer 7)])]
 
 -- A file does not roll back its successfully committed prefix.
 #guard failureInfo (runSql failedPrefix initial) = some (1, .prepare (.tableExists "invoices"))
-#guard ((runSql failedPrefix initial).database 0).map Table.rows =
+#guard ((runSql failedPrefix initial).database.table 0).map Table.rows =
   some [⟨-4, [.integer 7, .null]⟩, ⟨9, [.integer 7, .null]⟩]
-#guard ((runSql failedPrefix initial).database 1).isNone
+#guard ((runSql failedPrefix initial).database.table 1).isNone
 
 -- Definitions outside the modeled subset are not run.
 #guard failureInfo (runSql [.createIndex 1 "by_amount" { table := 0, columns := [0], unique := false }] initial) =
   some (0, .unmodeled)
 #guard failureInfo (runSql [.addColumn 1 { name := "x", declaredType := none }] initial) = some (0, .unmodeled)
 
-/-- For every profile, script and starting database, the computed SQL result
-is a related execution, including errors and open transactions. -/
-theorem all_scripts_execute (profile : Profile) (script : List Resolved.Statement) (database : Database) :
-    ProfileExecutes profile script database (runSql script database) := .evaluated
+/-- For every profile, script, starting database and clock assignment, the computed SQL
+result at the clock assignment is a related execution, including errors and open
+transactions. -/
+theorem all_scripts_execute (profile : Profile) (script : List Resolved.Statement) (database : Database)
+    (clock : Clock) : ProfileExecutes profile script database (runSqlAt clock script database) := .evaluated clock
 
 /-- For every schema-only script and starting database, the computed SQL result
 extends the original database, including failure prefixes. The guard excludes
@@ -87,16 +88,16 @@ theorem all_scripts_preserve (script : List Resolved.Statement) (guard : SchemaO
     DatabaseExtends database (runSql script database).database := runSql_extends guard database
 
 -- A literal INSERT changes the rows, so the schema-only preservation guard is necessary.
-example : ¬ SchemaOnly [.insert 0 [[.integer 8]] [] []] := by simp [SchemaOnly]
-#guard ((runSql [.insert 0 [[.integer 8]] [] []] initial).database 0).map (fun table => table.rows.length) = some 3
+example : ¬ SchemaOnly [.insert 0 [[.integer 8]] []] := by simp [SchemaOnly]
+#guard ((runSql [.insert 0 [[.integer 8]] []] initial).database.table 0).map (fun table => table.rows.length) = some 3
 
 /-- No complete certificate exists when the approved starting condition is false:
 its required admitted witness would satisfy False. This holds for every supplied
 catalog, script, contract, representations and profile. -/
-example {Logical : Type} (startCatalog nextCatalog : Catalog) (script : List Resolved.Statement)
+example {Logical : Type} (startCatalog : Catalog) (script : List Resolved.Statement)
     (contract : LogicalContract Logical) (before after : Interpretation Logical)
     (failures : FailureRepresentation Logical) (profile : Profile) :
-    ¬ VerificationConditions startCatalog nextCatalog script (fun _ => False)
+    ¬ VerificationConditions startCatalog script (fun _ => False)
       contract before after failures profile := by
   intro alleged
   obtain ⟨_, _, impossible⟩ := alleged.nonempty

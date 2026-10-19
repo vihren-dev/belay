@@ -27,7 +27,7 @@ def history (rows : List Row) : Table :=
 /-- Witnesses contain only the declared application storage, at the history
 table's catalog position. -/
 def database (rows : List Row) : Database :=
-  SchemaBinding.start.emptyDatabase.set 0 (history rows)
+  SchemaBinding.start.emptyDatabase.setRows 0 rows
 
 /-- Empty application history is a defined business state. -/
 def emptyState : Database := database []
@@ -41,8 +41,8 @@ theorem start_valid : SchemaBinding.start.Valid Generated.profile.limits := by d
 /-- Replacing only row collections preserves the complete declared catalog. -/
 theorem conforms (rows : List Row) (valid : (history rows).Valid) :
     Conforms Generated.profile SchemaBinding.start (database rows) :=
-  (Catalog.emptyDatabase_conforms start_valid).replaceRows
-    (position := 0) (old := { shape := SchemaBinding.history, rows := [] }) (by decide +kernel) (by rfl) valid
+  (Catalog.emptyDatabase_conforms start_valid).setRows
+    (position := 0) (table := { shape := SchemaBinding.history, rows := [] }) (by decide +kernel) valid
 
 /-- Empty history satisfies storage validity and complete decoder-definedness. -/
 theorem empty_admitted : Admitted Generated.profile SchemaBinding.start Interpretation.admitted emptyState :=

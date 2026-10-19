@@ -23,7 +23,7 @@ def case_assertions(term: str, encoded: str, *, expected: bool = True, failure: 
     """The definitions and proofs of one case: the runner's decoded structural case, the check
     that it encodes to the recorded JSON, and the kernel proof of its verdict."""
     preserved = "" if failure is None else (
-        "theorem preservedFailure : (modelOutcome fixture).map (fun outcome => (observeOutcome 0 outcome).error) = "
+        "theorem preservedFailure : (modelOutcome fixture).map (fun outcome => (observeOutcome outcome).error) = "
         "some (" + failure + ") := by decide +kernel\n#print axioms preservedFailure\n")
     return ("def fixture : Case :=\n" + indent(term, "  ") + "\n" +
             f"#guard match Lean.Json.parse {quoted_string(encoded)} with\n"
