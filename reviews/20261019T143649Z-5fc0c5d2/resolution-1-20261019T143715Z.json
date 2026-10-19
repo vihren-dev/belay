@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-19T14:37:15+00:00",
+  "finding": "20261019T143649Z-5fc0c5d2#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "WithoutRowidExamples: a WITHOUT ROWID key that repeats a column keeps [0, 1], and a rowid table keeps [0, 1, 0]"
+}

@@ -36,6 +36,12 @@ def textKeyed : Syntax.Statement :=
   some (true, [true, false], none)
 #guard ((tableOf (.createTable (name! "x") [keyed (name! "a") (some "INTEGER") (.primaryKey false)] [] withoutRowid)).bind
   (·.rowidAlias)) == none
+-- A key that repeats a column keeps its first occurrence, as SQLite ignores the others
+-- (R-03887-49864); a table with a rowid keeps them, as its key index lists them.
+#guard (tableOf (.createTable (name! "r") [column (name! "a"), column (name! "b")] [.primaryKey [name! "a", name! "b", name! "a"]]
+  withoutRowid)).map (·.primaryKey) == some [0, 1]
+#guard (tableOf (.createTable (name! "r") [column (name! "a"), column (name! "b")] [.primaryKey [name! "a", name! "b", name! "a"]]
+  {})).map (·.primaryKey) == some [0, 1, 0]
 -- A table without a primary key is SQLite's prepare error.
 #guard statements (schema [.createTable (name! "n") [column (name! "a")] [] withoutRowid]) ==
   [.prepareError (.expression (.primaryKeyMissing (name! "n")))]
