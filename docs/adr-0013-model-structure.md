@@ -354,6 +354,20 @@ Implementation notes (2026-10-18, steps 3 and 4):
   stay. The registries are a classifier of the restriction kinds, so the ids and the
   prediction JSON do not change.
 
+Implementation notes (2026-10-19, step 8):
+
+- `json_valid` reads the JSON5 flag (`hasNonstd`) that the one JSON reader records, so
+  the strict grammar of `Json/Validity.lean` is gone. One path walker keeps the JSONB
+  offsets for `json_each`. `realText` and `%J` share one `%g` front end over bytes.
+- A name is `Identifier`, a structure with one field of the bytes as written, not
+  `List UInt8` itself. With a plain definition of `List UInt8`, `simp` cannot match a
+  lemma whose name argument has type `Identifier` against a literal of type
+  `List UInt8`, and the demonstration's proof failed. The kernel still sees a byte list
+  under one constructor. Fixed names are `name! "t"` literals. Function, type and
+  keyword names, and the names of output columns, stay `String`.
+- Kernel time of the 16 frozen model cases with kernel proofs (the profiler's type
+  checking, best of three runs): 3.40 s before identifiers as bytes, 1.58 s after.
+
 ### Amendment 2 (2026-10-18): D5 in detail
 
 The code map for step 5 found that D5's `subquery (Query)` cannot be written as stated, and

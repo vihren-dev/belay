@@ -52,4 +52,11 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), step 8, owner de
 
 ## Remaining
 
-- Kernel time before and after, suites, reviews, CI time, pull requests.
+- 2026-10-19: kernel time of the 16 frozen model cases with kernel proofs (type checking,
+  best of three): 3.40 s at the deduplication tip, 1.58 s with identifiers as bytes.
+  `limit_before_duplicate` (2,000 columns) has no kernel proof and is left out.
+- 2026-10-19: CI time (local, forced rebuilds), step 7 tip → deduplication tip →
+  identifiers as bytes: harness 21 → 23 → 23 s, model 335 → 334 → 344 s, frozen
+  138 → 141 → 140 s, mutants 404 → 408 → 423 s. The model suite does not get shorter:
+  its kernel proofs are a small part of it.
+- Remaining: pull requests.
