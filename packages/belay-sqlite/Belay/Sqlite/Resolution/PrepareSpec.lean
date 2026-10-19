@@ -17,8 +17,8 @@ namespace Belay.Sqlite
 object, the catalog has an object with the folded name, and the catalog is unchanged. -/
 theorem resolveCreateTable_named (context : ResolveContext) (catalog after : Catalog) (index : Nat)
     (name : Identifier) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
-    (error : PrepareError) (named : ∀ cause, error ≠ .expression cause)
-    (ok : resolveCreateTable context catalog index name columns constraints = .ok (.prepareError error, after)) :
+    (options : Syntax.TableOptions) (error : PrepareError) (named : ∀ cause, error ≠ .expression cause)
+    (ok : resolveCreateTable context catalog index name columns constraints options = .ok (.prepareError error, after)) :
     (catalog.find name).isSome = true ∧ after = catalog := by
   unfold resolveCreateTable at ok
   simp only [prepareError, restrict] at ok
@@ -34,9 +34,9 @@ has an object with the folded name, the resolution is a prepare error that names
 catalog object, and the catalog is unchanged. -/
 theorem resolveCreateTable_used (context : ResolveContext) (catalog : Catalog) (index : Nat)
     (name : Identifier) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
-    (notReserved : reservedName name = false) (used : (catalog.find name).isSome = true) :
+    (options : Syntax.TableOptions) (notReserved : reservedName name = false) (used : (catalog.find name).isSome = true) :
     ∃ error, (∀ cause, error ≠ .expression cause) ∧
-      resolveCreateTable context catalog index name columns constraints = .ok (.prepareError error, catalog) := by
+      resolveCreateTable context catalog index name columns constraints options = .ok (.prepareError error, catalog) := by
   unfold resolveCreateTable
   simp only [notReserved, Bool.false_and, Bool.false_eq_true, ite_false, prepareError]
   cases found : catalog.find name with

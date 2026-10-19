@@ -47,7 +47,8 @@ def test_definitions_keep_names_types_and_constraints_as_written(parse_sql: Call
             column("e", None, [{"default": {"sourceText": "'x''y'", "value": {"string": {"bytes": list(b"x'y")}}}}]),
             column("f", None)],
             "constraints": [{"primaryKey": {"columns": ["a"], "algorithm": None}},
-                            {"unique": {"columns": ["c", "d"], "algorithm": None}}]}},
+                            {"unique": {"columns": ["c", "d"], "algorithm": None}}],
+            "options": {"withoutRowid": False}}},
         {"createIndex": {"name": "i", "unique": True, "table": "Big T", "terms": [
             {"expression": {"identifier": {"name": "a", "quote": "none"}}, "descending": False},
             {"expression": {"identifier": {"name": "B", "quote": "none"}}, "descending": False}], "filter": None}},
@@ -146,10 +147,10 @@ def test_dequote_follows_sqlite() -> None:
 
 
 def test_record_names_the_profile_and_both_scripts(parse_sql: Callable[..., Tree]) -> None:
-    """The record carries version 4, the release and build, and the statement JSON."""
+    """The record carries version 5, the release and build, and the statement JSON."""
     schema = statements(parse_sql("CREATE TABLE t(a);"))
     record = script_record(DEFAULT_PROFILE, schema, statements(parse_sql("COMMIT;")))
-    assert record == {"version": 4, "release": "3.51.0", "sourceId": DEFAULT_PROFILE.source_id,
+    assert record == {"version": 5, "release": "3.51.0", "sourceId": DEFAULT_PROFILE.source_id,
                       "schema": [schema[0].value], "script": ["commit"]}
 
 

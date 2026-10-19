@@ -27,12 +27,19 @@ structure ConflictClause where
   action : ConflictAction
   deriving Repr, BEq
 
+/-- The table options of CREATE TABLE ({lit}`table_option_set`). Use {lean}`({} : TableOptions)`
+for a table without options. -/
+structure TableOptions where
+  /-- {lit}`WITHOUT ROWID`. -/
+  withoutRowid : Bool := false
+  deriving Repr, BEq
+
 /-- One statement as written. For example, {lit}`COMMIT` is
 {lean}`Statement.commit`. -/
 inductive Statement where
-  /-- {lit}`CREATE TABLE name (columns, constraints)`. -/
+  /-- {lit}`CREATE TABLE name (columns, constraints) options`. -/
   | createTable (name : Identifier) (columns : List ColumnDefinition)
-      (constraints : List TableConstraint)
+      (constraints : List TableConstraint) (options : TableOptions := {})
   /-- {lit}`CREATE [UNIQUE] INDEX name ON table (terms) [WHERE filter]`: each key term is an
   expression with its sort order, and the filter is none for an index of every row. -/
   | createIndex (name : Identifier) (unique : Bool) (table : Identifier) (terms : List OrderTerm)

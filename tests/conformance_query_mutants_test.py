@@ -30,7 +30,8 @@ from conformance import (algorithm_mutants, alias_mutants, authored_algorithms, 
                          authored_joins, authored_json, authored_json_each, authored_json_functions, authored_keys,
                          authored_merged, authored_numbers, authored_queries, authored_right, authored_row_writes,
                          authored_upserts, authored_using, authored_writes, clock_mutants, date_function_mutants,
-                         authored_indexes, date_modifier_mutants, fromless_mutants, index_mutants,
+                         authored_indexes, authored_without_rowid, date_modifier_mutants, fromless_mutants,
+                         index_mutants, without_rowid_mutants,
                          json_each_mutants, json_function_mutants,
                          json_mutants, upsert_mutants)
 from conformance.native_replay import prepare
@@ -118,11 +119,15 @@ def test_every_key_alias_upsert_and_algorithm_mutant_changes_a_verdict(runtime_r
                  (algorithm_mutants.MUTANTS, algorithm_mutants.TARGETS)])
 
 
-def test_every_index_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored index cases notice every changed rule of index forms
-    (`conformance.index_mutants`): a filter that is ignored, an expression key read as a
-    column, and a CREATE INDEX that runs without its uniqueness check (ADR 0014, slice 1)."""
-    measure_set(runtime_root, [authored_indexes], [(index_mutants.MUTANTS, index_mutants.TARGETS)])
+def test_every_index_and_without_rowid_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored index and `WITHOUT ROWID` cases notice every changed rule of index forms
+    (`conformance.index_mutants`: a filter that is ignored, an expression key read as a
+    column, and a CREATE INDEX that runs without its uniqueness check) and of `WITHOUT ROWID`
+    tables (`conformance.without_rowid_mutants`: a scan in insertion order, and a key column
+    that admits NULL), ADR 0014, slices 1 and 2."""
+    measure_set(runtime_root, [authored_indexes, authored_without_rowid],
+                [(index_mutants.MUTANTS, index_mutants.TARGETS),
+                 (without_rowid_mutants.MUTANTS, without_rowid_mutants.TARGETS)])
 
 
 def test_every_write_and_join_mutant_changes_a_verdict(runtime_root: Path) -> None:

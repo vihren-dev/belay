@@ -42,8 +42,8 @@ transaction control. Proof sketch: every branch returns the input catalog with a
 error, or the CREATE TABLE at the end of the catalog with {name}`Catalog.createTable`. -/
 theorem resolveCreateTable_applyCatalog (context : ResolveContext) (catalog after : Catalog) (index : Nat)
     (name : Identifier) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
-    (statement : Resolved.Statement)
-    (ok : resolveCreateTable context catalog index name columns constraints = .ok (statement, after)) :
+    (options : Syntax.TableOptions) (statement : Resolved.Statement)
+    (ok : resolveCreateTable context catalog index name columns constraints options = .ok (statement, after)) :
     after = statement.applyCatalog catalog ∧ statement.isControl = false := by
   unfold resolveCreateTable at ok
   simp only [prepareError, restrict] at ok
@@ -94,10 +94,10 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
   | begin => cases ok; rfl
   | commit => cases ok; rfl
   | rollback => cases ok; rfl
-  | createTable name columns constraints =>
+  | createTable name columns constraints options =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    obtain ⟨equal, control⟩ := resolveCreateTable_applyCatalog _ _ _ _ _ _ _ _ (by assumption)
+    obtain ⟨equal, control⟩ := resolveCreateTable_applyCatalog _ _ _ _ _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
   | createIndex name unique table terms filter =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok

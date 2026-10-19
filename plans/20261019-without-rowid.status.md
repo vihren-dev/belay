@@ -20,6 +20,17 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D4.
   NULL; `rowid` is `no such column`; a scan is in key order, descending for
   `PRIMARY KEY DESC`; the table has a `pk` index.
 
+- 2026-10-19: outcomes 1 to 4 in one commit. Syntax `createTable` has `TableOptions`
+  (`withoutRowid`), mapped from the table option set; STRICT stays refused; record
+  version 5 (the frozen model cases and the regression record get `options`, and the
+  regression hash). `CatalogTable.withoutRowid` and `asWithoutRowid` (key columns NOT NULL,
+  no alias); `primaryKeyMissing`; `ScopeSource.hasRowid` makes rowid names `no such column`
+  over such tables; `Table.scanRows` orders a scan by rowid or by key, used by queries and
+  by the harness's UPDATE and DELETE outputs. The harness has `NativeTable.withoutRowid`
+  (written only when true) and compares such rows by cells in key order; the prediction
+  renders the key cells as identity. Authored corpus `authored_without_rowid` (17 cases,
+  corpus 30) and `without_rowid_mutants` (two). ADR 0014 records the hidden-rowid design.
+
 ## Remaining
 
-- All outcomes, checks, reviews, CI time, pull requests.
+- Suites, verdict, review, CI time, pull requests A and B.

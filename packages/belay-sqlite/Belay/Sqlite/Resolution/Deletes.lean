@@ -19,7 +19,7 @@ def resolveDelete (context : ResolveContext) (catalog : Catalog) (index : Nat) (
     if reservedName tableName then restrict index [0] .systemTable
     else prepareError catalog (.noSuchTable tableName)
   | some (position, table) =>
-    let scope := Scope.single tableName table.columns
+    let scope := Scope.single tableName table.columns !table.withoutRowid
     let resolvedCondition : Except ValueIssue (Option Resolved.Expr) := match filter with
       | none => .ok none
       | some term => some <$> condition [] (resolveOperand dqs scope true term)

@@ -16,9 +16,10 @@ namespace Belay.Sqlite
 /-- The scope of {lit}`DO UPDATE`: the table, then {lit}`excluded` with the same
 columns. Every column of {lit}`excluded` is merged ({name}`ScopeSource.merged`), so an
 unqualified name reads the table's column and only {lit}`excluded.column` reads the
-proposed row, as in SQLite. -/
-def upsertScope (tableName : Identifier) (columns : List CatalogColumn) : Scope :=
-  [{ name := tableName, columns }, { name := (name! "excluded"), columns, offset := columns.length, merged := List.range columns.length }]
+proposed row, as in SQLite. Both have a rowid unless the table is {lit}`WITHOUT ROWID`. -/
+def upsertScope (tableName : Identifier) (columns : List CatalogColumn) (hasRowid : Bool := true) : Scope :=
+  [{ name := tableName, columns, hasRowid },
+   { name := (name! "excluded"), columns, offset := columns.length, merged := List.range columns.length, hasRowid }]
 
 /-- The key that a conflict target names: the first key of columns without filter
 ({name}`UniqueKey.columns?`) whose columns are the target's columns, in any order. An
@@ -69,7 +70,8 @@ its action ({name}`resolveConflictAction`). -/
 def resolveConflict (dqs : Bool) (tableName : Identifier) (table : CatalogTable) (keys : List UniqueKey)
     (clause : Nat) (written : Syntax.ConflictClause) : Except ValueIssue Resolved.ConflictClause :=
   resolveConflictTarget table.columns keys clause written.target >>= fun target =>
-  resolveConflictAction dqs (upsertScope tableName table.columns) keys clause target.isSome written.action
+  resolveConflictAction dqs (upsertScope tableName table.columns !table.withoutRowid) keys clause target.isSome
+    written.action
     >>= fun action => .ok { target, action }
 
 end Belay.Sqlite

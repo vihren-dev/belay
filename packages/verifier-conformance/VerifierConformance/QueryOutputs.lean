@@ -31,8 +31,9 @@ def database : Database := .ofTables [((name! "t"), table)]
   [some ⟨["v"], [[.text [122]], [.text [122]]], some 2⟩]
 
 open Resolved.QueryExamples in
--- DELETE ... RETURNING v without a filter returns the old value of every row and counts them.
+-- DELETE ... RETURNING v without a filter returns the old value of every row, in rowid order,
+-- and counts them.
 #guard (passFrom 0 [.delete 0 none [(.column 1, "v")]] { database }).outputs ==
-  [some ⟨["v"], table.rows.map (fun row => [row.values.getD 1 .null]), some table.rows.length⟩]
+  [some ⟨["v"], table.scanRows.map (fun row => [row.values.getD 1 .null]), some table.rows.length⟩]
 
 end Belay.Sqlite.Conformance.QueryOutputs

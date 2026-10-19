@@ -35,7 +35,8 @@ def sortOrders (descending : List Bool) : List Bool := if descending.any id then
 
 /-- One native table: its name in {lit}`sqlite_schema`, its columns, the primary-key
 positions in key order, the key positions of each UNIQUE constraint index (origin
-{lit}`u`), its explicit indexes, and its rows. -/
+{lit}`u`), its explicit indexes, its rows, and whether it is {lit}`WITHOUT ROWID`. The rows
+of a {lit}`WITHOUT ROWID` table have the rowid 0: SQLite gives them no rowid. -/
 structure NativeTable where
   name : Identifier
   columns : List NativeColumn
@@ -43,6 +44,7 @@ structure NativeTable where
   uniqueKeys : List (List Nat)
   indexes : List NativeIndex
   rows : List Row
+  withoutRowid : Bool := false
   deriving Repr, DecidableEq
 
 /-- Where SQLite reported a statement's error: in {lit}`sqlite3_prepare_v2`, where
@@ -112,14 +114,20 @@ def sameIndexes (model native : List NativeIndex) : Bool :=
   model.length == native.length && model.all (native.contains ·)
 
 /-- Whether the catalog table at a position, its object name and its stored rows match
-a native table: name, columns, keys, indexes and rows. -/
+a native table: name, columns, keys, indexes, {lit}`WITHOUT ROWID`, and rows: by rowid, or
+for a {lit}`WITHOUT ROWID` table by their cells in key order
+({name}`Belay.Sqlite.Table.scanRows`), since the model's rowids of such a table are its
+own. -/
 def tableMatches (catalog : Catalog) (position : Nat) (name : Identifier) (table : CatalogTable)
     (rows : List Row) (native : NativeTable) : Bool :=
   name == native.name && table.columns.length == native.columns.length &&
   (table.columns.zip native.columns).all (fun (column, observed) => columnMatches column observed) &&
   table.primaryKey == native.primaryKey && sortKeys table.uniqueKeys == sortKeys native.uniqueKeys &&
-  sameIndexes (catalogIndexes catalog position) native.indexes &&
-  sortRows rows == sortRows native.rows
+  sameIndexes (catalogIndexes catalog position) native.indexes && table.withoutRowid == native.withoutRowid &&
+  if table.withoutRowid then
+    ({ shape := table, rows } : Table).scanRows.map (·.values) ==
+      ({ shape := table, rows := native.rows } : Table).scanRows.map (·.values)
+  else sortRows rows == sortRows native.rows
 
 /-- Whether a model database matches the native tables: every catalog table has exactly
 one native table with its folded name that matches it, no native table is outside the

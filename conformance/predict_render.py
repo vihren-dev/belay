@@ -83,13 +83,20 @@ def indexes(table: dict[str, Json], rowid_primary_key: bool, descending_key: boo
 
 
 def table_record(predicted: dict[str, Json]) -> dict[str, Json]:
-    """One model table in the recorded table form."""
+    """One model table in the recorded table form. A row's identity is its rowid, or its
+    primary-key cells in a `WITHOUT ROWID` table, as the recorder writes it."""
     table = predicted["table"]
     primary = [int(key) for key in table["primaryKey"]]
-    return {"name": table["name"], "kind": "table", "withoutRowid": False, "foreignKeys": [],
+    without_rowid = bool(table.get("withoutRowid", False))
+
+    def identity(row: dict[str, Json]) -> list[Json]:
+        values = row["values"]
+        return ([value_cell(values[key]) for key in primary] if without_rowid
+                else [integer_cell(int(row["rowid"]))])
+    return {"name": table["name"], "kind": "table", "withoutRowid": without_rowid, "foreignKeys": [],
             "columns": [column_row(position, column, primary) for position, column in enumerate(table["columns"])],
             "indexes": indexes(table, bool(predicted["rowidPrimaryKey"]), bool(predicted["primaryKeyDescending"])),
-            "rows": [{"identity": [integer_cell(int(row["rowid"]))], "values": [value_cell(v) for v in row["values"]]}
+            "rows": [{"identity": identity(row), "values": [value_cell(v) for v in row["values"]]}
                      for row in table["rows"]]}
 
 

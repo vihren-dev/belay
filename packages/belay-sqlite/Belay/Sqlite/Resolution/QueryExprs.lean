@@ -21,8 +21,8 @@ mutual
 operand of its name ({name}`Scope.resolveName`, {name}`Scope.nameOperand`): one column,
 or the coalesce of the columns that full joins merged; two columns that no join merged
 are SQLite's {lit}`ambiguous column name: %s`. With none: a rowid name
-({name}`rowidName`) is a model restriction when a table is in scope, because SQLite reads
-the rowid; a name written in double quotes is a string literal when {lit}`dqs` is on;
+({name}`rowidName`) is a model restriction when a source with a rowid is in scope
+({name}`ScopeSource.hasRowid`), because SQLite reads the rowid; a name written in double quotes is a string literal when {lit}`dqs` is on;
 an unquoted {lit}`TRUE` or {lit}`FALSE` is the integer 1 or 0; else it is SQLite's
 {lit}`no such column: %s`, also for {lit}`[true]`, which only quotes. A qualified name {lit}`x.c` is column
 {lit}`c` of the sources named {lit}`x` ({name}`Scope.resolveQualified`): one column, the
@@ -41,7 +41,7 @@ def resolveOperand (dqs : Bool) (scope : Scope) (misuse : Bool) : Syntax.Expr �
   | .identifier name quote => match scope.resolveName name with
     | .found _ reads => .ok (scope.nameOperand reads)
     | .missing =>
-      if rowidName name && !scope.isEmpty then .error (.restriction [] .rowidName)
+      if rowidName name && scope.any (·.hasRowid) then .error (.restriction [] .rowidName)
       else if quote == .double && dqs then .ok (.literal (.text name.bytes), none)
       else if quote == .none && booleanKeywordName name then
         .ok (.literal (.integer (if name.isKeyword (bytes! "true") then 1 else 0)), none)
@@ -50,7 +50,7 @@ def resolveOperand (dqs : Bool) (scope : Scope) (misuse : Bool) : Syntax.Expr �
   | .qualified source column => match scope.resolveQualified source column with
     | .found _ reads => .ok (scope.nameOperand reads)
     | .missing =>
-      if rowidName column && scope.hasSource source then .error (.restriction [] .rowidName)
+      if rowidName column && scope.rowidSource source then .error (.restriction [] .rowidName)
       else .error (.prepare (.noSuchColumn ⟨source.bytes ++ [46] ++ column.bytes⟩))
     | .ambiguous => .error (.prepare (.ambiguousColumn ⟨source.bytes ++ [46] ++ column.bytes⟩))
   | .compare operator left right => do

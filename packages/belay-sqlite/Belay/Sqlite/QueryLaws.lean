@@ -76,6 +76,12 @@ starting list. -/
 theorem stableSort_perm (le : α → α → Bool) (items : List α) : (stableSort le items).Perm items := by
   simpa [stableSort] using foldl_insertStable_perm le items []
 
+/-- For every table, the rows of a full scan ({name}`Belay.Sqlite.Table.scanRows`) are a
+permutation of its rows, in rowid or in key order. -/
+theorem _root_.Belay.Sqlite.Table.scanRows_perm (table : Table) : table.scanRows.Perm table.rows := by
+  unfold Table.scanRows
+  split <;> exact stableSort_perm _ _
+
 /-- For every relation {lit}`le` that is transitive and total (for all {lit}`a` and
 {lit}`b`, {lit}`le a b` or {lit}`le b a`), every item and every list that is in order
 by {lit}`le`: the result of {name}`insertStable` is in order by {lit}`le`. Proof

@@ -62,16 +62,20 @@ def output_wire(event: dict[str, Json]) -> dict[str, Json]:
 
 
 def native_tables(observation: dict[str, Json]) -> list[Json]:
-    """Decode every recorded table with its PRAGMA metadata and rows; Lean compares them."""
+    """Decode every recorded table with its PRAGMA metadata and rows; Lean compares them. A
+    `WITHOUT ROWID` table has no rowid: its rows get the rowid 0, and Lean compares them by
+    their cells in key order."""
     result: list[Json] = []
     for item in observation["tables"]:
-        if item["withoutRowid"] or item["kind"] != "table" or item["rowKey"] not in [["rowid"], ["_rowid_"], ["oid"]]:
+        without_rowid = bool(item["withoutRowid"])
+        if item["kind"] != "table" or (not without_rowid and item["rowKey"] not in [["rowid"], ["_rowid_"], ["oid"]]):
             raise ValueError("Unexpected row identity in an observed table")
         indexes = [(native_bindings.decode_rows([index["entry"]])[0], native_bindings.decode_rows(index["columns"]))
                    for index in item["indexes"]]
-        rows = [row_wire(integer(native_bindings.decode_cell(row["identity"][0])),
+        rows = [row_wire(0 if without_rowid else integer(native_bindings.decode_cell(row["identity"][0])),
                          tuple(native_bindings.decode_cell(cell) for cell in row["values"])) for row in item["rows"]]
-        result.append(native_table(item["name"], native_bindings.decode_rows(item["columns"]), indexes, rows))
+        result.append(native_table(item["name"], native_bindings.decode_rows(item["columns"]), indexes, rows,
+                                   without_rowid=without_rowid))
     return result
 
 

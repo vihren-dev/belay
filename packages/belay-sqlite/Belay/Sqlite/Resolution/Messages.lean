@@ -30,6 +30,7 @@ def ExprError.message : ExprError → String
   | .tableMayNotBeAltered name => s!"table {name} may not be altered"
   | .tableMayNotBeIndexed name => s!"table {name} may not be indexed"
   | .cannotAddPrimaryKey => "Cannot add a PRIMARY KEY column"
+  | .primaryKeyMissing table => s!"PRIMARY KEY missing on table {table}"
   | .cannotAddUnique => "Cannot add a UNIQUE column"
   | .conflictingAlgorithms => "conflicting ON CONFLICT clauses specified"
   | .noSuchColumn name => s!"no such column: {name}"

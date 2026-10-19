@@ -87,10 +87,20 @@ def statisticsTable (name : Identifier) (columns : List Syntax.ColumnDefinition)
     { name := column, declaredType := none, constraints := [] }
   constraints.isEmpty && (statisticsColumns name.folded).any plain
 
-/-- Resolve CREATE TABLE. Path 1 is the column list and path 2 the table constraints. -/
+/-- A table as {lit}`WITHOUT ROWID` makes it (ADR 0014, D4; {lit}`convertToWithoutRowidTable`):
+no rowid alias, and each primary-key column NOT NULL, with ABORT unless it declares its own
+NOT NULL. -/
+def CatalogTable.asWithoutRowid (table : CatalogTable) : CatalogTable :=
+  let columns := table.columns.mapIdx fun position (column : CatalogColumn) =>
+    if table.primaryKey.contains position then { column with notNull := true } else column
+  { table with withoutRowid := true, rowidAlias := none, columns }
+
+/-- Resolve CREATE TABLE. Path 1 is the column list and path 2 the table constraints. A
+{lit}`WITHOUT ROWID` table ({name}`CatalogTable.asWithoutRowid`) without a primary key is
+SQLite's {lit}`PRIMARY KEY missing on table %s`, after the errors of its definitions. -/
 def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : Nat)
     (name : Identifier) (columns : List Syntax.ColumnDefinition)
-    (constraints : List Syntax.TableConstraint) : StatementResolution :=
+    (constraints : List Syntax.TableConstraint) (options : Syntax.TableOptions := {}) : StatementResolution :=
   let statistics := context.mode == .description && statisticsTable name columns constraints
   if reservedName name && !statistics then
     if context.mode == .description then restrict index [0] .engineTable
@@ -103,7 +113,10 @@ def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : N
         (addTableConstraints name · constraints) with
     | .error error => prepareError catalog (.expression error)
     | .ok table =>
-      if columns.any (rowidName ·.name) then restrict index [1] .rowidColumnName
+      let table := if options.withoutRowid then table.asWithoutRowid else table
+      if options.withoutRowid && table.primaryKey.isEmpty then
+        prepareError catalog (.expression (.primaryKeyMissing name))
+      else if columns.any (rowidName ·.name) then restrict index [1] .rowidColumnName
       else if context.mode == .execution && (!constraints.isEmpty || columns.any (!·.constraints.isEmpty)) then
         restrict index [1] .createTableConstraints
       else if columns.any (!·.constraints.all Syntax.ColumnConstraint.modeledDefault) then
@@ -127,7 +140,7 @@ def resolveCreateIndex (context : ResolveContext) (catalog : Catalog) (index : N
     | some (_, { entry := .table _, .. }) => prepareError catalog (.tableNameUsed name)
     | some (_, { entry := .index _, .. }) => prepareError catalog (.indexExists name)
     | none =>
-      let scope := Scope.single tableName table.columns
+      let scope := Scope.single tableName table.columns !table.withoutRowid
       let dqs := context.profile.dqsDdl
       match indexKeys dqs scope table.columns terms with
       | .error issue => issueResolution catalog index [3] issue

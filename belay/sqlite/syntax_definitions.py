@@ -137,6 +137,19 @@ def table_constraint(tree: Tree, node: Node) -> Located:
     raise tree.unsupported(node, "Unsupported table constraint; use PRIMARY KEY or UNIQUE over column names")
 
 
+def table_options(tree: Tree, node: Node) -> Located:
+    """Map the table options after the column list: `WITHOUT ROWID` (ADR 0014, slice 2).
+    `STRICT` is refused until the model describes it."""
+    without_rowid = False
+    for item in left_list(tree, node, {1: ["table_option"], 3: ["table_option_set", "COMMA", "table_option"]}):
+        option = item[-1]
+        if [child.symbol for child in tree.children(option)] == ["WITHOUT", "nm"]:
+            without_rowid = True
+        else:
+            raise tree.unsupported(option, "The table option STRICT is not modeled; remove it")
+    return structure([("withoutRowid", leaf(without_rowid, node.start, node.end))], node.start, node.end)
+
+
 def create_table(tree: Tree, command: Node) -> Located:
     """Map CREATE TABLE with column definitions and table constraints."""
     declaration, arguments = require(tree, command, ["create_table", "create_table_args"])
@@ -145,7 +158,6 @@ def create_table(tree: Tree, command: Node) -> Located:
     absent(tree, header[1], "TEMP")
     absent(tree, header[3], "IF NOT EXISTS")
     absent(tree, header[5], "A schema name")
-    absent(tree, body[4], "A table option such as WITHOUT ROWID or STRICT")
     column_shapes = {2: ["columnname", "carglist"], 4: ["columnlist", "COMMA", "columnname", "carglist"]}
     columns = [column_definition(tree, item[-2], item[-1]) for item in left_list(tree, body[1], column_shapes)]
     constraints: list[Located] = []
@@ -155,7 +167,8 @@ def create_table(tree: Tree, command: Node) -> Located:
                        left_list(tree, listed, {1: ["tcons"], 3: ["conslist", "tconscomma", "tcons"]})]
     return constructor("createTable", [("name", name(tree, header[4])),
                                        ("columns", sequence(columns, body[1].start, body[1].end)),
-                                       ("constraints", sequence(constraints, body[2].start, body[2].end))],
+                                       ("constraints", sequence(constraints, body[2].start, body[2].end)),
+                                       ("options", table_options(tree, body[4]))],
                        command.start, command.end)
 
 

@@ -38,6 +38,9 @@ inductive ExprError where
   | tableMayNotBeIndexed (name : Identifier)
   /-- {lit}`Cannot add a PRIMARY KEY column` ({lit}`sqlite3AlterFinishAddColumn`). -/
   | cannotAddPrimaryKey
+  /-- {lit}`PRIMARY KEY missing on table %s`: a {lit}`WITHOUT ROWID` table without a primary
+  key ({lit}`sqlite3EndTable`). -/
+  | primaryKeyMissing (table : Identifier)
   /-- {lit}`Cannot add a UNIQUE column` ({lit}`sqlite3AlterFinishAddColumn`). -/
   | cannotAddUnique
   /-- {lit}`conflicting ON CONFLICT clauses specified`: two constraints of one index with

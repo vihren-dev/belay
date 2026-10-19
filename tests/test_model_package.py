@@ -62,13 +62,13 @@ open Belay.Sqlite
 #check Conforms.setRows
 #check TableExtends.project
 #check Conformance.statement_atomicity
-def sample : ScriptRecord := ⟨4, "3.51.0", "build", [], []⟩
+def sample : ScriptRecord := ⟨5, "3.51.0", "build", [], []⟩
 #eval match decodeScriptRecord (Lean.toJson sample) with
-  | .ok result => result.version == 4 && result.schema.isEmpty && result.script.isEmpty
+  | .ok result => result.version == 5 && result.schema.isEmpty && result.script.isEmpty
   | .error _ => false
 #eval match decodeScriptRecord (Lean.toJson { sample with version := 1 }) with
   | .ok _ => false
-  | .error message => message.contains "1" && message.contains "version 4" && message.contains "Regenerate"
+  | .error message => message.contains "1" && message.contains "version 5" && message.contains "Regenerate"
 #eval match (Lean.fromJson? (Lean.toJson (256 : Nat)) : Except String UInt8) with
   | .ok _ => false
   | .error _ => true

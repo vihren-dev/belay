@@ -56,7 +56,7 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
             match resolveAll (resolveConflict context.profile.dqsDml tableName table keys) conflicts with
             | .error issue => issueResolution catalog index [3] issue
             | .ok clauses =>
-              match resolveReturning context.profile.dqsDml (Scope.single tableName table.columns) returning with
+              match resolveReturning context.profile.dqsDml (Scope.single tableName table.columns !table.withoutRowid) returning with
               | .error issue => issueResolution catalog index [insertReturningField] issue
               | .ok columns =>
                 let policy := catalog.writePolicy position table algorithm

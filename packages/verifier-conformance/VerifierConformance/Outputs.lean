@@ -108,7 +108,9 @@ alias), or of the new values of the selected rows. A successful INSERT with
 ({name}`LiteralData.upsertRun`); skipped and deleted rows are not counted, and a FAIL
 failure counts the rows before the failing one ({name}`keptCount`). A
 successful DELETE changes each row that its filter selects, and its {lit}`RETURNING` rows
-are {name}`returnedRows` of the old values of those rows. A write that fails a
+are {name}`returnedRows` of the old values of those rows. UPDATE and DELETE return their
+rows in scan order ({name}`Belay.Sqlite.Table.scanRows`): rowid order, or key order for a
+{lit}`WITHOUT ROWID` table. A write that fails a
 constraint or a rowid alias ({lit}`datatype mismatch`) returns its {lit}`RETURNING` names
 and no rows. A query has its result column
 names and the rows of {name}`Resolved.Query.run` over the table before it, and no
@@ -147,7 +149,7 @@ def statementOutput (clock : Int) (statement : Resolved.Statement) (before : Sql
     let names := returning.map (·.2)
     if successful then do
       let table ← before.database.table target
-      let chosen := table.rows.filter (LiteralData.selected clock filter)
+      let chosen := table.scanRows.filter (LiteralData.selected clock filter)
       let written := chosen.map fun row => (LiteralData.assign clock table.shape.columns assignments row).values
       return ⟨names, returnedRows clock returning written,
         some chosen.length⟩
@@ -156,7 +158,7 @@ def statementOutput (clock : Int) (statement : Resolved.Statement) (before : Sql
     let names := returning.map (·.2)
     if successful then do
       let table ← before.database.table target
-      let chosen := table.rows.filter (LiteralData.selected clock filter)
+      let chosen := table.scanRows.filter (LiteralData.selected clock filter)
       return ⟨names, returnedRows clock returning (chosen.map (·.values)), some chosen.length⟩
     else none
   | .query query =>

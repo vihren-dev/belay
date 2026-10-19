@@ -51,6 +51,9 @@ structure CatalogTable where
   /-- The {lit}`ON CONFLICT` algorithm of each UNIQUE constraint, in the order of
   {lit}`uniqueKeys`, none without the clause; a constraint without an entry has none. -/
   uniqueAlgorithms : List (Option ConflictAlgorithm) := []
+  /-- Whether the table is {lit}`WITHOUT ROWID` (ADR 0014, D4): it has no rowid, its rows
+  are in primary-key order, and its key columns are NOT NULL. -/
+  withoutRowid : Bool := false
   deriving Repr, DecidableEq
 
 /-- The {lit}`ON CONFLICT` algorithm of the UNIQUE constraint at the position, none for a

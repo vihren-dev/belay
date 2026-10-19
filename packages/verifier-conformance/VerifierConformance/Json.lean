@@ -31,7 +31,24 @@ instance : Lean.FromJson Conformance.NativeIndex where
     return { name := ← json.getObjValAs? Identifier "name", columns := ← json.getObjValAs? (List (Option Nat)) "columns",
              unique := ← json.getObjValAs? Bool "unique", descending := Conformance.sortOrders descending, isPartial }
 
-deriving instance Lean.FromJson, Lean.ToJson for Conformance.NativeTable, Conformance.NativeObservation
+/-- A native table as JSON, with {lit}`withoutRowid` only for a {lit}`WITHOUT ROWID` table, so the
+records of other tables keep their form. -/
+instance : Lean.ToJson Conformance.NativeTable where
+  toJson table := Lean.Json.mkObj ([("name", Lean.toJson table.name), ("columns", Lean.toJson table.columns),
+      ("primaryKey", Lean.toJson table.primaryKey), ("uniqueKeys", Lean.toJson table.uniqueKeys),
+      ("indexes", Lean.toJson table.indexes), ("rows", Lean.toJson table.rows)] ++
+    (if table.withoutRowid then [("withoutRowid", Lean.toJson true)] else []))
+
+/-- Read a native table ({name}`Conformance.NativeTable`); a missing {lit}`withoutRowid` is a
+table with a rowid. -/
+instance : Lean.FromJson Conformance.NativeTable where
+  fromJson? json := do
+    let withoutRowid : Bool := (json.getObjValAs? Bool "withoutRowid").toOption.getD false
+    return { name := ← json.getObjValAs? Identifier "name", columns := ← json.getObjValAs? _ "columns",
+             primaryKey := ← json.getObjValAs? _ "primaryKey", uniqueKeys := ← json.getObjValAs? _ "uniqueKeys",
+             indexes := ← json.getObjValAs? _ "indexes", rows := ← json.getObjValAs? _ "rows", withoutRowid }
+
+deriving instance Lean.FromJson, Lean.ToJson for Conformance.NativeObservation
 deriving instance Lean.FromJson, Lean.ToJson for Conformance.StatementOutput, Conformance.OutputGroup,
   Conformance.NativeOutput
 deriving instance Lean.FromJson, Lean.ToJson for Conformance.Case
@@ -43,9 +60,9 @@ source spelling in statement syntax. Version 4 lacked that spelling. -/
 def caseVersion : Nat := 5
 
 /-- Check one native table: folded-name uniqueness is checked by the caller; here,
-distinct bounded rowids and one cell per column. -/
+distinct bounded rowids, except in a {lit}`WITHOUT ROWID` table, and one cell per column. -/
 def checkNativeTable (table : NativeTable) : Except String Unit := do
-  unless (table.rows.map Row.rowid).eraseDups.length == table.rows.length do
+  unless table.withoutRowid || (table.rows.map Row.rowid).eraseDups.length == table.rows.length do
     throw "duplicate physical rowid"
   for row in table.rows do
     unless LiteralData.boundedInteger row.rowid && row.values.length == table.columns.length do

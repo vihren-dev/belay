@@ -211,6 +211,19 @@ Each slice works in this way:
 - A judge change, such as the comparison of `WITHOUT ROWID` rows, has its own pull
   request A with a new judge lock, under ADR 0011.
 
+### Implementation notes
+
+- Slice 1 (2026-10-19): the key forms and the catalog index live in
+  `Resolution/Keys.lean`, and `Catalog.uniqueKeys` gives every key as terms with an optional
+  filter. An index may repeat a column, as SQLite allows. The time keywords in an index
+  are covered by Lean examples only: the recorder refuses them outside a controlled clock.
+- Slice 2 (2026-10-19), a change of D4's representation: the rows of a `WITHOUT ROWID`
+  table keep distinct hidden rowids, which the writes allocate as for any table and no
+  result shows, and `Table.scanRows` orders a full scan by the primary key. So the write
+  path, `Table.Valid` and its proofs stay as they are. Queries and the `RETURNING` rows of
+  UPDATE and DELETE read the scan; the harness compares such a table by its cells in key
+  order, and the prediction gives each row the primary-key cells as its identity.
+
 ## Consequences
 
 - **Catalog and Syntax grow.**

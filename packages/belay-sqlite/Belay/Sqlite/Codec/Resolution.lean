@@ -17,6 +17,7 @@ deriving instance Lean.FromJson, Lean.ToJson for Syntax.ResultColumn, Syntax.Ord
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ColumnDefinition, Syntax.TableConstraint
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.TableReference, Syntax.Join
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ConflictAction, Syntax.ConflictClause
+deriving instance Lean.FromJson, Lean.ToJson for Syntax.TableOptions
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.Statement
 deriving instance Lean.ToJson for ExprError
 
@@ -60,6 +61,7 @@ deriving instance Lean.ToExpr for Syntax.TableReference
 deriving instance Lean.ToExpr for Syntax.Join
 deriving instance Lean.ToExpr for Syntax.ConflictAction
 deriving instance Lean.ToExpr for Syntax.ConflictClause
+deriving instance Lean.ToExpr for Syntax.TableOptions
 deriving instance Lean.ToExpr for Syntax.Statement
 deriving instance Lean.ToExpr for Limits
 deriving instance Lean.ToExpr for Profile
@@ -93,10 +95,11 @@ deriving instance Lean.ToExpr for Resolved.Cell
 deriving instance Lean.ToExpr for Resolved.Statement
 
 /-- The supported version of {lit}`ScriptRecord`, the structural record of a schema
-and a script: {assert}`scriptRecordVersion = 4`. Version 4 gives CREATE INDEX its key terms
-and filter (ADR 0014, slice 1); version 3 retained each default's source spelling. Earlier
-versions do not carry this metadata. -/
-def scriptRecordVersion : Nat := 4
+and a script: {assert}`scriptRecordVersion = 5`. Version 5 gives CREATE TABLE its table
+options (ADR 0014, slice 2); version 4 gave CREATE INDEX its key terms and filter (slice 1);
+version 3 retained each default's source spelling. Earlier versions do not carry this
+metadata. -/
+def scriptRecordVersion : Nat := 5
 
 /-- The structural record of a schema and a script: the SQLite release and build of
 the profile, and the schema and script statements as written. Use an empty schema

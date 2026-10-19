@@ -45,6 +45,9 @@ structure ScopeSource where
   {lit}`x.*` do not show and names do see: the {lit}`json` and {lit}`root` columns of
   {lit}`json_each`. Empty for a table. -/
   hidden : List Nat := []
+  /-- Whether the source has a rowid that {lit}`rowid`, {lit}`_rowid_` and {lit}`oid` name: a
+  table that is not {lit}`WITHOUT ROWID`, and {lit}`json_each`. -/
+  hasRowid : Bool := true
   deriving Repr, DecidableEq
 
 /-- The sources in scope, in {lit}`FROM` order, each at its offset in the joined row;
@@ -56,8 +59,10 @@ def Scope.place (sources : List ScopeSource) : Scope :=
   (sources.foldl (fun (offset, placed) source =>
     (offset + source.columns.length, placed ++ [{ source with offset }])) (0, [])).2
 
-/-- The scope of one table under its name, as a write or a query of one table has. -/
-def Scope.single (name : Identifier) (columns : List CatalogColumn) : Scope := [{ name, columns }]
+/-- The scope of one table under its name, as a write or a query of one table has;
+{lit}`hasRowid` is false for a {lit}`WITHOUT ROWID` table. -/
+def Scope.single (name : Identifier) (columns : List CatalogColumn) (hasRowid : Bool := true) : Scope :=
+  [{ name, columns, hasRowid }]
 
 /-- The columns of all sources, in the order of the concatenated row. -/
 def Scope.columns (scope : Scope) : List CatalogColumn := scope.flatMap (·.columns)
@@ -131,6 +136,10 @@ def ScopeSource.named (source : ScopeSource) (name : Identifier) : Bool :=
 /-- Whether a source of the scope has the folded name. -/
 def Scope.hasSource (scope : Scope) (name : Identifier) : Bool :=
   scope.any (·.named name)
+
+/-- Whether a source with the folded name has a rowid ({name}`ScopeSource.hasRowid`). -/
+def Scope.rowidSource (scope : Scope) (name : Identifier) : Bool :=
+  scope.any fun source => source.named name && source.hasRowid
 
 /-- Resolve the qualified name {lit}`source.column` as SQLite does (checked on native 3.51.0):
 as an unqualified name ({name}`Scope.resolveName`) over only the sources with the folded

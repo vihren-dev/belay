@@ -45,6 +45,7 @@ def nativeTableOf (catalog : Catalog) (position : Nat) (name : Identifier) (tabl
   uniqueKeys := table.shape.uniqueKeys
   indexes := catalogIndexes catalog position
   rows := table.rows
+  withoutRowid := table.shape.withoutRowid
 
 /-- The table at a catalog position in SQLite's catalog terms, whether its primary key
 is the rowid, which decides whether SQLite makes an index for that key, and whether that

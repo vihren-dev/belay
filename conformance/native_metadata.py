@@ -92,11 +92,15 @@ def native_keys(info: list[Row], indexes: list[tuple[Row, list[Row]]]) -> tuple[
 
 
 def native_table(name: str, info: list[Row], indexes: list[tuple[Row, list[Row]]],
-                 rows: list[Json]) -> dict[str, Json]:
-    """One native table of a case: its name in `sqlite_schema`, metadata and encoded rows."""
+                 rows: list[Json], without_rowid: bool = False) -> dict[str, Json]:
+    """One native table of a case: its name in `sqlite_schema`, metadata and encoded rows, and
+    `withoutRowid` only for a `WITHOUT ROWID` table."""
     primary, unique_keys, explicit = native_keys(info, indexes)
-    return {"name": name, "columns": native_columns(info), "primaryKey": list(primary), "uniqueKeys": unique_keys,
-            "indexes": explicit, "rows": rows}
+    table: dict[str, Json] = {"name": name, "columns": native_columns(info), "primaryKey": list(primary),
+                              "uniqueKeys": unique_keys, "indexes": explicit, "rows": rows}
+    if without_rowid:
+        table["withoutRowid"] = True
+    return table
 
 
 def table_metadata(connection: Connection, name: str) -> tuple[list[Row], list[tuple[Row, list[Row]]]]:

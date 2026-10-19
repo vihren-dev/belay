@@ -99,9 +99,21 @@ def records (clock : Int) (query : Query) (rows : List (List Value)) : List Reco
         | .aggregate aggregate => aggregate.eval clock [row]
       (output, sortValues output row)
 
-/-- The rows of the table in rowid order, as the source of a query. -/
-def sourceRows (table : Table) : List (List Value) :=
-  (stableSort (fun a b => decide (a.rowid ≤ b.rowid)) table.rows).map Row.values
+/-- The primary-key cells of a row, in key order; a missing cell reads as NULL. -/
+def _root_.Belay.Sqlite.Table.keyCells (table : Table) (row : Row) : List Value :=
+  table.shape.primaryKey.map fun position => row.values.getD position .null
+
+/-- The rows of the table in the order of a full scan: rowid order, or for a
+{lit}`WITHOUT ROWID` table primary-key order ({name}`compareSort` of {name}`Belay.Sqlite.Table.keyCells`),
+descending for {lit}`PRIMARY KEY DESC`, as SQLite's key b-tree gives them (ADR 0014, D4). -/
+def _root_.Belay.Sqlite.Table.scanRows (table : Table) : List Row :=
+  if table.shape.withoutRowid then
+    let directions := table.shape.primaryKey.map fun _ => table.shape.primaryKeyDescending
+    stableSort (fun a b => (compareSort directions (table.keyCells a) (table.keyCells b)).isLE) table.rows
+  else stableSort (fun a b => decide (a.rowid ≤ b.rowid)) table.rows
+
+/-- The rows of the table in scan order ({name}`Belay.Sqlite.Table.scanRows`), as the source of a query. -/
+def sourceRows (table : Table) : List (List Value) := table.scanRows.map Row.values
 
 /-- The rows that the {lit}`WHERE` condition keeps: those where it is true. -/
 def filtered (clock : Int) (query : Query) (rows : List (List Value)) : List (List Value) :=

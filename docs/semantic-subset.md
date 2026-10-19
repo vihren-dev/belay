@@ -12,8 +12,9 @@ The frontend maps these statements, and refuses every other statement as
 
 - `CREATE TABLE` with column definitions (name, declared type text, `NOT NULL`,
   `PRIMARY KEY` with its sort order, `UNIQUE`, and `DEFAULT` with a literal, a
-  signed number, a time keyword or a name) and table `PRIMARY KEY` and `UNIQUE`
-  constraints over plain column names;
+  signed number, a time keyword or a name), table `PRIMARY KEY` and `UNIQUE`
+  constraints over plain column names, and the option `WITHOUT ROWID` (ADR 0014,
+  slice 2; `STRICT` is refused);
 - `CREATE [UNIQUE] INDEX` with key terms, each a column name or an expression with
   an optional `ASC` or `DESC`, and an optional `WHERE` filter (ADR 0014, slice 1);
 - `ALTER TABLE … ADD [COLUMN]` with one column definition;
@@ -134,6 +135,13 @@ errors apply: a qualified name in a term, `CURRENT_TIME`, `CURRENT_DATE` and
 `CURRENT_TIMESTAMP` in a term or the filter, and an aggregate. A string literal as a
 term, a date and time function, a JSON function, a rowid name in the filter and
 `COLLATE` in a term are model restrictions.
+
+A `WITHOUT ROWID` table (ADR 0014, slice 2) needs a primary key, else SQLite's
+`PRIMARY KEY missing on table t`. Its key columns are NOT NULL, `INTEGER PRIMARY KEY` is
+no rowid alias, and `rowid`, `_rowid_` and `oid` that name no column are
+`no such column`. A full scan returns its rows in primary-key order, descending for
+`PRIMARY KEY DESC`, and UPDATE and DELETE with `RETURNING` return them in that order; a
+table with a rowid returns them in rowid order.
 
 ADD COLUMN supports literal defaults, with optional NOT NULL. Existing rows
 read the default under the column affinity. Without a default they read NULL.
