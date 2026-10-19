@@ -1,6 +1,6 @@
 # Status: deduplication and identifiers as bytes (ADR 0013, step 8)
 
-Created 2026-10-19. Status: open.
+Created 2026-10-19. Status: DONE.
 Task file: [task](20261019-dedup-and-byte-names.task.md).
 Specification: [ADR 0013](../docs/adr-0013-model-structure.md), step 8, owner decision 9.
 
@@ -59,4 +59,4 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), step 8, owner de
   identifiers as bytes: harness 21 → 23 → 23 s, model 335 → 334 → 344 s, frozen
   138 → 141 → 140 s, mutants 404 → 408 → 423 s. The model suite does not get shorter:
   its kernel proofs are a small part of it.
-- Remaining: pull requests.
+- 2026-10-19: pull requests #168 (deduplication) and #169 (identifiers as bytes). DONE.

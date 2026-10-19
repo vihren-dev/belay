@@ -1,6 +1,6 @@
 # Deduplication and identifiers as bytes (ADR 0013, step 8)
 
-Created 2026-10-19. Status: open.
+Created 2026-10-19. Status: DONE (pull requests #168 and #169).
 Status file: [status](20261019-dedup-and-byte-names.status.md).
 Specification: [ADR 0013](../docs/adr-0013-model-structure.md), "Order" step 8, the
 implementation note of step 1 on folded names, and owner decision 9. Verdict: unchanged.
