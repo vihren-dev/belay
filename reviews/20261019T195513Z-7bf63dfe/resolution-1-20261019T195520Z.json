@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-19T19:55:20+00:00",
+  "finding": "20261019T195513Z-7bf63dfe#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "semantic-subset.md lists the second AS and the qualified name"
+}

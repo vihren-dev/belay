@@ -167,9 +167,9 @@ CHECK constraints, without the rowid; every write computes the generated values 
 row, in an order that respects their dependencies, stores them with the column's affinity,
 and then checks NOT NULL, CHECK and the unique keys. An INSERT without a column list takes
 one value for each column that is not generated. SQLite's prepare errors apply: a generated
-column in the primary key, a DEFAULT on it, `rowid` in its expression, a time keyword, a
-table whose columns are all generated, and an INSERT or UPDATE that names a generated
-column. A loop of generated columns (`generated-loop`), a date and time function or a JSON
+column in the primary key, a DEFAULT on it, a second `AS` on one column, `rowid` or a
+qualified name in its expression, a time keyword, a table whose columns are all generated,
+and an INSERT or UPDATE that names a generated column. A loop of generated columns (`generated-loop`), a date and time function or a JSON
 function in the expression (`generated-function`), a `DO UPDATE` of a generated column
 (`upsert-generated`) and ADD COLUMN of a generated column (`add-column-generated`) are
 model restrictions.
