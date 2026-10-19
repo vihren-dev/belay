@@ -3,8 +3,11 @@
 # `timeout --foreground` keeps nix-build in the caller's process group, so a caller that kills
 # the group on its deadline (tests/runtime_support.py) stops nix-build too. Nix builds run in
 # the Nix daemon, so the children that --foreground leaves alone are not builders. The recipes
-# that build test suites allow 1500 seconds, more than the per-suite limit in
+# that build test suites use suite_build_limit.
+
+# Seconds for a nix-build of test suites: more than the per-suite limit in
 # build-support/tests.nix, so a suite that hangs fails with its own name.
+suite_build_limit := "1500"
 default:
     @just --list
 
@@ -58,11 +61,11 @@ smoke:
 
 # Fresh development replay includes every authored/synthetic case and a stable upstream sample.
 test: build documentation-inventory test-source
-    timeout --foreground 1500 nix-build build-support/default.nix -A developmentTests --out-link build/nix-tests --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+    timeout --foreground {{suite_build_limit}} nix-build build-support/default.nix -A developmentTests --out-link build/nix-tests --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
 # CI and package checks retain all full model, kernel and historical evidence checks.
 test-full: build documentation-inventory test-source
-    timeout --foreground 1500 nix-build build-support/default.nix -A tests --out-link build/nix-tests-full --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+    timeout --foreground {{suite_build_limit}} nix-build build-support/default.nix -A tests --out-link build/nix-tests-full --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
 # Check every authored public declaration, constructor and field in the compiled import closure.
 documentation-inventory: resources
@@ -108,12 +111,12 @@ test-nix:
 # Run the scheduled suites (tests/nix_scheduled_suites.json), which pull requests skip.
 test-scheduled:
     mkdir -p build
-    timeout --foreground 1500 nix-build build-support/default.nix -A scheduledTests --out-link build/nix-tests-scheduled --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+    timeout --foreground {{suite_build_limit}} nix-build build-support/default.nix -A scheduledTests --out-link build/nix-tests-scheduled --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
 # Select only the cached application-specific suite.
 test-atuin:
     mkdir -p build
-    timeout --foreground 1500 nix-build build-support/default.nix -A tests.atuin --out-link build/nix-atuin --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+    timeout --foreground {{suite_build_limit}} nix-build build-support/default.nix -A tests.atuin --out-link build/nix-atuin --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
 # Build a native offline archive and verify its actual installed entrypoint.
 runtime-package: build

@@ -8,6 +8,7 @@ before the limit of the recipe that builds the suite.
 
 import json
 from pathlib import Path
+import re
 import shlex
 
 import pytest
@@ -23,8 +24,12 @@ pytestmark = [pytest.mark.unit, pytest.mark.environment]
 
 
 def nix_build_recipe_lines() -> list[list[str]]:
-    """The words of each justfile line that runs nix-build under `timeout`."""
-    lines = [shlex.split(line) for line in (ROOT / "justfile").read_text().splitlines()
+    """The words of each justfile line that runs nix-build under `timeout`, with the
+    justfile's `NAME := "VALUE"` variables put in place of `{{NAME}}`."""
+    text = (ROOT / "justfile").read_text()
+    variables = dict(re.findall(r'(?m)^([a-z_]+) := "([^"]*)"$', text))
+    text = re.sub(r"\{\{([a-z_]+)\}\}", lambda match: variables.get(match.group(1), match.group(0)), text)
+    lines = [shlex.split(line) for line in text.splitlines()
              if line.lstrip().startswith("timeout ") and " nix-build " in line]
     return [words for words in lines if "nix-build" in words]
 
