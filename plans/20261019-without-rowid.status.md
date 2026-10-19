@@ -1,6 +1,6 @@
 # Status: `WITHOUT ROWID` tables (ADR 0014, slice 2)
 
-Created 2026-10-19. Status: open.
+Created 2026-10-19. Status: DONE.
 Task file: [task](20261019-without-rowid.task.md).
 Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D4.
 
@@ -45,4 +45,4 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D4.
 
 ## Remaining
 
-- Pull requests A and B.
+- 2026-10-19: pull requests #177 (A) and #178 (B). DONE.
