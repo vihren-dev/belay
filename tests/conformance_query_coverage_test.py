@@ -12,8 +12,8 @@ The cases of `conformance.authored_queries`, `conformance.authored_numbers`,
 `conformance.authored_json_each`, `conformance.authored_default_writes`,
 `conformance.authored_clock`, `conformance.authored_date_functions` and
 `conformance.authored_date_modifiers` (these three under the controlled clock), and
-`conformance.authored_indexes` and `conformance.authored_without_rowid` (ADR 0014,
-slices 1 and 2) are
+`conformance.authored_indexes`, `conformance.authored_without_rowid` and
+`conformance.authored_collations` (ADR 0014, slices 1 to 3) are
 recorded natively as version 5 records with statement outputs, name requirement
 identifiers of the pinned documentation, and replay through resolution, the
 execution semantics and query evaluation. Every case agrees with the model, and the
@@ -28,7 +28,7 @@ from types import ModuleType
 
 import pytest
 
-from conformance import (authored_algorithms, authored_aliases, authored_clock, authored_date_functions,
+from conformance import (authored_algorithms, authored_aliases, authored_clock, authored_collations, authored_date_functions,
                          authored_date_modifiers, authored_default_writes, authored_deletes,
                          authored_fromless, authored_indexes, authored_joins, authored_json, authored_json_each,
                          authored_json_functions, authored_keys, authored_merged, authored_numbers,
@@ -47,7 +47,7 @@ CASE_SETS = [authored_queries, authored_numbers, authored_writes, authored_row_w
              authored_algorithms, authored_fromless, authored_json,
              authored_json_functions, authored_json_each,
              authored_default_writes, authored_clock, authored_date_functions, authored_date_modifiers,
-             authored_indexes, authored_without_rowid]
+             authored_indexes, authored_without_rowid, authored_collations]
 """The authored case modules: each has `definitions` and `records`."""
 
 

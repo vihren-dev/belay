@@ -17,7 +17,10 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D3 and owner dec
 1. **Syntax.** `COLLATE name` on a column and `expr COLLATE name` in an expression map to
    the Syntax IR. A collation in a key of a table constraint stays a frontend refusal.
 2. **Three collations.** `BINARY`, `NOCASE` and `RTRIM`, with ASCII case of the name
-   ignored; any other name is SQLite's prepare error `no such collation sequence: %s`.
+   ignored. Any other name is SQLite's prepare error `no such collation sequence: %s` in a
+   column definition and an index term, and the restriction `unknown-collation` in any
+   other expression: SQLite looks the name up only where it uses the collation, and its
+   query planner decides some of those uses (checked natively; amended 2026-10-19).
    Checked natively with 3.51.0:
    - `NOCASE` compares TEXT with ASCII letters folded (`'Ä'` and `'ä'` differ);
    - `RTRIM` compares TEXT after removing trailing spaces (`'a '` is less than `'a\t'`);
@@ -33,7 +36,10 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D3 and owner dec
      expression;
    - `COLLATE` passes through unary plus and `CAST` to the operand, and the collation of
      a column reference is its column's;
-   - the equality that `USING` and `NATURAL` make: that of their comparison.
+   - the equality that `USING` and `NATURAL` make: the collation of the left-most left
+     column of the name (a coalesce of left columns has the collation of its first
+     argument, checked natively).
+   - a `GROUP BY` term may be a column name under `COLLATE`.
 5. **Execution compares through the collation** wherever it compares values: comparison
    operators, sorting, grouping, `min` and `max`, unique keys (also partial and expression
    keys), and the scan order of a `WITHOUT ROWID` table.
@@ -65,5 +71,6 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D3 and owner dec
   `Resolution/Keys.lean`, `Resolution/IndexTerms.lean`, `Resolution/Definitions.lean`,
   `belay/sqlite/syntax_definitions.py`, `syntax_queries.py`, the harness and
   `conformance/native_metadata.py` (which refuses a collation other than `BINARY` today).
-- **ON CONFLICT targets** match a key only when its collations are those of the named
-  columns, as SQLite does; a check natively decides the detail.
+- **ON CONFLICT targets.** Checked natively: a target without `COLLATE` matches a key of
+  any collation, so the target matching stays; `COLLATE` in a target stays a frontend
+  refusal.

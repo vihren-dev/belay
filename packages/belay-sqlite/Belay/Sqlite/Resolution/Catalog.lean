@@ -28,6 +28,9 @@ structure CatalogColumn where
   /-- The resolved DEFAULT with its source spelling ({name}`ColumnDefault`); omit it for no
   default. -/
   defaultValue : Option ColumnDefault := none
+  /-- The collation of the column ({lit}`COLLATE name`); {lit}`BINARY` without one (ADR 0014,
+  D3). -/
+  collation : Collation := .binary
   deriving Repr, DecidableEq
 
 /-- One table entry. Keys are lists of column positions. Use
@@ -116,12 +119,19 @@ def columnPosition (columns : List CatalogColumn) (name : Identifier) : Option N
 /-- The affinity of a catalog column, from its declared type text. -/
 def CatalogColumn.affinity (column : CatalogColumn) : Affinity := affinityOf column.declaredType
 
+/-- The key of the column positions of a table with the columns, without filter, each under
+its column's collation: a primary key or UNIQUE constraint. -/
+def UniqueKey.ofColumns (columns : List CatalogColumn) (positions : List Nat) : UniqueKey :=
+  { terms := positions.map fun position =>
+      { term := .column position, collation := (columns[position]?.map (·.collation)).getD .binary } }
+
 /-- Each unique key of the table at a catalog position, in this order: the primary key
 when there is one, the UNIQUE constraints, and the unique indexes on the table in
 catalog order. SQLite keeps each of them as an index, and a write that makes two rows
 equal on one of them fails. -/
 def Catalog.uniqueKeys (catalog : Catalog) (position : Nat) (table : CatalogTable) : List UniqueKey :=
-  ((if table.primaryKey.isEmpty then [] else [table.primaryKey]) ++ table.uniqueKeys).map UniqueKey.ofColumns ++
+  ((if table.primaryKey.isEmpty then [] else [table.primaryKey]) ++ table.uniqueKeys).map
+      (UniqueKey.ofColumns table.columns) ++
     catalog.filterMap fun object => match object.entry with
       | .index index => if index.table == position && index.unique then some index.uniqueKey else none
       | .table _ => none

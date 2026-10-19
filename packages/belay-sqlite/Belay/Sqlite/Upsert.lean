@@ -24,11 +24,11 @@ def proposedRow (table : Table) (values : List Value) : Row :=
 def conflictingRow (keys : List UniqueKey) (table : Table) (proposed : Row) : Option Row :=
   table.rows.find? fun row => keys.any fun key => keyEqual key row proposed
 
-/-- The keys that a clause checks: its target key, or every key for a clause without
-target. -/
+/-- The keys that a clause checks: the key of the table whose columns are its target's,
+or every key for a clause without target. -/
 def clauseKeys (keys : List UniqueKey) (clause : Resolved.ConflictClause) : List UniqueKey :=
   match clause.target with
-  | some key => [UniqueKey.ofColumns key]
+  | some key => (keys.find? (·.columns? == some key)).toList
   | none => keys
 
 /-- The first clause, in written order, whose keys ({name}`clauseKeys`) have a row that

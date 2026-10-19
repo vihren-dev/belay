@@ -18,6 +18,7 @@ def RestrictionKind.id : RestrictionKind → String
   | .indexStringTerm => "index-string-term"
   | .indexDateFunction => "index-date-function"
   | .indexJsonFunction => "index-json-function"
+  | .unknownCollation => "unknown-collation"
   | .addColumnConstraint => "add-column-constraint"
   | .rowDependentKey => "row-dependent-key"
   | .conflictWithoutTarget => "conflict-without-target"
@@ -55,6 +56,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .indexStringTerm => "a string literal as an index key is not modeled; name the column without quotes"
   | .indexDateFunction => "a date and time function in an index key or WHERE clause is not modeled; index the column instead"
   | .indexJsonFunction => "a JSON function in an index key or WHERE clause is not modeled; index the column instead"
+  | .unknownCollation => "COLLATE with a name other than BINARY, NOCASE or RTRIM in an expression is not modeled; use one of these collations"
   | .addColumnConstraint => "the default of the added column is not modeled; use a literal default or no default"
   | .rowDependentKey => "a SET value that reads the row is not modeled for a column of a unique key; assign a constant value"
   | .conflictWithoutTarget => "DO UPDATE without a conflict target is not modeled for a table with more than one key; name the target columns"
@@ -83,7 +85,7 @@ def RestrictionKind.message : RestrictionKind → String
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .createTableConstraints, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments]
+  [.schemaStatement, .engineTable, .rowidColumnName, .createTableConstraints, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

@@ -83,7 +83,7 @@ def constraint_algorithm(tree: Tree, node: Node) -> Located:
 
 def column_constraint(tree: Tree, node: Node) -> Located:
     """Map NOT NULL, PRIMARY KEY with its sort order, UNIQUE, each with its ON CONFLICT
-    algorithm, and the DEFAULT forms."""
+    algorithm, COLLATE with its name as written, and the DEFAULT forms."""
     children = tree.children(node)
     symbols = [child.symbol for child in children]
     if symbols == ["NOT", "NULL", "onconf"]:
@@ -96,6 +96,8 @@ def column_constraint(tree: Tree, node: Node) -> Located:
                            node.start, node.end)
     if symbols == ["UNIQUE", "onconf"]:
         return constructor("unique", [("algorithm", constraint_algorithm(tree, children[1]))], node.start, node.end)
+    if symbols in (["COLLATE", "ID"], ["COLLATE", "STRING"]):
+        return constructor("collate", [("name", name(tree, children[1]))], node.start, node.end)
     if symbols == ["DEFAULT", "scantok", "term"]:
         value = term(tree, children[2])
     elif symbols in (["DEFAULT", "MINUS", "scantok", "term"], ["DEFAULT", "PLUS", "scantok", "term"]):
@@ -104,8 +106,8 @@ def column_constraint(tree: Tree, node: Node) -> Located:
     elif symbols == ["DEFAULT", "scantok", "ID"]:
         value = identifier(tree, children[2])
     else:
-        raise tree.unsupported(node, "Unsupported column constraint; use NOT NULL, PRIMARY KEY, UNIQUE or "
-                               "DEFAULT with a literal")
+        raise tree.unsupported(node, "Unsupported column constraint; use NOT NULL, PRIMARY KEY, UNIQUE, "
+                               "COLLATE or DEFAULT with a literal")
     source_text = tree.sql[value.start:value.end].decode("utf-8")
     return constructor("default", [("value", value),
                                    ("sourceText", leaf(source_text, value.start, value.end))], node.start, node.end)

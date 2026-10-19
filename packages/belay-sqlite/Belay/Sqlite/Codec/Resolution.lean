@@ -69,6 +69,7 @@ deriving instance Lean.ToExpr for TimeKeyword
 deriving instance Lean.ToExpr for DefaultInsert
 deriving instance Lean.ToExpr for DefaultForm
 deriving instance Lean.ToExpr for ColumnDefault
+deriving instance Lean.ToExpr for Collation
 deriving instance Lean.ToExpr for CatalogColumn
 deriving instance Lean.ToExpr for CatalogTable
 deriving instance Lean.ToExpr for Resolved.JsonFunction
@@ -84,6 +85,7 @@ deriving instance Lean.ToExpr for PrepareError
 deriving instance Lean.ToExpr for Resolved.Aggregate
 deriving instance Lean.ToExpr for Resolved.Output
 deriving instance Lean.ToExpr for Resolved.SortKey
+deriving instance Lean.ToExpr for Resolved.SortTerm
 deriving instance Lean.ToExpr for Resolved.JoinKind
 deriving instance Lean.ToExpr for Resolved.Source
 deriving instance Lean.ToExpr for Resolved.QuerySource

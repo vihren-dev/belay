@@ -46,6 +46,9 @@ def applyConstraint (tableName : Identifier) (definition : Syntax.ColumnDefiniti
   | .notNull algorithm => .ok { table with columns := updateLast table.columns fun column =>
       { column with notNull := true, notNullAlgorithm := algorithm.getD .abort } }
   | .unique algorithm => addUniqueKey table [table.columns.length - 1] algorithm
+  | .collate name => match Collation.named? name with
+    | none => .error (.noSuchCollation name)
+    | some collation => .ok { table with columns := updateLast table.columns fun column => { column with collation } }
 
 /-- Add the column definitions in written order: {lit}`too many columns on %s` when
 a column would exceed the limit, then {lit}`duplicate column name: %s`, then each
@@ -162,6 +165,7 @@ def addedColumn (definition : Syntax.ColumnDefinition) : Option CatalogColumn :=
     | .default expression sourceText =>
       (resolveColumnDefault column.affinity ⟨expression, sourceText⟩).map fun resolved =>
         { column with defaultValue := some resolved }
+    | .collate name => (Collation.named? name).map fun collation => { column with collation }
     | .primaryKey .. | .unique _ => some column)
     { name := definition.name, declaredType := reportedType definition.declaredType }
 
@@ -176,6 +180,8 @@ def resolveAddColumn (context : ResolveContext) (catalog : Catalog) (index : Nat
       prepareError catalog (.expression (.tooManyColumns tableName))
     else if (columnPosition table.columns definition.name).isSome then
       prepareError catalog (.expression (.duplicateColumn definition.name))
+    else if let some name := definition.constraints.findSome? Syntax.ColumnConstraint.unknownCollation then
+      prepareError catalog (.expression (.noSuchCollation name))
     else if definition.constraints.any Syntax.ColumnConstraint.isPrimaryKey && !table.primaryKey.isEmpty then
       prepareError catalog (.expression (.multiplePrimaryKeys tableName))
     else if definition.constraints.any Syntax.ColumnConstraint.nonconstantDefault then

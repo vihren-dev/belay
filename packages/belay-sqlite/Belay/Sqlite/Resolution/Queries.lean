@@ -8,7 +8,10 @@ steps follow SQLite's resolver: the tables of {lit}`FROM` ({lit}`Sources`), the 
 columns, {lit}`WHERE`, the {lit}`ON` conditions, {lit}`GROUP BY`, {lit}`ORDER BY`, then
 {lit}`LIMIT` and {lit}`OFFSET`. The paths of a restriction use the child positions of
 {lit}`Syntax.Statement.select`: 0 the columns, 1 the first table, 2 the joins, 3 the
-filter, 4 the grouping terms, 5 the ordering terms, 6 the limit and 7 the offset. -/
+filter, 4 the grouping terms, 5 the ordering terms, 6 the limit and 7 the offset. A
+grouping term is a column name, also under {lit}`COLLATE` ({name}`Belay.Sqlite.Syntax.Expr.collatedColumn`),
+or a result column; each grouping and ordering term compares under its collation
+(ADR 0014, slice 3). -/
 
 namespace Belay.Sqlite
 
@@ -25,10 +28,10 @@ def integerLiteral : Syntax.Expr → Option Int
     | .numeric text => (numericValue text true).integer?
     | .null | .string _ | .blob _ | .currentTime _ | .identifier .. | .negate _ | .positive _
     | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast ..
-    | .qualified .. => none
+    | .qualified .. | .collate .. => none
   | .null | .string _ | .blob _ | .currentTime _ | .identifier .. | .positive _ | .compare ..
   | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast ..
-  | .qualified .. => none
+  | .qualified .. | .collate .. => none
 
 /-- One resolved result column with its names: {lit}`*` gives every column of every
 source that is not merged ({name}`Scope.visible`) under its defined name, a merged pair as
@@ -51,7 +54,7 @@ def resolveResultColumn (dqs : Bool) (scope : Scope) (column : Nat) :
     | .call name [operand] => match aggregateNamed name with
       | some aggregate =>
         let (resolved, _) ← (resolveOperand dqs scope true operand).mapError (·.under [0, column, 0, 1, 0])
-        .ok (named (.aggregate (aggregate resolved)) none)
+        .ok (named (.aggregate ((aggregate resolved).withCollation (operand.collationIn scope))) none)
       | none =>
         if scalarFunctionName name then do
           let (resolved, _) ← (resolveOperand dqs scope false value).mapError (·.under [0, column, 0])
@@ -59,7 +62,7 @@ def resolveResultColumn (dqs : Bool) (scope : Scope) (column : Nat) :
         else throw ((callIssue name).under [0, column, 0])
     | .call _ [] | .call _ (_ :: _ :: _) | .null | .numeric _ | .string _ | .blob _ | .currentTime _
     | .identifier .. | .qualified .. | .negate _ | .positive _ | .compare .. | .and .. | .or .. | .not _
-    | .isNull .. | .arithmetic .. | .cast .. =>
+    | .isNull .. | .arithmetic .. | .cast .. | .collate .. =>
       let (resolved, _) ← (resolveOperand dqs scope false value).mapError (·.under [0, column, 0])
       .ok (named (.scalar resolved) (definedName scope value))
 
@@ -83,7 +86,7 @@ def namedResult (names : List (Option Identifier)) : Syntax.Expr → Option (Exc
   | term@.null | term@(.numeric _) | term@(.string _) | term@(.blob _) | term@(.currentTime _)
   | term@(.negate _) | term@(.positive _) | term@(.compare ..) | term@(.and ..)
   | term@(.or ..) | term@(.not _) | term@(.isNull ..) | term@(.callStar _) | term@(.call ..)
-  | term@(.arithmetic ..) | term@(.cast ..) | term@(.qualified ..) =>
+  | term@(.arithmetic ..) | term@(.cast ..) | term@(.qualified ..) | term@(.collate ..) =>
     (integerLiteral term).map fun (number : Int) =>
       if 1 ≤ number ∧ number ≤ (names.length : Int) then .ok (number.toNat - 1) else .error ()
 
@@ -128,35 +131,44 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
     let aggregate := !groupBy.isEmpty || outputs.any fun (output, _) => match output with
       | .aggregate _ => true
       | .scalar _ => false
+    let collations := resultCollations scope results
     let grouped := fun (column : Nat) => match outputs[column]? with
-      | some (.scalar expression, _) => .ok expression
+      | some (.scalar expression, _) => .ok (expression, collations.getD column .binary)
       | some (.aggregate _, _) | none => .error (.prepare .aggregateInGroupBy)
     let terms ← resolveAll (fun item term => match term with
       | .identifier name _ => match scope.resolveName name, aliasIndex aliases name with
-        | .found _ reads, _ => .ok (scope.nameOperand reads).1
+        | .found _ reads, _ => .ok ((scope.nameOperand reads).1, term.collationIn scope)
         | .missing, some column => grouped column
         | .missing, none | .ambiguous, _ =>
-          (resolveOperand dqs scope true term).map (·.1) |>.mapError (·.under [4, item])
+          (resolveOperand dqs scope true term).map (·.1, term.collationIn scope) |>.mapError (·.under [4, item])
       | .callStar name | .call name [] | .call name [_] =>
         .error (if aggregateCall term then .prepare .aggregateInGroupBy else (callIssue name).under [4, item])
       | .numeric _ | .negate _ => match namedResult aliases term with
         | some (.ok column) => grouped column
         | some (.error ()) => .error (.prepare (.groupByOutOfRange (item + 1) outputs.length))
         | none => .error (.restriction [4, item] .groupByTerm)
-      | .qualified .. => (resolveOperand dqs scope true term).map (·.1) |>.mapError (·.under [4, item])
+      | .qualified .. =>
+        (resolveOperand dqs scope true term).map (·.1, term.collationIn scope) |>.mapError (·.under [4, item])
+      | .collate .. =>
+        if term.collatedColumn scope then
+          (resolveOperand dqs scope true term).map (·.1, term.collationIn scope) |>.mapError (·.under [4, item])
+        else .error (.restriction [4, item] .groupByTerm)
       | .call _ (_ :: _ :: _) | .null | .string _ | .blob _ | .currentTime _ | .positive _ | .compare ..
       | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast .. =>
         .error (.restriction [4, item] .groupByTerm)) groupBy
-    if aggregate && !outputs.all (groupedOutput terms ·.1) then
+    if aggregate && !outputs.all (groupedOutput (terms.map Prod.fst) ·.1) then
       throw (.restriction [0] .bareColumn)
     let order ← resolveAll (fun item (term : Syntax.OrderTerm) => match namedResult aliases term.expression with
-      | some (.ok column) => .ok (Resolved.SortKey.output column, term.descending)
+      | some (.ok column) =>
+        .ok { key := .output column, descending := term.descending, collation := collations.getD column .binary }
       | some (.error ()) => .error (.prepare (.orderByOutOfRange (item + 1) outputs.length))
       | none =>
         if aggregate then .error (.restriction [5, item] .aggregateOrderBy)
         else if namesAlias scope (aliases.filterMap id) term.expression then
           .error (aliasInExpression.under [5, item, 0])
-        else (resolveOperand dqs scope false term.expression).map (fun (e, _) => (.expression e, term.descending))
+        else (resolveOperand dqs scope false term.expression).map (fun (e, _) =>
+            ({ key := .expression e, descending := term.descending, collation := term.expression.collationIn scope }
+              : Resolved.SortTerm))
           |>.mapError (·.under [5, item, 0])) orderBy
     let limitValue ← windowValue [6] limit
     let offsetValue ← windowValue [7] offset

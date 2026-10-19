@@ -17,28 +17,30 @@ theorem transCmp_on {cmp : β → β → Ordering} [Std.TransCmp cmp] (key : α 
   eq_swap := Std.OrientedCmp.eq_swap
   isLE_trans first second := Std.TransCmp.isLE_trans first second
 
-/-- For both directions, {name}`compareTerm` is a transitive comparison: ascending
-is {name}`compareValues`, descending is its opposite. -/
-theorem compareTerm_transCmp (descending : Bool) : Std.TransCmp (compareTerm descending) := by
+/-- For both directions and every collation, {name}`compareTerm` is a transitive
+comparison: ascending, it is {name}`Collation.compare`; descending, its opposite. -/
+theorem compareTerm_transCmp (descending : Bool) (collation : Collation) :
+    Std.TransCmp (compareTerm descending collation) := by
   cases descending
-  · have equal : compareTerm false = compareValues := by funext a b; simp [compareTerm]
+  · have equal : compareTerm false collation = collation.compare := by funext a b; simp [compareTerm]
     rw [equal]; exact inferInstance
-  · have equal : compareTerm true = fun a b => compareValues b a := by funext a b; simp [compareTerm]
+  · have equal : compareTerm true collation = fun a b => collation.compare b a := by
+      funext a b; simp [compareTerm]
     rw [equal]; exact Std.TransCmp.opposite
 
-/-- For every list of directions, {name}`compareSort` is a transitive comparison of
-lists of sort values. The proof inducts over the directions: each step is the
+/-- For every list of directions with collations, {name}`compareSort` is a transitive
+comparison of lists of sort values. The proof inducts over the terms: each step is the
 lexicographic combination of the first term and the rest, by the core instance. -/
-theorem compareSort_transCmp : ∀ directions : List Bool, Std.TransCmp (compareSort directions)
+theorem compareSort_transCmp : ∀ orders : List (Bool × Collation), Std.TransCmp (compareSort orders)
   | [] => { eq_swap := by simp [compareSort], isLE_trans := by simp [compareSort] }
-  | descending :: directions => by
-    have := compareTerm_transCmp descending
-    have := compareSort_transCmp directions
-    have := transCmp_on (cmp := compareTerm descending) (fun values : List Value => values.headD .null)
-    have := transCmp_on (cmp := compareSort directions) (fun values : List Value => values.tail)
-    have equal : compareSort (descending :: directions) = compareLex
-        (fun a b => compareTerm descending (a.headD .null) (b.headD .null))
-        (fun a b => compareSort directions a.tail b.tail) := by
+  | (descending, collation) :: orders => by
+    have := compareTerm_transCmp descending collation
+    have := compareSort_transCmp orders
+    have := transCmp_on (cmp := compareTerm descending collation) (fun values : List Value => values.headD .null)
+    have := transCmp_on (cmp := compareSort orders) (fun values : List Value => values.tail)
+    have equal : compareSort ((descending, collation) :: orders) = compareLex
+        (fun a b => compareTerm descending collation (a.headD .null) (b.headD .null))
+        (fun a b => compareSort orders a.tail b.tail) := by
       funext a b; simp [compareSort, compareLex]
     rw [equal]; exact inferInstance
 
@@ -124,7 +126,7 @@ theorem stableSort_sorted (le : α → α → Bool) (trans : ∀ a b c, le a b �
 
 /-- For every list of directions and records, the sorted records are a permutation
 of the records: the sort neither adds, drops nor repeats a record. -/
-theorem sort_perm (directions : List Bool) (items : List Record) :
+theorem sort_perm (directions : List (Bool × Collation)) (items : List Record) :
     (stableSort (fun a b => (compareSort directions a.2 b.2).isLE) items).Perm items :=
   stableSort_perm _ _
 
@@ -132,7 +134,7 @@ theorem sort_perm (directions : List Bool) (items : List Record) :
 each record compares as less than or equal to every later record by the
 {lit}`ORDER BY` terms. The proof uses {name}`stableSort_sorted` with the
 transitivity and totality of {name}`compareSort`. -/
-theorem sort_sorted (directions : List Bool) (items : List Record) :
+theorem sort_sorted (directions : List (Bool × Collation)) (items : List Record) :
     (stableSort (fun a b => (compareSort directions a.2 b.2).isLE) items).Pairwise
       fun a b => (compareSort directions a.2 b.2).isLE := by
   have := compareSort_transCmp directions

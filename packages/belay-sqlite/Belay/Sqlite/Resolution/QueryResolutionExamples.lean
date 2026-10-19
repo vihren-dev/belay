@@ -134,12 +134,12 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
 -- GROUP BY resolves a name to a source column before a result alias, so an alias
 -- of an aggregate does not hide the column `b`.
 #guard (queryOf (select [.expression (.callStar "count") (some (name! "b")) "count(*)"] (groupBy := [.identifier (name! "b") .none]))).map
-  (·.groupBy) == some [.column 1]
+  (·.groupBy) == some [(.column 1, .binary)]
 -- A negative LIMIT means no limit; ORDER BY an alias names the result column.
 #guard (queryOf (select [.star] (limit := some (.negate (.numeric "1"))))).map (·.limit) == some none
 #guard (queryOf (select [.expression (.identifier (name! "b") .none) (some (name! "k")) "b"]
   (orderBy := [{ expression := .identifier (name! "K") .none, descending := true }]))).map (·.orderBy) ==
-  some [(.output 0, true)]
+  some [{ key := .output 0, descending := true }]
 
 -- A rowid name that is not a column is a restriction in every expression, since SQLite
 -- reads the rowid: in a result column, in WHERE, in a SET value and in a DELETE filter.

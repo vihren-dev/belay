@@ -23,12 +23,12 @@ so a malformed row cannot supply an invented value. -/
 def read (row : Row) (position : Nat) : Option Value := row.values[position]?
 
 /-- Whether two stored key cells conflict: neither is NULL, and they are equal under
-SQLite's comparison with the BINARY collation ({name}`compareValues`), so numbers by
-value, TEXT and BLOB by bytes, and values of different storage classes never.
-{assert}`keyCellsEqual (.text [97]) (.text [97]) = true`, and two NULL cells never
-conflict. -/
-def keyCellsEqual (first second : Value) : Bool :=
-  first != .null && second != .null && compareValues first second == .eq
+SQLite's comparison with the collation ({name}`Collation.compare`, {lit}`BINARY` when none
+is given), so numbers by value, TEXT by its collation, BLOB by bytes, and values of
+different storage classes never. {assert}`keyCellsEqual (.text [97]) (.text [97]) = true`,
+and two NULL cells never conflict. -/
+def keyCellsEqual (first second : Value) (collation : Collation := .binary) : Bool :=
+  first != .null && second != .null && collation.compare first second == .eq
 
 /-- The value of a key term in a row: the cell of a column, or the value of an expression
 over the row. Key expressions read no clock, so they evaluate at clock 0. A missing cell
@@ -46,14 +46,15 @@ def keyApplies (key : UniqueKey) (row : Row) : Bool :=
   | some filter => Resolved.truthy (filter.eval 0 row.values)
 
 /-- Whether two rows conflict on a key: the key applies to both ({name}`keyApplies`), and
-for each term both values are key cells that conflict ({name}`keyCellsEqual`). A missing
+for each term both values are key cells that conflict under its collation
+({name}`keyCellsEqual`). A missing
 or NULL value makes the comparison false, so two rows with a NULL in a key never
 conflict, as in SQLite. An empty key compares equal vacuously:
 {assert}`keyEqual { terms := [] } { rowid := 0, values := [] } { rowid := 1, values := [] } = true`. -/
 def keyEqual (key : UniqueKey) (first second : Row) : Bool :=
   keyApplies key first && keyApplies key second &&
-    key.terms.all fun term => match termValue first term, termValue second term with
-      | some a, some b => keyCellsEqual a b
+    key.terms.all fun term => match termValue first term.term, termValue second term.term with
+      | some a, some b => keyCellsEqual a b term.collation
       | _, _ => false
 
 /-- Reject each row that compares equal under {name}`keyEqual` to a later row.

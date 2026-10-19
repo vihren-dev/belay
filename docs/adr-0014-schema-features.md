@@ -223,6 +223,17 @@ Each slice works in this way:
   path, `Table.Valid` and its proofs stay as they are. Queries and the `RETURNING` rows of
   UPDATE and DELETE read the scan; the harness compares such a table by its cells in key
   order, and the prediction gives each row the primary-key cells as its identity.
+- Slice 3 (2026-10-19), details checked natively that D3 does not state:
+  - SQLite looks a collation name up only where it uses the collation, and its query
+    planner decides some of those uses: `SELECT x COLLATE foo` runs, and
+    `WHERE 'a' COLLATE NOCASE = x COLLATE foo` fails. So an unknown name is SQLite's prepare
+    error in a column definition and an index term only, and the restriction
+    `unknown-collation` in any other expression.
+  - The equality of `USING` and `NATURAL` has the collation of the left-most left column of
+    the name: SQLite gives a coalesce of left columns the collation of its first argument,
+    and a column always has a collation.
+  - An `ON CONFLICT` target without `COLLATE` matches a key of any collation; `COLLATE` in a
+    target stays a frontend refusal.
 
 ## Consequences
 

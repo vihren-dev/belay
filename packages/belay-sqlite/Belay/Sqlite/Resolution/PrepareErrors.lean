@@ -48,6 +48,9 @@ inductive ExprError where
   | conflictingAlgorithms
   /-- {lit}`no such column: %s` (name resolution of an expression or key). -/
   | noSuchColumn (name : Identifier)
+  /-- {lit}`no such collation sequence: %s`: a {lit}`COLLATE` name other than {lit}`BINARY`,
+  {lit}`NOCASE` and {lit}`RTRIM` (ADR 0014, D3). -/
+  | noSuchCollation (name : Identifier)
   /-- {lit}`the "." operator prohibited in index expressions`: a qualified name in a key
   term of CREATE INDEX ({lit}`notValidImpl`). -/
   | qualifiedIndexTerm

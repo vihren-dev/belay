@@ -43,7 +43,7 @@ default evaluation are separate. -/
 def constantDefaultExpression : Syntax.Expr → Bool
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ => true
   | .identifier name quote => quote == .none && booleanKeywordName name
-  | .negate operand | .positive operand => constantDefaultExpression operand
+  | .negate operand | .positive operand | .collate operand _ => constantDefaultExpression operand
   | .qualified .. => false
   | .compare .eq left right => constantDefaultExpression left && constantDefaultExpression right
   | .compare .ne .. | .compare .lt .. | .compare .le .. | .compare .gt .. | .compare .ge ..
@@ -63,22 +63,28 @@ def constantDefault (expression : Syntax.Expr) : Bool :=
   | .identifier .. => true
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call ..
-  | .arithmetic .. | .cast .. | .qualified .. => constantDefaultExpression expression
+  | .arithmetic .. | .cast .. | .qualified .. | .collate .. => constantDefaultExpression expression
 
 /-- Whether the constraint is PRIMARY KEY. -/
 def Syntax.ColumnConstraint.isPrimaryKey : Syntax.ColumnConstraint → Bool
   | .primaryKey .. => true
-  | .notNull _ | .unique _ | .default _ _ => false
+  | .notNull _ | .unique _ | .default _ _ | .collate _ => false
+
+/-- The name of a {lit}`COLLATE` constraint that names no collation ({name}`Collation.named?`),
+which SQLite refuses with {lit}`no such collation sequence`; none for every other constraint. -/
+def Syntax.ColumnConstraint.unknownCollation : Syntax.ColumnConstraint → Option Identifier
+  | .collate name => if (Collation.named? name).isSome then none else some name
+  | .notNull _ | .primaryKey .. | .unique _ | .default _ _ => none
 
 /-- Whether the constraint is UNIQUE. -/
 def Syntax.ColumnConstraint.isUnique : Syntax.ColumnConstraint → Bool
   | .unique _ => true
-  | .notNull _ | .primaryKey .. | .default _ _ => false
+  | .notNull _ | .primaryKey .. | .default _ _ | .collate _ => false
 
 /-- Whether the constraint is a DEFAULT that SQLite refuses as not constant. -/
 def Syntax.ColumnConstraint.nonconstantDefault : Syntax.ColumnConstraint → Bool
   | .default value _ => !constantDefault value
-  | .notNull _ | .primaryKey .. | .unique _ => false
+  | .notNull _ | .primaryKey .. | .unique _ | .collate _ => false
 
 /-- Whether the model describes a catalog default: a literal whose value or
 SQLite preparation error is modeled, or a time keyword such as {lit}`CURRENT_TIMESTAMP`, which is kept
@@ -89,7 +95,7 @@ def Syntax.ColumnConstraint.modeledDefault : Syntax.ColumnConstraint → Bool
   | .default expression _ => match literalDefault expression with
     | .ok _ | .error (.prepare _) => true
     | .error (.restriction ..) => false
-  | .notNull _ | .primaryKey .. | .unique _ => true
+  | .notNull _ | .primaryKey .. | .unique _ | .collate _ => true
 
 /-- A prepare error leaves the catalog unchanged. -/
 def prepareError (catalog : Catalog) (error : PrepareError) : StatementResolution :=

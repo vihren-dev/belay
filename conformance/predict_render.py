@@ -10,7 +10,7 @@ for keys, and writes rows and cells as the recordings do.
 from conformance.case_format import Json
 
 BINARY = "BINARY"
-"""The collation of every index key that the model supports."""
+"""The collation of a column or an index term without COLLATE."""
 
 
 def text_cell(value: str) -> Json:
@@ -45,30 +45,35 @@ def column_row(position: int, column: dict[str, Json], primary_key: list[int]) -
 
 
 def index_entry(names: list[str], keys: list[int | None], name: str, unique: bool, origin: str,
-                number: int, descending: list[bool], partial: bool = False) -> dict[str, Json]:
+                number: int, descending: list[bool], collations: list[str],
+                partial: bool = False) -> dict[str, Json]:
     """One `PRAGMA index_list` entry with its `index_xinfo` key rows: a column key by its
     position and name, an expression key as column -2 without a name, each with its sort
-    order; `partial` marks an index with a `WHERE` filter."""
+    order and collation; `partial` marks an index with a `WHERE` filter."""
     return {"entry": [integer_cell(number), text_cell(name), integer_cell(int(unique)), text_cell(origin),
                       integer_cell(int(partial))],
             "columns": [[integer_cell(rank), integer_cell(-2 if key is None else key),
                          "null" if key is None else text_cell(names[key]),
-                         integer_cell(int(order)), text_cell(BINARY), integer_cell(1)]
-                        for rank, (key, order) in enumerate(zip(keys, descending, strict=True))]}
+                         integer_cell(int(order)), text_cell(collation), integer_cell(1)]
+                        for rank, (key, order, collation) in enumerate(zip(keys, descending, collations,
+                                                                            strict=True))]}
 
 
 def declared_index(names: list[str], index: dict[str, Json], number: int) -> dict[str, Json]:
     """One declared index of the prediction: its key terms (`None` for an expression), and its
-    sort orders and partial flag, which the prediction gives only when present."""
+    sort orders, collations and partial flag, which the prediction gives only when present."""
     keys = [None if key is None else int(key) for key in index["columns"]]
     orders = [bool(order) for order in index.get("descending") or [False] * len(keys)]
-    return index_entry(names, keys, str(index["name"]), bool(index["unique"]), "c", number, orders,
+    collations = [str(collation) for collation in index.get("collations") or [BINARY] * len(keys)]
+    return index_entry(names, keys, str(index["name"]), bool(index["unique"]), "c", number, orders, collations,
                        bool(index.get("partial", False)))
 
 
-def indexes(table: dict[str, Json], rowid_primary_key: bool, descending_key: bool) -> list[dict[str, Json]]:
+def indexes(table: dict[str, Json], rowid_primary_key: bool, descending_key: bool,
+            column_collations: list[str]) -> list[dict[str, Json]]:
     """Declared indexes, and the implicit unique indexes of UNIQUE constraints and of a primary
-    key that is not the row id; a `PRIMARY KEY DESC` key gives a descending index."""
+    key that is not the row id; a `PRIMARY KEY DESC` key gives a descending index, and an
+    implicit index compares each column under the column's collation."""
     name = str(table["name"])
     names = [str(column["name"]) for column in table["columns"]]
     primary = [int(key) for key in table["primaryKey"]]
@@ -76,7 +81,7 @@ def indexes(table: dict[str, Json], rowid_primary_key: bool, descending_key: boo
     if primary and not rowid_primary_key:
         implicit.append(("pk", primary, descending_key))
     entries = [index_entry(names, list(keys), f"sqlite_autoindex_{name}_{number}", True, origin, number,
-                           [descending] * len(keys))
+                           [descending] * len(keys), [column_collations[key] for key in keys])
                for number, (origin, keys, descending) in enumerate(implicit, start=1)]
     entries += [declared_index(names, index, len(entries) + number) for number, index in enumerate(table["indexes"])]
     return entries
@@ -97,7 +102,9 @@ def table_record(predicted: dict[str, Json]) -> dict[str, Json]:
                 else [integer_cell(int(row["rowid"]))])
     return {"name": table["name"], "kind": "table", "withoutRowid": without_rowid, "foreignKeys": [],
             "columns": [column_row(position, column, primary) for position, column in enumerate(table["columns"])],
-            "indexes": indexes(table, bool(predicted["rowidPrimaryKey"]), bool(predicted["primaryKeyDescending"])),
+            "indexes": indexes(table, bool(predicted["rowidPrimaryKey"]), bool(predicted["primaryKeyDescending"]),
+                               [str(collation) for collation in
+                                predicted.get("collations") or [BINARY] * len(table["columns"])]),
             "rows": [{"identity": identity(row), "values": [value_cell(v) for v in row["values"]]}
                      for row in table["rows"]]}
 

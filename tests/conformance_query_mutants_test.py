@@ -1,6 +1,7 @@
 """Each mutant of the query, number, key, write, row-write, DELETE, join, alias, UPSERT,
 algorithm, query-without-FROM, JSON, JSON function, `json_each`, clock, date function, date
-modifier and index mutant tables changes the verdict of an authored case.
+modifier, index, `WITHOUT ROWID` and collation mutant tables changes the verdict of an
+authored case.
 
 ADR 0012 requires that the conformance suite tests each rule of query semantics and
 resolution, and its slices add the number, write, join and key rules: a changed copy of the
@@ -10,8 +11,9 @@ model that no case notices shows a missing case. The cases are the authored case
 `authored_right`, `authored_merged`, `authored_aliases`, `authored_upserts`,
 `authored_algorithms`, `authored_fromless`, `authored_json`, `authored_json_functions`,
 `authored_json_each`, `authored_clock`, `authored_date_functions`,
-`authored_date_modifiers` and `authored_indexes`, recorded natively with their outputs. Six
-measurements, one for index forms, one for
+`authored_date_modifiers`, `authored_indexes`, `authored_without_rowid` and
+`authored_collations`, recorded natively with their outputs. Seven measurements, one for
+index forms and `WITHOUT ROWID` tables, one for collations, one for
 queries and numbers, one for JSON and the clock, one for the date and time functions and
 their modifiers, one for writes and joins, and one for keys, rowid
 aliases, UPSERT and conflict algorithms, each build one base copy for their mutants, which
@@ -30,8 +32,8 @@ from conformance import (algorithm_mutants, alias_mutants, authored_algorithms, 
                          authored_joins, authored_json, authored_json_each, authored_json_functions, authored_keys,
                          authored_merged, authored_numbers, authored_queries, authored_right, authored_row_writes,
                          authored_upserts, authored_using, authored_writes, clock_mutants, date_function_mutants,
-                         authored_indexes, authored_without_rowid, date_modifier_mutants, fromless_mutants,
-                         index_mutants, without_rowid_mutants,
+                         authored_collations, authored_indexes, authored_without_rowid, collation_mutants,
+                         date_modifier_mutants, fromless_mutants, index_mutants, without_rowid_mutants,
                          json_each_mutants, json_function_mutants,
                          json_mutants, upsert_mutants)
 from conformance.native_replay import prepare
@@ -128,6 +130,13 @@ def test_every_index_and_without_rowid_mutant_changes_a_verdict(runtime_root: Pa
     measure_set(runtime_root, [authored_indexes, authored_without_rowid],
                 [(index_mutants.MUTANTS, index_mutants.TARGETS),
                  (without_rowid_mutants.MUTANTS, without_rowid_mutants.TARGETS)])
+
+
+def test_every_collation_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored collation cases notice every changed rule of collations
+    (`conformance.collation_mutants`): a comparison that ignores the collation, the right
+    operand's collation chosen first, and a key that compares with BINARY (ADR 0014, slice 3)."""
+    measure_set(runtime_root, [authored_collations], [(collation_mutants.MUTANTS, collation_mutants.TARGETS)])
 
 
 def test_every_write_and_join_mutant_changes_a_verdict(runtime_root: Path) -> None:

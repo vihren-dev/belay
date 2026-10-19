@@ -27,7 +27,7 @@ def table : Table :=
                     { rowid := 2, values := [.integer 2, .integer 2, letter 98] }] }
 
 /-- The keys of the table, as resolution gives them. -/
-def keys : List UniqueKey := [.ofColumns [0], .ofColumns [1]]
+def keys : List UniqueKey := [.ofColumns [] [0], .ofColumns [] [1]]
 
 /-- {lit}`excluded.v`: the proposed row starts after the three cells of the table's row. -/
 def excludedV : Resolved.Expr := .column 5

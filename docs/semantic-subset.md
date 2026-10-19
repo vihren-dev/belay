@@ -11,9 +11,9 @@ The frontend maps these statements, and refuses every other statement as
 `UNSUPPORTED` at its byte range:
 
 - `CREATE TABLE` with column definitions (name, declared type text, `NOT NULL`,
-  `PRIMARY KEY` with its sort order, `UNIQUE`, and `DEFAULT` with a literal, a
-  signed number, a time keyword or a name), table `PRIMARY KEY` and `UNIQUE`
-  constraints over plain column names, and the option `WITHOUT ROWID` (ADR 0014,
+  `PRIMARY KEY` with its sort order, `UNIQUE`, `COLLATE` (ADR 0014, slice 3), and
+  `DEFAULT` with a literal, a signed number, a time keyword or a name), table
+  `PRIMARY KEY` and `UNIQUE` constraints over plain column names, and the option `WITHOUT ROWID` (ADR 0014,
   slice 2; `STRICT` is refused);
 - `CREATE [UNIQUE] INDEX` with key terms, each a column name or an expression with
   an optional `ASC` or `DESC`, and an optional `WHERE` filter (ADR 0014, slice 1);
@@ -94,7 +94,7 @@ row of `DO UPDATE` are always ABORT. In the schema, a `PRIMARY KEY`, `UNIQUE` or
 `OR` clause; keys with different algorithms other than REPLACE are the restriction
 `mixed-conflict-algorithms`, UPDATE of such a table is `constraint-algorithm-update`, and
 REPLACE of a NOT NULL column with a default is `replace-default`. Named
-constraints, collations, `CHECK`, `REFERENCES`, generated columns, `UPDATE OR`, a target with a direction, collation,
+constraints, `CHECK`, `REFERENCES`, generated columns, `UPDATE OR`, a target with a direction, collation,
 `NULLS` order, qualified name or `WHERE`, `WITH`, `FROM` in writes, sort modifiers in keys,
 partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
 options, `AS SELECT`, views, triggers, virtual tables, `EXPLAIN`, `PRAGMA`,
@@ -133,8 +133,8 @@ conflict fails with SQLite's constraint error and leaves the catalog unchanged. 
 `ON CONFLICT` target names only a key of columns without a filter. SQLite's prepare
 errors apply: a qualified name in a term, `CURRENT_TIME`, `CURRENT_DATE` and
 `CURRENT_TIMESTAMP` in a term or the filter, and an aggregate. A string literal as a
-term, a date and time function, a JSON function, a rowid name in the filter and
-`COLLATE` in a term are model restrictions.
+term, a date and time function, a JSON function and a rowid name in the filter are
+model restrictions.
 
 A `WITHOUT ROWID` table (ADR 0014, slice 2) needs a primary key, else SQLite's
 `PRIMARY KEY missing on table t`. Its key columns are NOT NULL, `INTEGER PRIMARY KEY` is
@@ -143,7 +143,25 @@ no rowid alias, and `rowid`, `_rowid_` and `oid` that name no column are
 `PRIMARY KEY DESC`, and UPDATE and DELETE with `RETURNING` return them in that order; a
 table with a rowid returns them in rowid order.
 
-ADD COLUMN supports literal defaults, with optional NOT NULL. Existing rows
+A collation (ADR 0014, slice 3) is `BINARY`, `NOCASE` or `RTRIM`, with ASCII case of the
+name ignored. `NOCASE` compares TEXT with the ASCII capitals folded, and `RTRIM` compares
+TEXT without trailing spaces; neither changes a value of another storage class. A column
+has the collation of its `COLLATE` clause, else `BINARY`; an index term has that of an
+explicit `COLLATE`, else that of its column. A primary key, a `UNIQUE` column and a unique
+index compare their terms under these collations, and a `WITHOUT ROWID` table scans in
+that order. Resolution decides each collation by SQLite's rules: a comparison uses an
+explicit `COLLATE` of its left operand, else of its right operand, else the collation of
+a column on the left, else on the right, else `BINARY`; `COLLATE` passes through unary plus
+and `CAST`. An `ORDER BY` or `GROUP BY` term, `min` and `max` use the collation of their
+expression, and the equality of `USING` and `NATURAL` that of its left column. A
+`GROUP BY` term may be a column name under `COLLATE`. An unknown name in a column
+definition or an index term is SQLite's prepare error `no such collation sequence: %s`;
+in any other expression it is the restriction `unknown-collation`, because SQLite looks
+the name up only where it uses the collation, and its query planner decides some of
+those uses. `COLLATE` in an `ON CONFLICT` target or in a key of a table constraint is
+refused.
+
+ADD COLUMN supports literal defaults, with optional NOT NULL and COLLATE. Existing rows
 read the default under the column affinity. Without a default they read NULL.
 NOT NULL with NULL succeeds on an empty table and fails during execution on a
 populated table, retaining the prior catalog and rows. A time keyword default
@@ -222,7 +240,7 @@ should shrink.
 | `unmodeled-function` | Only `COUNT(*)`, `COUNT`, `MIN`, `MAX`, `SUM` and `AVG` of one argument, `COALESCE` of two or more arguments, `json_extract`, `->`, `->>`, `json_type`, `json_valid`, `json_array_length` and `json` are modeled as functions | ADR 0012 slices 1, 2, 6b and 6c |
 | `aggregate-in-expression` | An aggregate inside an expression is not modeled | ADR 0012 slice 1 |
 | `alias-in-expression` | A result column alias inside WHERE or an ORDER BY expression is not modeled | ADR 0012 slice 1 |
-| `group-by-term` | Only a column name or a result column number is modeled in GROUP BY | ADR 0012 slice 1 |
+| `group-by-term` | Only a column name, also under COLLATE, or a result column number is modeled in GROUP BY | ADR 0012 slice 1; ADR 0014, slice 3 |
 | `bare-column` | A result column outside GROUP BY in an aggregate query is not modeled | ADR 0012 slice 1 |
 | `aggregate-order-by` | An aggregate query is modeled with ORDER BY result column numbers or aliases only | ADR 0012 slice 1 |
 | `window-value` | Only an integer literal is modeled as LIMIT or OFFSET | ADR 0012 slice 1 |
@@ -241,6 +259,7 @@ should shrink.
 | `mixed-conflict-algorithms` | Keys of one INSERT with different conflict algorithms other than REPLACE are not modeled | ADR 0012 amendment 4, slice 5d |
 | `windowed-group-sum` | SUM in a grouped query with LIMIT or OFFSET is not modeled, because SQLite may stop before an overflowing group | ADR 0012 slice 2 |
 | `constant-function-error` | A constant value in VALUES or SET whose JSON function fails is not modeled, because the model does not describe when SQLite evaluates it | ADR 0012 slice 6b |
+| `unknown-collation` | COLLATE with a name other than BINARY, NOCASE or RTRIM in an expression is not modeled, because SQLite looks the name up only where its query planner uses the collation | ADR 0014, slice 3 |
 
 #### Unrepresented
 

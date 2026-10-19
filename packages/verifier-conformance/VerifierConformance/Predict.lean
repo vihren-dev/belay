@@ -48,13 +48,17 @@ def nativeTableOf (catalog : Catalog) (position : Nat) (name : Identifier) (tabl
   withoutRowid := table.shape.withoutRowid
 
 /-- The table at a catalog position in SQLite's catalog terms, whether its primary key
-is the rowid, which decides whether SQLite makes an index for that key, and whether that
-key is descending, which the index records. -/
+is the rowid, which decides whether SQLite makes an index for that key, whether that
+key is descending, which the index records, and the collation name of each column, which
+the indexes of the primary key and of UNIQUE constraints record; {lit}`collations` is
+present only when a column is not {lit}`BINARY`, so other predictions keep their form. -/
 def predictedTable (catalog : Catalog) (position : Nat) (table : Table) : Option Json :=
-  catalog[position]?.map fun object => Json.mkObj [
+  let collations := collationNames (table.shape.columns.map (·.collation.sqlName))
+  catalog[position]?.map fun object => Json.mkObj ([
     ("table", toJson (nativeTableOf catalog position object.name table)),
     ("rowidPrimaryKey", toJson table.shape.rowidAlias.isSome),
-    ("primaryKeyDescending", toJson table.shape.primaryKeyDescending)]
+    ("primaryKeyDescending", toJson table.shape.primaryKeyDescending)] ++
+    (if collations.isEmpty then [] else [("collations", toJson collations)]))
 
 /-- Starting rows as a native table without metadata: {name}`databaseOf` reads only
 the name and the rows. -/

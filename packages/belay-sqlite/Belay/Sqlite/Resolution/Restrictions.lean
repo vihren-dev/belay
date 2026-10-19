@@ -30,6 +30,10 @@ inductive RestrictionKind where
   /-- A JSON function in a key term or the filter of CREATE INDEX: it can fail while a row
   is written, which the model's key check does not describe (ADR 0014, slice 1). -/
   | indexJsonFunction
+  /-- A {lit}`COLLATE` in an expression with a name that names no collation: SQLite looks
+  the name up only where it uses the collation, and its query planner decides some of
+  those uses, so the model cannot tell whether the statement fails (ADR 0014, slice 3). -/
+  | unknownCollation
   /-- The added column requires unmodeled default evaluation. -/
   | addColumnConstraint
   /-- A {lit}`SET` value that reads the row is not modeled for a column of a unique key

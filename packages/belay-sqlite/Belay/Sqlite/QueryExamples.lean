@@ -32,20 +32,20 @@ def plain : Query where
 #guard { plain with filter := some (.compare .eq none (.column 0) (.literal (.integer 1))) }.results 0 (sourceRows table) ==
   [[.text [97]], [.text [98]]]
 -- ORDER BY k DESC puts NULL last; the tie between rowids 1 and 2 keeps rowid order.
-#guard { plain with orderBy := [(.expression (.column 0), true)] }.results 0 (sourceRows table) ==
+#guard { plain with orderBy := [{ key := .expression (.column 0), descending := true }] }.results 0 (sourceRows table) ==
   [[.text [100]], [.text [97]], [.text [98]], [.text [99]]]
 -- ORDER BY k with LIMIT 2 OFFSET 1: NULL first, then the window.
-#guard { plain with orderBy := [(.expression (.column 0), false)], offset := 1, limit := some 2 }.results 0 (sourceRows table) ==
+#guard { plain with orderBy := [{ key := .expression (.column 0) }], offset := 1, limit := some 2 }.results 0 (sourceRows table) ==
   [[.text [97]], [.text [98]]]
 /-- {lit}`SELECT k, COUNT(*), MIN(v), COUNT(k) FROM t GROUP BY k ORDER BY 1`. -/
 def grouped : Query where
   sources := [.first 0]
   filter := none
   aggregate := true
-  groupBy := [.column 0]
+  groupBy := [(.column 0, .binary)]
   columns := [.scalar (.column 0), .aggregate .countRows, .aggregate (.min (.column 1)), .aggregate (.count (.column 0))]
   names := ["k", "count(*)", "min(v)", "count(k)"]
-  orderBy := [(.output 0, false)]
+  orderBy := [{ key := .output 0 }]
   offset := 0
   limit := none
 

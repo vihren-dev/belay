@@ -23,13 +23,16 @@ def KeyTerm.reads (width : Nat) : KeyTerm → List Nat
   | .column position => [position]
   | .expression value => value.reads width
 
-/-- One key term of an index with its sort order. The sort order changes no result that
-the model observes; the catalog keeps it to describe the index. -/
+/-- One key term with its sort order and its collation (ADR 0014, D3), under which two
+values of the term are equal. The sort order changes no result that the model observes;
+the catalog keeps it to describe an index. -/
 structure IndexKey where
   /-- The term. -/
   term : KeyTerm
   /-- Whether the term is {lit}`DESC`; {lean}`false` for {lit}`ASC` or no order. -/
   descending : Bool := false
+  /-- The collation of the term; {lit}`BINARY` without one. -/
+  collation : Collation := .binary
   deriving Repr, DecidableEq
 
 /-- One index entry: the catalog position of its table, its key terms, whether it is
@@ -45,32 +48,31 @@ structure CatalogIndex where
   filter : Option Resolved.Expr := none
   deriving Repr, DecidableEq
 
-/-- One unique key of a table: its terms, and the filter of a partial unique index, none
-for a key of every row. Two rows conflict on it when the filter is true for both and
-every term is equal ({lit}`LiteralData.keyEqual`). -/
+/-- One unique key of a table: its terms with their collations, and the filter of a partial
+unique index, none for a key of every row. Two rows conflict on it when the filter is true
+for both and every term is equal under its collation ({lit}`LiteralData.keyEqual`). -/
 structure UniqueKey where
   /-- The terms in key order. -/
-  terms : List KeyTerm
+  terms : List IndexKey
   /-- The filter of a partial unique index; none for a key of every row. -/
   filter : Option Resolved.Expr := none
   deriving Repr, DecidableEq
-
-/-- The key of the column positions, without filter: a primary key or UNIQUE constraint. -/
-def UniqueKey.ofColumns (positions : List Nat) : UniqueKey := { terms := positions.map .column }
 
 /-- The column positions of a key of columns without filter, the only keys that an
 {lit}`ON CONFLICT` target can name; none for any other key. -/
 def UniqueKey.columns? (key : UniqueKey) : Option (List Nat) :=
   if key.filter.isSome then none
-  else key.terms.mapM fun | .column position => some position | .expression _ => none
+  else key.terms.mapM fun key => match key.term with
+    | .column position => some position
+    | .expression _ => none
 
 /-- The positions below the width that the key's terms and filter read. -/
 def UniqueKey.reads (width : Nat) (key : UniqueKey) : List Nat :=
-  (key.terms.flatMap (·.reads width) ++ (key.filter.map (·.reads width)).getD []).eraseDups
+  (key.terms.flatMap (·.term.reads width) ++ (key.filter.map (·.reads width)).getD []).eraseDups
 
 /-- The unique key of a unique index. -/
 def CatalogIndex.uniqueKey (index : CatalogIndex) : UniqueKey :=
-  { terms := index.keys.map (·.term), filter := index.filter }
+  { terms := index.keys, filter := index.filter }
 
 /-- Whether an index is admitted for a table of the width: at least one key term, column
 terms below the width, and expression terms and the filter that read only columns below

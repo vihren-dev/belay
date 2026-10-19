@@ -1,5 +1,6 @@
 import Belay.Sqlite.Declarations
 import Belay.Sqlite.Operators
+import Belay.Sqlite.Comparison
 import Belay.Sqlite.Resolution.JsonFunction
 import Belay.Sqlite.Resolution.DateFunction
 import Belay.Sqlite.ClockText
@@ -22,8 +23,10 @@ inductive Expr where
   /-- A literal value, after the affinity of a comparison is applied to it. -/
   | literal (value : Value)
   /-- A comparison of two operands, with the affinity that SQLite applies to them
-  ({lit}`comparisonAffinity`); none applies no conversion. -/
+  ({lit}`comparisonAffinity`; none applies no conversion) and the collation that resolution
+  chose for it (ADR 0014, D3), {lit}`BINARY` when none is written. -/
   | compare (operator : Comparison) (affinity : Option Affinity) (left right : Expr)
+      (collation : Collation := .binary)
   /-- {lit}`AND`, with SQLite's three-valued logic. -/
   | and (left right : Expr)
   /-- {lit}`OR`, with SQLite's three-valued logic. -/
@@ -64,10 +67,12 @@ inductive Aggregate where
   | countRows
   /-- {lit}`COUNT(x)`: the number of rows where the operand is not NULL. -/
   | count (operand : Expr)
-  /-- {lit}`MIN(x)`: the least operand value that is not NULL, or NULL. -/
-  | min (operand : Expr)
-  /-- {lit}`MAX(x)`: the greatest operand value that is not NULL, or NULL. -/
-  | max (operand : Expr)
+  /-- {lit}`MIN(x)`: the least operand value that is not NULL under the operand's collation,
+  or NULL. -/
+  | min (operand : Expr) (collation : Collation := .binary)
+  /-- {lit}`MAX(x)`: the greatest operand value that is not NULL under the operand's
+  collation, or NULL. -/
+  | max (operand : Expr) (collation : Collation := .binary)
   /-- {lit}`SUM(x)`: the sum of the operand values that are not NULL, by
   {lit}`SumState.sumValue`; it fails on an integer overflow. -/
   | sum (operand : Expr)
@@ -80,7 +85,7 @@ inductive Aggregate where
 overflow. -/
 def Aggregate.canFail : Aggregate → Bool
   | .sum _ => true
-  | .countRows | .count _ | .min _ | .max _ | .avg _ => false
+  | .countRows | .count _ | .min .. | .max .. | .avg _ => false
 
 /-- One result column: an expression over a row, or, in an aggregate query, an
 aggregate over a group or an expression over the group's first row, which
@@ -105,6 +110,17 @@ inductive SortKey where
   | expression (expression : Expr)
   /-- The result column at a zero-based index. -/
   | output (index : Nat)
+  deriving Repr, DecidableEq
+
+/-- One {lit}`ORDER BY` term: the value it sorts by, whether it is {lit}`DESC`, and the
+collation of its expression ({lit}`BINARY` when none applies). -/
+structure SortTerm where
+  /-- The value the term sorts by. -/
+  key : SortKey
+  /-- Whether the term is {lit}`DESC`. -/
+  descending : Bool := false
+  /-- The collation of the term's expression. -/
+  collation : Collation := .binary
   deriving Repr, DecidableEq
 
 /-- The kind of a resolved join: inner, or left, right or full outer. -/
@@ -169,14 +185,15 @@ structure Query where
   filter : Option Expr
   /-- Whether the query is an aggregate query: it has {lit}`GROUP BY` or an aggregate. -/
   aggregate : Bool
-  /-- The {lit}`GROUP BY` terms; empty for one group of all rows. -/
-  groupBy : List Expr
+  /-- The {lit}`GROUP BY` terms, each with the collation that decides when two values are one
+  group; empty for one group of all rows. -/
+  groupBy : List (Expr × Collation)
   /-- The result columns, in order. -/
   columns : List Output
   /-- The name of each result column. -/
   names : List String
-  /-- The {lit}`ORDER BY` terms, each with {lean}`true` for {lit}`DESC`. -/
-  orderBy : List (SortKey × Bool)
+  /-- The {lit}`ORDER BY` terms. -/
+  orderBy : List SortTerm
   /-- The number of rows that {lit}`OFFSET` skips; zero without {lit}`OFFSET`. -/
   offset : Nat
   /-- The {lit}`LIMIT`, or {lean}`(none : Option Nat)` for no limit. -/

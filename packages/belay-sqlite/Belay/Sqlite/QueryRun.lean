@@ -23,7 +23,7 @@ def Output.scalars : Output → List Expr
 /-- The operand of an aggregate result column; none for a scalar or {lit}`COUNT(*)`. -/
 def Output.operands : Output → List Expr
   | .scalar _ | .aggregate .countRows => []
-  | .aggregate (.count operand) | .aggregate (.min operand) | .aggregate (.max operand)
+  | .aggregate (.count operand) | .aggregate (.min operand _) | .aggregate (.max operand _)
   | .aggregate (.sum operand) | .aggregate (.avg operand) => [operand]
 
 /-- The expressions of an {lit}`ORDER BY` key: an expression, or none for a result
@@ -36,8 +36,8 @@ def SortKey.expressions : SortKey → List Expr
 result columns, the aggregate operands, and the {lit}`GROUP BY` and {lit}`ORDER BY`
 keys. -/
 def Query.keptExpressions (query : Query) : List Expr :=
-  query.columns.flatMap Output.scalars ++ query.columns.flatMap Output.operands ++ query.groupBy ++
-    query.orderBy.flatMap (·.1.expressions)
+  query.columns.flatMap Output.scalars ++ query.columns.flatMap Output.operands ++ query.groupBy.map Prod.fst ++
+    query.orderBy.flatMap (·.key.expressions)
 
 /-- The expressions of a source of {lit}`FROM`: the arguments of a {lit}`json_each` source,
 and the {lit}`ON` condition. -/

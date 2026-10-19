@@ -34,6 +34,7 @@ def ExprError.message : ExprError → String
   | .cannotAddUnique => "Cannot add a UNIQUE column"
   | .conflictingAlgorithms => "conflicting ON CONFLICT clauses specified"
   | .noSuchColumn name => s!"no such column: {name}"
+  | .noSuchCollation name => s!"no such collation sequence: {name}"
   | .qualifiedIndexTerm => "the \".\" operator prohibited in index expressions"
   | .nondeterministicIndex filter =>
     "non-deterministic functions prohibited in " ++ (if filter then "partial index WHERE clauses" else "index expressions")

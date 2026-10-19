@@ -46,4 +46,12 @@ def mergedLeft (coalesced : Bool) (left : Scope) (name : Identifier) : Option Op
   | [] => none
   | first :: rest => some (left.nameOperand (if coalesced then first :: rest else [first]))
 
+/-- The collation of the equality of a merged name: that of the left-most left column of
+the name, BINARY when the left input has none. SQLite gives a coalesce of the left
+columns the collation of its first argument, and a column always has a collation, so the
+column of the joined source never decides it (checked on native 3.51.0). -/
+def Scope.namedCollation (scope : Scope) (name : Identifier) : Collation :=
+  ((scope.find? fun source => (columnPosition source.columns name).isSome).bind fun source =>
+    (columnPosition source.columns name).bind fun index => source.columns[index]?.map (·.collation)).getD .binary
+
 end Belay.Sqlite

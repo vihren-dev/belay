@@ -19,19 +19,26 @@ structure NativeColumn where
 
 /-- One explicit index ({lit}`index_list` origin {lit}`c`): its name, the column position of
 each key term, none for an expression ({lit}`index_xinfo` column -2), its uniqueness, the
-sort order of each term, as an empty list when every term is ascending, and whether it is
-partial ({lit}`index_list` column {lit}`partial`). -/
+sort order of each term, as an empty list when every term is ascending, whether it is
+partial ({lit}`index_list` column {lit}`partial`), and the collation name of each term in
+capitals ({lit}`index_xinfo` column {lit}`coll`), as an empty list when every term is
+{lit}`BINARY`. -/
 structure NativeIndex where
   name : Identifier
   columns : List (Option Nat)
   unique : Bool
   descending : List Bool := []
   isPartial : Bool := false
+  collations : List String := []
   deriving Repr, DecidableEq
 
 /-- The sort orders of the terms of an index as {name}`NativeIndex.descending` keeps them: the
 empty list when every term is ascending. -/
 def sortOrders (descending : List Bool) : List Bool := if descending.any id then descending else []
+
+/-- The collation names of the terms of an index as {name}`NativeIndex.collations` keeps
+them: the empty list when every term is {lit}`BINARY`. -/
+def collationNames (names : List String) : List String := if names.all (· == "BINARY") then [] else names
 
 /-- One native table: its name in {lit}`sqlite_schema`, its columns, the primary-key
 positions in key order, the key positions of each UNIQUE constraint index (origin
@@ -106,7 +113,8 @@ def catalogIndexes (catalog : Catalog) (position : Nat) : List NativeIndex :=
                columns := index.keys.map fun key => match key.term with
                  | .column position => some position
                  | .expression _ => none,
-               descending := sortOrders (index.keys.map (·.descending)) } else none
+               descending := sortOrders (index.keys.map (·.descending)),
+               collations := collationNames (index.keys.map (·.collation.sqlName)) } else none
     | .table _ => none
 
 /-- Whether two index lists hold the same indexes, in any order. -/

@@ -75,6 +75,9 @@ inductive Expr where
   | arithmetic (operator : ArithmeticOperator) (left right : Expr)
   /-- {lit}`CAST(operand AS typeName)`, with the type name as written. -/
   | cast (operand : Expr) (typeName : String)
+  /-- {lit}`operand COLLATE name` (ADR 0014, slice 3): the operand's value with the named
+  collation, as written. -/
+  | collate (operand : Expr) (name : Identifier)
   deriving Repr, BEq, Inhabited
 
 /-- A DEFAULT expression and its source spelling. The expression determines the
@@ -108,6 +111,8 @@ inductive ColumnConstraint where
   /-- {lit}`DEFAULT` with its expression and its source text, excluding DEFAULT
   and any outer parentheses belonging to the DEFAULT production. -/
   | default (value : Expr) (sourceText : String)
+  /-- {lit}`COLLATE name`, with the collation name as written (ADR 0014, slice 3). -/
+  | collate (name : Identifier)
   deriving Repr, BEq
 
 /-- One column of CREATE TABLE or ADD COLUMN. Use {lean}`(none : Option String)`

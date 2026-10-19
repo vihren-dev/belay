@@ -148,7 +148,7 @@ def keyed : Catalog := catalogOf (schema [.createTable (name! "k") [column (name
 -- The unique keys of a table, which writes keep: the primary key, UNIQUE constraints, then
 -- unique indexes. A write names only the table; execution reads the keys from the catalog.
 #guard (keyed.findTable (name! "k")).map (fun (position, table) => keyed.uniqueKeys position table) ==
-  some ([[2], [1, 0], [0]].map UniqueKey.ofColumns)
+  some ([[2], [1, 0], [0]].map (UniqueKey.ofColumns ((keyed.findTable (name! "k")).map (·.2.columns) |>.getD [])))
 #guard statements (migration keyed [.insert (name! "k") none [[.null, .null, .null, .null]] [], .update (name! "k") [((name! "a"), .null)] none])
   == [.insert 0 [[.value .null, .value .null, .value .null, .value .null]] [], .update 0 [(0, .literal .null)] none []]
 

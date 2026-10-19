@@ -28,6 +28,7 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "index-string-term": ("CREATE TABLE t(a INTEGER);", "CREATE INDEX i ON t('a');"),
     "index-date-function": ("CREATE TABLE t(a TEXT);", "CREATE INDEX i ON t(date(a));"),
     "index-json-function": ("CREATE TABLE t(a TEXT);", "CREATE INDEX i ON t(json_extract(a, '$.k'));"),
+    "unknown-collation": ("CREATE TABLE t(a TEXT);", "SELECT a COLLATE foo FROM t;"),
     "add-column-constraint": ("CREATE TABLE t(a INTEGER);", "ALTER TABLE t ADD COLUMN b TEXT DEFAULT +'x';"),
     "row-dependent-key": ("CREATE TABLE t(a INTEGER UNIQUE);", "UPDATE t SET a = a + 1;"),
     "conflict-without-target": ("CREATE TABLE t(a INTEGER UNIQUE, b INTEGER UNIQUE);",
