@@ -191,9 +191,11 @@ platform caches evicted each other. A path removed by mistake costs a rebuild in
 later run and cannot change a result. The step may fail without failing the job.
 
 Host JUnit reports, cached Nix test outputs and CI phase diagnostics are
-retained for 14 days. Pytest's exit status decides success. Individual subprocess
-and whole-command deadlines remain bounded (a timed-out test command's process
-group is killed). The hosted job limit is 75 minutes, including the reference phase, runtime,
+retained for 14 days. Pytest's exit status decides success. `tools/ci_checks.py`
+writes the output of each phase to the job log while the phase runs, and keeps it in
+`build/ci-phases/PHASE/`. Individual subprocess and whole-command deadlines remain
+bounded: a timed-out command's process group is killed, and the output read before
+the kill is kept, also when a process outside the group keeps the pipes open. The hosted job limit is 75 minutes, including the reference phase, runtime,
 Darwin bundle, complete checks, setup and artifact retention. Child limits
 are individual upper bounds; their sum is not a promised job duration. Individual suite and command limits remain unchanged.
 Superseded ordinary runs are cancelled; release/manual runs are not.

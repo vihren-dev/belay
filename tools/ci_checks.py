@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import shlex
 import subprocess
 import sys
 from time import monotonic
@@ -43,23 +44,23 @@ def run_checks(scope: str, mode: str, system: str, root: Path) -> None:
     output = root / "build/ci-phases.json"
     output.parent.mkdir(exist_ok=True)
 
-    def run(name: str, command: list[str], timeout: int, *, capture: bool = False) -> str:
-        """Keep phase durations and failure status even when a native build or host gate fails."""
+    def run(name: str, command: list[str], timeout: int) -> str:
+        """Run one phase with its output streamed to the log; keep its duration and status."""
         started = monotonic()
         status = -1
+        artifacts = root / "build/ci-phases" / name
         try:
             result = run_command(command, cwd=root, environment=environment, timeout=timeout,
-                                 artifacts=root / "build/ci-phases" / name)
+                                 artifacts=artifacts, echo=True)
             status = result.returncode
-            if not capture or status:
-                print(result.stdout, end="", flush=True)
-            print(result.stderr, end="", file=sys.stderr, flush=True)
             if status:
                 raise subprocess.CalledProcessError(status, command, result.stdout, result.stderr)
             return result.stdout.strip()
         except CommandTimeout as error:
             status = error.result.returncode
-            print(error.result.diagnostic(), file=sys.stderr, flush=True)
+            print(f"Phase {name} stopped after its {timeout}-second limit: {shlex.join(command)}. "
+                  f"Its output is in the log above and in {artifacts.relative_to(root)}/.",
+                  file=sys.stderr, flush=True)
             raise
         finally:
             records.append({"phase": name, "command": command, "exit_code": status,
@@ -69,7 +70,7 @@ def run_checks(scope: str, mode: str, system: str, root: Path) -> None:
     if mode == "build":
         environment["SQLITE_VERIFIER_RUNTIME_ROOT"] = run("runtime",
             ["nix-build", "build-support/default.nix", "-A", "runtime", "--no-out-link",
-             "--extra-experimental-features", "nix-command flakes"], 900, capture=True)
+             "--extra-experimental-features", "nix-command flakes"], 900)
         runtime = Path(environment["SQLITE_VERIFIER_RUNTIME_ROOT"])
     elif mode == "source":
         run("setup", ["just", "setup"], 330)
@@ -79,8 +80,8 @@ def run_checks(scope: str, mode: str, system: str, root: Path) -> None:
     lean = str(toolchain / "lean") if toolchain.is_dir() else "lean"
     lake = str(toolchain / "lake") if toolchain.is_dir() else "lake"
     versions = {"python": sys.version,
-                "lean": run("lean-version", [lean, "--version"], 10, capture=True),
-                "lake": run("lake-version", [lake, "--version"], 10, capture=True)}
+                "lean": run("lean-version", [lean, "--version"], 10),
+                "lake": run("lake-version", [lake, "--version"], 10)}
     (root / "build/ci-environment.json").write_text(json.dumps(versions, indent=2) + "\n")
     if system == BUNDLE_FIRST_SYSTEM:
         run("bundle", ["nix-build", "build-support/default.nix", "-A", "tests.bundle",
@@ -96,7 +97,11 @@ def main() -> None:
     parser.add_argument("--system", choices=("x86_64-linux", "aarch64-darwin"), required=True)
     parser.add_argument("--root", type=Path, default=Path.cwd())
     arguments = parser.parse_args()
-    run_checks(arguments.scope, arguments.mode, arguments.system, arguments.root.resolve())
+    try:
+        run_checks(arguments.scope, arguments.mode, arguments.system, arguments.root.resolve())
+    except CommandTimeout:
+        # The phase output is already in the log; the exception text would repeat all of it.
+        sys.exit(1)
 
 
 if __name__ == "__main__":
