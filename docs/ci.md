@@ -56,9 +56,10 @@ bundle tests keep their per-test limits, described below. The
 [dated evidence](../reports/20261007-darwin-bundle-scheduling/README.md)
 distinguishes the earlier hosted failures from the isolated local pass.
 
-`just test-full` builds independent Nix test targets
-with `nix-build -A tests`, among them these; the flake exposes the same derivations as
-`checks.<system>`:
+`just test-full` builds independent Nix test targets, the suites of `tests`, through
+`nix-build -A testReports`. Each suite's output, with its `junit.xml`, is at
+`build/nix-tests-full/SUITE`. These are among them; the flake exposes the same
+derivations as `checks.<system>`:
 
 - `tests.kernel`: real Lean compilation and proof-checker replay attacks.
 - `tests.model`: production SQL translation and concrete Lean model assertions,
@@ -81,7 +82,8 @@ with `nix-build -A tests`, among them these; the flake exposes the same derivati
   harness or documentation change reuses the result.
 
 `just test-scheduled` builds the scheduled suites of `tests/nix_scheduled_suites.json`
-with `nix-build -A scheduledTests`: `scheduledTests.mutants`, the mutants of the model, each
+with `nix-build -A scheduledTestReports` (outputs in `build/nix-tests-scheduled/SUITE`):
+`scheduledTests.mutants`, the mutants of the model, each
 built as a changed copy of the Lean packages, where every mutant must change the verdict of
 an authored model case; and `scheduledTests.writers`, the round trips of the corpus writers.
 Each mutant copy rebuilds the model modules that depend on its change, so the suite grows

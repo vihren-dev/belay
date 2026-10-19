@@ -56,6 +56,12 @@ in rec {
   # `just test` skips the slow model comparisons, the frozen evidence and the locked-corpus
   # validation; `just test-full` runs them.
   developmentTests = pkgs.lib.removeAttrs tests [ "model" "frozen" "corpora" ];
+  # One folder per suite, named after the suite, for the justfile recipes: for example
+  # build/nix-tests-full/frozen/junit.xml. `nix-build -A tests` would instead number its
+  # out-links in alphabetical order of the suites.
+  testReports = pkgs.linkFarm "sqlite-verifier-test-reports" tests;
+  developmentTestReports = pkgs.linkFarm "sqlite-verifier-development-test-reports" developmentTests;
+  scheduledTestReports = pkgs.linkFarm "sqlite-verifier-scheduled-test-reports" scheduledTests;
   runtime = import ./runtime.nix {
     inherit pkgs sources leanToolchain verifierLibrary leanRuntime modelPackage;
     parserLibrary = parserLibrary.library;

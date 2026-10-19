@@ -41,14 +41,15 @@ def test_each_delegated_file_belongs_to_one_suite() -> None:
 @pytest.mark.requires_native("just")
 def test_recipe_expansion_retains_full_model_in_release_checks() -> None:
     """Actual just dependencies select the sample for development and the full set for releases."""
-    for recipe, target in (("test", "developmentTests"), ("test-full", "tests"), ("package", "tests")):
+    for recipe, target in (("test", "developmentTestReports"), ("test-full", "testReports"),
+                           ("package", "testReports")):
         result = subprocess.run(["just", "--dry-run", recipe], cwd=ROOT,
                                 capture_output=True, text=True, timeout=5)
         assert result.returncode == 0, result.stdout + result.stderr
         commands = result.stdout + result.stderr
         assert f"-A {target} --out-link build/nix-tests" in commands
         if recipe != "test":
-            assert "-A developmentTests" not in commands
+            assert "-A developmentTestReports" not in commands
 
 
 def test_scheduled_suites_run_only_in_the_package_recipe() -> None:
@@ -60,6 +61,6 @@ def test_scheduled_suites_run_only_in_the_package_recipe() -> None:
     assert scheduled and set(scheduled) <= set(suites)
     recipes = (ROOT / "justfile").read_text()
     assert "\npackage: test-full test-nix runtime-package test-scheduled\n" in recipes
-    assert "-A scheduledTests " in recipes and "-A tests " in recipes
+    assert "-A scheduledTestReports " in recipes and "-A testReports " in recipes
     default = (ROOT / "build-support/default.nix").read_text()
     assert "tests = pkgs.lib.removeAttrs allTests scheduledSuites;" in default

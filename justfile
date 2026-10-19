@@ -61,11 +61,11 @@ smoke:
 
 # Fresh development replay includes every authored/synthetic case and a stable upstream sample.
 test: build documentation-inventory test-source
-    timeout --foreground {{suite_build_limit}} nix-build build-support/default.nix -A developmentTests --out-link build/nix-tests --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+    timeout --foreground {{suite_build_limit}} nix-build build-support/default.nix -A developmentTestReports --out-link build/nix-tests --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
 # CI and package checks retain all full model, kernel and historical evidence checks.
 test-full: build documentation-inventory test-source
-    timeout --foreground {{suite_build_limit}} nix-build build-support/default.nix -A tests --out-link build/nix-tests-full --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+    timeout --foreground {{suite_build_limit}} nix-build build-support/default.nix -A testReports --out-link build/nix-tests-full --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
 # Check every authored public declaration, constructor and field in the compiled import closure.
 documentation-inventory: resources
@@ -111,7 +111,7 @@ test-nix:
 # Run the scheduled suites (tests/nix_scheduled_suites.json), which pull requests skip.
 test-scheduled:
     mkdir -p build
-    timeout --foreground {{suite_build_limit}} nix-build build-support/default.nix -A scheduledTests --out-link build/nix-tests-scheduled --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+    timeout --foreground {{suite_build_limit}} nix-build build-support/default.nix -A scheduledTestReports --out-link build/nix-tests-scheduled --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
 # Select only the cached application-specific suite.
 test-atuin:

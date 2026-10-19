@@ -17,7 +17,7 @@ from tests.runtime_support import run_command
 from tools.ci_checks import BUNDLE_BUILD_LIMIT_SECONDS
 
 ROOT = Path(__file__).resolve().parents[1]
-SUITE_TARGETS = {"developmentTests", "tests", "scheduledTests", "tests.atuin"}
+SUITE_TARGETS = {"developmentTestReports", "testReports", "scheduledTestReports", "tests.atuin"}
 """The `nix-build -A` targets of build-support/default.nix that build test suites."""
 
 pytestmark = [pytest.mark.unit, pytest.mark.environment]
