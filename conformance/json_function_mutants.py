@@ -17,7 +17,7 @@ VALID = SQLITE + "Json/Valid.lean"
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "json_large_integer_real": (FUNCTIONS, "  | .int _ | .int5 _ => \"integer\"",
         "  | .int payload | .int5 payload => if payload.length > 18 then \"real\" else \"integer\""),
-    "json_valid_accepts_json5": (VALID, "  else standardJson bytes || flags / 2 % 2 == 1", "  else Bool.true"),
+    "json_valid_accepts_json5": (VALID, "    | some (_, standard) => standard || flags / 2 % 2 == 1", "    | some (_, standard) => Bool.true"),
     "json_valid_fails_malformed": (VALID,
         "      .ok (.integer (if (valueText json).any (textValid flags ·) then 1 else 0))",
         "      if (valueText json).any (fun bytes => (parseJsonText bytes).isNone) then .error .malformed\n"

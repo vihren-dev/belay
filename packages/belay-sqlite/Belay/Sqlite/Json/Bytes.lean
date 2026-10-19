@@ -51,6 +51,16 @@ def hexValue (byte : UInt8) : UInt32 :=
 def hasHexDigits (text : Array UInt8) (start count : Nat) : Bool :=
   (List.range count).all fun offset => isHexDigit (byteAt text (start + offset))
 
+/-- The bytes of the text from {lit}`start` up to, not including, {lit}`stop`. -/
+def slice (text : Array UInt8) (start stop : Nat) : List UInt8 :=
+  (List.range (stop - start)).map fun offset => byteAt text (start + offset)
+
+/-- The first position at or after {lit}`position` that is not a hexadecimal digit. -/
+def hexDigitsEnd (text : Array UInt8) : Nat → Nat → Nat
+  | 0, position => position
+  | fuel + 1, position =>
+    if isHexDigit (byteAt text position) then hexDigitsEnd text fuel (position + 1) else position
+
 /-- Whether the text at {lit}`start` begins with the ASCII pattern, with the case of
 letters ignored ({lit}`sqlite3StrNICmp`). A NUL byte in the text never matches. -/
 def matchesIgnoringCase (text : Array UInt8) (start : Nat) (pattern : List UInt8) : Bool :=

@@ -6,9 +6,9 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), step 8, owner de
 
 ## Relevant files
 
-- Bytes: `packages/belay-sqlite/Belay/Sqlite/Json/Bytes.lean`, `Json/Validity.lean`,
+- Bytes: `packages/belay-sqlite/Belay/Sqlite/Json/Bytes.lean`, `Json/Read.lean`,
   `Date/Parse.lean`, `Date/Functions.lean`.
-- JSON: `Json/Validity.lean`, `Json/Path.lean`, `Json/JsonbOffset.lean`.
+- JSON: `Json/Read.lean`, `Json/ReadScalar.lean`, `Json/Path.lean`, `Json/JsonbOffset.lean`.
 - Printf: `RealText.lean`, `Date/Printf.lean`.
 - Names: `Declarations.lean` (`normalizeIdentifier`), `Resolution/Syntax*.lean`,
   `Resolution/Catalog.lean`, `Codec/*.lean`, `packages/sqlite-verifier`, `examples/`.
@@ -22,7 +22,13 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), step 8, owner de
   `bytes!` literal macro (outcomes 1 and 5); the twins in `Json/Bytes.lean`,
   `Json/Validity.lean`, `Date/Parse.lean` and `Date/Functions.lean` are gone, and the date
   keywords and units use the literal. The core has 132 modules. Verdict unchanged.
+- 2026-10-19: one `json_valid` grammar (outcome 2). The reader records SQLite's
+  `hasNonstd` flag (`ReadOutcome.value` and `ScalarRead` carry `standard`; `readJsonText`
+  returns it), `standardJson` reads it, and `Json/Validity.lean` with its canonical grammar
+  is gone. `slice` and `hexDigitsEnd` moved to `Json/Bytes.lean`. New guards for JSON5
+  white space before separators and in nested values, checked with native 3.51.0. The core
+  has 131 modules.
 
 ## Remaining
 
-- All outcomes, checks, reviews, CI time, pull requests.
+- Outcomes 3, 4 and 6; checks, reviews, CI time, pull requests.

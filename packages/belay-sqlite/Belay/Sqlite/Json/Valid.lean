@@ -1,4 +1,3 @@
-import Belay.Sqlite.Json.Validity
 import Belay.Sqlite.Json.Extract
 
 set_option doc.verso true
@@ -28,12 +27,14 @@ between 1 and 15`. -/
 def flagsAccepted (flags : Int) : Bool := 1 ≤ flags && flags ≤ 15
 
 /-- Whether a text argument is valid JSON for the flags: false when the flags accept no
-text (bits 1 and 2 clear) or the text is malformed; true for standard JSON
-({name}`standardJson`); and true for JSON5 text only with bit 2. -/
+text (bits 1 and 2 clear) or the text is malformed; true for standard JSON (the flag of
+{name}`readJsonText`, as in {name}`standardJson`); and true for JSON5 text only with
+bit 2. -/
 def textValid (flags : Int) (bytes : List UInt8) : Bool :=
   if flags % 4 == 0 then Bool.false
-  else if (parseJsonText bytes).isNone then Bool.false
-  else standardJson bytes || flags / 2 % 2 == 1
+  else match readJsonText bytes with
+    | none => Bool.false
+    | some (_, standard) => standard || flags / 2 % 2 == 1
 
 /-- {lit}`json_valid(json, flags)`: the flags error for flags that SQLite does not accept
 ({name}`flagsAccepted`), checked first; then NULL for a NULL argument, and 1 or 0 for a text, INTEGER or REAL argument,

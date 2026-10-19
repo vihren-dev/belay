@@ -1,4 +1,4 @@
-import Belay.Sqlite.Json.Validity
+import Belay.Sqlite.Json.Read
 import Belay.Sqlite.Json.ExampleSupport
 
 set_option doc.verso true
@@ -55,6 +55,13 @@ open Belay.Sqlite.Json Belay.Sqlite.Json.ExampleSupport
 -- The depth limit is 1000 arrays or objects.
 #guard standardJson (List.replicate 1000 (91 : UInt8) ++ List.replicate 1000 93)
 #guard !standardJson (List.replicate 1001 (91 : UInt8) ++ List.replicate 1001 93)
+-- The flag covers white space before each separator, and every nested value.
+#guard standardJson (utf8 "{\"a\"\n:\n1\n,\n\"b\"\r:[ ]}") && standardJson (utf8 "[1\t,2]")
+#guard !standardJson (utf8 "[1 /**/ ,2]") && !standardJson (utf8 "[1 /**/]")
+#guard !standardJson (utf8 "{\"a\" /**/ :1}") && !standardJson (utf8 "{\"a\":1 /**/}")
+#guard !standardJson (utf8 "[-Infinity]") && !standardJson (utf8 "{\"a\":+1}")
+#guard !standardJson (utf8 "{\"a\":[1,]}") && !standardJson (utf8 "[[1],[2,]]")
+#guard !standardJson (utf8 "{\"a\":{\"b\":'c'}}")
 -- A literal must be the whole word.
 #guard !standardJson (utf8 "truex") && !standardJson (utf8 "[1 2]")
 

@@ -15,7 +15,7 @@ MODEL_MODULE_PREFIX = "Belay.Sqlite"
 """Only the standalone package namespace supplies project modules to the core."""
 ALLOWED_EXTERNAL_IMPORT_ROOTS = {"Init"}
 """The core uses only Lean's prelude; `Std` and the Lean compiler API add import cost it does not need."""
-EXPECTED_CORE_MODULE_COUNT = 132
+EXPECTED_CORE_MODULE_COUNT = 131
 """The public root reaches one hundred and thirty-two core modules, including resolution, the source list, query evaluation, joins,
 UPSERT, number conversions, store-time affinity, JSON reading, defaults, the clock, the date and time functions with
 their modifiers; its compiled examples are not imported."""
