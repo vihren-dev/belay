@@ -41,5 +41,5 @@ def test_changed_record(kernel: KernelCase) -> None:
     assert changed.returncode == 1 and "Generated.script" in changed.stderr, changed.diagnostic()
     restricted = kernel.check(record={**RECORD, "script": [{"createTable": {"name": "r", "constraints": [],
         "options": {"withoutRowid": False}, "columns": [
-        {"name": "a", "declaredType": None, "constraints": [{"notNull": {"algorithm": None}}]}]}}]})
+        {"name": "rowid", "declaredType": None, "constraints": []}]}}]})
     assert restricted.returncode == 1 and "does not resolve" in restricted.stderr, restricted.diagnostic()

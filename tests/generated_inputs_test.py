@@ -122,7 +122,7 @@ def test_constructed_declarations_match_resolver(parity: Callable[..., CommandRe
      "differs from the resolution of the script record: Generated.profile"),
     (lambda record: record["script"].append({"createTable": {"name": "r", "constraints": [], "options": {
         "withoutRowid": False}, "columns": [
-        {"name": "a", "declaredType": None, "constraints": [{"notNull": {"algorithm": None}}]}]}}),
+        {"name": "rowid", "declaredType": None, "constraints": []}]}}),
      "the script record does not resolve"),
 ], ids=["changed_schema", "other_version", "missing_field", "extra_statement", "other_profile", "restricted"])
 def test_tampered_record_is_rejected(parity: Callable[..., CommandResult], runtime_root: Path,
