@@ -34,7 +34,7 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D1.
   `Resolved.Expr.readsBelow` exists once (`ExprAny.lean`). The harness's `NativeIndex`
   has expression keys, sort orders and the partial flag, written only when present, so
   the frozen model cases keep their form; the two frozen cases with CREATE INDEX get the
-  new Syntax, as step 1 of ADR 0013 did. Authored corpus `authored_indexes` (22 cases,
+  new Syntax, as step 1 of ADR 0013 did. Authored corpus `authored_indexes` (20 cases,
   corpus version 29) and `index_mutants` (three mutants). The core has 134 modules.
 
 ## Remaining

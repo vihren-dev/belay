@@ -5,7 +5,9 @@ equal under the expression and admits rows that differ; a partial unique index t
 two rows outside its filter and refuses two inside it; REPLACE, IGNORE and UPSERT over a
 partial unique index; a constant key term; an UPDATE into equal expression keys; CREATE
 INDEX in a migration over existing rows, unique and not, with and without a filter; sort
-orders; and the prepare errors of index terms and filters. Native SQLite is the only
+orders; and the prepare errors of index terms and filters, except the time keywords,
+which the recorder refuses outside a controlled clock (the Lean examples of
+`Resolution/IndexExamples.lean` cover them). Native SQLite is the only
 source of outcomes. The cases use `conformance.authored_queries.QueryCase` and its
 recorder.
 """
@@ -34,8 +36,6 @@ FILTER_COLUMNS = "R-41796-02552"
 """SQLite: the WHERE clause of a partial index may name any column of the table."""
 EXPRESSION_COLUMNS = "R-40025-59984"
 """SQLite: expressions in an index may only refer to columns of the indexed table."""
-DETERMINISTIC = "R-11135-63542"
-"""SQLite: expressions in an index may not use functions whose result might change."""
 EXPRESSION_KEY = "R-06603-49335"
 """SQLite: `index_xinfo` reports -2 as the column of an expression key."""
 DESCENDING = "R-32925-06786"
@@ -82,10 +82,6 @@ def definitions() -> list[QueryCase]:
              ("index", "prepare-error")),
         case("index-qualified-filter", TABLES, "CREATE INDEX dq ON d(a) WHERE d.b = 'x';", (FILTER_COLUMNS,),
              ("index", "partial", "create-index")),
-        case("index-time-term", TABLES, "CREATE INDEX dt ON d(CURRENT_TIMESTAMP);", (DETERMINISTIC,),
-             ("index", "prepare-error")),
-        case("index-time-filter", TABLES, "CREATE INDEX dt ON d(a) WHERE b > CURRENT_DATE;", (DETERMINISTIC,),
-             ("index", "partial", "prepare-error")),
         case("index-missing-filter-column", TABLES, "CREATE INDEX dm ON d(a) WHERE zz > 0;", (FILTER_COLUMNS,),
              ("index", "partial", "prepare-error")),
         case("index-rowid-term", TABLES, "CREATE INDEX dr ON d(rowid);", (EXPRESSION_COLUMNS,),

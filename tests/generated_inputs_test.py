@@ -115,13 +115,13 @@ def test_constructed_declarations_match_resolver(parity: Callable[..., CommandRe
 @pytest.mark.parametrize("change,diagnostic", [
     (lambda record: record["schema"][0]["createTable"].update(name="other"),
      "differs from the resolution of the script record: Generated.schema"),
-    (lambda record: record.update(version=1), "only version 3 is supported"),
+    (lambda record: record.update(version=1), "only version 4 is supported"),
     (lambda record: record.pop("script"), "bundle checker rejected"),
     (lambda record: record["script"].append("commit"), "value differs from the compiled SqlInputs: Generated.script"),
     (lambda record: record.update(release="3.46.0"),
      "differs from the resolution of the script record: Generated.profile"),
     (lambda record: record["script"].append({"createTable": {"name": "r", "constraints": [], "columns": [
-        {"name": "a", "declaredType": None, "constraints": [{"notNull": {"algorithm": None}}]}]}})),
+        {"name": "a", "declaredType": None, "constraints": [{"notNull": {"algorithm": None}}]}]}}),
      "the script record does not resolve"),
 ], ids=["changed_schema", "other_version", "missing_field", "extra_statement", "other_profile", "restricted"])
 def test_tampered_record_is_rejected(parity: Callable[..., CommandResult], runtime_root: Path,
