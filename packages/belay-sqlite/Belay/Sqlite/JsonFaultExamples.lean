@@ -32,7 +32,7 @@ def fromless : Query where
 
 /-- An empty table {lit}`t(a)` at catalog position 0. -/
 def empty : Database :=
-  .ofTables [("t", { shape := { columns := [{ name := "a", declaredType := none }] }, rows := [] })]
+  .ofTables [((name! "t"), { shape := { columns := [{ name := (name! "a"), declaredType := none }] }, rows := [] })]
 
 #guard selected.eval 0 [] == .integer 1 && malformed.eval 0 [] == .null
 -- SQLite certainly reports the failure of a result column without FROM, and the step

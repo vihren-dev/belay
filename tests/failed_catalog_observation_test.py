@@ -19,7 +19,7 @@ CHECKS = """
 import VerifierConformance.Predict
 open Belay.Sqlite Belay.Sqlite.Conformance
 
-def shape : CatalogTable := { columns := [{ name := "id", declaredType := none }] }
+def shape : CatalogTable := { columns := [{ name := name! "id", declaredType := none }] }
 def table : Table := { shape, rows := [{ rowid := 1, values := [.integer 7] }] }
 def catalog (name : String) : Catalog := [{ name, entry := .table shape }]
 -- Distinct names make use of the wrong catalog observable in JSON as well as comparison.

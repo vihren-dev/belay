@@ -16,7 +16,7 @@ namespace Belay.Sqlite
 /-- For every CREATE TABLE whose resolution is a prepare error that names a catalog
 object, the catalog has an object with the folded name, and the catalog is unchanged. -/
 theorem resolveCreateTable_named (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (name : String) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
+    (name : Identifier) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
     (error : PrepareError) (named : ∀ cause, error ≠ .expression cause)
     (ok : resolveCreateTable context catalog index name columns constraints = .ok (.prepareError error, after)) :
     (catalog.find name).isSome = true ∧ after = catalog := by
@@ -33,7 +33,7 @@ theorem resolveCreateTable_named (context : ResolveContext) (catalog after : Cat
 has an object with the folded name, the resolution is a prepare error that names a
 catalog object, and the catalog is unchanged. -/
 theorem resolveCreateTable_used (context : ResolveContext) (catalog : Catalog) (index : Nat)
-    (name : String) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
+    (name : Identifier) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
     (notReserved : reservedName name = false) (used : (catalog.find name).isSome = true) :
     ∃ error, (∀ cause, error ≠ .expression cause) ∧
       resolveCreateTable context catalog index name columns constraints = .ok (.prepareError error, catalog) := by
@@ -51,7 +51,7 @@ name, and the catalog is unchanged. Proof sketch: split every branch of the
 resolver; the branches after the table lookup give errors that name no catalog
 object, by the lemmas on column lists, values and full rows. -/
 theorem resolveInsert_named (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (tableName : String) (names : Option (List String)) (rows : List (List Syntax.Expr))
+    (tableName : Identifier) (names : Option (List Identifier)) (rows : List (List Syntax.Expr))
     (conflicts : List Syntax.ConflictClause) (algorithm : Option ConflictAlgorithm)
     (returning : List Syntax.ResultColumn)
     (error : PrepareError) (named : ∀ cause, error ≠ .expression cause)
@@ -71,7 +71,7 @@ theorem resolveInsert_named (context : ResolveContext) (catalog after : Catalog)
 table has the folded name, the resolution is {lit}`no such table`, and the catalog
 is unchanged. -/
 theorem resolveInsert_missing (context : ResolveContext) (catalog : Catalog) (index : Nat)
-    (tableName : String) (names : Option (List String)) (rows : List (List Syntax.Expr))
+    (tableName : Identifier) (names : Option (List Identifier)) (rows : List (List Syntax.Expr))
     (conflicts : List Syntax.ConflictClause) (algorithm : Option ConflictAlgorithm)
     (returning : List Syntax.ResultColumn)
     (same : ∀ row ∈ rows, row.length = (rows.head?.map List.length).getD 0)

@@ -34,7 +34,7 @@ every requested column, even for an empty table. Return {name}`Option.none`
 for a missing cell, NULL key or duplicate logical key; no row is discarded
 or merged. Use an empty protected-field list to observe only application keys.
 SQL affinity and collation are not evaluated by this logical projection. -/
-def projectApplicationRows (table : Table) (keyNames fields : List String) :
+def projectApplicationRows (table : Table) (keyNames fields : List Identifier) :
     Option ApplicationKeyRows := do
   if keyNames.isEmpty || keyNames.eraseDups.length != keyNames.length ||
       !(keyNames ++ fields).all (fun name => (columnPosition table.shape.columns name).isSome)
@@ -50,7 +50,7 @@ the catalog. A name without a table, or an absent stored table, returns
 {name}`Option.none`, distinct from a present empty table's
 {lean}`(some [] : Option ApplicationKeyRows)`. Use an empty protected field list
 for keys alone; the key/domain checks remain. -/
-def observeApplicationRows (catalog : Catalog) (name : String) (keyNames fields : List String)
+def observeApplicationRows (catalog : Catalog) (name : Identifier) (keyNames fields : List Identifier)
     (database : Database) : Option ApplicationKeyRows := do
   let position ← tablePosition catalog name
   let table ← database.table position
@@ -61,8 +61,8 @@ representation invariant. Observe through {name}`observeApplicationRows`.
 An absent or invalid-key table cannot satisfy the invariant. Use this helper
 for the stated key policy; general {name}`Interpretation` remains available
 for other NULL, duplicate and identity policies. -/
-def applicationKeyInterpretation (profile : Profile) (catalog : Catalog) (name : String)
-    (keyNames fields : List String) : Interpretation ApplicationKeyRows where
+def applicationKeyInterpretation (profile : Profile) (catalog : Catalog) (name : Identifier)
+    (keyNames fields : List Identifier) : Interpretation ApplicationKeyRows where
   invariant database := Conforms profile catalog database ∧
     ∃ records, observeApplicationRows catalog name keyNames fields database = some records
   observe := observeApplicationRows catalog name keyNames fields

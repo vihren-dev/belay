@@ -12,8 +12,8 @@ namespace Belay.Sqlite
 /-- The columns of {lit}`json_each` in SQLite's order, without declared types: the eight
 that {lit}`*` shows, then the hidden {lit}`json` and {lit}`root`. -/
 def eachColumns : List CatalogColumn :=
-  ["key", "value", "type", "atom", "id", "parent", "fullkey", "path", "json", "root"].map
-    fun name => { name, declaredType := none }
+  [name! "key", name! "value", name! "type", name! "atom", name! "id", name! "parent",
+    name! "fullkey", name! "path", name! "json", name! "root"].map fun name => { name, declaredType := none }
 
 /-- The positions of the hidden columns {lit}`json` and {lit}`root` in
 {name}`eachColumns`. -/
@@ -30,10 +30,10 @@ argument ({name}`RestrictionKind.tableFunction`), and more than
 {lit}`json_each`, as SQLite names it in messages; two of its columns are hidden. -/
 def eachReference (path : List Nat) (reference : Syntax.TableReference) (arguments : List Syntax.Expr) :
     Except ValueIssue ScopeSource :=
-  if normalizeIdentifier reference.table != "json_each" || arguments.isEmpty then
+  if !reference.table.isKeyword (bytes! "json_each") || arguments.isEmpty then
     .error (.restriction path .tableFunction)
   else if arguments.length > maximumEachArguments then .error (.prepare .tooManyEachArguments)
-  else .ok { name := reference.alias.getD "json_each", columns := eachColumns, hidden := eachHidden }
+  else .ok { name := reference.alias.getD (name! "json_each"), columns := eachColumns, hidden := eachHidden }
 
 /-- Resolve the arguments of the {lit}`json_each` source at {lit}`index` of the scope, whose
 reference is at {lit}`path`: each argument resolves over the whole scope, as SQLite does,

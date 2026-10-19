@@ -39,11 +39,11 @@ is a scalar. A name is the {lit}`AS` alias, else the defined name of a reference
 def resolveResultColumn (dqs : Bool) (scope : Scope) (column : Nat) :
     Syntax.ResultColumn → Except ValueIssue (List (Resolved.Output × String))
   | .star => if scope.isEmpty then .error (.prepare .noTablesSpecified) else
-      scope.visible.mapM fun (position, defined) => (.scalar ·.1, defined.name) <$> scope.starOperand position defined
+      scope.visible.mapM fun (position, defined) => (.scalar ·.1, defined.name.text) <$> scope.starOperand position defined
   | .sourceStar source => (sourceStarColumns scope source).map fun columns =>
       columns.map fun (expression, name) => (.scalar expression, name)
   | .expression value alias text => do
-    let named := fun (output : Resolved.Output) (defined : Option String) => [(output, alias.getD (defined.getD text))]
+    let named := fun (output : Resolved.Output) (defined : Option String) => [(output, (alias.map (·.text)).getD (defined.getD text))]
     match value with
     | .callStar name =>
       if normalizeIdentifier name == "count" then .ok (named (.aggregate .countRows) none)
@@ -64,8 +64,8 @@ def resolveResultColumn (dqs : Bool) (scope : Scope) (column : Nat) :
       .ok (named (.scalar resolved) (definedName scope value))
 
 /-- The index of the first result column whose alias has the folded name. -/
-def aliasIndex (names : List (Option String)) (name : String) : Option Nat :=
-  names.findIdx? fun alias => alias.any (normalizeIdentifier · == normalizeIdentifier name)
+def aliasIndex (names : List (Option Identifier)) (name : Identifier) : Option Nat :=
+  names.findIdx? fun alias => alias.any (·.sameName name)
 
 /-- Whether a result column of an aggregate query is admitted by the model: an
 aggregate, or a scalar that is one of the grouping terms. SQLite also admits other
@@ -78,7 +78,7 @@ def groupedOutput (terms : List Resolved.Expr) : Resolved.Output → Bool
 {lit}`k` from 1 to the number of columns names column {lit}`k - 1`; an identifier
 names the first column with that alias. {lit}`some (.error ())` is an integer out of
 range; {lean}`(none : Option (Except Unit Nat))` is any other term. -/
-def namedResult (names : List (Option String)) : Syntax.Expr → Option (Except Unit Nat)
+def namedResult (names : List (Option Identifier)) : Syntax.Expr → Option (Except Unit Nat)
   | .identifier name _ => (aliasIndex names name).map .ok
   | term@.null | term@(.numeric _) | term@(.string _) | term@(.blob _) | term@(.currentTime _)
   | term@(.negate _) | term@(.positive _) | term@(.compare ..) | term@(.and ..)

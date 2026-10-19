@@ -13,7 +13,7 @@ name, and the catalog is unchanged. Proof sketch: split every branch of the
 resolver; after the table lookup, the assignments, the filter and the
 {lit}`RETURNING` columns give errors that name no catalog object. -/
 theorem resolveUpdate_named (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (tableName : String) (assignments : List (String × Syntax.Expr)) (filter : Option Syntax.Expr)
+    (tableName : Identifier) (assignments : List (Identifier × Syntax.Expr)) (filter : Option Syntax.Expr)
     (returning : List Syntax.ResultColumn)
     (error : PrepareError) (named : ∀ cause, error ≠ .expression cause)
     (ok : resolveUpdate context catalog index tableName assignments filter returning = .ok (.prepareError error, after)) :
@@ -30,7 +30,7 @@ theorem resolveUpdate_named (context : ResolveContext) (catalog after : Catalog)
 /-- For every UPDATE: when no table has the folded name, the resolution is
 {lit}`no such table`, and the catalog is unchanged. -/
 theorem resolveUpdate_missing (context : ResolveContext) (catalog : Catalog) (index : Nat)
-    (tableName : String) (assignments : List (String × Syntax.Expr)) (filter : Option Syntax.Expr)
+    (tableName : Identifier) (assignments : List (Identifier × Syntax.Expr)) (filter : Option Syntax.Expr)
     (returning : List Syntax.ResultColumn)
     (missing : catalog.findTable tableName = none) :
     resolveUpdate context catalog index tableName assignments filter returning =

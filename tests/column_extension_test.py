@@ -13,9 +13,9 @@ CHECKS = """
 import Belay.Sqlite
 open Belay.Sqlite
 
-def oldColumn : CatalogColumn := { name := "old", declaredType := some "BLOB" }
-def addedColumn : CatalogColumn := { name := "added", declaredType := some "INTEGER" }
-def textColumn : CatalogColumn := { name := "label", declaredType := some "TEXT" }
+def oldColumn : CatalogColumn := { name := name! "old", declaredType := some "BLOB" }
+def addedColumn : CatalogColumn := { name := name! "added", declaredType := some "INTEGER" }
+def textColumn : CatalogColumn := { name := name! "label", declaredType := some "TEXT" }
 def original : Table where
   shape := { columns := [oldColumn], uniqueKeys := [[0]] }
   rows := [{ rowid := 7, values := [.text [111]] }, { rowid := 3, values := [.blob [0, 255]] }]

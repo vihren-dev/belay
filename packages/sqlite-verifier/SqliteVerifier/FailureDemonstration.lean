@@ -15,23 +15,23 @@ namespace SqliteVerifier.Demonstration
 
 /-- Recreating the audit table fails after both earlier statements have committed. -/
 def failureScript : List Resolved.Statement :=
-  script ++ [.prepareError (.tableExists "audit"), .createTable 2 "unreached" { columns := [message] }]
+  script ++ [.prepareError (.tableExists (name! "audit")), .createTable 2 (name! "unreached") { columns := [message] }]
 
 /-- The catalog after every statement of {name}`failureScript` succeeds. Resolution
 continues after a prepare error as if that statement had no effect, so it contains
 the unreached table; execution stops before it. -/
-def failureNextCatalog : Catalog := nextCatalog ++ [{ name := "unreached", entry := .table { columns := [message] } }]
+def failureNextCatalog : Catalog := nextCatalog ++ [{ name := (name! "unreached"), entry := .table { columns := [message] } }]
 
 /-- The invoice projection under {name}`failureNextCatalog`, the catalog that resolution
 gives after every statement. Success never happens, so only its soundness matters. -/
 def failureNext (profile : Profile) : Interpretation LogicalRows :=
-  projectedInterpretation profile failureNextCatalog "invoices" ["amount"]
+  projectedInterpretation profile failureNextCatalog (name! "invoices") [(name! "amount")]
 
 /-- Failure applicability is an approved property, not an execution assumption. -/
 def failureRequirements : LogicalContract LogicalRows :=
   { requirements with applicability := fun _ outcome =>
       match outcome with
-      | .failure 2 (.prepare (.tableExists "audit")) _ => True
+      | .failure 2 (.prepare (.tableExists (name! "audit"))) _ => True
       | _ => False }
 
 /-- Read the resulting committed prefix, whose catalog is {name}`nextCatalog`, with the
@@ -51,7 +51,7 @@ theorem failureMigrationCorrect (profile : Profile) (columns : 2 ≤ profile.lim
   have checked := migrationCorrect profile columns
   apply VerificationConditions.of_runSql (contract := failureRequirements)
     checked.nonempty checked.beforeSound
-    (projectedInterpretation_sound failureRequirements profile failureNextCatalog "invoices" ["amount"]
+    (projectedInterpretation_sound failureRequirements profile failureNextCatalog (name! "invoices") [(name! "amount")]
       (by intros; trivial))
   · intro _ _
     exact checked.afterSound
@@ -70,7 +70,7 @@ theorem failureMigrationCorrect (profile : Profile) (columns : 2 ≤ profile.lim
     | success result =>
       have preserved := obligations.2
       rw [executed] at preserved
-      have failed : runSql failureScript database = .failure 2 (.prepare (.tableExists "audit")) result := by
+      have failed : runSql failureScript database = .failure 2 (.prepare (.tableExists (name! "audit"))) result := by
         simp only [runSql, failureScript]
         rw [runSqlFrom_schemaOnly_append (initial := script) (by simp [SchemaOnly, script]), executed]
         simp only [Nat.zero_add, script, List.length, runSqlFrom_cons, advance_prepareError, effect_prepareError,

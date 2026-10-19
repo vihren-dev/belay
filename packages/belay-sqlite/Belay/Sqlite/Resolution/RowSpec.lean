@@ -112,7 +112,7 @@ columns. So every resolved row has one cell for each table column. Proof sketch:
 split the resolver down to its successful branch; each row is a result of
 {name}`fullCells` by {name}`resolveAllFrom_ok`, and {name}`fullCells_rowWidth` gives the rule. -/
 theorem resolveInsert_rowWidth (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (tableName : String) (names : Option (List String)) (rows : List (List Syntax.Expr))
+    (tableName : Identifier) (names : Option (List Identifier)) (rows : List (List Syntax.Expr))
     (conflicts : List Syntax.ConflictClause) (algorithm : Option ConflictAlgorithm)
     (returning : List Syntax.ResultColumn)
     (position : Nat) (full : List (List Resolved.Cell))

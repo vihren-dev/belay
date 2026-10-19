@@ -52,7 +52,7 @@ table still needs the validity premise for its empty record list.
 Use this with application-specific contracts.
 The proof extracts the stored valid table from whole-shape conformance and applies the premise. -/
 theorem applicationKeyInterpretation_sound (contract : LogicalContract ApplicationKeyRows)
-    (profile : Profile) (catalog : Catalog) (name : String) (keyNames fields : List String)
+    (profile : Profile) (catalog : Catalog) (name : Identifier) (keyNames fields : List Identifier)
     (valid : ∀ table, table.Valid → ∀ records,
       projectApplicationRows table keyNames fields = some records → contract.valid records) :
     SoundRepresentation contract profile
@@ -77,8 +77,8 @@ nonempty key tuples containing no NULL. No extra contract-validity premise is
 needed because every defined read has valid keys. An impossible invariant
 leaves its database obligations vacuous.
 The proof uses the general soundness theorem and projection validity. -/
-theorem applicationKeyPreservation_sound (profile : Profile) (catalog : Catalog) (name : String)
-    (keyNames fields : List String) :
+theorem applicationKeyPreservation_sound (profile : Profile) (catalog : Catalog) (name : Identifier)
+    (keyNames fields : List Identifier) :
     SoundRepresentation applicationKeyPreservation profile
       (applicationKeyInterpretation profile catalog name keyNames fields) := by
   apply applicationKeyInterpretation_sound

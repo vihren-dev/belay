@@ -17,8 +17,8 @@ namespace Belay.Sqlite
 the left input; else SQLite's {name}`ExprError.joinUsingColumn`. With
 {lit}`coalesced` (a right or full join in the {lit}`FROM`), the name must then pass
 {name}`usingReferenceChecked`. -/
-def usingNameChecked (coalesced : Bool) (left : Scope) (right : ScopeSource) (name : String) :
-    Except ValueIssue String :=
+def usingNameChecked (coalesced : Bool) (left : Scope) (right : ScopeSource) (name : Identifier) :
+    Except ValueIssue Identifier :=
   if (columnPosition right.columns name).isSome && left.hasColumn name then
     if coalesced then usingReferenceChecked left name else .ok name
   else .error (.prepare (.joinUsingColumn name))
@@ -31,7 +31,7 @@ also pass {name}`usingReferenceChecked`, in order. None for a join with neither,
 SQLite's {name}`ExprError.naturalJoinCondition` for {lit}`NATURAL` with {lit}`ON` or
 {lit}`USING`. -/
 def mergedNames (coalesced : Bool) (left : Scope) (right : ScopeSource) (natural : Bool) (join : Syntax.Join) :
-    Except ValueIssue (Option (List String)) :=
+    Except ValueIssue (Option (List Identifier)) :=
   if natural then
     if join.condition.isSome || join.usingColumns.isSome then .error (.prepare .naturalJoinCondition)
     else
@@ -67,7 +67,7 @@ def JoinCondition.ofMerged : Option Resolved.Expr → JoinCondition
 the column of the joined source at its offset ({name}`ScopeSource.offset`), compared with their affinity
 ({name}`comparisonAffinity`); none for no name, which is a cross join. It is the condition
 that SQLite generates, so it has the comparison rules of a written {lit}`ON` condition. -/
-def mergedCondition (coalesced : Bool) (left : Scope) (right : ScopeSource) (names : List String) :
+def mergedCondition (coalesced : Bool) (left : Scope) (right : ScopeSource) (names : List Identifier) :
     Option Resolved.Expr :=
   let equalities := names.filterMap fun name => do
     let (leftSide, affinity) ← mergedLeft coalesced left name
@@ -108,7 +108,7 @@ the joined source and of the left input, {name}`usingNameChecked` without
 {lit}`coalesced` accepts them all, in order. Proof sketch: induction on the names; the
 assumption for the first name makes its check succeed, and the assumption for the other
 names gives the induction hypothesis. -/
-theorem usingNames_checked (left : Scope) (right : ScopeSource) (names : List String)
+theorem usingNames_checked (left : Scope) (right : ScopeSource) (names : List Identifier)
     (both : ∀ name ∈ names, (columnPosition right.columns name).isSome ∧ left.hasColumn name) :
     names.mapM (usingNameChecked false left right) = .ok names := by
   induction names with
@@ -125,7 +125,7 @@ right and full joins, {name}`mergeJoin` merges the joined columns of those names
 the rule and gives the conjunction of their equalities with the left-most left columns
 ({name}`mergedCondition`), as in slice 4b. -/
 theorem mergeJoin_using (left : Scope) (right : ScopeSource) (rule : MergeRule) (item : Nat) (join : Syntax.Join)
-    (names : List String) (written : join.usingColumns = some names)
+    (names : List Identifier) (written : join.usingColumns = some names)
     (both : ∀ name ∈ names, (columnPosition right.columns name).isSome ∧ left.hasColumn name) :
     mergeJoin left right false false rule item join =
       .ok ({ right with merged := names.filterMap (columnPosition right.columns ·), mergeRule := rule },

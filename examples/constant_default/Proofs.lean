@@ -57,7 +57,7 @@ theorem migrationCorrect : Generated.expected := by
         effect_addColumn_ok 0 present constant_default default_value rfl, SqlState.publish_ok, runSqlFrom_nil]
       rfl
     · rw [conforms.1]
-      change Generated.nextCatalog.columnsOf "invoices" = some [Requirements.amount, Requirements.priority]
+      change Generated.nextCatalog.columnsOf (name! "invoices") = some [Requirements.amount, Requirements.priority]
       decide +kernel
   · intro _; rfl
   · intro _ _; trivial

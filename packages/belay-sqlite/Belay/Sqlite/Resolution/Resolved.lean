@@ -49,9 +49,9 @@ A write names its table by catalog position; execution reads the table's columns
 and conflict algorithms from the catalog of the database it runs on. -/
 inductive Statement where
   /-- Create the named table at the catalog position, which is the end of the catalog. -/
-  | createTable (position : Nat) (name : String) (table : CatalogTable)
+  | createTable (position : Nat) (name : Identifier) (table : CatalogTable)
   /-- Create the named index at the catalog position, which is the end of the catalog. -/
-  | createIndex (position : Nat) (name : String) (index : CatalogIndex)
+  | createIndex (position : Nat) (name : Identifier) (index : CatalogIndex)
   /-- Append the column to the table at the catalog position. -/
   | addColumn (table : Nat) (column : CatalogColumn)
   /-- Start a transaction. -/

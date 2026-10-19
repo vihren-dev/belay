@@ -44,7 +44,7 @@ rows. -/
 def databaseOf (catalog : Catalog) (natives : List NativeTable) : Database :=
   { catalog, rows := catalog.map fun object => match object.entry with
     | .table _ => ((natives.find? fun native =>
-        normalizeIdentifier native.name == normalizeIdentifier object.name).map (·.rows)).getD []
+        native.name.sameName object.name).map (·.rows)).getD []
     | .index _ => [] }
 
 /-- The primary result-code abstraction matches the granularity of ExecutionError. -/

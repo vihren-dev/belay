@@ -38,7 +38,7 @@ def decodeCase (json : Lean.Json) : Except String Case := do
   unless c.version == caseVersion do throw s!"unsupported conformance case version {c.version}; regenerate the case"
   unless !(c.nativeTrace.isEmpty) do throw "missing initial native observation"
   for tables in c.initial :: c.nativeTrace.flatMap (fun n => [n.visible, n.persisted]) do
-    unless (tables.map (normalizeIdentifier ·.name)).eraseDups.length == tables.length do
+    unless (tables.map (·.name.folded)).eraseDups.length == tables.length do
       throw "duplicate table name"
     for table in tables do checkNativeTable table
   for (n, position) in c.nativeTrace.zipIdx do

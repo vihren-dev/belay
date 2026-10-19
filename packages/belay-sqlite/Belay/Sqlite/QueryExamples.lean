@@ -11,7 +11,7 @@ namespace Belay.Sqlite.Resolved.QueryExamples
 /-- A table {lit}`t(k, v)` with rows in an order other than rowid order: rowid 3 has
 NULL, rowids 1 and 2 have the key 1, rowid 4 has the key 2. -/
 def table : Table where
-  shape := { columns := [{ name := "k", declaredType := none }, { name := "v", declaredType := none }] }
+  shape := { columns := [{ name := (name! "k"), declaredType := none }, { name := (name! "v"), declaredType := none }] }
   rows := [⟨3, [.null, .text [99]]⟩, ⟨1, [.integer 1, .text [97]]⟩, ⟨2, [.integer 1, .text [98]]⟩,
     ⟨4, [.integer 2, .text [100]]⟩]
 

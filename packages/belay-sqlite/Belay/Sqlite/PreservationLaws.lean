@@ -65,7 +65,7 @@ theorem DatabaseExtends.trans (first : DatabaseExtends before middle)
 /-- For every database, name and catalog table, CREATE TABLE ({name}`Catalog.createTable`
 with an empty row list appended) extends the database: every table present before is
 present and unchanged. No condition is imposed on the new table. -/
-theorem DatabaseExtends.create (database : Database) (name : String) (table : CatalogTable) :
+theorem DatabaseExtends.create (database : Database) (name : Identifier) (table : CatalogTable) :
     DatabaseExtends database
       { catalog := database.catalog.createTable name table, rows := database.rows ++ [[]] } :=
   fun _ old present => ⟨old, Database.table_createTable name table present, TableExtends.refl old⟩

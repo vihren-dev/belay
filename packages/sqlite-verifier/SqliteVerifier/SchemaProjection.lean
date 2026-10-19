@@ -30,7 +30,7 @@ projection ({name}`TableExtends.covers`, {name}`TableExtends.project`). -/
 theorem VerificationConditions.ofSchemaProjection
     {startCatalog nextCatalog : Catalog} {script : List Resolved.Statement}
     {approvedConditions : Database → Prop} {contract : LogicalContract LogicalRows} {profile : Profile}
-    {name : String} {fields : List String} {position : Nat}
+    {name : Identifier} {fields : List Identifier} {position : Nat}
     (nonempty : ∃ database, Admitted profile startCatalog approvedConditions database)
     (valid : ∀ table, table.Valid → Covers table fields → contract.valid (table.project fields))
     (schema : SchemaOnly script) (modeled : ModeledDefinitions script)

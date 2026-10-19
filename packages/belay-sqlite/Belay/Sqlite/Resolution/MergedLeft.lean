@@ -16,7 +16,7 @@ namespace Belay.Sqlite
 
 /-- Every column of the folded name in the scope, in order: the source's name, the
 column's name as declared, and whether the source's join merged it. -/
-def Scope.namedColumns (scope : Scope) (name : String) : List (String × String × Bool) :=
+def Scope.namedColumns (scope : Scope) (name : Identifier) : List (Identifier × Identifier × Bool) :=
   scope.filterMap fun source => (columnPosition source.columns name).bind fun index =>
     source.columns[index]?.map fun column => (source.name, column.name, source.merged.contains index)
 
@@ -24,24 +24,24 @@ def Scope.namedColumns (scope : Scope) (name : String) : List (String × String 
 merged by its own source's join; else SQLite's
 {name}`ExprError.ambiguousUsingReference`. SQLite checks it when the {lit}`FROM` has a
 right or full join. -/
-def usingReferenceChecked (left : Scope) (name : String) : Except ValueIssue String :=
+def usingReferenceChecked (left : Scope) (name : Identifier) : Except ValueIssue Identifier :=
   if ((left.namedColumns name).drop 1).all (·.2.2) then .ok name
   else .error (.prepare (.ambiguousUsingReference name))
 
 /-- The positions in the joined row of the scope of every column of the folded name, in
 order. -/
-def Scope.namedPositions (scope : Scope) (name : String) : List Nat :=
+def Scope.namedPositions (scope : Scope) (name : Identifier) : List Nat :=
   scope.flatMap fun source => ((columnPosition source.columns name).map (source.offset + ·)).toList
 
 /-- Whether a source of the scope has a column of the folded name. -/
-def Scope.hasColumn (scope : Scope) (name : String) : Bool :=
+def Scope.hasColumn (scope : Scope) (name : Identifier) : Bool :=
   !(scope.namedPositions name).isEmpty
 
 /-- The left side of the equality of a merged name, resolved, with its affinity
 ({name}`Scope.nameOperand`): with {lit}`coalesced` (a right or full join in the
 {lit}`FROM`), every left column of the name, so their coalesce when there are several;
 else the left-most left column. None when the left input has no column of the name. -/
-def mergedLeft (coalesced : Bool) (left : Scope) (name : String) : Option Operand :=
+def mergedLeft (coalesced : Bool) (left : Scope) (name : Identifier) : Option Operand :=
   match left.namedPositions name with
   | [] => none
   | first :: rest => some (left.nameOperand (if coalesced then first :: rest else [first]))

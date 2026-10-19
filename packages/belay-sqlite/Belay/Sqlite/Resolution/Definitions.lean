@@ -15,7 +15,7 @@ namespace Belay.Sqlite
 
 /-- The positions of key columns, or {lit}`no such column: %s` for the first name
 that no column has. -/
-def keyPositions (columns : List CatalogColumn) : List String → Except ExprError (List Nat)
+def keyPositions (columns : List CatalogColumn) : List Identifier → Except ExprError (List Nat)
   | [] => .ok []
   | name :: rest => match columnPosition columns name with
     | some position => (keyPositions columns rest).map (position :: ·)
@@ -29,7 +29,7 @@ def updateLast (items : List α) (change : α → α) : List α :=
   | first :: rest => first :: updateLast rest change
 
 /-- Apply one column constraint of the last column of a table being created. -/
-def applyConstraint (tableName : String) (definition : Syntax.ColumnDefinition)
+def applyConstraint (tableName : Identifier) (definition : Syntax.ColumnDefinition)
     (table : CatalogTable) : Syntax.ColumnConstraint → Except ExprError CatalogTable
   | .primaryKey descending algorithm =>
     if !table.primaryKey.isEmpty then .error (.multiplePrimaryKeys tableName) else
@@ -49,7 +49,7 @@ def applyConstraint (tableName : String) (definition : Syntax.ColumnDefinition)
 /-- Add the column definitions in written order: {lit}`too many columns on %s` when
 a column would exceed the limit, then {lit}`duplicate column name: %s`, then each
 column constraint ({lit}`sqlite3AddColumn` and the constraint actions). -/
-def addDefinitions (limit : Nat) (tableName : String) (table : CatalogTable) :
+def addDefinitions (limit : Nat) (tableName : Identifier) (table : CatalogTable) :
     List Syntax.ColumnDefinition → Except ExprError CatalogTable
   | [] => .ok table
   | definition :: rest => do
@@ -63,7 +63,7 @@ def addDefinitions (limit : Nat) (tableName : String) (table : CatalogTable) :
 
 /-- Apply the table constraints in written order. A table PRIMARY KEY with one
 column of declared type INTEGER is a rowid alias, whatever its sort order. -/
-def addTableConstraints (tableName : String) (table : CatalogTable) :
+def addTableConstraints (tableName : Identifier) (table : CatalogTable) :
     List Syntax.TableConstraint → Except ExprError CatalogTable
   | [] => .ok table
   | .primaryKey names algorithm :: rest => do
@@ -80,18 +80,15 @@ def addTableConstraints (tableName : String) (table : CatalogTable) :
     addTableConstraints tableName keyed rest
 
 /-- The exact statistics tables that ANALYZE creates, which a catalog description may contain. -/
-def statisticsTable (name : String) (columns : List Syntax.ColumnDefinition)
+def statisticsTable (name : Identifier) (columns : List Syntax.ColumnDefinition)
     (constraints : List Syntax.TableConstraint) : Bool :=
-  let plain := fun (names : List String) => columns == names.map fun column =>
+  let plain := fun (names : List Identifier) => columns == names.map fun column =>
     { name := column, declaredType := none, constraints := [] }
-  constraints.isEmpty && match normalizeIdentifier name with
-    | "sqlite_stat1" => plain ["tbl", "idx", "stat"]
-    | "sqlite_stat4" => plain ["tbl", "idx", "neq", "nlt", "ndlt", "sample"]
-    | _ => false
+  constraints.isEmpty && (statisticsColumns name.folded).any plain
 
 /-- Resolve CREATE TABLE. Path 1 is the column list and path 2 the table constraints. -/
 def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : Nat)
-    (name : String) (columns : List Syntax.ColumnDefinition)
+    (name : Identifier) (columns : List Syntax.ColumnDefinition)
     (constraints : List Syntax.TableConstraint) : StatementResolution :=
   let statistics := context.mode == .description && statisticsTable name columns constraints
   if reservedName name && !statistics then
@@ -115,7 +112,7 @@ def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : N
 /-- Resolve CREATE INDEX of a catalog description. The execution semantics does not
 model CREATE INDEX, so a CREATE INDEX that runs is a model restriction. -/
 def resolveCreateIndex (context : ResolveContext) (catalog : Catalog) (index : Nat)
-    (name : String) (unique : Bool) (tableName : String) (columns : List String) : StatementResolution :=
+    (name : Identifier) (unique : Bool) (tableName : Identifier) (columns : List Identifier) : StatementResolution :=
   if context.mode == .execution then restrict index [] .createIndexRuns else
   match catalog.findTable tableName with
   | none => prepareError catalog (.noSuchTable tableName)
@@ -148,7 +145,7 @@ def addedColumn (definition : Syntax.ColumnDefinition) : Option CatalogColumn :=
 
 /-- Resolve ALTER TABLE ADD COLUMN. Path 1 is the column definition. -/
 def resolveAddColumn (context : ResolveContext) (catalog : Catalog) (index : Nat)
-    (tableName : String) (definition : Syntax.ColumnDefinition) : StatementResolution :=
+    (tableName : Identifier) (definition : Syntax.ColumnDefinition) : StatementResolution :=
   match catalog.findTable tableName with
   | none => prepareError catalog (.noSuchTable tableName)
   | some (position, table) =>

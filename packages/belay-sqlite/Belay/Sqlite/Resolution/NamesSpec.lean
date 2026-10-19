@@ -14,7 +14,7 @@ table whose name {name}`Catalog.find` does not find. Proof sketch: split every b
 of the resolver; each prepare error returns the catalog, and the only branch that
 appends is the one where {name}`Catalog.find` found nothing. -/
 theorem resolveCreateTable_step (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (name : String) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
+    (name : Identifier) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
     (statement : Resolved.Statement)
     (ok : resolveCreateTable context catalog index name columns constraints = .ok (statement, after)) :
     CatalogStep catalog after := by
@@ -31,7 +31,7 @@ theorem resolveCreateTable_step (context : ResolveContext) (catalog after : Cata
 name {name}`Catalog.find` does not find. Proof sketch: as for CREATE TABLE, split
 every branch; only the branch where the name is unused appends. -/
 theorem resolveCreateIndex_step (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (name : String) (unique : Bool) (tableName : String) (columns : List String)
+    (name : Identifier) (unique : Bool) (tableName : Identifier) (columns : List Identifier)
     (statement : Resolved.Statement)
     (ok : resolveCreateIndex context catalog index name unique tableName columns = .ok (statement, after)) :
     CatalogStep catalog after := by
@@ -48,7 +48,7 @@ theorem resolveCreateIndex_step (context : ResolveContext) (catalog after : Cata
 new entry and keeps its name. Proof sketch: split every branch; the successful branch
 replaces the object that {name}`Catalog.findTable_some` gives at the table's position. -/
 theorem resolveAddColumn_step (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (tableName : String) (definition : Syntax.ColumnDefinition) (statement : Resolved.Statement)
+    (tableName : Identifier) (definition : Syntax.ColumnDefinition) (statement : Resolved.Statement)
     (ok : resolveAddColumn context catalog index tableName definition = .ok (statement, after)) :
     CatalogStep catalog after := by
   unfold resolveAddColumn at ok

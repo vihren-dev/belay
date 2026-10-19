@@ -48,10 +48,10 @@ def Scope.starOperand (scope : Scope) (position : Nat) (column : CatalogColumn) 
     | .found _ reads => .ok (scope.nameOperand reads)
     | .missing | .ambiguous => .ok (scope.nameOperand [position])
   else
-    let name := (scope[index]?.map (·.name)).getD ""
+    let name := (scope[index]?.map (·.name)).getD default
     match scope.resolveQualified name column.name with
     | .found _ reads => .ok (scope.nameOperand reads)
     | .missing => .ok (scope.nameOperand [position])
-    | .ambiguous => .error (.prepare (.ambiguousColumn s!"main.{name}.{column.name}"))
+    | .ambiguous => .error (.prepare (.ambiguousColumn ⟨bytes! "main." ++ name.bytes ++ [46] ++ column.name.bytes⟩))
 
 end Belay.Sqlite

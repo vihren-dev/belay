@@ -17,10 +17,11 @@ abbrev start : Catalog := Generated.startCatalog
 columns when absent. The latter is not a supported table; {name}`Conforms` and
 decoder validity remain separate proof obligations. -/
 def history : CatalogTable :=
-  ((start.findTable "history").map Prod.snd).getD { columns := [] }
+  ((start.findTable (name! "history")).map Prod.snd).getD { columns := [] }
 
 /-- The eleven pre-migration application fields used by the approved decoder. -/
-def fields : List String := ["id", "timestamp", "duration", "exit", "command", "cwd",
-  "session", "hostname", "deleted_at", "author", "intent"]
+def fields : List Identifier := [name! "id", name! "timestamp", name! "duration", name! "exit",
+  name! "command", name! "cwd", name! "session", name! "hostname", name! "deleted_at", name! "author",
+  name! "intent"]
 
 end SchemaBinding

@@ -7,7 +7,7 @@ namespace NextInterpretation
 
 /-- Read every protected invoice row from the resulting prefix storage. -/
 def next : SqliteVerifier.Interpretation Requirements.LogicalState :=
-  SqliteVerifier.projectedInterpretation Generated.profile Generated.nextCatalog "invoices" ["amount"]
+  SqliteVerifier.projectedInterpretation Generated.profile Generated.nextCatalog (name! "invoices") [name! "amount"]
 
 /-- Every declared failure representation reads the committed prefix, whose catalog has
 no unreached table, with the same invoice reader. -/

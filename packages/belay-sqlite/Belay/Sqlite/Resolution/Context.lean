@@ -56,7 +56,7 @@ classification scope of {name}`constantDefaultExpression`. A bare identifier is 
 TRUE and FALSE are boolean keywords, and other names are stored as text. Other
 expressions use {name}`constantDefaultExpression`, including its permissive
 classification of forms that remain model restrictions. For example,
-{lean}`constantDefault (.identifier "hello" .none)` is true. Omit the DEFAULT
+{lean}`constantDefault (.identifier (name! "hello") .none)` is true. Omit the DEFAULT
 constraint when a column needs no default. -/
 def constantDefault (expression : Syntax.Expr) : Bool :=
   match expression with

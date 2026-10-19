@@ -13,7 +13,7 @@ namespace SqliteVerifier.Demonstration
 
 /-- Create the independent audit table before extending existing invoices. -/
 def reverseScript : List Resolved.Statement :=
-  [.createTable 1 "audit" { columns := [message] }, .addColumn 0 note]
+  [.createTable 1 (name! "audit") { columns := [message] }, .addColumn 0 note]
 
 /-- For every profile and every database admitted by {name}`startCatalog` and the
 true condition, {name}`reverseScript` and {name}`script` have equal computed SQL
@@ -23,10 +23,10 @@ successful orders; ADD COLUMN and CREATE TABLE commute
 theorem reverse_runs (database : Database) (admitted : Admitted profile startCatalog (fun _ => True) database) :
     runSql reverseScript database = runSql script database := by
   obtain ⟨same, length, table, present, _, _⟩ := admitted_invoices admitted
-  have audit := effect_createTable_ok 0 database "audit" { columns := [message] } 1
+  have audit := effect_createTable_ok 0 database (name! "audit") { columns := [message] } 1
     (by simp [same, startCatalog]) (by simp [same, length, startCatalog])
-  have invoice := Database.table_createTable "audit" { columns := [message] } present
-  generalize createdIs : ({ catalog := database.catalog.createTable "audit" { columns := [message] }, rows := database.rows ++ [[]] } : Database) =
+  have invoice := Database.table_createTable (name! "audit") { columns := [message] } present
+  generalize createdIs : ({ catalog := database.catalog.createTable (name! "audit") { columns := [message] }, rows := database.rows ++ [[]] } : Database) =
     created at audit invoice
   have added := effect_addColumn_ok 0 invoice (column := note) (value := .null) rfl rfl rfl
   have reversed : runSql reverseScript database = .success (created.addColumn 0 note .null) := by

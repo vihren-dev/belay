@@ -15,7 +15,7 @@ namespace Belay.Sqlite.Conformance
 
 /-- The starting rows of one table, by its name in {lit}`sqlite_schema`. -/
 structure NamedRows where
-  name : String
+  name : Identifier
   rows : List Row
   deriving FromJson
 
@@ -38,7 +38,7 @@ def nativeColumn (column : CatalogColumn) : NativeColumn :=
     defaultValue := column.defaultValue.map (·.sourceText) }
 
 /-- The table at a catalog position, under its catalog object name, as native metadata. -/
-def nativeTableOf (catalog : Catalog) (position : Nat) (name : String) (table : Table) : NativeTable where
+def nativeTableOf (catalog : Catalog) (position : Nat) (name : Identifier) (table : Table) : NativeTable where
   name := name
   columns := table.shape.columns.map nativeColumn
   primaryKey := table.shape.primaryKey

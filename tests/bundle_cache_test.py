@@ -47,7 +47,7 @@ def test_sql_edit_reuses_modules_without_sql_inputs(runtime_root: Path, example_
 
     first = prepare()
     for path, old, new in ((atuin / "migration.sql", "add column shell text;", "add column other text;"),
-                           (atuin / "AtuinFacts.lean", 'name := "shell"', 'name := "other"')):
+                           (atuin / "AtuinFacts.lean", 'name := name! "shell"', 'name := name! "other"')):
         text = path.read_text()
         assert old in text
         path.write_text(text.replace(old, new))

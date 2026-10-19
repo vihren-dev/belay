@@ -69,8 +69,8 @@ predicate on the name and its old projection. Then the predicate holds for the
 same name and the new projection. With no old rows, widths are vacuous. Use this
 to retain any fact about this observation. The proof rewrites the projection
 using {name}`TableExtends.project`. -/
-theorem TableExtends.columnInvariant {name : String}
-    {predicate : String → List (Int × List (Option Value)) → Prop} (extension : TableExtends before after)
+theorem TableExtends.columnInvariant {name : Identifier}
+    {predicate : Identifier → List (Int × List (Option Value)) → Prop} (extension : TableExtends before after)
     (width : ∀ row ∈ before.rows, row.values.length = before.shape.columns.length)
     (covered : Covers before [name])
     (valid : predicate name (before.project [name])) :

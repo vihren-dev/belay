@@ -11,7 +11,7 @@ namespace Belay.Sqlite
 object: the error is {lit}`no such table` for the statement's table, no table has the
 folded name, and the catalog is unchanged. -/
 theorem resolveAddColumn_named (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (tableName : String) (definition : Syntax.ColumnDefinition) (error : PrepareError)
+    (tableName : Identifier) (definition : Syntax.ColumnDefinition) (error : PrepareError)
     (named : ∀ cause, error ≠ .expression cause)
     (ok : resolveAddColumn context catalog index tableName definition = .ok (.prepareError error, after)) :
     error = .noSuchTable tableName ∧ catalog.findTable tableName = none ∧ after = catalog := by
@@ -27,7 +27,7 @@ theorem resolveAddColumn_named (context : ResolveContext) (catalog after : Catal
 /-- For every ADD COLUMN: when no table has the folded name, the resolution is
 {lit}`no such table`, and the catalog is unchanged. -/
 theorem resolveAddColumn_missing (context : ResolveContext) (catalog : Catalog) (index : Nat)
-    (tableName : String) (definition : Syntax.ColumnDefinition)
+    (tableName : Identifier) (definition : Syntax.ColumnDefinition)
     (missing : catalog.findTable tableName = none) :
     resolveAddColumn context catalog index tableName definition =
       .ok (.prepareError (.noSuchTable tableName), catalog) := by
@@ -39,7 +39,7 @@ table that the folded name finds, whose name SQLite does not reserve and with fe
 columns than the profile limit, the resolution is {lit}`duplicate column name` exactly
 when a column of the table has the folded name of the new column. -/
 theorem resolveAddColumn_duplicate (context : ResolveContext) (catalog : Catalog) (index : Nat)
-    (tableName : String) (definition : Syntax.ColumnDefinition) (position : Nat) (table : CatalogTable)
+    (tableName : Identifier) (definition : Syntax.ColumnDefinition) (position : Nat) (table : CatalogTable)
     (found : catalog.findTable tableName = some (position, table))
     (notReserved : reservedName tableName = false)
     (room : table.columns.length + 1 ≤ context.profile.limits.columns) :
@@ -60,7 +60,7 @@ that names a catalog object: either no table has the folded table name and the e
 is {lit}`no such table`, or an object has the folded index name; and the catalog is
 unchanged. -/
 theorem resolveCreateIndex_named (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (name : String) (unique : Bool) (tableName : String) (columns : List String)
+    (name : Identifier) (unique : Bool) (tableName : Identifier) (columns : List Identifier)
     (error : PrepareError) (named : ∀ cause, error ≠ .expression cause)
     (ok : resolveCreateIndex context catalog index name unique tableName columns = .ok (.prepareError error, after)) :
     ((catalog.findTable tableName = none ∧ error = .noSuchTable tableName) ∨
@@ -77,7 +77,7 @@ theorem resolveCreateIndex_named (context : ResolveContext) (catalog after : Cat
 /-- For every CREATE INDEX of a catalog description: when no table has the folded
 table name, the resolution is {lit}`no such table`, and the catalog is unchanged. -/
 theorem resolveCreateIndex_missing (context : ResolveContext) (catalog : Catalog) (index : Nat)
-    (name : String) (unique : Bool) (tableName : String) (columns : List String)
+    (name : Identifier) (unique : Bool) (tableName : Identifier) (columns : List Identifier)
     (description : context.mode = .description) (missing : catalog.findTable tableName = none) :
     resolveCreateIndex context catalog index name unique tableName columns =
       .ok (.prepareError (.noSuchTable tableName), catalog) := by
@@ -88,7 +88,7 @@ theorem resolveCreateIndex_missing (context : ResolveContext) (catalog : Catalog
 finds, where SQLite reserves neither name: when an object has the folded index name,
 the resolution is a prepare error that names a catalog object. -/
 theorem resolveCreateIndex_used (context : ResolveContext) (catalog : Catalog) (index : Nat)
-    (name : String) (unique : Bool) (tableName : String) (columns : List String)
+    (name : Identifier) (unique : Bool) (tableName : Identifier) (columns : List Identifier)
     (position : Nat) (table : CatalogTable) (description : context.mode = .description)
     (found : catalog.findTable tableName = some (position, table))
     (tableAllowed : reservedName tableName = false) (nameAllowed : reservedName name = false)

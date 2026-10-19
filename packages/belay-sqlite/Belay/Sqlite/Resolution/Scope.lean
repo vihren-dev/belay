@@ -27,7 +27,7 @@ of its first cell in the joined row, and the columns that a {lit}`USING` or {lit
 join merged into a left column. -/
 structure ScopeSource where
   /-- The name of the source. -/
-  name : String
+  name : Identifier
   /-- The columns of the source's table. -/
   columns : List CatalogColumn
   /-- The position in the joined row of the source's first cell: the number of cells of
@@ -57,7 +57,7 @@ def Scope.place (sources : List ScopeSource) : Scope :=
     (offset + source.columns.length, placed ++ [{ source with offset }])) (0, [])).2
 
 /-- The scope of one table under its name, as a write or a query of one table has. -/
-def Scope.single (name : String) (columns : List CatalogColumn) : Scope := [{ name, columns }]
+def Scope.single (name : Identifier) (columns : List CatalogColumn) : Scope := [{ name, columns }]
 
 /-- The columns of all sources, in the order of the concatenated row. -/
 def Scope.columns (scope : Scope) : List CatalogColumn := scope.flatMap (·.columns)
@@ -83,7 +83,7 @@ def Scope.visible (scope : Scope) : List (Nat × CatalogColumn) :=
 names: the first column with the folded name in each source that has one, unless that
 column is merged ({name}`ScopeSource.merged`). One position is a name; none is a missing
 name; two or more are SQLite's {lit}`ambiguous column name`. -/
-def Scope.matches (scope : Scope) (name : String) : List Nat :=
+def Scope.matches (scope : Scope) (name : Identifier) : List Nat :=
   scope.flatMap fun source =>
     (((columnPosition source.columns name).filter (!source.merged.contains ·)).map (source.offset + ·)).toList
 
@@ -105,7 +105,7 @@ inductive NameResolution where
 column of the name in the first source with one gives it; a later one changes the result
 only when the source's join merged it, by its {name}`MergeRule`, and makes the name
 ambiguous otherwise. -/
-def Scope.resolveStep (name : String) (result : NameResolution) (source : ScopeSource) : NameResolution :=
+def Scope.resolveStep (name : Identifier) (result : NameResolution) (source : ScopeSource) : NameResolution :=
   match columnPosition source.columns name, result with
   | none, result => result
   | some index, .missing => .found (source.offset + index) [source.offset + index]
@@ -121,28 +121,28 @@ def Scope.resolveStep (name : String) (result : NameResolution) (source : ScopeS
 (checked on native 3.51.0), by {name}`Scope.resolveStep`: the first source with a column
 of the folded name gives that column; a later one changes the result only when its join
 merged the name; a later one that did not merge it makes the name ambiguous. -/
-def Scope.resolveName (scope : Scope) (name : String) : NameResolution :=
+def Scope.resolveName (scope : Scope) (name : Identifier) : NameResolution :=
   scope.foldl (Scope.resolveStep name) .missing
 
 /-- Whether the source has the folded name. -/
-def ScopeSource.named (source : ScopeSource) (name : String) : Bool :=
-  normalizeIdentifier source.name == normalizeIdentifier name
+def ScopeSource.named (source : ScopeSource) (name : Identifier) : Bool :=
+  source.name.sameName name
 
 /-- Whether a source of the scope has the folded name. -/
-def Scope.hasSource (scope : Scope) (name : String) : Bool :=
+def Scope.hasSource (scope : Scope) (name : Identifier) : Bool :=
   scope.any (·.named name)
 
 /-- Resolve the qualified name {lit}`source.column` as SQLite does (checked on native 3.51.0):
 as an unqualified name ({name}`Scope.resolveName`) over only the sources with the folded
 name {lit}`source`, so a column of two such sources that no join merged is SQLite's
 {lit}`ambiguous column name`, and merged columns are visible. -/
-def Scope.resolveQualified (scope : Scope) (source column : String) : NameResolution :=
+def Scope.resolveQualified (scope : Scope) (source column : Identifier) : NameResolution :=
   Scope.resolveName (scope.filter (·.named source)) column
 
 /-- The columns of {lit}`source.*` with their positions in the concatenated row: every
 column that is not hidden ({name}`ScopeSource.hidden`) of every source with the folded
 name, in order, merged columns included; none when no source has the name. -/
-def Scope.starColumns? (scope : Scope) (name : String) : Option (List (Nat × CatalogColumn)) :=
+def Scope.starColumns? (scope : Scope) (name : Identifier) : Option (List (Nat × CatalogColumn)) :=
   if scope.hasSource name then
     some ((scope.filter (·.named name)).flatMap fun source => source.placedColumns (!source.hidden.contains ·))
   else none
@@ -160,7 +160,7 @@ slice 4b. Proof sketch: each step of {name}`Scope.resolveStep` keeps the propert
 merged column under {name}`MergeRule.keepLeft` keeps the result and any other later
 column makes the name ambiguous. -/
 theorem resolveName_single (scope : Scope) (keep : ∀ source ∈ scope, source.mergeRule = .keepLeft)
-    (name : String) : (scope.resolveName name).single := by
+    (name : Identifier) : (scope.resolveName name).single := by
   have step : ∀ (sources : Scope) (state : NameResolution), state.single →
       (∀ source ∈ sources, source.mergeRule = .keepLeft) →
       (sources.foldl (Scope.resolveStep name) state).single := by

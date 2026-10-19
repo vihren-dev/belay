@@ -27,10 +27,10 @@ that reads one column ({name}`Scope.resolveName`) or a qualified name; none for 
 expression, such as a merged name of a full join, which SQLite names as written. -/
 def definedName (scope : Scope) : Syntax.Expr → Option String
   | .identifier name _ => match scope.resolveName name with
-    | .found _ [position] => scope.columns[position]?.map CatalogColumn.name
+    | .found _ [position] => scope.columns[position]?.map (·.name.text)
     | .found .. | .missing | .ambiguous => none
   | .qualified source column => match scope.resolveQualified source column with
-    | .found _ [position] => scope.columns[position]?.map CatalogColumn.name
+    | .found _ [position] => scope.columns[position]?.map (·.name.text)
     | .found .. | .missing | .ambiguous => none
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
@@ -42,11 +42,11 @@ column of the one table of the write; a {lit}`source.*` column is SQLite's
 {name}`ExprError.returningSourceStar`. -/
 def returningColumn (dqs : Bool) (scope : Scope) (item : Nat) :
     Syntax.ResultColumn → Except ValueIssue (List (Resolved.Expr × String))
-  | .star => .ok (scope.visible.map fun (position, column) => (.column position, column.name))
+  | .star => .ok (scope.visible.map fun (position, column) => (.column position, column.name.text))
   | .sourceStar _ => .error (.prepare .returningSourceStar)
   | .expression value alias text => do
       let (resolved, _) ← (resolveOperand dqs scope true value).mapError (·.under [item, 0])
-      .ok [(resolved, alias.getD ((definedName scope value).getD text))]
+      .ok [(resolved, (alias.map (·.text)).getD ((definedName scope value).getD text))]
 
 /-- Whether a result column is {lit}`source.*`. -/
 def Syntax.ResultColumn.isSourceStar : Syntax.ResultColumn → Bool

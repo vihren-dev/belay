@@ -10,22 +10,22 @@ namespace Belay.Sqlite.Resolution.DeleteExamples
 open Belay.Sqlite Syntax Resolution.Examples Resolution.QueryResolutionExamples
 
 /-- The filter {lit}`Abc = 1` as written. -/
-def abcIsOne : Syntax.Expr := .compare .eq (.identifier "Abc" .none) (.numeric "1")
+def abcIsOne : Syntax.Expr := .compare .eq (.identifier (name! "Abc") .none) (.numeric "1")
 
 -- The filter resolves as a SELECT condition; RETURNING `*` names the table's columns.
-#guard resolvedOne (.delete "t" (some abcIsOne)) ==
+#guard resolvedOne (.delete (name! "t") (some abcIsOne)) ==
   some (.delete 0 (some (.compare .eq (some .integer) (.column 0) (.literal (.integer 1)))) [])
-#guard resolvedOne ((.delete "t" none [.star])) ==
+#guard resolvedOne ((.delete (name! "t") none [.star])) ==
   some (.delete 0 none [(.column 0, "Abc"), (.column 1, "b")])
 -- SQLite's prepare errors, and SQLite's own tables as a restriction.
-#guard errorOf (.delete "missing" none) == some (.noSuchTable "missing")
-#guard errorOf (.delete "t" (some (.compare .eq (.identifier "zz" .none) (.numeric "1")))) == some (.expression (.noSuchColumn "zz"))
-#guard restrictedOne (.delete "sqlite_schema" none)
+#guard errorOf (.delete (name! "missing") none) == some (.noSuchTable (name! "missing"))
+#guard errorOf (.delete (name! "t") (some (.compare .eq (.identifier (name! "zz") .none) (.numeric "1")))) == some (.expression (.noSuchColumn (name! "zz")))
+#guard restrictedOne (.delete (name! "sqlite_schema") none)
 
 /-- A table with a row where {lit}`Abc` is 1 and a row where it is NULL. -/
 def table : Table :=
-  { shape := { columns := [{ name := "Abc", declaredType := some "INTEGER" },
-      { name := "b", declaredType := some "TEXT" }] },
+  { shape := { columns := [{ name := (name! "Abc"), declaredType := some "INTEGER" },
+      { name := (name! "b"), declaredType := some "TEXT" }] },
     rows := [{ rowid := 1, values := [.integer 1, .text [97]] }, { rowid := 2, values := [.null, .text [98]] }] }
 
 -- The row where the filter is true is removed; the row where it is NULL is kept.

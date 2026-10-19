@@ -10,11 +10,11 @@ open Belay.Sqlite Syntax Resolution.Examples Resolution.JoinExamples Resolution.
 
 /-- A table of two rows, with {lit}`a` 1 and 3. -/
 def rightTwo : Table :=
-  { shape := { columns := [{ name := "a", declaredType := some "INTEGER" }] },
+  { shape := { columns := [{ name := (name! "a"), declaredType := some "INTEGER" }] },
     rows := [{ rowid := 1, values := [.integer 1] }, { rowid := 2, values := [.integer 3] }] }
 
 /-- A table without rows. -/
-def empty : Table := { shape := { columns := [{ name := "a", declaredType := some "INTEGER" }] }, rows := [] }
+def empty : Table := { shape := { columns := [{ name := (name! "a"), declaredType := some "INTEGER" }] }, rows := [] }
 
 /-- A join of the kind to table 1 with the condition. -/
 def join (kind : Resolved.JoinKind) (condition : Option Resolved.Expr := equal) : Resolved.QuerySource :=
@@ -27,9 +27,9 @@ def rowsWith (kind : Resolved.JoinKind) (table : Table) (condition : Option Reso
     (Resolved.sourceRows table)
 
 -- The operators resolve to their kinds.
-#guard (queryOver [.star] (table "t") [joined ["RIGHT"] (table "u") (some onA)]).map (fun query => (query.sources.drop 1).map (·.kind)) ==
+#guard (queryOver [.star] (table (name! "t")) [joined ["RIGHT"] (table (name! "u")) (some onA)]).map (fun query => (query.sources.drop 1).map (·.kind)) ==
   some [.right]
-#guard (queryOver [.star] (table "t") [joined ["full", "Outer"] (table "u") (some onA)]).map (fun query => (query.sources.drop 1).map (·.kind)) ==
+#guard (queryOver [.star] (table (name! "t")) [joined ["full", "Outer"] (table (name! "u")) (some onA)]).map (fun query => (query.sources.drop 1).map (·.kind)) ==
   some [.full]
 -- A right join adds each unmatched right row padded on the left; a full join adds both sides.
 #guard rowsWith .right rightTwo == [[.integer 1, .integer 1], [.null, .integer 3]]
@@ -52,7 +52,7 @@ def fullQuery : Resolved.Query :=
 #guard Resolved.joinRows 0 2 (rowsWith .inner rightTwo) rightOnSecond 1 (Resolved.sourceRows rightTwo) ==
   [[.integer 1, .integer 1, .integer 1], [.null, .null, .integer 3]]
 -- The source of a query folds the joins with the width of the tables so far.
-#guard (fullQuery.source 0 (.ofTables [("l", JoinExamples.left), ("r", rightTwo)])).map (·.rows) ==
+#guard (fullQuery.source 0 (.ofTables [((name! "l"), JoinExamples.left), ((name! "r"), rightTwo)])).map (·.rows) ==
   some [[.integer 1, .integer 1], [.integer 2, .null], [.null, .integer 3]]
 
 end Belay.Sqlite.Resolution.RightJoinExamples

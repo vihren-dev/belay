@@ -30,8 +30,10 @@ SQLITE = "belay-sqlite/Belay/Sqlite/"
 """The model sources, relative to `packages/`."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "non_ascii_fold": (SQLITE + "Declarations.lean",
-        "if 'A' ≤ c ∧ c ≤ 'Z' then", "if 'A' ≤ c ∧ c ≤ 'Z' ∨ 'À' ≤ c ∧ c ≤ 'Þ' ∧ c ≠ '×' then"),
+    "non_ascii_fold": (SQLITE + "Identifier.lean",
+        "def Identifier.folded (name : Identifier) : List UInt8 := name.bytes.map lowerAscii",
+        "def Identifier.folded (name : Identifier) : List UInt8 :=\n"
+        "  name.bytes.map fun byte => if 0x80 ≤ byte && byte ≤ 0x9e && byte != 0x97 then byte + 32 else lowerAscii byte"),
     "affinity_order": (SQLITE + "Resolution/TypeAffinity.lean",
         'if containsText upper "INT" then .integer\n    else if ["CHAR", "CLOB", "TEXT"].any (containsText upper) then .text',
         'if ["CHAR", "CLOB", "TEXT"].any (containsText upper) then .text\n    else if containsText upper "INT" then .integer'),
@@ -71,7 +73,7 @@ the match allows it (`no_table_exists` creates the table again), or makes it a
 model restriction where nothing can continue (`no_such_table`)."""
 
 GUARDS: dict[str, str] = {
-    "non_ascii_fold": "rule:normalizeIdentifier",
+    "non_ascii_fold": "rule:Identifier.folded",
     "affinity_order": "rule:affinityOf",
     "desc_rowid_alias": "rule:applyConstraint",
     "rollback_keeps_catalog": "rule:resolveStatement",

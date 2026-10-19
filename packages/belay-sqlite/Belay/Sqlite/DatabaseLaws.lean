@@ -20,7 +20,7 @@ theorem rows_getD_append_nil : ∀ (rows : List (List Row)) (index : Nat),
 the table at that position. Proof sketch: the position is below the catalog length, so the
 appended object does not change the element there. -/
 theorem Catalog.tableAt_createTable {catalog : Catalog} {position : Nat} {shape : CatalogTable}
-    (name : String) (table : CatalogTable) (present : catalog.tableAt position = some shape) :
+    (name : Identifier) (table : CatalogTable) (present : catalog.tableAt position = some shape) :
     (catalog.createTable name table).tableAt position = some shape := by
   have below : position < catalog.length := by
     unfold Catalog.tableAt at present
@@ -36,7 +36,7 @@ same table at that position. Proof sketch: the catalog entry is kept
 ({name}`Catalog.tableAt_createTable`) and the appended empty row list does not change
 {lit}`getD` ({name}`rows_getD_append_nil`). -/
 theorem Database.table_createTable {database : Database} {position : Nat} {table : Table}
-    (name : String) (shape : CatalogTable) (present : database.table position = some table) :
+    (name : Identifier) (shape : CatalogTable) (present : database.table position = some table) :
     ({ catalog := database.catalog.createTable name shape, rows := database.rows ++ [[]] } : Database).table
       position = some table := by
   unfold Database.table at present ⊢
@@ -129,7 +129,7 @@ theorem Database.table_setRows_other (database : Database) {position other : Nat
 the position and CREATE TABLE commute: either order gives the same catalog. Proof sketch:
 the position is below the length, so the lookup and {lit}`List.set` of
 {name}`Catalog.addColumn` see only the old prefix of the appended list. -/
-theorem Catalog.addColumn_createTable (catalog : Catalog) {position : Nat} (column : CatalogColumn) (name : String)
+theorem Catalog.addColumn_createTable (catalog : Catalog) {position : Nat} (column : CatalogColumn) (name : Identifier)
     (table : CatalogTable) (below : position < catalog.length) :
     (catalog.createTable name table).addColumn position column = (catalog.addColumn position column).createTable name table := by
   unfold Catalog.addColumn Catalog.createTable
@@ -142,7 +142,7 @@ commute: either order gives the same database. Proof sketch: the catalogs agree 
 {name}`Catalog.addColumn_createTable`; the row lists agree at every index because
 {lit}`List.modify` below the length commutes with appending. -/
 theorem Database.addColumn_createTable (database : Database) {position : Nat} (column : CatalogColumn) (value : Value)
-    (name : String) (table : CatalogTable) (below : position < database.catalog.length)
+    (name : Identifier) (table : CatalogTable) (below : position < database.catalog.length)
     (aligned : database.rows.length = database.catalog.length) :
     ({ catalog := database.catalog.createTable name table, rows := database.rows ++ [[]] } : Database).addColumn
         position column value =

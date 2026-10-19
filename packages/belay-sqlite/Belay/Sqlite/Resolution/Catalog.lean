@@ -7,7 +7,7 @@ set_option doc.verso true
 
 /-! The catalog that name resolution reads and updates. Tables and indexes share
 one namespace, as in {lit}`sqlite_schema`. Names keep their case as written;
-lookup compares SQLite's ASCII-folded form ({name}`Belay.Sqlite.normalizeIdentifier`).
+lookup compares SQLite's ASCII-folded form ({name}`Belay.Sqlite.Identifier.sameName`).
 Columns keep their declared type text, and the affinity function
 ({lit}`affinityOf`, in {lit}`TypeAffinity.lean`) computes the affinity from it. -/
 
@@ -17,7 +17,7 @@ namespace Belay.Sqlite
 constraint fields for a nullable column without a default. -/
 structure CatalogColumn where
   /-- The column name as written, for example {lit}`Id`. -/
-  name : String
+  name : Identifier
   /-- The declared type text, or {lean}`(none : Option String)` for no type. -/
   declaredType : Option String
   /-- Whether the column declares NOT NULL. -/
@@ -83,7 +83,7 @@ inductive CatalogEntry where
 /-- One named catalog object. The name is kept as written; lookup folds it. -/
 structure CatalogObject where
   /-- The object name as written. -/
-  name : String
+  name : Identifier
   /-- The object's kind and content. -/
   entry : CatalogEntry
   deriving Repr, DecidableEq
@@ -99,11 +99,11 @@ def findPosition (test : α → Bool) : List α → Option (Nat × α)
       (findPosition test rest).map fun (position, found) => (position + 1, found)
 
 /-- The first catalog object whose folded name equals the folded given name. -/
-def Catalog.find (catalog : Catalog) (name : String) : Option (Nat × CatalogObject) :=
-  findPosition (fun object => normalizeIdentifier object.name == normalizeIdentifier name) catalog
+def Catalog.find (catalog : Catalog) (name : Identifier) : Option (Nat × CatalogObject) :=
+  findPosition (fun object => object.name.sameName name) catalog
 
 /-- The first object with the folded name, when it is a table: its position and entry. -/
-def Catalog.findTable (catalog : Catalog) (name : String) : Option (Nat × CatalogTable) :=
+def Catalog.findTable (catalog : Catalog) (name : Identifier) : Option (Nat × CatalogTable) :=
   match catalog.find name with
   | some (position, { entry := .table table, .. }) => some (position, table)
   | some (_, { entry := .index _, .. }) => none
@@ -112,13 +112,12 @@ def Catalog.findTable (catalog : Catalog) (name : String) : Option (Nat × Catal
 /-- The columns of the table with the name in the catalog, in table order, or
 {lean}`(none : Option (List CatalogColumn))` when no table has the name. Use it to
 state catalog requirements. -/
-def Catalog.columnsOf (catalog : Catalog) (name : String) : Option (List CatalogColumn) :=
+def Catalog.columnsOf (catalog : Catalog) (name : Identifier) : Option (List CatalogColumn) :=
   (catalog.findTable name).map (·.2.columns)
 
 /-- The position of the first column whose folded name equals the folded given name. -/
-def columnPosition (columns : List CatalogColumn) (name : String) : Option Nat :=
-  (findPosition (fun column => normalizeIdentifier column.name == normalizeIdentifier name)
-    columns).map Prod.fst
+def columnPosition (columns : List CatalogColumn) (name : Identifier) : Option Nat :=
+  (findPosition (fun column => column.name.sameName name) columns).map Prod.fst
 
 /-- The affinity of a catalog column, from its declared type text. -/
 def CatalogColumn.affinity (column : CatalogColumn) : Affinity := affinityOf column.declaredType
@@ -136,11 +135,11 @@ def Catalog.uniqueKeys (catalog : Catalog) (position : Nat) (table : CatalogTabl
 /-- Add the table with the name at the end of the catalog, at position
 {lean}`catalog.length`, as CREATE TABLE does. The resolver and the execution of CREATE
 TABLE both use it, so they give the same catalog. -/
-def Catalog.createTable (catalog : Catalog) (name : String) (table : CatalogTable) : Catalog :=
+def Catalog.createTable (catalog : Catalog) (name : Identifier) (table : CatalogTable) : Catalog :=
   catalog ++ [{ name, entry := .table table }]
 
 /-- Add the index with the name at the end of the catalog, as CREATE INDEX does. -/
-def Catalog.createIndex (catalog : Catalog) (name : String) (index : CatalogIndex) : Catalog :=
+def Catalog.createIndex (catalog : Catalog) (name : Identifier) (index : CatalogIndex) : Catalog :=
   catalog ++ [{ name, entry := .index index }]
 
 /-- Append the column to the table at the position, keeping the table's name and every
@@ -154,16 +153,24 @@ def Catalog.addColumn (catalog : Catalog) (position : Nat) (column : CatalogColu
   | none => catalog
 
 /-- Whether the folded name starts with {lit}`sqlite_`, which SQLite reserves. -/
-def reservedName (name : String) : Bool := (normalizeIdentifier name).startsWith "sqlite_"
+def reservedName (name : Identifier) : Bool := (bytes! "sqlite_").isPrefixOf name.folded
+
+/-- The column names of SQLite's statistics tables, which a schema may contain, by the
+folded table name ({name}`Identifier.folded`). -/
+def statisticsColumns (folded : List UInt8) : Option (List Identifier) :=
+  if folded == bytes! "sqlite_stat1" then some [name! "tbl", name! "idx", name! "stat"]
+  else if folded == bytes! "sqlite_stat4" then
+    some [name! "tbl", name! "idx", name! "neq", name! "nlt", name! "ndlt", name! "sample"]
+  else none
 
 /-- Whether a column name is one of SQLite's rowid names, which the model keeps
 for the physical rowid. -/
-def rowidName (name : String) : Bool :=
-  ["rowid", "_rowid_", "oid"].contains (normalizeIdentifier name)
+def rowidName (name : Identifier) : Bool :=
+  [bytes! "rowid", bytes! "_rowid_", bytes! "oid"].contains name.folded
 
 /-- The folded names of all catalog objects, in catalog order. -/
-def Catalog.foldedNames (catalog : Catalog) : List String :=
-  catalog.map fun object => normalizeIdentifier object.name
+def Catalog.foldedNames (catalog : Catalog) : List (List UInt8) :=
+  catalog.map fun object => object.name.folded
 
 /-- No two catalog objects have the same folded name. The empty catalog has
 unique names. -/

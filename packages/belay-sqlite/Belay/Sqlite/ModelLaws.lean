@@ -42,7 +42,7 @@ theorem findPosition_append {test : α → Bool} {items : List α} (more : List 
 /-- For every requested name, {name}`columnPosition` finds a column of the table.
 An empty name list requires nothing; repeated names are allowed. Use this to
 establish column presence before projection; row width is separate. -/
-def Covers (table : Table) (names : List String) : Prop :=
+def Covers (table : Table) (names : List Identifier) : Prop :=
   ∀ name ∈ names, ∃ index, columnPosition table.shape.columns name = some index
 
 /-- For every table and two limits, if the table is supported under the first and

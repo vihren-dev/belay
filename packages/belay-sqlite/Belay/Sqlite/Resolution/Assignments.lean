@@ -38,7 +38,7 @@ row for a column of a unique key ({lit}`keyColumns`) is a model restriction, and
 value that names no column and whose JSON function may fail. Paths are
 relative to the assignment list. -/
 def resolveAssignment (dqs : Bool) (scope : Scope) (keyColumns : List Nat) (item : Nat) :
-    String × Syntax.Expr → Except ValueIssue (Nat × Resolved.Expr)
+    Identifier × Syntax.Expr → Except ValueIssue (Nat × Resolved.Expr)
   | (name, value) =>
     (resolveOperand dqs scope true value).mapError (·.under [item, 1]) >>= fun operand =>
     (match columnPosition scope.columns name with

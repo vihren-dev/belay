@@ -12,7 +12,7 @@ namespace Belay.Sqlite.Conformance.QueryOutputs
 open Resolved.QueryExamples in
 /-- A database with the example table of {lit}`Belay.Sqlite.Resolved.QueryExamples`
 at catalog position 0. -/
-def database : Database := .ofTables [("t", table)]
+def database : Database := .ofTables [((name! "t"), table)]
 
 #guard match advance 0 (.query Resolved.QueryExamples.grouped) { database } with
   | .next next => next.database.table 0 == database.table 0 && next.snapshot.isNone

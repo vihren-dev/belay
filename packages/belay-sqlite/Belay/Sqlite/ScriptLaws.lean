@@ -45,12 +45,12 @@ theorem advance_effect (position : Nat) (statement : Resolved.Statement) (state 
 
 /-- For every position, state and CREATE TABLE, {name}`advance` publishes its effect
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
-@[simp] theorem advance_createTable (step : Nat) (state : SqlState) (target : Nat) (name : String) (table : CatalogTable) :
+@[simp] theorem advance_createTable (step : Nat) (state : SqlState) (target : Nat) (name : Identifier) (table : CatalogTable) :
     advance step (.createTable target name table) state = state.publish step (literalStep (state.clock step) (.createTable target name table) state.database) := rfl
 
 /-- For every position, state and CREATE INDEX, {name}`advance` publishes its effect
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
-@[simp] theorem advance_createIndex (step : Nat) (state : SqlState) (target : Nat) (name : String) (index : CatalogIndex) :
+@[simp] theorem advance_createIndex (step : Nat) (state : SqlState) (target : Nat) (name : Identifier) (index : CatalogIndex) :
     advance step (.createIndex target name index) state = state.publish step (literalStep (state.clock step) (.createIndex target name index) state.database) := rfl
 
 /-- For every position, state and ADD COLUMN, {name}`advance` publishes its effect
@@ -126,7 +126,7 @@ of {name}`step`. -/
 of the catalog and the database has one row list for each catalog object, CREATE TABLE
 succeeds with the table added to the catalog ({name}`Catalog.createTable`) and no rows.
 Proof sketch: {name}`literalStep` is {name}`step` here, whose position check holds. -/
-theorem effect_createTable_ok (clock : Int) (database : Database) (name : String) (table : CatalogTable)
+theorem effect_createTable_ok (clock : Int) (database : Database) (name : Identifier) (table : CatalogTable)
     (target : Nat) (atEnd : target = database.catalog.length) (rows : database.rows.length = database.catalog.length) :
     literalStep clock (.createTable target name table) database =
       .ok { catalog := database.catalog.createTable name table, rows := database.rows ++ [[]] } := by

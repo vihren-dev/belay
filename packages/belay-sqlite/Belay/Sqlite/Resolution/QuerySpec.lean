@@ -14,7 +14,7 @@ identifier: if the term is an integer literal {lit}`k` from 1 to the number of
 result columns, it names result column {lit}`k - 1`; if it is an integer literal
 outside that range, it names no column and is out of range (SQLite's
 {lit}`ORDER BY` or {lit}`GROUP BY` term out of range). -/
-theorem namedResult_integer (names : List (Option String)) (term : Syntax.Expr) (number : Int)
+theorem namedResult_integer (names : List (Option Identifier)) (term : Syntax.Expr) (number : Int)
     (notIdentifier : ∀ name doubleQuoted, term ≠ .identifier name doubleQuoted)
     (literal : integerLiteral term = some number) :
     namedResult names term =

@@ -14,8 +14,8 @@ import SqliteVerifier.ApplicationKeys
 open Belay.Sqlite SqliteVerifier
 
 def columns : List CatalogColumn := [
-  { name := "id", declaredType := some "INTEGER" },
-  { name := "payload", declaredType := some "TEXT" }]
+  { name := name! "id", declaredType := some "INTEGER" },
+  { name := name! "payload", declaredType := some "TEXT" }]
 def first : Table := { shape := { columns := columns }, rows := [
   ⟨4, [.integer 1, .text [65]]⟩, ⟨8, [.integer 2, .text [66]]⟩] }
 def reordered : Table := { first with rows := [

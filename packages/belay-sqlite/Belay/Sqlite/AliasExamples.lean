@@ -12,14 +12,14 @@ open Belay.Sqlite
 /-- {lit}`t(id INTEGER PRIMARY KEY, v)`: the alias at position 0, which is also the
 primary key. -/
 def shape : CatalogTable :=
-  { columns := [{ name := "id", declaredType := some "INTEGER" }, { name := "v", declaredType := none }],
+  { columns := [{ name := (name! "id"), declaredType := some "INTEGER" }, { name := (name! "v"), declaredType := none }],
     primaryKey := [0], rowidAlias := some 0 }
 
 /-- The table with the row {lit}`(5, 'a')` at rowid 5. -/
 def table : Table := { shape, rows := [{ rowid := 5, values := [.integer 5, .text [97]] }] }
 
 /-- A database with the table at position 0. -/
-def database : Database := .ofTables [("t", table)]
+def database : Database := .ofTables [((name! "t"), table)]
 
 /-- The rows of the table after a write, or none for a failure. -/
 def rowsAfter : Effect → Option (List Row)

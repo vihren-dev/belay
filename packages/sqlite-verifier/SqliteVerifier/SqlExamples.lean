@@ -13,8 +13,8 @@ namespace SqliteVerifier.SqlExamples
 /-- The retained BIGINT key and nonnullable text field for these finite checks.
 BIGINT is an ordinary key column, independent of the physical rowid. -/
 def columns : List CatalogColumn := [
-  { name := "key", declaredType := some "BIGINT" },
-  { name := "value", declaredType := some "TEXT", notNull := true }]
+  { name := (name! "key"), declaredType := some "BIGINT" },
+  { name := (name! "value"), declaredType := some "TEXT", notNull := true }]
 
 /-- Shared key metadata, negative physical identities and a NULL key exercise both distinct semantics. -/
 def original : Table where
@@ -22,11 +22,11 @@ def original : Table where
   rows := [⟨-5, [.null, .text [97]]⟩, ⟨-2, [.integer 1, .text [98]]⟩]
 
 /-- The finite starting database contains {name}`original` only, at catalog position 0. -/
-def database : Database := .ofTables [("t", original)]
+def database : Database := .ofTables [((name! "t"), original)]
 
 /-- The nullable text field appended by the finite script, using the plain column
 defaults. Existing rows receive NULL in this field. -/
-def note : CatalogColumn := { name := "note", declaredType := some "TEXT" }
+def note : CatalogColumn := { name := (name! "note"), declaredType := some "TEXT" }
 
 /-- The unique keys of the table, which execution reads from the catalog for every write:
 the primary key on position 0. -/
@@ -79,8 +79,8 @@ example : error (runSql [.insert 0 [[.value (.integer 2), .value .null]] []] dat
 example : error (runSql [.insert 0 [[.value (.integer 3), .value (.text [])], [.value (.integer 3), .value (.text [])]] []] database) =
     some (0, .constraintViolation) := by decide +kernel
 -- A prepare error that resolution decided stops the script at its position.
-example : error (runSql [.begin, .prepareError (.noSuchTable "t")] database) =
-    some (1, .prepare (.noSuchTable "t")) := by decide +kernel
+example : error (runSql [.begin, .prepareError (.noSuchTable (name! "t"))] database) =
+    some (1, .prepare (.noSuchTable (name! "t"))) := by decide +kernel
 
 -- A value that the affinity would convert is not in stored form, and random rowid
 -- allocation fails the domain obligation; neither is a modeled native constraint error.

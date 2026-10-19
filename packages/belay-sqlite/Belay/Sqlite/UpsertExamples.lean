@@ -14,8 +14,8 @@ open Belay.Sqlite
 /-- {lit}`t(k INTEGER UNIQUE, u INTEGER UNIQUE, v NOT NULL)`: two keys and a NOT NULL
 column. -/
 def shape : CatalogTable :=
-  { columns := [{ name := "k", declaredType := some "INTEGER" }, { name := "u", declaredType := some "INTEGER" },
-      { name := "v", declaredType := none, notNull := true }],
+  { columns := [{ name := (name! "k"), declaredType := some "INTEGER" }, { name := (name! "u"), declaredType := some "INTEGER" },
+      { name := (name! "v"), declaredType := none, notNull := true }],
     uniqueKeys := [[0], [1]] }
 
 /-- The text value of one ASCII letter. -/

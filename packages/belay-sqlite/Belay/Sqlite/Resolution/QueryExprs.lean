@@ -42,17 +42,17 @@ def resolveOperand (dqs : Bool) (scope : Scope) (misuse : Bool) : Syntax.Expr �
     | .found _ reads => .ok (scope.nameOperand reads)
     | .missing =>
       if rowidName name && !scope.isEmpty then .error (.restriction [] .rowidName)
-      else if quote == .double && dqs then .ok (.literal (.text name.toUTF8.toList), none)
+      else if quote == .double && dqs then .ok (.literal (.text name.bytes), none)
       else if quote == .none && booleanKeywordName name then
-        .ok (.literal (.integer (if normalizeIdentifier name == "true" then 1 else 0)), none)
+        .ok (.literal (.integer (if name.isKeyword (bytes! "true") then 1 else 0)), none)
       else .error (.prepare (.noSuchColumn name))
     | .ambiguous => .error (.prepare (.ambiguousColumn name))
   | .qualified source column => match scope.resolveQualified source column with
     | .found _ reads => .ok (scope.nameOperand reads)
     | .missing =>
       if rowidName column && scope.hasSource source then .error (.restriction [] .rowidName)
-      else .error (.prepare (.noSuchColumn s!"{source}.{column}"))
-    | .ambiguous => .error (.prepare (.ambiguousColumn s!"{source}.{column}"))
+      else .error (.prepare (.noSuchColumn ⟨source.bytes ++ [46] ++ column.bytes⟩))
+    | .ambiguous => .error (.prepare (.ambiguousColumn ⟨source.bytes ++ [46] ++ column.bytes⟩))
   | .compare operator left right => do
     let a ← (resolveOperand dqs scope misuse left).mapError (·.under [1])
     let b ← (resolveOperand dqs scope misuse right).mapError (·.under [2])

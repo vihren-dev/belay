@@ -11,7 +11,7 @@ namespace Belay.Sqlite
 /-- Resolve DELETE. Path 1 is the filter and path {name}`deleteReturningField` the
 {lit}`RETURNING` columns. SQLite's own tables are a model restriction, as in
 {lit}`SELECT`. -/
-def resolveDelete (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : String)
+def resolveDelete (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : Identifier)
     (filter : Option Syntax.Expr) (returning : List Syntax.ResultColumn) : StatementResolution :=
   let dqs := context.profile.dqsDml
   match catalog.findTable tableName with

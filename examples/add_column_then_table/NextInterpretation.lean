@@ -6,7 +6,7 @@ namespace NextInterpretation
 
 /-- All old invoice rows and amounts remain protected. -/
 def next : SqliteVerifier.Interpretation Requirements.LogicalState :=
-  SqliteVerifier.projectedInterpretation Generated.profile Generated.nextCatalog "invoices" ["amount"]
+  SqliteVerifier.projectedInterpretation Generated.profile Generated.nextCatalog (name! "invoices") [name! "amount"]
 
 /-- The proof establishes successful applicability, so modeled failure is unreachable. -/
 def failures : SqliteVerifier.FailureRepresentation Requirements.LogicalState :=

@@ -9,7 +9,7 @@ open Belay.Sqlite SqliteVerifier HistoryModel
 /-- Every physical history row contributes one decoded business entry. The history
 table is at its position in the sealed starting catalog; positions do not change. -/
 def observe (database : Database) : Option (List History) := do
-  let position ← tablePosition SchemaBinding.start "history"
+  let position ← tablePosition SchemaBinding.start (name! "history")
   let table ← database.table position
   HistoryDecoding.decodeRows (table.project SchemaBinding.fields)
 

@@ -6,7 +6,7 @@ namespace NextInterpretation
 
 /-- The old values are still readable, but the target catalog requirement fails. -/
 def next : SqliteVerifier.Interpretation Requirements.LogicalState :=
-  SqliteVerifier.projectedInterpretation Generated.profile Generated.nextCatalog "invoices" ["amount"]
+  SqliteVerifier.projectedInterpretation Generated.profile Generated.nextCatalog (name! "invoices") [name! "amount"]
 
 /-- This example asks for successful applicability, as the approved contract requires. -/
 def failures : SqliteVerifier.FailureRepresentation Requirements.LogicalState :=

@@ -30,9 +30,9 @@ end
 
 /-- The columns of {lit}`source.*` ({name}`Scope.starColumns?`) with their expansions
 ({name}`Scope.starOperand`) and their names, or SQLite's {lit}`no such table: source` when no source has the name. -/
-def sourceStarColumns (scope : Scope) (source : String) : Except ValueIssue (List (Resolved.Expr × String)) :=
+def sourceStarColumns (scope : Scope) (source : Identifier) : Except ValueIssue (List (Resolved.Expr × String)) :=
   match scope.starColumns? source with
-  | some columns => columns.mapM fun (position, column) => (·.1, column.name) <$> scope.starOperand position column
+  | some columns => columns.mapM fun (position, column) => (·.1, column.name.text) <$> scope.starOperand position column
   | none => .error (.prepare (.noSuchSource source))
 
 /-- The number of tables in a join that SQLite accepts ({lit}`SQLITE_MAX_SRCLIST`). -/
@@ -45,7 +45,7 @@ inductive SourceIssue where
   /-- An issue of an expression or of a join form. -/
   | value (issue : ValueIssue)
   /-- {lit}`no such table: %s`, with the table name as written. -/
-  | noSuchTable (name : String)
+  | noSuchTable (name : Identifier)
   deriving Repr, DecidableEq
 
 /-- A value issue is a source issue ({name}`SourceIssue.value`), so the resolution of the

@@ -16,13 +16,13 @@ abbrev LogicalRows := List (Int × List (Option Value))
 
 /-- The catalog position of the table with the name, compared after SQLite's
 ASCII folding, or {lean}`(none : Option Nat)` when no table has it. -/
-def tablePosition (catalog : Catalog) (name : String) : Option Nat := (catalog.findTable name).map Prod.fst
+def tablePosition (catalog : Catalog) (name : Identifier) : Option Nat := (catalog.findTable name).map Prod.fst
 
 /-- Project the requested fields of the stored table with the name, retaining row
 order and rowids. A name without a table in the catalog, or an absent stored
 table, yields {name}`Option.none`; a present empty table yields
 {lean}`(some [] : Option LogicalRows)`, so lost tables cannot look empty. -/
-def observeTable (catalog : Catalog) (name : String) (fields : List String) (database : Database) :
+def observeTable (catalog : Catalog) (name : Identifier) (fields : List Identifier) (database : Database) :
     Option LogicalRows := do
   let position ← tablePosition catalog name
   (database.table position).map (·.project fields)
@@ -32,7 +32,7 @@ table stored at the catalog position of the name that satisfies {name}`Covers`
 for all requested fields. Observation uses {name}`observeTable`. Use an empty
 field list to observe rowids only; the caller proves the logical contract's
 validity. -/
-def projectedInterpretation (profile : Profile) (catalog : Catalog) (name : String) (fields : List String) :
+def projectedInterpretation (profile : Profile) (catalog : Catalog) (name : Identifier) (fields : List Identifier) :
     Interpretation LogicalRows where
   invariant database := Conforms profile catalog database ∧ ∃ position table,
     tablePosition catalog name = some position ∧ database.table position = some table ∧ Covers table fields
@@ -59,7 +59,7 @@ Then {name}`projectedInterpretation` is a {name}`SoundRepresentation`. An empty
 field list still requires that validity premise for its rowid-only projections.
 The proof extracts the stored valid table and applies the supplied premise. -/
 theorem projectedInterpretation_sound (contract : LogicalContract LogicalRows) (profile : Profile)
-    (catalog : Catalog) (name : String) (fields : List String)
+    (catalog : Catalog) (name : Identifier) (fields : List Identifier)
     (valid : ∀ table, table.Valid → Covers table fields → contract.valid (table.project fields)) :
     SoundRepresentation contract profile (projectedInterpretation profile catalog name fields) := by
   intro database invariant

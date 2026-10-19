@@ -26,7 +26,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "    else if constraintFailure then\n"
         "      some ⟨names, returnedRows clock returning (Resolved.rowsAt clock [] rows), some 0⟩ else none"),
     "returning_names_ignore_definition": (RETURNING,
-        "      .ok [(resolved, alias.getD ((definedName scope value).getD text))]", "      .ok [(resolved, alias.getD text)]"),
+        "      .ok [(resolved, (alias.map (·.text)).getD ((definedName scope value).getD text))]",
+        "      .ok [(resolved, (alias.map (·.text)).getD text)]"),
     "constant_not_evaluated": (CELLS,
         "    else .ok (.value (operand.1.eval 0 []))",
         "    else .ok (.value (match operand.1 with\n"

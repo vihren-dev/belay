@@ -16,7 +16,7 @@ statement applied to the input catalog gives the input catalog again
 Proof sketch: every branch of the resolver returns the input catalog and a write or a
 prepare error. -/
 theorem resolveInsert_same (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (tableName : String) (names : Option (List String)) (rows : List (List Syntax.Expr))
+    (tableName : Identifier) (names : Option (List Identifier)) (rows : List (List Syntax.Expr))
     (conflicts : List Syntax.ConflictClause) (algorithm : Option ConflictAlgorithm)
     (returning : List Syntax.ResultColumn)
     (statement : Resolved.Statement)
@@ -35,7 +35,7 @@ statement applied to the input catalog gives the input catalog again
 Proof sketch: every branch of the resolver returns the input catalog and a write or a
 prepare error. -/
 theorem resolveUpdate_same (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (tableName : String) (assignments : List (String × Syntax.Expr)) (filter : Option Syntax.Expr)
+    (tableName : Identifier) (assignments : List (Identifier × Syntax.Expr)) (filter : Option Syntax.Expr)
     (returning : List Syntax.ResultColumn)
     (statement : Resolved.Statement)
     (ok : resolveUpdate context catalog index tableName assignments filter returning = .ok (statement, after)) :
@@ -53,7 +53,7 @@ statement applied to the input catalog gives the input catalog again
 Proof sketch: every branch of the resolver returns the input catalog and a write or a
 prepare error. -/
 theorem resolveDelete_same (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (tableName : String) (filter : Option Syntax.Expr) (returning : List Syntax.ResultColumn)
+    (tableName : Identifier) (filter : Option Syntax.Expr) (returning : List Syntax.ResultColumn)
     (statement : Resolved.Statement)
     (ok : resolveDelete context catalog index tableName filter returning = .ok (statement, after)) :
     after = catalog ∧ statement.applyCatalog catalog = catalog ∧ statement.isControl = false := by

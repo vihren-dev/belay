@@ -11,7 +11,7 @@ namespace Belay.Sqlite.Conformance
 /-- One column as {lit}`PRAGMA table_xinfo` reports it: the name and declared type
 as written ({lit}`""` for no type), NOT NULL, and the default's text or none. -/
 structure NativeColumn where
-  name : String
+  name : Identifier
   declaredType : String
   notNull : Bool
   defaultValue : Option String
@@ -19,7 +19,7 @@ structure NativeColumn where
 
 /-- One explicit index ({lit}`index_list` origin {lit}`c`): its name, key column positions and uniqueness. -/
 structure NativeIndex where
-  name : String
+  name : Identifier
   columns : List Nat
   unique : Bool
   deriving Repr, DecidableEq
@@ -28,7 +28,7 @@ structure NativeIndex where
 positions in key order, the key positions of each UNIQUE constraint index (origin
 {lit}`u`), its explicit indexes, and its rows. -/
 structure NativeTable where
-  name : String
+  name : Identifier
   columns : List NativeColumn
   primaryKey : List Nat
   uniqueKeys : List (List Nat)
@@ -100,7 +100,7 @@ def sameIndexes (model native : List NativeIndex) : Bool :=
 
 /-- Whether the catalog table at a position, its object name and its stored rows match
 a native table: name, columns, keys, indexes and rows. -/
-def tableMatches (catalog : Catalog) (position : Nat) (name : String) (table : CatalogTable)
+def tableMatches (catalog : Catalog) (position : Nat) (name : Identifier) (table : CatalogTable)
     (rows : List Row) (native : NativeTable) : Bool :=
   name == native.name && table.columns.length == native.columns.length &&
   (table.columns.zip native.columns).all (fun (column, observed) => columnMatches column observed) &&
@@ -118,7 +118,7 @@ def tablesMatch (database : Database) (natives : List NativeTable) : Bool :=
     | .index _ => none
   natives.length == tables.length &&
   tables.all (fun (position, name, table) =>
-    match natives.filter (fun native => normalizeIdentifier native.name == normalizeIdentifier name) with
+    match natives.filter (fun native => native.name.sameName name) with
     | [native] => tableMatches database.catalog position name table (database.rows.getD position []) native
     | _ => false) &&
   database.rows.length == database.catalog.length &&

@@ -86,20 +86,20 @@ theorem Conforms.addColumn {catalog : Catalog} {database : Database} {table : Ta
       exact (each other).2 result found
 /-- For every catalog, name, table and position below the catalog length,
 {name}`Catalog.createTable` keeps the entry at the position. -/
-theorem Catalog.tableAt_createTable_below (catalog : Catalog) (name : String) (table : CatalogTable)
+theorem Catalog.tableAt_createTable_below (catalog : Catalog) (name : Identifier) (table : CatalogTable)
     {position : Nat} (below : position < catalog.length) :
     (catalog.createTable name table).tableAt position = catalog.tableAt position := by
   simp [Catalog.tableAt, Catalog.createTable, List.getElem?_append_left below]
 
 /-- For every catalog, name and table, after {name}`Catalog.createTable` the position
 {lean}`catalog.length` holds the new table. -/
-theorem Catalog.tableAt_createTable_end (catalog : Catalog) (name : String) (table : CatalogTable) :
+theorem Catalog.tableAt_createTable_end (catalog : Catalog) (name : Identifier) (table : CatalogTable) :
     (catalog.createTable name table).tableAt catalog.length = some table := by
   simp [Catalog.tableAt, Catalog.createTable]
 
 /-- For every catalog, name, table and position above the catalog length, the position
 holds no table after {name}`Catalog.createTable`. -/
-theorem Catalog.tableAt_createTable_above (catalog : Catalog) (name : String) (table : CatalogTable)
+theorem Catalog.tableAt_createTable_above (catalog : Catalog) (name : Identifier) (table : CatalogTable)
     {position : Nat} (above : catalog.length < position) :
     (catalog.createTable name table).tableAt position = none := by
   simp [Catalog.tableAt, Catalog.createTable, List.getElem?_eq_none (by simp; omega : (catalog ++ [_]).length ≤ position)]
@@ -111,7 +111,7 @@ Then the database after CREATE TABLE (the new catalog, and an empty row list app
 satisfies {name}`Conforms` with the new catalog. Proof sketch: positions below the old
 length keep their entry and rows; the new position holds the table with no rows; positions
 above it hold nothing. -/
-theorem Conforms.createTable {catalog : Catalog} {database : Database} (name : String) (table : CatalogTable)
+theorem Conforms.createTable {catalog : Catalog} {database : Database} (name : Identifier) (table : CatalogTable)
     (conforms : Conforms profile catalog database)
     (catalogValid : (catalog.createTable name table).Valid profile.limits) :
     Conforms profile (catalog.createTable name table)

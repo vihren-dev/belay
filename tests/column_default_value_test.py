@@ -21,8 +21,8 @@ CASES = [
     ("X'00ff'", ".blob [0, 255]"),
     ("-9223372036854775808", '.negate (.numeric "9223372036854775808")'),
     ("+7", '.positive (.numeric "7")'),
-    ("TRUE", '.identifier "TRUE" .none'), ("FaLsE", '.identifier "FaLsE" .none'),
-    ("hello", '.identifier "hello" .none'), ('"true"', '.identifier "true" .double'),
+    ("TRUE", '.identifier (name! "TRUE") .none'), ("FaLsE", '.identifier (name! "FaLsE") .none'),
+    ("hello", '.identifier (name! "hello") .none'), ('"true"', '.identifier (name! "true") .double'),
 ]
 """Written defaults exercise literal classes, signed boundaries and identifier quoting."""
 
@@ -67,8 +67,8 @@ open Belay.Sqlite Lean
   let tables ← [{affinities}].mapM fun affinity => inputs.mapM fun expression => do
     let some resolved := resolveColumnDefault (affinityOf (some affinity)) expression
       | throw (IO.userError "the model does not describe the default")
-    let columns : List CatalogColumn := [{{name := "id", declaredType := some "BLOB"}},
-      {{name := "added", declaredType := some affinity, defaultValue := some resolved}}]
+    let columns : List CatalogColumn := [{{name := name! "id", declaredType := some "BLOB"}},
+      {{name := name! "added", declaredType := some affinity, defaultValue := some resolved}}]
     IO.ofExcept (((fullCells columns [0] [Resolved.Cell.value (.integer 7)]).map fun (cells : List Resolved.Cell) =>
       cells.map fun cell => match cell with
         | Resolved.Cell.value value => value
@@ -108,8 +108,8 @@ open Belay.Sqlite Lean
 #eval do
   let some resolved := resolveColumnDefault (affinityOf none) ⟨({expression}), {quoted_string(sql)}⟩
     | throw (IO.userError "the model does not describe the default")
-  let columns : List CatalogColumn := [{{name := "id", declaredType := none}},
-    {{name := "added", declaredType := none, defaultValue := some resolved}}]
+  let columns : List CatalogColumn := [{{name := name! "id", declaredType := none}},
+    {{name := name! "added", declaredType := none, defaultValue := some resolved}}]
   match fullCells columns [0] [Resolved.Cell.value (.integer 7)] with
   | .error (.prepare error) =>
     IO.println (toJson ["prepare", error.message]).compress

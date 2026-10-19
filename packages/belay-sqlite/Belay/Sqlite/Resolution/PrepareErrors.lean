@@ -1,3 +1,5 @@
+import Belay.Sqlite.Identifier
+
 set_option doc.verso true
 
 /-! The errors that {lit}`sqlite3_prepare_v2` reports for a statement (ADR 0013, D8): the
@@ -13,27 +15,27 @@ refuses. {lit}`PrepareError.expression` carries them; resolution of expressions
 ({lit}`ValueIssue`) can give only these. -/
 inductive ExprError where
   /-- {lit}`object name reserved for internal use: %s` ({lit}`sqlite3CheckObjectName`). -/
-  | reservedName (name : String)
+  | reservedName (name : Identifier)
   /-- {lit}`too many columns on %s` ({lit}`sqlite3AddColumn`). -/
-  | tooManyColumns (table : String)
+  | tooManyColumns (table : Identifier)
   /-- {lit}`duplicate column name: %s` ({lit}`sqlite3AddColumn`). -/
-  | duplicateColumn (column : String)
+  | duplicateColumn (column : Identifier)
   /-- {lit}`table "%s" has more than one primary key` ({lit}`sqlite3AddPrimaryKey`). -/
-  | multiplePrimaryKeys (table : String)
+  | multiplePrimaryKeys (table : Identifier)
   /-- {lit}`default value of column [%s] is not constant` ({lit}`sqlite3AddDefaultValue`). -/
-  | defaultNotConstant (column : String)
+  | defaultNotConstant (column : Identifier)
   /-- {lit}`table %S has no column named %s` (INSERT column list). -/
-  | tableHasNoColumn (table column : String)
+  | tableHasNoColumn (table column : Identifier)
   /-- {lit}`table %S has %d columns but %d values were supplied` (INSERT). -/
-  | valueCount (table : String) (columns values : Nat)
+  | valueCount (table : Identifier) (columns values : Nat)
   /-- {lit}`%d values for %d columns` (INSERT with a column list). -/
   | valuesForColumns (values columns : Nat)
   /-- {lit}`all VALUES must have the same number of terms` ({lit}`sqlite3MultiValues`). -/
   | valuesDiffer
   /-- {lit}`table %s may not be altered` ({lit}`isAlterableTable`). -/
-  | tableMayNotBeAltered (name : String)
+  | tableMayNotBeAltered (name : Identifier)
   /-- {lit}`table %s may not be indexed` ({lit}`sqlite3CreateIndex`). -/
-  | tableMayNotBeIndexed (name : String)
+  | tableMayNotBeIndexed (name : Identifier)
   /-- {lit}`Cannot add a PRIMARY KEY column` ({lit}`sqlite3AlterFinishAddColumn`). -/
   | cannotAddPrimaryKey
   /-- {lit}`Cannot add a UNIQUE column` ({lit}`sqlite3AlterFinishAddColumn`). -/
@@ -42,7 +44,7 @@ inductive ExprError where
   different explicit {lit}`ON CONFLICT` algorithms. -/
   | conflictingAlgorithms
   /-- {lit}`no such column: %s` (name resolution of an expression or key). -/
-  | noSuchColumn (name : String)
+  | noSuchColumn (name : Identifier)
   /-- {lit}`hex literal too big: %s` (a hexadecimal literal with more than 16 digits). -/
   | hexLiteralTooBig (text : String)
   /-- {lit}`misuse of aggregate function %s()` (an aggregate in {lit}`WHERE`, or one
@@ -60,11 +62,11 @@ inductive ExprError where
   | wrongArgumentCount (function : String)
   /-- {lit}`ambiguous column name: %s`: an unqualified name that names a column of two or
   more sources of a join, as written. -/
-  | ambiguousColumn (name : String)
+  | ambiguousColumn (name : Identifier)
   /-- {lit}`no such table: %s` for {lit}`source.*` with a name that names no source of
   the query, as written. Unlike {lit}`PrepareError.noSuchTable`, it names no catalog
   object. -/
-  | noSuchSource (name : String)
+  | noSuchSource (name : Identifier)
   /-- {lit}`at most 64 tables in a join`. -/
   | tooManyTables
   /-- {lit}`RETURNING may not use "TABLE.*" wildcards`: a {lit}`source.*` column in
@@ -73,13 +75,13 @@ inductive ExprError where
   /-- {lit}`cannot join using column %s - column not present in both tables`: a name of
   {lit}`USING` that is not a column of both the left input and the joined table, as
   written. -/
-  | joinUsingColumn (name : String)
+  | joinUsingColumn (name : Identifier)
   /-- {lit}`a NATURAL join may not have an ON or USING clause`. -/
   | naturalJoinCondition
   /-- {lit}`ambiguous reference to %s in USING()`: in a {lit}`FROM` with a right or full
   join, a merged name of which a left table after the first has a column that its own
   join does not merge, as written. -/
-  | ambiguousUsingReference (name : String)
+  | ambiguousUsingReference (name : Identifier)
   /-- {lit}`ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE constraint`: a
   target whose columns are not the columns of one key of the table. -/
   | conflictTargetMismatch
@@ -96,15 +98,15 @@ is a SQLite rule, not a model restriction: SQLite runs the earlier statements an
 then stops at this one. -/
 inductive PrepareError where
   /-- {lit}`table %T already exists` ({lit}`sqlite3StartTable`). -/
-  | tableExists (name : String)
+  | tableExists (name : Identifier)
   /-- {lit}`there is already an index named %s` ({lit}`sqlite3StartTable`). -/
-  | indexNameUsed (name : String)
+  | indexNameUsed (name : Identifier)
   /-- {lit}`there is already a table named %s` ({lit}`sqlite3CreateIndex`). -/
-  | tableNameUsed (name : String)
+  | tableNameUsed (name : Identifier)
   /-- {lit}`index %s already exists` ({lit}`sqlite3CreateIndex`). -/
-  | indexExists (name : String)
+  | indexExists (name : Identifier)
   /-- {lit}`no such table: %s` ({lit}`sqlite3LocateTable`). -/
-  | noSuchTable (name : String)
+  | noSuchTable (name : Identifier)
   /-- An error that names no catalog object ({name}`ExprError`). -/
   | expression (error : ExprError)
   deriving Repr, DecidableEq

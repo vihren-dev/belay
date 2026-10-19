@@ -19,8 +19,8 @@ def issueResolution (catalog : Catalog) (index : Nat) (path : List Nat) : ValueI
 
 /-- The table column positions of an INSERT column list, or
 {lit}`table %S has no column named %s` for the first unknown name. -/
-def insertPositions (tableName : String) (columns : List CatalogColumn) :
-    List String → Except ExprError (List Nat)
+def insertPositions (tableName : Identifier) (columns : List CatalogColumn) :
+    List Identifier → Except ExprError (List Nat)
   | [] => .ok []
   | name :: rest => match columnPosition columns name with
     | some position => (insertPositions tableName columns rest).map (position :: ·)
@@ -31,8 +31,8 @@ def insertPositions (tableName : String) (columns : List CatalogColumn) :
 columns. An INSERT without clauses whose algorithms are all ABORT
 ({name}`insertPolicy`) is {name}`Resolved.Statement.insert`; any other INSERT is
 {name}`Resolved.Statement.upsert`. -/
-def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : String)
-    (names : Option (List String)) (rows : List (List Syntax.Expr)) (conflicts : List Syntax.ConflictClause)
+def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : Identifier)
+    (names : Option (List Identifier)) (rows : List (List Syntax.Expr)) (conflicts : List Syntax.ConflictClause)
     (algorithm : Option ConflictAlgorithm) (returning : List Syntax.ResultColumn) : StatementResolution :=
   let width := (rows.head?.map List.length).getD 0
   if rows.any (·.length != width) then prepareError catalog (.expression .valuesDiffer) else

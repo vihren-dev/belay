@@ -22,7 +22,7 @@ catalog has a finite empty-data witness, useful when proving nonempty admission:
 open Belay.Sqlite SqliteVerifier
 example : Conforms (Profile.documented "3.51.0" "build") [] (Catalog.emptyDatabase []) :=
   Catalog.emptyDatabase_conforms (by decide)
-example : CatalogColumn.plain { name := "id", declaredType := some "INTEGER" } = true := by rfl
+example : CatalogColumn.plain { name := (name! "id"), declaredType := some "INTEGER" } = true := by rfl
 ```
 
 Choose the observation and change relation explicitly. Use

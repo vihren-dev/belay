@@ -1,4 +1,4 @@
-import Belay.Sqlite.ByteText
+import Belay.Sqlite.Identifier
 set_option doc.verso true
 
 /-! Stored values, rows, column affinities and SQLite's identifier folding. The
@@ -55,9 +55,10 @@ structure Row where
   values : List Value
   deriving Repr, DecidableEq
 
-/-- Copy SQLite's ASCII-only case folding, including decoded quoted identifiers.
-Fold ASCII capitals to lowercase and leave every other character unchanged; for
-example, {lit}`Ab_É` folds to {lit}`ab_É`. The fold goes through the character list:
+/-- Copy SQLite's ASCII-only case folding for the names that the model keeps as text:
+function, type and keyword names. Table, column, index and source names are bytes and
+fold with {name}`Identifier.folded`. Fold ASCII capitals to lowercase and leave every
+other character unchanged; for example, {lit}`Ab_É` folds to {lit}`ab_É`. The fold goes through the character list:
 in the kernel proofs of conformance cases, {lit}`String.map` takes seconds for each
 name that has a capital, and the list takes milliseconds. -/
 def normalizeIdentifier (name : String) : String :=
@@ -65,9 +66,9 @@ def normalizeIdentifier (name : String) : String :=
 
 /-- Whether a name is SQLite's TRUE or FALSE keyword, ignoring ASCII letter case.
 Recognize boolean literals without treating ordinary column names as constants.
-For example, {lean}`booleanKeywordName "TrUe"` is true. This predicate checks only
-spelling; callers check the expression's quote flag. -/
-def booleanKeywordName (name : String) : Bool :=
-  ["true", "false"].contains (normalizeIdentifier name)
+For example, {lean}`booleanKeywordName (name! "TrUe")` is true. This predicate checks
+only spelling; callers check the expression's quote flag. -/
+def booleanKeywordName (name : Identifier) : Bool :=
+  name.isKeyword (bytes! "true") || name.isKeyword (bytes! "false")
 
 end Belay.Sqlite

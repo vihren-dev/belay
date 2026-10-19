@@ -39,7 +39,17 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), step 8, owner de
   `formatGeneral 15 true` and returns bytes; `%J` is `formatGeneral 16 false`. The String
   copies (`finiteText`, `trimFraction`, `exponentSuffix`, `digitChar`, `digitAt`) and
   `formatGeneric16` are gone. `Date/Printf.lean` keeps `%d` and `%f`.
+- 2026-10-19: identifiers as bytes (outcome 6). `Identifier.lean`: a structure over the
+  bytes (a plain definition of `List UInt8` made `simp` fail to match lemmas on
+  literals), the `name! "t"` literal, `folded`, `sameName`, `isKeyword`, and `text` over
+  a structural UTF-8 decoder. JSON stays a string; `Repr` prints `name!`. Syntax, catalog,
+  scope, resolved statements, errors, the conformance natives and the `sqlite-verifier`
+  API take `Identifier`; function, type and keyword names stay `String`, and so do output
+  column names. `statisticsColumns` moved to the catalog and replaces the copy in
+  `statisticsTable`. The approved files of `examples/approved`, `allowed_failure`,
+  `constant_default` and `atuin` are rewritten and rehashed. The `non_ascii_fold`
+  mutant mutates `Identifier.folded`. The core has 132 modules. Verdict unchanged.
 
 ## Remaining
 
-- Outcome 6; checks, reviews, CI time, pull requests.
+- Kernel time before and after, suites, reviews, CI time, pull requests.

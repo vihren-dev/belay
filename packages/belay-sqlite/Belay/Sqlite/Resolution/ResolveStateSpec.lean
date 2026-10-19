@@ -41,7 +41,7 @@ theorem ResolveState.after_of_isControl (state : ResolveState) {statement : Reso
 transaction control. Proof sketch: every branch returns the input catalog with a prepare
 error, or the CREATE TABLE at the end of the catalog with {name}`Catalog.createTable`. -/
 theorem resolveCreateTable_applyCatalog (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (name : String) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
+    (name : Identifier) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
     (statement : Resolved.Statement)
     (ok : resolveCreateTable context catalog index name columns constraints = .ok (statement, after)) :
     after = statement.applyCatalog catalog ∧ statement.isControl = false := by
@@ -55,7 +55,7 @@ theorem resolveCreateTable_applyCatalog (context : ResolveContext) (catalog afte
 transaction control. Proof sketch: as for CREATE TABLE, with {name}`Catalog.createIndex`.
 -/
 theorem resolveCreateIndex_applyCatalog (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (name : String) (unique : Bool) (tableName : String) (columns : List String)
+    (name : Identifier) (unique : Bool) (tableName : Identifier) (columns : List Identifier)
     (statement : Resolved.Statement)
     (ok : resolveCreateIndex context catalog index name unique tableName columns = .ok (statement, after)) :
     after = statement.applyCatalog catalog ∧ statement.isControl = false := by
@@ -68,7 +68,7 @@ theorem resolveCreateIndex_applyCatalog (context : ResolveContext) (catalog afte
 {name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
 transaction control. Proof sketch: as for CREATE TABLE, with {name}`Catalog.addColumn`. -/
 theorem resolveAddColumn_applyCatalog (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (tableName : String) (definition : Syntax.ColumnDefinition) (statement : Resolved.Statement)
+    (tableName : Identifier) (definition : Syntax.ColumnDefinition) (statement : Resolved.Statement)
     (ok : resolveAddColumn context catalog index tableName definition = .ok (statement, after)) :
     after = statement.applyCatalog catalog ∧ statement.isControl = false := by
   unfold resolveAddColumn at ok

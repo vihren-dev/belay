@@ -13,7 +13,7 @@ namespace Belay.Sqlite.Codec.SourceExamples
 open Lean Elab Command Belay.Sqlite
 
 /-- A column definition with a type and constraints. -/
-def column (name : String) (declaredType : Option String) (constraints : List Syntax.ColumnConstraint := []) :
+def column (name : Identifier) (declaredType : Option String) (constraints : List Syntax.ColumnConstraint := []) :
     Syntax.ColumnDefinition :=
   { name, declaredType, constraints }
 
@@ -24,13 +24,13 @@ def sampleRecord : ScriptRecord where
   version := 3
   release := "3.51.0"
   sourceId := "2025-11-04 19:38:17 fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b"
-  schema := [.createTable "Ünit \"q\"" [column "id" (some "BIGINT") [.primaryKey false],
-      column "at" (some "TIMESTAMP") [.default (.currentTime "CURRENT_TIMESTAMP") "CURRENT_TIMESTAMP"], column "b" none]
-      [.unique ["b"]], .createIndex "by_at" true "Ünit \"q\"" ["at"]]
-  script := [.begin, .addColumn "ÜNIT \"Q\"" (column "n" (some "TEXT")),
-    .insert "Ünit \"q\"" (some ["id", "at", "b", "n"]) [[.negate (.numeric "9"), .null, .null, .blob [0, 255]]] [],
-    .update "Ünit \"q\"" [("n", .string [104, 105])] (some (.compare .eq (.identifier "id" .none) (.numeric "0x10"))),
-    .insert "missing" none [[.null]] [], .commit]
+  schema := [.createTable (name! "Ünit \"q\"") [column (name! "id") (some "BIGINT") [.primaryKey false],
+      column (name! "at") (some "TIMESTAMP") [.default (.currentTime "CURRENT_TIMESTAMP") "CURRENT_TIMESTAMP"], column (name! "b") none]
+      [.unique [(name! "b")]], .createIndex (name! "by_at") true (name! "Ünit \"q\"") [(name! "at")]]
+  script := [.begin, .addColumn (name! "ÜNIT \"Q\"") (column (name! "n") (some "TEXT")),
+    .insert (name! "Ünit \"q\"") (some [(name! "id"), (name! "at"), (name! "b"), (name! "n")]) [[.negate (.numeric "9"), .null, .null, .blob [0, 255]]] [],
+    .update (name! "Ünit \"q\"") [((name! "n"), .string [104, 105])] (some (.compare .eq (.identifier (name! "id") .none) (.numeric "0x10"))),
+    .insert (name! "missing") none [[.null]] [], .commit]
 
 /-- The resolved sample, or nothing when it does not resolve. -/
 def sample : Option ResolvedScript := sampleRecord.resolve.toOption
@@ -99,11 +99,11 @@ run_cmd do
 
 -- A prepare error has SQLite's message and one flat JSON form, whether it names a catalog
 -- object or not.
-#guard (PrepareError.noSuchTable "t").message == "no such table: t"
-#guard (PrepareError.expression (.noSuchColumn "a")).message == "no such column: a"
-#guard (PrepareError.expression (.valueCount "t" 2 3)).message == "table t has 2 columns but 3 values were supplied"
-#guard (toJson (PrepareError.noSuchTable "t")).compress == "{\"noSuchTable\":{\"name\":\"t\"}}"
-#guard (toJson (PrepareError.expression (.noSuchColumn "a"))).compress == "{\"noSuchColumn\":{\"name\":\"a\"}}"
+#guard (PrepareError.noSuchTable (name! "t")).message == "no such table: t"
+#guard (PrepareError.expression (.noSuchColumn (name! "a"))).message == "no such column: a"
+#guard (PrepareError.expression (.valueCount (name! "t") 2 3)).message == "table t has 2 columns but 3 values were supplied"
+#guard (toJson (PrepareError.noSuchTable (name! "t"))).compress == "{\"noSuchTable\":{\"name\":\"t\"}}"
+#guard (toJson (PrepareError.expression (.noSuchColumn (name! "a")))).compress == "{\"noSuchColumn\":{\"name\":\"a\"}}"
 #guard (toJson (PrepareError.expression .valuesDiffer)).compress == "\"valuesDiffer\""
 
 end Belay.Sqlite.Codec.SourceExamples
