@@ -37,14 +37,38 @@ def affinityOf : Option String → Affinity
 ({lit}`sqlite3StdType`). -/
 def standardTypeNames : List String := ["ANY", "BLOB", "INT", "INTEGER", "REAL", "TEXT"]
 
-/-- A declared type as SQLite keeps and reports it: a type that is exactly one of
+/-- Whether a character is white space for SQLite ({lit}`sqlite3Isspace`). -/
+def sqliteSpace (character : Char) : Bool := " \t\n\x0c\r\x0b".contains character
+
+/-- Whether the characters end with the word, with ASCII case ignored. -/
+def endsWithWord (characters : List Char) (word : String) : Bool :=
+  (characters.drop (characters.length - word.length)).map Char.toLower == word.toList
+
+/-- A declared type without a trailing {lit}`GENERATED ALWAYS`, as {lit}`sqlite3AddColumn`
+removes it (ADR 0014, slice 5): when the text of 16 or more characters ends with
+{lit}`always`, that word and the white space before it go, and then {lit}`generated` and the
+white space before it when they end the rest; ASCII case is ignored. The grammar reads both
+words as part of the type of a generated column, so {lit}`TEXT GENERATED ALWAYS` is
+{lit}`TEXT` and {lit}`foogenerated always` is {lit}`foo`. -/
+def withoutGeneratedAlways (text : String) : String :=
+  let characters := text.toList
+  if characters.length ≥ 16 && endsWithWord characters "always" then
+    let rest := ((characters.take (characters.length - 6)).reverse.dropWhile sqliteSpace).reverse
+    if rest.length ≥ 9 && endsWithWord rest "generated" then
+      String.ofList ((rest.take (rest.length - 9)).reverse.dropWhile sqliteSpace).reverse
+    else String.ofList rest
+  else text
+
+/-- A declared type as SQLite keeps and reports it: without a trailing
+{lit}`GENERATED ALWAYS` ({name}`withoutGeneratedAlways`), and a type that is exactly one of
 {name}`standardTypeNames`, with ASCII case ignored, becomes that name in capitals
 ({lit}`sqlite3AddColumn`); any other type text stays as written, so {lit}`int` is
 {lit}`INT` and {lit}`VarChar(10)` keeps its case. -/
 def reportedType : Option String → Option String
   | none => none
-  | some text => some ((standardTypeNames.find? fun standard =>
-      normalizeIdentifier standard == normalizeIdentifier text).getD text)
+  | some written =>
+    let text := withoutGeneratedAlways written
+    some ((standardTypeNames.find? fun standard => normalizeIdentifier standard == normalizeIdentifier text).getD text)
 
 /-- Whether a declared type makes a single-column primary key an alias for the
 rowid: the text equals {lit}`INTEGER` with ASCII case ignored ({lit}`lang_createtable.html`,

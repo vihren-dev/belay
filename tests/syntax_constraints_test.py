@@ -44,16 +44,15 @@ def test_checks_names_and_foreign_keys(parse_sql: Callable[..., Tree]) -> None:
     assert [item["check"]["label"] for item in second["createTable"]["constraints"]] == ["z", "a != 5"]
 
 
-def test_generated_columns_keep_their_kind_and_sqlite_type(parse_sql: Callable[..., Tree]) -> None:
-    """`AS (expr)` maps with its kind word as written, or none, which resolution reads, and the
-    declared type loses its trailing `GENERATED ALWAYS` tokens, as `sqlite3AddColumn` does
+def test_generated_columns_keep_their_kind_and_type_as_written(parse_sql: Callable[..., Tree]) -> None:
+    """`AS (expr)` maps with its kind token as written, quotes included, or none, and the
+    declared type as written, `GENERATED ALWAYS` included: resolution decides both
     (ADR 0014, slice 5)."""
     (table,) = mapped(parse_sql, "CREATE TABLE t(a INTEGER, b TEXT GENERATED ALWAYS AS (a) stored, c AS (a), "
-                                 "d GENERATED ALWAYS AS (a) VIRTUAL, e AS (a) foo);")
+                                 "d AS (a) \"stored\");")
     columns = table["createTable"]["columns"]
     a = {"identifier": {"name": "a", "quote": "none"}}
     assert [(column["declaredType"], column["constraints"]) for column in columns[1:]] == [
-        ("TEXT", [{"generated": {"expression": a, "kind": "stored"}}]),
+        ("TEXT GENERATED ALWAYS", [{"generated": {"expression": a, "kind": "stored"}}]),
         (None, [{"generated": {"expression": a, "kind": None}}]),
-        ("", [{"generated": {"expression": a, "kind": "VIRTUAL"}}]),
-        (None, [{"generated": {"expression": a, "kind": "foo"}}])]
+        (None, [{"generated": {"expression": a, "kind": '"stored"'}}])]

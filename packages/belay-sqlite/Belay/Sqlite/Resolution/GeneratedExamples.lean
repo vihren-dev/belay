@@ -90,7 +90,14 @@ def errorOf (statement : Syntax.Statement) : Option PrepareError :=
 #guard errorOf (.createTable (name! "n") [column (name! "a"),
   gen (name! "b") (ref (name! "a")) false [.generated (.numeric "1") none]] []) ==
   some (.expression (.errorInGenerated (name! "b")))
--- A kind other than VIRTUAL and STORED is SQLite's error in generated column.
+-- The declared type loses a trailing GENERATED ALWAYS by SQLite's textual rule.
+#guard [some "TEXT GENERATED ALWAYS", some "foogenerated always", some "TEXT GENERATED /*x*/ ALWAYS",
+  some "GENERATED ALWAYS", some "always"].map reportedType ==
+  [some "TEXT", some "foo", some "TEXT GENERATED /*x*/", some "", some "always"]
+-- A quoted kind and a kind other than VIRTUAL and STORED are SQLite's error in generated column.
+#guard errorOf (.createTable (name! "n") [column (name! "a"),
+  { name := name! "b", declaredType := none, constraints := [.generated (ref (name! "a")) (some (name! "\"stored\""))] }] []) ==
+  some (.expression (.errorInGenerated (name! "b")))
 #guard errorOf (.createTable (name! "n") [column (name! "a"),
   { name := name! "b", declaredType := none, constraints := [.generated (ref (name! "a")) (some (name! "foo"))] }] []) ==
   some (.expression (.errorInGenerated (name! "b")))

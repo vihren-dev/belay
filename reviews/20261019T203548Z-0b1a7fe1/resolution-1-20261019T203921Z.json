@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-19T20:39:21+00:00",
+  "finding": "20261019T203548Z-0b1a7fe1#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the frontend passes the kind token with its quotes; resolution refuses a quoted kind (example)"
+}
