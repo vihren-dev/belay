@@ -114,6 +114,14 @@ def whereC (condition : Expr) : Option (List (List Value)) :=
 -- GROUP BY a NOCASE column puts 'a' and 'A' in one group.
 #guard outputs (filledC ++ [selectFrom (name! "c") [shown (.callStar "count")] (groupBy := [ref (name! "n")])]) ==
   some [[.integer 2], [.integer 1]]
+-- GROUP BY a column under one COLLATE groups under it, also in the kernel; a second COLLATE
+-- is the restriction group-by-term.
+example : outputs (filledC ++ [selectFrom (name! "c") [shown (.callStar "count")]
+    (groupBy := [.collate (ref (name! "b")) (name! "nocase")])]) = some [[.integer 2], [.integer 1]] := by
+  decide +kernel
+#guard reason (migration tables [selectFrom (name! "c") [shown (.callStar "count")]
+    (groupBy := [.collate (.collate (ref (name! "b")) (name! "nocase")) (name! "binary")])]) ==
+  RestrictionKind.groupByTerm.message
 -- min and max compare under the operand's collation; a tie keeps the earlier value.
 #guard outputs (filledC ++ [selectFrom (name! "c") [shown (.call "min" [ref (name! "n")]), shown (.call "max" [ref (name! "n")]),
     shown (.call "max" [ref (name! "b")])]]) ==
