@@ -1,6 +1,6 @@
 # Collations (ADR 0014, slice 3)
 
-Created 2026-10-19. Status: open.
+Created 2026-10-19. Status: DONE (pull requests #180 and #181).
 Status file: [status](20261019-collations.status.md).
 Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D3 and owner decision 1; the
 [measurement](../experiments/schema-features/README.md).

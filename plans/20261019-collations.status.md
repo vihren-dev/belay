@@ -1,6 +1,6 @@
 # Status: collations (ADR 0014, slice 3)
 
-Created 2026-10-19. Status: open.
+Created 2026-10-19. Status: DONE.
 Task file: [task](20261019-collations.task.md).
 Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D3.
 
@@ -56,4 +56,4 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D3.
 
 ## Remaining
 
-- Pull requests A and B.
+- 2026-10-19: pull requests #180 (A) and #181 (B). DONE.
