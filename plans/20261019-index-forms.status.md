@@ -37,6 +37,15 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D1.
   new Syntax, as step 1 of ADR 0013 did. Authored corpus `authored_indexes` (20 cases,
   corpus version 29) and `index_mutants` (three mutants). The core has 134 modules.
 
+- 2026-10-19: checks. Fixes after the first suite runs: tests read record version 4; the
+  index corpus records no clock (the two time cases moved to the Lean examples); an index
+  may repeat a column, as SQLite allows; the boundary and requirement tests expect the
+  CREATE INDEX cases that now agree; the frozen index cases keep their quoted key names.
+  `just test-full`, `just test-nix` and `just test-scheduled` pass. Verdict: 112 upstream
+  cases newly agree (v1 +2, v2 +2, v3 +7, v4 +23, v5 +78), none leaves AGREE; corpus 29
+  (20 cases) agrees in full. Freed 18 GiB of old `/tmp/nix-shell.*` directories with the
+  owner's approval for the disk guard.
+
 ## Remaining
 
-- Suites, verdict, review, CI time, pull requests A and B.
+- CI time, pull requests A and B.
