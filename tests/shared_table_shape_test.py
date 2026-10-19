@@ -28,7 +28,7 @@ def stamp : CatalogColumn :=
 def data : CatalogColumn := { name := name! "data", declaredType := none }
 def shape : CatalogTable := { columns := [idColumn, stamp, data], primaryKey := [0], uniqueKeys := [[1], [0, 2]] }
 def catalogWith (table : CatalogTable) : Catalog := [{ name := name! "items", entry := .table table },
-  { name := name! "by_stamp", entry := .index { table := 0, columns := [1, 0], unique := true } }]
+  { name := name! "by_stamp", entry := .index { table := 0, keys := [{ term := .column 1 }, { term := .column 0 }], unique := true } }]
 def catalog : Catalog := catalogWith shape
 def profile : Profile := Profile.documented "3.51.0" "build"
 def stored (candidate : CatalogTable) : Database := (catalogWith candidate).emptyDatabase
