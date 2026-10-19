@@ -23,8 +23,9 @@ SCOPE_RECIPES = {
 
 BUNDLE_FIRST_SYSTEM = "aarch64-darwin"
 """Darwin completes the bundle gate before the complete recipe starts other test builders."""
-BUNDLE_BUILD_LIMIT_SECONDS = 900
-"""Retain the existing Nix build budget; the bundle tests keep their own per-test limits."""
+BUNDLE_BUILD_LIMIT_SECONDS = 1500
+"""The limit of the justfile recipes that build test suites: more than the per-suite limit in
+build-support/tests.nix, so a bundle suite that hangs fails with its own name."""
 NIX_TEST_BUILD_OPTIONS = ("--option", "sandbox", "true", "--option", "sandbox-fallback", "false",
                           "--extra-experimental-features", "nix-command flakes")
 """Use the complete test recipes' sandbox policy for the isolated bundle target."""

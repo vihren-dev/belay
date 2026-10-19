@@ -43,7 +43,7 @@ def test_bundle_failure_stops_complete_recipe_and_retains_artifacts(
          patch.dict("os.environ", {"SQLITE_VERIFIER_SYSTEM": "aarch64-darwin"}):
         with pytest.raises(CommandTimeout if timed_out else subprocess.CalledProcessError):
             run_checks(scope, "build", "aarch64-darwin", tmp_path)
-    assert limits == [900]
+    assert limits == [1500]
     assert "tests.bundle" in commands[-1]
     assert not any(command[0] == "just" for command in commands)
     phase = json.loads((tmp_path / "build/ci-phases.json").read_text())[-1]
@@ -55,7 +55,7 @@ def test_bundle_failure_stops_complete_recipe_and_retains_artifacts(
     captured = capsys.readouterr()
     if timed_out:
         assert captured.out == "bundle timeout stdout\n"
-        assert "Phase bundle stopped after its 900-second limit" in captured.err
+        assert "Phase bundle stopped after its 1500-second limit" in captured.err
     else:
         assert "bundle failure stdout" in captured.out and "bundle failure stderr" in captured.err
 

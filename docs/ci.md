@@ -51,8 +51,8 @@ target with sandboxing enabled and fallback disabled. Its output is linked at
 before the complete recipe starts model or upstream test builders. Linux keeps
 the complete recipe's current schedule.
 
-The prebuild retains the 900-second Nix build deadline; the bundle tests keep
-their per-test limits, described below. The
+The prebuild has the 1500-second limit of the recipes that build test suites; the
+bundle tests keep their per-test limits, described below. The
 [dated evidence](../reports/20261007-darwin-bundle-scheduling/README.md)
 distinguishes the earlier hosted failures from the isolated local pass.
 
@@ -135,7 +135,11 @@ judge lock. A module missing from its input list fails it with an import error.
 Each test has a 300-second limit (`pytest-timeout`), so a hung test fails with its
 own name. Nix runs several targets at the same time, so a target's total time
 depends on the other targets; its 1200-second limit only guards against a hang
-outside a test.
+outside a test. The recipes that build test suites stop `nix-build` after 1500
+seconds, so the suite limit ends first and names the suite.
+`tests/test_recipe_limits.py` checks this order. They run
+`timeout --foreground`, which keeps `nix-build` in the caller's process group, so
+the deadline of a CI phase also stops `nix-build`.
 
 The remaining cheap source cases run in one pytest invocation. Cases marked
 `requires_nix` (source identities, test-target commands, environment snapshots,

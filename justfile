@@ -1,4 +1,10 @@
 # Shared entry points. Enter nix develop path:./nix once for a batch of checks.
+#
+# `timeout --foreground` keeps nix-build in the caller's process group, so a caller that kills
+# the group on its deadline (tests/runtime_support.py) stops nix-build too. Nix builds run in
+# the Nix daemon, so the children that --foreground leaves alone are not builders. The recipes
+# that build test suites allow 1500 seconds, more than the per-suite limit in
+# build-support/tests.nix, so a suite that hangs fails with its own name.
 default:
     @just --list
 
@@ -12,7 +18,7 @@ setup: build
 # Build the complete runtime and expose the existing development paths.
 build: resources
     mkdir -p build .lake
-    timeout 900 nix-build build-support/default.nix -A runtime --out-link build/runtime --extra-experimental-features 'nix-command flakes'
+    timeout --foreground 900 nix-build build-support/default.nix -A runtime --out-link build/runtime --extra-experimental-features 'nix-command flakes'
     rm -rf .lake/build packages/belay-sqlite/.lake/build
     mkdir -p packages/belay-sqlite/.lake
     ln -sfn ../build/runtime/.lake/build .lake/build
@@ -28,13 +34,13 @@ test-cases *args:
 # Build the test-only compiled model without adding commands to the shipped runtime.
 conformance-build:
     mkdir -p build
-    timeout 900 nix-build build-support/default.nix -A conformance --out-link build/conformance --extra-experimental-features 'nix-command flakes'
+    timeout --foreground 900 nix-build build-support/default.nix -A conformance --out-link build/conformance --extra-experimental-features 'nix-command flakes'
 
 # Build the checked library reference from an exact source commit, without hosting it.
 [positional-arguments]
 reference revision: resources
     mkdir -p build
-    timeout 1800 nix-build build-support/default.nix -A apiReference --argstr referenceRevision "$1" --out-link build/api-reference --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+    timeout --foreground 1800 nix-build build-support/default.nix -A apiReference --argstr referenceRevision "$1" --out-link build/api-reference --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
 # Record live prototype evidence; W3 remains an owner decision after reviewing it.
 [positional-arguments]
@@ -52,16 +58,16 @@ smoke:
 
 # Fresh development replay includes every authored/synthetic case and a stable upstream sample.
 test: build documentation-inventory test-source
-    timeout 900 nix-build build-support/default.nix -A developmentTests --out-link build/nix-tests --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+    timeout --foreground 1500 nix-build build-support/default.nix -A developmentTests --out-link build/nix-tests --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
 # CI and package checks retain all full model, kernel and historical evidence checks.
 test-full: build documentation-inventory test-source
-    timeout 900 nix-build build-support/default.nix -A tests --out-link build/nix-tests-full --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+    timeout --foreground 1500 nix-build build-support/default.nix -A tests --out-link build/nix-tests-full --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
 # Check every authored public declaration, constructor and field in the compiled import closure.
 documentation-inventory: resources
     mkdir -p build
-    timeout 900 nix-build build-support/default.nix -A publicDocumentation --out-link build/public-documentation --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+    timeout --foreground 900 nix-build build-support/default.nix -A publicDocumentation --out-link build/public-documentation --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
 # Test ownership is shared with Nix; all source-owned checks run on the host.
 test-source:
@@ -83,12 +89,12 @@ judge-lock:
 
 # Count the claimed-corpus cases that each model restriction keeps out of scope.
 restriction-costs:
-    timeout 1800 nix-build integrity/judge.nix -A predictions --out-link build/predictions --extra-experimental-features 'nix-command flakes' >&2
+    timeout --foreground 1800 nix-build integrity/judge.nix -A predictions --out-link build/predictions --extra-experimental-features 'nix-command flakes' >&2
     python3 -m conformance.restriction_costs --predictions build/predictions
 
 # Run the locked judge on this commit's subject, as the verdict job does.
 verdict:
-    timeout 1800 nix-build integrity/judge.nix -A verdict --out-link build/verdict
+    timeout --foreground 1800 nix-build integrity/judge.nix -A verdict --out-link build/verdict
 
 # Report per checklist condition how often it fired and what happened to its findings.
 [positional-arguments]
@@ -102,12 +108,12 @@ test-nix:
 # Run the scheduled suites (tests/nix_scheduled_suites.json), which pull requests skip.
 test-scheduled:
     mkdir -p build
-    timeout 900 nix-build build-support/default.nix -A scheduledTests --out-link build/nix-tests-scheduled --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+    timeout --foreground 1500 nix-build build-support/default.nix -A scheduledTests --out-link build/nix-tests-scheduled --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
 # Select only the cached application-specific suite.
 test-atuin:
     mkdir -p build
-    timeout 900 nix-build build-support/default.nix -A tests.atuin --out-link build/nix-atuin --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+    timeout --foreground 1500 nix-build build-support/default.nix -A tests.atuin --out-link build/nix-atuin --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
 # Build a native offline archive and verify its actual installed entrypoint.
 runtime-package: build
@@ -121,8 +127,8 @@ package: test-full test-nix runtime-package test-scheduled
 
 # Refresh into build/, then review and assign a new corpus version before freezing.
 conformance-upstream: conformance-build
-    timeout 900 nix-build build-support/default.nix -A conformanceNative.fixture --out-link build/testfixture --extra-experimental-features 'nix-command flakes'
-    timeout 900 nix-build build-support/default.nix -A conformanceNative.upstream --out-link build/upstream-sqlite --extra-experimental-features 'nix-command flakes'
+    timeout --foreground 900 nix-build build-support/default.nix -A conformanceNative.fixture --out-link build/testfixture --extra-experimental-features 'nix-command flakes'
+    timeout --foreground 900 nix-build build-support/default.nix -A conformanceNative.upstream --out-link build/upstream-sqlite --extra-experimental-features 'nix-command flakes'
     timeout 900 python3 -m conformance.upstream_pilot --fixture build/testfixture/bin/testfixture --upstream build/upstream-sqlite --output build/upstream-pilot --pattern 'alter*.test' --pattern 'e_*.test'
 
 # Select native fixture storage explicitly; Linux full replay can opt in to tmpfs.
@@ -141,7 +147,7 @@ conformance-long: conformance-build
 
 # Versioned requirement extraction uses the vendored, release-tagged docsrc archive.
 conformance-requirements:
-    timeout 900 nix-build build-support/default.nix -A conformanceDocs --out-link build/conformance-docs --extra-experimental-features 'nix-command flakes'
+    timeout --foreground 900 nix-build build-support/default.nix -A conformanceDocs --out-link build/conformance-docs --extra-experimental-features 'nix-command flakes'
     python3 -m conformance.requirement_inventory build/conformance-docs/docinfo.db build/requirements-3.51.0.json
 
 # Classify every frozen case without performing fresh native replay.
@@ -150,6 +156,6 @@ conformance-progress: conformance-build
 
 # Supply llvm-cov's executable path and a fresh output directory for each measurement.
 conformance-coverage llvm_cov output: conformance-generate
-    timeout 900 nix-build build-support/default.nix -A conformanceCoverage --out-link build/model-coverage --extra-experimental-features 'nix-command flakes'
-    timeout 900 nix-build build-support/default.nix -A conformanceNative.coverage --out-link build/native-coverage --extra-experimental-features 'nix-command flakes'
+    timeout --foreground 900 nix-build build-support/default.nix -A conformanceCoverage --out-link build/model-coverage --extra-experimental-features 'nix-command flakes'
+    timeout --foreground 900 nix-build build-support/default.nix -A conformanceNative.coverage --out-link build/native-coverage --extra-experimental-features 'nix-command flakes'
     timeout 300 python3 -m conformance.measure_coverage --llvm-cov {{quote(llvm_cov)}} --output {{quote(output)}}

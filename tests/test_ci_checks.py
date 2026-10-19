@@ -41,7 +41,7 @@ def test_hosted_job_keeps_owner_limit_and_child_deadlines(
          patch.dict("os.environ", {"SQLITE_VERIFIER_SYSTEM": system}):
         run_checks(scope, mode, system, tmp_path)
     recipes = (Path(__file__).resolve().parents[1] / "justfile").read_text()
-    reference = re.search(r"timeout ([1-9][0-9]*) nix-build [^\n]*-A apiReference", recipes)
+    reference = re.search(r"timeout --foreground ([1-9][0-9]*) nix-build [^\n]*-A apiReference", recipes)
     assert reference is not None, "Reference phase has no bounded recipe"
     reference_limit = int(reference.group(1))
     assert int(match.group(1)) == OWNER_JOB_LIMIT_MINUTES
@@ -123,14 +123,15 @@ def test_bundle_policy_matches_existing_nix_test_recipes() -> None:
     recipes = (Path(__file__).resolve().parents[1] / "justfile").read_text().splitlines()
     targets: set[str] = set()
     for line in recipes:
-        if not line.lstrip().startswith("timeout 900 nix-build "):
+        if " nix-build " not in line or line.lstrip().startswith("#"):
             continue
         words = shlex.split(line)
-        if "--option" not in words:
+        if words[:2] != ["timeout", "--foreground"] or words[3:4] != ["nix-build"] or "--option" not in words:
             continue
         targets.add(words[words.index("-A") + 1])
         assert tuple(words[words.index("--option"):]) == NIX_TEST_BUILD_OPTIONS
-    assert targets == {"developmentTests", "tests", "tests.atuin", "publicDocumentation", "scheduledTests"}
+    assert targets == {"developmentTests", "tests", "tests.atuin", "publicDocumentation", "scheduledTests",
+                       "apiReference"}
 
 
 def test_ci_failure_retains_phase_status(tmp_path: Path) -> None:
