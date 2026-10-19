@@ -39,6 +39,21 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D3.
   changed texts. Authored corpus `authored_collations` (27 cases, all AGREE locally,
   corpus 31) and `collation_mutants` (three).
 
+- 2026-10-19: checks. Fixes after the first suite runs: the authored catalog has one more
+  case that agrees (`index-collation`) and the core closure three more modules; the kernel
+  did not reduce `Syntax.Expr.collatedColumn`, whose recursion went through a nested
+  pattern, so a `GROUP BY` term now admits one `COLLATE` (a second one stays
+  `group-by-term`), with a kernel-checked example. Two files split to stay under 200
+  lines (`Resolution/ResolvedExprForm.lean`, `Resolution/QueryTerms.lean`).
+  `just test-full`, `just test-nix` and `just test-scheduled` pass. Verdict: 92 upstream
+  cases newly agree (v3 +1, v4 +1, v5 +90), none leaves AGREE; corpus 31 (27 cases)
+  agrees in full and has kernel proofs.
+
+- 2026-10-19: CI time (local, forced rebuilds), slice 2 → slice 3: harness 22 → 21 s,
+  model 352 → 364 s, frozen 142 → 140 s, mutants 466 → 519 s (three new mutants). PR B:
+  corpus 31 recorded natively (27 cases) and claimed in full; the 92 upstream cases join
+  `mustAgree`; new judge lock.
+
 ## Remaining
 
-- Checks, reviews, verdict, CI time, PR B (corpus 31 and claims), pull requests.
+- Pull requests A and B.
