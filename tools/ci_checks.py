@@ -1,17 +1,20 @@
 """Run complete native gates with Darwin's bundle before concurrent suite builds."""
 
 import argparse
+from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
 import shlex
 import subprocess
 import sys
+import xml.etree.ElementTree as ElementTree
 from time import monotonic
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from tools.check_resources import check_resources
 from tests.runtime_support import CommandTimeout, run_command
+from tools.test_reports import write_summary
 
 SCOPE_RECIPES = {
     "test": ["test-full"],
@@ -35,6 +38,7 @@ def run_checks(scope: str, mode: str, system: str, root: Path) -> None:
     """Use all complete gates and isolate Darwin's bundle phase from model and upstream builders."""
     if scope not in SCOPE_RECIPES or mode not in {"source", "build"}:
         raise ValueError(f"Unknown CI scope or build mode: {scope}, {mode}; use a scope from tests/ci_scope.py")
+    job_started = datetime.now(timezone.utc)
     check_resources(root)
     if os.environ.get("SQLITE_VERIFIER_SYSTEM") != system:
         raise ValueError("Pinned shell system differs from the selected native CI system")
@@ -87,7 +91,22 @@ def run_checks(scope: str, mode: str, system: str, root: Path) -> None:
     if system == BUNDLE_FIRST_SYSTEM:
         run("bundle", ["nix-build", "build-support/default.nix", "-A", "tests.bundle",
             "--out-link", "build/nix-tests-bundle", *NIX_TEST_BUILD_OPTIONS], BUNDLE_BUILD_LIMIT_SECONDS)
-    run("checks-" + scope, ["just", *SCOPE_RECIPES[scope]], 1800)
+    try:
+        run("checks-" + scope, ["just", *SCOPE_RECIPES[scope]], 1800)
+    finally:
+        write_test_summary(root / "build", job_started)
+
+
+def write_test_summary(build: Path, since: datetime) -> None:
+    """Print which test reports ran in this job and which Nix reused (tools/test_reports.py).
+
+    A report that cannot be read gives a warning instead of an error, so it cannot hide
+    the result of the checks phase.
+    """
+    try:
+        write_summary(build, since)
+    except (OSError, ValueError, ElementTree.ParseError) as error:
+        print(f"Cannot write the summary of the test reports in {build}: {error}", file=sys.stderr, flush=True)
 
 
 def main() -> None:

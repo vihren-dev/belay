@@ -199,7 +199,11 @@ later run and cannot change a result. The step may fail without failing the job.
 Host JUnit reports, cached Nix test outputs and CI phase diagnostics are
 retained for 14 days. Pytest's exit status decides success. `tools/ci_checks.py`
 writes the output of each phase to the job log while the phase runs, and keeps it in
-`build/ci-phases/PHASE/`. Individual subprocess and whole-command deadlines remain
+`build/ci-phases/PHASE/`. After the checks phase, also when it fails,
+`tools/test_reports.py` writes a summary to the log and to the job summary page.
+For each JUnit report it gives the tests, failures and time, and whether the suite
+ran in this job or Nix reused it from an earlier build, by the report's timestamp. It
+also lists the ten slowest test cases that ran in this job. Individual subprocess and whole-command deadlines remain
 bounded: a timed-out command's process group is killed, and the output read before
 the kill is kept, also when a process outside the group keeps the pipes open. The hosted job limit is 75 minutes, including the reference phase, runtime,
 Darwin bundle, complete checks, setup and artifact retention. Child limits
