@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-19T13:26:50+00:00",
+  "finding": "20261019T132455Z-0ed8c9b2#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "tests/profile_scope_test.py checks both foreign key forms, the rejection for versions 1 to 3, and profiled and foreign-key-free records"
+}

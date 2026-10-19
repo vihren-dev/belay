@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-19T13:26:49+00:00",
+  "finding": "20261019T132455Z-0ed8c9b2#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "ForeignKeyAction moves to Resolution/ForeignKeyAction.lean and the definition forms to Resolution/SyntaxDefinitions.lean; SyntaxExpr.lean has 131 lines"
+}

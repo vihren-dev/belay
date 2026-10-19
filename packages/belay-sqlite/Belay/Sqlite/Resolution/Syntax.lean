@@ -1,4 +1,4 @@
-import Belay.Sqlite.Resolution.SyntaxExpr
+import Belay.Sqlite.Resolution.SyntaxDefinitions
 import Belay.Sqlite.Resolution.ConflictAlgorithm
 
 set_option doc.verso true

@@ -1,6 +1,5 @@
 import Belay.Sqlite.Declarations
 import Belay.Sqlite.Operators
-import Belay.Sqlite.Resolution.ConflictAlgorithm
 
 set_option doc.verso true
 
@@ -79,100 +78,6 @@ inductive Expr where
   collation, as written. -/
   | collate (operand : Expr) (name : Identifier)
   deriving Repr, BEq, Inhabited
-
-/-- A DEFAULT expression and its source spelling. The expression determines the
-value; the text preserves metadata such as {lit}`X'00ff'` versus {lit}`x'00FF'`.
-For example, {lean}`({ expression := .numeric "7", sourceText := "7" } : DefaultExpression)`
-is the default written as {lit}`7`. -/
-structure DefaultExpression where
-  /-- The expression evaluated when a column value is omitted. -/
-  expression : Expr
-  /-- The expression text reported by SQLite, excluding DEFAULT and its outer parentheses. -/
-  sourceText : String
-  deriving BEq
-
-/-- Print a default as a constructor application so generated nested catalog terms
-keep valid Lean indentation when an expression spans several lines. -/
-instance : Repr DefaultExpression where
-  reprPrec value prec := Repr.addAppParen
-    ("Belay.Sqlite.Syntax.DefaultExpression.mk " ++ reprArg value.expression ++ " " ++ reprArg value.sourceText) prec
-
-/-- The action of {lit}`ON DELETE` or {lit}`ON UPDATE` of a foreign key, which
-{lit}`PRAGMA foreign_key_list` reports; {lean}`ForeignKeyAction.noAction` without the clause.
-With foreign keys off, SQLite runs no action (ADR 0014, slice 4). -/
-inductive ForeignKeyAction where
-  /-- {lit}`NO ACTION`, also without the clause. -/
-  | noAction
-  /-- {lit}`RESTRICT`. -/
-  | restrict
-  /-- {lit}`SET NULL`. -/
-  | setNull
-  /-- {lit}`SET DEFAULT`. -/
-  | setDefault
-  /-- {lit}`CASCADE`. -/
-  | cascade
-  deriving Repr, BEq, DecidableEq
-
-/-- The name of an action as {lit}`PRAGMA foreign_key_list` reports it, for example
-{lit}`SET NULL`. -/
-def ForeignKeyAction.sqlName : ForeignKeyAction → String
-  | .noAction => "NO ACTION"
-  | .restrict => "RESTRICT"
-  | .setNull => "SET NULL"
-  | .setDefault => "SET DEFAULT"
-  | .cascade => "CASCADE"
-
-/-- A column constraint as written. For example, {lit}`PRIMARY KEY DESC` is
-{lean}`ColumnConstraint.primaryKey true`. -/
-inductive ColumnConstraint where
-  /-- {lit}`NOT NULL [ON CONFLICT algorithm]`; {lean}`(none : Option ConflictAlgorithm)`
-  without the clause. -/
-  | notNull (algorithm : Option ConflictAlgorithm := none)
-  /-- {lit}`PRIMARY KEY [ASC | DESC] [ON CONFLICT algorithm]`; the flag is true for
-  {lit}`DESC`. -/
-  | primaryKey (descending : Bool) (algorithm : Option ConflictAlgorithm := none)
-  /-- {lit}`UNIQUE [ON CONFLICT algorithm]`. -/
-  | unique (algorithm : Option ConflictAlgorithm := none)
-  /-- {lit}`DEFAULT` with its expression and its source text, excluding DEFAULT
-  and any outer parentheses belonging to the DEFAULT production. -/
-  | default (value : Expr) (sourceText : String)
-  /-- {lit}`COLLATE name`, with the collation name as written (ADR 0014, slice 3). -/
-  | collate (name : Identifier)
-  /-- {lit}`CHECK (condition)` with the label that SQLite reports when it fails: the name of
-  the {lit}`CONSTRAINT name` in effect, else the source text between the parentheses
-  without outer white space, dequoted when it starts with a quote (ADR 0014, slice 4). -/
-  | check (condition : Expr) (label : String)
-  /-- {lit}`REFERENCES table [(columns)]` with its {lit}`ON DELETE` and {lit}`ON UPDATE`
-  actions; the other clauses do not show in {lit}`PRAGMA foreign_key_list` (ADR 0014,
-  slice 4). -/
-  | references (table : Identifier) (columns : List Identifier) (onDelete onUpdate : ForeignKeyAction)
-  deriving Repr, BEq
-
-/-- One column of CREATE TABLE or ADD COLUMN. Use {lean}`(none : Option String)`
-for a column without a declared type. -/
-structure ColumnDefinition where
-  /-- The column name as written. -/
-  name : Identifier
-  /-- The declared type text as written, for example {lit}`VARCHAR(10)`. -/
-  declaredType : Option String
-  /-- The column constraints in written order. -/
-  constraints : List ColumnConstraint
-  deriving Repr, BEq
-
-/-- A table constraint of CREATE TABLE, with column names as written. -/
-inductive TableConstraint where
-  /-- {lit}`PRIMARY KEY (columns) [ON CONFLICT algorithm]`. -/
-  | primaryKey (columns : List Identifier) (algorithm : Option ConflictAlgorithm := none)
-  /-- {lit}`UNIQUE (columns) [ON CONFLICT algorithm]`. -/
-  | unique (columns : List Identifier) (algorithm : Option ConflictAlgorithm := none)
-  /-- {lit}`CHECK (condition)` with its label, as for {name}`ColumnConstraint.check`. SQLite
-  ignores an {lit}`ON CONFLICT` clause of a table CHECK (ADR 0014, slice 4). -/
-  | check (condition : Expr) (label : String)
-  /-- {lit}`FOREIGN KEY (columns) REFERENCES table [(referenced)]` with its actions, as for
-  {name}`ColumnConstraint.references`; {lit}`referenced` is empty without a column list. -/
-  | foreignKey (columns : List Identifier) (table : Identifier) (referenced : List Identifier)
-      (onDelete onUpdate : ForeignKeyAction)
-  deriving Repr, BEq
 
 /-- One result column of a {lit}`SELECT`: {lit}`*`, or an expression with an
 optional {lit}`AS` alias and its source text as written, which SQLite uses as the
