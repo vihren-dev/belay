@@ -73,13 +73,13 @@ def CatalogIndex.uniqueKey (index : CatalogIndex) : UniqueKey :=
   { terms := index.keys.map (·.term), filter := index.filter }
 
 /-- Whether an index is admitted for a table of the width: at least one key term, column
-terms below the width and none twice, and expression terms and the filter that read only
-columns below the width. -/
+terms below the width, and expression terms and the filter that read only columns below
+the width. A column may appear in two terms, as SQLite allows. -/
 def CatalogIndex.supported (index : CatalogIndex) (width : Nat) : Bool :=
   let positions := index.keys.filterMap fun key => match key.term with
     | .column position => some position
     | .expression _ => none
-  !index.keys.isEmpty && positions.eraseDups.length == positions.length && positions.all (· < width) &&
+  !index.keys.isEmpty && positions.all (· < width) &&
     index.keys.all (fun key => match key.term with
       | .column _ => true
       | .expression value => value.readsBelow width) &&

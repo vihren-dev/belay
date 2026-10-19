@@ -45,7 +45,7 @@ def test_explicit_catalog_native_replay_and_classification(boundaries: dict[str,
         assert record["profile"]["engineVersion"] == "3.51.0"
     native_replay(catalog)
     report = replay(catalog, runtime_root)
-    assert report["counts"] == {"MODEL_UNSUPPORTED": 13, "AGREE": 10}
+    assert report["counts"] == {"MODEL_UNSUPPORTED": 12, "AGREE": 11}
     additions = {"add-not-null-empty", "add-not-null-populated",
                  "add-not-null-null-empty", "add-not-null-null-populated"}
     assert {case["name"] for case in report["cases"]
@@ -59,10 +59,11 @@ def test_validity_boundaries_without_profile_gate(runtime_root: Path) -> None:
     statement mapping or resolution refuses; a query on a table whose names differ
     only in case agrees (ADR 0012). A duplicate column, a missing key column and a
     reserved name are SQLite prepare errors that Lean resolution decides, so the
-    model agrees with them; an empty column list is a grammar error on both sides.
+    model agrees with them; an index that repeats a column runs in a migration (ADR 0014,
+    slice 1); an empty column list is a grammar error on both sides.
     """
     agreeing = {"validity-duplicate-column", "validity-missing-key-column", "validity-reserved-name",
-                "validity-identifier-case"}
+                "validity-identifier-case", "validity-repeated-index-column"}
     for case in validity_definitions():
         record = record_sql(case.setup, case.sql, name=case.name, outputs=True,
             parameters=list(case.parameters) if case.parameters is not None else None)
