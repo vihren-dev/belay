@@ -19,7 +19,8 @@ def ref (name : Identifier) : Expr := .identifier name .none
 /-- A column {lit}`name AS (expression)`, {lit}`STORED` when {lit}`stored`. -/
 def gen (name : Identifier) (expression : Expr) (stored : Bool := false) (more : List ColumnConstraint := []) :
     ColumnDefinition :=
-  { name, declaredType := some "INTEGER", constraints := .generated expression stored :: more }
+  { name, declaredType := some "INTEGER",
+    constraints := .generated expression (if stored then some (name! "Stored") else none) :: more }
 
 /-- {lit}`g(a INTEGER, c AS (b + 1), b AS (a * 2) STORED, u AS (a) UNIQUE)`: {lit}`c` reads {lit}`b`,
 which comes after it. -/
@@ -87,7 +88,11 @@ def errorOf (statement : Syntax.Statement) : Option PrepareError :=
 #guard errorOf (.createTable (name! "n") [column (name! "a"), gen (name! "b") (.qualified (name! "n") (name! "a"))] []) ==
   some (.expression .qualifiedGenerated)
 #guard errorOf (.createTable (name! "n") [column (name! "a"),
-  gen (name! "b") (ref (name! "a")) false [.generated (.numeric "1") false]] []) ==
+  gen (name! "b") (ref (name! "a")) false [.generated (.numeric "1") none]] []) ==
+  some (.expression (.errorInGenerated (name! "b")))
+-- A kind other than VIRTUAL and STORED is SQLite's error in generated column.
+#guard errorOf (.createTable (name! "n") [column (name! "a"),
+  { name := name! "b", declaredType := none, constraints := [.generated (ref (name! "a")) (some (name! "foo"))] }] []) ==
   some (.expression (.errorInGenerated (name! "b")))
 #guard errorOf (.createTable (name! "n") [column (name! "a"), gen (name! "b") (.currentTime "CURRENT_TIMESTAMP")] []) ==
   some (.expression .nondeterministicGenerated)

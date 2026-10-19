@@ -74,25 +74,24 @@ def actions(tree: Tree, node: Node) -> tuple[Located, Located]:
 
 
 def generated(tree: Tree, node: Node, kind: Node) -> Located:
-    """Map `AS (expr) [VIRTUAL | STORED]` (ADR 0014, slice 5); without a keyword the column is
-    VIRTUAL. Another word is SQLite's `error in generated column`, which the frontend refuses."""
+    """Map `AS (expr) [kind]` (ADR 0014, slice 5) with the kind word as written, or none;
+    resolution decides `VIRTUAL`, `STORED` or SQLite's `error in generated column`."""
     parts = tree.children(kind)
-    symbols = [part.symbol for part in parts]
-    word = tree.text(parts[3]).upper() if len(parts) == 4 else "VIRTUAL"
-    if symbols[:3] != ["LP", "expr", "RP"] or len(parts) > 4 or word not in ("VIRTUAL", "STORED"):
+    if [part.symbol for part in parts][:3] != ["LP", "expr", "RP"] or len(parts) > 4:
         raise tree.unsupported(kind, "Unsupported generated column; write AS (expression) VIRTUAL or STORED")
-    return constructor("generated", [("expression", query_expression(tree, parts[1])),
-                                     ("stored", leaf(word == "STORED", kind.start, kind.end))], node.start, node.end)
+    word = name(tree, parts[3]) if len(parts) == 4 else leaf(None, kind.end, kind.end)
+    return constructor("generated", [("expression", query_expression(tree, parts[1])), ("kind", word)],
+                       node.start, node.end)
 
 
-def declared_type(text: str) -> str:
-    """The declared type as `sqlite3AddColumn` keeps it: without a trailing
-    `GENERATED ALWAYS`, which the grammar reads as part of the type of a generated column."""
-    if len(text) >= 16 and text[-6:].lower() == "always":
-        text = text[:-6].rstrip(SPACE)
-        if len(text) >= 9 and text[-9:].lower() == "generated":
-            text = text[:-9].rstrip(SPACE)
-    return text
+def declared_type(tree: Tree, type_token: Node) -> str:
+    """The declared type text as `sqlite3AddColumn` keeps it: without a trailing
+    `GENERATED ALWAYS`, which the grammar reads as two keyword tokens of the type name."""
+    tokens = [node for node in tree.walk(type_token) if not node.children]
+    symbols = [node.symbol for node in tokens]
+    if len(tokens) >= 2 and symbols[-2:] == ["GENERATED", "ALWAYS"]:
+        return tree.sql[type_token.start:tokens[-2].start].decode("utf-8").rstrip(SPACE)
+    return tree.text(type_token)
 
 
 def references(tree: Tree, node: Node, parts: list[Node]) -> Located:

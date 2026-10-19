@@ -10,7 +10,6 @@ from collections.abc import Callable
 
 import pytest
 
-from belay.sqlite.errors import SqlError
 from belay.sqlite.sql_tree import Tree
 from belay.sqlite.syntax import statements
 
@@ -46,21 +45,15 @@ def test_checks_names_and_foreign_keys(parse_sql: Callable[..., Tree]) -> None:
 
 
 def test_generated_columns_keep_their_kind_and_sqlite_type(parse_sql: Callable[..., Tree]) -> None:
-    """`AS (expr)` maps with its kind, VIRTUAL without a keyword, and the declared type loses a
-    trailing `GENERATED ALWAYS`, as `sqlite3AddColumn` does (ADR 0014, slice 5)."""
+    """`AS (expr)` maps with its kind word as written, or none, which resolution reads, and the
+    declared type loses its trailing `GENERATED ALWAYS` tokens, as `sqlite3AddColumn` does
+    (ADR 0014, slice 5)."""
     (table,) = mapped(parse_sql, "CREATE TABLE t(a INTEGER, b TEXT GENERATED ALWAYS AS (a) stored, c AS (a), "
-                                 "d GENERATED ALWAYS AS (a) VIRTUAL);")
+                                 "d GENERATED ALWAYS AS (a) VIRTUAL, e AS (a) foo);")
     columns = table["createTable"]["columns"]
     a = {"identifier": {"name": "a", "quote": "none"}}
     assert [(column["declaredType"], column["constraints"]) for column in columns[1:]] == [
-        ("TEXT", [{"generated": {"expression": a, "stored": True}}]),
-        (None, [{"generated": {"expression": a, "stored": False}}]),
-        ("", [{"generated": {"expression": a, "stored": False}}])]
-
-
-def test_an_unknown_generated_kind_is_refused(parse_sql: Callable[..., Tree]) -> None:
-    """A word other than VIRTUAL or STORED is SQLite's `error in generated column`, which the
-    frontend refuses at its range."""
-    with pytest.raises(SqlError) as raised:
-        statements(parse_sql("CREATE TABLE t(a, b AS (a) foo);"))
-    assert raised.value.status == "UNSUPPORTED" and "VIRTUAL or STORED" in str(raised.value)
+        ("TEXT", [{"generated": {"expression": a, "kind": "stored"}}]),
+        (None, [{"generated": {"expression": a, "kind": None}}]),
+        ("", [{"generated": {"expression": a, "kind": "VIRTUAL"}}]),
+        (None, [{"generated": {"expression": a, "kind": "foo"}}])]

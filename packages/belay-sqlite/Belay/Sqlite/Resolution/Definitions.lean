@@ -53,8 +53,11 @@ def applyConstraint (tableName : Identifier) (definition : Syntax.ColumnDefiniti
     | none => .error (.noSuchCollation name)
     | some collation => .ok { table with columns := updateLast table.columns fun column => { column with collation } }
   | .check .. => .ok table
-  | .generated _ stored =>
+  | .generated _ kind =>
     if (table.columns.getLast?.bind (·.generated)).isSome then .error (.errorInGenerated definition.name) else
+    let stored := kind.any (·.isKeyword (bytes! "stored"))
+    if kind.any (fun word => !word.isKeyword (bytes! "stored") && !word.isKeyword (bytes! "virtual")) then
+      .error (.errorInGenerated definition.name) else
     if table.primaryKey.contains (table.columns.length - 1) then .error .generatedInPrimaryKey else
     if definition.constraints.any (· matches .default ..) &&
         (table.columns.getLast?.bind (·.defaultValue)).isSome then .error (.errorInGenerated definition.name) else

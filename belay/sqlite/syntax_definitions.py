@@ -87,7 +87,7 @@ def column_definition(tree: Tree, column: Node, constraints: Node) -> tuple[Loca
     with the constraint name in effect after them. `CONSTRAINT name` and a deferral clause
     map to no constraint: a name only labels the CHECK constraints after it."""
     column_name, type_token = require(tree, column, ["nm", "typetoken"])
-    declared = dequote(declared_type(tree.text(type_token))) if type_token.children else None
+    declared = dequote(declared_type(tree, type_token)) if type_token.children else None
     items: list[Located] = []
     current: str | None = None
     for item in left_list(tree, constraints, {2: ["carglist", "ccons"]}):
