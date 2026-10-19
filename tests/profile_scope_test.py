@@ -9,7 +9,7 @@ record, and a record without a foreign key, stay in scope.
 import pytest
 
 from belay.sqlite.errors import SqlError
-from belay.sqlite.located import leaf
+from belay.sqlite.located import Located, leaf
 from conformance.profile_scope import foreign_key_scope, has_foreign_key
 
 pytestmark = [pytest.mark.unit]
@@ -36,7 +36,7 @@ def test_a_record_without_profile_and_with_a_foreign_key_is_out_of_scope(version
 
 
 @pytest.mark.parametrize(("version", "statements"), [(4, [REFERENCES]), (5, [FOREIGN_KEY]), (3, [PLAIN]), (1, [])])
-def test_profiled_records_and_records_without_foreign_keys_stay_in_scope(version: int, statements: list) -> None:
+def test_profiled_records_and_records_without_foreign_keys_stay_in_scope(version: int, statements: list[Located]) -> None:
     """A profiled record says whether foreign keys are on, and a record without a foreign key
     does not depend on it."""
     foreign_key_scope({"name": "case", "nativeVersion": version}, statements)
