@@ -16,13 +16,14 @@ from types import ModuleType
 import pytest
 
 from conformance import (algorithm_evidence, alias_evidence, authored_algorithms, authored_aliases, authored_clock,
-                         authored_checks, authored_collations, authored_date_functions, authored_date_modifiers, authored_default_writes,
+                         authored_checks, authored_collations, authored_date_functions, authored_date_modifiers,
+                         authored_default_writes, authored_generated,
                          authored_deletes, authored_fromless, authored_indexes, authored_joins, authored_json,
                          authored_json_each,
                          authored_json_functions, authored_keys, authored_merged, authored_numbers,
                          authored_obligations, authored_queries, authored_right, authored_row_writes,
                          authored_upserts, authored_using, authored_without_rowid, authored_writes, check_evidence,
-                         clock_evidence, collation_evidence, date_function_evidence,
+                         clock_evidence, collation_evidence, date_function_evidence, generated_evidence,
                          date_modifier_evidence, default_write_evidence, delete_evidence, fromless_evidence,
                          index_evidence,
                          join_evidence, json_each_evidence, json_evidence, json_function_evidence, key_evidence,
@@ -60,12 +61,13 @@ pytestmark = [pytest.mark.integration, pytest.mark.conformance,
                                                             (index_evidence, authored_indexes, 29),
                                                             (without_rowid_evidence, authored_without_rowid, 30),
                                                             (collation_evidence, authored_collations, 31),
-                                                            (check_evidence, authored_checks, 32)],
+                                                            (check_evidence, authored_checks, 32),
+                                                            (generated_evidence, authored_generated, 33)],
                          ids=["queries", "numbers", "writes", "obligations", "row-writes", "deletes", "joins", "using",
                               "right", "merged", "keys", "aliases", "upserts", "algorithms", "fromless", "json",
                               "json-functions", "json-each", "default-writes", "clock",
                               "date-functions", "date-modifiers", "indexes", "without-rowid",
-                              "collations", "checks"])
+                              "collations", "checks", "generated"])
 def test_coverage_corpus_round_trips(evidence: ModuleType, cases: ModuleType, version: int, tmp_path: Path) -> None:
     """The corpus writer records the cases of its case module and writes a corpus of version 5
     records that reads back unchanged and replays natively, and refuses to replace an existing

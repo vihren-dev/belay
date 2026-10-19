@@ -24,14 +24,22 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D5; the
      `cannot use DEFAULT on a generated column` are prepare errors;
    - the expression resolves over the table's columns, with `no such column` also for
      `rowid`, and `non-deterministic functions prohibited in generated columns`;
-   - a generated column may read another generated column, and a loop
-     (`generated column loop on "b"`) fails the CREATE TABLE at step;
+   - a generated column may read another generated column; a loop
+     (`generated column loop on "b"`) fails the CREATE TABLE at step, which the model
+     leaves as the restriction `generated-loop` (amended 2026-10-19);
    - UNIQUE, NOT NULL and CHECK apply to generated columns as to other columns;
    - ADD COLUMN of a `STORED` column fails at step with `cannot add a STORED column`, and
-     ADD COLUMN of a `VIRTUAL` one computes its value for the existing rows.
+     ADD COLUMN of a `VIRTUAL` one computes its value for the existing rows; the model
+     leaves ADD COLUMN of a generated column as the restriction `add-column-generated`,
+     because the ADD COLUMN step and its laws append one value to every row (amended
+     2026-10-19);
+   - a table whose columns are all generated is `must have at least one non-generated
+     column`.
 4. **Writes.** An INSERT without a column list takes one value for each column that is not
    generated. Naming a generated column in INSERT is `cannot INSERT into generated column
-   "b"`, and in UPDATE `cannot UPDATE generated column "c"`, both prepare errors. Every
+   "b"`, and in UPDATE `cannot UPDATE generated column "c"`, both prepare errors. A
+   `DO UPDATE` that assigns a generated column fails natively only when a row conflicts;
+   the model leaves it as the restriction `upsert-generated`. Every
    write computes the generated values of the row, in an order that respects their
    dependencies, and stores them with the column's affinity, before the NOT NULL, CHECK
    and unique checks.
@@ -43,8 +51,7 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D5; the
 
 - Lean examples: each rule of outcomes 2 to 5; both kinds; a generated column that reads
   another; a loop; INSERT with and without a column list; UPDATE of a column that a
-  generated column reads; a UNIQUE and a CHECK on a generated column; ADD COLUMN of each
-  kind over rows.
+  generated column reads; a UNIQUE and a CHECK on a generated column; the restrictions.
 - An authored corpus (`conformance/authored_generated.py`) of these cases, each with a
   kernel proof, recorded as a new corpus.
 - The verdict of every corpus: cases that newly agree and none that leave AGREE.

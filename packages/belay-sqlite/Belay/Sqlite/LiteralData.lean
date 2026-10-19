@@ -108,12 +108,23 @@ def newRowid (table : Table) (values : List Value) : Int :=
   | some (.integer value) => value
   | some .null | some (.real _) | some (.text _) | some (.blob _) | none => nextRowid table.rows
 
+/-- The cells of a row with its generated columns computed (ADR 0014, D5): each generated
+cell is the value of its expression over the cells, stored with the column's affinity. One
+pass per generated column settles a generated column that reads another, as resolution
+admits no loop; every other cell stays. A table without generated columns keeps the cells. -/
+def generatedCells (columns : List CatalogColumn) (values : List Value) : List Value :=
+  let generated := columns.zipIdx.filterMap fun (column, position) =>
+    column.generated.map fun how => (position, column.affinity, how.expression)
+  generated.foldl (fun cells _ => generated.foldl (fun cells (position, affinity, expression) =>
+    cells.set position (storeValue affinity (expression.eval 0 cells))) cells) values
+
 /-- The cells of a new row with the rowid: the alias cell, if the table has an alias, is
-the integer rowid, so a NULL alias takes the new rowid; other cells stay. -/
+the integer rowid, so a NULL alias takes the new rowid; then the generated columns are
+computed ({name}`generatedCells`); other cells stay. -/
 def newCells (table : Table) (values : List Value) (rowid : Int) : List Value :=
-  match table.shape.rowidAlias with
-  | some position => values.set position (.integer rowid)
-  | none => values
+  generatedCells table.shape.columns (match table.shape.rowidAlias with
+    | some position => values.set position (.integer rowid)
+    | none => values)
 
 /-- Whether the supplied cells give a rowid alias that SQLite refuses with
 {lit}`datatype mismatch`: the table has an alias and its cell is neither NULL nor an

@@ -77,6 +77,7 @@ deriving instance Lean.ToExpr for Resolved.DateFunction
 deriving instance Lean.ToExpr for Resolved.Expr, Resolved.Arguments
 deriving instance Lean.ToExpr for CheckConstraint
 deriving instance Lean.ToExpr for ForeignKey
+deriving instance Lean.ToExpr for GeneratedColumn
 deriving instance Lean.ToExpr for CatalogColumn
 deriving instance Lean.ToExpr for CatalogTable
 deriving instance Lean.ToExpr for KeyTerm

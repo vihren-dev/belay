@@ -10,6 +10,16 @@ computes it again from the state's catalog. -/
 
 namespace Belay.Sqlite
 
+/-- The {lit}`ON CONFLICT` algorithm of the UNIQUE constraint at the position, none for a
+constraint without the clause or without an entry. -/
+def CatalogTable.uniqueAlgorithm (table : CatalogTable) (index : Nat) : Option ConflictAlgorithm :=
+  table.uniqueAlgorithms.getD index none
+
+/-- The algorithms of the UNIQUE constraints, one for each key of
+{name}`CatalogTable.uniqueKeys`. -/
+def CatalogTable.keyedUniqueAlgorithms (table : CatalogTable) : List (Option ConflictAlgorithm) :=
+  table.uniqueKeys.mapIdx fun index _ => table.uniqueAlgorithm index
+
 /-- The {lit}`ON CONFLICT` algorithm of each key of {name}`Catalog.uniqueKeys`, in its
 order: the primary key's, each UNIQUE constraint's, and ABORT for each unique index. -/
 def Catalog.keyAlgorithms (catalog : Catalog) (position : Nat) (table : CatalogTable) : List ConflictAlgorithm :=

@@ -73,6 +73,28 @@ def actions(tree: Tree, node: Node) -> tuple[Located, Located]:
     return found["DELETE"], found["UPDATE"]
 
 
+def generated(tree: Tree, node: Node, kind: Node) -> Located:
+    """Map `AS (expr) [VIRTUAL | STORED]` (ADR 0014, slice 5); without a keyword the column is
+    VIRTUAL. Another word is SQLite's `error in generated column`, which the frontend refuses."""
+    parts = tree.children(kind)
+    symbols = [part.symbol for part in parts]
+    word = tree.text(parts[3]).upper() if len(parts) == 4 else "VIRTUAL"
+    if symbols[:3] != ["LP", "expr", "RP"] or len(parts) > 4 or word not in ("VIRTUAL", "STORED"):
+        raise tree.unsupported(kind, "Unsupported generated column; write AS (expression) VIRTUAL or STORED")
+    return constructor("generated", [("expression", query_expression(tree, parts[1])),
+                                     ("stored", leaf(word == "STORED", kind.start, kind.end))], node.start, node.end)
+
+
+def declared_type(text: str) -> str:
+    """The declared type as `sqlite3AddColumn` keeps it: without a trailing
+    `GENERATED ALWAYS`, which the grammar reads as part of the type of a generated column."""
+    if len(text) >= 16 and text[-6:].lower() == "always":
+        text = text[:-6].rstrip(SPACE)
+        if len(text) >= 9 and text[-9:].lower() == "generated":
+            text = text[:-9].rstrip(SPACE)
+    return text
+
+
 def references(tree: Tree, node: Node, parts: list[Node]) -> Located:
     """Map a column's `REFERENCES table [(columns)]` with its actions."""
     on_delete, on_update = actions(tree, parts[3])

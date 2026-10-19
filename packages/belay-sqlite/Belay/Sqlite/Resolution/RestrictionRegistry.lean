@@ -28,11 +28,11 @@ inductive RestrictionRegistry where
 * {lit}`rowidName`: a resolved expression has no read of the physical rowid. -/
 def RestrictionKind.registry : RestrictionKind → RestrictionRegistry
   | .rowDependentKey | .conflictWithoutTarget | .mixedConflictAlgorithms | .windowedGroupSum
-  | .constantFunctionError | .unknownCollation => .undecided
+  | .constantFunctionError | .unknownCollation | .upsertGenerated => .undecided
   | .rowidName => .unrepresented
   | .schemaStatement | .engineTable | .rowidColumnName
   | .unmodeledDefault | .indexStringTerm | .indexDateFunction | .indexJsonFunction | .checkFunction
-  | .addColumnCheckError | .addColumnConstraint | .constraintAlgorithmUpdate
+  | .addColumnCheckError | .generatedFunction | .generatedLoop | .addColumnGenerated | .addColumnConstraint | .constraintAlgorithmUpdate
   | .replaceDefault | .insertColumnTwice | .updateColumnTwice | .joinOperator | .systemTable
   | .unmodeledFunction | .aggregateInExpression | .aliasInExpression | .groupByTerm | .bareColumn
   | .aggregateOrderBy | .windowValue | .negativeOffset | .tableFunction | .laterTableInOn | .functionJoin

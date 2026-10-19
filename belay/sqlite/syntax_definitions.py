@@ -7,7 +7,7 @@ refused with its source range.
 
 from .located import Located, constructor, leaf, sequence, structure
 from .sql_tree import Node, Tree
-from .syntax_constraints import check, constraint_name, foreign_key, references
+from .syntax_constraints import check, constraint_name, declared_type, foreign_key, generated, references
 from .syntax_expressions import dequote, expression, identifier, name, term
 from .syntax_shapes import MODELED_FORMS, absent, left_list, require
 
@@ -46,13 +46,15 @@ def constraint_algorithm(tree: Tree, node: Node) -> Located:
 def column_constraint(tree: Tree, node: Node, current: str | None) -> Located:
     """Map NOT NULL, PRIMARY KEY with its sort order, UNIQUE, each with its ON CONFLICT
     algorithm, COLLATE with its name as written, CHECK with the label of the constraint name
-    in effect (`current`), REFERENCES, and the DEFAULT forms."""
+    in effect (`current`), REFERENCES, AS for a generated column, and the DEFAULT forms."""
     children = tree.children(node)
     symbols = [child.symbol for child in children]
     if symbols == ["CHECK", "LP", "expr", "RP"]:
         return check(tree, node, children, current)
     if symbols == ["REFERENCES", "nm", "eidlist_opt", "refargs"]:
         return references(tree, node, children)
+    if symbols == ["AS", "generated"]:
+        return generated(tree, node, children[1])
     if symbols == ["NOT", "NULL", "onconf"]:
         return constructor("notNull", [("algorithm", constraint_algorithm(tree, children[2]))], node.start, node.end)
     if symbols == ["PRIMARY", "KEY", "sortorder", "onconf", "autoinc"]:
@@ -85,7 +87,7 @@ def column_definition(tree: Tree, column: Node, constraints: Node) -> tuple[Loca
     with the constraint name in effect after them. `CONSTRAINT name` and a deferral clause
     map to no constraint: a name only labels the CHECK constraints after it."""
     column_name, type_token = require(tree, column, ["nm", "typetoken"])
-    declared = dequote(tree.text(type_token)) if type_token.children else None
+    declared = dequote(declared_type(tree.text(type_token))) if type_token.children else None
     items: list[Located] = []
     current: str | None = None
     for item in left_list(tree, constraints, {2: ["carglist", "ccons"]}):

@@ -11,7 +11,22 @@ namespace Belay.Sqlite
 
 deriving instance Lean.FromJson, Lean.ToJson for Limits, Profile
 deriving instance Lean.FromJson, Lean.ToJson for Conformance.ErrorPhase
-deriving instance Lean.FromJson, Lean.ToJson for Conformance.NativeColumn
+/-- A native column as JSON, with {lit}`hidden` only for a generated column, so the records of
+other columns keep their form. -/
+instance : Lean.ToJson Conformance.NativeColumn where
+  toJson column := Lean.Json.mkObj ([("name", Lean.toJson column.name),
+      ("declaredType", Lean.toJson column.declaredType), ("notNull", Lean.toJson column.notNull),
+      ("defaultValue", Lean.toJson column.defaultValue)] ++
+    (if column.hidden == 0 then [] else [("hidden", Lean.toJson column.hidden)]))
+
+/-- Read a native column ({name}`Conformance.NativeColumn`); a missing {lit}`hidden` is an
+ordinary column. -/
+instance : Lean.FromJson Conformance.NativeColumn where
+  fromJson? json := do
+    let hidden : Nat := (json.getObjValAs? Nat "hidden").toOption.getD 0
+    return { name := ← json.getObjValAs? Identifier "name", declaredType := ← json.getObjValAs? String "declaredType",
+             notNull := ← json.getObjValAs? Bool "notNull",
+             defaultValue := ← json.getObjValAs? (Option String) "defaultValue", hidden }
 
 /-- A native index as JSON: {lit}`name`, {lit}`columns` (a number for a column key, null for an
 expression), {lit}`unique`, and {lit}`descending`, {lit}`partial` and {lit}`collations` only when

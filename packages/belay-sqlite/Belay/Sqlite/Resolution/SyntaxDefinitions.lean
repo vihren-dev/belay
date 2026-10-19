@@ -50,6 +50,9 @@ inductive ColumnConstraint where
   actions; the other clauses do not show in {lit}`PRAGMA foreign_key_list` (ADR 0014,
   slice 4). -/
   | references (table : Identifier) (columns : List Identifier) (onDelete onUpdate : ForeignKeyAction)
+  /-- {lit}`[GENERATED ALWAYS] AS (expression) [VIRTUAL | STORED]`; {lit}`stored` is true for
+  {lit}`STORED`, false for {lit}`VIRTUAL` and without a keyword (ADR 0014, slice 5). -/
+  | generated (expression : Expr) (stored : Bool)
   deriving Repr, BEq
 
 /-- One column of CREATE TABLE or ADD COLUMN. Use {lean}`(none : Option String)`

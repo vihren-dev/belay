@@ -9,13 +9,24 @@ catalog that resolution computes. -/
 namespace Belay.Sqlite.Conformance
 
 /-- One column as {lit}`PRAGMA table_xinfo` reports it: the name and declared type
-as written ({lit}`""` for no type), NOT NULL, and the default's text or none. -/
+as written ({lit}`""` for no type), NOT NULL, the default's text or none, and
+{lit}`hidden`: 0 for an ordinary column, 2 for a {lit}`VIRTUAL` and 3 for a {lit}`STORED`
+generated column (ADR 0014, D5). -/
 structure NativeColumn where
   name : Identifier
   declaredType : String
   notNull : Bool
   defaultValue : Option String
+  hidden : Nat := 0
   deriving Repr, DecidableEq
+
+/-- The {lit}`hidden` value of {lit}`PRAGMA table_xinfo` for a catalog column: 2 for a
+{lit}`VIRTUAL` and 3 for a {lit}`STORED` generated column, else 0. -/
+def _root_.Belay.Sqlite.CatalogColumn.hidden (column : CatalogColumn) : Nat :=
+  match column.generated with
+  | some { stored := true, .. } => 3
+  | some { stored := false, .. } => 2
+  | none => 0
 
 /-- One explicit index ({lit}`index_list` origin {lit}`c`): its name, the column position of
 each key term, none for an expression ({lit}`index_xinfo` column -2), its uniqueness, the
@@ -91,11 +102,12 @@ def defaultKeywords : List String :=
   ["null", "true", "false", "current_timestamp", "current_time", "current_date"]
 
 /-- Whether a catalog column matches its native metadata: the same name, the same
-declared type text, NOT NULL, and the same default spelling. Keyword defaults
-ignore ASCII case; all other defaults keep their exact source spelling. -/
+declared type text, NOT NULL, the same default spelling, and the same {lit}`hidden` value
+({name}`Belay.Sqlite.CatalogColumn.hidden`). Keyword defaults ignore ASCII case; all other defaults keep
+their exact source spelling. -/
 def columnMatches (column : CatalogColumn) (native : NativeColumn) : Bool :=
   column.name == native.name && column.declaredType.getD "" == native.declaredType &&
-  column.notNull == native.notNull &&
+  column.notNull == native.notNull && column.hidden == native.hidden &&
   match column.defaultValue, native.defaultValue with
   | none, none => true
   | some written, some text =>

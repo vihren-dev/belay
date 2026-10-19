@@ -25,11 +25,12 @@ def selected (clock : Int) (filter : Option Resolved.Expr) (row : Row) : Bool :=
 its expression on the context, stored with the column's affinity ({name}`storeValue`).
 The rowid and every other cell stay; a position beyond the row's width changes nothing.
 UPDATE uses the old row as the context ({lit}`assign`); {lit}`DO UPDATE` uses the old
-row followed by the proposed row. -/
+row followed by the proposed row. The generated columns of the new row are then computed
+({name}`generatedCells`). -/
 def assignFrom (clock : Int) (columns : List CatalogColumn) (assignments : List (Nat × Resolved.Expr)) (context : List Value)
     (row : Row) : Row :=
-  { row with values := assignments.foldl (fun values (position, expression) =>
-      values.set position (storeValue (positionAffinity columns position) (expression.eval clock context))) row.values }
+  { row with values := generatedCells columns (assignments.foldl (fun values (position, expression) =>
+      values.set position (storeValue (positionAffinity columns position) (expression.eval clock context))) row.values) }
 
 /-- The new row of a selected row of UPDATE: {name}`assignFrom` with the old row as the
 context, so each value reads the old row (R-36239-04077, R-40598-36595), and the rowid

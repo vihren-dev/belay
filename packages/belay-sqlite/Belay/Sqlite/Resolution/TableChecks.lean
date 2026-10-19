@@ -31,7 +31,7 @@ def columnChecks (dqs : Bool) (scope : Scope) (definition : Syntax.ColumnDefinit
     Except ValueIssue (List CheckConstraint) :=
   definition.constraints.zipIdx.filterMapM fun (constraint, item) => match constraint with
     | .check condition label => some <$> (resolveCheck dqs scope condition label).mapError (·.under [2, item, 0])
-    | .notNull _ | .primaryKey .. | .unique _ | .default .. | .collate _ | .references .. => .ok none
+    | .notNull _ | .primaryKey .. | .unique _ | .default .. | .collate _ | .references .. | .generated .. => .ok none
 
 /-- The table with the CHECK constraints of its definitions and of its table constraints
 resolved over the scope, in written order: each column's in {name}`CatalogColumn.checks`

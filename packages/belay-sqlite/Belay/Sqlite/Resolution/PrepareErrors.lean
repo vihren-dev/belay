@@ -60,6 +60,21 @@ inductive ExprError where
   /-- {lit}`unknown column "%s" in foreign key definition`: a {lit}`FOREIGN KEY` column that
   the table does not have. -/
   | unknownForeignKeyColumn (name : Identifier)
+  /-- {lit}`cannot INSERT into generated column "%s"` (ADR 0014, slice 5). -/
+  | insertGenerated (name : Identifier)
+  /-- {lit}`cannot UPDATE generated column "%s"`. -/
+  | updateGenerated (name : Identifier)
+  /-- {lit}`generated columns cannot be part of the PRIMARY KEY`. -/
+  | generatedInPrimaryKey
+  /-- {lit}`cannot use DEFAULT on a generated column`: a DEFAULT after {lit}`AS`. -/
+  | defaultOnGenerated
+  /-- {lit}`error in generated column "%s"`: {lit}`AS` after a DEFAULT. -/
+  | errorInGenerated (name : Identifier)
+  /-- {lit}`non-deterministic functions prohibited in generated columns`: a time keyword. -/
+  | nondeterministicGenerated
+  /-- {lit}`must have at least one non-generated column`: a table whose columns are all
+  generated. -/
+  | onlyGeneratedColumns
   /-- {lit}`the "." operator prohibited in index expressions`: a qualified name in a key
   term of CREATE INDEX ({lit}`notValidImpl`). -/
   | qualifiedIndexTerm

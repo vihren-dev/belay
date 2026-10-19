@@ -58,7 +58,7 @@ def resolveConflictAction (dqs : Bool) (scope : Scope) (keys : List UniqueKey) (
     (targeted : Bool) : Syntax.ConflictAction → Except ValueIssue Resolved.ConflictAction
   | .nothing => .ok .nothing
   | .update assignments filter =>
-    (resolveAll (resolveAssignment dqs scope []) assignments).mapError (·.under [clause, 1, 0]) >>= fun resolved =>
+    (resolveAll (resolveAssignment dqs scope [] fun _ => .restriction [] .upsertGenerated) assignments).mapError (·.under [clause, 1, 0]) >>= fun resolved =>
     resolveConflictFilter dqs scope clause filter >>= fun resolvedFilter =>
     if (resolved.map Prod.fst).eraseDups.length != resolved.length then
       .error (.restriction [clause, 1, 0] .updateColumnTwice)

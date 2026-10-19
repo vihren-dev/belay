@@ -2,7 +2,7 @@ import Belay.Sqlite.Resolution.Context
 import Belay.Sqlite.Resolution.KeyMerge
 import Belay.Sqlite.Resolution.ReadDefaults
 import Belay.Sqlite.Resolution.IndexTerms
-import Belay.Sqlite.Resolution.TableChecks
+import Belay.Sqlite.Resolution.GeneratedColumns
 
 set_option doc.verso true
 
@@ -35,11 +35,13 @@ def applyConstraint (tableName : Identifier) (definition : Syntax.ColumnDefiniti
     (table : CatalogTable) : Syntax.ColumnConstraint → Except ExprError CatalogTable
   | .primaryKey descending algorithm =>
     if !table.primaryKey.isEmpty then .error (.multiplePrimaryKeys tableName) else
+    if (table.columns.getLast?.bind (·.generated)).isSome then .error .generatedInPrimaryKey else
     let position := table.columns.length - 1
     let alias := if aliasesRowid definition.declaredType && !descending then some position else none
     setPrimaryKey table [position] alias descending algorithm
   | .default value sourceText =>
     if !constantDefault value then .error (.defaultNotConstant definition.name) else
+    if (table.columns.getLast?.bind (·.generated)).isSome then .error .defaultOnGenerated else
     -- A default that the model does not describe leaves no default here; resolution then
     -- refuses the statement with {lit}`unmodeledDefault` ({lit}`modeledDefault`).
     .ok { table with columns := updateLast table.columns fun column =>
@@ -51,6 +53,13 @@ def applyConstraint (tableName : Identifier) (definition : Syntax.ColumnDefiniti
     | none => .error (.noSuchCollation name)
     | some collation => .ok { table with columns := updateLast table.columns fun column => { column with collation } }
   | .check .. => .ok table
+  | .generated _ stored =>
+    if table.primaryKey.contains (table.columns.length - 1) then .error .generatedInPrimaryKey else
+    if definition.constraints.any (· matches .default ..) &&
+        (table.columns.getLast?.bind (·.defaultValue)).isSome then .error (.errorInGenerated definition.name) else
+    -- The expression resolves over the whole table in {lit}`resolveGeneratedColumns`.
+    .ok { table with columns := updateLast table.columns fun column =>
+      { column with generated := some { expression := .literal .null, stored } } }
   | .references referenced columns onDelete onUpdate =>
     if columns.length > 1 then .error (.foreignKeyOneColumn definition.name referenced) else
     let key : ForeignKey := { table := referenced, columns := [table.columns.length - 1], referenced := columns,
@@ -83,6 +92,8 @@ def addTableConstraints (tableName : Identifier) (table : CatalogTable) :
   | .primaryKey names algorithm :: rest => do
     if !table.primaryKey.isEmpty then throw (.multiplePrimaryKeys tableName)
     let positions ← keyPositions table.columns names
+    if positions.any fun position => (table.columns[position]?.bind (·.generated)).isSome then
+      throw .generatedInPrimaryKey
     let alias := match positions with
       | [position] => if aliasesRowid (table.columns[position]?.bind (·.declaredType)) then some position else none
       | _ => none
@@ -140,8 +151,12 @@ def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : N
       let table := if options.withoutRowid then table.asWithoutRowid else table
       if options.withoutRowid && table.primaryKey.isEmpty then
         prepareError catalog (.expression (.primaryKeyMissing name))
+      else if table.columns.all (·.generated.isSome) then prepareError catalog (.expression .onlyGeneratedColumns)
       else match resolveTableChecks context.profile.dqsDdl (Scope.single name table.columns !table.withoutRowid)
           table columns constraints with
+      | .error issue => issueResolution catalog index [] issue
+      | .ok table =>
+      match resolveGeneratedColumns context.profile.dqsDdl (Scope.single name table.columns false) table columns with
       | .error issue => issueResolution catalog index [] issue
       | .ok table =>
         if columns.any (rowidName ·.name) then restrict index [1] .rowidColumnName

@@ -37,11 +37,13 @@ def value_cell(value: Json) -> Json:
 
 
 def column_row(position: int, column: dict[str, Json], primary_key: list[int]) -> list[Json]:
-    """One `PRAGMA table_xinfo` row: number, name, type, not-null, default, key position, hidden."""
+    """One `PRAGMA table_xinfo` row: number, name, type, not-null, default, key position, and
+    hidden: 2 for a VIRTUAL and 3 for a STORED generated column, else 0."""
     key = primary_key.index(position) + 1 if position in primary_key else 0
     default = "null" if column["defaultValue"] is None else text_cell(str(column["defaultValue"]))
     return [integer_cell(position), text_cell(str(column["name"])), text_cell(str(column["declaredType"])),
-            integer_cell(int(bool(column["notNull"]))), default, integer_cell(key), integer_cell(0)]
+            integer_cell(int(bool(column["notNull"]))), default, integer_cell(key),
+            integer_cell(int(column.get("hidden", 0)))]
 
 
 def index_entry(names: list[str], keys: list[int | None], name: str, unique: bool, origin: str,

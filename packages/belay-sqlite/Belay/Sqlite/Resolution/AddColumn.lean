@@ -22,7 +22,7 @@ def addedColumn (definition : Syntax.ColumnDefinition) : Option CatalogColumn :=
       (resolveColumnDefault column.affinity ⟨expression, sourceText⟩).map fun resolved =>
         { column with defaultValue := some resolved }
     | .collate name => (Collation.named? name).map fun collation => { column with collation }
-    | .primaryKey .. | .unique _ | .check .. | .references .. => some column)
+    | .primaryKey .. | .unique _ | .check .. | .references .. | .generated .. => some column)
     { name := definition.name, declaredType := reportedType definition.declaredType }
 
 /-- Resolve ALTER TABLE ADD COLUMN. Path 1 is the column definition. Its CHECK constraints
@@ -48,6 +48,7 @@ def resolveAddColumn (context : ResolveContext) (catalog : Catalog) (index : Nat
     else if definition.constraints.any Syntax.ColumnConstraint.isPrimaryKey then prepareError catalog (.expression .cannotAddPrimaryKey)
     else if definition.constraints.any Syntax.ColumnConstraint.isUnique then prepareError catalog (.expression .cannotAddUnique)
     else if rowidName definition.name then restrict index [1] .rowidColumnName
+    else if definition.constraints.any (· matches .generated ..) then restrict index [1] .addColumnGenerated
     else
       match addedColumn definition with
       | none => restrict index [1] .addColumnConstraint
@@ -60,7 +61,7 @@ def resolveAddColumn (context : ResolveContext) (catalog : Catalog) (index : Nat
           let foreignKeys := definition.constraints.filterMap fun
             | .references target columns onDelete onUpdate =>
               some { table := target, columns := [table.columns.length], referenced := columns, onDelete, onUpdate }
-            | .notNull _ | .primaryKey .. | .unique _ | .default .. | .collate _ | .check .. => none
+            | .notNull _ | .primaryKey .. | .unique _ | .default .. | .collate _ | .check .. | .generated .. => none
           let column := { column with checks, foreignKeys }
           .ok (.addColumn position column, catalog.addColumn position column)
 

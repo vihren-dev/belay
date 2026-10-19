@@ -12,8 +12,8 @@ The frontend maps these statements, and refuses every other statement as
 
 - `CREATE TABLE` with column definitions (name, declared type text, `NOT NULL`,
   `PRIMARY KEY` with its sort order, `UNIQUE`, `COLLATE` (ADR 0014, slice 3), `CHECK`
-  and `REFERENCES` (slice 4), and `DEFAULT` with a literal, a signed number, a time
-  keyword or a name), table `PRIMARY KEY` and `UNIQUE` constraints over plain column
+  and `REFERENCES` (slice 4), `[GENERATED ALWAYS] AS (expr) [VIRTUAL | STORED]` (slice 5),
+  and `DEFAULT` with a literal, a signed number, a time keyword or a name), table `PRIMARY KEY` and `UNIQUE` constraints over plain column
   names, `CHECK` and `FOREIGN KEY` (slice 4), `CONSTRAINT name` before any constraint,
   and the option `WITHOUT ROWID` (slice 2; `STRICT` is refused);
 - `CREATE [UNIQUE] INDEX` with key terms, each a column name or an expression with
@@ -94,7 +94,7 @@ row of `DO UPDATE` are always ABORT. In the schema, a `PRIMARY KEY`, `UNIQUE` or
 `NOT NULL` constraint may have `ON CONFLICT algorithm`, its algorithm when INSERT has no
 `OR` clause; keys with different algorithms other than REPLACE are the restriction
 `mixed-conflict-algorithms`, UPDATE of such a table is `constraint-algorithm-update`, and
-REPLACE of a NOT NULL column with a default is `replace-default`. Generated columns, `UPDATE OR`, a target with a direction, collation,
+REPLACE of a NOT NULL column with a default is `replace-default`. `UPDATE OR`, a target with a direction, collation,
 `NULLS` order, qualified name or `WHERE`, `WITH`, `FROM` in writes, sort modifiers in keys,
 partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
 options, `AS SELECT`, views, triggers, virtual tables, `EXPLAIN`, `PRAGMA`,
@@ -160,6 +160,19 @@ errors, and the catalog keeps it with its `ON DELETE` and `ON UPDATE` actions, a
 `PRAGMA foreign_key_list` reports it. A record without an execution profile and with a
 foreign key is out of scope, as its setup may have turned foreign keys on. A CREATE TABLE with constraints and defaults runs in the
 migration as in the schema.
+
+A generated column (ADR 0014, slice 5) is `VIRTUAL` or `STORED`, and `PRAGMA table_xinfo`
+reports it with `hidden` 2 or 3. Its expression resolves over the table's columns after the
+CHECK constraints, without the rowid; every write computes the generated values of the
+row, in an order that respects their dependencies, stores them with the column's affinity,
+and then checks NOT NULL, CHECK and the unique keys. An INSERT without a column list takes
+one value for each column that is not generated. SQLite's prepare errors apply: a generated
+column in the primary key, a DEFAULT on it, `rowid` in its expression, a time keyword, a
+table whose columns are all generated, and an INSERT or UPDATE that names a generated
+column. A loop of generated columns (`generated-loop`), a date and time function or a JSON
+function in the expression (`generated-function`), a `DO UPDATE` of a generated column
+(`upsert-generated`) and ADD COLUMN of a generated column (`add-column-generated`) are
+model restrictions.
 
 A collation (ADR 0014, slice 3) is `BINARY`, `NOCASE` or `RTRIM`, with ASCII case of the
 name ignored. `NOCASE` compares TEXT with the ASCII capitals folded, and `RTRIM` compares
@@ -248,6 +261,9 @@ should shrink.
 | `index-json-function` | A JSON function in a key term or the filter of CREATE INDEX is not modeled | ADR 0014, slice 1 |
 | `check-function` | A time keyword, a date and time function or a JSON function in a CHECK constraint is not modeled | ADR 0014, slice 4 |
 | `add-column-check-error` | A CHECK of ADD COLUMN that SQLite cannot resolve is not modeled, because SQLite reports it while the statement runs | ADR 0014, slice 4 |
+| `generated-function` | A date and time function or a JSON function in a generated column is not modeled | ADR 0014, slice 5 |
+| `generated-loop` | Generated columns that read each other in a loop are not modeled, because SQLite reports the loop while CREATE TABLE runs | ADR 0014, slice 5 |
+| `add-column-generated` | ADD COLUMN of a generated column is not modeled | ADR 0014, slice 5 |
 | `add-column-constraint` | The added column requires unmodeled default evaluation | ADR 0008 |
 | `constraint-algorithm-update` | UPDATE of a table with ON CONFLICT constraint algorithms is not modeled | ADR 0012 amendment 4, slice 5d |
 | `replace-default` | REPLACE of a NOT NULL column with a default is not modeled | ADR 0012 amendment 4, slice 5d |
@@ -278,6 +294,7 @@ should shrink.
 | `windowed-group-sum` | SUM in a grouped query with LIMIT or OFFSET is not modeled, because SQLite may stop before an overflowing group | ADR 0012 slice 2 |
 | `constant-function-error` | A constant value in VALUES or SET whose JSON function fails is not modeled, because the model does not describe when SQLite evaluates it | ADR 0012 slice 6b |
 | `unknown-collation` | COLLATE with a name other than BINARY, NOCASE or RTRIM in an expression is not modeled, because SQLite looks the name up only where its query planner uses the collation | ADR 0014, slice 3 |
+| `upsert-generated` | DO UPDATE of a generated column is not modeled, because SQLite refuses it only when a row conflicts | ADR 0014, slice 5 |
 
 #### Unrepresented
 

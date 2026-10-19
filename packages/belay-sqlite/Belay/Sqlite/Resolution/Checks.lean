@@ -2,9 +2,10 @@ import Belay.Sqlite.Resolution.ResolvedExprForm
 
 set_option doc.verso true
 
-/-! The CHECK constraints of a table (ADR 0014, D2). A CHECK is a condition over a row of
-its table, resolved once when the table is defined, and the label that SQLite reports
-when the condition is false. Execution checks it on every row that a write stores. -/
+/-! The CHECK constraints and the generated columns of a table (ADR 0014, D2 and D5). A
+CHECK is a condition over a row of its table, resolved once when the table is defined,
+and the label that SQLite reports when the condition is false. Execution checks it on
+every row that a write stores, after it computes the generated columns of the row. -/
 
 namespace Belay.Sqlite
 
@@ -17,6 +18,18 @@ structure CheckConstraint where
   condition : Resolved.Expr
   /-- The label that SQLite reports when the condition is false. -/
   label : String
+  deriving Repr, DecidableEq
+
+/-- How a generated column is computed: its expression over a row of the table and whether
+it is {lit}`STORED`. For example, {lit}`b AS (a * 2)` on a table {lit}`(a, b)` has the expression
+{lean}`Resolved.Expr.arithmetic .multiply (.column 0) (.literal (.integer 2))` and is
+{lit}`VIRTUAL`. The model stores the values of both kinds, as they read the same (ADR 0014,
+D5). -/
+structure GeneratedColumn where
+  /-- The expression over a row of the table. -/
+  expression : Resolved.Expr
+  /-- Whether the column is {lit}`STORED`; false for {lit}`VIRTUAL`. -/
+  stored : Bool
   deriving Repr, DecidableEq
 
 end Belay.Sqlite

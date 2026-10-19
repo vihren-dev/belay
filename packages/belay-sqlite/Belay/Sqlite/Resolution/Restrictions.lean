@@ -40,6 +40,20 @@ inductive RestrictionKind where
   runs, as {lit}`error in table %s after add column: %s`, which the model does not describe
   (ADR 0014, slice 4). -/
   | addColumnCheckError
+  /-- A date and time function or a JSON function in a generated column: SQLite refuses
+  {lit}`'now'` only when it writes a row, and a JSON function can fail while a row is written
+  (ADR 0014, slice 5). -/
+  | generatedFunction
+  /-- Generated columns that read each other in a loop: SQLite reports it while CREATE TABLE
+  runs, which the model does not describe. -/
+  | generatedLoop
+  /-- A {lit}`DO UPDATE` that assigns a generated column: SQLite refuses it only when a row
+  conflicts. -/
+  | upsertGenerated
+  /-- ADD COLUMN of a generated column: SQLite computes a {lit}`VIRTUAL` one for every
+  existing row and refuses a {lit}`STORED` one while the statement runs, which the model
+  does not describe. -/
+  | addColumnGenerated
   /-- The added column requires unmodeled default evaluation. -/
   | addColumnConstraint
   /-- A {lit}`SET` value that reads the row is not modeled for a column of a unique key

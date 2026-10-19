@@ -42,17 +42,22 @@ def integer(cell: Cell) -> int:
 
 
 def native_columns(info: list[Row]) -> list[Json]:
-    """Decode `PRAGMA table_xinfo` rows: name, declared type, NOT NULL and default text.
+    """Decode `PRAGMA table_xinfo` rows: name, declared type, NOT NULL, default text and,
+    only for a generated column, `hidden` (2 for VIRTUAL, 3 for STORED).
 
-    Hidden columns belong to virtual and generated tables, which the frontend
+    Hidden value 1 belongs to the hidden columns of virtual tables, which the frontend
     refuses, so one here is evidence corruption.
     """
     columns: list[Json] = []
     for number, (cid, name, declared, not_null, default, _, hidden) in enumerate(info):
-        if integer(cid) != number or integer(hidden) != 0:
+        if integer(cid) != number or integer(hidden) not in (0, 2, 3):
             raise ValueError("Unexpected native column inventory")
-        columns.append({"name": text(name), "declaredType": text(declared), "notNull": bool(integer(not_null)),
-                        "defaultValue": None if default[0] == 5 else text(default)})
+        column: dict[str, Json] = {"name": text(name), "declaredType": text(declared),
+                                   "notNull": bool(integer(not_null)),
+                                   "defaultValue": None if default[0] == 5 else text(default)}
+        if integer(hidden):
+            column["hidden"] = integer(hidden)
+        columns.append(column)
     return columns
 
 

@@ -40,6 +40,9 @@ structure CatalogColumn where
   /-- The foreign keys of the column's {lit}`REFERENCES` constraints, in written order; omit
   them for none (ADR 0014, D2). -/
   foreignKeys : List ForeignKey := []
+  /-- How the column is generated; omit it for a column that is not generated (ADR 0014,
+  D5). -/
+  generated : Option GeneratedColumn := none
   deriving Repr, DecidableEq
 
 /-- One table entry. Keys are lists of column positions. Use
@@ -86,16 +89,6 @@ only in which label a row reports when several CHECK constraints fail, and every
 has the same result code. -/
 def CatalogTable.allChecks (table : CatalogTable) : List CheckConstraint :=
   table.columns.flatMap (·.checks) ++ table.checks
-
-/-- The {lit}`ON CONFLICT` algorithm of the UNIQUE constraint at the position, none for a
-constraint without the clause or without an entry. -/
-def CatalogTable.uniqueAlgorithm (table : CatalogTable) (index : Nat) : Option ConflictAlgorithm :=
-  table.uniqueAlgorithms.getD index none
-
-/-- The algorithms of the UNIQUE constraints, one for each key of
-{name}`CatalogTable.uniqueKeys`. -/
-def CatalogTable.keyedUniqueAlgorithms (table : CatalogTable) : List (Option ConflictAlgorithm) :=
-  table.uniqueKeys.mapIdx fun index _ => table.uniqueAlgorithm index
 
 /-- The kind and content of one catalog object. -/
 inductive CatalogEntry where

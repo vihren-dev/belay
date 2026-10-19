@@ -260,6 +260,21 @@ Each slice works in this way:
   - Records before version 4 have no execution profile, and their setup may turn foreign
     keys on; the subject cannot see it, so such a record with a foreign key stays out of
     scope (`conformance/profile_scope.py`).
+- Slice 5 (2026-10-19), details checked natively that D5 does not state:
+  - `PRAGMA table_xinfo` reports a generated column with `hidden` 2 (`VIRTUAL`) or 3
+    (`STORED`), and the recorder reads its values as row cells, so the model stores both
+    kinds.
+  - An INSERT without a column list takes values for the columns that are not generated,
+    and its count message counts only those.
+  - SQLite strips a trailing `GENERATED ALWAYS` from a declared type.
+  - A loop of generated columns fails CREATE TABLE at step, a `DO UPDATE` of a generated
+    column fails only on a conflict, and ADD COLUMN of a `STORED` column fails at step; the
+    model leaves these, and ADD COLUMN of any generated column, as restrictions
+    (`generated-loop`, `upsert-generated`, `add-column-generated`). ADD COLUMN of a
+    `VIRTUAL` column would need a value per existing row, which the ADD COLUMN step and its
+    laws do not describe.
+  - The model computes generated values in passes over the generated columns, one per
+    generated column, so the kernel reduces the computation.
 
 ## Consequences
 
