@@ -1,3 +1,4 @@
+import Belay.Sqlite.ByteText
 set_option doc.verso true
 
 /-! Stored values, rows, column affinities and SQLite's identifier folding. The

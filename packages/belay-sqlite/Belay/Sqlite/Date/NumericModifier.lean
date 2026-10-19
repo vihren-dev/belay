@@ -23,7 +23,7 @@ the amount. -/
 def DateTime.applyUnitModifier (p : DateTime) (amount : Float) (rest : List UInt8) : Option DateTime :=
   let text := dropSpaces rest
   if text.length < unitTextMinimum || text.length > unitTextMaximum then none else
-  let text := if text.getLast?.map lowerAsciiByte == some 115 then text.dropLast else text
+  let text := if text.getLast?.map lowerAscii == some 115 then text.dropLast else text
   (TimeUnit.find? text amount).map fun unit => p.addUnits unit amount
 
 /-- Whether a time text starts with {lit}`HH:MM` as {lit}`getDigits` reads it with the

@@ -13,31 +13,31 @@ the first modifier. -/
 namespace Belay.Sqlite
 
 /-- The modifier keyword {lit}`auto` in lower-case ASCII bytes. -/
-def autoKeyword : List UInt8 := [97, 117, 116, 111]
+def autoKeyword : List UInt8 := bytes! "auto"
 
 /-- The modifier keyword {lit}`ceiling` in lower-case ASCII bytes. -/
-def ceilingKeyword : List UInt8 := [99, 101, 105, 108, 105, 110, 103]
+def ceilingKeyword : List UInt8 := bytes! "ceiling"
 
 /-- The modifier keyword {lit}`floor` in lower-case ASCII bytes. -/
-def floorKeyword : List UInt8 := [102, 108, 111, 111, 114]
+def floorKeyword : List UInt8 := bytes! "floor"
 
 /-- The modifier keyword {lit}`julianday` in lower-case ASCII bytes. -/
-def juliandayKeyword : List UInt8 := [106, 117, 108, 105, 97, 110, 100, 97, 121]
+def juliandayKeyword : List UInt8 := bytes! "julianday"
 
 /-- The modifier keyword {lit}`localtime` in lower-case ASCII bytes. -/
-def localtimeKeyword : List UInt8 := [108, 111, 99, 97, 108, 116, 105, 109, 101]
+def localtimeKeyword : List UInt8 := bytes! "localtime"
 
 /-- The modifier keyword {lit}`unixepoch` in lower-case ASCII bytes. -/
-def unixepochKeyword : List UInt8 := [117, 110, 105, 120, 101, 112, 111, 99, 104]
+def unixepochKeyword : List UInt8 := bytes! "unixepoch"
 
 /-- The modifier keyword {lit}`utc` in lower-case ASCII bytes. -/
-def utcKeyword : List UInt8 := [117, 116, 99]
+def utcKeyword : List UInt8 := bytes! "utc"
 
 /-- The modifier keyword {lit}`weekday` and its space in lower-case ASCII bytes. -/
-def weekdayPrefix : List UInt8 := [119, 101, 101, 107, 100, 97, 121, 32]
+def weekdayPrefix : List UInt8 := bytes! "weekday "
 
 /-- The modifier keyword {lit}`start of` and its space in lower-case ASCII bytes. -/
-def startOfPrefix : List UInt8 := [115, 116, 97, 114, 116, 32, 111, 102, 32]
+def startOfPrefix : List UInt8 := bytes! "start of "
 
 /-- The least raw number that {lit}`auto` reads as Unix seconds: -4713-11-24 12:00:00. -/
 def autoUnixSecondsMinimum : Float := -210866760000.0
@@ -90,7 +90,7 @@ def DateTime.applyStartOf (p : DateTime) (unit : List UInt8) : Option DateTime :
 
 /-- Whether the text starts with a lower-case keyword without regard to ASCII case, as
 {lit}`sqlite3_strnicmp` compares the length of the keyword. -/
-def startsWithKeyword (text keyword : List UInt8) : Bool := (text.take keyword.length).map lowerAsciiByte == keyword
+def startsWithKeyword (text keyword : List UInt8) : Bool := (text.take keyword.length).map lowerAscii == keyword
 
 /-- The keyword modifiers that start with {lit}`s`: {lit}`start of ...`, or
 {lit}`subsec` and {lit}`subsecond`, which show milliseconds. -/
@@ -120,7 +120,7 @@ def DateTime.applyModifier (p : DateTime) (index : Nat) (text : List UInt8) : Op
   match text with
   | [] => none
   | first :: _ =>
-    let initial := lowerAsciiByte first
+    let initial := lowerAscii first
     if initial == 97 then
       if equalsKeyword text autoKeyword && index ≤ 1 then some p.autoAdjust else none
     else if initial == 99 then

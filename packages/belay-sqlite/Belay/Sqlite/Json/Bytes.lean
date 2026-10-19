@@ -1,3 +1,4 @@
+import Belay.Sqlite.ByteText
 set_option doc.verso true
 
 /-! Byte classes of the SQLite 3.51.0 JSON reader ({lit}`jsonIsSpace`, {lit}`jsonIsOk`,
@@ -38,10 +39,6 @@ def isLabelStart (byte : UInt8) : Bool := isAsciiAlpha byte || byte == 36 || byt
 /-- Whether a byte can continue an unquoted JSON5 object label ({lit}`sqlite3JsonId2`):
 a label start byte or a digit. -/
 def isLabelPart (byte : UInt8) : Bool := isLabelStart byte || isAsciiDigit byte
-
-/-- The ASCII lowercase of a byte ({lit}`sqlite3UpperToLower`); other bytes stay the
-same. -/
-def lowerAscii (byte : UInt8) : UInt8 := if 65 ≤ byte && byte ≤ 90 then byte + 32 else byte
 
 /-- The value of a hexadecimal digit ({lit}`jsonHexToInt`). The arithmetic is SQLite's:
 it gives a value in 0 to 15 for every byte, also for a byte that is not a digit. -/

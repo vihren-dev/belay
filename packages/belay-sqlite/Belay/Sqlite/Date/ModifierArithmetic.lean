@@ -30,12 +30,12 @@ def TimeUnit.all : List TimeUnit := [.second, .minute, .hour, .day, .month, .yea
 
 /-- The name of a unit in lower-case ASCII bytes. -/
 def TimeUnit.name : TimeUnit → List UInt8
-  | .second => [115, 101, 99, 111, 110, 100]
-  | .minute => [109, 105, 110, 117, 116, 101]
-  | .hour => [104, 111, 117, 114]
-  | .day => [100, 97, 121]
-  | .month => [109, 111, 110, 116, 104]
-  | .year => [121, 101, 97, 114]
+  | .second => bytes! "second"
+  | .minute => bytes! "minute"
+  | .hour => bytes! "hour"
+  | .day => bytes! "day"
+  | .month => bytes! "month"
+  | .year => bytes! "year"
 
 /-- The bound {lit}`rLimit` of the amount: the amount must be greater than its negative
 and less than it. SQLite stores the bound as a C {lit}`float`, so the values are the
@@ -62,7 +62,7 @@ def TimeUnit.seconds : TimeUnit → Float
 accepts the amount, as the loop over {lit}`aXformType` finds it. -/
 def TimeUnit.find? (text : List UInt8) (amount : Float) : Option TimeUnit :=
   TimeUnit.all.find? fun unit =>
-    text.map lowerAsciiByte == unit.name && amount > -unit.amountLimit && amount < unit.amountLimit
+    text.map lowerAscii == unit.name && amount > -unit.amountLimit && amount < unit.amountLimit
 
 /-- Bring the month into 1 to 12 and carry whole years into the year, with C's
 truncating division: {lit}`x = M>0 ? (M-1)/12 : (M-12)/12`. -/

@@ -134,10 +134,6 @@ def canonicalMemberEnd (text : Array UInt8) : Nat → Nat → UInt8 → Option N
       else none
 end
 
-/-- The bytes of a text up to its first NUL byte. SQLite reads the JSON text as a C
-string, so the reader stops at the first NUL. -/
-def bytesBeforeNul (bytes : List UInt8) : List UInt8 := bytes.takeWhile (· != 0)
-
 /-- Whether a text is one canonical JSON value with only JSON space bytes around it,
 read up to the first NUL byte. After the value, {lit}`jsonConvertTextToBlob` sets the
 JSON5 flag for any other white space or comment. -/

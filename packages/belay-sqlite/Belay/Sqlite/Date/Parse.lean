@@ -150,21 +150,14 @@ def parseCalendarDate (bytes : List UInt8) : Option DateTime :=
                                   validDate := true }.computeFloor
           some (if date.timezoneMinutes != 0 then date.computeJulianDay else date)
 
-/-- The ASCII lower case of a byte, as {lit}`sqlite3UpperToLower` maps it. -/
-def lowerAsciiByte (byte : UInt8) : UInt8 := if 65 ≤ byte && byte ≤ 90 then byte + 32 else byte
-
-/-- Whether the text equals a lower-case keyword without regard to ASCII case, as
-{lit}`sqlite3StrICmp` compares. -/
-def equalsKeyword (bytes keyword : List UInt8) : Bool := bytes.map lowerAsciiByte == keyword
-
 /-- The keyword {lit}`now` in lower-case ASCII bytes. -/
-def nowKeyword : List UInt8 := [110, 111, 119]
+def nowKeyword : List UInt8 := bytes! "now"
 
 /-- The keyword {lit}`subsec` in lower-case ASCII bytes. -/
-def subsecKeyword : List UInt8 := [115, 117, 98, 115, 101, 99]
+def subsecKeyword : List UInt8 := bytes! "subsec"
 
 /-- The keyword {lit}`subsecond` in lower-case ASCII bytes. -/
-def subsecondKeyword : List UInt8 := subsecKeyword ++ [111, 110, 100]
+def subsecondKeyword : List UInt8 := bytes! "subsecond"
 
 /-- {lit}`parseDateOrTime`: a date, a time, {lit}`now`, a number that
 {name}`atof` reads in full (a Julian day number), or {lit}`subsec` or {lit}`subsecond`,

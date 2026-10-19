@@ -12,10 +12,6 @@ SQLite's {lit}`sqlite3NotPureFunc` passes, so {lit}`now` always reads the clock.
 
 namespace Belay.Sqlite
 
-/-- The bytes before the first zero byte: the text that C reads through the pointer of
-{lit}`sqlite3_value_text`. -/
-def bytesBeforeNul (bytes : List UInt8) : List UInt8 := bytes.takeWhile (· != 0)
-
 /-- The text of a value as {lit}`sqlite3_value_text` gives it to C code: NULL has none;
 a number is its text; TEXT and BLOB are their bytes up to the first zero byte. -/
 def Value.sqliteValueText? : Value → Option (List UInt8)

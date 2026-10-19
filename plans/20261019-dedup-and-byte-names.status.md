@@ -18,6 +18,10 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), step 8, owner de
 - 2026-10-19: duplicates mapped: `bytesBeforeNul` twice (`Json/Validity.lean`,
   `Date/Functions.lean`), ASCII lower-casing twice (`Json/Bytes.lean` `lowerAscii`,
   `Date/Parse.lean` `lowerAsciiByte`). Owner decision 9: identifiers as bytes in this step.
+- 2026-10-19: `ByteText.lean` holds `lowerAscii`, `bytesBeforeNul`, `equalsKeyword` and the
+  `bytes!` literal macro (outcomes 1 and 5); the twins in `Json/Bytes.lean`,
+  `Json/Validity.lean`, `Date/Parse.lean` and `Date/Functions.lean` are gone, and the date
+  keywords and units use the literal. The core has 132 modules. Verdict unchanged.
 
 ## Remaining
 
