@@ -46,6 +46,20 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D2.
   upstream cases newly agree (v1 +13, v2 +13, v3 +16, v4 +58, v5 +99, v6 +2), none leaves
   AGREE. The authored corpus has 32 cases.
 
+- 2026-10-19: checks. Fixes after the suite runs: the examples and tests that named the
+  removed `CatalogTable.plain` or expected a CREATE TABLE with constraints to stay
+  restricted; the harness compares a primary key without repeated columns, as
+  `table_xinfo` gives each column once, and a `WITHOUT ROWID` key drops repeats as SQLite
+  does; the authored catalog has `check-abort` agree. `just test-full`, `just test-nix`
+  and `just test-scheduled` pass. Verdict: 201 upstream cases newly agree (v1 +13, v2 +13,
+  v3 +16, v4 +58, v5 +99, v6 +2; v5: 1,210 → 1,309), none leaves AGREE; corpus 32 (32
+  cases) agrees in full with kernel proofs.
+
+- 2026-10-19: CI time (local, forced rebuilds), slice 3 → slice 4: harness 21 → 22 s,
+  model 364 → 385 s, frozen 140 → 141 s, mutants 519 → 551 s (four new mutants). PR B:
+  corpus 32 recorded natively (32 cases) and claimed in full; the 201 upstream cases join
+  `mustAgree`; new judge lock.
+
 ## Remaining
 
-- Checks, reviews, CI time, PR B, pull requests.
+- Pull requests A and B.
