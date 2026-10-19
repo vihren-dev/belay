@@ -1,6 +1,6 @@
 # ADR 0014: Schema features: index forms, CHECK, collations and table options
 
-Date: 2026-10-19. Status: PROPOSED.
+Date: 2026-10-19. Status: ACCEPTED on 2026-10-19 (#170).
 Audience: designers and reviewers.
 Evidence: [the schema features measurement](../experiments/schema-features/README.md).
 Related: [ADR 0008](adr-0008-syntax-and-resolution-in-lean.md) (catalog and resolution),
