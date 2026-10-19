@@ -77,7 +77,8 @@ theorem stableSort_perm (le : α → α → Bool) (items : List α) : (stableSor
   simpa [stableSort] using foldl_insertStable_perm le items []
 
 /-- For every table, the rows of a full scan ({name}`Belay.Sqlite.Table.scanRows`) are a
-permutation of its rows, in rowid or in key order. -/
+permutation of its rows, in rowid or in key order. Proof sketch: both branches of the scan
+are a {name}`stableSort` of the rows, which {name}`stableSort_perm` permutes. -/
 theorem _root_.Belay.Sqlite.Table.scanRows_perm (table : Table) : table.scanRows.Perm table.rows := by
   unfold Table.scanRows
   split <;> exact stableSort_perm _ _

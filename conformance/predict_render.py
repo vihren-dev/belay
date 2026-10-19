@@ -90,6 +90,8 @@ def table_record(predicted: dict[str, Json]) -> dict[str, Json]:
     without_rowid = bool(table.get("withoutRowid", False))
 
     def identity(row: dict[str, Json]) -> list[Json]:
+        """The row's identity as the recorder writes it: its primary-key cells in a `WITHOUT
+        ROWID` table, else its rowid."""
         values = row["values"]
         return ([value_cell(values[key]) for key in primary] if without_rowid
                 else [integer_cell(int(row["rowid"]))])
