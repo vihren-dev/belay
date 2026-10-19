@@ -1,6 +1,6 @@
 # Status: index forms (ADR 0014, slice 1)
 
-Created 2026-10-19. Status: open.
+Created 2026-10-19. Status: DONE.
 Task file: [task](20261019-index-forms.task.md).
 Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D1.
 
@@ -53,4 +53,4 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D1.
 
 ## Remaining
 
-- Pull requests A and B.
+- 2026-10-19: pull requests #175 (A) and #176 (B). DONE.

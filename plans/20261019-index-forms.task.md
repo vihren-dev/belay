@@ -1,6 +1,6 @@
 # Index forms: expression keys, partial indexes and indexes that run (ADR 0014, slice 1)
 
-Created 2026-10-19. Status: open.
+Created 2026-10-19. Status: DONE (pull requests #175 and #176).
 Status file: [status](20261019-index-forms.status.md).
 Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D1 and "Order and pull
 requests"; the [measurement](../experiments/schema-features/README.md).
