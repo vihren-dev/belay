@@ -14,7 +14,8 @@ The frontend maps these statements, and refuses every other statement as
   `PRIMARY KEY` with its sort order, `UNIQUE`, and `DEFAULT` with a literal, a
   signed number, a time keyword or a name) and table `PRIMARY KEY` and `UNIQUE`
   constraints over plain column names;
-- `CREATE [UNIQUE] INDEX` over plain column names;
+- `CREATE [UNIQUE] INDEX` with key terms, each a column name or an expression with
+  an optional `ASC` or `DESC`, and an optional `WHERE` filter (ADR 0014, slice 1);
 - `ALTER TABLE … ADD [COLUMN]` with one column definition;
 - `BEGIN` (optionally `DEFERRED`), `COMMIT`/`END` and `ROLLBACK`, optionally with
   `TRANSACTION`;
@@ -122,6 +123,18 @@ Omitted INSERT columns use their literal defaults and column affinities. A colum
 with `DEFAULT CURRENT_TIMESTAMP`, `CURRENT_DATE` or `CURRENT_TIME` gives an omitted
 value the text of the INSERT's clock value, stored with the column affinity (slice 6e2).
 
+An index has key terms and an optional `WHERE` filter (ADR 0014, slice 1). A term that
+is a column name is that column; any other term is an expression over the table's
+row. A unique index constrains only the rows for which its filter is true, and two
+rows conflict when every term is equal and none is NULL. A `CREATE INDEX` in the
+migration builds the index over the existing rows; a unique index over rows that
+conflict fails with SQLite's constraint error and leaves the catalog unchanged. An
+`ON CONFLICT` target names only a key of columns without a filter. SQLite's prepare
+errors apply: a qualified name in a term, `CURRENT_TIME`, `CURRENT_DATE` and
+`CURRENT_TIMESTAMP` in a term or the filter, and an aggregate. A string literal as a
+term, a date and time function, a JSON function, a rowid name in the filter and
+`COLLATE` in a term are model restrictions.
+
 ADD COLUMN supports literal defaults, with optional NOT NULL. Existing rows
 read the default under the column affinity. Without a default they read NULL.
 NOT NULL with NULL succeeds on an empty table and fails during execution on a
@@ -144,7 +157,7 @@ successful prefix. Predicting an error alone never establishes `VIOLATED`.
 
 SQL that SQLite accepts but the model does not describe is a model restriction:
 the whole request is `UNSUPPORTED` at the byte range of the refused node. In the
-migration these are, among others: `CREATE INDEX`; `CREATE TABLE` with
+migration these are, among others: `CREATE TABLE` with
 constraints or defaults; `ADD COLUMN` with an unmodeled default expression; rowid column
 names; time values; a `SET` value that reads the row for a column of a unique key; a
 column named twice. In a `SELECT`: an aggregate inside an expression; a result column
@@ -188,7 +201,9 @@ should shrink.
 | `rowid-column-name` | Column names `rowid`, `_rowid_` and `oid` are not modeled | ADR 0008 |
 | `create-table-constraints` | Constraints and defaults in a CREATE TABLE that runs are not modeled | ADR 0008 |
 | `unmodeled-default` | Only literal defaults and the time keywords are modeled | ADR 0008 |
-| `create-index-runs` | A CREATE INDEX that runs is not modeled | ADR 0008 |
+| `index-string-term` | A string literal as a key term of CREATE INDEX, also a double-quoted name that is no column, is not modeled | ADR 0014, slice 1 |
+| `index-date-function` | A date and time function in a key term or the filter of CREATE INDEX is not modeled | ADR 0014, slice 1 |
+| `index-json-function` | A JSON function in a key term or the filter of CREATE INDEX is not modeled | ADR 0014, slice 1 |
 | `add-column-constraint` | The added column requires unmodeled default evaluation | ADR 0008 |
 | `constraint-algorithm-update` | UPDATE of a table with ON CONFLICT constraint algorithms is not modeled | ADR 0012 amendment 4, slice 5d |
 | `replace-default` | REPLACE of a NOT NULL column with a default is not modeled | ADR 0012 amendment 4, slice 5d |

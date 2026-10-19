@@ -45,6 +45,14 @@ inductive ExprError where
   | conflictingAlgorithms
   /-- {lit}`no such column: %s` (name resolution of an expression or key). -/
   | noSuchColumn (name : Identifier)
+  /-- {lit}`the "." operator prohibited in index expressions`: a qualified name in a key
+  term of CREATE INDEX ({lit}`notValidImpl`). -/
+  | qualifiedIndexTerm
+  /-- {lit}`non-deterministic functions prohibited in index expressions`, or
+  {lit}`... in partial index WHERE clauses` when {lit}`filter` holds:
+  {lit}`CURRENT_TIME`, {lit}`CURRENT_DATE` or {lit}`CURRENT_TIMESTAMP` in a key term or in
+  the filter of CREATE INDEX. -/
+  | nondeterministicIndex (filter : Bool)
   /-- {lit}`hex literal too big: %s` (a hexadecimal literal with more than 16 digits). -/
   | hexLiteralTooBig (text : String)
   /-- {lit}`misuse of aggregate function %s()` (an aggregate in {lit}`WHERE`, or one

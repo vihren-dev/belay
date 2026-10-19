@@ -69,14 +69,16 @@ deriving instance Lean.ToExpr for DefaultForm
 deriving instance Lean.ToExpr for ColumnDefault
 deriving instance Lean.ToExpr for CatalogColumn
 deriving instance Lean.ToExpr for CatalogTable
+deriving instance Lean.ToExpr for Resolved.JsonFunction
+deriving instance Lean.ToExpr for Resolved.DateFunction
+deriving instance Lean.ToExpr for Resolved.Expr, Resolved.Arguments
+deriving instance Lean.ToExpr for KeyTerm
+deriving instance Lean.ToExpr for IndexKey
 deriving instance Lean.ToExpr for CatalogIndex
 deriving instance Lean.ToExpr for CatalogEntry
 deriving instance Lean.ToExpr for CatalogObject
 deriving instance Lean.ToExpr for ExprError
 deriving instance Lean.ToExpr for PrepareError
-deriving instance Lean.ToExpr for Resolved.JsonFunction
-deriving instance Lean.ToExpr for Resolved.DateFunction
-deriving instance Lean.ToExpr for Resolved.Expr, Resolved.Arguments
 deriving instance Lean.ToExpr for Resolved.Aggregate
 deriving instance Lean.ToExpr for Resolved.Output
 deriving instance Lean.ToExpr for Resolved.SortKey
@@ -91,9 +93,10 @@ deriving instance Lean.ToExpr for Resolved.Cell
 deriving instance Lean.ToExpr for Resolved.Statement
 
 /-- The supported version of {lit}`ScriptRecord`, the structural record of a schema
-and a script: {assert}`scriptRecordVersion = 3`. Version 3 retains each default's
-source spelling. Earlier versions do not carry this metadata. -/
-def scriptRecordVersion : Nat := 3
+and a script: {assert}`scriptRecordVersion = 4`. Version 4 gives CREATE INDEX its key terms
+and filter (ADR 0014, slice 1); version 3 retained each default's source spelling. Earlier
+versions do not carry this metadata. -/
+def scriptRecordVersion : Nat := 4
 
 /-- The structural record of a schema and a script: the SQLite release and build of
 the profile, and the schema and script statements as written. Use an empty schema

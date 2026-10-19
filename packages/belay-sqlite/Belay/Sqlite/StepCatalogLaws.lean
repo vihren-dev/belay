@@ -18,7 +18,7 @@ def SqlState.Agrees (sql : SqlState) (state : ResolveState) : Prop :=
 /-- For every clock value, statement, database and result: if {name}`literalStep` succeeds
 with the result, then the result's catalog is {name}`Resolved.Statement.applyCatalog` of
 the statement on the database's catalog, and the statement is not transaction control.
-Proof sketch: CREATE TABLE and ADD COLUMN call the catalog functions, writes store rows
+Proof sketch: CREATE TABLE, CREATE INDEX and ADD COLUMN call the catalog functions, writes store rows
 only ({name}`Database.setRows`), a query returns the database, and every other statement
 fails. -/
 theorem literalStep_success_catalog {clock : Int} {statement : Resolved.Statement} {database result : Database}
@@ -62,7 +62,11 @@ theorem literalStep_success_catalog {clock : Int} {statement : Resolved.Statemen
       simp only [ran, queryEffect] at success
       repeat' split at success
       all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
-  | createIndex | begin | commit | rollback | prepareError =>
+  | createIndex target name index =>
+    simp only [literalStep, runStatement, step] at success
+    repeat' split at success
+    all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
+  | begin | commit | rollback | prepareError =>
     simp [literalStep, runStatement, step] at success
 
 /-- For every position, statement, connection states and resolution state: if the

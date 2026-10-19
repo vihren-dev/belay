@@ -47,6 +47,36 @@ theorem Database.table_createTable {database : Database} {position : Nat} {table
     subst present
     simp only [Catalog.tableAt_createTable name shape h, Option.map_some, rows_getD_append_nil]
 
+/-- For every catalog, position that holds a table, name and index, after
+{name}`Catalog.createIndex` the position holds the same table. Proof sketch: the index is
+appended after every existing position. -/
+theorem Catalog.tableAt_createIndex {catalog : Catalog} {position : Nat} {shape : CatalogTable}
+    (name : Identifier) (index : CatalogIndex) (present : catalog.tableAt position = some shape) :
+    (catalog.createIndex name index).tableAt position = some shape := by
+  have below : position < catalog.length := by
+    unfold Catalog.tableAt at present
+    cases h : catalog[position]? with
+    | none => simp [h] at present
+    | some _ => exact (List.getElem?_eq_some_iff.mp h).1
+  unfold Catalog.tableAt at present ⊢
+  simpa [Catalog.createIndex, List.getElem?_append_left below] using present
+
+/-- For every database, name, index and position with a table in the view, the database
+after CREATE INDEX ({name}`Catalog.createIndex` with an empty row list appended) has the
+same table at that position. Proof sketch: as {name}`Database.table_createTable`, with
+{name}`Catalog.tableAt_createIndex`. -/
+theorem Database.table_createIndex {database : Database} {position : Nat} {table : Table}
+    (name : Identifier) (index : CatalogIndex) (present : database.table position = some table) :
+    ({ catalog := database.catalog.createIndex name index, rows := database.rows ++ [[]] } : Database).table
+      position = some table := by
+  unfold Database.table at present ⊢
+  cases h : database.catalog.tableAt position with
+  | none => simp [h] at present
+  | some old =>
+    simp only [h, Option.map_some, Option.some.injEq] at present
+    subst present
+    simp only [Catalog.tableAt_createIndex name index h, Option.map_some, rows_getD_append_nil]
+
 /-- For every catalog, position that holds a table and column, after
 {name}`Catalog.addColumn` the position holds the table with the column appended. Proof
 sketch: the position holds a table entry, which {name}`Catalog.addColumn` replaces with

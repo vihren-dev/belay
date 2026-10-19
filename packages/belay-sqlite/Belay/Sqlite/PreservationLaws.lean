@@ -1,5 +1,5 @@
 import Belay.Sqlite.SqlLaws
-import Belay.Sqlite.DatabaseLaws
+import Belay.Sqlite.DatabaseWriteLaws
 
 set_option doc.verso true
 
@@ -20,19 +20,6 @@ database imposes no requirement. New tables are allowed. -/
 def DatabaseExtends (before after : Database) : Prop :=
   ∀ position table, before.table position = some table →
     ∃ result, after.table position = some result ∧ TableExtends table result
-
-/-- For every table, appending no columns gives the same table, including its
-rows and keys. The proof unfolds the table and row operations. -/
-theorem Table.appendColumns_nil (table : Table) : table.appendColumns [] = table := by
-  cases table
-  simp [Table.appendColumns, Row.appendValues]
-
-/-- For every table and two column/value lists, consecutive extensions equal one
-extension by their concatenation. The proof distributes row mapping over append. -/
-theorem Table.appendColumns_append (table : Table) (first second : List (CatalogColumn × Value)) :
-    (table.appendColumns first).appendColumns second = table.appendColumns (first ++ second) := by
-  simp [Table.appendColumns, Row.appendValues, List.map_map,
-    List.append_assoc, Function.comp_def]
 
 /-- Every table extends itself, witnessed by an empty list of appended columns. -/
 theorem TableExtends.refl (table : Table) : TableExtends table table :=
@@ -69,6 +56,14 @@ theorem DatabaseExtends.create (database : Database) (name : Identifier) (table 
     DatabaseExtends database
       { catalog := database.catalog.createTable name table, rows := database.rows ++ [[]] } :=
   fun _ old present => ⟨old, Database.table_createTable name table present, TableExtends.refl old⟩
+
+/-- For every database, name and index, CREATE INDEX ({name}`Catalog.createIndex` with an
+empty row list appended) extends the database: every table present before is present and
+unchanged. -/
+theorem DatabaseExtends.index (database : Database) (name : Identifier) (index : CatalogIndex) :
+    DatabaseExtends database
+      { catalog := database.catalog.createIndex name index, rows := database.rows ++ [[]] } :=
+  fun _ old present => ⟨old, Database.table_createIndex name index present, TableExtends.refl old⟩
 
 /-- For every present table, column and value, {name}`Database.addColumn` at its position
 extends the database. Other tables are unchanged. The proof separates the selected
@@ -115,7 +110,15 @@ theorem step_extends (clock : Int) (statement : Resolved.Statement) (database : 
           split
           · exact DatabaseExtends.refl database
           · exact DatabaseExtends.add database target table column value h
-  | createIndex _ _ _ => exact DatabaseExtends.refl database
+  | createIndex target name index =>
+    simp only [step]
+    split
+    · split
+      · exact DatabaseExtends.refl database
+      · split
+        · exact DatabaseExtends.refl database
+        · exact DatabaseExtends.index database name index
+    · exact DatabaseExtends.refl database
   | query query =>
     have same : effectDatabase (step clock (.query query) database) = database := by
       simp only [step, queryEffect]

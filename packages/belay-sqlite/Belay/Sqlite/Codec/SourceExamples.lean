@@ -21,12 +21,13 @@ def column (name : Identifier) (declaredType : Option String) (constraints : Lis
 that matches only after ASCII folding, negative integers, text and blob bytes, a
 default, keys, an index and a prepare error. -/
 def sampleRecord : ScriptRecord where
-  version := 3
+  version := 4
   release := "3.51.0"
   sourceId := "2025-11-04 19:38:17 fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b"
   schema := [.createTable (name! "Ünit \"q\"") [column (name! "id") (some "BIGINT") [.primaryKey false],
       column (name! "at") (some "TIMESTAMP") [.default (.currentTime "CURRENT_TIMESTAMP") "CURRENT_TIMESTAMP"], column (name! "b") none]
-      [.unique [(name! "b")]], .createIndex (name! "by_at") true (name! "Ünit \"q\"") [(name! "at")]]
+      [.unique [(name! "b")]], .createIndex (name! "by_at") true (name! "Ünit \"q\"")
+        [{ expression := .identifier (name! "at") .none, descending := true }] (some (.isNull (.identifier (name! "b") .none) true))]
   script := [.begin, .addColumn (name! "ÜNIT \"Q\"") (column (name! "n") (some "TEXT")),
     .insert (name! "Ünit \"q\"") (some [(name! "id"), (name! "at"), (name! "b"), (name! "n")]) [[.negate (.numeric "9"), .null, .null, .blob [0, 255]]] [],
     .update (name! "Ünit \"q\"") [((name! "n"), .string [104, 105])] (some (.compare .eq (.identifier (name! "id") .none) (.numeric "0x10"))),

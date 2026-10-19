@@ -26,7 +26,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "  clauses.findSome? fun clause => (conflictingRow (clauseKeys keys clause) table proposed).map (clause, ·)",
         "  clauses.reverse.findSome? fun clause => (conflictingRow (clauseKeys keys clause) table proposed).map"
         " (clause, ·)"),
-    "target_checks_every_key": (UPSERT, "  | some key => [key]", "  | some _ => keys"),
+    "target_checks_every_key": (UPSERT, "  | some key => [UniqueKey.ofColumns key]", "  | some _ => keys"),
     "later_row_ignores_earlier": (RUN,
         "      | .ok (next, _) => upsertSteps clock keys policy clauses next rest",
         "      | .ok _ => upsertSteps clock keys policy clauses table rest"),

@@ -99,4 +99,10 @@ def prepareError (catalog : Catalog) (error : PrepareError) : StatementResolutio
 def restrict (index : Nat) (path : List Nat) (kind : RestrictionKind) : StatementResolution :=
   .error { statement := index, path := path, kind := kind }
 
+/-- Turn a value issue into the statement's resolution: a prepare error keeps the
+catalog, a restriction refuses the script. -/
+def issueResolution (catalog : Catalog) (index : Nat) (path : List Nat) : ValueIssue → StatementResolution
+  | .prepare error => prepareError catalog (.expression error)
+  | .restriction inner reason => restrict index (path ++ inner) reason
+
 end Belay.Sqlite

@@ -25,7 +25,7 @@ def timestamp : CatalogColumn := {
 /-- A table keyed on {lit}`id`, with a unique index named {lit}`key_index` on the same
 column at catalog position 1, illustrating keys and the shared namespace. -/
 def keyed : Catalog := [{ name := (name! "items"), entry := .table { columns := [textKey], primaryKey := [0] } },
-  { name := (name! "key_index"), entry := .index { table := 0, columns := [0], unique := true } }]
+  { name := (name! "key_index"), entry := .index { table := 0, keys := [{ term := .column 0 }], unique := true } }]
 
 /-- The documented limits of SQLite; the column limit is 2,000. -/
 def limits : Limits := Limits.documentedDefaults
@@ -50,7 +50,7 @@ def statisticsTable : CatalogTable := { columns := [name! "tbl", name! "idx", na
 #guard Catalog.supported limits [{ name := (name! "sqlite_x"), entry := .table { columns := [textKey] } }] == false
 -- A table and an index share one folded name, so the catalog is not valid.
 #guard Catalog.supported limits [{ name := (name! "KEY_INDEX"), entry := .table { columns := [textKey] } },
-  { name := (name! "key_index"), entry := .index { table := 0, columns := [0], unique := true } }] == false
+  { name := (name! "key_index"), entry := .index { table := 0, keys := [{ term := .column 0 }], unique := true } }] == false
 
 /-- The concrete {name}`table` satisfies {name}`Table.Valid`, including its
 negative rowid and NULL cell. The proof reduces widths and bounds, and computes the

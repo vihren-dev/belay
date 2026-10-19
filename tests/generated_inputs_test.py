@@ -120,8 +120,8 @@ def test_constructed_declarations_match_resolver(parity: Callable[..., CommandRe
     (lambda record: record["script"].append("commit"), "value differs from the compiled SqlInputs: Generated.script"),
     (lambda record: record.update(release="3.46.0"),
      "differs from the resolution of the script record: Generated.profile"),
-    (lambda record: record["script"].append({"createIndex": {"name": "i", "unique": False, "table": "invoices",
-                                                             "columns": ["amount"]}}),
+    (lambda record: record["script"].append({"createTable": {"name": "r", "constraints": [], "columns": [
+        {"name": "a", "declaredType": None, "constraints": [{"notNull": {"algorithm": None}}]}]}})),
      "the script record does not resolve"),
 ], ids=["changed_schema", "other_version", "missing_field", "extra_statement", "other_profile", "restricted"])
 def test_tampered_record_is_rejected(parity: Callable[..., CommandResult], runtime_root: Path,

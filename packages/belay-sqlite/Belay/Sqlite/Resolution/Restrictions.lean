@@ -21,8 +21,15 @@ inductive RestrictionKind where
   | createTableConstraints
   /-- Only literal defaults and {lit}`CURRENT_TIMESTAMP` are modeled (ADR 0008, T14). -/
   | unmodeledDefault
-  /-- A CREATE INDEX that runs is not modeled (ADR 0008). -/
-  | createIndexRuns
+  /-- A string literal as a key term of CREATE INDEX, also a double-quoted name that is no
+  column: SQLite reads a string that names a column as that column (ADR 0014, slice 1). -/
+  | indexStringTerm
+  /-- A date and time function in a key term or the filter of CREATE INDEX: SQLite refuses
+  one that reads the clock only when it writes a row (ADR 0014, slice 1). -/
+  | indexDateFunction
+  /-- A JSON function in a key term or the filter of CREATE INDEX: it can fail while a row
+  is written, which the model's key check does not describe (ADR 0014, slice 1). -/
+  | indexJsonFunction
   /-- The added column requires unmodeled default evaluation. -/
   | addColumnConstraint
   /-- A {lit}`SET` value that reads the row is not modeled for a column of a unique key

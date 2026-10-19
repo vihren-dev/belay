@@ -34,4 +34,43 @@ def Expr.isJsonCall : Expr → Bool
   | .column _ | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic ..
   | .cast .. | .coalesce .. | .now _ | .date .. => false
 
+/-- Whether the expression itself is a date and time function call; its parts are not
+inspected. -/
+def Expr.isDateCall : Expr → Bool
+  | .date .. => true
+  | .column _ | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic ..
+  | .cast .. | .coalesce .. | .json .. | .now _ => false
+
+/-- Whether the expression itself is {lit}`CURRENT_TIME`, {lit}`CURRENT_DATE` or
+{lit}`CURRENT_TIMESTAMP`; its parts are not inspected. -/
+def Expr.isNow : Expr → Bool
+  | .now _ => true
+  | .column _ | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic ..
+  | .cast .. | .coalesce .. | .json .. | .date .. => false
+
+/-- Whether the expression itself is the column at the position; its parts are not
+inspected. -/
+def Expr.isColumn (position : Nat) : Expr → Bool
+  | .column read => read == position
+  | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast ..
+  | .coalesce .. | .json .. | .now _ | .date .. => false
+
+/-- Whether the expression itself is a column at the position or after it; its parts are
+not inspected. -/
+def Expr.isColumnFrom (width : Nat) : Expr → Bool
+  | .column read => read ≥ width
+  | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast ..
+  | .coalesce .. | .json .. | .now _ | .date .. => false
+
+/-- Whether the expression reads only columns below the width. -/
+def Expr.readsBelow (width : Nat) (expression : Expr) : Bool := !expression.any (Expr.isColumnFrom width)
+
+/-- Whether the expression reads the column at the position anywhere. -/
+def Expr.readsColumn (position : Nat) (expression : Expr) : Bool := expression.any (Expr.isColumn position)
+
+/-- The positions below the width that the expression reads, in increasing order. For
+example the expression {lit}`a + c` over the columns {lit}`a, b, c` reads {lean}`[0, 2]`. -/
+def Expr.reads (width : Nat) (expression : Expr) : List Nat :=
+  (List.range width).filter expression.readsColumn
+
 end Belay.Sqlite.Resolved

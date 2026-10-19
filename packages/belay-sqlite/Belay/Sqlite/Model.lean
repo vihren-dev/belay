@@ -84,7 +84,7 @@ def CatalogObject.supported (limits : Limits) (catalog : Catalog) (object : Cata
       (statisticsColumns object.name.folded).any fun names =>
         table == { columns := names.map fun name => { name, declaredType := none } })
   | .index index => !reservedName object.name &&
-      (catalog.tableAt index.table).any fun table => supportedKey table.columns.length index.columns
+      (catalog.tableAt index.table).any fun table => index.supported table.columns.length
 
 /-- Admit a catalog: unique folded object names and every object supported. -/
 def Catalog.supported (limits : Limits) (catalog : Catalog) : Bool :=

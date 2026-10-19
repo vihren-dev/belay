@@ -49,4 +49,22 @@ def mentionsColumnIn (scope : Scope) : List Syntax.Expr → Bool
   | argument :: rest => mentionsColumn scope argument || mentionsColumnIn scope rest
 end
 
+mutual
+/-- Whether an expression has a qualified name {lit}`source.column` anywhere, which SQLite
+refuses in a key term of CREATE INDEX. -/
+def Syntax.Expr.hasQualifiedName : Syntax.Expr → Bool
+  | .qualified .. => true
+  | .compare _ left right | .and left right | .or left right | .arithmetic _ left right =>
+    left.hasQualifiedName || right.hasQualifiedName
+  | .not operand | .isNull operand _ | .negate operand | .positive operand | .cast operand _ =>
+    operand.hasQualifiedName
+  | .call _ arguments => Syntax.Expr.anyQualifiedName arguments
+  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ | .identifier .. => false
+
+/-- Whether some argument has a qualified name ({name}`Syntax.Expr.hasQualifiedName`). -/
+def Syntax.Expr.anyQualifiedName : List Syntax.Expr → Bool
+  | [] => false
+  | argument :: rest => argument.hasQualifiedName || Syntax.Expr.anyQualifiedName rest
+end
+
 end Belay.Sqlite

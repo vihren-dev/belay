@@ -31,12 +31,13 @@ theorem resolveCreateTable_step (context : ResolveContext) (catalog after : Cata
 name {name}`Catalog.find` does not find. Proof sketch: as for CREATE TABLE, split
 every branch; only the branch where the name is unused appends. -/
 theorem resolveCreateIndex_step (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (name : Identifier) (unique : Bool) (tableName : Identifier) (columns : List Identifier)
+    (name : Identifier) (unique : Bool) (tableName : Identifier) (terms : List Syntax.OrderTerm)
+    (filter : Option Syntax.Expr)
     (statement : Resolved.Statement)
-    (ok : resolveCreateIndex context catalog index name unique tableName columns = .ok (statement, after)) :
+    (ok : resolveCreateIndex context catalog index name unique tableName terms filter = .ok (statement, after)) :
     CatalogStep catalog after := by
   unfold resolveCreateIndex at ok
-  simp only [prepareError, restrict] at ok
+  simp only [issueResolution, prepareError, restrict] at ok
   repeat' split at ok
   all_goals first
     | (cases ok; exact .same)
@@ -101,10 +102,10 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveCreateTable_step _ _ _ _ _ _ _ _ (by assumption))
-  | createIndex name unique table columns =>
+  | createIndex name unique table terms filter =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    exact keep _ (resolveCreateIndex_step _ _ _ _ _ _ _ _ _ (by assumption))
+    exact keep _ (resolveCreateIndex_step _ _ _ _ _ _ _ _ _ _ (by assumption))
   | addColumn table column =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok

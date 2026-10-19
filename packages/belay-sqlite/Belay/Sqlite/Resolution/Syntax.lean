@@ -33,8 +33,10 @@ inductive Statement where
   /-- {lit}`CREATE TABLE name (columns, constraints)`. -/
   | createTable (name : Identifier) (columns : List ColumnDefinition)
       (constraints : List TableConstraint)
-  /-- {lit}`CREATE [UNIQUE] INDEX name ON table (columns)`. -/
-  | createIndex (name : Identifier) (unique : Bool) (table : Identifier) (columns : List Identifier)
+  /-- {lit}`CREATE [UNIQUE] INDEX name ON table (terms) [WHERE filter]`: each key term is an
+  expression with its sort order, and the filter is none for an index of every row. -/
+  | createIndex (name : Identifier) (unique : Bool) (table : Identifier) (terms : List OrderTerm)
+      (filter : Option Expr)
   /-- {lit}`ALTER TABLE table ADD COLUMN column`. -/
   | addColumn (table : Identifier) (column : ColumnDefinition)
   /-- {lit}`BEGIN`. -/

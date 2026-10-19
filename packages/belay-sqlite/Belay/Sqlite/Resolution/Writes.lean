@@ -11,12 +11,6 @@ column gets the written value and every other column its default. -/
 
 namespace Belay.Sqlite
 
-/-- Turn a value issue into the statement's resolution: a prepare error keeps the
-catalog, a restriction refuses the script. -/
-def issueResolution (catalog : Catalog) (index : Nat) (path : List Nat) : ValueIssue → StatementResolution
-  | .prepare error => prepareError catalog (.expression error)
-  | .restriction inner reason => restrict index (path ++ inner) reason
-
 /-- The table column positions of an INSERT column list, or
 {lit}`table %S has no column named %s` for the first unknown name. -/
 def insertPositions (tableName : Identifier) (columns : List CatalogColumn) :

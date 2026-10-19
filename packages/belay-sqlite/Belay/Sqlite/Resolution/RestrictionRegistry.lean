@@ -31,7 +31,7 @@ def RestrictionKind.registry : RestrictionKind → RestrictionRegistry
   | .constantFunctionError => .undecided
   | .rowidName => .unrepresented
   | .schemaStatement | .engineTable | .rowidColumnName | .createTableConstraints
-  | .unmodeledDefault | .createIndexRuns | .addColumnConstraint | .constraintAlgorithmUpdate
+  | .unmodeledDefault | .indexStringTerm | .indexDateFunction | .indexJsonFunction | .addColumnConstraint | .constraintAlgorithmUpdate
   | .replaceDefault | .insertColumnTwice | .updateColumnTwice | .joinOperator | .systemTable
   | .unmodeledFunction | .aggregateInExpression | .aliasInExpression | .groupByTerm | .bareColumn
   | .aggregateOrderBy | .windowValue | .negativeOffset | .tableFunction | .laterTableInOn | .functionJoin

@@ -70,9 +70,11 @@ example : ¬validRowid 9223372036854775808 := by unfold validRowid; decide
   some [⟨-4, [.integer 7, .null]⟩, ⟨9, [.integer 7, .null]⟩]
 #guard ((runSql failedPrefix initial).database.table 1).isNone
 
--- Definitions outside the modeled subset are not run.
-#guard failureInfo (runSql [.createIndex 1 (name! "by_amount") { table := 0, columns := [0], unique := false }] initial) =
-  some (0, .unmodeled)
+-- CREATE INDEX at the end of the catalog builds the index; a definition at another position is not run.
+#guard failureInfo (runSql [.createIndex 1 (name! "by_amount") { table := 0, keys := [{ term := .column 0 }], unique := false }]
+  initial) = none
+#guard failureInfo (runSql [.createIndex 2 (name! "by_amount") { table := 0, keys := [{ term := .column 0 }], unique := false }]
+  initial) = some (0, .unmodeled)
 #guard failureInfo (runSql [.addColumn 1 { name := (name! "x"), declaredType := none }] initial) = some (0, .unmodeled)
 
 /-- For every profile, script, starting database and clock assignment, the computed SQL

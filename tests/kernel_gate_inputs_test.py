@@ -39,6 +39,6 @@ def test_changed_record(kernel: KernelCase) -> None:
     """A record whose resolution differs from the compiled inputs is rejected, as is one that does not resolve."""
     changed = kernel.check(record={**RECORD, "script": ["begin"]})
     assert changed.returncode == 1 and "Generated.script" in changed.stderr, changed.diagnostic()
-    restricted = kernel.check(record={**RECORD, "script": [{"createIndex": {"name": "i", "unique": False,
-                                                                            "table": "t", "columns": ["a"]}}]})
+    restricted = kernel.check(record={**RECORD, "script": [{"createTable": {"name": "r", "constraints": [], "columns": [
+        {"name": "a", "declaredType": None, "constraints": [{"notNull": {"algorithm": None}}]}]}}]})
     assert restricted.returncode == 1 and "does not resolve" in restricted.stderr, restricted.diagnostic()

@@ -39,8 +39,8 @@ def resolveStatement (context : ResolveContext) (state : ResolveState) (index : 
   | .rollback => .ok (.rollback, { catalog := state.saved.getD state.catalog, saved := none })
   | .createTable name columns constraints =>
     state.withCatalog (resolveCreateTable context state.catalog index name columns constraints)
-  | .createIndex name unique table columns =>
-    state.withCatalog (resolveCreateIndex context state.catalog index name unique table columns)
+  | .createIndex name unique table terms filter =>
+    state.withCatalog (resolveCreateIndex context state.catalog index name unique table terms filter)
   | .addColumn table column => state.withCatalog (resolveAddColumn context state.catalog index table column)
   | .insert table columns rows conflicts algorithm returning =>
     state.withCatalog (resolveInsert context state.catalog index table columns rows conflicts algorithm returning)

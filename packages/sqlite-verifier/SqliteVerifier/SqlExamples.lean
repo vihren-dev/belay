@@ -30,7 +30,7 @@ def note : CatalogColumn := { name := (name! "note"), declaredType := some "TEXT
 
 /-- The unique keys of the table, which execution reads from the catalog for every write:
 the primary key on position 0. -/
-def keys : List (List Nat) := [[0]]
+def keys : List UniqueKey := [.ofColumns [0]]
 
 /-- The file itself supplies both transaction control and literal writes. -/
 def script : List Resolved.Statement := [.begin, .addColumn 0 note,

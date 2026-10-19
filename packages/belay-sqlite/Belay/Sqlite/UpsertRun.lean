@@ -52,19 +52,19 @@ def nullColumn (columns : List CatalogColumn) (values : List Value) : Option Nat
 
 /-- Whether the proposed row conflicts with a row of the table on the key at the
 position. -/
-def conflictsAt (keys : List (List Nat)) (table : Table) (proposed : Row) (index : Nat) : Bool :=
+def conflictsAt (keys : List UniqueKey) (table : Table) (proposed : Row) (index : Nat) : Bool :=
   (keys[index]?).any fun key => table.rows.any fun row => keyEqual key row proposed
 
 /-- The first key position, in order, whose algorithm is not REPLACE and on which the
 proposed row conflicts; SQLite checks the REPLACE keys after the others. -/
-def blockingKey (keys : List (List Nat)) (algorithms : List ConflictAlgorithm) (table : Table)
+def blockingKey (keys : List UniqueKey) (algorithms : List ConflictAlgorithm) (table : Table)
     (proposed : Row) : Option Nat :=
   (List.range keys.length).find? fun index =>
     algorithmAt algorithms index != .replace && conflictsAt keys table proposed index
 
 /-- The table without the rows that conflict with the proposed row on a key whose
 algorithm is REPLACE. -/
-def replaced (keys : List (List Nat)) (algorithms : List ConflictAlgorithm) (table : Table) (proposed : Row) :
+def replaced (keys : List UniqueKey) (algorithms : List ConflictAlgorithm) (table : Table) (proposed : Row) :
     Table :=
   { table with rows := table.rows.filter fun row => !((List.range keys.length).any fun index =>
       algorithmAt algorithms index == .replace && (keys[index]?).any fun key => keyEqual key row proposed) }
@@ -73,7 +73,7 @@ def replaced (keys : List (List Nat)) (algorithms : List ConflictAlgorithm) (tab
 REPLACE fails with its algorithm ({name}`failedConstraint`); otherwise the rows that
 conflict on REPLACE keys are deleted ({name}`replaced`), the row is appended with the
 rowid that it had before the deletion, and {name}`checkedRow` checks the table. -/
-def insertChecked (keys : List (List Nat)) (algorithms : List ConflictAlgorithm) (table : Table) (proposed : Row) :
+def insertChecked (keys : List UniqueKey) (algorithms : List ConflictAlgorithm) (table : Table) (proposed : Row) :
     Except ExecutionError (Table × Option Row) :=
   match blockingKey keys algorithms table proposed with
   | some index => failedConstraint table (algorithmAt algorithms index)
@@ -83,7 +83,7 @@ def insertChecked (keys : List (List Nat)) (algorithms : List ConflictAlgorithm)
 
 /-- One row of an INSERT with clauses or algorithms: the table after it and the row that
 it inserted or updated, none for a skipped row; or the error of the statement. -/
-def upsertRow (clock : Int) (keys : List (List Nat)) (policy : Resolved.ConflictPolicy) (clauses : List Resolved.ConflictClause)
+def upsertRow (clock : Int) (keys : List UniqueKey) (policy : Resolved.ConflictPolicy) (clauses : List Resolved.ConflictClause)
     (table : Table) (values : List Value) : Except ExecutionError (Table × Option Row) :=
   if aliasMismatch table.shape values then .error .datatypeMismatch else
   let proposed := proposedRow table values
@@ -108,7 +108,7 @@ structure UpsertStep where
 /-- The reached rows of an INSERT with clauses or algorithms, in order: each row with the
 table before it and its {name}`upsertRow` result, up to and with the first row that
 fails. -/
-def upsertSteps (clock : Int) (keys : List (List Nat)) (policy : Resolved.ConflictPolicy)
+def upsertSteps (clock : Int) (keys : List UniqueKey) (policy : Resolved.ConflictPolicy)
     (clauses : List Resolved.ConflictClause) (table : Table) : List (List Value) → List UpsertStep
   | [] => []
   | values :: rest =>
@@ -130,7 +130,7 @@ def upsertSummary (table : Table) : List UpsertStep → Except (ExecutionError �
 
 /-- The rows in order ({name}`upsertRow`): the {name}`upsertSummary` of the reached rows
 ({name}`upsertSteps`). -/
-def upsertRun (clock : Int) (keys : List (List Nat)) (policy : Resolved.ConflictPolicy) (clauses : List Resolved.ConflictClause)
+def upsertRun (clock : Int) (keys : List UniqueKey) (policy : Resolved.ConflictPolicy) (clauses : List Resolved.ConflictClause)
     (table : Table) (rows : List (List Value)) : Except (ExecutionError × Table × List Row) (Table × List Row) :=
   upsertSummary table (upsertSteps clock keys policy clauses table rows)
 
@@ -146,7 +146,7 @@ def upsertBounded (steps : List UpsertStep) : Bool :=
 column in each row, a column at every position that a {lit}`DO UPDATE` assigns, and
 {name}`upsertBounded` of the reached rows. This check does not establish the constraints of the result,
 which {name}`checkedRow` checks. -/
-def upsertReady (keys : List (List Nat)) (table : Table) (clauses : List Resolved.ConflictClause)
+def upsertReady (keys : List UniqueKey) (table : Table) (clauses : List Resolved.ConflictClause)
     (rows : List (List Value)) (steps : List UpsertStep) : Bool :=
   tableReady keys table && aliasReady table.shape &&
   rows.all (fun values => values.length == table.shape.columns.length &&

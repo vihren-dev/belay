@@ -68,7 +68,7 @@ def updateMismatch (clock : Int) (table : Table) (assignments : List (Nat × Res
 assigned position, and a bounded rowid for every row of the updated table ({lit}`result`,
 which the execution computes: {name}`updated`). This check does not establish the updated
 constraints, which {lit}`checkedWrite` checks. -/
-def updateReady (keys : List (List Nat)) (table : Table) (assignments : List (Nat × Resolved.Expr))
+def updateReady (keys : List UniqueKey) (table : Table) (assignments : List (Nat × Resolved.Expr))
     (result : Table) : Bool :=
   tableReady keys table && aliasReady table.shape &&
   assignments.all (fun (position, _) => (table.shape.columns[position]?).isSome) &&

@@ -33,6 +33,9 @@ def ExprError.message : ExprError → String
   | .cannotAddUnique => "Cannot add a UNIQUE column"
   | .conflictingAlgorithms => "conflicting ON CONFLICT clauses specified"
   | .noSuchColumn name => s!"no such column: {name}"
+  | .qualifiedIndexTerm => "the \".\" operator prohibited in index expressions"
+  | .nondeterministicIndex filter =>
+    "non-deterministic functions prohibited in " ++ (if filter then "partial index WHERE clauses" else "index expressions")
   | .hexLiteralTooBig text => s!"hex literal too big: {text}"
   | .misuseOfAggregate function => s!"misuse of aggregate function {function}()"
   | .aggregateInGroupBy => "aggregate functions are not allowed in the GROUP BY clause"

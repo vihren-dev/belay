@@ -22,6 +22,21 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D1.
   as a column, partial unique indexes over existing rows). The judge compares partial
   indexes, expression keys and sort orders already, so no judge change.
 
+- 2026-10-19: outcomes 1 to 6 in one commit. Syntax `createIndex` has key terms
+  (`OrderTerm`) and a filter, mapped by `belay/sqlite/syntax_indexes.py`; the record is
+  version 4. `Resolution/Keys.lean` has `KeyTerm`, `IndexKey`, `CatalogIndex` and
+  `UniqueKey`; `Catalog.uniqueKeys` gives every key in one form, and
+  `LiteralData.keyEqual` evaluates terms at clock 0 and the filter (`keyApplies`).
+  `Resolution/IndexTerms.lean` resolves terms and filters with SQLite's prepare errors
+  (`qualifiedIndexTerm`, `nondeterministicIndex`) and the restrictions
+  `index-string-term`, `index-date-function` and `index-json-function`;
+  `create-index-runs` is gone, and `step` builds an index over existing rows.
+  `Resolved.Expr.readsBelow` exists once (`ExprAny.lean`). The harness's `NativeIndex`
+  has expression keys, sort orders and the partial flag, written only when present, so
+  the frozen model cases keep their form; the two frozen cases with CREATE INDEX get the
+  new Syntax, as step 1 of ADR 0013 did. Authored corpus `authored_indexes` (22 cases,
+  corpus version 29) and `index_mutants` (three mutants). The core has 134 modules.
+
 ## Remaining
 
-- All outcomes, checks, reviews, CI time, pull requests.
+- Suites, verdict, review, CI time, pull requests A and B.

@@ -16,13 +16,13 @@ namespace Belay.Sqlite
 
 /-- The unique keys of the table at the position in the database's catalog
 ({name}`Catalog.uniqueKeys`), which every write to it keeps unique. -/
-def Database.keys (database : Database) (target : Nat) (table : Table) : List (List Nat) :=
+def Database.keys (database : Database) (target : Nat) (table : Table) : List UniqueKey :=
   database.catalog.uniqueKeys target table.shape
 
 /-- Store a write's result when it satisfies the constraints of the given keys and its
 rowids are distinct ({name}`LiteralData.rowidsDistinct`), or fail with
 {lean}`ExecutionError.constraintViolation` and the input database. -/
-def checkedWrite (database : Database) (target : Nat) (keys : List (List Nat)) (result : Table) : Effect :=
+def checkedWrite (database : Database) (target : Nat) (keys : List UniqueKey) (result : Table) : Effect :=
   if LiteralData.constraints keys result && LiteralData.rowidsDistinct result then
     .ok (database.setRows target result.rows)
   else .error (.constraintViolation, database)
@@ -33,7 +33,7 @@ that is not an integer before the constraints of its row
 {lean}`ExecutionError.datatypeMismatch` unless the rows before it already fail; with no
 such row, {name}`checkedWrite` of the table with all rows inserted ({lit}`result`, which is
 {name}`LiteralData.inserted`). A failure keeps the input database. -/
-def insertOutcome (database : Database) (target : Nat) (keys : List (List Nat)) (table : Table)
+def insertOutcome (database : Database) (target : Nat) (keys : List UniqueKey) (table : Table)
     (rows : List (List Value)) (result : Table) : Effect :=
   match rows.findIdx? (LiteralData.aliasMismatch table.shape) with
   | some index =>
@@ -110,7 +110,7 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
   | .addColumn _ column =>
     { effect := step clock statement database,
       ready := column.clockDefault || (readDefaultValue column).toOption.isSome }
-  | .createIndex .. => { effect := step clock statement database, ready := false }
+  | .createIndex .. => { effect := step clock statement database, ready := true }
   | .begin | .commit | .rollback | .prepareError _ => { effect := step clock statement database, ready := true }
 
 /-- The effect of one statement at a clock value ({name}`runStatement`). This computation

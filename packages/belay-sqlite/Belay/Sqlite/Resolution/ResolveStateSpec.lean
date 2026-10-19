@@ -55,12 +55,13 @@ theorem resolveCreateTable_applyCatalog (context : ResolveContext) (catalog afte
 transaction control. Proof sketch: as for CREATE TABLE, with {name}`Catalog.createIndex`.
 -/
 theorem resolveCreateIndex_applyCatalog (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (name : Identifier) (unique : Bool) (tableName : Identifier) (columns : List Identifier)
+    (name : Identifier) (unique : Bool) (tableName : Identifier) (terms : List Syntax.OrderTerm)
+    (filter : Option Syntax.Expr)
     (statement : Resolved.Statement)
-    (ok : resolveCreateIndex context catalog index name unique tableName columns = .ok (statement, after)) :
+    (ok : resolveCreateIndex context catalog index name unique tableName terms filter = .ok (statement, after)) :
     after = statement.applyCatalog catalog ∧ statement.isControl = false := by
   unfold resolveCreateIndex at ok
-  simp only [prepareError, restrict] at ok
+  simp only [issueResolution, prepareError, restrict] at ok
   repeat' split at ok
   all_goals first | (cases ok; exact ⟨rfl, rfl⟩) | (cases ok)
 
@@ -98,10 +99,10 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
     split at ok <;> cases ok
     obtain ⟨equal, control⟩ := resolveCreateTable_applyCatalog _ _ _ _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
-  | createIndex name unique table columns =>
+  | createIndex name unique table terms filter =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    obtain ⟨equal, control⟩ := resolveCreateIndex_applyCatalog _ _ _ _ _ _ _ _ _ (by assumption)
+    obtain ⟨equal, control⟩ := resolveCreateIndex_applyCatalog _ _ _ _ _ _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
   | addColumn table column =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok

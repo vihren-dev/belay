@@ -1,4 +1,5 @@
-"""The authored coverage cases of queries, numbers and writes (ADR 0012, slices 1 to 6g).
+"""The authored coverage cases of queries, numbers, writes and index forms (ADR 0012, slices 1 to
+6g; ADR 0014).
 
 The cases of `conformance.authored_queries`, `conformance.authored_numbers`,
 `conformance.authored_writes`, `conformance.authored_row_writes`,
@@ -10,7 +11,8 @@ The cases of `conformance.authored_queries`, `conformance.authored_numbers`,
 `conformance.authored_json`, `conformance.authored_json_functions`,
 `conformance.authored_json_each`, `conformance.authored_default_writes`,
 `conformance.authored_clock`, `conformance.authored_date_functions` and
-`conformance.authored_date_modifiers` (the last three under the controlled clock) are
+`conformance.authored_date_modifiers` (these three under the controlled clock), and
+`conformance.authored_indexes` (ADR 0014, slice 1) are
 recorded natively as version 5 records with statement outputs, name requirement
 identifiers of the pinned documentation, and replay through resolution, the
 execution semantics and query evaluation. Every case agrees with the model, and the
@@ -27,7 +29,7 @@ import pytest
 
 from conformance import (authored_algorithms, authored_aliases, authored_clock, authored_date_functions,
                          authored_date_modifiers, authored_default_writes, authored_deletes,
-                         authored_fromless, authored_joins, authored_json, authored_json_each,
+                         authored_fromless, authored_indexes, authored_joins, authored_json, authored_json_each,
                          authored_json_functions, authored_keys, authored_merged, authored_numbers,
                          authored_queries, authored_right, authored_row_writes, authored_upserts, authored_using,
                          authored_writes)
@@ -43,7 +45,8 @@ CASE_SETS = [authored_queries, authored_numbers, authored_writes, authored_row_w
              authored_using, authored_right, authored_merged, authored_keys, authored_aliases, authored_upserts,
              authored_algorithms, authored_fromless, authored_json,
              authored_json_functions, authored_json_each,
-             authored_default_writes, authored_clock, authored_date_functions, authored_date_modifiers]
+             authored_default_writes, authored_clock, authored_date_functions, authored_date_modifiers,
+             authored_indexes]
 """The authored case modules: each has `definitions` and `records`."""
 
 

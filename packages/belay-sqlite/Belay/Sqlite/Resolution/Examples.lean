@@ -27,6 +27,9 @@ def migration (catalog : Catalog) (script : List Syntax.Statement) (profile : Pr
 def schema (script : List Syntax.Statement) : ResolveResult :=
   resolve { profile := defaults, mode := .description } [] script
 
+/-- An index key term of a column name, without sort order. -/
+def key (name : Identifier) : OrderTerm := { expression := .identifier name .none, descending := false }
+
 /-- A column definition without constraints. -/
 def column (name : Identifier) (declaredType : Option String := some "TEXT") : ColumnDefinition :=
   { name, declaredType, constraints := [] }
@@ -86,9 +89,9 @@ def constrained (constraint : ColumnConstraint) : ColumnDefinition :=
 #guard (catalogOf (migration [] [.createTable (name! "É") [column (name! "x")] [], .createTable (name! "é") [column (name! "x")] []])).length == 2
 
 -- One namespace: a table and an index cannot share a name.
-#guard statements (schema [.createTable (name! "t") [column (name! "a")] [], .createIndex (name! "t") false (name! "t") [(name! "a")]])
+#guard statements (schema [.createTable (name! "t") [column (name! "a")] [], .createIndex (name! "t") false (name! "t") [key (name! "a")] none])
   matches [_, .prepareError (.tableNameUsed (name! "t"))]
-#guard statements (schema [.createTable (name! "t") [column (name! "a")] [], .createIndex (name! "i") false (name! "t") [(name! "a")], .createTable (name! "I") [column (name! "a")] []])
+#guard statements (schema [.createTable (name! "t") [column (name! "a")] [], .createIndex (name! "i") false (name! "t") [key (name! "a")] none, .createTable (name! "I") [column (name! "a")] []])
   matches [_, _, .prepareError (.indexNameUsed (name! "I"))]
 
 -- Column limit from the profile: 3 columns pass, 4 fail; ADD COLUMN to a full table fails.
@@ -140,12 +143,12 @@ def constrained (constraint : ColumnConstraint) : ColumnDefinition :=
 constraint, a unique index and an index that is not unique. -/
 def keyed : Catalog := catalogOf (schema [.createTable (name! "k") [column (name! "a") (some "INTEGER"), column (name! "b") (some "NUMERIC"),
     column (name! "c") (some "BIGINT"), column (name! "d")] [.primaryKey [(name! "c")], .unique [(name! "b"), (name! "a")]],
-  .createIndex (name! "ka") true (name! "k") [(name! "a")], .createIndex (name! "kb") false (name! "k") [(name! "b")]])
+  .createIndex (name! "ka") true (name! "k") [key (name! "a")] none, .createIndex (name! "kb") false (name! "k") [key (name! "b")] none])
 
 -- The unique keys of a table, which writes keep: the primary key, UNIQUE constraints, then
 -- unique indexes. A write names only the table; execution reads the keys from the catalog.
 #guard (keyed.findTable (name! "k")).map (fun (position, table) => keyed.uniqueKeys position table) ==
-  some [[2], [1, 0], [0]]
+  some ([[2], [1, 0], [0]].map UniqueKey.ofColumns)
 #guard statements (migration keyed [.insert (name! "k") none [[.null, .null, .null, .null]] [], .update (name! "k") [((name! "a"), .null)] none])
   == [.insert 0 [[.value .null, .value .null, .value .null, .value .null]] [], .update 0 [(0, .literal .null)] none []]
 
@@ -156,7 +159,7 @@ def keyed : Catalog := catalogOf (schema [.createTable (name! "k") [column (name
   [.insert (name! "s") none [[.null]] []])
 
 -- New tables and indexes take the next catalog position.
-#guard statements (schema [.createTable (name! "t") [column (name! "a")] [], .createIndex (name! "i") false (name! "t") [(name! "a")], .createTable (name! "u") [column (name! "a")] []])
+#guard statements (schema [.createTable (name! "t") [column (name! "a")] [], .createIndex (name! "i") false (name! "t") [key (name! "a")] none, .createTable (name! "u") [column (name! "a")] []])
   matches [.createTable 0 (name! "t") _, .createIndex 1 (name! "i") _, .createTable 2 (name! "u") _]
 
 -- Transactions: ROLLBACK restores the catalog of BEGIN; COMMIT keeps the changes.
@@ -171,7 +174,7 @@ def keyed : Catalog := catalogOf (schema [.createTable (name! "k") [column (name
 
 -- Statements that run keep the model scope; descriptions may contain the statistics tables.
 #guard restricted (migration [] [.createTable (name! "t") [{ name := (name! "a"), declaredType := none, constraints := [.notNull] }] []])
-#guard restricted (migration tableT [.createIndex (name! "i") false (name! "t") [(name! "a")]])
+#guard statements (migration tableT [.createIndex (name! "i") false (name! "t") [key (name! "a")] none]) matches [.createIndex 1 ..]
 #guard statements (migration [] [.createTable (name! "sqlite_x") [column (name! "a")] []]) == [.prepareError (.expression (.reservedName (name! "sqlite_x")))]
 #guard !restricted (schema [.createTable (name! "sqlite_stat1") [column (name! "tbl") none, column (name! "idx") none, column (name! "stat") none] []])
 

@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model
+import Belay.Sqlite.LiteralData
 import Belay.Sqlite.Resolution.ReadDefaults
 import Belay.Sqlite.Resolution.Resolved
 import Belay.Sqlite.QueryFunctions
@@ -128,11 +129,13 @@ default fails with {lean}`ExecutionError.nullColumnDefault` when rows exist, and
 a time default with {lean}`ExecutionError.nonConstantColumnDefault`;
 an empty table succeeds. Unsupported default readback returns
 {lean}`ExecutionError.unmodeled` and is excluded by the support check.
-CREATE TABLE at a position other than the end of the catalog (or over rows that do not
-match the catalog), ADD COLUMN at a position without a table,
-and CREATE INDEX fail with {lean}`ExecutionError.unmodeled`: {lit}`resolve` gives
-no such statement for a conforming database, and the supported-subset check
-excludes CREATE INDEX. A query changes nothing: its run over its source rows
+CREATE INDEX builds the index over the table's rows (ADR 0014, D1): a unique index whose
+key has two conflicting rows ({lit}`LiteralData.uniqueRows`) fails with
+{lean}`ExecutionError.constraintViolation` and keeps the catalog.
+CREATE TABLE or CREATE INDEX at a position other than the end of the catalog (or over
+rows that do not match the catalog), CREATE INDEX of a position without a table, and ADD
+COLUMN at a position without a table fail with {lean}`ExecutionError.unmodeled`:
+{lit}`resolve` gives no such statement for a conforming database. A query changes nothing: its run over its source rows
 ({name}`Resolved.Query.run`, {name}`Resolved.Query.source`) fails with
 {lean}`ExecutionError.integerOverflow` when it overflows, else with
 {lean}`ExecutionError.functionError` when its fault is {lean}`Resolved.Fault.must`, and
@@ -157,9 +160,18 @@ def step (clock : Int) (statement : Resolved.Statement) (database : Database) : 
         if column.notNull && value == .null && !table.rows.isEmpty then
           .error (.nullColumnDefault, database)
         else .ok (database.addColumn target column value)
+  | .createIndex target name index =>
+    if target == database.catalog.length && database.rows.length == database.catalog.length then
+      match database.table index.table with
+      | none => .error (.unmodeled, database)
+      | some table =>
+        if index.unique && !LiteralData.uniqueRows index.uniqueKey table.rows then
+          .error (.constraintViolation, database)
+        else .ok { catalog := database.catalog.createIndex name index, rows := database.rows ++ [[]] }
+    else .error (.unmodeled, database)
   | .prepareError error => .error (.prepare error, database)
   | .query query => queryEffect database (query.runOn clock database)
-  | .createIndex .. | .begin | .commit | .rollback | .insert .. | .upsert .. | .update .. | .delete .. =>
+  | .begin | .commit | .rollback | .insert .. | .upsert .. | .update .. | .delete .. =>
     .error (.unmodeled, database)
 
 end Belay.Sqlite

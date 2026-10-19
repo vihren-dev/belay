@@ -54,4 +54,17 @@ theorem Database.setRows_comm (database : Database) (first second : Nat)
   simp only [Database.setRows, Database.mk.injEq, true_and]
   exact List.set_comm _ _ different
 
+/-- For every table, appending no columns gives the same table, including its
+rows and keys. The proof unfolds the table and row operations. -/
+theorem Table.appendColumns_nil (table : Table) : table.appendColumns [] = table := by
+  cases table
+  simp [Table.appendColumns, Row.appendValues]
+
+/-- For every table and two column/value lists, consecutive extensions equal one
+extension by their concatenation. The proof distributes row mapping over append. -/
+theorem Table.appendColumns_append (table : Table) (first second : List (CatalogColumn × Value)) :
+    (table.appendColumns first).appendColumns second = table.appendColumns (first ++ second) := by
+  simp [Table.appendColumns, Row.appendValues, List.map_map,
+    List.append_assoc, Function.comp_def]
+
 end Belay.Sqlite

@@ -15,7 +15,9 @@ def RestrictionKind.id : RestrictionKind → String
   | .rowidColumnName => "rowid-column-name"
   | .createTableConstraints => "create-table-constraints"
   | .unmodeledDefault => "unmodeled-default"
-  | .createIndexRuns => "create-index-runs"
+  | .indexStringTerm => "index-string-term"
+  | .indexDateFunction => "index-date-function"
+  | .indexJsonFunction => "index-json-function"
   | .addColumnConstraint => "add-column-constraint"
   | .rowDependentKey => "row-dependent-key"
   | .conflictWithoutTarget => "conflict-without-target"
@@ -50,7 +52,9 @@ def RestrictionKind.message : RestrictionKind → String
   | .rowidColumnName => "column names rowid, _rowid_ and oid are not modeled; rename the column"
   | .createTableConstraints => "constraints and defaults in a CREATE TABLE that runs are not modeled; create the table with plain columns"
   | .unmodeledDefault => "default expression is not modeled; use a literal default"
-  | .createIndexRuns => "a CREATE INDEX that runs is not modeled; remove the CREATE INDEX statement"
+  | .indexStringTerm => "a string literal as an index key is not modeled; name the column without quotes"
+  | .indexDateFunction => "a date and time function in an index key or WHERE clause is not modeled; index the column instead"
+  | .indexJsonFunction => "a JSON function in an index key or WHERE clause is not modeled; index the column instead"
   | .addColumnConstraint => "the default of the added column is not modeled; use a literal default or no default"
   | .rowDependentKey => "a SET value that reads the row is not modeled for a column of a unique key; assign a constant value"
   | .conflictWithoutTarget => "DO UPDATE without a conflict target is not modeled for a table with more than one key; name the target columns"
@@ -79,7 +83,7 @@ def RestrictionKind.message : RestrictionKind → String
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .createTableConstraints, .unmodeledDefault, .createIndexRuns, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments]
+  [.schemaStatement, .engineTable, .rowidColumnName, .createTableConstraints, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

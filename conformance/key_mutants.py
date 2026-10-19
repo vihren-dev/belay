@@ -30,8 +30,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "    | _, _ => true)"),
     "null_cells_equal": (LITERAL_DATA, BODY, "  (first == .null && second == .null) ||\n" + BODY),
     "first_key_column_only": (LITERAL_DATA,
-        "  key.all fun position => match read first position, read second position with",
-        "  (key.take 1).all fun position => match read first position, read second position with"),
+        "    key.terms.all fun term => match termValue first term, termValue second term with",
+        "    (key.terms.take 1).all fun term => match termValue first term, termValue second term with"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
 replacement. The names follow the list in the task of slice 5a: TEXT compared without

@@ -2,6 +2,7 @@ import Belay.Sqlite.Declarations
 import Belay.Sqlite.Resolution.Syntax
 import Belay.Sqlite.Resolution.ColumnDefault
 import Belay.Sqlite.Resolution.TypeAffinity
+import Belay.Sqlite.Resolution.Keys
 
 set_option doc.verso true
 
@@ -62,16 +63,6 @@ def CatalogTable.uniqueAlgorithm (table : CatalogTable) (index : Nat) : Option C
 def CatalogTable.keyedUniqueAlgorithms (table : CatalogTable) : List (Option ConflictAlgorithm) :=
   table.uniqueKeys.mapIdx fun index _ => table.uniqueAlgorithm index
 
-/-- One index entry: the catalog position of its table and its key columns. -/
-structure CatalogIndex where
-  /-- The catalog position of the indexed table. -/
-  table : Nat
-  /-- The key column positions in key order. -/
-  columns : List Nat
-  /-- Whether the index requires unique keys. -/
-  unique : Bool
-  deriving Repr, DecidableEq
-
 /-- The kind and content of one catalog object. -/
 inductive CatalogEntry where
   /-- A table. -/
@@ -122,14 +113,14 @@ def columnPosition (columns : List CatalogColumn) (name : Identifier) : Option N
 /-- The affinity of a catalog column, from its declared type text. -/
 def CatalogColumn.affinity (column : CatalogColumn) : Affinity := affinityOf column.declaredType
 
-/-- The column positions of each unique key of the table at a catalog position, in
-this order: the primary key when there is one, the UNIQUE constraints, and the
-unique indexes on the table in catalog order. SQLite keeps each of them as an
-index, and a write that makes two rows equal on one of them fails. -/
-def Catalog.uniqueKeys (catalog : Catalog) (position : Nat) (table : CatalogTable) : List (List Nat) :=
-  (if table.primaryKey.isEmpty then [] else [table.primaryKey]) ++ table.uniqueKeys ++
+/-- Each unique key of the table at a catalog position, in this order: the primary key
+when there is one, the UNIQUE constraints, and the unique indexes on the table in
+catalog order. SQLite keeps each of them as an index, and a write that makes two rows
+equal on one of them fails. -/
+def Catalog.uniqueKeys (catalog : Catalog) (position : Nat) (table : CatalogTable) : List UniqueKey :=
+  ((if table.primaryKey.isEmpty then [] else [table.primaryKey]) ++ table.uniqueKeys).map UniqueKey.ofColumns ++
     catalog.filterMap fun object => match object.entry with
-      | .index index => if index.table == position && index.unique then some index.columns else none
+      | .index index => if index.table == position && index.unique then some index.uniqueKey else none
       | .table _ => none
 
 /-- Add the table with the name at the end of the catalog, at position

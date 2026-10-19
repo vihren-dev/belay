@@ -1,6 +1,7 @@
 import Belay.Sqlite.Resolution.Context
 import Belay.Sqlite.Resolution.KeyMerge
 import Belay.Sqlite.Resolution.ReadDefaults
+import Belay.Sqlite.Resolution.IndexTerms
 
 set_option doc.verso true
 
@@ -109,11 +110,14 @@ def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : N
         restrict index [1] .unmodeledDefault
       else .ok (.createTable catalog.length name table, catalog.createTable name table)
 
-/-- Resolve CREATE INDEX of a catalog description. The execution semantics does not
-model CREATE INDEX, so a CREATE INDEX that runs is a model restriction. -/
+/-- Resolve CREATE INDEX, of a catalog description or in a script, in SQLite's order: the
+table, its reserved name, the index name, the name in use, the key terms
+({name}`indexKeys`, path 3) and the filter ({name}`indexFilter`, path 4), both over the
+table alone and under the profile's {lit}`DQS_DDL`. A CREATE INDEX that runs builds the
+index over the existing rows in execution. -/
 def resolveCreateIndex (context : ResolveContext) (catalog : Catalog) (index : Nat)
-    (name : Identifier) (unique : Bool) (tableName : Identifier) (columns : List Identifier) : StatementResolution :=
-  if context.mode == .execution then restrict index [] .createIndexRuns else
+    (name : Identifier) (unique : Bool) (tableName : Identifier) (terms : List Syntax.OrderTerm)
+    (filter : Option Syntax.Expr) : StatementResolution :=
   match catalog.findTable tableName with
   | none => prepareError catalog (.noSuchTable tableName)
   | some (position, table) =>
@@ -122,11 +126,16 @@ def resolveCreateIndex (context : ResolveContext) (catalog : Catalog) (index : N
     else match catalog.find name with
     | some (_, { entry := .table _, .. }) => prepareError catalog (.tableNameUsed name)
     | some (_, { entry := .index _, .. }) => prepareError catalog (.indexExists name)
-    | none => match keyPositions table.columns columns with
-      | .error error => prepareError catalog (.expression error)
-      | .ok positions =>
-        let created := { table := position, columns := positions, unique }
-        .ok (.createIndex catalog.length name created, catalog.createIndex name created)
+    | none =>
+      let scope := Scope.single tableName table.columns
+      let dqs := context.profile.dqsDdl
+      match indexKeys dqs scope table.columns terms with
+      | .error issue => issueResolution catalog index [3] issue
+      | .ok keys => match indexFilter dqs scope filter with
+        | .error issue => issueResolution catalog index [4] issue
+        | .ok resolvedFilter =>
+          let created := { table := position, keys, unique, filter := resolvedFilter }
+          .ok (.createIndex catalog.length name created, catalog.createIndex name created)
 
 /-- Construct added-column metadata after PRIMARY KEY and UNIQUE have been
 rejected. NOT NULL sets nullability and its {lit}`ON CONFLICT` algorithm (ABORT without
