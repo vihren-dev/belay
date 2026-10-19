@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-19T06:20:54+00:00",
+  "finding": "20261019T061913Z-9bf6dc0f#4",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "Correction of the earlier reason: the scan finds a schema feature in all but 10 of the cases that the model refuses for a schema reason (stated in the README). It is a one-off measurement for the ADR, and each slice measures its real effect with the verdict; a test comes if the script becomes a maintained tool."
+}
