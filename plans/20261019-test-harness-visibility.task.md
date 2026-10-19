@@ -1,6 +1,6 @@
 # Test harness visibility
 
-Created 2026-10-19. Status: in progress.
+Created 2026-10-19. Status: DONE (pull request #182).
 Status file: [status](20261019-test-harness-visibility.status.md).
 Related: [CI](../docs/ci.md), [build and test behavior](../build-support/README.md),
 [ADR 0001](../docs/adr-0001-pytest-and-nix-ci.md) (Nix test caching and the 2026-09-29

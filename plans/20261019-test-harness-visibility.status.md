@@ -1,6 +1,6 @@
 # Status: test harness visibility
 
-Created 2026-10-19. Status: in progress.
+Created 2026-10-19. Status: DONE (pull request #182).
 Task file: [task](20261019-test-harness-visibility.task.md).
 
 ## Relevant files
@@ -47,4 +47,6 @@ Task file: [task](20261019-test-harness-visibility.task.md).
   while the rerun mutant suite had passed 5 of its 6 tests. PR #161 and main run
   39237549400 (macOS) failed the same way. The owner raised the checks phase limit to
   3600 s (`CHECKS_PHASE_LIMIT_SECONDS`).
-- Next: check that the Linux job of #182 passes; then rebase the open pull requests.
+- 2026-10-19: run 39293028419 passed (Linux 23m12s, checks phase 1101 s; every suite,
+  including the scheduled `mutants` at 500 s, ran in this job). DONE. The open pull
+  request stack (#161 to #181) is rebased onto this branch.
