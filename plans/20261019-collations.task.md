@@ -39,7 +39,7 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D3 and owner dec
    - the equality that `USING` and `NATURAL` make: the collation of the left-most left
      column of the name (a coalesce of left columns has the collation of its first
      argument, checked natively).
-   - a `GROUP BY` term may be a column name under `COLLATE`.
+   - a `GROUP BY` term may be a column name under one `COLLATE`.
 5. **Execution compares through the collation** wherever it compares values: comparison
    operators, sorting, grouping, `min` and `max`, unique keys (also partial and expression
    keys), and the scan order of a `WITHOUT ROWID` table.

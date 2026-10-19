@@ -154,7 +154,7 @@ explicit `COLLATE` of its left operand, else of its right operand, else the coll
 a column on the left, else on the right, else `BINARY`; `COLLATE` passes through unary plus
 and `CAST`. An `ORDER BY` or `GROUP BY` term, `min` and `max` use the collation of their
 expression, and the equality of `USING` and `NATURAL` that of its left column. A
-`GROUP BY` term may be a column name under `COLLATE`. An unknown name in a column
+`GROUP BY` term may be a column name under one `COLLATE`. An unknown name in a column
 definition or an index term is SQLite's prepare error `no such collation sequence: %s`;
 in any other expression it is the restriction `unknown-collation`, because SQLite looks
 the name up only where it uses the collation, and its query planner decides some of

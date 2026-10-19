@@ -10,7 +10,7 @@ columns, {lit}`WHERE`, the {lit}`ON` conditions, {lit}`GROUP BY`, {lit}`ORDER BY
 {lit}`LIMIT` and {lit}`OFFSET`. The paths of a restriction use the child positions of
 {lit}`Syntax.Statement.select`: 0 the columns, 1 the first table, 2 the joins, 3 the
 filter, 4 the grouping terms, 5 the ordering terms, 6 the limit and 7 the offset. A
-grouping term is a column name, also under {lit}`COLLATE` ({name}`Belay.Sqlite.Syntax.Expr.collatedColumn`),
+grouping term is a column name, also under one {lit}`COLLATE` ({name}`Belay.Sqlite.Syntax.Expr.collatedColumn`),
 or a result column; each grouping and ordering term compares under its collation
 (ADR 0014, slice 3). -/
 

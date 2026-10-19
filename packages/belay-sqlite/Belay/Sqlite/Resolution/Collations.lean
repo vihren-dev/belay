@@ -45,17 +45,19 @@ def Syntax.Expr.columnCollation (scope : Scope) : Syntax.Expr → Option Collati
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .compare .. | .and .. | .or ..
   | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. => none
 
-/-- Whether an expression is a column under one or more {lit}`COLLATE`: a qualified name, or
-an unqualified name that reads a column of the scope. The model admits such a
-{lit}`GROUP BY` term; a name that reads no column could name a result column. -/
+/-- Whether an expression is a column under one {lit}`COLLATE`: a qualified name, or an
+unqualified name that reads a column of the scope. The model admits such a
+{lit}`GROUP BY` term; a name that reads no column could name a result column. It does not
+recurse, so the kernel reduces it in the proofs of conformance cases; a second
+{lit}`COLLATE` stays a restriction. -/
 def Syntax.Expr.collatedColumn (scope : Scope) : Syntax.Expr → Bool
   | .collate (.identifier name _) _ => (scope.resolveName name matches .found ..)
   | .collate (.qualified ..) _ => true
-  | .collate operand@(.collate ..) _ => operand.collatedColumn scope
-  | .collate (.null) _ | .collate (.numeric _) _ | .collate (.string _) _ | .collate (.blob _) _
-  | .collate (.currentTime _) _ | .collate (.negate _) _ | .collate (.positive _) _ | .collate (.compare ..) _
-  | .collate (.and ..) _ | .collate (.or ..) _ | .collate (.not _) _ | .collate (.isNull ..) _
-  | .collate (.callStar _) _ | .collate (.call ..) _ | .collate (.arithmetic ..) _ | .collate (.cast ..) _
+  | .collate (.collate ..) _ | .collate .null _ | .collate (.numeric _) _ | .collate (.string _) _
+  | .collate (.blob _) _ | .collate (.currentTime _) _ | .collate (.negate _) _ | .collate (.positive _) _
+  | .collate (.compare ..) _ | .collate (.and ..) _ | .collate (.or ..) _ | .collate (.not _) _
+  | .collate (.isNull ..) _ | .collate (.callStar _) _ | .collate (.call ..) _ | .collate (.arithmetic ..) _
+  | .collate (.cast ..) _
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .qualified .. | .negate _
   | .positive _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
   | .cast .. => false
