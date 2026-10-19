@@ -122,7 +122,8 @@ def sameIndexes (model native : List NativeIndex) : Bool :=
   model.length == native.length && model.all (native.contains ·)
 
 /-- Whether the catalog table at a position, its object name and its stored rows match
-a native table: name, columns, keys, indexes, {lit}`WITHOUT ROWID`, and rows: by rowid, or
+a native table: name, columns, keys (the primary key without repeated columns, as
+{lit}`PRAGMA table_xinfo` gives each column once), indexes, {lit}`WITHOUT ROWID`, and rows: by rowid, or
 for a {lit}`WITHOUT ROWID` table by their cells in key order
 ({name}`Belay.Sqlite.Table.scanRows`), since the model's rowids of such a table are its
 own. -/
@@ -130,7 +131,7 @@ def tableMatches (catalog : Catalog) (position : Nat) (name : Identifier) (table
     (rows : List Row) (native : NativeTable) : Bool :=
   name == native.name && table.columns.length == native.columns.length &&
   (table.columns.zip native.columns).all (fun (column, observed) => columnMatches column observed) &&
-  table.primaryKey == native.primaryKey && sortKeys table.uniqueKeys == sortKeys native.uniqueKeys &&
+  table.primaryKey.eraseDups == native.primaryKey && sortKeys table.uniqueKeys == sortKeys native.uniqueKeys &&
   sameIndexes (catalogIndexes catalog position) native.indexes && table.withoutRowid == native.withoutRowid &&
   if table.withoutRowid then
     ({ shape := table, rows } : Table).scanRows.map (·.values) ==

@@ -109,12 +109,13 @@ def statisticsTable (name : Identifier) (columns : List Syntax.ColumnDefinition)
   constraints.isEmpty && (statisticsColumns name.folded).any plain
 
 /-- A table as {lit}`WITHOUT ROWID` makes it (ADR 0014, D4; {lit}`convertToWithoutRowidTable`):
-no rowid alias, and each primary-key column NOT NULL, with ABORT unless it declares its own
-NOT NULL. -/
+no rowid alias, each primary-key column NOT NULL, with ABORT unless it declares its own
+NOT NULL, and a key without the repeated occurrences of a column, which SQLite ignores
+(R-03887-49864). -/
 def CatalogTable.asWithoutRowid (table : CatalogTable) : CatalogTable :=
   let columns := table.columns.mapIdx fun position (column : CatalogColumn) =>
     if table.primaryKey.contains position then { column with notNull := true } else column
-  { table with withoutRowid := true, rowidAlias := none, columns }
+  { table with withoutRowid := true, rowidAlias := none, columns, primaryKey := table.primaryKey.eraseDups }
 
 /-- Resolve CREATE TABLE, of a catalog description or in a script. Path 1 is the column list
 and path 2 the table constraints. A {lit}`WITHOUT ROWID` table
