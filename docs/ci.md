@@ -40,7 +40,9 @@ CI retains `api-reference-SYSTEM` for 14 days, including when a later check
 fails. `just documentation-inventory` checks authored Verso coverage.
 Documentation dependencies stay outside the installed proof runtime.
 The complete job has a 75-minute limit. The reference phase keeps its
-30-minute limit. Individual compiler, suite and installer deadlines remain
+30-minute limit. The phase that runs the scope's `just` recipes has a 60-minute
+limit (`CHECKS_PHASE_LIMIT_SECONDS`): `just package` reruns the scheduled mutant suite
+when the model changes, and that took more than 30 minutes. Individual compiler, suite and installer deadlines remain
 unchanged; a job that reaches its aggregate limit fails.
 
 Each complete check invocation enters the pinned Nix environment once. `tools/ci_checks.py`

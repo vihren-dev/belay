@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from tools.ci_checks import NIX_TEST_BUILD_OPTIONS, run_checks
+from tools.ci_checks import CHECKS_PHASE_LIMIT_SECONDS, NIX_TEST_BUILD_OPTIONS, run_checks
 from tests.runtime_support import CommandResult, CommandTimeout
 
 pytestmark = [pytest.mark.unit, pytest.mark.environment]
@@ -47,6 +47,7 @@ def test_hosted_job_keeps_owner_limit_and_child_deadlines(
     assert int(match.group(1)) == OWNER_JOB_LIMIT_MINUTES
     assert reference_limit == 1800
     assert all(0 < timeout <= OWNER_JOB_LIMIT_MINUTES * 60 for timeout in budgets)
+    assert budgets[-1] == CHECKS_PHASE_LIMIT_SECONDS == 3600
 
 
 

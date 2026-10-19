@@ -97,7 +97,9 @@ Five causes, found while reading that run:
   Python under `timeout` keep their behavior.
 - The macOS `model` suite took 838.7 s on main (run 38787513511), so the suite
   limit cannot drop below 900 s. Raise the limits that build suites instead.
-  The CI phase limit (1800 s) and the job limit (75 min) are the owner's and stay.
+  The job limit (75 min) is the owner's and stays. The owner raised the checks phase
+  limit from 1800 s to 3600 s on 2026-10-19, after the first CI run of this task showed
+  that `just package` with a rerun of the mutant suite needs about 33 minutes.
 - `nixpkgs.linkFarm` keeps its entries in `passthru.entries`, which a test can evaluate.
 - `.github/workflows/ci.yml` is code-owned. The artifact path `build/nix-tests*/`
   already matches the new layout; avoid changing the workflow if possible.

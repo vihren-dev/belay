@@ -29,6 +29,10 @@ BUNDLE_FIRST_SYSTEM = "aarch64-darwin"
 BUNDLE_BUILD_LIMIT_SECONDS = 1500
 """The limit of the justfile recipes that build test suites: more than the per-suite limit in
 build-support/tests.nix, so a bundle suite that hangs fails with its own name."""
+CHECKS_PHASE_LIMIT_SECONDS = 3600
+"""The limit of the `just` recipes of a scope. `just package` reruns the scheduled mutant suite when
+the model changes; on 2026-10-19 that phase needed about 33 minutes on Linux (pull request #182) and
+more than 30 minutes on macOS (run 39237549400). The 75-minute job limit stays the outer bound."""
 NIX_TEST_BUILD_OPTIONS = ("--option", "sandbox", "true", "--option", "sandbox-fallback", "false",
                           "--extra-experimental-features", "nix-command flakes")
 """Use the complete test recipes' sandbox policy for the isolated bundle target."""
@@ -92,7 +96,7 @@ def run_checks(scope: str, mode: str, system: str, root: Path) -> None:
         run("bundle", ["nix-build", "build-support/default.nix", "-A", "tests.bundle",
             "--out-link", "build/nix-tests-bundle", *NIX_TEST_BUILD_OPTIONS], BUNDLE_BUILD_LIMIT_SECONDS)
     try:
-        run("checks-" + scope, ["just", *SCOPE_RECIPES[scope]], 1800)
+        run("checks-" + scope, ["just", *SCOPE_RECIPES[scope]], CHECKS_PHASE_LIMIT_SECONDS)
     finally:
         write_test_summary(root / "build", job_started)
 

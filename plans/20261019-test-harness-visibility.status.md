@@ -41,4 +41,10 @@ Task file: [task](20261019-test-harness-visibility.task.md).
   session's mutant suite, and passed on the rerun.
 - 2026-10-19: outcome 6. `tools/test_reports.py` prints the report summary after the
   checks phase, also on failure, and adds it to `GITHUB_STEP_SUMMARY`.
-- Next: pull request; check the Linux job's log, artifact layout and summary page.
+- 2026-10-19: pull request #182. Its first Linux run (39271039697) streamed the log,
+  printed the one-line timeout message and the summary, and kept one report folder
+  per suite. It failed: the 1800-second checks phase ended `just package` at 15:15:57,
+  while the rerun mutant suite had passed 5 of its 6 tests. PR #161 and main run
+  39237549400 (macOS) failed the same way. The owner raised the checks phase limit to
+  3600 s (`CHECKS_PHASE_LIMIT_SECONDS`).
+- Next: check that the Linux job of #182 passes; then rebase the open pull requests.
