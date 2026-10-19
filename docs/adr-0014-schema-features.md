@@ -15,9 +15,9 @@ Today the model refuses a schema that has any of these features: a partial or ex
 index, an index built over existing rows, CHECK, COLLATE, a generated column,
 `WITHOUT ROWID` or `STRICT`. Real application schemas use them, so the migration checker
 refuses those schemas before it looks at the migration. This ADR adds them to the
-catalog, to resolution and to execution, in six slices that the measurement orders.
-Foreign-key enforcement, `AUTOINCREMENT`, `CREATE TABLE ... AS SELECT` and `DROP` stay
-out of scope (see "Not decided here").
+catalog, to resolution and to execution, in six slices that the measurement orders, and
+adds `DROP INDEX` and `DROP TABLE` as a seventh. Foreign-key enforcement, `AUTOINCREMENT`
+and `CREATE TABLE ... AS SELECT` stay out of scope (see "Not decided here").
 
 ## Context
 
@@ -91,6 +91,10 @@ UNIQUE constraints and unique indexes are then checked by one function.
   SQLite replaces only for unique keys. The other algorithms keep their meaning.
 - **Named constraints.** `CONSTRAINT name` may come before any constraint. Only CHECK
   reports the name.
+- **Inert `REFERENCES`** (owner decision 3). A `REFERENCES` clause or a `FOREIGN KEY`
+  table constraint is admitted under a profile that does not enforce foreign keys, where
+  SQLite ignores it apart from its prepare errors. The catalog keeps no foreign key.
+  Under a profile that enforces them, it stays a restriction.
 - **ADD COLUMN.** An `ADD COLUMN` with a CHECK follows SQLite's check of the existing
   rows. The slice confirms the exact rule natively first.
 - **CREATE TABLE in the script.** A CREATE TABLE with constraints that runs in the script
@@ -163,6 +167,22 @@ A table has a `withoutRowid` flag, with these rules:
   `cannot store TEXT value in INTEGER column s.a`. NULL fits every type. `ANY` keeps
   the value as written, with no affinity.
 
+### D7. `DROP INDEX` and `DROP TABLE`
+
+- **What they do.** `DROP INDEX` removes an index from the catalog. `DROP TABLE` removes a
+  table and its indexes, and its rows.
+- **Errors.**
+  - SQLite's prepare errors apply, for example `no such table` and `no such index`.
+  - `IF EXISTS` turns those two into no-ops.
+  - An index that belongs to a constraint (`sqlite_autoindex_...`) cannot be dropped:
+    `index associated with UNIQUE or PRIMARY KEY constraint cannot be dropped`.
+  - Each of these was checked natively.
+- **Catalog positions.** A removal changes the positions of later objects. The catalog
+  function of DROP is shared by resolution and execution, as ADR 0013 requires for every
+  definition, and resolved statements refer to positions after the DROP.
+- **Scope.** A table that a trigger, a view or an enforced foreign key refers to stays a
+  restriction, since the model has none of these.
+
 ### Order and pull requests
 
 The slices follow the measured order, and each has its own task file:
@@ -172,7 +192,8 @@ The slices follow the measured order, and each has its own task file:
 3. collations (D3);
 4. CHECK and named constraints, and CREATE TABLE with constraints in the script (D2);
 5. generated columns (D5);
-6. `STRICT` (D6).
+6. `STRICT` (D6);
+7. `DROP INDEX` and `DROP TABLE` (D7).
 
 The order differs from the measured one in two places:
 
@@ -228,24 +249,19 @@ Each slice works in this way:
 
 - **Foreign keys.** Enforcement (`PRAGMA foreign_keys`), `foreign_key_check` and the
   actions of `ON DELETE` and `ON UPDATE` need nested writes. They get their own ADR,
-  with triggers. This ADR may admit an inert `REFERENCES` clause under a profile that
-  does not enforce foreign keys (owner decision 3).
-- **`DROP TABLE` and `DROP INDEX`.** They interact with triggers, views and foreign keys.
-  Without those they are small, and they could join this ADR (owner decision 2).
+  with triggers. This ADR admits only an inert `REFERENCES` clause (D2).
 - **`AUTOINCREMENT`**, which needs the `sqlite_sequence` table, and
   **`CREATE TABLE ... AS SELECT`**, which needs a query as a statement source.
 - **User-defined collations** and the `ICU` collations. The model has none.
 
 ## Owner decisions
 
-Open:
+Decided on 2026-10-19:
 
-1. **Collations in this ADR.** D3 touches every comparison and sort. The other choice
-   is to leave collations to a later ADR and keep COLLATE a restriction. Recommended:
-   keep D3 here; collations bring in 55 clean cases and block 330 cases in all.
-2. **`DROP INDEX` and `DROP TABLE`.** Add them as a seventh slice, for tables and
-   indexes without triggers, views or enforced foreign keys. Recommended: yes; they
-   are the second most common other blocker of these cases (110).
-3. **Inert `REFERENCES`.** Admit a `REFERENCES` clause under a profile that does not
-   enforce foreign keys, where SQLite ignores it. Recommended: yes, in slice 4; it
-   costs little and real schemas declare foreign keys.
+1. **Collations stay in this ADR** (D3, slice 3). Collations bring in 55 clean cases and
+   appear in 330 cases in all.
+2. **`DROP INDEX` and `DROP TABLE` join this ADR** as slice 7 (D7), for tables and
+   indexes that no trigger, view or enforced foreign key refers to. DROP is the only
+   other blocker of 110 schema-feature cases.
+3. **An inert `REFERENCES` is admitted** under profiles that do not enforce foreign keys
+   (D2, slice 4).
