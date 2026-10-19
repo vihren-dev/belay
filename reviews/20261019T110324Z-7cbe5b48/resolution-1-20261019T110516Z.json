@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-19T11:05:16+00:00",
+  "finding": "20261019T110324Z-7cbe5b48#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Queries.lean split: integer literals, named result columns and window values move to Resolution/QueryTerms.lean (146 and 70 lines)"
+}
