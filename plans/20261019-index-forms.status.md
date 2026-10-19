@@ -46,6 +46,11 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D1.
   (20 cases) agrees in full. Freed 18 GiB of old `/tmp/nix-shell.*` directories with the
   owner's approval for the disk guard.
 
+- 2026-10-19: CI time (local, forced rebuilds), base #169 → slice 1: harness 23 → 23 s,
+  model 344 → 342 s, frozen 140 → 140 s, mutants 423 → 461 s. PR B: corpus 29 recorded
+  natively (20 cases), claimed with every case in `mustAgree`, and the 112 upstream cases
+  join `mustAgree`; new judge lock.
+
 ## Remaining
 
-- CI time, pull requests A and B.
+- Pull requests A and B.
