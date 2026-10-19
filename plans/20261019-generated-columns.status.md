@@ -22,7 +22,7 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D5.
   list fills the columns that are not generated; the harness carries `hidden`. New
   restrictions `generated-function`, `generated-loop`, `upsert-generated` and
   `add-column-generated` (the task records the last three as amendments). Authored corpus
-  `authored_generated` (21 cases, all AGREE with kernel proofs locally, corpus 33) and
+  `authored_generated` (23 cases after the first review, all AGREE with kernel proofs locally, corpus 33) and
   `generated_mutants` (three).
 
 ## Remaining

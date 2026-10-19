@@ -75,6 +75,9 @@ inductive ExprError where
   /-- {lit}`must have at least one non-generated column`: a table whose columns are all
   generated. -/
   | onlyGeneratedColumns
+  /-- {lit}`the "." operator prohibited in generated columns`: a qualified name in the
+  expression of a generated column. -/
+  | qualifiedGenerated
   /-- {lit}`the "." operator prohibited in index expressions`: a qualified name in a key
   term of CREATE INDEX ({lit}`notValidImpl`). -/
   | qualifiedIndexTerm

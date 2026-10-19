@@ -86,6 +86,10 @@ def definitions() -> list[QueryCase]:
              ("generated", "prepare-error")),
         case("generated-only", TABLES, "CREATE TABLE n(a AS (1));", (NON_GENERATED,),
              ("generated", "prepare-error")),
+        case("generated-qualified-name", TABLES, "CREATE TABLE n(a, b AS (n.a));", (READS_OTHERS,),
+             ("generated", "prepare-error")),
+        case("generated-twice", TABLES, "CREATE TABLE n(a, b AS (a) AS (a + 1));", (READS_OTHERS,),
+             ("generated", "prepare-error")),
         case("generated-no-such-column", TABLES, "CREATE TABLE n(a, b AS (zz));", (READS_OTHERS,),
              ("generated", "prepare-error")),
     ]

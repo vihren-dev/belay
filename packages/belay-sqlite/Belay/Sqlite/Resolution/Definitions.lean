@@ -54,6 +54,7 @@ def applyConstraint (tableName : Identifier) (definition : Syntax.ColumnDefiniti
     | some collation => .ok { table with columns := updateLast table.columns fun column => { column with collation } }
   | .check .. => .ok table
   | .generated _ stored =>
+    if (table.columns.getLast?.bind (·.generated)).isSome then .error (.errorInGenerated definition.name) else
     if table.primaryKey.contains (table.columns.length - 1) then .error .generatedInPrimaryKey else
     if definition.constraints.any (· matches .default ..) &&
         (table.columns.getLast?.bind (·.defaultValue)).isSome then .error (.errorInGenerated definition.name) else

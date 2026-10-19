@@ -45,6 +45,7 @@ def ExprError.message : ExprError → String
   | .errorInGenerated name => s!"error in generated column \"{name}\""
   | .nondeterministicGenerated => "non-deterministic functions prohibited in generated columns"
   | .onlyGeneratedColumns => "must have at least one non-generated column"
+  | .qualifiedGenerated => "the \".\" operator prohibited in generated columns"
   | .qualifiedIndexTerm => "the \".\" operator prohibited in index expressions"
   | .nondeterministicIndex filter =>
     "non-deterministic functions prohibited in " ++ (if filter then "partial index WHERE clauses" else "index expressions")

@@ -84,6 +84,11 @@ def errorOf (statement : Syntax.Statement) : Option PrepareError :=
 #guard errorOf (.createTable (name! "n") [column (name! "a"), gen (name! "b") (ref (name! "rowid"))] []) ==
   some (.expression (.noSuchColumn (name! "rowid")))
 #guard errorOf (.createTable (name! "n") [gen (name! "a") (.numeric "1")] []) == some (.expression .onlyGeneratedColumns)
+#guard errorOf (.createTable (name! "n") [column (name! "a"), gen (name! "b") (.qualified (name! "n") (name! "a"))] []) ==
+  some (.expression .qualifiedGenerated)
+#guard errorOf (.createTable (name! "n") [column (name! "a"),
+  gen (name! "b") (ref (name! "a")) false [.generated (.numeric "1") false]] []) ==
+  some (.expression (.errorInGenerated (name! "b")))
 #guard errorOf (.createTable (name! "n") [column (name! "a"), gen (name! "b") (.currentTime "CURRENT_TIMESTAMP")] []) ==
   some (.expression .nondeterministicGenerated)
 
