@@ -17,9 +17,10 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "json_arrow_scalar_unquoted": (JSON + "Extract.lean", "  | .ok (some found) => .ok (.text (renderNode found))",
         "  | .ok (some found) => sqlValueOfNode found"),
     "json_last_duplicate_key": (JSON + "Path.lean",
-        "    | some (text, rawLabel) => if labelsMatch key rawKey text rawLabel then some (some value) else",
-        "    | some (text, rawLabel) => if labelsMatch key rawKey text rawLabel then"
-        " some ((findMember key rawKey rest).getD (some value)) else"),
+        "      if labelsMatch key rawKey text rawLabel then some (some (offset, offset + jsonbSize label, value))",
+        "      if labelsMatch key rawKey text rawLabel then"
+        " some ((findMember key rawKey rest (offset + jsonbSize label + jsonbSize value)).getD"
+        " (some (offset, offset + jsonbSize label, value)))"),
     "json_numbers_rerendered": (JSON + "Render.lean", "  | .int payload | .float payload => payload",
         "  | .int payload => payload | .float payload => (payload.reverse.dropWhile (· == 48)).reverse"),
     "json5_not_normalized": (JSON + "Render.lean", "  | .int5 payload => renderInt5 payload",

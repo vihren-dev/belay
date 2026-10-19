@@ -39,7 +39,7 @@ def parseJsonArgument (json : Value) : Except JsonError (Option JsonNode) :=
 /-- Convert a lookup result for a path text into a node, {lit}`none` for "not found",
 or the error of {lit}`jsonExtractFunc`. -/
 def lookupOutcome (path : List UInt8) : LookupResult → Except JsonError (Option JsonNode)
-  | .found node => .ok (some node)
+  | .found located => .ok (some located.node)
   | .notFound => .ok none
   | .malformed => .error .malformed
   | .pathError => .error (.badPath path)

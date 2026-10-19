@@ -28,7 +28,12 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), step 8, owner de
   is gone. `slice` and `hexDigitsEnd` moved to `Json/Bytes.lean`. New guards for JSON5
   white space before separators and in nested values, checked with native 3.51.0. The core
   has 131 modules.
+- 2026-10-19: one path walker (outcome 3). `lookupStep` in `Json/Path.lean` keeps the JSONB
+  offsets (`LookupResult.found` holds a `LocatedNode`); `json_extract`, the arrows and
+  `json_each` use it. `locateStep`, `locatePath` and `findMemberAt` are gone; `findMember`
+  takes the offset. `Json/JsonbOffset.lean` keeps only the sizes and `LocatedNode`. The
+  `json_last_duplicate_key` mutant follows `findMember`.
 
 ## Remaining
 
-- Outcomes 3, 4 and 6; checks, reviews, CI time, pull requests.
+- Outcomes 4 and 6; checks, reviews, CI time, pull requests.
