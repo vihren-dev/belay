@@ -106,7 +106,9 @@ def write_test_summary(build: Path, since: datetime) -> None:
     try:
         write_summary(build, since)
     except (OSError, ValueError, ElementTree.ParseError) as error:
-        print(f"Cannot write the summary of the test reports in {build}: {error}", file=sys.stderr, flush=True)
+        print(f"Cannot write the summary of the test reports in {build}: {error}. The check result "
+              "does not change. Correct the report file or the GITHUB_STEP_SUMMARY path named in the "
+              "error, then run the job again to get the summary.", file=sys.stderr, flush=True)
 
 
 def main() -> None:

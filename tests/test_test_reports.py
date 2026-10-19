@@ -88,8 +88,9 @@ def test_summary_separates_suites_that_ran_from_reused_ones(tmp_path: Path) -> N
 
 
 def test_summary_lists_at_most_ten_cases_and_handles_missing_data(tmp_path: Path) -> None:
-    """The slowest-case list is capped, a report without a timestamp is marked, and an empty
-    build folder gives a short summary instead of an error."""
+    """`tools.test_reports.find_reports` and `tools.test_reports.render_summary` cap the slowest-case
+    list at ten, mark a report without a timestamp, and give a short summary for an empty build
+    folder instead of an error."""
     assert "No JUnit reports in build/." in render_summary(find_reports(tmp_path), SINCE)
     write_junit(tmp_path / "nix-tests-bundle/junit.xml", None, {"untimed": 5.0})
     assert "No test case ran in this job." in render_summary(find_reports(tmp_path), SINCE)
