@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.SyntaxExpr
+import Belay.Sqlite.Resolution.ConflictAlgorithm
 
 set_option doc.verso true
 
@@ -29,9 +30,9 @@ structure ConflictClause where
 /-- A write that can carry {lit}`RETURNING`: an {lit}`INSERT`, {lit}`UPDATE` or
 {lit}`DELETE` with the fields of the statement of the same name. -/
 inductive Write where
-  /-- {lit}`INSERT INTO table [(columns)] VALUES rows [ON CONFLICT ...]`. -/
+  /-- {lit}`INSERT [OR algorithm] INTO table [(columns)] VALUES rows [ON CONFLICT ...]`. -/
   | insert (table : String) (columns : Option (List String)) (rows : List (List Expr))
-      (conflicts : List ConflictClause)
+      (conflicts : List ConflictClause) (algorithm : Option ConflictAlgorithm := none)
   /-- {lit}`UPDATE table SET assignments [WHERE filter]`. -/
   | update (table : String) (assignments : List (String × Expr)) (filter : Option Expr)
   /-- {lit}`DELETE FROM table [WHERE filter]`. -/
@@ -57,18 +58,22 @@ inductive Statement where
   /-- {lit}`INSERT INTO table [(columns)] VALUES rows` and its {lit}`ON CONFLICT`
   clauses in written order; a missing column list is
   {lean}`(none : Option (List String))`, and an INSERT without clauses has
-  {lean}`([] : List ConflictClause)`. -/
+  {lean}`([] : List ConflictClause)`. The algorithm of {lit}`INSERT OR algorithm` or of
+  {lit}`REPLACE INTO` is {lit}`algorithm`, {lean}`(none : Option ConflictAlgorithm)` without
+  one. -/
   | insert (table : String) (columns : Option (List String)) (rows : List (List Expr))
-      (conflicts : List ConflictClause)
+      (conflicts : List ConflictClause) (algorithm : Option ConflictAlgorithm := none)
   /-- {lit}`UPDATE table SET assignments [WHERE filter]`. -/
   | update (table : String) (assignments : List (String × Expr)) (filter : Option Expr)
   /-- {lit}`DELETE FROM table [WHERE filter]`. -/
   | delete (table : String) (filter : Option Expr)
   /-- {lit}`SELECT columns FROM source joins [WHERE filter] [GROUP BY terms] [ORDER BY terms]
   [LIMIT limit [OFFSET offset]]`: the first table of {lit}`FROM` and the joins after it, in
-  order; one table has no joins. An omitted clause is {lit}`none` or an empty list;
+  order; one table has no joins, and a {lit}`SELECT` without {lit}`FROM` has
+  {lean}`(none : Option TableReference)` and no joins. An omitted clause is {lit}`none` or
+  an empty list;
   {lit}`LIMIT offset, limit` gives both expressions. -/
-  | select (columns : List ResultColumn) (source : TableReference) (joins : List Join) (filter : Option Expr)
+  | select (columns : List ResultColumn) (source : Option TableReference) (joins : List Join) (filter : Option Expr)
       (groupBy : List Expr) (orderBy : List OrderTerm) (limit : Option Expr) (offset : Option Expr)
   /-- A write with {lit}`RETURNING columns`: an {lit}`INSERT`, {lit}`UPDATE` or
   {lit}`DELETE` and its result columns. A write without {lit}`RETURNING` is the statement

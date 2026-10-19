@@ -33,6 +33,15 @@ inductive RestrictionKind where
   /-- {lit}`ON CONFLICT DO UPDATE` without a target on a table with more than one key:
   SQLite then chooses the key of the conflict by its internal order of indexes. -/
   | conflictWithoutTarget
+  /-- Keys of one INSERT with different conflict algorithms other than REPLACE: SQLite's
+  internal order of keys decides which one applies to a row that conflicts on both. -/
+  | mixedConflictAlgorithms
+  /-- UPDATE of a table with a constraint algorithm other than ABORT: {lit}`UPDATE OR` and
+  the algorithms of UPDATE are not modeled (ADR 0012, amendment 4). -/
+  | constraintAlgorithmUpdate
+  /-- REPLACE of a NOT NULL column with a default: REPLACE stores the default for a NULL,
+  and the model does not evaluate defaults in writes. -/
+  | replaceDefault
   /-- A column named twice in INSERT is not modeled (ADR 0008). -/
   | insertColumnTwice
   /-- A column assigned twice in UPDATE is not modeled (ADR 0008). -/
@@ -56,7 +65,7 @@ inductive RestrictionKind where
   | laterTableInOn
   /-- Queries of SQLite's own tables, such as {lit}`sqlite_schema`, are not modeled (ADR 0012 slice 1). -/
   | systemTable
-  /-- Only {lit}`COUNT(*)`, {lit}`COUNT`, {lit}`MIN`, {lit}`MAX`, {lit}`SUM` and {lit}`AVG` of one argument, and {lit}`COALESCE` of two or more arguments are modeled as functions (ADR 0012 slices 1 and 2). -/
+  /-- Only {lit}`COUNT(*)`, {lit}`COUNT`, {lit}`MIN`, {lit}`MAX`, {lit}`SUM` and {lit}`AVG` of one argument, {lit}`COALESCE` of two or more arguments, {lit}`json_extract`, the operators {lit}`->` and {lit}`->>`, {lit}`json_type`, {lit}`json_valid`, {lit}`json_array_length` and {lit}`json` are modeled as functions (ADR 0012 slices 1, 2, 6b and 6c). -/
   | unmodeledFunction
   /-- An aggregate inside an expression is not modeled (ADR 0012 slice 1). -/
   | aggregateInExpression
@@ -82,6 +91,16 @@ inductive RestrictionKind where
   | negativeOffset
   /-- SUM in a grouped query with LIMIT or OFFSET is not modeled, because SQLite may stop before an overflowing group (ADR 0012 slice 2). -/
   | windowedGroupSum
+  /-- A constant value in {lit}`VALUES` or {lit}`SET` whose JSON function fails is not modeled, because the model does not describe when SQLite evaluates it (ADR 0012 slice 6b). -/
+  | constantFunctionError
+  /-- Only {lit}`json_each` with one or two arguments is modeled as a table-valued function in {lit}`FROM` (ADR 0012 slice 6d). -/
+  | tableFunction
+  /-- A table after a {lit}`json_each` source in {lit}`FROM` is not modeled (ADR 0012 slice 6d). -/
+  | tableAfterFunction
+  /-- Only an inner join without {lit}`NATURAL` or {lit}`USING` is modeled with {lit}`json_each` (ADR 0012 slice 6d). -/
+  | functionJoin
+  /-- An argument of {lit}`json_each` that reads a later source is not modeled (ADR 0012 slice 6d). -/
+  | laterSourceInArguments
   deriving Repr, DecidableEq
 
 end Belay.Sqlite

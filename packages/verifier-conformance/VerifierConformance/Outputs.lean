@@ -1,5 +1,5 @@
 import Belay.Sqlite.SqlExecution
-import Belay.Sqlite.QueryJoins
+import Belay.Sqlite.QueryFunctions
 
 /-! ADR 0005 output comparison uses native tie groups, without evaluating SQL. -/
 
@@ -74,8 +74,16 @@ def haltError : SqlTransition → Option ExecutionError
 /-- Whether an execution error is a failed write, whose outputs are the {lit}`RETURNING`
 names, no rows and no change: a constraint failure or a rowid alias mismatch. -/
 def ExecutionError.failsWrite : ExecutionError → Bool
-  | .constraintViolation | .datatypeMismatch => true
-  | .unmodeled | .prepare _ | .transactionAlreadyActive | .noActiveTransaction | .integerOverflow => false
+  | .constraintViolation | .constraintFail | .constraintRollback | .datatypeMismatch => true
+  | .unmodeled | .prepare _ | .transactionAlreadyActive | .noActiveTransaction | .integerOverflow
+  | .functionError => false
+
+/-- The change count of a failed INSERT with clauses or algorithms: the rows written
+before the failing row for a FAIL failure, which keeps them, and zero for every other
+failure or a success. -/
+def keptCount : Except (ExecutionError × Table × List Row) (Table × List Row) → Nat
+  | .error (reason, _, written) => if reason = .constraintFail then written.length else 0
+  | .ok _ => 0
 
 /-- Observe the literal-DML domain; unsupported output capability is explicit.
 Transitions and failure status come from production advance, never a second
@@ -85,7 +93,8 @@ UPDATE changes each row that its filter selects; their {lit}`RETURNING` rows are
 alias), or of the new values of the selected rows. A successful INSERT with
 {lit}`ON CONFLICT` clauses changes each row that it inserted or updated, and its
 {lit}`RETURNING` rows are {name}`returnedRows` of those rows in row order
-({name}`LiteralData.upsertRun`); skipped rows are not counted. A
+({name}`LiteralData.upsertRun`); skipped and deleted rows are not counted, and a FAIL
+failure counts the rows before the failing one ({name}`keptCount`). A
 successful DELETE changes each row that its filter selects, and its {lit}`RETURNING` rows
 are {name}`returnedRows` of the old values of those rows. A write that fails a
 constraint or a rowid alias ({lit}`datatype mismatch`) returns its {lit}`RETURNING` names
@@ -94,12 +103,15 @@ names and the rows of {name}`Resolved.Query.run` over the table before it, and n
 change count; a query whose table is missing has no output. A query that fails with
 {lit}`integer overflow` has its column names and no rows when it has no
 {lit}`GROUP BY`; with {lit}`GROUP BY`, SQLite may return the rows of other groups
-before the failing one, in an order the model does not describe, so it has no output. -/
+before the failing one, in an order the model does not describe, so it has no output. A
+query whose JSON function fails, which has no {lit}`FROM` and so at most one row, has its
+column names and no rows. -/
 def statementOutput (statement : Resolved.Statement) (before : SqlState)
     (transition : SqlTransition) : Option StatementOutput :=
   let successful := match transition with | .next _ => true | .halt _ => false
   let constraintFailure := (haltError transition).any ExecutionError.failsWrite
   let overflow := haltError transition == some .integerOverflow
+  let functionFailure := haltError transition == some .functionError
   match statement with
   | .insert at_ rows _ returning =>
     let names := returning.map (·.2)
@@ -108,13 +120,13 @@ def statementOutput (statement : Resolved.Statement) (before : SqlState)
       let written := ((LiteralData.inserted table rows).rows.drop table.rows.length).map (·.values)
       return ⟨names, returnedRows returning written, some rows.length⟩
     else if constraintFailure then some ⟨names, [], some 0⟩ else none
-  | .upsert at_ rows clauses keys returning =>
+  | .upsert at_ rows clauses keys returning policy =>
     let names := returning.map (·.2)
+    let run := (before.database at_).map fun table => LiteralData.upsertRun keys policy clauses table rows
     if successful then do
-      let table ← before.database at_
-      let (_, written) ← (LiteralData.upsertRun keys clauses table rows).toOption
+      let (_, written) ← (← run).toOption
       return ⟨names, returnedRows returning (written.map (·.values)), some written.length⟩
-    else if constraintFailure then some ⟨names, [], some 0⟩ else none
+    else if constraintFailure then some ⟨names, [], some ((run.map keptCount).getD 0)⟩ else none
   | .update at_ assignments filter _ returning =>
     let names := returning.map (·.2)
     if successful then do
@@ -133,7 +145,8 @@ def statementOutput (statement : Resolved.Statement) (before : SqlState)
     else none
   | .query query =>
     if successful then (query.source before.database).map fun rows => ⟨query.names, query.run rows, none⟩
-    else if overflow && query.groupBy.isEmpty then some ⟨query.names, [], none⟩ else none
+    else if (overflow && query.groupBy.isEmpty) || functionFailure then some ⟨query.names, [], none⟩
+    else none
   | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ =>
     some ⟨[], [], none⟩
 

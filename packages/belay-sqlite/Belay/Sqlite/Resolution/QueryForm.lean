@@ -10,6 +10,28 @@ already applied to its literal operands, so evaluation needs no catalog. -/
 
 namespace Belay.Sqlite.Resolved
 
+/-- A JSON function of ADR 0012, amendment 5, slices 6b and 6c: {lit}`json_extract`, the
+operators {lit}`->` and {lit}`->>`, which SQLite's parser makes calls of the functions
+{lit}`->` and {lit}`->>`, {lit}`json_type`, {lit}`json_valid`, {lit}`json_array_length`
+and {lit}`json`. -/
+inductive JsonFunction where
+  /-- {lit}`json_extract(json, path, ...)`. -/
+  | extract
+  /-- {lit}`json -> path`: the selection as JSON text. -/
+  | arrowJson
+  /-- {lit}`json ->> path`: the selection as an SQL value. -/
+  | arrowValue
+  /-- {lit}`json_type(json [, path])`: the JSON type name. -/
+  | typeName
+  /-- {lit}`json_valid(json [, flags])`: 1 or 0. -/
+  | valid
+  /-- {lit}`json_array_length(json [, path])`: the number of elements. -/
+  | arrayLength
+  /-- {lit}`json(json)`: the rendered JSON text. -/
+  | json
+  deriving Repr, DecidableEq
+
+mutual
 /-- A scalar expression over one row of the source table. Its value is a stored
 value; the comparisons and logical operators give the integers 1 and 0, or NULL. -/
 inductive Expr where
@@ -33,7 +55,23 @@ inductive Expr where
   | cast (affinity : Affinity) (operand : Expr)
   /-- {lit}`COALESCE`: the first operand when it is not NULL, else the second. -/
   | coalesce (first rest : Expr)
+  /-- A call of a JSON function with its arguments in written order. -/
+  | json (function : JsonFunction) (arguments : Arguments)
+  /-- The resolved arguments after the second of a call of three or more arguments, which
+  resolution passes from a {lit}`Syntax.Expr.more` node to its call. A resolved
+  statement does not contain it; its value is NULL. -/
+  | arguments (list : Arguments)
   deriving Repr, DecidableEq
+
+/-- The arguments of a call in written order, as a list that is mutual with
+{lit}`Expr`, so equality stays derivable and recursion stays structural. -/
+inductive Arguments where
+  /-- No more arguments. -/
+  | nil
+  /-- An argument and the arguments after it. -/
+  | cons (head : Expr) (tail : Arguments)
+  deriving Repr, DecidableEq
+end
 
 /-- An aggregate function of slice 1, over the rows of one group. -/
 inductive Aggregate where
@@ -111,16 +149,34 @@ structure Join where
   condition : Option Expr
   deriving Repr, DecidableEq
 
+/-- A {lit}`json_each(json [, path])` source after the tables of {lit}`FROM` (ADR 0012,
+amendment 5, slice 6d), an inner join: its arguments over the joined row before it, and
+its optional {lit}`ON` condition over the joined row with its cells. -/
+structure EachSource where
+  /-- The JSON argument. -/
+  json : Expr
+  /-- The path argument; {lean}`(none : Option Expr)` for {lit}`json_each(json)`. -/
+  path : Option Expr
+  /-- The {lit}`ON` condition, or {lean}`(none : Option Expr)` for every row. -/
+  condition : Option Expr
+  deriving Repr, DecidableEq
+
 /-- A resolved {lit}`SELECT`: the first table's catalog position and the joins after
-it, the {lit}`WHERE` condition, whether it is an aggregate query with its grouping terms,
+it, the {lit}`json_each` sources after them, the {lit}`WHERE` condition, whether it is an aggregate query with its grouping terms,
 the result columns with their names, the {lit}`ORDER BY` terms with a flag for
 {lit}`DESC`, and the window. Use {lean}`(none : Option Nat)` for no {lit}`LIMIT`. -/
 structure Query where
-  /-- The catalog position of the first source table. -/
-  table : Nat
+  /-- The catalog position of the first source table, or
+  {lean}`(none : Option Nat)` for a {lit}`SELECT` without {lit}`FROM`, whose source is one
+  row with no columns. -/
+  table : Option Nat
   /-- The joins after the first table, in order; empty for a query of one table. An
   expression names a cell by its position in the concatenated row of all tables. -/
   joins : List Join := []
+  /-- The {lit}`json_each` sources after the tables, in order; empty without one. A query
+  whose first source is {lit}`json_each` has no table: its sources join the one empty row
+  of a query without {lit}`FROM`. -/
+  functions : List EachSource := []
   /-- The {lit}`WHERE` condition, or {lean}`(none : Option Expr)` for every row. -/
   filter : Option Expr
   /-- Whether the query is an aggregate query: it has {lit}`GROUP BY` or an aggregate. -/

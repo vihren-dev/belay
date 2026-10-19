@@ -50,7 +50,7 @@ def test_wrong_trace_and_unsupported(runtime_root: Path, tmp_path: Path) -> None
     with pytest.raises(AssertionError, match="false|failed"):
         prove(rejected["caseLean"], runtime_root, tmp_path / "FalseProof.lean", case=wrong)
     invalid = deepcopy(case)
-    invalid["script"][0]["addColumn"]["column"]["constraints"] = ["notNull"]
+    invalid["script"][0]["addColumn"]["column"]["constraints"] = [{"notNull": {"algorithm": None}}]
     result = compiled(invalid, runtime_root, emit_lean=True)
     assert result["verdict"] == "MODEL_UNSUPPORTED"
     prove(result["caseLean"], runtime_root, tmp_path / "RestrictedDefinition.lean", case=invalid, expected=False)
@@ -88,7 +88,7 @@ def test_exact_storage_and_wide_rows(runtime_root: Path) -> None:
 
 def test_fail_closed_transport(runtime_root: Path) -> None:
     """Unsupported frontend SQL, malformed bytes and versions cannot become agreement."""
-    case, answer = evaluate(Fixture("", "SELECT 1;", {}, "unsupported"), runtime_root)
+    case, answer = evaluate(Fixture("", "SELECT DISTINCT 1;", {}, "unsupported"), runtime_root)
     assert case is None and answer["verdict"] == "MODEL_UNSUPPORTED"
     case = record(fixtures()[0], default_parser(runtime_root))
     wrong = deepcopy(case)

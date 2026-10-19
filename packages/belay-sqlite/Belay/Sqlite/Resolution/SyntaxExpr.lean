@@ -1,5 +1,6 @@
 import Belay.Sqlite.Declarations
 import Belay.Sqlite.Operators
+import Belay.Sqlite.Resolution.ConflictAlgorithm
 
 set_option doc.verso true
 
@@ -60,22 +61,29 @@ inductive Expr where
   /-- {lit}`CAST(operand AS typeName)`, with the type name as written. -/
   | cast (operand : Expr) (typeName : String)
   /-- A function call with two or more arguments, with the function name as written:
-  the first argument, then the others as another {lit}`callPair` with the same name, or
-  as the last argument. {lit}`COALESCE(a, b, c)` is
-  {lean}`Expr.callPair "COALESCE" (.identifier "a" false) (.callPair "COALESCE" (.identifier "b" false) (.identifier "c" false))`.
+  the first argument, then the last argument or, for three or more, the others as
+  {lit}`more` nodes. {lit}`COALESCE(a, b, c)` is
+  {lean}`Expr.callPair "COALESCE" (.identifier "a" false) (.more (.identifier "b" false) (.identifier "c" false))`.
   Resolution folds the name and decides the function. -/
   | callPair (name : String) (first rest : Expr)
+  /-- The rest of an argument list of three or more arguments, the last operand of a
+  {lit}`callPair`: one argument and the arguments after it. {lit}`f(a, b, c)` is
+  {lit}`callPair f a (more b c)`, and {lit}`f(a, g(b, c))` stays
+  {lit}`callPair f a (callPair g b c)`. -/
+  | more (first rest : Expr)
   deriving Repr, DecidableEq
 
 /-- A column constraint as written. For example, {lit}`PRIMARY KEY DESC` is
 {lean}`ColumnConstraint.primaryKey true`. -/
 inductive ColumnConstraint where
-  /-- {lit}`NOT NULL`. -/
-  | notNull
-  /-- {lit}`PRIMARY KEY`; the flag is true for {lit}`DESC`. -/
-  | primaryKey (descending : Bool)
-  /-- {lit}`UNIQUE`. -/
-  | unique
+  /-- {lit}`NOT NULL [ON CONFLICT algorithm]`; {lean}`(none : Option ConflictAlgorithm)`
+  without the clause. -/
+  | notNull (algorithm : Option ConflictAlgorithm := none)
+  /-- {lit}`PRIMARY KEY [ASC | DESC] [ON CONFLICT algorithm]`; the flag is true for
+  {lit}`DESC`. -/
+  | primaryKey (descending : Bool) (algorithm : Option ConflictAlgorithm := none)
+  /-- {lit}`UNIQUE [ON CONFLICT algorithm]`. -/
+  | unique (algorithm : Option ConflictAlgorithm := none)
   /-- {lit}`DEFAULT` with its expression. -/
   | default (value : Expr)
   deriving Repr, DecidableEq
@@ -93,10 +101,10 @@ structure ColumnDefinition where
 
 /-- A table constraint of CREATE TABLE, with column names as written. -/
 inductive TableConstraint where
-  /-- {lit}`PRIMARY KEY (columns)`. -/
-  | primaryKey (columns : List String)
-  /-- {lit}`UNIQUE (columns)`. -/
-  | unique (columns : List String)
+  /-- {lit}`PRIMARY KEY (columns) [ON CONFLICT algorithm]`. -/
+  | primaryKey (columns : List String) (algorithm : Option ConflictAlgorithm := none)
+  /-- {lit}`UNIQUE (columns) [ON CONFLICT algorithm]`. -/
+  | unique (columns : List String) (algorithm : Option ConflictAlgorithm := none)
   deriving Repr, DecidableEq
 
 /-- One result column of a {lit}`SELECT`: {lit}`*`, or an expression with an
@@ -111,13 +119,17 @@ inductive ResultColumn where
   | expression (value : Expr) (alias : Option String) (text : String)
   deriving Repr, DecidableEq
 
-/-- A table in {lit}`FROM`: its name and its optional alias, both as written. Use
-{lean}`(none : Option String)` for no alias. -/
+/-- A table in {lit}`FROM`, or a table-valued function such as {lit}`json_each(json)`: its
+name and its optional alias, both as written, and the arguments of a function. Use
+{lean}`(none : Option String)` for no alias, and {lean}`(none : Option (List Expr))` for a
+table. -/
 structure TableReference where
-  /-- The table name. -/
+  /-- The table name, or the function name. -/
   table : String
   /-- The alias of {lit}`table AS alias` or {lit}`table alias`. -/
   alias : Option String
+  /-- The arguments of a table-valued function in written order; none for a table. -/
+  arguments : Option (List Expr) := none
   deriving Repr, DecidableEq
 
 /-- One join of {lit}`FROM` after the first table: the keywords of its operator, the

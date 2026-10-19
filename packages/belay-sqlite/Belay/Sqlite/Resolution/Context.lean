@@ -41,22 +41,22 @@ def constantDefault : Syntax.Expr → Bool
   | .negate operand | .positive operand => constantDefault operand
   | .equals .. | .qualified .. => false
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. => true
-  | .arithmetic .. | .cast .. | .callPair .. => true
+  | .arithmetic .. | .cast .. | .callPair .. | .more .. => true
 
 /-- Whether the constraint is PRIMARY KEY. -/
 def Syntax.ColumnConstraint.isPrimaryKey : Syntax.ColumnConstraint → Bool
-  | .primaryKey _ => true
-  | .notNull | .unique | .default _ => false
+  | .primaryKey .. => true
+  | .notNull _ | .unique _ | .default _ => false
 
 /-- Whether the constraint is UNIQUE. -/
 def Syntax.ColumnConstraint.isUnique : Syntax.ColumnConstraint → Bool
-  | .unique => true
-  | .notNull | .primaryKey _ | .default _ => false
+  | .unique _ => true
+  | .notNull _ | .primaryKey .. | .default _ => false
 
 /-- Whether the constraint is a DEFAULT that SQLite refuses as not constant. -/
 def Syntax.ColumnConstraint.nonconstantDefault : Syntax.ColumnConstraint → Bool
   | .default value => !constantDefault value
-  | .notNull | .primaryKey _ | .unique => false
+  | .notNull _ | .primaryKey .. | .unique _ => false
 
 /-- Whether the model describes the constraint's default: no default, or the
 {lit}`CURRENT_TIMESTAMP` default, which the model keeps without evaluating it. Other
@@ -67,8 +67,9 @@ def Syntax.ColumnConstraint.modeledDefault : Syntax.ColumnConstraint → Bool
   | .default (.identifier ..) | .default (.negate _) | .default (.positive _)
   | .default (.equals ..) | .default (.compare ..) | .default (.and ..) | .default (.or ..)
   | .default (.not _) | .default (.isNull ..) | .default (.callStar _) | .default (.call ..)
-  | .default (.arithmetic ..) | .default (.cast ..) | .default (.callPair ..) | .default (.qualified ..) => false
-  | .notNull | .primaryKey _ | .unique => true
+  | .default (.arithmetic ..) | .default (.cast ..) | .default (.callPair ..) | .default (.more ..)
+  | .default (.qualified ..) => false
+  | .notNull _ | .primaryKey .. | .unique _ => true
 
 /-- A prepare error leaves the catalog unchanged. -/
 def prepareError (catalog : Catalog) (error : PrepareError) : StatementResolution :=

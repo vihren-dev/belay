@@ -50,5 +50,8 @@ def PrepareError.message : PrepareError → String
   | .naturalJoinCondition => "a NATURAL join may not have an ON or USING clause"
   | .ambiguousUsingReference name => s!"ambiguous reference to {name} in USING()"
   | .conflictTargetMismatch => "ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE constraint"
+  | .conflictingAlgorithms => "conflicting ON CONFLICT clauses specified"
+  | .noTablesSpecified => "no tables specified"
+  | .tooManyEachArguments => "too many arguments on json_each() - max 2"
 
 end Belay.Sqlite

@@ -116,7 +116,7 @@ let
     "authored_transactions" "transaction_evidence" "authored_resolution" "resolution_evidence"
     "authored_queries" "query_evidence" "query_mutants" "authored_evidence" "authored_numbers" "number_evidence"
     "authored_writes" "write_evidence" "write_mutants"
-    "number_mutants" "restriction_examples" "authored_obligations" "obligation_mutants" "obligation_evidence" "authored_row_writes" "row_write_evidence" "row_write_mutants" "authored_deletes" "delete_evidence" "delete_mutants" "authored_joins" "join_evidence" "join_mutants" "authored_using" "using_evidence" "using_mutants" "authored_right" "right_evidence" "right_mutants" "authored_merged" "merged_evidence" "merged_mutants" "authored_keys" "key_evidence" "key_mutants" "authored_aliases" "alias_evidence" "alias_mutants" "authored_upserts" "upsert_evidence" "upsert_mutants"
+    "number_mutants" "restriction_examples" "authored_obligations" "obligation_mutants" "obligation_evidence" "authored_row_writes" "row_write_evidence" "row_write_mutants" "authored_deletes" "delete_evidence" "delete_mutants" "authored_joins" "join_evidence" "join_mutants" "authored_using" "using_evidence" "using_mutants" "authored_right" "right_evidence" "right_mutants" "authored_merged" "merged_evidence" "merged_mutants" "authored_keys" "key_evidence" "key_mutants" "authored_aliases" "alias_evidence" "alias_mutants" "authored_upserts" "upsert_evidence" "upsert_mutants" "authored_algorithms" "algorithm_evidence" "algorithm_mutants" "authored_fromless" "fromless_evidence" "fromless_mutants" "authored_json" "json_evidence" "json_mutants" "authored_json_functions" "json_function_evidence" "json_function_mutants" "authored_json_each" "json_each_evidence" "json_each_mutants"
     "upstream_selection" "upstream_catalog" "upstream_sampling" "upstream_profiles" "upstream_functions" "upstream_result_values"
     "corpus_shards" "corpus_workers" "corpus_evidence" "corpus_acquisition" "locked_corpora" "freeze_corpus" "freeze_validation" "freeze_profiles" "workload" "workload_inputs"
     "upstream_assertions"
@@ -133,6 +133,11 @@ let
     (root + /reports/20261001-adr5-c5-authored.json)
     (root + /reports/20261001-adr5-c5-authored-records.jsonl.gz)
     (root + /reports/20261006-grouped-immediate-transactions)
+    (root + /conformance/corpus-v24)
+    (root + /conformance/corpus-v23)
+    (root + /conformance/corpus-v22)
+    (root + /conformance/corpus-v21)
+    (root + /conformance/corpus-v20)
     (root + /conformance/corpus-v19)
     (root + /conformance/corpus-v18)
     (root + /conformance/corpus-v17)

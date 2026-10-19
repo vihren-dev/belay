@@ -11,6 +11,7 @@ child 3 its {lit}`USING` list. -/
 
 namespace Belay.Sqlite
 
+mutual
 /-- Whether every column that the expression reads has a position below the bound: the
 expression reads only the tables whose cells come before it in the joined row. -/
 def Resolved.Expr.readsBelow (bound : Nat) : Resolved.Expr → Bool
@@ -19,13 +20,19 @@ def Resolved.Expr.readsBelow (bound : Nat) : Resolved.Expr → Bool
   | .compare _ left right | .and left right | .or left right | .arithmetic _ left right | .coalesce left right =>
     left.readsBelow bound && right.readsBelow bound
   | .not operand | .isNull operand _ | .cast _ operand => operand.readsBelow bound
+  | .json _ arguments | .arguments arguments => arguments.readsBelow bound
 
-/-- The columns of {lit}`source.*` with their expansions ({name}`Scope.starOperand`) and
-their names, or SQLite's {lit}`no such table: source` when no source has the name. -/
+/-- Whether every argument reads only columns below the bound. -/
+def Resolved.Arguments.readsBelow (bound : Nat) : Resolved.Arguments → Bool
+  | .nil => true
+  | .cons head tail => head.readsBelow bound && tail.readsBelow bound
+end
+
+/-- The columns of {lit}`source.*` ({name}`Scope.starColumns?`) with their expansions
+({name}`Scope.starOperand`) and their names, or SQLite's {lit}`no such table: source` when no source has the name. -/
 def sourceStarColumns (scope : Scope) (source : String) : Except ValueIssue (List (Resolved.Expr × String)) :=
-  match scope.source? source with
-  | some (offset, columns) => .ok (columns.mapIdx fun position column =>
-      ((scope.starOperand (offset + position) column).1, column.name))
+  match scope.starColumns? source with
+  | some columns => .ok (columns.map fun (position, column) => ((scope.starOperand position column).1, column.name))
   | none => .error (.prepare (.noSuchSource source))
 
 /-- The number of tables in a join that SQLite accepts ({lit}`SQLITE_MAX_SRCLIST`). -/
@@ -131,8 +138,9 @@ more than {name}`maximumJoinTables` tables is SQLite's
 sources with the same folded name are a model restriction; then each join in order
 ({name}`mergeJoins`), whose generated conditions coalesce the left columns when any join
 is a right or full join. -/
-def resolveTables (catalog : Catalog) (source : Syntax.TableReference) (joins : List Syntax.Join) :
-    Except ValueIssue (Nat × List (Nat × Option (List Nat × Syntax.Expr)) × Scope) := do
+def resolveTables (catalog : Catalog) (source : Option Syntax.TableReference) (joins : List Syntax.Join) :
+    Except ValueIssue (Option Nat × List (Nat × Option (List Nat × Syntax.Expr)) × Scope) := do
+  let some source := source | .ok (none, [], [])
   if joins.length + 1 > maximumJoinTables then throw (.prepare .tooManyTables)
   let (first, firstSource) ← resolveTableReference catalog [1] source
   let joined ← resolveAll (fun item (join : Syntax.Join) => resolveTableReference catalog [2, item, 1] join.source) joins
@@ -141,7 +149,7 @@ def resolveTables (catalog : Catalog) (source : Syntax.TableReference) (joins : 
       normalizeIdentifier earlier.name == normalizeIdentifier source.name) (sources.mapIdx fun item source => (item, source)) then
     throw (.restriction (if item == 0 then [1] else [2, item - 1, 1]) .duplicateSource)
   let (scope, conditions) ← mergeJoins (joins.any Syntax.Join.rightOrFull) [firstSource] 0 (joins.zip (joined.map Prod.snd))
-  .ok (first, (joined.map Prod.fst).zip conditions, scope)
+  .ok (some first, (joined.map Prod.fst).zip conditions, scope)
 
 /-- Resolve the condition of the join at {lit}`item`, written or generated, with the path
 of its issues, over the whole scope, as SQLite does; then require that it reads only the

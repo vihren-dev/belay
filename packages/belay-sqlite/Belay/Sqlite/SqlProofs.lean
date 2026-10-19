@@ -7,6 +7,56 @@ conveniences separate leaves the statement and transaction semantics in one modu
 
 namespace Belay.Sqlite
 
+/-- For every database, position, reason and result database, the failure of an idle
+state is the plain failure. Proof sketch: without a snapshot both branches of the reason
+test finish to the failure itself. -/
+@[simp] theorem SqlState.failed_idle (current : Database) (position : Nat) (reason : ExecutionError)
+    (database : Database) : ({ database := current } : SqlState).failed position reason database =
+      .failure position reason database := by
+  unfold SqlState.failed SqlState.finish
+  split <;> rfl
+
+/-- The error of an outcome: the reason of a failure, the error of a pending result, or
+none. -/
+def Outcome.error? : Outcome → Option ExecutionError
+  | .success _ => none
+  | .failure _ reason _ => some reason
+  | .pending _ _ error => error.map (·.2)
+
+/-- For every state, position, reason and database, the error of
+{name}`SqlState.failed` is the reason. Proof sketch: split on the ROLLBACK test and the
+snapshot; each branch is the failure, or the pending result that carries its reason. -/
+theorem SqlState.failed_error (state : SqlState) (position : Nat) (reason : ExecutionError) (database : Database) :
+    (state.failed position reason database).error? = some reason := by
+  unfold SqlState.failed SqlState.finish
+  split <;> (try split) <;> (try split) <;> simp_all [Outcome.error?]
+
+/-- For every state, position, reason other than ROLLBACK and database:
+{name}`SqlState.failed` has that database as its visible database, and the saved snapshot
+when present, or else that database, as its persisted database. Proof sketch: the
+ROLLBACK test fails, so the result is {name}`SqlState.finish` of the failure; split on the
+snapshot. -/
+theorem SqlState.failed_database (state : SqlState) (position : Nat) (reason : ExecutionError) (database : Database)
+    (other : reason ≠ .constraintRollback) :
+    (state.failed position reason database).database = database ∧
+    (state.failed position reason database).persistedDatabase = state.snapshot.getD database := by
+  unfold SqlState.failed
+  split
+  · contradiction
+  · cases h : state.snapshot <;> simp [SqlState.finish, h, Outcome.database, Outcome.persistedDatabase]
+
+/-- For every state, position and database: {name}`SqlState.failed` of a ROLLBACK
+failure has the saved snapshot when present, or else that database, as its visible and
+its persisted database. Proof sketch: the ROLLBACK test holds; split on the snapshot,
+which gives the failure over the snapshot or the finished failure. -/
+theorem SqlState.failed_rollback (state : SqlState) (position : Nat) (database : Database) :
+    (state.failed position .constraintRollback database).database = state.snapshot.getD database ∧
+    (state.failed position .constraintRollback database).persistedDatabase = state.snapshot.getD database := by
+  unfold SqlState.failed
+  split
+  · cases h : state.snapshot <;> simp [SqlState.finish, h, Outcome.database, Outcome.persistedDatabase]
+  · contradiction
+
 /-- Every statement in the script is CREATE TABLE or ADD COLUMN. This is a syntax
 guard, not a validity or success claim. The empty script satisfies it; CREATE
 INDEX, transaction control, literal writes and prepare errors do not. Use it for
@@ -26,15 +76,17 @@ def SchemaOnly (script : List Resolved.Statement) : Prop :=
     | .query _ => False
 
 /-- No statement in the script is INSERT (with or without {lit}`ON CONFLICT`), UPDATE or
-DELETE. This is a syntax guard, not
-a success claim; the empty script satisfies it. -/
+DELETE, and no query has a JSON call in its expressions
+({name}`Resolved.Query.expressions`, {name}`Resolved.Expr.callsJson`) or a {lit}`json_each`
+source. This is a syntax guard, not a success claim; the empty script satisfies it. -/
 def NoWrites (script : List Resolved.Statement) : Prop :=
   ∀ statement ∈ script, match statement with
     | .insert .. => False
     | .upsert .. => False
     | .update .. => False
     | .delete .. => False
-    | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ | .query _ => True
+    | .query query => query.expressions.all (!·.callsJson) = true ∧ query.functions = []
+    | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ => True
 
 /-- Each definition in the script is one that the model describes: each CREATE
 TABLE creates a {name}`CatalogTable.plain` table, each ADD COLUMN adds a
@@ -50,7 +102,7 @@ def ModeledDefinitions (script : List Resolved.Statement) : Prop :=
 
 /-- For every position and connection state, a {name}`NoWrites` script with
 {name}`ModeledDefinitions` passes the reached-statement support check, because
-only writes have a data check. The proof inducts over the script and follows
+only writes and queries have a data check, and a query without a JSON call passes it. The proof inducts over the script and follows
 each actual transition. -/
 theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDefinitions script) :
     supportedSqlFrom position script state = true := by
@@ -62,7 +114,14 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDe
     have tail : NoWrites rest := fun item member => guard item (by simp [member])
     have tailModeled : ModeledDefinitions rest := fun item member => modeled item (by simp [member])
     have ready : statementReady statement state.database = true := by
-      cases statement <;> simp_all [statementReady]
+      cases statement with
+      | query query =>
+        obtain ⟨plain, noFunctions⟩ : (query.expressions.all fun x => !x.callsJson) = true ∧ query.functions = [] :=
+          first
+        simp [statementReady, queryJsonReady, Resolved.Query.mayFail_of_callsJson query _ plain,
+          eachJsonReady_plain query _ noFunctions]
+      | createTable | createIndex | addColumn | begin | commit | rollback | insert | upsert | update | delete
+      | prepareError => simp_all [statementReady]
     simp only [supportedSqlFrom, ready, Bool.true_and]
     cases advance position statement state with
     | halt outcome => rfl

@@ -28,7 +28,10 @@ The frontend maps these statements, and refuses every other statement as
   `RETURNING` is a model restriction;
 - `SELECT columns FROM tables [WHERE …] [GROUP BY …] [ORDER BY … [ASC|DESC]]
   [LIMIT n [OFFSET m]]`, whose result columns are `*`, `source.*` or expressions
-  with an optional alias (ADR 0012, slice 1). `FROM` is one table, or tables joined
+  with an optional alias (ADR 0012, slice 1). Without `FROM`, the source is one row
+  with no columns (slice 6a), which `WHERE` keeps or removes; aggregation, grouping,
+  `ORDER BY` and `LIMIT` then apply as for any query, so `SELECT count(*) WHERE 0` is one
+  row with 0. `*` is SQLite's `no tables specified`. `FROM` is one table, or tables joined
   left to right with `,`, `JOIN`, `INNER JOIN`, `CROSS JOIN` (with an optional `ON`)
   and `LEFT [OUTER] JOIN … ON`, and `RIGHT [OUTER] JOIN` and `FULL [OUTER] JOIN`
   with an optional `ON` (slice 4c), which add each right row that no row of the left
@@ -53,7 +56,11 @@ comparisons, `IS` and `IS NOT`, `AND`, `OR`, `NOT`, `IS NULL` and its forms,
 parentheses, `COUNT(*)`, `COUNT`, `MIN`, `MAX`, `SUM` and `AVG` of one argument, the arithmetic
 operators `+`, `-`, `*`, `/` and `%`, unary `-` and `+` of any expression,
 `CAST(expression AS type)`, and `COALESCE` of two or more arguments (ADR 0012,
-slice 2). In a write, a `VALUES` item may be any of these expressions that names no
+slice 2), `json_extract` with one or more paths and the operators `->` and `->>`
+(slice 6b), and `json_type`, `json_valid`, `json_array_length` and `json` (slice 6c). A
+`FROM` may end with `json_each(json [, path])` sources, joined by a comma or an inner
+`JOIN` with an optional `ON` condition, whose arguments read the sources before them
+(slice 6d). In a write, a `VALUES` item may be any of these expressions that names no
 column: resolution computes its value (slice 3a). A `SET` value may be any of these
 expressions over the table's columns, evaluated on the old row, and the `WHERE` of an
 `UPDATE` any condition of a `SELECT` (slice 3b). Each written value is then stored as SQLite
@@ -68,9 +75,17 @@ and the proposed row as `excluded.c`. A target is a list of column names, in any
 that are the columns of one key. The rows are handled in order: the first clause whose
 target key has a conflicting row handles the row, and a row that no clause handles is
 inserted and checked against every key. A `DO UPDATE` without target on a table with
-more than one key is the restriction `conflict-without-target`. Named
-constraints, collations, `CHECK`, `REFERENCES`, generated columns, `OR` conflict
-clauses, the conflict clauses of constraints, a target with a direction, collation,
+more than one key is the restriction `conflict-without-target`. `INSERT OR ROLLBACK`,
+`ABORT`, `FAIL`, `IGNORE` and `REPLACE`, and `REPLACE INTO`, apply the algorithm to every
+key and NOT NULL failure of a row (slice 5d): FAIL keeps the earlier rows, IGNORE skips
+the row, REPLACE deletes every row that conflicts on any key (a NULL in a NOT NULL column
+is ABORT), and ROLLBACK rolls back the open transaction. A rowid alias mismatch and the
+row of `DO UPDATE` are always ABORT. In the schema, a `PRIMARY KEY`, `UNIQUE` or
+`NOT NULL` constraint may have `ON CONFLICT algorithm`, its algorithm when INSERT has no
+`OR` clause; keys with different algorithms other than REPLACE are the restriction
+`mixed-conflict-algorithms`, UPDATE of such a table is `constraint-algorithm-update`, and
+REPLACE of a NOT NULL column with a default is `replace-default`. Named
+constraints, collations, `CHECK`, `REFERENCES`, generated columns, `UPDATE OR`, a target with a direction, collation,
 `NULLS` order, qualified name or `WHERE`, `WITH`, `FROM` in writes, sort modifiers in keys,
 partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
 options, `AS SELECT`, views, triggers, virtual tables, `EXPLAIN`, `PRAGMA`,
@@ -136,7 +151,7 @@ messages in `RestrictionText.lean`. Every id has one row in this table;
 same ids. `conformance/restriction_examples.py` has, for every id, a schema and a
 migration that the resolver refuses with that id, and a test runs each one. Syntax
 that the frontend refuses before resolution, such as `DISTINCT` or
-`INSERT OR IGNORE`, has no id. `just restriction-costs` counts, for each id and for each kind
+`UPDATE OR IGNORE`, has no id. `just restriction-costs` counts, for each id and for each kind
 of frontend refusal, the cases of the claimed corpora that it keeps out of scope.
 
 | Id | Restriction | Introduced by |
@@ -151,6 +166,9 @@ of frontend refusal, the cases of the claimed corpora that it keeps out of scope
 | `time-value` | Time values are not modeled | ADR 0008 |
 | `row-dependent-key` | A SET value that reads the row is not modeled for a column of a unique key | ADR 0012 amendment 1 (question 1) |
 | `conflict-without-target` | DO UPDATE without a conflict target is not modeled for a table with more than one key | ADR 0012 amendment 4 (owner decision 2) |
+| `mixed-conflict-algorithms` | Keys of one INSERT with different conflict algorithms other than REPLACE are not modeled | ADR 0012 amendment 4, slice 5d |
+| `constraint-algorithm-update` | UPDATE of a table with ON CONFLICT constraint algorithms is not modeled | ADR 0012 amendment 4, slice 5d |
+| `replace-default` | REPLACE of a NOT NULL column with a default is not modeled | ADR 0012 amendment 4, slice 5d |
 | `insert-column-twice` | A column named twice in INSERT is not modeled | ADR 0008 |
 | `update-column-twice` | A column assigned twice in UPDATE is not modeled | ADR 0008 |
 | `rowid-name` | A rowid name that is not a column is not modeled in an expression over a table; in VALUES it resolves as any other name | ADR 0012 slice 3a; extended 2026-10-14 |
@@ -158,7 +176,7 @@ of frontend refusal, the cases of the claimed corpora that it keeps out of scope
 | `duplicate-source` | Two sources of a query with the same name are not modeled | ADR 0012 amendment 2 (question 3) |
 | `later-table-in-on` | An ON condition that names a table joined after it is not modeled | ADR 0012 amendment 2 |
 | `system-table` | Queries of SQLite's own tables, such as `sqlite_schema`, are not modeled | ADR 0012 slice 1 |
-| `unmodeled-function` | Only `COUNT(*)`, `COUNT`, `MIN`, `MAX`, `SUM` and `AVG` of one argument, and `COALESCE` of two or more arguments are modeled as functions | ADR 0012 slices 1 and 2 |
+| `unmodeled-function` | Only `COUNT(*)`, `COUNT`, `MIN`, `MAX`, `SUM` and `AVG` of one argument, `COALESCE` of two or more arguments, `json_extract`, `->`, `->>`, `json_type`, `json_valid`, `json_array_length` and `json` are modeled as functions | ADR 0012 slices 1, 2, 6b and 6c |
 | `aggregate-in-expression` | An aggregate inside an expression is not modeled | ADR 0012 slice 1 |
 | `alias-in-expression` | A result column alias inside WHERE or an ORDER BY expression is not modeled | ADR 0012 slice 1 |
 | `value-as-condition` | A value used as a condition is not modeled | ADR 0012 slice 1 |
@@ -171,6 +189,11 @@ of frontend refusal, the cases of the claimed corpora that it keeps out of scope
 | `window-value` | Only an integer literal is modeled as LIMIT or OFFSET | ADR 0012 slice 1 |
 | `negative-offset` | A negative OFFSET is not modeled | ADR 0012 slice 1 |
 | `windowed-group-sum` | SUM in a grouped query with LIMIT or OFFSET is not modeled, because SQLite may stop before an overflowing group | ADR 0012 slice 2 |
+| `constant-function-error` | A constant value in VALUES or SET whose JSON function fails is not modeled, because the model does not describe when SQLite evaluates it | ADR 0012 slice 6b |
+| `table-function` | Only `json_each` with one or two arguments is modeled as a table-valued function in FROM | ADR 0012 slice 6d |
+| `table-after-function` | A table after a `json_each` source in FROM is not modeled | ADR 0012 slice 6d |
+| `function-join` | Only an inner join without NATURAL or USING is modeled with `json_each` | ADR 0012 slice 6d |
+| `later-source-in-arguments` | An argument of `json_each` that reads a later source is not modeled | ADR 0012 slice 6d |
 
 ## Execution
 
@@ -187,7 +210,14 @@ else double arithmetic; NULL for a division by zero or a NaN result; SQLite's ow
 text-to-REAL conversion and its 15-digit text of a REAL, which are not correctly
 rounded; and `SUM` and `AVG` with SQLite's summation. A `SUM` that overflows the
 64-bit integers stops the query with `integer overflow`, unless a later REAL input
-makes the sum approximate. Literal writes
+makes the sum approximate. JSON functions read JSON and JSON5 text as SQLite 3.51.0
+does, and give SQLite's values and rendered JSON text (slice 6b). A JSON function that
+fails with `malformed JSON`, `bad JSON path` or the `json_valid` flags error stops a query without `FROM` where SQLite
+certainly evaluates it. Every other statement in which a JSON function may fail is
+outside the supported subset for that data, because SQLite skips or folds some
+expressions and evaluates a constant `WHERE` term before it reads the rows: a query with
+`FROM`, a write, a failure under `AND`, `OR` or `COALESCE`, and a JSONB (BLOB)
+argument. Literal writes
 have checked data-domain obligations: existing key cells and filter cells must
 be integers or NULL, existing constraints must hold, and the random-search branch
 at the maximum rowid is outside the admitted domain. New NOT NULL and uniqueness

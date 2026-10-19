@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model
 import Belay.Sqlite.Resolution.Resolved
-import Belay.Sqlite.QueryJoins
+import Belay.Sqlite.QueryFunctions
+import Belay.Sqlite.JsonFaults
 
 set_option doc.verso true
 
@@ -22,8 +23,15 @@ inductive ExecutionError where
   | transactionAlreadyActive
   /-- COMMIT or ROLLBACK encounters no open transaction. -/
   | noActiveTransaction
-  /-- A literal write violates a NOT NULL or unique-key constraint. -/
+  /-- A literal write violates a NOT NULL or unique-key constraint, with ABORT: the
+  statement's changes are undone. -/
   | constraintViolation
+  /-- A row of INSERT violates a NOT NULL or unique-key constraint with FAIL: the
+  statement stops and keeps the changes of its earlier rows. -/
+  | constraintFail
+  /-- A row of INSERT violates a NOT NULL or unique-key constraint with ROLLBACK: the
+  statement fails and the open transaction is rolled back. -/
+  | constraintRollback
   /-- A query's {lit}`SUM` overflows the 64-bit integers: SQLite's {lit}`integer overflow`,
   reported while the statement runs. -/
   | integerOverflow
@@ -31,6 +39,9 @@ inductive ExecutionError where
   assigned to it by UPDATE: SQLite's {lit}`datatype mismatch` ({lit}`SQLITE_MISMATCH`),
   reported while the statement runs. -/
   | datatypeMismatch
+  /-- A JSON function of a query fails: SQLite's {lit}`malformed JSON` or
+  {lit}`bad JSON path`, reported while the statement runs. -/
+  | functionError
   deriving Repr, DecidableEq
 
 /-- The final database and transaction status. Use {lean}`Outcome.success`
@@ -78,7 +89,9 @@ and CREATE INDEX fail with {lean}`ExecutionError.unmodeled`: {lit}`resolve` give
 no such statement for a conforming database, and the supported-subset check
 excludes CREATE INDEX. A query changes nothing; it fails with
 {lean}`ExecutionError.integerOverflow` when {name}`Resolved.Query.fails` holds for its
-source rows ({name}`Resolved.Query.source`), and otherwise succeeds. Its result rows are not part of the outcome. SQL execution handles transaction control and writes
+source rows ({name}`Resolved.Query.source`), else with
+{lean}`ExecutionError.functionError` when {name}`Resolved.Query.mustFail` holds, and
+otherwise succeeds. Its result rows are not part of the outcome. SQL execution handles transaction control and writes
 separately. The default position is zero. -/
 def step (statement : Resolved.Statement) (database : Database) (position : Nat := 0) : Outcome :=
   match statement with
@@ -90,7 +103,10 @@ def step (statement : Resolved.Statement) (database : Database) (position : Nat 
     | some table => .success (database.set at_ (table.appendColumns [column]))
   | .prepareError error => .failure position (.prepare error) database
   | .query query => match query.source database with
-    | some rows => if query.fails rows then .failure position .integerOverflow database else .success database
+    | some rows =>
+      if query.fails rows then .failure position .integerOverflow database
+      else if query.mustFail rows then .failure position .functionError database
+      else .success database
     | none => .success database
   | .createIndex .. | .begin | .commit | .rollback | .insert .. | .upsert .. | .update .. | .delete .. =>
     .failure position .unmodeled database
