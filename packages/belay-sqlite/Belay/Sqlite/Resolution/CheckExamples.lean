@@ -118,13 +118,21 @@ def errorOf (statement : Syntax.Statement) : Option PrepareError :=
 #guard errorOf (.createTable (name! "x") [integer (name! "a") [.check (above (name! "zz") "0") "zz > 0"]] []) ==
   some (.expression (.noSuchColumn (name! "zz")))
 #guard (errorOf (.createTable (name! "x") [integer (name! "a") [.check (.callStar "count") "count(*)"]] [])).isSome
-#guard errorOf (.createTable (name! "x") [integer (name! "a") [.references (name! "q") [name! "x", name! "y"]]] []) ==
+#guard errorOf (.createTable (name! "x") [integer (name! "a") [.references (name! "q") [name! "x", name! "y"] .noAction .noAction]] []) ==
   some (.expression (.foreignKeyOneColumn (name! "a") (name! "q")))
-#guard errorOf (.createTable (name! "x") [integer (name! "a") []] [.foreignKey [name! "a"] (name! "q") [name! "x", name! "y"]]) ==
+#guard errorOf (.createTable (name! "x") [integer (name! "a") []] [.foreignKey [name! "a"] (name! "q") [name! "x", name! "y"] .noAction .noAction]) ==
   some (.expression .foreignKeyColumnCount)
-#guard errorOf (.createTable (name! "x") [integer (name! "a") []] [.foreignKey [name! "zz"] (name! "q") []]) ==
+#guard errorOf (.createTable (name! "x") [integer (name! "a") []] [.foreignKey [name! "zz"] (name! "q") [] .noAction .noAction]) ==
   some (.expression (.unknownForeignKeyColumn (name! "zz")))
-#guard errorOf (.createTable (name! "x") [integer (name! "a") [.references (name! "nothere") [name! "x"]]] []) == none
+#guard errorOf (.createTable (name! "x") [integer (name! "a") [.references (name! "nothere") [name! "x"] .cascade .noAction]] []) == none
+-- The catalog keeps each foreign key with its actions, for {lit}`PRAGMA foreign_key_list`:
+-- a column's, then the table constraints'.
+#guard (match (catalogOf (schema [.createTable (name! "x") [integer (name! "a") [.references (name! "p") [] .cascade .setNull],
+    integer (name! "b") []] [.foreignKey [name! "b", name! "a"] (name! "q") [name! "m", name! "n"] .noAction .restrict]])).head? with
+  | some { entry := .table table, .. } => table.allForeignKeys ==
+    [{ table := name! "p", columns := [0], referenced := [], onDelete := .cascade, onUpdate := .setNull },
+     { table := name! "q", columns := [1, 0], referenced := [name! "m", name! "n"], onDelete := .noAction, onUpdate := .restrict }]
+  | some { entry := .index _, .. } | none => false)
 #guard (PrepareError.expression (.unknownForeignKeyColumn (name! "zz"))).message ==
   "unknown column \"zz\" in foreign key definition"
 -- The CHECK resolves after the other checks of the definition.

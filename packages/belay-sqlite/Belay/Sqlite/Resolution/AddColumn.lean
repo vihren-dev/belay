@@ -28,7 +28,7 @@ def addedColumn (definition : Syntax.ColumnDefinition) : Option CatalogColumn :=
 /-- Resolve ALTER TABLE ADD COLUMN. Path 1 is the column definition. Its CHECK constraints
 resolve over the table with the new column ({name}`columnChecks`); one that SQLite cannot
 resolve is {name}`RestrictionKind.addColumnCheckError`, as SQLite reports it while the
-statement runs. -/
+statement runs. Its {lit}`REFERENCES` constraints are its foreign keys. -/
 def resolveAddColumn (context : ResolveContext) (catalog : Catalog) (index : Nat)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition) : StatementResolution :=
   match catalog.findTable tableName with
@@ -57,7 +57,11 @@ def resolveAddColumn (context : ResolveContext) (catalog : Catalog) (index : Nat
         | .error (.prepare _) => restrict index [1] .addColumnCheckError
         | .error (.restriction path reason) => restrict index (1 :: path) reason
         | .ok checks =>
-          let column := { column with checks }
+          let foreignKeys := definition.constraints.filterMap fun
+            | .references target columns onDelete onUpdate =>
+              some { table := target, columns := [table.columns.length], referenced := columns, onDelete, onUpdate }
+            | .notNull _ | .primaryKey .. | .unique _ | .default .. | .collate _ | .check .. => none
+          let column := { column with checks, foreignKeys }
           .ok (.addColumn position column, catalog.addColumn position column)
 
 end Belay.Sqlite

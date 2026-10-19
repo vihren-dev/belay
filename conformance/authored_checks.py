@@ -108,6 +108,11 @@ def definitions() -> list[QueryCase]:
              ("check", "quoted", "create-table-runs")),
         case("foreign-key-inert", TABLES, "INSERT INTO r VALUES(1, 99); SELECT a, b FROM r;", (FK_OFF,),
              ("foreign-key", "inert")),
+        case("foreign-key-list", TABLES,
+             "CREATE TABLE f(a REFERENCES k(a) ON DELETE CASCADE ON UPDATE SET NULL ON DELETE RESTRICT, b, c, "
+             "FOREIGN KEY (c, b) REFERENCES u(k, v) MATCH FULL DEFERRABLE INITIALLY DEFERRED, "
+             "FOREIGN KEY (b) REFERENCES nothere ON UPDATE CASCADE); ALTER TABLE f ADD COLUMN d REFERENCES k;",
+             (FK_CREATE,), ("foreign-key", "catalog", "create-table-runs", "add-column")),
         case("foreign-key-one-column", TABLES, "CREATE TABLE f(a REFERENCES k(a, b));", (FK_CREATE,),
              ("foreign-key", "prepare-error")),
         case("foreign-key-column-count", TABLES, "CREATE TABLE f(a, b, FOREIGN KEY (a, b) REFERENCES k(a));",

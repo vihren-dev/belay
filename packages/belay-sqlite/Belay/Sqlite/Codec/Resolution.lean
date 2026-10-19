@@ -12,6 +12,7 @@ namespace Belay.Sqlite
 deriving instance Lean.FromJson, Lean.ToJson for Comparison, ArithmeticOperator
 deriving instance Lean.FromJson, Lean.ToJson for ConflictAlgorithm
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.QuoteKind
+deriving instance Lean.FromJson, Lean.ToJson for Syntax.ForeignKeyAction
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.Expr, Syntax.DefaultExpression, Syntax.ColumnConstraint
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ResultColumn, Syntax.OrderTerm
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ColumnDefinition, Syntax.TableConstraint
@@ -54,6 +55,7 @@ deriving instance Lean.ToExpr for Syntax.Expr
 deriving instance Lean.ToExpr for Syntax.ResultColumn
 deriving instance Lean.ToExpr for Syntax.OrderTerm
 deriving instance Lean.ToExpr for Syntax.DefaultExpression
+deriving instance Lean.ToExpr for Syntax.ForeignKeyAction
 deriving instance Lean.ToExpr for Syntax.ColumnConstraint
 deriving instance Lean.ToExpr for Syntax.ColumnDefinition
 deriving instance Lean.ToExpr for Syntax.TableConstraint
@@ -74,6 +76,7 @@ deriving instance Lean.ToExpr for Resolved.JsonFunction
 deriving instance Lean.ToExpr for Resolved.DateFunction
 deriving instance Lean.ToExpr for Resolved.Expr, Resolved.Arguments
 deriving instance Lean.ToExpr for CheckConstraint
+deriving instance Lean.ToExpr for ForeignKey
 deriving instance Lean.ToExpr for CatalogColumn
 deriving instance Lean.ToExpr for CatalogTable
 deriving instance Lean.ToExpr for KeyTerm

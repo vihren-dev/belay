@@ -51,8 +51,12 @@ def applyConstraint (tableName : Identifier) (definition : Syntax.ColumnDefiniti
     | none => .error (.noSuchCollation name)
     | some collation => .ok { table with columns := updateLast table.columns fun column => { column with collation } }
   | .check .. => .ok table
-  | .references referenced columns =>
-    if columns.length > 1 then .error (.foreignKeyOneColumn definition.name referenced) else .ok table
+  | .references referenced columns onDelete onUpdate =>
+    if columns.length > 1 then .error (.foreignKeyOneColumn definition.name referenced) else
+    let key : ForeignKey := { table := referenced, columns := [table.columns.length - 1], referenced := columns,
+                              onDelete, onUpdate }
+    .ok { table with columns := updateLast table.columns fun column =>
+      { column with foreignKeys := column.foreignKeys ++ [key] } }
 
 /-- Add the column definitions in written order: {lit}`too many columns on %s` when
 a column would exceed the limit, then {lit}`duplicate column name: %s`, then each
@@ -71,9 +75,8 @@ def addDefinitions (limit : Nat) (tableName : Identifier) (table : CatalogTable)
 
 /-- Apply the table constraints in written order. A table PRIMARY KEY with one
 column of declared type INTEGER is a rowid alias, whatever its sort order. A CHECK waits
-for {name}`resolveTableChecks`. A {lit}`FOREIGN KEY` changes no catalog: SQLite checks the
-number of referenced columns, then each column, and keeps no foreign key with foreign
-keys off. -/
+for {name}`resolveTableChecks`. A {lit}`FOREIGN KEY` adds a {name}`ForeignKey` after SQLite's
+checks: the number of referenced columns, then each column. -/
 def addTableConstraints (tableName : Identifier) (table : CatalogTable) :
     List Syntax.TableConstraint → Except ExprError CatalogTable
   | [] => .ok table
@@ -90,11 +93,13 @@ def addTableConstraints (tableName : Identifier) (table : CatalogTable) :
     let keyed ← addUniqueKey table positions algorithm
     addTableConstraints tableName keyed rest
   | .check .. :: rest => addTableConstraints tableName table rest
-  | .foreignKey columns _ referenced :: rest => do
+  | .foreignKey columns target referenced onDelete onUpdate :: rest => do
     if !referenced.isEmpty && referenced.length != columns.length then throw .foreignKeyColumnCount
-    if let some name := columns.find? (columnPosition table.columns · |>.isNone) then
-      throw (.unknownForeignKeyColumn name)
-    addTableConstraints tableName table rest
+    let positions ← columns.mapM fun name => match columnPosition table.columns name with
+      | some position => .ok position
+      | none => .error (.unknownForeignKeyColumn name)
+    let key : ForeignKey := { table := target, columns := positions, referenced, onDelete, onUpdate }
+    addTableConstraints tableName { table with foreignKeys := table.foreignKeys ++ [key] } rest
 
 /-- The exact statistics tables that ANALYZE creates, which a catalog description may contain. -/
 def statisticsTable (name : Identifier) (columns : List Syntax.ColumnDefinition)

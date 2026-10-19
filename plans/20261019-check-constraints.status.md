@@ -36,6 +36,16 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D2.
   200 lines. Authored corpus `authored_checks` (31 cases, all AGREE with kernel proofs
   locally, corpus 32) and `check_mutants` (four).
 
+- 2026-10-19: the first verdict found a spec error: ADR 0014 D2 said the catalog keeps no
+  foreign key, but the judge compares `PRAGMA foreign_key_list`, so 18 agreeing cases
+  disagreed. The owner chose to keep foreign keys as inert metadata (owner decision 4,
+  recorded in the ADR). The catalog keeps them with their actions on columns and tables
+  (`Resolution/ForeignKeys.lean`), the prediction renders the rows, and a record without a
+  profile and with a foreign key is out of scope (its setup may turn foreign keys on). The
+  atuin and constant-default examples and the core module count follow. Verdict: 201
+  upstream cases newly agree (v1 +13, v2 +13, v3 +16, v4 +58, v5 +99, v6 +2), none leaves
+  AGREE. The authored corpus has 32 cases.
+
 ## Remaining
 
-- Checks, reviews, verdict, CI time, PR B, pull requests.
+- Checks, reviews, CI time, PR B, pull requests.

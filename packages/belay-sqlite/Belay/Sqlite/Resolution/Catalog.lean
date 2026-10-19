@@ -4,6 +4,7 @@ import Belay.Sqlite.Resolution.ColumnDefault
 import Belay.Sqlite.Resolution.TypeAffinity
 import Belay.Sqlite.Resolution.Keys
 import Belay.Sqlite.Resolution.Checks
+import Belay.Sqlite.Resolution.ForeignKeys
 import Belay.Sqlite.Resolution.ReservedNames
 
 set_option doc.verso true
@@ -36,6 +37,9 @@ structure CatalogColumn where
   /-- The CHECK constraints of the column definition, in written order; omit them for none
   (ADR 0014, D2). -/
   checks : List CheckConstraint := []
+  /-- The foreign keys of the column's {lit}`REFERENCES` constraints, in written order; omit
+  them for none (ADR 0014, D2). -/
+  foreignKeys : List ForeignKey := []
   deriving Repr, DecidableEq
 
 /-- One table entry. Keys are lists of column positions. Use
@@ -65,7 +69,16 @@ structure CatalogTable where
   /-- The CHECK constraints of the table constraints, in written order; omit them for none
   (ADR 0014, D2). The CHECK constraints of a column are in {name}`CatalogColumn.checks`. -/
   checks : List CheckConstraint := []
+  /-- The foreign keys of the {lit}`FOREIGN KEY` table constraints, in written order; omit them
+  for none. Those of a column are in {name}`CatalogColumn.foreignKeys`. -/
+  foreignKeys : List ForeignKey := []
   deriving Repr, DecidableEq
+
+/-- Every foreign key of the table in the order in which SQLite creates them: those of each
+column in column order, then those of the table constraints. {lit}`PRAGMA foreign_key_list`
+numbers them in the reverse order. -/
+def CatalogTable.allForeignKeys (table : CatalogTable) : List ForeignKey :=
+  table.columns.flatMap (·.foreignKeys) ++ table.foreignKeys
 
 /-- Every CHECK constraint of the table: those of each column in column order, then those
 of the table constraints. SQLite keeps one list in written order; the two orders differ

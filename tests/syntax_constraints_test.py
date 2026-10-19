@@ -23,18 +23,21 @@ def mapped(parse_sql: Callable[..., Tree], sql: str) -> list[object]:
 def test_checks_names_and_foreign_keys(parse_sql: Callable[..., Tree]) -> None:
     """CHECK maps with SQLite's label: the `CONSTRAINT` name in effect, which reaches from
     the last column into the table constraints until a comma, else the trimmed text,
-    dequoted when it starts with a quote; foreign keys keep their column lists only
-    (ADR 0014, slice 4)."""
-    sql = ("CREATE TABLE t(a CONSTRAINT x NOT NULL CHECK (  a > 0 ) REFERENCES p(q) ON DELETE CASCADE, "
+    dequoted when it starts with a quote; foreign keys keep their column lists and their
+    actions, a later clause replacing an earlier one (ADR 0014, slice 4)."""
+    sql = ("CREATE TABLE t(a CONSTRAINT x NOT NULL CHECK (  a > 0 ) REFERENCES p(q) ON DELETE CASCADE "
+           "ON UPDATE SET NULL ON DELETE RESTRICT, "
            "b CHECK (\"b\" < 3), CONSTRAINT y UNIQUE (b) CHECK (b != 1), CHECK (b > a) ON CONFLICT IGNORE, "
            "FOREIGN KEY (a, b) REFERENCES p(q, r) MATCH FULL);"
            "CREATE TABLE u(a CONSTRAINT z CHECK (a > 0), CHECK (a < 9), CHECK (a != 5));")
     first, second = mapped(parse_sql, sql)
     columns, constraints = first["createTable"]["columns"], first["createTable"]["constraints"]
     assert [constraint for constraint in columns[0]["constraints"] if "check" not in constraint] == [
-        {"notNull": {"algorithm": None}}, {"references": {"table": "p", "columns": ["q"]}}]
+        {"notNull": {"algorithm": None}},
+        {"references": {"table": "p", "columns": ["q"], "onDelete": "restrict", "onUpdate": "setNull"}}]
     labels = [item["check"]["label"] for item in columns[0]["constraints"] + columns[1]["constraints"] + constraints
               if "check" in item]
     assert labels == ["x", "b", "y", "b > a"]
-    assert constraints[-1] == {"foreignKey": {"columns": ["a", "b"], "table": "p", "referenced": ["q", "r"]}}
+    assert constraints[-1] == {"foreignKey": {"columns": ["a", "b"], "table": "p", "referenced": ["q", "r"],
+                                              "onDelete": "noAction", "onUpdate": "noAction"}}
     assert [item["check"]["label"] for item in second["createTable"]["constraints"]] == ["z", "a != 5"]

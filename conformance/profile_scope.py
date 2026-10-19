@@ -7,12 +7,15 @@ as an input, so it implements a controlled clock, and it implements only SQLite'
 defaults for the other settings. A record whose profile changes such a setting stays out of the
 model's scope, with the setting named, so that the model never predicts behavior it
 does not implement. Records before version 4 have no profile: their recorder used
-the pinned build with its documented default limits.
+the pinned build with its documented default limits, and their setup may have turned
+foreign keys on, which the subject cannot see; such a record with a foreign key stays out
+of scope (ADR 0014, slice 4).
 """
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 
 from belay.sqlite.errors import SqlError
+from belay.sqlite.located import Located
 from conformance.case_format import Json, case_profile
 from conformance.execution_profile import ExecutionProfile, profile_from_wire
 from conformance.native_connection import SOURCE_ID
@@ -29,6 +32,26 @@ def unsupported_setting(profile: ExecutionProfile) -> str | None:
                 ("untrusted schema mode", not profile.trusted_schema),
                 ("other writers", bool(profile.other_writers)))
     return next((name for name, used in settings if used), None)
+
+
+def has_foreign_key(value: object) -> bool:
+    """Whether statement syntax has a `REFERENCES` or `FOREIGN KEY` constraint."""
+    if isinstance(value, Located):
+        return has_foreign_key(value.value)
+    if isinstance(value, dict):
+        return "references" in value or "foreignKey" in value or any(has_foreign_key(item) for item in value.values())
+    if isinstance(value, (list, tuple)):
+        return any(has_foreign_key(item) for item in value)
+    return False
+
+
+def foreign_key_scope(record: Mapping[str, Json], statements: Iterable[Located]) -> None:
+    """Raise `SqlError` with status `UNSUPPORTED` for a record without a profile whose
+    statements have a foreign key: its setup may have turned foreign keys on, and the model
+    implements them only off."""
+    if record.get("nativeVersion") not in PROFILED and any(has_foreign_key(item) for item in statements):
+        raise SqlError("UNSUPPORTED", f"{record.get('name', 'case')}: the record has no execution profile, so "
+                       "whether foreign keys are on is unknown; this case stays out of scope")
 
 
 def modeled_profile(record: Mapping[str, Json]) -> Json:

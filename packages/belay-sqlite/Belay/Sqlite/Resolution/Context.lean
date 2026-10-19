@@ -75,7 +75,8 @@ def Syntax.ColumnConstraint.isPrimaryKey : Syntax.ColumnConstraint → Bool
 {name}`ExprError.foreignKeyOneColumn`. -/
 def Syntax.ColumnConstraint.parseError (column : Identifier) : Syntax.ColumnConstraint → Option ExprError
   | .collate name => if (Collation.named? name).isSome then none else some (.noSuchCollation name)
-  | .references table columns => if columns.length > 1 then some (.foreignKeyOneColumn column table) else none
+  | .references table columns _ _ =>
+    if columns.length > 1 then some (.foreignKeyOneColumn column table) else none
   | .notNull _ | .primaryKey .. | .unique _ | .default _ _ | .check .. => none
 
 /-- Whether the constraint is UNIQUE. -/

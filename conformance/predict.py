@@ -22,7 +22,7 @@ from belay.sqlite.syntax import statements
 from conformance import native_bindings
 from conformance.case_format import UNIX_EPOCH_JULIAN_MILLISECONDS, Json, row_wire
 from conformance.predict_render import output_record, view_record
-from conformance.profile_scope import modeled_profile
+from conformance.profile_scope import foreign_key_scope, modeled_profile
 from conformance.record_parser import NO_PARSER_REASON, record_parser, runtime_library
 
 RUNNER_TIMEOUT_SECONDS = 600
@@ -55,12 +55,14 @@ def julian_clocks(given: dict[str, Json]) -> list[int]:
 
 
 def mapped(given: dict[str, Json], library: object) -> tuple[dict[str, Json], list[Located]]:
-    """The model input of one case and its statements; frontend refusals and execution
-    settings that the model does not implement raise `SqlError` (`profile_scope`)."""
+    """The model input of one case and its statements; frontend refusals, execution
+    settings that the model does not implement, and a foreign key in a record without a
+    profile raise `SqlError` (`profile_scope`)."""
     profile = modeled_profile(given)
     parser = record_parser(library, given)
     schema = statements(parse(parser, given["initialSchemaSql"].encode(), "corpus-schema.sql"))
     script = statements(parse(parser, given["migrationSql"].encode(), "corpus-migration.sql"))
+    foreign_key_scope(given, [*schema, *script])
     return {"profile": profile, "schema": [item.value for item in schema], "script": [item.value for item in script],
             "initial": initial_rows(given["initialRows"]), "clocks": julian_clocks(given)}, script
 

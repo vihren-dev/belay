@@ -47,18 +47,30 @@ def nativeTableOf (catalog : Catalog) (position : Nat) (name : Identifier) (tabl
   rows := table.rows
   withoutRowid := table.shape.withoutRowid
 
+/-- A foreign key of a table in the terms of {lit}`PRAGMA foreign_key_list`: the referenced
+table, the names of its columns, the referenced columns, and the names of its actions. -/
+def foreignKeyJson (columns : List CatalogColumn) (key : ForeignKey) : Json :=
+  Json.mkObj [("table", toJson key.table),
+    ("columns", toJson (key.columns.filterMap fun position => columns[position]?.map (·.name))),
+    ("referenced", toJson key.referenced), ("onDelete", toJson key.onDelete.sqlName),
+    ("onUpdate", toJson key.onUpdate.sqlName)]
+
 /-- The table at a catalog position in SQLite's catalog terms, whether its primary key
 is the rowid, which decides whether SQLite makes an index for that key, whether that
-key is descending, which the index records, and the collation name of each column, which
-the indexes of the primary key and of UNIQUE constraints record; {lit}`collations` is
-present only when a column is not {lit}`BINARY`, so other predictions keep their form. -/
+key is descending, which the index records, the collation name of each column, which
+the indexes of the primary key and of UNIQUE constraints record, and its foreign keys in
+the order in which SQLite creates them ({name}`CatalogTable.allForeignKeys`).
+{lit}`collations` and {lit}`foreignKeys` are present only when a column is not
+{lit}`BINARY` or the table has a foreign key, so other predictions keep their form. -/
 def predictedTable (catalog : Catalog) (position : Nat) (table : Table) : Option Json :=
   let collations := collationNames (table.shape.columns.map (·.collation.sqlName))
+  let foreignKeys := table.shape.allForeignKeys.map (foreignKeyJson table.shape.columns)
   catalog[position]?.map fun object => Json.mkObj ([
     ("table", toJson (nativeTableOf catalog position object.name table)),
     ("rowidPrimaryKey", toJson table.shape.rowidAlias.isSome),
     ("primaryKeyDescending", toJson table.shape.primaryKeyDescending)] ++
-    (if collations.isEmpty then [] else [("collations", toJson collations)]))
+    (if collations.isEmpty then [] else [("collations", toJson collations)]) ++
+    (if foreignKeys.isEmpty then [] else [("foreignKeys", toJson foreignKeys)]))
 
 /-- Starting rows as a native table without metadata: {name}`databaseOf` reads only
 the name and the rows. -/

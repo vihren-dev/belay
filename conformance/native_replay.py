@@ -3,7 +3,7 @@
 from conformance.record_parser import NO_PARSER_REASON, record_parser
 
 from conformance.case_format import CASE_VERSION, UNIX_EPOCH_JULIAN_MILLISECONDS, Json, row_wire
-from conformance.profile_scope import modeled_profile
+from conformance.profile_scope import foreign_key_scope, modeled_profile
 from conformance.record_versions import PROFILED, WITH_OUTPUTS
 from conformance.native_connection import SOURCE_ID
 from conformance import native_bindings
@@ -101,6 +101,7 @@ def model_case(record: dict[str, Json], library: ParserLibrary) -> dict[str, Jso
     profile = modeled_profile(record)
     schema = statements(schema_tree)
     script = statements(migration_tree)
+    foreign_key_scope(record, [*schema, *script])
     trace = record["trace"]
     if (len(trace) > len(script) or any(event["primaryCode"] for event in trace[:-1])
             or (not trace or not trace[-1]["primaryCode"]) and len(trace) != len(script)):

@@ -54,7 +54,8 @@ theorem migrationCorrect : Generated.expected := by
       exact admitted.1.addColumn (.integer 7) present (catalog_bound ▸ nextValid)
     refine ⟨database.addColumn 0 Requirements.priority (.integer 7), ?_, conforms, ?_⟩
     · simp only [runSql_eq, script_bound, runSqlFrom_cons, advance_addColumn,
-        effect_addColumn_ok 0 present constant_default default_value rfl, SqlState.publish_ok, runSqlFrom_nil]
+        effect_addColumn_ok 0 present constant_default default_value rfl (by simp [Requirements.priority]),
+        SqlState.publish_ok, runSqlFrom_nil]
       rfl
     · rw [conforms.1]
       change Generated.nextCatalog.columnsOf (name! "invoices") = some [Requirements.amount, Requirements.priority]

@@ -87,6 +87,21 @@ def indexes(table: dict[str, Json], rowid_primary_key: bool, descending_key: boo
     return entries
 
 
+def foreign_key_rows(keys: list[Json]) -> list[list[Json]]:
+    """The `PRAGMA foreign_key_list` rows of a table's foreign keys, given in the order in
+    which SQLite creates them: SQLite numbers them in the reverse order, gives one row per
+    column, NULL as the referenced column of a key without a column list, and the match
+    `NONE`."""
+    rows: list[list[Json]] = []
+    for number, key in enumerate(reversed(keys)):
+        referenced = [str(name) for name in key["referenced"]]
+        for sequence, column in enumerate(key["columns"]):
+            rows.append([integer_cell(number), integer_cell(sequence), text_cell(str(key["table"])),
+                         text_cell(str(column)), text_cell(referenced[sequence]) if referenced else "null",
+                         text_cell(str(key["onUpdate"])), text_cell(str(key["onDelete"])), text_cell("NONE")])
+    return rows
+
+
 def table_record(predicted: dict[str, Json]) -> dict[str, Json]:
     """One model table in the recorded table form. A row's identity is its rowid, or its
     primary-key cells in a `WITHOUT ROWID` table, as the recorder writes it."""
@@ -100,7 +115,8 @@ def table_record(predicted: dict[str, Json]) -> dict[str, Json]:
         values = row["values"]
         return ([value_cell(values[key]) for key in primary] if without_rowid
                 else [integer_cell(int(row["rowid"]))])
-    return {"name": table["name"], "kind": "table", "withoutRowid": without_rowid, "foreignKeys": [],
+    return {"name": table["name"], "kind": "table", "withoutRowid": without_rowid,
+            "foreignKeys": foreign_key_rows(list(predicted.get("foreignKeys") or [])),
             "columns": [column_row(position, column, primary) for position, column in enumerate(table["columns"])],
             "indexes": indexes(table, bool(predicted["rowidPrimaryKey"]), bool(predicted["primaryKeyDescending"]),
                                [str(collation) for collation in

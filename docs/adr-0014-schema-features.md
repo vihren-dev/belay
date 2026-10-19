@@ -93,7 +93,9 @@ UNIQUE constraints and unique indexes are then checked by one function.
   reports the name.
 - **Inert `REFERENCES`** (owner decision 3). A `REFERENCES` clause or a `FOREIGN KEY`
   table constraint is admitted under a profile that does not enforce foreign keys, where
-  SQLite ignores it apart from its prepare errors. The catalog keeps no foreign key.
+  SQLite ignores it apart from its prepare errors. The catalog keeps each foreign key as
+  inert metadata (the referenced table and columns, and the `ON DELETE` and `ON UPDATE`
+  actions), because the judge compares `PRAGMA foreign_key_list` (owner decision 4).
   Under a profile that enforces them, it stays a restriction.
 - **ADD COLUMN.** An `ADD COLUMN` with a CHECK follows SQLite's check of the existing
   rows. The slice confirms the exact rule natively first.
@@ -250,6 +252,14 @@ Each slice works in this way:
     restriction `check-function`.
   - The support check admits every CREATE TABLE: a new table has no rows to violate a
     constraint.
+  - `PRAGMA foreign_key_list` numbers the foreign keys in the reverse of the order in which
+    SQLite creates them (the columns' in column order, then the table constraints'), with
+    one row per column, NULL as `to` without a column list, and `match` always `NONE`; a
+    later action clause replaces an earlier one. The model keeps them in creation order
+    (`CatalogTable.allForeignKeys`), and the prediction renders the rows.
+  - Records before version 4 have no execution profile, and their setup may turn foreign
+    keys on; the subject cannot see it, so such a record with a foreign key stays out of
+    scope (`conformance/profile_scope.py`).
 
 ## Consequences
 
@@ -305,3 +315,10 @@ Decided on 2026-10-19:
    other blocker of 110 schema-feature cases.
 3. **An inert `REFERENCES` is admitted** under profiles that do not enforce foreign keys
    (D2, slice 4).
+
+Decided on 2026-10-19, during slice 4:
+
+4. **Foreign keys are kept as inert metadata** (D2). The first text of D2 said that the
+   catalog keeps no foreign key, but the judge compares each table's
+   `PRAGMA foreign_key_list` rows, so 18 cases that agree would disagree. The catalog keeps
+   them and the prediction gives the rows that SQLite reports.

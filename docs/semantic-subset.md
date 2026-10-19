@@ -155,8 +155,10 @@ result code 1 when one fails. A time keyword, a date and time function or a JSON
 in a CHECK is the restriction `check-function`, and a CHECK of ADD COLUMN that SQLite
 cannot resolve is `add-column-check-error`, as SQLite reports it while the statement runs.
 Foreign keys are off in every modeled profile, as in SQLite by default: a `REFERENCES`
-clause or a `FOREIGN KEY` constraint has no effect apart from its prepare errors, and the
-catalog keeps no foreign key. A CREATE TABLE with constraints and defaults runs in the
+clause or a `FOREIGN KEY` constraint has no effect on writes apart from its prepare
+errors, and the catalog keeps it with its `ON DELETE` and `ON UPDATE` actions, as
+`PRAGMA foreign_key_list` reports it. A record without an execution profile and with a
+foreign key is out of scope, as its setup may have turned foreign keys on. A CREATE TABLE with constraints and defaults runs in the
 migration as in the schema.
 
 A collation (ADR 0014, slice 3) is `BINARY`, `NOCASE` or `RTRIM`, with ASCII case of the

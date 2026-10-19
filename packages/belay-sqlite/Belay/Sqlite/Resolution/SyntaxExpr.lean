@@ -97,6 +97,31 @@ instance : Repr DefaultExpression where
   reprPrec value prec := Repr.addAppParen
     ("Belay.Sqlite.Syntax.DefaultExpression.mk " ++ reprArg value.expression ++ " " ++ reprArg value.sourceText) prec
 
+/-- The action of {lit}`ON DELETE` or {lit}`ON UPDATE` of a foreign key, which
+{lit}`PRAGMA foreign_key_list` reports; {lean}`ForeignKeyAction.noAction` without the clause.
+With foreign keys off, SQLite runs no action (ADR 0014, slice 4). -/
+inductive ForeignKeyAction where
+  /-- {lit}`NO ACTION`, also without the clause. -/
+  | noAction
+  /-- {lit}`RESTRICT`. -/
+  | restrict
+  /-- {lit}`SET NULL`. -/
+  | setNull
+  /-- {lit}`SET DEFAULT`. -/
+  | setDefault
+  /-- {lit}`CASCADE`. -/
+  | cascade
+  deriving Repr, BEq, DecidableEq
+
+/-- The name of an action as {lit}`PRAGMA foreign_key_list` reports it, for example
+{lit}`SET NULL`. -/
+def ForeignKeyAction.sqlName : ForeignKeyAction → String
+  | .noAction => "NO ACTION"
+  | .restrict => "RESTRICT"
+  | .setNull => "SET NULL"
+  | .setDefault => "SET DEFAULT"
+  | .cascade => "CASCADE"
+
 /-- A column constraint as written. For example, {lit}`PRIMARY KEY DESC` is
 {lean}`ColumnConstraint.primaryKey true`. -/
 inductive ColumnConstraint where
@@ -117,9 +142,10 @@ inductive ColumnConstraint where
   the {lit}`CONSTRAINT name` in effect, else the source text between the parentheses
   without outer white space, dequoted when it starts with a quote (ADR 0014, slice 4). -/
   | check (condition : Expr) (label : String)
-  /-- {lit}`REFERENCES table [(columns)]`, with its clauses dropped: with foreign keys off
-  only the number of columns matters, which SQLite checks (ADR 0014, slice 4). -/
-  | references (table : Identifier) (columns : List Identifier)
+  /-- {lit}`REFERENCES table [(columns)]` with its {lit}`ON DELETE` and {lit}`ON UPDATE`
+  actions; the other clauses do not show in {lit}`PRAGMA foreign_key_list` (ADR 0014,
+  slice 4). -/
+  | references (table : Identifier) (columns : List Identifier) (onDelete onUpdate : ForeignKeyAction)
   deriving Repr, BEq
 
 /-- One column of CREATE TABLE or ADD COLUMN. Use {lean}`(none : Option String)`
@@ -142,9 +168,10 @@ inductive TableConstraint where
   /-- {lit}`CHECK (condition)` with its label, as for {name}`ColumnConstraint.check`. SQLite
   ignores an {lit}`ON CONFLICT` clause of a table CHECK (ADR 0014, slice 4). -/
   | check (condition : Expr) (label : String)
-  /-- {lit}`FOREIGN KEY (columns) REFERENCES table [(referenced)]`, with its clauses
-  dropped; {lit}`referenced` is empty without a column list (ADR 0014, slice 4). -/
+  /-- {lit}`FOREIGN KEY (columns) REFERENCES table [(referenced)]` with its actions, as for
+  {name}`ColumnConstraint.references`; {lit}`referenced` is empty without a column list. -/
   | foreignKey (columns : List Identifier) (table : Identifier) (referenced : List Identifier)
+      (onDelete onUpdate : ForeignKeyAction)
   deriving Repr, BEq
 
 /-- One result column of a {lit}`SELECT`: {lit}`*`, or an expression with an

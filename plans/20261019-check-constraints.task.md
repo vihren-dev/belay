@@ -23,7 +23,7 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D2 and owner dec
    label that SQLite reports: the constraint's name, else the source text between the
    parentheses without leading and trailing white space, dequoted when it starts with a
    quote (`CHECK ("a" > 0)` reports `a`). A name before any other constraint has no
-   effect. The catalog keeps no foreign key.
+   effect. The catalog keeps the foreign keys (outcome 4).
 3. **Resolution of a CHECK** follows SQLite's prepare errors, checked natively with 3.51.0:
    `subqueries prohibited in CHECK constraints`, `no such column`, `misuse of aggregate
    function`, and the profile's `DQS_DDL` for a double-quoted name. A qualified name of the
@@ -33,7 +33,11 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D2 and owner dec
    `FOREIGN KEY` constraint has no effect apart from SQLite's prepare errors:
    `unknown column "c" in foreign key definition`, `number of columns in foreign key does
    not match the number of columns in the referenced table`, and `foreign key on c should
-   reference only one column of table t`. The referenced table need not exist.
+   reference only one column of table t`. The referenced table need not exist. The catalog
+   keeps each foreign key as inert metadata, which the prediction reports as
+   `PRAGMA foreign_key_list` does (owner decision of 2026-10-19: the judge compares those
+   rows). A record without an execution profile and with a foreign key stays out of scope,
+   as its setup may have turned foreign keys on.
 5. **Execution.** INSERT, UPDATE and the `DO UPDATE` of an UPSERT check the CHECK
    constraints of each written row in SQLite's order: NOT NULL, then CHECK in written
    order, then the unique keys. A CHECK fails when its condition is false; NULL passes.
