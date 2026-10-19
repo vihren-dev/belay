@@ -89,6 +89,7 @@ decoded as UTF-8 ({name}`decodeUtf8`). A name that the parser wrote is always va
 UTF-8; other bytes give one character for each byte. -/
 def Identifier.text (name : Identifier) : String := String.ofList (decodeUtf8 name.bytes)
 
+/-- A name in text, such as a message: {name}`Identifier.text`. -/
 instance : ToString Identifier := ⟨Identifier.text⟩
 
 /-- A name as Lean source: {lit}`name! "t"` for a name whose bytes are valid UTF-8, else
