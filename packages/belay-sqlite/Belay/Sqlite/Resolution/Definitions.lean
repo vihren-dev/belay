@@ -37,7 +37,7 @@ def applyConstraint (tableName : Identifier) (definition : Syntax.ColumnDefiniti
     if !table.primaryKey.isEmpty then .error (.multiplePrimaryKeys tableName) else
     if (table.columns.getLast?.bind (·.generated)).isSome then .error .generatedInPrimaryKey else
     let position := table.columns.length - 1
-    let alias := if aliasesRowid definition.declaredType && !descending then some position else none
+    let alias := if aliasesRowid (reportedType definition.declaredType) && !descending then some position else none
     setPrimaryKey table [position] alias descending algorithm
   | .default value sourceText =>
     if !constantDefault value then .error (.defaultNotConstant definition.name) else

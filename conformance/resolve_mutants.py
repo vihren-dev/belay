@@ -38,7 +38,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         'if containsText upper "INT" then .integer\n    else if ["CHAR", "CLOB", "TEXT"].any (containsText upper) then .text',
         'if ["CHAR", "CLOB", "TEXT"].any (containsText upper) then .text\n    else if containsText upper "INT" then .integer'),
     "desc_rowid_alias": (SQLITE + "Resolution/Definitions.lean",
-        "aliasesRowid definition.declaredType && !descending", "aliasesRowid definition.declaredType"),
+        "aliasesRowid (reportedType definition.declaredType) && !descending", "aliasesRowid (reportedType definition.declaredType)"),
     "rollback_keeps_catalog": (SQLITE + "Resolution/Resolve.lean",
         "{ catalog := state.saved.getD state.catalog, saved := none }", "{ catalog := state.catalog, saved := none }"),
     "table_index_same_name": (SQLITE + "Resolution/Definitions.lean",

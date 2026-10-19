@@ -40,34 +40,72 @@ def standardTypeNames : List String := ["ANY", "BLOB", "INT", "INTEGER", "REAL",
 /-- Whether a character is white space for SQLite ({lit}`sqlite3Isspace`). -/
 def sqliteSpace (character : Char) : Bool := " \t\n\x0c\r\x0b".contains character
 
-/-- Whether the characters end with the word, with ASCII case ignored. -/
+/-- The characters without trailing SQLite white space ({name}`sqliteSpace`). -/
+def dropTrailingSpace (characters : List Char) : List Char :=
+  (characters.reverse.dropWhile sqliteSpace).reverse
+
+/-- Whether the characters end with the ASCII word, with ASCII case ignored. -/
 def endsWithWord (characters : List Char) (word : String) : Bool :=
   (characters.drop (characters.length - word.length)).map Char.toLower == word.toList
 
-/-- A declared type without a trailing {lit}`GENERATED ALWAYS`, as {lit}`sqlite3AddColumn`
-removes it (ADR 0014, slice 5): when the text of 16 or more characters ends with
-{lit}`always`, that word and the white space before it go, and then {lit}`generated` and the
-white space before it when they end the rest; ASCII case is ignored. The grammar reads both
-words as part of the type of a generated column, so {lit}`TEXT GENERATED ALWAYS` is
-{lit}`TEXT` and {lit}`foogenerated always` is {lit}`foo`. -/
+/-- The number of UTF-8 bytes of the characters, as SQLite counts the length of a token. -/
+def utf8Length (characters : List Char) : Nat := (String.ofList characters).utf8ByteSize
+
+/-- A declared type as written without a trailing {lit}`GENERATED ALWAYS`, as
+{lit}`sqlite3AddColumn` removes it before it dequotes the type (ADR 0014, slice 5): when the
+text has 16 or more UTF-8 bytes and ends with {lit}`always`, that word and the white space
+before it go, and then {lit}`generated` and the white space before it when they end the rest
+of 9 or more bytes; ASCII case is ignored. The grammar reads both words as part of the type
+of a generated column, so {lit}`TEXT GENERATED ALWAYS` is {lit}`TEXT`, {lit}`foogenerated always`
+is {lit}`foo`, and a quoted type, which ends with its quote, keeps them. -/
 def withoutGeneratedAlways (text : String) : String :=
   let characters := text.toList
-  if characters.length ≥ 16 && endsWithWord characters "always" then
-    let rest := ((characters.take (characters.length - 6)).reverse.dropWhile sqliteSpace).reverse
-    if rest.length ≥ 9 && endsWithWord rest "generated" then
-      String.ofList ((rest.take (rest.length - 9)).reverse.dropWhile sqliteSpace).reverse
+  if utf8Length characters ≥ 16 && endsWithWord characters "always" then
+    let rest := dropTrailingSpace (characters.take (characters.length - 6))
+    if utf8Length rest ≥ 9 && endsWithWord rest "generated" then
+      String.ofList (dropTrailingSpace (rest.take (rest.length - 9)))
     else String.ofList rest
   else text
 
-/-- A declared type as SQLite keeps and reports it: without a trailing
-{lit}`GENERATED ALWAYS` ({name}`withoutGeneratedAlways`), and a type that is exactly one of
-{name}`standardTypeNames`, with ASCII case ignored, becomes that name in capitals
-({lit}`sqlite3AddColumn`); any other type text stays as written, so {lit}`int` is
-{lit}`INT` and {lit}`VarChar(10)` keeps its case. -/
+/-- The closing quote of an opening quote character: {lit}`'`, {lit}`"` and a backtick close
+themselves and {lit}`[` closes with {lit}`]`; none for any other character. -/
+def closingQuote : Char → Option Char
+  | '\'' => some '\''
+  | '"' => some '"'
+  | '`' => some '`'
+  | '[' => some ']'
+  | _ => none
+
+/-- The characters after an opening quote up to its closing quote, with a doubled closing
+quote read as one, as {lit}`sqlite3Dequote` copies them; the rest after the closing quote
+is dropped. -/
+def dequotedRest (close : Char) : List Char → List Char
+  | [] => []
+  | character :: rest =>
+    if character == close then
+      match rest with
+      | next :: later => if next == close then close :: dequotedRest close later else []
+      | [] => []
+    else character :: dequotedRest close rest
+
+/-- The text as {lit}`sqlite3Dequote` leaves it: without its quotes when it starts with a quote
+character ({name}`closingQuote`), else unchanged. -/
+def dequoteText (text : String) : String :=
+  match text.toList with
+  | first :: rest => match closingQuote first with
+    | some close => String.ofList (dequotedRest close rest)
+    | none => text
+  | [] => text
+
+/-- A declared type as SQLite keeps and reports it, from the type as written: without a
+trailing {lit}`GENERATED ALWAYS` ({name}`withoutGeneratedAlways`), dequoted
+({name}`dequoteText`), and a type that is exactly one of {name}`standardTypeNames`, with
+ASCII case ignored, becomes that name in capitals ({lit}`sqlite3AddColumn`); any other type
+text stays as written, so {lit}`int` is {lit}`INT` and {lit}`VarChar(10)` keeps its case. -/
 def reportedType : Option String → Option String
   | none => none
   | some written =>
-    let text := withoutGeneratedAlways written
+    let text := dequoteText (withoutGeneratedAlways written)
     some ((standardTypeNames.find? fun standard => normalizeIdentifier standard == normalizeIdentifier text).getD text)
 
 /-- Whether a declared type makes a single-column primary key an alias for the

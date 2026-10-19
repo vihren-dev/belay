@@ -91,9 +91,17 @@ def errorOf (statement : Syntax.Statement) : Option PrepareError :=
   gen (name! "b") (ref (name! "a")) false [.generated (.numeric "1") none]] []) ==
   some (.expression (.errorInGenerated (name! "b")))
 -- The declared type loses a trailing GENERATED ALWAYS by SQLite's textual rule.
+-- It counts UTF-8 bytes, and a quoted type ends with its quote, so it keeps the words.
 #guard [some "TEXT GENERATED ALWAYS", some "foogenerated always", some "TEXT GENERATED /*x*/ ALWAYS",
-  some "GENERATED ALWAYS", some "always"].map reportedType ==
-  [some "TEXT", some "foo", some "TEXT GENERATED /*x*/", some "", some "always"]
+  some "GENERATED ALWAYS", some "always", some "éééééalways", some "\"TEXT GENERATED ALWAYS\"",
+  some "\"Big\" GENERATED ALWAYS", some "'Odd''Q' GENERATED ALWAYS", some "\"Some\" Type"].map reportedType ==
+  [some "TEXT", some "foo", some "TEXT GENERATED /*x*/", some "", some "always", some "ééééé",
+   some "TEXT GENERATED ALWAYS", some "Big", some "Odd'Q", some "Some"]
+-- INTEGER GENERATED ALWAYS PRIMARY KEY is a rowid alias, as its type is INTEGER.
+#guard (match (catalogOf (schema [.createTable (name! "r")
+    [{ name := name! "a", declaredType := some "INTEGER GENERATED ALWAYS", constraints := [.primaryKey false] }] []])).head? with
+  | some { entry := .table table, .. } => table.rowidAlias == some 0
+  | some { entry := .index _, .. } | none => false)
 -- A quoted kind and a kind other than VIRTUAL and STORED are SQLite's error in generated column.
 #guard errorOf (.createTable (name! "n") [column (name! "a"),
   { name := name! "b", declaredType := none, constraints := [.generated (ref (name! "a")) (some (name! "\"stored\""))] }] []) ==

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-19T22:46:04+00:00",
+  "finding": "20261019T203959Z-1e9ab761#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the frontend passes the type as written; reportedType strips GENERATED ALWAYS before it dequotes, so a quoted type keeps the words (checked natively, example)"
+}
