@@ -25,7 +25,7 @@ The names follow the list in the task of slice 2: a scan in insertion order, and
 column that admits NULL."""
 
 TARGETS: dict[str, tuple[str, ...]] = {
-    "without_rowid_insertion_order": ("without-rowid-scan-text",),
+    "without_rowid_insertion_order": ("without-rowid-insert-order",),
     "without_rowid_null_key": ("without-rowid-null-key",),
 }
 """The authored case of `conformance.authored_without_rowid` that each mutant changes."""
