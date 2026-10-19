@@ -19,7 +19,7 @@ NULL. -/
 def valueText : Value → Option (List UInt8)
   | .null => none
   | .integer value => some (toString value).toUTF8.toList
-  | .real bits => some (realText (Float.ofBits bits)).toUTF8.toList
+  | .real bits => some (realText (Float.ofBits bits))
   | .text bytes | .blob bytes => some bytes
 
 /-- The bytes of a text up to its first NUL byte, as a C string reads them. -/

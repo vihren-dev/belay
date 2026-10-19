@@ -98,7 +98,7 @@ def ArithmeticOperator.apply (operator : ArithmeticOperator) (left right : Value
 {name}`realText`, TEXT and BLOB bytes as they are, NULL as no bytes. -/
 def Value.textBytes : Value → List UInt8
   | .integer value => (toString value).toUTF8.toList
-  | .real bits => (realText (Float.ofBits bits)).toUTF8.toList
+  | .real bits => realText (Float.ofBits bits)
   | .text bytes | .blob bytes => bytes
   | .null => []
 

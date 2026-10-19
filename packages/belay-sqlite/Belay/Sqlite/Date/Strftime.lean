@@ -135,7 +135,7 @@ def StrftimeSpecifier.text (x : DateTime) : StrftimeSpecifier → List UInt8
   | .twelveHourPadded => formatInteger 2 true (twelveHour x.hour)
   | .twelveHourSpaced => formatInteger 2 false (twelveHour x.hour)
   | .dayOfYear => formatInteger 3 true (x.daysAfterJanuaryFirst + 1)
-  | .julianDay => formatGeneric16 (Float.ofInt x.julianMilliseconds / 86400000.0)
+  | .julianDay => formatGeneral julianDayTextDigits Bool.false (Float.ofInt x.julianMilliseconds / 86400000.0)
   | .month => formatInteger 2 true x.month
   | .minute => formatInteger 2 true x.minute
   | .meridiemUpper => if x.hour ≥ 12 then [80, 77] else [65, 77]

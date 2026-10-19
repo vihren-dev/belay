@@ -1,12 +1,14 @@
 import Belay.Sqlite.NumberText
+import Belay.Sqlite.ByteText
 
 set_option doc.verso true
 
-/-! SQLite's conversion of a REAL to text (ADR 0012, slice 2): {lit}`%!.15g` of its own
-printf over {lit}`sqlite3FpDecode`, ported from the pinned 3.51.0 source. The decoding
-scales the value into 64 bits in double-double arithmetic, so it is not a correctly
-rounded decimal conversion; the model follows its steps. A {lit}`CAST(x AS TEXT)` of a
-REAL gives this text. -/
+/-! The floating-point conversions of SQLite's own printf ({lit}`sqlite3_str_vappendf` of
+the pinned 3.51.0 source) over {lit}`sqlite3FpDecode`, as bytes, and the text of a REAL
+(ADR 0012, slice 2): {lit}`%!.15g`. The decoding scales the value into 64 bits in
+double-double arithmetic, so it is not a correctly rounded decimal conversion; the model
+follows its steps. A {lit}`CAST(x AS TEXT)` of a REAL gives this text. The date functions
+use the same conversions for {lit}`%.3f` and {lit}`%.16g` ({lit}`Date/Printf.lean`). -/
 
 namespace Belay.Sqlite
 
@@ -72,64 +74,88 @@ def roundDigits (round maximum : Nat) (digits : List Nat) (point : Int) : List N
   let trimmed := (digits.reverse.dropWhile (· == 0)).reverse
   (if trimmed.isEmpty then [0] else trimmed, point)
 
-/-- The character of a decimal digit. -/
-def digitChar (digit : Nat) : Char := Char.ofNat (48 + digit)
+/-- The greatest number of significant digits of {lit}`sqlite3FpDecode`: 26 under the
+{lit}`!` flag of SQLite's printf ({lit}`alternate`), else 16. A decoding with more digits
+is rounded to it. -/
+def printfDigitLimit (alternate : Bool) : Nat := if alternate then 26 else 16
 
-/-- The digit at a position, or 0 past the end, as a character. -/
-def digitAt (digits : List Nat) (index : Nat) : Char := digitChar (digits.getD index 0)
+/-- {lit}`sqlite3FpDecode` of a double: its sign, its significant digits and the position
+of the decimal point after the first digit ({lit}`iDP`). A positive {lit}`round` keeps
+that many significant digits; zero or less keeps {lit}`-round` digits after the decimal
+point. {lit}`alternate` is the {lit}`!` flag ({name}`printfDigitLimit`). Zero gives the
+digit 0 and the point 1. -/
+def decodeDouble (alternate : Bool) (value : Float) (round : Int) : Bool × List Nat × Int :=
+  if value == 0 then (false, [0], 1) else
+  let negative := value < 0
+  let (digits, exponent) := fpDigits (if negative then -value else value)
+  let point : Int := digits.length + exponent
+  let (digits, point, round) :=
+    if round > 0 then (digits, point, round) else
+    let round := point - round
+    if round == 0 && digits.headD 0 ≥ 5 then (0 :: digits, point + 1, 1) else (digits, point, round)
+  let (digits, point) := roundDigits round.toNat (printfDigitLimit alternate) digits point
+  (negative, digits, point)
 
-/-- The exponent suffix of {lit}`%e`: {lit}`e`, the sign, and two or three digits. -/
-def exponentSuffix (exponent : Int) : String :=
+/-- The ASCII byte of a decimal digit. -/
+def digitByte (digit : Nat) : UInt8 := (48 + digit).toUInt8
+
+/-- The fixed-point bytes of decoded digits with {lit}`precision` digits after the
+point, as the {lit}`etFLOAT` branch writes them: the integer digits (or one zero), the
+point when the precision is positive or {lit}`forcePoint` holds ({lit}`flag_dp`), zeros
+before the first significant digit, then the digits, with zeros past the last one. -/
+def fixedDigitBytes (forcePoint : Bool) (digits : List Nat) (point : Int) (precision : Nat) : List UInt8 :=
+  let byteAt := fun (index : Nat) => digitByte (digits.getD index 0)
+  let whole := if point ≤ 0 then [48] else (List.range point.toNat).map byteAt
+  let used := if point ≤ 0 then 0 else point.toNat
+  let zeros := min precision (if point < 0 then (-point).toNat else 0)
+  let fraction := List.replicate zeros 48 ++ (List.range (precision - zeros)).map (fun index => byteAt (used + index))
+  whole ++ (if precision > 0 || forcePoint then 46 :: fraction else [])
+
+/-- Remove the trailing zeros after a point, as {lit}`%g` does ({lit}`flag_rtz`). A point
+that would end the text is removed, or keeps one zero under the {lit}`!` flag
+({lit}`alternate`). A text without a point stays. -/
+def trimGeneralFraction (alternate : Bool) (bytes : List UInt8) : List UInt8 :=
+  if !bytes.contains 46 then bytes else
+  let trimmed := (bytes.reverse.dropWhile (· == 48)).reverse
+  if trimmed.getLast? == some 46 then (if alternate then trimmed ++ [48] else trimmed.dropLast) else trimmed
+
+/-- The exponent suffix of {lit}`%e` as bytes: {lit}`e`, the sign, and two or three
+digits. -/
+def exponentSuffixBytes (exponent : Int) : List UInt8 :=
   let magnitude := exponent.natAbs
-  let hundreds := if magnitude ≥ 100 then String.singleton (digitChar (magnitude / 100)) else ""
-  let rest := magnitude % 100
-  "e" ++ (if exponent < 0 then "-" else "+") ++ hundreds ++ String.ofList [digitChar (rest / 10), digitChar (rest % 10)]
-
-/-- Remove the trailing zeros of a fixed-point text, and keep one zero after a point
-that would end the text, as {lit}`%!g` does. -/
-def trimFraction (text : List Char) : List Char :=
-  let trimmed := (text.reverse.dropWhile (· == '0')).reverse
-  if trimmed.getLast? == some '.' then trimmed ++ ['0'] else trimmed
-
-/-- The significant digits of a REAL as text: the precision 15 of {lit}`%!.15g`. -/
-def realTextDigits : Nat := 15
-
-/-- The digit limit of {lit}`sqlite3FpDecode` under the {lit}`!` flag of SQLite's printf:
-a decoding with more digits is rounded to it. -/
-def realTextDigitLimit : Nat := 26
+  let hundreds := if magnitude ≥ 100 then [digitByte (magnitude / 100)] else []
+  [101, if exponent < 0 then 45 else 43] ++ hundreds ++ [digitByte (magnitude % 100 / 10), digitByte (magnitude % 10)]
 
 /-- The least decimal exponent that {lit}`%g` writes in plain notation; below it, the
 text uses exponent notation. -/
 def plainExponentMinimum : Int := -4
 
-/-- The text of a finite double that is not zero, by {lit}`%!.15g`: {name}`realTextDigits`
-significant digits, plain notation for decimal exponents from
-{name}`plainExponentMinimum` to one less than the digit count, else exponent notation;
-trailing zeros removed, but at least one digit after the point. -/
-def finiteText (negative : Bool) (value : Float) : String :=
-  let (digits, exponent) := fpDigits value
-  let (digits, point) := roundDigits realTextDigits realTextDigitLimit digits (digits.length + exponent)
-  let exp := point - 1
-  let last : Int := realTextDigits - 1
-  let sign := if negative then "-" else ""
-  if exp < plainExponentMinimum || exp > last then
-    let body := [digitAt digits 0, '.'] ++ (List.range (realTextDigits - 1)).map (fun index => digitAt digits (index + 1))
-    sign ++ String.ofList (trimFraction body) ++ exponentSuffix exp
-  else
-    let precision := (last - exp).toNat
-    let whole := if exp < 0 then ['0'] else (List.range (exp.toNat + 1)).map (digitAt digits)
-    let used := if exp < 0 then 0 else exp.toNat + 1
-    let zeros := min precision (if exp < 0 then (-exp - 1).toNat else 0)
-    let fraction := List.replicate zeros '0' ++ (List.range (precision - zeros)).map (fun index => digitAt digits (used + index))
-    sign ++ String.ofList (trimFraction (whole ++ ['.'] ++ fraction))
+/-- A double by {lit}`%.Pg` ({lit}`etGENERIC`), or {lit}`%!.Pg` when {lit}`alternate`
+holds: {lit}`precision` significant digits, plain notation for a decimal exponent from
+{name}`plainExponentMinimum` to one less than the precision, else exponent notation,
+then {name}`trimGeneralFraction`. Under the {lit}`!` flag the text always has a point.
+For example {lean}`formatGeneral 16 false 2.5` is the bytes of {lit}`2.5`. -/
+def formatGeneral (precision : Nat) (alternate : Bool) (value : Float) : List UInt8 :=
+  let (negative, digits, point) := decodeDouble alternate value precision
+  let sign : List UInt8 := if negative then [45] else []
+  let exponent := point - 1
+  let last : Int := precision - 1
+  if exponent < plainExponentMinimum || exponent > last then
+    sign ++ trimGeneralFraction alternate (fixedDigitBytes alternate digits 1 (precision - 1)) ++
+      exponentSuffixBytes exponent
+  else sign ++ trimGeneralFraction alternate (fixedDigitBytes alternate digits point (last - exponent).toNat)
 
-/-- SQLite's text of a REAL ({lit}`vdbeMemRenderNum` with {lit}`%!.15g`): {lit}`0.0` for
-either zero, {lit}`Inf` and {lit}`-Inf` for the infinities, else {name}`finiteText`.
-SQLite stores no NaN; a NaN gives {lit}`NaN`. -/
-def realText (value : Float) : String :=
-  if value.isNaN then "NaN"
-  else if value == 0 then "0.0"
-  else if value.isInf then (if value < 0 then "-Inf" else "Inf")
-  else finiteText (value < 0) (if value < 0 then -value else value)
+/-- The significant digits of a REAL as text: the precision 15 of {lit}`%!.15g`. -/
+def realTextDigits : Nat := 15
+
+/-- SQLite's text of a REAL as bytes ({lit}`vdbeMemRenderNum` with {lit}`%!.15g`):
+{lit}`0.0` for either zero, {lit}`Inf` and {lit}`-Inf` for the infinities, else
+{name}`formatGeneral` with {name}`realTextDigits` digits and the {lit}`!` flag. SQLite
+stores no NaN; a NaN gives {lit}`NaN`. -/
+def realText (value : Float) : List UInt8 :=
+  if value.isNaN then bytes! "NaN"
+  else if value == 0 then bytes! "0.0"
+  else if value.isInf then (if value < 0 then bytes! "-Inf" else bytes! "Inf")
+  else formatGeneral realTextDigits true value
 
 end Belay.Sqlite

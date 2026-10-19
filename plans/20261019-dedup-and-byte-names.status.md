@@ -33,7 +33,13 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), step 8, owner de
   `json_each` use it. `locateStep`, `locatePath` and `findMemberAt` are gone; `findMember`
   takes the offset. `Json/JsonbOffset.lean` keeps only the sizes and `LocatedNode`. The
   `json_last_duplicate_key` mutant follows `findMember`.
+- 2026-10-19: one printf front end (outcome 4). `RealText.lean` holds the floating-point
+  conversions over bytes: `decodeDouble` (with the `!` flag), `fixedDigitBytes`,
+  `trimGeneralFraction`, `exponentSuffixBytes` and `formatGeneral`. `realText` is
+  `formatGeneral 15 true` and returns bytes; `%J` is `formatGeneral 16 false`. The String
+  copies (`finiteText`, `trimFraction`, `exponentSuffix`, `digitChar`, `digitAt`) and
+  `formatGeneric16` are gone. `Date/Printf.lean` keeps `%d` and `%f`.
 
 ## Remaining
 
-- Outcomes 4 and 6; checks, reviews, CI time, pull requests.
+- Outcome 6; checks, reviews, CI time, pull requests.
