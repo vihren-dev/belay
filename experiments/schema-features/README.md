@@ -41,6 +41,11 @@ python3 experiments/schema-features/measure.py VERDICT/report.json conformance/c
   - *Clean*: those with no other feature.
   - *Only feature*: clean cases in which this is the only schema feature.
 
+**Check of the scan.** For each case that the model refuses for a schema reason, the scan
+finds a schema feature. The exception is 10 cases: 8 with `Unsupported SQL form: expr`
+(for example an index on `'a'`, a string that SQLite reads as a column name) and 2 with a
+column constraint.
+
 A clean case is the best estimate of a case that support for its schema features brings
 into scope. A restriction that the scan does not see, such as an unmodeled function, can
 still stop it, so the clean counts are upper bounds.
