@@ -1,6 +1,6 @@
 # Status: invariants in types, API lemmas and position-free effects (ADR 0013, step 7)
 
-Created 2026-10-18. Status: open.
+Created 2026-10-18. Status: DONE.
 Task file: [task](20261018-types-and-api.task.md).
 Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D8 and D7.
 
@@ -72,6 +72,4 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D8 and D7.
   (`Query.runOn`). The harness's `statementOutput` still recomputes the written rows for
   its outputs. Verdict unchanged.
 
-## Remaining
-
-- Full checks, CI time, pull request.
+- 2026-10-19: checks pass and CI time is measured; pull request #167. DONE.

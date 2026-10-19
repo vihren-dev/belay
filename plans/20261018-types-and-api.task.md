@@ -1,6 +1,6 @@
 # Invariants in types, API lemmas and position-free effects (ADR 0013, step 7)
 
-Created 2026-10-18. Status: open.
+Created 2026-10-18. Status: DONE (pull request #167).
 Status file: [status](20261018-types-and-api.status.md).
 Specification: [ADR 0013](../docs/adr-0013-model-structure.md), decision D8, D7
 (`Statement.kind`), "Order" step 7, and the readiness results deferred from step 3.
