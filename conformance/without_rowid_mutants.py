@@ -9,14 +9,14 @@ from conformance.resolve_mutants import SQLITE
 
 QUERY_EVAL = SQLITE + "QueryEval.lean"
 """The scan order of a table."""
-DEFINITIONS = SQLITE + "Resolution/Definitions.lean"
-"""The catalog table of a `WITHOUT ROWID` definition."""
+TABLE_OPTIONS = SQLITE + "Resolution/TableOptions.lean"
+"""The catalog rules of the table options, such as `WITHOUT ROWID`."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "without_rowid_insertion_order": (QUERY_EVAL,
         "    stableSort (fun a b => (compareSort directions (table.keyCells a) (table.keyCells b)).isLE) table.rows",
         "    table.rows"),
-    "without_rowid_null_key": (DEFINITIONS,
+    "without_rowid_null_key": (TABLE_OPTIONS,
         "    if table.primaryKey.contains position then { column with notNull := true } else column",
         "    column"),
 }

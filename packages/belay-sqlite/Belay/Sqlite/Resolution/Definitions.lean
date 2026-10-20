@@ -3,6 +3,7 @@ import Belay.Sqlite.Resolution.KeyMerge
 import Belay.Sqlite.Resolution.ReadDefaults
 import Belay.Sqlite.Resolution.IndexTerms
 import Belay.Sqlite.Resolution.GeneratedColumns
+import Belay.Sqlite.Resolution.TableOptions
 
 set_option doc.verso true
 
@@ -71,13 +72,6 @@ def applyConstraint (tableName : Identifier) (definition : Syntax.ColumnDefiniti
     .ok { table with columns := updateLast table.columns fun column =>
       { column with foreignKeys := column.foreignKeys ++ [key] } }
 
-/-- The catalog column of a definition before its constraints apply: its name, its reported
-type ({name}`reportedType`) and, in a {lit}`STRICT` table, its strict type
-({name}`StrictType.ofReported`), which its affinity and its DEFAULT need (ADR 0014, D6). -/
-def definedColumn (strict : Bool) (definition : Syntax.ColumnDefinition) : CatalogColumn :=
-  let declaredType := reportedType definition.declaredType
-  { name := definition.name, declaredType, strictType := if strict then StrictType.ofReported declaredType else none }
-
 /-- Add the column definitions in written order: {lit}`too many columns on %s` when
 a column would exceed the limit, then {lit}`duplicate column name: %s`, then each
 column constraint ({lit}`sqlite3AddColumn` and the constraint actions). Each column has the
@@ -130,31 +124,12 @@ def statisticsTable (name : Identifier) (columns : List Syntax.ColumnDefinition)
     { name := column, declaredType := none, constraints := [] }
   constraints.isEmpty && (statisticsColumns name.folded).any plain
 
-/-- A table as {lit}`WITHOUT ROWID` makes it (ADR 0014, D4; {lit}`convertToWithoutRowidTable`):
-no rowid alias, each primary-key column NOT NULL, with ABORT unless it declares its own
-NOT NULL, and a key without the repeated occurrences of a column, which SQLite ignores
-(R-03887-49864). -/
-def CatalogTable.asWithoutRowid (table : CatalogTable) : CatalogTable :=
-  let columns := table.columns.mapIdx fun position (column : CatalogColumn) =>
-    if table.primaryKey.contains position then { column with notNull := true } else column
-  { table with withoutRowid := true, rowidAlias := none, columns, primaryKey := table.primaryKey.eraseDups }
-
-/-- The errors of a {lit}`STRICT` table's types (ADR 0014, D6; {lit}`sqlite3EndTable`), in
-column order, or none: a column without a type is {name}`ExprError.missingDatatype`, and one
-with a type that {name}`StrictType.ofReported` does not read is
-{name}`ExprError.unknownDatatype`. A table that is not {lit}`STRICT` has none. -/
-def strictTypeError (tableName : Identifier) (table : CatalogTable) : Option ExprError :=
-  if !table.strict then none else
-    table.columns.findSome? fun column => match column.declaredType, StrictType.ofReported column.declaredType with
-      | _, some _ => none
-      | none, none => some (.missingDatatype tableName column.name)
-      | some written, none => some (.unknownDatatype tableName column.name written)
-
 /-- Resolve CREATE TABLE, of a catalog description or in a script. Path 1 is the column list
 and path 2 the table constraints. A {lit}`WITHOUT ROWID` table
 ({name}`CatalogTable.asWithoutRowid`) without a primary key is SQLite's
 {lit}`PRIMARY KEY missing on table %s`, after the errors of its definitions and of a
-{lit}`STRICT` table's types ({name}`strictTypeError`); then the CHECK
+{lit}`STRICT` table's types ({name}`strictTypeError`), whose key columns are NOT NULL
+({name}`CatalogTable.withStrictKeys`); then the CHECK
 constraints resolve ({name}`resolveTableChecks`) under the profile's {lit}`DQS_DDL`. -/
 def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : Nat)
     (name : Identifier) (columns : List Syntax.ColumnDefinition)
@@ -174,7 +149,7 @@ def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : N
       match strictTypeError name table with
       | some error => prepareError catalog (.expression error)
       | none =>
-      let table := if options.withoutRowid then table.asWithoutRowid else table
+      let table := if options.withoutRowid then table.asWithoutRowid else table.withStrictKeys
       if options.withoutRowid && table.primaryKey.isEmpty then
         prepareError catalog (.expression (.primaryKeyMissing name))
       else if table.columns.all (·.generated.isSome) then prepareError catalog (.expression .onlyGeneratedColumns)

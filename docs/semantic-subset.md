@@ -181,7 +181,9 @@ without a type are SQLite's prepare errors. After the column's affinity applies,
 whose storage class does not fit the type fails the statement with SQLite's constraint
 error, for example `cannot store TEXT value in INTEGER column s.i`: `INT` and `INTEGER`
 take integers, `REAL` integers and reals, `TEXT` text, `BLOB` blobs, and NULL fits every
-type. `ANY` takes every value as written, with no affinity, also in a DEFAULT. The type
+type. `ANY` takes every value as written, with no affinity, also in a DEFAULT. Each
+primary-key column other than the rowid alias is NOT NULL, with ABORT unless it declares
+its own NOT NULL, as in SQLite. The type
 check comes after NOT NULL and before CHECK and the unique keys, covers UPDATE, `DO
 UPDATE` and generated columns, and acts as ABORT under every conflict algorithm. ADD
 COLUMN to a `STRICT` table with a type that it does not admit, or with a default that does

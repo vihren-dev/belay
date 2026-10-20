@@ -32,6 +32,8 @@ CONSTRAINT = "R-64842-30903"
 """SQLite: a value that cannot be losslessly converted is SQLITE_CONSTRAINT_DATATYPE."""
 FITS = "R-43870-25292"
 """SQLite: a value in a column other than ANY must be NULL or the declared type."""
+KEY_NOT_NULL = "R-40010-16873"
+"""SQLite: a PRIMARY KEY column of a STRICT table, other than an INTEGER PRIMARY KEY, refuses NULL."""
 ANY = "R-01879-24612"
 """SQLite: an ANY column accepts any kind of data, and no type coercion occurs."""
 
@@ -74,6 +76,13 @@ def definitions() -> list[QueryCase]:
         case("strict-generated", TABLES, "INSERT INTO g VALUES(1);", (CONVERSION,), ("strict", "generated")),
         case("strict-without-rowid", TABLES, "INSERT INTO w VALUES(1, '2'); SELECT k, v FROM w;", (CONVERSION,),
              ("strict", "without-rowid")),
+        case("strict-key-not-null", TABLES, "CREATE TABLE k(a TEXT PRIMARY KEY, b INT) STRICT; "
+             "INSERT INTO k VALUES(NULL, 1);", (KEY_NOT_NULL,), ("strict", "primary-key", "not-null")),
+        case("strict-key-or-ignore", TABLES, "CREATE TABLE k(a TEXT, b INT, PRIMARY KEY(a, b)) STRICT; "
+             "INSERT OR IGNORE INTO k VALUES('x', NULL), ('y', 2); SELECT a, b FROM k;", (KEY_NOT_NULL,),
+             ("strict", "primary-key", "or-ignore")),
+        case("strict-rowid-alias-null", TABLES, "CREATE TABLE k(a INTEGER PRIMARY KEY, b TEXT) STRICT; "
+             "INSERT INTO k VALUES(NULL, 'x'); SELECT a, b FROM k;", (KEY_NOT_NULL,), ("strict", "rowid-alias")),
         case("strict-unknown-type", TABLES, "CREATE TABLE n(a VARCHAR(10)) STRICT;", (TYPES,),
              ("strict", "prepare-error")),
         case("strict-missing-type", TABLES, "CREATE TABLE n(a, b INTEGER) STRICT;", (DATATYPE_REQUIRED,),

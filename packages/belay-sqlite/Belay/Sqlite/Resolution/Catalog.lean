@@ -144,8 +144,7 @@ def Catalog.columnsOf (catalog : Catalog) (name : Identifier) : Option (List Cat
 def columnPosition (columns : List CatalogColumn) (name : Identifier) : Option Nat :=
   (findPosition (fun column => column.name.sameName name) columns).map Prod.fst
 
-/-- The affinity of a catalog column, from its declared type text; none ({lit}`BLOB`) for an
-{lit}`ANY` column of a {lit}`STRICT` table, which stores a value as written. -/
+/-- The affinity of a column from its declared type; {lit}`BLOB` for a {lit}`STRICT` table's {lit}`ANY`. -/
 def CatalogColumn.affinity (column : CatalogColumn) : Affinity :=
   if column.strictType == some .any then .blob else affinityOf column.declaredType
 
@@ -166,9 +165,8 @@ def Catalog.uniqueKeys (catalog : Catalog) (position : Nat) (table : CatalogTabl
       | .index index => if index.table == position && index.unique then some index.uniqueKey else none
       | .table _ => none
 
-/-- Add the table with the name at the end of the catalog, at position
-{lean}`catalog.length`, as CREATE TABLE does. The resolver and the execution of CREATE
-TABLE both use it, so they give the same catalog. -/
+/-- Add the table with the name at the end of the catalog, at position {lean}`catalog.length`, as
+CREATE TABLE does. The resolver and the execution of CREATE TABLE both use it, so they agree. -/
 def Catalog.createTable (catalog : Catalog) (name : Identifier) (table : CatalogTable) : Catalog :=
   catalog ++ [{ name, entry := .table table }]
 

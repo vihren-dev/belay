@@ -35,7 +35,8 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D6.
    statement runs (`error in table r after add column: unknown datatype ...`), which the
    model leaves as a restriction. So does a default that does not fit the type, which
    SQLite reports as `type mismatch on DEFAULT` while the statement runs, when the table
-   has rows. A column's affinity and its default follow its strict type (an `ANY` default
+   has rows. Each primary-key column other than the rowid alias is NOT NULL, with ABORT
+   unless it declares its own (`sqlite3EndTable`). A column's affinity and its default follow its strict type (an `ANY` default
    `'7'` stays text), and ADD COLUMN to a `STRICT` table has the output column of SQLite's
    SELECT over `pragma_quick_check`.
 

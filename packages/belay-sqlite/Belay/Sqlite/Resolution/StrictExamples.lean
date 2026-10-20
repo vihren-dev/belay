@@ -103,6 +103,20 @@ def rowS (i r t b a : Expr) : Syntax.Statement := insertInto (name! "s") [i, r, 
 #guard rowsAt 2 [insertInto (name! "w") [.numeric "1", .string [50]]] == some [[.text [49], .integer 2]]
 #guard failedRows 2 [insertInto (name! "w") [.string [107], .string [120]]] == some (0, .constraintViolation, some 0)
 
+/-- The column {lit}`a` of the type with {lit}`PRIMARY KEY`. -/
+def keyColumn (declaredType : String) : ColumnDefinition :=
+  { name := name! "a", declaredType := some declaredType, constraints := [.primaryKey false] }
+
+-- A primary-key column that is not the rowid alias is NOT NULL; the rowid alias takes a new rowid.
+#guard failedRows 3 [.createTable (name! "k") [keyColumn "TEXT"] [] strict, insertInto (name! "k") [.null]] ==
+  some (1, .constraintViolation, some 0)
+#guard (match (catalogOf (schema [.createTable (name! "k") [keyColumn "TEXT"] [] strict])).head? with
+  | some { entry := .table table, .. } => table.columns.map (·.notNull) == [true]
+  | some { entry := .index _, .. } | none => false)
+#guard (match (catalogOf (schema [.createTable (name! "k") [keyColumn "INTEGER"] [] strict])).head? with
+  | some { entry := .table table, .. } => table.columns.map (·.notNull) == [false] && table.rowidAlias == some 0
+  | some { entry := .index _, .. } | none => false)
+
 /-- The prepare error of one statement from {name}`tables`, or none. -/
 def errorOf (statement : Syntax.Statement) : Option PrepareError :=
   match statements (migration tables [statement]) with

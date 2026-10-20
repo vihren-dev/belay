@@ -23,6 +23,13 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D6.
     agree with kernel proofs), `strict_evidence.py` (corpus 34), `strict_mutants.py`
     (three mutants, all killed); the CHECK mutants follow the new step of `upsertRow`.
 
+- 2026-10-20: review of "STRICT tables": a must finding, the implicit NOT NULL of the
+  primary-key columns of a `STRICT` table, and three file-length findings. Fixed in
+  "refactor: NOT NULL keys of STRICT tables": `Resolution/TableOptions.lean`
+  (`CatalogTable.withStrictKeys`, with `asWithoutRowid`, `definedColumn` and
+  `strictTypeError` moved from `Definitions.lean`), three more authored cases (28),
+  `tests/syntax_table_options_test.py`.
+
 ## Remaining
 
 - Review, the suites, CI time, the verdict, corpus 34 with claims and lock, pull requests.

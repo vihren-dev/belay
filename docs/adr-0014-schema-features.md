@@ -286,6 +286,9 @@ Each slice works in this way:
     A rowid alias keeps its own `datatype mismatch`.
   - A column's affinity and its DEFAULT follow its strict type: an `ANY` default `'7'`
     stays text.
+  - Each primary-key column other than the rowid alias is NOT NULL, with ABORT unless it
+    declares its own NOT NULL (`sqlite3EndTable`, R-40010-16873), and `PRAGMA table_info`
+    reports it so.
   - ADD COLUMN to a `STRICT` table runs SQLite's SELECT over `pragma_quick_check`, which is
     an output column of the statement. A type that the table does not admit, and a
     default that does not fit the type (`type mismatch on DEFAULT` when the table has
