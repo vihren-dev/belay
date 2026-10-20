@@ -1,6 +1,6 @@
 # The exact numeric functions (ADR 0015, slice 2)
 
-Created 2026-10-20. Status: open.
+Created 2026-10-20. Status: DONE.
 Status file: [status](20261020-numeric-functions.status.md).
 Specification: [ADR 0015](../docs/adr-0015-functions.md), D4.
 

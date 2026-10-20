@@ -1,6 +1,6 @@
 # Status: the exact numeric functions (ADR 0015, slice 2)
 
-Created 2026-10-20. Status: open.
+Created 2026-10-20. Status: DONE.
 Task file: [task](20261020-numeric-functions.task.md).
 Specification: [ADR 0015](../docs/adr-0015-functions.md), D4.
 
@@ -30,6 +30,9 @@ Specification: [ADR 0015](../docs/adr-0015-functions.md), D4.
   `tests/conformance_function_mutants_test.py`, listed in the mutants suite of
   `tests/nix_suites.json`. Tests: `test_test_ownership`, the function mutants, `mutant_guards`.
 
-## Remaining
+- 2026-10-20: `just test-full` passes on "refactor: review of the numeric functions". The
+  slice verdict: v5 1,768 (+20), corpus 37 with 9 cases that agree, no case lost.
 
-- Review, the slice verdict, corpus 37, `just test-full`.
+## Status
+
+DONE.
