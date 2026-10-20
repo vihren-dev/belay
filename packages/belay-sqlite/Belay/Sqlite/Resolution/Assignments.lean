@@ -29,7 +29,7 @@ execution evaluates on the old row, at the statement's clock value, and stores. 
 def assignedExpression (scope : Scope) (position : Nat) (expression : Syntax.Expr)
     (resolved : Resolved.Expr) : Resolved.Expr :=
   if mentionsColumn scope expression || resolved.readsClock then resolved
-  else .literal (storeValue (columnAffinity scope.columns position) (resolved.eval 0 []))
+  else .literal (storeValue (columnAffinity scope.columns position) (resolved.eval (.plain 0) []))
 
 /-- Resolve one {lit}`SET` assignment at item {lit}`item`, in SQLite's order
 ({lit}`sqlite3Update`): the expression first, then the column name. The column name
@@ -49,7 +49,7 @@ def resolveAssignment (dqs : Bool) (scope : Scope) (keyColumns : List Nat) (gene
     if (scope.columns[position]?.bind (·.generated)).isSome then .error (generated name)
     else if mentionsColumn scope value && keyColumns.contains position then
       .error (.restriction [item, 1] .rowDependentKey)
-    else if !mentionsColumn scope value && !operand.1.readsClock && operand.1.mayFailOn 0 [] then
+    else if !mentionsColumn scope value && !operand.1.readsClock && operand.1.mayFailOn (.plain 0) [] then
       .error (.restriction [item, 1] .constantFunctionError)
     else .ok (position, assignedExpression scope position value operand.1)
 

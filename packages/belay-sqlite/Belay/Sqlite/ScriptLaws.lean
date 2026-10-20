@@ -150,7 +150,7 @@ theorem effect_addColumn_ok (clock : Int) {database : Database} {target : Nat} {
   simp [literalStep, runStatement, step, present, constant, read, allowed, checked]
 
 /-- For every clock value, database, position, table, rows and {lit}`RETURNING` columns:
-when the table is at the position, no row at the clock value ({name}`Resolved.rowsAt`) has
+when the table is at the position, no row at the clock value ({name}`Resolved.rowsAt` in the plain context of the clock value) has
 a rowid alias that SQLite refuses ({name}`LiteralData.aliasMismatch`), and the table with
 the rows inserted ({name}`LiteralData.inserted`) meets {name}`LiteralData.constraints` (its
 NOT NULL cells and its unique keys) and has distinct rowids, INSERT succeeds with the
@@ -160,12 +160,12 @@ premises select the successful branches of {name}`insertOutcome` and
 theorem effect_write_ok (clock : Int) {database : Database} {target : Nat} {table : Table}
     {rows : List (List Resolved.Cell)} {returning : List (Resolved.Expr × String)}
     (present : database.table target = some table)
-    (aligned : (Resolved.rowsAt clock table.shape.columns rows).findIdx? (LiteralData.aliasMismatch table.shape) = none)
+    (aligned : (Resolved.rowsAt (Resolved.EvalContext.plain clock) table.shape.columns rows).findIdx? (LiteralData.aliasMismatch table.shape) = none)
     (checked : (LiteralData.constraints (database.keys target table)
-        (LiteralData.inserted table (Resolved.rowsAt clock table.shape.columns rows)) &&
-      LiteralData.rowidsDistinct (LiteralData.inserted table (Resolved.rowsAt clock table.shape.columns rows))) = true) :
+        (LiteralData.inserted table (Resolved.rowsAt (Resolved.EvalContext.plain clock) table.shape.columns rows)) &&
+      LiteralData.rowidsDistinct (LiteralData.inserted table (Resolved.rowsAt (Resolved.EvalContext.plain clock) table.shape.columns rows))) = true) :
     literalStep clock (.insert target rows returning) database =
-      .ok (database.setRows target (LiteralData.inserted table (Resolved.rowsAt clock table.shape.columns rows)).rows) := by
+      .ok (database.setRows target (LiteralData.inserted table (Resolved.rowsAt (Resolved.EvalContext.plain clock) table.shape.columns rows)).rows) := by
   simp only [literalStep, runStatement, present, insertOutcome, aligned, checkedWrite, checked, ite_true]
 
 end Belay.Sqlite

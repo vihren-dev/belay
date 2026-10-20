@@ -60,11 +60,11 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDe
         obtain ⟨plain, noEach⟩ : (query.expressions.all fun x => !x.any Resolved.Expr.isFallibleCall) = true ∧
             query.sources.all (!·.source.isEach) = true := first.2 query rfl
         simp only [statementReady, runStatement, Resolved.Query.runOn]
-        cases found : query.source (state.clock position) state.database with
+        cases found : query.source (Resolved.EvalContext.plain (state.clock position)) state.database with
         | none => rfl
         | some source =>
           have clean := Resolved.source_fault_of_plain _ state.database query.sources _ source noEach rfl found
-          by_cases must : query.mustFail (state.clock position) source.rows = true <;>
+          by_cases must : query.mustFail (Resolved.EvalContext.plain (state.clock position)) source.rows = true <;>
             simp [Resolved.Query.run, Resolved.Query.mayFail_of_plain _ query _ plain, clean, must]
       | createTable | createIndex | addColumn | drop | begin | commit | rollback | insert | upsert | update | delete
       | prepareError => simp_all [statementReady, runStatement]

@@ -94,10 +94,12 @@ def Outcome.persistedDatabase : Outcome → Database
   | outcome => outcome.database
 
 /-- A query over a database at a clock value: its source rows ({name}`Resolved.Query.source`)
-and its run over them ({name}`Resolved.Query.run`); none when a table is missing. -/
+and its run over them ({name}`Resolved.Query.run`), both in the plain context of the clock
+value ({name}`Resolved.EvalContext.plain`); none when a table is missing. -/
 def Resolved.Query.runOn (query : Resolved.Query) (clock : Int) (database : Database) :
     Option (Resolved.SourceRows × Resolved.QueryRun) :=
-  (query.source clock database).map fun source => (source, query.run clock source.rows)
+  let context := Resolved.EvalContext.plain clock
+  (query.source context database).map fun source => (source, query.run context source.rows)
 
 /-- The effect of a query with its run ({name}`Resolved.Query.runOn`): it changes nothing; it
 fails with {lean}`ExecutionError.integerOverflow` when it overflows, else with

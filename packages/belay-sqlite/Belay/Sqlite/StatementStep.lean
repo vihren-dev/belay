@@ -56,7 +56,8 @@ structure StatementRun where
 effect and its support check (ADR 0013, D8). The effect: INSERT and UPDATE with ABORT
 constraints over the table's keys ({name}`Database.keys`), INSERT with {lit}`ON CONFLICT`
 clauses or algorithms row by row ({name}`LiteralData.upsertSteps`), each over the rows at
-the clock value ({name}`Resolved.rowsAt`), DELETE, which removes rows and cannot fail a
+the clock value ({name}`Resolved.rowsAt`), in the plain context of the clock value
+({name}`Resolved.EvalContext.plain`), DELETE, which removes rows and cannot fail a
 constraint, a query ({name}`queryEffect`), and {name}`step` for every other statement. A
 position without a table fails as {lean}`ExecutionError.unmodeled`. An error carries the
 database that the statement reached: the rows before the failing row of an INSERT with
@@ -67,12 +68,13 @@ instead. ADD COLUMN must have modeled default readback, a model restriction, bec
 accepts such statements. CREATE TABLE passes, as its table has no rows to violate a
 constraint (ADR 0014, slice 4), and so do CREATE INDEX and the other statement forms. -/
 def runStatement (clock : Int) (statement : Resolved.Statement) (database : Database) : StatementRun :=
+  let context := Resolved.EvalContext.plain clock
   match statement with
   | .insert target rows returning => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
       let keys := database.keys target table
-      let values := Resolved.rowsAt clock table.shape.columns rows
+      let values := Resolved.rowsAt context table.shape.columns rows
       let result := LiteralData.inserted table values
       { effect := insertOutcome database target keys table values result,
         ready := LiteralData.insertReady keys table values result &&
@@ -82,8 +84,8 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
     | some table =>
       let keys := database.keys target table
       let policy := database.catalog.writePolicy target table.shape algorithm
-      let values := Resolved.rowsAt clock table.shape.columns rows
-      let steps := LiteralData.upsertSteps clock keys policy clauses table values
+      let values := Resolved.rowsAt context table.shape.columns rows
+      let steps := LiteralData.upsertSteps context keys policy clauses table values
       { effect := match LiteralData.upsertSummary table steps with
           | .ok (result, _) => .ok (database.setRows target result.rows)
           | .error (reason, reached, _) => .error (reason, database.setRows target reached.rows),
@@ -92,16 +94,16 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
       let keys := database.keys target table
-      let result := LiteralData.updated clock table assignments filter
-      { effect := if LiteralData.updateMismatch clock table assignments filter then .error (.datatypeMismatch, database)
+      let result := LiteralData.updated context table assignments filter
+      { effect := if LiteralData.updateMismatch context table assignments filter then .error (.datatypeMismatch, database)
           else checkedWrite database target keys result,
         ready := LiteralData.updateReady keys table assignments result &&
-          updateJsonReady clock table assignments filter returning }
+          updateJsonReady context table assignments filter returning }
   | .delete target filter returning => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
-      { effect := .ok (database.setRows target (LiteralData.deleted clock table filter).rows),
-        ready := deleteJsonReady clock table filter returning }
+      { effect := .ok (database.setRows target (LiteralData.deleted context table filter).rows),
+        ready := deleteJsonReady context table filter returning }
   | .query query =>
     let ran := query.runOn clock database
     { effect := queryEffect database ran,

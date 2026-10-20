@@ -34,20 +34,20 @@ def fromless : Query where
 def empty : Database :=
   .ofTables [((name! "t"), { shape := { columns := [{ name := (name! "a"), declaredType := none }] }, rows := [] })]
 
-#guard selected.eval 0 [] == .integer 1 && malformed.eval 0 [] == .null
+#guard selected.eval (.plain 0) [] == .integer 1 && malformed.eval (.plain 0) [] == .null
 -- SQLite certainly reports the failure of a result column without FROM, and the step
 -- fails with it.
-#guard fromless.mustFail 0 [[]] && statementReady 0 (.query fromless) empty
+#guard fromless.mustFail (.plain 0) [[]] && statementReady 0 (.query fromless) empty
 #guard match step 0 (.query fromless) empty with
   | .error (reason, _) => reason == .functionError
   | .ok _ => false
 -- Under LIMIT 0 SQLite evaluates nothing; OFFSET 1 skips the result column; WHERE 0
 -- leaves no row. The model does not describe the first two, and the third succeeds.
-#guard !{ fromless with limit := some 0 }.mustFail 0 [[]] && !statementReady 0 (.query { fromless with limit := some 0 }) empty
-#guard !{ fromless with offset := 1 }.mustFail 0 [[]] && !statementReady 0 (.query { fromless with offset := 1 }) empty
-#guard !{ fromless with filter := some (.literal (.integer 0)) }.mayFail 0 [[]]
+#guard !{ fromless with limit := some 0 }.mustFail (.plain 0) [[]] && !statementReady 0 (.query { fromless with limit := some 0 }) empty
+#guard !{ fromless with offset := 1 }.mustFail (.plain 0) [[]] && !statementReady 0 (.query { fromless with offset := 1 }) empty
+#guard !{ fromless with filter := some (.literal (.integer 0)) }.mayFail (.plain 0) [[]]
 -- An aggregate operand fails also under OFFSET.
-#guard { fromless with aggregate := true, columns := [.aggregate (.count malformed)], offset := 1 }.mustFail 0 [[]]
+#guard { fromless with aggregate := true, columns := [.aggregate (.count malformed)], offset := 1 }.mustFail (.plain 0) [[]]
 -- SQLite may skip an operand of AND, so a failure under AND is not certain.
 #guard !statementReady 0 (.query { fromless with columns := [.scalar (.and (.literal (.integer 0)) malformed)] }) empty
 -- A constant WHERE term is evaluated once before the rows, also over an empty table;
@@ -63,15 +63,15 @@ def empty : Database :=
 -- certain.
 #guard
   let blob : Query := { fromless with aggregate := true, columns := [.aggregate (.jsonGroupArray (.literal (.blob [0xc7, 1, 0x61])))] }
-  blob.mayFail 0 [[]] && !blob.mustFail 0 [[]] && (blob.run 0 [[]]).fault == .may
+  blob.mayFail (.plain 0) [[]] && !blob.mustFail (.plain 0) [[]] && (blob.run (.plain 0) [[]]).fault == .may
 #guard
   let column : Output := .aggregate (.jsonGroupObject (text "a") (.literal (.blob [0xc7, 1, 0x61])))
   let blob : Query := { fromless with aggregate := true, columns := [column] }
-  blob.mayFail 0 [[]] && !blob.mustFail 0 [[]]
-#guard { fromless with aggregate := true, columns := [.aggregate (.jsonGroupArray malformed)] }.mustFail 0 [[]]
-#guard { fromless with aggregate := true, columns := [.aggregate (.jsonGroupObject malformed (text "x"))] }.mustFail 0 [[]]
-#guard !{ fromless with aggregate := true, columns := [.aggregate (.jsonGroupArray selected)] }.mayFail 0 [[]]
+  blob.mayFail (.plain 0) [[]] && !blob.mustFail (.plain 0) [[]]
+#guard { fromless with aggregate := true, columns := [.aggregate (.jsonGroupArray malformed)] }.mustFail (.plain 0) [[]]
+#guard { fromless with aggregate := true, columns := [.aggregate (.jsonGroupObject malformed (text "x"))] }.mustFail (.plain 0) [[]]
+#guard !{ fromless with aggregate := true, columns := [.aggregate (.jsonGroupArray selected)] }.mayFail (.plain 0) [[]]
 -- The model gives a write no JSON error: a DELETE whose WHERE may fail is not ready.
-#guard (empty.table 0).all fun table => !deleteJsonReady 0 table (some malformed) [] && deleteJsonReady 0 table (some selected) []
+#guard (empty.table 0).all fun table => !deleteJsonReady (.plain 0) table (some malformed) [] && deleteJsonReady (.plain 0) table (some selected) []
 
 end Belay.Sqlite.Resolved.JsonFaultExamples
