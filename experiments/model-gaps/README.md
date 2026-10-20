@@ -27,3 +27,17 @@ python3 experiments/model-gaps/measure.py VERDICT/report.json conformance/corpus
 ## Result
 
 See the table in ADR 0018. All groups together make 519 cases of v5 and 163 of v4 clean.
+
+## After ADR 0018
+
+`next_groups.py` measures the candidate groups of the next model ADR, [ADR
+0019](../../docs/adr-0019-guide-sql.md), with every group of ADR 0018 counted as done:
+
+```sh
+python3 experiments/model-gaps/next_groups.py VERDICT/report.json conformance/corpus-v5 conformance/corpus-v4
+```
+
+It corrects three marks of the scan: `IS` and `LIKE` are modeled, and the bitwise operators are
+counted without `%`. Measured on 2026-10-20 over the local verdict after slice 1 of ADR 0018;
+the result is the table in ADR 0019.
+
