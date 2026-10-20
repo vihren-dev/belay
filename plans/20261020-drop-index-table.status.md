@@ -1,6 +1,6 @@
 # Status: `DROP INDEX` and `DROP TABLE` (ADR 0014, slice 7)
 
-Created 2026-10-20. Status: open.
+Created 2026-10-20. Status: DONE (pull requests #191 and #192).
 Task file: [task](20261020-drop-index-table.task.md).
 Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D7.
 
@@ -31,6 +31,14 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D7.
   `constraintIndexName`, sketches, and `Resolution/DropSpec.lean` with the DROP resolution
   laws.
 
+- 2026-10-20: the first suite run failed: the Nix suites copy only the frontend modules
+  that `tests/conformance_frontend.json` lists. Fixed in "fix: declare the DROP frontend
+  module for the Nix suites" (review clean). Then `just test-full`, `just test-nix` and `just
+  test-scheduled` pass. CI time with forced rebuilds: harness 22 s, model 414 s, frozen
+  142 s, mutants 648 s. Verdict: 33 upstream cases newly agree (v3 +2, v4 +10, v5 +21), none
+  leave AGREE, and corpus 35 has 21 AGREE. Pull requests #191 (A) and #192 (B). This is the
+  last slice of ADR 0014.
+
 ## Remaining
 
-- Review, the suites, CI time, the verdict, corpus 35 with claims and lock, pull requests.
+- None. DONE.

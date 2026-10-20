@@ -1,6 +1,6 @@
 # `DROP INDEX` and `DROP TABLE` (ADR 0014, slice 7)
 
-Created 2026-10-20. Status: open.
+Created 2026-10-20. Status: DONE (pull requests #191 and #192).
 Status file: [status](20261020-drop-index-table.status.md).
 Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D7.
 
