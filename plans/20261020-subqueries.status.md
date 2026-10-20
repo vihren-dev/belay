@@ -30,6 +30,17 @@ Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D1.
   packages, `test_model_package` (the core closure has one more module),
   `test_lean_categories`, `conformance_query_coverage`, `conformance_authored`.
 
+- 2026-10-20: "the rows that SQLite's plan chooses". A scalar subquery reads the first row
+  and `IN` the rows of a window, which SQLite's plan can change when rows tie (natively: an
+  index on `p(a)` makes `(SELECT b FROM p WHERE a > 0)` give the row of the smallest `a`, not
+  the first rowid). `SubqueryRun.firstCertain` and `rowsCertain` (`Query.windowCertain`)
+  say whether every permitted order gives the same first values; otherwise the form is
+  `Fault.may`, so the statement is not described. `EXISTS` loses its negation flag (`NOT
+  EXISTS` is `NOT` of it, as SQLite parses it). `Query.outer` keeps the width of the outer
+  row, so a subquery evaluated over the row without cells keeps its cell positions. The
+  `mayFail` scan now also covers joined queries. Tests: `SubqueryExamples.lean` (faults of
+  scalar subqueries with and without a certain first row, `IN` with `LIMIT`, `EXISTS`).
+
 ## Remaining
 
 - All outcomes and tests.

@@ -36,7 +36,7 @@ def keysWhere (filter : Expr) : Query where
 
 /-- {lit}`SELECT result FROM u WHERE filter`, a subquery over {lit}`u`. -/
 def fromOther (result : Expr) (filter : Option Expr) : Query :=
-  { keysWhere (.literal .null) with sources := [.first 1], filter, columns := [.scalar result], names := ["r"] }
+  { keysWhere (.literal .null) with sources := [.first 1], filter, columns := [.scalar result], names := ["r"], outer := 2 }
 
 /-- The result rows of a query with its subqueries over the example database, at clock 0. -/
 def rowsOf (query : Query) (subqueries : List Query) : Option (List (List Value)) :=
@@ -46,10 +46,10 @@ def rowsOf (query : Query) (subqueries : List Query) : Option (List (List Value)
 def matchesKey : Expr := .compare .eq none (.column 2) (.column 0)
 
 -- EXISTS (SELECT 1 FROM u WHERE u.x = t.k): only the rows whose key is in u.
-example : rowsOf (keysWhere (.exists 0 false)) [fromOther (.literal (.integer 1)) (some matchesKey)] =
+example : rowsOf (keysWhere (.exists 0)) [fromOther (.literal (.integer 1)) (some matchesKey)] =
     some [[.integer 1], [.integer 1]] := by decide +kernel
 -- NOT EXISTS keeps the other rows, also the row whose key is NULL.
-#guard rowsOf (keysWhere (.exists 0 true)) [fromOther (.literal (.integer 1)) (some matchesKey)] ==
+#guard rowsOf (keysWhere (.not (.exists 0))) [fromOther (.literal (.integer 1)) (some matchesKey)] ==
   some [[.null], [.integer 2]]
 -- k IN (SELECT x FROM u): 1 matches; 2 does not, and u has a NULL, so 2 IN (...) is NULL.
 #guard rowsOf (keysWhere (.inQuery (.column 0) 0 none .binary false)) [fromOther (.column 2) none] ==
@@ -69,9 +69,32 @@ example : rowsOf (keysWhere (.inQuery (.column 0) 0 none .binary true)) [fromOth
   some [[.integer 3], [.integer 3], [.null], [.integer 3]]
 -- Depth two: EXISTS (SELECT 1 FROM u WHERE u.x = 3 AND EXISTS (SELECT 1 FROM u AS w WHERE w.x = t.k)).
 -- The inner subquery's row is t's cells, then u's, then w's: w.x is position 3 and t.k position 0.
-example : rowsOf (keysWhere (.exists 0 false))
-    [fromOther (.literal (.integer 1)) (some (.and (.compare .eq none (.column 2) (.literal (.integer 3))) (.exists 1 false))),
-     { fromOther (.literal (.integer 1)) (some (.compare .eq none (.column 3) (.column 0))) with sources := [.first 1] }] =
+example : rowsOf (keysWhere (.exists 0))
+    [fromOther (.literal (.integer 1)) (some (.and (.compare .eq none (.column 2) (.literal (.integer 3))) (.exists 1))),
+     { fromOther (.literal (.integer 1)) (some (.compare .eq none (.column 3) (.column 0))) with outer := 3 }] =
     some [[.integer 1], [.integer 1]] := by decide +kernel
+
+/-- The fault of a query's run with its subqueries over the example database, at clock 0. -/
+def faultOf (query : Query) (subqueries : List Query) : Option Fault :=
+  (query.runOn 0 database subqueries).map (·.2.fault)
+
+/-- {lit}`SELECT (q) FROM t` for a scalar subquery {lit}`q`. -/
+def scalarOf : Query := { keysWhere (.literal (.integer 1)) with filter := none, columns := [.scalar (.subquery 0)] }
+
+-- SQLite's plan chooses the first row of (SELECT x FROM u), so the model does not describe its value.
+#guard faultOf scalarOf [fromOther (.column 2) none] == some .may
+-- One row of an aggregate, and the first row of an order without ties, are certain.
+#guard faultOf scalarOf [{ fromOther (.column 2) none with aggregate := true, columns := [.aggregate (.max (.column 2) .binary)] }] ==
+  some .none
+/-- {lit}`(SELECT x FROM u ORDER BY x DESC LIMIT 1)`: the largest value, without a tie. -/
+def largest : Query :=
+  { fromOther (.column 2) none with orderBy := [{ key := .expression (.column 2), descending := true }], limit := some 1 }
+
+#guard faultOf scalarOf [largest] == some .none && rowsOf scalarOf [largest] == some (List.replicate 4 [.integer 3])
+-- IN reads the rows of a window that SQLite's plan chooses: k IN (SELECT x FROM u LIMIT 2).
+#guard faultOf (keysWhere (.inQuery (.column 0) 0 none .binary false)) [{ fromOther (.column 2) none with limit := some 2 }] ==
+  some .may
+-- EXISTS reads only whether a row exists, which no order changes.
+#guard faultOf (keysWhere (.exists 0)) [{ fromOther (.column 2) none with limit := some 2 }] == some .none
 
 end Belay.Sqlite.Resolved.SubqueryExamples

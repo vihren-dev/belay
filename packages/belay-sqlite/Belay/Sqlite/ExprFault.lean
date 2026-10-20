@@ -18,7 +18,8 @@ inductive Fault where
   /-- No JSON call fails. -/
   | none
   /-- A JSON call fails, but SQLite may skip it, or its error is one that the model does
-  not describe. -/
+  not describe; also a value that the model does not describe, such as the first row of a
+  scalar subquery that SQLite's plan chooses. -/
   | may
   /-- A JSON call fails where SQLite certainly evaluates it, with an error that the
   model describes. -/
@@ -108,12 +109,19 @@ def comparisonOperands : Option Affinity → Value → Value → Value × Value
   | some .blob, left, right | none, left, right => (left, right)
 
 /-- The rows that a subquery gives for one outer row, with the fault of its evaluation
-(ADR 0018, D1). -/
+(ADR 0018, D1), and whether SQLite's plan can change the rows that a scalar subquery or
+{lit}`IN` reads. Use {lean}`true` for both flags when the rows are certain. -/
 structure SubqueryRun where
   /-- The result rows, in the order of the subquery. -/
   rows : List (List Value)
   /-- The fault of the subquery's expressions. -/
   fault : Fault
+  /-- Whether the first value of the first row is the same in every order in which SQLite
+  may give the rows; a scalar subquery reads it. -/
+  firstCertain : Bool := true
+  /-- Whether the first values of the rows are the same in every order in which SQLite may
+  give the rows, as a multiset; {lit}`IN` reads them. -/
+  rowsCertain : Bool := true
 
 /-- What the evaluation of an expression reads besides its row (ADR 0018, D1): the
 statement's clock value in Julian-day milliseconds, and the results of the statement's
@@ -130,14 +138,16 @@ names gives no rows and no fault, which resolution never needs. -/
 def EvalContext.plain (clock : Int) : EvalContext :=
   { clock, subqueries := fun _ _ => { rows := [], fault := .none } }
 
-/-- Whether no subquery of the context has a fault: for every index and outer row, the
-fault of the subquery's run is {lean}`Fault.none`. -/
+/-- Whether no subquery of the context has a fault or uncertain rows: for every index and
+outer row, the fault of the subquery's run is {lean}`Fault.none`, and its first row and its
+rows are certain ({name}`SubqueryRun.firstCertain`, {name}`SubqueryRun.rowsCertain`). -/
 def EvalContext.Quiet (context : EvalContext) : Prop :=
-  ∀ index row, (context.subqueries index row).fault = .none
+  ∀ index row, (context.subqueries index row).fault = .none ∧ (context.subqueries index row).firstCertain = true ∧
+    (context.subqueries index row).rowsCertain = true
 
 /-- For every clock value, the plain context of the clock value is quiet
 ({name}`EvalContext.Quiet`). Proof sketch: the plain context gives the fault
-{lean}`Fault.none` for every index and outer row by definition. -/
-theorem EvalContext.plain_quiet (clock : Int) : (EvalContext.plain clock).Quiet := fun _ _ => rfl
+{lean}`Fault.none` and certain rows for every index and outer row by definition. -/
+theorem EvalContext.plain_quiet (clock : Int) : (EvalContext.plain clock).Quiet := fun _ _ => ⟨rfl, rfl, rfl⟩
 
 end Belay.Sqlite.Resolved

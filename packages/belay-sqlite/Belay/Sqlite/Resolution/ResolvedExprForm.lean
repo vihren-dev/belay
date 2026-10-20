@@ -52,9 +52,9 @@ inductive Expr where
   | date (function : DateFunction) (arguments : Arguments)
   /-- A call of a scalar function of ADR 0015 with its arguments in written order. -/
   | scalar (function : ScalarFunction) (arguments : Arguments)
-  /-- {lit}`EXISTS (q)`, or {lit}`NOT EXISTS (q)` when {lit}`negated` (ADR 0018, D1): whether
-  subquery {lit}`index` of the statement gives a row for the expression's row. -/
-  | exists (index : Nat) (negated : Bool)
+  /-- {lit}`EXISTS (q)` (ADR 0018, D1): whether subquery {lit}`index` of the statement gives a
+  row for the expression's row. {lit}`NOT EXISTS (q)` is {lit}`NOT` of it, as SQLite parses it. -/
+  | exists (index : Nat)
   /-- {lit}`operand IN (q)`, or {lit}`NOT IN` when {lit}`negated`: whether the value of the
   operand is among the values of subquery {lit}`index`, compared under the affinity and the
   collation that resolution chose, as {lit}`=` compares them. -/
