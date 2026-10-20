@@ -25,6 +25,21 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D5.
   `authored_generated` (23 cases after the first review, all AGREE with kernel proofs locally, corpus 33) and
   `generated_mutants` (three).
 
+- 2026-10-19/20: reviews and checks. Two review rounds with new "must" findings (a
+  qualified name and a second `AS`; then the frontend's case folding, a quoted kind, and
+  SQLite's textual rule for a trailing `GENERATED ALWAYS` on bytes before dequoting); the
+  owner chose to continue after the second round. Lean could not build the stripped type
+  String in a way the kernel reduces, so the frontend applies that lexical rule, with an
+  explicit ASCII comparison, before it dequotes. `columnHidden` replaces a `_root_`
+  declaration that the model mutation tests copy into several namespaces. The disk guard
+  needed the owner-approved cleanup of old `/tmp/nix-shell.*` directories. `just
+  test-full`, `just test-nix` and `just test-scheduled` pass. Verdict: 66 upstream cases
+  newly agree (v4 +33, v5 +33; v5: 1,309 → 1,342), none leaves AGREE; corpus 33 (23 cases)
+  agrees in full with kernel proofs.
+
+- 2026-10-20: CI time (local, forced rebuilds), slice 4 → slice 5: harness 22 → 22 s,
+  model 385 → 395 s, frozen 141 → 143 s, mutants 551 → 583 s (three new mutants).
+
 ## Remaining
 
-- Checks, reviews, verdict, CI time, PR B, pull requests.
+- PR B (corpus 33 and claims), pull requests.
