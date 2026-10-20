@@ -252,6 +252,12 @@ Each slice works as in ADR 0014:
   separator of `group_concat` is that of each row. No out-of-scope case of corpus v5 gained:
   each also uses another feature.
 
+- Slice 6 (2026-10-20): `printf` and `format` port `sqlite3_str_vappendf` with every
+  conversion, flag, width and precision; 951 generated formats agree with native SQLite. A
+  width or precision above 100000 is a `may` fault, so that a proof never builds a long text.
+- Result (2026-10-20): corpus v5 gains 680 cases (1,365 to 2,045 that agree) and v4 gains 71,
+  with no case lost.
+
 ## Consequences
 
 - **Fewer out-of-scope cases, more prepare errors.** A misspelled or unknown function
