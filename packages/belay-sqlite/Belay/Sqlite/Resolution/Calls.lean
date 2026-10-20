@@ -79,7 +79,7 @@ def Resolved.Expr.passesValue : Resolved.Expr → Bool
   | .scalar .unhex _ | .scalar .quote _ | .scalar .unistrQuote _ | .scalar .char _ | .scalar .unicode _
   | .scalar .unistr _ | .scalar .concat _ | .scalar .concatWs _ | .scalar .round _ | .scalar .floor _
   | .scalar .ceil _ | .scalar .trunc _ | .scalar .sqrt _ | .scalar .pi _ | .scalar .degrees _
-  | .scalar .radians _ | .scalar .mod _ | .column _ | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic ..
+  | .scalar .radians _ | .scalar .mod _ | .scalar .printf _ | .column _ | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic ..
   | .cast .. | .json .. | .now _ | .date .. => false
 
 /-- Whether the JSON subtype of an argument is not described: the argument passes on a value

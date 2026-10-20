@@ -5,6 +5,7 @@ import Belay.Sqlite.Resolution.ScalarFunction
 import Belay.Sqlite.Functions.Pattern
 import Belay.Sqlite.Functions.Quote
 import Belay.Sqlite.Functions.Numeric
+import Belay.Sqlite.Functions.Printf
 
 set_option doc.verso true
 
@@ -16,16 +17,6 @@ the catalog does not accept gives NULL. -/
 
 namespace Belay.Sqlite.Resolved
 
-/-- Why a scalar function gives no value. -/
-inductive FunctionFailure where
-  /-- SQLite fails the statement while it runs, for example {lit}`integer overflow` of
-  {lit}`abs`. -/
-  | error
-  /-- The model does not describe the value, for example a {lit}`zeroblob` larger than
-  {lit}`zeroblobLimit`. -/
-  | unmodeled
-  deriving Repr, DecidableEq
-
 /-- The number of UTF-8 characters of text before its first NUL byte, as SQLite counts them
 by lead bytes: each byte that is not a continuation byte ({lit}`0x80` to {lit}`0xBF`) starts a
 character. For example, {lean}`utf8Length "hé".toUTF8.toList = 2`. -/
@@ -35,12 +26,6 @@ def utf8Length (bytes : List UInt8) : Nat :=
 /-- The largest {lit}`zeroblob` that the model computes: 4096 bytes. A larger one is
 {name}`FunctionFailure.unmodeled`, so that a proof never builds a long list. -/
 def zeroblobLimit : Int := 4096
-
-/-- The text of a value as a function sees it ({lit}`sqlite3_value_text`): none for NULL, else
-the bytes of {lit}`Value.textBytes` before the first NUL, as a C string. -/
-def cText? : Value → Option (List UInt8)
-  | .null => none
-  | value@(.integer _) | value@(.real _) | value@(.text _) | value@(.blob _) => some (bytesBeforeNul value.textBytes)
 
 /-- The longest {lit}`LIKE` or {lit}`GLOB` pattern in bytes ({lit}`SQLITE_LIMIT_LIKE_PATTERN_LENGTH`,
 50000 by default); a longer one fails with {lit}`LIKE or GLOB pattern too complex`. -/
@@ -167,6 +152,7 @@ def ScalarFunction.apply : ScalarFunction → List Value → Except FunctionFail
   | .degrees, [value] => .ok (doubleValue (· * ((180.0 : Float) / piDouble)) value)
   | .radians, [value] => .ok (doubleValue (· * (piDouble / (180.0 : Float))) value)
   | .mod, [x, y] => .ok (modValue x y)
+  | .printf, values => printfValue values
   | .round, _ | .floor, _ | .ceil, _ | .trunc, _ | .sqrt, _ | .pi, _ | .degrees, _ | .radians, _ | .mod, _
   | .typeof, _ | .length, _ | .octetLength, _ | .abs, _ | .sign, _ | .zeroblob, _ | .iif, _ | .nullif _, _
   | .min _, _ | .max _, _ | .like, _ | .glob, _ | .lower, _ | .upper, _ | .substr, _ | .instr, _ | .replace, _

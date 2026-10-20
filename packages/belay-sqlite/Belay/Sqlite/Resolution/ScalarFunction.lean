@@ -101,14 +101,18 @@ inductive ScalarFunction where
   | radians
   /-- {lit}`mod(x, y)`: the remainder of {lit}`fmod`. -/
   | mod
+  /-- {lit}`printf(format, ...)` and {lit}`format(format, ...)`: the fields of SQLite's
+  {lit}`sqlite3_str_vappendf` over the arguments. -/
+  | printf
   deriving Repr, DecidableEq
 
 /-- Whether the function itself can fail or give a value that the model does not describe:
 {lit}`abs` of the smallest integer, a long {lit}`zeroblob`, and {lit}`like` and {lit}`glob` with
 a long pattern or an {lit}`ESCAPE` that is not one character, and {lit}`unistr` with an invalid
-escape. The other functions fail only through their arguments. -/
+escape, and {lit}`printf` with a width or precision above the model's limit. The other
+functions fail only through their arguments. -/
 def ScalarFunction.canFail : ScalarFunction → Bool
-  | .abs | .zeroblob | .like | .glob | .unistr => true
+  | .abs | .zeroblob | .like | .glob | .unistr | .printf => true
   | .typeof | .length | .octetLength | .sign | .iif | .nullif _ | .min _ | .max _ | .lower | .upper | .substr
   | .instr | .replace | .trim _ | .hex | .unhex | .quote | .unistrQuote | .char | .unicode | .concat
   | .concatWs | .round | .floor | .ceil | .trunc | .sqrt | .pi | .degrees | .radians | .mod => false

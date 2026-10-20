@@ -91,6 +91,7 @@ def scalarCall (scope : Scope) (name : String) (written : List Syntax.Expr) (arg
   | "degrees" => scalar .degrees
   | "radians" => scalar .radians
   | "mod" => scalar .mod
+  | "printf" | "format" => scalar .printf
   | _ => match jsonFunctionNamed name, dateFunctionNamed name with
     | some function, _ => jsonCall name function arguments
     | none, some function => dateCall function arguments

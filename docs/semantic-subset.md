@@ -101,7 +101,10 @@ such as a BLOB with a header longer than needed, is outside the supported subset
 slice 5, adds the aggregates `group_concat(x [, separator])`, `string_agg(x, separator)` and
 `total(x)` of a whole result column: `group_concat` joins the text of the values that are not
 NULL in the order of the group's rows, each after the first preceded by the separator of its own
-row, and `total` is the REAL sum of `SUM`'s summation, `0.0` for an empty group. A
+row, and `total` is the REAL sum of `SUM`'s summation, `0.0` for an empty group. ADR 0015,
+slice 6, adds `printf` and `format` with every conversion, flag, width and precision of SQLite's
+`sqlite3_str_vappendf` for SQL functions; a width or precision above 100000 is outside the
+supported subset. A
 `FROM` may end with `json_each(json [, path])` sources, joined by a comma or an inner
 `JOIN` with an optional `ON` condition, whose arguments read the sources before them
 (slice 6d). A comparison applies SQLite's comparison affinity (ADR 0013, D4): with an
