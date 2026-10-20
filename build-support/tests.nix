@@ -82,7 +82,7 @@ let
     (builtins.attrValues (builtins.fromJSON (builtins.readFile claims)).corpora);
   # Mutants rebuild changed copies of the two Lean packages, so their suites read the
   # complete sources, without local build outputs in `.lake`.
-  mutantInputs = modelInputs ++ map (package: fs.difference (root + "/packages/${package}")
+  mutantInputs = modelInputs ++ [ (root + /tests/mutant_sets.py) ] ++ map (package: fs.difference (root + "/packages/${package}")
     (fs.maybeMissing (root + "/packages/${package}/.lake"))) [ "belay-sqlite" "verifier-conformance" ];
   # Inputs shared by the three suites that the old single model suite contained.
   modelInputs = frontend ++ [
@@ -296,6 +296,13 @@ in {
     tools = modelTools;
   };
   mutants = suite "mutants" {
+    inputs = mutantInputs;
+    runtime = conformance;
+    tools = modelTools;
+  };
+  # The mutants of writes, joins and table forms; a scheduled suite apart from "mutants", so that
+  # each stays within the suite limit on a hosted runner.
+  tableMutants = suite "tableMutants" {
     inputs = mutantInputs;
     runtime = conformance;
     tools = modelTools;
