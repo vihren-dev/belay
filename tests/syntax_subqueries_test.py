@@ -1,9 +1,9 @@
-"""The frontend lifts the subqueries of a SELECT into the statement's list (`belay.sqlite.syntax_subqueries`).
+"""The frontend lifts the subqueries of a statement into its list (`belay.sqlite.syntax_subqueries`).
 
 These tests check the JSON that Lean's `Syntax.Subquery` decoder reads: the forms that name
 a subquery by its index, the order of the list and the query around each subquery, the
-source range of a subquery's clauses, and the refusal of a subquery outside a SELECT
-statement (ADR 0018, D1).
+source range of a subquery's clauses, the subqueries of writes, and the refusal of a subquery
+where the model does not place it (ADR 0018, D1).
 """
 
 from collections.abc import Callable
@@ -62,15 +62,30 @@ def test_subquery_paths_select_their_text(parse_sql: Callable[..., Tree]) -> Non
     assert sql.encode()[start:end].decode() == "b = a"
 
 
+def test_writes_list_the_subqueries_of_their_expressions(parse_sql: Callable[..., Tree]) -> None:
+    """INSERT VALUES, UPDATE SET and WHERE, and DELETE WHERE list their subqueries in the
+    `subqueries` field, after `returning`, with the write as the query around them."""
+    [insert, update, delete] = [item.value for item in statements(parse_sql(
+        "INSERT INTO t VALUES ((SELECT max(b) FROM u)); UPDATE t SET a = (SELECT 1) WHERE EXISTS (SELECT 2); "
+        "DELETE FROM t WHERE a IN (SELECT b FROM u);"))]
+    assert insert["insert"]["rows"] == [[{"subquery": {"index": 0}}]]
+    assert [item["parent"] for item in insert["insert"]["subqueries"]] == [None]
+    assert update["update"]["assignments"] == [["a", {"subquery": {"index": 0}}]]
+    assert update["update"]["filter"] == {"exists": {"index": 1}}
+    assert len(update["update"]["subqueries"]) == 2
+    assert delete["delete"]["filter"] == {"inQuery": {"operand": column("a"), "index": 0, "negated": False}}
+    assert list(delete["delete"]) == ["table", "filter", "returning", "subqueries"]
+
+
 @pytest.mark.parametrize(("sql", "refused"), [
-    ("UPDATE t SET a = (SELECT 1);", "SELECT 1"),
-    ("DELETE FROM t WHERE EXISTS (SELECT 1);", "SELECT 1"),
+    ("UPDATE t SET a = 1 RETURNING (SELECT 1);", "SELECT 1"),
+    ("INSERT INTO t VALUES (1) ON CONFLICT DO UPDATE SET a = (SELECT 1);", "SELECT 1"),
     ("CREATE TABLE c(a CHECK (a IN (SELECT 1)));", "SELECT 1"),
     ("SELECT a FROM t WHERE a IN u;", "a IN u"),
 ])
-def test_subqueries_outside_a_select_are_refused(parse_sql: Callable[..., Tree], sql: str, refused: str) -> None:
-    """A subquery in another statement, and `x IN table`, have no constructor and are refused at
-    their range."""
+def test_subqueries_outside_their_clauses_are_refused(parse_sql: Callable[..., Tree], sql: str, refused: str) -> None:
+    """A subquery in RETURNING, ON CONFLICT or a schema statement, and `x IN table`, have no
+    constructor and are refused at their range."""
     with pytest.raises(SqlError) as raised:
         statements(parse_sql(sql))
     assert raised.value.status == "UNSUPPORTED"

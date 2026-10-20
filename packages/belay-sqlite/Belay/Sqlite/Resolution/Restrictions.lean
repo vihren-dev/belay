@@ -148,6 +148,10 @@ inductive RestrictionKind where
   modeled: the model reports a certain failure of such a query, which a value of the subquery
   that SQLite's plan chooses could avoid (ADR 0018, slice 1). -/
   | subqueryFallibleCall
+  /-- A subquery of a write that reads the written table is not modeled: SQLite evaluates an
+  uncorrelated subquery once, but a correlated one over the rows that the statement has
+  already changed, in the order in which it writes them (ADR 0018, slice 1). -/
+  | subqueryReadsTarget
   deriving Repr, DecidableEq
 
 end Belay.Sqlite

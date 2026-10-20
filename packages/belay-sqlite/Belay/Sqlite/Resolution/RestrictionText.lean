@@ -55,6 +55,7 @@ def RestrictionKind.id : RestrictionKind → String
   | .subqueryHere => "subquery-here"
   | .outerAggregate => "outer-aggregate"
   | .subqueryFallibleCall => "subquery-fallible-call"
+  | .subqueryReadsTarget => "subquery-reads-target"
 
 /-- The message of a restriction that users read: what the model does not describe,
 and what to write instead. -/
@@ -104,10 +105,11 @@ def RestrictionKind.message : RestrictionKind → String
   | .subqueryHere => "a subquery is modeled only in a SELECT statement, outside ON conditions and json_each arguments; rewrite the statement without it"
   | .outerAggregate => "an aggregate in a subquery whose argument reads a column of an outer query is not modeled, because SQLite computes it in the outer query; aggregate only columns of the subquery's own tables"
   | .subqueryFallibleCall => "a SELECT without FROM that has both a subquery and a function that can fail is not modeled; select from a table or remove the function"
+  | .subqueryReadsTarget => "a subquery of INSERT, UPDATE or DELETE that reads the written table is not modeled, because SQLite evaluates it while the statement changes the table; read the table in a separate statement"
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .dropConstraintIndex, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments, .jsonSubtype, .subqueryHere, .outerAggregate, .subqueryFallibleCall]
+  [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .dropConstraintIndex, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments, .jsonSubtype, .subqueryHere, .outerAggregate, .subqueryFallibleCall, .subqueryReadsTarget]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

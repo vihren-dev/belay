@@ -71,6 +71,7 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "subquery-here": ("CREATE TABLE t(a);", "SELECT * FROM t JOIN t AS b ON EXISTS (SELECT 1);"),
     "outer-aggregate": ("CREATE TABLE t(a);", "SELECT (SELECT count(t.a) FROM t AS b) FROM t;"),
     "subquery-fallible-call": ("CREATE TABLE t(a);", "SELECT json((SELECT a FROM t));"),
+    "subquery-reads-target": ("CREATE TABLE t(a);", "UPDATE t SET a = (SELECT max(a) FROM t);"),
 }
 """For each restriction id: a schema and a migration that the resolver refuses with it."""
 

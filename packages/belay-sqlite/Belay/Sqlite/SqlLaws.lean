@@ -62,7 +62,7 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDe
             (query.expressions.all fun x => !x.any Resolved.Expr.isFallibleCall) = true ∧
             query.sources.all (!·.source.isEach) = true := first.2 query subqueries rfl
         subst none
-        simp only [statementReady, runStatement, Resolved.Query.runOn, Resolved.statementContext_nil, List.all_nil,
+        simp only [statementReady, runStatement, Resolved.Query.runOn, Resolved.statementContext_nil, Resolved.subqueriesPlain, List.all_nil,
           Bool.true_and]
         cases found : query.source (Resolved.EvalContext.plain (state.clock position)) state.database with
         | none => rfl

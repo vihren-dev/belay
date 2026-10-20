@@ -135,9 +135,9 @@ def statementOutput (clock : Int) (statement : Resolved.Statement) (before : Sql
   let constraintFailure := (haltError transition).any ExecutionError.failsWrite
   let overflow := haltError transition == some .integerOverflow
   let functionFailure := haltError transition == some .functionError
-  let context := Resolved.EvalContext.plain clock
   match statement with
-  | .insert target rows returning =>
+  | .insert target rows returning subqueries =>
+    let context := Resolved.statementContext clock before.database subqueries
     let names := returning.map (·.2)
     if successful then do
       let table ← before.database.table target
@@ -145,7 +145,8 @@ def statementOutput (clock : Int) (statement : Resolved.Statement) (before : Sql
       let written := ((LiteralData.inserted table values).rows.drop table.rows.length).map (·.values)
       return ⟨names, returnedRows context returning written, some rows.length⟩
     else if constraintFailure then some ⟨names, [], some 0⟩ else none
-  | .upsert target rows clauses returning algorithm =>
+  | .upsert target rows clauses returning algorithm subqueries =>
+    let context := Resolved.statementContext clock before.database subqueries
     let names := returning.map (·.2)
     let run := (before.database.table target).map fun table =>
       LiteralData.upsertRun context (before.database.keys target table)
@@ -155,7 +156,8 @@ def statementOutput (clock : Int) (statement : Resolved.Statement) (before : Sql
       let (_, written) ← (← run).toOption
       return ⟨names, returnedRows context returning (written.map (·.values)), some written.length⟩
     else if constraintFailure then some ⟨names, [], some ((run.map keptCount).getD 0)⟩ else none
-  | .update target assignments filter returning =>
+  | .update target assignments filter returning subqueries =>
+    let context := Resolved.statementContext clock before.database subqueries
     let names := returning.map (·.2)
     if successful then do
       let table ← before.database.table target
@@ -164,7 +166,8 @@ def statementOutput (clock : Int) (statement : Resolved.Statement) (before : Sql
       return ⟨names, returnedRows context returning written,
         some chosen.length⟩
     else if constraintFailure then some ⟨names, [], some 0⟩ else none
-  | .delete target filter returning =>
+  | .delete target filter returning subqueries =>
+    let context := Resolved.statementContext clock before.database subqueries
     let names := returning.map (·.2)
     if successful then do
       let table ← before.database.table target

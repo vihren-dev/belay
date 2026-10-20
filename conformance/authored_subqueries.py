@@ -4,7 +4,8 @@ The cases follow the "Tests" list of the slice 1 task: `EXISTS` and `NOT EXISTS`
 `NOT IN` with NULLs, affinity and collation, scalar subqueries with no row, one row and a
 certain first row, correlation at depth one and two, a name of the subquery's own table
 that hides an outer column, aggregates inside a subquery, subqueries in `ORDER BY`, in a join
-and without `FROM`, and the prepare errors of a subquery with two result columns. Native
+and without `FROM`, subqueries in `UPDATE`, `DELETE` and `INSERT ... VALUES`, and the prepare
+errors of a subquery with two result columns. Native
 SQLite is the only source of outcomes. The cases use `conformance.authored_queries.QueryCase`
 and its recorder.
 """
@@ -106,6 +107,18 @@ def definitions() -> list[QueryCase]:
         case("subquery-without-from", TABLES,
              "SELECT EXISTS (SELECT 1 FROM u), (SELECT count(*) FROM t), 3 IN (SELECT x FROM u);",
              (EXISTS_ONE, AGGREGATE, IN_MATRIX), ("subquery", "fromless")),
+        case("subquery-update-set", TABLES,
+             "UPDATE t SET v = (SELECT s FROM u WHERE x = t.k AND s <> 'q'); SELECT k, v FROM t ORDER BY k;",
+             (FIRST_ROW, NO_ROW, CORRELATED), ("subquery", "update")),
+        case("subquery-update-where", TABLES,
+             "UPDATE t SET v = 'hit' WHERE k IN (SELECT x FROM u); SELECT k, v FROM t ORDER BY k;",
+             (IN_MATRIX,), ("subquery", "update", "in")),
+        case("subquery-delete-where", TABLES,
+             "DELETE FROM t WHERE NOT EXISTS (SELECT 1 FROM u WHERE x = t.k); SELECT k FROM t ORDER BY k;",
+             (EXISTS_ZERO, CORRELATED), ("subquery", "delete")),
+        case("subquery-insert-values", TABLES,
+             "INSERT INTO w VALUES ((SELECT count(*) FROM u)), ((SELECT max(s) FROM u)); SELECT s FROM w ORDER BY s;",
+             (FIRST_ROW, AGGREGATE), ("subquery", "insert")),
         case("subquery-scalar-columns", TABLES, "SELECT (SELECT x, s FROM u);", (IN_SCALAR,),
              ("subquery", "scalar", "error")),
         case("subquery-in-columns", TABLES, "SELECT k FROM t WHERE k IN (SELECT x, s FROM u);", (IN_SCALAR,),

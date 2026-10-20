@@ -93,9 +93,10 @@ def test_delete_maps_filter_and_returning(parse_sql: Callable[..., Tree]) -> Non
     RETURNING result columns, empty without the clause, as for UPDATE (slice 3c)."""
     [plain, returned] = [item.value for item in statements(parse_sql(
         "DELETE FROM t; DELETE FROM t WHERE a ISNULL RETURNING a;"))]
-    assert plain == {"delete": {"table": "t", "filter": None, "returning": []}}
+    assert plain == {"delete": {"table": "t", "filter": None, "returning": [], "subqueries": []}}
     assert returned == {"delete": {"table": "t", "filter": {"isNull": {"operand": column("a"), "negated": False}},
-                                   "returning": [{"expression": {"value": column("a"), "alias": None, "text": "a"}}]}}
+                                   "returning": [{"expression": {"value": column("a"), "alias": None, "text": "a"}}],
+                                   "subqueries": []}}
 
 
 @pytest.mark.parametrize(("sql", "refused"), [

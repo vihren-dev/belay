@@ -47,6 +47,13 @@ def Expr.isFallibleCall : Expr → Bool
   | .column _ | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic ..
   | .cast .. | .coalesce .. | .now _ | .date .. | .exists .. | .inQuery .. | .subquery _ => false
 
+/-- Whether the expression itself names a subquery of the statement: {lit}`EXISTS`, {lit}`IN`
+of a subquery or a scalar subquery; its parts are not inspected. Use it with {name}`Expr.any`. -/
+def Expr.namesSubquery : Expr → Bool
+  | .exists _ | .inQuery .. | .subquery _ => true
+  | .column _ | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic ..
+  | .cast .. | .coalesce .. | .json .. | .now _ | .date .. | .scalar .. => false
+
 /-- Whether the expression itself is a date and time function call; its parts are not
 inspected. -/
 def Expr.isDateCall : Expr → Bool

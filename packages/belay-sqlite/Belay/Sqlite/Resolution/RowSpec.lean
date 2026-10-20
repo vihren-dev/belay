@@ -103,8 +103,8 @@ theorem fullCells_rowWidth (columns : List CatalogColumn) (positions : List Nat)
           cases step
           simp [hcell, Except.map]
 
-/-- For a successful resolution of INSERT, with any {lit}`ON CONFLICT` clauses, to an
-insert statement, the catalog is
+/-- For a successful resolution of INSERT, with any {lit}`ON CONFLICT` clauses and subqueries,
+to an insert statement, the catalog is
 unchanged, the statement names the position of the table that the name finds, and
 for every resolved row there are table positions of the written columns and a
 written row such that the resolved row satisfies {name}`RowWidth` for the table's
@@ -114,11 +114,11 @@ split the resolver down to its successful branch; each row is a result of
 theorem resolveInsert_rowWidth (context : ResolveContext) (catalog after : Catalog) (index : Nat)
     (tableName : Identifier) (names : Option (List Identifier)) (rows : List (List Syntax.Expr))
     (conflicts : List Syntax.ConflictClause) (algorithm : Option ConflictAlgorithm)
-    (returning : List Syntax.ResultColumn)
-    (position : Nat) (full : List (List Resolved.Cell))
+    (returning : List Syntax.ResultColumn) (subqueries resolvedSubqueries : List Resolved.Query)
+    (shapes : SubqueryShapes) (position : Nat) (full : List (List Resolved.Cell))
     (columns : List (Resolved.Expr × String))
-    (ok : resolveInsert context catalog index tableName names rows conflicts algorithm returning =
-      .ok (.insert position full columns, after)) :
+    (ok : resolveInsert context catalog index tableName names rows conflicts algorithm returning subqueries shapes =
+      .ok (.insert position full columns resolvedSubqueries, after)) :
     after = catalog ∧ ∃ table, catalog.findTable tableName = some (position, table) ∧
       ∀ row ∈ full, ∃ positions written, RowWidth table.columns positions written row := by
   unfold resolveInsert at ok

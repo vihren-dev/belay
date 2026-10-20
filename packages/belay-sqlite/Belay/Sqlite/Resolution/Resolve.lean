@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.SelectResolution
+import Belay.Sqlite.Resolution.WriteResolution
 import Belay.Sqlite.Resolution.StatementCatalog
 import Belay.Sqlite.Resolution.Updates
 import Belay.Sqlite.Resolution.Deletes
@@ -45,15 +46,18 @@ def resolveStatement (context : ResolveContext) (state : ResolveState) (index : 
   | .addColumn table column => state.withCatalog (resolveAddColumn context state.catalog index table column)
   | .dropTable name ifExists => state.withCatalog (resolveDropTable state.catalog name ifExists)
   | .dropIndex name ifExists => state.withCatalog (resolveDropIndex state.catalog index name ifExists)
-  | .insert table columns rows conflicts algorithm returning =>
-    state.withCatalog (resolveInsert context state.catalog index table columns rows conflicts algorithm returning)
-  | .update table assignments filter returning =>
-    state.withCatalog (resolveUpdate context state.catalog index table assignments filter returning)
+  | .insert table columns rows conflicts algorithm returning subqueries =>
+    state.withCatalog (resolveWriteSubqueries context state.catalog index 6 table (fun _ => []) subqueries
+      (resolveInsert context state.catalog index table columns rows conflicts algorithm returning))
+  | .update table assignments filter returning subqueries =>
+    state.withCatalog (resolveWriteSubqueries context state.catalog index 4 table (writtenScope table) subqueries
+      (resolveUpdate context state.catalog index table assignments filter returning))
   | .select columns source joins filter groupBy orderBy limit offset subqueries =>
     state.withCatalog (resolveSelect context state.catalog index
       { columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none } subqueries)
-  | .delete table filter returning =>
-    state.withCatalog (resolveDelete context state.catalog index table filter returning)
+  | .delete table filter returning subqueries =>
+    state.withCatalog (resolveWriteSubqueries context state.catalog index 3 table (writtenScope table) subqueries
+      (resolveDelete context state.catalog index table filter returning))
 
 /-- Resolve the statements from a zero-based index and a state, in order. -/
 def resolveFrom (context : ResolveContext) (index : Nat) (state : ResolveState) :

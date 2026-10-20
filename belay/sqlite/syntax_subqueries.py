@@ -1,10 +1,11 @@
-"""Lift the subqueries of a SELECT into the statement's list (ADR 0018, D1).
+"""Lift the subqueries of a statement into its list (ADR 0018, D1).
 
 An expression names a subquery by its index in the list, in the order of the subqueries'
-text, and each subquery names the query around it: `None` for the statement's query, else
-the index of an earlier subquery. `syntax_select.select` opens the list for a statement;
-outside it, such as in a CHECK constraint or a write, a subquery has no constructor and is
-refused with its source range.
+text, and each subquery names the query around it: `None` for the statement's query or
+write, else the index of an earlier subquery. `syntax_select.select` and the writes of
+`syntax_writes` open the list for a statement; outside it, such as in a CHECK constraint, and
+in RETURNING and ON CONFLICT, a subquery has no constructor and is refused with its source
+range.
 """
 
 from collections.abc import Callable, Iterator
@@ -29,12 +30,18 @@ class SubqueryList:
 
 
 ACTIVE: ContextVar[SubqueryList | None] = ContextVar("subqueries", default=None)
-"""The list of the statement whose SELECT the frontend maps, if any."""
+"""The list of the statement whose expressions the frontend maps, if any."""
+
+OUTSIDE = "A subquery is modeled only in SELECT, INSERT VALUES, UPDATE and DELETE; rewrite the statement without it"
+"""The refusal of a subquery outside a statement that lists subqueries, such as in a CHECK constraint."""
+
+REFUSAL: ContextVar[str] = ContextVar("subquery_refusal", default=OUTSIDE)
+"""The refusal of a subquery where no list is open."""
 
 
 @contextmanager
 def statement_subqueries(clauses: Clauses) -> Iterator[SubqueryList]:
-    """Open the list of subqueries of one statement while its SELECT is mapped."""
+    """Open the list of subqueries of one statement while its expressions are mapped."""
     token = ACTIVE.set(SubqueryList(clauses))
     try:
         listed = ACTIVE.get()
@@ -44,12 +51,24 @@ def statement_subqueries(clauses: Clauses) -> Iterator[SubqueryList]:
         ACTIVE.reset(token)
 
 
+@contextmanager
+def no_subqueries(refusal: str) -> Iterator[None]:
+    """Refuse every subquery, with the refusal, while a clause whose subqueries the model does
+    not place is mapped, such as RETURNING."""
+    active, message = ACTIVE.set(None), REFUSAL.set(refusal)
+    try:
+        yield
+    finally:
+        REFUSAL.reset(message)
+        ACTIVE.reset(active)
+
+
 def lift(tree: Tree, select: Node) -> int:
     """Add the subquery of a `select` production to the statement's list and return its index;
-    its own subqueries come after it. Refuse it outside a SELECT statement."""
+    its own subqueries come after it. Refuse it where no list is open."""
     listed = ACTIVE.get()
     if listed is None:
-        raise tree.unsupported(select, "A subquery is modeled only in a SELECT statement; rewrite the statement without it")
+        raise tree.unsupported(select, REFUSAL.get())
     index = len(listed.items)
     listed.items.append(None)
     around, listed.current = listed.current, index
