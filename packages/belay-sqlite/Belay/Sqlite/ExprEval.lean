@@ -13,6 +13,21 @@ reports it, {lit}`may` when SQLite may skip it or the model does not describe it
 
 namespace Belay.Sqlite.Resolved
 
+/-- {lit}`x IN (q)` over the value of {lit}`x` and the first values of the rows of {lit}`q`, as
+SQLite 3.51.0 computes it: an empty subquery gives 0 ({lit}`NOT IN`: 1), also for NULL; else a
+NULL operand gives NULL; a value that compares equal under the affinity and the collation
+({name}`comparisonOperands`) gives 1 ({lit}`NOT IN`: 0); else a NULL among the values gives NULL;
+else 0 ({lit}`NOT IN`: 1). -/
+def inValue (affinity : Option Affinity) (collation : Collation) (negated : Bool) (value : Value)
+    (candidates : List Value) : Value :=
+  if candidates.isEmpty then truth negated
+  else if value.isNull then .null
+  else if candidates.any (fun candidate =>
+      let (a, b) := comparisonOperands affinity value candidate
+      !b.isNull && collation.compare a b == .eq) then truth (!negated)
+  else if candidates.any (·.isNull) then .null
+  else truth negated
+
 mutual
 /-- The value of an expression over the cells of one row, in column order, with its
 {name}`Fault`. A column past the end of the row reads as NULL. {lit}`AND` is false when an
@@ -30,7 +45,10 @@ value ({lit}`TimeKeyword.value`), and a date and time function gives
 {lit}`DateFunction.value` at the clock value. A scalar function of ADR 0015 gives
 {name}`ScalarFunction.apply` over its argument values, and NULL with {name}`Fault.ofFunction`
 when it fails; {lit}`iif` gives {name}`iifValue`, and only its first argument is certain
-to run, so the faults of the others are softened. -/
+to run, so the faults of the others are softened. A subquery form reads the results of its
+subquery for the row ({name}`EvalContext`), with the subquery's fault: {lit}`EXISTS` is 1 when
+the subquery gives a row, a scalar subquery the first value of its first row or NULL, and
+{lit}`IN` gives {name}`inValue`. -/
 def Expr.evaluate (context : EvalContext) (row : List Value) : Expr → Value × Fault
   | .column position => (row.getD position .null, .none)
   | .literal value => (value, .none)
@@ -87,6 +105,16 @@ def Expr.evaluate (context : EvalContext) (row : List Value) : Expr → Value ×
     (match result with
       | .ok value => value
       | .error _ => .null, fault.join (Fault.ofFunction result))
+  | .exists index negated =>
+    let run := context.subqueries index row
+    (truth (!run.rows.isEmpty != negated), run.fault)
+  | .inQuery operand index affinity collation negated =>
+    let (value, fault) := operand.evaluate context row
+    let run := context.subqueries index row
+    (inValue affinity collation negated value (run.rows.filterMap List.head?), fault.join run.fault)
+  | .subquery index =>
+    let run := context.subqueries index row
+    ((run.rows.head?.bind List.head?).getD .null, run.fault)
 
 /-- The values of the arguments of a call over one row, in written order, with the
 joined fault of the arguments. -/
@@ -109,7 +137,8 @@ def Expr.givesJson (context : EvalContext) (row : List Value) : Expr → Bool
   | .json .extract (.cons _ (.cons _ (.cons _ _))) => true
   | .json function _ => function.givesJson
   | .column _ | .literal _ | .compare _ _ _ _ _ | .and _ _ | .or _ _ | .not _ | .isNull _ _
-  | .arithmetic _ _ _ | .cast _ _ | .coalesce _ _ | .now _ | .date _ _ | .scalar _ _ => false
+  | .arithmetic _ _ _ | .cast _ _ | .coalesce _ _ | .now _ | .date _ _ | .scalar _ _ | .exists _ _
+  | .inQuery _ _ _ _ _ | .subquery _ => false
 
 /-- Whether each argument of a call over one row has SQLite's JSON subtype
 ({lit}`Expr.givesJson`), in written order. -/

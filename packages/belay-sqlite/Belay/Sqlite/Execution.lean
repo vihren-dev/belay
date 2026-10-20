@@ -4,6 +4,7 @@ import Belay.Sqlite.Resolution.ReadDefaults
 import Belay.Sqlite.Resolution.Resolved
 import Belay.Sqlite.QueryFunctions
 import Belay.Sqlite.QueryRun
+import Belay.Sqlite.Subqueries
 
 set_option doc.verso true
 
@@ -93,12 +94,13 @@ def Outcome.persistedDatabase : Outcome → Database
   | .pending persisted _ _ => persisted
   | outcome => outcome.database
 
-/-- A query over a database at a clock value: its source rows ({name}`Resolved.Query.source`)
-and its run over them ({name}`Resolved.Query.run`), both in the plain context of the clock
-value ({name}`Resolved.EvalContext.plain`); none when a table is missing. -/
-def Resolved.Query.runOn (query : Resolved.Query) (clock : Int) (database : Database) :
-    Option (Resolved.SourceRows × Resolved.QueryRun) :=
-  let context := Resolved.EvalContext.plain clock
+/-- A query over a database at a clock value with the subqueries of its statement: its
+source rows ({name}`Resolved.Query.source`) and its run over them ({name}`Resolved.Query.run`),
+both in the statement's context ({name}`Resolved.statementContext`); none when a table is
+missing. -/
+def Resolved.Query.runOn (query : Resolved.Query) (clock : Int) (database : Database)
+    (subqueries : List Resolved.Query) : Option (Resolved.SourceRows × Resolved.QueryRun) :=
+  let context := Resolved.statementContext clock database subqueries
   (query.source context database).map fun source => (source, query.run context source.rows)
 
 /-- The effect of a query with its run ({name}`Resolved.Query.runOn`): it changes nothing; it
@@ -170,7 +172,7 @@ def step (clock : Int) (statement : Resolved.Statement) (database : Database) : 
     else .error (.unmodeled, database)
   | .drop positions => .ok (database.drop positions)
   | .prepareError error => .error (.prepare error, database)
-  | .query query => queryEffect database (query.runOn clock database)
+  | .query query subqueries => queryEffect database (query.runOn clock database subqueries)
   | .begin | .commit | .rollback | .insert .. | .upsert .. | .update .. | .delete .. =>
     .error (.unmodeled, database)
 

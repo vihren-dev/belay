@@ -53,9 +53,9 @@ theorem literalStep_success_catalog {clock : Int} {statement : Resolved.Statemen
     split at success
     · cases success
     · cases success; exact ⟨rfl, rfl⟩
-  | query query =>
+  | query query subqueries =>
     simp only [literalStep, runStatement] at success
-    cases ran : query.runOn clock database with
+    cases ran : query.runOn clock database subqueries with
     | none => simp only [ran, queryEffect] at success; cases success; exact ⟨rfl, rfl⟩
     | some pair =>
       obtain ⟨_, run⟩ := pair

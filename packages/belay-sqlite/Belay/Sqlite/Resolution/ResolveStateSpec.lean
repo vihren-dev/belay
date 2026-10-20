@@ -22,7 +22,7 @@ def ResolveState.after (state : ResolveState) : Resolved.Statement → ResolveSt
   | .rollback => { catalog := state.saved.getD state.catalog, saved := none }
   | statement@(.createTable ..) | statement@(.createIndex ..) | statement@(.addColumn ..) | statement@(.drop _)
   | statement@(.insert ..) | statement@(.update ..) | statement@(.upsert ..) | statement@(.delete ..)
-  | statement@(.prepareError _) | statement@(.query _) =>
+  | statement@(.prepareError _) | statement@(.query ..) =>
     { state with catalog := statement.applyCatalog state.catalog }
 
 /-- For every state and statement that is not transaction control

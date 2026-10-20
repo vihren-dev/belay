@@ -171,7 +171,8 @@ def statementOutput (clock : Int) (statement : Resolved.Statement) (before : Sql
       let chosen := table.scanRows.filter (LiteralData.selected context filter)
       return ⟨names, returnedRows context returning (chosen.map (·.values)), some chosen.length⟩
     else none
-  | .query query =>
+  | .query query subqueries =>
+    let context := Resolved.statementContext clock before.database subqueries
     if successful then
       (query.source context before.database).map fun source => ⟨query.names, (query.run context source.rows).rows, none⟩
     else if (overflow && query.groupBy.isEmpty) || functionFailure then some ⟨query.names, [], none⟩

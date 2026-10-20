@@ -126,8 +126,17 @@ structure EvalContext where
   subqueries : Nat → List Value → SubqueryRun
 
 /-- The context of a statement without subqueries at a clock value: a subquery that it
-names gives no rows and the fault {lean}`Fault.may`, which resolution never needs. -/
+names gives no rows and no fault, which resolution never needs. -/
 def EvalContext.plain (clock : Int) : EvalContext :=
-  { clock, subqueries := fun _ _ => { rows := [], fault := .may } }
+  { clock, subqueries := fun _ _ => { rows := [], fault := .none } }
+
+/-- Whether no subquery of the context has a fault: for every index and outer row, the
+fault of the subquery's run is {lean}`Fault.none`. -/
+def EvalContext.Quiet (context : EvalContext) : Prop :=
+  ∀ index row, (context.subqueries index row).fault = .none
+
+/-- For every clock value, the plain context of the clock value is quiet
+({name}`EvalContext.Quiet`). -/
+theorem EvalContext.plain_quiet (clock : Int) : (EvalContext.plain clock).Quiet := fun _ _ => rfl
 
 end Belay.Sqlite.Resolved
