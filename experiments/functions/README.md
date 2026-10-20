@@ -110,8 +110,10 @@ Checked with the pinned SQLite 3.51.0 build:
 
 - The math functions are compiled in (`ln(2)` is `0.693147180559945`).
 - An unknown name is the prepare error `no such function: nosuch`.
-- `PRAGMA function_list` gives each built-in function with its number of arguments: 143
-  names, 118 scalar and 27 aggregate or window (`min` and `max` are both).
+- `PRAGMA function_list` of the pinned library gives each built-in function with its
+  number of arguments: 141 names, 116 scalar and 27 aggregate or window (`min` and `max`
+  are both). The `sqlite3` shell adds a few, such as `regexp`, which the recorder's library
+  does not have.
 - Scalar `min` and `max` compare under the collation of the left-most argument that has
   one: `min('B', 'a' COLLATE nocase)` is `a`.
 - An argument that a JSON function gave is JSON: `json_array(json('[1]'))` is `[[1]]`, and

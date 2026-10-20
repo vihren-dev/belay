@@ -1,6 +1,6 @@
 # ADR 0015: SQL functions
 
-Date: 2026-10-20. Status: PROPOSED.
+Date: 2026-10-20. Status: ACCEPTED on 2026-10-20 (owner instruction to implement it, after the decisions of #194).
 Audience: designers and reviewers.
 Evidence: [the functions measurement](../experiments/functions/README.md).
 Related: [ADR 0012](adr-0012-query-semantics.md) (query semantics, JSON and date
@@ -66,8 +66,9 @@ reduces.
 
 - **The catalog.** A new module lists each built-in function of the pinned SQLite build
   that a call can name: its name and the numbers of arguments it accepts. These are the
-  built-in functions of `PRAGMA function_list`: 143 names, 118 scalar and 27 aggregate or
-  window (`min` and `max` are both). The list is written in Lean. A test compares it with `PRAGMA function_list` of the native build, with native
+  built-in functions of `PRAGMA function_list` in the pinned library: 141 names, 116
+  scalar and 27 aggregate or window (`min` and `max` are both). The `sqlite3` shell adds a
+  few more, such as `regexp`, which the library does not have. The list is written in Lean. A test compares it with `PRAGMA function_list` of the native build, with native
   SQLite as the oracle.
 - **Errors.** Resolution reports SQLite's prepare errors from the catalog:
   - `no such function: X` for a name that is no function;

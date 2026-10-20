@@ -153,6 +153,11 @@ inductive PrepareError where
   | indexExists (name : Identifier)
   /-- {lit}`no such table: %s` ({lit}`sqlite3LocateTable`). -/
   | noSuchTable (name : Identifier)
+  /-- {lit}`no such index: %S` ({lit}`sqlite3DropIndex`). -/
+  | noSuchIndex (name : Identifier)
+  /-- {lit}`table %s may not be dropped` ({lit}`sqlite3DropTable`), for SQLite's schema
+  tables: {lit}`sqlite_master` and {lit}`sqlite_temp_master` under any of their names. -/
+  | tableMayNotBeDropped (name : Identifier)
   /-- An error that names no catalog object ({name}`ExprError`). -/
   | expression (error : ExprError)
   deriving Repr, DecidableEq

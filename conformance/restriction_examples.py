@@ -31,6 +31,7 @@ EXAMPLES: dict[str, tuple[str, str]] = {
                          "INSERT INTO t(a) VALUES(1) ON CONFLICT(a) DO UPDATE SET b = 2;"),
     "add-column-generated": ("CREATE TABLE t(a INTEGER);", "ALTER TABLE t ADD COLUMN b AS (a + 1);"),
     "add-column-strict-type": ("CREATE TABLE t(a INTEGER) STRICT;", "ALTER TABLE t ADD COLUMN b VARCHAR(5);"),
+    "drop-constraint-index": ("CREATE TABLE t(a INTEGER UNIQUE);", "DROP INDEX sqlite_autoindex_t_1;"),
     "unmodeled-default": ("CREATE TABLE t(a INTEGER DEFAULT -'a');", "SELECT a FROM t;"),
     "index-string-term": ("CREATE TABLE t(a INTEGER);", "CREATE INDEX i ON t('a');"),
     "index-date-function": ("CREATE TABLE t(a TEXT);", "CREATE INDEX i ON t(date(a));"),
