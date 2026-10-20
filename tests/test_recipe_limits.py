@@ -17,8 +17,36 @@ from tests.runtime_support import run_command
 from tools.ci_checks import BUNDLE_BUILD_LIMIT_SECONDS
 
 ROOT = Path(__file__).resolve().parents[1]
-SUITE_TARGETS = {"developmentTestReports", "testReports", "scheduledTestReports", "tests.atuin"}
+SUITE_TARGETS = {"developmentTestReports", "testReports", "scheduledTestReports", "scheduledCheckReports",
+                 "scheduledTests.{{suite}}", "tests.atuin"}
 """The `nix-build -A` targets of build-support/default.nix that build test suites."""
+
+
+def development_exclusions() -> set[str]:
+    """The suites that `developmentTests` of build-support/default.nix leaves out."""
+    default = (ROOT / "build-support/default.nix").read_text()
+    match = re.search(r"developmentTests = pkgs\.lib\.removeAttrs tests \[([^]]*)\];", default)
+    assert match is not None, "build-support/default.nix has no developmentTests"
+    return set(re.findall(r'"([^"]+)"', match.group(1)))
+
+
+def built_suites(target: str, suites: set[str], scheduled: set[str], mutants: set[str]) -> set[str]:
+    """The suites that a `nix-build -A` target of the justfile builds: `testReports` the suites
+    that are not scheduled, `developmentTestReports` those without the suites that `just test`
+    skips (`development_exclusions`), `scheduledTestReports` every scheduled suite,
+    `scheduledCheckReports` the scheduled suites but the mutant suites, `scheduledTests.{{suite}}`
+    one mutant suite, and `tests.atuin` that suite."""
+    if target == "testReports":
+        return suites - scheduled
+    if target == "developmentTestReports":
+        return suites - scheduled - development_exclusions()
+    if target == "scheduledTestReports":
+        return scheduled
+    if target == "scheduledCheckReports":
+        return scheduled - mutants
+    if target == "scheduledTests.{{suite}}":
+        return mutants
+    return {target.split(".", 1)[1]}
 
 pytestmark = [pytest.mark.unit, pytest.mark.environment]
 
@@ -49,7 +77,8 @@ def test_nix_builds_stay_in_the_callers_process_group() -> None:
 
 @pytest.mark.requires_nix
 def test_suite_limit_ends_before_the_limits_that_build_suites() -> None:
-    """The per-suite limit that Nix renders is less than each recipe and CI limit that builds suites."""
+    """The per-suite limit that Nix renders is less than the limit of each recipe that builds the
+    suite, and the bundle suite's limit less than the CI bundle phase."""
     result = run_command(["nix-instantiate", "--eval", "--strict", "--json",
                           "--extra-experimental-features", "nix-command flakes", "--expr",
                           "builtins.mapAttrs (_: test: test.installPhase) "
@@ -62,6 +91,11 @@ def test_suite_limit_ends_before_the_limits_that_build_suites() -> None:
     recipe_limits = {words[words.index("-A") + 1]: int(words[2]) for words in nix_build_recipe_lines()
                      if words[words.index("-A") + 1] in SUITE_TARGETS}
     assert set(recipe_limits) == SUITE_TARGETS
-    outer = {**recipe_limits, "ci_checks bundle phase": BUNDLE_BUILD_LIMIT_SECONDS}
-    for name, limit in suite_limits.items():
-        assert all(limit < enclosing for enclosing in outer.values()), (name, limit, outer)
+    suites = set(json.loads((ROOT / "tests/nix_suites.json").read_text()))
+    scheduled = set(json.loads((ROOT / "tests/nix_scheduled_suites.json").read_text()))
+    mutants = set(json.loads((ROOT / "tests/nix_mutant_suites.json").read_text()))
+    assert set(suite_limits) == suites
+    for target, enclosing in recipe_limits.items():
+        for name in built_suites(target, suites, scheduled, mutants):
+            assert suite_limits[name] < enclosing, (name, suite_limits[name], target, enclosing)
+    assert suite_limits["bundle"] < BUNDLE_BUILD_LIMIT_SECONDS, ("ci_checks bundle phase", suite_limits["bundle"])

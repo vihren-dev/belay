@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.WriteCatalogSpec
+import Belay.Sqlite.Resolution.DropSpec
 
 set_option doc.verso true
 
@@ -19,7 +20,7 @@ def ResolveState.after (state : ResolveState) : Resolved.Statement → ResolveSt
   | .begin => { state with saved := state.saved.getD state.catalog }
   | .commit => { state with saved := none }
   | .rollback => { catalog := state.saved.getD state.catalog, saved := none }
-  | statement@(.createTable ..) | statement@(.createIndex ..) | statement@(.addColumn ..)
+  | statement@(.createTable ..) | statement@(.createIndex ..) | statement@(.addColumn ..) | statement@(.drop _)
   | statement@(.insert ..) | statement@(.update ..) | statement@(.upsert ..) | statement@(.delete ..)
   | statement@(.prepareError _) | statement@(.query _) =>
     { state with catalog := statement.applyCatalog state.catalog }
@@ -34,7 +35,7 @@ theorem ResolveState.after_of_isControl (state : ResolveState) {statement : Reso
     state.after statement = { state with catalog := statement.applyCatalog state.catalog } := by
   cases statement with
   | begin | commit | rollback => cases ordinary
-  | createTable | createIndex | addColumn | insert | update | upsert | delete | prepareError | query => rfl
+  | createTable | createIndex | addColumn | drop | insert | update | upsert | delete | prepareError | query => rfl
 
 /-- For every successful resolution of CREATE TABLE, the catalog after it is
 {name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
@@ -108,6 +109,16 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     obtain ⟨equal, control⟩ := resolveAddColumn_applyCatalog _ _ _ _ _ _ _ (by assumption)
+    exact ordinary _ control equal
+  | dropTable name ifExists =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    obtain ⟨equal, control⟩ := resolveDropTable_applyCatalog _ _ _ _ _ (by assumption)
+    exact ordinary _ control equal
+  | dropIndex name ifExists =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    obtain ⟨equal, control⟩ := resolveDropIndex_applyCatalog _ _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
   | insert table columns rows conflicts algorithm returning =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok

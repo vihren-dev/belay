@@ -75,6 +75,8 @@ def PrepareError.message : PrepareError → String
   | .tableNameUsed name => s!"there is already a table named {name}"
   | .indexExists name => s!"index {name} already exists"
   | .noSuchTable name => s!"no such table: {name}"
+  | .noSuchIndex name => s!"no such index: {name}"
+  | .tableMayNotBeDropped name => s!"table {name} may not be dropped"
   | .expression error => error.message
 
 end Belay.Sqlite

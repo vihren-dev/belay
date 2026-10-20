@@ -1,4 +1,4 @@
-import Belay.Sqlite.Resolution.Catalog
+import Belay.Sqlite.Resolution.CatalogDrop
 import Belay.Sqlite.Resolution.Profile
 import Belay.Sqlite.StoreValue
 
@@ -53,6 +53,13 @@ indexes. -/
 def Database.ofTables (tables : List (Identifier × Table)) : Database :=
   { catalog := tables.map fun (name, table) => { name, entry := .table table.shape },
     rows := tables.map (·.2.rows) }
+
+/-- DROP INDEX or DROP TABLE in the database: the catalog without the objects at the
+positions ({name}`Catalog.drop`), and the stored rows without the rows at those positions,
+so each kept object keeps its rows at its new position. -/
+def Database.drop (database : Database) (positions : List Nat) : Database :=
+  { catalog := database.catalog.drop positions,
+    rows := (database.rows.zipIdx.filter fun (_, position) => !positions.contains position).map Prod.fst }
 
 /-- Store the rows at the position and keep the catalog and every other position. A
 position past the end of {lit}`rows` is unchanged. -/

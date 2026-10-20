@@ -106,9 +106,9 @@ def test_installed_protected_schema_precedes_invalid_proof(runtime_root: Path, t
 
 
 def test_unsupported_migration(installed_verify: Callable[..., CommandResult], tmp_path: Path) -> None:
-    """The installed entrypoint rejects unsupported DROP TABLE before proof acceptance."""
+    """The installed entrypoint rejects an unsupported CREATE VIEW before proof acceptance."""
     migration = tmp_path / "unsupported.sql"
-    migration.write_text("DROP TABLE invoices;\n")
+    migration.write_text("CREATE VIEW open_invoices AS SELECT * FROM invoices;\n")
     result = installed_verify("missing_required_column", migration=migration, timeout=30)
     assert result.returncode != 0 and result.json_object()["status"] == "UNSUPPORTED", result.diagnostic()
 

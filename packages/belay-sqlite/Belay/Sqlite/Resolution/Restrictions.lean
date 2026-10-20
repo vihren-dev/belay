@@ -58,6 +58,10 @@ inductive RestrictionKind where
   default that does not fit the type: SQLite reports it while the statement runs, which the
   model does not describe (ADR 0014, slice 6). -/
   | addColumnStrictType
+  /-- DROP INDEX of a name that begins with {lit}`sqlite_autoindex_` and is no catalog index:
+  the catalog does not name the indexes of UNIQUE and PRIMARY KEY constraints, which SQLite
+  refuses to drop (ADR 0014, slice 7). -/
+  | dropConstraintIndex
   /-- The added column requires unmodeled default evaluation. -/
   | addColumnConstraint
   /-- A {lit}`SET` value that reads the row is not modeled for a column of a unique key

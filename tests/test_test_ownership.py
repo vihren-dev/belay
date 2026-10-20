@@ -55,12 +55,18 @@ def test_recipe_expansion_retains_full_model_in_release_checks() -> None:
 def test_scheduled_suites_run_only_in_the_package_recipe() -> None:
     """A scheduled suite (`tests/nix_scheduled_suites.json`) is an owned Nix suite, the pull
     request recipes build only `tests`, which excludes it, and `just package`, which main
-    pushes and scheduled runs use, builds it through `test-scheduled`."""
+    pushes and scheduled runs use, builds it through `test-scheduled-checks`, except the mutant
+    suites (`tests/nix_mutant_suites.json`), which the CI job `mutants` builds one at a time
+    through `test-mutants`."""
     suites = json.loads((ROOT / "tests/nix_suites.json").read_text())
     scheduled = json.loads((ROOT / "tests/nix_scheduled_suites.json").read_text())
     assert scheduled and set(scheduled) <= set(suites)
     recipes = (ROOT / "justfile").read_text()
-    assert "\npackage: test-full test-nix runtime-package test-scheduled\n" in recipes
-    assert "-A scheduledTestReports " in recipes and "-A testReports " in recipes
+    mutants = json.loads((ROOT / "tests/nix_mutant_suites.json").read_text())
+    assert mutants and set(mutants) < set(scheduled)
+    assert "\npackage: test-full test-nix runtime-package test-scheduled-checks\n" in recipes
+    assert "-A scheduledCheckReports " in recipes and "-A testReports " in recipes
+    assert '-A "scheduledTests.{{suite}}" ' in recipes
+    assert "(pkgs.lib.removeAttrs scheduledTests mutantSuites);" in (ROOT / "build-support/default.nix").read_text()
     default = (ROOT / "build-support/default.nix").read_text()
     assert "tests = pkgs.lib.removeAttrs allTests scheduledSuites;" in default

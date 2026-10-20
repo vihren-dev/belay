@@ -10,6 +10,7 @@ from .located import Json, Located
 from .profiles import ExecutionProfile
 from .sql_tree import Node, Tree
 from .syntax_definitions import add_column, create_table
+from .syntax_drops import drop
 from .syntax_indexes import create_index
 from .syntax_select import select
 from .syntax_writes import delete, insert, transaction, update
@@ -42,6 +43,8 @@ def statement(tree: Tree, command: Node) -> Located:
         return create_index(tree, command)
     if symbols[:2] == ["ALTER", "TABLE"]:
         return add_column(tree, command)
+    if symbols[:2] in (["DROP", "TABLE"], ["DROP", "INDEX"]):
+        return drop(tree, command)
     if symbols[:1] in (["BEGIN"], ["COMMIT"], ["END"], ["ROLLBACK"]):
         return transaction(tree, command)
     if symbols[:2] == ["with", "insert_cmd"]:
@@ -53,7 +56,8 @@ def statement(tree: Tree, command: Node) -> Located:
     if symbols == ["select"]:
         return select(tree, command)
     raise tree.unsupported(command, "This statement is not modeled; the model runs CREATE TABLE, CREATE INDEX, "
-                           "ALTER TABLE ADD COLUMN, BEGIN, COMMIT, ROLLBACK, INSERT, UPDATE, DELETE and SELECT")
+                           "ALTER TABLE ADD COLUMN, DROP TABLE, DROP INDEX, BEGIN, COMMIT, ROLLBACK, INSERT, UPDATE, DELETE "
+                           "and SELECT")
 
 
 def statements(tree: Tree) -> tuple[Located, ...]:

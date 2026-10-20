@@ -19,6 +19,7 @@ The frontend maps these statements, and refuses every other statement as
 - `CREATE [UNIQUE] INDEX` with key terms, each a column name or an expression with
   an optional `ASC` or `DESC`, and an optional `WHERE` filter (ADR 0014, slice 1);
 - `ALTER TABLE … ADD [COLUMN]` with one column definition;
+- `DROP TABLE [IF EXISTS] name` and `DROP INDEX [IF EXISTS] name` (ADR 0014, slice 7);
 - `BEGIN` (optionally `DEFERRED`), `COMMIT`/`END` and `ROLLBACK`, optionally with
   `TRANSACTION`;
 - `INSERT INTO table [(columns)] VALUES` with one or more rows;
@@ -190,6 +191,17 @@ COLUMN to a `STRICT` table with a type that it does not admit, or with a default
 not fit the type, is a model restriction (`add-column-strict-type`), because SQLite reports
 it only while the statement runs.
 
+`DROP TABLE` (ADR 0014, slice 7) removes the table, its rows and its indexes, and `DROP
+INDEX` removes one index; the later catalog objects move to lower positions, and later
+statements resolve against the catalog without the dropped objects. A ROLLBACK brings a
+dropped object back with its rows. SQLite's prepare errors apply, with names compared with
+ASCII case ignored: `no such table` and `no such index`, also for an object of the other
+kind, which `IF EXISTS` turns into a statement that does nothing, and `table sqlite_master
+may not be dropped` for SQLite's schema tables under any of their names, also with `IF
+EXISTS`. The catalog does not name the indexes of UNIQUE and PRIMARY KEY constraints, so a
+DROP INDEX of another name that begins with `sqlite_autoindex_` is a model restriction
+(`drop-constraint-index`). The model has no triggers, views or enforced foreign keys.
+
 A collation (ADR 0014, slice 3) is `BINARY`, `NOCASE` or `RTRIM`, with ASCII case of the
 name ignored. `NOCASE` compares TEXT with the ASCII capitals folded, and `RTRIM` compares
 TEXT without trailing spaces; neither changes a value of another storage class. A column
@@ -280,6 +292,7 @@ should shrink.
 | `generated-function` | A date and time function or a JSON function in a generated column is not modeled | ADR 0014, slice 5 |
 | `generated-loop` | Generated columns that read each other in a loop are not modeled, because SQLite reports the loop while CREATE TABLE runs | ADR 0014, slice 5 |
 | `add-column-generated` | ADD COLUMN of a generated column is not modeled | ADR 0014, slice 5 |
+| `drop-constraint-index` | DROP INDEX of a name that begins with `sqlite_autoindex_` and is no catalog index is not modeled, because the catalog does not name the indexes of UNIQUE and PRIMARY KEY constraints, which SQLite does not drop | ADR 0014, slice 7 |
 | `add-column-strict-type` | ADD COLUMN to a `STRICT` table with a type that it does not admit, or with a default that does not fit the type, is not modeled, because SQLite reports it while the statement runs | ADR 0014, slice 6 |
 | `add-column-constraint` | The added column requires unmodeled default evaluation | ADR 0008 |
 | `constraint-algorithm-update` | UPDATE of a table with ON CONFLICT constraint algorithms is not modeled | ADR 0012 amendment 4, slice 5d |

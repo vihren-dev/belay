@@ -11,6 +11,7 @@
   "belay.sqlite.syntax_conflicts",
   "belay.sqlite.syntax_constraints",
   "belay.sqlite.syntax_definitions",
+  "belay.sqlite.syntax_drops",
   "belay.sqlite.syntax_expressions",
   "belay.sqlite.syntax_indexes",
   "belay.sqlite.syntax_queries",
