@@ -58,6 +58,18 @@ def empty : Database :=
 #guard
   let columns : List Output := [.scalar malformed, .aggregate .countRows]
   !statementReady 0 (.query { fromless with sources := [.first 0], aggregate := true, columns := columns }) empty
+-- A JSON aggregate writes its operand as json_array does: a BLOB operand (JSONB) is a
+-- possible failure that the model does not describe, and a failing operand stays certain.
+#guard
+  let blob : Query := { fromless with aggregate := true, columns := [.aggregate (.jsonGroupArray (.literal (.blob [1])))] }
+  blob.mayFail 0 [[]] && !blob.mustFail 0 [[]] && (blob.run 0 [[]]).fault == .may
+#guard
+  let column : Output := .aggregate (.jsonGroupObject (text "a") (.literal (.blob [1])))
+  let blob : Query := { fromless with aggregate := true, columns := [column] }
+  blob.mayFail 0 [[]] && !blob.mustFail 0 [[]]
+#guard { fromless with aggregate := true, columns := [.aggregate (.jsonGroupArray malformed)] }.mustFail 0 [[]]
+#guard { fromless with aggregate := true, columns := [.aggregate (.jsonGroupObject malformed (text "x"))] }.mustFail 0 [[]]
+#guard !{ fromless with aggregate := true, columns := [.aggregate (.jsonGroupArray selected)] }.mayFail 0 [[]]
 -- The model gives a write no JSON error: a DELETE whose WHERE may fail is not ready.
 #guard (empty.table 0).all fun table => !deleteJsonReady 0 table (some malformed) [] && deleteJsonReady 0 table (some selected) []
 

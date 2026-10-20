@@ -46,6 +46,10 @@ Specification: [ADR 0015](../docs/adr-0015-functions.md), D5.
   examples, `conformance_query_coverage`, `conformance_authored`,
   `conformance_restriction_examples`, `test_model_package`.
 
+- 2026-10-20: review: one must finding (no query-level test of the aggregate faults). Fixed
+  in "refactor: query examples of the JSON aggregate faults": `JsonFaultExamples.lean` checks a
+  `may` fault for a BLOB operand of each aggregate and a certain failure of a failing operand.
+
 ## Remaining
 
 - Review, the slice verdict, corpus 38, `just test-full`.
