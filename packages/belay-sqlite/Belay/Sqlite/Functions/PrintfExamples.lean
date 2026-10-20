@@ -40,6 +40,13 @@ def gives (format : String) (arguments : List Value) (expected : String) : Bool 
 #guard gives "%*d|%-*d|%.*f" [.integer 6, .integer 42, .integer (-6), .integer 42, .integer 2, .real (3.14159 : Float).toBits]
   "    42|42    |3.14"
 #guard gives "%d %d %s|100%%|a%yb" [] "0 0 |100%|a"
+-- A width or precision up to printfFieldLimit is written; above it, literal or from *, the
+-- value is not described.
+#guard gives "%.100000s|" [text "x"] "x|"
+#guard [[text "%.100001s", text "x"], [text "%100001d", .integer 1], [text "%*d", .integer 100001, .integer 1],
+    [text "%.*f", .integer 100001, .integer 1]].all fun arguments => match printfValue arguments with
+  | .error .unmodeled => true
+  | .error .error | .ok _ => false
 #guard match printfValue [] with
   | .ok value => value == .null
   | .error _ => false
