@@ -86,8 +86,9 @@ describe, stays a restriction with its own id.
 
 - `x IN (a, b, ...)` and `NOT IN`, with SQLite's affinity and NULL rules for the list;
   `x IN (q)` comes with D1.
-- `x BETWEEN a AND b` with SQLite's rules: `x` is evaluated once, and the comparisons use
-  the affinity and collation of `x`.
+- `x BETWEEN a AND b` as SQLite computes it: `x >= a AND x <= b` with `x` evaluated once,
+  where each of the two comparisons applies its own affinity and collation rules, as any
+  comparison does.
 - `CASE` with and without an operand. Only the branch that SQLite takes is certain to run,
   so the faults of the others are softened, as for `iif` (ADR 0015).
 - `||`, with the text of each operand as `concat` writes it and NULL for a NULL operand.

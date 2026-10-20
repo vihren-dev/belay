@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-20T19:00:51+00:00",
+  "finding": "20261020T190022Z-62fbec34#2",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The script is a one-off measurement in experiments/, like experiments/functions and experiments/schema-features, which have no tests either; it is not part of the product or of CI, so a test would be supporting code without a present problem (AGENTS.md). A README documents how to reproduce it."
+}
