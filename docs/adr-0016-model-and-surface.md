@@ -41,8 +41,8 @@ Measured on `main` at fd9c2ad3 (2026-10-20), after ADR 0015:
 Facts that bear on the decision:
 
 - **The model imports only `Init`.** `tests/test_model_ownership.py` enforces this. The
-  surface needs `Std` (`Std.Do` for triples, in the guide) and native code (the parser,
-  for `sql` and `db!` at elaboration). It cannot live in the model package.
+  surface needs `Std` (`Std.Do` for triples, in the guide), `Lean` (for its
+  elaborators) and native code (the parser, for `sql` and `db!` at elaboration). It cannot live in the model package.
 - **The trusted base is the application library and the model library.** The kernel
   gate resolves trusted modules from the pinned sysroot and two installed roots
   (`requireLibraryRoots` in `packages/sqlite-verifier/GatePaths.lean`). The judge's
@@ -64,7 +64,8 @@ Facts that bear on the decision:
 
 The first surface code goes into a new Lake package with its own Nix derivation and its
 own suite in `tests/nix_suites.json`, created by the change that adds that code. It
-requires the model package and may import `Init`, `Std` and the model. The package
+requires the model package and may import `Init`, `Std`, `Lean` (its elaborators use
+Lean's elaboration API) and the model. The package
 starts with the code of its first prototype, not empty.
 
 ### D2. Layer rules, checked from the first day
@@ -77,8 +78,10 @@ starts with the code of its first prototype, not empty.
 - The installed runtime, the kernel gate and the judge's subject do not contain the
   surface.
 
-The surface's suite holds a test of these rules. It is one check over the surface's
-import lines, extended from `tests/test_model_ownership.py`.
+The surface's suite holds a test of these rules, extended from
+`tests/test_model_ownership.py`: it reads the import lines of every Lean file in the
+repository, for the first two rules, and the packages that the installed runtime, the
+gate and the conformance runtime are built from (`build-support/`), for the third.
 
 ### D3. The name
 
@@ -119,8 +122,9 @@ and not before.
   chooses it, the move of D3.
 - **The trusted base stays as it is.** Notation, elaborators, native code and their
   dependencies stay outside the gate and the judge.
-- **The boundary starts small.** D2 checks only the surface's imports. The verifier
-  keeps importing model modules by name until a trigger in the table needs more.
+- **The boundary starts small.** D2 keeps the surface out of the layers below it and
+  makes the surface use the model's root only. The verifier keeps importing model
+  modules by name until a trigger in the table needs more.
 - **A late rename costs more.** If the owner decides the name after the surface grows,
   the move of D3 touches surface code too. Order item 2 keeps that cost small.
 
