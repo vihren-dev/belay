@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-19T22:46:05+00:00",
+  "finding": "20261019T203959Z-1e9ab761#3",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the column PRIMARY KEY alias check reads reportedType, so INTEGER GENERATED ALWAYS PRIMARY KEY aliases the rowid (checked natively, example)"
+}

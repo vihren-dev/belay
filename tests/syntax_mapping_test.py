@@ -47,12 +47,32 @@ def test_definitions_keep_names_types_and_constraints_as_written(parse_sql: Call
             column("e", None, [{"default": {"sourceText": "'x''y'", "value": {"string": {"bytes": list(b"x'y")}}}}]),
             column("f", None)],
             "constraints": [{"primaryKey": {"columns": ["a"], "algorithm": None}},
-                            {"unique": {"columns": ["c", "d"], "algorithm": None}}]}},
+                            {"unique": {"columns": ["c", "d"], "algorithm": None}}],
+            "options": {"withoutRowid": False}}},
         {"createIndex": {"name": "i", "unique": True, "table": "Big T", "terms": [
             {"expression": {"identifier": {"name": "a", "quote": "none"}}, "descending": False},
             {"expression": {"identifier": {"name": "B", "quote": "none"}}, "descending": False}], "filter": None}},
         {"addColumn": {"table": "t", "column": column("z", "INT", [
             {"default": {"sourceText": "y", "value": {"identifier": {"name": "y", "quote": "none"}}}}])}}]
+
+
+def test_collations_keep_their_names_as_written(parse_sql: Callable[..., Tree]) -> None:
+    """`COLLATE` maps on a column, quoted or not, and as an expression, also in `ORDER BY` and
+    an index term, with the name as written; resolution decides what the name means
+    (ADR 0014, slice 3)."""
+    sql = ("CREATE TABLE t(a TEXT COLLATE NoCase, b COLLATE 'rtrim');"
+           "SELECT a COLLATE binary = b FROM t ORDER BY b COLLATE nocase DESC;"
+           "CREATE INDEX i ON t(a COLLATE rtrim);")
+    a, b = {"identifier": {"name": "a", "quote": "none"}}, {"identifier": {"name": "b", "quote": "none"}}
+    table, query, index = mapped(parse_sql, sql)
+    assert table["createTable"]["columns"] == [column("a", "TEXT", [{"collate": {"name": "NoCase"}}]),
+                                               column("b", None, [{"collate": {"name": "rtrim"}}])]
+    assert query["select"]["columns"][0]["expression"]["value"] == {
+        "compare": {"operator": "eq", "left": {"collate": {"operand": a, "name": "binary"}}, "right": b}}
+    assert query["select"]["orderBy"] == [{"expression": {"collate": {"operand": b, "name": "nocase"}},
+                                           "descending": True}]
+    assert index["createIndex"]["terms"] == [{"expression": {"collate": {"operand": a, "name": "rtrim"}},
+                                              "descending": False}]
 
 
 def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., Tree]) -> None:
@@ -80,10 +100,11 @@ def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., 
 
 @pytest.mark.parametrize(("sql", "refused"), [
     ("CREATE TEMP TABLE t(a);", "TEMP"), ("CREATE TABLE IF NOT EXISTS t(a);", "IF NOT EXISTS"),
-    ("CREATE TABLE main.t(a);", ".t"), ("CREATE TABLE t(a) STRICT;", "STRICT"),
-    ("CREATE TABLE t AS SELECT 1;", "AS SELECT 1"), ("CREATE TABLE t(a COLLATE NOCASE);", "COLLATE NOCASE"),
-    ("CREATE TABLE t(a CHECK (a));", "CHECK (a)"), ("CREATE TABLE t(a, PRIMARY KEY(a DESC));", "DESC"),
-    ("CREATE TABLE t(a DEFAULT (1));", "DEFAULT (1)"), ("CREATE INDEX i ON t(a COLLATE NOCASE);", "a COLLATE NOCASE"),
+    ("CREATE TABLE main.t(a);", ".t"), ("CREATE TABLE t(a) STRICTER;", "STRICTER"),
+    ("CREATE TABLE t AS SELECT 1;", "AS SELECT 1"),
+    ("CREATE TABLE t(a, UNIQUE(a COLLATE NOCASE));", "a COLLATE NOCASE"),
+    ("CREATE TABLE t(a, FOREIGN KEY (a DESC) REFERENCES p);", "DESC"), ("CREATE TABLE t(a, PRIMARY KEY(a DESC));", "DESC"),
+    ("CREATE TABLE t(a DEFAULT (1));", "DEFAULT (1)"),
     ("ALTER TABLE t RENAME TO u;", "ALTER TABLE t RENAME TO u"), ("BEGIN IMMEDIATE;", "IMMEDIATE"),
     ("UPDATE OR REPLACE t SET a = 1;", "OR REPLACE"), ("INSERT INTO t SELECT 1;", "SELECT 1"),
     ("INSERT INTO t VALUES (a || 1);", "a || 1"), ("UPDATE t SET a = 1 WHERE a IN (1);", "a IN (1)"),
@@ -103,7 +124,7 @@ def test_syntax_without_a_constructor_is_unsupported_at_its_range(
     ("ALTER TABLE t RENAME TO u;", "rewrite it with the modeled forms: CREATE TABLE"),
     ("UPDATE t SET (a, b) = (1, 2);", "rewrite it with the modeled forms: CREATE TABLE"),
     ("INSERT INTO t SELECT 1;", "write INSERT ... VALUES (...)"),
-    ("CREATE TABLE t(a COLLATE NOCASE);", "use NOT NULL, PRIMARY KEY, UNIQUE or DEFAULT with a literal"),
+    ("CREATE TABLE t(a DEFAULT (1));", "use NOT NULL, PRIMARY KEY, UNIQUE, COLLATE, CHECK, REFERENCES or DEFAULT with a literal"),
     ("VACUUM;", "the model runs CREATE TABLE"),
 ])
 def test_refusals_say_which_form_to_use(parse_sql: Callable[..., Tree], sql: str, advice: str) -> None:
@@ -146,10 +167,10 @@ def test_dequote_follows_sqlite() -> None:
 
 
 def test_record_names_the_profile_and_both_scripts(parse_sql: Callable[..., Tree]) -> None:
-    """The record carries version 4, the release and build, and the statement JSON."""
+    """The record carries version 5, the release and build, and the statement JSON."""
     schema = statements(parse_sql("CREATE TABLE t(a);"))
     record = script_record(DEFAULT_PROFILE, schema, statements(parse_sql("COMMIT;")))
-    assert record == {"version": 4, "release": "3.51.0", "sourceId": DEFAULT_PROFILE.source_id,
+    assert record == {"version": 5, "release": "3.51.0", "sourceId": DEFAULT_PROFILE.source_id,
                       "schema": [schema[0].value], "script": ["commit"]}
 
 
@@ -159,3 +180,4 @@ def test_default_source_spelling(parse_sql: Callable[..., Tree], literal: str) -
     statement = mapped(parse_sql, f"CREATE TABLE t(v BLOB DEFAULT {literal});")[0]
     constraint = statement["createTable"]["columns"][0]["constraints"][0]
     assert constraint["default"]["sourceText"] == literal
+

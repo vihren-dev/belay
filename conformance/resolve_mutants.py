@@ -38,26 +38,26 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         'if containsText upper "INT" then .integer\n    else if ["CHAR", "CLOB", "TEXT"].any (containsText upper) then .text',
         'if ["CHAR", "CLOB", "TEXT"].any (containsText upper) then .text\n    else if containsText upper "INT" then .integer'),
     "desc_rowid_alias": (SQLITE + "Resolution/Definitions.lean",
-        "aliasesRowid definition.declaredType && !descending", "aliasesRowid definition.declaredType"),
+        "aliasesRowid (reportedType definition.declaredType) && !descending", "aliasesRowid (reportedType definition.declaredType)"),
     "rollback_keeps_catalog": (SQLITE + "Resolution/Resolve.lean",
         "{ catalog := state.saved.getD state.catalog, saved := none }", "{ catalog := state.catalog, saved := none }"),
     "table_index_same_name": (SQLITE + "Resolution/Definitions.lean",
         "  | some (_, { entry := .index _, .. }) => prepareError catalog (.indexNameUsed name)\n  | none =>",
         "  | some (_, { entry := .index _, .. }) | none =>"),
-    "constant_column_limit": (SQLITE + "Resolution/Definitions.lean",
+    "constant_column_limit": (SQLITE + "Resolution/AddColumn.lean",
         "table.columns.length + 1 > context.profile.limits.columns", "table.columns.length + 1 > 2000"),
     "no_table_exists": (SQLITE + "Resolution/Definitions.lean",
         "  | some (_, { entry := .table _, .. }) => prepareError catalog (.tableExists name)\n"
         "  | some (_, { entry := .index _, .. }) => prepareError catalog (.indexNameUsed name)\n  | none =>",
         "  | some (_, { entry := .index _, .. }) => prepareError catalog (.indexNameUsed name)\n"
         "  | some (_, { entry := .table _, .. }) | none =>"),
-    "no_too_many_columns": (SQLITE + "Resolution/Definitions.lean",
+    "no_too_many_columns": (SQLITE + "Resolution/AddColumn.lean",
         "    else if table.columns.length + 1 > context.profile.limits.columns then\n"
         "      prepareError catalog (.expression (.tooManyColumns tableName))\n", ""),
-    "no_duplicate_column": (SQLITE + "Resolution/Definitions.lean",
+    "no_duplicate_column": (SQLITE + "Resolution/AddColumn.lean",
         "    else if (columnPosition table.columns definition.name).isSome then\n"
         "      prepareError catalog (.expression (.duplicateColumn definition.name))\n", ""),
-    "no_such_table": (SQLITE + "Resolution/Definitions.lean",
+    "no_such_table": (SQLITE + "Resolution/AddColumn.lean",
         "  | none => prepareError catalog (.noSuchTable tableName)\n  | some (position, table) =>\n"
         "    if reservedName tableName then prepareError catalog (.expression (.tableMayNotBeAltered tableName))",
         "  | none => restrict index [] .engineTable\n  | some (position, table) =>\n"

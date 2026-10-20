@@ -58,23 +58,30 @@ theorem LiteralData.uniqueRows_append (unique : uniqueRows key rows = true)
     rfl
 
 /-- For every key list, table and value list, assume old {name}`LiteralData.constraints`,
-NOT NULL checks on the zipped new column/cell pairs of {name}`LiteralData.newCells`,
-and a false key comparison between every old row and the new row for every key. Then
-the table after
+NOT NULL checks on the zipped new column/cell pairs of {name}`LiteralData.newCells`, the
+types of a {lit}`STRICT` table ({name}`LiteralData.typesFit`) and the CHECK constraints of the
+table ({name}`LiteralData.checksHold`) on the new row, and a false
+key comparison between every old row and the new row for every key. Then the table after
 {name}`LiteralData.insertRow` satisfies the same check. With no keys the freshness
 requirement is vacuous; with no old rows each key's pairwise check is vacuous.
 Row width and allocation bounds are not assumed. The proof separates old and new
-NOT NULL checks, then applies {name}`LiteralData.uniqueRows_append` to each key. -/
+NOT NULL, type and CHECK checks, then applies {name}`LiteralData.uniqueRows_append` to each key. -/
 theorem LiteralData.insertRow_constraints (old : constraints keys table = true)
     (nonnull : (table.shape.columns.zip (newCells table values (newRowid table values))).all (fun (column, value) =>
       !column.notNull || value != .null) = true)
+    (typed : typesFit table.shape
+      { rowid := newRowid table values, values := newCells table values (newRowid table values) } = true)
+    (checked : checksHold table.shape
+      { rowid := newRowid table values, values := newCells table values (newRowid table values) } = true)
     (fresh : ∀ key ∈ keys, ∀ row ∈ table.rows,
       keyEqual key row { rowid := newRowid table values, values := newCells table values (newRowid table values) } =
         false) :
     constraints keys (insertRow table values) = true := by
   simp only [constraints, Bool.and_eq_true] at old ⊢
-  constructor
-  · simpa [insertRow, List.all_append, nonnull] using old.1
+  refine ⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩
+  · simpa [insertRow, List.all_append, nonnull] using old.1.1.1
+  · simpa [insertRow, List.all_append, typed] using old.1.1.2
+  · simpa [insertRow, List.all_append, checked] using old.1.2
   · apply List.all_eq_true.mpr
     intro key member
     exact uniqueRows_append (List.all_eq_true.mp old.2 key member) (fresh key member)
@@ -115,7 +122,8 @@ exactly when the integers are equal: the integer keys of the model before slice 
 special case of SQLite's key equality. Proof sketch: both cells rank as numbers and have
 no bytes, so the comparison is that of the integers times the same nonzero factor. -/
 theorem LiteralData.keyCellsEqual_integer (a b : Int) : keyCellsEqual (.integer a) (.integer b) = (a == b) := by
-  simp only [keyCellsEqual, compareValues, compareLex, compareOn, Value.rank, Value.scaled, Value.bytes]
+  simp only [keyCellsEqual, Collation.compare, Collation.key, compareValues, compareLex, compareOn, Value.rank,
+    Value.scaled, Value.bytes]
   have pos : (2 : Int) ^ 1074 ≠ 0 := Int.pow_ne_zero (by decide)
   generalize (2 : Int) ^ 1074 = factor at *
   by_cases h : a = b

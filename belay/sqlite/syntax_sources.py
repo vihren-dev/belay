@@ -14,7 +14,7 @@ from collections.abc import Callable
 
 from .located import Located, constructor, leaf, sequence, structure
 from .sql_tree import Node, Tree
-from .syntax_definitions import absent, left_list, require
+from .syntax_shapes import absent, left_list, require
 from .syntax_expressions import dequote, name
 
 def alias(tree: Tree, node: Node) -> Located:

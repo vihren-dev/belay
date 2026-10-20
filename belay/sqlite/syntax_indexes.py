@@ -7,7 +7,7 @@ frontend maps every expression form that a query may use.
 
 from .located import Located, constructor, leaf, sequence
 from .sql_tree import Node, Tree
-from .syntax_definitions import absent, require
+from .syntax_shapes import absent, require
 from .syntax_expressions import name
 from .syntax_queries import query_expression
 from .syntax_select import order_terms

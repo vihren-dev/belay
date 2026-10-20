@@ -93,7 +93,9 @@ UNIQUE constraints and unique indexes are then checked by one function.
   reports the name.
 - **Inert `REFERENCES`** (owner decision 3). A `REFERENCES` clause or a `FOREIGN KEY`
   table constraint is admitted under a profile that does not enforce foreign keys, where
-  SQLite ignores it apart from its prepare errors. The catalog keeps no foreign key.
+  SQLite ignores it apart from its prepare errors. The catalog keeps each foreign key as
+  inert metadata (the referenced table and columns, and the `ON DELETE` and `ON UPDATE`
+  actions), because the judge compares `PRAGMA foreign_key_list` (owner decision 4).
   Under a profile that enforces them, it stays a restriction.
 - **ADD COLUMN.** An `ADD COLUMN` with a CHECK follows SQLite's check of the existing
   rows. The slice confirms the exact rule natively first.
@@ -211,6 +213,88 @@ Each slice works in this way:
 - A judge change, such as the comparison of `WITHOUT ROWID` rows, has its own pull
   request A with a new judge lock, under ADR 0011.
 
+### Implementation notes
+
+- Slice 1 (2026-10-19): the key forms and the catalog index live in
+  `Resolution/Keys.lean`, and `Catalog.uniqueKeys` gives every key as terms with an optional
+  filter. An index may repeat a column, as SQLite allows. The time keywords in an index
+  are covered by Lean examples only: the recorder refuses them outside a controlled clock.
+- Slice 2 (2026-10-19), a change of D4's representation: the rows of a `WITHOUT ROWID`
+  table keep distinct hidden rowids, which the writes allocate as for any table and no
+  result shows, and `Table.scanRows` orders a full scan by the primary key. So the write
+  path, `Table.Valid` and its proofs stay as they are. Queries and the `RETURNING` rows of
+  UPDATE and DELETE read the scan; the harness compares such a table by its cells in key
+  order, and the prediction gives each row the primary-key cells as its identity.
+- Slice 3 (2026-10-19), details checked natively that D3 does not state:
+  - SQLite looks a collation name up only where it uses the collation, and its query
+    planner decides some of those uses: `SELECT x COLLATE foo` runs, and
+    `WHERE 'a' COLLATE NOCASE = x COLLATE foo` fails. So an unknown name is SQLite's prepare
+    error in a column definition and an index term only, and the restriction
+    `unknown-collation` in any other expression.
+  - The equality of `USING` and `NATURAL` has the collation of the left-most left column of
+    the name: SQLite gives a coalesce of left columns the collation of its first argument,
+    and a column always has a collation.
+  - An `ON CONFLICT` target without `COLLATE` matches a key of any collation; `COLLATE` in a
+    target stays a frontend refusal.
+- Slice 4 (2026-10-19), details checked natively that D2 does not state:
+  - The CHECK constraints of a column live on the column, and those of table constraints
+    on the table. SQLite keeps one list in written order; the orders differ only in the
+    label that a row reports when several CHECK constraints fail, and every failure has
+    the same result code.
+  - The name of `CONSTRAINT name` stays in effect within a column definition, and from the
+    last column into the table constraints until a comma between two of them. The
+    frontend gives each CHECK its label.
+  - ADD COLUMN with a CHECK over rows fails with result code 1 (`SQLITE_ERROR`) at step,
+    not with a constraint error, and its SELECT over `pragma_quick_check` is an output
+    column. A CHECK of ADD COLUMN that does not resolve is a step error natively, which the
+    model leaves as the restriction `add-column-check-error`.
+  - A time keyword, a date and time function or a JSON function in a CHECK is the
+    restriction `check-function`.
+  - The support check admits every CREATE TABLE: a new table has no rows to violate a
+    constraint.
+  - `PRAGMA foreign_key_list` numbers the foreign keys in the reverse of the order in which
+    SQLite creates them (the columns' in column order, then the table constraints'), with
+    one row per column, NULL as `to` without a column list, and `match` always `NONE`; a
+    later action clause replaces an earlier one. The model keeps them in creation order
+    (`CatalogTable.allForeignKeys`), and the prediction renders the rows.
+  - Records before version 4 have no execution profile, and their setup may turn foreign
+    keys on; the subject cannot see it, so such a record with a foreign key stays out of
+    scope (`conformance/profile_scope.py`).
+- Slice 5 (2026-10-19), details checked natively that D5 does not state:
+  - `PRAGMA table_xinfo` reports a generated column with `hidden` 2 (`VIRTUAL`) or 3
+    (`STORED`), and the recorder reads its values as row cells, so the model stores both
+    kinds.
+  - An INSERT without a column list takes values for the columns that are not generated,
+    and its count message counts only those.
+  - SQLite strips a trailing `GENERATED ALWAYS` from a declared type.
+  - A loop of generated columns fails CREATE TABLE at step, a `DO UPDATE` of a generated
+    column fails only on a conflict, and ADD COLUMN of a `STORED` column fails at step; the
+    model leaves these, and ADD COLUMN of any generated column, as restrictions
+    (`generated-loop`, `upsert-generated`, `add-column-generated`). ADD COLUMN of a
+    `VIRTUAL` column would need a value per existing row, which the ADD COLUMN step and its
+    laws do not describe.
+  - The model computes generated values in passes over the generated columns, one per
+    generated column, so the kernel reduces the computation.
+- Slice 6 (2026-10-20), details checked natively that D6 does not state:
+  - SQLite reads the option words as written, so `STRICT` in either ASCII case is the
+    option, and a quoted word is `unknown table option`. A column without a type is
+    `missing datatype for t.a`, and another type is `unknown datatype for t.a: "..."`.
+  - The type check comes after NOT NULL and before CHECK and the unique keys, and has
+    extended code 3091 (`SQLITE_CONSTRAINT_DATATYPE`). It is ABORT under every conflict
+    algorithm: `OP_TypeCheck` ends with `abort_due_to_error`, so `OR FAIL` keeps no earlier
+    row, `OR ROLLBACK` keeps the transaction open, and `OR IGNORE` and `OR REPLACE` fail.
+    A rowid alias keeps its own `datatype mismatch`.
+  - A column's affinity and its DEFAULT follow its strict type: an `ANY` default `'7'`
+    stays text.
+  - Each primary-key column other than the rowid alias is NOT NULL, with ABORT unless it
+    declares its own NOT NULL (`sqlite3EndTable`, R-40010-16873), and `PRAGMA table_info`
+    reports it so.
+  - ADD COLUMN to a `STRICT` table runs SQLite's SELECT over `pragma_quick_check`, which is
+    an output column of the statement. A type that the table does not admit, and a
+    default that does not fit the type (`type mismatch on DEFAULT` when the table has
+    rows), fail only while the statement runs; the model leaves both as the restriction
+    `add-column-strict-type`.
+
 ## Consequences
 
 - **Catalog and Syntax grow.**
@@ -265,3 +349,10 @@ Decided on 2026-10-19:
    other blocker of 110 schema-feature cases.
 3. **An inert `REFERENCES` is admitted** under profiles that do not enforce foreign keys
    (D2, slice 4).
+
+Decided on 2026-10-19, during slice 4:
+
+4. **Foreign keys are kept as inert metadata** (D2). The first text of D2 said that the
+   catalog keeps no foreign key, but the judge compares each table's
+   `PRAGMA foreign_key_list` rows, so 18 cases that agree would disagree. The catalog keeps
+   them and the prediction gives the rows that SQLite reports.

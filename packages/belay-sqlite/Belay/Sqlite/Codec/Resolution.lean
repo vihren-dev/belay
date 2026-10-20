@@ -12,11 +12,24 @@ namespace Belay.Sqlite
 deriving instance Lean.FromJson, Lean.ToJson for Comparison, ArithmeticOperator
 deriving instance Lean.FromJson, Lean.ToJson for ConflictAlgorithm
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.QuoteKind
+deriving instance Lean.FromJson, Lean.ToJson for Syntax.ForeignKeyAction
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.Expr, Syntax.DefaultExpression, Syntax.ColumnConstraint
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ResultColumn, Syntax.OrderTerm
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ColumnDefinition, Syntax.TableConstraint
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.TableReference, Syntax.Join
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ConflictAction, Syntax.ConflictClause
+/-- The table options as JSON, with {lit}`strict` only for a {lit}`STRICT` table, so the
+records of other tables keep their form. -/
+instance : Lean.ToJson Syntax.TableOptions where
+  toJson options := Lean.Json.mkObj ([("withoutRowid", Lean.toJson options.withoutRowid)] ++
+    (if options.strict then [("strict", Lean.toJson true)] else []))
+
+/-- Read the table options ({name}`Syntax.TableOptions`); a missing {lit}`strict` is a table
+that is not {lit}`STRICT`. -/
+instance : Lean.FromJson Syntax.TableOptions where
+  fromJson? json := do
+    let strict : Bool := (json.getObjValAs? Bool "strict").toOption.getD false
+    return { withoutRowid := ← json.getObjValAs? Bool "withoutRowid", strict }
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.Statement
 deriving instance Lean.ToJson for ExprError
 
@@ -53,6 +66,7 @@ deriving instance Lean.ToExpr for Syntax.Expr
 deriving instance Lean.ToExpr for Syntax.ResultColumn
 deriving instance Lean.ToExpr for Syntax.OrderTerm
 deriving instance Lean.ToExpr for Syntax.DefaultExpression
+deriving instance Lean.ToExpr for Syntax.ForeignKeyAction
 deriving instance Lean.ToExpr for Syntax.ColumnConstraint
 deriving instance Lean.ToExpr for Syntax.ColumnDefinition
 deriving instance Lean.ToExpr for Syntax.TableConstraint
@@ -60,6 +74,7 @@ deriving instance Lean.ToExpr for Syntax.TableReference
 deriving instance Lean.ToExpr for Syntax.Join
 deriving instance Lean.ToExpr for Syntax.ConflictAction
 deriving instance Lean.ToExpr for Syntax.ConflictClause
+deriving instance Lean.ToExpr for Syntax.TableOptions
 deriving instance Lean.ToExpr for Syntax.Statement
 deriving instance Lean.ToExpr for Limits
 deriving instance Lean.ToExpr for Profile
@@ -67,11 +82,16 @@ deriving instance Lean.ToExpr for TimeKeyword
 deriving instance Lean.ToExpr for DefaultInsert
 deriving instance Lean.ToExpr for DefaultForm
 deriving instance Lean.ToExpr for ColumnDefault
-deriving instance Lean.ToExpr for CatalogColumn
-deriving instance Lean.ToExpr for CatalogTable
+deriving instance Lean.ToExpr for Collation
 deriving instance Lean.ToExpr for Resolved.JsonFunction
 deriving instance Lean.ToExpr for Resolved.DateFunction
 deriving instance Lean.ToExpr for Resolved.Expr, Resolved.Arguments
+deriving instance Lean.ToExpr for CheckConstraint
+deriving instance Lean.ToExpr for ForeignKey
+deriving instance Lean.ToExpr for GeneratedColumn
+deriving instance Lean.ToExpr for StrictType
+deriving instance Lean.ToExpr for CatalogColumn
+deriving instance Lean.ToExpr for CatalogTable
 deriving instance Lean.ToExpr for KeyTerm
 deriving instance Lean.ToExpr for IndexKey
 deriving instance Lean.ToExpr for CatalogIndex
@@ -82,6 +102,7 @@ deriving instance Lean.ToExpr for PrepareError
 deriving instance Lean.ToExpr for Resolved.Aggregate
 deriving instance Lean.ToExpr for Resolved.Output
 deriving instance Lean.ToExpr for Resolved.SortKey
+deriving instance Lean.ToExpr for Resolved.SortTerm
 deriving instance Lean.ToExpr for Resolved.JoinKind
 deriving instance Lean.ToExpr for Resolved.Source
 deriving instance Lean.ToExpr for Resolved.QuerySource
@@ -93,10 +114,11 @@ deriving instance Lean.ToExpr for Resolved.Cell
 deriving instance Lean.ToExpr for Resolved.Statement
 
 /-- The supported version of {lit}`ScriptRecord`, the structural record of a schema
-and a script: {assert}`scriptRecordVersion = 4`. Version 4 gives CREATE INDEX its key terms
-and filter (ADR 0014, slice 1); version 3 retained each default's source spelling. Earlier
-versions do not carry this metadata. -/
-def scriptRecordVersion : Nat := 4
+and a script: {assert}`scriptRecordVersion = 5`. Version 5 gives CREATE TABLE its table
+options (ADR 0014, slice 2); version 4 gave CREATE INDEX its key terms and filter (slice 1);
+version 3 retained each default's source spelling. Earlier versions do not carry this
+metadata. -/
+def scriptRecordVersion : Nat := 5
 
 /-- The structural record of a schema and a script: the SQLite release and build of
 the profile, and the schema and script statements as written. Use an empty schema

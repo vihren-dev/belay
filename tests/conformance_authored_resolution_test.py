@@ -18,10 +18,9 @@ from conformance.requirement_coverage import resolved_ids
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_lean,
               pytest.mark.requires_native("parser-library", "sqlite3")]
 ROOT = Path(__file__).resolve().parents[1]
-OUT_OF_SCOPE = {"nonconstant-default", "multiple-primary-keys-neighbor",
-                "nonconstant-default-neighbor"}
-"""Cases whose SQL the model does not describe: a parenthesized default expression; a
-CREATE TABLE that runs with a primary key or a default."""
+OUT_OF_SCOPE = {"nonconstant-default"}
+"""Cases whose SQL the model does not describe: a parenthesized default expression. A CREATE
+TABLE with a primary key or a default runs since ADR 0014, slice 4."""
 
 
 def test_coverage_cases_record_phases_and_agree(runtime_root: Path) -> None:

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-19T19:54:43+00:00",
+  "finding": "20261019T195210Z-9057add3#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "a second AS on a column is errorInGenerated (checked natively), with an example and a corpus case"
+}

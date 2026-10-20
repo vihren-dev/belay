@@ -11,27 +11,64 @@ namespace Belay.Sqlite
 
 deriving instance Lean.FromJson, Lean.ToJson for Limits, Profile
 deriving instance Lean.FromJson, Lean.ToJson for Conformance.ErrorPhase
-deriving instance Lean.FromJson, Lean.ToJson for Conformance.NativeColumn
+/-- A native column as JSON, with {lit}`hidden` only for a generated column, so the records of
+other columns keep their form. -/
+instance : Lean.ToJson Conformance.NativeColumn where
+  toJson column := Lean.Json.mkObj ([("name", Lean.toJson column.name),
+      ("declaredType", Lean.toJson column.declaredType), ("notNull", Lean.toJson column.notNull),
+      ("defaultValue", Lean.toJson column.defaultValue)] ++
+    (if column.hidden == 0 then [] else [("hidden", Lean.toJson column.hidden)]))
+
+/-- Read a native column ({name}`Conformance.NativeColumn`); a missing {lit}`hidden` is an
+ordinary column. -/
+instance : Lean.FromJson Conformance.NativeColumn where
+  fromJson? json := do
+    let hidden : Nat := (json.getObjValAs? Nat "hidden").toOption.getD 0
+    return { name := ← json.getObjValAs? Identifier "name", declaredType := ← json.getObjValAs? String "declaredType",
+             notNull := ← json.getObjValAs? Bool "notNull",
+             defaultValue := ← json.getObjValAs? (Option String) "defaultValue", hidden }
 
 /-- A native index as JSON: {lit}`name`, {lit}`columns` (a number for a column key, null for an
-expression), {lit}`unique`, and {lit}`descending` and {lit}`partial` only when an index has a
-descending term or is partial, so the records of indexes without them keep their form. -/
+expression), {lit}`unique`, and {lit}`descending`, {lit}`partial` and {lit}`collations` only when
+an index has a descending term, is partial or has a term that is not {lit}`BINARY`, so the
+records of indexes without them keep their form. -/
 instance : Lean.ToJson Conformance.NativeIndex where
   toJson index := Lean.Json.mkObj ([("name", Lean.toJson index.name), ("columns", Lean.toJson index.columns),
       ("unique", Lean.toJson index.unique)] ++
     (if index.descending.isEmpty then [] else [("descending", Lean.toJson index.descending)]) ++
-    (if index.isPartial then [("partial", Lean.toJson true)] else []))
+    (if index.isPartial then [("partial", Lean.toJson true)] else []) ++
+    (if index.collations.isEmpty then [] else [("collations", Lean.toJson index.collations)]))
 
 /-- Read a native index ({name}`Conformance.NativeIndex`); a missing {lit}`descending` is every
-term ascending and a missing {lit}`partial` is a full index. -/
+term ascending, a missing {lit}`partial` is a full index, and a missing {lit}`collations` is
+every term {lit}`BINARY`. -/
 instance : Lean.FromJson Conformance.NativeIndex where
   fromJson? json := do
     let descending : List Bool ← (json.getObjValAs? (List Bool) "descending").toOption.getD [] |> pure
     let isPartial : Bool ← (json.getObjValAs? Bool "partial").toOption.getD false |> pure
+    let collations : List String ← (json.getObjValAs? (List String) "collations").toOption.getD [] |> pure
     return { name := ← json.getObjValAs? Identifier "name", columns := ← json.getObjValAs? (List (Option Nat)) "columns",
-             unique := ← json.getObjValAs? Bool "unique", descending := Conformance.sortOrders descending, isPartial }
+             unique := ← json.getObjValAs? Bool "unique", descending := Conformance.sortOrders descending, isPartial,
+             collations := Conformance.collationNames collations }
 
-deriving instance Lean.FromJson, Lean.ToJson for Conformance.NativeTable, Conformance.NativeObservation
+/-- A native table as JSON, with {lit}`withoutRowid` only for a {lit}`WITHOUT ROWID` table, so the
+records of other tables keep their form. -/
+instance : Lean.ToJson Conformance.NativeTable where
+  toJson table := Lean.Json.mkObj ([("name", Lean.toJson table.name), ("columns", Lean.toJson table.columns),
+      ("primaryKey", Lean.toJson table.primaryKey), ("uniqueKeys", Lean.toJson table.uniqueKeys),
+      ("indexes", Lean.toJson table.indexes), ("rows", Lean.toJson table.rows)] ++
+    (if table.withoutRowid then [("withoutRowid", Lean.toJson true)] else []))
+
+/-- Read a native table ({name}`Conformance.NativeTable`); a missing {lit}`withoutRowid` is a
+table with a rowid. -/
+instance : Lean.FromJson Conformance.NativeTable where
+  fromJson? json := do
+    let withoutRowid : Bool := (json.getObjValAs? Bool "withoutRowid").toOption.getD false
+    return { name := ← json.getObjValAs? Identifier "name", columns := ← json.getObjValAs? _ "columns",
+             primaryKey := ← json.getObjValAs? _ "primaryKey", uniqueKeys := ← json.getObjValAs? _ "uniqueKeys",
+             indexes := ← json.getObjValAs? _ "indexes", rows := ← json.getObjValAs? _ "rows", withoutRowid }
+
+deriving instance Lean.FromJson, Lean.ToJson for Conformance.NativeObservation
 deriving instance Lean.FromJson, Lean.ToJson for Conformance.StatementOutput, Conformance.OutputGroup,
   Conformance.NativeOutput
 deriving instance Lean.FromJson, Lean.ToJson for Conformance.Case
@@ -43,9 +80,9 @@ source spelling in statement syntax. Version 4 lacked that spelling. -/
 def caseVersion : Nat := 5
 
 /-- Check one native table: folded-name uniqueness is checked by the caller; here,
-distinct bounded rowids and one cell per column. -/
+distinct bounded rowids, except in a {lit}`WITHOUT ROWID` table, and one cell per column. -/
 def checkNativeTable (table : NativeTable) : Except String Unit := do
-  unless (table.rows.map Row.rowid).eraseDups.length == table.rows.length do
+  unless table.withoutRowid || (table.rows.map Row.rowid).eraseDups.length == table.rows.length do
     throw "duplicate physical rowid"
   for row in table.rows do
     unless LiteralData.boundedInteger row.rowid && row.values.length == table.columns.length do

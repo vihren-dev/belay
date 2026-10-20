@@ -34,7 +34,9 @@ def indexExpressionTerm (dqs : Bool) (scope : Scope) (expression : Syntax.Expr) 
 column is that column; an unquoted {lit}`TRUE` or {lit}`FALSE` is an expression; a
 double-quoted name that is no column, under the profile's {lit}`DQS_DDL`, and a string
 literal are {name}`RestrictionKind.indexStringTerm`; any other name is
-{lit}`no such column`, also {lit}`rowid`. Every other term is
+{lit}`no such column`, also {lit}`rowid`. {lit}`x COLLATE c` is the term of {lit}`x`, then
+{lit}`no such collation sequence: c` for a name that names no collation, as
+{lit}`sqlite3CreateIndex` checks a term's names before its collation. Every other term is
 {name}`indexExpressionTerm`. -/
 def indexTerm (dqs : Bool) (scope : Scope) (columns : List CatalogColumn) : Syntax.Expr → Except ValueIssue KeyTerm
   | expression@(.identifier name quote) =>
@@ -45,18 +47,24 @@ def indexTerm (dqs : Bool) (scope : Scope) (columns : List CatalogColumn) : Synt
       else if quote == .double && dqs then .error (.restriction [] .indexStringTerm)
       else .error (.prepare (.noSuchColumn name))
   | .string _ => .error (.restriction [] .indexStringTerm)
+  | .collate operand name => do
+    let term ← indexTerm dqs scope columns operand
+    if (Collation.named? name).isNone then .error (.prepare (.noSuchCollation name)) else .ok term
   | expression@.null | expression@(.numeric _) | expression@(.blob _) | expression@(.currentTime _)
   | expression@(.qualified ..) | expression@(.negate _) | expression@(.positive _) | expression@(.compare ..)
   | expression@(.and ..) | expression@(.or ..) | expression@(.not _) | expression@(.isNull ..)
   | expression@(.callStar _) | expression@(.call ..) | expression@(.arithmetic ..) | expression@(.cast ..) =>
     indexExpressionTerm dqs scope expression
 
-/-- The key terms of CREATE INDEX in order, with their sort orders; the path of an issue of
-term {lit}`item` is {lit}`[item, 0]` within the term list. -/
+/-- The key terms of CREATE INDEX in order, with their sort orders and collations: an
+explicit {lit}`COLLATE`, else the column's, else {lit}`BINARY`
+({name}`Syntax.Expr.collationIn`); the path of an issue of term {lit}`item` is
+{lit}`[item, 0]` within the term list. -/
 def indexKeys (dqs : Bool) (scope : Scope) (columns : List CatalogColumn) (terms : List Syntax.OrderTerm) :
     Except ValueIssue (List IndexKey) :=
   terms.zipIdx.mapM fun (term, item) =>
-    ((fun resolved => { term := resolved, descending := term.descending }) <$>
+    ((fun resolved => { term := resolved, descending := term.descending,
+                        collation := term.expression.collationIn scope }) <$>
       indexTerm dqs scope columns term.expression).mapError (·.under [item, 0])
 
 /-- The filter of a partial index as a condition over the scope of the indexed table, or

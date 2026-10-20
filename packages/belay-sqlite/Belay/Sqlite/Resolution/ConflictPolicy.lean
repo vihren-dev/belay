@@ -10,6 +10,16 @@ computes it again from the state's catalog. -/
 
 namespace Belay.Sqlite
 
+/-- The {lit}`ON CONFLICT` algorithm of the UNIQUE constraint at the position, none for a
+constraint without the clause or without an entry. -/
+def CatalogTable.uniqueAlgorithm (table : CatalogTable) (index : Nat) : Option ConflictAlgorithm :=
+  table.uniqueAlgorithms.getD index none
+
+/-- The algorithms of the UNIQUE constraints, one for each key of
+{name}`CatalogTable.uniqueKeys`. -/
+def CatalogTable.keyedUniqueAlgorithms (table : CatalogTable) : List (Option ConflictAlgorithm) :=
+  table.uniqueKeys.mapIdx fun index _ => table.uniqueAlgorithm index
+
 /-- The {lit}`ON CONFLICT` algorithm of each key of {name}`Catalog.uniqueKeys`, in its
 order: the primary key's, each UNIQUE constraint's, and ABORT for each unique index. -/
 def Catalog.keyAlgorithms (catalog : Catalog) (position : Nat) (table : CatalogTable) : List ConflictAlgorithm :=
@@ -22,11 +32,12 @@ def Catalog.keyAlgorithms (catalog : Catalog) (position : Nat) (table : CatalogT
 /-- The algorithm of each constraint of an INSERT into the table: the statement's
 {lit}`OR` algorithm when it has one (R-33948-22286), else the algorithm of the
 constraint ({lit}`constraints` for the keys, {name}`CatalogColumn.notNullAlgorithm` for
-NOT NULL). -/
+NOT NULL), and ABORT for the CHECK constraints, which have no algorithm of their own. -/
 def insertPolicy (table : CatalogTable) (constraints : List ConflictAlgorithm) (algorithm : Option ConflictAlgorithm) :
     Resolved.ConflictPolicy :=
   { keys := constraints.map fun own => algorithm.getD own,
-    notNull := table.columns.map fun column => algorithm.getD column.notNullAlgorithm }
+    notNull := table.columns.map fun column => algorithm.getD column.notNullAlgorithm,
+    check := algorithm.getD .abort }
 
 /-- Whether the policy gives two keys different algorithms other than REPLACE, whose order
 SQLite decides internally (the restriction {lit}`mixed-conflict-algorithms`). -/
@@ -41,7 +52,7 @@ def replacesDefault (table : CatalogTable) (policy : Resolved.ConflictPolicy) : 
 
 /-- Whether every algorithm of the policy is ABORT, the behavior of a plain INSERT. -/
 def Resolved.ConflictPolicy.aborts (policy : Resolved.ConflictPolicy) : Bool :=
-  policy.keys.all (· == .abort) && policy.notNull.all (· == .abort)
+  policy.keys.all (· == .abort) && policy.notNull.all (· == .abort) && policy.check == .abort
 
 /-- The policy of an INSERT into the table at the catalog position with the optional
 {lit}`OR` algorithm: {name}`insertPolicy` over {name}`Catalog.keyAlgorithms`. Resolution

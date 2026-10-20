@@ -11,7 +11,7 @@ from conformance.resolve_mutants import SQLITE
 LITERAL_DATA = SQLITE + "LiteralData.lean"
 """The key equality of the execution semantics."""
 
-BODY = "  first != .null && second != .null && compareValues first second == .eq"
+BODY = "  first != .null && second != .null && collation.compare first second == .eq"
 """The body of `keyCellsEqual`."""
 
 FOLD = "(fun b => if 65 ≤ b && b ≤ 90 then b + 32 else b)"
@@ -30,8 +30,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "    | _, _ => true)"),
     "null_cells_equal": (LITERAL_DATA, BODY, "  (first == .null && second == .null) ||\n" + BODY),
     "first_key_column_only": (LITERAL_DATA,
-        "    key.terms.all fun term => match termValue first term, termValue second term with",
-        "    (key.terms.take 1).all fun term => match termValue first term, termValue second term with"),
+        "    key.terms.all fun term => match termValue first term.term, termValue second term.term with",
+        "    (key.terms.take 1).all fun term => match termValue first term.term, termValue second term.term with"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
 replacement. The names follow the list in the task of slice 5a: TEXT compared without

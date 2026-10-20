@@ -135,16 +135,19 @@ theorem effect_createTable_ok (clock : Int) (database : Database) (name : Identi
 
 /-- For every clock value, database, position, table, column and value: when the table is
 at the position, the column has no time default, its default reads as the value
-({name}`readDefaultValue`), and the column is not NOT NULL with a NULL value over rows,
-ADD COLUMN succeeds with the column appended and the value in every row
-({name}`Database.addColumn`). Proof sketch: {name}`literalStep` is {name}`step` here, and
-the premises select its successful branch. -/
+({name}`readDefaultValue`), the column is not NOT NULL with a NULL value over rows, and
+every row with the value appended satisfies the column's CHECK constraints
+({name}`LiteralData.checkHolds`), ADD COLUMN succeeds with the column appended and the
+value in every row ({name}`Database.addColumn`). Proof sketch: {name}`literalStep` is
+{name}`step` here, and the premises select its successful branch. -/
 theorem effect_addColumn_ok (clock : Int) {database : Database} {target : Nat} {table : Table}
     {column : CatalogColumn} {value : Value} (present : database.table target = some table)
     (constant : column.clockDefault = false) (read : readDefaultValue column = .ok value)
-    (allowed : (column.notNull && value == .null && !table.rows.isEmpty) = false) :
+    (allowed : (column.notNull && value == .null && !table.rows.isEmpty) = false)
+    (checked : table.rows.all (fun row => column.checks.all
+      (LiteralData.checkHolds { row with values := row.values ++ [value] })) = true) :
     literalStep clock (.addColumn target column) database = .ok (database.addColumn target column value) := by
-  simp [literalStep, runStatement, step, present, constant, read, allowed]
+  simp [literalStep, runStatement, step, present, constant, read, allowed, checked]
 
 /-- For every clock value, database, position, table, rows and {lit}`RETURNING` columns:
 when the table is at the position, no row at the clock value ({name}`Resolved.rowsAt`) has

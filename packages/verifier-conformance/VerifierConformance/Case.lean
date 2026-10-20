@@ -38,13 +38,19 @@ inductive Verdict where
   | modelUnsupported
   deriving Repr, DecidableEq
 
+/-- The rows of a native table as the model stores them: as recorded, or for a
+{lit}`WITHOUT ROWID` table numbered 1, 2, ... in recorded order, since SQLite gives them no
+rowid and the model's rowids of such a table are its own (ADR 0014, D4). -/
+def storedRows (table : CatalogTable) (rows : List Row) : List Row :=
+  if table.withoutRowid then rows.zipIdx.map fun (row, index) => { row with rowid := index + 1 } else rows
+
 /-- The starting database: the catalog, and at each catalog table the rows of the native
-table with its folded name. A catalog table without a native table, and an index, hold no
-rows. -/
+table with its folded name ({name}`storedRows`). A catalog table without a native table,
+and an index, hold no rows. -/
 def databaseOf (catalog : Catalog) (natives : List NativeTable) : Database :=
   { catalog, rows := catalog.map fun object => match object.entry with
-    | .table _ => ((natives.find? fun native =>
-        native.name.sameName object.name).map (·.rows)).getD []
+    | .table table => storedRows table (((natives.find? fun native =>
+        native.name.sameName object.name).map (·.rows)).getD [])
     | .index _ => [] }
 
 /-- The primary result-code abstraction matches the granularity of ExecutionError. -/
@@ -54,7 +60,7 @@ def primaryCode : Option (Nat × ExecutionError) → Nat
   | some (_, .datatypeMismatch) => 20
   | some (_, .unmodeled) | some (_, .prepare _) | some (_, .transactionAlreadyActive)
   | some (_, .noActiveTransaction) | some (_, .integerOverflow) | some (_, .functionError)
-  | some (_, .nullColumnDefault) | some (_, .nonConstantColumnDefault) => 1
+  | some (_, .nullColumnDefault) | some (_, .nonConstantColumnDefault) | some (_, .checkColumnDefault) => 1
 
 /-- The phase in which SQLite reports a modeled error: a prepare error of resolution
 in {lit}`sqlite3_prepare_v2`, and every other modeled error in {lit}`sqlite3_step`. -/
@@ -64,7 +70,8 @@ def errorPhase : Option (Nat × ExecutionError) → Option ErrorPhase
   | some (_, .unmodeled) | some (_, .transactionAlreadyActive) | some (_, .noActiveTransaction)
   | some (_, .constraintViolation) | some (_, .constraintFail) | some (_, .constraintRollback)
   | some (_, .integerOverflow) | some (_, .datatypeMismatch) | some (_, .functionError)
-  | some (_, .nullColumnDefault) | some (_, .nonConstantColumnDefault) => some .step
+  | some (_, .nullColumnDefault) | some (_, .nonConstantColumnDefault) | some (_, .checkColumnDefault) =>
+    some .step
 
 /-- Compare the visible and committed databases, each with its own catalog, the
 transaction status, the primary code and, when the recorder observed it, the error phase;

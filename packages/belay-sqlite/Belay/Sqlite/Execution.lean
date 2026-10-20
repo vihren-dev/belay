@@ -51,6 +51,11 @@ inductive ExecutionError where
   rows: SQLite's {lit}`Cannot add a column with non-constant default`, reported while the
   statement runs with primary code 1; an empty table permits the addition. -/
   | nonConstantColumnDefault
+  /-- ADD COLUMN whose CHECK constraint an existing row with the new column's default
+  fails: SQLite's {lit}`CHECK constraint failed`, reported while the statement runs with
+  primary code 1, not as a constraint error; an empty table permits the addition (ADR 0014,
+  slice 4). -/
+  | checkColumnDefault
   deriving Repr, DecidableEq
 
 /-- The final database and transaction status. Use {lean}`Outcome.success`
@@ -88,20 +93,6 @@ def Outcome.persistedDatabase : Outcome → Database
   | .pending persisted _ _ => persisted
   | outcome => outcome.database
 
-/-- Whether the model describes a definition of this column: no NOT NULL and no
-default. This is a model restriction, not a SQLite rule: SQLite accepts such
-columns, so the supported-subset check {lit}`statementReady` excludes them and
-{lit}`step` never fails because of them. -/
-def CatalogColumn.plain (column : CatalogColumn) : Bool := !column.notNull && column.defaultValue.isNone
-
-/-- Whether the model describes a CREATE TABLE of this table: plain columns, no
-keys and no rowid alias. This is a model restriction, which the supported-subset
-check {lit}`statementReady` applies; {lit}`resolve` also refuses other tables in
-statements that run. -/
-def CatalogTable.plain (table : CatalogTable) : Bool :=
-  table.columns.all CatalogColumn.plain && table.primaryKey.isEmpty && table.uniqueKeys.isEmpty &&
-    table.rowidAlias.isNone
-
 /-- A query over a database at a clock value: its source rows ({name}`Resolved.Query.source`)
 and its run over them ({name}`Resolved.Query.run`); none when a table is missing. -/
 def Resolved.Query.runOn (query : Resolved.Query) (clock : Int) (database : Database) :
@@ -125,9 +116,10 @@ input database for every error here. SQLite refuses a statement with its prepare
 error. CREATE TABLE adds the table to the catalog ({name}`Catalog.createTable`) with no
 rows. ADD COLUMN reads the literal default and appends
 its affinity-applied value to each existing row. A NOT NULL column with a NULL
-default fails with {lean}`ExecutionError.nullColumnDefault` when rows exist, and one with
-a time default with {lean}`ExecutionError.nonConstantColumnDefault`;
-an empty table succeeds. Unsupported default readback returns
+default fails with {lean}`ExecutionError.nullColumnDefault` when rows exist, one with
+a time default with {lean}`ExecutionError.nonConstantColumnDefault`, and one whose CHECK
+constraint an existing row with the default fails with
+{lean}`ExecutionError.checkColumnDefault`; an empty table succeeds. Unsupported default readback returns
 {lean}`ExecutionError.unmodeled` and is excluded by the support check.
 CREATE INDEX builds the index over the table's rows (ADR 0014, D1): a unique index whose
 key has two conflicting rows ({lit}`LiteralData.uniqueRows`) fails with
@@ -159,6 +151,9 @@ def step (clock : Int) (statement : Resolved.Statement) (database : Database) : 
       | .ok value =>
         if column.notNull && value == .null && !table.rows.isEmpty then
           .error (.nullColumnDefault, database)
+        else if !table.rows.all (fun row => column.checks.all
+            (LiteralData.checkHolds { row with values := row.values ++ [value] })) then
+          .error (.checkColumnDefault, database)
         else .ok (database.addColumn target column value)
   | .createIndex target name index =>
     if target == database.catalog.length && database.rows.length == database.catalog.length then

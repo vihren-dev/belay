@@ -58,7 +58,7 @@ theorem failureMigrationCorrect (profile : Profile) (columns : 2 ≤ profile.lim
   · exact checked.starting
   · intro database _
     exact SupportedSql.of_readsClock (by decide) (supportedSqlFrom_noWrites (by simp [NoWrites, failureScript, script])
-      (by simp [ModeledDefinitions, failureScript, script, CatalogTable.plain, CatalogColumn.plain, readDefaultValue, Except.toOption, note, message]))
+      (by simp [ModeledDefinitions, failureScript, script, readDefaultValue, Except.toOption, note, message]))
   · intro database admitted
     obtain ⟨logical, read, _⟩ := (checked.beforeSound database (checked.starting database admitted)).2
     have obligations := checked.outcomes database admitted _ (ProfileExecutes.of_readsClock (by decide))

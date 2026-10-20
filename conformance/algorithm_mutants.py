@@ -38,8 +38,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "or_does_not_override": (POLICY, "  { keys := constraints.map fun own => algorithm.getD own,",
         "  { keys := constraints.map fun own => own,"),
     "not_null_constraint_ignored": (POLICY,
-        "    notNull := table.columns.map fun column => algorithm.getD column.notNullAlgorithm }",
-        "    notNull := table.columns.map fun _ => algorithm.getD .abort }"),
+        "    notNull := table.columns.map fun column => algorithm.getD column.notNullAlgorithm,",
+        "    notNull := table.columns.map fun _ => algorithm.getD .abort,"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
 replacement. The names follow the list in the task of slice 5d: FAIL keeps no row;

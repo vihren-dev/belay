@@ -5,6 +5,7 @@ import Belay.Sqlite.Resolution.SyntaxScope
 import Belay.Sqlite.ExprEval
 import Belay.Sqlite.Resolution.ExprAny
 import Belay.Sqlite.ClockReads
+import Belay.Sqlite.Resolution.Collations
 
 set_option doc.verso true
 
@@ -21,8 +22,8 @@ mutual
 operand of its name ({name}`Scope.resolveName`, {name}`Scope.nameOperand`): one column,
 or the coalesce of the columns that full joins merged; two columns that no join merged
 are SQLite's {lit}`ambiguous column name: %s`. With none: a rowid name
-({name}`rowidName`) is a model restriction when a table is in scope, because SQLite reads
-the rowid; a name written in double quotes is a string literal when {lit}`dqs` is on;
+({name}`rowidName`) is a model restriction when a source with a rowid is in scope
+({name}`ScopeSource.hasRowid`), because SQLite reads the rowid; a name written in double quotes is a string literal when {lit}`dqs` is on;
 an unquoted {lit}`TRUE` or {lit}`FALSE` is the integer 1 or 0; else it is SQLite's
 {lit}`no such column: %s`, also for {lit}`[true]`, which only quotes. A qualified name {lit}`x.c` is column
 {lit}`c` of the sources named {lit}`x` ({name}`Scope.resolveQualified`): one column, the
@@ -36,12 +37,15 @@ arguments: without arguments only a date and time function; with one argument a 
 date and time function over its resolved argument, else an aggregate's issue or
 {name}`callIssue`; with two or more {lit}`COALESCE`, a JSON or a date and time function over
 its resolved arguments, else {name}`pairIssue`. The issue path of argument {lit}`k` is
-{lit}`[1, k]`. -/
+{lit}`[1, k]`. A comparison compares under {name}`comparisonCollation`. {lit}`x COLLATE c`
+is the resolved {lit}`x`, whose collation the expression that uses it decides; a name
+{lit}`c` other than {lit}`BINARY`, {lit}`NOCASE` and {lit}`RTRIM` is
+{name}`RestrictionKind.unknownCollation`. -/
 def resolveOperand (dqs : Bool) (scope : Scope) (misuse : Bool) : Syntax.Expr → Except ValueIssue Operand
   | .identifier name quote => match scope.resolveName name with
     | .found _ reads => .ok (scope.nameOperand reads)
     | .missing =>
-      if rowidName name && !scope.isEmpty then .error (.restriction [] .rowidName)
+      if rowidName name && scope.any (·.hasRowid) then .error (.restriction [] .rowidName)
       else if quote == .double && dqs then .ok (.literal (.text name.bytes), none)
       else if quote == .none && booleanKeywordName name then
         .ok (.literal (.integer (if name.isKeyword (bytes! "true") then 1 else 0)), none)
@@ -50,7 +54,7 @@ def resolveOperand (dqs : Bool) (scope : Scope) (misuse : Bool) : Syntax.Expr �
   | .qualified source column => match scope.resolveQualified source column with
     | .found _ reads => .ok (scope.nameOperand reads)
     | .missing =>
-      if rowidName column && scope.hasSource source then .error (.restriction [] .rowidName)
+      if rowidName column && scope.rowidSource source then .error (.restriction [] .rowidName)
       else .error (.prepare (.noSuchColumn ⟨source.bytes ++ [46] ++ column.bytes⟩))
     | .ambiguous => .error (.prepare (.ambiguousColumn ⟨source.bytes ++ [46] ++ column.bytes⟩))
   | .compare operator left right => do
@@ -60,7 +64,10 @@ def resolveOperand (dqs : Bool) (scope : Scope) (misuse : Bool) : Syntax.Expr �
       -- x IS [NOT] TRUE is (NOT NOT x) IS [NOT] 1, and x IS [NOT] FALSE is (NOT x) IS [NOT] 1.
       let tested := if b.1.literal? == some (.integer 1) then .not (.not a.1) else .not a.1
       .ok (.compare operator none tested (.literal (.integer 1)), none)
-    else .ok (.compare operator (comparisonAffinity a.2 b.2) a.1 b.1, none)
+    else .ok (.compare operator (comparisonAffinity a.2 b.2) a.1 b.1 (comparisonCollation scope left right), none)
+  | .collate operand name => do
+    let resolved ← (resolveOperand dqs scope misuse operand).mapError (·.under [0])
+    if (Collation.named? name).isNone then .error (.restriction [] .unknownCollation) else .ok resolved
   | .and left right => do
     let a ← condition [0] (resolveOperand dqs scope misuse left)
     let b ← condition [1] (resolveOperand dqs scope misuse right)

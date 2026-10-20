@@ -33,18 +33,21 @@ def assignedExpression (scope : Scope) (position : Nat) (expression : Syntax.Exp
 
 /-- Resolve one {lit}`SET` assignment at item {lit}`item`, in SQLite's order
 ({lit}`sqlite3Update`): the expression first, then the column name. The column name
-must name a column of the table ({lit}`no such column: %s`). A value that reads the
+must name a column of the table ({lit}`no such column: %s`), and a generated one is the issue
+{lit}`generated` of its name. A value that reads the
 row for a column of a unique key ({lit}`keyColumns`) is a model restriction, and so is a
 value that names no column and whose JSON function may fail. Paths are
 relative to the assignment list. -/
-def resolveAssignment (dqs : Bool) (scope : Scope) (keyColumns : List Nat) (item : Nat) :
+def resolveAssignment (dqs : Bool) (scope : Scope) (keyColumns : List Nat) (generated : Identifier → ValueIssue)
+    (item : Nat) :
     Identifier × Syntax.Expr → Except ValueIssue (Nat × Resolved.Expr)
   | (name, value) =>
     (resolveOperand dqs scope true value).mapError (·.under [item, 1]) >>= fun operand =>
     (match columnPosition scope.columns name with
       | some position => .ok position
       | none => .error (.prepare (.noSuchColumn name))) >>= fun position =>
-    if mentionsColumn scope value && keyColumns.contains position then
+    if (scope.columns[position]?.bind (·.generated)).isSome then .error (generated name)
+    else if mentionsColumn scope value && keyColumns.contains position then
       .error (.restriction [item, 1] .rowDependentKey)
     else if !mentionsColumn scope value && !operand.1.readsClock && operand.1.mayFailOn 0 [] then
       .error (.restriction [item, 1] .constantFunctionError)

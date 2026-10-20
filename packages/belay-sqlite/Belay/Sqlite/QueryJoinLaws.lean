@@ -31,13 +31,13 @@ theorem Query.source_none (clock : Int) (query : Query) (database : Database) (n
   rfl
 
 /-- For every valid table, every row of {name}`sourceRows` has one cell per column.
-Proof sketch: the sorted rows are a permutation of the table's rows
-({name}`stableSort_perm`), each of which has one cell per column. -/
+Proof sketch: the scanned rows are a permutation of the table's rows
+({name}`Belay.Sqlite.Table.scanRows_perm`), each of which has one cell per column. -/
 theorem sourceRows_width {table : Table} (valid : table.Valid) :
     ∀ cells ∈ sourceRows table, cells.length = table.shape.columns.length := by
   intro cells member
   obtain ⟨row, sorted, rfl⟩ := List.mem_map.mp member
-  exact (valid.2 row ((stableSort_perm _ _).mem_iff.mp sorted)).2.1
+  exact (valid.2 row (table.scanRows_perm.mem_iff.mp sorted)).2.1
 
 /-- For every clock value, width, left row of that width, join, and candidate rows of
 {lit}`columns` cells each, every row of {name}`joinMatches` at the clock value has the width plus {lit}`columns` cells. Proof

@@ -25,8 +25,8 @@ def extremum (better : Value → Value → Bool) (values : List Value) : Value :
 def Aggregate.eval (clock : Int) (rows : List (List Value)) : Aggregate → Value
   | .countRows => .integer rows.length
   | .count operand => .integer (rows.filter fun row => !(operand.eval clock row).isNull).length
-  | .min operand => extremum (fun a b => compareValues a b == .lt) (rows.map (operand.eval clock))
-  | .max operand => extremum (fun a b => compareValues a b == .gt) (rows.map (operand.eval clock))
+  | .min operand collation => extremum (fun a b => collation.compare a b == .lt) (rows.map (operand.eval clock))
+  | .max operand collation => extremum (fun a b => collation.compare a b == .gt) (rows.map (operand.eval clock))
   | .sum operand => ((sumOf (rows.map (operand.eval clock))).sumValue).getD .null
   | .avg operand => (sumOf (rows.map (operand.eval clock))).averageValue
 
@@ -34,29 +34,30 @@ def Aggregate.eval (clock : Int) (rows : List (List Value)) : Aggregate → Valu
 overflow that no later REAL input cleared. Every other aggregate never fails. -/
 def Aggregate.fails (clock : Int) (rows : List (List Value)) : Aggregate → Bool
   | .sum operand => ((sumOf (rows.map (operand.eval clock))).sumValue).isNone
-  | .countRows | .count _ | .min _ | .max _ | .avg _ => false
+  | .countRows | .count _ | .min .. | .max .. | .avg _ => false
 
 /-- The groups of rows by the values of the grouping terms, in the order in which
 each group first appears. Two rows are in one group when each term's values compare
-as equal. -/
-def groups (clock : Int) (terms : List Expr) (rows : List (List Value)) : List (List (List Value)) :=
-  let key := fun row => terms.map (·.eval clock row)
-  let same := fun first second => (List.zip (key first) (key second)).all fun (a, b) => compareValues a b == .eq
+as equal under the term's collation. -/
+def groups (clock : Int) (terms : List (Expr × Collation)) (rows : List (List Value)) : List (List (List Value)) :=
+  let key := fun row => terms.map fun (term, _) => term.eval clock row
+  let same := fun first second => ((terms.map (·.2)).zip ((key first).zip (key second))).all
+    fun (collation, a, b) => collation.compare a b == .eq
   (rows.foldl (fun found row => match found.findIdx? (fun group => group.head?.any (same row)) with
     | some index => found.modify index (· ++ [row])
     | none => found ++ [[row]]) [])
 
-/-- One {lit}`ORDER BY` comparison: ascending, or descending when {lit}`descending`
-is true. NULL is first in ascending order (R-12881-55998). -/
-def compareTerm (descending : Bool) (a b : Value) : Ordering :=
-  if descending then compareValues b a else compareValues a b
+/-- One {lit}`ORDER BY` comparison under a collation: ascending, or descending when
+{lit}`descending` is true. NULL is first in ascending order (R-12881-55998). -/
+def compareTerm (descending : Bool) (collation : Collation) (a b : Value) : Ordering :=
+  if descending then collation.compare b a else collation.compare a b
 
-/-- The comparison of two lists of sort values, term by term, with one direction
-per term; the first term that differs decides. A missing value reads as NULL. -/
-def compareSort : List Bool → List Value → List Value → Ordering
+/-- The comparison of two lists of sort values, term by term, with one direction and one
+collation per term; the first term that differs decides. A missing value reads as NULL. -/
+def compareSort : List (Bool × Collation) → List Value → List Value → Ordering
   | [], _, _ => .eq
-  | descending :: directions, a, b =>
-    (compareTerm descending (a.headD .null) (b.headD .null)).then (compareSort directions a.tail b.tail)
+  | (descending, collation) :: orders, a, b =>
+    (compareTerm descending collation (a.headD .null) (b.headD .null)).then (compareSort orders a.tail b.tail)
 
 /-- Insert an item into a list after every leading item that is at most the new
 item by {lit}`le`. In a sorted list, the item goes after its equals, which keeps a
@@ -83,7 +84,7 @@ def queryGroups (clock : Int) (query : Query) (rows : List (List Value)) : List 
 of an aggregate query. -/
 def records (clock : Int) (query : Query) (rows : List (List Value)) : List Record :=
   let sortValues := fun (output : List Value) (source : List Value) =>
-    query.orderBy.map fun (key, _) => match key with
+    query.orderBy.map fun term => match term.key with
       | .expression expression => expression.eval clock source
       | .output index => output.getD index .null
   if query.aggregate then
@@ -99,9 +100,23 @@ def records (clock : Int) (query : Query) (rows : List (List Value)) : List Reco
         | .aggregate aggregate => aggregate.eval clock [row]
       (output, sortValues output row)
 
-/-- The rows of the table in rowid order, as the source of a query. -/
-def sourceRows (table : Table) : List (List Value) :=
-  (stableSort (fun a b => decide (a.rowid ≤ b.rowid)) table.rows).map Row.values
+/-- The primary-key cells of a row, in key order; a missing cell reads as NULL. -/
+def _root_.Belay.Sqlite.Table.keyCells (table : Table) (row : Row) : List Value :=
+  table.shape.primaryKey.map fun position => row.values.getD position .null
+
+/-- The rows of the table in the order of a full scan: rowid order, or for a
+{lit}`WITHOUT ROWID` table primary-key order ({name}`compareSort` of {name}`Belay.Sqlite.Table.keyCells`),
+descending for {lit}`PRIMARY KEY DESC`, under the key columns' collations, as SQLite's key
+b-tree gives them (ADR 0014, D4). -/
+def _root_.Belay.Sqlite.Table.scanRows (table : Table) : List Row :=
+  if table.shape.withoutRowid then
+    let directions := table.shape.primaryKey.map fun position =>
+      (table.shape.primaryKeyDescending, (table.shape.columns[position]?.map (·.collation)).getD .binary)
+    stableSort (fun a b => (compareSort directions (table.keyCells a) (table.keyCells b)).isLE) table.rows
+  else stableSort (fun a b => decide (a.rowid ≤ b.rowid)) table.rows
+
+/-- The rows of the table in scan order ({name}`Belay.Sqlite.Table.scanRows`), as the source of a query. -/
+def sourceRows (table : Table) : List (List Value) := table.scanRows.map Row.values
 
 /-- The rows that the {lit}`WHERE` condition keeps: those where it is true. -/
 def filtered (clock : Int) (query : Query) (rows : List (List Value)) : List (List Value) :=
@@ -111,7 +126,7 @@ def filtered (clock : Int) (query : Query) (rows : List (List Value)) : List (Li
 groups and columns, a stable sort by the {lit}`ORDER BY` terms, then the window.
 {lit}`Query.run` gives them with the fault of the query. -/
 def Query.results (clock : Int) (query : Query) (rows : List (List Value)) : List (List Value) :=
-  let directions := query.orderBy.map Prod.snd
+  let directions := query.orderBy.map fun term => (term.descending, term.collation)
   let sorted := stableSort (fun a b => (compareSort directions a.2 b.2).isLE)
     (records clock query (filtered clock query rows))
   let window := sorted.drop query.offset

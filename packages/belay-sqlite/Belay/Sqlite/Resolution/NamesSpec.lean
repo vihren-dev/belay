@@ -15,11 +15,11 @@ of the resolver; each prepare error returns the catalog, and the only branch tha
 appends is the one where {name}`Catalog.find` found nothing. -/
 theorem resolveCreateTable_step (context : ResolveContext) (catalog after : Catalog) (index : Nat)
     (name : Identifier) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
-    (statement : Resolved.Statement)
-    (ok : resolveCreateTable context catalog index name columns constraints = .ok (statement, after)) :
+    (options : Syntax.TableOptions) (statement : Resolved.Statement)
+    (ok : resolveCreateTable context catalog index name columns constraints options = .ok (statement, after)) :
     CatalogStep catalog after := by
   unfold resolveCreateTable at ok
-  simp only [prepareError, restrict] at ok
+  simp only [issueResolution, prepareError, restrict] at ok
   repeat' split at ok
   all_goals first
     | (cases ok; exact .same)
@@ -98,10 +98,10 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
     cases hsaved : state.saved
     · simpa [hsaved] using current
     · simpa [hsaved] using saved _ hsaved
-  | createTable name columns constraints =>
+  | createTable name columns constraints options =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    exact keep _ (resolveCreateTable_step _ _ _ _ _ _ _ _ (by assumption))
+    exact keep _ (resolveCreateTable_step _ _ _ _ _ _ _ _ _ (by assumption))
   | createIndex name unique table terms filter =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok

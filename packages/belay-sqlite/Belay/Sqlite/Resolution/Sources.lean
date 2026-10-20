@@ -45,7 +45,7 @@ def resolveTableReference (catalog : Catalog) (path : List Nat) (reference : Syn
   match catalog.findTable reference.table with
   | some (position, table) =>
     let declared := (catalog[position]?.map (·.name)).getD reference.table
-    .ok (position, { name := reference.alias.getD declared, columns := table.columns })
+    .ok (position, { name := reference.alias.getD declared, columns := table.columns, hasRowid := !table.withoutRowid })
   | none =>
     if reservedName reference.table then .error (.value (.restriction path .systemTable))
     else .error (.noSuchTable reference.table)

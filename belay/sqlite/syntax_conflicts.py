@@ -12,7 +12,8 @@ range.
 
 from .located import Located, constructor, leaf, pair, sequence, structure
 from .sql_tree import Node, Tree
-from .syntax_definitions import absent, left_list, require, resolve_type
+from .syntax_definitions import resolve_type
+from .syntax_shapes import absent, left_list, require
 from .syntax_expressions import name
 from .syntax_queries import query_expression
 

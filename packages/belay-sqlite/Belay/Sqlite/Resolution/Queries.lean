@@ -1,5 +1,6 @@
 import Belay.Sqlite.Resolution.StatementCatalog
 import Belay.Sqlite.Resolution.SourceList
+import Belay.Sqlite.Resolution.QueryTerms
 
 set_option doc.verso true
 
@@ -8,27 +9,12 @@ steps follow SQLite's resolver: the tables of {lit}`FROM` ({lit}`Sources`), the 
 columns, {lit}`WHERE`, the {lit}`ON` conditions, {lit}`GROUP BY`, {lit}`ORDER BY`, then
 {lit}`LIMIT` and {lit}`OFFSET`. The paths of a restriction use the child positions of
 {lit}`Syntax.Statement.select`: 0 the columns, 1 the first table, 2 the joins, 3 the
-filter, 4 the grouping terms, 5 the ordering terms, 6 the limit and 7 the offset. -/
+filter, 4 the grouping terms, 5 the ordering terms, 6 the limit and 7 the offset. A
+grouping term is a column name, also under one {lit}`COLLATE` ({name}`Belay.Sqlite.Syntax.Expr.collatedColumn`),
+or a result column; each grouping and ordering term compares under its collation
+(ADR 0014, slice 3). -/
 
 namespace Belay.Sqlite
-
-/-- The integer of a numeric value, if it is one. -/
-def NumericValue.integer? : NumericValue → Option Int
-  | .integer value => some value
-  | .real | .hexTooBig => none
-
-/-- The value of an integer literal, possibly negated; {lean}`(none : Option Int)`
-for any other expression. -/
-def integerLiteral : Syntax.Expr → Option Int
-  | .numeric text => (numericValue text false).integer?
-  | .negate operand => match operand with
-    | .numeric text => (numericValue text true).integer?
-    | .null | .string _ | .blob _ | .currentTime _ | .identifier .. | .negate _ | .positive _
-    | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast ..
-    | .qualified .. => none
-  | .null | .string _ | .blob _ | .currentTime _ | .identifier .. | .positive _ | .compare ..
-  | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast ..
-  | .qualified .. => none
 
 /-- One resolved result column with its names: {lit}`*` gives every column of every
 source that is not merged ({name}`Scope.visible`) under its defined name, a merged pair as
@@ -51,7 +37,7 @@ def resolveResultColumn (dqs : Bool) (scope : Scope) (column : Nat) :
     | .call name [operand] => match aggregateNamed name with
       | some aggregate =>
         let (resolved, _) ← (resolveOperand dqs scope true operand).mapError (·.under [0, column, 0, 1, 0])
-        .ok (named (.aggregate (aggregate resolved)) none)
+        .ok (named (.aggregate ((aggregate resolved).withCollation (operand.collationIn scope))) none)
       | none =>
         if scalarFunctionName name then do
           let (resolved, _) ← (resolveOperand dqs scope false value).mapError (·.under [0, column, 0])
@@ -59,49 +45,9 @@ def resolveResultColumn (dqs : Bool) (scope : Scope) (column : Nat) :
         else throw ((callIssue name).under [0, column, 0])
     | .call _ [] | .call _ (_ :: _ :: _) | .null | .numeric _ | .string _ | .blob _ | .currentTime _
     | .identifier .. | .qualified .. | .negate _ | .positive _ | .compare .. | .and .. | .or .. | .not _
-    | .isNull .. | .arithmetic .. | .cast .. =>
+    | .isNull .. | .arithmetic .. | .cast .. | .collate .. =>
       let (resolved, _) ← (resolveOperand dqs scope false value).mapError (·.under [0, column, 0])
       .ok (named (.scalar resolved) (definedName scope value))
-
-/-- The index of the first result column whose alias has the folded name. -/
-def aliasIndex (names : List (Option Identifier)) (name : Identifier) : Option Nat :=
-  names.findIdx? fun alias => alias.any (·.sameName name)
-
-/-- Whether a result column of an aggregate query is admitted by the model: an
-aggregate, or a scalar that is one of the grouping terms. SQLite also admits other
-scalars ("bare columns", whose row it chooses); that is a model restriction. -/
-def groupedOutput (terms : List Resolved.Expr) : Resolved.Output → Bool
-  | .aggregate _ => true
-  | .scalar expression => terms.contains expression
-
-/-- The result column that an {lit}`ORDER BY` or {lit}`GROUP BY` term names: an integer
-{lit}`k` from 1 to the number of columns names column {lit}`k - 1`; an identifier
-names the first column with that alias. {lit}`some (.error ())` is an integer out of
-range; {lean}`(none : Option (Except Unit Nat))` is any other term. -/
-def namedResult (names : List (Option Identifier)) : Syntax.Expr → Option (Except Unit Nat)
-  | .identifier name _ => (aliasIndex names name).map .ok
-  | term@.null | term@(.numeric _) | term@(.string _) | term@(.blob _) | term@(.currentTime _)
-  | term@(.negate _) | term@(.positive _) | term@(.compare ..) | term@(.and ..)
-  | term@(.or ..) | term@(.not _) | term@(.isNull ..) | term@(.callStar _) | term@(.call ..)
-  | term@(.arithmetic ..) | term@(.cast ..) | term@(.qualified ..) =>
-    (integerLiteral term).map fun (number : Int) =>
-      if 1 ≤ number ∧ number ≤ (names.length : Int) then .ok (number.toNat - 1) else .error ()
-
-/-- Resolve a {lit}`LIMIT` or {lit}`OFFSET` expression: an integer literal, or none. -/
-def windowValue (path : List Nat) : Option Syntax.Expr → Except ValueIssue (Option Int)
-  | none => .ok none
-  | some term => match integerLiteral term with
-    | some value => .ok (some value)
-    | none => .error (.restriction path .windowValue)
-
-/-- Whether a query is a model restriction because SQLite may skip a failing group: it
-has {lit}`GROUP BY`, a {lit}`LIMIT` or {lit}`OFFSET`, and a result column that can fail
-({name}`Resolved.Output.canFail`). SQLite finalizes the groups in an order that the
-model does not describe and stops at the window, so it may never compute a group
-whose {lit}`SUM` overflows. -/
-def windowSkipsFailure (groupBy : List Syntax.Expr) (limit offset : Option Syntax.Expr)
-    (outputs : List Resolved.Output) : Bool :=
-  !groupBy.isEmpty && (limit.isSome || offset.isSome) && outputs.any Resolved.Output.canFail
 
 /-- Resolve a {lit}`SELECT`; see the module documentation for the steps. -/
 def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
@@ -128,35 +74,44 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
     let aggregate := !groupBy.isEmpty || outputs.any fun (output, _) => match output with
       | .aggregate _ => true
       | .scalar _ => false
+    let collations := resultCollations scope results
     let grouped := fun (column : Nat) => match outputs[column]? with
-      | some (.scalar expression, _) => .ok expression
+      | some (.scalar expression, _) => .ok (expression, collations.getD column .binary)
       | some (.aggregate _, _) | none => .error (.prepare .aggregateInGroupBy)
     let terms ← resolveAll (fun item term => match term with
       | .identifier name _ => match scope.resolveName name, aliasIndex aliases name with
-        | .found _ reads, _ => .ok (scope.nameOperand reads).1
+        | .found _ reads, _ => .ok ((scope.nameOperand reads).1, term.collationIn scope)
         | .missing, some column => grouped column
         | .missing, none | .ambiguous, _ =>
-          (resolveOperand dqs scope true term).map (·.1) |>.mapError (·.under [4, item])
+          (resolveOperand dqs scope true term).map (·.1, term.collationIn scope) |>.mapError (·.under [4, item])
       | .callStar name | .call name [] | .call name [_] =>
         .error (if aggregateCall term then .prepare .aggregateInGroupBy else (callIssue name).under [4, item])
       | .numeric _ | .negate _ => match namedResult aliases term with
         | some (.ok column) => grouped column
         | some (.error ()) => .error (.prepare (.groupByOutOfRange (item + 1) outputs.length))
         | none => .error (.restriction [4, item] .groupByTerm)
-      | .qualified .. => (resolveOperand dqs scope true term).map (·.1) |>.mapError (·.under [4, item])
+      | .qualified .. =>
+        (resolveOperand dqs scope true term).map (·.1, term.collationIn scope) |>.mapError (·.under [4, item])
+      | .collate .. =>
+        if term.collatedColumn scope then
+          (resolveOperand dqs scope true term).map (·.1, term.collationIn scope) |>.mapError (·.under [4, item])
+        else .error (.restriction [4, item] .groupByTerm)
       | .call _ (_ :: _ :: _) | .null | .string _ | .blob _ | .currentTime _ | .positive _ | .compare ..
       | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast .. =>
         .error (.restriction [4, item] .groupByTerm)) groupBy
-    if aggregate && !outputs.all (groupedOutput terms ·.1) then
+    if aggregate && !outputs.all (groupedOutput (terms.map Prod.fst) ·.1) then
       throw (.restriction [0] .bareColumn)
     let order ← resolveAll (fun item (term : Syntax.OrderTerm) => match namedResult aliases term.expression with
-      | some (.ok column) => .ok (Resolved.SortKey.output column, term.descending)
+      | some (.ok column) =>
+        .ok { key := .output column, descending := term.descending, collation := collations.getD column .binary }
       | some (.error ()) => .error (.prepare (.orderByOutOfRange (item + 1) outputs.length))
       | none =>
         if aggregate then .error (.restriction [5, item] .aggregateOrderBy)
         else if namesAlias scope (aliases.filterMap id) term.expression then
           .error (aliasInExpression.under [5, item, 0])
-        else (resolveOperand dqs scope false term.expression).map (fun (e, _) => (.expression e, term.descending))
+        else (resolveOperand dqs scope false term.expression).map (fun (e, _) =>
+            ({ key := .expression e, descending := term.descending, collation := term.expression.collationIn scope }
+              : Resolved.SortTerm))
           |>.mapError (·.under [5, item, 0])) orderBy
     let limitValue ← windowValue [6] limit
     let offsetValue ← windowValue [7] offset

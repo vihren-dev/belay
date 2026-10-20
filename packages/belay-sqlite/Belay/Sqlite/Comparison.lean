@@ -59,6 +59,59 @@ instance : Std.TransCmp compareValues := by
   unfold compareValues; exact inferInstance
 
 
+/-- A collating sequence of SQLite (ADR 0014, D3): how TEXT values compare. {lit}`BINARY`
+compares bytes, {lit}`NOCASE` compares with ASCII letters folded, and {lit}`RTRIM` compares
+without trailing spaces. Values of other storage classes compare the same under each. Use
+{lean}`Collation.binary` where SQLite names no collation. -/
+inductive Collation where
+  /-- {lit}`BINARY`: the bytes. -/
+  | binary
+  /-- {lit}`NOCASE`: the bytes with ASCII capitals folded to lowercase. -/
+  | nocase
+  /-- {lit}`RTRIM`: the bytes without trailing spaces. -/
+  | rtrim
+  deriving Repr, DecidableEq
+
+/-- The built-in collation that a name names, with ASCII case ignored: {lit}`BINARY`,
+{lit}`NOCASE` or {lit}`RTRIM`; none for any other name, which SQLite refuses with
+{lit}`no such collation sequence`. -/
+def Collation.named? (name : Identifier) : Option Collation :=
+  if name.isKeyword (bytes! "binary") then some .binary
+  else if name.isKeyword (bytes! "nocase") then some .nocase
+  else if name.isKeyword (bytes! "rtrim") then some .rtrim
+  else none
+
+/-- The name of a collation in capitals, as SQLite registers it: {lit}`BINARY`, {lit}`NOCASE` or
+{lit}`RTRIM`. {name}`Collation.named?` reads each name back. -/
+def Collation.sqlName : Collation → String
+  | .binary => "BINARY"
+  | .nocase => "NOCASE"
+  | .rtrim => "RTRIM"
+
+/-- The bytes without trailing spaces (0x20), as {lit}`rtrimCollFunc` removes them. -/
+def trimTrailingSpaces (bytes : List UInt8) : List UInt8 := (bytes.reverse.dropWhile (· == 32)).reverse
+
+/-- The value that a collation compares in place of a value: TEXT with folded ASCII
+capitals ({lit}`NOCASE`) or without trailing spaces ({lit}`RTRIM`); every other value, and
+every value under {lit}`BINARY`, as it is. -/
+def Collation.key : Collation → Value → Value
+  | .binary, value => value
+  | .nocase, .text bytes => .text (bytes.map lowerAscii)
+  | .rtrim, .text bytes => .text (trimTrailingSpaces bytes)
+  | .nocase, value@.null | .nocase, value@(.integer _) | .nocase, value@(.real _) | .nocase, value@(.blob _)
+  | .rtrim, value@.null | .rtrim, value@(.integer _) | .rtrim, value@(.real _) | .rtrim, value@(.blob _) => value
+
+/-- SQLite's comparison of two values under a collation: {name}`compareValues` of their
+collation keys ({name}`Collation.key`). Under {lit}`BINARY` it is {name}`compareValues`. -/
+def Collation.compare (collation : Collation) (left right : Value) : Ordering :=
+  compareValues (collation.key left) (collation.key right)
+
+/-- For every collation, {name}`Collation.compare` is a transitive, oriented comparison, as
+a sort and a grouping need: it is {name}`compareValues` of the keys. -/
+instance (collation : Collation) : Std.TransCmp collation.compare where
+  eq_swap := Std.OrientedCmp.eq_swap (cmp := compareValues)
+  isLE_trans := Std.TransCmp.isLE_trans (cmp := compareValues)
+
 /-- Whether an ordering satisfies the operator, for operands that are not NULL. -/
 def Comparison.holds : Comparison → Ordering → Bool
   | .eq, order | .is, order => order == .eq
@@ -71,15 +124,16 @@ def Comparison.holds : Comparison → Ordering → Bool
 /-- A truth value as SQLite gives it: the integer 1 or 0. -/
 def truth (holds : Bool) : Value := .integer (if holds then 1 else 0)
 
-/-- The value of a comparison of two values, after affinity is applied. The six
-ordinary operators give NULL when an operand is NULL. {lit}`IS` is true for two
-NULLs and false for one; {lit}`IS NOT` is its negation. -/
-def Comparison.apply (operator : Comparison) (left right : Value) : Value :=
+/-- The value of a comparison of two values, after affinity is applied, under a collation
+({name}`Collation.compare`, {lit}`BINARY` when none is given). The six ordinary operators give
+NULL when an operand is NULL. {lit}`IS` is true for two NULLs and false for one; {lit}`IS NOT`
+is its negation. -/
+def Comparison.apply (operator : Comparison) (left right : Value) (collation : Collation := .binary) : Value :=
   match operator with
   | .is | .isNot =>
     if left.isNull || right.isNull then truth ((left.isNull && right.isNull) == (operator == .is))
-    else truth (operator.holds (compareValues left right))
+    else truth (operator.holds (collation.compare left right))
   | .eq | .ne | .lt | .le | .gt | .ge =>
-    if left.isNull || right.isNull then .null else truth (operator.holds (compareValues left right))
+    if left.isNull || right.isNull then .null else truth (operator.holds (collation.compare left right))
 
 end Belay.Sqlite

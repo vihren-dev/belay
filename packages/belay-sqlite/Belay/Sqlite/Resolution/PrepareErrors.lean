@@ -38,6 +38,9 @@ inductive ExprError where
   | tableMayNotBeIndexed (name : Identifier)
   /-- {lit}`Cannot add a PRIMARY KEY column` ({lit}`sqlite3AlterFinishAddColumn`). -/
   | cannotAddPrimaryKey
+  /-- {lit}`PRIMARY KEY missing on table %s`: a {lit}`WITHOUT ROWID` table without a primary
+  key ({lit}`sqlite3EndTable`). -/
+  | primaryKeyMissing (table : Identifier)
   /-- {lit}`Cannot add a UNIQUE column` ({lit}`sqlite3AlterFinishAddColumn`). -/
   | cannotAddUnique
   /-- {lit}`conflicting ON CONFLICT clauses specified`: two constraints of one index with
@@ -45,6 +48,41 @@ inductive ExprError where
   | conflictingAlgorithms
   /-- {lit}`no such column: %s` (name resolution of an expression or key). -/
   | noSuchColumn (name : Identifier)
+  /-- {lit}`no such collation sequence: %s`: a {lit}`COLLATE` name other than {lit}`BINARY`,
+  {lit}`NOCASE` and {lit}`RTRIM` (ADR 0014, D3). -/
+  | noSuchCollation (name : Identifier)
+  /-- {lit}`foreign key on %s should reference only one column of table %T`: a column's
+  {lit}`REFERENCES` with more than one referenced column (ADR 0014, slice 4). -/
+  | foreignKeyOneColumn (column table : Identifier)
+  /-- {lit}`number of columns in foreign key does not match the number of columns in the
+  referenced table`: a {lit}`FOREIGN KEY` with a column list of another length. -/
+  | foreignKeyColumnCount
+  /-- {lit}`unknown column "%s" in foreign key definition`: a {lit}`FOREIGN KEY` column that
+  the table does not have. -/
+  | unknownForeignKeyColumn (name : Identifier)
+  /-- {lit}`cannot INSERT into generated column "%s"` (ADR 0014, slice 5). -/
+  | insertGenerated (name : Identifier)
+  /-- {lit}`cannot UPDATE generated column "%s"`. -/
+  | updateGenerated (name : Identifier)
+  /-- {lit}`generated columns cannot be part of the PRIMARY KEY`. -/
+  | generatedInPrimaryKey
+  /-- {lit}`cannot use DEFAULT on a generated column`: a DEFAULT after {lit}`AS`. -/
+  | defaultOnGenerated
+  /-- {lit}`error in generated column "%s"`: {lit}`AS` after a DEFAULT. -/
+  | errorInGenerated (name : Identifier)
+  /-- {lit}`non-deterministic functions prohibited in generated columns`: a time keyword. -/
+  | nondeterministicGenerated
+  /-- {lit}`must have at least one non-generated column`: a table whose columns are all
+  generated. -/
+  | onlyGeneratedColumns
+  /-- {lit}`the "." operator prohibited in generated columns`: a qualified name in the
+  expression of a generated column. -/
+  | qualifiedGenerated
+  /-- {lit}`unknown datatype for %s.%s: "%s"`: a column of a {lit}`STRICT` table whose type is
+  none of the six (ADR 0014, slice 6). -/
+  | unknownDatatype (table column : Identifier) (type : String)
+  /-- {lit}`missing datatype for %s.%s`: a column of a {lit}`STRICT` table without a type. -/
+  | missingDatatype (table column : Identifier)
   /-- {lit}`the "." operator prohibited in index expressions`: a qualified name in a key
   term of CREATE INDEX ({lit}`notValidImpl`). -/
   | qualifiedIndexTerm

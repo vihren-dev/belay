@@ -3,6 +3,10 @@ import Belay.Sqlite.Resolution.Syntax
 import Belay.Sqlite.Resolution.ColumnDefault
 import Belay.Sqlite.Resolution.TypeAffinity
 import Belay.Sqlite.Resolution.Keys
+import Belay.Sqlite.Resolution.Checks
+import Belay.Sqlite.Resolution.ForeignKeys
+import Belay.Sqlite.Resolution.StrictTypes
+import Belay.Sqlite.Resolution.ReservedNames
 
 set_option doc.verso true
 
@@ -28,6 +32,21 @@ structure CatalogColumn where
   /-- The resolved DEFAULT with its source spelling ({name}`ColumnDefault`); omit it for no
   default. -/
   defaultValue : Option ColumnDefault := none
+  /-- The collation of the column ({lit}`COLLATE name`); {lit}`BINARY` without one (ADR 0014,
+  D3). -/
+  collation : Collation := .binary
+  /-- The CHECK constraints of the column definition, in written order; omit them for none
+  (ADR 0014, D2). -/
+  checks : List CheckConstraint := []
+  /-- The foreign keys of the column's {lit}`REFERENCES` constraints, in written order; omit
+  them for none (ADR 0014, D2). -/
+  foreignKeys : List ForeignKey := []
+  /-- How the column is generated; omit it for a column that is not generated (ADR 0014,
+  D5). -/
+  generated : Option GeneratedColumn := none
+  /-- The type of the column in a {lit}`STRICT` table; omit it for a column of another table
+  (ADR 0014, D6). -/
+  strictType : Option StrictType := none
   deriving Repr, DecidableEq
 
 /-- One table entry. Keys are lists of column positions. Use
@@ -51,17 +70,32 @@ structure CatalogTable where
   /-- The {lit}`ON CONFLICT` algorithm of each UNIQUE constraint, in the order of
   {lit}`uniqueKeys`, none without the clause; a constraint without an entry has none. -/
   uniqueAlgorithms : List (Option ConflictAlgorithm) := []
+  /-- Whether the table is {lit}`WITHOUT ROWID` (ADR 0014, D4): it has no rowid, its rows
+  are in primary-key order, and its key columns are NOT NULL. -/
+  withoutRowid : Bool := false
+  /-- Whether the table is {lit}`STRICT` (ADR 0014, D6): each column has a
+  {name}`CatalogColumn.strictType`. -/
+  strict : Bool := false
+  /-- The CHECK constraints of the table constraints, in written order; omit them for none
+  (ADR 0014, D2). The CHECK constraints of a column are in {name}`CatalogColumn.checks`. -/
+  checks : List CheckConstraint := []
+  /-- The foreign keys of the {lit}`FOREIGN KEY` table constraints, in written order; omit them
+  for none. Those of a column are in {name}`CatalogColumn.foreignKeys`. -/
+  foreignKeys : List ForeignKey := []
   deriving Repr, DecidableEq
 
-/-- The {lit}`ON CONFLICT` algorithm of the UNIQUE constraint at the position, none for a
-constraint without the clause or without an entry. -/
-def CatalogTable.uniqueAlgorithm (table : CatalogTable) (index : Nat) : Option ConflictAlgorithm :=
-  table.uniqueAlgorithms.getD index none
+/-- Every foreign key of the table in the order in which SQLite creates them: those of each
+column in column order, then those of the table constraints. {lit}`PRAGMA foreign_key_list`
+numbers them in the reverse order. -/
+def CatalogTable.allForeignKeys (table : CatalogTable) : List ForeignKey :=
+  table.columns.flatMap (·.foreignKeys) ++ table.foreignKeys
 
-/-- The algorithms of the UNIQUE constraints, one for each key of
-{name}`CatalogTable.uniqueKeys`. -/
-def CatalogTable.keyedUniqueAlgorithms (table : CatalogTable) : List (Option ConflictAlgorithm) :=
-  table.uniqueKeys.mapIdx fun index _ => table.uniqueAlgorithm index
+/-- Every CHECK constraint of the table: those of each column in column order, then those
+of the table constraints. SQLite keeps one list in written order; the two orders differ
+only in which label a row reports when several CHECK constraints fail, and every failure
+has the same result code. -/
+def CatalogTable.allChecks (table : CatalogTable) : List CheckConstraint :=
+  table.columns.flatMap (·.checks) ++ table.checks
 
 /-- The kind and content of one catalog object. -/
 inductive CatalogEntry where
@@ -110,22 +144,29 @@ def Catalog.columnsOf (catalog : Catalog) (name : Identifier) : Option (List Cat
 def columnPosition (columns : List CatalogColumn) (name : Identifier) : Option Nat :=
   (findPosition (fun column => column.name.sameName name) columns).map Prod.fst
 
-/-- The affinity of a catalog column, from its declared type text. -/
-def CatalogColumn.affinity (column : CatalogColumn) : Affinity := affinityOf column.declaredType
+/-- The affinity of a column from its declared type; {lit}`BLOB` for a {lit}`STRICT` table's {lit}`ANY`. -/
+def CatalogColumn.affinity (column : CatalogColumn) : Affinity :=
+  if column.strictType == some .any then .blob else affinityOf column.declaredType
+
+/-- The key of the column positions of a table with the columns, without filter, each under
+its column's collation: a primary key or UNIQUE constraint. -/
+def UniqueKey.ofColumns (columns : List CatalogColumn) (positions : List Nat) : UniqueKey :=
+  { terms := positions.map fun position =>
+      { term := .column position, collation := (columns[position]?.map (·.collation)).getD .binary } }
 
 /-- Each unique key of the table at a catalog position, in this order: the primary key
 when there is one, the UNIQUE constraints, and the unique indexes on the table in
 catalog order. SQLite keeps each of them as an index, and a write that makes two rows
 equal on one of them fails. -/
 def Catalog.uniqueKeys (catalog : Catalog) (position : Nat) (table : CatalogTable) : List UniqueKey :=
-  ((if table.primaryKey.isEmpty then [] else [table.primaryKey]) ++ table.uniqueKeys).map UniqueKey.ofColumns ++
+  ((if table.primaryKey.isEmpty then [] else [table.primaryKey]) ++ table.uniqueKeys).map
+      (UniqueKey.ofColumns table.columns) ++
     catalog.filterMap fun object => match object.entry with
       | .index index => if index.table == position && index.unique then some index.uniqueKey else none
       | .table _ => none
 
-/-- Add the table with the name at the end of the catalog, at position
-{lean}`catalog.length`, as CREATE TABLE does. The resolver and the execution of CREATE
-TABLE both use it, so they give the same catalog. -/
+/-- Add the table with the name at the end of the catalog, at position {lean}`catalog.length`, as
+CREATE TABLE does. The resolver and the execution of CREATE TABLE both use it, so they agree. -/
 def Catalog.createTable (catalog : Catalog) (name : Identifier) (table : CatalogTable) : Catalog :=
   catalog ++ [{ name, entry := .table table }]
 
@@ -142,22 +183,6 @@ def Catalog.addColumn (catalog : Catalog) (position : Nat) (column : CatalogColu
     catalog.set position { name, entry := .table { table with columns := table.columns ++ [column] } }
   | some { entry := .index _, .. } => catalog
   | none => catalog
-
-/-- Whether the folded name starts with {lit}`sqlite_`, which SQLite reserves. -/
-def reservedName (name : Identifier) : Bool := (bytes! "sqlite_").isPrefixOf name.folded
-
-/-- The column names of SQLite's statistics tables, which a schema may contain, by the
-folded table name ({name}`Identifier.folded`). -/
-def statisticsColumns (folded : List UInt8) : Option (List Identifier) :=
-  if folded == bytes! "sqlite_stat1" then some [name! "tbl", name! "idx", name! "stat"]
-  else if folded == bytes! "sqlite_stat4" then
-    some [name! "tbl", name! "idx", name! "neq", name! "nlt", name! "ndlt", name! "sample"]
-  else none
-
-/-- Whether a column name is one of SQLite's rowid names, which the model keeps
-for the physical rowid. -/
-def rowidName (name : Identifier) : Bool :=
-  [bytes! "rowid", bytes! "_rowid_", bytes! "oid"].contains name.folded
 
 /-- The folded names of all catalog objects, in catalog order. -/
 def Catalog.foldedNames (catalog : Catalog) : List (List UInt8) :=

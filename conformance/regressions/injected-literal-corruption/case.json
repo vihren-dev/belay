@@ -48,7 +48,10 @@
               "algorithm": null
             }
           }
-        ]
+        ],
+        "options": {
+          "withoutRowid": false
+        }
       }
     }
   ],

@@ -11,9 +11,11 @@ The frontend maps these statements, and refuses every other statement as
 `UNSUPPORTED` at its byte range:
 
 - `CREATE TABLE` with column definitions (name, declared type text, `NOT NULL`,
-  `PRIMARY KEY` with its sort order, `UNIQUE`, and `DEFAULT` with a literal, a
-  signed number, a time keyword or a name) and table `PRIMARY KEY` and `UNIQUE`
-  constraints over plain column names;
+  `PRIMARY KEY` with its sort order, `UNIQUE`, `COLLATE` (ADR 0014, slice 3), `CHECK`
+  and `REFERENCES` (slice 4), `[GENERATED ALWAYS] AS (expr) [VIRTUAL | STORED]` (slice 5),
+  and `DEFAULT` with a literal, a signed number, a time keyword or a name), table `PRIMARY KEY` and `UNIQUE` constraints over plain column
+  names, `CHECK` and `FOREIGN KEY` (slice 4), `CONSTRAINT name` before any constraint,
+  and the options `WITHOUT ROWID` (slice 2) and `STRICT` (slice 6);
 - `CREATE [UNIQUE] INDEX` with key terms, each a column name or an expression with
   an optional `ASC` or `DESC`, and an optional `WHERE` filter (ADR 0014, slice 1);
 - `ALTER TABLE … ADD [COLUMN]` with one column definition;
@@ -92,8 +94,7 @@ row of `DO UPDATE` are always ABORT. In the schema, a `PRIMARY KEY`, `UNIQUE` or
 `NOT NULL` constraint may have `ON CONFLICT algorithm`, its algorithm when INSERT has no
 `OR` clause; keys with different algorithms other than REPLACE are the restriction
 `mixed-conflict-algorithms`, UPDATE of such a table is `constraint-algorithm-update`, and
-REPLACE of a NOT NULL column with a default is `replace-default`. Named
-constraints, collations, `CHECK`, `REFERENCES`, generated columns, `UPDATE OR`, a target with a direction, collation,
+REPLACE of a NOT NULL column with a default is `replace-default`. `UPDATE OR`, a target with a direction, collation,
 `NULLS` order, qualified name or `WHERE`, `WITH`, `FROM` in writes, sort modifiers in keys,
 partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
 options, `AS SELECT`, views, triggers, virtual tables, `EXPLAIN`, `PRAGMA`,
@@ -101,7 +102,8 @@ compound `SELECT`, `DISTINCT`, `HAVING`, subqueries and table-valued functions i
 `FROM`, schema-qualified tables and columns, `NULLS FIRST` and `NULLS LAST`, and
 other functions are refused. Names keep
 their case as written; quotes are removed as SQLite removes them. Numeric literals
-and declared types keep their text.
+keep their text, and declared types keep their text as SQLite's `sqlite3AddColumn` leaves
+it: without a trailing `GENERATED ALWAYS` (ADR 0014, slice 5), then dequoted.
 
 Every command retains its original half-open UTF-8 byte span; semicolons in names
 and trigger bodies cannot split commands. The CLI requires at least one migration
@@ -132,10 +134,81 @@ conflict fails with SQLite's constraint error and leaves the catalog unchanged. 
 `ON CONFLICT` target names only a key of columns without a filter. SQLite's prepare
 errors apply: a qualified name in a term, `CURRENT_TIME`, `CURRENT_DATE` and
 `CURRENT_TIMESTAMP` in a term or the filter, and an aggregate. A string literal as a
-term, a date and time function, a JSON function, a rowid name in the filter and
-`COLLATE` in a term are model restrictions.
+term, a date and time function, a JSON function and a rowid name in the filter are
+model restrictions.
 
-ADD COLUMN supports literal defaults, with optional NOT NULL. Existing rows
+A `WITHOUT ROWID` table (ADR 0014, slice 2) needs a primary key, else SQLite's
+`PRIMARY KEY missing on table t`. Its key columns are NOT NULL, `INTEGER PRIMARY KEY` is
+no rowid alias, and `rowid`, `_rowid_` and `oid` that name no column are
+`no such column`. A full scan returns its rows in primary-key order, descending for
+`PRIMARY KEY DESC`, and UPDATE and DELETE with `RETURNING` return them in that order; a
+table with a rowid returns them in rowid order.
+
+A CHECK constraint (ADR 0014, slice 4) is a condition over a row of its table, resolved
+when the table is defined, after the other checks of the definition, with SQLite's prepare
+errors: `no such column`, an aggregate as misuse, and the profile's `DQS_DDL`. INSERT,
+UPDATE and `DO UPDATE` check each written row: NOT NULL first, then CHECK, then the unique
+keys. A CHECK fails when its condition is false, read as a number; NULL passes. A failure
+is SQLite's constraint error with the statement's `OR` algorithm, else ABORT: IGNORE skips
+the row, REPLACE acts as ABORT, and SQLite ignores the conflict clause of a table CHECK.
+ADD COLUMN with a CHECK checks the existing rows with the new default and fails with
+result code 1 when one fails. A time keyword, a date and time function or a JSON function
+in a CHECK is the restriction `check-function`, and a CHECK of ADD COLUMN that SQLite
+cannot resolve is `add-column-check-error`, as SQLite reports it while the statement runs.
+Foreign keys are off in every modeled profile, as in SQLite by default: a `REFERENCES`
+clause or a `FOREIGN KEY` constraint has no effect on writes apart from its prepare
+errors, and the catalog keeps it with its `ON DELETE` and `ON UPDATE` actions, as
+`PRAGMA foreign_key_list` reports it. A record without an execution profile and with a
+foreign key is out of scope, as its setup may have turned foreign keys on. A CREATE TABLE with constraints and defaults runs in the
+migration as in the schema.
+
+A generated column (ADR 0014, slice 5) is `VIRTUAL` or `STORED`, and `PRAGMA table_xinfo`
+reports it with `hidden` 2 or 3. Its expression resolves over the table's columns after the
+CHECK constraints, without the rowid; every write computes the generated values of the
+row, in an order that respects their dependencies, stores them with the column's affinity,
+and then checks NOT NULL, CHECK and the unique keys. An INSERT without a column list takes
+one value for each column that is not generated. SQLite's prepare errors apply: a generated
+column in the primary key, a DEFAULT on it, a second `AS` on one column, `rowid` or a
+qualified name in its expression, a time keyword, a table whose columns are all generated,
+and an INSERT or UPDATE that names a generated column. A loop of generated columns (`generated-loop`), a date and time function or a JSON
+function in the expression (`generated-function`), a `DO UPDATE` of a generated column
+(`upsert-generated`) and ADD COLUMN of a generated column (`add-column-generated`) are
+model restrictions.
+
+A `STRICT` table (ADR 0014, slice 6) admits only the declared types `INT`, `INTEGER`,
+`REAL`, `TEXT`, `BLOB` and `ANY`, with ASCII case ignored; another type and a column
+without a type are SQLite's prepare errors. After the column's affinity applies, a value
+whose storage class does not fit the type fails the statement with SQLite's constraint
+error, for example `cannot store TEXT value in INTEGER column s.i`: `INT` and `INTEGER`
+take integers, `REAL` integers and reals, `TEXT` text, `BLOB` blobs, and NULL fits every
+type. `ANY` takes every value as written, with no affinity, also in a DEFAULT. Each
+primary-key column other than the rowid alias is NOT NULL, with ABORT unless it declares
+its own NOT NULL, as in SQLite. The type
+check comes after NOT NULL and before CHECK and the unique keys, covers UPDATE, `DO
+UPDATE` and generated columns, and acts as ABORT under every conflict algorithm. ADD
+COLUMN to a `STRICT` table with a type that it does not admit, or with a default that does
+not fit the type, is a model restriction (`add-column-strict-type`), because SQLite reports
+it only while the statement runs.
+
+A collation (ADR 0014, slice 3) is `BINARY`, `NOCASE` or `RTRIM`, with ASCII case of the
+name ignored. `NOCASE` compares TEXT with the ASCII capitals folded, and `RTRIM` compares
+TEXT without trailing spaces; neither changes a value of another storage class. A column
+has the collation of its `COLLATE` clause, else `BINARY`; an index term has that of an
+explicit `COLLATE`, else that of its column. A primary key, a `UNIQUE` column and a unique
+index compare their terms under these collations, and a `WITHOUT ROWID` table scans in
+that order. Resolution decides each collation by SQLite's rules: a comparison uses an
+explicit `COLLATE` of its left operand, else of its right operand, else the collation of
+a column on the left, else on the right, else `BINARY`; `COLLATE` passes through unary plus
+and `CAST`. An `ORDER BY` or `GROUP BY` term, `min` and `max` use the collation of their
+expression, and the equality of `USING` and `NATURAL` that of its left column. A
+`GROUP BY` term may be a column name under one `COLLATE`. An unknown name in a column
+definition or an index term is SQLite's prepare error `no such collation sequence: %s`;
+in any other expression it is the restriction `unknown-collation`, because SQLite looks
+the name up only where it uses the collation, and its query planner decides some of
+those uses. `COLLATE` in an `ON CONFLICT` target or in a key of a table constraint is
+refused.
+
+ADD COLUMN supports literal defaults, with optional NOT NULL and COLLATE. Existing rows
 read the default under the column affinity. Without a default they read NULL.
 NOT NULL with NULL succeeds on an empty table and fails during execution on a
 populated table, retaining the prior catalog and rows. A time keyword default
@@ -157,8 +230,7 @@ successful prefix. Predicting an error alone never establishes `VIOLATED`.
 
 SQL that SQLite accepts but the model does not describe is a model restriction:
 the whole request is `UNSUPPORTED` at the byte range of the refused node. In the
-migration these are, among others: `CREATE TABLE` with
-constraints or defaults; `ADD COLUMN` with an unmodeled default expression; rowid column
+migration these are, among others: `ADD COLUMN` with an unmodeled default expression; rowid column
 names; time values; a `SET` value that reads the row for a column of a unique key; a
 column named twice. In a `SELECT`: an aggregate inside an expression; a result column
 outside `GROUP BY` in an aggregate query; `ORDER BY` terms of an aggregate query
@@ -199,11 +271,16 @@ should shrink.
 | `schema-statement` | A schema contains only CREATE TABLE and CREATE INDEX statements | ADR 0008 |
 | `engine-table` | Engine-managed tables other than sqlite_stat1 and sqlite_stat4 are not modeled | ADR 0008 |
 | `rowid-column-name` | Column names `rowid`, `_rowid_` and `oid` are not modeled | ADR 0008 |
-| `create-table-constraints` | Constraints and defaults in a CREATE TABLE that runs are not modeled | ADR 0008 |
 | `unmodeled-default` | Only literal defaults and the time keywords are modeled | ADR 0008 |
 | `index-string-term` | A string literal as a key term of CREATE INDEX, also a double-quoted name that is no column, is not modeled | ADR 0014, slice 1 |
 | `index-date-function` | A date and time function in a key term or the filter of CREATE INDEX is not modeled | ADR 0014, slice 1 |
 | `index-json-function` | A JSON function in a key term or the filter of CREATE INDEX is not modeled | ADR 0014, slice 1 |
+| `check-function` | A time keyword, a date and time function or a JSON function in a CHECK constraint is not modeled | ADR 0014, slice 4 |
+| `add-column-check-error` | A CHECK of ADD COLUMN that SQLite cannot resolve is not modeled, because SQLite reports it while the statement runs | ADR 0014, slice 4 |
+| `generated-function` | A date and time function or a JSON function in a generated column is not modeled | ADR 0014, slice 5 |
+| `generated-loop` | Generated columns that read each other in a loop are not modeled, because SQLite reports the loop while CREATE TABLE runs | ADR 0014, slice 5 |
+| `add-column-generated` | ADD COLUMN of a generated column is not modeled | ADR 0014, slice 5 |
+| `add-column-strict-type` | ADD COLUMN to a `STRICT` table with a type that it does not admit, or with a default that does not fit the type, is not modeled, because SQLite reports it while the statement runs | ADR 0014, slice 6 |
 | `add-column-constraint` | The added column requires unmodeled default evaluation | ADR 0008 |
 | `constraint-algorithm-update` | UPDATE of a table with ON CONFLICT constraint algorithms is not modeled | ADR 0012 amendment 4, slice 5d |
 | `replace-default` | REPLACE of a NOT NULL column with a default is not modeled | ADR 0012 amendment 4, slice 5d |
@@ -214,7 +291,7 @@ should shrink.
 | `unmodeled-function` | Only `COUNT(*)`, `COUNT`, `MIN`, `MAX`, `SUM` and `AVG` of one argument, `COALESCE` of two or more arguments, `json_extract`, `->`, `->>`, `json_type`, `json_valid`, `json_array_length` and `json` are modeled as functions | ADR 0012 slices 1, 2, 6b and 6c |
 | `aggregate-in-expression` | An aggregate inside an expression is not modeled | ADR 0012 slice 1 |
 | `alias-in-expression` | A result column alias inside WHERE or an ORDER BY expression is not modeled | ADR 0012 slice 1 |
-| `group-by-term` | Only a column name or a result column number is modeled in GROUP BY | ADR 0012 slice 1 |
+| `group-by-term` | Only a column name, also under COLLATE, or a result column number is modeled in GROUP BY | ADR 0012 slice 1; ADR 0014, slice 3 |
 | `bare-column` | A result column outside GROUP BY in an aggregate query is not modeled | ADR 0012 slice 1 |
 | `aggregate-order-by` | An aggregate query is modeled with ORDER BY result column numbers or aliases only | ADR 0012 slice 1 |
 | `window-value` | Only an integer literal is modeled as LIMIT or OFFSET | ADR 0012 slice 1 |
@@ -233,6 +310,8 @@ should shrink.
 | `mixed-conflict-algorithms` | Keys of one INSERT with different conflict algorithms other than REPLACE are not modeled | ADR 0012 amendment 4, slice 5d |
 | `windowed-group-sum` | SUM in a grouped query with LIMIT or OFFSET is not modeled, because SQLite may stop before an overflowing group | ADR 0012 slice 2 |
 | `constant-function-error` | A constant value in VALUES or SET whose JSON function fails is not modeled, because the model does not describe when SQLite evaluates it | ADR 0012 slice 6b |
+| `unknown-collation` | COLLATE with a name other than BINARY, NOCASE or RTRIM in an expression is not modeled, because SQLite looks the name up only where its query planner uses the collation | ADR 0014, slice 3 |
+| `upsert-generated` | DO UPDATE of a generated column is not modeled, because SQLite refuses it only when a row conflicts | ADR 0014, slice 5 |
 
 #### Unrepresented
 

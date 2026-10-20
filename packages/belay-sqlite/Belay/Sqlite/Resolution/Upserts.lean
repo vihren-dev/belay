@@ -16,9 +16,10 @@ namespace Belay.Sqlite
 /-- The scope of {lit}`DO UPDATE`: the table, then {lit}`excluded` with the same
 columns. Every column of {lit}`excluded` is merged ({name}`ScopeSource.merged`), so an
 unqualified name reads the table's column and only {lit}`excluded.column` reads the
-proposed row, as in SQLite. -/
-def upsertScope (tableName : Identifier) (columns : List CatalogColumn) : Scope :=
-  [{ name := tableName, columns }, { name := (name! "excluded"), columns, offset := columns.length, merged := List.range columns.length }]
+proposed row, as in SQLite. Both have a rowid unless the table is {lit}`WITHOUT ROWID`. -/
+def upsertScope (tableName : Identifier) (columns : List CatalogColumn) (hasRowid : Bool := true) : Scope :=
+  [{ name := tableName, columns, hasRowid },
+   { name := (name! "excluded"), columns, offset := columns.length, merged := List.range columns.length, hasRowid }]
 
 /-- The key that a conflict target names: the first key of columns without filter
 ({name}`UniqueKey.columns?`) whose columns are the target's columns, in any order. An
@@ -57,7 +58,7 @@ def resolveConflictAction (dqs : Bool) (scope : Scope) (keys : List UniqueKey) (
     (targeted : Bool) : Syntax.ConflictAction → Except ValueIssue Resolved.ConflictAction
   | .nothing => .ok .nothing
   | .update assignments filter =>
-    (resolveAll (resolveAssignment dqs scope []) assignments).mapError (·.under [clause, 1, 0]) >>= fun resolved =>
+    (resolveAll (resolveAssignment dqs scope [] fun _ => .restriction [] .upsertGenerated) assignments).mapError (·.under [clause, 1, 0]) >>= fun resolved =>
     resolveConflictFilter dqs scope clause filter >>= fun resolvedFilter =>
     if (resolved.map Prod.fst).eraseDups.length != resolved.length then
       .error (.restriction [clause, 1, 0] .updateColumnTwice)
@@ -69,7 +70,8 @@ its action ({name}`resolveConflictAction`). -/
 def resolveConflict (dqs : Bool) (tableName : Identifier) (table : CatalogTable) (keys : List UniqueKey)
     (clause : Nat) (written : Syntax.ConflictClause) : Except ValueIssue Resolved.ConflictClause :=
   resolveConflictTarget table.columns keys clause written.target >>= fun target =>
-  resolveConflictAction dqs (upsertScope tableName table.columns) keys clause target.isSome written.action
+  resolveConflictAction dqs (upsertScope tableName table.columns !table.withoutRowid) keys clause target.isSome
+    written.action
     >>= fun action => .ok { target, action }
 
 end Belay.Sqlite

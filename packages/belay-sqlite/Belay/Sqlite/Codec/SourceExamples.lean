@@ -21,7 +21,7 @@ def column (name : Identifier) (declaredType : Option String) (constraints : Lis
 that matches only after ASCII folding, negative integers, text and blob bytes, a
 default, keys, an index and a prepare error. -/
 def sampleRecord : ScriptRecord where
-  version := 4
+  version := 5
   release := "3.51.0"
   sourceId := "2025-11-04 19:38:17 fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b"
   schema := [.createTable (name! "Ünit \"q\"") [column (name! "id") (some "BIGINT") [.primaryKey false],

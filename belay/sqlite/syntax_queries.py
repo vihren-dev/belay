@@ -16,7 +16,7 @@ refused with its source range; `syntax_select` maps the SELECT statement.
 
 from .located import Located, constructor, leaf, sequence, structure
 from .sql_tree import Node, Tree
-from .syntax_definitions import absent, left_list, require
+from .syntax_shapes import absent, left_list, require
 from .syntax_expressions import dequote, expression, name
 
 COMPARISONS = {"EQ": "eq", "NE": "ne", "LT": "lt", "LE": "le", "GT": "gt", "GE": "ge"}
@@ -88,6 +88,9 @@ def query_expression(tree: Tree, node: Node) -> Located:
     if symbols == ["expr", "PTR", "expr"]:
         operator = leaf(tree.text(children[1]), children[1].start, children[1].end)
         return call(tree, node.start, node.end, operator, [children[0], children[2]])
+    if symbols in (["expr", "COLLATE", "ID"], ["expr", "COLLATE", "STRING"]):
+        return constructor("collate", [("operand", query_expression(tree, children[0])),
+                                       ("name", name(tree, children[2]))], node.start, node.end)
     if symbols == ["expr", "IS", "NOT", "expr"]:
         return compare(tree, node, "isNot", children[0], children[3])
     if symbols in (["MINUS", "expr"], ["PLUS", "expr"]):

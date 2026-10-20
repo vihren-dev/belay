@@ -15,7 +15,7 @@ non-deferred transactions have no constructor and are refused with their source 
 from .located import Located, constructor, leaf, sequence
 from .sql_tree import Node, Tree
 from .syntax_conflicts import assignment_list, conflict_clauses, insert_algorithm
-from .syntax_definitions import absent, left_list, require
+from .syntax_shapes import absent, left_list, require
 from .syntax_expressions import name
 from .syntax_queries import query_expression, result_columns
 

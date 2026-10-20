@@ -47,7 +47,8 @@ theorem payload {database : Database} (conforms : Conforms Generated.profile Sch
     (by decide +kernel)
   refine ⟨table, present, shape, valid, ?_, ?_⟩
   · simp only [runSql_eq, script_bound, runSqlFrom_cons, advance_addColumn,
-      effect_addColumn_ok 0 present (column := added) (value := .null) rfl rfl rfl, SqlState.publish_ok, runSqlFrom_nil]
+      effect_addColumn_ok 0 present (column := added) (value := .null) rfl rfl rfl (by simp [added]), SqlState.publish_ok,
+      runSqlFrom_nil]
     rfl
   · rw [next_bound]
     exact conforms.addColumn .null present (next_bound ▸ next_valid)

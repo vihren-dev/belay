@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-19T11:39:58+00:00",
+  "finding": "20261019T113847Z-3d99c18f#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "CollationExamples: a GROUP BY under one COLLATE checked by decide +kernel, and the restriction group-by-term for two"
+}

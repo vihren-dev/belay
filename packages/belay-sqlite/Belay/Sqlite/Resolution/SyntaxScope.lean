@@ -18,7 +18,8 @@ def namesAlias (scope : Scope) (aliases : List Identifier) : Syntax.Expr → Boo
       aliases.any (·.sameName name)
   | .compare _ left right | .and left right | .or left right | .arithmetic _ left right =>
     namesAlias scope aliases left || namesAlias scope aliases right
-  | .not operand | .isNull operand _ | .negate operand | .positive operand | .cast operand _ =>
+  | .not operand | .isNull operand _ | .negate operand | .positive operand | .cast operand _
+  | .collate operand _ =>
     namesAlias scope aliases operand
   | .call _ arguments => namesAliasIn scope aliases arguments
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ | .qualified .. => false
@@ -38,7 +39,8 @@ def mentionsColumn (scope : Scope) : Syntax.Expr → Bool
   | .qualified source column => scope.resolveQualified source column != .missing
   | .compare _ left right | .and left right | .or left right | .arithmetic _ left right =>
     mentionsColumn scope left || mentionsColumn scope right
-  | .not operand | .isNull operand _ | .negate operand | .positive operand | .cast operand _ =>
+  | .not operand | .isNull operand _ | .negate operand | .positive operand | .cast operand _
+  | .collate operand _ =>
     mentionsColumn scope operand
   | .call _ arguments => mentionsColumnIn scope arguments
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ => false
@@ -56,7 +58,8 @@ def Syntax.Expr.hasQualifiedName : Syntax.Expr → Bool
   | .qualified .. => true
   | .compare _ left right | .and left right | .or left right | .arithmetic _ left right =>
     left.hasQualifiedName || right.hasQualifiedName
-  | .not operand | .isNull operand _ | .negate operand | .positive operand | .cast operand _ =>
+  | .not operand | .isNull operand _ | .negate operand | .positive operand | .cast operand _
+  | .collate operand _ =>
     operand.hasQualifiedName
   | .call _ arguments => Syntax.Expr.anyQualifiedName arguments
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ | .identifier .. => false

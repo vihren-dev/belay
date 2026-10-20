@@ -7,6 +7,7 @@ import Belay.Sqlite.Resolution.Values
 import Belay.Sqlite.Resolution.ReadDefaults
 import Belay.Sqlite.Resolution.Context
 import Belay.Sqlite.Resolution.Definitions
+import Belay.Sqlite.Resolution.AddColumn
 import Belay.Sqlite.Resolution.Writes
 import Belay.Sqlite.Resolution.Resolve
 import Belay.Sqlite.Resolution.ColumnSpec

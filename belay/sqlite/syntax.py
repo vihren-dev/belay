@@ -14,7 +14,7 @@ from .syntax_indexes import create_index
 from .syntax_select import select
 from .syntax_writes import delete, insert, transaction, update
 
-SCRIPT_RECORD_VERSION = 4
+SCRIPT_RECORD_VERSION = 5
 """The version of the structural record that Lean's `decodeScriptRecord` accepts."""
 
 

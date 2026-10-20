@@ -25,8 +25,9 @@ def resolveUpdate (context : ResolveContext) (catalog : Catalog) (index : Nat) (
   | none => prepareError catalog (.noSuchTable tableName)
   | some (position, table) =>
     let keys := catalog.uniqueKeys position table
-    let scope := Scope.single tableName table.columns
-    match resolveAll (resolveAssignment dqs scope (keys.flatMap (·.reads table.columns.length))) assignments with
+    let scope := Scope.single tableName table.columns !table.withoutRowid
+    match resolveAll (resolveAssignment dqs scope (keys.flatMap (·.reads table.columns.length))
+        (fun name => .prepare (.updateGenerated name))) assignments with
     | .error issue => issueResolution catalog index [1] issue
     | .ok resolved =>
       let resolvedCondition : Except ValueIssue (Option Resolved.Expr) := match filter with

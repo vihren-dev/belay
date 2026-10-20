@@ -1,6 +1,5 @@
 import Belay.Sqlite.Declarations
 import Belay.Sqlite.Operators
-import Belay.Sqlite.Resolution.ConflictAlgorithm
 
 set_option doc.verso true
 
@@ -75,59 +74,10 @@ inductive Expr where
   | arithmetic (operator : ArithmeticOperator) (left right : Expr)
   /-- {lit}`CAST(operand AS typeName)`, with the type name as written. -/
   | cast (operand : Expr) (typeName : String)
+  /-- {lit}`operand COLLATE name` (ADR 0014, slice 3): the operand's value with the named
+  collation, as written. -/
+  | collate (operand : Expr) (name : Identifier)
   deriving Repr, BEq, Inhabited
-
-/-- A DEFAULT expression and its source spelling. The expression determines the
-value; the text preserves metadata such as {lit}`X'00ff'` versus {lit}`x'00FF'`.
-For example, {lean}`({ expression := .numeric "7", sourceText := "7" } : DefaultExpression)`
-is the default written as {lit}`7`. -/
-structure DefaultExpression where
-  /-- The expression evaluated when a column value is omitted. -/
-  expression : Expr
-  /-- The expression text reported by SQLite, excluding DEFAULT and its outer parentheses. -/
-  sourceText : String
-  deriving BEq
-
-/-- Print a default as a constructor application so generated nested catalog terms
-keep valid Lean indentation when an expression spans several lines. -/
-instance : Repr DefaultExpression where
-  reprPrec value prec := Repr.addAppParen
-    ("Belay.Sqlite.Syntax.DefaultExpression.mk " ++ reprArg value.expression ++ " " ++ reprArg value.sourceText) prec
-
-/-- A column constraint as written. For example, {lit}`PRIMARY KEY DESC` is
-{lean}`ColumnConstraint.primaryKey true`. -/
-inductive ColumnConstraint where
-  /-- {lit}`NOT NULL [ON CONFLICT algorithm]`; {lean}`(none : Option ConflictAlgorithm)`
-  without the clause. -/
-  | notNull (algorithm : Option ConflictAlgorithm := none)
-  /-- {lit}`PRIMARY KEY [ASC | DESC] [ON CONFLICT algorithm]`; the flag is true for
-  {lit}`DESC`. -/
-  | primaryKey (descending : Bool) (algorithm : Option ConflictAlgorithm := none)
-  /-- {lit}`UNIQUE [ON CONFLICT algorithm]`. -/
-  | unique (algorithm : Option ConflictAlgorithm := none)
-  /-- {lit}`DEFAULT` with its expression and its source text, excluding DEFAULT
-  and any outer parentheses belonging to the DEFAULT production. -/
-  | default (value : Expr) (sourceText : String)
-  deriving Repr, BEq
-
-/-- One column of CREATE TABLE or ADD COLUMN. Use {lean}`(none : Option String)`
-for a column without a declared type. -/
-structure ColumnDefinition where
-  /-- The column name as written. -/
-  name : Identifier
-  /-- The declared type text as written, for example {lit}`VARCHAR(10)`. -/
-  declaredType : Option String
-  /-- The column constraints in written order. -/
-  constraints : List ColumnConstraint
-  deriving Repr, BEq
-
-/-- A table constraint of CREATE TABLE, with column names as written. -/
-inductive TableConstraint where
-  /-- {lit}`PRIMARY KEY (columns) [ON CONFLICT algorithm]`. -/
-  | primaryKey (columns : List Identifier) (algorithm : Option ConflictAlgorithm := none)
-  /-- {lit}`UNIQUE (columns) [ON CONFLICT algorithm]`. -/
-  | unique (columns : List Identifier) (algorithm : Option ConflictAlgorithm := none)
-  deriving Repr, BEq
 
 /-- One result column of a {lit}`SELECT`: {lit}`*`, or an expression with an
 optional {lit}`AS` alias and its source text as written, which SQLite uses as the

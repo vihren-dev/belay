@@ -109,11 +109,11 @@ value ({lit}`TimeKeyword.value`), and a date and time function gives
 def Expr.evaluate (clock : Int) (row : List Value) : Expr → Value × Fault
   | .column position => (row.getD position .null, .none)
   | .literal value => (value, .none)
-  | .compare operator affinity left right =>
+  | .compare operator affinity left right collation =>
     let (a, first) := left.evaluate clock row
     let (b, second) := right.evaluate clock row
     let (a, b) := comparisonOperands affinity a b
-    (operator.apply a b, first.join second)
+    (operator.apply a b collation, first.join second)
   | .and left right =>
     let (a, first) := left.evaluate clock row
     let (b, second) := right.evaluate clock row

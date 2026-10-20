@@ -33,7 +33,8 @@ def test_explicit_catalog_native_replay_and_classification(boundaries: dict[str,
     """Profiles, outputs, requirement tags and bounded shared storage survive fresh replay. The
     model implements the default execution settings of these profiles (`profile_scope`), so the
     cases whose SQL it models agree, including NOT NULL additions on empty and
-    populated tables, and the others stay out of scope."""
+    populated tables and, since a CREATE TABLE with constraints runs (ADR 0014, slice 4),
+    tables with keys created in the migration, and the others stay out of scope."""
     catalog = list(boundaries.values())
     inventory = json.loads((Path(__file__).resolve().parents[1] /
                            "conformance/requirements-3.51.0.json").read_text())
@@ -45,7 +46,7 @@ def test_explicit_catalog_native_replay_and_classification(boundaries: dict[str,
         assert record["profile"]["engineVersion"] == "3.51.0"
     native_replay(catalog)
     report = replay(catalog, runtime_root)
-    assert report["counts"] == {"MODEL_UNSUPPORTED": 12, "AGREE": 11}
+    assert report["counts"] == {"MODEL_UNSUPPORTED": 10, "AGREE": 13}
     additions = {"add-not-null-empty", "add-not-null-populated",
                  "add-not-null-null-empty", "add-not-null-null-populated"}
     assert {case["name"] for case in report["cases"]
@@ -60,10 +61,12 @@ def test_validity_boundaries_without_profile_gate(runtime_root: Path) -> None:
     only in case agrees (ADR 0012). A duplicate column, a missing key column and a
     reserved name are SQLite prepare errors that Lean resolution decides, so the
     model agrees with them; an index that repeats a column runs in a migration (ADR 0014,
-    slice 1); an empty column list is a grammar error on both sides.
+    slice 1), and so does a table whose primary key or UNIQUE constraint repeats a column
+    (slice 4); an empty column list is a grammar error on both sides.
     """
     agreeing = {"validity-duplicate-column", "validity-missing-key-column", "validity-reserved-name",
-                "validity-identifier-case", "validity-repeated-index-column"}
+                "validity-identifier-case", "validity-repeated-index-column", "validity-repeated-primary-key",
+                "validity-repeated-unique-key"}
     for case in validity_definitions():
         record = record_sql(case.setup, case.sql, name=case.name, outputs=True,
             parameters=list(case.parameters) if case.parameters is not None else None)

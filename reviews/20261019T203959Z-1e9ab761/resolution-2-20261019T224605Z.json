@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-19T22:46:05+00:00",
+  "finding": "20261019T203959Z-1e9ab761#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the thresholds count UTF-8 bytes (utf8Length), checked natively with éééééalways (example)"
+}

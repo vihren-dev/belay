@@ -23,12 +23,12 @@ so a malformed row cannot supply an invented value. -/
 def read (row : Row) (position : Nat) : Option Value := row.values[position]?
 
 /-- Whether two stored key cells conflict: neither is NULL, and they are equal under
-SQLite's comparison with the BINARY collation ({name}`compareValues`), so numbers by
-value, TEXT and BLOB by bytes, and values of different storage classes never.
-{assert}`keyCellsEqual (.text [97]) (.text [97]) = true`, and two NULL cells never
-conflict. -/
-def keyCellsEqual (first second : Value) : Bool :=
-  first != .null && second != .null && compareValues first second == .eq
+SQLite's comparison with the collation ({name}`Collation.compare`, {lit}`BINARY` when none
+is given), so numbers by value, TEXT by its collation, BLOB by bytes, and values of
+different storage classes never. {assert}`keyCellsEqual (.text [97]) (.text [97]) = true`,
+and two NULL cells never conflict. -/
+def keyCellsEqual (first second : Value) (collation : Collation := .binary) : Bool :=
+  first != .null && second != .null && collation.compare first second == .eq
 
 /-- The value of a key term in a row: the cell of a column, or the value of an expression
 over the row. Key expressions read no clock, so they evaluate at clock 0. A missing cell
@@ -46,14 +46,15 @@ def keyApplies (key : UniqueKey) (row : Row) : Bool :=
   | some filter => Resolved.truthy (filter.eval 0 row.values)
 
 /-- Whether two rows conflict on a key: the key applies to both ({name}`keyApplies`), and
-for each term both values are key cells that conflict ({name}`keyCellsEqual`). A missing
+for each term both values are key cells that conflict under its collation
+({name}`keyCellsEqual`). A missing
 or NULL value makes the comparison false, so two rows with a NULL in a key never
 conflict, as in SQLite. An empty key compares equal vacuously:
 {assert}`keyEqual { terms := [] } { rowid := 0, values := [] } { rowid := 1, values := [] } = true`. -/
 def keyEqual (key : UniqueKey) (first second : Row) : Bool :=
   keyApplies key first && keyApplies key second &&
-    key.terms.all fun term => match termValue first term, termValue second term with
-      | some a, some b => keyCellsEqual a b
+    key.terms.all fun term => match termValue first term.term, termValue second term.term with
+      | some a, some b => keyCellsEqual a b term.collation
       | _, _ => false
 
 /-- Reject each row that compares equal under {name}`keyEqual` to a later row.
@@ -63,13 +64,34 @@ def uniqueRows (key : UniqueKey) : List Row → Bool
   | [] => true
   | row :: rest => !(rest.any (keyEqual key row)) && uniqueRows key rest
 
-/-- Check NOT NULL cells and the pairwise uniqueness of every given key. NOT NULL
-checks inspect only zipped column/cell pairs; row width is checked separately.
-A table with no rows satisfies both checks. In the admitted domain these checks
-represent ABORT constraints, rather than admission restrictions. -/
+/-- Whether a row satisfies a CHECK constraint: its condition is not false on the row, so
+NULL passes (R-34109-39108). The value counts as a number, as {lit}`CAST AS NUMERIC` reads it
+({name}`Resolved.truthy`, R-55435-14303). The model admits only CHECK conditions that read no clock,
+so they evaluate at clock 0. -/
+def checkHolds (row : Row) (check : CheckConstraint) : Bool :=
+  let value := check.condition.eval 0 row.values
+  value.isNull || Resolved.truthy value
+
+/-- Whether a row satisfies every CHECK constraint of the table
+({name}`CatalogTable.allChecks`); a table without CHECK constraints accepts every row. -/
+def checksHold (shape : CatalogTable) (row : Row) : Bool :=
+  shape.allChecks.all (checkHolds row)
+
+/-- Whether every cell of a row fits its column's type in a {lit}`STRICT` table
+({name}`StrictType.fits`); a column without a strict type takes every value. -/
+def typesFit (shape : CatalogTable) (row : Row) : Bool :=
+  (shape.columns.zip row.values).all fun (column, value) => column.strictType.all (·.fits value)
+
+/-- Check NOT NULL cells, the types of a {lit}`STRICT` table ({name}`typesFit`), the CHECK
+constraints of every row, and the pairwise uniqueness
+of every given key. NOT NULL checks inspect only zipped column/cell pairs; row width is
+checked separately. A table with no rows satisfies them all. In the admitted domain
+these checks represent ABORT constraints, rather than admission restrictions. -/
 def constraints (keys : List UniqueKey) (table : Table) : Bool :=
   table.rows.all (fun row => (table.shape.columns.zip row.values).all
     (fun (column, value) => !column.notNull || value != .null)) &&
+  table.rows.all (typesFit table.shape) &&
+  table.rows.all (checksHold table.shape) &&
   keys.all (fun key => uniqueRows key table.rows)
 
 /-- Require {name}`constraints` on the table before a write: its NOT NULL cells and its
@@ -93,12 +115,23 @@ def newRowid (table : Table) (values : List Value) : Int :=
   | some (.integer value) => value
   | some .null | some (.real _) | some (.text _) | some (.blob _) | none => nextRowid table.rows
 
+/-- The cells of a row with its generated columns computed (ADR 0014, D5): each generated
+cell is the value of its expression over the cells, stored with the column's affinity. One
+pass per generated column settles a generated column that reads another, as resolution
+admits no loop; every other cell stays. A table without generated columns keeps the cells. -/
+def generatedCells (columns : List CatalogColumn) (values : List Value) : List Value :=
+  let generated := columns.zipIdx.filterMap fun (column, position) =>
+    column.generated.map fun how => (position, column.affinity, how.expression)
+  generated.foldl (fun cells _ => generated.foldl (fun cells (position, affinity, expression) =>
+    cells.set position (storeValue affinity (expression.eval 0 cells))) cells) values
+
 /-- The cells of a new row with the rowid: the alias cell, if the table has an alias, is
-the integer rowid, so a NULL alias takes the new rowid; other cells stay. -/
+the integer rowid, so a NULL alias takes the new rowid; then the generated columns are
+computed ({name}`generatedCells`); other cells stay. -/
 def newCells (table : Table) (values : List Value) (rowid : Int) : List Value :=
-  match table.shape.rowidAlias with
-  | some position => values.set position (.integer rowid)
-  | none => values
+  generatedCells table.shape.columns (match table.shape.rowidAlias with
+    | some position => values.set position (.integer rowid)
+    | none => values)
 
 /-- Whether the supplied cells give a rowid alias that SQLite refuses with
 {lit}`datatype mismatch`: the table has an alias and its cell is neither NULL nor an

@@ -63,9 +63,9 @@ database that the statement reached: the rows before the failing row of an INSER
 clauses or algorithms, and the input database for every other error. The support check:
 INSERT and UPDATE pass the data domain of the table, every write and query the JSON
 checks of {lit}`JsonReady`; a position without a table passes and fails during execution
-instead. CREATE TABLE must be plain; ADD COLUMN must have modeled default readback; CREATE
-INDEX fails: these are model restrictions, because SQLite accepts such statements. Other
-statement forms pass. -/
+instead. ADD COLUMN must have modeled default readback, a model restriction, because SQLite
+accepts such statements. CREATE TABLE passes, as its table has no rows to violate a
+constraint (ADR 0014, slice 4), and so do CREATE INDEX and the other statement forms. -/
 def runStatement (clock : Int) (statement : Resolved.Statement) (database : Database) : StatementRun :=
   match statement with
   | .insert target rows returning => match database.table target with
@@ -106,7 +106,7 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
     let ran := query.runOn clock database
     { effect := queryEffect database ran,
       ready := ran.all fun (source, run) => source.fault != .may && run.fault != .may }
-  | .createTable _ _ table => { effect := step clock statement database, ready := table.plain }
+  | .createTable .. => { effect := step clock statement database, ready := true }
   | .addColumn _ column =>
     { effect := step clock statement database,
       ready := column.clockDefault || (readDefaultValue column).toOption.isSome }

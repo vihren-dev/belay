@@ -13,11 +13,18 @@ def RestrictionKind.id : RestrictionKind → String
   | .schemaStatement => "schema-statement"
   | .engineTable => "engine-table"
   | .rowidColumnName => "rowid-column-name"
-  | .createTableConstraints => "create-table-constraints"
   | .unmodeledDefault => "unmodeled-default"
   | .indexStringTerm => "index-string-term"
   | .indexDateFunction => "index-date-function"
   | .indexJsonFunction => "index-json-function"
+  | .unknownCollation => "unknown-collation"
+  | .checkFunction => "check-function"
+  | .addColumnCheckError => "add-column-check-error"
+  | .generatedFunction => "generated-function"
+  | .generatedLoop => "generated-loop"
+  | .upsertGenerated => "upsert-generated"
+  | .addColumnGenerated => "add-column-generated"
+  | .addColumnStrictType => "add-column-strict-type"
   | .addColumnConstraint => "add-column-constraint"
   | .rowDependentKey => "row-dependent-key"
   | .conflictWithoutTarget => "conflict-without-target"
@@ -50,11 +57,18 @@ def RestrictionKind.message : RestrictionKind → String
   | .schemaStatement => "a schema contains only CREATE TABLE and CREATE INDEX statements; move the other statement to the script"
   | .engineTable => "engine-managed tables other than sqlite_stat1 and sqlite_stat4 are not modeled; remove the table from the schema"
   | .rowidColumnName => "column names rowid, _rowid_ and oid are not modeled; rename the column"
-  | .createTableConstraints => "constraints and defaults in a CREATE TABLE that runs are not modeled; create the table with plain columns"
   | .unmodeledDefault => "default expression is not modeled; use a literal default"
   | .indexStringTerm => "a string literal as an index key is not modeled; name the column without quotes"
   | .indexDateFunction => "a date and time function in an index key or WHERE clause is not modeled; index the column instead"
   | .indexJsonFunction => "a JSON function in an index key or WHERE clause is not modeled; index the column instead"
+  | .unknownCollation => "COLLATE with a name other than BINARY, NOCASE or RTRIM in an expression is not modeled; use one of these collations"
+  | .checkFunction => "a time keyword, a date and time function or a JSON function in a CHECK constraint is not modeled; check the column values instead"
+  | .addColumnCheckError => "a CHECK of ADD COLUMN that names no column of the table, or uses an aggregate, is not modeled; correct the CHECK"
+  | .generatedFunction => "a date and time function or a JSON function in a generated column is not modeled; compute the value in the write"
+  | .generatedLoop => "generated columns that read each other in a loop are not modeled; SQLite refuses the table"
+  | .upsertGenerated => "DO UPDATE of a generated column is not modeled; assign the columns that it reads"
+  | .addColumnGenerated => "ADD COLUMN of a generated column is not modeled; create the table with it"
+  | .addColumnStrictType => "ADD COLUMN to a STRICT table without one of its types, or with a default that does not fit the type, is not modeled; use INT, INTEGER, REAL, TEXT, BLOB or ANY and a default of that type"
   | .addColumnConstraint => "the default of the added column is not modeled; use a literal default or no default"
   | .rowDependentKey => "a SET value that reads the row is not modeled for a column of a unique key; assign a constant value"
   | .conflictWithoutTarget => "DO UPDATE without a conflict target is not modeled for a table with more than one key; name the target columns"
@@ -83,7 +97,7 @@ def RestrictionKind.message : RestrictionKind → String
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .createTableConstraints, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments]
+  [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

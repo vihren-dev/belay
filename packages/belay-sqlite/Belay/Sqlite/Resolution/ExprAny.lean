@@ -13,7 +13,7 @@ mutual
 depth, including the arguments of calls. -/
 def Expr.any (test : Expr → Bool) : Expr → Bool
   | expression@(.column _) | expression@(.literal _) | expression@(.now _) => test expression
-  | expression@(.compare _ _ left right) | expression@(.and left right) | expression@(.or left right)
+  | expression@(.compare _ _ left right _) | expression@(.and left right) | expression@(.or left right)
   | expression@(.arithmetic _ left right) | expression@(.coalesce left right) =>
     test expression || left.any test || right.any test
   | expression@(.not operand) | expression@(.isNull operand _) | expression@(.cast _ operand) =>

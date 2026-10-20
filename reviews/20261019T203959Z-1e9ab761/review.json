@@ -1,0 +1,64 @@
+{
+  "caller": "claude",
+  "commit": "1e9ab7614377b18e47a1c9005e5af7570f2cec58",
+  "date": "2026-10-19T20:39:59+00:00",
+  "exit": 1,
+  "files": [
+    "belay/sqlite/syntax_constraints.py",
+    "belay/sqlite/syntax_definitions.py",
+    "packages/belay-sqlite/Belay/Sqlite/Resolution/GeneratedExamples.lean",
+    "packages/belay-sqlite/Belay/Sqlite/Resolution/TypeAffinity.lean",
+    "reviews/20261019T203548Z-0b1a7fe1/resolution-1-20261019T203921Z.json",
+    "reviews/20261019T203548Z-0b1a7fe1/resolution-2-20261019T203921Z.json",
+    "reviews/20261019T203548Z-0b1a7fe1/review.json",
+    "tests/syntax_constraints_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261019T203959Z-1e9ab761#1",
+      "line": 90,
+      "path": "belay/sqlite/syntax_definitions.py",
+      "rule": "R7",
+      "severity": "must",
+      "text": "Dequoting before suffix removal makes `CREATE TABLE t(a \"TEXT GENERATED ALWAYS\")` resolve to type `TEXT`, although SQLite retains `TEXT GENERATED ALWAYS`. Fix: preserve the quoted type through suffix removal and dequote afterward."
+    },
+    {
+      "id": "20261019T203959Z-1e9ab761#2",
+      "line": 55,
+      "path": "packages/belay-sqlite/Belay/Sqlite/Resolution/TypeAffinity.lean",
+      "rule": "R7",
+      "severity": "must",
+      "text": "The length guard counts characters instead of UTF-8 bytes, so `éééééalways` remains unchanged although SQLite reports `ééééé`. Fix: use SQLite's byte-length threshold and add a regression test."
+    },
+    {
+      "id": "20261019T203959Z-1e9ab761#3",
+      "line": 90,
+      "path": "belay/sqlite/syntax_definitions.py",
+      "rule": "R7",
+      "severity": "must",
+      "text": "Passing the untrimmed type breaks column-level rowid alias detection for `a INTEGER GENERATED ALWAYS PRIMARY KEY`, because `applyConstraint` checks the original type while SQLite uses `INTEGER`. Fix: update rowid alias detection to use the resolved type and test that a default insert assigns the rowid to `a`."
+    }
+  ],
+  "id": "20261019T203959Z-1e9ab761",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "fa2475f44035",
+    "R7": "0a38ead152b1",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-19T20:39:21+00:00",
+  "finding": "20261019T203548Z-0b1a7fe1#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "reportedType applies SQLite's textual rule in Lean, with examples of an embedded suffix and a comment, both checked natively"
+}
