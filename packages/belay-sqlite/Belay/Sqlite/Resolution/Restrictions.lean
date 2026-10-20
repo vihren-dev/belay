@@ -135,6 +135,19 @@ inductive RestrictionKind where
   {lit}`iif`, {lit}`nullif`, {lit}`min` or {lit}`max`: SQLite keeps the JSON subtype through such
   expressions, which the model does not describe (ADR 0015, slice 3). -/
   | jsonSubtype
+  /-- A subquery outside the expressions of a {lit}`SELECT` that the model resolves, such as in an
+  {lit}`ON` condition, a {lit}`json_each` argument or another statement, is not modeled
+  (ADR 0018, slice 1). -/
+  | subqueryHere
+  /-- An aggregate in a subquery whose argument reads a cell of a query around it is not
+  modeled: SQLite computes an aggregate whose argument reads only outer columns in the outer
+  query (checked natively: {lit}`SELECT (SELECT count(t.k) FROM u) FROM t` gives one row)
+  (ADR 0018, slice 1). -/
+  | outerAggregate
+  /-- A query without {lit}`FROM` that has both a subquery and a call that can fail is not
+  modeled: the model reports a certain failure of such a query, which a value of the subquery
+  that SQLite's plan chooses could avoid (ADR 0018, slice 1). -/
+  | subqueryFallibleCall
   deriving Repr, DecidableEq
 
 end Belay.Sqlite

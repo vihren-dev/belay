@@ -142,6 +142,10 @@ inductive ExprError where
   /-- {lit}`too many arguments on json_each() - max 2`: a {lit}`json_each` source in
   {lit}`FROM` with three or more arguments. -/
   | tooManyEachArguments
+  /-- {lit}`sub-select returns %d columns - expected 1`: a scalar subquery or the subquery of
+  {lit}`IN` with another number of result columns, with that number ({lit}`sqlite3SubselectError`;
+  in a comparison SQLite reports {lit}`row value misused`, with the same error code). -/
+  | subqueryColumns (count : Nat)
   deriving Repr, DecidableEq
 
 /-- An error that {lit}`sqlite3_prepare_v2` reports for a statement in the first

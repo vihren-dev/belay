@@ -48,7 +48,7 @@ def constantDefaultExpression : Syntax.Expr → Bool
   | .compare .ne .. | .compare .lt .. | .compare .le .. | .compare .gt .. | .compare .ge ..
   | .compare .is .. | .compare .isNot .. => true
   | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. => true
-  | .arithmetic .. | .cast .. => true
+  | .arithmetic .. | .cast .. | .exists _ | .inQuery .. | .subquery _ => true
 
 /-- SQLite's constant-default preparation check for a written DEFAULT, with the
 classification scope of {name}`constantDefaultExpression`. A bare identifier is permitted:
@@ -62,7 +62,8 @@ def constantDefault (expression : Syntax.Expr) : Bool :=
   | .identifier .. => true
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call ..
-  | .arithmetic .. | .cast .. | .qualified .. | .collate .. => constantDefaultExpression expression
+  | .arithmetic .. | .cast .. | .qualified .. | .collate .. | .exists _ | .inQuery .. | .subquery _ =>
+    constantDefaultExpression expression
 
 /-- Whether the constraint is PRIMARY KEY. -/
 def Syntax.ColumnConstraint.isPrimaryKey : Syntax.ColumnConstraint → Bool

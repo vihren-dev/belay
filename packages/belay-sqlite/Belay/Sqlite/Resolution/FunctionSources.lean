@@ -44,7 +44,7 @@ def resolveEachArguments (dqs : Bool) (scope : Scope) (index : Nat) (path : List
     (arguments : List Syntax.Expr) : Except ValueIssue Resolved.Source := do
   let bound := scope.cellsBefore index
   let resolved ← resolveAll (fun position argument => do
-    let (resolved, _) ← (resolveOperand dqs scope true argument).mapError (·.under (path ++ [2, position]))
+    let (resolved, _) ← (resolveOperand dqs scope {} true argument).mapError (·.under (path ++ [2, position]))
     if resolved.readsBelow bound then .ok resolved
     else .error (.restriction (path ++ [2, position]) .laterSourceInArguments)) arguments
   match resolved with

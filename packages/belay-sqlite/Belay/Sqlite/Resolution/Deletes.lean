@@ -22,7 +22,7 @@ def resolveDelete (context : ResolveContext) (catalog : Catalog) (index : Nat) (
     let scope := Scope.single tableName table.columns !table.withoutRowid
     let resolvedCondition : Except ValueIssue (Option Resolved.Expr) := match filter with
       | none => .ok none
-      | some term => some <$> condition [] (resolveOperand dqs scope true term)
+      | some term => some <$> condition [] (resolveOperand dqs scope {} true term)
     match resolvedCondition with
     | .error issue => issueResolution catalog index [1] issue
     | .ok resolvedFilter => match resolveReturning dqs scope returning with

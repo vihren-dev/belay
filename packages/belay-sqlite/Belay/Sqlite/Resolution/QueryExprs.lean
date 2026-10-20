@@ -6,6 +6,7 @@ import Belay.Sqlite.ExprEval
 import Belay.Sqlite.Resolution.ExprAny
 import Belay.Sqlite.ClockReads
 import Belay.Sqlite.Resolution.Collations
+import Belay.Sqlite.Resolution.SubqueryShapes
 
 set_option doc.verso true
 
@@ -38,8 +39,14 @@ reports the errors of the arguments before those of the function; {lit}`name(*)`
 {lit}`[1, k]`. A comparison compares under {name}`comparisonCollation`. {lit}`x COLLATE c`
 is the resolved {lit}`x`, whose collation the expression that uses it decides; a name
 {lit}`c` other than {lit}`BINARY`, {lit}`NOCASE` and {lit}`RTRIM` is
-{name}`RestrictionKind.unknownCollation`. -/
-def resolveOperand (dqs : Bool) (scope : Scope) (misuse : Bool) : Syntax.Expr → Except ValueIssue Operand
+{name}`RestrictionKind.unknownCollation`. A subquery form names a subquery that resolution
+resolved before ({name}`SubqueryShapes.find`), else it is {name}`RestrictionKind.subqueryHere`; a
+scalar subquery has the affinity of its result column, {lit}`x IN (q)` compares under
+{name}`comparisonAffinity` and {name}`inCollation`, and both need one result column, else SQLite's
+{lit}`sub-select returns %d columns - expected 1`. An aggregate whose arguments read a cell
+of a query around the current one is {name}`RestrictionKind.outerAggregate`. -/
+def resolveOperand (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misuse : Bool) :
+    Syntax.Expr → Except ValueIssue Operand
   | .identifier name quote => match scope.resolveName name with
     | .found _ reads => .ok (scope.nameOperand reads)
     | .missing =>
@@ -56,63 +63,80 @@ def resolveOperand (dqs : Bool) (scope : Scope) (misuse : Bool) : Syntax.Expr �
       else .error (.prepare (.noSuchColumn ⟨source.bytes ++ [46] ++ column.bytes⟩))
     | .ambiguous => .error (.prepare (.ambiguousColumn ⟨source.bytes ++ [46] ++ column.bytes⟩))
   | .compare operator left right => do
-    let a ← (resolveOperand dqs scope misuse left).mapError (·.under [1])
-    let b ← (resolveOperand dqs scope misuse right).mapError (·.under [2])
+    let a ← (resolveOperand dqs scope shapes misuse left).mapError (·.under [1])
+    let b ← (resolveOperand dqs scope shapes misuse right).mapError (·.under [2])
     if truthTest operator right b.1 then
       -- x IS [NOT] TRUE is (NOT NOT x) IS [NOT] 1, and x IS [NOT] FALSE is (NOT x) IS [NOT] 1.
       let tested := if b.1.literal? == some (.integer 1) then .not (.not a.1) else .not a.1
       .ok (.compare operator none tested (.literal (.integer 1)), none)
     else .ok (.compare operator (comparisonAffinity a.2 b.2) a.1 b.1 (comparisonCollation scope left right), none)
   | .collate operand name => do
-    let resolved ← (resolveOperand dqs scope misuse operand).mapError (·.under [0])
+    let resolved ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0])
     if (Collation.named? name).isNone then .error (.restriction [] .unknownCollation) else .ok resolved
   | .and left right => do
-    let a ← condition [0] (resolveOperand dqs scope misuse left)
-    let b ← condition [1] (resolveOperand dqs scope misuse right)
+    let a ← condition [0] (resolveOperand dqs scope shapes misuse left)
+    let b ← condition [1] (resolveOperand dqs scope shapes misuse right)
     .ok (.and a b, none)
   | .or left right => do
-    let a ← condition [0] (resolveOperand dqs scope misuse left)
-    let b ← condition [1] (resolveOperand dqs scope misuse right)
+    let a ← condition [0] (resolveOperand dqs scope shapes misuse left)
+    let b ← condition [1] (resolveOperand dqs scope shapes misuse right)
     .ok (.or a b, none)
   | .not operand => do
-    let a ← condition [0] (resolveOperand dqs scope misuse operand)
+    let a ← condition [0] (resolveOperand dqs scope shapes misuse operand)
     .ok (.not a, none)
   | .isNull operand negated => do
-    let a ← (resolveOperand dqs scope misuse operand).mapError (·.under [0])
+    let a ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0])
     .ok (.isNull a.1 negated, none)
   | .arithmetic operator left right => do
-    let a ← (resolveOperand dqs scope misuse left).mapError (·.under [1])
-    let b ← (resolveOperand dqs scope misuse right).mapError (·.under [2])
+    let a ← (resolveOperand dqs scope shapes misuse left).mapError (·.under [1])
+    let b ← (resolveOperand dqs scope shapes misuse right).mapError (·.under [2])
     .ok (.arithmetic operator a.1 b.1, none)
   | .cast operand typeName => do
-    let a ← (resolveOperand dqs scope misuse operand).mapError (·.under [0])
+    let a ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0])
     let affinity := affinityOf (some typeName)
     .ok (.cast affinity a.1, some affinity)
   | .numeric text => (queryNumeric text false).map fun value => (.literal value, none)
   | .negate (.numeric text) => (queryNumeric text true).map fun value => (.literal value, none)
   | .negate operand => do
-    let a ← (resolveOperand dqs scope misuse operand).mapError (·.under [0])
+    let a ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0])
     .ok (.arithmetic .subtract (.literal (.integer 0)) a.1, none)
   | .positive operand => do
-    let a ← (resolveOperand dqs scope misuse operand).mapError (·.under [0])
+    let a ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0])
     .ok (a.1, none)
   | .call name arguments => do
-    let resolved ← resolveArguments dqs scope misuse 0 arguments
+    let resolved ← resolveArguments dqs scope shapes misuse 0 arguments
+    if aggregateCall (.call name arguments) && resolved.readsUnder shapes shapes.outer then
+      throw (.restriction [] .outerAggregate)
     callOperand scope misuse name arguments resolved
   | call@(.callStar name) => .error (if aggregateCall call then aggregateIssue misuse name else starCallIssue name)
   | .null => .ok (.literal .null, none)
   | .string bytes => .ok (.literal (.text bytes), none)
   | .blob bytes => .ok (.literal (.blob bytes), none)
   | .currentTime keyword => .ok (.now (timeKeywordNamed keyword), none)
+  | .exists index => match shapes.find index with
+    | some _ => .ok (.exists index, none)
+    | none => .error (.restriction [] .subqueryHere)
+  | .subquery index => match shapes.find index with
+    | some shape =>
+      if shape.columns == 1 then .ok (.subquery index, shape.affinity) else .error (.prepare (.subqueryColumns shape.columns))
+    | none => .error (.restriction [] .subqueryHere)
+  | .inQuery operand index negated => do
+    let a ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0])
+    match shapes.find index with
+    | some shape =>
+      if shape.columns == 1 then
+        .ok (.inQuery a.1 index (comparisonAffinity a.2 shape.affinity) (inCollation scope operand shape) negated, none)
+      else .error (.prepare (.subqueryColumns shape.columns))
+    | none => .error (.restriction [] .subqueryHere)
 
 /-- Resolve the arguments of a call in written order ({name}`resolveOperand`), from
 argument {lit}`index`; the issue of argument {lit}`k` is at {lit}`[1, k]`. -/
-def resolveArguments (dqs : Bool) (scope : Scope) (misuse : Bool) (index : Nat) :
+def resolveArguments (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misuse : Bool) (index : Nat) :
     List Syntax.Expr → Except ValueIssue Resolved.Arguments
   | [] => .ok .nil
   | argument :: rest => do
-    let a ← (resolveOperand dqs scope misuse argument).mapError (·.under [1, index])
-    let tail ← resolveArguments dqs scope misuse (index + 1) rest
+    let a ← (resolveOperand dqs scope shapes misuse argument).mapError (·.under [1, index])
+    let tail ← resolveArguments dqs scope shapes misuse (index + 1) rest
     .ok (.cons a.1 tail)
 end
 

@@ -42,7 +42,7 @@ def resolveAssignment (dqs : Bool) (scope : Scope) (keyColumns : List Nat) (gene
     (item : Nat) :
     Identifier × Syntax.Expr → Except ValueIssue (Nat × Resolved.Expr)
   | (name, value) =>
-    (resolveOperand dqs scope true value).mapError (·.under [item, 1]) >>= fun operand =>
+    (resolveOperand dqs scope {} true value).mapError (·.under [item, 1]) >>= fun operand =>
     (match columnPosition scope.columns name with
       | some position => .ok position
       | none => .error (.prepare (.noSuchColumn name))) >>= fun position =>

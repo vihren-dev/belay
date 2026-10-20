@@ -12,10 +12,11 @@ child 3 its {lit}`USING` list. -/
 namespace Belay.Sqlite
 
 /-- The columns of {lit}`source.*` ({name}`Scope.starColumns?`) with their expansions
-({name}`Scope.starOperand`) and their names, or SQLite's {lit}`no such table: source` when no source has the name. -/
-def sourceStarColumns (scope : Scope) (source : Identifier) : Except ValueIssue (List (Resolved.Expr × String)) :=
+({name}`Scope.starOperand`), as operands with their affinities, and their names, or SQLite's
+{lit}`no such table: source` when no source has the name. -/
+def sourceStarColumns (scope : Scope) (source : Identifier) : Except ValueIssue (List (Operand × String)) :=
   match scope.starColumns? source with
-  | some columns => columns.mapM fun (position, column) => (·.1, column.name.text) <$> scope.starOperand position column
+  | some columns => columns.mapM fun (position, column) => (·, column.name.text) <$> scope.starOperand position column
   | none => .error (.prepare (.noSuchSource source))
 
 /-- The number of tables in a join that SQLite accepts ({lit}`SQLITE_MAX_SRCLIST`). -/
@@ -130,7 +131,7 @@ def resolveJoinCondition (dqs : Bool) (scope : Scope) (index : Nat) : JoinCondit
   | .none => .ok none
   | .merged condition => .ok (some condition)
   | .written path term => do
-    let resolved ← condition path (resolveOperand dqs scope true term)
+    let resolved ← condition path (resolveOperand dqs scope {} true term)
     let bound := scope.cellsBefore (index + 1)
     if resolved.readsBelow bound then .ok (some resolved)
     else throw (.restriction path .laterTableInOn)

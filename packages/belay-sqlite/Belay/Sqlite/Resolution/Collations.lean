@@ -17,12 +17,14 @@ A name that names no collation reads as {lit}`BINARY`; resolution restricts or r
 before. -/
 def Syntax.Expr.explicitCollation : Syntax.Expr → Option Collation
   | .collate _ name => some ((Collation.named? name).getD .binary)
-  | .positive operand | .negate operand | .cast operand _ | .not operand | .isNull operand _ =>
+  | .positive operand | .negate operand | .cast operand _ | .not operand | .isNull operand _
+  | .inQuery operand .. =>
     operand.explicitCollation
   | .compare _ left right | .and left right | .or left right | .arithmetic _ left right =>
     left.explicitCollation <|> right.explicitCollation
   | .call _ arguments => Syntax.Expr.firstExplicitCollation arguments
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .qualified .. | .callStar _ =>
+  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .qualified .. | .callStar _
+  | .exists _ | .subquery _ =>
     none
 
 /-- The first explicit collation of the arguments ({name}`Syntax.Expr.explicitCollation`). -/
@@ -43,7 +45,7 @@ def Syntax.Expr.columnCollation (scope : Scope) : Syntax.Expr → Option Collati
     | .missing | .ambiguous => none
   | .positive operand | .cast operand _ | .collate operand _ => operand.columnCollation scope
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .compare .. | .and .. | .or ..
-  | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. => none
+  | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .exists _ | .inQuery .. | .subquery _ => none
 
 /-- Whether an expression is a column under one {lit}`COLLATE`: a qualified name, or an
 unqualified name that reads a column of the scope. The model admits such a
@@ -57,7 +59,8 @@ def Syntax.Expr.collatedColumn (scope : Scope) : Syntax.Expr → Bool
   | .collate (.blob _) _ | .collate (.currentTime _) _ | .collate (.negate _) _ | .collate (.positive _) _
   | .collate (.compare ..) _ | .collate (.and ..) _ | .collate (.or ..) _ | .collate (.not _) _
   | .collate (.isNull ..) _ | .collate (.callStar _) _ | .collate (.call ..) _ | .collate (.arithmetic ..) _
-  | .collate (.cast ..) _
+  | .collate (.cast ..) _ | .collate (.exists _) _ | .collate (.inQuery ..) _ | .collate (.subquery _) _
+  | .exists _ | .inQuery .. | .subquery _
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .qualified .. | .negate _
   | .positive _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
   | .cast .. => false

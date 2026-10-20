@@ -24,7 +24,7 @@ JSON function may fail is a model restriction, because the model does not descri
 SQLite evaluates a constant. The value is not yet stored with the column's affinity
 ({lit}`fullCells` stores it). -/
 def constantCell (dqs : Bool) (expression : Syntax.Expr) : Except ValueIssue Resolved.Cell :=
-  resolveOperand dqs [] true expression >>= fun operand =>
+  resolveOperand dqs [] {} true expression >>= fun operand =>
     if operand.1.readsClock then
       if operand.1.any Resolved.Expr.isFallibleCall then .error (.restriction [] .constantFunctionError)
       else .ok (.expression operand.1)

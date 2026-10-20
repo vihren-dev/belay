@@ -79,9 +79,11 @@ inductive Statement where
   order; one table has no joins, and a {lit}`SELECT` without {lit}`FROM` has
   {lean}`(none : Option TableReference)` and no joins. An omitted clause is {lit}`none` or
   an empty list;
-  {lit}`LIMIT offset, limit` gives both expressions. -/
+  {lit}`LIMIT offset, limit` gives both expressions. The subqueries of the statement are
+  {lit}`subqueries`, in the order of their text ({name}`Subquery`); empty without one. -/
   | select (columns : List ResultColumn) (source : Option TableReference) (joins : List Join) (filter : Option Expr)
       (groupBy : List Expr) (orderBy : List OrderTerm) (limit : Option Expr) (offset : Option Expr)
+      (subqueries : List Subquery := [])
   deriving Repr, BEq
 
 end Belay.Sqlite.Syntax

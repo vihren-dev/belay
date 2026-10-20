@@ -48,16 +48,29 @@ structure ScopeSource where
   /-- Whether the source has a rowid that {lit}`rowid`, {lit}`_rowid_` and {lit}`oid` name: a
   table that is not {lit}`WITHOUT ROWID`, and {lit}`json_each`. -/
   hasRowid : Bool := true
+  /-- How many queries out the source is (ADR 0018, D1): 0 for a source of the query whose
+  expressions resolution resolves, 1 for a source of the query around a subquery, and so on. -/
+  depth : Nat := 0
   deriving Repr, DecidableEq
 
 /-- The sources in scope, in {lit}`FROM` order, each at its offset in the joined row;
-empty where no table is in scope, as in a {lit}`VALUES` row. -/
+empty where no table is in scope, as in a {lit}`VALUES` row. In a subquery the sources of the
+queries around it come first, as their cells come first in its row ({name}`ScopeSource.depth`). -/
 abbrev Scope := List ScopeSource
 
-/-- The sources in order, each at the offset after the cells of the sources before it. -/
-def Scope.place (sources : List ScopeSource) : Scope :=
+/-- The sources in order, each at the offset after the cells of the sources before it, from
+{lit}`start`: 0 for a statement's query, the number of outer cells for a subquery. -/
+def Scope.place (sources : List ScopeSource) (start : Nat := 0) : Scope :=
   (sources.foldl (fun (offset, placed) source =>
-    (offset + source.columns.length, placed ++ [{ source with offset }])) (0, [])).2
+    (offset + source.columns.length, placed ++ [{ source with offset }])) (start, [])).2
+
+/-- The sources of the query whose expressions resolution resolves, at depth 0. -/
+def Scope.inner (scope : Scope) : Scope := scope.filter (·.depth == 0)
+
+/-- The scope of a subquery: the sources of the scope around it, one depth further out,
+followed by its own sources, which {name}`Scope.place` put after the outer cells. -/
+def Scope.enclose (outer inner : Scope) : Scope :=
+  outer.map (fun source => { source with depth := source.depth + 1 }) ++ inner
 
 /-- The scope of one table under its name, as a write or a query of one table has;
 {lit}`hasRowid` is false for a {lit}`WITHOUT ROWID` table. -/
@@ -67,10 +80,11 @@ def Scope.single (name : Identifier) (columns : List CatalogColumn) (hasRowid : 
 /-- The columns of all sources, in the order of the concatenated row. -/
 def Scope.columns (scope : Scope) : List CatalogColumn := scope.flatMap (·.columns)
 
-/-- The number of cells before the source at {lit}`index`: its offset, or the number of
-cells of the whole scope for an index past its end. -/
+/-- The number of cells before the source at {lit}`index` of the query's own sources
+({name}`Scope.inner`): its offset, or the number of cells of the whole scope for an index past
+their end. -/
 def Scope.cellsBefore (scope : Scope) (index : Nat) : Nat :=
-  (scope[index]?.map (·.offset)).getD scope.columns.length
+  (scope.inner[index]?.map (·.offset)).getD scope.columns.length
 
 /-- The columns of a source with their positions in the joined row that pass the filter
 on their positions in the source. -/
@@ -79,10 +93,10 @@ def ScopeSource.placedColumns (source : ScopeSource) (keep : Nat → Bool) : Lis
     fun (index, column) => (source.offset + index, column)
 
 /-- The columns that {lit}`*` reads, with their positions in the concatenated row: every
-column of every source that is not merged ({name}`ScopeSource.merged`) or hidden
-({name}`ScopeSource.hidden`). -/
+column of every source of the query's own sources ({name}`Scope.inner`) that is not merged
+({name}`ScopeSource.merged`) or hidden ({name}`ScopeSource.hidden`). -/
 def Scope.visible (scope : Scope) : List (Nat × CatalogColumn) :=
-  scope.flatMap fun source => source.placedColumns fun index => !source.merged.contains index && !source.hidden.contains index
+  scope.inner.flatMap fun source => source.placedColumns fun index => !source.merged.contains index && !source.hidden.contains index
 
 /-- The positions in the concatenated row of the columns that an unqualified name
 names: the first column with the folded name in each source that has one, unless that
@@ -122,20 +136,32 @@ def Scope.resolveStep (name : Identifier) (result : NameResolution) (source : Sc
       | .coalesce => .found first (reads ++ [source.offset + index])
     else .ambiguous
 
-/-- Resolve an unqualified name over the sources from left to right, as SQLite does
-(checked on native 3.51.0), by {name}`Scope.resolveStep`: the first source with a column
-of the folded name gives that column; a later one changes the result only when its join
-merged the name; a later one that did not merge it makes the name ambiguous. -/
+/-- Resolve an unqualified name over the sources of one depth from left to right
+({name}`Scope.resolveStep`). -/
+def Scope.resolveAt (scope : Scope) (name : Identifier) (depth : Nat) : NameResolution :=
+  scope.foldl (fun result source => if source.depth == depth then Scope.resolveStep name result source else result)
+    .missing
+
+/-- One more than the largest depth of the scope's sources; 1 for an empty scope. -/
+def Scope.depths (scope : Scope) : Nat :=
+  scope.foldl (fun bound source => max bound (source.depth + 1)) 1
+
+/-- Resolve an unqualified name as SQLite does (checked on native 3.51.0): in the query's own
+sources first, then in those of each query around it, outward; the first depth with a column
+of the name gives the result ({name}`Scope.resolveAt`). Over the sources of one depth, from left
+to right ({name}`Scope.resolveStep`), the first source with a column of the folded name gives
+that column; a later one changes the result only when its join merged the name; a later one
+that did not merge it makes the name ambiguous. -/
 def Scope.resolveName (scope : Scope) (name : Identifier) : NameResolution :=
-  scope.foldl (Scope.resolveStep name) .missing
+  (((List.range scope.depths).map (scope.resolveAt name)).find? (· != .missing)).getD .missing
 
 /-- Whether the source has the folded name. -/
 def ScopeSource.named (source : ScopeSource) (name : Identifier) : Bool :=
   source.name.sameName name
 
-/-- Whether a source of the scope has the folded name. -/
+/-- Whether a source of the query's own sources ({name}`Scope.inner`) has the folded name. -/
 def Scope.hasSource (scope : Scope) (name : Identifier) : Bool :=
-  scope.any (·.named name)
+  scope.inner.any (·.named name)
 
 /-- Whether a source with the folded name has a rowid ({name}`ScopeSource.hasRowid`). -/
 def Scope.rowidSource (scope : Scope) (name : Identifier) : Bool :=
@@ -149,45 +175,12 @@ def Scope.resolveQualified (scope : Scope) (source column : Identifier) : NameRe
   Scope.resolveName (scope.filter (·.named source)) column
 
 /-- The columns of {lit}`source.*` with their positions in the concatenated row: every
-column that is not hidden ({name}`ScopeSource.hidden`) of every source with the folded
-name, in order, merged columns included; none when no source has the name. -/
+column that is not hidden ({name}`ScopeSource.hidden`) of every source of the query's own
+sources with the folded name, in order, merged columns included; none when no such source has
+the name. -/
 def Scope.starColumns? (scope : Scope) (name : Identifier) : Option (List (Nat × CatalogColumn)) :=
   if scope.hasSource name then
-    some ((scope.filter (·.named name)).flatMap fun source => source.placedColumns (!source.hidden.contains ·))
+    some ((scope.inner.filter (·.named name)).flatMap fun source => source.placedColumns (!source.hidden.contains ·))
   else none
-
-/-- Whether a name resolution reads only its first column: missing, ambiguous, or found
-with the one position of its first column. -/
-def NameResolution.single : NameResolution → Prop
-  | .found first reads => reads = [first]
-  | .missing | .ambiguous => True
-
-/-- For every scope whose sources all keep the left result ({name}`MergeRule.keepLeft`), as
-in a {lit}`FROM` without right and full joins, and every name, the resolution of the name
-reads only its first column ({name}`NameResolution.single`): a name is one column, as in
-slice 4b. Proof sketch: each step of {name}`Scope.resolveStep` keeps the property, since a
-merged column under {name}`MergeRule.keepLeft` keeps the result and any other later
-column makes the name ambiguous. -/
-theorem resolveName_single (scope : Scope) (keep : ∀ source ∈ scope, source.mergeRule = .keepLeft)
-    (name : Identifier) : (scope.resolveName name).single := by
-  have step : ∀ (sources : Scope) (state : NameResolution), state.single →
-      (∀ source ∈ sources, source.mergeRule = .keepLeft) →
-      (sources.foldl (Scope.resolveStep name) state).single := by
-    intro sources
-    induction sources with
-    | nil => intro state holds _; exact holds
-    | cons source rest ih =>
-      intro state holds keeps
-      apply ih _ _ fun other member => keeps other (List.mem_cons_of_mem _ member)
-      have rule := keeps source List.mem_cons_self
-      unfold Scope.resolveStep
-      split
-      · exact holds
-      · simp [NameResolution.single]
-      · simp [NameResolution.single]
-      · split
-        · simp only [rule]; exact holds
-        · first | (simp [NameResolution.single]; done) | simpa [NameResolution.single] using holds
-  exact step scope .missing trivial keep
 
 end Belay.Sqlite

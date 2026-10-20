@@ -10,19 +10,21 @@ namespace Belay.Sqlite
 
 mutual
 /-- Whether an expression names a result column alias: an identifier that names no
-column in scope but, after ASCII folding, is one of {lit}`aliases`. SQLite
+column of the query's own sources ({name}`Scope.inner`) but, after ASCII folding, is one of
+{lit}`aliases`, which in a subquery also holds the aliases of the queries around it. SQLite
 resolves such a name in {lit}`WHERE` and inside {lit}`ORDER BY` expressions to the
 aliased result expression, before the double-quoted string fallback. -/
 def namesAlias (scope : Scope) (aliases : List Identifier) : Syntax.Expr → Bool
-  | .identifier name _ => (scope.matches name).isEmpty &&
+  | .identifier name _ => (scope.inner.matches name).isEmpty &&
       aliases.any (·.sameName name)
   | .compare _ left right | .and left right | .or left right | .arithmetic _ left right =>
     namesAlias scope aliases left || namesAlias scope aliases right
   | .not operand | .isNull operand _ | .negate operand | .positive operand | .cast operand _
-  | .collate operand _ =>
+  | .collate operand _ | .inQuery operand .. =>
     namesAlias scope aliases operand
   | .call _ arguments => namesAliasIn scope aliases arguments
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ | .qualified .. => false
+  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ | .qualified .. | .exists _
+  | .subquery _ => false
 
 /-- Whether some argument names a result column alias ({name}`namesAlias`). -/
 def namesAliasIn (scope : Scope) (aliases : List Identifier) : List Syntax.Expr → Bool
@@ -32,8 +34,8 @@ end
 
 mutual
 /-- Whether an expression names a column in scope: an identifier with the folded name of
-a column, or a qualified name of one, anywhere in the expression. A write value that names a column
-depends on the row. -/
+a column, or a qualified name of one, anywhere in the expression, or a subquery, which can read
+the row. A write value that names a column depends on the row. -/
 def mentionsColumn (scope : Scope) : Syntax.Expr → Bool
   | .identifier name _ => !(scope.matches name).isEmpty
   | .qualified source column => scope.resolveQualified source column != .missing
@@ -42,6 +44,7 @@ def mentionsColumn (scope : Scope) : Syntax.Expr → Bool
   | .not operand | .isNull operand _ | .negate operand | .positive operand | .cast operand _
   | .collate operand _ =>
     mentionsColumn scope operand
+  | .exists _ | .inQuery .. | .subquery _ => true
   | .call _ arguments => mentionsColumnIn scope arguments
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ => false
 
@@ -59,10 +62,11 @@ def Syntax.Expr.hasQualifiedName : Syntax.Expr → Bool
   | .compare _ left right | .and left right | .or left right | .arithmetic _ left right =>
     left.hasQualifiedName || right.hasQualifiedName
   | .not operand | .isNull operand _ | .negate operand | .positive operand | .cast operand _
-  | .collate operand _ =>
+  | .collate operand _ | .inQuery operand .. =>
     operand.hasQualifiedName
   | .call _ arguments => Syntax.Expr.anyQualifiedName arguments
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ | .identifier .. => false
+  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ | .identifier .. | .exists _
+  | .subquery _ => false
 
 /-- Whether some argument has a qualified name ({name}`Syntax.Expr.hasQualifiedName`). -/
 def Syntax.Expr.anyQualifiedName : List Syntax.Expr → Bool

@@ -23,10 +23,10 @@ def integerLiteral : Syntax.Expr → Option Int
     | .numeric text => (numericValue text true).integer?
     | .null | .string _ | .blob _ | .currentTime _ | .identifier .. | .negate _ | .positive _
     | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast ..
-    | .qualified .. | .collate .. => none
+    | .qualified .. | .collate .. | .exists _ | .inQuery .. | .subquery _ => none
   | .null | .string _ | .blob _ | .currentTime _ | .identifier .. | .positive _ | .compare ..
   | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast ..
-  | .qualified .. | .collate .. => none
+  | .qualified .. | .collate .. | .exists _ | .inQuery .. | .subquery _ => none
 
 /-- The index of the first result column whose alias has the folded name. -/
 def aliasIndex (names : List (Option Identifier)) (name : Identifier) : Option Nat :=
@@ -48,7 +48,8 @@ def namedResult (names : List (Option Identifier)) : Syntax.Expr → Option (Exc
   | term@.null | term@(.numeric _) | term@(.string _) | term@(.blob _) | term@(.currentTime _)
   | term@(.negate _) | term@(.positive _) | term@(.compare ..) | term@(.and ..)
   | term@(.or ..) | term@(.not _) | term@(.isNull ..) | term@(.callStar _) | term@(.call ..)
-  | term@(.arithmetic ..) | term@(.cast ..) | term@(.qualified ..) | term@(.collate ..) =>
+  | term@(.arithmetic ..) | term@(.cast ..) | term@(.qualified ..) | term@(.collate ..) | term@(.exists _)
+  | term@(.inQuery ..) | term@(.subquery _) =>
     (integerLiteral term).map fun (number : Int) =>
       if 1 ≤ number ∧ number ≤ (names.length : Int) then .ok (number.toNat - 1) else .error ()
 

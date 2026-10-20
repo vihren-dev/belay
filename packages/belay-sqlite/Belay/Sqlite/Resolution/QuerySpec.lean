@@ -1,4 +1,4 @@
-import Belay.Sqlite.Resolution.Queries
+import Belay.Sqlite.Resolution.SelectResolution
 
 set_option doc.verso true
 
@@ -23,21 +23,19 @@ theorem namedResult_integer (names : List (Option Identifier)) (term : Syntax.Ex
   | identifier name doubleQuoted => exact absurd rfl (notIdentifier name doubleQuoted)
   | _ => simp only [namedResult, literal, Option.map_some]; split <;> rfl
 
-/-- For every context, catalog, statement index and {lit}`SELECT` with at most
-{name}`maximumJoinTables` sources whose first source is a table (no table-valued function):
-when the catalog has no table with the folded name of the first table and that name is not
-reserved for SQLite's own tables, resolution gives
-SQLite's {lit}`no such table: %s` and keeps the catalog. -/
+/-- For every context, catalog, statement index, list of subqueries and {lit}`SELECT` with at
+most {name}`maximumJoinTables` sources whose first source is a table (no table-valued
+function): when the catalog has no table with the folded name of the first table and that
+name is not reserved for SQLite's own tables, resolution gives SQLite's
+{lit}`no such table: %s` and keeps the catalog. -/
 theorem resolveSelect_noSuchTable (context : ResolveContext) (catalog : Catalog) (index : Nat)
-    (results : List Syntax.ResultColumn) (source : Syntax.TableReference) (joins : List Syntax.Join)
-    (filter : Option Syntax.Expr) (groupBy : List Syntax.Expr) (orderBy : List Syntax.OrderTerm)
-    (limit offset : Option Syntax.Expr) (tables : joins.length + 1 ≤ maximumJoinTables)
+    (query : Syntax.Subquery) (subqueries : List Syntax.Subquery) (source : Syntax.TableReference)
+    (first : query.source = some source) (tables : query.joins.length + 1 ≤ maximumJoinTables)
     (table : source.arguments = none)
     (missing : catalog.findTable source.table = none) (application : reservedName source.table = false) :
-    resolveSelect context catalog index results source joins filter groupBy orderBy limit offset =
-      .ok (.prepareError (.noSuchTable source.table), catalog) := by
-  have notMore : ¬ joins.length + 1 > maximumJoinTables := by omega
-  simp [resolveSelect, resolveSources, resolveReference, table, resolveTableReference, missing, application,
+    resolveSelect context catalog index query subqueries = .ok (.prepareError (.noSuchTable source.table), catalog) := by
+  have notMore : ¬ query.joins.length + 1 > maximumJoinTables := by omega
+  simp [resolveSelect, resolveSources, first, resolveReference, table, resolveTableReference, missing, application,
     notMore, issueResolution, prepareError, Functor.map, Except.map, bind, Except.bind]
 
 end Belay.Sqlite
