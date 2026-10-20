@@ -20,7 +20,7 @@ def checkIssue (resolved : Resolved.Expr) : Option ValueIssue :=
 /-- One CHECK constraint over the scope of its table: the condition and its label. -/
 def resolveCheck (dqs : Bool) (scope : Scope) (condition : Syntax.Expr) (label : String) :
     Except ValueIssue CheckConstraint := do
-  let resolved ← Belay.Sqlite.condition [] (resolveOperand dqs scope true condition)
+  let resolved ← Belay.Sqlite.condition [] (resolveOperand dqs scope {} true condition)
   match checkIssue resolved with
   | some issue => .error issue
   | none => .ok { condition := resolved, label }

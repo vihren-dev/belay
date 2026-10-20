@@ -68,6 +68,9 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "function-join": ("CREATE TABLE t(a);", "SELECT * FROM t RIGHT JOIN json_each('[1]');"),
     "later-source-in-arguments": ("CREATE TABLE t(a);", "SELECT * FROM t, json_each(b.value) AS a, json_each('[1]') AS b;"),
     "json-subtype": ("CREATE TABLE t(a);", "SELECT json_array(coalesce(json(a), 1)) FROM t;"),
+    "subquery-here": ("CREATE TABLE t(a);", "SELECT * FROM t JOIN t AS b ON EXISTS (SELECT 1);"),
+    "outer-aggregate": ("CREATE TABLE t(a);", "SELECT (SELECT count(t.a) FROM t AS b) FROM t;"),
+    "subquery-fallible-call": ("CREATE TABLE t(a);", "SELECT json((SELECT a FROM t));"),
 }
 """For each restriction id: a schema and a migration that the resolver refuses with it."""
 

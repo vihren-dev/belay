@@ -133,7 +133,7 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
   | select results source joins filter groupBy orderBy limit offset =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    exact keep _ ((resolveSelect_same _ _ _ _ _ _ _ _ _ _ _ _ _ (by assumption)).1 ▸ .same)
+    exact keep _ ((resolveSelect_same _ _ _ _ _ _ _ (by assumption)).1 ▸ .same)
 
 /-- For every context, starting catalog and script with a successful resolution: if
 the starting catalog has unique folded names, so does the resulting catalog.

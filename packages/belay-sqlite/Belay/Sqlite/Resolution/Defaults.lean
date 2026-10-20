@@ -25,7 +25,8 @@ def literalDefault : Syntax.Expr → Except ValueIssue Value
     else .ok (.text name.bytes)
   | .currentTime _ => .error (.restriction [] .unmodeledDefault)
   | .negate _ | .positive _ | .compare .. | .and .. | .or .. | .not _
-  | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast .. | .qualified .. | .collate .. =>
+  | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast .. | .qualified .. | .collate .. | .exists _
+  | .inQuery .. | .subquery _ =>
     .error (.restriction [] .unmodeledDefault)
 
 /-- The value that an INSERT gives an omitted column, before affinity applies: NULL without a

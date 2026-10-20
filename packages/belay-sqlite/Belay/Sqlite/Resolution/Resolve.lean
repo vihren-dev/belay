@@ -1,4 +1,4 @@
-import Belay.Sqlite.Resolution.Queries
+import Belay.Sqlite.Resolution.SelectResolution
 import Belay.Sqlite.Resolution.StatementCatalog
 import Belay.Sqlite.Resolution.Updates
 import Belay.Sqlite.Resolution.Deletes
@@ -49,9 +49,9 @@ def resolveStatement (context : ResolveContext) (state : ResolveState) (index : 
     state.withCatalog (resolveInsert context state.catalog index table columns rows conflicts algorithm returning)
   | .update table assignments filter returning =>
     state.withCatalog (resolveUpdate context state.catalog index table assignments filter returning)
-  | .select columns source joins filter groupBy orderBy limit offset =>
-    state.withCatalog
-      (resolveSelect context state.catalog index columns source joins filter groupBy orderBy limit offset)
+  | .select columns source joins filter groupBy orderBy limit offset subqueries =>
+    state.withCatalog (resolveSelect context state.catalog index
+      { columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none } subqueries)
   | .delete table filter returning =>
     state.withCatalog (resolveDelete context state.catalog index table filter returning)
 

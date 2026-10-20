@@ -33,7 +33,7 @@ def Syntax.ColumnDefinition.generatedExpression (definition : Syntax.ColumnDefin
 def resolveGeneratedExpression (dqs : Bool) (scope : Scope) (expression : Syntax.Expr) :
     Except ValueIssue Resolved.Expr := do
   if expression.hasQualifiedName then throw (.prepare .qualifiedGenerated)
-  let (resolved, _) ← resolveOperand dqs scope true expression
+  let (resolved, _) ← resolveOperand dqs scope {} true expression
   match generatedIssue resolved with
   | some issue => .error issue
   | none => .ok resolved

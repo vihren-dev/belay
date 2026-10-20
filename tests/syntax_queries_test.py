@@ -42,7 +42,7 @@ def test_select_keeps_columns_text_and_clauses(parse_sql: Callable[..., Tree]) -
         "groupBy": [column("a")],
         "orderBy": [{"expression": {"numeric": {"text": "1"}}, "descending": True},
                     {"expression": column("b"), "descending": False}],
-        "limit": {"numeric": {"text": "2"}}, "offset": {"numeric": {"text": "1"}}}}
+        "limit": {"numeric": {"text": "2"}}, "offset": {"numeric": {"text": "1"}}, "subqueries": []}}
 
 
 @pytest.mark.parametrize(("sql", "operand"), [

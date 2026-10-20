@@ -138,7 +138,7 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
   | select results source joins filter groupBy orderBy limit offset =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    obtain ⟨same, unchanged, control⟩ := resolveSelect_same _ _ _ _ _ _ _ _ _ _ _ _ _ (by assumption)
+    obtain ⟨same, unchanged, control⟩ := resolveSelect_same _ _ _ _ _ _ _ (by assumption)
     exact ordinary _ control (same.trans unchanged.symm)
 
 /-- For every context, script, index and state with a successful resolution, the final

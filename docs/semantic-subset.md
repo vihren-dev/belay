@@ -53,6 +53,19 @@ The frontend maps these statements, and refuses every other statement as
   name, and a left table that does not merge the name is SQLite's
   `ambiguous reference to a in USING()`; `*` and `x.*` of a table left of a right or
   full join show such a merged name (slice 4d).
+- Subqueries in the expressions of a `SELECT` (ADR 0018, slice 1): `EXISTS (q)`, `NOT
+  EXISTS (q)`, `x IN (q)`, `x NOT IN (q)` and the scalar subquery `(q)`, where `q` is a
+  `SELECT` as above and may name the columns of the queries around it. A name resolves in
+  its own query first, then outward. `EXISTS` is 1 or 0; a scalar subquery is the first
+  value of its first row, or NULL without a row, and has the affinity of its result
+  column; `IN` compares under the affinity and collation of its operand and the
+  subquery's result column, and is NULL when no row matches and the subquery gives a
+  NULL. A scalar subquery or `IN` subquery with another number of result columns than
+  one is SQLite's `sub-select returns N columns - expected 1`. When rows tie, SQLite's
+  plan can choose the first row of a scalar subquery and the rows of an `IN` window, so
+  the model describes the statement only when every permitted order gives the same
+  values. A subquery in an `ON` condition, a `json_each` argument or a statement other
+  than `SELECT`, and in `FROM`, is refused or a restriction.
 
 Expressions are `NULL`, numeric, string and blob literals, the time keywords,
 names, unary `-` and `+`, and `=`. Inside a `SELECT`, they may also be the other
@@ -355,6 +368,8 @@ should shrink.
 | `function-join` | `json_each` as the right operand of RIGHT or FULL JOIN, with NATURAL or USING, or before a NATURAL JOIN, is not modeled | ADR 0012 slice 6d; ADR 0013 amendment 2 |
 | `later-source-in-arguments` | An argument of `json_each` that reads a later source is not modeled, because the model joins in written order | ADR 0012 slice 6d; ADR 0013 amendment 2 |
 | `json-subtype` | A JSON call passed on through `coalesce`, `iif`, `nullif`, `min` or `max` as a value argument of `json_quote`, `json_array`, `json_object`, an edit function or a JSON aggregate is not modeled, because SQLite keeps the JSON subtype through such expressions | ADR 0015, slice 3 |
+| `subquery-here` | A subquery outside the expressions of a `SELECT` that the model resolves, such as in an `ON` condition, a `json_each` argument or another statement, is not modeled | ADR 0018, slice 1 |
+| `outer-aggregate` | An aggregate in a subquery whose argument reads a column of a query around it is not modeled, because SQLite computes an aggregate whose argument reads only outer columns in the outer query | ADR 0018, slice 1 |
 
 #### Undecided
 
@@ -367,6 +382,7 @@ should shrink.
 | `constant-function-error` | A constant value in VALUES or SET whose JSON function fails is not modeled, because the model does not describe when SQLite evaluates it | ADR 0012 slice 6b |
 | `unknown-collation` | COLLATE with a name other than BINARY, NOCASE or RTRIM in an expression is not modeled, because SQLite looks the name up only where its query planner uses the collation | ADR 0014, slice 3 |
 | `upsert-generated` | DO UPDATE of a generated column is not modeled, because SQLite refuses it only when a row conflicts | ADR 0014, slice 5 |
+| `subquery-fallible-call` | A query without `FROM` that has a subquery and a call that can fail is not modeled, because a value of the subquery that SQLite's plan chooses could avoid the failure | ADR 0018, slice 1 |
 
 #### Unrepresented
 

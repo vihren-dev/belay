@@ -77,6 +77,14 @@ inductive Expr where
   /-- {lit}`operand COLLATE name` (ADR 0014, slice 3): the operand's value with the named
   collation, as written. -/
   | collate (operand : Expr) (name : Identifier)
+  /-- {lit}`EXISTS (q)` (ADR 0018, D1), where {lit}`q` is subquery {lit}`index` of the
+  statement ({lit}`Subquery`); {lit}`NOT EXISTS` is {lit}`NOT` of it, as SQLite parses it. -/
+  | exists (index : Nat)
+  /-- {lit}`operand IN (q)`, or {lit}`operand NOT IN (q)` when {lit}`negated`, where {lit}`q` is
+  subquery {lit}`index` of the statement. -/
+  | inQuery (operand : Expr) (index : Nat) (negated : Bool)
+  /-- A scalar subquery {lit}`(q)`, where {lit}`q` is subquery {lit}`index` of the statement. -/
+  | subquery (index : Nat)
   deriving Repr, BEq, Inhabited
 
 /-- One result column of a {lit}`SELECT`: {lit}`*`, or an expression with an
@@ -126,6 +134,33 @@ structure OrderTerm where
   expression : Expr
   /-- Whether the term is {lit}`DESC`; {lean}`false` for {lit}`ASC` or no direction. -/
   descending : Bool
+  deriving Repr, BEq
+
+/-- A subquery of a statement as written (ADR 0018, D1): its clauses, as those of
+{lit}`Syntax.Statement.select`, and the query around it, an earlier subquery by its index in
+the statement's list or {lean}`(none : Option Nat)` for the statement's query. The frontend
+lists the subqueries in the order of their text, so a subquery comes after the query around
+it; an expression names a subquery by its index ({lit}`Expr.exists`, {lit}`Expr.inQuery`,
+{lit}`Expr.subquery`). -/
+structure Subquery where
+  /-- The result columns. -/
+  columns : List ResultColumn
+  /-- The first table of {lit}`FROM`, or none without {lit}`FROM`. -/
+  source : Option TableReference
+  /-- The joins after the first table, in order. -/
+  joins : List Join
+  /-- The {lit}`WHERE` condition. -/
+  filter : Option Expr
+  /-- The {lit}`GROUP BY` terms. -/
+  groupBy : List Expr
+  /-- The {lit}`ORDER BY` terms. -/
+  orderBy : List OrderTerm
+  /-- The {lit}`LIMIT` expression. -/
+  limit : Option Expr
+  /-- The {lit}`OFFSET` expression. -/
+  offset : Option Expr
+  /-- The index of the subquery around this one, or none for the statement's query. -/
+  parent : Option Nat
   deriving Repr, BEq
 
 end Belay.Sqlite.Syntax

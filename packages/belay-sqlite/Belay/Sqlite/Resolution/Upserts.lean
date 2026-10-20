@@ -47,7 +47,7 @@ condition. -/
 def resolveConflictFilter (dqs : Bool) (scope : Scope) (clause : Nat) :
     Option Syntax.Expr → Except ValueIssue (Option Resolved.Expr)
   | none => .ok none
-  | some term => some <$> condition [clause, 1, 1] (resolveOperand dqs scope true term)
+  | some term => some <$> condition [clause, 1, 1] (resolveOperand dqs scope {} true term)
 
 /-- Resolve the action of a clause at {lit}`clause`: {lit}`DO NOTHING` as it is;
 {lit}`DO UPDATE` with its assignments in order, then its filter as a condition, over

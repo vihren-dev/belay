@@ -41,6 +41,24 @@ Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D1.
   `mayFail` scan now also covers joined queries. Tests: `SubqueryExamples.lean` (faults of
   scalar subqueries with and without a certain first row, `IN` with `LIMIT`, `EXISTS`).
 
+- 2026-10-20: "subqueries in SELECT, from SQL text". The frontend lifts the subqueries of a
+  `SELECT` into the statement's list (`belay/sqlite/syntax_subqueries.py`, in the order of
+  their text, each with the query around it), and refuses them in other statements.
+  `Syntax.Expr` has `exists`, `inQuery` and `subquery`; `Syntax.Statement.select` has
+  `subqueries` (child 8). Scope sources have a depth: a name resolves in its own query
+  first, then outward, and `*` sees only the query's own sources. `SelectResolution.lean`
+  resolves the scopes outward-in and the bodies inward-out, so a query knows the shapes of
+  its subqueries (`SubqueryShapes.lean`: column count, affinity and collations of the first
+  result column, lowest cell read). New restrictions: `subquery-here`, `outer-aggregate`,
+  `subquery-fallible-call`; new prepare error `sub-select returns N columns - expected 1`.
+  An alias of an outer query in a subquery's `WHERE` is `alias-in-expression`. Native
+  probes: the recorder cannot observe tie groups for a nested `LIMIT` or an `ORDER BY` key
+  that is not a projected name, so the authored cases avoid both. Tests:
+  `SubqueryResolutionExamples.lean`, `tests/syntax_subqueries_test.py`,
+  `conformance/authored_subqueries.py` (20 cases, all agree with kernel proofs), the
+  restriction examples, `test_model_package` (175 core modules), `test_lean_categories`,
+  `conformance_query_coverage`, `conformance_authored`, the syntax tests.
+
 ## Remaining
 
 - All outcomes and tests.

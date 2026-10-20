@@ -2,7 +2,8 @@
 
 A query keeps its result columns, its first table and its joins (`syntax_sources`), or
 none for a SELECT without FROM (ADR 0012, amendment 5, slice 6a), and its WHERE, GROUP BY,
-ORDER BY, LIMIT and OFFSET clauses. Compound SELECT, WITH, DISTINCT, HAVING and NULLS
+ORDER BY, LIMIT and OFFSET clauses; a SELECT statement also lists the subqueries of its
+expressions (ADR 0018, D1). Compound SELECT, WITH, DISTINCT, HAVING and NULLS
 FIRST or LAST have no constructor and are refused with their source range.
 """
 
@@ -11,6 +12,7 @@ from .sql_tree import Node, Tree
 from .syntax_shapes import absent, left_list, require
 from .syntax_queries import query_expression, result_columns
 from .syntax_sources import from_clause
+from .syntax_subqueries import statement_subqueries, subquery_list
 
 
 def order_terms(tree: Tree, node: Node) -> list[Located]:
@@ -32,16 +34,18 @@ def optional(located: Located | None, node: Node) -> Located:
     return located if located is not None else leaf(None, node.start, node.end)
 
 
-def select(tree: Tree, command: Node) -> Located:
-    """Map `SELECT ... [FROM tables] [WHERE] [GROUP BY] [ORDER BY] [LIMIT [OFFSET]]`; without
-    FROM, the source is a null leaf and the joins are empty."""
-    (current,) = require(tree, command, ["select"])
-    (current,) = require(tree, current, ["selectnowith"])
+def query_clauses(tree: Tree, select_node: Node) -> list[tuple[str, Located]]:
+    """Map the clauses of a `select` production, `SELECT ... [FROM tables] [WHERE] [GROUP BY]
+    [ORDER BY] [LIMIT [OFFSET]]`, in the order of `Syntax.Subquery` and of their text, so the
+    subqueries of their expressions are listed in that order; without FROM, the source is a
+    null leaf and the joins are empty."""
+    (current,) = require(tree, select_node, ["selectnowith"])
     (one,) = require(tree, current, ["oneselect"])
     _, distinct, columns, source, where, group, having, order, limit = require(tree, one, [
         "SELECT", "distinct", "selcollist", "from", "where_opt", "groupby_opt", "having_opt", "orderby_opt", "limit_opt"])
     absent(tree, distinct, "DISTINCT or ALL")
     absent(tree, having, "HAVING")
+    results = result_columns(tree, columns)
     if source.children:
         _, tables = require(tree, source, ["FROM", "seltablist"])
         first_table, joins = from_clause(tree, tables, query_expression)
@@ -61,8 +65,17 @@ def select(tree: Tree, command: Node) -> Located:
         count, offset = (first, second) if window[2] == "OFFSET" else (second, first)
     elif window:
         raise tree.unsupported(limit, "Unsupported LIMIT form; write LIMIT n [OFFSET m]")
-    return constructor("select", [
-        ("columns", result_columns(tree, columns)), ("source", first_table), ("joins", joins),
-        ("filter", optional(condition, where)), ("groupBy", sequence(grouping, group.start, group.end)),
-        ("orderBy", sequence(ordering, order.start, order.end)), ("limit", optional(count, limit)),
-        ("offset", optional(offset, limit))], command.start, command.end)
+    return [("columns", results), ("source", first_table), ("joins", joins),
+            ("filter", optional(condition, where)), ("groupBy", sequence(grouping, group.start, group.end)),
+            ("orderBy", sequence(ordering, order.start, order.end)), ("limit", optional(count, limit)),
+            ("offset", optional(offset, limit))]
+
+
+def select(tree: Tree, command: Node) -> Located:
+    """Map a SELECT statement: its clauses (`query_clauses`) and the subqueries that its
+    expressions name (`syntax_subqueries`)."""
+    (select_node,) = require(tree, command, ["select"])
+    with statement_subqueries(query_clauses) as listed:
+        clauses = query_clauses(tree, select_node)
+    return constructor("select", clauses + [("subqueries", subquery_list(listed, command.start, command.end))],
+                       command.start, command.end)

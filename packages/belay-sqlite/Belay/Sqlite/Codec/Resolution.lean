@@ -17,6 +17,7 @@ deriving instance Lean.FromJson, Lean.ToJson for Syntax.Expr, Syntax.DefaultExpr
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ResultColumn, Syntax.OrderTerm
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ColumnDefinition, Syntax.TableConstraint
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.TableReference, Syntax.Join
+deriving instance Lean.FromJson, Lean.ToJson for Syntax.Subquery
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ConflictAction, Syntax.ConflictClause
 /-- The table options as JSON, with {lit}`strict` only for a {lit}`STRICT` table, so the
 records of other tables keep their form. -/
@@ -75,6 +76,7 @@ deriving instance Lean.ToExpr for Syntax.ColumnDefinition
 deriving instance Lean.ToExpr for Syntax.TableConstraint
 deriving instance Lean.ToExpr for Syntax.TableReference
 deriving instance Lean.ToExpr for Syntax.Join
+deriving instance Lean.ToExpr for Syntax.Subquery
 deriving instance Lean.ToExpr for Syntax.ConflictAction
 deriving instance Lean.ToExpr for Syntax.ConflictClause
 deriving instance Lean.ToExpr for Syntax.TableOptions
