@@ -1,5 +1,6 @@
 import Belay.Sqlite.Json.Extract
 import Belay.Sqlite.Json.Render
+import Belay.Sqlite.Json.JsonbOutput
 
 set_option doc.verso true
 
@@ -53,14 +54,14 @@ def mergeMembers : Nat → List (JsonNode × JsonNode) → List (JsonNode × Jso
     mergeMembers fuel members rest
 end
 
-/-- {lit}`json_patch(target, patch)` ({lit}`jsonPatchFunc`): NULL for a NULL argument, else the text of
-{name}`mergePatch`. -/
-def jsonPatch (target patch : Value) : Except JsonError Value := do
+/-- {lit}`json_patch(target, patch)` ({lit}`jsonPatchFunc`): NULL for a NULL argument, else the result
+of {name}`mergePatch` as text, or as JSONB for {lit}`binary` ({name}`nodeOutput`). -/
+def jsonPatch (binary : Bool) (target patch : Value) : Except JsonError Value := do
   let target ← parseJsonArgument target
   let patch ← parseJsonArgument patch
   match target, patch with
   | some target, some patch =>
-    .ok (.text (renderNode (mergePatch (2 * (renderNode patch).length + 2) target patch)))
+    .ok (nodeOutput binary (mergePatch (2 * (renderNode patch).length + 2) target patch))
   | none, _ | some _, none => .ok .null
 
 mutual

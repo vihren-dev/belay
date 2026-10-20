@@ -5,7 +5,9 @@ set_option doc.verso true
 /-! The SQL function {lit}`json_valid(json [, flags])` (ADR 0012, amendment 5, slice 6c;
 {lit}`jsonValidFunc` in 3.51.0) on TEXT, INTEGER, REAL and NULL arguments. The flags are
 bits: 1 accepts RFC 8259 JSON text, 2 also JSON5 text, and 4 and 8 JSONB, which a text
-argument never is. The function never fails on malformed JSON; it gives 0. -/
+argument never is. The function never fails on malformed JSON; it gives 0. A BLOB that is
+JSONB by SQLite's quick check ({lit}`isJsonb`) gives 1 with flag 4, the full check
+({lit}`jsonbValid`) with flag 8 and else 0; any other BLOB is read as text. -/
 
 namespace Belay.Sqlite.Json
 
@@ -38,13 +40,18 @@ def textValid (flags : Int) (bytes : List UInt8) : Bool :=
 
 /-- {lit}`json_valid(json, flags)`: the flags error for flags that SQLite does not accept
 ({name}`flagsAccepted`), checked first; then NULL for a NULL argument, and 1 or 0 for a text, INTEGER or REAL argument,
-read as its text. A BLOB argument is not modelled. -/
+read as its text, and for a BLOB as the module documentation says. -/
 def jsonValid (json flags : Value) : Except JsonError Value :=
   let flags := flagsValue flags
   if !flagsAccepted flags then .error .badFlags
   else match json with
     | .null => .ok .null
-    | .blob _ => .error .blobArgument
+    | .blob bytes =>
+      if isJsonb bytes then
+        .ok (.integer (if flags / 4 % 2 == 1 then 1
+          else if flags / 8 % 2 == 1 && jsonbValid bytes.toArray (jsonbFuel bytes.toArray) 0 bytes.length 1 then 1
+          else 0))
+      else .ok (.integer (if textValid flags bytes then 1 else 0))
     | .integer _ | .real _ | .text _ =>
       .ok (.integer (if (valueText json).any (textValid flags ·) then 1 else 0))
 

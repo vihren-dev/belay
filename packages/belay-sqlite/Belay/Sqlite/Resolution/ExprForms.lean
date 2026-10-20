@@ -18,7 +18,8 @@ def aggregateIssue (misuse : Bool) (function : String) : ValueIssue :=
   else .restriction [] .aggregateInExpression
 
 /-- The aggregate of one operand that a function name names, after ASCII folding:
-{lit}`count`, {lit}`min`, {lit}`max`, {lit}`sum`, {lit}`avg` or {lit}`json_group_array`. -/
+{lit}`count`, {lit}`min`, {lit}`max`, {lit}`sum`, {lit}`avg`, {lit}`json_group_array` or
+{lit}`jsonb_group_array`. -/
 def aggregateNamed (name : String) : Option (Resolved.Expr → Resolved.Aggregate) :=
   match normalizeIdentifier name with
   | "count" => some .count
@@ -26,20 +27,22 @@ def aggregateNamed (name : String) : Option (Resolved.Expr → Resolved.Aggregat
   | "max" => some .max
   | "sum" => some .sum
   | "avg" => some .avg
-  | "json_group_array" => some .jsonGroupArray
+  | "json_group_array" => some (.jsonGroupArray · false)
+  | "jsonb_group_array" => some (.jsonGroupArray · true)
   | _ => none
 
 /-- The aggregate of two operands that a function name names, after ASCII folding:
-{lit}`json_group_object`. -/
+{lit}`json_group_object` or {lit}`jsonb_group_object`. -/
 def pairAggregateNamed (name : String) : Option (Resolved.Expr → Resolved.Expr → Resolved.Aggregate) :=
   match normalizeIdentifier name with
-  | "json_group_object" => some .jsonGroupObject
+  | "json_group_object" => some (.jsonGroupObject · · false)
+  | "jsonb_group_object" => some (.jsonGroupObject · · true)
   | _ => none
 
 /-- Whether an aggregate writes its operand as a JSON value, so that the JSON subtype of the
 operand matters: {lit}`json_group_array` and {lit}`json_group_object`. -/
 def Resolved.Aggregate.writesJson : Resolved.Aggregate → Bool
-  | .jsonGroupArray _ | .jsonGroupObject .. => true
+  | .jsonGroupArray .. | .jsonGroupObject .. => true
   | .countRows | .count _ | .min .. | .max .. | .sum _ | .avg _ => false
 
 /-- Whether a call is an aggregate of the model: {lit}`count(*)`, or a named aggregate

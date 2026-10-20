@@ -83,19 +83,21 @@ inductive Aggregate where
   {lit}`SumState.averageValue`. -/
   | avg (operand : Expr)
   /-- {lit}`json_group_array(x)`: the JSON array of the operand values of the group in order,
-  each written as {lit}`json_array` writes it, NULL as {lit}`null`; {lit}`[]` for an empty group. -/
-  | jsonGroupArray (operand : Expr)
+  each written as {lit}`json_array` writes it, NULL as {lit}`null`; {lit}`[]` for an empty group.
+  With {lit}`binary`, {lit}`jsonb_group_array`: the same array as JSONB. -/
+  | jsonGroupArray (operand : Expr) (binary : Bool := false)
   /-- {lit}`json_group_object(label, value)`: the JSON object of the members of the group in
   order, the label as text up to its first NUL byte and the value as {lit}`json_object` writes
-  it; a row with a NULL label adds no member; {lit}`{}` for an empty group. -/
-  | jsonGroupObject (label value : Expr)
+  it; a row with a NULL label adds no member; {lit}`{}` for an empty group. With {lit}`binary`,
+  {lit}`jsonb_group_object`: the same object as JSONB. -/
+  | jsonGroupObject (label value : Expr) (binary : Bool := false)
   deriving Repr, DecidableEq
 
 /-- Whether an aggregate can fail while the statement runs: {lit}`SUM`, on an integer
 overflow. -/
 def Aggregate.canFail : Aggregate → Bool
   | .sum _ => true
-  | .countRows | .count _ | .min .. | .max .. | .avg _ | .jsonGroupArray _ | .jsonGroupObject .. => false
+  | .countRows | .count _ | .min .. | .max .. | .avg _ | .jsonGroupArray .. | .jsonGroupObject .. => false
 
 /-- One result column: an expression over a row, or, in an aggregate query, an
 aggregate over a group or an expression over the group's first row, which

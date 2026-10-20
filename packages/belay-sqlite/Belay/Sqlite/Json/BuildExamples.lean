@@ -26,7 +26,11 @@ def number (value : Int) : Value × Bool := (.integer value, false)
   marked "[1]", plain "[1]", (.real (1e300 : Float).toBits, false)]) "[1,2.5,\"a\\\"b\",null,[1],\"[1]\",1.0e+300]"
 #guard givesText (apply .quote [(.real (0.1 : Float).toBits, false)]) "0.1"
 #guard givesText (apply .quote [plain "a\u0001\n"]) "\"a\\u0001\\n\""
-#guard fails (apply .array [(.blob [1], false)]) .blobArgument
+-- A JSONB BLOB is its tree (x'01' is true); another BLOB cannot be stored; JSONB with a header
+-- longer than needed (x'c70161') is not described.
+#guard givesText (apply .array [(.blob [1], false)]) "[true]"
+#guard fails (apply .array [(.blob [0xab, 0xcd], false)]) .blobValue
+#guard fails (apply .array [(.blob [0xc7, 1, 0x61], false)]) .blobArgument
 
 -- json_object: labels must be TEXT; an odd count fails; duplicates stay; an infinity.
 #guard givesText (apply .object [plain "a", number 1, plain "b", marked "{}", plain "a",
@@ -75,7 +79,7 @@ def number (value : Int) : Value × Bool := (.integer value, false)
 #guard groupObject [(sqlText "a", .integer 1, false), (.null, .integer 2, false), (.integer 3, sqlText "x", false),
   (.text [98, 0, 99], sqlText "{}", true)] == sqlText "{\"a\":1,\"3\":\"x\",\"b\":{}}"
 #guard groupObject [] == sqlText "{}"
-#guard groupArray [(.blob [1], false)] == .null
+#guard groupArray [(.blob [0xc7, 1, 0x61], false)] == .null
 
 /-- The JSON subtype in evaluation: {lit}`json_array(json('[1]'), json_extract('[[2],"[3]"]', '$[0]'),
 json_extract('[[2],"[3]"]', '$[1]'))` is {lit}`[[1],[2],"[3]"]`: the selected array is JSON and the

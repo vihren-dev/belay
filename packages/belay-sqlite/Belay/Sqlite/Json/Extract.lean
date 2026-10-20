@@ -2,6 +2,7 @@ import Belay.Sqlite.RealText
 import Belay.Sqlite.Json.Read
 import Belay.Sqlite.Json.Path
 import Belay.Sqlite.Json.SqlValue
+import Belay.Sqlite.Json.Jsonb
 
 set_option doc.verso true
 
@@ -25,16 +26,24 @@ def valueText : Value → Option (List UInt8)
 /-- The bytes of a text up to its first NUL byte, as a C string reads them. -/
 def cString (bytes : List UInt8) : List UInt8 := bytes.takeWhile (· != 0)
 
-/-- Parse the JSON argument ({lit}`jsonParseFuncArg`): {lit}`none` for NULL, the tree of
-the value's text, or an error for malformed text. A BLOB is not modelled. -/
+/-- Parse JSON text, or the error {lit}`malformed JSON`. -/
+def parseTextArgument (bytes : List UInt8) : Except JsonError (Option JsonNode) :=
+  match parseJsonText bytes with
+  | some node => .ok (some node)
+  | none => .error .malformed
+
+/-- Parse the JSON argument ({lit}`jsonParseFuncArg`): {lit}`none` for NULL; for a BLOB, the
+tree of JSONB that the model reads ({name}`readBlob`), the text of a BLOB that is not JSONB,
+and {lit}`blobArgument` for JSONB that the model does not describe; else the tree of the
+value's text, or an error for malformed text. -/
 def parseJsonArgument (json : Value) : Except JsonError (Option JsonNode) :=
   match json with
   | .null => .ok none
-  | .blob _ => .error .blobArgument
-  | .integer _ | .real _ | .text _ =>
-    match (valueText json).bind parseJsonText with
-    | some node => .ok (some node)
-    | none => .error .malformed
+  | .blob bytes => match readBlob bytes with
+    | .tree node => .ok (some node)
+    | .notJsonb => parseTextArgument bytes
+    | .undescribed => .error .blobArgument
+  | .integer _ | .real _ | .text _ => parseTextArgument ((valueText json).getD [])
 
 /-- Convert a lookup result for a path text into a node, {lit}`none` for "not found",
 or the error of {lit}`jsonExtractFunc`. -/
@@ -164,6 +173,7 @@ def JsonError.message? : JsonError → Option (List UInt8)
   | .malformed => some "malformed JSON".toUTF8.toList
   | .badPath path => some ("bad JSON path: ".toUTF8.toList ++ quoteSqlText path)
   | .blobArgument => none
+  | .blobValue => some "JSON cannot hold BLOB values".toUTF8.toList
   | .badFlags => some "FLAGS parameter to json_valid() must be between 1 and 15".toUTF8.toList
   | .objectArgumentCount => some "json_object() requires an even number of arguments".toUTF8.toList
   | .labelNotText => some "json_object() labels must be TEXT".toUTF8.toList

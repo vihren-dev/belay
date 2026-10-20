@@ -91,7 +91,13 @@ subtype: when it is a direct call of `json`, `->`, one of these functions (excep
 and `json_error_position`), or `json_extract` that selects an array or an object or has two or
 more paths. A JSON call passed on through `coalesce`, `iif`, `nullif`, `min` or `max` is the
 restriction `json-subtype`, also as the operand of a JSON aggregate. The position that `json_error_position` gives for malformed JSON
-is not modeled. A
+is not modeled. ADR 0015, slice 4, adds JSONB: `jsonb`, `jsonb_extract`, `jsonb_array`,
+`jsonb_object`, `jsonb_set`, `jsonb_insert`, `jsonb_replace`, `jsonb_remove`, `jsonb_patch`,
+`jsonb_group_array` and `jsonb_group_object` give SQLite's JSONB BLOB byte for byte, and every
+JSON function reads a BLOB argument as SQLite does: JSONB when it passes SQLite's quick check,
+else JSON text, and as a stored value the error `JSON cannot hold BLOB values`. The model reads
+JSONB that is valid and in the encoding that SQLite's encoder gives for its tree; other JSONB,
+such as a BLOB with a header longer than needed, is outside the supported subset. A
 `FROM` may end with `json_each(json [, path])` sources, joined by a comma or an inner
 `JOIN` with an optional `ON` condition, whose arguments read the sources before them
 (slice 6d). A comparison applies SQLite's comparison affinity (ADR 0013, D4): with an
@@ -378,13 +384,13 @@ rounded; and `SUM` and `AVG` with SQLite's summation. A `SUM` that overflows the
 64-bit integers stops the query with `integer overflow`, unless a later REAL input
 makes the sum approximate. JSON functions read JSON and JSON5 text as SQLite 3.51.0
 does, and give SQLite's values and rendered JSON text (slice 6b). A JSON function that
-fails with `malformed JSON`, `bad JSON path`, the `json_valid` flags error or an argument error
-of `json_object` or an edit function stops a query without `FROM` where SQLite
+fails with `malformed JSON`, `bad JSON path`, the `json_valid` flags error, an argument error
+of `json_object` or an edit function, or `JSON cannot hold BLOB values` stops a query without `FROM` where SQLite
 certainly evaluates it. Every other statement in which a JSON function may fail is
 outside the supported subset for that data, because SQLite skips or folds some
 expressions and evaluates a constant `WHERE` term before it reads the rows: a query with
-`FROM`, a write, a failure under `AND`, `OR` or `COALESCE`, and a JSONB (BLOB)
-argument. Each statement sees one clock value, SQLite's
+`FROM`, a write, a failure under `AND`, `OR` or `COALESCE`, and JSONB that the model does not
+read. Each statement sees one clock value, SQLite's
 Julian-day milliseconds from the VFS method `xCurrentTimeInt64`, and different statements
 may see different values (slice 6e2). `CURRENT_TIME`, `CURRENT_DATE` and
 `CURRENT_TIMESTAMP` give it as SQLite's text `HH:MM:SS`, `YYYY-MM-DD` and

@@ -58,13 +58,14 @@ def empty : Database :=
 #guard
   let columns : List Output := [.scalar malformed, .aggregate .countRows]
   !statementReady 0 (.query { fromless with sources := [.first 0], aggregate := true, columns := columns }) empty
--- A JSON aggregate writes its operand as json_array does: a BLOB operand (JSONB) is a
--- possible failure that the model does not describe, and a failing operand stays certain.
+-- A JSON aggregate writes its operand as json_array does: JSONB that the model does not
+-- describe (a header longer than needed) is a possible failure, and a failing operand stays
+-- certain.
 #guard
-  let blob : Query := { fromless with aggregate := true, columns := [.aggregate (.jsonGroupArray (.literal (.blob [1])))] }
+  let blob : Query := { fromless with aggregate := true, columns := [.aggregate (.jsonGroupArray (.literal (.blob [0xc7, 1, 0x61])))] }
   blob.mayFail 0 [[]] && !blob.mustFail 0 [[]] && (blob.run 0 [[]]).fault == .may
 #guard
-  let column : Output := .aggregate (.jsonGroupObject (text "a") (.literal (.blob [1])))
+  let column : Output := .aggregate (.jsonGroupObject (text "a") (.literal (.blob [0xc7, 1, 0x61])))
   let blob : Query := { fromless with aggregate := true, columns := [column] }
   blob.mayFail 0 [[]] && !blob.mustFail 0 [[]]
 #guard { fromless with aggregate := true, columns := [.aggregate (.jsonGroupArray malformed)] }.mustFail 0 [[]]

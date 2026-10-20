@@ -30,15 +30,16 @@ def Aggregate.eval (clock : Int) (rows : List (List Value)) : Aggregate → Valu
   | .max operand collation => extremum (fun a b => collation.compare a b == .gt) (rows.map (operand.eval clock))
   | .sum operand => ((sumOf (rows.map (operand.eval clock))).sumValue).getD .null
   | .avg operand => (sumOf (rows.map (operand.eval clock))).averageValue
-  | .jsonGroupArray operand => Json.groupArray (rows.map fun row => (operand.eval clock row, operand.givesJson clock row))
-  | .jsonGroupObject label value =>
-    Json.groupObject (rows.map fun row => (label.eval clock row, value.eval clock row, value.givesJson clock row))
+  | .jsonGroupArray operand binary =>
+    Json.groupOutput binary (Json.groupArray (rows.map fun row => (operand.eval clock row, operand.givesJson clock row)))
+  | .jsonGroupObject label value binary => Json.groupOutput binary
+    (Json.groupObject (rows.map fun row => (label.eval clock row, value.eval clock row, value.givesJson clock row)))
 
 /-- Whether an aggregate fails over the rows of one group: {lit}`SUM` with an integer
 overflow that no later REAL input cleared. Every other aggregate never fails. -/
 def Aggregate.fails (clock : Int) (rows : List (List Value)) : Aggregate → Bool
   | .sum operand => ((sumOf (rows.map (operand.eval clock))).sumValue).isNone
-  | .countRows | .count _ | .min .. | .max .. | .avg _ | .jsonGroupArray _ | .jsonGroupObject .. => false
+  | .countRows | .count _ | .min .. | .max .. | .avg _ | .jsonGroupArray .. | .jsonGroupObject .. => false
 
 /-- The groups of rows by the values of the grouping terms, in the order in which
 each group first appears. Two rows are in one group when each term's values compare

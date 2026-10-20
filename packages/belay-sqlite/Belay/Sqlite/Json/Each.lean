@@ -14,13 +14,14 @@ namespace Belay.Sqlite.Json
 open Belay.Sqlite
 
 /-- The cells that are the same in every row of one call: the root path text, which is
-the {lit}`path` column and the hidden {lit}`root` column, and the JSON text of the hidden
+the {lit}`path` column and the hidden {lit}`root` column, and the cell of the hidden
 {lit}`json` column. -/
 structure EachContext where
   /-- The root path as given, up to its first NUL byte, or {lit}`$` without one. -/
   rootPath : List UInt8
-  /-- The JSON argument as {lit}`sqlite3_value_text` gives it, up to its first NUL byte. -/
-  jsonText : List UInt8
+  /-- The JSON argument: a JSONB BLOB as it is, else TEXT as {lit}`sqlite3_value_text` gives it,
+  up to its first NUL byte ({lit}`JEACH_JSON`). -/
+  json : Value
 
 /-- Whether a node is an array or an object; {lit}`jsonEachColumn` gives no {lit}`atom`
 for these. -/
@@ -50,7 +51,7 @@ def eachRow (context : EachContext) (key : Value) (node : JsonNode) (id : Nat) (
   let value ← sqlValueOfNode node
   let atom := if node.isContainer then Value.null else value
   pure [key, value, .text node.typeName.toUTF8.toList, atom, .integer id, .null, .text fullKey,
-    .text context.rootPath, .text context.jsonText, .text context.rootPath]
+    .text context.rootPath, context.json, .text context.rootPath]
 
 /-- The rows of the elements of an array from element {lit}`index`, whose JSONB starts at
 {lit}`offset`: the key is the index and the id is the element's offset. -/
@@ -108,9 +109,11 @@ def eachRows (json : Value) (path : Option Value) : Except JsonError (List (List
   | .error error => .error error
   | .ok none => .ok []
   | .ok (some root) =>
-    let jsonText := cString ((valueText json).getD [])
+    let jsonCell := match json with
+      | .blob bytes => if isJsonb bytes then json else .text (cString bytes)
+      | .null | .integer _ | .real _ | .text _ => .text (cString ((valueText json).getD []))
     match path with
-    | none => selectedRows ⟨[36], jsonText⟩ ⟨root, 0, none⟩
+    | none => selectedRows ⟨[36], jsonCell⟩ ⟨root, 0, none⟩
     | some pathValue =>
       match valueText pathValue with
       | none => .ok []
@@ -119,6 +122,6 @@ def eachRows (json : Value) (path : Option Value) : Except JsonError (List (List
         match eachRoot root rootPath with
         | .error error => .error error
         | .ok none => .ok []
-        | .ok (some located) => selectedRows ⟨rootPath, jsonText⟩ located
+        | .ok (some located) => selectedRows ⟨rootPath, jsonCell⟩ located
 
 end Belay.Sqlite.Json

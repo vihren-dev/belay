@@ -28,8 +28,8 @@ def Output.operands : Output → List Expr
   | .scalar _ | .aggregate .countRows => []
   | .aggregate (.count operand) | .aggregate (.min operand _) | .aggregate (.max operand _)
   | .aggregate (.sum operand) | .aggregate (.avg operand) => [operand]
-  | .aggregate (.jsonGroupArray operand) => [.json .array (.cons operand .nil)]
-  | .aggregate (.jsonGroupObject label value) => [label, .json .array (.cons value .nil)]
+  | .aggregate (.jsonGroupArray operand _) => [.json .array (.cons operand .nil)]
+  | .aggregate (.jsonGroupObject label value _) => [label, .json .array (.cons value .nil)]
 
 /-- The expressions of an {lit}`ORDER BY` key: an expression, or none for a result
 column, which the result columns already cover. -/

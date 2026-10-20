@@ -46,7 +46,7 @@ which the model describes; {lit}`may` for a JSONB argument and for the error pos
 malformed JSON, which it does not; {lit}`none` for a value. -/
 def Fault.ofJson : Except Json.JsonError Value → Fault
   | .error .malformed | .error (.badPath _) | .error .badFlags | .error .objectArgumentCount
-  | .error .labelNotText | .error (.editArgumentCount _) => .must
+  | .error .labelNotText | .error (.editArgumentCount _) | .error .blobValue => .must
   | .error .blobArgument | .error .unmodeledPosition => .may
   | .ok _ => .none
 

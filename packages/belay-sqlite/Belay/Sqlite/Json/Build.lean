@@ -1,6 +1,7 @@
 import Belay.Sqlite.Json.Edit
 import Belay.Sqlite.Json.Extract
 import Belay.Sqlite.Json.Render
+import Belay.Sqlite.Json.JsonbOutput
 import Belay.Sqlite.Arithmetic
 
 set_option doc.verso true
@@ -9,12 +10,22 @@ set_option doc.verso true
 code: {lit}`json_quote`, {lit}`json_array`, {lit}`json_object`, {lit}`json_set`, {lit}`json_insert`,
 {lit}`json_replace` and {lit}`json_remove` ({lit}`json_patch`, {lit}`json_pretty` and
 {lit}`json_error_position` are in {lit}`Json.PatchPretty`). An argument comes with whether it
-has SQLite's JSON subtype, which decides whether it is JSON or text. A BLOB argument is JSONB, which the model does not
-describe yet ({lit}`blobArgument`). -/
+has SQLite's JSON subtype, which decides whether it is JSON or text. A BLOB value is JSONB ({lit}`readBlob`), or fails with
+{lit}`JSON cannot hold BLOB values` when it is not JSONB by SQLite's quick check. -/
 
 namespace Belay.Sqlite.Json
 
 open Belay.Sqlite
+
+/-- The tree of a BLOB value that a JSON function stores ({lit}`jsonArgIsJsonb` in
+{lit}`jsonAppendSqlValue` and {lit}`jsonFunctionArgToBlob`): the tree of JSONB that the model
+reads, {lit}`JSON cannot hold BLOB values` for a BLOB that is not JSONB, and
+{lit}`blobArgument` for JSONB that the model does not describe. -/
+def blobValueNode (bytes : List UInt8) : Except JsonError JsonNode :=
+  match readBlob bytes with
+  | .tree node => .ok node
+  | .notJsonb => .error .blobValue
+  | .undescribed => .error .blobArgument
 
 /-- A double as JSON text ({lit}`%!0.15g` of {lit}`jsonAppendSqlValue`): an infinity is
 {lit}`9.0e+999` under the {lit}`0` flag, with a minus sign when negative. -/
@@ -23,19 +34,20 @@ def jsonDoubleText (value : Float) : List UInt8 :=
 
 /-- An SQL value as JSON text ({lit}`jsonAppendSqlValue`): NULL as {lit}`null`, an integer in
 decimal, a REAL by {name}`jsonDoubleText`, JSON text as it is, other text as a JSON string
-({name}`escapeSqlText`), and a BLOB as JSONB, which the model does not describe. -/
+({name}`escapeSqlText`), a JSONB BLOB as the text of its tree, and the error
+{lit}`JSON cannot hold BLOB values` for another BLOB. -/
 def sqlValueText (value : Value) (json : Bool) : Except JsonError (List UInt8) :=
   match value with
   | .null => .ok "null".toUTF8.toList
   | .integer _ => .ok value.textBytes
   | .real bits => .ok (jsonDoubleText (Float.ofBits bits))
   | .text bytes => .ok (if json then bytes else quoted (escapeSqlText bytes))
-  | .blob _ => .error .blobArgument
+  | .blob bytes => (blobValueNode bytes).map renderNode
 
 /-- An SQL value as a JSON node to insert ({lit}`jsonFunctionArgToBlob`): NULL as {lit}`null`, an
 integer as its decimal text, a REAL as its text ({lit}`9e999` for an infinity), JSON text
-parsed (malformed text fails), other text as {lit}`textraw`, and a BLOB as JSONB, which the
-model does not describe. -/
+parsed (malformed text fails), other text as {lit}`textraw`, and a BLOB as its JSONB tree
+({name}`blobValueNode`). -/
 def sqlValueNode (value : Value) (json : Bool) : Except JsonError JsonNode :=
   match value with
   | .null => .ok .null
@@ -47,7 +59,7 @@ def sqlValueNode (value : Value) (json : Bool) : Except JsonError JsonNode :=
   | .text bytes => if json then (match parseJsonText bytes with
       | some node => .ok node
       | none => .error .malformed) else .ok (.textraw bytes)
-  | .blob _ => .error .blobArgument
+  | .blob bytes => blobValueNode bytes
 
 /-- The texts of SQL values as JSON, in order ({name}`sqlValueText`). -/
 def sqlValueTexts : List (Value × Bool) → Except JsonError (List (List UInt8))
@@ -114,8 +126,9 @@ def EditMode.functionName : EditMode → List UInt8
 
 /-- {lit}`json_set`, {lit}`json_insert` and {lit}`json_replace` ({lit}`jsonSetFunc`,
 {lit}`jsonReplaceFunc`): an even number of arguments fails, a NULL JSON gives NULL, then the
-edits of {name}`applyEdits` and the text of the result. -/
-def jsonEdit (mode : EditMode) (arguments : List (Value × Bool)) : Except JsonError Value :=
+edits of {name}`applyEdits` and the result as text, or as JSONB for {lit}`binary`
+({name}`nodeOutput`). -/
+def jsonEdit (binary : Bool) (mode : EditMode) (arguments : List (Value × Bool)) : Except JsonError Value :=
   match arguments with
   | [] => .ok .null
   | (json, _) :: rest =>
@@ -123,7 +136,7 @@ def jsonEdit (mode : EditMode) (arguments : List (Value × Bool)) : Except JsonE
     else match parseJsonArgument json with
       | .error error => .error error
       | .ok none => .ok .null
-      | .ok (some root) => (applyEdits mode root rest).map fun node => .text (renderNode node)
+      | .ok (some root) => (applyEdits mode root rest).map (nodeOutput binary)
 
 /-- The removals of {lit}`json_remove` in turn ({lit}`jsonRemoveFunc`): a NULL path or {lit}`$` alone
 ends with NULL; a path that selects nothing changes nothing. -/
@@ -142,44 +155,16 @@ def applyRemovals (root : JsonNode) : List Value → Except JsonError (Option Js
         | .pathError => .error (.badPath pathBytes)
         | .malformed => .error .malformed
 
-/-- {lit}`json_remove(json, path, ...)`: NULL without arguments or for a NULL JSON, else the text of
-{name}`applyRemovals`. -/
-def jsonRemove (arguments : List Value) : Except JsonError Value :=
+/-- {lit}`json_remove(json, path, ...)`: NULL without arguments or for a NULL JSON, else the result
+of {name}`applyRemovals` as text, or as JSONB for {lit}`binary`. -/
+def jsonRemove (binary : Bool) (arguments : List Value) : Except JsonError Value :=
   match arguments with
   | [] => .ok .null
   | json :: paths => match parseJsonArgument json with
     | .error error => .error error
     | .ok none => .ok .null
     | .ok (some root) => (applyRemovals root paths).map fun
-      | some node => .text (renderNode node)
+      | some node => nodeOutput binary node
       | none => .null
-
-/-- {lit}`json_group_array(x)` over the values of a group ({lit}`jsonArrayStep`): the array of
-{name}`jsonArray`; a value that the model does not describe (a BLOB) gives NULL, with the
-fault of its operand ({lit}`Output.operands`). -/
-def groupArray (values : List (Value × Bool)) : Value :=
-  match jsonArray values with
-  | .ok array => array
-  | .error _ => .null
-
-/-- The members of {lit}`json_group_object` ({lit}`jsonObjectStep`): a row with a NULL label adds
-none; a label is its text up to the first NUL byte as a JSON string, then the value as
-{name}`sqlValueText`. -/
-def groupMembers : List (Value × Value × Bool) → Except JsonError (List (List UInt8))
-  | [] => .ok []
-  | (label, value, json) :: rest => match valueText label with
-    | none => groupMembers rest
-    | some bytes => do
-      let text ← sqlValueText value json
-      let later ← groupMembers rest
-      .ok ((quoted (escapeSqlText (cString bytes)) ++ [58] ++ text) :: later)
-
-/-- {lit}`json_group_object(label, value)` over the rows of a group: the object of
-{name}`groupMembers`; NULL with the fault of the value operand when a value is one that the
-model does not describe. -/
-def groupObject (rows : List (Value × Value × Bool)) : Value :=
-  match groupMembers rows with
-  | .ok members => .text ([123] ++ List.intercalate [44] members ++ [125])
-  | .error _ => .null
 
 end Belay.Sqlite.Json

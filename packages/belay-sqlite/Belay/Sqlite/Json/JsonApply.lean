@@ -1,6 +1,7 @@
 import Belay.Sqlite.Json.Functions
 import Belay.Sqlite.Json.Valid
 import Belay.Sqlite.Json.Build
+import Belay.Sqlite.Json.Group
 import Belay.Sqlite.Json.PatchPretty
 import Belay.Sqlite.Resolution.QueryForm
 
@@ -24,7 +25,10 @@ flags, 1 without them ({name}`jsonValid`); {lit}`json` the JSON ({name}`jsonText
 values ({name}`jsonArray`, {name}`jsonObject`); the edit functions the JSON, then paths and
 values ({name}`jsonEdit`, {name}`jsonRemove`); {lit}`json_patch` two JSON values
 ({name}`jsonPatch`); {lit}`json_pretty` the JSON and an optional indent ({name}`jsonPretty`); and
-{lit}`json_error_position` the JSON ({name}`jsonErrorPosition`).
+{lit}`json_error_position` the JSON ({name}`jsonErrorPosition`). Each {lit}`jsonb_*` function
+takes the arguments of its {lit}`json_*` form and gives JSONB: {lit}`jsonb` ({name}`jsonbValue`),
+{lit}`jsonb_extract` ({name}`jsonbExtract`), the tree of an edit ({name}`nodeOutput`), and the
+text of {lit}`json_array` and {lit}`json_object` converted ({name}`textAsJsonb`).
 Resolution gives each function a number of arguments that SQLite accepts; any other count
 is NULL. For example,
 {lean}`apply .arrowValue [(.text "[7]".toUTF8.toList, false), (.integer 0, false)]` is
@@ -45,16 +49,26 @@ def apply (function : Resolved.JsonFunction) (arguments : List (Value × Bool)) 
   | .quote, [value] => (sqlValueText value (arguments.headD (.null, false)).2).map Value.text
   | .array, _ => jsonArray arguments
   | .object, _ => jsonObject arguments
-  | .set, _ => jsonEdit .set arguments
-  | .insert, _ => jsonEdit .insert arguments
-  | .replace, _ => jsonEdit .replace arguments
-  | .remove, values => jsonRemove values
-  | .patch, [target, patch] => jsonPatch target patch
+  | .set, _ => jsonEdit Bool.false .set arguments
+  | .insert, _ => jsonEdit Bool.false .insert arguments
+  | .replace, _ => jsonEdit Bool.false .replace arguments
+  | .remove, values => jsonRemove Bool.false values
+  | .patch, [target, patch] => jsonPatch Bool.false target patch
+  | .jsonb, [json] => jsonbValue json
+  | .jsonbExtract, [] => .ok .null
+  | .jsonbExtract, json :: paths => jsonbExtract json paths
+  | .jsonbArray, _ => (jsonArray arguments).map textAsJsonb
+  | .jsonbObject, _ => (jsonObject arguments).map textAsJsonb
+  | .jsonbSet, _ => jsonEdit Bool.true .set arguments
+  | .jsonbInsert, _ => jsonEdit Bool.true .insert arguments
+  | .jsonbReplace, _ => jsonEdit Bool.true .replace arguments
+  | .jsonbRemove, values => jsonRemove Bool.true values
+  | .jsonbPatch, [target, patch] => jsonPatch Bool.true target patch
   | .pretty, [json] => jsonPretty json none
   | .pretty, [json, indent] => jsonPretty json (some indent)
   | .errorPosition, [json] => jsonErrorPosition json
   | .arrowJson, _ | .arrowValue, _ | .typeName, _ | .valid, _ | .arrayLength, _ | .json, _ | .quote, _
-  | .patch, _ | .pretty, _ | .errorPosition, _ => .ok .null
+  | .patch, _ | .pretty, _ | .errorPosition, _ | .jsonb, _ | .jsonbPatch, _ => .ok .null
 
 #guard match apply .arrowValue [(.text "[7]".toUTF8.toList, false), (.integer 0, false)] with
   | .ok value => value == .integer 7
