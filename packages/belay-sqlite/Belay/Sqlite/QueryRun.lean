@@ -20,11 +20,16 @@ def Output.scalars : Output → List Expr
   | .scalar term => [term]
   | .aggregate _ => []
 
-/-- The operand of an aggregate result column; none for a scalar or {lit}`COUNT(*)`. -/
+/-- The expressions that an aggregate result column evaluates over each row; none for a
+scalar or {lit}`COUNT(*)`. A value of {lit}`json_group_array` or {lit}`json_group_object` is
+written as {lit}`json_array` writes it, so it is the call {lit}`json_array(value)`, whose fault
+is that of writing the value (a BLOB is JSONB, which the model does not describe). -/
 def Output.operands : Output → List Expr
   | .scalar _ | .aggregate .countRows => []
   | .aggregate (.count operand) | .aggregate (.min operand _) | .aggregate (.max operand _)
   | .aggregate (.sum operand) | .aggregate (.avg operand) => [operand]
+  | .aggregate (.jsonGroupArray operand) => [.json .array (.cons operand .nil)]
+  | .aggregate (.jsonGroupObject label value) => [label, .json .array (.cons value .nil)]
 
 /-- The expressions of an {lit}`ORDER BY` key: an expression, or none for a result
 column, which the result columns already cover. -/

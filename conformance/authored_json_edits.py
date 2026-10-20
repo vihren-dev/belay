@@ -3,7 +3,8 @@
 The cases follow the "Tests" list of the slice 3 task: `json_quote`, `json_array`,
 `json_object`, `json_set`, `json_insert`, `json_replace`, `json_remove`, `json_patch`,
 `json_pretty` and `json_error_position` over SQL values of each type, the JSON subtype of
-their arguments, and the argument errors in queries without FROM. Native SQLite is the only
+their arguments, the aggregates `json_group_array` and `json_group_object`, and the argument
+errors in queries without FROM. Native SQLite is the only
 source of outcomes. SQLite's JSON documentation (`json1.html`) has no requirement marks, so the
 cases name the requirement of the result columns of a simple SELECT. The cases use
 `conformance.authored_queries.QueryCase` and its recorder.
@@ -18,6 +19,12 @@ TABLES = ("CREATE TABLE j(k INTEGER PRIMARY KEY, d TEXT, v, p TEXT); "
           "(4, NULL, NULL, NULL), (5, ' {\"a\" : {\"b\":1}} ', '[3]', '$.a.b');")
 """One table with JSON text (one NULL, one with white space), values of each type except BLOB,
 and paths."""
+
+GROUPS = ("CREATE TABLE g(k INTEGER PRIMARY KEY, grp INTEGER, label, v, w TEXT); "
+          "INSERT INTO g VALUES (1, 1, 'a', 1, '[1]'), (2, 1, NULL, 2, '{}'), (3, 1, 3, 'x', 'true'), "
+          "(4, 2, 'b', NULL, '\"s\"'), (5, 2, 'b', 2.5, '[2,3]'), (6, 1, 1.5, '[1]', 'null');")
+"""One table for the aggregates: two groups, labels of each type with one NULL and one
+repeated, values of each type, and JSON text."""
 
 RESULTS = "R-08669-22397"
 """SQLite: a simple SELECT returns one column for each result expression. The JSON functions
@@ -62,6 +69,12 @@ def definitions() -> list[QueryCase]:
         case("json-edit-in-writes", TABLES, "UPDATE j SET d = json_set(d, '$.w', k) WHERE k = 1 OR k = 5; "
              "INSERT INTO j(k, d) VALUES (6, json_object('n', json_array(1, 'x'))); SELECT k, d FROM j ORDER BY k;",
              (RESULTS,), ("functions", "json_set", "update")),
+        case("json-group-aggregates", GROUPS, "SELECT grp AS n, json_group_array(v), json_group_object(label, v), "
+             "json_group_array(json(w)), json_group_object(label, json_extract(w, '$')) FROM g GROUP BY grp "
+             "ORDER BY n;", (RESULTS,), ("functions", "json_group_array", "json_group_object", "group-by")),
+        case("json-group-whole-table", GROUPS, "SELECT json_group_array(k), json_group_object(w, k) FROM g; "
+             "SELECT json_group_array(v), json_group_object(label, v), count(*) FROM g WHERE k > 9;", (RESULTS,),
+             ("functions", "json_group_array", "json_group_object", "empty-table")),
     ]
 
 

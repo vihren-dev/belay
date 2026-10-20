@@ -131,7 +131,7 @@ inductive RestrictionKind where
   written order (ADR 0012 slice 6d; ADR 0013, amendment 2). -/
   | laterSourceInArguments
   /-- An argument of a JSON function that reads it as SQL value, such as a value of
-  {lit}`json_array`, is not modeled when it passes on a JSON call through {lit}`COALESCE`,
+  {lit}`json_array` or the operand of {lit}`json_group_array`, is not modeled when it passes on a JSON call through {lit}`COALESCE`,
   {lit}`iif`, {lit}`nullif`, {lit}`min` or {lit}`max`: SQLite keeps the JSON subtype through such
   expressions, which the model does not describe (ADR 0015, slice 3). -/
   | jsonSubtype

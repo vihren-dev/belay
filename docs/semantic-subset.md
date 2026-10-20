@@ -84,12 +84,13 @@ function is. ADR 0015, slice 2, adds the exact numeric functions `round`, `floor
 zero (`trunc(-0.5)` is `-0.0`); the transcendental functions (`ln`, `exp`, `pow`, `sin` and
 the others) stay `unmodeled-function`. ADR 0015, slice 3, adds the JSON functions
 `json_quote`, `json_array`, `json_object`, `json_set`, `json_insert`, `json_replace`,
-`json_remove`, `json_patch`, `json_pretty` and `json_error_position`. They write an SQL value as
+`json_remove`, `json_patch`, `json_pretty` and `json_error_position`, and the aggregates
+`json_group_array` and `json_group_object` of a whole result column. They write an SQL value as
 SQLite's `jsonAppendSqlValue` does, and read a text value as JSON only when it has SQLite's JSON
 subtype: when it is a direct call of `json`, `->`, one of these functions (except `json_pretty`
 and `json_error_position`), or `json_extract` that selects an array or an object or has two or
 more paths. A JSON call passed on through `coalesce`, `iif`, `nullif`, `min` or `max` is the
-restriction `json-subtype`. The position that `json_error_position` gives for malformed JSON
+restriction `json-subtype`, also as the operand of a JSON aggregate. The position that `json_error_position` gives for malformed JSON
 is not modeled. A
 `FROM` may end with `json_each(json [, path])` sources, joined by a comma or an inner
 `JOIN` with an optional `ON` condition, whose arguments read the sources before them
@@ -340,7 +341,7 @@ should shrink.
 | `later-table-in-on` | An ON condition that names a source joined after it is not modeled: SQLite moves it to WHERE without outer joins and refuses it otherwise | ADR 0012 amendment 2; ADR 0013 amendment 2 |
 | `function-join` | `json_each` as the right operand of RIGHT or FULL JOIN, with NATURAL or USING, or before a NATURAL JOIN, is not modeled | ADR 0012 slice 6d; ADR 0013 amendment 2 |
 | `later-source-in-arguments` | An argument of `json_each` that reads a later source is not modeled, because the model joins in written order | ADR 0012 slice 6d; ADR 0013 amendment 2 |
-| `json-subtype` | A JSON call passed on through `coalesce`, `iif`, `nullif`, `min` or `max` as a value argument of `json_quote`, `json_array`, `json_object` or an edit function is not modeled, because SQLite keeps the JSON subtype through such expressions | ADR 0015, slice 3 |
+| `json-subtype` | A JSON call passed on through `coalesce`, `iif`, `nullif`, `min` or `max` as a value argument of `json_quote`, `json_array`, `json_object`, an edit function or a JSON aggregate is not modeled, because SQLite keeps the JSON subtype through such expressions | ADR 0015, slice 3 |
 
 #### Undecided
 

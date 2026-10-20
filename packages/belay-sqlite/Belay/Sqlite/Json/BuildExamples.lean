@@ -68,6 +68,15 @@ def number (value : Int) : Value × Bool := (.integer value, false)
 #guard gives (apply .errorPosition [plain "[1]"]) (.integer 0)
 #guard fails (apply .errorPosition [plain "{\"a\":"]) .unmodeledPosition
 
+-- json_group_array and json_group_object: NULL values stay, NULL labels add no member, a label
+-- ends at its first NUL byte, and an empty group is [] or {}.
+#guard groupArray [number 1, (.null, false), marked "[2]", plain "x"] == sqlText "[1,null,[2],\"x\"]"
+#guard groupArray [] == sqlText "[]"
+#guard groupObject [(sqlText "a", .integer 1, false), (.null, .integer 2, false), (.integer 3, sqlText "x", false),
+  (.text [98, 0, 99], sqlText "{}", true)] == sqlText "{\"a\":1,\"3\":\"x\",\"b\":{}}"
+#guard groupObject [] == sqlText "{}"
+#guard groupArray [(.blob [1], false)] == .null
+
 /-- The JSON subtype in evaluation: {lit}`json_array(json('[1]'), json_extract('[[2],"[3]"]', '$[0]'),
 json_extract('[[2],"[3]"]', '$[1]'))` is {lit}`[[1],[2],"[3]"]`: the selected array is JSON and the
 selected string is text. -/

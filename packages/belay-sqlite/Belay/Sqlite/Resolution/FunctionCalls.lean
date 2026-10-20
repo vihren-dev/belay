@@ -109,7 +109,8 @@ def callOperand (scope : Scope) (misuse : Bool) (name : String) (written : List 
   | some function =>
     if !function.accepts written.length then .error (.prepare (.wrongArgumentCount name))
     else if function.isAggregateCall written.length then
-      .error (if misuse || (aggregateNamed name).isSome then aggregateIssue misuse name else unmodeledFunction)
+      .error (if misuse || (aggregateNamed name).isSome || (pairAggregateNamed name).isSome then aggregateIssue misuse name
+        else unmodeledFunction)
     else if function.scalar.isNone then .error unmodeledFunction
     else scalarCall scope name written arguments
 

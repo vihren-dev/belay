@@ -21,7 +21,8 @@ when every value is NULL. A tie keeps the earlier value, as SQLite's {lit}`min()
 def extremum (better : Value → Value → Bool) (values : List Value) : Value :=
   (values.filter (!·.isNull)).foldl (fun best value => if best.isNull || better value best then value else best) .null
 
-/-- The value of an aggregate over the rows of one group. -/
+/-- The value of an aggregate over the rows of one group. The JSON aggregates read whether
+each value has the JSON subtype ({name}`Expr.givesJson`). -/
 def Aggregate.eval (clock : Int) (rows : List (List Value)) : Aggregate → Value
   | .countRows => .integer rows.length
   | .count operand => .integer (rows.filter fun row => !(operand.eval clock row).isNull).length
@@ -29,12 +30,15 @@ def Aggregate.eval (clock : Int) (rows : List (List Value)) : Aggregate → Valu
   | .max operand collation => extremum (fun a b => collation.compare a b == .gt) (rows.map (operand.eval clock))
   | .sum operand => ((sumOf (rows.map (operand.eval clock))).sumValue).getD .null
   | .avg operand => (sumOf (rows.map (operand.eval clock))).averageValue
+  | .jsonGroupArray operand => Json.groupArray (rows.map fun row => (operand.eval clock row, operand.givesJson clock row))
+  | .jsonGroupObject label value =>
+    Json.groupObject (rows.map fun row => (label.eval clock row, value.eval clock row, value.givesJson clock row))
 
 /-- Whether an aggregate fails over the rows of one group: {lit}`SUM` with an integer
 overflow that no later REAL input cleared. Every other aggregate never fails. -/
 def Aggregate.fails (clock : Int) (rows : List (List Value)) : Aggregate → Bool
   | .sum operand => ((sumOf (rows.map (operand.eval clock))).sumValue).isNone
-  | .countRows | .count _ | .min .. | .max .. | .avg _ => false
+  | .countRows | .count _ | .min .. | .max .. | .avg _ | .jsonGroupArray _ | .jsonGroupObject .. => false
 
 /-- The groups of rows by the values of the grouping terms, in the order in which
 each group first appears. Two rows are in one group when each term's values compare

@@ -37,7 +37,15 @@ Specification: [ADR 0015](../docs/adr-0015-functions.md), D5.
   `Resolved.Expr.passesValue`). Fixed in "refactor: review of the JSON build and edit
   functions" by enumerating the constructors. Tests: the full Lean build with the examples.
 
+- 2026-10-20: the aggregates `json_group_array` and `json_group_object`
+  (`Aggregate.jsonGroupArray`, `Aggregate.jsonGroupObject`, `Json.groupArray`,
+  `Json.groupObject`, `pairAggregateNamed`, the two-operand branch of `resolveResultColumn`).
+  The operand of a JSON aggregate counts as `json_array(operand)` for the faults
+  (`Output.operands`), so a BLOB is a `may` fault; `json-subtype` also applies to the
+  operands. Two more authored cases (15 in all), all agree. Tests: the Lean build with the
+  examples, `conformance_query_coverage`, `conformance_authored`,
+  `conformance_restriction_examples`, `test_model_package`.
+
 ## Remaining
 
-- The aggregates `json_group_array` and `json_group_object`.
 - Review, the slice verdict, corpus 38, `just test-full`.

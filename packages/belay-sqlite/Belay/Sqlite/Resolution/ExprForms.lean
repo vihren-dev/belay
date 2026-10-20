@@ -17,8 +17,8 @@ def aggregateIssue (misuse : Bool) (function : String) : ValueIssue :=
   if misuse then .prepare (.misuseOfAggregate function)
   else .restriction [] .aggregateInExpression
 
-/-- The aggregate that a function name names, after ASCII folding: {lit}`count`,
-{lit}`min`, {lit}`max`, {lit}`sum` or {lit}`avg` of one operand. -/
+/-- The aggregate of one operand that a function name names, after ASCII folding:
+{lit}`count`, {lit}`min`, {lit}`max`, {lit}`sum`, {lit}`avg` or {lit}`json_group_array`. -/
 def aggregateNamed (name : String) : Option (Resolved.Expr → Resolved.Aggregate) :=
   match normalizeIdentifier name with
   | "count" => some .count
@@ -26,14 +26,29 @@ def aggregateNamed (name : String) : Option (Resolved.Expr → Resolved.Aggregat
   | "max" => some .max
   | "sum" => some .sum
   | "avg" => some .avg
+  | "json_group_array" => some .jsonGroupArray
   | _ => none
 
-/-- Whether a call is an aggregate of slice 1: {lit}`count(*)`, or a named aggregate
-of one operand. -/
+/-- The aggregate of two operands that a function name names, after ASCII folding:
+{lit}`json_group_object`. -/
+def pairAggregateNamed (name : String) : Option (Resolved.Expr → Resolved.Expr → Resolved.Aggregate) :=
+  match normalizeIdentifier name with
+  | "json_group_object" => some .jsonGroupObject
+  | _ => none
+
+/-- Whether an aggregate writes its operand as a JSON value, so that the JSON subtype of the
+operand matters: {lit}`json_group_array` and {lit}`json_group_object`. -/
+def Resolved.Aggregate.writesJson : Resolved.Aggregate → Bool
+  | .jsonGroupArray _ | .jsonGroupObject .. => true
+  | .countRows | .count _ | .min .. | .max .. | .sum _ | .avg _ => false
+
+/-- Whether a call is an aggregate of the model: {lit}`count(*)`, or a named aggregate
+of one operand ({name}`aggregateNamed`) or of two ({name}`pairAggregateNamed`). -/
 def aggregateCall : Syntax.Expr → Bool
   | .callStar name => normalizeIdentifier name == "count"
   | .call name [_] => (aggregateNamed name).isSome
-  | .call _ [] | .call _ (_ :: _ :: _) => false
+  | .call name [_, _] => (pairAggregateNamed name).isSome
+  | .call _ [] | .call _ (_ :: _ :: _ :: _) => false
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast ..
   | .qualified .. | .collate .. => false

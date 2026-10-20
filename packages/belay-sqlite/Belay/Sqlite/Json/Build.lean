@@ -154,4 +154,32 @@ def jsonRemove (arguments : List Value) : Except JsonError Value :=
       | some node => .text (renderNode node)
       | none => .null
 
+/-- {lit}`json_group_array(x)` over the values of a group ({lit}`jsonArrayStep`): the array of
+{name}`jsonArray`; a value that the model does not describe (a BLOB) gives NULL, with the
+fault of its operand ({lit}`Output.operands`). -/
+def groupArray (values : List (Value × Bool)) : Value :=
+  match jsonArray values with
+  | .ok array => array
+  | .error _ => .null
+
+/-- The members of {lit}`json_group_object` ({lit}`jsonObjectStep`): a row with a NULL label adds
+none; a label is its text up to the first NUL byte as a JSON string, then the value as
+{name}`sqlValueText`. -/
+def groupMembers : List (Value × Value × Bool) → Except JsonError (List (List UInt8))
+  | [] => .ok []
+  | (label, value, json) :: rest => match valueText label with
+    | none => groupMembers rest
+    | some bytes => do
+      let text ← sqlValueText value json
+      let later ← groupMembers rest
+      .ok ((quoted (escapeSqlText (cString bytes)) ++ [58] ++ text) :: later)
+
+/-- {lit}`json_group_object(label, value)` over the rows of a group: the object of
+{name}`groupMembers`; NULL with the fault of the value operand when a value is one that the
+model does not describe. -/
+def groupObject (rows : List (Value × Value × Bool)) : Value :=
+  match groupMembers rows with
+  | .ok members => .text ([123] ++ List.intercalate [44] members ++ [125])
+  | .error _ => .null
+
 end Belay.Sqlite.Json

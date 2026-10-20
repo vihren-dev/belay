@@ -42,11 +42,22 @@ def resolveResultColumn (dqs : Bool) (scope : Scope) (column : Nat) :
     | .call name [operand] => match aggregateNamed name with
       | some aggregate =>
         let (resolved, _) ← (resolveOperand dqs scope true operand).mapError (·.under [0, column, 0, 1, 0])
+        if (aggregate resolved).writesJson && resolved.subtypeUndescribed then
+          throw ((ValueIssue.restriction [] .jsonSubtype).under [0, column, 0, 1, 0])
         .ok (named (.aggregate ((aggregate resolved).withCollation (operand.collationIn scope))) none)
       | none => do
         let (resolved, _) ← (resolveOperand dqs scope false value).mapError (·.under [0, column, 0])
         .ok (named (.scalar resolved) none)
-    | .call _ (_ :: _ :: _) | .null | .numeric _ | .string _ | .blob _ | .currentTime _
+    | .call name [first, second] => match pairAggregateNamed name with
+      | some aggregate =>
+        let (label, _) ← (resolveOperand dqs scope true first).mapError (·.under [0, column, 0, 1, 0])
+        let (operand, _) ← (resolveOperand dqs scope true second).mapError (·.under [0, column, 0, 1, 1])
+        if operand.subtypeUndescribed then throw ((ValueIssue.restriction [] .jsonSubtype).under [0, column, 0, 1, 1])
+        .ok (named (.aggregate (aggregate label operand)) none)
+      | none => do
+        let (resolved, _) ← (resolveOperand dqs scope false value).mapError (·.under [0, column, 0])
+        .ok (named (.scalar resolved) none)
+    | .call _ (_ :: _ :: _ :: _) | .null | .numeric _ | .string _ | .blob _ | .currentTime _
     | .identifier .. | .qualified .. | .negate _ | .positive _ | .compare .. | .and .. | .or .. | .not _
     | .isNull .. | .arithmetic .. | .cast .. | .collate .. =>
       let (resolved, _) ← (resolveOperand dqs scope false value).mapError (·.under [0, column, 0])
