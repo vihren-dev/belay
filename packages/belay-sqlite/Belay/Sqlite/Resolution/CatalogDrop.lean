@@ -35,7 +35,9 @@ def Catalog.tableObjects (catalog : Catalog) (position : Nat) : List Nat :=
     | .table _ => none
 
 /-- For every catalog and list of positions, the folded names of {name}`Catalog.drop` are a
-sublist of the folded names of the catalog: a drop removes names and adds none. -/
+sublist of the folded names of the catalog: a drop removes names and adds none. Proof
+sketch: the folded names of the catalog are those of its {lit}`zipIdx`; a drop filters that
+list and keeps each name, so its names are the map of a filtered list, a sublist. -/
 theorem Catalog.foldedNames_drop_sublist (catalog : Catalog) (positions : List Nat) :
     (catalog.drop positions).foldedNames.Sublist catalog.foldedNames := by
   have whole : (catalog.zipIdx.map fun (pair : CatalogObject × Nat) => pair.1.name.folded) = catalog.foldedNames := by
@@ -48,7 +50,8 @@ theorem Catalog.foldedNames_drop_sublist (catalog : Catalog) (positions : List N
   exact (List.filter_sublist).map _
 
 /-- For every catalog with unique folded names and every list of positions,
-{name}`Catalog.drop` keeps the folded names unique. -/
+{name}`Catalog.drop` keeps the folded names unique. Proof sketch: a sublist of a list without
+duplicates has none ({name}`Catalog.foldedNames_drop_sublist`). -/
 theorem Catalog.NamesUnique.drop {catalog : Catalog} (unique : catalog.NamesUnique) (positions : List Nat) :
     (catalog.drop positions).NamesUnique :=
   (Catalog.foldedNames_drop_sublist catalog positions).nodup unique

@@ -26,6 +26,11 @@ def Catalog.findIndex (catalog : Catalog) (name : Identifier) : Option Nat :=
   | some (position, { entry := .index _, .. }) => some position
   | some (_, { entry := .table _, .. }) | none => none
 
+/-- Whether the name begins with {lit}`sqlite_autoindex_`, with ASCII case ignored: the
+prefix of the names that SQLite gives the indexes of UNIQUE and PRIMARY KEY constraints,
+which the catalog does not name. -/
+def constraintIndexName (name : Identifier) : Bool := (bytes! "sqlite_autoindex_").isPrefixOf name.folded
+
 /-- Resolve DROP TABLE: a schema table is {name}`PrepareError.tableMayNotBeDropped`; a
 table drops with its indexes ({name}`Catalog.tableObjects`); a name that is no table, also
 the name of an index, is {name}`PrepareError.noSuchTable`, and with {lit}`IF EXISTS` a DROP
@@ -43,14 +48,14 @@ def resolveDropTable (catalog : Catalog) (name : Identifier) (ifExists : Bool) :
 /-- Resolve DROP INDEX: an index drops alone; a name that is no index, also the name of a
 table, is {name}`PrepareError.noSuchIndex`, and with {lit}`IF EXISTS` a DROP of nothing. The
 catalog does not name the indexes of UNIQUE and PRIMARY KEY constraints, which SQLite
-refuses to drop, so another name that begins with {lit}`sqlite_autoindex_` is
+refuses to drop, so another name of their form ({name}`constraintIndexName`) is
 {name}`RestrictionKind.dropConstraintIndex`. -/
 def resolveDropIndex (catalog : Catalog) (index : Nat) (name : Identifier) (ifExists : Bool) :
     StatementResolution :=
   match catalog.findIndex name with
   | some position => .ok (.drop [position], catalog.drop [position])
   | none =>
-    if (bytes! "sqlite_autoindex_").isPrefixOf name.folded then restrict index [0] .dropConstraintIndex
+    if constraintIndexName name then restrict index [0] .dropConstraintIndex
     else if ifExists then .ok (.drop [], catalog.drop [])
     else prepareError catalog (.noSuchIndex name)
 

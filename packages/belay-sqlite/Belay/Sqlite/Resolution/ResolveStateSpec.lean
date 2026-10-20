@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.WriteCatalogSpec
+import Belay.Sqlite.Resolution.DropSpec
 
 set_option doc.verso true
 
@@ -73,30 +74,6 @@ theorem resolveAddColumn_applyCatalog (context : ResolveContext) (catalog after 
     (ok : resolveAddColumn context catalog index tableName definition = .ok (statement, after)) :
     after = statement.applyCatalog catalog ∧ statement.isControl = false := by
   unfold resolveAddColumn at ok
-  simp only [prepareError, restrict] at ok
-  repeat' split at ok
-  all_goals first | (cases ok; exact ⟨rfl, rfl⟩) | (cases ok)
-
-/-- For every successful resolution of DROP TABLE, the catalog after it is
-{name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
-transaction control. Proof sketch: every branch returns the input catalog with a prepare
-error, or a drop with {name}`Catalog.drop` of its positions. -/
-theorem resolveDropTable_applyCatalog (catalog after : Catalog) (name : Identifier) (ifExists : Bool)
-    (statement : Resolved.Statement) (ok : resolveDropTable catalog name ifExists = .ok (statement, after)) :
-    after = statement.applyCatalog catalog ∧ statement.isControl = false := by
-  unfold resolveDropTable at ok
-  simp only [prepareError] at ok
-  repeat' split at ok
-  all_goals first | (cases ok; exact ⟨rfl, rfl⟩) | (cases ok)
-
-/-- For every successful resolution of DROP INDEX, the catalog after it is
-{name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
-transaction control. Proof sketch: as for DROP TABLE. -/
-theorem resolveDropIndex_applyCatalog (catalog after : Catalog) (index : Nat) (name : Identifier)
-    (ifExists : Bool) (statement : Resolved.Statement)
-    (ok : resolveDropIndex catalog index name ifExists = .ok (statement, after)) :
-    after = statement.applyCatalog catalog ∧ statement.isControl = false := by
-  unfold resolveDropIndex at ok
   simp only [prepareError, restrict] at ok
   repeat' split at ok
   all_goals first | (cases ok; exact ⟨rfl, rfl⟩) | (cases ok)

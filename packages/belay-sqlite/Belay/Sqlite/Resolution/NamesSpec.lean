@@ -1,4 +1,4 @@
-import Belay.Sqlite.Resolution.CatalogSpec
+import Belay.Sqlite.Resolution.DropSpec
 import Belay.Sqlite.Resolution.WriteCatalogSpec
 
 set_option doc.verso true
@@ -64,26 +64,6 @@ theorem resolveAddColumn_step (context : ResolveContext) (catalog after : Catalo
   cases (by assumption : entry = .table _)
   simp only [Catalog.addColumn, atPosition]
   exact .replace _ _ _ atPosition
-
-/-- For every successful resolution of DROP TABLE, the catalog changes by one
-{name}`CatalogStep`: unchanged after a prepare error, else the removal of its positions. -/
-theorem resolveDropTable_step (catalog after : Catalog) (name : Identifier) (ifExists : Bool)
-    (statement : Resolved.Statement) (ok : resolveDropTable catalog name ifExists = .ok (statement, after)) :
-    CatalogStep catalog after := by
-  unfold resolveDropTable at ok
-  simp only [prepareError] at ok
-  repeat' split at ok
-  all_goals first | (cases ok; exact .same) | (cases ok; exact .remove _) | cases ok
-
-/-- For every successful resolution of DROP INDEX, the catalog changes by one
-{name}`CatalogStep`: unchanged after a prepare error, else the removal of its positions. -/
-theorem resolveDropIndex_step (catalog after : Catalog) (index : Nat) (name : Identifier) (ifExists : Bool)
-    (statement : Resolved.Statement) (ok : resolveDropIndex catalog index name ifExists = .ok (statement, after)) :
-    CatalogStep catalog after := by
-  unfold resolveDropIndex at ok
-  simp only [prepareError, restrict] at ok
-  repeat' split at ok
-  all_goals first | (cases ok; exact .same) | (cases ok; exact .remove _) | cases ok
 
 /-- The resolution state keeps unique names: the current catalog has unique folded
 names, and so does the catalog that an open transaction saved, if there is one. -/

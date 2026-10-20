@@ -26,6 +26,11 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D7.
     with kernel proofs), `drop_evidence.py` (corpus 35), `drop_mutants.py` (three mutants,
     all killed). The requirement case `drop-index` now agrees.
 
+- 2026-10-20: review of "DROP INDEX and DROP TABLE": four must findings (a policy literal,
+  missing proof sketches, a file over 200 lines). Fixed in "refactor: DROP review":
+  `constraintIndexName`, sketches, and `Resolution/DropSpec.lean` with the DROP resolution
+  laws.
+
 ## Remaining
 
 - Review, the suites, CI time, the verdict, corpus 35 with claims and lock, pull requests.
