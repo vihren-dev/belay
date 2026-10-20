@@ -70,7 +70,7 @@ def test_predict_command_reports_scope(runtime_root: Path) -> None:
     admitted = record_sql("CREATE TABLE t(a INTEGER); INSERT INTO t VALUES (7);", "INSERT INTO t(a) VALUES (1);",
                           name="admitted")
     refused = record_sql("CREATE TABLE t(a INTEGER);", "CREATE VIEW v AS SELECT a FROM t;", name="refused")
-    restricted = record_sql("CREATE TABLE t(a INTEGER);", "SELECT abs(a) FROM t;", name="restricted")
+    restricted = record_sql("CREATE TABLE t(a INTEGER);", "SELECT ln(a) FROM t;", name="restricted")
     first, second, third = predict(runtime_root, admitted, refused, restricted)
     assert first["status"] == "predicted" and first["supported"] and len(first["steps"]) == 2
     assert first["steps"][1]["start"] == 0

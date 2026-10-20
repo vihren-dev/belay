@@ -53,7 +53,11 @@ Specification: [ADR 0015](../docs/adr-0015-functions.md), D1, D2 and D3.
   the text functions" (`classMembers`, `instrSearch`, `replaceAll`, `trimFront`, `trimBack`,
   `unhexBytes`, `unistrBytes`).
 
+- 2026-10-20: the second `just test-full` failed in `tests/conformance_predict_test.py`, whose
+  restricted example was `abs(a)`, modeled since this slice; "fix: the predict test and the
+  restriction example use ln()" uses `ln(a)` (the recorder refuses `random()`).
+
 ## Remaining
 
-- `just test-full` after the fix; the claims of corpus 36 and the 394 upstream cases go into
+- `just test-full` after the fixes; the claims of corpus 36 and the 394 upstream cases go into
   the PR B of the ADR.
