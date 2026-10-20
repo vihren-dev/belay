@@ -1,9 +1,9 @@
 # ADR 0016: Separate the model from the user surface
 
 Date: 2026-10-20. Revised 2026-10-20, after ADR 0015 was merged and the rule for
-supporting code (`AGENTS.md`, "Goal, core and supporting code") was adopted. Status:
-PROPOSED.
-Implementation: when the first code of the user surface is written.
+supporting code (`AGENTS.md`, "Goal, core and supporting code") was adopted; the owner
+decided the names the same day (D3). Status: PROPOSED.
+Implementation: when the surface ADR's first prototype starts (see "Order").
 Audience: designers and reviewers.
 Related: [ADR 0006](adr-0006-model-boundary-and-execution-levels.md) (the model
 boundary), [ADR 0010](adr-0010-lake-builds-and-artifact-cache.md) (one Lean package per
@@ -83,17 +83,18 @@ The surface's suite holds a test of these rules, extended from
 repository, for the first two rules, and the packages that the installed runtime, the
 gate and the conformance runtime are built from (`build-support/`), for the third.
 
-### D3. The name
+### D3. The names
 
-The guide gives the surface the name that users import, `Belay.Sqlite`, which the model
-has today. Until the owner decides (owner decision 1), the surface package uses a
-working name, `Belay.SqliteSurface` (package `belay-sqlite-surface`), so that no model
-code moves for a name.
+The surface takes the name that users import, as the guide uses it: package
+`belaySqlite` in `packages/belay-sqlite`, root module and namespace `Belay.Sqlite`. The
+model moves to package `belaySqliteModel` in `packages/belay-sqlite-model`, with root
+module and namespace `Belay.Sqlite.Model` (owner decision 1).
 
-If the owner gives `Belay.Sqlite` to the surface, the model moves to
-`Belay.Sqlite.Model` in one mechanical change of its own, before the surface has more
-than its prototype: the fewer surface modules exist, the smaller the move. Every corpus
-verdict stays the same, and no alias of an old name stays.
+The move is one mechanical change of its own, with no other work in it, and it comes
+before the first surface code, so that no surface module has to move. Every caller
+changes in the same change: the Lean packages, the engineering examples, the kernel
+tests, the Nix build, the conformance tools and their mutant anchors, the tests and the
+documentation. Every corpus verdict stays the same, and no alias of an old name stays.
 
 ## Deferred, with their triggers
 
@@ -110,23 +111,28 @@ and not before.
 
 ## Order
 
-1. The prototypes of the guide's open questions 8, 9 and 12, in the surface package of
-   D1 with the rules of D2. They come with the surface's own ADR.
-2. Owner decision 1, before the surface has more than its prototypes; if it gives
-   `Belay.Sqlite` to the surface, the move of D3 follows at once, in its own change.
+This ADR plans no work of its own. It takes effect when the surface's own ADR starts
+its first prototype (the guide's open questions 8, 9 and 12 are the candidates):
+
+1. The move of D3, in its own change, because the surface's first code needs the name.
+2. The change of the first prototype creates the surface package of D1, with the test
+   of D2.
 
 ## Consequences
 
 - **No preparation without a user of it.** The model, the verifier and CI stay as they
-  are until surface code exists. The cost of this ADR is the D2 test and, if the owner
-  chooses it, the move of D3.
+  are until surface code is about to exist. The cost of this ADR is the move of D3 and
+  the D2 test.
 - **The trusted base stays as it is.** Notation, elaborators, native code and their
   dependencies stay outside the gate and the judge.
 - **The boundary starts small.** D2 keeps the surface out of the layers below it and
   makes the surface use the model's root only. The verifier keeps importing model
   modules by name until a trigger in the table needs more.
-- **A late rename costs more.** If the owner decides the name after the surface grows,
-  the move of D3 touches surface code too. Order item 2 keeps that cost small.
+- **The move costs one large diff.** About 220 Lean files, the Nix build, the
+  conformance tools and their mutant anchors, the tests and the documentation change
+  together. Open branches conflict with it, so it waits for a time with no model work in
+  flight. The runtime's model root gets a new path, so Lake caches from before the move
+  are not reused.
 
 ## Alternatives considered
 
@@ -143,6 +149,10 @@ items keeps each step with the problem that would start it.
 needs `Std` and native code, which the model's `Init`-only rule forbids, and one package
 gives one Nix derivation, so a surface change would rebuild and retest the model.
 
+**Keep `Belay.Sqlite` for the model, and give the surface another name.** It avoids the
+move of D3. Rejected by owner decision 1: users import the surface, so the surface gets
+the short name.
+
 **The surface inside the verifier package.** Rejected: the verifier package is in the
 trusted base and has its own product role. A library for Lean developers is neither.
 
@@ -151,14 +161,12 @@ trusted base and has its own product role. A library for Lean developers is neit
 - The design of the surface: its types, notation, elaborators and automation (its own
   ADR, from the guide).
 - How the surface runs the parser in the Lean process, and whether it needs the C
-  library, a Lean port of the translation, or both (the prototypes of order item 1).
+  library, a Lean port of the translation, or both (the surface ADR's prototypes).
 - Whether the installed verifier accepts proofs that import the surface.
 
 ## Owner decisions
 
-To be decided:
+Decided on 2026-10-20:
 
-1. **The name that users import.** Recommended: `Belay.Sqlite` for the surface, as the
-   guide uses it, with the model moved to `Belay.Sqlite.Model` (D3). The alternative
-   keeps `Belay.Sqlite` for the model and gives the surface another name, with no move.
-2. **The order:** the surface's prototypes first, under the working name of D3.
+1. **The names.** The surface is `Belay.Sqlite`, as the guide uses it, and the model
+   moves to `Belay.Sqlite.Model` (D3).
