@@ -1,6 +1,6 @@
 # Status: subqueries (ADR 0018, slice 1)
 
-Created 2026-10-20. Status: open.
+Created 2026-10-20. Status: DONE (2026-10-21).
 Task file: [task](20261020-subqueries.task.md).
 Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D1.
 
@@ -94,6 +94,16 @@ Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D1.
   `conformance/subquery_evidence.py` writes corpus 42; its round trip is in
   `tests/conformance_corpus_writers_test.py`.
 
+- 2026-10-21: "the end of the slice". The JSON of a statement without subqueries keeps the
+  form of frozen records (the frontend writes `subqueries` only when there are some; the codec
+  module `Codec/SyntaxJson.lean` reads a missing list as empty), and the Nix suites declare
+  `syntax_subqueries`. Kernel time of the authored corpora's proofs
+  (`conformance_query_coverage_test`): 385.1 s at `main`, 384.4 s at the slice for the same 34
+  corpora, and 8.5 s for the subquery corpus. Corpus 42 is recorded
+  (`conformance/corpus-v42`, 24 cases, native replay passes), with its claim for PR B. Local
+  verdict: no case leaves AGREE; 7 cases of v5 and 2 of v4 newly agree. `just test-full`
+  passes (after an approved cleanup of `/tmp`). DONE.
+
 ## Remaining
 
-- All outcomes and tests.
+- PR A and PR B come at the end of ADR 0018, with the other slices.
