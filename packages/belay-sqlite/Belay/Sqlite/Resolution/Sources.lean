@@ -40,7 +40,8 @@ instance : MonadLift (Except ValueIssue) (Except SourceIssue) := ⟨Except.mapEr
 source with its name (the alias, else the table name as declared, as SQLite names it in
 messages). A missing table is SQLite's
 {lit}`no such table: %s`; one of SQLite's own tables is a model restriction, as in a
-query of one table. -/
+query of one table, and so is a name of an eponymous table-valued function
+({name}`eponymousName`), which SQLite reads without arguments. -/
 def resolveTableReference (catalog : Catalog) (path : List Nat) (reference : Syntax.TableReference) :
     Except SourceIssue (Nat × ScopeSource) :=
   match catalog.findTable reference.table with
@@ -49,6 +50,7 @@ def resolveTableReference (catalog : Catalog) (path : List Nat) (reference : Syn
     .ok (position, { name := reference.alias.getD declared, columns := table.columns, hasRowid := !table.withoutRowid })
   | none =>
     if reservedName reference.table then .error (.value (.restriction path .systemTable))
+    else if eponymousName reference.table then .error (.value (.restriction path .tableFunction))
     else .error (.noSuchTable reference.table)
 
 /-- The flags that the keywords of a join operator set, as SQLite's {lit}`sqlite3JoinType`
