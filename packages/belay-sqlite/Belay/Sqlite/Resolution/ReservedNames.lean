@@ -11,13 +11,19 @@ namespace Belay.Sqlite
 /-- Whether the folded name starts with {lit}`sqlite_`, which SQLite reserves. -/
 def reservedName (name : Identifier) : Bool := (bytes! "sqlite_").isPrefixOf name.folded
 
+/-- The folded names of the eponymous table-valued functions of the pinned SQLite build and
+of its shell (checked natively: {lit}`SELECT count(*) FROM jsonb_each` gives 0, and
+{lit}`pragma_module_list` lists the others). A name of the shell's functions is included, so
+the model never predicts {lit}`no such table` where a build of SQLite may have the function. -/
+def eponymousNames : List (List UInt8) :=
+  [bytes! "json_each", bytes! "json_tree", bytes! "jsonb_each", bytes! "jsonb_tree", bytes! "dbstat",
+   bytes! "bytecode", bytes! "tables_used", bytes! "generate_series", bytes! "completion", bytes! "fsdir"]
+
 /-- Whether a name that names no table of the schema can name one of SQLite's eponymous
-table-valued functions of the pinned build (checked natively: {lit}`SELECT count(*) FROM json_each`
-gives 0): {lit}`json_each`, {lit}`json_tree`, {lit}`dbstat`, or a name with the prefix
+table-valued functions: one of {name}`eponymousNames`, or a name with the prefix
 {lit}`pragma_`, after ASCII folding. -/
 def eponymousName (name : Identifier) : Bool :=
-  name.folded == bytes! "json_each" || name.folded == bytes! "json_tree" || name.folded == bytes! "dbstat" ||
-    (bytes! "pragma_").isPrefixOf name.folded
+  eponymousNames.contains name.folded || (bytes! "pragma_").isPrefixOf name.folded
 
 /-- The column names of SQLite's statistics tables, which a schema may contain, by the
 folded table name ({name}`Identifier.folded`). -/

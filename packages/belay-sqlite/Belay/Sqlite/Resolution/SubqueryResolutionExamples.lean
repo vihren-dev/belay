@@ -105,7 +105,10 @@ def joinOnExists : Join := { operator := [], source := table "u", condition := s
 #guard restrictedOne (.select [.star] (some (table "t")) [joinOnExists] none [] [] none none [fromU [written (.numeric "1")] none])
 -- json_each without arguments is SQLite's eponymous table-valued function, not a missing table,
 -- also in a subquery of an ON condition (corpus case json101-17.1).
-#guard restrictedOne (.select [.star] (some (table "json_each")) [] none [] [] none none)
+#guard ["json_each", "JSONB_TREE", "pragma_table_info", "dbstat"].all fun eponymous =>
+  restrictedOne (.select [.star] (some (table eponymous)) [] none [] [] none none)
+#guard errorOf (.select [.star] (some (table "json_eachx")) [] none [] [] none none) ==
+  some (.noSuchTable (Identifier.ofString "json_eachx"))
 #guard restrictedOne (.select [.star] (some (table "t")) [joinOnExists] none [] [] none none
   [{ fromU [written (name "v")] none with source := some (table "json_each") }])
 -- A subquery that names a query after it is malformed syntax, which the model refuses.
