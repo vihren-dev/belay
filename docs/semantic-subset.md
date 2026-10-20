@@ -78,7 +78,11 @@ number of arguments to function`; both come after the errors of the arguments. A
 function that can fail while the statement runs, such as `abs` of the smallest integer or a
 `LIKE` with an `ESCAPE` of two characters, fails as SQLite does in a query without `FROM`; in a
 CHECK constraint, an index key or a generated column it is a model restriction, as a JSON
-function is. A
+function is. ADR 0015, slice 2, adds the exact numeric functions `round`, `floor`, `ceil`,
+`ceiling`, `trunc`, `sqrt`, `pi`, `degrees`, `radians` and `mod`, which follow SQLite's
+`func.c` with the results of the C library for these exact operations, including the sign of
+zero (`trunc(-0.5)` is `-0.0`); the transcendental functions (`ln`, `exp`, `pow`, `sin` and
+the others) stay `unmodeled-function`. A
 `FROM` may end with `json_each(json [, path])` sources, joined by a comma or an inner
 `JOIN` with an optional `ON` condition, whose arguments read the sources before them
 (slice 6d). A comparison applies SQLite's comparison affinity (ADR 0013, D4): with an

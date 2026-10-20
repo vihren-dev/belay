@@ -82,6 +82,15 @@ def scalarCall (scope : Scope) (name : String) (written : List Syntax.Expr) (arg
   | "unistr" => scalar .unistr
   | "concat" => scalar .concat
   | "concat_ws" => scalar .concatWs
+  | "round" => scalar .round
+  | "floor" => scalar .floor
+  | "ceil" | "ceiling" => scalar .ceil
+  | "trunc" => scalar .trunc
+  | "sqrt" => scalar .sqrt
+  | "pi" => scalar .pi
+  | "degrees" => scalar .degrees
+  | "radians" => scalar .radians
+  | "mod" => scalar .mod
   | _ => match jsonFunctionNamed name, dateFunctionNamed name with
     | some function, _ => jsonCall name function arguments
     | none, some function => dateCall function arguments

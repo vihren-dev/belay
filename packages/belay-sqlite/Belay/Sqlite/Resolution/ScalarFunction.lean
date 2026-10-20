@@ -83,6 +83,24 @@ inductive ScalarFunction where
   | concat
   /-- {lit}`concat_ws(separator, x, ...)`. -/
   | concatWs
+  /-- {lit}`round(x [, digits])`. -/
+  | round
+  /-- {lit}`floor(x)`. -/
+  | floor
+  /-- {lit}`ceil(x)` and {lit}`ceiling(x)`. -/
+  | ceil
+  /-- {lit}`trunc(x)`. -/
+  | trunc
+  /-- {lit}`sqrt(x)`. -/
+  | sqrt
+  /-- {lit}`pi()`. -/
+  | pi
+  /-- {lit}`degrees(x)`: radians to degrees. -/
+  | degrees
+  /-- {lit}`radians(x)`: degrees to radians. -/
+  | radians
+  /-- {lit}`mod(x, y)`: the remainder of {lit}`fmod`. -/
+  | mod
   deriving Repr, DecidableEq
 
 /-- Whether the function itself can fail or give a value that the model does not describe:
@@ -93,6 +111,6 @@ def ScalarFunction.canFail : ScalarFunction → Bool
   | .abs | .zeroblob | .like | .glob | .unistr => true
   | .typeof | .length | .octetLength | .sign | .iif | .nullif _ | .min _ | .max _ | .lower | .upper | .substr
   | .instr | .replace | .trim _ | .hex | .unhex | .quote | .unistrQuote | .char | .unicode | .concat
-  | .concatWs => false
+  | .concatWs | .round | .floor | .ceil | .trunc | .sqrt | .pi | .degrees | .radians | .mod => false
 
 end Belay.Sqlite.Resolved

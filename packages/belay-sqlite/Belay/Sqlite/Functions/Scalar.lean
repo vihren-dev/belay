@@ -4,6 +4,7 @@ import Belay.Sqlite.StoreValue
 import Belay.Sqlite.Resolution.ScalarFunction
 import Belay.Sqlite.Functions.Pattern
 import Belay.Sqlite.Functions.Quote
+import Belay.Sqlite.Functions.Numeric
 
 set_option doc.verso true
 
@@ -156,6 +157,17 @@ def ScalarFunction.apply : ScalarFunction → List Value → Except FunctionFail
     | none => .error .error
   | .concat, values => .ok (concatValue [] values)
   | .concatWs, separator :: values => .ok (if separator.isNull then .null else concatValue separator.textBytes values)
+  | .round, [value] => .ok (roundValue value none)
+  | .round, [value, digits] => .ok (roundValue value (some digits))
+  | .floor, [value] => .ok (roundingValue floorDouble value)
+  | .ceil, [value] => .ok (roundingValue ceilDouble value)
+  | .trunc, [value] => .ok (roundingValue truncDouble value)
+  | .sqrt, [value] => .ok (doubleValue Float.sqrt value)
+  | .pi, [] => .ok (realValue piDouble)
+  | .degrees, [value] => .ok (doubleValue (· * ((180.0 : Float) / piDouble)) value)
+  | .radians, [value] => .ok (doubleValue (· * (piDouble / (180.0 : Float))) value)
+  | .mod, [x, y] => .ok (modValue x y)
+  | .round, _ | .floor, _ | .ceil, _ | .trunc, _ | .sqrt, _ | .pi, _ | .degrees, _ | .radians, _ | .mod, _
   | .typeof, _ | .length, _ | .octetLength, _ | .abs, _ | .sign, _ | .zeroblob, _ | .iif, _ | .nullif _, _
   | .min _, _ | .max _, _ | .like, _ | .glob, _ | .lower, _ | .upper, _ | .substr, _ | .instr, _ | .replace, _
   | .trim _, _ | .hex, _ | .unhex, _ | .quote, _ | .unistrQuote, _ | .unicode, _ | .unistr, _ | .concatWs, _ =>

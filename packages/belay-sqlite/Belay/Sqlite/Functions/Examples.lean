@@ -85,7 +85,26 @@ def fails (function : ScalarFunction) (arguments : List Value) : Bool :=
 #guard value .concatWs [text "-", text "a", .null, text "b"] == text "a-b"
 #guard fails .unistr [text "a\\xb"]
 
+-- The numeric functions (slice 2): exact roundings, the sign of zero, fmod and the constants.
+#guard value .round [.real (2.5 : Float).toBits] == .real (3.0 : Float).toBits
+#guard value .round [.real (-2.5 : Float).toBits] == .real (-3.0 : Float).toBits
+#guard value .round [.real (1.005 : Float).toBits, .integer 2] == .real (1.0 : Float).toBits
+#guard value .round [.real (2.5 : Float).toBits, .null] == .null
+#guard value .floor [.real (-2.5 : Float).toBits] == .real (-3.0 : Float).toBits
+#guard value .floor [.integer 3] == .integer 3
+#guard value .floor [text "x"] == .null
+#guard value .ceil [.real (2.1 : Float).toBits] == .real (3.0 : Float).toBits
+#guard value .trunc [.real (-2.7 : Float).toBits] == .real (-2.0 : Float).toBits
+#guard value .trunc [.real (-0.5 : Float).toBits] == .real (-(0.0 : Float)).toBits
+#guard value .sqrt [.integer (-1)] == .null
+#guard value .mod [.real (7.5 : Float).toBits, .integer 2] == .real (1.5 : Float).toBits
+#guard value .mod [.integer (-7), .integer 3] == .real (-1.0 : Float).toBits
+#guard value .mod [.integer 1, .integer 0] == .null
+#guard value .degrees [.real piDouble.toBits] == .real (180.0 : Float).toBits
+
 -- The kernel reduces pattern matching, which the proofs of the authored cases need.
 example : value .like [text "%b_", text "aBc"] = .integer 1 := by decide +kernel
+example : value .mod [.real (1e300 : Float).toBits, .integer 7] = value .mod [.real (1e300 : Float).toBits, .integer 7] := by
+  decide +kernel
 
 end Belay.Sqlite.Resolved.FunctionExamples
