@@ -90,8 +90,10 @@ inductive Statement where
   | delete (table : Nat) (filter : Option Expr) (returning : List (Expr × String))
   /-- SQLite refuses to prepare the statement with this error. -/
   | prepareError (error : PrepareError)
-  /-- Run a query: it reads the database, changes nothing, and has result rows. -/
-  | query (query : Query)
+  /-- Run a query: it reads the database, changes nothing, and has result rows. The
+  subqueries are those that its expressions name by index (ADR 0018, D1); a subquery's
+  expressions name only subqueries after it in the list. -/
+  | query (query : Query) (subqueries : List Query)
   deriving Repr, DecidableEq
 
 end Resolved

@@ -20,7 +20,7 @@ def Statement.applyCatalog : Statement → Catalog → Catalog
   | .addColumn position column, catalog => catalog.addColumn position column
   | .drop positions, catalog => catalog.drop positions
   | .begin, catalog | .commit, catalog | .rollback, catalog | .insert .., catalog | .update .., catalog
-  | .upsert .., catalog | .delete .., catalog | .prepareError _, catalog | .query _, catalog => catalog
+  | .upsert .., catalog | .delete .., catalog | .prepareError _, catalog | .query .., catalog => catalog
 
 /-- The form of a resolved statement, for the rules that only classify statements (ADR
 0013, D7). -/
@@ -49,7 +49,7 @@ a statement has reads it, so a new statement form gets a form here first. -/
   | .drop _ => .drop
   | .begin | .commit | .rollback => .control
   | .insert .. | .upsert .. | .update .. | .delete .. => .write
-  | .query _ => .query
+  | .query .. => .query
   | .prepareError _ => .prepareError
 
 /-- Whether the statement is transaction control ({name}`Statement.Kind.control`): BEGIN,

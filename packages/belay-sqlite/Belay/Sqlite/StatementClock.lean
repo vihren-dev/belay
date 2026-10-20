@@ -58,7 +58,7 @@ def Statement.clockExpressions : Statement → List Expr
     rows.flatten.filterMap Cell.expression? ++ clauses.flatMap ConflictClause.expressions ++ returning.map (·.1)
   | .update _ assignments filter returning => assignments.map (·.2) ++ filter.toList ++ returning.map (·.1)
   | .delete _ filter returning => filter.toList ++ returning.map (·.1)
-  | .query inner => inner.expressions
+  | .query inner subqueries => inner.expressions ++ subqueries.flatMap Query.expressions
   | .createTable .. | .createIndex .. | .addColumn .. | .drop _ | .begin | .commit | .rollback | .prepareError _ => []
 
 /-- Whether a statement reads the clock: it has an expression that reads it

@@ -80,10 +80,12 @@ theorem advance_effect (position : Nat) (statement : Resolved.Statement) (state 
 @[simp] theorem advance_delete (step : Nat) (state : SqlState) (target : Nat) (filter : Option Resolved.Expr) (returning : List (Resolved.Expr × String)) :
     advance step (.delete target filter returning) state = state.publish step (literalStep (state.clock step) (.delete target filter returning) state.database) := rfl
 
-/-- For every position, state and a query, {name}`advance` publishes its effect
+/-- For every position, state, query and list of subqueries, {name}`advance` publishes its effect
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
-@[simp] theorem advance_query (step : Nat) (state : SqlState) (query : Resolved.Query) :
-    advance step (.query query) state = state.publish step (literalStep (state.clock step) (.query query) state.database) := rfl
+@[simp] theorem advance_query (step : Nat) (state : SqlState) (query : Resolved.Query)
+    (subqueries : List Resolved.Query) :
+    advance step (.query query subqueries) state =
+      state.publish step (literalStep (state.clock step) (.query query subqueries) state.database) := rfl
 
 /-- For every position, state and a statement that SQLite refuses, {name}`advance` publishes its effect
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/

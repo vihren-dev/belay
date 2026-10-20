@@ -137,7 +137,7 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
              offset := (offsetValue.getD 0).toNat,
              limit := limitValue.bind fun value => if value < 0 then none else some value.toNat }
   match resolved with
-  | .ok query => .ok (.query query, catalog)
+  | .ok query => .ok (.query query [], catalog)
   | .error issue => issueResolution catalog index [] issue
 
 /-- For every successful resolution of a {lit}`SELECT`, the catalog is unchanged and the

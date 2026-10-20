@@ -18,6 +18,18 @@ Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D1.
   `test_model_package`, `test_lean_categories`, `conformance_query_coverage`,
   `conformance_authored`, the local verdict.
 
+- 2026-10-20: "the resolved subquery forms". `Resolved.Expr` has `exists`, `inQuery` and
+  `subquery`, which name a subquery of the statement by index; `Statement.query` holds the
+  statement's subqueries. `Subqueries.lean` runs a subquery for an outer row (its sources
+  joined after the outer cells) and builds the stratified statement context
+  (`statementContext`, the list length as fuel); `Query.runOn`, `statementReady` and the
+  conformance outputs use it. `IN` follows SQLite's NULL rules (`inValue`). A scalar subquery
+  as a JSON value argument is undescribed (`isSubquery`), because SQLite keeps the JSON
+  subtype of its result. Resolution still gives no subqueries. Tests: `SubqueryExamples.lean`
+  (each form, correlation at depth one and two, kernel proofs), the builds of the three
+  packages, `test_model_package` (the core closure has one more module),
+  `test_lean_categories`, `conformance_query_coverage`, `conformance_authored`.
+
 ## Remaining
 
 - All outcomes and tests.

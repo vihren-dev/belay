@@ -63,7 +63,9 @@ position without a table fails as {lean}`ExecutionError.unmodeled`. An error car
 database that the statement reached: the rows before the failing row of an INSERT with
 clauses or algorithms, and the input database for every other error. The support check:
 INSERT and UPDATE pass the data domain of the table, every write and query the JSON
-checks of {lit}`JsonReady`; a position without a table passes and fails during execution
+checks of {lit}`JsonReady`, and a query's subqueries have no fallible call
+({name}`Resolved.Expr.isFallibleCall`), because SQLite may evaluate a subquery for rows that the
+model does not reach; a position without a table passes and fails during execution
 instead. ADD COLUMN must have modeled default readback, a model restriction, because SQLite
 accepts such statements. CREATE TABLE passes, as its table has no rows to violate a
 constraint (ADR 0014, slice 4), and so do CREATE INDEX and the other statement forms. -/
@@ -104,10 +106,11 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
     | some table =>
       { effect := .ok (database.setRows target (LiteralData.deleted context table filter).rows),
         ready := deleteJsonReady context table filter returning }
-  | .query query =>
-    let ran := query.runOn clock database
+  | .query query subqueries =>
+    let ran := query.runOn clock database subqueries
     { effect := queryEffect database ran,
-      ready := ran.all fun (source, run) => source.fault != .may && run.fault != .may }
+      ready := subqueries.all (·.expressions.all (!·.any Resolved.Expr.isFallibleCall)) &&
+        ran.all fun (source, run) => source.fault != .may && run.fault != .may }
   | .createTable .. => { effect := step clock statement database, ready := true }
   | .addColumn _ column =>
     { effect := step clock statement database,
@@ -144,7 +147,7 @@ def advanceWith (position : Nat) (statement : Resolved.Statement) (state : SqlSt
     | none => .halt (.failure position .noActiveTransaction state.database)
     | some original => .next { state with database := original, snapshot := none }
   | .createTable .. | .createIndex .. | .addColumn .. | .drop _ | .insert .. | .upsert .. | .update .. | .delete ..
-  | .prepareError _ | .query _ =>
+  | .prepareError _ | .query .. =>
     state.publish position effect
 
 /-- Evaluate one statement at its supplied zero-based position ({name}`advanceWith` of its
