@@ -84,6 +84,16 @@ Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D1.
   v4 newly agree; of v5's write cases, 10 have a subquery in `RETURNING` or `ON CONFLICT` and
   7 read the written table).
 
+- 2026-10-20: "mutants and the corpus writer". `conformance/subquery_mutants.py`: `NOT IN`
+  that ignores a NULL, a correlated reference that does not read the outer row, a scalar
+  subquery that gives its last row, and a name that resolves outward first; each is killed
+  by its authored case, in the `mutants` suite (`tests/conformance_query_mutants_test.py`).
+  The earlier commits of this slice had left 35 anchors of other mutant tables stale (the
+  clock value renamed to the context, the query body split from `resolveSelect`); a
+  `refactor:` commit repaired them, and all 23 mutant measurements pass locally.
+  `conformance/subquery_evidence.py` writes corpus 42; its round trip is in
+  `tests/conformance_corpus_writers_test.py`.
+
 ## Remaining
 
 - All outcomes and tests.
