@@ -40,12 +40,12 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "if descending then collation.compare b a else collation.compare a b",
         "if descending then collation.compare b a\n  else if a.isNull != b.isNull then (if a.isNull then .gt else .lt) else collation.compare a b"),
     "count_counts_null": (EVALUATION,
-        "  | .count operand => .integer (rows.filter fun row => !(operand.eval clock row).isNull).length",
+        "  | .count operand => .integer (rows.filter fun row => !(operand.eval context row).isNull).length",
         "  | .count _ => .integer rows.length"),
     "extremum_over_null": (EVALUATION, "(values.filter (!·.isNull)).foldl", "values.foldl"),
     "empty_aggregate_no_row": (EVALUATION,
-        "  if query.groupBy.isEmpty then [rows] else groups clock query.groupBy rows",
-        "  if query.groupBy.isEmpty then (if rows.isEmpty then [] else [rows]) else groups clock query.groupBy rows"),
+        "  if query.groupBy.isEmpty then [rows] else groups context query.groupBy rows",
+        "  if query.groupBy.isEmpty then (if rows.isEmpty then [] else [rows]) else groups context query.groupBy rows"),
     "limit_one_too_high": (EVALUATION, "window.take limit", "window.take (limit + 1)"),
     "offset_ignored": (EVALUATION, "let window := sorted.drop query.offset", "let window := sorted"),
     "no_such_column": (EXPRESSIONS,
@@ -58,10 +58,10 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         ".error (if aggregateCall term then .prepare .aggregateInGroupBy else (callIssue name).under [4, item])",
         ".error ((callIssue name).under [4, item])"),
     "no_order_by_out_of_range": (RESOLUTION,
-        "      | some (.error ()) => .error (.prepare (.orderByOutOfRange (item + 1) outputs.length))",
+        "    | some (.error ()) => .error (.prepare (.orderByOutOfRange (item + 1) outputs.length))",
         "      | some (.error ()) => .error (.restriction [4, item] .aggregateOrderBy)"),
     "no_group_by_out_of_range": (RESOLUTION,
-        "        | some (.error ()) => .error (.prepare (.groupByOutOfRange (item + 1) outputs.length))",
+        "      | some (.error ()) => .error (.prepare (.groupByOutOfRange (item + 1) outputs.length))",
         "        | some (.error ()) => .error (.restriction [3, item] .groupByTerm)"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
@@ -95,9 +95,9 @@ GUARDS: dict[str, str] = {
     "no_such_column": "rule:resolveOperand",
     "no_such_table": "rule:resolveTableReference",
     "no_misuse_of_aggregate": "rule:aggregateIssue",
-    "no_aggregate_in_group_by": "rule:resolveSelect",
-    "no_order_by_out_of_range": "rule:resolveSelect",
-    "no_group_by_out_of_range": "rule:resolveSelect",
+    "no_aggregate_in_group_by": "rule:resolveQueryBody",
+    "no_order_by_out_of_range": "rule:resolveQueryBody",
+    "no_group_by_out_of_range": "rule:resolveQueryBody",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
 changes. `conformance.mutant_guards` checks every entry."""

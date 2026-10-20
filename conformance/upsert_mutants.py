@@ -17,22 +17,22 @@ OUTPUTS = "verifier-conformance/VerifierConformance/Outputs.lean"
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "update_first_row": (RUN,
-        "      | .update assignments filter => updateExisting clock keys table assignments filter existing proposed",
-        "      | .update assignments filter => updateExisting clock keys table assignments filter"
+        "      | .update assignments filter => updateExisting context keys table assignments filter existing proposed",
+        "      | .update assignments filter => updateExisting context keys table assignments filter"
         " (table.rows.headD existing) proposed"),
-    "excluded_reads_existing": (UPSERT, "  let context := existing.values ++ proposed.values",
-        "  let context := existing.values ++ existing.values"),
+    "excluded_reads_existing": (UPSERT, "  let cells := existing.values ++ proposed.values",
+        "  let cells := existing.values ++ existing.values"),
     "last_clause_handles": (UPSERT,
         "  clauses.findSome? fun clause => (conflictingRow (clauseKeys keys clause) table proposed).map (clause, ·)",
         "  clauses.reverse.findSome? fun clause => (conflictingRow (clauseKeys keys clause) table proposed).map"
         " (clause, ·)"),
     "target_checks_every_key": (UPSERT, "  | some key => (keys.find? (·.columns? == some key)).toList", "  | some _ => keys"),
     "later_row_ignores_earlier": (RUN,
-        "      | .ok (next, _) => upsertSteps clock keys policy clauses next rest",
-        "      | .ok _ => upsertSteps clock keys policy clauses table rest"),
+        "      | .ok (next, _) => upsertSteps context keys policy clauses next rest",
+        "      | .ok _ => upsertSteps context keys policy clauses table rest"),
     "skipped_row_counted": (OUTPUTS,
-        "      return ⟨names, returnedRows clock returning (written.map (·.values)), some written.length⟩",
-        "      return ⟨names, returnedRows clock returning (written.map (·.values)), some rows.length⟩"),
+        "      return ⟨names, returnedRows context returning (written.map (·.values)), some written.length⟩",
+        "      return ⟨names, returnedRows context returning (written.map (·.values)), some rows.length⟩"),
     "update_not_checked": (UPSERT, "  else checkedRow keys (replaceRow table existing changed) changed",
         "  else .ok (replaceRow table existing changed, some changed)"),
 }

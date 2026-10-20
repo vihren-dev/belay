@@ -20,9 +20,9 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "fromless_two_rows": (FUNCTIONS, "{ rows := [[]], width := 0, fault := .none }",
         "{ rows := [[], []], width := 0, fault := .none }"),
     "fromless_where_ignored": (QUERIES,
-        "    return { sources, filter := condition,",
-        "    return { sources, filter := if sources.isEmpty then none else condition,"),
-    "fromless_star_accepted": (QUERIES, "  | .star => if scope.isEmpty then .error (.prepare .noTablesSpecified) else",
+        "  return ({ sources, filter := condition,",
+        "  return ({ sources, filter := if sources.isEmpty then none else condition,"),
+    "fromless_star_accepted": (QUERIES, "  | .star => if scope.inner.isEmpty then .error (.prepare .noTablesSpecified) else",
         "  | .star => if false then .error (.prepare .noTablesSpecified) else"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
@@ -38,7 +38,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 
 GUARDS: dict[str, str] = {
     "fromless_no_row": "rule:Query.source", "fromless_two_rows": "rule:Query.source",
-    "fromless_where_ignored": "rule:resolveSelect", "fromless_star_accepted": "rule:resolveResultColumn",
+    "fromless_where_ignored": "rule:resolveQueryBody", "fromless_star_accepted": "rule:resolveResultColumn",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
 changes. `conformance.mutant_guards` checks every entry."""

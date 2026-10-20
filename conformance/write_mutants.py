@@ -15,23 +15,23 @@ CELLS = "belay-sqlite/Belay/Sqlite/Resolution/InsertCells.lean"
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "update_returning_old_values": (OUTPUTS,
-        "let written := chosen.map fun row => (LiteralData.assign clock table.shape.columns assignments row).values",
+        "let written := chosen.map fun row => (LiteralData.assign context table.shape.columns assignments row).values",
         "let written := chosen.map fun row => row.values"),
     "update_returning_every_row": (OUTPUTS,
         "      let written := chosen.map fun row =>", "      let written := table.rows.map fun row =>"),
     "returning_rows_on_failure": (OUTPUTS,
-        "      return ⟨names, returnedRows clock returning written, some rows.length⟩\n"
+        "      return ⟨names, returnedRows context returning written, some rows.length⟩\n"
         "    else if constraintFailure then some ⟨names, [], some 0⟩ else none",
-        "      return ⟨names, returnedRows clock returning written, some rows.length⟩\n"
+        "      return ⟨names, returnedRows context returning written, some rows.length⟩\n"
         "    else if constraintFailure then\n"
-        "      some ⟨names, returnedRows clock returning (Resolved.rowsAt clock [] rows), some 0⟩ else none"),
+        "      some ⟨names, returnedRows context returning (Resolved.rowsAt context [] rows), some 0⟩ else none"),
     "returning_names_ignore_definition": (RETURNING,
         "      .ok [(resolved, (alias.map (·.text)).getD ((definedName scope value).getD text))]",
         "      .ok [(resolved, (alias.map (·.text)).getD text)]"),
     "constant_not_evaluated": (CELLS,
-        "    else .ok (.value (operand.1.eval 0 []))",
+        "    else .ok (.value (operand.1.eval (.plain 0) []))",
         "    else .ok (.value (match operand.1 with\n"
-        "      | .arithmetic _ left _ => left.eval 0 []\n      | other => other.eval 0 []))"),
+        "      | .arithmetic _ left _ => left.eval (.plain 0) []\n      | other => other.eval (.plain 0) []))"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
 replacement. The names follow the list in the task of slice 3a; `constant_not_evaluated`

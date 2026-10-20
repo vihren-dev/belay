@@ -20,7 +20,7 @@ DATE_TIME = SQLITE + "Date/DateTime.lean"
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "now_without_statement_clock": (EVALUATION,
-        "    (function.value clock values, fault)",
+        "    (function.value context.clock values, fault)",
         "    (function.value 0 values, fault)"),
     "julianday_as_integer": (FUNCTIONS,
         "      | .julianday => realValue (Float.ofInt x.computeJulianDay.julianMilliseconds / 86400000.0)",
