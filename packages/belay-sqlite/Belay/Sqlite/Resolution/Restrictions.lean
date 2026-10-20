@@ -99,7 +99,7 @@ inductive RestrictionKind where
   | laterTableInOn
   /-- Queries of SQLite's own tables, such as {lit}`sqlite_schema`, are not modeled (ADR 0012 slice 1). -/
   | systemTable
-  /-- Only {lit}`COUNT(*)`, {lit}`COUNT`, {lit}`MIN`, {lit}`MAX`, {lit}`SUM` and {lit}`AVG` of one argument, {lit}`COALESCE` of two or more arguments, {lit}`json_extract`, the operators {lit}`->` and {lit}`->>`, {lit}`json_type`, {lit}`json_valid`, {lit}`json_array_length` and {lit}`json` are modeled as functions (ADR 0012 slices 1, 2, 6b and 6c). -/
+  /-- A function of the pinned library that the model does not describe, or a form of it that it does not describe, such as a window function (ADR 0012 slices 1, 2, 6b and 6c; ADR 0015). -/
   | unmodeledFunction
   /-- An aggregate inside an expression is not modeled (ADR 0012 slice 1). -/
   | aggregateInExpression
@@ -130,6 +130,11 @@ inductive RestrictionKind where
   evaluates it only because its planner reorders inner joins, and the model joins in
   written order (ADR 0012 slice 6d; ADR 0013, amendment 2). -/
   | laterSourceInArguments
+  /-- An argument of a JSON function that reads it as SQL value, such as a value of
+  {lit}`json_array`, is not modeled when it passes on a JSON call through {lit}`COALESCE`,
+  {lit}`iif`, {lit}`nullif`, {lit}`min` or {lit}`max`: SQLite keeps the JSON subtype through such
+  expressions, which the model does not describe (ADR 0015, slice 3). -/
+  | jsonSubtype
   deriving Repr, DecidableEq
 
 end Belay.Sqlite

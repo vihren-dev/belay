@@ -17,8 +17,8 @@ slice the local verdict, the corpus, and `just test-full`.
    (checked natively):
    - `json_quote`, `json_array`, `json_object` and the aggregates write each SQL value as JSON
      (`jsonAppendSqlValue`): NULL as `null`, an integer in decimal, a REAL by `%!0.15g`, text
-     as a JSON string with SQLite's escapes, JSON text (see 2) as it is, and a BLOB fails with
-     `JSON cannot hold BLOB values`; `json_object` labels must be text (`json_object() labels
+     as a JSON string with SQLite's escapes, and JSON text (see 2) as it is; a BLOB is JSONB
+     (slice 4); `json_object` labels must be text (`json_object() labels
      must be TEXT`), and an odd number of arguments fails;
    - `json_set`, `json_insert` and `json_replace` parse the JSON, then apply each path and
      value in turn: a NULL path is skipped, a path that does not start with `$` is a bad
@@ -59,5 +59,6 @@ slice the local verdict, the corpus, and `just test-full`.
   `JEDIT_*`, `jsonCreateEditSubstructure`, `jsonMergePatch`); the model edits `JsonNode` trees
   and renders them with `renderNode`, which gives the same text. An inserted SQL value becomes
   a node as `jsonFunctionArgToBlob` makes it (text as `textraw`, numbers with their text).
-- **Faults.** `malformed JSON`, `bad JSON path`, `JSON cannot hold BLOB values` and the label
-  errors are `must` failures; `json_error_position` of malformed JSON is `may`.
+- **Faults.** `malformed JSON`, `bad JSON path`, bad `json_valid` flags, and the argument errors
+  of `json_object` and the edit functions are `must` failures; a BLOB argument (JSONB, which
+  SQLite 3.51.0 reads instead of failing) and `json_error_position` of malformed JSON are `may`.

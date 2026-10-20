@@ -118,6 +118,16 @@ def extract (json : Value) (paths : List Value) : Except JsonError Value :=
     | .ok none => .ok .null
     | .ok (some node) => extractSeveral node paths []
 
+/-- Whether {lit}`json_extract` with one path gives SQLite's JSON subtype: when the path selects
+an array or an object, which it returns as JSON text; false when it fails or selects another
+node or nothing. -/
+def extractGivesJson (json path : Value) : Bool :=
+  match parseJsonArgument json, valueText path with
+  | .ok (some node), some pathBytes => match lookupFullPath node pathBytes with
+    | .ok (some (.array _)) | .ok (some (.object _)) => true
+    | .ok (some _) | .ok none | .error _ => false
+  | .ok (some _), none | .ok none, _ | .error _, _ => false
+
 /-- Select the node of an arrow operator: parse the JSON, then look up the operand;
 {lit}`none` for a NULL argument or no node. -/
 def arrowSelect (json : Value) (path : Value) : Except JsonError (Option JsonNode) :=
@@ -148,12 +158,16 @@ quote doubled. -/
 def quoteSqlText (bytes : List UInt8) : List UInt8 :=
   39 :: (bytes.flatMap fun byte => if byte == 39 then [39, 39] else [byte]) ++ [39]
 
-/-- The error message that SQLite reports, or {lit}`none` for a BLOB argument, which the
-model does not describe. -/
+/-- The error message that SQLite reports, or {lit}`none` for a BLOB argument or an error
+position, which the model does not describe. -/
 def JsonError.message? : JsonError → Option (List UInt8)
   | .malformed => some "malformed JSON".toUTF8.toList
   | .badPath path => some ("bad JSON path: ".toUTF8.toList ++ quoteSqlText path)
   | .blobArgument => none
   | .badFlags => some "FLAGS parameter to json_valid() must be between 1 and 15".toUTF8.toList
+  | .objectArgumentCount => some "json_object() requires an even number of arguments".toUTF8.toList
+  | .labelNotText => some "json_object() labels must be TEXT".toUTF8.toList
+  | .editArgumentCount name => some ("json_".toUTF8.toList ++ name ++ "() needs an odd number of arguments".toUTF8.toList)
+  | .unmodeledPosition => none
 
 end Belay.Sqlite.Json

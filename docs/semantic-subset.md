@@ -82,7 +82,15 @@ function is. ADR 0015, slice 2, adds the exact numeric functions `round`, `floor
 `ceiling`, `trunc`, `sqrt`, `pi`, `degrees`, `radians` and `mod`, which follow SQLite's
 `func.c` with the results of the C library for these exact operations, including the sign of
 zero (`trunc(-0.5)` is `-0.0`); the transcendental functions (`ln`, `exp`, `pow`, `sin` and
-the others) stay `unmodeled-function`. A
+the others) stay `unmodeled-function`. ADR 0015, slice 3, adds the JSON functions
+`json_quote`, `json_array`, `json_object`, `json_set`, `json_insert`, `json_replace`,
+`json_remove`, `json_patch`, `json_pretty` and `json_error_position`. They write an SQL value as
+SQLite's `jsonAppendSqlValue` does, and read a text value as JSON only when it has SQLite's JSON
+subtype: when it is a direct call of `json`, `->`, one of these functions (except `json_pretty`
+and `json_error_position`), or `json_extract` that selects an array or an object or has two or
+more paths. A JSON call passed on through `coalesce`, `iif`, `nullif`, `min` or `max` is the
+restriction `json-subtype`. The position that `json_error_position` gives for malformed JSON
+is not modeled. A
 `FROM` may end with `json_each(json [, path])` sources, joined by a comma or an inner
 `JOIN` with an optional `ON` condition, whose arguments read the sources before them
 (slice 6d). A comparison applies SQLite's comparison affinity (ADR 0013, D4): with an
@@ -332,6 +340,7 @@ should shrink.
 | `later-table-in-on` | An ON condition that names a source joined after it is not modeled: SQLite moves it to WHERE without outer joins and refuses it otherwise | ADR 0012 amendment 2; ADR 0013 amendment 2 |
 | `function-join` | `json_each` as the right operand of RIGHT or FULL JOIN, with NATURAL or USING, or before a NATURAL JOIN, is not modeled | ADR 0012 slice 6d; ADR 0013 amendment 2 |
 | `later-source-in-arguments` | An argument of `json_each` that reads a later source is not modeled, because the model joins in written order | ADR 0012 slice 6d; ADR 0013 amendment 2 |
+| `json-subtype` | A JSON call passed on through `coalesce`, `iif`, `nullif`, `min` or `max` as a value argument of `json_quote`, `json_array`, `json_object` or an edit function is not modeled, because SQLite keeps the JSON subtype through such expressions | ADR 0015, slice 3 |
 
 #### Undecided
 
@@ -368,7 +377,8 @@ rounded; and `SUM` and `AVG` with SQLite's summation. A `SUM` that overflows the
 64-bit integers stops the query with `integer overflow`, unless a later REAL input
 makes the sum approximate. JSON functions read JSON and JSON5 text as SQLite 3.51.0
 does, and give SQLite's values and rendered JSON text (slice 6b). A JSON function that
-fails with `malformed JSON`, `bad JSON path` or the `json_valid` flags error stops a query without `FROM` where SQLite
+fails with `malformed JSON`, `bad JSON path`, the `json_valid` flags error or an argument error
+of `json_object` or an edit function stops a query without `FROM` where SQLite
 certainly evaluates it. Every other statement in which a JSON function may fail is
 outside the supported subset for that data, because SQLite skips or folds some
 expressions and evaluates a constant `WHERE` term before it reads the rows: a query with

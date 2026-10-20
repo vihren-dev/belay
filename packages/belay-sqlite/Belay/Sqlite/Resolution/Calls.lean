@@ -1,5 +1,6 @@
 import Belay.Sqlite.Resolution.QueryAffinity
 import Belay.Sqlite.Resolution.Values
+import Belay.Sqlite.Resolution.ExprAny
 
 set_option doc.verso true
 
@@ -31,25 +32,63 @@ def jsonFunctionNamed (name : String) : Option Resolved.JsonFunction :=
   | "json_valid" => some .valid
   | "json_array_length" => some .arrayLength
   | "json" => some .json
+  | "json_quote" => some .quote
+  | "json_array" => some .array
+  | "json_object" => some .object
+  | "json_set" => some .set
+  | "json_insert" => some .insert
+  | "json_replace" => some .replace
+  | "json_remove" => some .remove
+  | "json_patch" => some .patch
+  | "json_pretty" => some .pretty
+  | "json_error_position" => some .errorPosition
   | _ => none
 
 /-- Whether SQLite accepts the number of arguments of a JSON function: one or more for
 {lit}`json_extract`, exactly two for {lit}`->` and {lit}`->>`, one or two for
-{lit}`json_type`, {lit}`json_valid` and {lit}`json_array_length`, and exactly one for
-{lit}`json`. -/
+{lit}`json_type`, {lit}`json_valid`, {lit}`json_array_length` and {lit}`json_pretty`, exactly one
+for {lit}`json`, {lit}`json_quote` and {lit}`json_error_position`, exactly two for
+{lit}`json_patch`, and any number for {lit}`json_array`, {lit}`json_object` and the edit
+functions, whose own checks follow when they run. -/
 def Resolved.JsonFunction.accepts : Resolved.JsonFunction → Nat → Bool
   | .extract, count => count ≥ 1
-  | .arrowJson, count | .arrowValue, count => count == 2
-  | .typeName, count | .valid, count | .arrayLength, count => count == 1 || count == 2
-  | .json, count => count == 1
+  | .arrowJson, count | .arrowValue, count | .patch, count => count == 2
+  | .typeName, count | .valid, count | .arrayLength, count | .pretty, count => count == 1 || count == 2
+  | .json, count | .quote, count | .errorPosition, count => count == 1
+  | .array, _ | .object, _ | .set, _ | .insert, _ | .replace, _ | .remove, _ => true
+
+/-- Whether the expression itself passes on the value of one of its arguments with its JSON
+subtype: {lit}`COALESCE`, {lit}`iif`, {lit}`nullif`, {lit}`min` and {lit}`max`; its parts are not
+inspected. -/
+def Resolved.Expr.passesValue : Resolved.Expr → Bool
+  | .coalesce .. | .scalar .iif _ | .scalar (.nullif _) _ | .scalar (.min _) _ | .scalar (.max _) _ => true
+  | .scalar _ _ | .column _ | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic ..
+  | .cast .. | .json .. | .now _ | .date .. => false
+
+/-- Whether the JSON subtype of an argument is not described: the argument passes on a value
+({name}`Resolved.Expr.passesValue`) and has a JSON call inside. A direct JSON call is described
+({lit}`Expr.givesJson`), and any other expression gives no subtype. -/
+def Resolved.Expr.subtypeUndescribed (argument : Resolved.Expr) : Bool :=
+  argument.passesValue && argument.any Resolved.Expr.isJsonCall
+
+/-- The arguments of a call in written order. -/
+def Resolved.Arguments.toList : Resolved.Arguments → List Resolved.Expr
+  | .nil => []
+  | .cons head tail => head :: tail.toList
 
 /-- A JSON call of the named function over resolved arguments, or SQLite's
 {lit}`wrong number of arguments to function %s()` when the function does not accept their
-number; SQLite checks the number after it resolves the arguments. -/
+number; SQLite checks the number after it resolves the arguments. An argument that the
+function reads as an SQL value ({name}`Resolved.JsonFunction.valuePositions`) whose subtype is
+not described ({name}`Resolved.Expr.subtypeUndescribed`) is the restriction
+{lit}`json-subtype`. -/
 def jsonCall (name : String) (function : Resolved.JsonFunction) (arguments : Resolved.Arguments) :
     Except ValueIssue Operand :=
-  if function.accepts arguments.length then .ok (.json function arguments, none)
-  else .error (.prepare (.wrongArgumentCount name))
+  if !function.accepts arguments.length then .error (.prepare (.wrongArgumentCount name))
+  else if (function.valuePositions arguments.length).any fun position =>
+      (arguments.toList.getD position (.literal .null)).subtypeUndescribed then
+    .error (.restriction [] .jsonSubtype)
+  else .ok (.json function arguments, none)
 
 /-- The date and time function that a folded name names, if any. -/
 def dateFunctionNamed (name : String) : Option Resolved.DateFunction :=

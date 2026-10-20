@@ -55,6 +55,15 @@ inductive JsonError where
   | blobArgument
   /-- The error {lit}`FLAGS parameter to json_valid() must be between 1 and 15`. -/
   | badFlags
+  /-- The error {lit}`json_object() requires an even number of arguments`. -/
+  | objectArgumentCount
+  /-- The error {lit}`json_object() labels must be TEXT`. -/
+  | labelNotText
+  /-- The error {lit}`json_NAME() needs an odd number of arguments` of {lit}`json_set`,
+  {lit}`json_insert` or {lit}`json_replace`, with the name after {lit}`json_`. -/
+  | editArgumentCount (name : List UInt8)
+  /-- The error position of malformed JSON text, which the model does not describe. -/
+  | unmodeledPosition
   deriving Repr, DecidableEq
 
 /-- The label text of an object member and whether it has no escapes, as
