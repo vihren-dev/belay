@@ -28,6 +28,23 @@ Rules for this repository:
 - An error message tells what failed, where, and what the user can do next.
   Do not refer to internal documents, such as ADR numbers, in user-facing text.
 
+## Goal, core and supporting code
+
+The goal of this repository is a semantic model of SQLite as a Lean library:
+Lean developers state and prove facts about SQLite databases, statements and
+queries, and can trust that the model behaves as SQLite does, which the
+conformance evidence checks against native SQLite.
+
+Core code is the model and the evidence that it agrees with SQLite. It must
+serve the goal, and a specification may plan it ahead. Supporting code is
+everything else: tooling, CI, harness features, measurement scripts, process
+automation and refactors that no core change needs. Write supporting code only
+to solve a clear present problem, with the smallest change that solves it. A
+present problem exists now: a failing check, a measured cost, a core task that
+it blocks, or an owner request. "Later", "at scale", "for consistency" and "in
+case" are not present problems. Review condition R18 checks this in
+specifications.
+
 ## Replaced code
 
 The project has no users. When code is replaced, update all callers and delete
@@ -144,8 +161,10 @@ agent tool: Codex reviews commits from Claude Code sessions, and Claude Code
 reviews commits from Codex sessions.
 
 - After each commit whose checks pass, run `just review`. It reviews `@-`, the
-  commit before the working copy. A commit that changes only files in `plans/`
-  needs no review.
+  commit before the working copy. A commit that changes only status files
+  (`plans/*.status.md`) or review records needs no review. A commit that adds or
+  changes a specification, such as an ADR or a task file, gets a review like any
+  other commit (conditions R18 and R19).
 - Exit code 0: no "must" findings. Fix "should" findings, or reject or defer
   them with a reason.
 - Exit code 1: fix each "must" finding in a `refactor:` commit before the next
