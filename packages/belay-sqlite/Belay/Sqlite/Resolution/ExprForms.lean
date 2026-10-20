@@ -18,8 +18,8 @@ def aggregateIssue (misuse : Bool) (function : String) : ValueIssue :=
   else .restriction [] .aggregateInExpression
 
 /-- The aggregate of one operand that a function name names, after ASCII folding:
-{lit}`count`, {lit}`min`, {lit}`max`, {lit}`sum`, {lit}`avg`, {lit}`json_group_array` or
-{lit}`jsonb_group_array`. -/
+{lit}`count`, {lit}`min`, {lit}`max`, {lit}`sum`, {lit}`avg`, {lit}`json_group_array`,
+{lit}`jsonb_group_array`, {lit}`group_concat` or {lit}`total`. -/
 def aggregateNamed (name : String) : Option (Resolved.Expr → Resolved.Aggregate) :=
   match normalizeIdentifier name with
   | "count" => some .count
@@ -29,21 +29,25 @@ def aggregateNamed (name : String) : Option (Resolved.Expr → Resolved.Aggregat
   | "avg" => some .avg
   | "json_group_array" => some (.jsonGroupArray · false)
   | "jsonb_group_array" => some (.jsonGroupArray · true)
+  | "group_concat" => some (.groupConcat · none)
+  | "total" => some .total
   | _ => none
 
 /-- The aggregate of two operands that a function name names, after ASCII folding:
-{lit}`json_group_object` or {lit}`jsonb_group_object`. -/
+{lit}`json_group_object`, {lit}`jsonb_group_object`, and {lit}`group_concat` and {lit}`string_agg`
+with a separator. -/
 def pairAggregateNamed (name : String) : Option (Resolved.Expr → Resolved.Expr → Resolved.Aggregate) :=
   match normalizeIdentifier name with
   | "json_group_object" => some (.jsonGroupObject · · false)
   | "jsonb_group_object" => some (.jsonGroupObject · · true)
+  | "group_concat" | "string_agg" => some fun operand separator => .groupConcat operand (some separator)
   | _ => none
 
 /-- Whether an aggregate writes its operand as a JSON value, so that the JSON subtype of the
 operand matters: {lit}`json_group_array` and {lit}`json_group_object`. -/
 def Resolved.Aggregate.writesJson : Resolved.Aggregate → Bool
   | .jsonGroupArray .. | .jsonGroupObject .. => true
-  | .countRows | .count _ | .min .. | .max .. | .sum _ | .avg _ => false
+  | .countRows | .count _ | .min .. | .max .. | .sum _ | .avg _ | .groupConcat .. | .total _ => false
 
 /-- Whether a call is an aggregate of the model: {lit}`count(*)`, or a named aggregate
 of one operand ({name}`aggregateNamed`) or of two ({name}`pairAggregateNamed`). -/

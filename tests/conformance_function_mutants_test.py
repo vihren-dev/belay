@@ -3,8 +3,8 @@
 ADR 0015 adds SQL functions slice by slice, and each slice lists the changes of its rules
 that the conformance suite must notice. The cases are the authored cases of
 `conformance.authored_text_functions` (slice 1), `conformance.authored_numeric_functions`
-(slice 2), `conformance.authored_json_edits` (slice 3) and `conformance.authored_jsonb` (slice 4),
-recorded natively with their outputs. Each measurement builds one base copy for
+(slice 2), `conformance.authored_json_edits` (slice 3), `conformance.authored_jsonb` (slice 4) and
+`conformance.authored_aggregates` (slice 5), recorded natively with their outputs. Each measurement builds one base copy for
 its mutants with `measure_set` of `tests/mutant_sets.py`, and each mutant
 copy classifies the case that the mutant names as its target.
 """
@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from conformance import (authored_json_edits, authored_jsonb, authored_numeric_functions, authored_text_functions,
+from conformance import (aggregate_mutants, authored_aggregates, authored_json_edits, authored_jsonb, authored_numeric_functions, authored_text_functions,
                          function_mutants, json_edit_mutants, jsonb_mutants, numeric_function_mutants)
 from tests.mutant_sets import measure_set
 
@@ -49,3 +49,10 @@ def test_every_jsonb_mutant_changes_a_verdict(runtime_root: Path) -> None:
     whose size needs one byte written with two, `jsonb_set` that stores SQL text as `TEXT`, and
     a BLOB that is never read as JSON text (ADR 0015, slice 4)."""
     measure_set(runtime_root, [authored_jsonb], [(jsonb_mutants.MUTANTS, jsonb_mutants.TARGETS)])
+
+
+def test_every_aggregate_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored cases of `group_concat`, `string_agg` and `total` notice every changed rule
+    (`conformance.aggregate_mutants`): a separator argument that is ignored, `group_concat` that
+    keeps a NULL value, and `total` that gives NULL for an empty group (ADR 0015, slice 5)."""
+    measure_set(runtime_root, [authored_aggregates], [(aggregate_mutants.MUTANTS, aggregate_mutants.TARGETS)])

@@ -97,7 +97,11 @@ is not modeled. ADR 0015, slice 4, adds JSONB: `jsonb`, `jsonb_extract`, `jsonb_
 JSON function reads a BLOB argument as SQLite does: JSONB when it passes SQLite's quick check,
 else JSON text, and as a stored value the error `JSON cannot hold BLOB values`. The model reads
 JSONB that is valid and in the encoding that SQLite's encoder gives for its tree; other JSONB,
-such as a BLOB with a header longer than needed, is outside the supported subset. A
+such as a BLOB with a header longer than needed, is outside the supported subset. ADR 0015,
+slice 5, adds the aggregates `group_concat(x [, separator])`, `string_agg(x, separator)` and
+`total(x)` of a whole result column: `group_concat` joins the text of the values that are not
+NULL in the order of the group's rows, each after the first preceded by the separator of its own
+row, and `total` is the REAL sum of `SUM`'s summation, `0.0` for an empty group. A
 `FROM` may end with `json_each(json [, path])` sources, joined by a comma or an inner
 `JOIN` with an optional `ON` condition, whose arguments read the sources before them
 (slice 6d). A comparison applies SQLite's comparison affinity (ADR 0013, D4): with an

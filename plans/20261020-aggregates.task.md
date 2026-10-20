@@ -30,7 +30,7 @@ slice the local verdict, the corpus, and `just test-full`.
   recorded as a new corpus: values of each type, separators per row and NULL, empty and
   all-NULL groups, `GROUP BY` order, and `total` with integers that overflow.
 - The verdict of every corpus: cases that newly agree and none that leave AGREE.
-- Mutants: a separator taken from the first row, `group_concat` that keeps NULL values as
+- Mutants: a separator argument that is ignored, `group_concat` that keeps NULL values as
   empty text, and `total` that gives NULL for an empty group; each killed by an authored case.
 
 ## Key points

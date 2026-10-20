@@ -61,7 +61,7 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
 #guard errorOf (select [.star] (orderBy := [{ expression := .numeric "3", descending := false }])) ==
   some (.expression (.orderByOutOfRange 1 2))
 #guard errorOf (select [written (.callStar "COUNT") "COUNT(*)"] (groupBy := [.numeric "1"])) == some (.expression .aggregateInGroupBy)
-#guard restrictedOne (select [written (.call "group_concat" [.identifier (name! "b") .none]) "group_concat(b)"])
+#guard restrictedOne (select [written (.call "median" [.identifier (name! "b") .none]) "median(b)"])
 -- SQLite's own tables are not in the catalog; querying one is a model restriction.
 #guard restrictedOne (.select [.star] (some { table := (name! "sqlite_master"), alias := none }) [] none [] [] none none)
 -- A declared type that is a standard type name is kept in capitals, as SQLite reports it.

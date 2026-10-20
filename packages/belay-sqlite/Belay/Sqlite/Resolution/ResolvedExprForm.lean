@@ -91,13 +91,21 @@ inductive Aggregate where
   it; a row with a NULL label adds no member; {lit}`{}` for an empty group. With {lit}`binary`,
   {lit}`jsonb_group_object`: the same object as JSONB. -/
   | jsonGroupObject (label value : Expr) (binary : Bool := false)
+  /-- {lit}`group_concat(x [, separator])` and {lit}`string_agg(x, separator)`: the text of the
+  operand values that are not NULL, in the order of the group's rows, each after the first
+  preceded by the separator of its own row ({lit}`,` without a separator, nothing for a NULL
+  one); NULL when every value is NULL. -/
+  | groupConcat (operand : Expr) (separator : Option Expr)
+  /-- {lit}`total(x)`: the sum of the operand values that are not NULL as a REAL, by
+  {lit}`SumState.totalValue`; {lit}`0.0` for an empty group, and it never fails. -/
+  | total (operand : Expr)
   deriving Repr, DecidableEq
 
 /-- Whether an aggregate can fail while the statement runs: {lit}`SUM`, on an integer
 overflow. -/
 def Aggregate.canFail : Aggregate → Bool
   | .sum _ => true
-  | .countRows | .count _ | .min .. | .max .. | .avg _ | .jsonGroupArray .. | .jsonGroupObject .. => false
+  | .countRows | .count _ | .min .. | .max .. | .avg _ | .jsonGroupArray .. | .jsonGroupObject .. | .groupConcat .. | .total _ => false
 
 /-- One result column: an expression over a row, or, in an aggregate query, an
 aggregate over a group or an expression over the group's first row, which

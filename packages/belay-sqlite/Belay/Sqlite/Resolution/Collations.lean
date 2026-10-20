@@ -91,6 +91,7 @@ def Resolved.Aggregate.withCollation (collation : Collation) : Resolved.Aggregat
   | .min operand _ => .min operand collation
   | .max operand _ => .max operand collation
   | aggregate@.countRows | aggregate@(.count _) | aggregate@(.sum _) | aggregate@(.avg _)
-  | aggregate@(.jsonGroupArray ..) | aggregate@(.jsonGroupObject ..) => aggregate
+  | aggregate@(.jsonGroupArray ..) | aggregate@(.jsonGroupObject ..) | aggregate@(.groupConcat ..)
+  | aggregate@(.total _) => aggregate
 
 end Belay.Sqlite

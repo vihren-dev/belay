@@ -32,7 +32,7 @@ from conformance import (algorithm_evidence, alias_evidence, authored_algorithms
                          authored_strict, strict_evidence, authored_drops, drop_evidence,
                          authored_text_functions, text_function_evidence, authored_numeric_functions,
                          numeric_function_evidence, authored_json_edits, json_edit_evidence, authored_jsonb,
-                         jsonb_evidence)
+                         jsonb_evidence, authored_aggregates, aggregate_evidence)
 from conformance.authored_resolution import definitions as resolution_definitions
 from conformance.corpus import load
 
@@ -73,13 +73,14 @@ pytestmark = [pytest.mark.integration, pytest.mark.conformance,
                                                             (numeric_function_evidence, authored_numeric_functions,
                                                              37),
                                                             (json_edit_evidence, authored_json_edits, 38),
-                                                            (jsonb_evidence, authored_jsonb, 39)],
+                                                            (jsonb_evidence, authored_jsonb, 39),
+                                                            (aggregate_evidence, authored_aggregates, 40)],
                          ids=["queries", "numbers", "writes", "obligations", "row-writes", "deletes", "joins", "using",
                               "right", "merged", "keys", "aliases", "upserts", "algorithms", "fromless", "json",
                               "json-functions", "json-each", "default-writes", "clock",
                               "date-functions", "date-modifiers", "indexes", "without-rowid",
                               "collations", "checks", "generated", "strict", "drops",
-                              "text-functions", "numeric-functions", "json-edits", "jsonb"])
+                              "text-functions", "numeric-functions", "json-edits", "jsonb", "aggregates"])
 def test_coverage_corpus_round_trips(evidence: ModuleType, cases: ModuleType, version: int, tmp_path: Path) -> None:
     """The corpus writer records the cases of its case module and writes a corpus of version 5
     records that reads back unchanged and replays natively, and refuses to replace an existing
