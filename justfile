@@ -8,6 +8,8 @@
 # Seconds for a nix-build of test suites: more than the per-suite limit in
 # build-support/tests.nix, so a suite that hangs fails with its own name.
 suite_build_limit := "1500"
+# Seconds for a nix-build of one mutant suite: more than its limit in build-support/tests.nix.
+mutant_build_limit := "3000"
 default:
     @just --list
 
@@ -108,10 +110,21 @@ review-stats *args:
 test-nix:
     timeout --foreground 600 python3 -u -m pytest -v tests -m requires_nix --ignore=tests/runtime_package_test.py --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD}" --junitxml build/test-results/nix.xml
 
-# Run the scheduled suites (tests/nix_scheduled_suites.json), which pull requests skip.
+# Run all scheduled suites (tests/nix_scheduled_suites.json), which pull requests skip, also the
+# mutant suites that CI runs in their own job.
 test-scheduled:
     mkdir -p build
-    timeout --foreground {{suite_build_limit}} nix-build build-support/default.nix -A scheduledTestReports --out-link build/nix-tests-scheduled --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+    timeout --foreground {{mutant_build_limit}} nix-build build-support/default.nix -A scheduledTestReports --out-link build/nix-tests-scheduled --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+
+# Run the scheduled suites of the check job: all but the mutant suites (tests/nix_mutant_suites.json).
+test-scheduled-checks:
+    mkdir -p build
+    timeout --foreground {{suite_build_limit}} nix-build build-support/default.nix -A scheduledCheckReports --out-link build/nix-tests-scheduled --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
+
+# Run one mutant suite of tests/nix_mutant_suites.json, as its CI job does.
+test-mutants suite:
+    mkdir -p build/nix-tests-mutants
+    timeout --foreground {{mutant_build_limit}} nix-build build-support/default.nix -A "scheduledTests.{{suite}}" --out-link "build/nix-tests-mutants/{{suite}}" --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
 # Select only the cached application-specific suite.
 test-atuin:
@@ -124,7 +137,7 @@ runtime-package: build
     timeout --foreground 1800 python3 -m pytest --junitxml build/test-results/installed.xml --runtime-archive "dist/sqlite-verifier-${SQLITE_VERIFIER_SYSTEM:?Enter nix develop path:./nix}.tar.gz" --runtime-variant installed tests/runtime_package_test.py tests/atuin_cli_test.py
 
 # Keep a source snapshot alongside the checked installable runtime.
-package: test-full test-nix runtime-package test-scheduled
+package: test-full test-nix runtime-package test-scheduled-checks
     mkdir -p dist
     tar --exclude='./.jj' --exclude='./.git' --exclude='./.lake' --exclude='./.direnv' --exclude='./dist' --exclude='./build' --exclude='__pycache__' --exclude='./result*' -czf dist/sqlite-verifier-source.tar.gz .
 

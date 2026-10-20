@@ -21,6 +21,9 @@ let
   # depend on how many suites share the CPU (reports/20261006-hosted-model-timeout/README.md).
   testTimeoutSeconds = 300;
   suiteTimeoutSeconds = 1200;
+  # A mutant suite (tests/nix_mutant_suites.json) runs alone on its own CI runner, and its tests
+  # take about 4 minutes each there, so it gets a larger limit; each test keeps its own limit.
+  mutantSuiteTimeoutSeconds = 2700;
   # The conformance suites use only the SQL frontend, not the verification application.
   # tests/test_conformance_frontend.py checks this list against the actual imports.
   frontend = map (name: root + "/${builtins.replaceStrings [ "." ] [ "/" ] name}.py")
@@ -49,7 +52,7 @@ let
     ln -s ${leanPackages."packages/public-doc-tools"} "$out/packages/public-doc-tools"
   '';
   # `seeds`: Lake cache seeds (case-seeds.nix) copied into one writable cache that the tests use (ADR 0010).
-  suite = name: { inputs, runtime, tools ? [], environment ? {}, seeds ? [] }:
+  suite = name: { inputs, runtime, tools ? [], environment ? {}, seeds ? [], timeout ? suiteTimeoutSeconds }:
     let
       files = (builtins.fromJSON (builtins.readFile (root + /tests/nix_suites.json))).${name};
       file = builtins.head files;
@@ -71,7 +74,7 @@ let
             cp -R --no-preserve=mode "$seed/." "$BELAY_TEST_CACHE/"
           done
         ''}
-        timeout ${toString suiteTimeoutSeconds} python3 -m pytest ${file} ${pkgs.lib.concatStringsSep " " extraFiles} --runtime-root ${runtime} \
+        timeout ${toString timeout} python3 -m pytest ${file} ${pkgs.lib.concatStringsSep " " extraFiles} --runtime-root ${runtime} \
           -p no:cacheprovider -p pytest_timeout --timeout=${toString testTimeoutSeconds} \
           --junitxml "$out/junit.xml" -v --durations=10
       '';
@@ -299,13 +302,15 @@ in {
     inputs = mutantInputs;
     runtime = conformance;
     tools = modelTools;
+    timeout = mutantSuiteTimeoutSeconds;
   };
-  # The mutants of writes, joins and table forms; a scheduled suite apart from "mutants", so that
-  # each stays within the suite limit on a hosted runner.
+  # The mutants of writes, joins and table forms; a mutant suite apart from "mutants", which runs
+  # on its own CI runner.
   tableMutants = suite "tableMutants" {
     inputs = mutantInputs;
     runtime = conformance;
     tools = modelTools;
+    timeout = mutantSuiteTimeoutSeconds;
   };
   # The round trips of the corpus writers of the authored cases; a scheduled suite.
   writers = suite "writers" {

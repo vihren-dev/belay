@@ -53,6 +53,9 @@ in rec {
   scheduledSuites = builtins.fromJSON (builtins.readFile ../tests/nix_scheduled_suites.json);
   tests = pkgs.lib.removeAttrs allTests scheduledSuites;
   scheduledTests = pkgs.lib.getAttrs scheduledSuites allTests;
+  # The scheduled suites of the mutants of the model, which CI runs in their own job, one runner
+  # each (`just test-mutants SUITE`); tests/nix_mutant_suites.json lists them.
+  mutantSuites = builtins.fromJSON (builtins.readFile ../tests/nix_mutant_suites.json);
   # `just test` skips the slow model comparisons, the frozen evidence and the locked-corpus
   # validation; `just test-full` runs them.
   developmentTests = pkgs.lib.removeAttrs tests [ "model" "frozen" "corpora" ];
@@ -62,6 +65,9 @@ in rec {
   testReports = pkgs.linkFarm "sqlite-verifier-test-reports" tests;
   developmentTestReports = pkgs.linkFarm "sqlite-verifier-development-test-reports" developmentTests;
   scheduledTestReports = pkgs.linkFarm "sqlite-verifier-scheduled-test-reports" scheduledTests;
+  # The scheduled suites that `just package` runs in the check job: all but the mutant suites.
+  scheduledCheckReports = pkgs.linkFarm "sqlite-verifier-scheduled-check-reports"
+    (pkgs.lib.removeAttrs scheduledTests mutantSuites);
   runtime = import ./runtime.nix {
     inherit pkgs sources leanToolchain verifierLibrary leanRuntime modelPackage;
     parserLibrary = parserLibrary.library;

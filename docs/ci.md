@@ -84,13 +84,20 @@ derivations as `checks.<system>`:
   harness or documentation change reuses the result.
 
 `just test-scheduled` builds the scheduled suites of `tests/nix_scheduled_suites.json`
-with `nix-build -A scheduledTestReports` (outputs in `build/nix-tests-scheduled/SUITE`):
+with `nix-build -A scheduledTestReports` (outputs in `build/nix-tests-scheduled/SUITE`).
+`just package` builds them through `just test-scheduled-checks`, except the mutant suites of
+`tests/nix_mutant_suites.json`: the CI job `mutants` runs each of those on its own runner with
+`just test-mutants SUITE`, in parallel with the check job, for the `package` scope only, because
+together they need more time than the check job has left. A mutant suite's limit is 2700
+seconds, since it runs alone on its runner; each test keeps its limit of 300 seconds. The
+scheduled suites are:
 `scheduledTests.mutants` and `scheduledTests.tableMutants` (writes, joins and table forms),
 the mutants of the model, each
 built as a changed copy of the Lean packages, where every mutant must change the verdict of
 an authored model case; and `scheduledTests.writers`, the round trips of the corpus writers.
 Each mutant copy rebuilds the model modules that depend on its change, so the suite grows
-with each slice of the model and does not fit the time of a pull request. `just package` runs it, so main pushes, tags,
+with each slice of the model and does not fit the time of a pull request. `just package` and the
+`mutants` job run these suites, so main pushes, tags,
 manual and nightly runs check these suites, and so does a pull request with the
 `package` scope. Pull requests with a smaller scope do not, so that their CI time
 does not grow. The flake checks exclude them.

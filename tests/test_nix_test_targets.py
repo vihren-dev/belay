@@ -53,7 +53,8 @@ def expression(root: Path) -> str:
 
 
 def test_bounded_commands_keep_complete_suite_ownership() -> None:
-    """The real Nix command runs every owned file with a per-test limit and full reporting."""
+    """The real Nix command runs every owned file with a per-test limit and full reporting; the
+    suite limit is 1200 seconds, and 2700 for a mutant suite, which runs alone on its CI runner."""
     result = run_command(['nix-instantiate', '--eval', '--strict', '--json',
         '--extra-experimental-features', 'nix-command flakes', '--expr',
         f'builtins.mapAttrs (_: test: test.installPhase) ({expression(ROOT)})'], cwd=ROOT, timeout=30)
@@ -63,10 +64,12 @@ def test_bounded_commands_keep_complete_suite_ownership() -> None:
     assert set(scripts) == set(ownership) == {'atuin', 'bundle', 'cli', 'kernel', 'model', 'frozen', 'corpora',
                                                'harness', 'sample', 'upstream', 'parserLibrary', 'packages',
                                                'documentation', 'mutants', 'tableMutants', 'writers'}
+    mutant_suites = set(json.loads((ROOT / 'tests/nix_mutant_suites.json').read_text()))
     for name, script in scripts.items():
         command = shlex.split(next(line for line in script.replace('\\\n', ' ').splitlines()
                                   if line.strip().startswith('timeout ')))
-        assert command[:5] == ['timeout', '1200', 'python3', '-m', 'pytest']
+        limit = '2700' if name in mutant_suites else '1200'
+        assert command[:5] == ['timeout', limit, 'python3', '-m', 'pytest'], (name, command[:5])
         runtime_index = command.index('--runtime-root')
         assert command[5:runtime_index] == ownership[name], (name, command)
         assert command[runtime_index + 2:] == ['-p', 'no:cacheprovider', '-p', 'pytest_timeout', '--timeout=300',
