@@ -29,9 +29,9 @@ def table : Table :=
     rows := [{ rowid := 1, values := [.integer 1, .text [97]] }, { rowid := 2, values := [.null, .text [98]] }] }
 
 -- The row where the filter is true is removed; the row where it is NULL is kept.
-#guard (LiteralData.deleted 0 table (some (.compare .eq none (.column 0) (.literal (.integer 1))))).rows ==
+#guard (LiteralData.deleted (.plain 0) table (some (.compare .eq none (.column 0) (.literal (.integer 1))))).rows ==
   [{ rowid := 2, values := [.null, .text [98]] }]
 -- Without a filter every row is removed.
-#guard (LiteralData.deleted 0 table none).rows == []
+#guard (LiteralData.deleted (.plain 0) table none).rows == []
 
 end Belay.Sqlite.Resolution.DeleteExamples

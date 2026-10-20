@@ -90,10 +90,10 @@ def right : Table :=
 def equal : Option Resolved.Expr := some (.compare .eq none (.column 0) (.column 1))
 
 -- An inner join keeps the matching row; a left join also pads the unmatched left row.
-#guard Resolved.joinRows 0 1 (Resolved.sourceRows left) { kind := .inner, source := .table 1, condition := equal } 1
+#guard Resolved.joinRows (.plain 0) 1 (Resolved.sourceRows left) { kind := .inner, source := .table 1, condition := equal } 1
     (Resolved.sourceRows right) ==
   [[.integer 1, .integer 1]]
-#guard Resolved.joinRows 0 1 (Resolved.sourceRows left) { kind := .left, source := .table 1, condition := equal } 1
+#guard Resolved.joinRows (.plain 0) 1 (Resolved.sourceRows left) { kind := .left, source := .table 1, condition := equal } 1
     (Resolved.sourceRows right) ==
   [[.integer 1, .integer 1], [.integer 2, .null]]
 

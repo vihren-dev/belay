@@ -87,7 +87,7 @@ def insertChecked (keys : List UniqueKey) (algorithms : List ConflictAlgorithm) 
 
 /-- One row of an INSERT with clauses or algorithms: the table after it and the row that
 it inserted or updated, none for a skipped row; or the error of the statement. -/
-def upsertRow (clock : Int) (keys : List UniqueKey) (policy : Resolved.ConflictPolicy) (clauses : List Resolved.ConflictClause)
+def upsertRow (context : Resolved.EvalContext) (keys : List UniqueKey) (policy : Resolved.ConflictPolicy) (clauses : List Resolved.ConflictClause)
     (table : Table) (values : List Value) : Except ExecutionError (Table × Option Row) :=
   if aliasMismatch table.shape values then .error .datatypeMismatch else
   let proposed := proposedRow table values
@@ -99,7 +99,7 @@ def upsertRow (clock : Int) (keys : List UniqueKey) (policy : Resolved.ConflictP
     | none => insertChecked keys policy.keys table proposed
     | some (clause, existing) => match clause.action with
       | .nothing => .ok (table, none)
-      | .update assignments filter => updateExisting clock keys table assignments filter existing proposed
+      | .update assignments filter => updateExisting context keys table assignments filter existing proposed
 
 /-- One reached row of an INSERT with clauses or algorithms: the table before the row, the
 row's values, and the result of {name}`upsertRow` for it. -/
@@ -114,14 +114,14 @@ structure UpsertStep where
 /-- The reached rows of an INSERT with clauses or algorithms, in order: each row with the
 table before it and its {name}`upsertRow` result, up to and with the first row that
 fails. -/
-def upsertSteps (clock : Int) (keys : List UniqueKey) (policy : Resolved.ConflictPolicy)
+def upsertSteps (context : Resolved.EvalContext) (keys : List UniqueKey) (policy : Resolved.ConflictPolicy)
     (clauses : List Resolved.ConflictClause) (table : Table) : List (List Value) → List UpsertStep
   | [] => []
   | values :: rest =>
-    let result := upsertRow clock keys policy clauses table values
+    let result := upsertRow context keys policy clauses table values
     { before := table, values, result } :: match result with
       | .error _ => []
-      | .ok (next, _) => upsertSteps clock keys policy clauses next rest
+      | .ok (next, _) => upsertSteps context keys policy clauses next rest
 
 /-- The result of the reached rows ({name}`upsertSteps`) over the table: the final table
 and the inserted and updated rows in row order; or the first error with the table before
@@ -136,9 +136,9 @@ def upsertSummary (table : Table) : List UpsertStep → Except (ExecutionError �
 
 /-- The rows in order ({name}`upsertRow`): the {name}`upsertSummary` of the reached rows
 ({name}`upsertSteps`). -/
-def upsertRun (clock : Int) (keys : List UniqueKey) (policy : Resolved.ConflictPolicy) (clauses : List Resolved.ConflictClause)
+def upsertRun (context : Resolved.EvalContext) (keys : List UniqueKey) (policy : Resolved.ConflictPolicy) (clauses : List Resolved.ConflictClause)
     (table : Table) (rows : List (List Value)) : Except (ExecutionError × Table × List Row) (Table × List Row) :=
-  upsertSummary table (upsertSteps clock keys policy clauses table rows)
+  upsertSummary table (upsertSteps context keys policy clauses table rows)
 
 /-- Whether every reached row ({name}`UpsertStep`) has a bounded proposed rowid, and every
 table after a row has bounded rowids. SQLite chooses a random rowid after the largest one,

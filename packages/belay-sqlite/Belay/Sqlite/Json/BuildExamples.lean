@@ -90,7 +90,7 @@ def subtypeCall : Resolved.Expr :=
     (.cons (.json .extract (.cons (.literal (sqlText "[[2],\"[3]\"]")) (.cons (.literal (sqlText "$[1]")) .nil)))
     .nil)))
 
-example : (subtypeCall.evaluate 0 []).1 = sqlText "[[1],[2],\"[3]\"]" := by decide +kernel
+example : (subtypeCall.evaluate (.plain 0) []).1 = sqlText "[[1],[2],\"[3]\"]" := by decide +kernel
 
 example : givesText (apply .set [plain "{\"a\":1}", plain "$.b[0]", number 2]) "{\"a\":1,\"b\":[2]}" = true := by
   decide +kernel

@@ -60,9 +60,11 @@ def matchesOutput (expected actual : StatementOutput)
     matchesGroups ordered expected.rows && matchesGroups ordered actual.rows
 
 /-- The {lit}`RETURNING` rows of a write: each {lit}`RETURNING` expression evaluated over
-each written row, in order. A write without {lit}`RETURNING` returns no rows. -/
-def returnedRows (clock : Int) (returning : List (Resolved.Expr × String)) (written : List (List Value)) : List ResultRow :=
-  if returning.isEmpty then [] else written.map fun row => returning.map fun (expression, _) => expression.eval clock row
+each written row in the statement's evaluation context, in order. A write without
+{lit}`RETURNING` returns no rows. -/
+def returnedRows (context : Resolved.EvalContext) (returning : List (Resolved.Expr × String)) (written : List (List Value)) :
+    List ResultRow :=
+  if returning.isEmpty then [] else written.map fun row => returning.map fun (expression, _) => expression.eval context row
 
 /-- The error with which a transition stops: the reason of a failure, or the error of a
 pending transaction; none for a transition that continues or succeeds. -/
@@ -133,44 +135,45 @@ def statementOutput (clock : Int) (statement : Resolved.Statement) (before : Sql
   let constraintFailure := (haltError transition).any ExecutionError.failsWrite
   let overflow := haltError transition == some .integerOverflow
   let functionFailure := haltError transition == some .functionError
+  let context := Resolved.EvalContext.plain clock
   match statement with
   | .insert target rows returning =>
     let names := returning.map (·.2)
     if successful then do
       let table ← before.database.table target
-      let values := Resolved.rowsAt clock table.shape.columns rows
+      let values := Resolved.rowsAt context table.shape.columns rows
       let written := ((LiteralData.inserted table values).rows.drop table.rows.length).map (·.values)
-      return ⟨names, returnedRows clock returning written, some rows.length⟩
+      return ⟨names, returnedRows context returning written, some rows.length⟩
     else if constraintFailure then some ⟨names, [], some 0⟩ else none
   | .upsert target rows clauses returning algorithm =>
     let names := returning.map (·.2)
     let run := (before.database.table target).map fun table =>
-      LiteralData.upsertRun clock (before.database.keys target table)
+      LiteralData.upsertRun context (before.database.keys target table)
         (before.database.catalog.writePolicy target table.shape algorithm) clauses table
-        (Resolved.rowsAt clock table.shape.columns rows)
+        (Resolved.rowsAt context table.shape.columns rows)
     if successful then do
       let (_, written) ← (← run).toOption
-      return ⟨names, returnedRows clock returning (written.map (·.values)), some written.length⟩
+      return ⟨names, returnedRows context returning (written.map (·.values)), some written.length⟩
     else if constraintFailure then some ⟨names, [], some ((run.map keptCount).getD 0)⟩ else none
   | .update target assignments filter returning =>
     let names := returning.map (·.2)
     if successful then do
       let table ← before.database.table target
-      let chosen := table.scanRows.filter (LiteralData.selected clock filter)
-      let written := chosen.map fun row => (LiteralData.assign clock table.shape.columns assignments row).values
-      return ⟨names, returnedRows clock returning written,
+      let chosen := table.scanRows.filter (LiteralData.selected context filter)
+      let written := chosen.map fun row => (LiteralData.assign context table.shape.columns assignments row).values
+      return ⟨names, returnedRows context returning written,
         some chosen.length⟩
     else if constraintFailure then some ⟨names, [], some 0⟩ else none
   | .delete target filter returning =>
     let names := returning.map (·.2)
     if successful then do
       let table ← before.database.table target
-      let chosen := table.scanRows.filter (LiteralData.selected clock filter)
-      return ⟨names, returnedRows clock returning (chosen.map (·.values)), some chosen.length⟩
+      let chosen := table.scanRows.filter (LiteralData.selected context filter)
+      return ⟨names, returnedRows context returning (chosen.map (·.values)), some chosen.length⟩
     else none
   | .query query =>
     if successful then
-      (query.source clock before.database).map fun source => ⟨query.names, (query.run clock source.rows).rows, none⟩
+      (query.source context before.database).map fun source => ⟨query.names, (query.run context source.rows).rows, none⟩
     else if (overflow && query.groupBy.isEmpty) || functionFailure then some ⟨query.names, [], none⟩
     else none
   | .addColumn _ column => some ⟨addColumnOutputNames column, [], none⟩

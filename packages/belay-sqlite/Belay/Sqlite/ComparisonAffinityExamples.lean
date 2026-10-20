@@ -12,7 +12,7 @@ def text (value : String) : Value := .text value.toUTF8.toList
 
 /-- The value of {lit}`left = right` under the affinity. -/
 def equals (affinity : Option Affinity) (left right : Value) : Value :=
-  (Expr.compare .eq affinity (.literal left) (.literal right)).eval 0 []
+  (Expr.compare .eq affinity (.literal left) (.literal right)).eval (.plain 0) []
 
 -- An INTEGER column against '1' compares the number: `intcol = '1'` is 1.
 #guard equals (some .integer) (.integer 1) (text "1") == .integer 1
@@ -24,7 +24,7 @@ def equals (affinity : Option Affinity) (left right : Value) : Value :=
 -- A TEXT column against 1 compares the text: `textcol = 1` is 1 when the column holds '1'.
 #guard equals (some .text) (text "1") (.integer 1) == .integer 1
 -- `CAST(1 AS TEXT) = 1` has TEXT affinity from the CAST, so it is 1.
-#guard (Expr.compare .eq (some .text) (.cast .text (.literal (.integer 1))) (.literal (.integer 1))).eval 0 [] ==
+#guard (Expr.compare .eq (some .text) (.cast .text (.literal (.integer 1))) (.literal (.integer 1))).eval (.plain 0) [] ==
   .integer 1
 -- An integer never goes through a double: 2^53 + 1 against the REAL 2^53 is not equal.
 #guard equals (some .numeric) (.real (9007199254740992.0 : Float).toBits) (.integer 9007199254740993) == .integer 0

@@ -23,20 +23,20 @@ def returningExpressions (returning : List (Resolved.Expr × String)) : List Res
 over a row of the table or over the empty row, no call of a {lit}`SET` value may
 fail over a row that {lit}`WHERE` selects, and no {lit}`RETURNING` expression has a
 fallible call. -/
-def updateJsonReady (clock : Int) (table : Table) (assignments : List (Nat × Resolved.Expr))
+def updateJsonReady (context : Resolved.EvalContext) (table : Table) (assignments : List (Nat × Resolved.Expr))
     (filter : Option Resolved.Expr) (returning : List (Resolved.Expr × String)) : Bool :=
   let rows := table.rows.map Row.values
-  let chosen := (table.rows.filter (LiteralData.selected clock filter)).map Row.values
-  !Resolved.anyMayFail clock ([] :: rows) filter.toList &&
-  !Resolved.anyMayFail clock chosen (assignments.map (·.2)) &&
+  let chosen := (table.rows.filter (LiteralData.selected context filter)).map Row.values
+  !Resolved.anyMayFail context ([] :: rows) filter.toList &&
+  !Resolved.anyMayFail context chosen (assignments.map (·.2)) &&
   !(returningExpressions returning).any (·.any Resolved.Expr.isFallibleCall)
 
 /-- Whether a DELETE over the table is ready: no call of {lit}`WHERE` may fail over
 a row of the table or over the empty row, and no {lit}`RETURNING` expression has a
 fallible call. -/
-def deleteJsonReady (clock : Int) (table : Table) (filter : Option Resolved.Expr)
+def deleteJsonReady (context : Resolved.EvalContext) (table : Table) (filter : Option Resolved.Expr)
     (returning : List (Resolved.Expr × String)) : Bool :=
-  !Resolved.anyMayFail clock ([] :: table.rows.map Row.values) filter.toList &&
+  !Resolved.anyMayFail context ([] :: table.rows.map Row.values) filter.toList &&
   !(returningExpressions returning).any (·.any Resolved.Expr.isFallibleCall)
 
 /-- The expressions of an {lit}`ON CONFLICT` clause: the values and the filter of

@@ -62,11 +62,11 @@ def checkedRow (keys : List UniqueKey) (next : Table) (written : Row) :
 existing row followed by the proposed row. A filter that is not true skips the row; the
 new row takes the rowid of {name}`movedRowid`, and a non-integer alias is
 {lit}`datatype mismatch`; the result is checked by {name}`checkedRow`. -/
-def updateExisting (clock : Int) (keys : List UniqueKey) (table : Table) (assignments : List (Nat × Resolved.Expr))
+def updateExisting (context : Resolved.EvalContext) (keys : List UniqueKey) (table : Table) (assignments : List (Nat × Resolved.Expr))
     (filter : Option Resolved.Expr) (existing proposed : Row) : Except ExecutionError (Table × Option Row) :=
-  let context := existing.values ++ proposed.values
-  if !(filter.all fun condition => Resolved.truthy (condition.eval clock context)) then .ok (table, none) else
-  let changed := movedRowid table.shape.rowidAlias (assignFrom clock table.shape.columns assignments context existing)
+  let cells := existing.values ++ proposed.values
+  if !(filter.all fun condition => Resolved.truthy (condition.eval context cells)) then .ok (table, none) else
+  let changed := movedRowid table.shape.rowidAlias (assignFrom context table.shape.columns assignments cells existing)
   if aliasCellMismatch table.shape.rowidAlias changed then .error .datatypeMismatch
   else checkedRow keys (replaceRow table existing changed) changed
 

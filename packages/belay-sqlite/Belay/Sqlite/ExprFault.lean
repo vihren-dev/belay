@@ -107,4 +107,27 @@ def comparisonOperands : Option Affinity → Value → Value → Value × Value
     if left.isText || right.isText then (storeValue .text left, storeValue .text right) else (left, right)
   | some .blob, left, right | none, left, right => (left, right)
 
+/-- The rows that a subquery gives for one outer row, with the fault of its evaluation
+(ADR 0018, D1). -/
+structure SubqueryRun where
+  /-- The result rows, in the order of the subquery. -/
+  rows : List (List Value)
+  /-- The fault of the subquery's expressions. -/
+  fault : Fault
+
+/-- What the evaluation of an expression reads besides its row (ADR 0018, D1): the
+statement's clock value in Julian-day milliseconds, and the results of the statement's
+subqueries, by index, for the row of the expression that reads them. Use
+{lit}`EvalContext.plain` for a statement without subqueries. -/
+structure EvalContext where
+  /-- The statement's clock value. -/
+  clock : Int
+  /-- The results of subquery {lit}`index` for an outer row. -/
+  subqueries : Nat → List Value → SubqueryRun
+
+/-- The context of a statement without subqueries at a clock value: a subquery that it
+names gives no rows and the fault {lean}`Fault.may`, which resolution never needs. -/
+def EvalContext.plain (clock : Int) : EvalContext :=
+  { clock, subqueries := fun _ _ => { rows := [], fault := .may } }
+
 end Belay.Sqlite.Resolved

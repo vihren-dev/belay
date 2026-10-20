@@ -23,7 +23,7 @@ def join (kind : Resolved.JoinKind) (condition : Option Resolved.Expr := equal) 
 /-- The rows of a join of {name}`JoinExamples.left` (one column) and the table. -/
 def rowsWith (kind : Resolved.JoinKind) (table : Table) (condition : Option Resolved.Expr := equal) :
     List (List Value) :=
-  Resolved.joinRows 0 1 (Resolved.sourceRows JoinExamples.left) (join kind condition) table.shape.columns.length
+  Resolved.joinRows (.plain 0) 1 (Resolved.sourceRows JoinExamples.left) (join kind condition) table.shape.columns.length
     (Resolved.sourceRows table)
 
 -- The operators resolve to their kinds.
@@ -38,7 +38,7 @@ def rowsWith (kind : Resolved.JoinKind) (table : Table) (condition : Option Reso
 #guard rowsWith .right rightTwo (some (.literal (.integer 0))) == [[.null, .integer 1], [.null, .integer 3]]
 #guard rowsWith .full empty == [[.integer 1, .null], [.integer 2, .null]]
 #guard rowsWith .right empty == []
-#guard Resolved.joinRows 0 1 [] (join .full) 1 (Resolved.sourceRows rightTwo) == [[.null, .integer 1], [.null, .integer 3]]
+#guard Resolved.joinRows (.plain 0) 1 [] (join .full) 1 (Resolved.sourceRows rightTwo) == [[.null, .integer 1], [.null, .integer 3]]
 
 /-- A right join to table 2 on the second and third cells of the joined row. -/
 def rightOnSecond : Resolved.QuerySource := { kind := .right, source := .table 2, condition := some (.compare .eq none (.column 1) (.column 2)) }
@@ -49,10 +49,10 @@ def fullQuery : Resolved.Query :=
     names := [], orderBy := [], offset := 0, limit := none }
 
 -- After an inner join, a right join pads every column of the left input.
-#guard Resolved.joinRows 0 2 (rowsWith .inner rightTwo) rightOnSecond 1 (Resolved.sourceRows rightTwo) ==
+#guard Resolved.joinRows (.plain 0) 2 (rowsWith .inner rightTwo) rightOnSecond 1 (Resolved.sourceRows rightTwo) ==
   [[.integer 1, .integer 1, .integer 1], [.null, .null, .integer 3]]
 -- The source of a query folds the joins with the width of the tables so far.
-#guard (fullQuery.source 0 (.ofTables [((name! "l"), JoinExamples.left), ((name! "r"), rightTwo)])).map (·.rows) ==
+#guard (fullQuery.source (.plain 0) (.ofTables [((name! "l"), JoinExamples.left), ((name! "r"), rightTwo)])).map (·.rows) ==
   some [[.integer 1, .integer 1], [.integer 2, .null], [.null, .integer 3]]
 
 end Belay.Sqlite.Resolution.RightJoinExamples

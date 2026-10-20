@@ -35,7 +35,7 @@ over the row. Key expressions read no clock, so they evaluate at clock 0. A miss
 gives {name}`Option.none`. -/
 def termValue (row : Row) : KeyTerm → Option Value
   | .column position => read row position
-  | .expression value => some (value.eval 0 row.values)
+  | .expression value => some (value.eval (.plain 0) row.values)
 
 /-- Whether a key constrains the row: always for a key without filter, and for a partial
 unique index when its filter is true for the row ({name}`Resolved.truthy`; NULL is not
@@ -43,7 +43,7 @@ true). -/
 def keyApplies (key : UniqueKey) (row : Row) : Bool :=
   match key.filter with
   | none => true
-  | some filter => Resolved.truthy (filter.eval 0 row.values)
+  | some filter => Resolved.truthy (filter.eval (.plain 0) row.values)
 
 /-- Whether two rows conflict on a key: the key applies to both ({name}`keyApplies`), and
 for each term both values are key cells that conflict under its collation
@@ -69,7 +69,7 @@ NULL passes (R-34109-39108). The value counts as a number, as {lit}`CAST AS NUME
 ({name}`Resolved.truthy`, R-55435-14303). The model admits only CHECK conditions that read no clock,
 so they evaluate at clock 0. -/
 def checkHolds (row : Row) (check : CheckConstraint) : Bool :=
-  let value := check.condition.eval 0 row.values
+  let value := check.condition.eval (.plain 0) row.values
   value.isNull || Resolved.truthy value
 
 /-- Whether a row satisfies every CHECK constraint of the table
@@ -123,7 +123,7 @@ def generatedCells (columns : List CatalogColumn) (values : List Value) : List V
   let generated := columns.zipIdx.filterMap fun (column, position) =>
     column.generated.map fun how => (position, column.affinity, how.expression)
   generated.foldl (fun cells _ => generated.foldl (fun cells (position, affinity, expression) =>
-    cells.set position (storeValue affinity (expression.eval 0 cells))) cells) values
+    cells.set position (storeValue affinity (expression.eval (.plain 0) cells))) cells) values
 
 /-- The cells of a new row with the rowid: the alias cell, if the table has an alias, is
 the integer rowid, so a NULL alias takes the new rowid; then the generated columns are

@@ -33,17 +33,17 @@ the database does not have, or a subquery, which the model does not run yet. The
 a {lit}`json_each` source are its rows over each row so far ({name}`joinRow`); resolution
 refuses it as the right operand of a right or full join, where this gives the rows of an
 inner or left join. -/
-def QuerySource.join (clock : Int) (database : Database) (state : SourceRows) (join : QuerySource) : Option SourceRows :=
+def QuerySource.join (context : EvalContext) (database : Database) (state : SourceRows) (join : QuerySource) : Option SourceRows :=
   match join.source with
   | .table position => (database.table position).map fun table =>
-    { rows := joinRows clock state.width state.rows join table.shape.columns.length (sourceRows table),
+    { rows := joinRows context state.width state.rows join table.shape.columns.length (sourceRows table),
       width := state.width + table.shape.columns.length, fault := state.fault }
   | .each json path =>
-    let results := state.rows.map fun row => (row, Json.eachRows (json.eval clock row) (path.map (·.eval clock row)))
+    let results := state.rows.map fun row => (row, Json.eachRows (json.eval context row) (path.map (·.eval context row)))
     let failed := results.any fun (_, result) => match result with
       | .ok _ => false
       | .error _ => true
-    some { rows := results.flatMap (fun (row, result) => joinRow clock join eachWidth (result.toOption.getD []) row),
+    some { rows := results.flatMap (fun (row, result) => joinRow context join eachWidth (result.toOption.getD []) row),
            width := state.width + eachWidth,
            fault := if failed then state.fault.join .may else state.fault }
   | .subquery => none
@@ -51,16 +51,16 @@ def QuerySource.join (clock : Int) (database : Database) (state : SourceRows) (j
 /-- The source rows of a query over a database: its sources joined in written order
 ({name}`QuerySource.join`) from the one row with no cells, which is the source of a query
 without {lit}`FROM`; none when a table is missing. -/
-def Query.source (clock : Int) (query : Query) (database : Database) : Option SourceRows :=
-  query.sources.foldlM (QuerySource.join clock database) { rows := [[]], width := 0, fault := .none }
+def Query.source (context : EvalContext) (query : Query) (database : Database) : Option SourceRows :=
+  query.sources.foldlM (QuerySource.join context database) { rows := [[]], width := 0, fault := .none }
 
-/-- For every clock value, database, list of sources without a {lit}`json_each` source and state whose
+/-- For every context, database, list of sources without a {lit}`json_each` source and state whose
 fault is {lean}`Fault.none`, a successful fold of {name}`QuerySource.join` ends with the fault
 {lean}`Fault.none`. Proof sketch: induction on the sources; a table source keeps the fault,
 and a subquery stops the fold. -/
-theorem source_fault_of_plain (clock : Int) (database : Database) :
+theorem source_fault_of_plain (context : EvalContext) (database : Database) :
     ∀ (sources : List QuerySource) (state result : SourceRows), sources.all (!·.source.isEach) = true →
-      state.fault = .none → sources.foldlM (QuerySource.join clock database) state = some result → result.fault = .none
+      state.fault = .none → sources.foldlM (QuerySource.join context database) state = some result → result.fault = .none
   | [], state, result, _, clean, done => by
     simp only [List.foldlM, pure] at done
     cases done
@@ -76,7 +76,7 @@ theorem source_fault_of_plain (clock : Int) (database : Database) :
       | none => simp [found] at done
       | some table =>
         simp only [found, Option.map_some] at done
-        refine source_fault_of_plain clock database rest _ result plain.2 ?_ done
+        refine source_fault_of_plain context database rest _ result plain.2 ?_ done
         exact clean
     | each json path => simp [Source.isEach] at plain
     | subquery => simp [QuerySource.join] at done

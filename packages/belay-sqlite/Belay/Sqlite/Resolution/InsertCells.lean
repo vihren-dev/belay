@@ -28,8 +28,8 @@ def constantCell (dqs : Bool) (expression : Syntax.Expr) : Except ValueIssue Res
     if operand.1.readsClock then
       if operand.1.any Resolved.Expr.isFallibleCall then .error (.restriction [] .constantFunctionError)
       else .ok (.expression operand.1)
-    else if operand.1.mayFailOn 0 [] then .error (.restriction [] .constantFunctionError)
-    else .ok (.value (operand.1.eval 0 []))
+    else if operand.1.mayFailOn (.plain 0) [] then .error (.restriction [] .constantFunctionError)
+    else .ok (.value (operand.1.eval (.plain 0) []))
 
 /-- The cell of an omitted column: its default ({name}`defaultValue`) stored with the
 column's affinity; or the time keyword of a default that is one, such as
