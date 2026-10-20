@@ -19,7 +19,7 @@ def ResolveState.after (state : ResolveState) : Resolved.Statement → ResolveSt
   | .begin => { state with saved := state.saved.getD state.catalog }
   | .commit => { state with saved := none }
   | .rollback => { catalog := state.saved.getD state.catalog, saved := none }
-  | statement@(.createTable ..) | statement@(.createIndex ..) | statement@(.addColumn ..)
+  | statement@(.createTable ..) | statement@(.createIndex ..) | statement@(.addColumn ..) | statement@(.drop _)
   | statement@(.insert ..) | statement@(.update ..) | statement@(.upsert ..) | statement@(.delete ..)
   | statement@(.prepareError _) | statement@(.query _) =>
     { state with catalog := statement.applyCatalog state.catalog }
@@ -34,7 +34,7 @@ theorem ResolveState.after_of_isControl (state : ResolveState) {statement : Reso
     state.after statement = { state with catalog := statement.applyCatalog state.catalog } := by
   cases statement with
   | begin | commit | rollback => cases ordinary
-  | createTable | createIndex | addColumn | insert | update | upsert | delete | prepareError | query => rfl
+  | createTable | createIndex | addColumn | drop | insert | update | upsert | delete | prepareError | query => rfl
 
 /-- For every successful resolution of CREATE TABLE, the catalog after it is
 {name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
@@ -77,6 +77,30 @@ theorem resolveAddColumn_applyCatalog (context : ResolveContext) (catalog after 
   repeat' split at ok
   all_goals first | (cases ok; exact ⟨rfl, rfl⟩) | (cases ok)
 
+/-- For every successful resolution of DROP TABLE, the catalog after it is
+{name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
+transaction control. Proof sketch: every branch returns the input catalog with a prepare
+error, or a drop with {name}`Catalog.drop` of its positions. -/
+theorem resolveDropTable_applyCatalog (catalog after : Catalog) (name : Identifier) (ifExists : Bool)
+    (statement : Resolved.Statement) (ok : resolveDropTable catalog name ifExists = .ok (statement, after)) :
+    after = statement.applyCatalog catalog ∧ statement.isControl = false := by
+  unfold resolveDropTable at ok
+  simp only [prepareError] at ok
+  repeat' split at ok
+  all_goals first | (cases ok; exact ⟨rfl, rfl⟩) | (cases ok)
+
+/-- For every successful resolution of DROP INDEX, the catalog after it is
+{name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
+transaction control. Proof sketch: as for DROP TABLE. -/
+theorem resolveDropIndex_applyCatalog (catalog after : Catalog) (index : Nat) (name : Identifier)
+    (ifExists : Bool) (statement : Resolved.Statement)
+    (ok : resolveDropIndex catalog index name ifExists = .ok (statement, after)) :
+    after = statement.applyCatalog catalog ∧ statement.isControl = false := by
+  unfold resolveDropIndex at ok
+  simp only [prepareError, restrict] at ok
+  repeat' split at ok
+  all_goals first | (cases ok; exact ⟨rfl, rfl⟩) | (cases ok)
+
 /-- For every context, state, index and statement that resolves, the next state is
 {name}`ResolveState.after` of the resolved statement. Proof sketch: transaction control
 resolves to itself; every other statement gives a resolved statement that is not control
@@ -108,6 +132,16 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     obtain ⟨equal, control⟩ := resolveAddColumn_applyCatalog _ _ _ _ _ _ _ (by assumption)
+    exact ordinary _ control equal
+  | dropTable name ifExists =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    obtain ⟨equal, control⟩ := resolveDropTable_applyCatalog _ _ _ _ _ (by assumption)
+    exact ordinary _ control equal
+  | dropIndex name ifExists =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    obtain ⟨equal, control⟩ := resolveDropIndex_applyCatalog _ _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
   | insert table columns rows conflicts algorithm returning =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok

@@ -65,6 +65,26 @@ theorem resolveAddColumn_step (context : ResolveContext) (catalog after : Catalo
   simp only [Catalog.addColumn, atPosition]
   exact .replace _ _ _ atPosition
 
+/-- For every successful resolution of DROP TABLE, the catalog changes by one
+{name}`CatalogStep`: unchanged after a prepare error, else the removal of its positions. -/
+theorem resolveDropTable_step (catalog after : Catalog) (name : Identifier) (ifExists : Bool)
+    (statement : Resolved.Statement) (ok : resolveDropTable catalog name ifExists = .ok (statement, after)) :
+    CatalogStep catalog after := by
+  unfold resolveDropTable at ok
+  simp only [prepareError] at ok
+  repeat' split at ok
+  all_goals first | (cases ok; exact .same) | (cases ok; exact .remove _) | cases ok
+
+/-- For every successful resolution of DROP INDEX, the catalog changes by one
+{name}`CatalogStep`: unchanged after a prepare error, else the removal of its positions. -/
+theorem resolveDropIndex_step (catalog after : Catalog) (index : Nat) (name : Identifier) (ifExists : Bool)
+    (statement : Resolved.Statement) (ok : resolveDropIndex catalog index name ifExists = .ok (statement, after)) :
+    CatalogStep catalog after := by
+  unfold resolveDropIndex at ok
+  simp only [prepareError, restrict] at ok
+  repeat' split at ok
+  all_goals first | (cases ok; exact .same) | (cases ok; exact .remove _) | cases ok
+
 /-- The resolution state keeps unique names: the current catalog has unique folded
 names, and so does the catalog that an open transaction saved, if there is one. -/
 def ResolveState.NamesUnique (state : ResolveState) : Prop :=
@@ -110,6 +130,14 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveAddColumn_step _ _ _ _ _ _ _ (by assumption))
+  | dropTable name ifExists =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    exact keep _ (resolveDropTable_step _ _ _ _ _ (by assumption))
+  | dropIndex name ifExists =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    exact keep _ (resolveDropIndex_step _ _ _ _ _ _ (by assumption))
   | insert table columns rows conflicts algorithm returning =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok

@@ -13,6 +13,19 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D7.
   `sqlite_stat1` can be dropped, and ROLLBACK restores a dropped table. `foreign_keys` is
   off by default.
 
+- 2026-10-20: the model, the frontend and the tests (commit "DROP INDEX and DROP TABLE").
+  - Frontend `belay/sqlite/syntax_drops.py`; Lean `Syntax.Statement.dropTable` and
+    `dropIndex`, `Resolved.Statement.drop positions` (kind `drop`),
+    `Resolution/CatalogDrop.lean` (`Catalog.drop`, `keptBelow`, `Catalog.tableObjects`, the
+    names lemma), `Resolution/Drops.lean` (`resolveDropTable`, `resolveDropIndex`), the
+    prepare errors `noSuchIndex` and `tableMayNotBeDropped`, the restriction
+    `drop-constraint-index`, and `Database.drop` in execution.
+  - Laws: `CatalogStep.remove`, the DROP cases of the names, catalog-agreement and
+    resolve-state laws; `step_extends` excludes DROP (nothing else uses it).
+  - `Resolution/DropExamples.lean`; `conformance/authored_drops.py` (21 cases, all agree
+    with kernel proofs), `drop_evidence.py` (corpus 35), `drop_mutants.py` (three mutants,
+    all killed). The requirement case `drop-index` now agrees.
+
 ## Remaining
 
-- All outcomes, checks, reviews, CI time, pull requests.
+- Review, the suites, CI time, the verdict, corpus 35 with claims and lock, pull requests.

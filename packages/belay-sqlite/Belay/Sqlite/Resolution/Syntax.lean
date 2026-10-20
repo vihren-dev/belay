@@ -48,6 +48,12 @@ inductive Statement where
       (filter : Option Expr)
   /-- {lit}`ALTER TABLE table ADD COLUMN column`. -/
   | addColumn (table : Identifier) (column : ColumnDefinition)
+  /-- {lit}`DROP TABLE [IF EXISTS] name` (ADR 0014, slice 7); {lit}`ifExists` is true with
+  {lit}`IF EXISTS`. -/
+  | dropTable (name : Identifier) (ifExists : Bool)
+  /-- {lit}`DROP INDEX [IF EXISTS] name` (ADR 0014, slice 7); {lit}`ifExists` is true with
+  {lit}`IF EXISTS`. -/
+  | dropIndex (name : Identifier) (ifExists : Bool)
   /-- {lit}`BEGIN`. -/
   | begin
   /-- {lit}`COMMIT` or {lit}`END`. -/

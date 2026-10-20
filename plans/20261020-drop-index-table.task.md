@@ -34,9 +34,12 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D7.
 4. **Scope.** The model has no triggers, views or enforced foreign keys, so a DROP that
    would affect one of them is out of scope as before; the profiles keep `foreign_keys`
    off.
-5. **Laws.** The laws that hold for every statement, such as conformance of the database to
-   its catalog and the agreement of the resolver's and the execution's catalog, hold for
-   the two DROP statements too.
+5. **Laws.** The laws that hold for every statement hold for the two DROP statements too:
+   unique folded names (`resolve_namesUnique`), the agreement of the resolver's and the
+   execution's catalog (`advance_agrees`, `runSqlFrom_agrees`) and the resolve-state fold
+   (`resolveFrom_after`). The extension law `step_extends`, whose statement says that no
+   table is lost, cannot hold for DROP and excludes it. (Amended 2026-10-20: conformance to
+   the catalog has lemmas per statement, not a law for every statement, so it is not listed.)
 
 ## Tests
 

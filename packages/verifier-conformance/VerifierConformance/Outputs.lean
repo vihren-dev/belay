@@ -174,7 +174,7 @@ def statementOutput (clock : Int) (statement : Resolved.Statement) (before : Sql
     else if (overflow && query.groupBy.isEmpty) || functionFailure then some ⟨query.names, [], none⟩
     else none
   | .addColumn _ column => some ⟨addColumnOutputNames column, [], none⟩
-  | .createTable .. | .createIndex .. | .begin | .commit | .rollback | .prepareError _ =>
+  | .createTable .. | .createIndex .. | .drop _ | .begin | .commit | .rollback | .prepareError _ =>
     some ⟨[], [], none⟩
 
 end Belay.Sqlite.Conformance
