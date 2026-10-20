@@ -44,15 +44,29 @@ def test_checks_names_and_foreign_keys(parse_sql: Callable[..., Tree]) -> None:
     assert [item["check"]["label"] for item in second["createTable"]["constraints"]] == ["z", "a != 5"]
 
 
-def test_generated_columns_keep_their_kind_and_type_as_written(parse_sql: Callable[..., Tree]) -> None:
-    """`AS (expr)` maps with its kind token as written, quotes included, or none, and the
-    declared type as written, `GENERATED ALWAYS` included: resolution decides both
-    (ADR 0014, slice 5)."""
+def test_generated_columns_keep_their_kind_and_sqlite_type(parse_sql: Callable[..., Tree]) -> None:
+    """`AS (expr)` maps with its kind token as written, quotes included, or none, which
+    resolution reads, and the declared type as `sqlite3AddColumn` leaves it: a trailing
+    `GENERATED ALWAYS` goes, then the type is dequoted (ADR 0014, slice 5)."""
     (table,) = mapped(parse_sql, "CREATE TABLE t(a INTEGER, b TEXT GENERATED ALWAYS AS (a) stored, c AS (a), "
                                  "d AS (a) \"stored\");")
     columns = table["createTable"]["columns"]
     a = {"identifier": {"name": "a", "quote": "none"}}
     assert [(column["declaredType"], column["constraints"]) for column in columns[1:]] == [
-        ("TEXT GENERATED ALWAYS", [{"generated": {"expression": a, "kind": "stored"}}]),
+        ("TEXT", [{"generated": {"expression": a, "kind": "stored"}}]),
         (None, [{"generated": {"expression": a, "kind": None}}]),
         (None, [{"generated": {"expression": a, "kind": '"stored"'}}])]
+
+
+@pytest.mark.parametrize(("written", "reported"), [
+    ("TEXT GENERATED ALWAYS", "TEXT"), ("foogenerated always", "foo"),
+    ("TEXT GENERATED /*x*/ ALWAYS", "TEXT GENERATED /*x*/"), ("GENERATED ALWAYS", ""), ("always", "always"),
+    ("\u00e9\u00e9\u00e9\u00e9\u00e9always", "\u00e9\u00e9\u00e9\u00e9\u00e9"),
+    ('"TEXT GENERATED ALWAYS"', "TEXT GENERATED ALWAYS"), ('"Big" GENERATED ALWAYS', "Big"),
+    ("'Odd''Q' GENERATED ALWAYS", "Odd'Q")])
+def test_declared_type_follows_sqlite(parse_sql: Callable[..., Tree], written: str, reported: str) -> None:
+    """The type rule of `sqlite3AddColumn`, each case checked natively with 3.51.0: the word
+    length counts UTF-8 bytes, the words compare in either ASCII case, a comment between
+    them keeps them, and a quoted type keeps them, as it ends with its quote."""
+    (table,) = mapped(parse_sql, f"CREATE TABLE t(a {written});")
+    assert table["createTable"]["columns"][0]["declaredType"] == reported

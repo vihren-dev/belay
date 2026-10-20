@@ -32,8 +32,7 @@ def column(name: str, declared: str | None, constraints: list[object] | None = N
 
 
 def test_definitions_keep_names_types_and_constraints_as_written(parse_sql: Callable[..., Tree]) -> None:
-    """Names keep their case, types keep their text as written, which resolution dequotes as
-    SQLite does, and every constraint maps."""
+    """Names keep their case, types keep SQLite's dequoted span, and every constraint maps."""
     sql = ('CREATE TABLE [Big T](a VARCHAR ( 10 ) NOT NULL PRIMARY KEY DESC, "B" "Some" Type UNIQUE, '
            "c DEFAULT -1, d DEFAULT CURRENT_TIMESTAMP, e DEFAULT 'x''y', f, PRIMARY KEY(a), UNIQUE(c, d));"
            "CREATE UNIQUE INDEX i ON `Big T`(a, B); ALTER TABLE t ADD COLUMN z INT DEFAULT y;")
@@ -41,7 +40,7 @@ def test_definitions_keep_names_types_and_constraints_as_written(parse_sql: Call
         {"createTable": {"name": "Big T", "columns": [
             column("a", "VARCHAR ( 10 )", [{"notNull": {"algorithm": None}},
                                            {"primaryKey": {"descending": True, "algorithm": None}}]),
-            column("B", '"Some" Type', [{"unique": {"algorithm": None}}]),
+            column("B", "Some", [{"unique": {"algorithm": None}}]),
             column("c", None, [{"default": {"sourceText": "-1", "value": {"negate": {"operand": {"numeric": {"text": "1"}}}}}}]),
             column("d", None, [{"default": {"sourceText": "CURRENT_TIMESTAMP",
                                             "value": {"currentTime": {"keyword": "CURRENT_TIMESTAMP"}}}}]),

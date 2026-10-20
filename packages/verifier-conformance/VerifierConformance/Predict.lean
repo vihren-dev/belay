@@ -35,7 +35,7 @@ structure PredictInput where
 source spelling independently of their evaluated value. -/
 def nativeColumn (column : CatalogColumn) : NativeColumn :=
   { name := column.name, declaredType := column.declaredType.getD "", notNull := column.notNull,
-    defaultValue := column.defaultValue.map (·.sourceText), hidden := column.hidden }
+    defaultValue := column.defaultValue.map (·.sourceText), hidden := columnHidden column }
 
 /-- The table at a catalog position, under its catalog object name, as native metadata. -/
 def nativeTableOf (catalog : Catalog) (position : Nat) (name : Identifier) (table : Table) : NativeTable where

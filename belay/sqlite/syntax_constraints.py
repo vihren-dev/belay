@@ -85,6 +85,33 @@ def generated(tree: Tree, node: Node, kind: Node) -> Located:
                        node.start, node.end)
 
 
+ASCII_CAPITAL_OFFSET = 32
+"""The distance between an ASCII lowercase letter and its capital."""
+
+
+def ends_with_word(text: str, word: str) -> bool:
+    """Whether the text ends with the lowercase ASCII word, each letter in either ASCII case,
+    as `sqlite3_strnicmp` compares a keyword."""
+    tail = text[len(text) - len(word):] if len(word) <= len(text) else ""
+    return len(tail) == len(word) and all(
+        character == letter or ord(character) == ord(letter) - ASCII_CAPITAL_OFFSET
+        for character, letter in zip(tail, word, strict=True))
+
+
+def declared_type(text: str) -> str:
+    """The type text without a trailing `GENERATED ALWAYS`, as `sqlite3AddColumn` removes it
+    before it dequotes the type (ADR 0014, slice 5): when the text has 16 or more UTF-8 bytes
+    and ends with `always`, that word and the white space before it go, and then `generated`
+    and the white space before it when they end the rest of 9 or more bytes. The grammar
+    reads both words as part of the type of a generated column, so `foogenerated always` is
+    `foo`, and a quoted type, which ends with its quote, keeps them."""
+    if len(text.encode()) >= 16 and ends_with_word(text, "always"):
+        text = text[:-6].rstrip(SPACE)
+        if len(text.encode()) >= 9 and ends_with_word(text, "generated"):
+            text = text[:-9].rstrip(SPACE)
+    return text
+
+
 def references(tree: Tree, node: Node, parts: list[Node]) -> Located:
     """Map a column's `REFERENCES table [(columns)]` with its actions."""
     on_delete, on_update = actions(tree, parts[3])

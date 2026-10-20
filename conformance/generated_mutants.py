@@ -40,7 +40,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 
 GUARDS: dict[str, str] = {
     "generated_not_recomputed": "rule:assignFrom",
-    "stored_hidden_virtual": "rule:_root_.Belay.Sqlite.CatalogColumn.hidden",
+    "stored_hidden_virtual": "rule:columnHidden",
     "insert_fills_generated": "rule:resolveInsert",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant

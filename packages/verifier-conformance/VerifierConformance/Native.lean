@@ -22,7 +22,7 @@ structure NativeColumn where
 
 /-- The {lit}`hidden` value of {lit}`PRAGMA table_xinfo` for a catalog column: 2 for a
 {lit}`VIRTUAL` and 3 for a {lit}`STORED` generated column, else 0. -/
-def _root_.Belay.Sqlite.CatalogColumn.hidden (column : CatalogColumn) : Nat :=
+def columnHidden (column : CatalogColumn) : Nat :=
   match column.generated with
   | some { stored := true, .. } => 3
   | some { stored := false, .. } => 2
@@ -103,11 +103,11 @@ def defaultKeywords : List String :=
 
 /-- Whether a catalog column matches its native metadata: the same name, the same
 declared type text, NOT NULL, the same default spelling, and the same {lit}`hidden` value
-({name}`Belay.Sqlite.CatalogColumn.hidden`). Keyword defaults ignore ASCII case; all other defaults keep
+({name}`columnHidden`). Keyword defaults ignore ASCII case; all other defaults keep
 their exact source spelling. -/
 def columnMatches (column : CatalogColumn) (native : NativeColumn) : Bool :=
   column.name == native.name && column.declaredType.getD "" == native.declaredType &&
-  column.notNull == native.notNull && column.hidden == native.hidden &&
+  column.notNull == native.notNull && columnHidden column == native.hidden &&
   match column.defaultValue, native.defaultValue with
   | none, none => true
   | some written, some text =>
