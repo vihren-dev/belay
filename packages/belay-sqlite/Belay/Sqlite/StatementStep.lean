@@ -110,7 +110,7 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
   | .addColumn _ column =>
     { effect := step clock statement database,
       ready := column.clockDefault || (readDefaultValue column).toOption.isSome }
-  | .createIndex .. => { effect := step clock statement database, ready := true }
+  | .createIndex .. | .drop _ => { effect := step clock statement database, ready := true }
   | .begin | .commit | .rollback | .prepareError _ => { effect := step clock statement database, ready := true }
 
 /-- The effect of one statement at a clock value ({name}`runStatement`). This computation
@@ -141,7 +141,7 @@ def advanceWith (position : Nat) (statement : Resolved.Statement) (state : SqlSt
   | .rollback => match state.snapshot with
     | none => .halt (.failure position .noActiveTransaction state.database)
     | some original => .next { state with database := original, snapshot := none }
-  | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .upsert .. | .update .. | .delete ..
+  | .createTable .. | .createIndex .. | .addColumn .. | .drop _ | .insert .. | .upsert .. | .update .. | .delete ..
   | .prepareError _ | .query _ =>
     state.publish position effect
 

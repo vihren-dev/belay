@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-20T09:25:44+00:00",
+  "finding": "20261020T092504Z-6aabe8d1#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The measurement is a one-off experiment outside the product, like experiments/schema-features, which has no tests either. Its README reproduces it and checks the scan against the model's refusal reasons (784 refused for a function reason, 955 found by the scan)."
+}

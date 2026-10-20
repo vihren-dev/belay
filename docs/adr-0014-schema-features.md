@@ -294,6 +294,18 @@ Each slice works in this way:
     default that does not fit the type (`type mismatch on DEFAULT` when the table has
     rows), fail only while the statement runs; the model leaves both as the restriction
     `add-column-strict-type`.
+- Slice 7 (2026-10-20), details checked natively that D7 does not state:
+  - DROP TABLE of an index name is `no such table`, and DROP INDEX of a table name is `no
+    such index`; `IF EXISTS` turns both into a statement that does nothing.
+  - DROP TABLE of `sqlite_master` or `sqlite_schema` is `table sqlite_master may not be
+    dropped`, and of `sqlite_temp_master` or `sqlite_temp_schema` `table
+    sqlite_temp_master may not be dropped`, also with `IF EXISTS`.
+  - The catalog does not name the indexes of UNIQUE and PRIMARY KEY constraints, so a DROP
+    INDEX of another name that begins with `sqlite_autoindex_` is the restriction
+    `drop-constraint-index`.
+  - A DROP changes neither `changes()` nor `total_changes()`, and has no output column.
+  - The theorem `step_extends` now excludes DROP, which removes tables; nothing else uses
+    it.
 
 ## Consequences
 

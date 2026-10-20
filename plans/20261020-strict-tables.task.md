@@ -1,6 +1,6 @@
 # `STRICT` tables (ADR 0014, slice 6)
 
-Created 2026-10-20. Status: open.
+Created 2026-10-20. Status: DONE (pull requests #189 and #190).
 Status file: [status](20261020-strict-tables.status.md).
 Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D6.
 

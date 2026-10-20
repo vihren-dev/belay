@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.ColumnSpec
+import Belay.Sqlite.Resolution.CatalogDrop
 
 set_option doc.verso true
 
@@ -46,7 +47,8 @@ theorem Catalog.findTable_some (catalog : Catalog) (name : Identifier) (position
 
 /-- How one statement may change the catalog. The catalog is the same; or one object
 is appended whose name {name}`Catalog.find` does not find; or the object at a
-position is replaced by one with the same name. -/
+position is replaced by one with the same name; or the objects at some positions are
+removed ({name}`Catalog.drop`). -/
 inductive CatalogStep (catalog : Catalog) : Catalog → Prop where
   /-- The catalog does not change. -/
   | same : CatalogStep catalog catalog
@@ -57,16 +59,20 @@ inductive CatalogStep (catalog : Catalog) : Catalog → Prop where
   | replace (position : Nat) (object : CatalogObject) (entry : CatalogEntry)
       (atPosition : catalog[position]? = some object) :
       CatalogStep catalog (catalog.set position { name := object.name, entry := entry })
+  /-- The objects at the positions are removed, as DROP does. -/
+  | remove (positions : List Nat) : CatalogStep catalog (catalog.drop positions)
 
 /-- For all catalogs related by {name}`CatalogStep`, unique folded names before give
 unique folded names after. Proof sketch: an unchanged catalog keeps its names; an
 appended object has a folded name outside the list, by
 {name}`Catalog.find_eq_none_iff`; a replaced object keeps its name, so the list of
-folded names is the same. -/
+folded names is the same; a removal keeps a sublist of the names
+({name}`Catalog.NamesUnique.drop`). -/
 theorem CatalogStep.namesUnique (step : CatalogStep catalog after) (unique : catalog.NamesUnique) :
     after.NamesUnique := by
   cases step with
   | same => exact unique
+  | remove positions => exact unique.drop positions
   | append object unused =>
     have absent := (Catalog.find_eq_none_iff _ _).mp unused
     simp only [Catalog.NamesUnique, Catalog.foldedNames, List.map_append, List.map_cons, List.map_nil] at *
