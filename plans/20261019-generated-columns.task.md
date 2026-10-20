@@ -1,6 +1,6 @@
 # Generated columns (ADR 0014, slice 5)
 
-Created 2026-10-19. Status: open.
+Created 2026-10-19. Status: DONE (pull requests #185 and #186).
 Status file: [status](20261019-generated-columns.status.md).
 Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D5; the
 [measurement](../experiments/schema-features/README.md).

@@ -1,6 +1,6 @@
 # Status: generated columns (ADR 0014, slice 5)
 
-Created 2026-10-19. Status: open.
+Created 2026-10-19. Status: DONE.
 Task file: [task](20261019-generated-columns.task.md).
 Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D5.
 
@@ -42,4 +42,5 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D5.
 
 ## Remaining
 
-- PR B (corpus 33 and claims), pull requests.
+- 2026-10-20: PR B (corpus 33, 23 cases, claimed in full; the 66 upstream cases join
+  `mustAgree`; new judge lock); pull requests #185 (A) and #186 (B). DONE.
