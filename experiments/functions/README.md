@@ -94,6 +94,9 @@ window functions `rank` and `percent_rank`.
 | JSONB | `jsonb` and the `jsonb_*` functions | 685 |
 | Aggregates | `group_concat`, `string_agg`, `total` | 692 |
 
+With the `LIKE` and `GLOB` operators, the first group has 376 clean cases: one case uses
+only these operators and core functions.
+
 The functions in no group (window functions, the transcendental math functions, `changes`
 and the other connection functions, and names that are no function) appear in 58 clean
 cases or fewer in total.

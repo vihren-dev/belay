@@ -15,7 +15,7 @@ seven JSON functions, and the six date and time functions. Every other call is t
 restriction `unmodeled-function`, also a name that is no function at all. Functions are
 the largest single reason that corpus cases stay out of scope. This ADR adds SQLite's
 deterministic built-in functions in six slices that the measurement orders: core text and
-type functions, exact numeric functions, JSON functions that build or edit text, JSONB,
+type functions with the `LIKE` and `GLOB` operators, exact numeric functions, JSON functions that build or edit text, JSONB,
 three aggregates, and `printf`. It also adds SQLite's prepare errors of calls: `no such
 function` and the argument count of each function. Window functions, the transcendental
 math functions and the functions that read the connection stay out of scope (see "Not
@@ -106,8 +106,7 @@ reduces.
   `substring`, `instr`, `replace`, `trim`, `ltrim`, `rtrim`, `hex`, `unhex`, `quote`,
   `char`, `unicode`, `unistr`, `unistr_quote`, `concat`, `concat_ws`, `ifnull`, `nullif`,
   `iif` and `if`, `likely`, `unlikely`, `likelihood`, scalar `min` and `max`, `abs`,
-  `sign`, `zeroblob`, `like` and `glob` as functions, `sqlite_version` and
-  `sqlite_source_id`.
+  `sign`, `zeroblob`, `like`, `glob`, `sqlite_version` and `sqlite_source_id`.
 - **Text rules.**
   - Text is UTF-8 bytes. `length`, `substr`, `instr` and `unicode` count characters as
     SQLite does, by UTF-8 lead bytes, also in text that is not valid UTF-8. A BLOB is
@@ -118,8 +117,17 @@ reduces.
 - **`quote`.** It writes a REAL with `%!.15g` when that text converts back to the same
   value, and otherwise with more digits, as SQLite does (`quote(1.0/3)` is
   `3.333333333333333148e-01`). The exact rule is checked natively in the slice.
-- **`like` and `glob` as functions** are in this slice only if the slice of the `LIKE`
-  and `GLOB` operators comes first. Otherwise they wait for it.
+- **`LIKE` and `GLOB`.** This slice also adds the operators `LIKE`, `NOT LIKE`, `GLOB` and
+  `NOT GLOB`, with `ESCAPE`, and the functions `like` and `glob`. The functions take the
+  pattern first: `like(pattern, text [, escape])` (owner decision 3). Checked natively:
+  - `LIKE` ignores the case of ASCII letters only (`'Àb' LIKE 'àb'` is 0), and it ignores
+    the collation of its operands.
+  - `GLOB` is case sensitive, and `[^...]` negates a character class; `[!...]` does not.
+  - `_` matches one UTF-8 character, and a number is compared as its text.
+  - An `ESCAPE` of more than one character fails while the statement runs: `ESCAPE
+    expression must be a single character`.
+  - `PRAGMA case_sensitive_like` stays out of scope, as every PRAGMA; `REGEXP` has no
+    built-in function in the library.
 
 ### D4. Exact numeric functions (slice 2)
 
@@ -181,7 +189,8 @@ reduces.
 
 The slices follow the measured order, and each has its own task file:
 
-1. the function catalog and its prepare errors, and the text and type functions (D1, D3);
+1. the function catalog and its prepare errors, the text and type functions, and the `LIKE`
+   and `GLOB` operators (D1, D3);
 2. the exact numeric functions (D4);
 3. the JSON functions that build or edit text (D5);
 4. JSONB (D6);
@@ -240,15 +249,15 @@ Each slice works as in ADR 0014:
   `sqlite_compileoption_*`, `load_extension` and `sqlite_log`. They stay
   `unmodeled-function`.
 - **The expression forms** that most other function cases need (`||`, `CASE`, `BETWEEN`,
-  `IN`, `LIKE`, subqueries). They get their own ADR.
+  `IN`, subqueries). They get their own ADR. `LIKE` and `GLOB` are in slice 1 (D3).
 
-## Questions for the owner
+## Owner decisions
 
-1. **JSONB (D6, slice 4).** It brings the most clean cases after the core functions (170),
-   and it is also the largest implementation: an exact binary encoder and decoder. Keep it
-   in this ADR, or move it to its own?
-2. **`printf` (D8, slice 6).** It brings almost no corpus cases, but application SQL uses
-   it. Keep it in this ADR, or leave it for later?
-3. **`like` and `glob` as functions (D3).** They depend on the `LIKE` and `GLOB`
-   operators. Keep them in slice 1 and add the operators there, or wait for the
-   expressions ADR?
+Decided on 2026-10-20:
+
+1. **JSONB stays in this ADR** (D6, slice 4). It brings about 170 clean cases.
+2. **`printf` and `format` stay in this ADR** (D8, slice 6), because application SQL uses
+   them, although the corpus gives them almost no clean cases.
+3. **The `LIKE` and `GLOB` operators join slice 1** (D3), with the functions `like` and
+   `glob`. They add one clean case of corpus v5 (376 instead of 375), since the other cases
+   with `LIKE` or `GLOB` also use another feature; application SQL uses them.
