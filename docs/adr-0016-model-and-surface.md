@@ -15,7 +15,9 @@ and its subject), [ADR 0013](adr-0013-model-structure.md) (model structure).
 The model will get a user surface: the library that Lean developers import to state
 and prove facts about SQLite databases, statements and programs. The surface is core
 work, because users meet the product through it. Its design is a separate decision;
-the target user guide (in the product repository) describes it.
+the target user guide (in the product repository) describes it. The product will later
+model PostgreSQL and MariaDB too, with the same surface for users, so the names leave
+room for more engines than SQLite (D3).
 
 The surface needs a home that the model cannot be: it imports `Std` and will call the
 SQLite parser as native code, and the model imports only `Init`. This ADR decides that
@@ -85,10 +87,19 @@ gate and the conformance runtime are built from (`build-support/`), for the thir
 
 ### D3. The names
 
-The surface takes the name that users import, as the guide uses it: package
-`belaySqlite` in `packages/belay-sqlite`, root module and namespace `Belay.Sqlite`. The
-model moves to package `belaySqliteModel` in `packages/belay-sqlite-model`, with root
-module and namespace `Belay.Sqlite.Model` (owner decision 1).
+Users import `Belay`. Everything specific to one engine lives under that engine's name,
+`Belay.Sqlite` for SQLite, and later `Belay.Postgres` and `Belay.MariaDB` (owner
+decision 1):
+
+| Part | Package | Root module and namespace |
+| --- | --- | --- |
+| The surface | `belay` in `packages/belay` | `Belay`, with the SQLite surface under `Belay.Sqlite` |
+| The SQLite model | `belaySqliteModel` in `packages/belay-sqlite-model` | `Belay.Sqlite.Model` |
+
+With one engine, every part of the surface is specific to SQLite, so all surface code
+lives under `Belay.Sqlite`. The module `Belay` imports it and defines nothing of its
+own. A part that is the same for every engine moves into `Belay` only when a second
+engine exists (see "Deferred, with their triggers").
 
 The move is one mechanical change of its own, with no other work in it, and it comes
 before the first surface code, so that no surface module has to move. Every caller
@@ -107,6 +118,7 @@ and not before.
 | Examples out of the production library (a `ModelExamples` target) | A measured cost: the installed runtime, the gate or the documentation inventory is slower or larger because of the examples |
 | CI that skips the model's suites for a surface-only change | The surface has a suite whose changes rerun the model's suites, and the CI time of such changes is measured |
 | Lean's module system (private declarations, `@[expose]`) | A surface user depends on a model helper that must stay internal, or the documentation inventory's cost of public helpers is measured |
+| An engine interface in `Belay`: the parts of the surface that are the same for every engine (scripts, programs, queries as propositions, triples, equivalence), with each engine as an instance | The model of a second engine (PostgreSQL or MariaDB) exists, so that the shared parts come from two real engines |
 | A separate repository for the surface (the guide's `vihren-dev/belay-sqlite`) | The first release of the surface |
 
 ## Order
@@ -153,6 +165,16 @@ gives one Nix derivation, so a surface change would rebuild and retest the model
 move of D3. Rejected by owner decision 1: users import the surface, so the surface gets
 the short name.
 
+**`Belay.Sqlite` as the name that users import** (the first form of owner decision 1).
+Replaced the same day: with PostgreSQL and MariaDB to come, the import must not name
+one engine, so users import `Belay` and the engine's name marks only what is specific
+to it.
+
+**An engine interface now, with SQLite as its only instance.** Rejected under the rule
+for supporting code: a shared framework for one case. Its shape would come from one
+engine and be wrong where the second one differs, for example in typed parameters,
+error states or transactions. The deferred table keeps it with its trigger.
+
 **The surface inside the verifier package.** Rejected: the verifier package is in the
 trusted base and has its own product role. A library for Lean developers is neither.
 
@@ -163,10 +185,14 @@ trusted base and has its own product role. A library for Lean developers is neit
 - How the surface runs the parser in the Lean process, and whether it needs the C
   library, a Lean port of the translation, or both (the surface ADR's prototypes).
 - Whether the installed verifier accepts proofs that import the surface.
+- How the engine appears in the user's code with one import, for example in the type of
+  a database (`Sqlite.Database`), so that `db!` and `run` follow from the type (the
+  surface ADR).
 
 ## Owner decisions
 
 Decided on 2026-10-20:
 
-1. **The names.** The surface is `Belay.Sqlite`, as the guide uses it, and the model
-   moves to `Belay.Sqlite.Model` (D3).
+1. **The names.** Users import `Belay`; the parts specific to SQLite live under
+   `Belay.Sqlite`, and the SQLite model moves to `Belay.Sqlite.Model` (D3). PostgreSQL and
+   MariaDB will get their own names under `Belay`, with the same surface.
