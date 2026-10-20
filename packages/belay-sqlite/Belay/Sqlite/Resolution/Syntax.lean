@@ -32,6 +32,8 @@ for a table without options. -/
 structure TableOptions where
   /-- {lit}`WITHOUT ROWID`. -/
   withoutRowid : Bool := false
+  /-- {lit}`STRICT` (ADR 0014, slice 6). -/
+  strict : Bool := false
   deriving Repr, BEq
 
 /-- One statement as written. For example, {lit}`COMMIT` is

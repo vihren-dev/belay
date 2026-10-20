@@ -15,7 +15,7 @@ The frontend maps these statements, and refuses every other statement as
   and `REFERENCES` (slice 4), `[GENERATED ALWAYS] AS (expr) [VIRTUAL | STORED]` (slice 5),
   and `DEFAULT` with a literal, a signed number, a time keyword or a name), table `PRIMARY KEY` and `UNIQUE` constraints over plain column
   names, `CHECK` and `FOREIGN KEY` (slice 4), `CONSTRAINT name` before any constraint,
-  and the option `WITHOUT ROWID` (slice 2; `STRICT` is refused);
+  and the options `WITHOUT ROWID` (slice 2) and `STRICT` (slice 6);
 - `CREATE [UNIQUE] INDEX` with key terms, each a column name or an expression with
   an optional `ASC` or `DESC`, and an optional `WHERE` filter (ADR 0014, slice 1);
 - `ALTER TABLE … ADD [COLUMN]` with one column definition;
@@ -175,6 +175,19 @@ function in the expression (`generated-function`), a `DO UPDATE` of a generated 
 (`upsert-generated`) and ADD COLUMN of a generated column (`add-column-generated`) are
 model restrictions.
 
+A `STRICT` table (ADR 0014, slice 6) admits only the declared types `INT`, `INTEGER`,
+`REAL`, `TEXT`, `BLOB` and `ANY`, with ASCII case ignored; another type and a column
+without a type are SQLite's prepare errors. After the column's affinity applies, a value
+whose storage class does not fit the type fails the statement with SQLite's constraint
+error, for example `cannot store TEXT value in INTEGER column s.i`: `INT` and `INTEGER`
+take integers, `REAL` integers and reals, `TEXT` text, `BLOB` blobs, and NULL fits every
+type. `ANY` takes every value as written, with no affinity, also in a DEFAULT. The type
+check comes after NOT NULL and before CHECK and the unique keys, covers UPDATE, `DO
+UPDATE` and generated columns, and acts as ABORT under every conflict algorithm. ADD
+COLUMN to a `STRICT` table with a type that it does not admit, or with a default that does
+not fit the type, is a model restriction (`add-column-strict-type`), because SQLite reports
+it only while the statement runs.
+
 A collation (ADR 0014, slice 3) is `BINARY`, `NOCASE` or `RTRIM`, with ASCII case of the
 name ignored. `NOCASE` compares TEXT with the ASCII capitals folded, and `RTRIM` compares
 TEXT without trailing spaces; neither changes a value of another storage class. A column
@@ -265,6 +278,7 @@ should shrink.
 | `generated-function` | A date and time function or a JSON function in a generated column is not modeled | ADR 0014, slice 5 |
 | `generated-loop` | Generated columns that read each other in a loop are not modeled, because SQLite reports the loop while CREATE TABLE runs | ADR 0014, slice 5 |
 | `add-column-generated` | ADD COLUMN of a generated column is not modeled | ADR 0014, slice 5 |
+| `add-column-strict-type` | ADD COLUMN to a `STRICT` table with a type that it does not admit, or with a default that does not fit the type, is not modeled, because SQLite reports it while the statement runs | ADR 0014, slice 6 |
 | `add-column-constraint` | The added column requires unmodeled default evaluation | ADR 0008 |
 | `constraint-algorithm-update` | UPDATE of a table with ON CONFLICT constraint algorithms is not modeled | ADR 0012 amendment 4, slice 5d |
 | `replace-default` | REPLACE of a NOT NULL column with a default is not modeled | ADR 0012 amendment 4, slice 5d |

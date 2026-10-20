@@ -12,13 +12,14 @@ LITERAL_DATA = SQLITE + "LiteralData.lean"
 UPSERT_RUN = SQLITE + "UpsertRun.lean"
 """The rows of an INSERT with clauses or conflict algorithms."""
 
-CHECK_STEP = ("  | none => if !checksHold table.shape proposed then failedConstraint table policy.check else\n"
+CHECK_STEP = ("    if !checksHold table.shape proposed then failedConstraint table policy.check else\n"
               "    match handlingClause keys clauses table proposed with")
-"""The CHECK step of `upsertRow`, after NOT NULL and before the unique keys."""
+"""The CHECK step of `upsertRow`, after NOT NULL and the types of a `STRICT` table, and before
+the unique keys."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "check_null_fails": (LITERAL_DATA, "  value.isNull || Resolved.truthy value", "  Resolved.truthy value"),
-    "check_after_keys": (UPSERT_RUN, CHECK_STEP, "  | none => match handlingClause keys clauses table proposed with"),
+    "check_after_keys": (UPSERT_RUN, CHECK_STEP, "    match handlingClause keys clauses table proposed with"),
     "check_replace_skips": (UPSERT_RUN, CHECK_STEP,
         CHECK_STEP.replace("failedConstraint table policy.check",
                            "failedConstraint table (if policy.check == .replace then .ignore else policy.check)")),

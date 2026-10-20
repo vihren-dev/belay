@@ -11,6 +11,8 @@ row:
   every algorithm;
 * a NULL in a NOT NULL column fails with the algorithm of that column, before any
   conflict handling;
+* then a cell whose storage class its {lit}`STRICT` column refuses is ABORT under every
+  algorithm, as SQLite's type check is (ADR 0014, D6; checked natively with 3.51.0);
 * then a CHECK constraint that the row fails fails with the statement's algorithm, else
   ABORT, and REPLACE acts as ABORT (ADR 0014, D2);
 * the first clause whose target key has a conflicting row handles the row;
@@ -91,7 +93,8 @@ def upsertRow (clock : Int) (keys : List UniqueKey) (policy : Resolved.ConflictP
   let proposed := proposedRow table values
   match nullColumn table.shape.columns proposed.values with
   | some column => failedConstraint table (algorithmAt policy.notNull column)
-  | none => if !checksHold table.shape proposed then failedConstraint table policy.check else
+  | none => if !typesFit table.shape proposed then failedConstraint table .abort else
+    if !checksHold table.shape proposed then failedConstraint table policy.check else
     match handlingClause keys clauses table proposed with
     | none => insertChecked keys policy.keys table proposed
     | some (clause, existing) => match clause.action with

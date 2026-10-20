@@ -90,14 +90,15 @@ def keptCount : Except (ExecutionError × Table × List Row) (Table × List Row)
 time default ({name}`CatalogColumn.clockDefault`), and for a NOT NULL column without a
 non-NULL default. That helper compiles a SELECT of a RAISE expression (pinned SQLite
 {lit}`alter.c`), whose name is exposed even when the table is empty. Otherwise a column with
-a CHECK constraint has the column of SQLite's SELECT over {lit}`pragma_quick_check`, which
-checks the existing rows (ADR 0014, slice 4; checked natively). Other modeled additions
+a CHECK constraint, and a column of a {lit}`STRICT` table ({name}`CatalogColumn.strictType`),
+has the column of SQLite's SELECT over {lit}`pragma_quick_check`, which checks the existing
+rows (ADR 0014, slices 4 and 6; checked natively). Other modeled additions
 have no output columns. -/
 def addColumnOutputNames (column : CatalogColumn) : List String :=
   if column.clockDefault then ["raise(ABORT,'Cannot add a column with non-constant default')"]
   else if column.notNull && (readDefaultValue column).toOption == some .null then
     ["raise(ABORT,'Cannot add a NOT NULL column with default value NULL')"]
-  else if !column.checks.isEmpty then
+  else if !column.checks.isEmpty || column.strictType.isSome then
     ["CASE WHEN quick_check GLOB 'CHECK*' THEN raise(ABORT,'CHECK constraint failed') " ++
       "WHEN quick_check GLOB 'non-* value in*' THEN raise(ABORT,'type mismatch on DEFAULT') " ++
       "ELSE raise(ABORT,'NOT NULL constraint failed') END"]

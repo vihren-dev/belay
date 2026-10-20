@@ -71,9 +71,17 @@ def applyConstraint (tableName : Identifier) (definition : Syntax.ColumnDefiniti
     .ok { table with columns := updateLast table.columns fun column =>
       { column with foreignKeys := column.foreignKeys ++ [key] } }
 
+/-- The catalog column of a definition before its constraints apply: its name, its reported
+type ({name}`reportedType`) and, in a {lit}`STRICT` table, its strict type
+({name}`StrictType.ofReported`), which its affinity and its DEFAULT need (ADR 0014, D6). -/
+def definedColumn (strict : Bool) (definition : Syntax.ColumnDefinition) : CatalogColumn :=
+  let declaredType := reportedType definition.declaredType
+  { name := definition.name, declaredType, strictType := if strict then StrictType.ofReported declaredType else none }
+
 /-- Add the column definitions in written order: {lit}`too many columns on %s` when
 a column would exceed the limit, then {lit}`duplicate column name: %s`, then each
-column constraint ({lit}`sqlite3AddColumn` and the constraint actions). -/
+column constraint ({lit}`sqlite3AddColumn` and the constraint actions). Each column has the
+strict type of the table's {name}`CatalogTable.strict` ({name}`definedColumn`). -/
 def addDefinitions (limit : Nat) (tableName : Identifier) (table : CatalogTable) :
     List Syntax.ColumnDefinition → Except ExprError CatalogTable
   | [] => .ok table
@@ -81,8 +89,7 @@ def addDefinitions (limit : Nat) (tableName : Identifier) (table : CatalogTable)
     if table.columns.length + 1 > limit then throw (.tooManyColumns tableName)
     if (columnPosition table.columns definition.name).isSome then
       throw (.duplicateColumn definition.name)
-    let column : CatalogColumn := { name := definition.name, declaredType := reportedType definition.declaredType }
-    let added := { table with columns := table.columns ++ [column] }
+    let added := { table with columns := table.columns ++ [definedColumn table.strict definition] }
     let constrained ← definition.constraints.foldlM (applyConstraint tableName definition) added
     addDefinitions limit tableName constrained rest
 
@@ -132,10 +139,22 @@ def CatalogTable.asWithoutRowid (table : CatalogTable) : CatalogTable :=
     if table.primaryKey.contains position then { column with notNull := true } else column
   { table with withoutRowid := true, rowidAlias := none, columns, primaryKey := table.primaryKey.eraseDups }
 
+/-- The errors of a {lit}`STRICT` table's types (ADR 0014, D6; {lit}`sqlite3EndTable`), in
+column order, or none: a column without a type is {name}`ExprError.missingDatatype`, and one
+with a type that {name}`StrictType.ofReported` does not read is
+{name}`ExprError.unknownDatatype`. A table that is not {lit}`STRICT` has none. -/
+def strictTypeError (tableName : Identifier) (table : CatalogTable) : Option ExprError :=
+  if !table.strict then none else
+    table.columns.findSome? fun column => match column.declaredType, StrictType.ofReported column.declaredType with
+      | _, some _ => none
+      | none, none => some (.missingDatatype tableName column.name)
+      | some written, none => some (.unknownDatatype tableName column.name written)
+
 /-- Resolve CREATE TABLE, of a catalog description or in a script. Path 1 is the column list
 and path 2 the table constraints. A {lit}`WITHOUT ROWID` table
 ({name}`CatalogTable.asWithoutRowid`) without a primary key is SQLite's
-{lit}`PRIMARY KEY missing on table %s`, after the errors of its definitions; then the CHECK
+{lit}`PRIMARY KEY missing on table %s`, after the errors of its definitions and of a
+{lit}`STRICT` table's types ({name}`strictTypeError`); then the CHECK
 constraints resolve ({name}`resolveTableChecks`) under the profile's {lit}`DQS_DDL`. -/
 def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : Nat)
     (name : Identifier) (columns : List Syntax.ColumnDefinition)
@@ -148,10 +167,13 @@ def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : N
   | some (_, { entry := .table _, .. }) => prepareError catalog (.tableExists name)
   | some (_, { entry := .index _, .. }) => prepareError catalog (.indexNameUsed name)
   | none =>
-    match addDefinitions context.profile.limits.columns name { columns := [] } columns >>=
+    match addDefinitions context.profile.limits.columns name { columns := [], strict := options.strict } columns >>=
         (addTableConstraints name · constraints) with
     | .error error => prepareError catalog (.expression error)
     | .ok table =>
+      match strictTypeError name table with
+      | some error => prepareError catalog (.expression error)
+      | none =>
       let table := if options.withoutRowid then table.asWithoutRowid else table
       if options.withoutRowid && table.primaryKey.isEmpty then
         prepareError catalog (.expression (.primaryKeyMissing name))

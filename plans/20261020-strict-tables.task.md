@@ -26,12 +26,18 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D6.
    `ANY` every value. Checked natively with 3.51.0:
    - the check comes after NOT NULL and before CHECK and the unique keys, and also covers
      generated columns and `DO UPDATE`;
-   - the statement's `OR FAIL` and `OR ROLLBACK` apply; `OR IGNORE` and `OR REPLACE` act
-     as ABORT;
+   - the type check is ABORT under every algorithm: `OR FAIL` keeps no earlier row,
+     `OR ROLLBACK` keeps the transaction open, and `OR IGNORE` and `OR REPLACE` fail
+     (`OP_TypeCheck` ends with `abort_due_to_error`; amended 2026-10-20 after a native
+     check, which an earlier probe got wrong);
    - a rowid alias keeps its own rule (`datatype mismatch`).
 4. **ADD COLUMN** to a `STRICT` table with a type that is not allowed fails while the
    statement runs (`error in table r after add column: unknown datatype ...`), which the
-   model leaves as a restriction.
+   model leaves as a restriction. So does a default that does not fit the type, which
+   SQLite reports as `type mismatch on DEFAULT` while the statement runs, when the table
+   has rows. A column's affinity and its default follow its strict type (an `ANY` default
+   `'7'` stays text), and ADD COLUMN to a `STRICT` table has the output column of SQLite's
+   SELECT over `pragma_quick_check`.
 
 ## Tests
 

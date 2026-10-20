@@ -59,15 +59,18 @@ theorem LiteralData.uniqueRows_append (unique : uniqueRows key rows = true)
 
 /-- For every key list, table and value list, assume old {name}`LiteralData.constraints`,
 NOT NULL checks on the zipped new column/cell pairs of {name}`LiteralData.newCells`, the
-CHECK constraints of the table on the new row ({name}`LiteralData.checksHold`), and a false
+types of a {lit}`STRICT` table ({name}`LiteralData.typesFit`) and the CHECK constraints of the
+table ({name}`LiteralData.checksHold`) on the new row, and a false
 key comparison between every old row and the new row for every key. Then the table after
 {name}`LiteralData.insertRow` satisfies the same check. With no keys the freshness
 requirement is vacuous; with no old rows each key's pairwise check is vacuous.
 Row width and allocation bounds are not assumed. The proof separates old and new
-NOT NULL and CHECK checks, then applies {name}`LiteralData.uniqueRows_append` to each key. -/
+NOT NULL, type and CHECK checks, then applies {name}`LiteralData.uniqueRows_append` to each key. -/
 theorem LiteralData.insertRow_constraints (old : constraints keys table = true)
     (nonnull : (table.shape.columns.zip (newCells table values (newRowid table values))).all (fun (column, value) =>
       !column.notNull || value != .null) = true)
+    (typed : typesFit table.shape
+      { rowid := newRowid table values, values := newCells table values (newRowid table values) } = true)
     (checked : checksHold table.shape
       { rowid := newRowid table values, values := newCells table values (newRowid table values) } = true)
     (fresh : ∀ key ∈ keys, ∀ row ∈ table.rows,
@@ -75,8 +78,9 @@ theorem LiteralData.insertRow_constraints (old : constraints keys table = true)
         false) :
     constraints keys (insertRow table values) = true := by
   simp only [constraints, Bool.and_eq_true] at old ⊢
-  refine ⟨⟨?_, ?_⟩, ?_⟩
-  · simpa [insertRow, List.all_append, nonnull] using old.1.1
+  refine ⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩
+  · simpa [insertRow, List.all_append, nonnull] using old.1.1.1
+  · simpa [insertRow, List.all_append, typed] using old.1.1.2
   · simpa [insertRow, List.all_append, checked] using old.1.2
   · apply List.all_eq_true.mpr
     intro key member

@@ -100,7 +100,7 @@ def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., 
 
 @pytest.mark.parametrize(("sql", "refused"), [
     ("CREATE TEMP TABLE t(a);", "TEMP"), ("CREATE TABLE IF NOT EXISTS t(a);", "IF NOT EXISTS"),
-    ("CREATE TABLE main.t(a);", ".t"), ("CREATE TABLE t(a) STRICT;", "STRICT"),
+    ("CREATE TABLE main.t(a);", ".t"), ("CREATE TABLE t(a) STRICTER;", "STRICTER"),
     ("CREATE TABLE t AS SELECT 1;", "AS SELECT 1"),
     ("CREATE TABLE t(a, UNIQUE(a COLLATE NOCASE));", "a COLLATE NOCASE"),
     ("CREATE TABLE t(a, FOREIGN KEY (a DESC) REFERENCES p);", "DESC"), ("CREATE TABLE t(a, PRIMARY KEY(a DESC));", "DESC"),
@@ -180,3 +180,29 @@ def test_default_source_spelling(parse_sql: Callable[..., Tree], literal: str) -
     statement = mapped(parse_sql, f"CREATE TABLE t(v BLOB DEFAULT {literal});")[0]
     constraint = statement["createTable"]["columns"][0]["constraints"][0]
     assert constraint["default"]["sourceText"] == literal
+
+
+@pytest.mark.parametrize(("options", "expected"), [
+    ("", {"withoutRowid": False}),
+    ("STRICT", {"withoutRowid": False, "strict": True}),
+    ("sTrIcT, without ROWID", {"withoutRowid": True, "strict": True}),
+    ("WITHOUT rowid", {"withoutRowid": True}),
+])
+def test_table_options_map_strict_and_without_rowid(parse_sql: Callable[..., Tree], options: str,
+                                                    expected: dict[str, bool]) -> None:
+    """`table_options` reads `STRICT` and `WITHOUT ROWID` in either ASCII case, as SQLite's
+    grammar does, and writes `strict` only for a `STRICT` table, so other records keep
+    their form."""
+    statement = mapped(parse_sql, f"CREATE TABLE t(a INTEGER PRIMARY KEY) {options};")[0]
+    assert statement["createTable"]["options"] == expected
+
+
+@pytest.mark.parametrize("option", ['"strict"', "[STRICT]", 'WITHOUT "rowid"', "STRICTER", "WITHOUT oid"])
+def test_other_table_options_are_refused(parse_sql: Callable[..., Tree], option: str) -> None:
+    """`table_options` refuses a quoted option word and any other word: SQLite compares the
+    token as written, so a quoted word is its `unknown table option` error."""
+    sql = f"CREATE TABLE t(a INTEGER PRIMARY KEY) {option};"
+    with pytest.raises(SqlError) as raised:
+        statements(parse_sql(sql))
+    assert raised.value.status == "UNSUPPORTED"
+    assert "use WITHOUT ROWID or STRICT" in str(raised.value)

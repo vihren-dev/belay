@@ -5,6 +5,7 @@ import Belay.Sqlite.Resolution.TypeAffinity
 import Belay.Sqlite.Resolution.Keys
 import Belay.Sqlite.Resolution.Checks
 import Belay.Sqlite.Resolution.ForeignKeys
+import Belay.Sqlite.Resolution.StrictTypes
 import Belay.Sqlite.Resolution.ReservedNames
 
 set_option doc.verso true
@@ -43,6 +44,9 @@ structure CatalogColumn where
   /-- How the column is generated; omit it for a column that is not generated (ADR 0014,
   D5). -/
   generated : Option GeneratedColumn := none
+  /-- The type of the column in a {lit}`STRICT` table; omit it for a column of another table
+  (ADR 0014, D6). -/
+  strictType : Option StrictType := none
   deriving Repr, DecidableEq
 
 /-- One table entry. Keys are lists of column positions. Use
@@ -69,6 +73,9 @@ structure CatalogTable where
   /-- Whether the table is {lit}`WITHOUT ROWID` (ADR 0014, D4): it has no rowid, its rows
   are in primary-key order, and its key columns are NOT NULL. -/
   withoutRowid : Bool := false
+  /-- Whether the table is {lit}`STRICT` (ADR 0014, D6): each column has a
+  {name}`CatalogColumn.strictType`. -/
+  strict : Bool := false
   /-- The CHECK constraints of the table constraints, in written order; omit them for none
   (ADR 0014, D2). The CHECK constraints of a column are in {name}`CatalogColumn.checks`. -/
   checks : List CheckConstraint := []
@@ -137,8 +144,10 @@ def Catalog.columnsOf (catalog : Catalog) (name : Identifier) : Option (List Cat
 def columnPosition (columns : List CatalogColumn) (name : Identifier) : Option Nat :=
   (findPosition (fun column => column.name.sameName name) columns).map Prod.fst
 
-/-- The affinity of a catalog column, from its declared type text. -/
-def CatalogColumn.affinity (column : CatalogColumn) : Affinity := affinityOf column.declaredType
+/-- The affinity of a catalog column, from its declared type text; none ({lit}`BLOB`) for an
+{lit}`ANY` column of a {lit}`STRICT` table, which stores a value as written. -/
+def CatalogColumn.affinity (column : CatalogColumn) : Affinity :=
+  if column.strictType == some .any then .blob else affinityOf column.declaredType
 
 /-- The key of the column positions of a table with the columns, without filter, each under
 its column's collation: a primary key or UNIQUE constraint. -/

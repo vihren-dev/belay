@@ -18,7 +18,18 @@ deriving instance Lean.FromJson, Lean.ToJson for Syntax.ResultColumn, Syntax.Ord
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ColumnDefinition, Syntax.TableConstraint
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.TableReference, Syntax.Join
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ConflictAction, Syntax.ConflictClause
-deriving instance Lean.FromJson, Lean.ToJson for Syntax.TableOptions
+/-- The table options as JSON, with {lit}`strict` only for a {lit}`STRICT` table, so the
+records of other tables keep their form. -/
+instance : Lean.ToJson Syntax.TableOptions where
+  toJson options := Lean.Json.mkObj ([("withoutRowid", Lean.toJson options.withoutRowid)] ++
+    (if options.strict then [("strict", Lean.toJson true)] else []))
+
+/-- Read the table options ({name}`Syntax.TableOptions`); a missing {lit}`strict` is a table
+that is not {lit}`STRICT`. -/
+instance : Lean.FromJson Syntax.TableOptions where
+  fromJson? json := do
+    let strict : Bool := (json.getObjValAs? Bool "strict").toOption.getD false
+    return { withoutRowid := ← json.getObjValAs? Bool "withoutRowid", strict }
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.Statement
 deriving instance Lean.ToJson for ExprError
 
@@ -78,6 +89,7 @@ deriving instance Lean.ToExpr for Resolved.Expr, Resolved.Arguments
 deriving instance Lean.ToExpr for CheckConstraint
 deriving instance Lean.ToExpr for ForeignKey
 deriving instance Lean.ToExpr for GeneratedColumn
+deriving instance Lean.ToExpr for StrictType
 deriving instance Lean.ToExpr for CatalogColumn
 deriving instance Lean.ToExpr for CatalogTable
 deriving instance Lean.ToExpr for KeyTerm

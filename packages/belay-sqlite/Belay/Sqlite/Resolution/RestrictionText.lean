@@ -24,6 +24,7 @@ def RestrictionKind.id : RestrictionKind → String
   | .generatedLoop => "generated-loop"
   | .upsertGenerated => "upsert-generated"
   | .addColumnGenerated => "add-column-generated"
+  | .addColumnStrictType => "add-column-strict-type"
   | .addColumnConstraint => "add-column-constraint"
   | .rowDependentKey => "row-dependent-key"
   | .conflictWithoutTarget => "conflict-without-target"
@@ -67,6 +68,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .generatedLoop => "generated columns that read each other in a loop are not modeled; SQLite refuses the table"
   | .upsertGenerated => "DO UPDATE of a generated column is not modeled; assign the columns that it reads"
   | .addColumnGenerated => "ADD COLUMN of a generated column is not modeled; create the table with it"
+  | .addColumnStrictType => "ADD COLUMN to a STRICT table without one of its types, or with a default that does not fit the type, is not modeled; use INT, INTEGER, REAL, TEXT, BLOB or ANY and a default of that type"
   | .addColumnConstraint => "the default of the added column is not modeled; use a literal default or no default"
   | .rowDependentKey => "a SET value that reads the row is not modeled for a column of a unique key; assign a constant value"
   | .conflictWithoutTarget => "DO UPDATE without a conflict target is not modeled for a table with more than one key; name the target columns"
@@ -95,7 +97,7 @@ def RestrictionKind.message : RestrictionKind → String
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .upsertGenerated, .addColumnGenerated, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments]
+  [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

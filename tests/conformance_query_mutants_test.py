@@ -1,6 +1,7 @@
 """Each mutant of the query, number, key, write, row-write, DELETE, join, alias, UPSERT,
 algorithm, query-without-FROM, JSON, JSON function, `json_each`, clock, date function, date
-modifier, index, `WITHOUT ROWID`, collation, CHECK and generated-column mutant tables
+modifier, index, `WITHOUT ROWID`, collation, CHECK, generated-column and `STRICT` mutant
+tables
 changes the verdict of an authored case.
 
 ADR 0012 requires that the conformance suite tests each rule of query semantics and
@@ -12,9 +13,10 @@ model that no case notices shows a missing case. The cases are the authored case
 `authored_algorithms`, `authored_fromless`, `authored_json`, `authored_json_functions`,
 `authored_json_each`, `authored_clock`, `authored_date_functions`,
 `authored_date_modifiers`, `authored_indexes`, `authored_without_rowid`,
-`authored_collations`, `authored_checks` and `authored_generated`, recorded natively with
-their outputs. Nine measurements, one for index forms and `WITHOUT ROWID` tables, one for
-collations, one for CHECK constraints, one for generated columns, one for
+`authored_collations`, `authored_checks`, `authored_generated` and `authored_strict`,
+recorded natively with their outputs. Ten measurements, one for index forms and `WITHOUT
+ROWID` tables, one for collations, one for CHECK constraints, one for generated columns, one
+for `STRICT` tables, one for
 queries and numbers, one for JSON and the clock, one for the date and time functions and
 their modifiers, one for writes and joins, and one for keys, rowid
 aliases, UPSERT and conflict algorithms, each build one base copy for their mutants, which
@@ -37,7 +39,7 @@ from conformance import (algorithm_mutants, alias_mutants, authored_algorithms, 
                          authored_without_rowid, check_mutants, collation_mutants, generated_mutants,
                          date_modifier_mutants, fromless_mutants, index_mutants, without_rowid_mutants,
                          json_each_mutants, json_function_mutants,
-                         json_mutants, upsert_mutants)
+                         json_mutants, upsert_mutants, authored_strict, strict_mutants)
 from conformance.native_replay import prepare
 from conformance import (delete_mutants, join_mutants, key_mutants, merged_mutants, number_mutants, query_mutants,
                          right_mutants, row_write_mutants, using_mutants, write_mutants)
@@ -154,6 +156,14 @@ def test_every_generated_mutant_changes_a_verdict(runtime_root: Path) -> None:
     the `hidden` value of a VIRTUAL column for a STORED one, and an INSERT without a column
     list that expects a value for each generated column (ADR 0014, slice 5)."""
     measure_set(runtime_root, [authored_generated], [(generated_mutants.MUTANTS, generated_mutants.TARGETS)])
+
+
+def test_every_strict_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored `STRICT` cases notice every changed rule of `STRICT` tables
+    (`conformance.strict_mutants`): a type check that NULL fails, `ANY` with the affinity of
+    its declared type, and an `OR IGNORE` that skips a row with a type error (ADR 0014,
+    slice 6)."""
+    measure_set(runtime_root, [authored_strict], [(strict_mutants.MUTANTS, strict_mutants.TARGETS)])
 
 
 def test_every_write_and_join_mutant_changes_a_verdict(runtime_root: Path) -> None:

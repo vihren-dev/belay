@@ -7,7 +7,7 @@ refused with its source range.
 
 from .located import Located, constructor, leaf, sequence, structure
 from .sql_tree import Node, Tree
-from .syntax_constraints import check, constraint_name, declared_type, foreign_key, generated, references
+from .syntax_constraints import ascii_equal, check, constraint_name, declared_type, foreign_key, generated, references
 from .syntax_expressions import dequote, expression, identifier, name, term
 from .syntax_shapes import MODELED_FORMS, absent, left_list, require
 
@@ -127,16 +127,26 @@ def table_constraint(tree: Tree, node: Node, current: str | None) -> Located:
 
 
 def table_options(tree: Tree, node: Node) -> Located:
-    """Map the table options after the column list: `WITHOUT ROWID` (ADR 0014, slice 2).
-    `STRICT` is refused until the model describes it."""
-    without_rowid = False
+    """Map the table options after the column list: `WITHOUT ROWID` (ADR 0014, slice 2) and
+    `STRICT` (slice 6), each token as written in either ASCII case, as the grammar
+    compares it; a quoted word is no option.
+    `strict` is present only when true, so the records of other tables keep their form.
+    Another word is SQLite's `unknown table option`, which the frontend refuses."""
+    without_rowid = strict = False
     for item in left_list(tree, node, {1: ["table_option"], 3: ["table_option_set", "COMMA", "table_option"]}):
         option = item[-1]
-        if [child.symbol for child in tree.children(option)] == ["WITHOUT", "nm"]:
+        parts = tree.children(option)
+        symbols = [child.symbol for child in parts]
+        if symbols == ["WITHOUT", "nm"] and ascii_equal(tree.text(parts[1]), "rowid"):
             without_rowid = True
+        elif symbols == ["nm"] and ascii_equal(tree.text(parts[0]), "strict"):
+            strict = True
         else:
-            raise tree.unsupported(option, "The table option STRICT is not modeled; remove it")
-    return structure([("withoutRowid", leaf(without_rowid, node.start, node.end))], node.start, node.end)
+            raise tree.unsupported(option, "Unknown table option; use WITHOUT ROWID or STRICT")
+    fields = [("withoutRowid", leaf(without_rowid, node.start, node.end))]
+    if strict:
+        fields.append(("strict", leaf(True, node.start, node.end)))
+    return structure(fields, node.start, node.end)
 
 
 def create_table(tree: Tree, command: Node) -> Located:

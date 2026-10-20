@@ -89,6 +89,12 @@ ASCII_CAPITAL_OFFSET = 32
 """The distance between an ASCII lowercase letter and its capital."""
 
 
+def ascii_equal(text: str, word: str) -> bool:
+    """Whether the text is the lowercase ASCII word, each letter in either ASCII case, as
+    `sqlite3StrICmp` compares a table option."""
+    return len(text) == len(word) and ends_with_word(text, word)
+
+
 def ends_with_word(text: str, word: str) -> bool:
     """Whether the text ends with the lowercase ASCII word, each letter in either ASCII case,
     as `sqlite3_strnicmp` compares a keyword."""

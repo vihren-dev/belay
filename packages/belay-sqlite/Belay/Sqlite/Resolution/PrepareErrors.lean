@@ -78,6 +78,11 @@ inductive ExprError where
   /-- {lit}`the "." operator prohibited in generated columns`: a qualified name in the
   expression of a generated column. -/
   | qualifiedGenerated
+  /-- {lit}`unknown datatype for %s.%s: "%s"`: a column of a {lit}`STRICT` table whose type is
+  none of the six (ADR 0014, slice 6). -/
+  | unknownDatatype (table column : Identifier) (type : String)
+  /-- {lit}`missing datatype for %s.%s`: a column of a {lit}`STRICT` table without a type. -/
+  | missingDatatype (table column : Identifier)
   /-- {lit}`the "." operator prohibited in index expressions`: a qualified name in a key
   term of CREATE INDEX ({lit}`notValidImpl`). -/
   | qualifiedIndexTerm

@@ -28,7 +28,8 @@ from conformance import (algorithm_evidence, alias_evidence, authored_algorithms
                          index_evidence,
                          join_evidence, json_each_evidence, json_evidence, json_function_evidence, key_evidence,
                          merged_evidence, number_evidence, obligation_evidence, query_evidence, right_evidence,
-                         row_write_evidence, upsert_evidence, using_evidence, without_rowid_evidence, write_evidence)
+                         row_write_evidence, upsert_evidence, using_evidence, without_rowid_evidence, write_evidence,
+                         authored_strict, strict_evidence)
 from conformance.authored_resolution import definitions as resolution_definitions
 from conformance.corpus import load
 
@@ -62,12 +63,13 @@ pytestmark = [pytest.mark.integration, pytest.mark.conformance,
                                                             (without_rowid_evidence, authored_without_rowid, 30),
                                                             (collation_evidence, authored_collations, 31),
                                                             (check_evidence, authored_checks, 32),
-                                                            (generated_evidence, authored_generated, 33)],
+                                                            (generated_evidence, authored_generated, 33),
+                                                            (strict_evidence, authored_strict, 34)],
                          ids=["queries", "numbers", "writes", "obligations", "row-writes", "deletes", "joins", "using",
                               "right", "merged", "keys", "aliases", "upserts", "algorithms", "fromless", "json",
                               "json-functions", "json-each", "default-writes", "clock",
                               "date-functions", "date-modifiers", "indexes", "without-rowid",
-                              "collations", "checks", "generated"])
+                              "collations", "checks", "generated", "strict"])
 def test_coverage_corpus_round_trips(evidence: ModuleType, cases: ModuleType, version: int, tmp_path: Path) -> None:
     """The corpus writer records the cases of its case module and writes a corpus of version 5
     records that reads back unchanged and replays natively, and refuses to replace an existing

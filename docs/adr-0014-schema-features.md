@@ -275,6 +275,22 @@ Each slice works in this way:
     laws do not describe.
   - The model computes generated values in passes over the generated columns, one per
     generated column, so the kernel reduces the computation.
+- Slice 6 (2026-10-20), details checked natively that D6 does not state:
+  - SQLite reads the option words as written, so `STRICT` in either ASCII case is the
+    option, and a quoted word is `unknown table option`. A column without a type is
+    `missing datatype for t.a`, and another type is `unknown datatype for t.a: "..."`.
+  - The type check comes after NOT NULL and before CHECK and the unique keys, and has
+    extended code 3091 (`SQLITE_CONSTRAINT_DATATYPE`). It is ABORT under every conflict
+    algorithm: `OP_TypeCheck` ends with `abort_due_to_error`, so `OR FAIL` keeps no earlier
+    row, `OR ROLLBACK` keeps the transaction open, and `OR IGNORE` and `OR REPLACE` fail.
+    A rowid alias keeps its own `datatype mismatch`.
+  - A column's affinity and its DEFAULT follow its strict type: an `ANY` default `'7'`
+    stays text.
+  - ADD COLUMN to a `STRICT` table runs SQLite's SELECT over `pragma_quick_check`, which is
+    an output column of the statement. A type that the table does not admit, and a
+    default that does not fit the type (`type mismatch on DEFAULT` when the table has
+    rows), fail only while the statement runs; the model leaves both as the restriction
+    `add-column-strict-type`.
 
 ## Consequences
 

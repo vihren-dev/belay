@@ -77,13 +77,20 @@ def checkHolds (row : Row) (check : CheckConstraint) : Bool :=
 def checksHold (shape : CatalogTable) (row : Row) : Bool :=
   shape.allChecks.all (checkHolds row)
 
-/-- Check NOT NULL cells, the CHECK constraints of every row, and the pairwise uniqueness
+/-- Whether every cell of a row fits its column's type in a {lit}`STRICT` table
+({name}`StrictType.fits`); a column without a strict type takes every value. -/
+def typesFit (shape : CatalogTable) (row : Row) : Bool :=
+  (shape.columns.zip row.values).all fun (column, value) => column.strictType.all (·.fits value)
+
+/-- Check NOT NULL cells, the types of a {lit}`STRICT` table ({name}`typesFit`), the CHECK
+constraints of every row, and the pairwise uniqueness
 of every given key. NOT NULL checks inspect only zipped column/cell pairs; row width is
-checked separately. A table with no rows satisfies all three. In the admitted domain
+checked separately. A table with no rows satisfies them all. In the admitted domain
 these checks represent ABORT constraints, rather than admission restrictions. -/
 def constraints (keys : List UniqueKey) (table : Table) : Bool :=
   table.rows.all (fun row => (table.shape.columns.zip row.values).all
     (fun (column, value) => !column.notNull || value != .null)) &&
+  table.rows.all (typesFit table.shape) &&
   table.rows.all (checksHold table.shape) &&
   keys.all (fun key => uniqueRows key table.rows)
 

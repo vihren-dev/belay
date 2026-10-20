@@ -54,6 +54,10 @@ inductive RestrictionKind where
   existing row and refuses a {lit}`STORED` one while the statement runs, which the model
   does not describe. -/
   | addColumnGenerated
+  /-- ADD COLUMN to a {lit}`STRICT` table with a type that it does not admit, or with a
+  default that does not fit the type: SQLite reports it while the statement runs, which the
+  model does not describe (ADR 0014, slice 6). -/
+  | addColumnStrictType
   /-- The added column requires unmodeled default evaluation. -/
   | addColumnConstraint
   /-- A {lit}`SET` value that reads the row is not modeled for a column of a unique key
