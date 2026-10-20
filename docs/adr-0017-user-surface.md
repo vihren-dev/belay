@@ -64,7 +64,7 @@ task file, and each ends with users able to do more than before.
 | Slice | What a user can do after it | Guide sections |
 | --- | --- | --- |
 | S1. SQL text in Lean | Nothing new yet: the elaborator turns SQL text into the model's syntax, in the Lean process and in the editor | "Writing SQL in Lean files" (first part); open questions 8 and 9 |
-| S2. Concrete databases | Build a database with `db!`, write scripts with `sql`, run them with `db.run`, see results with `#eval` and `#sql`, and prove facts about one database with `decide`; SQL that does not parse or resolve is an error at its position | "A first example", "Values", "Databases", "Scripts", "Row order" |
+| S2. Concrete databases | Build a database with `db!`, write scripts with `sql`, run them with `db.run`, see results with `#eval` and `#sql`, and prove facts about one database with `decide`; SQL that does not parse is an error at its position, `sql!` and `db!` also report resolution errors there, and `sql` resolves when it runs | "A first example", "Values", "Databases", "Scripts", "Row order" (without `Output.oneOf`) |
 | S3. Parameters and programs | Scripts with `$x` and `:name`; programs in `do` notation with `send`, `query`, `single`; `Run` | "Parameters", "Programs" |
 | S4. Claims over every database | `Holds`, `Empty` and `Fails`; level 2 (`succeeds where`) with the lemma library | "Queries as propositions", "Level 2" |
 | S5. Counterexamples | `#sql_check` and `sql_refute`: a search over small databases whose witness the kernel checks, shown as a script that `sqlite3` replays | "Check before you prove", "Counterexamples for any statement" |
@@ -74,7 +74,7 @@ task file, and each ends with users able to do more than before.
 
 The order follows three rules. Risk first: S1 is the step that nobody has tried, and
 every later slice needs it. A usable result early: S2 is the guide's first example, and
-it needs no new model semantics. Counterexamples before triples: the model comparison
+it needs no new model semantics apart from `Output.oneOf`, whose examples wait (D3). Counterexamples before triples: the model comparison
 names the learning curve as the main risk of the design, and the verification systems
 review shows that a cheap first answer is what makes people adopt a verifier, so S5
 comes before S6.
@@ -103,9 +103,13 @@ same syntax.
 
 S2 delivers the guide's first example and its reference rows for `Value`, `Database`,
 `Script`, `Output`, `db!`, `sql`, `sql!`, `++`, `db.run` and `#sql`, over the model's
-semantics. Its acceptance: the guide's first example and the examples of its sections
-"Values", "Databases", "Scripts" and "Row order" elaborate, and their `decide` proofs
-check. Two choices belong to its task file: whether the surface's `Database` carries
+semantics. As the guide says, `sql` parses at elaboration and resolves each statement
+against the database when it runs; `sql!` and `db!` also resolve at elaboration and
+report a resolution error at its name. Its acceptance: the guide's first example and the
+examples of its sections "Values", "Databases", "Scripts" and "Row order" elaborate, and
+their `decide` proofs check, except the examples of `Output.oneOf`. The model gives one
+result for a query whose `LIMIT` or `OFFSET` the `ORDER BY` does not fix, so the list of
+every result that SQLite may give is model work (D5). Two choices belong to its task file: whether the surface's `Database` carries
 `Database.Valid` as a field, as the guide describes, and how `db!` proves it for the
 database that it builds.
 
@@ -122,6 +126,7 @@ part of this ADR; this ADR only names them and when the surface needs them:
 
 | Model work | Needed by | Evidence |
 | --- | --- | --- |
+| Every result that SQLite may give for a `LIMIT` or `OFFSET` that the `ORDER BY` does not fix (`Output.oneOf`) | S2's row order examples, and S6, whose triples hold for every permitted order | guide "Row order"; open question 5 |
 | Subqueries: `EXISTS`, `NOT EXISTS`, `IN (SELECT ...)` and scalar subqueries | S4: most of the guide's claims are `NOT EXISTS` queries | guide "Queries as propositions"; 332 out-of-scope cases of corpus v5 |
 | `IN (...)`, `NOT IN`, `BETWEEN`, `CASE`, `||` | S4 and S6 examples | 39, 84, 27 and 105 cases; pain point 4 (`NOT IN`) |
 | `DISTINCT` and `HAVING` | S4 (level 2 of the unique index) | 185 cases; pain point 3 |
@@ -143,7 +148,8 @@ judge, as ADR 0016 requires.
 ## Consequences
 
 - **The first user-visible result is S2.** It is the guide's first example over today's
-  model, and the base of every demonstration.
+  model, and the base of every demonstration; only the examples of `Output.oneOf` wait
+  for model work.
 - **The launch examples depend on the model, not only on the surface.** Until the model
   has subqueries, a claim "over every database" can only use the SQL of the model's
   current subset, and the rebuild example waits for foreign keys.
