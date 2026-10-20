@@ -1,6 +1,6 @@
 # Status: `STRICT` tables (ADR 0014, slice 6)
 
-Created 2026-10-20. Status: open.
+Created 2026-10-20. Status: DONE (pull requests #189 and #190).
 Task file: [task](20261020-strict-tables.task.md).
 Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D6.
 
@@ -30,6 +30,12 @@ Specification: [ADR 0014](../docs/adr-0014-schema-features.md), D6.
   `strictTypeError` moved from `Definitions.lean`), three more authored cases (28),
   `tests/syntax_table_options_test.py`.
 
+- 2026-10-20: `just test-full`, `just test-nix` and `just test-scheduled` pass. CI time
+  with forced rebuilds: harness 22 s, model 407 s, frozen 142 s, mutants 623 s. Verdict:
+  10 upstream cases newly agree (`alter-20.1` and `alter-20.3` in v1 to v5), none leave
+  AGREE, and corpus 34 has 28 AGREE. Claims and lock in "claims: corpus 34 ...". Pull
+  requests #189 (A) and #190 (B).
+
 ## Remaining
 
-- Review, the suites, CI time, the verdict, corpus 34 with claims and lock, pull requests.
+- None. DONE.
