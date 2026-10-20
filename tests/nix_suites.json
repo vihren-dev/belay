@@ -123,7 +123,8 @@
     "tests/conformance_query_mutants_test.py"
   ],
   "tableMutants": [
-    "tests/conformance_table_mutants_test.py"
+    "tests/conformance_table_mutants_test.py",
+    "tests/conformance_function_mutants_test.py"
   ],
   "writers": [
     "tests/conformance_corpus_writers_test.py"

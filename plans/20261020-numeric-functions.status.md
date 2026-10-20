@@ -24,6 +24,12 @@ Specification: [ADR 0015](../docs/adr-0015-functions.md), D4.
   - Tests run: `test_model_package` (160 modules), `mutant_guards`, `restriction_registry`,
     the kernel proofs and corpus writer of corpus 37, the numeric mutants.
 
+- 2026-10-20: review: one must finding (the literal digit limit of `round`) and one should
+  finding (`tests/conformance_query_mutants_test.py` over 200 lines). Fixed in "refactor:
+  review of the numeric functions": `roundDigitLimit`, and the function mutant tests in
+  `tests/conformance_function_mutants_test.py`, listed in the mutants suite of
+  `tests/nix_suites.json`. Tests: `test_test_ownership`, the function mutants, `mutant_guards`.
+
 ## Remaining
 
 - Review, the slice verdict, corpus 37, `just test-full`.

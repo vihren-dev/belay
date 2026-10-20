@@ -67,8 +67,12 @@ def fixedText (digits : Nat) (value : Float) : List UInt8 :=
   let (negative, decoded, point) := decodeDouble true value (-(digits : Int))
   (if negative then [45] else []) ++ fixedDigitBytes true decoded point digits
 
+/-- The most digits that {lit}`round` keeps after the point; more digits are clamped to it, as
+{lit}`roundFunc` does. -/
+def roundDigitLimit : Int := 30
+
 /-- {lit}`round(x [, digits])` ({lit}`roundFunc`): NULL digits or a NULL value give NULL; the
-digits are clamped to 0 to 30; the double of the value ({lit}`sqlite3_value_double`) stays beyond
+digits are clamped to 0 to {name}`roundDigitLimit`; the double of the value ({lit}`sqlite3_value_double`) stays beyond
 {name}`integralBound`, with no digits is truncated after adding or subtracting 0.5, and else is
 written by {name}`fixedText` and read back. The result is a REAL. -/
 def roundValue (value : Value) (digits : Option Value) : Value :=
@@ -76,7 +80,9 @@ def roundValue (value : Value) (digits : Option Value) : Value :=
   else
     let count := match digits with
       | none => 0
-      | some digits => let count := digits.toInt64; if count > 30 then 30 else if count < 0 then 0 else count
+      | some digits =>
+        let count := digits.toInt64
+        if count > roundDigitLimit then roundDigitLimit else if count < 0 then 0 else count
     let double := value.toReal
     if double < -integralBound || double > integralBound then realValue double
     else if count == 0 then realValue (Float.ofInt (double + (if double < 0 then -0.5 else 0.5)).toInt64.toInt)
