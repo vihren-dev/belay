@@ -1,5 +1,5 @@
-import Belay.Sqlite.SchemaPreservation
-import Belay.Sqlite.LiteralPreservation
+import Belay.Sqlite.SchemaPreservationLaws
+import Belay.Sqlite.LiteralPreservationLaws
 
 set_option doc.verso true
 
@@ -13,19 +13,19 @@ namespace SqliteVerifier.SchemaExamples
 
 /-- A nullable TEXT column used in the retained ordinary primary-key example.
 The key does not add a NOT NULL annotation; {assert}`textKey.notNull = false`. -/
-def textKey : CatalogColumn := { name := "id", declaredType := some "TEXT" }
+def textKey : CatalogColumn := { name := (name! "id"), declaredType := some "TEXT" }
 
 /-- An existing NOT NULL TIMESTAMP declaration with a retained {lit}`CURRENT_TIMESTAMP`
 default. It illustrates metadata that a schema may describe but that a new column
 of a statement that runs may not have; {assert}`timestamp.plain = false`. -/
 def timestamp : CatalogColumn := {
-  name := "installed_on", declaredType := some "TIMESTAMP"
+  name := (name! "installed_on"), declaredType := some "TIMESTAMP"
   notNull := true, defaultValue := some { form := .clock .timestamp, sourceText := "CURRENT_TIMESTAMP" } }
 
 /-- A table keyed on {lit}`id`, with a unique index named {lit}`key_index` on the same
 column at catalog position 1, illustrating keys and the shared namespace. -/
-def keyed : Catalog := [{ name := "items", entry := .table { columns := [textKey], primaryKey := [0] } },
-  { name := "key_index", entry := .index { table := 0, columns := [0], unique := true } }]
+def keyed : Catalog := [{ name := (name! "items"), entry := .table { columns := [textKey], primaryKey := [0] } },
+  { name := (name! "key_index"), entry := .index { table := 0, keys := [{ term := .column 0 }], unique := true } }]
 
 /-- The documented limits of SQLite; the column limit is 2,000. -/
 def limits : Limits := Limits.documentedDefaults
@@ -39,18 +39,18 @@ def table : Table := { shape := { columns := [textKey], primaryKey := [0] }, row
 -- A rowid alias is admitted (slice 5b); writes to it check its affinity (aliasReady).
 #guard ({ columns := [textKey], primaryKey := [0], rowidAlias := some 0 } : CatalogTable).supported limits
 #guard ({ columns := [textKey], uniqueKeys := [[1]] } : CatalogTable).supported limits == false
-#guard ({ columns := [textKey, { textKey with name := "ID" }] } : CatalogTable).supported limits == false
+#guard ({ columns := [textKey, { textKey with name := (name! "ID") }] } : CatalogTable).supported limits == false
 #guard ({ columns := [timestamp] } : CatalogTable).supported limits
 #guard !timestamp.plain
 /-- The typeless columns of SQLite's {lit}`sqlite_stat1` table. -/
-def statisticsTable : CatalogTable := { columns := ["tbl", "idx", "stat"].map fun name => { name, declaredType := none } }
+def statisticsTable : CatalogTable := { columns := [name! "tbl", name! "idx", name! "stat"].map fun name => { name, declaredType := none } }
 
-#guard Catalog.supported limits [{ name := "sqlite_stat1", entry := .table statisticsTable }]
-#guard Catalog.supported limits [{ name := "sqlite_stat1", entry := .table { columns := [textKey] } }] == false
-#guard Catalog.supported limits [{ name := "sqlite_x", entry := .table { columns := [textKey] } }] == false
+#guard Catalog.supported limits [{ name := (name! "sqlite_stat1"), entry := .table statisticsTable }]
+#guard Catalog.supported limits [{ name := (name! "sqlite_stat1"), entry := .table { columns := [textKey] } }] == false
+#guard Catalog.supported limits [{ name := (name! "sqlite_x"), entry := .table { columns := [textKey] } }] == false
 -- A table and an index share one folded name, so the catalog is not valid.
-#guard Catalog.supported limits [{ name := "KEY_INDEX", entry := .table { columns := [textKey] } },
-  { name := "key_index", entry := .index { table := 0, columns := [0], unique := true } }] == false
+#guard Catalog.supported limits [{ name := (name! "KEY_INDEX"), entry := .table { columns := [textKey] } },
+  { name := (name! "key_index"), entry := .index { table := 0, keys := [{ term := .column 0 }], unique := true } }] == false
 
 /-- The concrete {name}`table` satisfies {name}`Table.Valid`, including its
 negative rowid and NULL cell. The proof reduces widths and bounds, and computes the
@@ -66,35 +66,36 @@ example : table.Valid := by
 /-- Adding a plain {lit}`shell` column to the table at position 0 returns that
 table's {name}`Table.appendColumns` at the same position, preserving its keys. The
 proof computes this fixed execution in the kernel. -/
-example : (step (.addColumn 0 { name := "shell", declaredType := some "TEXT" })
-    (.ofTables [("t", table)])).database.table 0 =
-    some (table.appendColumns [({ name := "shell", declaredType := some "TEXT" }, .null)]) := by
+example : (effectDatabase (step 0 (.addColumn 0 { name := (name! "shell"), declaredType := some "TEXT" })
+    (.ofTables [((name! "t"), table)]))).table 0 =
+    some (table.appendColumns [({ name := (name! "shell"), declaredType := some "TEXT" }, .null)]) := by
   decide +kernel
 
 /-- The supported-subset check admits ADD COLUMN of {name}`timestamp`, whose default is
 {lit}`CURRENT_TIMESTAMP`: the model describes it (ADR 0012, amendment 5, slice 6e2). The
 proof computes the check in the kernel. -/
-example : statementReady (.addColumn 0 timestamp) ({} : Database) = true := by
+example : statementReady 0 (.addColumn 0 timestamp) ({} : Database) = true := by
   decide +kernel
 
 /-- {name}`step` runs a CREATE TABLE of a keyed table, which is not plain: it
 stores an empty table with that shape at the new position, as SQLite does. The
 supported-subset check {name}`statementReady` refuses the statement instead,
 because the model restricts such tables. The proof computes both in the kernel. -/
-example : (step (.createTable 0 "items" { columns := [textKey], primaryKey := [0] }) ({} : Database)).database.table 0 =
+example : (effectDatabase (step 0 (.createTable 0 (name! "items") { columns := [textKey], primaryKey := [0] })
+      ({} : Database))).table 0 =
       some { shape := { columns := [textKey], primaryKey := [0] }, rows := [] } ∧
-    statementReady (.createTable 0 "items" { columns := [textKey], primaryKey := [0] }) ({} : Database) = false := by
+    statementReady 0 (.createTable 0 (name! "items") { columns := [textKey], primaryKey := [0] }) ({} : Database) = false := by
   decide +kernel
 
 /-- ADD COLUMN of {name}`timestamp` on a table with a row fails as SQLite does, with
 {lit}`Cannot add a column with non-constant default`, because its default reads the clock:
 {name}`step` gives {name}`ExecutionError.nonConstantColumnDefault` and retains the original
 table. The proof computes both in the kernel. -/
-example : (step (.addColumn 0 timestamp) (.ofTables [("t", table)])).database.table 0 =
+example : (effectDatabase (step 0 (.addColumn 0 timestamp) (.ofTables [((name! "t"), table)]))).table 0 =
       some table ∧
-    (match step (.addColumn 0 timestamp) (.ofTables [("t", table)]) with
-      | .failure _ reason _ => reason == .nonConstantColumnDefault
-      | .success _ | .pending .. => false) = true := by
+    (match step 0 (.addColumn 0 timestamp) (.ofTables [((name! "t"), table)]) with
+      | .error (reason, _) => reason == .nonConstantColumnDefault
+      | .ok _ => false) = true := by
   decide +kernel
 
 end SqliteVerifier.SchemaExamples

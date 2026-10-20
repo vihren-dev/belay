@@ -54,8 +54,10 @@ def native_keys(info: list[Row], indexes: list[tuple[Row, list[Row]]]) -> tuple[
     """Decode the primary key and the UNIQUE and explicit indexes of one table.
 
     The primary key lists column positions in key order. UNIQUE constraint indexes
-    (origin `u`) give key positions; explicit indexes (origin `c`) give their name,
-    positions and uniqueness. The primary-key index (origin `pk`) repeats the key.
+    (origin `u`) give key positions; explicit indexes (origin `c`) give their name, the
+    position of each key term (`None` for an expression, column -2), uniqueness, and,
+    only when present, the sort order of each term and the partial flag. The primary-key
+    index (origin `pk`) repeats the key.
     """
     primary = [number for _, number in sorted((integer(row[5]), number) for number, row in enumerate(info)
                                               if integer(row[5]))]
@@ -63,16 +65,25 @@ def native_keys(info: list[Row], indexes: list[tuple[Row, list[Row]]]) -> tuple[
     explicit: list[Json] = []
     for (_, name, unique, origin, partial), index_columns in indexes:
         positions: list[Json] = []
+        orders: list[Json] = []
         for _, cid, _, descending, collation, key in index_columns:
             if not integer(key):
                 continue  # Auxiliary rowid is not part of the declared index key.
-            if integer(cid) < 0 or text(collation) != "BINARY" or integer(descending) and text(origin) == "c":
+            expression = integer(cid) == -2 and text(origin) == "c"
+            if (integer(cid) < 0 and not expression) or text(collation) != "BINARY" or (
+                    integer(descending) and text(origin) == "u"):
                 raise ValueError(f"Unexpected native index key: {text(name)}")
-            positions.append(integer(cid))
-        if integer(partial):
+            positions.append(None if integer(cid) == -2 else integer(cid))
+            orders.append(bool(integer(descending)))
+        if integer(partial) and text(origin) != "c":
             raise ValueError(f"Unexpected partial native index: {text(name)}")
         if text(origin) == "c":
-            explicit.append({"name": text(name), "columns": positions, "unique": bool(integer(unique))})
+            index: dict[str, Json] = {"name": text(name), "columns": positions, "unique": bool(integer(unique))}
+            if any(orders):
+                index["descending"] = orders
+            if integer(partial):
+                index["partial"] = True
+            explicit.append(index)
         elif text(origin) == "u" and integer(unique):
             unique_keys.append(positions)
         elif text(origin) != "pk":

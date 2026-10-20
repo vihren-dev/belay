@@ -1,4 +1,4 @@
-import Belay.Sqlite.Resolution.WriteCatalog
+import Belay.Sqlite.Resolution.WriteCatalogSpec
 
 set_option doc.verso true
 
@@ -14,12 +14,11 @@ namespace Belay.Sqlite
 /-- The resolution state after the statement: BEGIN saves the catalog unless a catalog is
 already saved, COMMIT drops the saved catalog, ROLLBACK restores it, and every other
 statement applies {name}`Resolved.Statement.applyCatalog` to the catalog and keeps the
-saved one. A clocked statement is the statement it wraps. -/
+saved one. -/
 def ResolveState.after (state : ResolveState) : Resolved.Statement → ResolveState
   | .begin => { state with saved := state.saved.getD state.catalog }
   | .commit => { state with saved := none }
   | .rollback => { catalog := state.saved.getD state.catalog, saved := none }
-  | .clocked statement _ => state.after statement
   | statement@(.createTable ..) | statement@(.createIndex ..) | statement@(.addColumn ..)
   | statement@(.insert ..) | statement@(.update ..) | statement@(.upsert ..) | statement@(.delete ..)
   | statement@(.prepareError _) | statement@(.query _) =>
@@ -27,14 +26,13 @@ def ResolveState.after (state : ResolveState) : Resolved.Statement → ResolveSt
 
 /-- For every state and statement that is not transaction control
 ({name}`Resolved.Statement.isControl`), {name}`ResolveState.after` applies the statement's
-catalog change and keeps the saved catalog. Proof sketch: induction on the statement:
-BEGIN, COMMIT and ROLLBACK contradict the premise, a clocked statement follows from the
-statement it wraps, and every other constructor is the definition. -/
+catalog change and keeps the saved catalog. Proof sketch: case analysis on the statement:
+BEGIN, COMMIT and ROLLBACK contradict the premise, and every other constructor is the
+definition. -/
 theorem ResolveState.after_of_isControl (state : ResolveState) {statement : Resolved.Statement}
     (ordinary : statement.isControl = false) :
     state.after statement = { state with catalog := statement.applyCatalog state.catalog } := by
-  induction statement with
-  | clocked inner _ ih => exact ih ordinary
+  cases statement with
   | begin | commit | rollback => cases ordinary
   | createTable | createIndex | addColumn | insert | update | upsert | delete | prepareError | query => rfl
 
@@ -43,7 +41,7 @@ theorem ResolveState.after_of_isControl (state : ResolveState) {statement : Reso
 transaction control. Proof sketch: every branch returns the input catalog with a prepare
 error, or the CREATE TABLE at the end of the catalog with {name}`Catalog.createTable`. -/
 theorem resolveCreateTable_applyCatalog (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (name : String) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
+    (name : Identifier) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
     (statement : Resolved.Statement)
     (ok : resolveCreateTable context catalog index name columns constraints = .ok (statement, after)) :
     after = statement.applyCatalog catalog ∧ statement.isControl = false := by
@@ -57,12 +55,13 @@ theorem resolveCreateTable_applyCatalog (context : ResolveContext) (catalog afte
 transaction control. Proof sketch: as for CREATE TABLE, with {name}`Catalog.createIndex`.
 -/
 theorem resolveCreateIndex_applyCatalog (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (name : String) (unique : Bool) (tableName : String) (columns : List String)
+    (name : Identifier) (unique : Bool) (tableName : Identifier) (terms : List Syntax.OrderTerm)
+    (filter : Option Syntax.Expr)
     (statement : Resolved.Statement)
-    (ok : resolveCreateIndex context catalog index name unique tableName columns = .ok (statement, after)) :
+    (ok : resolveCreateIndex context catalog index name unique tableName terms filter = .ok (statement, after)) :
     after = statement.applyCatalog catalog ∧ statement.isControl = false := by
   unfold resolveCreateIndex at ok
-  simp only [prepareError, restrict] at ok
+  simp only [issueResolution, prepareError, restrict] at ok
   repeat' split at ok
   all_goals first | (cases ok; exact ⟨rfl, rfl⟩) | (cases ok)
 
@@ -70,7 +69,7 @@ theorem resolveCreateIndex_applyCatalog (context : ResolveContext) (catalog afte
 {name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
 transaction control. Proof sketch: as for CREATE TABLE, with {name}`Catalog.addColumn`. -/
 theorem resolveAddColumn_applyCatalog (context : ResolveContext) (catalog after : Catalog) (index : Nat)
-    (tableName : String) (definition : Syntax.ColumnDefinition) (statement : Resolved.Statement)
+    (tableName : Identifier) (definition : Syntax.ColumnDefinition) (statement : Resolved.Statement)
     (ok : resolveAddColumn context catalog index tableName definition = .ok (statement, after)) :
     after = statement.applyCatalog catalog ∧ statement.isControl = false := by
   unfold resolveAddColumn at ok
@@ -100,10 +99,10 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
     split at ok <;> cases ok
     obtain ⟨equal, control⟩ := resolveCreateTable_applyCatalog _ _ _ _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
-  | createIndex name unique table columns =>
+  | createIndex name unique table terms filter =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    obtain ⟨equal, control⟩ := resolveCreateIndex_applyCatalog _ _ _ _ _ _ _ _ _ (by assumption)
+    obtain ⟨equal, control⟩ := resolveCreateIndex_applyCatalog _ _ _ _ _ _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
   | addColumn table column =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok

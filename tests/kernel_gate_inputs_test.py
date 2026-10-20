@@ -15,12 +15,12 @@ pytestmark = [pytest.mark.integration, pytest.mark.kernel, pytest.mark.requires_
 @pytest.mark.parametrize("module,old,new,name", [
     ("SchemaInputs", '"3.51.0" "2025', '"3.46.0" "2025', "Generated.profile"),
     ("SchemaInputs", "def startCatalog : Catalog := []",
-     'def startCatalog : Catalog := [{ name := "t", entry := .table { columns := [{ name := "a", declaredType := none }] } }]',
+     'def startCatalog : Catalog := [{ name := name! "t", entry := .table { columns := [{ name := name! "a", declaredType := none }] } }]',
      "Generated.startCatalog"),
     ("SqlInputs", "def resolved : List Resolved.Statement := []", "def resolved : List Resolved.Statement := [.begin]",
      "Generated.resolved"),
     ("SqlInputs", "def nextCatalog : Catalog := []",
-     'def nextCatalog : Catalog := [{ name := "t", entry := .table { columns := [{ name := "a", declaredType := none }] } }]',
+     'def nextCatalog : Catalog := [{ name := name! "t", entry := .table { columns := [{ name := name! "a", declaredType := none }] } }]',
      "Generated.nextCatalog"),
 ], ids=["profile", "start_catalog", "resolved", "next_catalog"])
 def test_changed_generated_declaration(kernel: KernelCase, module: str, old: str, new: str, name: str) -> None:
@@ -39,6 +39,6 @@ def test_changed_record(kernel: KernelCase) -> None:
     """A record whose resolution differs from the compiled inputs is rejected, as is one that does not resolve."""
     changed = kernel.check(record={**RECORD, "script": ["begin"]})
     assert changed.returncode == 1 and "Generated.script" in changed.stderr, changed.diagnostic()
-    restricted = kernel.check(record={**RECORD, "script": [{"createIndex": {"name": "i", "unique": False,
-                                                                            "table": "t", "columns": ["a"]}}]})
+    restricted = kernel.check(record={**RECORD, "script": [{"createTable": {"name": "r", "constraints": [], "columns": [
+        {"name": "a", "declaredType": None, "constraints": [{"notNull": {"algorithm": None}}]}]}}]})
     assert restricted.returncode == 1 and "does not resolve" in restricted.stderr, restricted.diagnostic()

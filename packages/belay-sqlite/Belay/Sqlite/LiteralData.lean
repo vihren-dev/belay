@@ -1,12 +1,11 @@
-import Belay.Sqlite.Model
-import Belay.Sqlite.Comparison
+import Belay.Sqlite.ExprEval
 
 set_option doc.verso true
 
 /-! A closed literal-DML domain over column positions. Admission is a proof
 obligation, separate from native constraint failures. Unmodeled coercions and
-comparisons are never SQL errors. Writes carry the unique keys of their table as
-column positions, which resolution computes from the catalog. -/
+comparisons are never SQL errors. Writes carry the unique keys of their table
+({name}`Belay.Sqlite.UniqueKey`), which resolution computes from the catalog. -/
 namespace Belay.Sqlite
 namespace LiteralData
 
@@ -31,19 +30,36 @@ conflict. -/
 def keyCellsEqual (first second : Value) : Bool :=
   first != .null && second != .null && compareValues first second == .eq
 
-/-- For each key position, require both reads to be key cells that conflict
-({name}`keyCellsEqual`). A missing or NULL cell makes the comparison false, so two rows
-with a NULL in a key never conflict, as in SQLite. An empty key compares equal
-vacuously; {assert}`keyEqual [] { rowid := 0, values := [] } { rowid := 1, values := [] } = true`. -/
-def keyEqual (key : List Nat) (first second : Row) : Bool :=
-  key.all fun position => match read first position, read second position with
-    | some a, some b => keyCellsEqual a b
-    | _, _ => false
+/-- The value of a key term in a row: the cell of a column, or the value of an expression
+over the row. Key expressions read no clock, so they evaluate at clock 0. A missing cell
+gives {name}`Option.none`. -/
+def termValue (row : Row) : KeyTerm → Option Value
+  | .column position => read row position
+  | .expression value => some (value.eval 0 row.values)
+
+/-- Whether a key constrains the row: always for a key without filter, and for a partial
+unique index when its filter is true for the row ({name}`Resolved.truthy`; NULL is not
+true). -/
+def keyApplies (key : UniqueKey) (row : Row) : Bool :=
+  match key.filter with
+  | none => true
+  | some filter => Resolved.truthy (filter.eval 0 row.values)
+
+/-- Whether two rows conflict on a key: the key applies to both ({name}`keyApplies`), and
+for each term both values are key cells that conflict ({name}`keyCellsEqual`). A missing
+or NULL value makes the comparison false, so two rows with a NULL in a key never
+conflict, as in SQLite. An empty key compares equal vacuously:
+{assert}`keyEqual { terms := [] } { rowid := 0, values := [] } { rowid := 1, values := [] } = true`. -/
+def keyEqual (key : UniqueKey) (first second : Row) : Bool :=
+  keyApplies key first && keyApplies key second &&
+    key.terms.all fun term => match termValue first term, termValue second term with
+      | some a, some b => keyCellsEqual a b
+      | _, _ => false
 
 /-- Reject each row that compares equal under {name}`keyEqual` to a later row.
 Preserve duplicate NULL-containing keys because those comparisons are false.
 An empty row list satisfies the check for any key. -/
-def uniqueRows (key : List Nat) : List Row → Bool
+def uniqueRows (key : UniqueKey) : List Row → Bool
   | [] => true
   | row :: rest => !(rest.any (keyEqual key row)) && uniqueRows key rest
 
@@ -51,14 +67,14 @@ def uniqueRows (key : List Nat) : List Row → Bool
 checks inspect only zipped column/cell pairs; row width is checked separately.
 A table with no rows satisfies both checks. In the admitted domain these checks
 represent ABORT constraints, rather than admission restrictions. -/
-def constraints (keys : List (List Nat)) (table : Table) : Bool :=
+def constraints (keys : List UniqueKey) (table : Table) : Bool :=
   table.rows.all (fun row => (table.shape.columns.zip row.values).all
     (fun (column, value) => !column.notNull || value != .null)) &&
   keys.all (fun key => uniqueRows key table.rows)
 
 /-- Require {name}`constraints` on the table before a write: its NOT NULL cells and its
 unique keys hold. SQLite guarantees them for every table that it stores. -/
-def tableReady (keys : List (List Nat)) (table : Table) : Bool :=
+def tableReady (keys : List UniqueKey) (table : Table) : Bool :=
   constraints keys table
 
 /-- Return 1 for no rows, otherwise one more than the largest stored rowid,
@@ -115,13 +131,14 @@ def aliasReady (shape : CatalogTable) : Bool :=
 
 /-- Require {name}`tableReady` before the write, {name}`aliasReady`, one value per column
 in each row, {name}`storedForm` on every column/value pair, and a bounded rowid for
-every inserted row. This admits evaluation; the inserted table's constraint truth is
-checked separately. -/
-def insertReady (keys : List (List Nat)) (table : Table) (rows : List (List Value)) : Bool :=
+every row of the table with the rows inserted ({lit}`result`, which the execution
+computes: {name}`inserted`). This admits evaluation; the inserted table's constraint truth
+is checked separately. -/
+def insertReady (keys : List UniqueKey) (table : Table) (rows : List (List Value)) (result : Table) : Bool :=
   tableReady keys table && aliasReady table.shape &&
   rows.all (fun values => values.length == table.shape.columns.length &&
     (table.shape.columns.zip values).all (fun (column, value) => storedForm column.affinity value)) &&
-  (inserted table rows).rows.all (fun row => boundedInteger row.rowid)
+  result.rows.all (fun row => boundedInteger row.rowid)
 
 end LiteralData
 end Belay.Sqlite

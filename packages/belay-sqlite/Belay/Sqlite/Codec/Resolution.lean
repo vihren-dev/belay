@@ -18,7 +18,21 @@ deriving instance Lean.FromJson, Lean.ToJson for Syntax.ColumnDefinition, Syntax
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.TableReference, Syntax.Join
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ConflictAction, Syntax.ConflictClause
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.Statement
-deriving instance Lean.ToJson for PrepareError
+deriving instance Lean.ToJson for ExprError
+
+/-- A prepare error as JSON, in one flat form: an error that names a catalog object as its
+own constructor, and an {name}`ExprError` as that error's constructor, so the wire form
+does not show the split of the two types. For example, {lit}`no such table: t` is
+{lit}`{"noSuchTable": {"name": "t"}}` and {lit}`no such column: a` is
+{lit}`{"noSuchColumn": {"name": "a"}}`, the derived form of each constructor. -/
+instance : Lean.ToJson PrepareError where
+  toJson
+    | .tableExists name => Lean.Json.mkObj [("tableExists", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .indexNameUsed name => Lean.Json.mkObj [("indexNameUsed", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .tableNameUsed name => Lean.Json.mkObj [("tableNameUsed", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .indexExists name => Lean.Json.mkObj [("indexExists", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .noSuchTable name => Lean.Json.mkObj [("noSuchTable", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .expression error => Lean.toJson error
 
 /-- A model restriction as JSON: the statement index, the path, the message that users
 read as {lit}`reason`, and the stable id of its kind as {lit}`restriction`. -/
@@ -55,30 +69,34 @@ deriving instance Lean.ToExpr for DefaultForm
 deriving instance Lean.ToExpr for ColumnDefault
 deriving instance Lean.ToExpr for CatalogColumn
 deriving instance Lean.ToExpr for CatalogTable
-deriving instance Lean.ToExpr for CatalogIndex
-deriving instance Lean.ToExpr for CatalogEntry
-deriving instance Lean.ToExpr for CatalogObject
-deriving instance Lean.ToExpr for PrepareError
 deriving instance Lean.ToExpr for Resolved.JsonFunction
 deriving instance Lean.ToExpr for Resolved.DateFunction
 deriving instance Lean.ToExpr for Resolved.Expr, Resolved.Arguments
+deriving instance Lean.ToExpr for KeyTerm
+deriving instance Lean.ToExpr for IndexKey
+deriving instance Lean.ToExpr for CatalogIndex
+deriving instance Lean.ToExpr for CatalogEntry
+deriving instance Lean.ToExpr for CatalogObject
+deriving instance Lean.ToExpr for ExprError
+deriving instance Lean.ToExpr for PrepareError
 deriving instance Lean.ToExpr for Resolved.Aggregate
 deriving instance Lean.ToExpr for Resolved.Output
 deriving instance Lean.ToExpr for Resolved.SortKey
 deriving instance Lean.ToExpr for Resolved.JoinKind
-deriving instance Lean.ToExpr for Resolved.Join
-deriving instance Lean.ToExpr for Resolved.EachSource
+deriving instance Lean.ToExpr for Resolved.Source
+deriving instance Lean.ToExpr for Resolved.QuerySource
 deriving instance Lean.ToExpr for Resolved.Query
 deriving instance Lean.ToExpr for Resolved.ConflictAction
 deriving instance Lean.ToExpr for Resolved.ConflictClause
 deriving instance Lean.ToExpr for Resolved.ConflictPolicy
-deriving instance Lean.ToExpr for Resolved.ClockCell
+deriving instance Lean.ToExpr for Resolved.Cell
 deriving instance Lean.ToExpr for Resolved.Statement
 
 /-- The supported version of {lit}`ScriptRecord`, the structural record of a schema
-and a script: {assert}`scriptRecordVersion = 3`. Version 3 retains each default's
-source spelling. Earlier versions do not carry this metadata. -/
-def scriptRecordVersion : Nat := 3
+and a script: {assert}`scriptRecordVersion = 4`. Version 4 gives CREATE INDEX its key terms
+and filter (ADR 0014, slice 1); version 3 retained each default's source spelling. Earlier
+versions do not carry this metadata. -/
+def scriptRecordVersion : Nat := 4
 
 /-- The structural record of a schema and a script: the SQLite release and build of
 the profile, and the schema and script statements as written. Use an empty schema

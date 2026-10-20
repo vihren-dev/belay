@@ -13,10 +13,11 @@ from conformance.case_format import Json
 from conformance.model_check import compiled_many
 
 MUTANTS = {
-    "update_ignored": ("StatementStep", "(LiteralData.updated table assignments filter)", "table"),
+    "update_ignored": ("StatementStep", "LiteralData.updated clock table assignments filter", "table"),
     "add_unpadded": ("Execution", "(database.addColumn target column value)",
                      "{ database with catalog := database.catalog.addColumn target column }"),
-    "rollback_ignored": ("StatementStep", ".next { database := original }", ".next { database := state.database }"),
+    "rollback_ignored": ("StatementStep", ".next { state with database := original, snapshot := none }",
+                         ".next { state with snapshot := none }"),
     "unique_disabled": ("LiteralData", "keys.all (fun key => uniqueRows key table.rows)", "true"),
 }
 

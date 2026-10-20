@@ -1,3 +1,4 @@
+import Belay.Sqlite.ByteText
 set_option doc.verso true
 
 /-! Byte classes of the SQLite 3.51.0 JSON reader ({lit}`jsonIsSpace`, {lit}`jsonIsOk`,
@@ -39,10 +40,6 @@ def isLabelStart (byte : UInt8) : Bool := isAsciiAlpha byte || byte == 36 || byt
 a label start byte or a digit. -/
 def isLabelPart (byte : UInt8) : Bool := isLabelStart byte || isAsciiDigit byte
 
-/-- The ASCII lowercase of a byte ({lit}`sqlite3UpperToLower`); other bytes stay the
-same. -/
-def lowerAscii (byte : UInt8) : UInt8 := if 65 ≤ byte && byte ≤ 90 then byte + 32 else byte
-
 /-- The value of a hexadecimal digit ({lit}`jsonHexToInt`). The arithmetic is SQLite's:
 it gives a value in 0 to 15 for every byte, also for a byte that is not a digit. -/
 def hexValue (byte : UInt8) : UInt32 :=
@@ -53,6 +50,16 @@ def hexValue (byte : UInt8) : UInt32 :=
 {lit}`start` ({lit}`jsonIs2Hex`, {lit}`jsonIs4Hex`). -/
 def hasHexDigits (text : Array UInt8) (start count : Nat) : Bool :=
   (List.range count).all fun offset => isHexDigit (byteAt text (start + offset))
+
+/-- The bytes of the text from {lit}`start` up to, not including, {lit}`stop`. -/
+def slice (text : Array UInt8) (start stop : Nat) : List UInt8 :=
+  (List.range (stop - start)).map fun offset => byteAt text (start + offset)
+
+/-- The first position at or after {lit}`position` that is not a hexadecimal digit. -/
+def hexDigitsEnd (text : Array UInt8) : Nat → Nat → Nat
+  | 0, position => position
+  | fuel + 1, position =>
+    if isHexDigit (byteAt text position) then hexDigitsEnd text fuel (position + 1) else position
 
 /-- Whether the text at {lit}`start` begins with the ASCII pattern, with the case of
 letters ignored ({lit}`sqlite3StrNICmp`). A NUL byte in the text never matches. -/

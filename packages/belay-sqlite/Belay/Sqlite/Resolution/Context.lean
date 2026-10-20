@@ -56,7 +56,7 @@ classification scope of {name}`constantDefaultExpression`. A bare identifier is 
 TRUE and FALSE are boolean keywords, and other names are stored as text. Other
 expressions use {name}`constantDefaultExpression`, including its permissive
 classification of forms that remain model restrictions. For example,
-{lean}`constantDefault (.identifier "hello" .none)` is true. Omit the DEFAULT
+{lean}`constantDefault (.identifier (name! "hello") .none)` is true. Omit the DEFAULT
 constraint when a column needs no default. -/
 def constantDefault (expression : Syntax.Expr) : Bool :=
   match expression with
@@ -98,5 +98,11 @@ def prepareError (catalog : Catalog) (error : PrepareError) : StatementResolutio
 /-- A model restriction at a path of statement {lit}`index`. -/
 def restrict (index : Nat) (path : List Nat) (kind : RestrictionKind) : StatementResolution :=
   .error { statement := index, path := path, kind := kind }
+
+/-- Turn a value issue into the statement's resolution: a prepare error keeps the
+catalog, a restriction refuses the script. -/
+def issueResolution (catalog : Catalog) (index : Nat) (path : List Nat) : ValueIssue → StatementResolution
+  | .prepare error => prepareError catalog (.expression error)
+  | .restriction inner reason => restrict index (path ++ inner) reason
 
 end Belay.Sqlite

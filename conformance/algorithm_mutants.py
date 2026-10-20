@@ -10,20 +10,25 @@ from conformance.resolve_mutants import SQLITE
 
 RUN = SQLITE + "UpsertRun.lean"
 """The rows of an INSERT with conflict algorithms."""
-EXECUTION = SQLITE + "StatementStep.lean"
-"""The SQL step, which rolls back a transaction."""
+STATE = SQLITE + "SqlState.lean"
+"""The connection state: the failure of a statement and the publication of its effect."""
 POLICY = SQLITE + "Resolution/ConflictPolicy.lean"
 """The conflict policy of INSERT, which gives each constraint its algorithm."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "fail_keeps_no_row": (RUN, "  | .constraintFail => database.setRows target reached.rows", "  | .constraintFail => database"),
+    "fail_keeps_no_row": (STATE,
+        "    .halt (state.failed position reason (if reason = .constraintFail then reached else state.database))",
+        "    .halt (state.failed position reason state.database)"),
+    "failure_keeps_rows": (STATE,
+        "    .halt (state.failed position reason (if reason = .constraintFail then reached else state.database))",
+        "    .halt (state.failed position reason reached)"),
     "ignore_stops": (RUN, "  | .ignore => .ok (table, none)", "  | .ignore => .error (failureError .abort)"),
     "replace_first_key_only": (RUN,
         "  { table with rows := table.rows.filter fun row => !((List.range keys.length).any fun index =>",
         "  { table with rows := table.rows.filter fun row => !((List.range 1).any fun index =>"),
     "replace_blocks": (RUN, "    algorithmAt algorithms index != .replace && conflictsAt keys table proposed index",
         "    conflictsAt keys table proposed index"),
-    "rollback_keeps_transaction": (EXECUTION, "  if reason = .constraintRollback then match state.snapshot with",
+    "rollback_keeps_transaction": (STATE, "  if reason = .constraintRollback then match state.snapshot with",
         "  if false then match state.snapshot with"),
     "not_null_ignores_algorithm": (RUN,
         "  | some column => failedConstraint table (algorithmAt policy.notNull column)",
@@ -42,10 +47,12 @@ IGNORE stops at the row; REPLACE deletes only the rows of the first key, so a ro
 conflicts on two keys keeps one; a REPLACE key fails as ABORT; ROLLBACK keeps the
 transaction open; a NOT NULL failure ignores its algorithm; a key ignores the algorithm
 of its constraint; the OR clause does not override the constraint's algorithm; a NOT NULL
-column ignores the algorithm of its constraint."""
+column ignores the algorithm of its constraint. `failure_keeps_rows` (ADR 0013, step 7):
+every failure keeps the rows that the statement reached, so ROLLBACK outside a transaction
+keeps the rows before the failing one."""
 
 TARGETS: dict[str, tuple[str, ...]] = {
-    "fail_keeps_no_row": ("or-fail",), "ignore_stops": ("or-ignore",),
+    "fail_keeps_no_row": ("or-fail",), "failure_keeps_rows": ("or-rollback-idle",), "ignore_stops": ("or-ignore",),
     "replace_first_key_only": ("or-replace-two-rows",), "replace_blocks": ("replace-into",),
     "rollback_keeps_transaction": ("or-rollback-transaction",), "not_null_ignores_algorithm": ("or-ignore-not-null",),
     "constraint_algorithm_ignored": ("constraint-ignore",), "or_does_not_override": ("constraint-or-overrides",),
@@ -54,7 +61,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 """The authored case of `conformance.authored_algorithms` that each mutant changes."""
 
 GUARDS: dict[str, str] = {
-    "fail_keeps_no_row": "rule:failedDatabase", "ignore_stops": "rule:failedConstraint",
+    "fail_keeps_no_row": "rule:SqlState.publish", "failure_keeps_rows": "rule:SqlState.publish", "ignore_stops": "rule:failedConstraint",
     "replace_first_key_only": "rule:replaced", "replace_blocks": "rule:blockingKey",
     "rollback_keeps_transaction": "rule:SqlState.failed", "not_null_ignores_algorithm": "rule:upsertRow",
     "constraint_algorithm_ignored": "rule:insertPolicy", "or_does_not_override": "rule:insertPolicy",

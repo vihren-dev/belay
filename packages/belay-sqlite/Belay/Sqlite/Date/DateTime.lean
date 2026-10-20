@@ -122,7 +122,7 @@ def DateTime.computeCivilDate (p : DateTime) : DateTime :=
 /-- {lit}`computeHMS`: set the time of day from the Julian day field, after
 {name}`DateTime.computeJulianDay`. The seconds are the double
 {lit}`(day_ms % 60000)/1000.0`, so they keep the milliseconds. The sum
-{lit}`iJD + 43200000` wraps as in {name}`timeOfDayOfClock`. -/
+{lit}`iJD + 43200000` wraps ({name}`wrapInt64`). -/
 def DateTime.computeTimeOfDay (p : DateTime) : DateTime :=
   if p.validTime then p else
   let p := p.computeJulianDay

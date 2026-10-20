@@ -15,7 +15,7 @@ namespace Belay.Sqlite.Conformance
 
 /-- The starting rows of one table, by its name in {lit}`sqlite_schema`. -/
 structure NamedRows where
-  name : String
+  name : Identifier
   rows : List Row
   deriving FromJson
 
@@ -38,7 +38,7 @@ def nativeColumn (column : CatalogColumn) : NativeColumn :=
     defaultValue := column.defaultValue.map (·.sourceText) }
 
 /-- The table at a catalog position, under its catalog object name, as native metadata. -/
-def nativeTableOf (catalog : Catalog) (position : Nat) (name : String) (table : Table) : NativeTable where
+def nativeTableOf (catalog : Catalog) (position : Nat) (name : Identifier) (table : Table) : NativeTable where
   name := name
   columns := table.shape.columns.map nativeColumn
   primaryKey := table.shape.primaryKey
@@ -95,13 +95,13 @@ def predict (p : PredictInput) : Json :=
       Json.mkObj [("visible", toJson ([] : List Json)), ("persisted", toJson ([] : List Json)),
         ("transactionOpen", toJson false), ("primaryCode", toJson (0 : Nat)),
         ("phase", toJson (none : Option ErrorPhase))]])]
-  | .ok unclocked =>
+  | .ok resolution =>
     let clock : Clock := fun position => p.clocks.getD position 0
-    let resolution := { unclocked with resolved := scriptAtClock clock unclocked.resolved }
-    let start : SqlState := { database := databaseOf resolution.startCatalog (p.initial.map NamedRows.native) }
+    let start : SqlState := { database := databaseOf resolution.startCatalog (p.initial.map NamedRows.native),
+                              clock := scriptClock clock resolution.resolved }
     let pass := passFrom 0 resolution.resolved start
     let steps := pass.observations.map stepJson
-    let supported := !(p.clocks.isEmpty && scriptReadsClock unclocked.resolved) &&
+    let supported := !(p.clocks.isEmpty && scriptReadsClock resolution.resolved) &&
       pass.supported && !pass.observations.any invalidObservation
     Json.mkObj [("supported", toJson supported), ("steps", toJson steps), ("outputs", toJson pass.outputs)]
 

@@ -10,26 +10,28 @@ OUTPUTS = "verifier-conformance/VerifierConformance/Outputs.lean"
 """The outputs of statements, with the RETURNING rows."""
 RETURNING = "belay-sqlite/Belay/Sqlite/Resolution/Returning.lean"
 """The resolution of RETURNING columns."""
-CELLS = "belay-sqlite/Belay/Sqlite/Resolution/ClockRows.lean"
+CELLS = "belay-sqlite/Belay/Sqlite/Resolution/InsertCells.lean"
 """The constant values of INSERT rows."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "update_returning_old_values": (OUTPUTS,
-        "let written := chosen.map fun row => (LiteralData.assign table.shape.columns assignments row).values",
+        "let written := chosen.map fun row => (LiteralData.assign clock table.shape.columns assignments row).values",
         "let written := chosen.map fun row => row.values"),
     "update_returning_every_row": (OUTPUTS,
         "      let written := chosen.map fun row =>", "      let written := table.rows.map fun row =>"),
     "returning_rows_on_failure": (OUTPUTS,
-        "      return ⟨names, returnedRows returning written, some rows.length⟩\n"
+        "      return ⟨names, returnedRows clock returning written, some rows.length⟩\n"
         "    else if constraintFailure then some ⟨names, [], some 0⟩ else none",
-        "      return ⟨names, returnedRows returning written, some rows.length⟩\n"
-        "    else if constraintFailure then some ⟨names, returnedRows returning rows, some 0⟩ else none"),
+        "      return ⟨names, returnedRows clock returning written, some rows.length⟩\n"
+        "    else if constraintFailure then\n"
+        "      some ⟨names, returnedRows clock returning (Resolved.rowsAt clock [] rows), some 0⟩ else none"),
     "returning_names_ignore_definition": (RETURNING,
-        "      .ok [(resolved, alias.getD ((definedName scope value).getD text))]", "      .ok [(resolved, alias.getD text)]"),
+        "      .ok [(resolved, (alias.map (·.text)).getD ((definedName scope value).getD text))]",
+        "      .ok [(resolved, (alias.map (·.text)).getD text)]"),
     "constant_not_evaluated": (CELLS,
-        "    else .ok (operand.1.eval [], none)",
-        "    else .ok (match operand.1 with\n"
-        "      | .arithmetic _ left _ => left.eval []\n      | other => other.eval [], none)"),
+        "    else .ok (.value (operand.1.eval 0 []))",
+        "    else .ok (.value (match operand.1 with\n"
+        "      | .arithmetic _ left _ => left.eval 0 []\n      | other => other.eval 0 []))"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
 replacement. The names follow the list in the task of slice 3a; `constant_not_evaluated`

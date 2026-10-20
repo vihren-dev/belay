@@ -12,30 +12,30 @@ open Belay.Sqlite
 /-- {lit}`t(id INTEGER PRIMARY KEY, v)`: the alias at position 0, which is also the
 primary key. -/
 def shape : CatalogTable :=
-  { columns := [{ name := "id", declaredType := some "INTEGER" }, { name := "v", declaredType := none }],
+  { columns := [{ name := (name! "id"), declaredType := some "INTEGER" }, { name := (name! "v"), declaredType := none }],
     primaryKey := [0], rowidAlias := some 0 }
 
 /-- The table with the row {lit}`(5, 'a')` at rowid 5. -/
 def table : Table := { shape, rows := [{ rowid := 5, values := [.integer 5, .text [97]] }] }
 
 /-- A database with the table at position 0. -/
-def database : Database := .ofTables [("t", table)]
+def database : Database := .ofTables [((name! "t"), table)]
 
 /-- The rows of the table after a write, or none for a failure. -/
-def rowsAfter : Outcome → Option (List Row)
-  | .success database => (database.table 0).map (·.rows)
-  | .failure .. | .pending .. => none
+def rowsAfter : Effect → Option (List Row)
+  | .ok database => (database.table 0).map (·.rows)
+  | .error _ => none
 
 /-- The error of a failed write, or none. -/
-def errorOf : Outcome → Option ExecutionError
-  | .failure _ reason _ => some reason
-  | .success _ | .pending .. => none
+def errorOf : Effect → Option ExecutionError
+  | .error (reason, _) => some reason
+  | .ok _ => none
 
 /-- INSERT of the rows into the table. -/
-def insert (rows : List (List Value)) : Outcome := literalStep (.insert 0 rows []) database 0
+def insert (rows : List (List Value)) : Effect := literalStep 0 (.insert 0 (rows.map (·.map .value)) []) database
 
 /-- UPDATE of the alias to the value. -/
-def update (value : Value) : Outcome := literalStep (.update 0 [(0, .literal value)] none []) database 0
+def update (value : Value) : Effect := literalStep 0 (.update 0 [(0, .literal value)] none []) database
 
 -- A NULL alias takes the next rowid, also into its cell; an integer alias is the rowid.
 #guard rowsAfter (insert [[.null, .text [98]], [.integer (-3), .text [99]]]) ==

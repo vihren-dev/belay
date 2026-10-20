@@ -44,7 +44,7 @@ rows. -/
 def databaseOf (catalog : Catalog) (natives : List NativeTable) : Database :=
   { catalog, rows := catalog.map fun object => match object.entry with
     | .table _ => ((natives.find? fun native =>
-        normalizeIdentifier native.name == normalizeIdentifier object.name).map (·.rows)).getD []
+        native.name.sameName object.name).map (·.rows)).getD []
     | .index _ => [] }
 
 /-- The primary result-code abstraction matches the granularity of ExecutionError. -/
@@ -104,7 +104,8 @@ def Case.clock (c : Case) : Clock := fun position => c.clocks.getD position 0
 
 /-- Resolve the case under its recorded profile, then check the initial state first,
 admission second, and the complete execution trace and outputs last. Each statement
-runs at its recorded clock value ({name}`scriptAtClock`); a script that reads the clock is
+runs at its recorded clock value as {name}`runSqlAt` gives it ({name}`scriptClock`); a script
+that reads the clock is
 unsupported for a record without clock values. A model restriction is unsupported; a schema that SQLite prepared but resolution refuses is
 a disagreement. -/
 def classifyCase (c : Case) : Verdict :=
@@ -112,16 +113,15 @@ def classifyCase (c : Case) : Verdict :=
   match resolveSchemaAndScript profile c.schema c.script with
   | .error (.schemaRestricted _) | .error (.scriptRestricted _) => .modelUnsupported
   | .error (.schemaPrepareError ..) => .disagree none
-  | .ok unclocked =>
-    let resolution := { unclocked with resolved := scriptAtClock c.clock unclocked.resolved }
+  | .ok resolution =>
     let initial := databaseOf resolution.startCatalog c.initial
-    let pass := passFrom 0 resolution.resolved { database := initial }
+    let pass := passFrom 0 resolution.resolved { database := initial, clock := scriptClock c.clock resolution.resolved }
     let observed := pass.observations
     let outputs := pass.outputs
     match observed, c.nativeTrace with
     | first :: rest, expected :: expectations =>
       if !matchesObservation first expected then .disagree none
-      else if (c.clocks.isEmpty && scriptReadsClock unclocked.resolved) ||
+      else if (c.clocks.isEmpty && scriptReadsClock resolution.resolved) ||
           !pass.supported || observed.any invalidObservation ||
           c.parameters.any (fun values => !values.isEmpty) || (c.outputs.isSome && outputs.any Option.isNone) then
         .modelUnsupported

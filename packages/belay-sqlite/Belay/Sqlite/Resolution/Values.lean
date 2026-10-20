@@ -1,6 +1,7 @@
 import Belay.Sqlite.Resolution.Profile
 import Belay.Sqlite.Resolution.Resolved
 import Belay.Sqlite.NumberConvert
+import Belay.Sqlite.Arithmetic
 
 set_option doc.verso true
 
@@ -12,11 +13,12 @@ values and no time functions, so those are model restrictions. -/
 
 namespace Belay.Sqlite
 
-/-- Why an expression has no value: a SQLite prepare error, or a model restriction
-with the path of the node inside the expression. -/
+/-- Why an expression has no value: a SQLite prepare error of an expression
+({name}`ExprError`, which names no catalog object), or a model restriction with the path
+of the node inside the expression. -/
 inductive ValueIssue where
   /-- SQLite refuses to prepare the statement. -/
-  | prepare (error : PrepareError)
+  | prepare (error : ExprError)
   /-- The model does not describe the expression at this path, for the reason of the
   restriction kind. -/
   | restriction (path : List Nat) (kind : RestrictionKind)
@@ -96,7 +98,7 @@ def startsHex (chars : List Char) : Bool := chars.take 2 == ['0', 'x'] || chars.
 ({lit}`codeReal`): {name}`atof` of the text, negated when {lit}`negated` is true. -/
 def realLiteral (chars : List Char) (negated : Bool) : Value :=
   let value := (atof (String.ofList chars).toUTF8.toList).1
-  .real (if negated then -value else value).toBits
+  realValue (if negated then -value else value)
 
 /-- The value of a numeric literal in a query ({lit}`codeInteger` and {lit}`codeReal`):
 an integer as in {name}`numericValue`; a REAL by {name}`realLiteral`; and the

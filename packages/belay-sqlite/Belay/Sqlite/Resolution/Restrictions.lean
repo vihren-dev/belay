@@ -21,8 +21,15 @@ inductive RestrictionKind where
   | createTableConstraints
   /-- Only literal defaults and {lit}`CURRENT_TIMESTAMP` are modeled (ADR 0008, T14). -/
   | unmodeledDefault
-  /-- A CREATE INDEX that runs is not modeled (ADR 0008). -/
-  | createIndexRuns
+  /-- A string literal as a key term of CREATE INDEX, also a double-quoted name that is no
+  column: SQLite reads a string that names a column as that column (ADR 0014, slice 1). -/
+  | indexStringTerm
+  /-- A date and time function in a key term or the filter of CREATE INDEX: SQLite refuses
+  one that reads the clock only when it writes a row (ADR 0014, slice 1). -/
+  | indexDateFunction
+  /-- A JSON function in a key term or the filter of CREATE INDEX: it can fail while a row
+  is written, which the model's key check does not describe (ADR 0014, slice 1). -/
+  | indexJsonFunction
   /-- The added column requires unmodeled default evaluation. -/
   | addColumnConstraint
   /-- A {lit}`SET` value that reads the row is not modeled for a column of a unique key
@@ -49,17 +56,14 @@ inductive RestrictionKind where
   extended to queries and write expressions on 2026-10-14, where SQLite reads the
   rowid and the model would report {lit}`no such column`. -/
   | rowidName
-  /-- A join operator other than {lit}`,`, {lit}`[INNER] JOIN`, {lit}`CROSS JOIN`,
-  {lit}`LEFT [OUTER] JOIN`, {lit}`RIGHT [OUTER] JOIN` and {lit}`FULL [OUTER] JOIN`, each
-  with an optional leading {lit}`NATURAL`, is not modeled, for example
-  {lit}`OUTER LEFT JOIN` (ADR 0012, amendment 2). -/
+  /-- A join operator that SQLite refuses with {lit}`unknown join type`, such as
+  {lit}`INNER OUTER JOIN`, is not modeled: the model has no such prepare error (ADR 0012,
+  amendment 2; ADR 0013, amendment 2). -/
   | joinOperator
-  /-- Two sources of a query with the same name are not modeled (ADR 0012, amendment 2,
-  owner decision on question 3). -/
-  | duplicateSource
-  /-- An {lit}`ON` condition that names a table joined after it is not modeled: SQLite
-  resolves it against the whole {lit}`FROM`, and the model evaluates it while it joins
-  (ADR 0012, amendment 2). -/
+  /-- An {lit}`ON` condition that names a source joined after it is not modeled: SQLite
+  moves it to {lit}`WHERE` for a {lit}`FROM` without outer joins and refuses it otherwise,
+  with a prepare error that the model does not have (ADR 0012, amendment 2; ADR 0013,
+  amendment 2). -/
   | laterTableInOn
   /-- Queries of SQLite's own tables, such as {lit}`sqlite_schema`, are not modeled (ADR 0012 slice 1). -/
   | systemTable
@@ -85,11 +89,14 @@ inductive RestrictionKind where
   | constantFunctionError
   /-- Only {lit}`json_each` with one or two arguments is modeled as a table-valued function in {lit}`FROM` (ADR 0012 slice 6d). -/
   | tableFunction
-  /-- A table after a {lit}`json_each` source in {lit}`FROM` is not modeled (ADR 0012 slice 6d). -/
-  | tableAfterFunction
-  /-- Only an inner join without {lit}`NATURAL` or {lit}`USING` is modeled with {lit}`json_each` (ADR 0012 slice 6d). -/
+  /-- {lit}`json_each` as the right operand of a right or full join, or with {lit}`NATURAL`
+  or {lit}`USING`, and a {lit}`NATURAL` join after {lit}`json_each`, are not modeled: a
+  correlated source has no fixed rows to keep unmatched, and {lit}`NATURAL` skips hidden
+  columns (ADR 0012 slice 6d; ADR 0013, amendment 2). -/
   | functionJoin
-  /-- An argument of {lit}`json_each` that reads a later source is not modeled (ADR 0012 slice 6d). -/
+  /-- An argument of {lit}`json_each` that reads a later source is not modeled: SQLite
+  evaluates it only because its planner reorders inner joins, and the model joins in
+  written order (ADR 0012 slice 6d; ADR 0013, amendment 2). -/
   | laterSourceInArguments
   deriving Repr, DecidableEq
 

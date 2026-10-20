@@ -17,6 +17,6 @@ invariant requires conformance to {name}`Generated.startCatalog` under
 no observation. The starting catalog is supplied only by sealed {lit}`SchemaInputs`,
 so no handwritten duplicate is needed. -/
 def current : SqliteVerifier.Interpretation Requirements.LogicalState :=
-  SqliteVerifier.projectedInterpretation Generated.profile Generated.startCatalog "invoices" ["amount"]
+  SqliteVerifier.projectedInterpretation Generated.profile Generated.startCatalog (name! "invoices") [name! "amount"]
 
 end Interpretation

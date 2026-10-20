@@ -48,7 +48,7 @@ def test_sealed_source_compilation(compilation_case: CompilationFixture, proof_c
 def test_changed_supplied_schema(compilation_case: CompilationFixture) -> None:
     """An approved assertion about the supplied empty starting catalog rejects a changed generated catalog."""
     changed = EMPTY_SCHEMA_INPUTS.replace("def startCatalog : Catalog := []", 'def startCatalog : Catalog := '
-        '[{ name := "unexpected", entry := .table { columns := [{ name := "x", declaredType := some "TEXT" }] } }]')
+        '[{ name := name! "unexpected", entry := .table { columns := [{ name := name! "x", declaredType := some "TEXT" }] } }]')
     with pytest.raises(CompileError) as rejected:
         compilation_case.compile(schema=changed)
     assert rejected.value.phase == "compile" and "Requirements" in str(rejected.value)

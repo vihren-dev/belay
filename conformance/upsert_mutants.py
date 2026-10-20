@@ -17,8 +17,8 @@ OUTPUTS = "verifier-conformance/VerifierConformance/Outputs.lean"
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "update_first_row": (RUN,
-        "      | .update assignments filter => updateExisting keys table assignments filter existing proposed",
-        "      | .update assignments filter => updateExisting keys table assignments filter"
+        "      | .update assignments filter => updateExisting clock keys table assignments filter existing proposed",
+        "      | .update assignments filter => updateExisting clock keys table assignments filter"
         " (table.rows.headD existing) proposed"),
     "excluded_reads_existing": (UPSERT, "  let context := existing.values ++ proposed.values",
         "  let context := existing.values ++ existing.values"),
@@ -26,13 +26,13 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "  clauses.findSome? fun clause => (conflictingRow (clauseKeys keys clause) table proposed).map (clause, ·)",
         "  clauses.reverse.findSome? fun clause => (conflictingRow (clauseKeys keys clause) table proposed).map"
         " (clause, ·)"),
-    "target_checks_every_key": (UPSERT, "  | some key => [key]", "  | some _ => keys"),
+    "target_checks_every_key": (UPSERT, "  | some key => [UniqueKey.ofColumns key]", "  | some _ => keys"),
     "later_row_ignores_earlier": (RUN,
-        "    | .ok (next, written) => match upsertRun keys policy clauses next rest with",
-        "    | .ok (_, written) => match upsertRun keys policy clauses table rest with"),
+        "      | .ok (next, _) => upsertSteps clock keys policy clauses next rest",
+        "      | .ok _ => upsertSteps clock keys policy clauses table rest"),
     "skipped_row_counted": (OUTPUTS,
-        "      return ⟨names, returnedRows returning (written.map (·.values)), some written.length⟩",
-        "      return ⟨names, returnedRows returning (written.map (·.values)), some rows.length⟩"),
+        "      return ⟨names, returnedRows clock returning (written.map (·.values)), some written.length⟩",
+        "      return ⟨names, returnedRows clock returning (written.map (·.values)), some rows.length⟩"),
     "update_not_checked": (UPSERT, "  else checkedRow keys (replaceRow table existing changed) changed",
         "  else .ok (replaceRow table existing changed, some changed)"),
 }
@@ -55,7 +55,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 GUARDS: dict[str, str] = {
     "update_first_row": "rule:upsertRow", "excluded_reads_existing": "rule:updateExisting",
     "last_clause_handles": "rule:handlingClause", "target_checks_every_key": "rule:clauseKeys",
-    "later_row_ignores_earlier": "rule:upsertRun", "skipped_row_counted": "rule:statementOutput",
+    "later_row_ignores_earlier": "rule:upsertSteps", "skipped_row_counted": "rule:statementOutput",
     "update_not_checked": "rule:updateExisting",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant

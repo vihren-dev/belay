@@ -14,8 +14,8 @@ open Belay.Sqlite
 /-- {lit}`t(k INTEGER UNIQUE, u INTEGER UNIQUE, v NOT NULL)`: two keys and a NOT NULL
 column. -/
 def shape : CatalogTable :=
-  { columns := [{ name := "k", declaredType := some "INTEGER" }, { name := "u", declaredType := some "INTEGER" },
-      { name := "v", declaredType := none, notNull := true }],
+  { columns := [{ name := (name! "k"), declaredType := some "INTEGER" }, { name := (name! "u"), declaredType := some "INTEGER" },
+      { name := (name! "v"), declaredType := none, notNull := true }],
     uniqueKeys := [[0], [1]] }
 
 /-- The text value of one ASCII letter. -/
@@ -27,7 +27,7 @@ def table : Table :=
                     { rowid := 2, values := [.integer 2, .integer 2, letter 98] }] }
 
 /-- The keys of the table, as resolution gives them. -/
-def keys : List (List Nat) := [[0], [1]]
+def keys : List UniqueKey := [.ofColumns [0], .ofColumns [1]]
 
 /-- {lit}`excluded.v`: the proposed row starts after the three cells of the table's row. -/
 def excludedV : Resolved.Expr := .column 5
@@ -45,19 +45,19 @@ def aborts : Resolved.ConflictPolicy := { keys := [], notNull := [] }
 
 /-- The values of the rows after an UPSERT, or none for an error. -/
 def valuesAfter (clauses : List Resolved.ConflictClause) (rows : List (List Value)) : Option (List (List Value)) :=
-  match LiteralData.upsertRun keys aborts clauses table rows with
+  match LiteralData.upsertRun 0 keys aborts clauses table rows with
   | .ok (result, _) => some (result.rows.map (·.values))
   | .error _ => none
 
 /-- The error of an UPSERT, or none. -/
 def errorOf (clauses : List Resolved.ConflictClause) (rows : List (List Value)) : Option ExecutionError :=
-  match LiteralData.upsertRun keys aborts clauses table rows with
+  match LiteralData.upsertRun 0 keys aborts clauses table rows with
   | .ok _ => none
   | .error (reason, _, _) => some reason
 
 /-- The values of the rows that {lit}`RETURNING` reads, or none for an error. -/
 def returned (clauses : List Resolved.ConflictClause) (rows : List (List Value)) : Option (List (List Value)) :=
-  match LiteralData.upsertRun keys aborts clauses table rows with
+  match LiteralData.upsertRun 0 keys aborts clauses table rows with
   | .ok (_, written) => some (written.map (·.values))
   | .error _ => none
 
@@ -84,7 +84,7 @@ def returned (clauses : List Resolved.ConflictClause) (rows : List (List Value))
     [[.integer 1, .integer 9, letter 120]] == some .constraintViolation
 -- NOT NULL fails before conflict handling.
 #guard errorOf [nothingOnK] [[.integer 1, .integer 9, .null]] == some .constraintViolation
--- RETURNING reads the inserted and the updated rows, not the skipped ones.
+-- RETURNING reads the inserted and the updated 0 rows, not the skipped ones.
 #guard returned [setV [0] excludedV (some (.compare .ne none (.column 0) (.literal (.integer 2))))]
     [[.integer 1, .integer 9, letter 120], [.integer 2, .integer 9, letter 121], [.integer 7, .integer 7, letter 122]] ==
   some [[.integer 1, .integer 1, letter 120], [.integer 7, .integer 7, letter 122]]

@@ -22,26 +22,27 @@ theorem findPosition_eq_none_iff (test : α → Bool) (items : List α) :
 folded name is not among the catalog's folded names. Proof sketch: rewrite with
 {name}`findPosition_eq_none_iff`; the folded-name test fails for every object exactly
 when the folded name is not in the mapped list. -/
-theorem Catalog.find_eq_none_iff (catalog : Catalog) (name : String) :
-    catalog.find name = none ↔ normalizeIdentifier name ∉ catalog.foldedNames := by
+theorem Catalog.find_eq_none_iff (catalog : Catalog) (name : Identifier) :
+    catalog.find name = none ↔ name.folded ∉ catalog.foldedNames := by
   rw [Catalog.find, findPosition_eq_none_iff]
-  simp only [Catalog.foldedNames, List.mem_map, not_exists, not_and, beq_eq_false_iff_ne, ne_eq]
+  simp only [Catalog.foldedNames, Identifier.sameName, List.mem_map, not_exists, not_and, beq_eq_false_iff_ne,
+    ne_eq]
 
 /-- For every catalog, name, position and table entry that {name}`Catalog.findTable`
 returns, the catalog has an object at that position with the table entry, whose
 folded name is the folded given name. Proof sketch: the result comes from
 {name}`Catalog.find`, and {name}`findPosition_eq_some_iff` gives the object at the
 position and its passing name test. -/
-theorem Catalog.findTable_some (catalog : Catalog) (name : String) (position : Nat) (table : CatalogTable)
+theorem Catalog.findTable_some (catalog : Catalog) (name : Identifier) (position : Nat) (table : CatalogTable)
     (found : catalog.findTable name = some (position, table)) :
     ∃ object, catalog[position]? = some object ∧ object.entry = .table table ∧
-      normalizeIdentifier object.name = normalizeIdentifier name := by
+      object.name.folded = name.folded := by
   unfold Catalog.findTable at found
   split at found <;> try contradiction
   rename_i object_position object_name hfind
   cases found
   have ⟨atPosition, test, _⟩ := (findPosition_eq_some_iff _ _ _ _).mp hfind
-  exact ⟨_, atPosition, rfl, by simpa using test⟩
+  exact ⟨_, atPosition, rfl, by simpa [Identifier.sameName] using test⟩
 
 /-- How one statement may change the catalog. The catalog is the same; or one object
 is appended whose name {name}`Catalog.find` does not find; or the object at a

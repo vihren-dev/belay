@@ -47,10 +47,10 @@ def Database.table (database : Database) (position : Nat) : Option Table :=
   (database.catalog.tableAt position).map fun shape => { shape, rows := database.rows.getD position [] }
 
 /-- A database with the named tables at positions 0, 1, … in order, each with its
-entry and rows: {lean}`Database.ofTables [("t", { shape := { columns := [] }, rows := [] })]`
+entry and rows: {lean}`Database.ofTables [(name! "t", { shape := { columns := [] }, rows := [] })]`
 has one empty table without columns. Use {lit}`Catalog.emptyDatabase` for a catalog with
 indexes. -/
-def Database.ofTables (tables : List (String × Table)) : Database :=
+def Database.ofTables (tables : List (Identifier × Table)) : Database :=
   { catalog := tables.map fun (name, table) => { name, entry := .table table.shape },
     rows := tables.map (·.2.rows) }
 
@@ -64,18 +64,12 @@ the width: {assert}`supportedKey 2 [1, 0] = true`. -/
 def supportedKey (width : Nat) (key : List Nat) : Bool :=
   !key.isEmpty && key.eraseDups.length == key.length && key.all (· < width)
 
-/-- The column names of SQLite's statistics tables, which a schema may contain. -/
-def statisticsColumns : String → Option (List String)
-  | "sqlite_stat1" => some ["tbl", "idx", "stat"]
-  | "sqlite_stat4" => some ["tbl", "idx", "neq", "nlt", "ndlt", "sample"]
-  | _ => none
-
 /-- Admit a table entry under the limits: at least one column and at most the
 column limit, no two columns with one folded name, no rowid column name, and keys that
 satisfy {name}`supportedKey`. A rowid alias is admitted (slice 5b). -/
 def CatalogTable.supported (limits : Limits) (table : CatalogTable) : Bool :=
   !table.columns.isEmpty && table.columns.length ≤ limits.columns &&
-    (table.columns.map (normalizeIdentifier ·.name)).eraseDups.length == table.columns.length &&
+    (table.columns.map (·.name.folded)).eraseDups.length == table.columns.length &&
     !table.columns.any (rowidName ·.name) &&
     (table.primaryKey.isEmpty || supportedKey table.columns.length table.primaryKey) &&
     table.uniqueKeys.all (supportedKey table.columns.length)
@@ -87,10 +81,10 @@ key of that table and a name that is not reserved. -/
 def CatalogObject.supported (limits : Limits) (catalog : Catalog) (object : CatalogObject) : Bool :=
   match object.entry with
   | .table table => table.supported limits && (!reservedName object.name ||
-      (statisticsColumns (normalizeIdentifier object.name)).any fun names =>
+      (statisticsColumns object.name.folded).any fun names =>
         table == { columns := names.map fun name => { name, declaredType := none } })
   | .index index => !reservedName object.name &&
-      (catalog.tableAt index.table).any fun table => supportedKey table.columns.length index.columns
+      (catalog.tableAt index.table).any fun table => index.supported table.columns.length
 
 /-- Admit a catalog: unique folded object names and every object supported. -/
 def Catalog.supported (limits : Limits) (catalog : Catalog) : Bool :=
@@ -190,7 +184,7 @@ def Database.addColumn (database : Database) (position : Nat) (column : CatalogC
 name selects the first column with the same folded name, as SQLite's name lookup
 does; return {name}`Option.none` when the column or cell is absent. Repeated
 names repeat their selected cells. -/
-def Table.project (table : Table) (names : List String) : List (Int × List (Option Value)) :=
+def Table.project (table : Table) (names : List Identifier) : List (Int × List (Option Value)) :=
   table.rows.map fun row => (row.rowid, names.map fun name => do
     let index ← columnPosition table.shape.columns name
     row.values[index]?)

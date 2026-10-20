@@ -1,5 +1,5 @@
 import SqliteVerifier.ContractProofs
-import Belay.Sqlite.Preservation
+import Belay.Sqlite.PreservationLaws
 
 set_option doc.verso true
 
@@ -13,23 +13,23 @@ namespace SqliteVerifier.Examples
 
 /-- Duplicate application values still denote distinct physical rows. -/
 def originalTable : Table :=
-  { shape := { columns := [{ name := "amount", declaredType := some "INTEGER" }] },
+  { shape := { columns := [{ name := (name! "amount"), declaredType := some "INTEGER" }] },
     rows := [⟨-4, [.integer 7]⟩, ⟨9, [.integer 7]⟩] }
 
 /-- One ordinary table at catalog position 0 provides a concrete execution witness. -/
-def initial : Database := .ofTables [("invoices", originalTable)]
+def initial : Database := .ofTables [((name! "invoices"), originalTable)]
 
 /-- A useful multi-statement addition over an existing table. -/
 def additions : List Resolved.Statement :=
-  [.addColumn 0 { name := "note", declaredType := some "TEXT" },
-   .createTable 1 "audit" { columns := [{ name := "message", declaredType := some "TEXT" }] }]
+  [.addColumn 0 { name := (name! "note"), declaredType := some "TEXT" },
+   .createTable 1 (name! "audit") { columns := [{ name := (name! "message"), declaredType := some "TEXT" }] }]
 
 /-- Repeating a creation fails, as SQLite's prepare error, after the previous
 column addition committed. -/
 def failedPrefix : List Resolved.Statement :=
-  [.addColumn 0 { name := "note", declaredType := some "TEXT" },
-   .prepareError (.tableExists "invoices"),
-   .createTable 1 "unreached" { columns := [{ name := "value", declaredType := none }] }]
+  [.addColumn 0 { name := (name! "note"), declaredType := some "TEXT" },
+   .prepareError (.tableExists (name! "invoices")),
+   .createTable 1 (name! "unreached") { columns := [{ name := (name! "value"), declaredType := none }] }]
 
 /-- Inspect the position and error of an outcome. -/
 def failureInfo : Outcome → Option (Nat × ExecutionError)
@@ -39,7 +39,7 @@ def failureInfo : Outcome → Option (Nat × ExecutionError)
 
 /-- A table with three columns, valid under the documented limits. -/
 def wide : CatalogTable :=
-  { columns := ["a", "b", "c"].map fun name => { name, declaredType := some "TEXT" } }
+  { columns := [name! "a", name! "b", name! "c"].map fun name => { name, declaredType := some "TEXT" } }
 
 /-- The documented limits with the column limit lowered to two. -/
 def twoColumns : Limits := { Limits.documentedDefaults with columns := 2 }
@@ -48,12 +48,12 @@ def twoColumns : Limits := { Limits.documentedDefaults with columns := 2 }
 example : validRowid (-9223372036854775808) := by unfold validRowid; decide
 example : validRowid 9223372036854775807 := by unfold validRowid; decide
 example : ¬validRowid 9223372036854775808 := by unfold validRowid; decide
-#guard normalizeIdentifier "ÄInvoices" = "Äinvoices"
+#guard (name! "ÄInvoices").folded = bytes! "Äinvoices"
 
 -- Validity uses the column limit of the profile, not a constant.
 #guard wide.supported Limits.documentedDefaults
 #guard wide.supported twoColumns == false
-#guard ({ columns := [{ name := "rowid", declaredType := some "INTEGER" }] } : CatalogTable).supported
+#guard ({ columns := [{ name := (name! "rowid"), declaredType := some "INTEGER" }] } : CatalogTable).supported
   Limits.documentedDefaults == false
 
 -- Every old row is retained, NULL is materialized, and the new table is empty.
@@ -61,19 +61,21 @@ example : ¬validRowid 9223372036854775808 := by unfold validRowid; decide
 #guard ((runSql additions initial).database.table 0).map Table.rows =
   some [⟨-4, [.integer 7, .null]⟩, ⟨9, [.integer 7, .null]⟩]
 #guard ((runSql additions initial).database.table 1).map Table.rows = some []
-#guard ((runSql additions initial).database.table 0).map (·.project ["AMOUNT"]) =
+#guard ((runSql additions initial).database.table 0).map (·.project [(name! "AMOUNT")]) =
   some [(-4, [some (.integer 7)]), (9, [some (.integer 7)])]
 
 -- A file does not roll back its successfully committed prefix.
-#guard failureInfo (runSql failedPrefix initial) = some (1, .prepare (.tableExists "invoices"))
+#guard failureInfo (runSql failedPrefix initial) = some (1, .prepare (.tableExists (name! "invoices")))
 #guard ((runSql failedPrefix initial).database.table 0).map Table.rows =
   some [⟨-4, [.integer 7, .null]⟩, ⟨9, [.integer 7, .null]⟩]
 #guard ((runSql failedPrefix initial).database.table 1).isNone
 
--- Definitions outside the modeled subset are not run.
-#guard failureInfo (runSql [.createIndex 1 "by_amount" { table := 0, columns := [0], unique := false }] initial) =
-  some (0, .unmodeled)
-#guard failureInfo (runSql [.addColumn 1 { name := "x", declaredType := none }] initial) = some (0, .unmodeled)
+-- CREATE INDEX at the end of the catalog builds the index; a definition at another position is not run.
+#guard failureInfo (runSql [.createIndex 1 (name! "by_amount") { table := 0, keys := [{ term := .column 0 }], unique := false }]
+  initial) = none
+#guard failureInfo (runSql [.createIndex 2 (name! "by_amount") { table := 0, keys := [{ term := .column 0 }], unique := false }]
+  initial) = some (0, .unmodeled)
+#guard failureInfo (runSql [.addColumn 1 { name := (name! "x"), declaredType := none }] initial) = some (0, .unmodeled)
 
 /-- For every profile, script, starting database and clock assignment, the computed SQL
 result at the clock assignment is a related execution, including errors and open
@@ -88,8 +90,8 @@ theorem all_scripts_preserve (script : List Resolved.Statement) (guard : SchemaO
     DatabaseExtends database (runSql script database).database := runSql_extends guard database
 
 -- A literal INSERT changes the rows, so the schema-only preservation guard is necessary.
-example : ¬ SchemaOnly [.insert 0 [[.integer 8]] []] := by simp [SchemaOnly]
-#guard ((runSql [.insert 0 [[.integer 8]] []] initial).database.table 0).map (fun table => table.rows.length) = some 3
+example : ¬ SchemaOnly [.insert 0 [[.value (.integer 8)]] []] := by simp [SchemaOnly]
+#guard ((runSql [.insert 0 [[.value (.integer 8)]] []] initial).database.table 0).map (fun table => table.rows.length) = some 3
 
 /-- No complete certificate exists when the approved starting condition is false:
 its required admitted witness would satisfy False. This holds for every supplied

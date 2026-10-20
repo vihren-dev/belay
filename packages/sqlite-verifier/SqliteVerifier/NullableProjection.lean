@@ -1,5 +1,5 @@
 import SqliteVerifier.Library
-import Belay.Sqlite.ModelProjection
+import Belay.Sqlite.ModelProjectionLaws
 
 set_option doc.verso true
 
@@ -21,14 +21,14 @@ structure NullableView where
   deriving Repr, DecidableEq
 
 /-- Observe selected old fields and optionally one added field from the stored
-table with the name in the catalog. Use {lean}`(none : Option String)` when no
+table with the name in the catalog. Use {lean}`(none : Option Identifier)` when no
 added field is requested and an empty field list when no old cells are needed. A
 name without a table in the catalog, or an absent stored table, returns
 {name}`Option.none`. A present table returns its old-field projection and, if a
 field name was supplied, its projection of that name. Missing columns produce
 missing cells under {name}`Table.project`; supplying a name does not prove that
 the field exists or that its values are NULL. -/
-def observeNullable (catalog : Catalog) (tableName : String) (fields : List String) (added : Option String)
+def observeNullable (catalog : Catalog) (tableName : Identifier) (fields : List Identifier) (added : Option Identifier)
     (database : Database) : Option NullableView := do
   let position ← tablePosition catalog tableName
   (database.table position).map fun table =>

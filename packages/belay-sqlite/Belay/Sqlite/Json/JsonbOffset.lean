@@ -1,9 +1,9 @@
-import Belay.Sqlite.Json.Path
+import Belay.Sqlite.Json.Node
 
 set_option doc.verso true
 
-/-! The byte offsets of nodes in SQLite's JSONB encoding of a parsed JSON text, and a path
-lookup that keeps them. {lit}`json_each` reports the offset of a node as its {lit}`id`
+/-! The byte offsets of nodes in SQLite's JSONB encoding of a parsed JSON text, which the
+path lookup keeps. {lit}`json_each` reports the offset of a node as its {lit}`id`
 column ({lit}`jsonEachColumn` in 3.51.0), so the model must know where each node starts
 in the JSONB that {lit}`jsonTranslateTextToBlob` builds. -/
 
@@ -61,60 +61,5 @@ structure LocatedNode where
 {lit}`offset`. -/
 def jsonbItemOffset (items : List JsonNode) (index : Nat) (offset : Nat) : Nat :=
   offset + jsonbItemsSize (items.take index)
-
-/-- The first member whose label equals the key, as {name}`findMember` finds it, with the
-offsets of its label and its value: {lit}`none` when no label matches, and
-{lit}`some none` for a label that is not a string. -/
-def findMemberAt (key : List UInt8) (rawKey : Bool) :
-    List (JsonNode × JsonNode) → Nat → Option (Option (Nat × Nat × JsonNode))
-  | [], _ => none
-  | (label, value) :: rest, offset =>
-    match label.labelText with
-    | none => some none
-    | some (text, rawLabel) =>
-      if labelsMatch key rawKey text rawLabel then some (some (offset, offset + jsonbSize label, value))
-      else findMemberAt key rawKey rest (offset + jsonbSize label + jsonbSize value)
-
-/-- Follow the path from {lit}`position` as {name}`lookupStep` does ({lit}`jsonLookupStep`),
-and keep the JSONB offsets. The outer {lit}`none` is a path error or malformed JSONB, which
-{lit}`json_each` both reports as a bad path; {lit}`some none` is "not found". -/
-def locateStep (path : Array UInt8) : Nat → Nat → LocatedNode → Option (Option LocatedNode)
-  | 0, _, _ => none
-  | fuel + 1, position, located =>
-    let byte := byteAt path position
-    if byte == 0 then some (some located)
-    else if byte == 46 then
-      match readPathLabel path (position + 1) with
-      | none => none
-      | some (key, rawKey, next) =>
-        match located.node with
-        | .object members =>
-          match findMemberAt key rawKey members (jsonbChildrenStart located.node located.offset) with
-          | none => some none
-          | some none => none
-          | some (some (labelOffset, valueOffset, value)) =>
-            locateStep path fuel next ⟨value, valueOffset, some labelOffset⟩
-        | .null | .true | .false | .int _ | .int5 _ | .float _ | .float5 _ | .text _ | .textj _ | .text5 _
-        | .textraw _ | .array _ => some none
-    else if byte == 91 then
-      match located.node with
-      | .array items =>
-        match readPathIndex path position items.length with
-        | none => none
-        | some none => some none
-        | some (some (index, close)) =>
-          match items[index.toNat]? with
-          | some item =>
-            let offset := jsonbItemOffset items index.toNat (jsonbChildrenStart located.node located.offset)
-            locateStep path fuel (close + 1) ⟨item, offset, none⟩
-          | none => some none
-      | .null | .true | .false | .int _ | .int5 _ | .float _ | .float5 _ | .text _ | .textj _ | .text5 _
-      | .textraw _ | .object _ => some none
-    else none
-
-/-- Look up a path text after its {lit}`$` in a whole document, whose root is at JSONB
-offset 0. -/
-def locatePath (path : List UInt8) (root : JsonNode) : Option (Option LocatedNode) :=
-  locateStep path.toArray (path.length + 2) 1 ⟨root, 0, none⟩
 
 end Belay.Sqlite.Json

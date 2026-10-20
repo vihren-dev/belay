@@ -48,7 +48,9 @@ def test_definitions_keep_names_types_and_constraints_as_written(parse_sql: Call
             column("f", None)],
             "constraints": [{"primaryKey": {"columns": ["a"], "algorithm": None}},
                             {"unique": {"columns": ["c", "d"], "algorithm": None}}]}},
-        {"createIndex": {"name": "i", "unique": True, "table": "Big T", "columns": ["a", "B"]}},
+        {"createIndex": {"name": "i", "unique": True, "table": "Big T", "terms": [
+            {"expression": {"identifier": {"name": "a", "quote": "none"}}, "descending": False},
+            {"expression": {"identifier": {"name": "B", "quote": "none"}}, "descending": False}], "filter": None}},
         {"addColumn": {"table": "t", "column": column("z", "INT", [
             {"default": {"sourceText": "y", "value": {"identifier": {"name": "y", "quote": "none"}}}}])}}]
 
@@ -81,7 +83,7 @@ def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., 
     ("CREATE TABLE main.t(a);", ".t"), ("CREATE TABLE t(a) STRICT;", "STRICT"),
     ("CREATE TABLE t AS SELECT 1;", "AS SELECT 1"), ("CREATE TABLE t(a COLLATE NOCASE);", "COLLATE NOCASE"),
     ("CREATE TABLE t(a CHECK (a));", "CHECK (a)"), ("CREATE TABLE t(a, PRIMARY KEY(a DESC));", "DESC"),
-    ("CREATE TABLE t(a DEFAULT (1));", "DEFAULT (1)"), ("CREATE INDEX i ON t(a) WHERE a;", "WHERE a"),
+    ("CREATE TABLE t(a DEFAULT (1));", "DEFAULT (1)"), ("CREATE INDEX i ON t(a COLLATE NOCASE);", "a COLLATE NOCASE"),
     ("ALTER TABLE t RENAME TO u;", "ALTER TABLE t RENAME TO u"), ("BEGIN IMMEDIATE;", "IMMEDIATE"),
     ("UPDATE OR REPLACE t SET a = 1;", "OR REPLACE"), ("INSERT INTO t SELECT 1;", "SELECT 1"),
     ("INSERT INTO t VALUES (a || 1);", "a || 1"), ("UPDATE t SET a = 1 WHERE a IN (1);", "a IN (1)"),
@@ -144,10 +146,10 @@ def test_dequote_follows_sqlite() -> None:
 
 
 def test_record_names_the_profile_and_both_scripts(parse_sql: Callable[..., Tree]) -> None:
-    """The record carries version 3, the release and build, and the statement JSON."""
+    """The record carries version 4, the release and build, and the statement JSON."""
     schema = statements(parse_sql("CREATE TABLE t(a);"))
     record = script_record(DEFAULT_PROFILE, schema, statements(parse_sql("COMMIT;")))
-    assert record == {"version": 3, "release": "3.51.0", "sourceId": DEFAULT_PROFILE.source_id,
+    assert record == {"version": 4, "release": "3.51.0", "sourceId": DEFAULT_PROFILE.source_id,
                       "schema": [schema[0].value], "script": ["commit"]}
 
 

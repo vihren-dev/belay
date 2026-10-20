@@ -29,16 +29,13 @@ OBLIGATIONS: dict[str, tuple[str, str, str]] = {
     "insert-row-width": (LITERAL_DATA, "insertReady", "values.length == table.shape.columns.length"),
     "insert-stored-form": (LITERAL_DATA, "insertReady",
                         "(table.shape.columns.zip values).all (fun (column, value) => storedForm column.affinity value)"),
-    "insert-rowid-bounded": (LITERAL_DATA, "insertReady",
-                             "(inserted table rows).rows.all (fun row => boundedInteger row.rowid)"),
+    "insert-rowid-bounded": (LITERAL_DATA, "insertReady", "result.rows.all (fun row => boundedInteger row.rowid)"),
     "update-table-ready": (ROW_UPDATE, "updateReady", "tableReady keys table"),
     "update-alias-ready": (ROW_UPDATE, "updateReady", "aliasReady table.shape"),
     "update-assigned-column": (ROW_UPDATE, "updateReady", "(table.shape.columns[position]?).isSome"),
-    "update-rowid-bounded": (ROW_UPDATE, "updateReady",
-                             "(updated table assignments filter).rows.all (fun row => boundedInteger row.rowid)"),
-    "create-table-plain": (EXECUTION, "statementReady", "table.plain"),
-    "add-column-default-readback": (EXECUTION, "statementReady", "(readDefaultValue column).toOption.isSome"),
-    "create-index-refused": (EXECUTION, "statementReady", "| .createIndex .. => false"),
+    "update-rowid-bounded": (ROW_UPDATE, "updateReady", "result.rows.all (fun row => boundedInteger row.rowid)"),
+    "create-table-plain": (EXECUTION, "runStatement", "ready := table.plain"),
+    "add-column-default-readback": (EXECUTION, "runStatement", "(readDefaultValue column).toOption.isSome"),
 }
 """Each conjunct of the admission obligations: the file under `packages/`, the declaration
 that contains it, and its exact text there."""
@@ -64,7 +61,6 @@ COVERED_ELSEWHERE: dict[str, str] = {
                           "so every native state passes tableReady",
     "create-table-plain": "restriction:create-table-constraints",
     "add-column-default-readback": "restriction:add-column-constraint",
-    "create-index-refused": "restriction:create-index-runs",
 }
 """For each conjunct without a mutant: `restriction:ID`, the restriction that resolution
 reports before the obligation is checked, or `reason:` and why no boundary case exists."""

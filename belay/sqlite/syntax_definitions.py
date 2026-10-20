@@ -159,19 +159,6 @@ def create_table(tree: Tree, command: Node) -> Located:
                        command.start, command.end)
 
 
-def create_index(tree: Tree, command: Node) -> Located:
-    """Map CREATE [UNIQUE] INDEX over plain column names, without a WHERE clause."""
-    parts = require(tree, command, ["createkw", "uniqueflag", "INDEX", "ifnotexists", "nm", "dbnm", "ON", "nm",
-                                    "LP", "sortlist", "RP", "where_opt"])
-    absent(tree, parts[3], "IF NOT EXISTS")
-    absent(tree, parts[5], "A schema name")
-    absent(tree, parts[11], "A partial index WHERE clause")
-    return constructor("createIndex", [("name", name(tree, parts[4])),
-                                       ("unique", leaf(bool(parts[1].children), parts[1].start, parts[1].end)),
-                                       ("table", name(tree, parts[7])),
-                                       ("columns", sort_names(tree, parts[9]))], command.start, command.end)
-
-
 def add_column(tree: Tree, command: Node) -> Located:
     """Map ALTER TABLE ADD [COLUMN] for an unqualified table name."""
     parts = require(tree, command, ["ALTER", "TABLE", "add_column_fullname", "ADD", "kwcolumn_opt", "columnname",

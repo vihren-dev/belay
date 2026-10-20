@@ -22,7 +22,7 @@ READ_CASES = CASES + [
     ("0.0", '.numeric "0.0"'), ("-0.0", '.negate (.numeric "0.0")'),
     ("0xFFFFFFFFFFFFFFFF", '.numeric "0xFFFFFFFFFFFFFFFF"'),
     ("-0xFFFFFFFFFFFFFFFF", '.negate (.numeric "0xFFFFFFFFFFFFFFFF")'),
-    ("[true]", '.identifier "true" .bracket'),
+    ("[true]", '.identifier (name! "true") .bracket'),
     ("1.50", '.numeric "1.50"'), ("1e0", '.numeric "1e0"'),
     ("9223372036854775808", '.numeric "9223372036854775808"'),
     ("-0x8000000000000000", '.negate (.numeric "0x8000000000000000")'),
@@ -64,7 +64,7 @@ open Belay.Sqlite Lean
   let inputs : List Syntax.DefaultExpression := [{inputs}]
   let tables := [{affinities}].map fun affinity => inputs.map fun written =>
     (resolveColumnDefault (affinityOf (some affinity)) written).bind fun resolved =>
-      let column : CatalogColumn := {{name := "added", declaredType := some affinity,
+      let column : CatalogColumn := {{name := name! "added", declaredType := some affinity,
                                      defaultValue := some resolved}}
       (readDefaultValue column).toOption
   IO.println (toJson tables).compress

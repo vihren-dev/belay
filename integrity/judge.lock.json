@@ -28,6 +28,6 @@
  "corpus corpus-v8": "/nix/store/z1ldsnlp6wslz1gr57k5db4mah5xsmxs-source",
  "corpus corpus-v9": "/nix/store/kinavd8bnp1dhayvg93rpnzlm84h34xa-source",
  "corpus synthetic-workload": "/nix/store/s4qyby377gydlfyswyclc8qb2sl3cn8k-source",
- "judge": "/nix/store/s1iqpasr8ps1qp326vprzwrf67q39fxw-source",
+ "judge": "/nix/store/pzys2avjkkk9vzw79vd3ybs96640pzwc-source",
  "oracle": "/nix/store/r4sm4f8pa49g5kr78d2sk2xbnibp4v3w-source"
 }

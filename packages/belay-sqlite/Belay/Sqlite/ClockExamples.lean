@@ -27,12 +27,12 @@ def newYear : Clock := fun position => if position = 0 then lastClockOf2024 else
 
 /-- A column with a declared type and a time keyword as its default, such as
 {lit}`b INTEGER DEFAULT CURRENT_TIMESTAMP`. -/
-def timeDefault (name : String) (declaredType : Option String) (keyword : String) : ColumnDefinition :=
+def timeDefault (name : Identifier) (declaredType : Option String) (keyword : String) : ColumnDefinition :=
   { name, declaredType, constraints := [.default (.currentTime keyword) keyword] }
 
 /-- {lit}`CREATE TABLE t(a TEXT, b INTEGER DEFAULT CURRENT_TIMESTAMP)`. -/
 def createT : Syntax.Statement :=
-  .createTable "t" [column "a", timeDefault "b" (some "INTEGER") "CURRENT_TIMESTAMP"] []
+  .createTable (name! "t") [column (name! "a"), timeDefault (name! "b") (some "INTEGER") "CURRENT_TIMESTAMP"] []
 
 /-- The catalog that {name}`createT` describes. -/
 def catalogT : Catalog := catalogOf (schema [createT])
@@ -48,22 +48,37 @@ def rowsAfter (clock : Clock) (script : List Syntax.Statement) : Option (List (L
 
 -- Two INSERTs see the clock values of their positions; the omitted column b gets the
 -- timestamp of its own statement, and its INTEGER affinity keeps the text.
-#guard rowsAfter newYear [.insert "t" (some ["a"]) [[.currentTime "CURRENT_DATE"]] [],
-    .insert "t" (some ["a"]) [[.currentTime "CURRENT_TIME"]] []] ==
+#guard rowsAfter newYear [.insert (name! "t") (some [(name! "a")]) [[.currentTime "CURRENT_DATE"]] [],
+    .insert (name! "t") (some [(name! "a")]) [[.currentTime "CURRENT_TIME"]] []] ==
   some [[textOf "2024-12-31", textOf "2024-12-31 23:59:59"], [textOf "00:00:00", textOf "2025-01-01 00:00:00"]]
 -- Every statement at one clock value gives one date.
-#guard rowsAfter (fun _ => firstClockOf2025) [.insert "t" (some ["a"]) [[.currentTime "CURRENT_DATE"]] [],
-    .insert "t" (some ["a"]) [[.currentTime "CURRENT_DATE"]] []] ==
+#guard rowsAfter (fun _ => firstClockOf2025) [.insert (name! "t") (some [(name! "a")]) [[.currentTime "CURRENT_DATE"]] [],
+    .insert (name! "t") (some [(name! "a")]) [[.currentTime "CURRENT_DATE"]] []] ==
   some [[textOf "2025-01-01", textOf "2025-01-01 00:00:00"], [textOf "2025-01-01", textOf "2025-01-01 00:00:00"]]
 -- A clock of zero gives NULL for the keyword and the default.
-#guard rowsAfter (fun _ => 0) [.insert "t" (some ["a"]) [[.currentTime "CURRENT_TIMESTAMP"]] []] ==
+#guard rowsAfter (fun _ => 0) [.insert (name! "t") (some [(name! "a")]) [[.currentTime "CURRENT_TIMESTAMP"]] []] ==
   some [[.null, .null]]
 
+-- A VALUES item that reads the clock is stored with its column's affinity: the text of
+-- `strftime('%s', 'now')` stays TEXT in a and becomes an INTEGER in b (checked natively).
+#guard rowsAfter newYear [.insert (name! "t") (some [(name! "a"), (name! "b")])
+    [[.call "strftime" [.string "%s".toUTF8.toList, .string "now".toUTF8.toList],
+      .call "strftime" [.string "%s".toUTF8.toList, .string "now".toUTF8.toList]]] []] ==
+  some [[textOf "1735689599", .integer 1735689599]]
+-- Each time keyword is its date and time function without arguments.
+example (clock : Int) : TimeKeyword.timestamp.value clock = Resolved.DateFunction.datetime.value clock [] := rfl
+
+-- SQLite reads a time value up to its first NUL: `date('now' || char(0) || 'x')` is the date
+-- of the statement's clock, and `date('nowx')` is NULL.
+#guard rowsAfter newYear [.insert (name! "t") (some [(name! "a"), (name! "b")])
+    [[.call "date" [.string [110, 111, 119, 0, 120]], .call "date" [.string [110, 111, 119, 120]]]] []] ==
+  some [[textOf "2024-12-31", .null]]
+
 /-- The resolved script {lit}`INSERT INTO t(a, b) VALUES ('x', 1)`, which reads no clock. -/
-def clockFree : List Resolved.Statement := [.insert 0 [[.text [120], .integer 1]] []]
+def clockFree : List Resolved.Statement := [.insert 0 [[.value (.text [120]), .value (.integer 1)]] []]
 
 -- It is the resolution of the statement.
-#guard statements (migration catalogT [.insert "t" (some ["a", "b"]) [[.string [120], .numeric "1"]] []]) == clockFree
+#guard statements (migration catalogT [.insert (name! "t") (some [(name! "a"), (name! "b")]) [[.string [120], .numeric "1"]] []]) == clockFree
 
 /-- For every clock assignment, {name}`clockFree` has the outcome of {name}`runSql`. -/
 example (clock : Clock) : runSqlAt clock clockFree emptyT = runSql clockFree emptyT :=
@@ -71,12 +86,12 @@ example (clock : Clock) : runSqlAt clock clockFree emptyT = runSql clockFree emp
 
 -- ADD COLUMN with a time default fails on a populated table and succeeds on an empty one.
 #guard (match runSqlAt (fun _ => firstClockOf2025) (statements (migration catalogT
-    [.insert "t" (some ["a"]) [[.null]] [],
-     .addColumn "t" (timeDefault "c" none "CURRENT_DATE")])) emptyT with
+    [.insert (name! "t") (some [(name! "a")]) [[.null]] [],
+     .addColumn (name! "t") (timeDefault (name! "c") none "CURRENT_DATE")])) emptyT with
   | .failure 1 .nonConstantColumnDefault _ => true
   | .success _ | .failure .. | .pending .. => false)
 #guard (match runSqlAt (fun _ => firstClockOf2025) (statements (migration catalogT
-    [.addColumn "t" (timeDefault "c" none "CURRENT_DATE")])) emptyT with
+    [.addColumn (name! "t") (timeDefault (name! "c") none "CURRENT_DATE")])) emptyT with
   | .success _ => true
   | .failure .. | .pending .. => false)
 

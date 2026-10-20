@@ -22,6 +22,16 @@ instance : Lean.FromJson UInt8 where
 instance : Lean.ToJson UInt8 where
   toJson value := Lean.toJson value.toNat
 
+/-- A name is a JSON string, as the frontend writes it; its bytes are the string's UTF-8
+bytes. -/
+instance : Lean.FromJson Identifier where
+  fromJson? json := Identifier.ofString <$> json.getStr?
+
+/-- A name as a JSON string: its text ({name}`Identifier.text`). -/
+instance : Lean.ToJson Identifier where
+  toJson name := Lean.Json.str name.text
+
+deriving instance Lean.ToExpr for Identifier
 deriving instance Lean.FromJson, Lean.ToJson for Value, Row
 
 -- Decoded values become closed kernel terms without elaborating generated source.

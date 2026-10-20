@@ -1,6 +1,6 @@
 import Belay.Sqlite.Resolution.Definitions
 import Belay.Sqlite.Resolution.Upserts
-import Belay.Sqlite.Resolution.ClockRows
+import Belay.Sqlite.Resolution.InsertCells
 
 set_option doc.verso true
 
@@ -11,16 +11,10 @@ column gets the written value and every other column its default. -/
 
 namespace Belay.Sqlite
 
-/-- Turn a value issue into the statement's resolution: a prepare error keeps the
-catalog, a restriction refuses the script. -/
-def issueResolution (catalog : Catalog) (index : Nat) (path : List Nat) : ValueIssue → StatementResolution
-  | .prepare error => prepareError catalog error
-  | .restriction inner reason => restrict index (path ++ inner) reason
-
 /-- The table column positions of an INSERT column list, or
 {lit}`table %S has no column named %s` for the first unknown name. -/
-def insertPositions (tableName : String) (columns : List CatalogColumn) :
-    List String → Except PrepareError (List Nat)
+def insertPositions (tableName : Identifier) (columns : List CatalogColumn) :
+    List Identifier → Except ExprError (List Nat)
   | [] => .ok []
   | name :: rest => match columnPosition columns name with
     | some position => (insertPositions tableName columns rest).map (position :: ·)
@@ -31,11 +25,11 @@ def insertPositions (tableName : String) (columns : List CatalogColumn) :
 columns. An INSERT without clauses whose algorithms are all ABORT
 ({name}`insertPolicy`) is {name}`Resolved.Statement.insert`; any other INSERT is
 {name}`Resolved.Statement.upsert`. -/
-def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : String)
-    (names : Option (List String)) (rows : List (List Syntax.Expr)) (conflicts : List Syntax.ConflictClause)
+def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : Identifier)
+    (names : Option (List Identifier)) (rows : List (List Syntax.Expr)) (conflicts : List Syntax.ConflictClause)
     (algorithm : Option ConflictAlgorithm) (returning : List Syntax.ResultColumn) : StatementResolution :=
   let width := (rows.head?.map List.length).getD 0
-  if rows.any (·.length != width) then prepareError catalog .valuesDiffer else
+  if rows.any (·.length != width) then prepareError catalog (.expression .valuesDiffer) else
   match catalog.findTable tableName with
   | none => prepareError catalog (.noSuchTable tableName)
   | some (position, table) =>
@@ -43,16 +37,16 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
       | some written => insertPositions tableName table.columns written
       | none => .ok (List.range table.columns.length)
     match positions with
-    | .error error => prepareError catalog error
+    | .error error => prepareError catalog (.expression error)
     | .ok positions =>
       match resolveAll (fun row values => (resolveAll (fun _ => constantCell context.profile.dqsDml)
           values).mapError (·.under [row])) rows with
       | .error issue => issueResolution catalog index [2] issue
       | .ok values =>
         if names.isNone && width != table.columns.length then
-          prepareError catalog (.valueCount tableName table.columns.length width)
+          prepareError catalog (.expression (.valueCount tableName table.columns.length width))
         else if names.isSome && width != positions.length then
-          prepareError catalog (.valuesForColumns width positions.length)
+          prepareError catalog (.expression (.valuesForColumns width positions.length))
         else if positions.eraseDups.length != positions.length then
           restrict index [1] .insertColumnTwice
         else match resolveAll (fun _ row => fullCells table.columns positions row) values with
@@ -69,7 +63,7 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
                 if policy.mixed then restrict index [] .mixedConflictAlgorithms
                 else if replacesDefault table policy then restrict index [] .replaceDefault
                 else if clauses.isEmpty && policy.aborts then
-                  .ok (withClockCells table.columns full (.insert position · columns), catalog)
-                else .ok (withClockCells table.columns full (.upsert position · clauses columns algorithm), catalog)
+                  .ok (.insert position full columns, catalog)
+                else .ok (.upsert position full clauses columns algorithm, catalog)
 
 end Belay.Sqlite

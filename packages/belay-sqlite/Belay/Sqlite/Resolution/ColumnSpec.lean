@@ -66,18 +66,18 @@ theorem findPosition_eq_some_iff (test : α → Bool) (items : List α) (positio
 /-- The column reference rule ({lit}`lang_expr.html`, "Column Names"; SQLite's
 {lit}`sqlite3ColumnIndex`): a name refers to the column at a position when that
 column's ASCII-folded name equals the folded name, and no earlier column has it. -/
-def ColumnReference (columns : List CatalogColumn) (name : String) (position : Nat) : Prop :=
+def ColumnReference (columns : List CatalogColumn) (name : Identifier) (position : Nat) : Prop :=
   ∃ column, columns[position]? = some column ∧
-    normalizeIdentifier column.name = normalizeIdentifier name ∧
+    column.name.folded = name.folded ∧
     ∀ earlier < position, ∀ other, columns[earlier]? = some other →
-      normalizeIdentifier other.name ≠ normalizeIdentifier name
+      other.name.folded ≠ name.folded
 
 /-- For all columns, names and positions: {name}`columnPosition` gives the position
 exactly when {name}`ColumnReference` holds for it. -/
-theorem columnPosition_eq_some_iff (columns : List CatalogColumn) (name : String) (position : Nat) :
+theorem columnPosition_eq_some_iff (columns : List CatalogColumn) (name : Identifier) (position : Nat) :
     columnPosition columns name = some position ↔ ColumnReference columns name position := by
   simp only [columnPosition, Option.map_eq_some_iff, Prod.exists, findPosition_eq_some_iff,
-    FirstMatch, ColumnReference, beq_iff_eq, beq_eq_false_iff_ne, ne_eq]
+    FirstMatch, ColumnReference, Identifier.sameName, beq_iff_eq, beq_eq_false_iff_ne, ne_eq]
   constructor
   · rintro ⟨_, column, match_, rfl⟩; exact ⟨column, match_⟩
   · rintro ⟨column, match_⟩; exact ⟨position, column, match_, rfl⟩

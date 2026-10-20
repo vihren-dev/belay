@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-19T06:20:08+00:00",
+  "finding": "20261019T061913Z-9bf6dc0f#4",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "A one-off measurement for the ADR, not product code: its counts were checked by hand against the model's own reasons (every schema reason maps to a detected feature), and each slice measures its real effect with the verdict. A test would be added if the script becomes a maintained tool, as restriction_costs.py is."
+}

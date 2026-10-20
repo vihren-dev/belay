@@ -41,13 +41,11 @@ inductive Expr where
   /-- A call of a JSON function with its arguments in written order. -/
   | json (function : JsonFunction) (arguments : Arguments)
   /-- {lit}`CURRENT_TIME`, {lit}`CURRENT_DATE` or {lit}`CURRENT_TIMESTAMP`: the statement's clock
-  value as text. The execution replaces it with that text before it evaluates a statement
-  ({lit}`Statement.atClock`). -/
+  value as text, which evaluation computes from the clock value it is given. -/
   | now (keyword : TimeKeyword)
-  /-- A call of a date and time function with its arguments in written order, and the
-  statement's clock value, which {lit}`now` gives. Resolution stores 0; the execution sets
-  the statement's clock value before it evaluates a statement ({lit}`Statement.atClock`). -/
-  | date (function : DateFunction) (arguments : Arguments) (clock : Int)
+  /-- A call of a date and time function with its arguments in written order; {lit}`now`
+  and a call without a time value read the clock value that evaluation is given. -/
+  | date (function : DateFunction) (arguments : Arguments)
   deriving Repr, DecidableEq
 
 /-- The arguments of a call in written order, as a list that is mutual with
@@ -124,46 +122,49 @@ inductive JoinKind where
   | full
   deriving Repr, DecidableEq
 
-/-- One resolved join after the first table: its kind, the catalog position of the
-joined table, and its {lit}`ON` condition over the joined row so far and the new table;
-{lean}`(none : Option Expr)` for no condition. -/
-structure Join where
-  /-- The kind of the join. -/
+/-- A source of a {lit}`FROM` clause (ADR 0013, D5): a table, a {lit}`json_each(json [, path])`
+call whose arguments read the joined row before it, or a subquery. -/
+inductive Source where
+  /-- The table at the catalog position, with its rows in rowid order. -/
+  | table (position : Nat)
+  /-- {lit}`json_each` with its JSON argument and optional path, over the row before it
+  (ADR 0012, amendment 5, slice 6d). -/
+  | each (json : Expr) (path : Option Expr)
+  /-- A subquery. Resolution does not give it yet (ADR 0013, amendment 2); its payload
+  comes with the subquery ADR, and execution treats it as unmodeled. -/
+  | subquery
+  deriving Repr, DecidableEq
+
+/-- Whether the source is {lit}`json_each`. -/
+def Source.isEach : Source → Bool
+  | .each .. => true
+  | .table _ | .subquery => false
+
+/-- One source of {lit}`FROM` in written order: how it joins the row so far, the source,
+and its {lit}`ON` condition over the row so far and its cells; {lean}`(none : Option Expr)`
+for no condition. The first source is an inner join without a condition. -/
+structure QuerySource where
+  /-- The kind of the join with the sources before it. -/
   kind : JoinKind
-  /-- The catalog position of the joined table. -/
-  table : Nat
-  /-- The {lit}`ON` condition, over the cells of the tables up to this one. -/
+  /-- The source. -/
+  source : Source
+  /-- The {lit}`ON` condition, over the cells of the sources up to this one. -/
   condition : Option Expr
   deriving Repr, DecidableEq
 
-/-- A {lit}`json_each(json [, path])` source after the tables of {lit}`FROM` (ADR 0012,
-amendment 5, slice 6d), an inner join: its arguments over the joined row before it, and
-its optional {lit}`ON` condition over the joined row with its cells. -/
-structure EachSource where
-  /-- The JSON argument. -/
-  json : Expr
-  /-- The path argument; {lean}`(none : Option Expr)` for {lit}`json_each(json)`. -/
-  path : Option Expr
-  /-- The {lit}`ON` condition, or {lean}`(none : Option Expr)` for every row. -/
-  condition : Option Expr
-  deriving Repr, DecidableEq
+/-- The first source of a {lit}`FROM`: the table at the catalog position, as an inner join
+without a condition. -/
+def QuerySource.first (position : Nat) : QuerySource := { kind := .inner, source := .table position, condition := none }
 
-/-- A resolved {lit}`SELECT`: the first table's catalog position and the joins after
-it, the {lit}`json_each` sources after them, the {lit}`WHERE` condition, whether it is an aggregate query with its grouping terms,
-the result columns with their names, the {lit}`ORDER BY` terms with a flag for
-{lit}`DESC`, and the window. Use {lean}`(none : Option Nat)` for no {lit}`LIMIT`. -/
+/-- A resolved {lit}`SELECT`: its sources, the {lit}`WHERE` condition, whether it is an
+aggregate query with its grouping terms, the result columns with their names, the
+{lit}`ORDER BY` terms with a flag for {lit}`DESC`, and the window. Use
+{lean}`(none : Option Nat)` for no {lit}`LIMIT`. -/
 structure Query where
-  /-- The catalog position of the first source table, or
-  {lean}`(none : Option Nat)` for a {lit}`SELECT` without {lit}`FROM`, whose source is one
-  row with no columns. -/
-  table : Option Nat
-  /-- The joins after the first table, in order; empty for a query of one table. An
-  expression names a cell by its position in the concatenated row of all tables. -/
-  joins : List Join := []
-  /-- The {lit}`json_each` sources after the tables, in order; empty without one. A query
-  whose first source is {lit}`json_each` has no table: its sources join the one empty row
-  of a query without {lit}`FROM`. -/
-  functions : List EachSource := []
+  /-- The sources of {lit}`FROM` in written order; empty for a {lit}`SELECT` without
+  {lit}`FROM`, whose source is one row with no columns. An expression names a cell by its
+  position in the concatenated row of all sources. -/
+  sources : List QuerySource
   /-- The {lit}`WHERE` condition, or {lean}`(none : Option Expr)` for every row. -/
   filter : Option Expr
   /-- Whether the query is an aggregate query: it has {lit}`GROUP BY` or an aggregate. -/

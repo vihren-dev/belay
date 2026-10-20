@@ -1,4 +1,4 @@
-import Belay.Sqlite.LiteralPreservation
+import Belay.Sqlite.LiteralPreservationLaws
 
 set_option doc.verso true
 
@@ -24,12 +24,12 @@ def realOne : Value := .real 0x3FF0000000000000
 def row (rowid : Int) (first second : Value) : Row := { rowid, values := [first, second] }
 
 -- A composite key conflicts only when every cell conflicts; a NULL cell never does.
-#guard keyEqual [0, 1] (row 1 (.integer 1) (.text [120])) (row 2 realOne (.text [120]))
-#guard !keyEqual [0, 1] (row 1 (.integer 1) (.text [120])) (row 2 (.integer 1) (.text [121]))
-#guard !keyEqual [0, 1] (row 1 (.integer 1) .null) (row 2 (.integer 1) .null)
+#guard keyEqual (.ofColumns [0, 1]) (row 1 (.integer 1) (.text [120])) (row 2 realOne (.text [120]))
+#guard !keyEqual (.ofColumns [0, 1]) (row 1 (.integer 1) (.text [120])) (row 2 (.integer 1) (.text [121]))
+#guard !keyEqual (.ofColumns [0, 1]) (row 1 (.integer 1) .null) (row 2 (.integer 1) .null)
 -- The uniqueness check of a table over its rows.
-#guard uniqueRows [0] [row 1 (.text [97]) .null, row 2 (.text [65]) .null]
-#guard !uniqueRows [0] [row 1 (.integer 1) .null, row 2 realOne .null]
-#guard uniqueRows [0] [row 1 (.integer 1) .null, row 2 (.text [49]) .null]
+#guard uniqueRows (.ofColumns [0]) [row 1 (.text [97]) .null, row 2 (.text [65]) .null]
+#guard !uniqueRows (.ofColumns [0]) [row 1 (.integer 1) .null, row 2 realOne .null]
+#guard uniqueRows (.ofColumns [0]) [row 1 (.integer 1) .null, row 2 (.text [49]) .null]
 
 end Belay.Sqlite.KeyExamples

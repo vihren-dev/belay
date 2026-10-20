@@ -61,8 +61,8 @@ def matchesOutput (expected actual : StatementOutput)
 
 /-- The {lit}`RETURNING` rows of a write: each {lit}`RETURNING` expression evaluated over
 each written row, in order. A write without {lit}`RETURNING` returns no rows. -/
-def returnedRows (returning : List (Resolved.Expr × String)) (written : List (List Value)) : List ResultRow :=
-  if returning.isEmpty then [] else written.map fun row => returning.map fun (expression, _) => expression.eval row
+def returnedRows (clock : Int) (returning : List (Resolved.Expr × String)) (written : List (List Value)) : List ResultRow :=
+  if returning.isEmpty then [] else written.map fun row => returning.map fun (expression, _) => expression.eval clock row
 
 /-- The error with which a transition stops: the reason of a failure, or the error of a
 pending transaction; none for a transition that continues or succeeds. -/
@@ -118,7 +118,7 @@ change count; a query whose table is missing has no output. A query that fails w
 before the failing one, in an order the model does not describe, so it has no output. A
 query whose JSON function fails, which has no {lit}`FROM` and so at most one row, has its
 column names and no rows. -/
-def statementOutput (statement : Resolved.Statement) (before : SqlState)
+def statementOutput (clock : Int) (statement : Resolved.Statement) (before : SqlState)
     (transition : SqlTransition) : Option StatementOutput :=
   let successful := match transition with | .next _ => true | .halt _ => false
   let constraintFailure := (haltError transition).any ExecutionError.failsWrite
@@ -129,40 +129,42 @@ def statementOutput (statement : Resolved.Statement) (before : SqlState)
     let names := returning.map (·.2)
     if successful then do
       let table ← before.database.table target
-      let written := ((LiteralData.inserted table rows).rows.drop table.rows.length).map (·.values)
-      return ⟨names, returnedRows returning written, some rows.length⟩
+      let values := Resolved.rowsAt clock table.shape.columns rows
+      let written := ((LiteralData.inserted table values).rows.drop table.rows.length).map (·.values)
+      return ⟨names, returnedRows clock returning written, some rows.length⟩
     else if constraintFailure then some ⟨names, [], some 0⟩ else none
   | .upsert target rows clauses returning algorithm =>
     let names := returning.map (·.2)
     let run := (before.database.table target).map fun table =>
-      LiteralData.upsertRun (before.database.keys target table)
-        (before.database.catalog.writePolicy target table.shape algorithm) clauses table rows
+      LiteralData.upsertRun clock (before.database.keys target table)
+        (before.database.catalog.writePolicy target table.shape algorithm) clauses table
+        (Resolved.rowsAt clock table.shape.columns rows)
     if successful then do
       let (_, written) ← (← run).toOption
-      return ⟨names, returnedRows returning (written.map (·.values)), some written.length⟩
+      return ⟨names, returnedRows clock returning (written.map (·.values)), some written.length⟩
     else if constraintFailure then some ⟨names, [], some ((run.map keptCount).getD 0)⟩ else none
   | .update target assignments filter returning =>
     let names := returning.map (·.2)
     if successful then do
       let table ← before.database.table target
-      let chosen := table.rows.filter (LiteralData.selected filter)
-      let written := chosen.map fun row => (LiteralData.assign table.shape.columns assignments row).values
-      return ⟨names, returnedRows returning written,
+      let chosen := table.rows.filter (LiteralData.selected clock filter)
+      let written := chosen.map fun row => (LiteralData.assign clock table.shape.columns assignments row).values
+      return ⟨names, returnedRows clock returning written,
         some chosen.length⟩
     else if constraintFailure then some ⟨names, [], some 0⟩ else none
   | .delete target filter returning =>
     let names := returning.map (·.2)
     if successful then do
       let table ← before.database.table target
-      let chosen := table.rows.filter (LiteralData.selected filter)
-      return ⟨names, returnedRows returning (chosen.map (·.values)), some chosen.length⟩
+      let chosen := table.rows.filter (LiteralData.selected clock filter)
+      return ⟨names, returnedRows clock returning (chosen.map (·.values)), some chosen.length⟩
     else none
   | .query query =>
-    if successful then (query.source before.database).map fun rows => ⟨query.names, (query.run rows).rows, none⟩
+    if successful then
+      (query.source clock before.database).map fun source => ⟨query.names, (query.run clock source.rows).rows, none⟩
     else if (overflow && query.groupBy.isEmpty) || functionFailure then some ⟨query.names, [], none⟩
     else none
   | .addColumn _ column => some ⟨addColumnOutputNames column, [], none⟩
-  | .clocked .. => none
   | .createTable .. | .createIndex .. | .begin | .commit | .rollback | .prepareError _ =>
     some ⟨[], [], none⟩
 

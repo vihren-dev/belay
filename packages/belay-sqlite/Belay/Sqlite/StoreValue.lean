@@ -26,7 +26,8 @@ def wholeReal (bits : UInt64) : Option Int :=
   else none
 
 /-- SQLite's {lit}`sqlite3VdbeIntegerAffinity` on a REAL: the integer of {name}`wholeReal`
-when there is one, otherwise the REAL with the same bits.
+when there is one, otherwise the REAL with the same bits, which are not NaN because they
+are a REAL's.
 {assert}`integerAffinity (5.0 : Float).toBits = .integer 5`. -/
 def integerAffinity (bits : UInt64) : Value :=
   match wholeReal bits with
@@ -72,7 +73,8 @@ def numericStore : Value → Value
 
 /-- The read of a stored value from a REAL column ({lit}`OP_RealAffinity`): an integer
 becomes its double, and every REAL result goes through {name}`positiveZero`; NULL, TEXT
-and BLOB stay. -/
+and BLOB stay. No result is NaN: the double of an integer is a number, and a REAL keeps
+its bits up to the sign of zero. -/
 def realRead : Value → Value
   | .integer whole => .real (positiveZero (Float.ofInt whole).toBits)
   | .real bits => .real (positiveZero bits)

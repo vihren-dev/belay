@@ -10,12 +10,12 @@ abbrev LogicalState := SqliteVerifier.LogicalRows
 def contract : SqliteVerifier.LogicalContract LogicalState where
   valid := fun _ => True
   change := Eq
-  catalogRequirement catalog := catalog.columnsOf "invoices" =
-    some [{ name := "amount", declaredType := some "INTEGER" }, { name := "note", declaredType := some "TEXT" }]
+  catalogRequirement catalog := catalog.columnsOf (name! "invoices") =
+    some [{ name := name! "amount", declaredType := some "INTEGER" }, { name := name! "note", declaredType := some "TEXT" }]
   failure := fun before _ _ after => before = after
   applicability := fun _ outcome =>
     match outcome with
-    | .failure 2 (.prepare (.tableExists "audit")) _ => True
+    | .failure 2 (.prepare (.tableExists (name! "audit"))) _ => True
     | _ => False
 
 end Requirements

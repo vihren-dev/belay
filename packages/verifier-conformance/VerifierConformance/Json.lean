@@ -11,8 +11,27 @@ namespace Belay.Sqlite
 
 deriving instance Lean.FromJson, Lean.ToJson for Limits, Profile
 deriving instance Lean.FromJson, Lean.ToJson for Conformance.ErrorPhase
-deriving instance Lean.FromJson, Lean.ToJson for Conformance.NativeColumn, Conformance.NativeIndex,
-  Conformance.NativeTable, Conformance.NativeObservation
+deriving instance Lean.FromJson, Lean.ToJson for Conformance.NativeColumn
+
+/-- A native index as JSON: {lit}`name`, {lit}`columns` (a number for a column key, null for an
+expression), {lit}`unique`, and {lit}`descending` and {lit}`partial` only when an index has a
+descending term or is partial, so the records of indexes without them keep their form. -/
+instance : Lean.ToJson Conformance.NativeIndex where
+  toJson index := Lean.Json.mkObj ([("name", Lean.toJson index.name), ("columns", Lean.toJson index.columns),
+      ("unique", Lean.toJson index.unique)] ++
+    (if index.descending.isEmpty then [] else [("descending", Lean.toJson index.descending)]) ++
+    (if index.isPartial then [("partial", Lean.toJson true)] else []))
+
+/-- Read a native index ({name}`Conformance.NativeIndex`); a missing {lit}`descending` is every
+term ascending and a missing {lit}`partial` is a full index. -/
+instance : Lean.FromJson Conformance.NativeIndex where
+  fromJson? json := do
+    let descending : List Bool ← (json.getObjValAs? (List Bool) "descending").toOption.getD [] |> pure
+    let isPartial : Bool ← (json.getObjValAs? Bool "partial").toOption.getD false |> pure
+    return { name := ← json.getObjValAs? Identifier "name", columns := ← json.getObjValAs? (List (Option Nat)) "columns",
+             unique := ← json.getObjValAs? Bool "unique", descending := Conformance.sortOrders descending, isPartial }
+
+deriving instance Lean.FromJson, Lean.ToJson for Conformance.NativeTable, Conformance.NativeObservation
 deriving instance Lean.FromJson, Lean.ToJson for Conformance.StatementOutput, Conformance.OutputGroup,
   Conformance.NativeOutput
 deriving instance Lean.FromJson, Lean.ToJson for Conformance.Case
@@ -38,7 +57,7 @@ def decodeCase (json : Lean.Json) : Except String Case := do
   unless c.version == caseVersion do throw s!"unsupported conformance case version {c.version}; regenerate the case"
   unless !(c.nativeTrace.isEmpty) do throw "missing initial native observation"
   for tables in c.initial :: c.nativeTrace.flatMap (fun n => [n.visible, n.persisted]) do
-    unless (tables.map (normalizeIdentifier ·.name)).eraseDups.length == tables.length do
+    unless (tables.map (·.name.folded)).eraseDups.length == tables.length do
       throw "duplicate table name"
     for table in tables do checkNativeTable table
   for (n, position) in c.nativeTrace.zipIdx do

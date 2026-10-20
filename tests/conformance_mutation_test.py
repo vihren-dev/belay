@@ -34,8 +34,8 @@ def test_model_mutation(runtime_root: Path, tmp_path: Path) -> None:
         source = source.replace("namespace Belay.Sqlite", "namespace Belay.Sqlite.Mutant")
         source = source.replace("end Belay.Sqlite", "end Belay.Sqlite.Mutant")
         if filename == "packages/belay-sqlite/Belay/Sqlite/StatementStep.lean":
-            assert source.count("(LiteralData.inserted table rows)") == 1
-            source = source.replace("(LiteralData.inserted table rows)", "table")
+            assert source.count("LiteralData.inserted table values") == 1
+            source = source.replace("LiteralData.inserted table values", "table")
         sources.append(source)
     proof = tmp_path / "Mutant.lean"
     proof.write_text("import VerifierConformance.Case\n" + "\n".join(sources) +

@@ -100,7 +100,7 @@ def test_changed_sql_rejects_stale_proof(pilot: Path, verify: Callable[..., dict
 def test_different_field_preserves_contract(pilot: Path, verify: Callable[..., dict[str, object]]) -> None:
     """Accept another nullable field using unchanged approved files and updated candidate facts."""
     replace_bytes(pilot / 'migration.sql', b'add column shell text;', b'add column other text;')
-    replace_bytes(pilot / 'AtuinFacts.lean', b'name := "shell"', b'name := "other"')
+    replace_bytes(pilot / 'AtuinFacts.lean', b'name := name! "shell"', b'name := name! "other"')
     report = verify('VERIFIED')
     inputs = report['inputs']
     assert isinstance(inputs, dict)

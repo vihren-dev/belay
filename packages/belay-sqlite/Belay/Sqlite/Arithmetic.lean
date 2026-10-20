@@ -85,16 +85,11 @@ def ArithmeticOperator.integer (operator : ArithmeticOperator) (left right : Val
   | .divide => if b == 0 then .null else exact (a.tdiv b)
   | .remainder => if b == 0 then .null else .integer (a.tmod (if b == -1 then 1 else b))
 
-/-- Whether a value is the NULL cell. -/
-def Value.isNullCell : Value → Bool
-  | .null => true
-  | .integer _ | .real _ | .text _ | .blob _ => false
-
 /-- SQLite's value of {lit}`left operator right`: NULL when an operand is NULL, integer
 arithmetic when both operands are integers or count as integers, else double
 arithmetic; a NaN result is NULL. -/
 def ArithmeticOperator.apply (operator : ArithmeticOperator) (left right : Value) : Value :=
-  if left.isNullCell || right.isNullCell then .null
+  if left.isNull || right.isNull then .null
   else match left.arithmeticInteger?, right.arithmeticInteger? with
     | some a, some b => operator.integer left right a b
     | some _, none | none, some _ | none, none => operator.real left right
@@ -103,7 +98,7 @@ def ArithmeticOperator.apply (operator : ArithmeticOperator) (left right : Value
 {name}`realText`, TEXT and BLOB bytes as they are, NULL as no bytes. -/
 def Value.textBytes : Value → List UInt8
   | .integer value => (toString value).toUTF8.toList
-  | .real bits => (realText (Float.ofBits bits)).toUTF8.toList
+  | .real bits => realText (Float.ofBits bits)
   | .text bytes | .blob bytes => bytes
   | .null => []
 

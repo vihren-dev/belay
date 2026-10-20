@@ -1,5 +1,5 @@
 import Belay.Sqlite.Resolution.StatementCatalog
-import Belay.Sqlite.Resolution.FunctionSources
+import Belay.Sqlite.Resolution.SourceList
 
 set_option doc.verso true
 
@@ -39,11 +39,11 @@ is a scalar. A name is the {lit}`AS` alias, else the defined name of a reference
 def resolveResultColumn (dqs : Bool) (scope : Scope) (column : Nat) :
     Syntax.ResultColumn → Except ValueIssue (List (Resolved.Output × String))
   | .star => if scope.isEmpty then .error (.prepare .noTablesSpecified) else
-      .ok (scope.visible.map fun (position, defined) => (.scalar (scope.starOperand position defined).1, defined.name))
+      scope.visible.mapM fun (position, defined) => (.scalar ·.1, defined.name.text) <$> scope.starOperand position defined
   | .sourceStar source => (sourceStarColumns scope source).map fun columns =>
       columns.map fun (expression, name) => (.scalar expression, name)
   | .expression value alias text => do
-    let named := fun (output : Resolved.Output) (defined : Option String) => [(output, alias.getD (defined.getD text))]
+    let named := fun (output : Resolved.Output) (defined : Option String) => [(output, (alias.map (·.text)).getD (defined.getD text))]
     match value with
     | .callStar name =>
       if normalizeIdentifier name == "count" then .ok (named (.aggregate .countRows) none)
@@ -64,8 +64,8 @@ def resolveResultColumn (dqs : Bool) (scope : Scope) (column : Nat) :
       .ok (named (.scalar resolved) (definedName scope value))
 
 /-- The index of the first result column whose alias has the folded name. -/
-def aliasIndex (names : List (Option String)) (name : String) : Option Nat :=
-  names.findIdx? fun alias => alias.any (normalizeIdentifier · == normalizeIdentifier name)
+def aliasIndex (names : List (Option Identifier)) (name : Identifier) : Option Nat :=
+  names.findIdx? fun alias => alias.any (·.sameName name)
 
 /-- Whether a result column of an aggregate query is admitted by the model: an
 aggregate, or a scalar that is one of the grouping terms. SQLite also admits other
@@ -78,7 +78,7 @@ def groupedOutput (terms : List Resolved.Expr) : Resolved.Output → Bool
 {lit}`k` from 1 to the number of columns names column {lit}`k - 1`; an identifier
 names the first column with that alias. {lit}`some (.error ())` is an integer out of
 range; {lean}`(none : Option (Except Unit Nat))` is any other term. -/
-def namedResult (names : List (Option String)) : Syntax.Expr → Option (Except Unit Nat)
+def namedResult (names : List (Option Identifier)) : Syntax.Expr → Option (Except Unit Nat)
   | .identifier name _ => (aliasIndex names name).map .ok
   | term@.null | term@(.numeric _) | term@(.string _) | term@(.blob _) | term@(.currentTime _)
   | term@(.negate _) | term@(.positive _) | term@(.compare ..) | term@(.and ..)
@@ -109,8 +109,11 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
     (filter : Option Syntax.Expr) (groupBy : List Syntax.Expr) (orderBy : List Syntax.OrderTerm)
     (limit offset : Option Syntax.Expr) : StatementResolution :=
   let dqs := context.profile.dqsDml
+  match resolveSources catalog source joins with
+  | .error (.noSuchTable name) => prepareError catalog (.noSuchTable name)
+  | .error (.value issue) => issueResolution catalog index [] issue
+  | .ok (pending, scope) =>
   let resolved : Except ValueIssue Resolved.Query := do
-    let (first, tables, scope, items) ← resolveSources catalog source joins
     let outputs := (← resolveAll (resolveResultColumn dqs scope) results).flatten
     let aliases := results.flatMap fun
       | .star => scope.visible.map fun _ => none
@@ -121,8 +124,7 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
       | some term =>
         if namesAlias scope (aliases.filterMap id) term then throw (aliasInExpression.under [3])
         else some <$> condition [3] (resolveOperand dqs scope true term)
-    let conditions ← resolveAll (fun item (_, term) => resolveJoinCondition dqs scope item term) tables
-    let functions ← resolveFunctions dqs scope items
+    let sources ← resolvePendingSources dqs scope pending
     let aggregate := !groupBy.isEmpty || outputs.any fun (output, _) => match output with
       | .aggregate _ => true
       | .scalar _ => false
@@ -161,9 +163,7 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat)
     if offsetValue.any (· < 0) then throw (.restriction [7] .negativeOffset)
     if windowSkipsFailure groupBy limit offset (outputs.map (·.1)) then
       throw (.restriction [6] .windowedGroupSum)
-    let resolvedJoins := (joins.zip ((tables.map Prod.fst).zip conditions)).map fun (join, table, on) =>
-      ({ kind := join.resolvedKind, table, condition := on } : Resolved.Join)
-    return { table := first, joins := resolvedJoins, functions, filter := condition, aggregate, groupBy := terms,
+    return { sources, filter := condition, aggregate, groupBy := terms,
              columns := outputs.map (·.1), names := outputs.map (·.2), orderBy := order,
              offset := (offsetValue.getD 0).toNat,
              limit := limitValue.bind fun value => if value < 0 then none else some value.toNat }

@@ -18,24 +18,24 @@ def positionAffinity (columns : List CatalogColumn) (position : Nat) : Affinity 
 /-- Whether UPDATE selects a row: the filter condition is true on the row
 ({name}`Resolved.truthy`, R-58095-46013), or there is no filter (R-55869-30521). A
 NULL or false condition does not select the row. -/
-def selected (filter : Option Resolved.Expr) (row : Row) : Bool :=
-  filter.all fun condition => Resolved.truthy (condition.eval row.values)
+def selected (clock : Int) (filter : Option Resolved.Expr) (row : Row) : Bool :=
+  filter.all fun condition => Resolved.truthy (condition.eval clock row.values)
 
 /-- The new row of an assigned row: each assignment sets its position to the value of
 its expression on the context, stored with the column's affinity ({name}`storeValue`).
 The rowid and every other cell stay; a position beyond the row's width changes nothing.
 UPDATE uses the old row as the context ({lit}`assign`); {lit}`DO UPDATE` uses the old
 row followed by the proposed row. -/
-def assignFrom (columns : List CatalogColumn) (assignments : List (Nat × Resolved.Expr)) (context : List Value)
+def assignFrom (clock : Int) (columns : List CatalogColumn) (assignments : List (Nat × Resolved.Expr)) (context : List Value)
     (row : Row) : Row :=
   { row with values := assignments.foldl (fun values (position, expression) =>
-      values.set position (storeValue (positionAffinity columns position) (expression.eval context))) row.values }
+      values.set position (storeValue (positionAffinity columns position) (expression.eval clock context))) row.values }
 
 /-- The new row of a selected row of UPDATE: {name}`assignFrom` with the old row as the
 context, so each value reads the old row (R-36239-04077, R-40598-36595), and the rowid
 and every other cell stay (R-40472-60438). -/
-def assign (columns : List CatalogColumn) (assignments : List (Nat × Resolved.Expr)) (row : Row) : Row :=
-  assignFrom columns assignments row.values row
+def assign (clock : Int) (columns : List CatalogColumn) (assignments : List (Nat × Resolved.Expr)) (row : Row) : Row :=
+  assignFrom clock columns assignments row.values row
 
 /-- The rowid of an assigned row: its rowid alias cell, when the table has an alias and the
 cell is an integer, so UPDATE of the alias moves the row (slice 5b); the old rowid
@@ -47,31 +47,32 @@ def movedRowid (alias : Option Nat) (row : Row) : Row :=
 
 /-- Apply the assignments to every row that {name}`selected` accepts, with the rowid of
 {name}`movedRowid`. Retain the order of rows, the cells of other rows and the shape. -/
-def updated (table : Table) (assignments : List (Nat × Resolved.Expr)) (filter : Option Resolved.Expr) : Table :=
+def updated (clock : Int) (table : Table) (assignments : List (Nat × Resolved.Expr)) (filter : Option Resolved.Expr) : Table :=
   { table with rows := table.rows.map fun row =>
-      if selected filter row then movedRowid table.shape.rowidAlias (assign table.shape.columns assignments row)
+      if selected clock filter row then movedRowid table.shape.rowidAlias (assign clock table.shape.columns assignments row)
       else row }
 
 /-- Whether UPDATE gives a selected row a rowid alias that SQLite refuses with
 {lit}`datatype mismatch`: the table has an alias, the assignments set it, and its new
 cell is not an integer (NULL included). -/
-def updateMismatch (table : Table) (assignments : List (Nat × Resolved.Expr)) (filter : Option Resolved.Expr) :
+def updateMismatch (clock : Int) (table : Table) (assignments : List (Nat × Resolved.Expr)) (filter : Option Resolved.Expr) :
     Bool :=
   match table.shape.rowidAlias with
   | none => false
   | some position => assignments.any (·.1 == position) && table.rows.any fun row =>
-      selected filter row && match (assign table.shape.columns assignments row).values[position]? with
+      selected clock filter row && match (assign clock table.shape.columns assignments row).values[position]? with
         | some (.integer _) => false
         | some .null | some (.real _) | some (.text _) | some (.blob _) | none => true
 
 /-- Require {name}`tableReady` before the write, {name}`aliasReady`, a column at every
-assigned position, and a bounded rowid for every updated row. This check does not
-establish the updated constraints, which {lit}`checkedWrite` checks. -/
-def updateReady (keys : List (List Nat)) (table : Table) (assignments : List (Nat × Resolved.Expr))
-    (filter : Option Resolved.Expr) : Bool :=
+assigned position, and a bounded rowid for every row of the updated table ({lit}`result`,
+which the execution computes: {name}`updated`). This check does not establish the updated
+constraints, which {lit}`checkedWrite` checks. -/
+def updateReady (keys : List UniqueKey) (table : Table) (assignments : List (Nat × Resolved.Expr))
+    (result : Table) : Bool :=
   tableReady keys table && aliasReady table.shape &&
   assignments.all (fun (position, _) => (table.shape.columns[position]?).isSome) &&
-  (updated table assignments filter).rows.all (fun row => boundedInteger row.rowid)
+  result.rows.all (fun row => boundedInteger row.rowid)
 
 end LiteralData
 end Belay.Sqlite

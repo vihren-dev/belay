@@ -6,7 +6,7 @@ namespace NextInterpretation
 
 /-- Read all protected rows and amounts from the resulting catalog. -/
 def next : SqliteVerifier.Interpretation Requirements.LogicalState :=
-  SqliteVerifier.projectedInterpretation Generated.profile Generated.nextCatalog "invoices" ["amount"]
+  SqliteVerifier.projectedInterpretation Generated.profile Generated.nextCatalog (name! "invoices") [name! "amount"]
 
 /-- Explicit success applicability rules out modeled failures. -/
 def failures : SqliteVerifier.FailureRepresentation Requirements.LogicalState :=

@@ -1,4 +1,4 @@
-import Belay.Sqlite.SqlProofs
+import Belay.Sqlite.SqlLaws
 
 set_option doc.verso true
 
@@ -13,8 +13,8 @@ namespace SqliteVerifier.SqlExamples
 /-- The retained BIGINT key and nonnullable text field for these finite checks.
 BIGINT is an ordinary key column, independent of the physical rowid. -/
 def columns : List CatalogColumn := [
-  { name := "key", declaredType := some "BIGINT" },
-  { name := "value", declaredType := some "TEXT", notNull := true }]
+  { name := (name! "key"), declaredType := some "BIGINT" },
+  { name := (name! "value"), declaredType := some "TEXT", notNull := true }]
 
 /-- Shared key metadata, negative physical identities and a NULL key exercise both distinct semantics. -/
 def original : Table where
@@ -22,19 +22,19 @@ def original : Table where
   rows := [⟨-5, [.null, .text [97]]⟩, ⟨-2, [.integer 1, .text [98]]⟩]
 
 /-- The finite starting database contains {name}`original` only, at catalog position 0. -/
-def database : Database := .ofTables [("t", original)]
+def database : Database := .ofTables [((name! "t"), original)]
 
 /-- The nullable text field appended by the finite script, using the plain column
 defaults. Existing rows receive NULL in this field. -/
-def note : CatalogColumn := { name := "note", declaredType := some "TEXT" }
+def note : CatalogColumn := { name := (name! "note"), declaredType := some "TEXT" }
 
 /-- The unique keys of the table, which execution reads from the catalog for every write:
 the primary key on position 0. -/
-def keys : List (List Nat) := [[0]]
+def keys : List UniqueKey := [.ofColumns [0]]
 
 /-- The file itself supplies both transaction control and literal writes. -/
 def script : List Resolved.Statement := [.begin, .addColumn 0 note,
-  .insert 0 [[.integer 2, .text [99], .null]] [],
+  .insert 0 [[.value (.integer 2), .value (.text [99]), .value .null]] [],
   .commit, .update 0 [(1, .literal (.text [100]))] (some (.compare .eq (some .integer) (.column 0) (.literal (.integer 2)))) []]
 
 /-- Return true exactly for a pending transaction; success and failure return
@@ -61,26 +61,26 @@ example : ((runSql script database).database.table 0).map Table.rows = some [
 
 /-- The unique-key failure stops after ADD, while BEGIN remains open. -/
 def rejected : List Resolved.Statement := [.begin, .addColumn 0 note,
-  .insert 0 [[.integer 1, .text [], .null]] [], .rollback]
+  .insert 0 [[.value (.integer 1), .value (.text []), .value .null]] [], .rollback]
 
 example : error (runSql rejected database) = some (2, .constraintViolation) ∧
     openTransaction (runSql rejected database) = true := by decide +kernel
 example : ((runSql rejected database).database.table 0).map (fun table => table.shape.columns) = some (columns ++ [note]) ∧
     ((runSql rejected database).persistedDatabase.table 0).map (fun table => table.shape.columns) = some columns := by
   decide +kernel
-example : ((runSql [.begin, .insert 0 [[.integer 2, .text []]] [], .rollback] database).database.table 0) =
+example : ((runSql [.begin, .insert 0 [[.value (.integer 2), .value (.text [])]] [], .rollback] database).database.table 0) =
     some original := by decide +kernel
 example : error (runSql [.commit] database) = some (0, .noActiveTransaction) := by decide +kernel
 example : error (runSql [.begin, .begin] database) = some (1, .transactionAlreadyActive) := by decide +kernel
 example : openTransaction (runSql [.begin] database) = true := by decide +kernel
-example : error (runSql [.insert 0 [[.integer 2, .null]] []] database) = some (0, .constraintViolation) := by
+example : error (runSql [.insert 0 [[.value (.integer 2), .value .null]] []] database) = some (0, .constraintViolation) := by
   decide +kernel
 -- Two rows of one INSERT that share a key fail together, and the table is unchanged.
-example : error (runSql [.insert 0 [[.integer 3, .text []], [.integer 3, .text []]] []] database) =
+example : error (runSql [.insert 0 [[.value (.integer 3), .value (.text [])], [.value (.integer 3), .value (.text [])]] []] database) =
     some (0, .constraintViolation) := by decide +kernel
 -- A prepare error that resolution decided stops the script at its position.
-example : error (runSql [.begin, .prepareError (.noSuchTable "t")] database) =
-    some (1, .prepare (.noSuchTable "t")) := by decide +kernel
+example : error (runSql [.begin, .prepareError (.noSuchTable (name! "t"))] database) =
+    some (1, .prepare (.noSuchTable (name! "t"))) := by decide +kernel
 
 -- A value that the affinity would convert is not in stored form, and random rowid
 -- allocation fails the domain obligation; neither is a modeled native constraint error.
@@ -90,7 +90,8 @@ example : LiteralData.storedForm .numeric (.text [49, 50]) = false := by decide 
 example : LiteralData.storedForm .numeric
     (.text "2026-09-25 00:00:00".toUTF8.toList) = true := by decide +kernel
 example : LiteralData.insertReady keys { original with rows := [⟨9223372036854775807, [.null, .text []]⟩] }
-    [[.integer 2, .text []]] = false := by decide +kernel
+    [[.integer 2, .text []]] (LiteralData.inserted { original with rows := [⟨9223372036854775807, [.null, .text []]⟩] }
+      [[.integer 2, .text []]]) = false := by decide +kernel
 example : LiteralData.constraints keys (LiteralData.inserted original [[.null, .text []]]) = true := by decide +kernel
 example : ¬ SchemaOnly script := by simp [SchemaOnly, script]
 

@@ -22,13 +22,13 @@ pytestmark = [pytest.mark.integration, pytest.mark.kernel,
 SHAPE_CHECKS = """
 import Belay.Sqlite
 open Belay.Sqlite
-def idColumn : CatalogColumn := { name := "id", declaredType := some "BIGINT", notNull := true }
+def idColumn : CatalogColumn := { name := name! "id", declaredType := some "BIGINT", notNull := true }
 def stamp : CatalogColumn :=
-  { name := "stamp", declaredType := some "TIMESTAMP", defaultValue := some { form := .clock .timestamp, sourceText := "CURRENT_TIMESTAMP" } }
-def data : CatalogColumn := { name := "data", declaredType := none }
+  { name := name! "stamp", declaredType := some "TIMESTAMP", defaultValue := some { form := .clock .timestamp, sourceText := "CURRENT_TIMESTAMP" } }
+def data : CatalogColumn := { name := name! "data", declaredType := none }
 def shape : CatalogTable := { columns := [idColumn, stamp, data], primaryKey := [0], uniqueKeys := [[1], [0, 2]] }
-def catalogWith (table : CatalogTable) : Catalog := [{ name := "items", entry := .table table },
-  { name := "by_stamp", entry := .index { table := 0, columns := [1, 0], unique := true } }]
+def catalogWith (table : CatalogTable) : Catalog := [{ name := name! "items", entry := .table table },
+  { name := name! "by_stamp", entry := .index { table := 0, keys := [{ term := .column 1 }, { term := .column 0 }], unique := true } }]
 def catalog : Catalog := catalogWith shape
 def profile : Profile := Profile.documented "3.51.0" "build"
 def stored (candidate : CatalogTable) : Database := (catalogWith candidate).emptyDatabase
@@ -42,8 +42,8 @@ theorem shape_rejected (candidate : CatalogTable) (different : candidate ≠ sha
   exact different equal
 def alternatives : List CatalogTable := [
   { shape with columns := shape.columns.reverse },
-  { shape with columns := [{ idColumn with name := "other" }, stamp, data] },
-  { shape with columns := [{ idColumn with name := "ID" }, stamp, data] },
+  { shape with columns := [{ idColumn with name := name! "other" }, stamp, data] },
+  { shape with columns := [{ idColumn with name := name! "ID" }, stamp, data] },
   { shape with columns := [{ idColumn with declaredType := some "INTEGER" }, stamp, data] },
   { shape with columns := [{ idColumn with notNull := false }, stamp, data] },
   { shape with columns := [idColumn, { stamp with defaultValue := none }, data] },

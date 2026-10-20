@@ -30,8 +30,10 @@ SQLITE = "belay-sqlite/Belay/Sqlite/"
 """The model sources, relative to `packages/`."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "non_ascii_fold": (SQLITE + "Declarations.lean",
-        "if 'A' ≤ c ∧ c ≤ 'Z' then", "if 'A' ≤ c ∧ c ≤ 'Z' ∨ 'À' ≤ c ∧ c ≤ 'Þ' ∧ c ≠ '×' then"),
+    "non_ascii_fold": (SQLITE + "Identifier.lean",
+        "def Identifier.folded (name : Identifier) : List UInt8 := name.bytes.map lowerAscii",
+        "def Identifier.folded (name : Identifier) : List UInt8 :=\n"
+        "  name.bytes.map fun byte => if 0x80 ≤ byte && byte ≤ 0x9e && byte != 0x97 then byte + 32 else lowerAscii byte"),
     "affinity_order": (SQLITE + "Resolution/TypeAffinity.lean",
         'if containsText upper "INT" then .integer\n    else if ["CHAR", "CLOB", "TEXT"].any (containsText upper) then .text',
         'if ["CHAR", "CLOB", "TEXT"].any (containsText upper) then .text\n    else if containsText upper "INT" then .integer'),
@@ -51,15 +53,15 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "  | some (_, { entry := .table _, .. }) | none =>"),
     "no_too_many_columns": (SQLITE + "Resolution/Definitions.lean",
         "    else if table.columns.length + 1 > context.profile.limits.columns then\n"
-        "      prepareError catalog (.tooManyColumns tableName)\n", ""),
+        "      prepareError catalog (.expression (.tooManyColumns tableName))\n", ""),
     "no_duplicate_column": (SQLITE + "Resolution/Definitions.lean",
         "    else if (columnPosition table.columns definition.name).isSome then\n"
-        "      prepareError catalog (.duplicateColumn definition.name)\n", ""),
+        "      prepareError catalog (.expression (.duplicateColumn definition.name))\n", ""),
     "no_such_table": (SQLITE + "Resolution/Definitions.lean",
         "  | none => prepareError catalog (.noSuchTable tableName)\n  | some (position, table) =>\n"
-        "    if reservedName tableName then prepareError catalog (.tableMayNotBeAltered tableName)",
-        "  | none => restrict index [] .createIndexRuns\n  | some (position, table) =>\n"
-        "    if reservedName tableName then prepareError catalog (.tableMayNotBeAltered tableName)"),
+        "    if reservedName tableName then prepareError catalog (.expression (.tableMayNotBeAltered tableName))",
+        "  | none => restrict index [] .engineTable\n  | some (position, table) =>\n"
+        "    if reservedName tableName then prepareError catalog (.expression (.tableMayNotBeAltered tableName))"),
     "commit_without_transaction": (SQLITE + "StatementStep.lean",
         "    | none => .halt (.failure position .noActiveTransaction state.database)\n"
         "    | some _ => .next { state with snapshot := none }",
@@ -71,7 +73,7 @@ the match allows it (`no_table_exists` creates the table again), or makes it a
 model restriction where nothing can continue (`no_such_table`)."""
 
 GUARDS: dict[str, str] = {
-    "non_ascii_fold": "rule:normalizeIdentifier",
+    "non_ascii_fold": "rule:Identifier.folded",
     "affinity_order": "rule:affinityOf",
     "desc_rowid_alias": "rule:applyConstraint",
     "rollback_keeps_catalog": "rule:resolveStatement",
@@ -81,7 +83,7 @@ GUARDS: dict[str, str] = {
     "no_too_many_columns": "rule:resolveAddColumn",
     "no_duplicate_column": "rule:resolveAddColumn",
     "no_such_table": "rule:resolveAddColumn",
-    "commit_without_transaction": "rule:advance",
+    "commit_without_transaction": "rule:advanceWith",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
 changes. `conformance.mutant_guards` checks every entry."""

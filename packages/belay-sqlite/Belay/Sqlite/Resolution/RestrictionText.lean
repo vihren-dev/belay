@@ -15,7 +15,9 @@ def RestrictionKind.id : RestrictionKind → String
   | .rowidColumnName => "rowid-column-name"
   | .createTableConstraints => "create-table-constraints"
   | .unmodeledDefault => "unmodeled-default"
-  | .createIndexRuns => "create-index-runs"
+  | .indexStringTerm => "index-string-term"
+  | .indexDateFunction => "index-date-function"
+  | .indexJsonFunction => "index-json-function"
   | .addColumnConstraint => "add-column-constraint"
   | .rowDependentKey => "row-dependent-key"
   | .conflictWithoutTarget => "conflict-without-target"
@@ -26,7 +28,6 @@ def RestrictionKind.id : RestrictionKind → String
   | .updateColumnTwice => "update-column-twice"
   | .rowidName => "rowid-name"
   | .joinOperator => "join-operator"
-  | .duplicateSource => "duplicate-source"
   | .laterTableInOn => "later-table-in-on"
   | .systemTable => "system-table"
   | .unmodeledFunction => "unmodeled-function"
@@ -40,7 +41,6 @@ def RestrictionKind.id : RestrictionKind → String
   | .windowedGroupSum => "windowed-group-sum"
   | .constantFunctionError => "constant-function-error"
   | .tableFunction => "table-function"
-  | .tableAfterFunction => "table-after-function"
   | .functionJoin => "function-join"
   | .laterSourceInArguments => "later-source-in-arguments"
 
@@ -52,7 +52,9 @@ def RestrictionKind.message : RestrictionKind → String
   | .rowidColumnName => "column names rowid, _rowid_ and oid are not modeled; rename the column"
   | .createTableConstraints => "constraints and defaults in a CREATE TABLE that runs are not modeled; create the table with plain columns"
   | .unmodeledDefault => "default expression is not modeled; use a literal default"
-  | .createIndexRuns => "a CREATE INDEX that runs is not modeled; remove the CREATE INDEX statement"
+  | .indexStringTerm => "a string literal as an index key is not modeled; name the column without quotes"
+  | .indexDateFunction => "a date and time function in an index key or WHERE clause is not modeled; index the column instead"
+  | .indexJsonFunction => "a JSON function in an index key or WHERE clause is not modeled; index the column instead"
   | .addColumnConstraint => "the default of the added column is not modeled; use a literal default or no default"
   | .rowDependentKey => "a SET value that reads the row is not modeled for a column of a unique key; assign a constant value"
   | .conflictWithoutTarget => "DO UPDATE without a conflict target is not modeled for a table with more than one key; name the target columns"
@@ -62,8 +64,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .insertColumnTwice => "a column named twice in INSERT is not modeled; name each column once"
   | .updateColumnTwice => "a column assigned twice in UPDATE is not modeled; assign each column once"
   | .rowidName => "the rowid names rowid, _rowid_ and oid are not modeled in expressions over a table; name the table's columns"
-  | .joinOperator => "this join operator is not modeled; write JOIN, LEFT JOIN or a comma"
-  | .duplicateSource => "two sources of a query with the same name are not modeled; give each source its own alias"
+  | .joinOperator => "this join operator is refused by SQLite and not modeled; write JOIN, LEFT JOIN or a comma"
   | .laterTableInOn => "an ON condition that names a table joined after it is not modeled; move the condition to WHERE or to the later join"
   | .systemTable => "queries of SQLite's own tables, such as sqlite_schema, are not modeled; query an application table"
   | .unmodeledFunction => "only COUNT(*), COUNT, MIN, MAX, SUM and AVG of one argument, COALESCE of two or more arguments, json_extract, ->, ->>, json_type, json_valid, json_array_length and json are modeled as functions"
@@ -77,13 +78,12 @@ def RestrictionKind.message : RestrictionKind → String
   | .windowedGroupSum => "SUM in a grouped query with LIMIT or OFFSET is not modeled, because SQLite may stop before an overflowing group; remove the window or the SUM"
   | .constantFunctionError => "a constant value in VALUES or SET whose JSON function fails is not modeled; correct the JSON text or the path"
   | .tableFunction => "only json_each with one or two arguments is modeled as a table-valued function in FROM; use json_each or a table"
-  | .tableAfterFunction => "a table after json_each in FROM is not modeled; write the tables before json_each"
-  | .functionJoin => "only an inner join without NATURAL or USING is modeled with json_each; write a comma, JOIN or JOIN ... ON"
+  | .functionJoin => "json_each as the right operand of RIGHT or FULL JOIN, with NATURAL or USING, or before a NATURAL JOIN, is not modeled; write JOIN or LEFT JOIN with ON"
   | .laterSourceInArguments => "an argument of json_each that reads a later source is not modeled; write the source before json_each"
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .createTableConstraints, .unmodeledDefault, .createIndexRuns, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .duplicateSource, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .tableAfterFunction, .functionJoin, .laterSourceInArguments]
+  [.schemaStatement, .engineTable, .rowidColumnName, .createTableConstraints, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

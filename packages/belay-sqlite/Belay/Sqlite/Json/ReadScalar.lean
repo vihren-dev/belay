@@ -32,9 +32,15 @@ def StringKind.withJsonEscape : StringKind → StringKind
   | .json => .json
   | .json5 => .json5
 
-/-- The bytes of the text from {lit}`start` up to, not including, {lit}`stop`. -/
-def slice (text : Array UInt8) (start stop : Nat) : List UInt8 :=
-  (List.range (stop - start)).map fun offset => byteAt text (start + offset)
+/-- A scalar value that the reader read: its node, the position after it, and whether
+SQLite met no JSON5 form in it, so that {lit}`pParse->hasNonstd` stays clear. -/
+structure ScalarRead where
+  /-- The node of the value. -/
+  node : JsonNode
+  /-- The position after the value. -/
+  next : Nat
+  /-- Whether the value is canonical JSON (RFC 8259) for SQLite. -/
+  standard : Bool
 
 /-- Scan a string body from {lit}`position` to the closing {lit}`delimiter`: the position
 of the delimiter and the escape class, or {lit}`none` for a syntax error. The escapes are
@@ -67,17 +73,14 @@ def scanString (text : Array UInt8) (delimiter : UInt8) : Nat → Nat → String
     else scanString text delimiter fuel (position + 1) kind
 
 /-- Read a string that starts with its delimiter at {lit}`position`: the node and the
-position after the closing delimiter. -/
-def readString (text : Array UInt8) (position : Nat) : Option (JsonNode × Nat) :=
+position after the closing delimiter. A single-quoted string and a JSON5 string
+({lit}`JSONB_TEXT5`) are JSON5. -/
+def readString (text : Array UInt8) (position : Nat) : Option ScalarRead :=
   match scanString text (byteAt text position) (text.size + 1) (position + 1) .plain with
-  | some (close, kind) => some (kind.node (slice text (position + 1) close), close + 1)
+  | some (close, kind) =>
+    some ⟨kind.node (slice text (position + 1) close), close + 1,
+      byteAt text position == 34 && !(kind matches .json5)⟩
   | none => none
-
-/-- The first position at or after {lit}`position` that is not a hexadecimal digit. -/
-def hexDigitsEnd (text : Array UInt8) : Nat → Nat → Nat
-  | 0, position => position
-  | fuel + 1, position =>
-    if isHexDigit (byteAt text position) then hexDigitsEnd text fuel (position + 1) else position
 
 /-- Whether the byte before an exponent or the end of a number is a point after a
 digit, which JSON5 allows. {lit}`start` is the first byte of the number. -/
@@ -120,25 +123,26 @@ def numberNode (text : Array UInt8) (start stop flags : Nat) : JsonNode :=
   if flags == 0 then .int payload else if flags == 1 then .int5 payload
   else if flags == 2 then .float payload else .float5 payload
 
-/-- Read a decimal number whose digits start after {lit}`start`. -/
-def readDecimal (text : Array UInt8) (start flags : Nat) : Option (JsonNode × Nat) :=
+/-- Read a decimal number whose digits start after {lit}`start`. A leading plus sign and
+the JSON5 flag bit make it JSON5. -/
+def readDecimal (text : Array UInt8) (start flags : Nat) : Option ScalarRead :=
   (scanDecimal text start (text.size + 1) (start + 1) flags Bool.false).map fun (stop, flags) =>
-    (numberNode text start stop flags, stop)
+    ⟨numberNode text start stop flags, stop, flags &&& 1 == 0 && byteAt text start != 43⟩
 
 /-- Read a hexadecimal JSON5 integer whose digits start at {lit}`digits`. -/
-def readHex (text : Array UInt8) (start digits : Nat) : Option (JsonNode × Nat) :=
+def readHex (text : Array UInt8) (start digits : Nat) : Option ScalarRead :=
   let stop := hexDigitsEnd text (text.size + 1) digits
-  some (numberNode text start stop 1, stop)
+  some ⟨numberNode text start stop 1, stop, Bool.false⟩
 
 /-- Read a number that starts with a sign at {lit}`start`: a JSON5 infinity, a fraction
 without leading digits, a hexadecimal integer or a decimal number. -/
-def readSignedNumber (text : Array UInt8) (start : Nat) : Option (JsonNode × Nat) :=
+def readSignedNumber (text : Array UInt8) (start : Nat) : Option ScalarRead :=
   let next := byteAt text (start + 1)
   if !isAsciiDigit next then
     if (next == 73 || next == 105) && matchesIgnoringCase text (start + 1) "inf".toUTF8.toList then
       let payload := if byteAt text start == 45 then "-9e999" else "9e999"
       let length := if matchesIgnoringCase text (start + 4) "inity".toUTF8.toList then 9 else 4
-      some (.float payload.toUTF8.toList, start + length)
+      some ⟨.float payload.toUTF8.toList, start + length, Bool.false⟩
     else if next == 46 then readDecimal text start 1
     else none
   else if next == 48 then
@@ -150,7 +154,7 @@ def readSignedNumber (text : Array UInt8) (start : Nat) : Option (JsonNode × Na
 
 /-- Read a number at {lit}`start` (the {lit}`parse_number` case of the reader). A leading
 zero is not followed by a digit; {lit}`0x` starts a hexadecimal integer. -/
-def readNumber (text : Array UInt8) (start : Nat) : Option (JsonNode × Nat) :=
+def readNumber (text : Array UInt8) (start : Nat) : Option ScalarRead :=
   let byte := byteAt text start
   if byte == 46 then
     if isAsciiDigit (byteAt text (start + 1)) then readDecimal text start 3 else none
@@ -170,17 +174,19 @@ def specialNames : List (List UInt8 × Bool) :=
 
 /-- Read a literal at {lit}`start`: {lit}`true`, {lit}`false` or {lit}`null` not followed
 by a letter or digit, else the first name of {name}`specialNames` that matches and is
-not followed by a letter or digit. An infinity is the float {lit}`9e999`; a NaN is null. -/
-def readLiteral (text : Array UInt8) (start : Nat) : Option (JsonNode × Nat) :=
-  let keyword (word : String) (node : JsonNode) : Option (JsonNode × Nat) :=
+not followed by a letter or digit. An infinity is the float {lit}`9e999`; a NaN is null.
+The names of {name}`specialNames` are JSON5. -/
+def readLiteral (text : Array UInt8) (start : Nat) : Option ScalarRead :=
+  let keyword (word : String) (node : JsonNode) : Option ScalarRead :=
     let bytes := word.toUTF8.toList
     if matchesExactly text start bytes && !isAsciiAlnum (byteAt text (start + bytes.length)) then
-      some (node, start + bytes.length)
+      some ⟨node, start + bytes.length, Bool.true⟩
     else none
-  let special : Option (JsonNode × Nat) :=
+  let special : Option ScalarRead :=
     (specialNames.find? fun (name, _) =>
       matchesIgnoringCase text start name && !isAsciiAlnum (byteAt text (start + name.length))).map
-      fun (name, isInfinity) => (if isInfinity then .float "9e999".toUTF8.toList else .null, start + name.length)
+      fun (name, isInfinity) =>
+        ⟨if isInfinity then .float "9e999".toUTF8.toList else .null, start + name.length, Bool.false⟩
   match byteAt text start with
   | 116 => keyword "true" .true
   | 102 => keyword "false" .false

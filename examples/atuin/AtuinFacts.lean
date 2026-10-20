@@ -8,7 +8,7 @@ namespace AtuinFacts
 open Belay.Sqlite SqliteVerifier
 
 /-- The proposed nullable field is a candidate choice, outside the approved contract. -/
-def added : CatalogColumn := { name := "shell", declaredType := some "TEXT" }
+def added : CatalogColumn := { name := name! "shell", declaredType := some "TEXT" }
 
 /-- The supplied SQL resolves to exactly this single supported extension. -/
 theorem script_bound : Generated.resolved = [.addColumn 0 added] := by rfl
@@ -20,7 +20,7 @@ theorem next_bound : Generated.nextCatalog = SchemaBinding.start.addColumn 0 add
 theorem next_valid : Generated.nextCatalog.Valid Generated.profile.limits := by decide +kernel
 
 /-- The history table is at catalog position 0 of the starting catalog. -/
-theorem located : tablePosition SchemaBinding.start "history" = some 0 := by decide +kernel
+theorem located : tablePosition SchemaBinding.start (name! "history") = some 0 := by decide +kernel
 
 /-- Every table with the approved history columns covers every name in
 {name}`SchemaBinding.fields`. The proof decides each name's column lookup; rows
@@ -46,8 +46,9 @@ theorem payload {database : Database} (conforms : Conforms Generated.profile Sch
   obtain ⟨table, present, shape, valid⟩ := conforms.table (position := 0) (shape := SchemaBinding.history)
     (by decide +kernel)
   refine ⟨table, present, shape, valid, ?_, ?_⟩
-  · simp [runSql, runSqlFrom, advance, literalStep, SqlState.finish, script_bound, step, CatalogColumn.clockDefault, readDefaultValue, Except.toOption, present,
-      added]
+  · simp only [runSql_eq, script_bound, runSqlFrom_cons, advance_addColumn,
+      effect_addColumn_ok 0 present (column := added) (value := .null) rfl rfl rfl, SqlState.publish_ok, runSqlFrom_nil]
+    rfl
   · rw [next_bound]
     exact conforms.addColumn .null present (next_bound ▸ next_valid)
 

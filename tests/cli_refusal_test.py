@@ -16,10 +16,10 @@ pytestmark = [pytest.mark.e2e, pytest.mark.kernel, pytest.mark.requires_lean,
 
 
 @pytest.mark.parametrize("sql,refused,restriction", [
-    ("CREATE INDEX i ON invoices(amount);", "CREATE INDEX i ON invoices(amount)", "create-index-runs"),
+    ("CREATE INDEX i ON invoices(json_extract(amount, '$'));", "json_extract(amount, '$')", "index-json-function"),
     ("CREATE TABLE t(a TEXT, rowid TEXT);", "a TEXT, rowid TEXT", "rowid-column-name"),
     ("SELECT amount FROM invoices WHERE rowid = 1;", "rowid", "rowid-name"),
-], ids=["index_that_runs", "rowid_column", "rowid_name"])
+], ids=["index_json_function", "rowid_column", "rowid_name"])
 def test_restriction_names_the_refused_sql(invoke: Callable[..., dict[str, object]], candidate: Path,
                                            sql: str, refused: str, restriction: str) -> None:
     """A model restriction from Lean resolution is UNSUPPORTED at the byte range of the refused node,

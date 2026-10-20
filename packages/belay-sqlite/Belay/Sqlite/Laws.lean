@@ -1,6 +1,6 @@
-import Belay.Sqlite.SqlProofs
+import Belay.Sqlite.SqlLaws
 import Belay.Sqlite.SqlExecution
-import Belay.Sqlite.DatabaseFacts
+import Belay.Sqlite.DatabaseLaws
 
 set_option doc.verso true
 
@@ -9,100 +9,68 @@ row preservation when a column is added. -/
 set_option maxHeartbeats 2000000
 namespace Belay.Sqlite.Conformance
 
-/-- Classify statements that leave transaction control to their surrounding script. -/
-def nonControl : Resolved.Statement → Bool
-  | .begin | .commit | .rollback => false
-  | .createTable .. | .createIndex .. | .addColumn .. | .insert .. | .upsert .. | .update .. | .delete ..
-  | .prepareError _ | .query _ | .clocked .. => true
-
-/-- Each statement in the body is non-control and succeeds at its position.
-The remaining body starts from its resulting database. An empty body requires
-nothing of the database. Use this predicate to state successful-body laws. -/
-inductive SuccessfulBody : Nat → List Resolved.Statement → Database → Prop where
+/-- Each statement in the body is non-control and succeeds at its position, at the clock
+value of the clock assignment for that position, as {name}`advance` runs it. The remaining
+body starts from its resulting database. An empty body requires nothing of the database.
+Use this predicate to state successful-body laws. -/
+inductive SuccessfulBody (clock : Nat → Int) : Nat → List Resolved.Statement → Database → Prop where
   /-- Every position and database admit an empty successful body; no statement premise is required. -/
-  | nil : SuccessfulBody position [] database
+  | nil : SuccessfulBody clock position [] database
   /-- A non-control statement that succeeds, followed by a successful tail, forms a successful body. -/
-  | cons (ordinary : nonControl statement = true)
-      (success : literalStep statement database position = .success next)
-      (tail : SuccessfulBody (position + 1) rest next) :
-      SuccessfulBody position (statement :: rest) database
+  | cons (ordinary : statement.isControl = false)
+      (success : literalStep (clock position) statement database = .ok next)
+      (tail : SuccessfulBody clock (position + 1) rest next) :
+      SuccessfulBody clock position (statement :: rest) database
 
-/-- For any position, body, current database and original snapshot, if
+/-- For any clock assignment, position, body, current database and original snapshot, if
 {name}`SuccessfulBody` holds, running the body followed by ROLLBACK with that
-snapshot returns success with exactly the original database.
+snapshot and clock assignment returns success with exactly the original database.
 
 The proof inducts over the successful body. Each non-control step preserves
 the snapshot; the final ROLLBACK restores it. -/
-theorem body_rollback (success : SuccessfulBody position body database) :
-    runSqlFrom position (body ++ [.rollback]) ⟨database, some original⟩ = .success original := by
+theorem body_rollback (success : SuccessfulBody clock position body database) :
+    runSqlFrom position (body ++ [.rollback]) { database, snapshot := some original, clock } =
+      .success original := by
   induction success with
-  | nil => simp [runSqlFrom, advance, SqlState.finish]
-  | @cons statement database position next rest ordinary success tail ih =>
-    cases statement <;> simp_all [nonControl, runSqlFrom, advance]
+  | nil => simp [runSqlFrom, advance, advanceWith, SqlState.finish]
+  | @cons position statement database next rest ordinary success tail ih =>
+    cases statement <;> simp_all [Resolved.Statement.isControl, runSqlFrom, advance, advanceWith, SqlState.publish]
 
-/-- For any body and database, if {name}`SuccessfulBody` holds at position 1,
-BEGIN followed by the body and ROLLBACK returns success with that database.
+/-- For any body and database, if {name}`SuccessfulBody` holds at position 1 at the clock
+value 0, BEGIN followed by the body and ROLLBACK returns success with that database.
 
 The proof unfolds BEGIN and applies {name}`body_rollback` with the initial
 database as the transaction snapshot. -/
-theorem rollback (success : SuccessfulBody 1 body database) :
+theorem rollback (success : SuccessfulBody (fun _ => 0) 1 body database) :
     runSql (.begin :: body ++ [.rollback]) database = .success database := by
-  simpa [runSql, runSqlFrom, advance] using body_rollback (original := database) success
+  simpa [runSql, runSqlFrom, advance, advanceWith] using body_rollback (original := database) success
 
-/-- For every statement, database and position, {name}`literalStep` returns one of:
-* success with some database;
-* a failure at that position with some reason and the unchanged input database;
-* a FAIL failure ({name}`ExecutionError.constraintFail`) at that position with some
-  database, which keeps the earlier rows of an INSERT.
+/-- For every state, position, effect and outcome: if {name}`SqlState.publish` of the
+effect halts with the outcome, the effect is an error with some reason and reached
+database, and the outcome is {name}`SqlState.failed` of that reason with the reached
+database for a FAIL failure and the state's database for every other reason. -/
+theorem SqlState.publish_halt {state : SqlState} {position : Nat} {effect : Effect} {outcome : Outcome}
+    (halted : state.publish position effect = .halt outcome) :
+    ∃ reason reached, effect = .error (reason, reached) ∧
+      outcome = state.failed position reason (if reason = .constraintFail then reached else state.database) := by
+  cases effect with
+  | ok database => simp [SqlState.publish] at halted
+  | error failure =>
+    obtain ⟨reason, reached⟩ := failure
+    simp only [SqlState.publish, SqlTransition.halt.injEq] at halted
+    exact ⟨reason, reached, rfl, halted.symm⟩
 
-The proof splits on the statement and table lookup, then follows each validation
-branch. Each failure branch other than FAIL retains the input database. -/
-theorem literal_cases (statement : Resolved.Statement) (database : Database) (position : Nat) :
-    (∃ result, literalStep statement database position = .success result) ∨
-    (∃ reason, literalStep statement database position = .failure position reason database) ∨
-    (∃ after, literalStep statement database position = .failure position .constraintFail after) := by
-  cases statement with
-  | createTable target name table =>
-    simp only [literalStep, step]
-    split <;> simp
-  | addColumn target column =>
-    simp only [literalStep, step]
-    cases database.table target with
-    | none => simp
-    | some table =>
-      simp only []
-      split
-      · split <;> simp
-      · cases readDefaultValue column with
-        | error _ => simp
-        | ok value =>
-          simp only []
-          split <;> simp
-  | insert target rows _ =>
-    cases h : database.table target <;> simp only [literalStep, insertOutcome, checkedWrite, h]
-    all_goals (repeat' split) <;> simp
-  | upsert target rows clauses _ algorithm =>
-    cases h : database.table target <;> simp only [literalStep, h]
-    all_goals (repeat' split) <;> try simp
-    rename_i reason _ _ _
-    cases reason <;> simp [LiteralData.failedDatabase]
-  | update target assignments filter _ =>
-    cases h : database.table target <;> simp only [literalStep, checkedWrite, h]
-    all_goals (repeat' split) <;> simp
-  | delete target filter _ =>
-    cases h : database.table target <;> simp [literalStep, h]
-  | createIndex _ _ _ => simp [literalStep, step]
-  | clocked _ _ => simp [literalStep, step]
-  | query query =>
-    simp only [literalStep, step]
-    cases query.source database with
-    | none => simp
-    | some rows =>
-      cases h : (query.run rows).overflow <;> cases h' : (query.run rows).fault <;> simp [h, h']
-  | prepareError _ => simp [literalStep, step]
-  | begin => simp [literalStep, step]
-  | commit => simp [literalStep, step]
-  | rollback => simp [literalStep, step]
+/-- For every state, position, effect and next state: if {name}`SqlState.publish` of the
+effect continues with the next state, the effect succeeds with some database, and the
+next state is the state with that database. -/
+theorem SqlState.publish_next {state next : SqlState} {position : Nat} {effect : Effect}
+    (continued : state.publish position effect = .next next) :
+    ∃ database, effect = .ok database ∧ next = { state with database } := by
+  cases effect with
+  | ok database =>
+    simp only [SqlState.publish, SqlTransition.next.injEq] at continued
+    exact ⟨database, rfl, continued.symm⟩
+  | error failure => simp [SqlState.publish] at continued
 
 /-- For any position, statement, state and outcome, if {name}`advance` halts with that
 outcome and its error is neither a FAIL failure ({name}`ExecutionError.constraintFail`)
@@ -111,25 +79,24 @@ equals the state's current database. Its persisted database equals the saved sna
 when present, and otherwise the current database. For FAIL and ROLLBACK the formula
 says nothing; {lit}`constraint_rollback` states ROLLBACK.
 
-The proof splits on the statement and snapshot. {name}`literal_cases` supplies
-the success and failure alternatives for ordinary statements. -/
+The proof splits on the statement and snapshot; an ordinary statement halts through
+{name}`SqlState.publish_halt`, which keeps the state's database for these errors. -/
 theorem statement_atomicity (halted : advance position statement state = .halt outcome)
     (atomic : outcome.error? ≠ some .constraintFail ∧ outcome.error? ≠ some .constraintRollback) :
     outcome.database = state.database ∧
     outcome.persistedDatabase = state.snapshot.getD state.database := by
-  have possibilities := literal_cases statement state.database position
-  cases statement <;> simp only [advance] at halted
+  cases statement <;> simp only [advance, advanceWith] at halted
   all_goals try (solve | (clear atomic; cases h : state.snapshot <;> simp_all [SqlState.finish,
     Outcome.database, Outcome.persistedDatabase, Option.getD]))
-  all_goals try (rcases possibilities with ⟨result, h⟩ | ⟨reason, h⟩ | ⟨after, h⟩ <;> rw [h] at halted <;>
-    simp only [reduceCtorEq, SqlTransition.halt.injEq] at halted <;> subst halted)
   all_goals first
-    | exact absurd (SqlState.failed_error _ _ _ _) atomic.1
-    | (rename_i reason
-       by_cases rolled : reason = .constraintRollback
-       · subst rolled; exact absurd (SqlState.failed_error _ _ _ _) atomic.2
-       · exact SqlState.failed_database _ _ _ _ rolled)
-    | (clear atomic possibilities; cases hs : state.snapshot <;>
+    | (obtain ⟨reason, reached, _, rfl⟩ := SqlState.publish_halt halted
+       have notFail : reason ≠ .constraintFail :=
+         fun failed => atomic.1 (by subst failed; exact SqlState.failed_error _ _ _ _)
+       have notRollback : reason ≠ .constraintRollback :=
+         fun rolled => atomic.2 (by subst rolled; exact SqlState.failed_error _ _ _ _)
+       simp only [notFail, if_false]
+       exact SqlState.failed_database _ _ _ _ notRollback)
+    | (clear atomic; cases hs : state.snapshot <;>
        simp_all [SqlState.finish, Outcome.database, Outcome.persistedDatabase, Option.getD] <;>
        subst halted <;> simp)
 
@@ -138,22 +105,21 @@ outcome and its error is a ROLLBACK failure ({name}`ExecutionError.constraintRol
 its visible and its persisted database are the saved snapshot when present, and
 otherwise the current database: the transaction of the snapshot is rolled back.
 
-The proof splits on the statement and snapshot. Only an INSERT fails with ROLLBACK, and
-by {name}`literal_cases` its failure keeps the input database. -/
+The proof splits on the statement and snapshot; an ordinary statement halts through
+{name}`SqlState.publish_halt`, which gives a ROLLBACK failure the state's database. -/
 theorem constraint_rollback (halted : advance position statement state = .halt outcome)
     (rolled : outcome.error? = some .constraintRollback) :
     outcome.database = state.snapshot.getD state.database ∧
     outcome.persistedDatabase = state.snapshot.getD state.database := by
-  have possibilities := literal_cases statement state.database position
-  cases statement <;> simp only [advance] at halted
+  cases statement <;> simp only [advance, advanceWith] at halted
   all_goals try (solve | cases h : state.snapshot <;> simp_all [SqlState.finish,
     Outcome.database, Outcome.persistedDatabase, Option.getD, Outcome.error?])
-  all_goals try (rcases possibilities with ⟨result, h⟩ | ⟨reason, h⟩ | ⟨after, h⟩ <;> rw [h] at halted <;>
-    simp only [reduceCtorEq, SqlTransition.halt.injEq] at halted <;> subst halted)
   all_goals first
-    | (rw [SqlState.failed_error] at rolled; simp only [Option.some.injEq, reduceCtorEq] at rolled; done)
-    | (rw [SqlState.failed_error] at rolled; cases rolled; exact SqlState.failed_rollback _ _ _)
-    | (clear possibilities; cases hs : state.snapshot <;>
+    | (obtain ⟨reason, reached, _, rfl⟩ := SqlState.publish_halt halted
+       rw [SqlState.failed_error] at rolled
+       cases rolled
+       exact SqlState.failed_rollback _ _ _)
+    | (cases hs : state.snapshot <;>
        simp_all [SqlState.finish, Outcome.database, Outcome.persistedDatabase, Option.getD, Outcome.error?] <;>
        subst halted <;> simp_all)
 
@@ -175,7 +141,7 @@ theorem add_column_shape (constant : column.clockDefault = false)
       (table.appendColumns [(column, value)]).rows.map Row.rowid = table.rows.map Row.rowid ∧
       (table.appendColumns [(column, value)]).rows.map Row.values =
         table.rows.map (fun row => row.values ++ [storeValue column.affinity value]) := by
-  simp only [advance, literalStep, step] at success
+  simp only [advance, advanceWith, literalStep, runStatement, step, SqlState.publish] at success
   repeat (split at * <;> simp_all)
   all_goals subst_vars
   all_goals simp_all [Database.table_addColumn, Table.appendColumns, Row.appendValues, List.map_map]

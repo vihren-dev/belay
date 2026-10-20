@@ -11,24 +11,33 @@ namespace Belay.Sqlite.Conformance
 /-- One column as {lit}`PRAGMA table_xinfo` reports it: the name and declared type
 as written ({lit}`""` for no type), NOT NULL, and the default's text or none. -/
 structure NativeColumn where
-  name : String
+  name : Identifier
   declaredType : String
   notNull : Bool
   defaultValue : Option String
   deriving Repr, DecidableEq
 
-/-- One explicit index ({lit}`index_list` origin {lit}`c`): its name, key column positions and uniqueness. -/
+/-- One explicit index ({lit}`index_list` origin {lit}`c`): its name, the column position of
+each key term, none for an expression ({lit}`index_xinfo` column -2), its uniqueness, the
+sort order of each term, as an empty list when every term is ascending, and whether it is
+partial ({lit}`index_list` column {lit}`partial`). -/
 structure NativeIndex where
-  name : String
-  columns : List Nat
+  name : Identifier
+  columns : List (Option Nat)
   unique : Bool
+  descending : List Bool := []
+  isPartial : Bool := false
   deriving Repr, DecidableEq
+
+/-- The sort orders of the terms of an index as {name}`NativeIndex.descending` keeps them: the
+empty list when every term is ascending. -/
+def sortOrders (descending : List Bool) : List Bool := if descending.any id then descending else []
 
 /-- One native table: its name in {lit}`sqlite_schema`, its columns, the primary-key
 positions in key order, the key positions of each UNIQUE constraint index (origin
 {lit}`u`), its explicit indexes, and its rows. -/
 structure NativeTable where
-  name : String
+  name : Identifier
   columns : List NativeColumn
   primaryKey : List Nat
   uniqueKeys : List (List Nat)
@@ -91,7 +100,11 @@ in folded-name order of the catalog. -/
 def catalogIndexes (catalog : Catalog) (position : Nat) : List NativeIndex :=
   catalog.filterMap fun object => match object.entry with
     | .index index => if index.table == position then
-        some { name := object.name, columns := index.columns, unique := index.unique } else none
+        some { name := object.name, unique := index.unique, isPartial := index.filter.isSome,
+               columns := index.keys.map fun key => match key.term with
+                 | .column position => some position
+                 | .expression _ => none,
+               descending := sortOrders (index.keys.map (·.descending)) } else none
     | .table _ => none
 
 /-- Whether two index lists hold the same indexes, in any order. -/
@@ -100,7 +113,7 @@ def sameIndexes (model native : List NativeIndex) : Bool :=
 
 /-- Whether the catalog table at a position, its object name and its stored rows match
 a native table: name, columns, keys, indexes and rows. -/
-def tableMatches (catalog : Catalog) (position : Nat) (name : String) (table : CatalogTable)
+def tableMatches (catalog : Catalog) (position : Nat) (name : Identifier) (table : CatalogTable)
     (rows : List Row) (native : NativeTable) : Bool :=
   name == native.name && table.columns.length == native.columns.length &&
   (table.columns.zip native.columns).all (fun (column, observed) => columnMatches column observed) &&
@@ -118,7 +131,7 @@ def tablesMatch (database : Database) (natives : List NativeTable) : Bool :=
     | .index _ => none
   natives.length == tables.length &&
   tables.all (fun (position, name, table) =>
-    match natives.filter (fun native => normalizeIdentifier native.name == normalizeIdentifier name) with
+    match natives.filter (fun native => native.name.sameName name) with
     | [native] => tableMatches database.catalog position name table (database.rows.getD position []) native
     | _ => false) &&
   database.rows.length == database.catalog.length &&

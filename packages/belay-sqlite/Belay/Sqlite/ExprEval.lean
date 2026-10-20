@@ -102,77 +102,83 @@ and {name}`castValue`; {lit}`COALESCE` gives its first operand unless that is NU
 function gives the value of {name}`Json.apply` over the values of its arguments, and NULL
 with {name}`Fault.ofJson` when it fails. The fault of {lit}`AND`, {lit}`OR` and
 {lit}`COALESCE` is softened ({name}`Fault.soften`), because SQLite may skip an operand; every
-other expression joins the faults of its parts ({name}`Fault.join`). A time keyword is NULL
-here: the execution replaces it with the statement's clock text first
-({lit}`Statement.atClock`). A date and time function gives the value of
-{lit}`DateFunction.value` at its stored clock value. -/
-def Expr.evaluate (row : List Value) : Expr → Value × Fault
+other expression joins the faults of its parts ({name}`Fault.join`). {lit}`clock` is the
+statement's clock value in Julian-day milliseconds: a time keyword is its text at the clock
+value ({lit}`TimeKeyword.value`), and a date and time function gives
+{lit}`DateFunction.value` at the clock value. -/
+def Expr.evaluate (clock : Int) (row : List Value) : Expr → Value × Fault
   | .column position => (row.getD position .null, .none)
   | .literal value => (value, .none)
   | .compare operator affinity left right =>
-    let (a, first) := left.evaluate row
-    let (b, second) := right.evaluate row
+    let (a, first) := left.evaluate clock row
+    let (b, second) := right.evaluate clock row
     let (a, b) := comparisonOperands affinity a b
     (operator.apply a b, first.join second)
   | .and left right =>
-    let (a, first) := left.evaluate row
-    let (b, second) := right.evaluate row
+    let (a, first) := left.evaluate clock row
+    let (b, second) := right.evaluate clock row
     (if falsy a || falsy b then truth false else if a.isNull || b.isNull then .null else truth true,
       (first.join second).soften)
   | .or left right =>
-    let (a, first) := left.evaluate row
-    let (b, second) := right.evaluate row
+    let (a, first) := left.evaluate clock row
+    let (b, second) := right.evaluate clock row
     (if truthy a || truthy b then truth true else if a.isNull || b.isNull then .null else truth false,
       (first.join second).soften)
   | .not operand =>
-    let (value, fault) := operand.evaluate row
+    let (value, fault) := operand.evaluate clock row
     (if value.isNull then .null else truth (!truthy value), fault)
   | .isNull operand negated =>
-    let (value, fault) := operand.evaluate row
+    let (value, fault) := operand.evaluate clock row
     (truth (value.isNull != negated), fault)
   | .arithmetic operator left right =>
-    let (a, first) := left.evaluate row
-    let (b, second) := right.evaluate row
+    let (a, first) := left.evaluate clock row
+    let (b, second) := right.evaluate clock row
     (operator.apply a b, first.join second)
   | .cast affinity operand =>
-    let (value, fault) := operand.evaluate row
+    let (value, fault) := operand.evaluate clock row
     (castValue affinity value, fault)
   | .coalesce first rest =>
-    let (value, fault) := first.evaluate row
-    let (other, later) := rest.evaluate row
-    (if value.isNullCell then other else value, (fault.join later).soften)
+    let (value, fault) := first.evaluate clock row
+    let (other, later) := rest.evaluate clock row
+    (if value.isNull then other else value, (fault.join later).soften)
   | .json function arguments =>
-    let (values, fault) := arguments.evaluate row
+    let (values, fault) := arguments.evaluate clock row
     let result := Json.apply function values
     (match result with
       | .ok value => value
       | .error _ => .null, fault.join (Fault.ofJson result))
-  | .date function arguments clock =>
-    let (values, fault) := arguments.evaluate row
+  | .date function arguments =>
+    let (values, fault) := arguments.evaluate clock row
     (function.value clock values, fault)
-  | .now _ => (.null, .none)
+  | .now keyword => (keyword.value clock, .none)
 
 /-- The values of the arguments of a call over one row, in written order, with the
 joined fault of the arguments. -/
-def Arguments.evaluate (row : List Value) : Arguments → List Value × Fault
+def Arguments.evaluate (clock : Int) (row : List Value) : Arguments → List Value × Fault
   | .nil => ([], .none)
   | .cons head tail =>
-    let (value, fault) := head.evaluate row
-    let (values, later) := tail.evaluate row
+    let (value, fault) := head.evaluate clock row
+    let (values, later) := tail.evaluate clock row
     (value :: values, fault.join later)
 end
 
-/-- The value of an expression over one row: the value of {name}`Expr.evaluate`. -/
-def Expr.eval (row : List Value) (expression : Expr) : Value := (expression.evaluate row).1
+/-- The value of an expression over one row at a clock value: the value of
+{name}`Expr.evaluate`. -/
+def Expr.eval (clock : Int) (row : List Value) (expression : Expr) : Value := (expression.evaluate clock row).1
 
-/-- The values of the arguments of a call over one row: the values of
+/-- The values of the arguments of a call over one row at a clock value: the values of
 {name}`Arguments.evaluate`. -/
-def Arguments.eval (row : List Value) (arguments : Arguments) : List Value := (arguments.evaluate row).1
+def Arguments.eval (clock : Int) (row : List Value) (arguments : Arguments) : List Value :=
+  (arguments.evaluate clock row).1
 
-/-- Whether the fault of the expression over the row is not {lean}`Fault.none`. -/
-def Expr.mayFailOn (row : List Value) (expression : Expr) : Bool := (expression.evaluate row).2 != .none
+/-- Whether the fault of the expression over the row at the clock value is not
+{lean}`Fault.none`. -/
+def Expr.mayFailOn (clock : Int) (row : List Value) (expression : Expr) : Bool :=
+  (expression.evaluate clock row).2 != .none
 
-/-- Whether the fault of the expression over the row is {lean}`Fault.must`. -/
-def Expr.mustFailOn (row : List Value) (expression : Expr) : Bool := (expression.evaluate row).2 == .must
+/-- Whether the fault of the expression over the row at the clock value is
+{lean}`Fault.must`. -/
+def Expr.mustFailOn (clock : Int) (row : List Value) (expression : Expr) : Bool :=
+  (expression.evaluate clock row).2 == .must
 
 end Belay.Sqlite.Resolved

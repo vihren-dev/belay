@@ -1,6 +1,8 @@
 import SqliteVerifier.Library
-import Belay.Sqlite.SchemaExtension
-import Belay.Sqlite.SchemaClock
+import SqliteVerifier.SchemaProjection
+import Belay.Sqlite.ScriptLaws
+import Belay.Sqlite.SchemaExtensionLaws
+import Belay.Sqlite.SchemaClockLaws
 
 set_option doc.verso true
 
@@ -15,32 +17,32 @@ open Belay.Sqlite
 namespace SqliteVerifier.Demonstration
 
 /-- The field whose values and row identities are protected by the requirements. -/
-def amount : CatalogColumn := { name := "amount", declaredType := some "INTEGER" }
+def amount : CatalogColumn := { name := (name! "amount"), declaredType := some "INTEGER" }
 /-- Nullable annotation introduced by the candidate migration. -/
-def note : CatalogColumn := { name := "note", declaredType := some "TEXT" }
+def note : CatalogColumn := { name := (name! "note"), declaredType := some "TEXT" }
 /-- New table's unprotected field. -/
-def message : CatalogColumn := { name := "message", declaredType := some "TEXT" }
+def message : CatalogColumn := { name := (name! "message"), declaredType := some "TEXT" }
 /-- Accepted current catalog; rows remain universally quantified. -/
-def startCatalog : Catalog := [{ name := "invoices", entry := .table { columns := [amount] } }]
+def startCatalog : Catalog := [{ name := (name! "invoices"), entry := .table { columns := [amount] } }]
 /-- Catalog of the committed prefix after its first successful statement. -/
-def middleCatalog : Catalog := [{ name := "invoices", entry := .table { columns := [amount, note] } }]
+def middleCatalog : Catalog := [{ name := (name! "invoices"), entry := .table { columns := [amount, note] } }]
 /-- The resulting catalog includes an independent empty audit table. -/
-def nextCatalog : Catalog := middleCatalog ++ [{ name := "audit", entry := .table { columns := [message] } }]
+def nextCatalog : Catalog := middleCatalog ++ [{ name := (name! "audit"), entry := .table { columns := [message] } }]
 /-- Two resolved statements show ordering rather than assuming file-level atomicity. -/
-def script : List Resolved.Statement := [.addColumn 0 note, .createTable 1 "audit" { columns := [message] }]
+def script : List Resolved.Statement := [.addColumn 0 note, .createTable 1 (name! "audit") { columns := [message] }]
 /-- The same contract can be reused with independently checked additive scripts. -/
 def requirements : LogicalContract LogicalRows where
   valid := fun _ => True
   change := Eq
-  catalogRequirement catalog := catalog.columnsOf "invoices" = some [amount, note]
+  catalogRequirement catalog := catalog.columnsOf (name! "invoices") = some [amount, note]
   failure := fun before _ _ after => before = after
   applicability := requiresSuccess
 /-- Current meaning includes every stored invoice and its actual amount. -/
 def current (profile : Profile) : Interpretation LogicalRows :=
-  projectedInterpretation profile startCatalog "invoices" ["amount"]
+  projectedInterpretation profile startCatalog (name! "invoices") [(name! "amount")]
 /-- Resulting meaning reads the same protected projection from resulting storage. -/
 def next (profile : Profile) : Interpretation LogicalRows :=
-  projectedInterpretation profile nextCatalog "invoices" ["amount"]
+  projectedInterpretation profile nextCatalog (name! "invoices") [(name! "amount")]
 
 /-- Limits that allow the two columns of the widest table here; validity under them
 carries over to every profile with a larger column limit. -/
@@ -68,88 +70,72 @@ theorem admitted_invoices (admitted : Admitted profile startCatalog (fun _ => Tr
 /-- ADD COLUMN of {name}`note` on {name}`startCatalog` gives {name}`middleCatalog`, and the
 CREATE TABLE of the audit table on it gives {name}`nextCatalog`. -/
 theorem catalog_steps : startCatalog.addColumn 0 note = middleCatalog ∧
-    middleCatalog.createTable "audit" { columns := [message] } = nextCatalog := by
+    middleCatalog.createTable (name! "audit") { columns := [message] } = nextCatalog := by
   decide +kernel
 
 /-- The database after {name}`script`: the note column added to the invoices, then the
 empty audit table. -/
 def migrated (database : Database) : Database :=
-  { catalog := (database.addColumn 0 note .null).catalog.createTable "audit" { columns := [message] },
+  { catalog := (database.addColumn 0 note .null).catalog.createTable (name! "audit") { columns := [message] },
     rows := (database.addColumn 0 note .null).rows ++ [[]] }
 
 /-- For every profile and admitted database, {name}`script` succeeds with
-{name}`migrated`. The proof computes the two steps: ADD COLUMN finds the invoice table,
-and CREATE TABLE finds the end of the catalog at position 1. -/
+{name}`migrated`. The proof runs the two statements with the script lemmas
+({name}`runSqlFrom_cons`, {name}`advance_effect`): ADD COLUMN finds the invoice table
+({name}`effect_addColumn_ok`), and CREATE TABLE finds the end of the catalog at position 1
+({name}`effect_createTable_ok`). -/
 theorem script_runs (admitted : Admitted profile startCatalog (fun _ => True) database) :
     runSql script database = .success (migrated database) := by
   obtain ⟨same, length, table, present, _, _⟩ := admitted_invoices admitted
   have middleLength : (database.addColumn 0 note .null).catalog.length = 1 ∧
       (database.addColumn 0 note .null).rows.length = 1 := by
     simp [Database.addColumn, Catalog.length_addColumn, same, length, startCatalog]
-  have added : step (.addColumn 0 note) database 0 = .success (database.addColumn 0 note .null) := by
-    simp [step, present, CatalogColumn.clockDefault, readDefaultValue, note]
-  have created : step (.createTable 1 "audit" { columns := [message] }) (database.addColumn 0 note .null) 1 =
-      .success (migrated database) := by
-    simp [step, middleLength, migrated]
-  simp [runSql, runSqlFrom, advance, literalStep, SqlState.finish, script, added, created]
+  have added := effect_addColumn_ok 0 present (column := note) (value := .null) rfl rfl rfl
+  have created := effect_createTable_ok 0 (database.addColumn 0 note .null) (name! "audit") { columns := [message] } 1
+    middleLength.1.symm (middleLength.2.trans middleLength.1.symm)
+  simp only [runSql_eq, script, runSqlFrom_cons, advance_addColumn, advance_createTable, added, created, SqlState.publish_ok,
+    runSqlFrom_nil]
+  rfl
 
 /-- The complete {name}`VerificationConditions` hold for the supplied catalogs,
 script and preservation contract, for every admitted starting database and every
-profile that allows two columns. The proof constructs a starting witness and
-sound representations, proves support, then computes the two successful
-statements and preserves the invoice projection. -/
+profile that allows two columns. The proof applies
+{name}`VerificationConditions.ofSchemaProjection`: the script is schema-only, the invoice
+table stays at position 0 and covers the amount, and the two statements succeed
+({name}`script_runs`) with a database that conforms to the next catalog. -/
 theorem migrationCorrect (profile : Profile) (columns : 2 ≤ profile.limits.columns) :
     VerificationConditions startCatalog script (fun _ => True)
       requirements (current profile) (next profile) unreachableFailures profile := by
   obtain ⟨startValid, middleValid, nextValid⟩ := catalogs_valid columns
-  apply VerificationConditions.of_runSql
+  apply VerificationConditions.ofSchemaProjection (position := 0)
   · exact ⟨startCatalog.emptyDatabase, Catalog.emptyDatabase_conforms startValid, trivial⟩
-  · exact projectedInterpretation_sound requirements profile startCatalog "invoices" ["amount"] (by intros; trivial)
-  · exact projectedInterpretation_sound requirements profile nextCatalog "invoices" ["amount"] (by intros; trivial)
-  · exact unreachableFailures_sound requirements profile
+  · intros; trivial
+  · simp [SchemaOnly, script]
+  · simp [ModeledDefinitions, script, CatalogTable.plain, CatalogColumn.plain, readDefaultValue, Except.toOption,
+      note, message]
+  · decide +kernel
+  · decide +kernel
   · intro database admitted
     obtain ⟨_, _, table, present, shape, _⟩ := admitted_invoices admitted
-    exact ⟨admitted.1, 0, table, by decide +kernel, present, fun name member => by
+    exact ⟨table, present, fun name member => by
       simp only [List.mem_singleton] at member
       subst name
       exact ⟨0, by rw [shape]; decide +kernel⟩⟩
-  · intro database _
-    exact SupportedSql.schemaOnly (by simp [SchemaOnly, script])
-      (by simp [ModeledDefinitions, script, CatalogTable.plain, CatalogColumn.plain, readDefaultValue, Except.toOption, note, message])
   · intro database admitted
-    obtain ⟨same, length, table, present, shape, valid⟩ := admitted_invoices admitted
+    obtain ⟨_, _, table, present, _, _⟩ := admitted_invoices admitted
     obtain ⟨toMiddle, toNext⟩ := catalog_steps
-    let middle := database.addColumn 0 note .null
-    have middleConforms : Conforms profile middleCatalog middle := by
+    have middleConforms : Conforms profile middleCatalog (database.addColumn 0 note .null) := by
       have extended := admitted.1.addColumn .null present (column := note) (by rw [toMiddle]; exact middleValid)
       rwa [toMiddle] at extended
     have finalConforms : Conforms profile nextCatalog (migrated database) := by
-      have extended := middleConforms.createTable "audit" { columns := [message] } (by rw [toNext]; exact nextValid)
+      have extended := middleConforms.createTable (name! "audit") { columns := [message] } (by rw [toNext]; exact nextValid)
       rwa [toNext] at extended
-    have executed := script_runs admitted
-    rw [executed]
-    refine ⟨trivial, ?_⟩
-    intro original originalRead
-    have covered : Covers table ["amount"] := by
-      intro name member
-      simp only [List.mem_singleton] at member
-      subst name
-      exact ⟨0, by rw [shape]; decide +kernel⟩
-    have growth : TableExtends table (table.appendColumns [(note, .null)]) := ⟨[(note, .null)], rfl⟩
-    have sameProjection := growth.project (fun row member => (valid.2 row member).2.1) covered
-    have stored : (migrated database).table 0 = some (table.appendColumns [(note, .null)]) :=
-      Database.table_createTable "audit" { columns := [message] } (Database.table_addColumn note .null present)
-    have required : requirements.catalogRequirement (migrated database).catalog := by
-      rw [finalConforms.1]
-      show nextCatalog.columnsOf "invoices" = some [amount, note]
-      decide +kernel
-    refine ⟨⟨finalConforms, 0, table.appendColumns [(note, .null)], by decide +kernel, stored, growth.covers covered⟩,
-      required, table.project ["amount"], ?_, ?_⟩
-    · have located : tablePosition nextCatalog "invoices" = some 0 := by decide +kernel
-      simpa [next, projectedInterpretation, observeTable, located, stored] using congrArg some sameProjection
-    · have located : tablePosition startCatalog "invoices" = some 0 := by decide +kernel
-      simpa [current, projectedInterpretation, observeTable, located, present, requirements] using originalRead.symm
-  · decide
+    refine ⟨migrated database, script_runs admitted, finalConforms, ?_⟩
+    rw [finalConforms.1]
+    show nextCatalog.columnsOf (name! "invoices") = some [amount, note]
+    decide +kernel
+  · intro _; rfl
+  · intro _ _; trivial
 
 #print axioms migrationCorrect
 

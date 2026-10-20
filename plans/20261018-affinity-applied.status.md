@@ -1,6 +1,6 @@
 # Status: affinity is applied, not refused (ADR 0013, step 4)
 
-Created 2026-10-18. Status: open.
+Created 2026-10-18. Status: DONE.
 Task file: [task](20261018-affinity-applied.task.md).
 Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D4.
 
@@ -33,6 +33,10 @@ Specification: [ADR 0013](../docs/adr-0013-model-structure.md), D4.
   pass. CI time against step 3: `tests.harness` 22 s to 22 s, `tests.model` 332 s to
   334 s, `tests.frozen` 140 s to 141 s, scheduled mutants 412 s to 411 s.
 
+- 2026-10-18: pull request A is #162. Pull request B adds the 58 newly agreeing
+  entries to `mustAgree` (corpus v3: 64, v4: 309, v5: 975 cases); the judge lock
+  changes only in its judge entry.
+
 ## Remaining
 
-- Pull requests A and B.
+- None. Step 5 of ADR 0013 follows.

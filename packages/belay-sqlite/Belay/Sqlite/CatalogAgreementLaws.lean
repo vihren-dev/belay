@@ -1,0 +1,53 @@
+import Belay.Sqlite.StepCatalogLaws
+
+set_option doc.verso true
+
+/-! Resolution and execution agree on the catalog. Resolution predicts the catalog after a
+script ({lit}`resolve`); execution carries a catalog in its state and changes it with the
+same functions. The final theorem {lit}`runSqlAt_catalog` states that a run without an
+error ends with the catalog that resolution predicts. -/
+
+namespace Belay.Sqlite
+
+/-- For every script, position, agreeing connection and resolution states, and outcome of
+{name}`runSqlFrom` without an error (a success, or a pending transaction without an
+error): the catalog of the outcome's visible database is the catalog of the fold of
+{name}`ResolveState.after` over the script. An outcome with an error is not covered. Proof
+sketch: induction on the script; a halt has an error ({name}`advance_halt_error`), and a
+continuing step keeps the states in agreement ({name}`advance_agrees`). -/
+theorem runSqlFrom_agrees :
+    ∀ (script : List Resolved.Statement) (position : Nat) (sql : SqlState) (state : ResolveState),
+      sql.Agrees state → ∀ outcome, runSqlFrom position script sql = outcome → outcome.error? = none →
+      outcome.database.catalog = (script.foldl ResolveState.after state).catalog
+  | [], position, sql, state, agrees, outcome, run, clean => by
+    simp only [runSqlFrom] at run
+    subst run
+    cases h : sql.snapshot <;> simp [SqlState.finish, h, Outcome.database, agrees.1]
+  | statement :: rest, position, sql, state, agrees, outcome, run, clean => by
+    simp only [runSqlFrom] at run
+    split at run
+    · rename_i halted _ halt
+      subst run
+      have := advance_halt_error halt
+      simp [clean] at this
+    · rename_i next continued
+      exact runSqlFrom_agrees rest (position + 1) next (state.after statement) (advance_agrees agrees continued)
+        outcome run clean
+
+/-- Resolution and execution give the same catalog (ADR 0013, D1). For every context,
+catalog, script, resolved statements and resulting catalog of a successful
+{name}`resolve`, every database whose catalog is the starting catalog, and every clock
+assignment: if {name}`runSqlAt` gives an outcome without an error (a success, or a pending
+transaction without an error), its visible database's catalog is the resulting catalog of
+resolution. An outcome with an error is not covered. Proof sketch: resolution's catalog is
+the fold of {name}`ResolveState.after` ({name}`resolve_after`), and execution follows it
+({name}`runSqlFrom_agrees`); the clock assignment is not part of the agreement. -/
+theorem runSqlAt_catalog {context : ResolveContext} {catalog next : Catalog} {script : List Syntax.Statement}
+    {resolved : List Resolved.Statement} {database : Database} (clock : Clock)
+    (resolution : resolve context catalog script = .resolved resolved next) (start : database.catalog = catalog)
+    (clean : (runSqlAt clock resolved database).error? = none) :
+    (runSqlAt clock resolved database).database.catalog = next := by
+  rw [resolve_after context catalog next script resolved resolution]
+  exact runSqlFrom_agrees _ 0 { database, clock := scriptClock clock resolved } { catalog } ⟨start, rfl⟩ _ rfl clean
+
+end Belay.Sqlite

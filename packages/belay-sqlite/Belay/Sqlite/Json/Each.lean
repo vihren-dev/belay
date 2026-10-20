@@ -1,5 +1,5 @@
 import Belay.Sqlite.Json.Functions
-import Belay.Sqlite.Json.JsonbOffset
+import Belay.Sqlite.Json.Path
 
 set_option doc.verso true
 
@@ -89,12 +89,14 @@ def selectedRows (context : EachContext) (located : LocatedNode) : Except JsonEr
 
 /-- The node at the root path of {lit}`json_each`, as {lit}`jsonEachFilter` finds it: the
 path text up to its first NUL byte must start with {lit}`$`, else it is a bad path; a
-path that selects nothing gives {lit}`none`. -/
+path that selects nothing gives {lit}`none`. Malformed JSONB, which a parsed text never
+has, is also a bad path. -/
 def eachRoot (root : JsonNode) (path : List UInt8) : Except JsonError (Option LocatedNode) :=
   if path.head? == some 36 then
-    match locatePath path root with
-    | none => .error (.badPath path)
-    | some located => .ok located
+    match lookupPath path 1 root with
+    | .found located => .ok (some located)
+    | .notFound => .ok none
+    | .pathError | .malformed => .error (.badPath path)
   else .error (.badPath path)
 
 /-- The rows of the table-valued function {lit}`json_each(json [, path])`: one list of ten cells

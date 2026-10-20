@@ -12,13 +12,13 @@ open Belay.Sqlite
 namespace SqliteVerifier.ApplicationKeyDemonstration
 
 /-- The invoice table observed by this fixed example; {lean}`"invoices"`. -/
-def invoiceTableName : String := "invoices"
+def invoiceTableName : Identifier := (name! "invoices")
 /-- The single logical key field; {lean}`["amount"]`. Its observed values must
 be distinct and non-NULL. General readers accept another key-name list. -/
-def invoiceKeyNames : List String := ["amount"]
+def invoiceKeyNames : List Identifier := [(name! "amount")]
 /-- The protected old field; {lean}`["amount"]`. This policy retains amounts
 as both identity and protected data for the small engineering example. -/
-def invoiceProtectedFields : List String := ["amount"]
+def invoiceProtectedFields : List Identifier := [(name! "amount")]
 
 /-- Require a defined observation keyed by amount, protecting amount itself.
 For the given database, some records are returned by {name}`observeApplicationRows`

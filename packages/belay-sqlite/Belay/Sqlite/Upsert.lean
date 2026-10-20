@@ -21,19 +21,19 @@ def proposedRow (table : Table) (values : List Value) : Row :=
 
 /-- The first row of the table that conflicts with the proposed row on one of the keys
 ({name}`keyEqual`), or none. -/
-def conflictingRow (keys : List (List Nat)) (table : Table) (proposed : Row) : Option Row :=
+def conflictingRow (keys : List UniqueKey) (table : Table) (proposed : Row) : Option Row :=
   table.rows.find? fun row => keys.any fun key => keyEqual key row proposed
 
 /-- The keys that a clause checks: its target key, or every key for a clause without
 target. -/
-def clauseKeys (keys : List (List Nat)) (clause : Resolved.ConflictClause) : List (List Nat) :=
+def clauseKeys (keys : List UniqueKey) (clause : Resolved.ConflictClause) : List UniqueKey :=
   match clause.target with
-  | some key => [key]
+  | some key => [UniqueKey.ofColumns key]
   | none => keys
 
 /-- The first clause, in written order, whose keys ({name}`clauseKeys`) have a row that
 conflicts with the proposed row, with that row; none when no clause has one. -/
-def handlingClause (keys : List (List Nat)) (clauses : List Resolved.ConflictClause) (table : Table)
+def handlingClause (keys : List UniqueKey) (clauses : List Resolved.ConflictClause) (table : Table)
     (proposed : Row) : Option (Resolved.ConflictClause × Row) :=
   clauses.findSome? fun clause => (conflictingRow (clauseKeys keys clause) table proposed).map (clause, ·)
 
@@ -54,7 +54,7 @@ def aliasCellMismatch (alias : Option Nat) (row : Row) : Bool :=
 /-- The table after a write of one row, with the row that {lit}`RETURNING` reads, when
 the table passes {name}`constraints` and {name}`rowidsDistinct`; otherwise the unique or
 NOT NULL failure. -/
-def checkedRow (keys : List (List Nat)) (next : Table) (written : Row) :
+def checkedRow (keys : List UniqueKey) (next : Table) (written : Row) :
     Except ExecutionError (Table × Option Row) :=
   if constraints keys next && rowidsDistinct next then .ok (next, some written) else .error .constraintViolation
 
@@ -62,11 +62,11 @@ def checkedRow (keys : List (List Nat)) (next : Table) (written : Row) :
 existing row followed by the proposed row. A filter that is not true skips the row; the
 new row takes the rowid of {name}`movedRowid`, and a non-integer alias is
 {lit}`datatype mismatch`; the result is checked by {name}`checkedRow`. -/
-def updateExisting (keys : List (List Nat)) (table : Table) (assignments : List (Nat × Resolved.Expr))
+def updateExisting (clock : Int) (keys : List UniqueKey) (table : Table) (assignments : List (Nat × Resolved.Expr))
     (filter : Option Resolved.Expr) (existing proposed : Row) : Except ExecutionError (Table × Option Row) :=
   let context := existing.values ++ proposed.values
-  if !(filter.all fun condition => Resolved.truthy (condition.eval context)) then .ok (table, none) else
-  let changed := movedRowid table.shape.rowidAlias (assignFrom table.shape.columns assignments context existing)
+  if !(filter.all fun condition => Resolved.truthy (condition.eval clock context)) then .ok (table, none) else
+  let changed := movedRowid table.shape.rowidAlias (assignFrom clock table.shape.columns assignments context existing)
   if aliasCellMismatch table.shape.rowidAlias changed then .error .datatypeMismatch
   else checkedRow keys (replaceRow table existing changed) changed
 

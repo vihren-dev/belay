@@ -10,11 +10,11 @@ open Belay.Sqlite SqliteVerifier
 abbrev LogicalState := LogicalRows
 
 /-- Existing invoice amount, whose values remain unchanged. -/
-def amount : CatalogColumn := { name := "amount", declaredType := some "INTEGER" }
+def amount : CatalogColumn := { name := name! "amount", declaredType := some "INTEGER" }
 
 /-- Required priority initialized to seven; the written default is retained. -/
 def priority : CatalogColumn := {
-  name := "priority", declaredType := some "INTEGER"
+  name := name! "priority", declaredType := some "INTEGER"
   notNull := true, defaultValue := some { form := .literal (.value (.integer 7)) (.integer 7), sourceText := "7" } }
 
 /-- For every starting and resulting observation, success preserves all rowids and
@@ -23,7 +23,7 @@ Failure must preserve the observation, but applicability requires success. -/
 def contract : LogicalContract LogicalState where
   valid := fun _ => True
   change := Eq
-  catalogRequirement catalog := catalog.columnsOf "invoices" = some [amount, priority]
+  catalogRequirement catalog := catalog.columnsOf (name! "invoices") = some [amount, priority]
   failure := fun before _ _ after => before = after
   applicability := requiresSuccess
 

@@ -1,7 +1,8 @@
 import Belay.Sqlite.Resolution.Catalog
+import Belay.Sqlite.Resolution.PrepareErrors
 import Belay.Sqlite.Resolution.ConflictPolicy
 import Belay.Sqlite.Resolution.RestrictionText
-import Belay.Sqlite.Resolution.ClockCell
+import Belay.Sqlite.Resolution.QueryForm
 
 set_option doc.verso true
 
@@ -12,99 +13,6 @@ statement that SQLite refuses to prepare. A model restriction refuses the whole
 script: SQLite accepts that SQL, but the model does not describe it. -/
 
 namespace Belay.Sqlite
-
-/-- An error that {lit}`sqlite3_prepare_v2` reports for a statement in the first
-scope. Each constructor names the SQLite message format it corresponds to. This
-is a SQLite rule, not a model restriction: SQLite runs the earlier statements and
-then stops at this one. -/
-inductive PrepareError where
-  /-- {lit}`object name reserved for internal use: %s` ({lit}`sqlite3CheckObjectName`). -/
-  | reservedName (name : String)
-  /-- {lit}`table %T already exists` ({lit}`sqlite3StartTable`). -/
-  | tableExists (name : String)
-  /-- {lit}`there is already an index named %s` ({lit}`sqlite3StartTable`). -/
-  | indexNameUsed (name : String)
-  /-- {lit}`there is already a table named %s` ({lit}`sqlite3CreateIndex`). -/
-  | tableNameUsed (name : String)
-  /-- {lit}`index %s already exists` ({lit}`sqlite3CreateIndex`). -/
-  | indexExists (name : String)
-  /-- {lit}`too many columns on %s` ({lit}`sqlite3AddColumn`). -/
-  | tooManyColumns (table : String)
-  /-- {lit}`duplicate column name: %s` ({lit}`sqlite3AddColumn`). -/
-  | duplicateColumn (column : String)
-  /-- {lit}`table "%s" has more than one primary key` ({lit}`sqlite3AddPrimaryKey`). -/
-  | multiplePrimaryKeys (table : String)
-  /-- {lit}`default value of column [%s] is not constant` ({lit}`sqlite3AddDefaultValue`). -/
-  | defaultNotConstant (column : String)
-  /-- {lit}`no such table: %s` ({lit}`sqlite3LocateTable`). -/
-  | noSuchTable (name : String)
-  /-- {lit}`no such column: %s` (name resolution of an expression or key). -/
-  | noSuchColumn (name : String)
-  /-- {lit}`table %S has no column named %s` (INSERT column list). -/
-  | tableHasNoColumn (table column : String)
-  /-- {lit}`table %S has %d columns but %d values were supplied` (INSERT). -/
-  | valueCount (table : String) (columns values : Nat)
-  /-- {lit}`%d values for %d columns` (INSERT with a column list). -/
-  | valuesForColumns (values columns : Nat)
-  /-- {lit}`all VALUES must have the same number of terms` ({lit}`sqlite3MultiValues`). -/
-  | valuesDiffer
-  /-- {lit}`table %s may not be altered` ({lit}`isAlterableTable`). -/
-  | tableMayNotBeAltered (name : String)
-  /-- {lit}`table %s may not be indexed` ({lit}`sqlite3CreateIndex`). -/
-  | tableMayNotBeIndexed (name : String)
-  /-- {lit}`Cannot add a PRIMARY KEY column` ({lit}`sqlite3AlterFinishAddColumn`). -/
-  | cannotAddPrimaryKey
-  /-- {lit}`Cannot add a UNIQUE column` ({lit}`sqlite3AlterFinishAddColumn`). -/
-  | cannotAddUnique
-  /-- {lit}`hex literal too big: %s` (a hexadecimal literal with more than 16 digits). -/
-  | hexLiteralTooBig (text : String)
-  /-- {lit}`misuse of aggregate function %s()` (an aggregate in {lit}`WHERE`, or one
-  aggregate inside another; {lit}`resolveSelectStep`). -/
-  | misuseOfAggregate (function : String)
-  /-- {lit}`aggregate functions are not allowed in the GROUP BY clause`. -/
-  | aggregateInGroupBy
-  /-- {lit}`%r ORDER BY term out of range - should be between 1 and %d`: the one-based
-  term and the number of result columns ({lit}`resolveOrderGroupBy`). -/
-  | orderByOutOfRange (term columns : Nat)
-  /-- {lit}`%r GROUP BY term out of range - should be between 1 and %d`. -/
-  | groupByOutOfRange (term columns : Nat)
-  /-- {lit}`wrong number of arguments to function %s()`, with the function name as
-  written ({lit}`resolveExprStep`). -/
-  | wrongArgumentCount (function : String)
-  /-- {lit}`ambiguous column name: %s`: an unqualified name that names a column of two or
-  more sources of a join, as written. -/
-  | ambiguousColumn (name : String)
-  /-- {lit}`no such table: %s` for {lit}`source.*` with a name that names no source of
-  the query, as written. Unlike {name}`PrepareError.noSuchTable`, it names no catalog
-  object. -/
-  | noSuchSource (name : String)
-  /-- {lit}`at most 64 tables in a join`. -/
-  | tooManyTables
-  /-- {lit}`RETURNING may not use "TABLE.*" wildcards`: a {lit}`source.*` column in
-  {lit}`RETURNING`, for every source name. -/
-  | returningSourceStar
-  /-- {lit}`cannot join using column %s - column not present in both tables`: a name of
-  {lit}`USING` that is not a column of both the left input and the joined table, as
-  written. -/
-  | joinUsingColumn (name : String)
-  /-- {lit}`a NATURAL join may not have an ON or USING clause`. -/
-  | naturalJoinCondition
-  /-- {lit}`ambiguous reference to %s in USING()`: in a {lit}`FROM` with a right or full
-  join, a merged name of which a left table after the first has a column that its own
-  join does not merge, as written. -/
-  | ambiguousUsingReference (name : String)
-  /-- {lit}`ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE constraint`: a
-  target whose columns are not the columns of one key of the table. -/
-  | conflictTargetMismatch
-  /-- {lit}`conflicting ON CONFLICT clauses specified`: two constraints of one index with
-  different explicit {lit}`ON CONFLICT` algorithms. -/
-  | conflictingAlgorithms
-  /-- {lit}`no tables specified`: {lit}`*` in a {lit}`SELECT` without {lit}`FROM`. -/
-  | noTablesSpecified
-  /-- {lit}`too many arguments on json_each() - max 2`: a {lit}`json_each` source in
-  {lit}`FROM` with three or more arguments. -/
-  | tooManyEachArguments
-  deriving Repr, DecidableEq
 
 /-- A model restriction: SQLite accepts the SQL, but the model does not describe
 it, so the whole script is refused before any proof. The statement index and the
@@ -123,15 +31,27 @@ def Restriction.reason (restriction : Restriction) : String := restriction.kind.
 
 namespace Resolved
 
+/-- One cell of a resolved INSERT row: a value that resolution computed and stored with the
+column's affinity, or an expression that reads the statement's clock, such as a
+{lit}`VALUES` item {lit}`CURRENT_TIMESTAMP` or an omitted column with that default, which the
+execution evaluates at the statement's clock value and stores with the column's affinity.
+An expression cell reads no column. Use {lean}`Cell.value` for a known value. -/
+inductive Cell where
+  /-- A value, stored with the column's affinity. -/
+  | value (value : Value)
+  /-- An expression that reads the clock and no column. -/
+  | expression (expression : Expr)
+  deriving Repr, DecidableEq
+
 /-- One statement after name resolution. For example, an INSERT into the table at
-catalog position 0 with one full row is {lean}`Statement.insert 0 [[Value.null]] []`.
+catalog position 0 with one full row is {lean}`Statement.insert 0 [[Cell.value Value.null]] []`.
 A write names its table by catalog position; execution reads the table's columns, keys
 and conflict algorithms from the catalog of the database it runs on. -/
 inductive Statement where
   /-- Create the named table at the catalog position, which is the end of the catalog. -/
-  | createTable (position : Nat) (name : String) (table : CatalogTable)
+  | createTable (position : Nat) (name : Identifier) (table : CatalogTable)
   /-- Create the named index at the catalog position, which is the end of the catalog. -/
-  | createIndex (position : Nat) (name : String) (index : CatalogIndex)
+  | createIndex (position : Nat) (name : Identifier) (index : CatalogIndex)
   /-- Append the column to the table at the catalog position. -/
   | addColumn (table : Nat) (column : CatalogColumn)
   /-- Start a transaction. -/
@@ -140,11 +60,11 @@ inductive Statement where
   | commit
   /-- Roll the transaction back. -/
   | rollback
-  /-- Insert full rows, with one converted value for each column in table order, and
+  /-- Insert full rows, with one cell for each column in table order ({name}`Cell`), and
   keep every unique key of the table ({name}`Catalog.uniqueKeys`) unique. The
   {lit}`RETURNING` columns are an expression over the written row and its name each,
   none without {lit}`RETURNING`; the execution semantics does not read them. -/
-  | insert (table : Nat) (rows : List (List Value)) (returning : List (Expr × String))
+  | insert (table : Nat) (rows : List (List Cell)) (returning : List (Expr × String))
   /-- In every row where the optional filter condition is true (every row without a
   filter), set each column position to its expression, evaluated on the old row and
   stored with the column's affinity. A literal update of slice 3a is the special case
@@ -158,7 +78,7 @@ inductive Statement where
   {name}`Catalog.writePolicy` of that algorithm. Each row is handled by the first clause
   whose target key has a conflicting row, or else by the algorithms of the constraints
   that it fails. -/
-  | upsert (table : Nat) (rows : List (List Value)) (clauses : List ConflictClause)
+  | upsert (table : Nat) (rows : List (List Cell)) (clauses : List ConflictClause)
       (returning : List (Expr × String)) (algorithm : Option ConflictAlgorithm)
   /-- Remove every row where the optional filter condition is true (every row without a
   filter). The {lit}`RETURNING` columns are evaluated on each removed row; the
@@ -168,11 +88,6 @@ inductive Statement where
   | prepareError (error : PrepareError)
   /-- Run a query: it reads the database, changes nothing, and has result rows. -/
   | query (query : Query)
-  /-- An INSERT ({lit}`insert` or {lit}`upsert`) with cells whose values read the
-  statement's clock. Its rows hold NULL in those cells; the execution sets each cell to
-  its value at the statement's clock value before it runs the statement
-  ({lit}`Statement.atClock`). -/
-  | clocked (statement : Statement) (cells : List ClockCell)
   deriving Repr, DecidableEq
 
 end Resolved

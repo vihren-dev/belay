@@ -16,15 +16,16 @@ MERGED_LEFT = SQLITE + "Resolution/MergedLeft.lean"
 """The left side of a generated condition."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "right_merged_uses_left": (SCOPE, "        | .takeRight => .found first [offset + index]",
-        "        | .takeRight => .found first reads"),
-    "full_merged_uses_left": (SCOPE, "        | .coalesce => .found first (reads ++ [offset + index])",
-        "        | .coalesce => .found first reads"),
+    "right_merged_uses_left": (SCOPE, "      | .takeRight => .found first [source.offset + index]",
+        "      | .takeRight => .found first reads"),
+    "full_merged_uses_left": (SCOPE, "      | .coalesce => .found first (reads ++ [source.offset + index])",
+        "      | .coalesce => .found first reads"),
     "coalesce_keeps_affinity": (MERGED_NAMES, "  | reads => (coalesceColumns reads, none)",
         "  | reads => (coalesceColumns reads,\n"
         "      (reads.head?.bind (scope.columns[·]?)).map CatalogColumn.affinity)"),
-    "later_using_left_most": (MERGED_LEFT, "  if coalesced then match left.namedColumns name with",
-        "  if false then match left.namedColumns name with"),
+    "later_using_left_most": (MERGED_LEFT,
+        "  | first :: rest => some (left.nameOperand (if coalesced then first :: rest else [first]))",
+        "  | first :: rest => some (left.nameOperand (if false then first :: rest else [first]))"),
     "ambiguous_reference_accepted": (MERGED_LEFT, "  if ((left.namedColumns name).drop 1).all (·.2.2) then .ok name",
         "  if true then .ok name"),
     "star_shows_own_column": (MERGED_NAMES, "  if rightAfter && mergedLater then match scope.resolveName column.name with",

@@ -2,6 +2,7 @@ import Belay.Sqlite.NumberConvert
 import Belay.Sqlite.RealText
 import Belay.Sqlite.Arithmetic
 import Belay.Sqlite.Summation
+import Belay.Sqlite.Comparison
 
 set_option doc.verso true
 
@@ -47,11 +48,12 @@ def integerOf (text : String) : Int := (atoi64 text.toUTF8.toList).1
 -- REAL to text: 15 significant digits, plain notation for exponents from -4 to 14,
 -- at least one digit after the point, and Inf for an infinity.
 #guard [realText 0, realText (-0.0), realText 1, realText 0.1, realText 1e14, realText 1e15] ==
-  ["0.0", "0.0", "1.0", "0.1", "100000000000000.0", "1.0e+15"]
+  (["0.0", "0.0", "1.0", "0.1", "100000000000000.0", "1.0e+15"]).map (·.toUTF8.toList)
 #guard [realText 123456789012345.6, realText 0.0001, realText 0.00001, realText (1 / 3), realText (-2.5)] ==
-  ["123456789012346.0", "0.0001", "1.0e-05", "0.333333333333333", "-2.5"]
+  (["123456789012346.0", "0.0001", "1.0e-05", "0.333333333333333", "-2.5"]).map (·.toUTF8.toList)
 #guard [realText 1.7976931348623157e308, realText 5e-324, realText (Float.ofBits 0x7FF0000000000000),
-  realText (Float.ofBits 0xFFF0000000000000)] == ["1.79769313486232e+308", "4.94065645841247e-324", "Inf", "-Inf"]
+  realText (Float.ofBits 0xFFF0000000000000)] ==
+  (["1.79769313486232e+308", "4.94065645841247e-324", "Inf", "-Inf"]).map (·.toUTF8.toList)
 -- Integer arithmetic is exact while it fits; an overflow gives a REAL.
 #guard ArithmeticOperator.add.apply (.integer 7) (.integer (-3)) == .integer 4
 #guard ArithmeticOperator.add.apply (.integer int64Maximum) (.integer 1) == .real 0x43E0000000000000
@@ -81,5 +83,11 @@ def integerOf (text : String) : Int := (atoi64 text.toUTF8.toList).1
 -- AVG never fails: the overflowing sum continues in doubles.
 #guard [(sumOf []).averageValue, (sumOf [.integer int64Maximum, .integer 1]).averageValue] ==
   [.null, .real 4886405595696988160]
+
+-- A NaN double is NULL as a value (realValue), as SQLite stores it. The model never creates a
+-- NaN REAL; one written by hand is not NULL: only NULL is, and `x IS NULL` is false for it.
+#guard realValue (0.0 / 0.0) == .null
+#guard !(Value.real 0x7FF8000000000000).isNull && (Value.null).isNull
+#guard Comparison.apply .is (.real 0x7FF8000000000000) .null == .integer 0
 
 end Belay.Sqlite.NumberExamples

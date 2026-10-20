@@ -354,6 +354,56 @@ Implementation notes (2026-10-18, steps 3 and 4):
   stay. The registries are a classifier of the restriction kinds, so the ids and the
   prediction JSON do not change.
 
+Implementation notes (2026-10-19, step 8):
+
+- `json_valid` reads the JSON5 flag (`hasNonstd`) that the one JSON reader records, so
+  the strict grammar of `Json/Validity.lean` is gone. One path walker keeps the JSONB
+  offsets for `json_each`. `realText` and `%J` share one `%g` front end over bytes.
+- A name is `Identifier`, a structure with one field of the bytes as written, not
+  `List UInt8` itself. With a plain definition of `List UInt8`, `simp` cannot match a
+  lemma whose name argument has type `Identifier` against a literal of type
+  `List UInt8`, and the demonstration's proof failed. The kernel still sees a byte list
+  under one constructor. Fixed names are `name! "t"` literals. Function, type and
+  keyword names, and the names of output columns, stay `String`.
+- Kernel time of the 16 frozen model cases with kernel proofs (the profiler's type
+  checking, best of three runs): 3.40 s before identifiers as bytes, 1.58 s after.
+
+### Amendment 2 (2026-10-18): D5 in detail
+
+The code map for step 5 found that D5's `subquery (Query)` cannot be written as stated, and
+that the ADR is silent on four SQLite rules. The owner chose the full D5 now, with a
+placeholder for subqueries.
+
+- **The subquery placeholder has no payload.** `subquery (Query)` would make `Query` a
+  nested inductive through the source list, and on Lean 4.34.1 `deriving DecidableEq` does
+  not accept it (see D3). `Resolved.Source.subquery` is a constructor without fields, which
+  resolution never builds: the frontend refuses a subquery in `FROM` before resolution.
+  The subquery ADR decides its payload. For the same reason D5 adds no restriction kind
+  `subquery` (owner decision 7): the frontend refusal stays until the subquery ADR.
+- **One source list.** `Query.sources` is a list of sources in written order, each with
+  its join kind and optional `ON` condition; `Query.table`, `joins` and `functions` go. A
+  query without `FROM` has no sources. A `json_each` source may come before or after a
+  table, and joins with `LEFT JOIN`, a correlated left join that pads its columns with
+  NULL when the source gives no row.
+- **Restrictions that stay, now in the *unsupported* registry with exact reasons.** A
+  `json_each` argument that reads a later source (`later-source-in-arguments`): SQLite
+  evaluates it only because its planner reorders inner joins, and written order is the
+  model's order. `json_each` as the right operand of `RIGHT` or `FULL`, and with `USING` or
+  `NATURAL` (`function-join`): a correlated source has no fixed rows to keep unmatched,
+  and `NATURAL` skips hidden columns. An `ON` condition that reads a later table
+  (`later-table-in-on`): SQLite moves it to `WHERE` for a `FROM` without outer joins and
+  refuses it otherwise, with a prepare error the model does not have yet.
+- **Duplicate sources resolve.** Checked natively: `SELECT count(*) FROM x3, x3` is 4, and
+  an unqualified or qualified name, `x3.*` and `*` over two sources named `x3` are SQLite's
+  `ambiguous column name`. `duplicate-source` leaves the registry.
+- **Join operators are parsed once**, as SQLite's `sqlite3JoinType` does: the words in any
+  order and repeated, so `OUTER LEFT JOIN` is a left join (checked natively). A
+  combination that SQLite refuses keeps `join-operator`.
+- **`USING` and `NATURAL` give their equalities directly** from the positions of the
+  merged columns, with the comparison affinity of those columns (none for a merged
+  `COALESCE`), instead of generated Syntax that is resolved again. The errors and their
+  order do not change.
+
 ## Consequences
 
 - **Cost of a new form.** A new expression form changes its evaluator arm, its resolver
@@ -427,3 +477,20 @@ instance is worth its proof.
 5. **Scope of D1.** Decided on 2026-10-18: the full D1 now, with the contract change and
    the rewritten approved files of amendment 1, instead of an internal step that keeps
    `Database` as a function.
+6. **Scope of D5.** Decided on 2026-10-18: the full D5 now, with a subquery placeholder
+   without payload (amendment 2), instead of only the join operators and direct `USING`.
+7. **No `subquery` restriction yet.** Decided on 2026-10-18: D5 adds no restriction kind
+   `subquery`. The frontend refuses a subquery in `FROM` before resolution, so no SQL
+   could reach such a kind, and the registry keeps only kinds that SQL reaches. The
+   subquery ADR adds the kind, or the semantics, when the frontend passes subqueries to
+   resolution (amendment 2).
+8. **The NaN rule of D8 without a `Table.Valid` conjunct.** Decided on 2026-10-18: every
+   REAL that the model computes is built through `realValue`, which gives NULL for a NaN
+   as SQLite does, or keeps the bits of a REAL; `isNull` and `isNullCell` are one
+   function. `Table.Valid` does not state it: Lean's `Float` is opaque to proofs, so no
+   lemma could show that a computed REAL is not NaN, and the conjunct would only add
+   premises to the ADD COLUMN lemmas.
+9. **Identifiers as bytes in step 8.** Decided on 2026-10-19: step 8 includes identifiers as
+   bytes (`List UInt8`) together with the deduplication. Table, column and index names
+   change type in the Syntax IR, the catalog, the codec and the public API, and the
+   approved files of the examples are rewritten and rehashed, as in step 2.

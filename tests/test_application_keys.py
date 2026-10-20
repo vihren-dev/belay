@@ -14,22 +14,22 @@ import SqliteVerifier.ApplicationKeys
 open Belay.Sqlite SqliteVerifier
 
 def columns : List CatalogColumn := [
-  { name := "id", declaredType := some "INTEGER" },
-  { name := "payload", declaredType := some "TEXT" }]
+  { name := name! "id", declaredType := some "INTEGER" },
+  { name := name! "payload", declaredType := some "TEXT" }]
 def first : Table := { shape := { columns := columns }, rows := [
   ⟨4, [.integer 1, .text [65]]⟩, ⟨8, [.integer 2, .text [66]]⟩] }
 def reordered : Table := { first with rows := [
   ⟨900, [.integer 2, .text [66]]⟩, ⟨-5, [.integer 1, .text [65]]⟩] }
 def readRecords (table : Table) : ApplicationKeyRows :=
-  (projectApplicationRows table ["id"] ["payload"]).getD []
+  (projectApplicationRows table [name! "id"] [name! "payload"]).getD []
 
-#guard (projectApplicationRows first ["id"] ["payload"]).isSome
-#guard (projectApplicationRows reordered ["id"] ["payload"]).isSome
+#guard (projectApplicationRows first [name! "id"] [name! "payload"]).isSome
+#guard (projectApplicationRows reordered [name! "id"] [name! "payload"]).isSome
 #guard (projectApplicationRows { first with rows := first.rows.take 1 }
-  ["id"] ["payload"]).isSome
+  [name! "id"] [name! "payload"]).isSome
 #guard (projectApplicationRows { first with rows := [
   ⟨4, [.integer 1, .text [90]]⟩, ⟨8, [.integer 2, .text [66]]⟩] }
-  ["id"] ["payload"]).isSome
+  [name! "id"] [name! "payload"]).isSome
 example : applicationKeyPreservation.change (readRecords first) (readRecords reordered) := by
   unfold applicationKeyPreservation
   decide +kernel
@@ -49,19 +49,19 @@ example : ¬ applicationKeyPreservation.change (readRecords first)
   decide +kernel
 
 #guard (projectApplicationRows { first with rows := [⟨4, [.null, .text [65]]⟩] }
-  ["id"] ["payload"]).isNone
+  [name! "id"] [name! "payload"]).isNone
 #guard (projectApplicationRows { first with rows := [
   ⟨4, [.integer 1, .text [65]]⟩, ⟨8, [.integer 1, .text [66]]⟩] }
-  ["id"] ["payload"]).isNone
-#guard (projectApplicationRows first [] ["payload"]).isNone
-#guard (projectApplicationRows first ["id", "id"] ["payload"]).isNone
-#guard (projectApplicationRows { first with rows := [] } ["missing"] ["payload"]).isNone
-#guard (projectApplicationRows { first with rows := [] } ["id"] ["missing"]).isNone
-#guard projectApplicationRows { first with rows := [] } ["id"] ["payload"] = some []
+  [name! "id"] [name! "payload"]).isNone
+#guard (projectApplicationRows first [] [name! "payload"]).isNone
+#guard (projectApplicationRows first [name! "id", name! "id"] [name! "payload"]).isNone
+#guard (projectApplicationRows { first with rows := [] } [name! "missing"] [name! "payload"]).isNone
+#guard (projectApplicationRows { first with rows := [] } [name! "id"] [name! "missing"]).isNone
+#guard projectApplicationRows { first with rows := [] } [name! "id"] [name! "payload"] = some []
 #guard (projectApplicationRows { first with rows := [⟨4, [.integer 1]⟩] }
-  ["id"] ["payload"]).isNone
-#guard (observeApplicationRows [] "items" ["id"] ["payload"] {}).isNone
-#guard (projectApplicationRows first ["id"] []).map (List.map Prod.snd) = some [[], []]
+  [name! "id"] [name! "payload"]).isNone
+#guard (observeApplicationRows [] (name! "items") [name! "id"] [name! "payload"] {}).isNone
+#guard (projectApplicationRows first [name! "id"] []).map (List.map Prod.snd) = some [[], []]
 """
 
 

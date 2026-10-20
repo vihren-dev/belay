@@ -18,15 +18,15 @@ CASES = [
     ("(NULL=1)", '.compare .eq .null (.numeric "1")'),
     ("(CURRENT_TIMESTAMP=CURRENT_TIMESTAMP)",
      '.compare .eq (.currentTime "CURRENT_TIMESTAMP") (.currentTime "CURRENT_TIMESTAMP")'),
-    ("(foo=foo)", '.compare .eq (.identifier "foo" .none) (.identifier "foo" .none)'),
-    ('("foo"="foo")', '.compare .eq (.identifier "foo" .double) (.identifier "foo" .double)'),
-    ("foo", '.identifier "foo" .none'),
-    ("(+foo)", '.positive (.identifier "foo" .none)'),
-    ("(+true)", '.positive (.identifier "true" .none)'),
-    ("(-FaLsE)", '.negate (.identifier "FaLsE" .none)'),
-    ("(TRUE=1)", '.compare .eq (.identifier "TRUE" .none) (.numeric "1")'),
-    ('(+"true")', '.positive (.identifier "true" .double)'),
-    ('("false"=0)', '.compare .eq (.identifier "false" .double) (.numeric "0")'),
+    ("(foo=foo)", '.compare .eq (.identifier (name! "foo") .none) (.identifier (name! "foo") .none)'),
+    ('("foo"="foo")', '.compare .eq (.identifier (name! "foo") .double) (.identifier (name! "foo") .double)'),
+    ("foo", '.identifier (name! "foo") .none'),
+    ("(+foo)", '.positive (.identifier (name! "foo") .none)'),
+    ("(+true)", '.positive (.identifier (name! "true") .none)'),
+    ("(-FaLsE)", '.negate (.identifier (name! "FaLsE") .none)'),
+    ("(TRUE=1)", '.compare .eq (.identifier (name! "TRUE") .none) (.numeric "1")'),
+    ('(+"true")', '.positive (.identifier (name! "true") .double)'),
+    ('("false"=0)', '.compare .eq (.identifier (name! "false") .double) (.numeric "0")'),
     ("(-CURRENT_TIMESTAMP)", '.negate (.currentTime "CURRENT_TIMESTAMP")'),
 ]
 """Handwritten syntax pairs isolate our resolver from the frontend mapping."""
@@ -62,13 +62,13 @@ def test_default_preparation_boundary(version: str, tmp_path: Path, lean_sysroot
     prepares = [native_prepares(version, sql, tmp_path) for sql, _ in CASES]
     checks = "".join(f'''example : constantDefault ({expression}) = {str(prepared).lower()} := by decide +kernel
 #eval ((resolveAddColumn {{ profile := Profile.documented "{version}" "", mode := .execution }}
-    catalog 0 "t" {{ name := "added", declaredType := some "BLOB", constraints := [.default ({expression}) "unused in preparation classification"] }}).toOption.map
-  (fun pair => pair.1 == .prepareError (.defaultNotConstant "added"))).getD false
+    catalog 0 (name! "t") {{ name := name! "added", declaredType := some "BLOB", constraints := [.default ({expression}) "unused in preparation classification"] }}).toOption.map
+  (fun pair => pair.1 == .prepareError (.expression (.defaultNotConstant (name! "added"))))).getD false
 ''' for (_, expression), prepared in zip(CASES, prepares, strict=True))
     source = f'''import Belay.Sqlite.Resolution.Definitions
 open Belay.Sqlite
-def catalog : Catalog := [{{ name := "t", entry := .table {{
-  columns := [{{name := "id", declaredType := some "BLOB"}}] }} }}]
+def catalog : Catalog := [{{ name := name! "t", entry := .table {{
+  columns := [{{name := name! "id", declaredType := some "BLOB"}}] }} }}]
 {checks}'''
     lines = compile_checks(source, tmp_path, lean_sysroot, lean_libraries).split()
     assert lines == ["false" if prepared else "true" for prepared in prepares], list(zip(CASES, lines))

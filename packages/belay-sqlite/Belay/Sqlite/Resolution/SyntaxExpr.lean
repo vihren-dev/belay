@@ -42,10 +42,10 @@ inductive Expr where
   | currentTime (keyword : String)
   /-- An identifier with how it was quoted ({name}`QuoteKind`), which decides SQLite's
   double-quoted-string fallback and whether {lit}`TRUE` and {lit}`FALSE` are keywords. -/
-  | identifier (name : String) (quote : QuoteKind)
+  | identifier (name : Identifier) (quote : QuoteKind)
   /-- A qualified column name {lit}`source.column`, with both names as written. The
   source is a table name or an alias. -/
-  | qualified (source column : String)
+  | qualified (source column : Identifier)
   /-- Unary minus. -/
   | negate (operand : Expr)
   /-- Unary plus, which SQLite keeps as a no-op. -/
@@ -68,7 +68,7 @@ inductive Expr where
   written; {lit}`date()` has no arguments. The operators {lit}`->` and {lit}`->>` are calls
   of functions with those names, as SQLite's parser makes them. Resolution folds the name
   and decides the function. For example, {lit}`COALESCE(a, b)` is
-  {lean}`Expr.call "COALESCE" [.identifier "a" .none, .identifier "b" .none]`. -/
+  {lean}`Expr.call "COALESCE" [.identifier (name! "a") .none, .identifier (name! "b") .none]`. -/
   | call (name : String) (arguments : List Expr)
   /-- An arithmetic operator, {lit}`+`, {lit}`-`, {lit}`*`, {lit}`/` or {lit}`%`, between
   two expressions. -/
@@ -114,7 +114,7 @@ inductive ColumnConstraint where
 for a column without a declared type. -/
 structure ColumnDefinition where
   /-- The column name as written. -/
-  name : String
+  name : Identifier
   /-- The declared type text as written, for example {lit}`VARCHAR(10)`. -/
   declaredType : Option String
   /-- The column constraints in written order. -/
@@ -124,9 +124,9 @@ structure ColumnDefinition where
 /-- A table constraint of CREATE TABLE, with column names as written. -/
 inductive TableConstraint where
   /-- {lit}`PRIMARY KEY (columns) [ON CONFLICT algorithm]`. -/
-  | primaryKey (columns : List String) (algorithm : Option ConflictAlgorithm := none)
+  | primaryKey (columns : List Identifier) (algorithm : Option ConflictAlgorithm := none)
   /-- {lit}`UNIQUE (columns) [ON CONFLICT algorithm]`. -/
-  | unique (columns : List String) (algorithm : Option ConflictAlgorithm := none)
+  | unique (columns : List Identifier) (algorithm : Option ConflictAlgorithm := none)
   deriving Repr, BEq
 
 /-- One result column of a {lit}`SELECT`: {lit}`*`, or an expression with an
@@ -136,20 +136,20 @@ inductive ResultColumn where
   /-- {lit}`*`: every column of every source. -/
   | star
   /-- {lit}`source.*`: every column of the source with this name, as written. -/
-  | sourceStar (source : String)
+  | sourceStar (source : Identifier)
   /-- An expression, its alias, and its source text. -/
-  | expression (value : Expr) (alias : Option String) (text : String)
+  | expression (value : Expr) (alias : Option Identifier) (text : String)
   deriving Repr, BEq
 
 /-- A table in {lit}`FROM`, or a table-valued function such as {lit}`json_each(json)`: its
 name and its optional alias, both as written, and the arguments of a function. Use
-{lean}`(none : Option String)` for no alias, and {lean}`(none : Option (List Expr))` for a
+{lean}`(none : Option Identifier)` for no alias, and {lean}`(none : Option (List Expr))` for a
 table. -/
 structure TableReference where
   /-- The table name, or the function name. -/
-  table : String
+  table : Identifier
   /-- The alias of {lit}`table AS alias` or {lit}`table alias`. -/
-  alias : Option String
+  alias : Option Identifier
   /-- The arguments of a table-valued function in written order; none for a table. -/
   arguments : Option (List Expr) := none
   deriving Repr, BEq
@@ -167,7 +167,7 @@ structure Join where
   /-- The {lit}`ON` condition. -/
   condition : Option Expr
   /-- The {lit}`USING` column names, as written. -/
-  usingColumns : Option (List String)
+  usingColumns : Option (List Identifier)
   deriving Repr, BEq
 
 /-- One {lit}`ORDER BY` term: an expression, and whether it is {lit}`DESC`. -/

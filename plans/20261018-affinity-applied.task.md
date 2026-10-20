@@ -1,6 +1,6 @@
 # Affinity is applied, not refused (ADR 0013, step 4)
 
-Created 2026-10-18. Status: open.
+Created 2026-10-18. Status: DONE (pull request #162 and its claim).
 Status file: [status](20261018-affinity-applied.status.md).
 Specification: [ADR 0013](../docs/adr-0013-model-structure.md), decision D4, "Order" step 4,
 owner decision 2 (restricted cases become predictions; measured over every corpus first).

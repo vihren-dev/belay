@@ -17,13 +17,13 @@ def test_production_trace(tmp_path: Path, lean_sysroot: Path, lean_libraries: tu
     proof.write_text('''import VerifierConformance.Pass
 open Belay.Sqlite Belay.Sqlite.Conformance
 
-def columns : List CatalogColumn := [{ name := "value", declaredType := some "INTEGER" }]
+def columns : List CatalogColumn := [{ name := name! "value", declaredType := some "INTEGER" }]
 def original : Table := {
   shape := { columns := columns, uniqueKeys := [[0]] }
   rows := [⟨-4, [.integer 7]⟩, ⟨22, [.integer 8]⟩] }
 def changed : Table := { original with rows := original.rows ++ [⟨23, [.integer 9]⟩] }
 def catalog : Catalog :=
-  [{ name := "p", entry := .table { columns := columns } }, { name := "t", entry := .table original.shape }]
+  [{ name := name! "p", entry := .table { columns := columns } }, { name := name! "t", entry := .table original.shape }]
 def initial : Database := { catalog, rows := [[], original.rows.reverse] }
 def before : Database := { catalog, rows := [[], original.rows] }
 def after : Database := { catalog, rows := [[], changed.rows] }
@@ -31,7 +31,7 @@ def idle : Observation := ⟨before, before, false, none⟩
 def begun : Observation := ⟨before, before, true, none⟩
 def written : Observation := ⟨after, before, true, none⟩
 def committed : Observation := ⟨after, after, false, none⟩
-def insertNew : Resolved.Statement := .insert 1 [[.integer 9]] []
+def insertNew : Resolved.Statement := .insert 1 [[.value (.integer 9)]] []
 def writeScript : List Resolved.Statement := [.begin, insertNew]
 
 theorem pending_write : trace writeScript initial = [idle, begun, written] := by
@@ -49,8 +49,8 @@ theorem nested_begin_halts : trace (writeScript ++ [.begin, .rollback]) initial 
 theorem empty_trace : trace [] initial = [idle] := by decide +kernel
 theorem no_transaction : trace [.commit, insertNew] initial =
     [idle, { idle with error := some (0, .noActiveTransaction) }] := by decide +kernel
-theorem prepare_error_halts : trace [.begin, .prepareError (.noSuchTable "absent")] initial =
-    [idle, begun, { begun with error := some (1, .prepare (.noSuchTable "absent")) }] := by decide +kernel
+theorem prepare_error_halts : trace [.begin, .prepareError (.noSuchTable (name! "absent"))] initial =
+    [idle, begun, { begun with error := some (1, .prepare (.noSuchTable (name! "absent"))) }] := by decide +kernel
 #print axioms trace_final
 #print axioms pending_write
 #print axioms explicit_commit

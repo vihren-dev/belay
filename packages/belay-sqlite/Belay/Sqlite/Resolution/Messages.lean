@@ -3,7 +3,7 @@ import Belay.Sqlite.Resolution.Resolved
 set_option doc.verso true
 
 /-! The text of SQLite's prepare errors. Each message fills the format that the
-constructor of {name}`Belay.Sqlite.PrepareError` names with its arguments. Names
+constructor of {name}`Belay.Sqlite.PrepareError` or {name}`Belay.Sqlite.ExprError` names with its arguments. Names
 appear as written in the statement, as SQLite prints them. -/
 
 namespace Belay.Sqlite
@@ -15,19 +15,14 @@ def ordinal (number : Nat) : String :=
     | 1 => "st" | 2 => "nd" | 3 => "rd" | _ => "th"
   s!"{number}{suffix}"
 
-/-- SQLite's message for a prepare error, for example {lit}`no such table: t`. -/
-def PrepareError.message : PrepareError → String
+/-- SQLite's message for an error that names no catalog object, for example
+{lit}`no such column: a`. -/
+def ExprError.message : ExprError → String
   | .reservedName name => s!"object name reserved for internal use: {name}"
-  | .tableExists name => s!"table {name} already exists"
-  | .indexNameUsed name => s!"there is already an index named {name}"
-  | .tableNameUsed name => s!"there is already a table named {name}"
-  | .indexExists name => s!"index {name} already exists"
   | .tooManyColumns table => s!"too many columns on {table}"
   | .duplicateColumn column => s!"duplicate column name: {column}"
   | .multiplePrimaryKeys table => s!"table \"{table}\" has more than one primary key"
   | .defaultNotConstant column => s!"default value of column [{column}] is not constant"
-  | .noSuchTable name => s!"no such table: {name}"
-  | .noSuchColumn name => s!"no such column: {name}"
   | .tableHasNoColumn table column => s!"table {table} has no column named {column}"
   | .valueCount table columns values => s!"table {table} has {columns} columns but {values} values were supplied"
   | .valuesForColumns values columns => s!"{values} values for {columns} columns"
@@ -36,6 +31,11 @@ def PrepareError.message : PrepareError → String
   | .tableMayNotBeIndexed name => s!"table {name} may not be indexed"
   | .cannotAddPrimaryKey => "Cannot add a PRIMARY KEY column"
   | .cannotAddUnique => "Cannot add a UNIQUE column"
+  | .conflictingAlgorithms => "conflicting ON CONFLICT clauses specified"
+  | .noSuchColumn name => s!"no such column: {name}"
+  | .qualifiedIndexTerm => "the \".\" operator prohibited in index expressions"
+  | .nondeterministicIndex filter =>
+    "non-deterministic functions prohibited in " ++ (if filter then "partial index WHERE clauses" else "index expressions")
   | .hexLiteralTooBig text => s!"hex literal too big: {text}"
   | .misuseOfAggregate function => s!"misuse of aggregate function {function}()"
   | .aggregateInGroupBy => "aggregate functions are not allowed in the GROUP BY clause"
@@ -50,8 +50,16 @@ def PrepareError.message : PrepareError → String
   | .naturalJoinCondition => "a NATURAL join may not have an ON or USING clause"
   | .ambiguousUsingReference name => s!"ambiguous reference to {name} in USING()"
   | .conflictTargetMismatch => "ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE constraint"
-  | .conflictingAlgorithms => "conflicting ON CONFLICT clauses specified"
   | .noTablesSpecified => "no tables specified"
   | .tooManyEachArguments => "too many arguments on json_each() - max 2"
+
+/-- SQLite's message for a prepare error, for example {lit}`no such table: t`. -/
+def PrepareError.message : PrepareError → String
+  | .tableExists name => s!"table {name} already exists"
+  | .indexNameUsed name => s!"there is already an index named {name}"
+  | .tableNameUsed name => s!"there is already a table named {name}"
+  | .indexExists name => s!"index {name} already exists"
+  | .noSuchTable name => s!"no such table: {name}"
+  | .expression error => error.message
 
 end Belay.Sqlite

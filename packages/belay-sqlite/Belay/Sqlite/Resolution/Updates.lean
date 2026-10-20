@@ -17,8 +17,8 @@ the filter as a condition; then a column assigned twice is a model restriction. 
 {name}`RestrictionKind.rowDependentKey` of its assignment. A table with a constraint
 algorithm other than ABORT is {name}`RestrictionKind.constraintAlgorithmUpdate`, after
 every other check. -/
-def resolveUpdate (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : String)
-    (assignments : List (String × Syntax.Expr)) (filter : Option Syntax.Expr)
+def resolveUpdate (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : Identifier)
+    (assignments : List (Identifier × Syntax.Expr)) (filter : Option Syntax.Expr)
     (returning : List Syntax.ResultColumn) : StatementResolution :=
   let dqs := context.profile.dqsDml
   match catalog.findTable tableName with
@@ -26,7 +26,7 @@ def resolveUpdate (context : ResolveContext) (catalog : Catalog) (index : Nat) (
   | some (position, table) =>
     let keys := catalog.uniqueKeys position table
     let scope := Scope.single tableName table.columns
-    match resolveAll (resolveAssignment dqs scope keys.flatten) assignments with
+    match resolveAll (resolveAssignment dqs scope (keys.flatMap (·.reads table.columns.length))) assignments with
     | .error issue => issueResolution catalog index [1] issue
     | .ok resolved =>
       let resolvedCondition : Except ValueIssue (Option Resolved.Expr) := match filter with

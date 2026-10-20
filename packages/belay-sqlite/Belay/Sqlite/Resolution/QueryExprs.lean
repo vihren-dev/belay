@@ -4,7 +4,7 @@ import Belay.Sqlite.Resolution.ExprForms
 import Belay.Sqlite.Resolution.SyntaxScope
 import Belay.Sqlite.ExprEval
 import Belay.Sqlite.Resolution.ExprAny
-import Belay.Sqlite.ClockSubstitution
+import Belay.Sqlite.ClockReads
 
 set_option doc.verso true
 
@@ -25,7 +25,8 @@ are SQLite's {lit}`ambiguous column name: %s`. With none: a rowid name
 the rowid; a name written in double quotes is a string literal when {lit}`dqs` is on;
 an unquoted {lit}`TRUE` or {lit}`FALSE` is the integer 1 or 0; else it is SQLite's
 {lit}`no such column: %s`, also for {lit}`[true]`, which only quotes. A qualified name {lit}`x.c` is column
-{lit}`c` of the source named {lit}`x` ({name}`Scope.qualified`), else
+{lit}`c` of the sources named {lit}`x` ({name}`Scope.resolveQualified`): one column, the
+coalesce of merged columns, {lit}`ambiguous column name: x.c`, else
 {lit}`no such column: x.c`. The operands of {lit}`AND`, {lit}`OR` and {lit}`NOT` must be
 conditions. An aggregate gives {name}`aggregateIssue`. A numeric literal has the value of
 {name}`queryNumeric`; unary minus of another expression is {lit}`0 - operand` and unary
@@ -41,16 +42,17 @@ def resolveOperand (dqs : Bool) (scope : Scope) (misuse : Bool) : Syntax.Expr �
     | .found _ reads => .ok (scope.nameOperand reads)
     | .missing =>
       if rowidName name && !scope.isEmpty then .error (.restriction [] .rowidName)
-      else if quote == .double && dqs then .ok (.literal (.text name.toUTF8.toList), none)
+      else if quote == .double && dqs then .ok (.literal (.text name.bytes), none)
       else if quote == .none && booleanKeywordName name then
-        .ok (.literal (.integer (if normalizeIdentifier name == "true" then 1 else 0)), none)
+        .ok (.literal (.integer (if name.isKeyword (bytes! "true") then 1 else 0)), none)
       else .error (.prepare (.noSuchColumn name))
     | .ambiguous => .error (.prepare (.ambiguousColumn name))
-  | .qualified source column => match scope.qualified source column with
-    | some position => .ok (.column position, (scope.columns[position]?.map CatalogColumn.affinity))
-    | none =>
-      if rowidName column && (scope.source? source).isSome then .error (.restriction [] .rowidName)
-      else .error (.prepare (.noSuchColumn s!"{source}.{column}"))
+  | .qualified source column => match scope.resolveQualified source column with
+    | .found _ reads => .ok (scope.nameOperand reads)
+    | .missing =>
+      if rowidName column && scope.hasSource source then .error (.restriction [] .rowidName)
+      else .error (.prepare (.noSuchColumn ⟨source.bytes ++ [46] ++ column.bytes⟩))
+    | .ambiguous => .error (.prepare (.ambiguousColumn ⟨source.bytes ++ [46] ++ column.bytes⟩))
   | .compare operator left right => do
     let a ← (resolveOperand dqs scope misuse left).mapError (·.under [1])
     let b ← (resolveOperand dqs scope misuse right).mapError (·.under [2])

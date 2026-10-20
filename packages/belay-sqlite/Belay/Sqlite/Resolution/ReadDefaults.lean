@@ -22,7 +22,7 @@ def readNumericDefault (affinity : Affinity) (token : String) (negated : Bool) :
   let value := match numericValue text false with
     | .integer integer =>
       if negated then
-        if integer == -(2 ^ 63 : Int) then .real (9223372036854775808.0 : Float).toBits
+        if integer == -(2 ^ 63 : Int) then realValue 9223372036854775808.0
         else .integer (-integer)
       else .integer integer
     | .hexTooBig => if negated then .integer 0 else .text text.toUTF8.toList

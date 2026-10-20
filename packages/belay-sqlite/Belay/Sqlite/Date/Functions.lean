@@ -12,10 +12,6 @@ SQLite's {lit}`sqlite3NotPureFunc` passes, so {lit}`now` always reads the clock.
 
 namespace Belay.Sqlite
 
-/-- The bytes before the first zero byte: the text that C reads through the pointer of
-{lit}`sqlite3_value_text`. -/
-def bytesBeforeNul (bytes : List UInt8) : List UInt8 := bytes.takeWhile (· != 0)
-
 /-- The text of a value as {lit}`sqlite3_value_text` gives it to C code: NULL has none;
 a number is its text; TEXT and BLOB are their bytes up to the first zero byte. -/
 def Value.sqliteValueText? : Value → Option (List UInt8)
@@ -117,5 +113,21 @@ def Resolved.DateFunction.value (function : Resolved.DateFunction) (clock : Int)
       | .time => .text x.computeTimeOfDay.timeText
       | .date => .text x.computeCivilDate.dateText
       | .strftime => strftimeValue clock arguments
+
+/-- The date and time function that a time keyword calls without arguments, as SQLite's
+{lit}`ctimeFunc`, {lit}`cdateFunc` and {lit}`ctimestampFunc` do: {lit}`time`, {lit}`date`
+and {lit}`datetime`. -/
+def TimeKeyword.dateFunction : TimeKeyword → Resolved.DateFunction
+  | .time => .time
+  | .date => .date
+  | .timestamp => .datetime
+
+/-- The value that SQLite gives for the keyword when the statement's clock, as the VFS
+method {lit}`xCurrentTimeInt64` returns it (Julian-day milliseconds), is {lit}`clock`: the
+value of its date and time function without arguments ({name}`TimeKeyword.dateFunction`).
+It is NULL for a clock of zero or less, where {lit}`setDateTimeToCurrent` fails, and text
+otherwise. -/
+def TimeKeyword.value (keyword : TimeKeyword) (clock : Int) : Value :=
+  keyword.dateFunction.value clock []
 
 end Belay.Sqlite

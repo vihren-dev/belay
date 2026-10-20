@@ -11,7 +11,7 @@ path = "../belay-sqlite"
 [[lean_lib]]
 name = "SqliteVerifier"
 roots = []
-globs = ["SqliteVerifier", "SqliteVerifier.Contract", "SqliteVerifier.ContractProofs", "SqliteVerifier.Library", "SqliteVerifier.NullableProjection", "SqliteVerifier.ApplicationKeys", "SqliteVerifier.ApplicationKeyPreservation", "SqliteVerifier.AxiomPolicy", "SqliteVerifier.Audit"]
+globs = ["SqliteVerifier", "SqliteVerifier.Contract", "SqliteVerifier.ContractProofs", "SqliteVerifier.Library", "SqliteVerifier.SchemaProjection", "SqliteVerifier.NullableProjection", "SqliteVerifier.ApplicationKeys", "SqliteVerifier.ApplicationKeyPreservation", "SqliteVerifier.AxiomPolicy", "SqliteVerifier.Audit"]
 
 # Engineering examples are test code with their own build target; the production root excludes them.
 [[lean_lib]]
