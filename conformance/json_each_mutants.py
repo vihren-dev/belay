@@ -28,11 +28,11 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "each_member_id_at_value": (EACH,
         "    let row ← eachRow context key value offset (context.rootPath ++ memberPathStep text)",
         "    let row ← eachRow context key value (offset + jsonbSize label) (context.rootPath ++ memberPathStep text)"),
-    "each_not_correlated": (FUNCTIONS, "(row, Json.eachRows (json.eval clock row) (path.map (·.eval clock row)))",
-        "(row, Json.eachRows (json.eval clock []) (path.map (·.eval clock [])))"),
+    "each_not_correlated": (FUNCTIONS, "(row, Json.eachRows (json.eval context row) (path.map (·.eval context row)))",
+        "(row, Json.eachRows (json.eval context []) (path.map (·.eval context [])))"),
     "each_hidden_in_star": (SCOPE,
-        "  scope.flatMap fun source => source.placedColumns fun index => !source.merged.contains index && !source.hidden.contains index",
-        "  scope.flatMap fun source => source.placedColumns fun index => !source.merged.contains index"),
+        "  scope.inner.flatMap fun source => source.placedColumns fun index => !source.merged.contains index && !source.hidden.contains index",
+        "  scope.inner.flatMap fun source => source.placedColumns fun index => !source.merged.contains index"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the replacement. The
 names follow the list in the task of slice 6d: `id` as the element index; `key` of an array

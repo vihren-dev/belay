@@ -11,21 +11,21 @@ from conformance.resolve_mutants import SQLITE
 QUERY_JOINS = SQLITE + "QueryJoins.lean"
 """The rows of joins."""
 
-ADDED = "    | .right | .full => (unmatchedRight clock left join candidates).map (List.replicate leftWidth .null ++ ·)\n"
+ADDED = "    | .right | .full => (unmatchedRight context left join candidates).map (List.replicate leftWidth .null ++ ·)\n"
 """The added rows of a right or full join."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "right_drops_unmatched": (QUERY_JOINS, ADDED + "    | .inner | .left => []",
-        "    | .full => (unmatchedRight clock left join candidates).map (List.replicate leftWidth .null ++ ·)\n"
+        "    | .full => (unmatchedRight context left join candidates).map (List.replicate leftWidth .null ++ ·)\n"
         "    | .right | .inner | .left => []"),
     "right_pads_own_width": (QUERY_JOINS, ADDED,
-        "    | .right | .full => (unmatchedRight clock left join candidates).map (List.replicate width .null ++ ·)\n"),
+        "    | .right | .full => (unmatchedRight context left join candidates).map (List.replicate width .null ++ ·)\n"),
     "unmatched_per_left_row": (QUERY_JOINS,
-        "  candidates.filter fun cells => !left.any fun row => join.matches clock (row ++ cells)",
-        "  candidates.filter fun cells => !left.all fun row => join.matches clock (row ++ cells)"),
+        "  candidates.filter fun cells => !left.any fun row => join.matches context (row ++ cells)",
+        "  candidates.filter fun cells => !left.all fun row => join.matches context (row ++ cells)"),
     "full_omits_unmatched_left": (QUERY_JOINS,
-        "  | .inner | .right => joinMatches clock row join candidates\n  | .left | .full =>",
-        "  | .inner | .right | .full => joinMatches clock row join candidates\n  | .left =>"),
+        "  | .inner | .right => joinMatches context row join candidates\n  | .left | .full =>",
+        "  | .inner | .right | .full => joinMatches context row join candidates\n  | .left =>"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
 replacement. The names follow Amendment 3, "Testing": a right join drops the unmatched

@@ -16,18 +16,18 @@ SOURCES = SQLITE + "Resolution/Sources.lean"
 QUERIES = SQLITE + "Resolution/Queries.lean"
 """The resolution of SELECT and its result columns."""
 
-PADDED = "    if (joinMatches clock row join candidates).isEmpty then [row ++ List.replicate width .null]"
+PADDED = "    if (joinMatches context row join candidates).isEmpty then [row ++ List.replicate width .null]"
 """The left join's row for a left row without a match."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "left_join_drops_unmatched": (QUERY_JOINS, PADDED, "    if (joinMatches clock row join candidates).isEmpty then []"),
+    "left_join_drops_unmatched": (QUERY_JOINS, PADDED, "    if (joinMatches context row join candidates).isEmpty then []"),
     "left_join_pads_left_values": (QUERY_JOINS, PADDED,
-        "    if (joinMatches clock row join candidates).isEmpty then\n"
+        "    if (joinMatches context row join candidates).isEmpty then\n"
         "      [row ++ (row ++ List.replicate width (.null : Value)).take width]"),
     "on_after_padding": (QUERY_JOINS, PADDED,
-        "    if (joinMatches clock row join candidates).isEmpty then\n"
+        "    if (joinMatches context row join candidates).isEmpty then\n"
         "      [row ++ List.replicate width .null].filter fun joined =>\n"
-        "        join.condition.all fun condition => truthy (condition.eval clock joined)"),
+        "        join.condition.all fun condition => truthy (condition.eval context joined)"),
     "unqualified_takes_first_source": (SCOPE, "    else .ambiguous\n", "    else .found first reads\n"),
     "alias_keeps_table_name": (SOURCES,
         "    .ok (position, { name := reference.alias.getD declared, columns := table.columns, hasRowid := !table.withoutRowid })",

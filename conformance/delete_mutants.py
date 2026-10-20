@@ -17,19 +17,19 @@ OUTPUTS = "verifier-conformance/VerifierConformance/Outputs.lean"
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "null_filter_deletes": (ROW_DELETE,
-        "  { table with rows := table.rows.filter fun row => !selected clock filter row }",
+        "  { table with rows := table.rows.filter fun row => !selected context filter row }",
         "  { table with rows := table.rows.filter fun row =>\n"
-        "      !(filter.all fun condition => !Resolved.falsy (condition.eval clock row.values)) }"),
+        "      !(filter.all fun condition => !Resolved.falsy (condition.eval context row.values)) }"),
     "delete_keeps_selected_rows": (ROW_DELETE,
-        "  { table with rows := table.rows.filter fun row => !selected clock filter row }",
-        "  { table with rows := table.rows.filter fun row => selected clock filter row }"),
+        "  { table with rows := table.rows.filter fun row => !selected context filter row }",
+        "  { table with rows := table.rows.filter fun row => selected context filter row }"),
     "delete_returning_kept_rows": (OUTPUTS,
-        "returnedRows clock returning (chosen.map (·.values)), some chosen.length⟩",
-        "returnedRows clock returning ((table.rows.filter (!LiteralData.selected clock filter ·)).map (·.values)),\n"
+        "returnedRows context returning (chosen.map (·.values)), some chosen.length⟩",
+        "returnedRows context returning ((table.rows.filter (!LiteralData.selected context filter ·)).map (·.values)),\n"
         "        some chosen.length⟩"),
     "delete_change_count_every_row": (OUTPUTS,
-        "returnedRows clock returning (chosen.map (·.values)), some chosen.length⟩",
-        "returnedRows clock returning (chosen.map (·.values)), some table.rows.length⟩"),
+        "returnedRows context returning (chosen.map (·.values)), some chosen.length⟩",
+        "returnedRows context returning (chosen.map (·.values)), some table.rows.length⟩"),
     "next_rowid_counts_rows": (LITERAL_DATA,
         "  | first :: rest => (rest.foldl (fun largest row => max largest row.rowid) first.rowid) + 1",
         "  | first :: rest => (rest.length : Int) + 2"),

@@ -13,9 +13,9 @@ EXECUTION = SQLITE + "Execution.lean"
 """The execution of CREATE INDEX."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
-    "index_filter_ignored": (LITERAL_DATA, "  | some filter => Resolved.truthy (filter.eval 0 row.values)",
+    "index_filter_ignored": (LITERAL_DATA, "  | some filter => Resolved.truthy (filter.eval (.plain 0) row.values)",
         "  | some filter => true"),
-    "index_expression_as_column": (LITERAL_DATA, "  | .expression value => some (value.eval 0 row.values)",
+    "index_expression_as_column": (LITERAL_DATA, "  | .expression value => some (value.eval (.plain 0) row.values)",
         "  | .expression value => read row 0"),
     "index_built_without_check": (EXECUTION,
         "        if index.unique && !LiteralData.uniqueRows index.uniqueKey table.rows then",
