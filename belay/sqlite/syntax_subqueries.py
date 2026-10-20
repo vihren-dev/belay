@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 
-from .located import Located, leaf, sequence, structure
+from .located import Located, constructor, leaf, sequence, structure
 from .sql_tree import Node, Tree
 
 Clauses = Callable[[Tree, Node], list[tuple[str, Located]]]
@@ -81,7 +81,11 @@ def lift(tree: Tree, select: Node) -> int:
     return index
 
 
-def subquery_list(listed: SubqueryList, start: int, end: int) -> Located:
-    """The located list of the statement's subqueries."""
+def with_subqueries(name: str, fields: list[tuple[str, Located]], listed: SubqueryList, start: int,
+                    end: int) -> Located:
+    """The statement constructor with its fields and, when it has subqueries, the `subqueries`
+    field after them. A statement without subqueries keeps the JSON form that it had before
+    subqueries were modeled, which frozen records hold; Lean reads a missing list as empty."""
     items = [item for item in listed.items if item is not None]
-    return sequence(items, start, end)
+    extra = [("subqueries", sequence(items, start, end))] if items else []
+    return constructor(name, fields + extra, start, end)

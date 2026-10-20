@@ -6,7 +6,7 @@ columns; DELETE keeps its optional WHERE expression and its RETURNING columns. V
 (`syntax_queries.query_expression`); Lean decides which of them the model admits in a
 write. Each write has a `returning` field with its RETURNING result columns as in
 SELECT, empty without RETURNING (ADR 0013, D3), and a `subqueries` field with the subqueries
-of its values, assignments and filter (`syntax_subqueries`, ADR 0018, D1); a subquery in
+of its values, assignments and filter when it has some (`syntax_subqueries`, ADR 0018, D1); a subquery in
 RETURNING or ON CONFLICT is refused.
 The ON CONFLICT clauses of INSERT are `syntax_conflicts.conflict_clauses`; an INSERT
 without them has an empty list. The algorithm of `INSERT OR algorithm` and `REPLACE INTO`
@@ -21,7 +21,7 @@ from .syntax_shapes import absent, left_list, require
 from .syntax_expressions import name
 from .syntax_queries import query_expression, result_columns
 from .syntax_select import query_clauses
-from .syntax_subqueries import no_subqueries, statement_subqueries, subquery_list
+from .syntax_subqueries import no_subqueries, statement_subqueries, with_subqueries
 
 IN_CLAUSE = ("A subquery in RETURNING or ON CONFLICT is not modeled; read the value in a separate statement")
 """The refusal of a subquery in RETURNING or ON CONFLICT, whose scope the model does not describe."""
@@ -92,11 +92,10 @@ def insert(tree: Tree, command: Node) -> Located:
         column_list = leaf(None, columns.start, columns.end)
     with statement_subqueries(query_clauses) as listed:
         rows = value_rows(tree, source)
-    return constructor("insert", [("table", name(tree, table)), ("columns", column_list),
-                                  ("rows", rows), ("conflicts", conflicts),
-                                  ("algorithm", algorithm), ("returning", returning(tree, command, returned)),
-                                  ("subqueries", subquery_list(listed, command.start, command.end))],
-                       command.start, command.end)
+    return with_subqueries("insert", [("table", name(tree, table)), ("columns", column_list), ("rows", rows),
+                                      ("conflicts", conflicts), ("algorithm", algorithm),
+                                      ("returning", returning(tree, command, returned))],
+                           listed, command.start, command.end)
 
 
 def update(tree: Tree, command: Node) -> Located:
@@ -112,10 +111,9 @@ def update(tree: Tree, command: Node) -> Located:
     with statement_subqueries(query_clauses) as listed:
         mapped = assignment_list(tree, assignments)
         filter_, returned = filter_and_returning(tree, where, "UPDATE")
-    return constructor("update", [("table", name(tree, table)), ("assignments", mapped),
-                                  ("filter", filter_), ("returning", returning(tree, command, returned)),
-                                  ("subqueries", subquery_list(listed, command.start, command.end))],
-                       command.start, command.end)
+    return with_subqueries("update", [("table", name(tree, table)), ("assignments", mapped),
+                                      ("filter", filter_), ("returning", returning(tree, command, returned))],
+                           listed, command.start, command.end)
 
 
 def filter_and_returning(tree: Tree, where: Node, statement: str) -> tuple[Located, list[Node]]:
@@ -138,7 +136,6 @@ def delete(tree: Tree, command: Node) -> Located:
     (table,) = require(tree, target, ["nm"])
     with statement_subqueries(query_clauses) as listed:
         filter_, returned = filter_and_returning(tree, where, "DELETE")
-    return constructor("delete", [("table", name(tree, table)), ("filter", filter_),
-                                  ("returning", returning(tree, command, returned)),
-                                  ("subqueries", subquery_list(listed, command.start, command.end))],
-                       command.start, command.end)
+    return with_subqueries("delete", [("table", name(tree, table)), ("filter", filter_),
+                                      ("returning", returning(tree, command, returned))],
+                           listed, command.start, command.end)

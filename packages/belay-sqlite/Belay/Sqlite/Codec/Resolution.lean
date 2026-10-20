@@ -32,6 +32,40 @@ instance : Lean.FromJson Syntax.TableOptions where
     let strict : Bool := (json.getObjValAs? Bool "strict").toOption.getD false
     return { withoutRowid := ← json.getObjValAs? Bool "withoutRowid", strict }
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.Statement
+
+/-- The derived reader of a statement, which needs every field. -/
+def Syntax.Statement.derivedFromJson : Lean.FromJson Syntax.Statement := inferInstance
+
+/-- The JSON of a statement with an empty {lit}`subqueries` list added to a {lit}`select`,
+{lit}`insert`, {lit}`update` or {lit}`delete` that has none: the frontend writes the field only
+for a statement with subqueries, so the records of other statements keep their form. -/
+def Syntax.Statement.withSubqueryField (json : Lean.Json) : Lean.Json :=
+  ["select", "insert", "update", "delete"].foldl (fun json key => match json.getObjVal? key with
+    | .ok fields => if (fields.getObjVal? "subqueries").isOk then json
+        else json.setObjVal! key (fields.setObjVal! "subqueries" (Lean.Json.arr #[]))
+    | .error _ => json) json
+
+/-- The derived writer of a statement, which writes every field. -/
+def Syntax.Statement.derivedToJson : Lean.ToJson Syntax.Statement := inferInstance
+
+/-- The JSON of a statement without an empty {lit}`subqueries` list, the form that the
+frontend writes ({name}`Syntax.Statement.withSubqueryField` reads it back). -/
+def Syntax.Statement.withoutEmptySubqueries (json : Lean.Json) : Lean.Json :=
+  ["select", "insert", "update", "delete"].foldl (fun json key => match json.getObjVal? key with
+    | .ok (.obj fields) => match fields.get? "subqueries" with
+      | some (Lean.Json.arr #[]) => json.setObjVal! key (.obj (fields.erase "subqueries"))
+      | _ => json
+    | _ => json) json
+
+/-- Write a statement ({name}`Syntax.Statement.derivedToJson`) without an empty
+{lit}`subqueries` list ({name}`Syntax.Statement.withoutEmptySubqueries`). -/
+instance (priority := high) : Lean.ToJson Syntax.Statement where
+  toJson statement := Syntax.Statement.withoutEmptySubqueries (Syntax.Statement.derivedToJson.toJson statement)
+
+/-- Read a statement ({name}`Syntax.Statement.derivedFromJson`), with a missing
+{lit}`subqueries` list read as empty ({name}`Syntax.Statement.withSubqueryField`). -/
+instance (priority := high) : Lean.FromJson Syntax.Statement where
+  fromJson? json := Syntax.Statement.derivedFromJson.fromJson? (Syntax.Statement.withSubqueryField json)
 deriving instance Lean.ToJson for ExprError
 
 /-- A prepare error as JSON, in one flat form: an error that names a catalog object as its
