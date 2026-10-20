@@ -1,6 +1,6 @@
 # The JSON functions that build or edit text (ADR 0015, slice 3)
 
-Created 2026-10-20. Status: open.
+Created 2026-10-20. Status: DONE.
 Status file: [status](20261020-json-edit-functions.status.md).
 Specification: [ADR 0015](../docs/adr-0015-functions.md), D5.
 

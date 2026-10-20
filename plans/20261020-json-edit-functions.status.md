@@ -1,6 +1,6 @@
 # Status: the JSON functions that build or edit text (ADR 0015, slice 3)
 
-Created 2026-10-20. Status: open.
+Created 2026-10-20. Status: DONE.
 Task file: [task](20261020-json-edit-functions.task.md).
 Specification: [ADR 0015](../docs/adr-0015-functions.md), D5.
 
@@ -50,6 +50,12 @@ Specification: [ADR 0015](../docs/adr-0015-functions.md), D5.
   in "refactor: query examples of the JSON aggregate faults": `JsonFaultExamples.lean` checks a
   `may` fault for a BLOB operand of each aggregate and a certain failure of a failing operand.
 
-## Remaining
+- 2026-10-20: `just test-full` passes on "refactor: query examples of the JSON aggregate
+  faults". The slice verdict: v5 1,909 (+141), v4 +28, corpus 38 with 15 cases that agree, no
+  case lost.
+- 2026-10-20: rebased onto "fix: the table mutants run in their own scheduled suite" (#191):
+  the function mutant tests run in the Nix suite `tableMutants`.
 
-- Review, the slice verdict, corpus 38, `just test-full`.
+## Status
+
+DONE.

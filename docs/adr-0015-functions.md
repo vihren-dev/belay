@@ -223,6 +223,21 @@ Each slice works as in ADR 0014:
     restriction in a CHECK constraint, an index key and a generated column, and fails as
     SQLite does only in a query without `FROM` (`Resolved.Expr.isFallibleCall`).
 
+- Slice 3 (2026-10-20), details checked natively that D5 does not state:
+  - A BLOB argument is JSONB, not an error (`json_array(x'01')` is `[true]`), so it stays a
+    `may` fault until slice 4.
+  - A value keeps the JSON subtype through `coalesce`, `iif`, `nullif`, scalar `min` and
+    `max`, `CASE` and unary `+`, and loses it through a subquery, a view or a CTE. The model
+    describes a direct call and unary `+`; a JSON call passed on through the others, as a
+    value argument of a JSON function or the operand of a JSON aggregate, is the restriction
+    `json-subtype`.
+  - `json_extract` with one path gives the subtype only when it selects an array or an
+    object; `json_pretty` and `json_error_position` give none.
+  - The position that `json_error_position` gives for malformed JSON is not modeled (a `may`
+    fault).
+  - `json_group_object` writes a label up to its first NUL byte and skips a row with a NULL
+    label; `json_object` requires TEXT labels.
+
 ## Consequences
 
 - **Fewer out-of-scope cases, more prepare errors.** A misspelled or unknown function
