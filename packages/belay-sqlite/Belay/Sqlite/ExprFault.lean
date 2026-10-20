@@ -136,7 +136,8 @@ def EvalContext.Quiet (context : EvalContext) : Prop :=
   ∀ index row, (context.subqueries index row).fault = .none
 
 /-- For every clock value, the plain context of the clock value is quiet
-({name}`EvalContext.Quiet`). -/
+({name}`EvalContext.Quiet`). Proof sketch: the plain context gives the fault
+{lean}`Fault.none` for every index and outer row by definition. -/
 theorem EvalContext.plain_quiet (clock : Int) : (EvalContext.plain clock).Quiet := fun _ _ => rfl
 
 end Belay.Sqlite.Resolved

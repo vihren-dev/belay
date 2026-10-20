@@ -47,7 +47,8 @@ def statementContext (clock : Int) (database : Database) (subqueries : List Quer
   subqueryContext clock database subqueries subqueries.length
 
 /-- For every clock value and database, the context of a statement without subqueries is the
-plain context of the clock value. -/
+plain context of the clock value. Proof sketch: an empty list gives depth 0, and
+{name}`subqueryContext` at depth 0 is the plain context by definition. -/
 @[simp] theorem statementContext_nil (clock : Int) (database : Database) :
     statementContext clock database [] = .plain clock := rfl
 
