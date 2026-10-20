@@ -45,11 +45,21 @@ slice the local verdict, the corpus, and `just test-full`.
 
 ## Key points
 
-- **Syntax is a tree, resolution lifts it to a list.** `Syntax.Expr` holds a subquery's
-  syntax, so the syntax types become one mutual inductive type (they need `BEq`, `Repr`
-  and JSON, not decidable equality). Resolution gives the statement a list of resolved
-  subqueries, and a resolved expression names one by its index, as ADR 0018 decides; a
-  subquery's expressions name only later subqueries.
+- **The frontend lifts subqueries into a list.** A syntax expression names a subquery by
+  its index in the statement's list of subqueries, in the order of their text, and each
+  subquery names the query around it (none for the statement's query). So the syntax types
+  stay as they are, without one mutual type of expressions and queries, and their JSON
+  stays valid for statements without subqueries. Resolution keeps the indices, as ADR 0018
+  decides; a subquery's expressions name only later subqueries.
+- **Resolution needs a subquery before the query around it.** A scalar subquery has the
+  affinity of its result column, and `x IN (q)` compares under the affinity and collation
+  of `x` and of `q`'s result column (natively: `(SELECT s FROM w) = 1` is 1 for a TEXT
+  column `s` that holds `'1'`). The scopes go outward-in, the bodies inward-out.
+- **Natively checked rules that the model must not miss.** A name in a subquery can name a
+  result column alias of the query around it, in its `WHERE` but not in its result columns;
+  an aggregate whose argument reads only outer columns belongs to the outer query
+  (`SELECT (SELECT count(t.k) FROM u) FROM t` gives one row); SQLite's plan can choose the
+  first row of a scalar subquery (an index changes it).
 - **Outer cells come first.** A subquery's row is the outer row followed by its own cells,
   so a correlated reference is a cell position; resolution shifts the positions.
 - **Evaluation is stratified.** `Expr.evaluate` takes the results of the subqueries as a
