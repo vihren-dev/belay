@@ -91,6 +91,9 @@ def largest : Query :=
   { fromOther (.column 2) none with orderBy := [{ key := .expression (.column 2), descending := true }], limit := some 1 }
 
 #guard faultOf scalarOf [largest] == some .none && rowsOf scalarOf [largest] == some (List.replicate 4 [.integer 3])
+-- Also in a joined query: SELECT (SELECT x FROM u) FROM t, u AS v, whose subquery's own cell is position 3.
+#guard faultOf { scalarOf with sources := [.first 0, { kind := .inner, source := .table 1, condition := none }] }
+  [{ fromOther (.column 3) none with outer := 3 }] == some .may
 -- IN reads the rows of a window that SQLite's plan chooses: k IN (SELECT x FROM u LIMIT 2).
 #guard faultOf (keysWhere (.inQuery (.column 0) 0 none .binary false)) [{ fromOther (.column 2) none with limit := some 2 }] ==
   some .may
