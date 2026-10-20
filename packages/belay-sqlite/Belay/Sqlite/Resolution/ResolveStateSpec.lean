@@ -120,22 +120,22 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
     split at ok <;> cases ok
     obtain ⟨equal, control⟩ := resolveDropIndex_applyCatalog _ _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
-  | insert table columns rows conflicts algorithm returning =>
+  | insert table columns rows conflicts algorithm returning subqueries =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    obtain ⟨same, unchanged, control⟩ := resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ (by assumption)
+    obtain ⟨same, unchanged, control⟩ := resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _ _ (fun _ _ _ _ h => resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ _ _ h) (by assumption)
     exact ordinary _ control (same.trans unchanged.symm)
-  | update table assignments filter returning =>
+  | update table assignments filter returning subqueries =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    obtain ⟨same, unchanged, control⟩ := resolveUpdate_same _ _ _ _ _ _ _ _ _ (by assumption)
+    obtain ⟨same, unchanged, control⟩ := resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _ _ (fun _ _ _ _ h => resolveUpdate_same _ _ _ _ _ _ _ _ _ _ _ h) (by assumption)
     exact ordinary _ control (same.trans unchanged.symm)
-  | delete table filter returning =>
+  | delete table filter returning subqueries =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    obtain ⟨same, unchanged, control⟩ := resolveDelete_same _ _ _ _ _ _ _ _ (by assumption)
+    obtain ⟨same, unchanged, control⟩ := resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _ _ (fun _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ _ h) (by assumption)
     exact ordinary _ control (same.trans unchanged.symm)
-  | select results source joins filter groupBy orderBy limit offset =>
+  | select results source joins filter groupBy orderBy limit offset subqueries =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     obtain ⟨same, unchanged, control⟩ := resolveSelect_same _ _ _ _ _ _ _ (by assumption)

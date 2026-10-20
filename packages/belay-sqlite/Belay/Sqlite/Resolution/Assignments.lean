@@ -36,13 +36,13 @@ def assignedExpression (scope : Scope) (position : Nat) (expression : Syntax.Exp
 must name a column of the table ({lit}`no such column: %s`), and a generated one is the issue
 {lit}`generated` of its name. A value that reads the
 row for a column of a unique key ({lit}`keyColumns`) is a model restriction, and so is a
-value that names no column and whose JSON function may fail. Paths are
-relative to the assignment list. -/
-def resolveAssignment (dqs : Bool) (scope : Scope) (keyColumns : List Nat) (generated : Identifier → ValueIssue)
-    (item : Nat) :
+value that names no column and whose JSON function may fail. The value may name the
+statement's subqueries ({lit}`shapes`). Paths are relative to the assignment list. -/
+def resolveAssignment (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (keyColumns : List Nat)
+    (generated : Identifier → ValueIssue) (item : Nat) :
     Identifier × Syntax.Expr → Except ValueIssue (Nat × Resolved.Expr)
   | (name, value) =>
-    (resolveOperand dqs scope {} true value).mapError (·.under [item, 1]) >>= fun operand =>
+    (resolveOperand dqs scope shapes true value).mapError (·.under [item, 1]) >>= fun operand =>
     (match columnPosition scope.columns name with
       | some position => .ok position
       | none => .error (.prepare (.noSuchColumn name))) >>= fun position =>

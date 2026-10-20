@@ -18,14 +18,15 @@ namespace Belay.Sqlite
 6e2): the expression resolved as a query expression with no column in scope and an
 aggregate as SQLite's {lit}`misuse of aggregate function`. Its value, so {lit}`1 + 2` is 3
 and {lit}`CAST('7' AS INTEGER)` is 7, computed at the clock value 0, which it does not
-read; or the expression when it reads the clock. An identifier, a rowid name included, is
+read; or the expression when it reads the clock or names a subquery of the statement
+({lit}`shapes`, {lit}`Resolved.Expr.namesSubquery`). An identifier, a rowid name included, is
 a double-quoted string or {lit}`no such column`, as no table is in scope. A value whose
 JSON function may fail is a model restriction, because the model does not describe when
 SQLite evaluates a constant. The value is not yet stored with the column's affinity
 ({lit}`fullCells` stores it). -/
-def constantCell (dqs : Bool) (expression : Syntax.Expr) : Except ValueIssue Resolved.Cell :=
-  resolveOperand dqs [] {} true expression >>= fun operand =>
-    if operand.1.readsClock then
+def constantCell (dqs : Bool) (shapes : SubqueryShapes) (expression : Syntax.Expr) : Except ValueIssue Resolved.Cell :=
+  resolveOperand dqs [] shapes true expression >>= fun operand =>
+    if operand.1.readsClock || operand.1.any Resolved.Expr.namesSubquery then
       if operand.1.any Resolved.Expr.isFallibleCall then .error (.restriction [] .constantFunctionError)
       else .ok (.expression operand.1)
     else if operand.1.mayFailOn (.plain 0) [] then .error (.restriction [] .constantFunctionError)

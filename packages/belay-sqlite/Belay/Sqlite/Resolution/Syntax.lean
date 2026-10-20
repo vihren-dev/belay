@@ -65,15 +65,19 @@ inductive Statement where
   {lean}`(none : Option (List Identifier))`, and an INSERT without clauses has
   {lean}`([] : List ConflictClause)`. The algorithm of {lit}`INSERT OR algorithm` or of
   {lit}`REPLACE INTO` is {lit}`algorithm`, {lean}`(none : Option ConflictAlgorithm)` without
-  one. The {lit}`RETURNING` columns are {lit}`returning`, empty without the clause. -/
+  one. The {lit}`RETURNING` columns are {lit}`returning`, empty without the clause. The
+  subqueries of the statement are {lit}`subqueries`, as for {lit}`SELECT`. -/
   | insert (table : Identifier) (columns : Option (List Identifier)) (rows : List (List Expr))
       (conflicts : List ConflictClause) (algorithm : Option ConflictAlgorithm := none)
-      (returning : List ResultColumn := [])
-  /-- {lit}`UPDATE table SET assignments [WHERE filter] [RETURNING columns]`. -/
+      (returning : List ResultColumn := []) (subqueries : List Subquery := [])
+  /-- {lit}`UPDATE table SET assignments [WHERE filter] [RETURNING columns]`, with the
+  subqueries of the statement, as for {lit}`SELECT`. -/
   | update (table : Identifier) (assignments : List (Identifier × Expr)) (filter : Option Expr)
-      (returning : List ResultColumn := [])
-  /-- {lit}`DELETE FROM table [WHERE filter] [RETURNING columns]`. -/
+      (returning : List ResultColumn := []) (subqueries : List Subquery := [])
+  /-- {lit}`DELETE FROM table [WHERE filter] [RETURNING columns]`, with the subqueries of the
+  statement, as for {lit}`SELECT`. -/
   | delete (table : Identifier) (filter : Option Expr) (returning : List ResultColumn := [])
+      (subqueries : List Subquery := [])
   /-- {lit}`SELECT columns FROM source joins [WHERE filter] [GROUP BY terms] [ORDER BY terms]
   [LIMIT limit [OFFSET offset]]`: the first table of {lit}`FROM` and the joins after it, in
   order; one table has no joins, and a {lit}`SELECT` without {lit}`FROM` has

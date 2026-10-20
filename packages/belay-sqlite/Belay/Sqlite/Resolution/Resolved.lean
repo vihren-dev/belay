@@ -67,27 +67,31 @@ inductive Statement where
   /-- Insert full rows, with one cell for each column in table order ({name}`Cell`), and
   keep every unique key of the table ({name}`Catalog.uniqueKeys`) unique. The
   {lit}`RETURNING` columns are an expression over the written row and its name each,
-  none without {lit}`RETURNING`; the execution semantics does not read them. -/
+  none without {lit}`RETURNING`; the execution semantics does not read them. The
+  subqueries are those that the cells name by index (ADR 0018, D1), as for a query. -/
   | insert (table : Nat) (rows : List (List Cell)) (returning : List (Expr × String))
+      (subqueries : List Query := [])
   /-- In every row where the optional filter condition is true (every row without a
   filter), set each column position to its expression, evaluated on the old row and
   stored with the column's affinity. A literal update of slice 3a is the special case
   of {lit}`.literal` values and the filter {lit}`column = integer`. The unique keys and
-  the {lit}`RETURNING` columns are as for INSERT. -/
+  the {lit}`RETURNING` columns and the subqueries are as for INSERT. -/
   | update (table : Nat) (assignments : List (Nat × Expr)) (filter : Option Expr)
-      (returning : List (Expr × String))
+      (returning : List (Expr × String)) (subqueries : List Query := [])
   /-- INSERT with {lit}`ON CONFLICT` clauses or a conflict algorithm other than ABORT: the
   rows as for {name}`Statement.insert`, the clauses in written order, and the statement's
   {lit}`OR` algorithm, if any. The algorithm of each constraint is
   {name}`Catalog.writePolicy` of that algorithm. Each row is handled by the first clause
   whose target key has a conflicting row, or else by the algorithms of the constraints
-  that it fails. -/
+  that it fails. The subqueries are as for INSERT. -/
   | upsert (table : Nat) (rows : List (List Cell)) (clauses : List ConflictClause)
       (returning : List (Expr × String)) (algorithm : Option ConflictAlgorithm)
+      (subqueries : List Query := [])
   /-- Remove every row where the optional filter condition is true (every row without a
   filter). The {lit}`RETURNING` columns are evaluated on each removed row; the
-  execution semantics does not read them. -/
+  execution semantics does not read them. The subqueries are as for INSERT. -/
   | delete (table : Nat) (filter : Option Expr) (returning : List (Expr × String))
+      (subqueries : List Query := [])
   /-- SQLite refuses to prepare the statement with this error. -/
   | prepareError (error : PrepareError)
   /-- Run a query: it reads the database, changes nothing, and has result rows. The

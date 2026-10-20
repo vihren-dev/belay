@@ -68,6 +68,22 @@ Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D1.
   cases whose restriction changed, 22 have a subquery in a write, 15 a compound subquery,
   6 a derived table, 5 an outer aggregate and 4 `HAVING`.
 
+- 2026-10-20: "subqueries in writes" (C3). `INSERT ... VALUES`, `UPDATE` (`SET` and `WHERE`)
+  and `DELETE` (`WHERE`) list their subqueries (syntax child 6, 4 and 3; resolved field
+  `subqueries`, default empty). `WriteResolution.lean` resolves them around the written
+  table (no table for `VALUES`); a subquery that reads the written table is the new
+  restriction `subquery-reads-target` (natively, a correlated one sees the rows that the
+  statement already changed: `UPDATE t SET a = (SELECT count(*) FROM t AS b WHERE b.a < t.a)
+  + 10` over 1, 2, 3 gives 10, 10, 10). The frontend refuses a subquery in `RETURNING` and
+  `ON CONFLICT`, whose scopes the model does not describe. Execution runs each write in its
+  statement context; an INSERT cell that names a subquery stays an expression, and readiness
+  needs its cells to be described (`Resolved.cellsReady`) and its subqueries to have no
+  fallible call (`Resolved.subqueriesPlain`). Tests: 4 more authored cases (24, all agree),
+  the write examples of `SubqueryResolutionExamples.lean`, `tests/syntax_subqueries_test.py`,
+  the restriction example, the local verdict (no case leaves AGREE; still 7 of v5 and 2 of
+  v4 newly agree; of v5's write cases, 10 have a subquery in `RETURNING` or `ON CONFLICT` and
+  7 read the written table).
+
 ## Remaining
 
 - All outcomes and tests.

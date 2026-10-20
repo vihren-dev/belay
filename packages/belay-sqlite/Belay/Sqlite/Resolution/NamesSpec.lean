@@ -118,19 +118,19 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveDropIndex_step _ _ _ _ _ _ (by assumption))
-  | insert table columns rows conflicts algorithm returning =>
+  | insert table columns rows conflicts algorithm returning subqueries =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    exact keep _ ((resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ (by assumption)).1 ▸ .same)
-  | update table assignments filter returning =>
+    exact keep _ ((resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _ _ (fun _ _ _ _ h => resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ _ _ h) (by assumption)).1 ▸ .same)
+  | update table assignments filter returning subqueries =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    exact keep _ ((resolveUpdate_same _ _ _ _ _ _ _ _ _ (by assumption)).1 ▸ .same)
-  | delete table filter returning =>
+    exact keep _ ((resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _ _ (fun _ _ _ _ h => resolveUpdate_same _ _ _ _ _ _ _ _ _ _ _ h) (by assumption)).1 ▸ .same)
+  | delete table filter returning subqueries =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    exact keep _ ((resolveDelete_same _ _ _ _ _ _ _ _ (by assumption)).1 ▸ .same)
-  | select results source joins filter groupBy orderBy limit offset =>
+    exact keep _ ((resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _ _ (fun _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ _ h) (by assumption)).1 ▸ .same)
+  | select results source joins filter groupBy orderBy limit offset subqueries =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ ((resolveSelect_same _ _ _ _ _ _ _ (by assumption)).1 ▸ .same)

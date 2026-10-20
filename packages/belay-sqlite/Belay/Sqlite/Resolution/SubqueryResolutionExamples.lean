@@ -111,6 +111,24 @@ def joinOnExists : Join := { operator := [], source := table "u", condition := s
   some (.noSuchTable (Identifier.ofString "json_eachx"))
 #guard restrictedOne (.select [.star] (some (table "t")) [joinOnExists] none [] [] none none
   [{ fromU [written (name "v")] none with source := some (table "json_each") }])
+-- Writes: in UPDATE t SET v = (SELECT s FROM u WHERE x = k), k is u.k (cell 4), u's own column.
+#guard match resolvedOne (.update (Identifier.ofString "t") [(Identifier.ofString "v", .subquery 0)] none []
+    [fromU [written (name "s")] (some (.compare .eq (name "x") (name "k")))]) with
+  | some (.update 0 [(1, .subquery 0)] none [] [subquery]) =>
+    subquery.filter == some (.compare .eq (some .blob) (.column 2) (.column 4) .binary)
+  | _ => false
+-- DELETE FROM t WHERE k IN (SELECT x FROM u), and INSERT INTO t VALUES ((SELECT count(*) FROM u)).
+#guard match resolvedOne (.delete (Identifier.ofString "t") (some (.inQuery (name "k") 0 false)) []
+    [fromU [written (name "x")] none]) with
+  | some (.delete 0 (some (.inQuery (.column 0) 0 (some .numeric) .binary false)) [] [_]) => true
+  | _ => false
+#guard match resolvedOne (.insert (Identifier.ofString "t") none [[.subquery 0, .null]] [] none []
+    [fromU [written (.callStar "count")] none]) with
+  | some (.insert 0 [[.expression (.subquery 0), .value .null]] [] [_]) => true
+  | _ => false
+-- A subquery of a write that reads the written table.
+#guard restrictedOne (.update (Identifier.ofString "t") [(Identifier.ofString "v", .subquery 0)] none []
+  [{ fromU [written (name "v")] none with source := some (table "t") }])
 -- A subquery that names a query after it is malformed syntax, which the model refuses.
 #guard restrictedOne (fromT [written (name "k")] (some (.exists 0)) [fromU [written (.numeric "1")] none (some 0)])
 -- A query without FROM with a subquery and a call that can fail.

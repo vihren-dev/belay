@@ -36,19 +36,19 @@ theorem literalStep_success_catalog {clock : Int} {statement : Resolved.Statemen
     · cases success
     · repeat' split at success
       all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
-  | insert target rows returning =>
+  | insert target rows returning subqueries =>
     simp only [literalStep, runStatement, insertOutcome, checkedWrite] at success
     repeat' split at success
     all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
-  | upsert target rows clauses returning algorithm =>
+  | upsert target rows clauses returning algorithm subqueries =>
     simp only [literalStep, runStatement] at success
     repeat' split at success
     all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
-  | update target assignments filter returning =>
+  | update target assignments filter returning subqueries =>
     simp only [literalStep, runStatement, checkedWrite] at success
     repeat' split at success
     all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
-  | delete target filter returning =>
+  | delete target filter returning subqueries =>
     simp only [literalStep, runStatement] at success
     split at success
     · cases success

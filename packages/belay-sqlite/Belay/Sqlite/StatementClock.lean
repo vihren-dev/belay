@@ -49,15 +49,18 @@ def Cell.expression? : Cell → Option Expr
 
 /-- Every expression of a statement that evaluation reads: the expression cells of INSERT
 rows ({name}`Cell.expression?`), the {lit}`RETURNING` columns, the values and filters of
-writes, the clauses of an upsert ({name}`ConflictClause.expressions`) and the expressions
-of a query ({name}`Query.expressions`); a schema or transaction statement and a prepare error
+writes, the clauses of an upsert ({name}`ConflictClause.expressions`), the expressions of a
+query ({name}`Query.expressions`) and those of each statement's subqueries; a schema or transaction statement and a prepare error
 have none. -/
 def Statement.clockExpressions : Statement → List Expr
-  | .insert _ rows returning => rows.flatten.filterMap Cell.expression? ++ returning.map (·.1)
-  | .upsert _ rows clauses returning _ =>
-    rows.flatten.filterMap Cell.expression? ++ clauses.flatMap ConflictClause.expressions ++ returning.map (·.1)
-  | .update _ assignments filter returning => assignments.map (·.2) ++ filter.toList ++ returning.map (·.1)
-  | .delete _ filter returning => filter.toList ++ returning.map (·.1)
+  | .insert _ rows returning subqueries =>
+    rows.flatten.filterMap Cell.expression? ++ returning.map (·.1) ++ subqueries.flatMap Query.expressions
+  | .upsert _ rows clauses returning _ subqueries =>
+    rows.flatten.filterMap Cell.expression? ++ clauses.flatMap ConflictClause.expressions ++ returning.map (·.1) ++
+      subqueries.flatMap Query.expressions
+  | .update _ assignments filter returning subqueries =>
+    assignments.map (·.2) ++ filter.toList ++ returning.map (·.1) ++ subqueries.flatMap Query.expressions
+  | .delete _ filter returning subqueries => filter.toList ++ returning.map (·.1) ++ subqueries.flatMap Query.expressions
   | .query inner subqueries => inner.expressions ++ subqueries.flatMap Query.expressions
   | .createTable .. | .createIndex .. | .addColumn .. | .drop _ | .begin | .commit | .rollback | .prepareError _ => []
 
@@ -66,5 +69,17 @@ def Statement.clockExpressions : Statement → List Expr
 statement that does not the clock value 0, which it does not read ({lit}`runSqlAt`). -/
 def Statement.readsClock (statement : Statement) : Bool :=
   statement.clockExpressions.any Expr.readsClock
+
+/-- Whether no expression of the subqueries of a statement has a fallible call
+({name}`Resolved.Expr.isFallibleCall`): SQLite may evaluate a subquery for rows that the model
+does not reach, so the model does not describe a failure inside one. -/
+def subqueriesPlain (subqueries : List Resolved.Query) : Bool :=
+  subqueries.all (·.expressions.all (!·.any Resolved.Expr.isFallibleCall))
+
+/-- Whether no expression cell of the rows of an INSERT may fail in the statement's context,
+over the row without cells that SQLite evaluates them over: a subquery that it names has a
+value that the model describes ({name}`Resolved.Fault.may` otherwise). -/
+def cellsReady (context : Resolved.EvalContext) (rows : List (List Resolved.Cell)) : Bool :=
+  !Resolved.anyMayFail context [[]] (rows.flatten.filterMap Resolved.Cell.expression?)
 
 end Belay.Sqlite.Resolved

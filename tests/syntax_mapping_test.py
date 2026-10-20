@@ -85,16 +85,18 @@ def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., 
         "begin",
         {"insert": {"table": "t", "columns": None, "rows": [
             [{"numeric": {"text": "0x1F"}}, {"identifier": {"name": "q", "quote": "double"}}],
-            ["null", {"blob": {"bytes": [0, 255]}}]], "conflicts": [], "algorithm": None, "returning": []}},
+            ["null", {"blob": {"bytes": [0, 255]}}]], "conflicts": [], "algorithm": None, "returning": [],
+            "subqueries": []}},
         {"insert": {"table": "t", "columns": ["a"], "rows": [
             [{"positive": {"operand": {"numeric": {"text": "1_000"}}}}]], "conflicts": [], "algorithm": None,
-            "returning": []}},
+            "returning": [], "subqueries": []}},
         {"update": {"table": "t", "assignments": [
             ["a", {"negate": {"operand": {"numeric": {"text": "2.5"}}}}],
             ["b", {"string": {"bytes": list("é".encode())}}]],
             "filter": {"compare": {"operator": "eq", "left": {"identifier": {"name": "id", "quote": "none"}},
-                                  "right": {"numeric": {"text": "3"}}}}, "returning": []}},
-        {"update": {"table": "t", "assignments": [["a", {"numeric": {"text": "1"}}]], "filter": None, "returning": []}},
+                                  "right": {"numeric": {"text": "3"}}}}, "returning": [], "subqueries": []}},
+        {"update": {"table": "t", "assignments": [["a", {"numeric": {"text": "1"}}]], "filter": None, "returning": [],
+                    "subqueries": []}},
         "commit", "rollback"]
 
 

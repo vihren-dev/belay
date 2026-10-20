@@ -56,34 +56,35 @@ structure StatementRun where
 effect and its support check (ADR 0013, D8). The effect: INSERT and UPDATE with ABORT
 constraints over the table's keys ({name}`Database.keys`), INSERT with {lit}`ON CONFLICT`
 clauses or algorithms row by row ({name}`LiteralData.upsertSteps`), each over the rows at
-the clock value ({name}`Resolved.rowsAt`), in the plain context of the clock value
-({name}`Resolved.EvalContext.plain`), DELETE, which removes rows and cannot fail a
+the clock value ({name}`Resolved.rowsAt`), in the statement's context of its subqueries
+({name}`Resolved.statementContext`), DELETE, which removes rows and cannot fail a
 constraint, a query ({name}`queryEffect`), and {name}`step` for every other statement. A
 position without a table fails as {lean}`ExecutionError.unmodeled`. An error carries the
 database that the statement reached: the rows before the failing row of an INSERT with
 clauses or algorithms, and the input database for every other error. The support check:
 INSERT and UPDATE pass the data domain of the table, every write and query the JSON
-checks of {lit}`JsonReady`, and a query's subqueries have no fallible call
-({name}`Resolved.Expr.isFallibleCall`), because SQLite may evaluate a subquery for rows that the
-model does not reach; a position without a table passes and fails during execution
+checks of {lit}`JsonReady`, no expression cell of INSERT may fail ({name}`Resolved.cellsReady`), and a
+statement's subqueries have no fallible call ({name}`Resolved.subqueriesPlain`), because SQLite may
+evaluate a subquery for rows that the model does not reach; a position without a table passes and fails during execution
 instead. ADD COLUMN must have modeled default readback, a model restriction, because SQLite
 accepts such statements. CREATE TABLE passes, as its table has no rows to violate a
 constraint (ADR 0014, slice 4), and so do CREATE INDEX and the other statement forms. -/
 def runStatement (clock : Int) (statement : Resolved.Statement) (database : Database) : StatementRun :=
-  let context := Resolved.EvalContext.plain clock
   match statement with
-  | .insert target rows returning => match database.table target with
+  | .insert target rows returning subqueries => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
+      let context := Resolved.statementContext clock database subqueries
       let keys := database.keys target table
       let values := Resolved.rowsAt context table.shape.columns rows
       let result := LiteralData.inserted table values
       { effect := insertOutcome database target keys table values result,
-        ready := LiteralData.insertReady keys table values result &&
+        ready := LiteralData.insertReady keys table values result && Resolved.subqueriesPlain subqueries && Resolved.cellsReady context rows &&
           !(returningExpressions returning).any (·.any Resolved.Expr.isFallibleCall) }
-  | .upsert target rows clauses returning algorithm => match database.table target with
+  | .upsert target rows clauses returning algorithm subqueries => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
+      let context := Resolved.statementContext clock database subqueries
       let keys := database.keys target table
       let policy := database.catalog.writePolicy target table.shape algorithm
       let values := Resolved.rowsAt context table.shape.columns rows
@@ -91,26 +92,29 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
       { effect := match LiteralData.upsertSummary table steps with
           | .ok (result, _) => .ok (database.setRows target result.rows)
           | .error (reason, reached, _) => .error (reason, database.setRows target reached.rows),
-        ready := LiteralData.upsertReady keys table clauses values steps && upsertJsonReady clauses returning }
-  | .update target assignments filter returning => match database.table target with
+        ready := LiteralData.upsertReady keys table clauses values steps && Resolved.subqueriesPlain subqueries &&
+          Resolved.cellsReady context rows &&
+          upsertJsonReady clauses returning }
+  | .update target assignments filter returning subqueries => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
+      let context := Resolved.statementContext clock database subqueries
       let keys := database.keys target table
       let result := LiteralData.updated context table assignments filter
       { effect := if LiteralData.updateMismatch context table assignments filter then .error (.datatypeMismatch, database)
           else checkedWrite database target keys result,
-        ready := LiteralData.updateReady keys table assignments result &&
+        ready := LiteralData.updateReady keys table assignments result && Resolved.subqueriesPlain subqueries &&
           updateJsonReady context table assignments filter returning }
-  | .delete target filter returning => match database.table target with
+  | .delete target filter returning subqueries => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
+      let context := Resolved.statementContext clock database subqueries
       { effect := .ok (database.setRows target (LiteralData.deleted context table filter).rows),
-        ready := deleteJsonReady context table filter returning }
+        ready := Resolved.subqueriesPlain subqueries && deleteJsonReady context table filter returning }
   | .query query subqueries =>
     let ran := query.runOn clock database subqueries
     { effect := queryEffect database ran,
-      ready := subqueries.all (·.expressions.all (!·.any Resolved.Expr.isFallibleCall)) &&
-        ran.all fun (source, run) => source.fault != .may && run.fault != .may }
+      ready := Resolved.subqueriesPlain subqueries && ran.all fun (source, run) => source.fault != .may && run.fault != .may }
   | .createTable .. => { effect := step clock statement database, ready := true }
   | .addColumn _ column =>
     { effect := step clock statement database,

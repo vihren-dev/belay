@@ -28,7 +28,8 @@ inductive RestrictionRegistry where
 * {lit}`rowidName`: a resolved expression has no read of the physical rowid. -/
 def RestrictionKind.registry : RestrictionKind → RestrictionRegistry
   | .rowDependentKey | .conflictWithoutTarget | .mixedConflictAlgorithms | .windowedGroupSum
-  | .constantFunctionError | .unknownCollation | .upsertGenerated | .subqueryFallibleCall => .undecided
+  | .constantFunctionError | .unknownCollation | .upsertGenerated | .subqueryFallibleCall
+  | .subqueryReadsTarget => .undecided
   | .rowidName => .unrepresented
   | .schemaStatement | .engineTable | .rowidColumnName
   | .unmodeledDefault | .indexStringTerm | .indexDateFunction | .indexJsonFunction | .checkFunction

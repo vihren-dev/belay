@@ -64,8 +64,11 @@ The frontend maps these statements, and refuses every other statement as
   one is SQLite's `sub-select returns N columns - expected 1`. When rows tie, SQLite's
   plan can choose the first row of a scalar subquery and the rows of an `IN` window, so
   the model describes the statement only when every permitted order gives the same
-  values. A subquery in an `ON` condition, a `json_each` argument or a statement other
-  than `SELECT`, and in `FROM`, is refused or a restriction.
+  values. The values of `INSERT`, the `SET` values and the `WHERE` of `UPDATE`, and the
+  `WHERE` of `DELETE` may have subqueries too, which read the database before the write; a
+  subquery that reads the written table is a restriction. A subquery in an `ON` condition, a
+  `json_each` argument, `RETURNING`, `ON CONFLICT` or a schema statement, and in `FROM`, is
+  refused or a restriction.
 
 Expressions are `NULL`, numeric, string and blob literals, the time keywords,
 names, unary `-` and `+`, and `=`. Inside a `SELECT`, they may also be the other
@@ -383,6 +386,7 @@ should shrink.
 | `unknown-collation` | COLLATE with a name other than BINARY, NOCASE or RTRIM in an expression is not modeled, because SQLite looks the name up only where its query planner uses the collation | ADR 0014, slice 3 |
 | `upsert-generated` | DO UPDATE of a generated column is not modeled, because SQLite refuses it only when a row conflicts | ADR 0014, slice 5 |
 | `subquery-fallible-call` | A query without `FROM` that has a subquery and a call that can fail is not modeled, because a value of the subquery that SQLite's plan chooses could avoid the failure | ADR 0018, slice 1 |
+| `subquery-reads-target` | A subquery of `INSERT`, `UPDATE` or `DELETE` that reads the written table is not modeled, because SQLite evaluates a correlated one over the rows that the statement has already changed | ADR 0018, slice 1 |
 
 #### Unrepresented
 
