@@ -9,7 +9,9 @@ their own suite, `tableMutants`. The cases are the authored cases of
 `authored_without_rowid`, `authored_collations`, `authored_checks`, `authored_generated`,
 `authored_strict` and `authored_drops`, recorded natively with their outputs. Each test
 builds one base copy for its mutants with `measure_set`, and each mutant copy classifies the
-case that the mutant names as its target.
+case that the mutant names as its target. The writes and the joins are separate measurements of
+at most 22 mutants, so that each test stays far within its limit of 300 seconds while the
+other Nix suite of mutants runs at the same time.
 """
 
 from pathlib import Path
@@ -77,15 +79,19 @@ def test_every_drop_mutant_changes_a_verdict(runtime_root: Path) -> None:
     measure_set(runtime_root, [authored_drops], [(drop_mutants.MUTANTS, drop_mutants.TARGETS)])
 
 
-def test_every_write_and_join_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored write and join cases notice every changed rule of writes with output, of
-    row-dependent writes, of DELETE and of joins (`conformance.write_mutants`,
-    `conformance.row_write_mutants`, `conformance.delete_mutants`, `conformance.join_mutants`,
+def test_every_write_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored write cases notice every changed rule of writes with output, of
+    row-dependent writes and of DELETE (`conformance.write_mutants`,
+    `conformance.row_write_mutants`, `conformance.delete_mutants`), so these rules are tested."""
+    measure_set(runtime_root, [authored_writes, authored_row_writes, authored_deletes],
+                [(write_mutants.MUTANTS, write_mutants.TARGETS), (row_write_mutants.MUTANTS, row_write_mutants.TARGETS),
+                 (delete_mutants.MUTANTS, delete_mutants.TARGETS)])
+
+
+def test_every_join_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored join cases notice every changed rule of joins (`conformance.join_mutants`,
     `conformance.using_mutants`, `conformance.right_mutants`, `conformance.merged_mutants`), so
     these rules are tested."""
-    measure_set(runtime_root, [authored_writes, authored_row_writes, authored_deletes, authored_joins, authored_using,
-                               authored_right, authored_merged],
-                [(write_mutants.MUTANTS, write_mutants.TARGETS), (row_write_mutants.MUTANTS, row_write_mutants.TARGETS),
-                 (delete_mutants.MUTANTS, delete_mutants.TARGETS), (join_mutants.MUTANTS, join_mutants.TARGETS),
-                 (using_mutants.MUTANTS, using_mutants.TARGETS), (right_mutants.MUTANTS, right_mutants.TARGETS),
-                 (merged_mutants.MUTANTS, merged_mutants.TARGETS)])
+    measure_set(runtime_root, [authored_joins, authored_using, authored_right, authored_merged],
+                [(join_mutants.MUTANTS, join_mutants.TARGETS), (using_mutants.MUTANTS, using_mutants.TARGETS),
+                 (right_mutants.MUTANTS, right_mutants.TARGETS), (merged_mutants.MUTANTS, merged_mutants.TARGETS)])

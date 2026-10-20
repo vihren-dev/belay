@@ -10,12 +10,15 @@ model that no case notices shows a missing case. The cases are the authored case
 `authored_json_functions`, `authored_json_each`, `authored_clock`, `authored_date_functions`
 and `authored_date_modifiers`, recorded natively with their outputs. The mutants of writes,
 joins and table forms are in `tests/conformance_table_mutants_test.py`, a separate Nix suite,
-so that each suite stays within its time limit on a hosted runner. Four measurements, one for
-queries and numbers, one for JSON and the clock, one for the date and time functions and
-their modifiers, and one for keys, rowid aliases, UPSERT and conflict algorithms, each build
-one base copy for their mutants (`measure_set`), which keeps each test within its time limit;
-every case must agree with the base copy. Each mutant copy then classifies the case that the
-mutant names as its target, which keeps the elaboration of case terms short.
+so that each suite stays within its time limit on a hosted runner. Seven measurements of at
+most 17 mutants each, one for queries, one for numbers and queries without FROM, one for the
+JSON functions, one for `json_each` and the clock, one for the date and time functions and
+their modifiers, one for keys and rowid aliases, and one for UPSERT and conflict algorithms,
+each build one base copy for their mutants (`measure_set`). The two Nix suites of mutants run at
+the same time on a hosted runner, which slows each test about twice, so each test stays far
+within its limit of 300 seconds; every case must agree with the base copy. Each mutant copy
+then classifies the case that the mutant names as its target, which keeps the elaboration of
+case terms short.
 """
 
 from pathlib import Path
@@ -34,45 +37,55 @@ from tests.mutant_sets import measure_set
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_lean,
               pytest.mark.requires_native("parser-library", "sqlite3")]
 
-def test_every_query_and_number_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored query, number and query-without-FROM cases notice every changed rule of
-    query semantics and numbers (`conformance.query_mutants`, `conformance.number_mutants`,
-    `conformance.fromless_mutants`), so these rules are tested."""
-    measure_set(runtime_root, [authored_queries, authored_numbers, authored_fromless],
-                [(query_mutants.MUTANTS, query_mutants.TARGETS), (number_mutants.MUTANTS, number_mutants.TARGETS),
+def test_every_query_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored query cases notice every changed rule of query semantics
+    (`conformance.query_mutants`), so these rules are tested."""
+    measure_set(runtime_root, [authored_queries], [(query_mutants.MUTANTS, query_mutants.TARGETS)])
+
+
+def test_every_number_and_fromless_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored number and query-without-FROM cases notice every changed rule of numbers
+    and of queries without FROM (`conformance.number_mutants`, `conformance.fromless_mutants`)."""
+    measure_set(runtime_root, [authored_numbers, authored_fromless],
+                [(number_mutants.MUTANTS, number_mutants.TARGETS),
                  (fromless_mutants.MUTANTS, fromless_mutants.TARGETS)])
 
 
-def test_every_json_and_clock_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored JSON, JSON function, `json_each` and clock cases notice every changed rule
-    of the JSON functions and the clock (`conformance.json_mutants`,
-    `conformance.json_function_mutants`, `conformance.json_each_mutants`,
-    `conformance.clock_mutants`), so these rules are tested. The JSON mutants have their
-    own measurement: with the query mutants, the measurement took 265 s of its 300 s limit
-    on a hosted runner, and went over it once."""
-    measure_set(runtime_root, [authored_json, authored_json_functions, authored_json_each, authored_clock],
+def test_every_json_function_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored JSON and JSON function cases notice every changed rule of the JSON functions
+    (`conformance.json_mutants`, `conformance.json_function_mutants`)."""
+    measure_set(runtime_root, [authored_json, authored_json_functions],
                 [(json_mutants.MUTANTS, json_mutants.TARGETS),
-                 (json_function_mutants.MUTANTS, json_function_mutants.TARGETS),
-                 (json_each_mutants.MUTANTS, json_each_mutants.TARGETS),
+                 (json_function_mutants.MUTANTS, json_function_mutants.TARGETS)])
+
+
+def test_every_json_each_and_clock_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored `json_each` and clock cases notice every changed rule of `json_each` and the
+    clock (`conformance.json_each_mutants`, `conformance.clock_mutants`)."""
+    measure_set(runtime_root, [authored_json_each, authored_clock],
+                [(json_each_mutants.MUTANTS, json_each_mutants.TARGETS),
                  (clock_mutants.MUTANTS, clock_mutants.TARGETS)])
 
 
 def test_every_date_function_and_modifier_mutant_changes_a_verdict(runtime_root: Path) -> None:
     """The authored date and time function and modifier cases notice every changed rule of
     the date and time functions and their modifiers (`conformance.date_function_mutants`,
-    `conformance.date_modifier_mutants`), so these rules are tested. They have their own
-    measurement, so that the JSON and clock measurement stays within its time limit."""
+    `conformance.date_modifier_mutants`), so these rules are tested."""
     measure_set(runtime_root, [authored_date_functions, authored_date_modifiers],
                 [(date_function_mutants.MUTANTS, date_function_mutants.TARGETS),
                  (date_modifier_mutants.MUTANTS, date_modifier_mutants.TARGETS)])
 
 
-def test_every_key_alias_upsert_and_algorithm_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored key, rowid alias, UPSERT and conflict algorithm cases notice every changed
-    rule of unique key values, rowid aliases and conflict handling (`conformance.key_mutants`,
-    `conformance.alias_mutants`, `conformance.upsert_mutants`, `conformance.algorithm_mutants`),
-    so these rules are tested."""
-    measure_set(runtime_root, [authored_keys, authored_aliases, authored_upserts, authored_algorithms],
-                [(key_mutants.MUTANTS, key_mutants.TARGETS), (alias_mutants.MUTANTS, alias_mutants.TARGETS),
-                 (upsert_mutants.MUTANTS, upsert_mutants.TARGETS),
+def test_every_key_and_alias_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored key and rowid alias cases notice every changed rule of unique key values and
+    rowid aliases (`conformance.key_mutants`, `conformance.alias_mutants`)."""
+    measure_set(runtime_root, [authored_keys, authored_aliases],
+                [(key_mutants.MUTANTS, key_mutants.TARGETS), (alias_mutants.MUTANTS, alias_mutants.TARGETS)])
+
+
+def test_every_upsert_and_algorithm_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored UPSERT and conflict algorithm cases notice every changed rule of conflict
+    handling (`conformance.upsert_mutants`, `conformance.algorithm_mutants`)."""
+    measure_set(runtime_root, [authored_upserts, authored_algorithms],
+                [(upsert_mutants.MUTANTS, upsert_mutants.TARGETS),
                  (algorithm_mutants.MUTANTS, algorithm_mutants.TARGETS)])
