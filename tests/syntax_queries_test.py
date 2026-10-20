@@ -42,7 +42,7 @@ def test_select_keeps_columns_text_and_clauses(parse_sql: Callable[..., Tree]) -
         "groupBy": [column("a")],
         "orderBy": [{"expression": {"numeric": {"text": "1"}}, "descending": True},
                     {"expression": column("b"), "descending": False}],
-        "limit": {"numeric": {"text": "2"}}, "offset": {"numeric": {"text": "1"}}, "subqueries": []}}
+        "limit": {"numeric": {"text": "2"}}, "offset": {"numeric": {"text": "1"}}}}
 
 
 @pytest.mark.parametrize(("sql", "operand"), [
@@ -93,10 +93,9 @@ def test_delete_maps_filter_and_returning(parse_sql: Callable[..., Tree]) -> Non
     RETURNING result columns, empty without the clause, as for UPDATE (slice 3c)."""
     [plain, returned] = [item.value for item in statements(parse_sql(
         "DELETE FROM t; DELETE FROM t WHERE a ISNULL RETURNING a;"))]
-    assert plain == {"delete": {"table": "t", "filter": None, "returning": [], "subqueries": []}}
+    assert plain == {"delete": {"table": "t", "filter": None, "returning": []}}
     assert returned == {"delete": {"table": "t", "filter": {"isNull": {"operand": column("a"), "negated": False}},
-                                   "returning": [{"expression": {"value": column("a"), "alias": None, "text": "a"}}],
-                                   "subqueries": []}}
+                                   "returning": [{"expression": {"value": column("a"), "alias": None, "text": "a"}}]}}
 
 
 @pytest.mark.parametrize(("sql", "refused"), [

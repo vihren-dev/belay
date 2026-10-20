@@ -12,7 +12,7 @@ from .sql_tree import Node, Tree
 from .syntax_shapes import absent, left_list, require
 from .syntax_queries import query_expression, result_columns
 from .syntax_sources import from_clause
-from .syntax_subqueries import statement_subqueries, subquery_list
+from .syntax_subqueries import statement_subqueries, with_subqueries
 
 
 def order_terms(tree: Tree, node: Node) -> list[Located]:
@@ -77,5 +77,4 @@ def select(tree: Tree, command: Node) -> Located:
     (select_node,) = require(tree, command, ["select"])
     with statement_subqueries(query_clauses) as listed:
         clauses = query_clauses(tree, select_node)
-    return constructor("select", clauses + [("subqueries", subquery_list(listed, command.start, command.end))],
-                       command.start, command.end)
+    return with_subqueries("select", clauses, listed, command.start, command.end)

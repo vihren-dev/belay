@@ -64,7 +64,8 @@ def test_subquery_paths_select_their_text(parse_sql: Callable[..., Tree]) -> Non
 
 def test_writes_list_the_subqueries_of_their_expressions(parse_sql: Callable[..., Tree]) -> None:
     """INSERT VALUES, UPDATE SET and WHERE, and DELETE WHERE list their subqueries in the
-    `subqueries` field, after `returning`, with the write as the query around them."""
+    `subqueries` field, after `returning`, with the write as the query around them; a statement
+    without subqueries has no such field, so its JSON keeps the form of frozen records."""
     [insert, update, delete] = [item.value for item in statements(parse_sql(
         "INSERT INTO t VALUES ((SELECT max(b) FROM u)); UPDATE t SET a = (SELECT 1) WHERE EXISTS (SELECT 2); "
         "DELETE FROM t WHERE a IN (SELECT b FROM u);"))]
@@ -75,6 +76,8 @@ def test_writes_list_the_subqueries_of_their_expressions(parse_sql: Callable[...
     assert len(update["update"]["subqueries"]) == 2
     assert delete["delete"]["filter"] == {"inQuery": {"operand": column("a"), "index": 0, "negated": False}}
     assert list(delete["delete"]) == ["table", "filter", "returning", "subqueries"]
+    [plain] = [item.value for item in statements(parse_sql("DELETE FROM t;"))]
+    assert "subqueries" not in plain["delete"]
 
 
 @pytest.mark.parametrize(("sql", "refused"), [
