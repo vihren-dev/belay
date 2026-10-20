@@ -169,7 +169,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [mutants, tableMutants]
+        suite: [mutants, tableMutants, functionMutants]
         system: [x86_64-linux, aarch64-darwin]
         include:
           - system: x86_64-linux

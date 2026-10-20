@@ -6,7 +6,8 @@ that the conformance suite must notice. The cases are the authored cases of
 (slice 2), `conformance.authored_json_edits` (slice 3), `conformance.authored_jsonb` (slice 4),
 `conformance.authored_aggregates` (slice 5) and `conformance.authored_printf` (slice 6), recorded natively with their outputs. Each measurement builds one base copy for
 its mutants with `measure_set` of `tests/mutant_sets.py`, and each mutant
-copy classifies the case that the mutant names as its target.
+copy classifies the case that the mutant names as its target. The tests run in the Nix suite
+`functionMutants`, on their own CI runner.
 """
 
 from pathlib import Path

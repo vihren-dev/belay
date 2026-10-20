@@ -312,6 +312,13 @@ in {
     tools = modelTools;
     timeout = mutantSuiteTimeoutSeconds;
   };
+  # The mutants of the SQL functions of ADR 0015; a mutant suite on its own CI runner.
+  functionMutants = suite "functionMutants" {
+    inputs = mutantInputs;
+    runtime = conformance;
+    tools = modelTools;
+    timeout = mutantSuiteTimeoutSeconds;
+  };
   # The round trips of the corpus writers of the authored cases; a scheduled suite.
   writers = suite "writers" {
     inputs = modelInputs;

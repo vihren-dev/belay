@@ -63,7 +63,8 @@ def test_bounded_commands_keep_complete_suite_ownership() -> None:
     ownership = json.loads((ROOT / 'tests/nix_suites.json').read_text())
     assert set(scripts) == set(ownership) == {'atuin', 'bundle', 'cli', 'kernel', 'model', 'frozen', 'corpora',
                                                'harness', 'sample', 'upstream', 'parserLibrary', 'packages',
-                                               'documentation', 'mutants', 'tableMutants', 'writers'}
+                                               'documentation', 'mutants', 'tableMutants', 'functionMutants',
+                                               'writers'}
     mutant_suites = set(json.loads((ROOT / 'tests/nix_mutant_suites.json').read_text()))
     for name, script in scripts.items():
         command = shlex.split(next(line for line in script.replace('\\\n', ' ').splitlines()

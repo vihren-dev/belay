@@ -1,8 +1,9 @@
 """The measurement of mutant tables over authored cases, shared by the mutant tests.
 
-`tests/conformance_query_mutants_test.py` and `tests/conformance_table_mutants_test.py` run in
-two Nix suites, `mutants` and `tableMutants`, whose sources contain only their own test files
-and their inputs. This module is an input of both, so neither test file imports the other.
+`tests/conformance_query_mutants_test.py`, `tests/conformance_table_mutants_test.py` and
+`tests/conformance_function_mutants_test.py` run in the Nix suites `mutants`, `tableMutants` and
+`functionMutants`, whose sources contain only their own test files and their inputs. This module
+is an input of each, so no test file imports another.
 """
 
 from pathlib import Path
