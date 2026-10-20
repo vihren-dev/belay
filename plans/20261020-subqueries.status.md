@@ -59,6 +59,15 @@ Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D1.
   restriction examples, `test_model_package` (175 core modules), `test_lean_categories`,
   `conformance_query_coverage`, `conformance_authored`, the syntax tests.
 
+- 2026-10-20: "eponymous table-valued functions". The local verdict of the previous commit
+  found a disagreement: `json101-17.1` reads `FROM json_each` without arguments inside a
+  subquery, which SQLite reads as its eponymous table-valued function, and the model gave
+  `no such table`. A missing table named `json_each`, `json_tree`, `dbstat` or `pragma_...`
+  is now the restriction `table-function` (`eponymousName`, checked natively). The local
+  verdict after it: no case leaves AGREE; 7 cases of v5 and 2 of v4 newly agree. Of the v5
+  cases whose restriction changed, 22 have a subquery in a write, 15 a compound subquery,
+  6 a derived table, 5 an outer aggregate and 4 `HAVING`.
+
 ## Remaining
 
 - All outcomes and tests.

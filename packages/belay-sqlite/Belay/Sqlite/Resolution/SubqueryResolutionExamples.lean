@@ -103,6 +103,11 @@ def errorOf (statement : Syntax.Statement) : Option PrepareError :=
 def joinOnExists : Join := { operator := [], source := table "u", condition := some (.exists 0), usingColumns := none }
 
 #guard restrictedOne (.select [.star] (some (table "t")) [joinOnExists] none [] [] none none [fromU [written (.numeric "1")] none])
+-- json_each without arguments is SQLite's eponymous table-valued function, not a missing table,
+-- also in a subquery of an ON condition (corpus case json101-17.1).
+#guard restrictedOne (.select [.star] (some (table "json_each")) [] none [] [] none none)
+#guard restrictedOne (.select [.star] (some (table "t")) [joinOnExists] none [] [] none none
+  [{ fromU [written (name "v")] none with source := some (table "json_each") }])
 -- A subquery that names a query after it is malformed syntax, which the model refuses.
 #guard restrictedOne (fromT [written (name "k")] (some (.exists 0)) [fromU [written (.numeric "1")] none (some 0)])
 -- A query without FROM with a subquery and a call that can fail.
