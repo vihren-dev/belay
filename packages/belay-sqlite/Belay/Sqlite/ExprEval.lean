@@ -3,6 +3,7 @@ import Belay.Sqlite.Resolution.QueryForm
 import Belay.Sqlite.Comparison
 import Belay.Sqlite.Json.JsonApply
 import Belay.Sqlite.Date.Functions
+import Belay.Sqlite.Functions.Scalar
 
 set_option doc.verso true
 
@@ -68,6 +69,21 @@ def truthy : Value → Bool
 /-- Whether a value is false as a condition: not NULL and not true. -/
 def falsy (value : Value) : Bool := !value.isNull && !truthy value
 
+/-- The fault of a scalar function result: {lit}`must` for a failure that SQLite reports,
+{lit}`may` for a value that the model does not describe, {lit}`none` for a value. -/
+def Fault.ofFunction : Except FunctionFailure Value → Fault
+  | .error .error => .must
+  | .error .unmodeled => .may
+  | .ok _ => .none
+
+/-- The value of {lit}`iif` over its argument values, as SQLite's {lit}`CASE` code computes it:
+the value after the first condition that is true ({name}`truthy`), else the last value of an
+odd number of arguments, else NULL. For example, {lean}`iifValue [.integer 0, .integer 1, .integer 2] = .integer 2`. -/
+def iifValue : List Value → Value
+  | [] => .null
+  | [value] => value
+  | condition :: value :: rest => if truthy condition then value else iifValue rest
+
 /-- A comparison operand after a numeric affinity: TEXT that looks like a number becomes
 that number ({name}`numericText`); every other value stays, so an integer never goes
 through a double. -/
@@ -105,7 +121,10 @@ with {name}`Fault.ofJson` when it fails. The fault of {lit}`AND`, {lit}`OR` and
 other expression joins the faults of its parts ({name}`Fault.join`). {lit}`clock` is the
 statement's clock value in Julian-day milliseconds: a time keyword is its text at the clock
 value ({lit}`TimeKeyword.value`), and a date and time function gives
-{lit}`DateFunction.value` at the clock value. -/
+{lit}`DateFunction.value` at the clock value. A scalar function of ADR 0015 gives
+{name}`ScalarFunction.apply` over its argument values, and NULL with {name}`Fault.ofFunction`
+when it fails; {lit}`iif` gives {name}`iifValue`, and only its first argument is certain
+to run, so the faults of the others are softened. -/
 def Expr.evaluate (clock : Int) (row : List Value) : Expr → Value × Fault
   | .column position => (row.getD position .null, .none)
   | .literal value => (value, .none)
@@ -151,6 +170,17 @@ def Expr.evaluate (clock : Int) (row : List Value) : Expr → Value × Fault
     let (values, fault) := arguments.evaluate clock row
     (function.value clock values, fault)
   | .now keyword => (keyword.value clock, .none)
+  | .scalar .iif .nil => (.null, .none)
+  | .scalar .iif (.cons condition rest) =>
+    let (value, fault) := condition.evaluate clock row
+    let (values, later) := rest.evaluate clock row
+    (iifValue (value :: values), fault.join later.soften)
+  | .scalar function arguments =>
+    let (values, fault) := arguments.evaluate clock row
+    let result := function.apply values
+    (match result with
+      | .ok value => value
+      | .error _ => .null, fault.join (Fault.ofFunction result))
 
 /-- The values of the arguments of a call over one row, in written order, with the
 joined fault of the arguments. -/

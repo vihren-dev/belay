@@ -18,8 +18,8 @@ VALUES = SQLITE + "ExprEval.lean"
 """The value and fault of an expression over one row."""
 EXPRESSIONS = SQLITE + "Resolution/QueryExprs.lean"
 """Resolution of query expressions."""
-FORMS = SQLITE + "Resolution/ExprForms.lean"
-"""The call and condition forms of expression resolution."""
+CALLS = SQLITE + "Resolution/FunctionCalls.lean"
+"""The catalog checks of a call: the number of arguments of each function (ADR 0015)."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "overflow_stays_integer": (ARITHMETIC,
@@ -49,9 +49,9 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "def dropSpaces (bytes : List UInt8) : List UInt8 := bytes.dropWhile isSpaceByte",
         "def dropSpaces (bytes : List UInt8) : List UInt8 := bytes"),
     "exponent_ignored": (NUMBER_TEXT, "    if marker == 101 || marker == 69 then", "    if false then"),
-    "coalesce_argument_count_removed": (FORMS,
-        "  if normalizeIdentifier name == \"coalesce\" then .prepare (.wrongArgumentCount name) else unmodeledFunction",
-        "  unmodeledFunction"),
+    "coalesce_argument_count_removed": (CALLS,
+        "    if !function.accepts written.length then .error (.prepare (.wrongArgumentCount name))",
+        "    if false then .error (.prepare (.wrongArgumentCount name))"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
 replacement. The names follow the list in the task of slice 2."""
@@ -81,7 +81,7 @@ GUARDS: dict[str, str] = {
     "coalesce_last": "rule:Expr.evaluate",
     "spaces_not_skipped": "rule:dropSpaces",
     "exponent_ignored": "rule:atofExponentPart",
-    "coalesce_argument_count_removed": "rule:callIssue",
+    "coalesce_argument_count_removed": "rule:callOperand",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
 changes. `conformance.mutant_guards` checks every entry."""

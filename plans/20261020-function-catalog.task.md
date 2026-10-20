@@ -27,7 +27,7 @@ the slice runs the local verdict, records the corpus, and runs `just test-full`.
    `substring`, `instr`, `replace`, `trim`, `ltrim`, `rtrim`, `hex`, `unhex`, `quote`,
    `char`, `unicode`, `unistr`, `unistr_quote`, `concat`, `concat_ws`, `ifnull`, `nullif`,
    `iif`, `if`, `likely`, `unlikely`, `likelihood`, scalar `min` and `max`, `abs`, `sign`,
-   `zeroblob`, `like`, `glob`, `sqlite_version` and `sqlite_source_id`. Each follows
+   `zeroblob`, `like` and `glob`. Each follows
    SQLite 3.51.0's `func.c`, checked natively, including:
    - text counted in UTF-8 characters by lead bytes, a BLOB in bytes, and numbers as their
      text;
@@ -49,6 +49,10 @@ the slice runs the local verdict, records the corpus, and runs `just test-full`.
    expressions today: result columns, WHERE, ORDER BY, VALUES, SET, RETURNING, index keys
    and filters, CHECK constraints and generated columns. The restrictions that each place
    has for functions stay (for example a date or JSON function in a CHECK).
+
+   (Amended 2026-10-20: `sqlite_version` and `sqlite_source_id` stay `unmodeled-function`,
+   because expression resolution has no profile to give the release; they wait for a slice
+   that gives it one. They appear in no clean case of the measurement.)
 
 ## Tests
 

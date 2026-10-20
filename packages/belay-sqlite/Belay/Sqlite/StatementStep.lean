@@ -76,7 +76,7 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
       let result := LiteralData.inserted table values
       { effect := insertOutcome database target keys table values result,
         ready := LiteralData.insertReady keys table values result &&
-          !(returningExpressions returning).any (·.any Resolved.Expr.isJsonCall) }
+          !(returningExpressions returning).any (·.any Resolved.Expr.isFallibleCall) }
   | .upsert target rows clauses returning algorithm => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>

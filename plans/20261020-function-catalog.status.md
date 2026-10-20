@@ -14,6 +14,30 @@ Specification: [ADR 0015](../docs/adr-0015-functions.md), D1, D2 and D3.
     written;
   - `abs('-3')` is `3.0`, `abs('x')` is `0.0`, `iif(0,1,1,2,3)` is 2, `sign('x')` is NULL.
 
+- 2026-10-20: the work is based on both the ADR branch (#194) and the slice 7 stack of ADR
+  0014 (#191, #192), so that corpus 36 follows corpus 35.
+- 2026-10-20: the catalog, the scalar form and the slice's functions (commit "function catalog,
+  text and type functions, LIKE and GLOB").
+  - Lean `Resolution/FunctionCatalog.lean` (141 built-in names and `match`),
+    `Resolution/ScalarFunction.lean`, `Resolution/FunctionCalls.lean` (`callOperand`,
+    `scalarCall`, `starCallIssue`), `Functions/Scalar.lean`, `Functions/Utf8.lean`,
+    `Functions/Pattern.lean` (`patternCompare` with fuel), `Functions/Text.lean`,
+    `Functions/Quote.lean`, `Functions/Examples.lean`; `Resolved.Expr.scalar`; the prepare
+    errors `noSuchFunction` and `likelihoodArgument`.
+  - `Resolved.Expr.isFallibleCall` replaces the JSON-only test where a fault matters (query
+    and write readiness, `NoWrites`, constant VALUES, CHECK, index keys, generated
+    columns); `Expr.fault_of_plain` now has a fallible-call premise.
+  - Frontend: `LIKE`, `GLOB`, `REGEXP` and `MATCH` operators as calls; `like(`, `glob(`, `if(` and
+    `replace(` as calls.
+  - Tests run for this commit: `function_catalog_test` (the Lean catalog against `PRAGMA
+    function_list`), `test_model_package` (158 modules), `mutant_guards`, `restriction_registry`,
+    `resolution_cleanup`, the frontend tests, the kernel proofs of every authored corpus,
+    `conformance_authored_test`, the restriction examples, the corpus writer of corpus 36, the
+    query and number mutants (the coalesce mutant now changes `callOperand`), and the three
+    new mutants of `conformance/function_mutants.py`. `conformance/authored_text_functions.py`
+    has 38 cases, all agree.
+  - `sqlite_version()` and `sqlite_source_id()` stay unmodeled (task amended).
+
 ## Remaining
 
-- All outcomes, tests, reviews, the slice verdict, the corpus, `just test-full`.
+- Review, the slice verdict, corpus 36, `just test-full`.

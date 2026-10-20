@@ -106,6 +106,12 @@ inductive ExprError where
   /-- {lit}`wrong number of arguments to function %s()`, with the function name as
   written ({lit}`resolveExprStep`). -/
   | wrongArgumentCount (function : String)
+  /-- {lit}`no such function: %s`, for a name that names no function of the library, as
+  written ({lit}`resolveExprStep`; ADR 0015, D1). -/
+  | noSuchFunction (function : String)
+  /-- {lit}`second argument to likelihood() must be a constant between 0.0 and 1.0`: the
+  second argument is no REAL literal of at most 1.0 ({lit}`exprProbability`). -/
+  | likelihoodArgument
   /-- {lit}`ambiguous column name: %s`: an unqualified name that names a column of two or
   more sources of a join, as written. -/
   | ambiguousColumn (name : Identifier)

@@ -3,6 +3,7 @@ import Belay.Sqlite.Operators
 import Belay.Sqlite.Comparison
 import Belay.Sqlite.Resolution.JsonFunction
 import Belay.Sqlite.Resolution.DateFunction
+import Belay.Sqlite.Resolution.ScalarFunction
 import Belay.Sqlite.ClockText
 
 set_option doc.verso true
@@ -49,6 +50,8 @@ inductive Expr where
   /-- A call of a date and time function with its arguments in written order; {lit}`now`
   and a call without a time value read the clock value that evaluation is given. -/
   | date (function : DateFunction) (arguments : Arguments)
+  /-- A call of a scalar function of ADR 0015 with its arguments in written order. -/
+  | scalar (function : ScalarFunction) (arguments : Arguments)
   deriving Repr, DecidableEq
 
 /-- The arguments of a call in written order, as a list that is mutual with

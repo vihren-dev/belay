@@ -63,7 +63,22 @@ operators `+`, `-`, `*`, `/` and `%`, unary `-` and `+` of any expression,
 slice 2), `json_extract` with one or more paths and the operators `->` and `->>`
 (slice 6b), `json_type`, `json_valid`, `json_array_length` and `json` (slice 6c), and
 `date`, `time`, `datetime`, `julianday`, `unixepoch` and `strftime` with one time value
-or none, which is `now` (slice 6f), and any modifiers, in UTC (slice 6g). A
+or none, which is `now` (slice 6f), and any modifiers, in UTC (slice 6g). ADR 0015,
+slice 1, adds the text and type functions `typeof`, `length`, `octet_length`, `lower`,
+`upper`, `substr`, `substring`, `instr`, `replace`, `trim`, `ltrim`, `rtrim`, `hex`, `unhex`,
+`quote`, `unistr`, `unistr_quote`, `char`, `unicode`, `concat`, `concat_ws`, `ifnull`,
+`nullif`, `iif`, `if`, `likely`, `unlikely`, `likelihood`, scalar `min` and `max`, `abs`,
+`sign`, `zeroblob`, `like` and `glob`, and the operators `LIKE`, `NOT LIKE`, `GLOB` and
+`NOT GLOB` with an optional `ESCAPE`, which are calls of `like` and `glob` with the pattern
+first, as in SQLite. Each follows SQLite's `func.c`: text counts UTF-8 characters, `lower`
+and `upper` change ASCII letters only, and `LIKE` ignores ASCII case only. A function result
+has no affinity. A name that is no function of the pinned library is SQLite's prepare error
+`no such function`, and a number of arguments that the function does not accept is `wrong
+number of arguments to function`; both come after the errors of the arguments. A
+function that can fail while the statement runs, such as `abs` of the smallest integer or a
+`LIKE` with an `ESCAPE` of two characters, fails as SQLite does in a query without `FROM`; in a
+CHECK constraint, an index key or a generated column it is a model restriction, as a JSON
+function is. A
 `FROM` may end with `json_each(json [, path])` sources, joined by a comma or an inner
 `JOIN` with an optional `ON` condition, whose arguments read the sources before them
 (slice 6d). A comparison applies SQLite's comparison affinity (ADR 0013, D4): with an
@@ -301,7 +316,7 @@ should shrink.
 | `update-column-twice` | A column assigned twice in UPDATE is not modeled | ADR 0008 |
 | `join-operator` | A join operator that SQLite refuses with `unknown join type`, such as `INNER OUTER JOIN`, is not modeled | ADR 0012 amendment 2; ADR 0013 amendment 2 |
 | `system-table` | Queries of SQLite's own tables, such as `sqlite_schema`, are not modeled | ADR 0012 slice 1 |
-| `unmodeled-function` | Only `COUNT(*)`, `COUNT`, `MIN`, `MAX`, `SUM` and `AVG` of one argument, `COALESCE` of two or more arguments, `json_extract`, `->`, `->>`, `json_type`, `json_valid`, `json_array_length` and `json` are modeled as functions | ADR 0012 slices 1, 2, 6b and 6c |
+| `unmodeled-function` | A function of the pinned library that the model does not describe, or a form of it that the model does not describe, such as a window function or `sqlite_version()` | ADR 0012 slices 1, 2, 6b and 6c; ADR 0015 |
 | `aggregate-in-expression` | An aggregate inside an expression is not modeled | ADR 0012 slice 1 |
 | `alias-in-expression` | A result column alias inside WHERE or an ORDER BY expression is not modeled | ADR 0012 slice 1 |
 | `group-by-term` | Only a column name, also under COLLATE, or a result column number is modeled in GROUP BY | ADR 0012 slice 1; ADR 0014, slice 3 |

@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.Calls
+import Belay.Sqlite.Resolution.FunctionCatalog
 
 set_option doc.verso true
 
@@ -41,18 +42,11 @@ def aggregateCall : Syntax.Expr → Bool
 def unmodeledFunction : ValueIssue :=
   .restriction [] .unmodeledFunction
 
-/-- The issue of a call with {lit}`*` or one argument that is not an aggregate:
-SQLite's {lit}`wrong number of arguments` for {lit}`COALESCE`, which needs two or more
-arguments; else {name}`unmodeledFunction`. -/
+/-- The issue of a call where the model does not evaluate calls, such as a {lit}`GROUP BY`
+term: SQLite's {lit}`no such function` for a name that names no function of the catalog
+({name}`builtinFunction?`), else {name}`unmodeledFunction`. -/
 def callIssue (name : String) : ValueIssue :=
-  if normalizeIdentifier name == "coalesce" then .prepare (.wrongArgumentCount name) else unmodeledFunction
-
-/-- The issue of a call with two or more arguments that is not {lit}`COALESCE`: SQLite's
-{lit}`wrong number of arguments` for {lit}`COUNT`, whose aggregate takes one argument;
-else {name}`unmodeledFunction`. {lit}`MIN` and {lit}`MAX` with two or more arguments are
-scalar functions, which the model does not evaluate. -/
-def pairIssue (name : String) : ValueIssue :=
-  if normalizeIdentifier name == "count" then .prepare (.wrongArgumentCount name) else unmodeledFunction
+  if (builtinFunction? (normalizeIdentifier name)).isNone then .prepare (.noSuchFunction name) else unmodeledFunction
 
 /-- Whether an expression as written is an unquoted {lit}`TRUE` or {lit}`FALSE`. -/
 def Syntax.Expr.unquotedBoolean : Syntax.Expr → Bool

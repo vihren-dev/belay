@@ -41,7 +41,7 @@ def DateFunction.readsNow (function : DateFunction) (arguments : Arguments) : Bo
   | some (.literal value) => namesClock value
   | none | some (.column _) | some (.compare ..) | some (.and ..) | some (.or ..) | some (.not _)
   | some (.isNull ..) | some (.arithmetic ..) | some (.cast ..) | some (.coalesce ..) | some (.json ..)
-  | some (.now _) | some (.date ..) => true
+  | some (.now _) | some (.date ..) | some (.scalar ..) => true
 
 /-- Whether the expression itself reads the clock; its parts are not inspected: a time
 keyword, or a date and time function that may read {lit}`now`
@@ -50,7 +50,7 @@ def Expr.readsClockHere : Expr → Bool
   | .now _ => true
   | .date function arguments => function.readsNow arguments
   | .column _ | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic ..
-  | .cast .. | .coalesce .. | .json .. => false
+  | .cast .. | .coalesce .. | .json .. | .scalar .. => false
 
 /-- Whether the expression or one of its parts reads the clock
 ({name}`Expr.readsClockHere`). -/

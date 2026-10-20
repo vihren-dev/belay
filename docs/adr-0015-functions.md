@@ -206,6 +206,23 @@ Each slice works as in ADR 0014:
 - the verdict of every corpus;
 - a pull request B that claims the cases that newly agree.
 
+### Implementation notes
+
+- Slice 1 (2026-10-20), details checked natively that D1 to D3 do not state:
+  - The library registers one function apart from the built-in ones, `match` with two
+    arguments, which fails when it runs; the catalog keeps it, so `MATCH` stays
+    `unmodeled-function` instead of `no such function`.
+  - SQLite resolves the arguments of a call before the function, also for an aggregate:
+    `WHERE sum(nocol)` is `no such column`.
+  - `like(` and `glob(` parse as the `LIKE_KW` token, and `if(` and `replace(` as keywords; the
+    frontend maps them as calls.
+  - A function result has no affinity and no collation, also `likely(x)` and `ifnull(x, y)`.
+  - `sqlite_version()` and `sqlite_source_id()` stay `unmodeled-function`: expression
+    resolution has no profile to give the release.
+  - A function that can fail while the statement runs is, like a JSON function, a model
+    restriction in a CHECK constraint, an index key and a generated column, and fails as
+    SQLite does only in a query without `FROM` (`Resolved.Expr.isFallibleCall`).
+
 ## Consequences
 
 - **Fewer out-of-scope cases, more prepare errors.** A misspelled or unknown function

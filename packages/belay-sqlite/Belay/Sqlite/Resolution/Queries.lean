@@ -33,17 +33,20 @@ def resolveResultColumn (dqs : Bool) (scope : Scope) (column : Nat) :
     match value with
     | .callStar name =>
       if normalizeIdentifier name == "count" then .ok (named (.aggregate .countRows) none)
-      else throw ((callIssue name).under [0, column, 0])
+      else throw ((starCallIssue name).under [0, column, 0])
+    | .call name [] =>
+      if normalizeIdentifier name == "count" then .ok (named (.aggregate .countRows) none)
+      else do
+        let (resolved, _) ← (resolveOperand dqs scope false value).mapError (·.under [0, column, 0])
+        .ok (named (.scalar resolved) none)
     | .call name [operand] => match aggregateNamed name with
       | some aggregate =>
         let (resolved, _) ← (resolveOperand dqs scope true operand).mapError (·.under [0, column, 0, 1, 0])
         .ok (named (.aggregate ((aggregate resolved).withCollation (operand.collationIn scope))) none)
-      | none =>
-        if scalarFunctionName name then do
-          let (resolved, _) ← (resolveOperand dqs scope false value).mapError (·.under [0, column, 0])
-          .ok (named (.scalar resolved) none)
-        else throw ((callIssue name).under [0, column, 0])
-    | .call _ [] | .call _ (_ :: _ :: _) | .null | .numeric _ | .string _ | .blob _ | .currentTime _
+      | none => do
+        let (resolved, _) ← (resolveOperand dqs scope false value).mapError (·.under [0, column, 0])
+        .ok (named (.scalar resolved) none)
+    | .call _ (_ :: _ :: _) | .null | .numeric _ | .string _ | .blob _ | .currentTime _
     | .identifier .. | .qualified .. | .negate _ | .positive _ | .compare .. | .and .. | .or .. | .not _
     | .isNull .. | .arithmetic .. | .cast .. | .collate .. =>
       let (resolved, _) ← (resolveOperand dqs scope false value).mapError (·.under [0, column, 0])

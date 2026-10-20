@@ -1,5 +1,6 @@
 """Each mutant of the write, row-write, DELETE, join, index, `WITHOUT ROWID`, collation, CHECK,
-generated-column, `STRICT` and DROP mutant tables changes the verdict of an authored case.
+generated-column, `STRICT`, DROP and text function mutant tables changes the verdict of an
+authored case.
 
 These measurements were in `tests/conformance_query_mutants_test.py`. The Nix suite of that
 file went over its limit of 1200 seconds on a hosted runner (pull request #191), so they have
@@ -7,7 +8,8 @@ their own suite, `tableMutants`. The cases are the authored cases of
 `conformance.authored_writes`, `authored_row_writes`, `authored_deletes`, `authored_joins`,
 `authored_using`, `authored_right`, `authored_merged`, `authored_indexes`,
 `authored_without_rowid`, `authored_collations`, `authored_checks`, `authored_generated`,
-`authored_strict` and `authored_drops`, recorded natively with their outputs. Each test
+`authored_strict`, `authored_drops` and `authored_text_functions`, recorded natively with
+their outputs. Each test
 builds one base copy for its mutants with `measure_set`, and each mutant copy classifies the
 case that the mutant names as its target. The writes and the joins are separate measurements of
 at most 22 mutants, so that each test stays far within its limit of 300 seconds while the
@@ -23,7 +25,8 @@ from conformance import (authored_checks, authored_collations, authored_deletes,
                          authored_strict, authored_using, authored_without_rowid, authored_writes, check_mutants,
                          collation_mutants, delete_mutants, drop_mutants, generated_mutants, index_mutants,
                          join_mutants, merged_mutants, right_mutants, row_write_mutants, strict_mutants,
-                         using_mutants, without_rowid_mutants, write_mutants)
+                         using_mutants, without_rowid_mutants, write_mutants, authored_text_functions,
+                         function_mutants)
 from tests.mutant_sets import measure_set
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_lean,
@@ -77,6 +80,13 @@ def test_every_drop_mutant_changes_a_verdict(runtime_root: Path) -> None:
     does not move the later positions, and `IF EXISTS` that still reports `no such table`
     (ADR 0014, slice 7)."""
     measure_set(runtime_root, [authored_drops], [(drop_mutants.MUTANTS, drop_mutants.TARGETS)])
+
+
+def test_every_text_function_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored cases of the text and type functions notice every changed rule
+    (`conformance.function_mutants`): `length` that counts bytes in text, `lower` that changes
+    non-ASCII bytes, and `LIKE` that compares case (ADR 0015, slice 1)."""
+    measure_set(runtime_root, [authored_text_functions], [(function_mutants.MUTANTS, function_mutants.TARGETS)])
 
 
 def test_every_write_mutant_changes_a_verdict(runtime_root: Path) -> None:

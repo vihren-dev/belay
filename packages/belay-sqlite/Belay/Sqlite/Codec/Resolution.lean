@@ -88,6 +88,8 @@ deriving instance Lean.ToExpr for ColumnDefault
 deriving instance Lean.ToExpr for Collation
 deriving instance Lean.ToExpr for Resolved.JsonFunction
 deriving instance Lean.ToExpr for Resolved.DateFunction
+deriving instance Lean.ToExpr for Resolved.TrimSide
+deriving instance Lean.ToExpr for Resolved.ScalarFunction
 deriving instance Lean.ToExpr for Resolved.Expr, Resolved.Arguments
 deriving instance Lean.ToExpr for CheckConstraint
 deriving instance Lean.ToExpr for ForeignKey

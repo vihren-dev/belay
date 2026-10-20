@@ -12,11 +12,12 @@ namespace Belay.Sqlite
 /-- The issue of a resolved key term or filter, or none: a {lit}`CURRENT_TIME`,
 {lit}`CURRENT_DATE` or {lit}`CURRENT_TIMESTAMP` is SQLite's
 {name}`ExprError.nondeterministicIndex` (with {lit}`filter` for the filter); a date and
-time function or a JSON function is a model restriction. -/
+time function, or a JSON function or another function that can fail
+({name}`Resolved.Expr.isFallibleCall`), is a model restriction. -/
 def indexExpressionIssue (filter : Bool) (resolved : Resolved.Expr) : Option ValueIssue :=
   if resolved.any Resolved.Expr.isNow then some (.prepare (.nondeterministicIndex filter))
   else if resolved.any Resolved.Expr.isDateCall then some (.restriction [] .indexDateFunction)
-  else if resolved.any Resolved.Expr.isJsonCall then some (.restriction [] .indexJsonFunction)
+  else if resolved.any Resolved.Expr.isFallibleCall then some (.restriction [] .indexJsonFunction)
   else none
 
 /-- A key term as an expression over the scope of the indexed table: a qualified name is
