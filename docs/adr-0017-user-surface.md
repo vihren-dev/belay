@@ -1,6 +1,6 @@
 # ADR 0017: The user surface, from SQL text to proved claims
 
-Date: 2026-10-20. Status: PROPOSED.
+Date: 2026-10-20. Status: ACCEPTED on 2026-10-20 (owner decisions below).
 Implementation: slice by slice, each with its own task file; ADR 0016 takes effect with
 the first slice.
 Audience: designers and reviewers.
@@ -188,8 +188,8 @@ proved over an approximation is not a claim about SQLite.
 
 ## Owner decisions
 
-To be decided:
+Decided on 2026-10-20:
 
 1. **The order of D1**, with counterexamples (S5) before triples (S6).
-2. **D5: the model work** that comes next, starting with subqueries, so that S4 is not
-   blocked.
+2. **D5: the model work.** The next model ADR covers all of D5, starting with
+   subqueries, so that no slice of the surface waits for the model.
