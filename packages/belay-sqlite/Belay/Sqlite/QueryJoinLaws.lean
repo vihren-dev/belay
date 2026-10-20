@@ -10,7 +10,7 @@ every left row, and a right or full join keeps every row of its source. -/
 
 namespace Belay.Sqlite.Resolved
 
-/-- For every context value, query whose only source is a table, as an inner join without a
+/-- For every evaluation context, query whose only source is a table, as an inner join without a
 condition, and every database, the source rows of the query in the context are the rows of its table in rowid order
 ({name}`sourceRows`), or none when the table is missing: the query of one table is the
 special case of a join. -/
@@ -23,7 +23,7 @@ theorem Query.source_single (context : EvalContext) (query : Query) (database : 
   | some found =>
     simp [joinRows, joinRow, joinMatches, QuerySource.matches, bind, Option.bind, pure]
 
-/-- For every context value, query without sources ({lit}`SELECT` without {lit}`FROM`) and
+/-- For every evaluation context, query without sources ({lit}`SELECT` without {lit}`FROM`) and
 every database, the source is one row with no cells, without a fault. -/
 theorem Query.source_none (context : EvalContext) (query : Query) (database : Database) (none_ : query.sources = []) :
     query.source context database = some { rows := [[]], width := 0, fault := .none } := by
@@ -39,7 +39,7 @@ theorem sourceRows_width {table : Table} (valid : table.Valid) :
   obtain ⟨row, sorted, rfl⟩ := List.mem_map.mp member
   exact (valid.2 row (table.scanRows_perm.mem_iff.mp sorted)).2.1
 
-/-- For every context value, width, left row of that width, join, and candidate rows of
+/-- For every evaluation context, width, left row of that width, join, and candidate rows of
 {lit}`columns` cells each, every row of {name}`joinMatches` in the context has the width plus {lit}`columns` cells. Proof
 sketch: a match is the left row followed by a candidate. -/
 theorem joinMatches_width (context : EvalContext) {width : Nat} {row : List Value} {candidates : List (List Value)} {columns : Nat} (join : QuerySource) (valid : ∀ cells ∈ candidates, cells.length = columns)
@@ -51,7 +51,7 @@ theorem joinMatches_width (context : EvalContext) {width : Nat} {row : List Valu
   split at built <;> cases built
   simp [rowWidth, valid cells cellsMember]
 
-/-- For every context value, width, left row of that width, join, and candidate rows of
+/-- For every evaluation context, width, left row of that width, join, and candidate rows of
 {lit}`columns` cells each, every row of {name}`joinRow` in the context has the width plus {lit}`columns` cells: a match by
 {name}`joinMatches_width`, or the left row padded with one NULL per column. -/
 theorem joinRow_width (context : EvalContext) {width : Nat} {leftRow : List Value} {candidates : List (List Value)} {columns : Nat} (join : QuerySource) (valid : ∀ cells ∈ candidates, cells.length = columns)
@@ -71,7 +71,7 @@ theorem joinRow_width (context : EvalContext) {width : Nat} {leftRow : List Valu
       · simp only [empty, Bool.false_eq_true, ite_false] at joined
         exact matched row joined
 
-/-- For every context value, width, left rows of that width, join, and candidate rows of
+/-- For every evaluation context, width, left rows of that width, join, and candidate rows of
 {lit}`columns` cells each, every row of {name}`joinRows` in the context has the width plus {lit}`columns` cells: a joined
 row is a left row followed by a candidate or by NULL padding, or, for a right or full join,
 NULL padding of the width followed by a candidate. Proof sketch: a row of the first part has
@@ -90,7 +90,7 @@ theorem joinRows_width (context : EvalContext) {width : Nat} {left : List (List 
       obtain ⟨cells, unmatched, rfl⟩ := List.mem_map.mp added
       simp [valid cells (List.mem_filter.mp unmatched).1]
 
-/-- For every context value, left or full join, width, left rows and candidate rows, every
+/-- For every evaluation context, left or full join, width, left rows and candidate rows, every
 left row is a prefix of some row of {name}`joinRows` in the context: such a join drops no left row. Proof sketch: a left row with
 matches is the prefix of its first match; otherwise it is the prefix of its padded row. -/
 theorem joinRows_left_keeps (context : EvalContext) {width : Nat} {left : List (List Value)} {candidates : List (List Value)} {columns : Nat} (join : QuerySource)
@@ -113,7 +113,7 @@ theorem joinRows_left_keeps (context : EvalContext) {width : Nat} {left : List (
     simp only [padded, empty, Bool.false_eq_true, ite_false]
     exact rowMember
 
-/-- For every context value, right or full join, width, left rows and candidate rows, every
+/-- For every evaluation context, right or full join, width, left rows and candidate rows, every
 candidate is a suffix of some row of {name}`joinRows` in the context: such a join drops no row of its source. Proof sketch: a
 row that some left row matches ends that left row's match; a row that no left row matches
 is in {name}`unmatchedRight` and ends its padded row. -/
