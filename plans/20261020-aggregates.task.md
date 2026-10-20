@@ -1,6 +1,6 @@
 # The aggregates group_concat, string_agg and total (ADR 0015, slice 5)
 
-Created 2026-10-20. Status: open.
+Created 2026-10-20. Status: DONE.
 Status file: [status](20261020-aggregates.status.md).
 Specification: [ADR 0015](../docs/adr-0015-functions.md), D7.
 

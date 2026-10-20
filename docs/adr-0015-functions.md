@@ -238,6 +238,20 @@ Each slice works as in ADR 0014:
   - `json_group_object` writes a label up to its first NUL byte and skips a row with a NULL
     label; `json_object` requires TEXT labels.
 
+- Slice 4 (2026-10-20), details checked natively that D6 does not state:
+  - A BLOB argument is JSONB only when it passes SQLite's quick check (`jsonArgIsJsonb`);
+    any other BLOB is read as JSON text, and as a stored value fails with
+    `JSON cannot hold BLOB values`.
+  - SQLite reads JSONB without a full check and edits it in place, so an edit keeps a header
+    that is longer than needed. The model reads JSONB that is valid and in the encoding of its
+    tree; other JSONB is a `may` fault.
+  - `jsonb_array`, `jsonb_object`, the JSONB aggregates and `jsonb_extract` with several paths
+    convert JSON text, so their strings are `TEXT` or `TEXTJ`; the edit functions store SQL
+    text as `TEXTRAW`.
+- Slice 5 (2026-10-20): the rows of a group keep their scan order also with `GROUP BY`, and the
+  separator of `group_concat` is that of each row. No out-of-scope case of corpus v5 gained:
+  each also uses another feature.
+
 ## Consequences
 
 - **Fewer out-of-scope cases, more prepare errors.** A misspelled or unknown function

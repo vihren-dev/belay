@@ -1,6 +1,6 @@
 # Status: the aggregates group_concat, string_agg and total (ADR 0015, slice 5)
 
-Created 2026-10-20. Status: open.
+Created 2026-10-20. Status: DONE.
 Task file: [task](20261020-aggregates.task.md).
 Specification: [ADR 0015](../docs/adr-0015-functions.md), D7.
 
@@ -23,6 +23,11 @@ Specification: [ADR 0015](../docs/adr-0015-functions.md), D7.
     `conformance_authored`, `conformance_predict`, `test_lean_categories`,
     `conformance_query_coverage`, the aggregate mutants.
 
-## Remaining
+- 2026-10-20: review: no findings. `just test-full` passes on the slice commit. The slice
+  verdict: corpus 40 with 3 cases that agree, no case lost, and no other case gained: the 29
+  out-of-scope cases of corpus v5 with these aggregates also use scalar subqueries, ORDER BY or
+  DISTINCT in the call, CTEs, triggers or subqueries in FROM.
 
-- Review, the slice verdict, corpus 40, `just test-full`.
+## Status
+
+DONE.
