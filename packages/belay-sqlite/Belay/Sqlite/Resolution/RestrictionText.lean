@@ -102,7 +102,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .laterSourceInArguments => "an argument of json_each that reads a later source is not modeled; write the source before json_each"
   | .jsonSubtype => "a JSON value passed on through coalesce, iif, nullif, min or max is not modeled as a JSON function argument; pass the JSON call directly"
   | .subqueryHere => "a subquery is modeled only in a SELECT statement, outside ON conditions and json_each arguments; rewrite the statement without it"
-  | .outerAggregate => "an aggregate in a subquery whose argument reads a column of an outer query is not modeled; SQLite computes it in the outer query"
+  | .outerAggregate => "an aggregate in a subquery whose argument reads a column of an outer query is not modeled, because SQLite computes it in the outer query; aggregate only columns of the subquery's own tables"
   | .subqueryFallibleCall => "a SELECT without FROM that has both a subquery and a function that can fail is not modeled; select from a table or remove the function"
 
 /-- Every restriction, in the order of the registry. -/
