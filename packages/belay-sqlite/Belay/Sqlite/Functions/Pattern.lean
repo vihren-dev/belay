@@ -33,8 +33,11 @@ def likeDialect : PatternDialect := { matchAll := 37, matchOne := 95, matchSet :
 /-- The outcome of a comparison ({lit}`SQLITE_MATCH`, {lit}`SQLITE_NOMATCH`,
 {lit}`SQLITE_NOWILDCARDMATCH`): the last stops the search at the wildcards before. -/
 inductive PatternResult where
+  /-- The string matches the pattern. -/
   | matched
+  /-- The string does not match; a wildcard before may try another place. -/
   | noMatch
+  /-- The string does not match at any place of the wildcards before. -/
   | noWildcardMatch
   deriving Repr, DecidableEq
 
@@ -44,6 +47,26 @@ def lowerCode (code : UInt32) : UInt32 := if 65 ≤ code && code ≤ 90 then cod
 /-- An ASCII code point in upper case; other code points stay. -/
 def upperCode (code : UInt32) : UInt32 := if 97 ≤ code && code ≤ 122 then code - 32 else code
 
+/-- The members of a character class after its first one: whether the class matches the
+character (with {lit}`invert` applied), and the pattern after the {lit}`]`; none when the
+pattern ends first. {lit}`a-z` is a range of the member before the {lit}`-`. The fuel bounds
+the members. -/
+def classMembers (character : UInt32) (invert : Bool) :
+    Nat → Bool → UInt32 → UInt32 → List UInt8 → Option (Bool × List UInt8)
+  | 0, _, _, _, _ => none
+  | fuel + 1, seen, prior, member, pattern =>
+    if member == 0 then none
+    else if member == 93 then some (seen != invert, pattern)
+    else
+      let next := pattern.headD 0
+      if member == 45 && next != 93 && next != 0 && prior > 0 then
+        let (high, after) := utf8Read pattern
+        let (following, later) := utf8Read after
+        classMembers character invert fuel (seen || (prior ≤ character && character ≤ high)) 0 following later
+      else
+        let (following, later) := utf8Read pattern
+        classMembers character invert fuel (seen || character == member) member following later
+
 /-- Whether a character class matches the character, and the pattern after its {lit}`]`; none
 for a class that the pattern does not close. {lit}`^` first negates, a {lit}`]` first is a
 member, and {lit}`a-z` is a range. The fuel bounds the members. -/
@@ -52,21 +75,7 @@ def classMatches (fuel : Nat) (character : UInt32) (pattern : List UInt8) : Opti
   let (invert, first, rest) := if first == 94 then (true, utf8Read rest |>.1, utf8Read rest |>.2) else (false, first, rest)
   let (seen, first, rest) := if first == 93 then (character == 93, utf8Read rest |>.1, utf8Read rest |>.2)
     else (false, first, rest)
-  let rec members : Nat → Bool → UInt32 → UInt32 → List UInt8 → Option (Bool × List UInt8)
-    | 0, _, _, _, _ => none
-    | fuel + 1, seen, prior, member, pattern =>
-      if member == 0 then none
-      else if member == 93 then some (seen != invert, pattern)
-      else
-        let next := pattern.headD 0
-        if member == 45 && next != 93 && next != 0 && prior > 0 then
-          let (high, after) := utf8Read pattern
-          let (following, later) := utf8Read after
-          members fuel (seen || (prior ≤ character && character ≤ high)) 0 following later
-        else
-          let (following, later) := utf8Read pattern
-          members fuel (seen || character == member) member following later
-  members fuel seen 0 first rest
+  classMembers character invert fuel seen 0 first rest
 
 mutual
 /-- {lit}`patternCompare` of a pattern and a C string, with the escape character

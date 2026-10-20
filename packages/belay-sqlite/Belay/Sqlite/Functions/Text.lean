@@ -64,6 +64,19 @@ def substrValue (value start : Value) (count : Option Value) : Value :=
       let rest := skip p2.toNat from_
       .text (from_.take (from_.length - rest.length))
 
+/-- The position of the needle in the text from {lit}`position` on, as {lit}`instrFunc` searches:
+one step per character of text ({lit}`characters`) or per byte, 0 when the needle is longer
+than the rest. The fuel bounds the steps. -/
+def instrSearch (needle : List UInt8) (characters : Bool) : List UInt8 → Nat → Nat → Nat
+  | text, position, 0 => if needle.isPrefixOf text then position else 0
+  | text, position, fuel + 1 =>
+    if needle.length > text.length then 0
+    else if needle.isPrefixOf text then position
+    else
+      let rest := text.drop 1
+      instrSearch needle characters (if characters then rest.dropWhile (· &&& 0xC0 == 0x80) else rest)
+        (position + 1) fuel
+
 /-- The 1-based position of the first occurrence of the needle ({lit}`instrFunc`), counted in
 characters for text and in bytes when both are BLOBs, 1 for an empty needle, 0 when it does not
 occur, and NULL when an argument is NULL. Text compares all the bytes of the values; a BLOB
@@ -73,17 +86,19 @@ def instrValue (haystack needle : Value) : Value :=
   else
     let blobs := (haystack matches .blob _) && (needle matches .blob _)
     let needleBytes := needle.textBytes
-    let rec search : List UInt8 → Nat → Nat → Nat
-      | text, position, 0 => if needleBytes.isPrefixOf text then position else 0
-      | text, position, fuel + 1 =>
-        if needleBytes.length > text.length then 0
-        else if needleBytes.isPrefixOf text then position
-        else
-          let rest := text.drop 1
-          let rest := if blobs then rest else rest.dropWhile (· &&& 0xC0 == 0x80)
-          search rest (position + 1) fuel
     let haystackBytes := haystack.textBytes
-    .integer (if needleBytes.isEmpty then 1 else search haystackBytes 1 haystackBytes.length)
+    .integer (if needleBytes.isEmpty then 1 else instrSearch needleBytes (!blobs) haystackBytes 1 haystackBytes.length)
+
+/-- The bytes with each occurrence of the pattern, from the left and without overlap, replaced.
+The fuel bounds the steps; the length of the bytes is enough. -/
+def replaceAll (pattern replacement : List UInt8) : Nat → List UInt8 → List UInt8
+  | 0, text => text
+  | fuel + 1, text =>
+    match text with
+    | [] => []
+    | byte :: rest =>
+      if pattern.isPrefixOf text then replacement ++ replaceAll pattern replacement fuel (text.drop pattern.length)
+      else byte :: replaceAll pattern replacement fuel rest
 
 /-- {lit}`replace(x, pattern, replacement)` ({lit}`replaceFunc`): each occurrence of the pattern
 in the bytes of {lit}`x`, from the left and without overlap, replaced. A NULL argument gives
@@ -95,14 +110,8 @@ def replaceValue (value pattern replacement : Value) : Value :=
     if patternBytes.headD 0 == 0 then .text value.textBytes
     else if replacement.isNull then .null
     else
-      let rec go : Nat → List UInt8 → List UInt8
-        | 0, text => text
-        | fuel + 1, text =>
-          if text.isEmpty then []
-          else if patternBytes.isPrefixOf text then replacement.textBytes ++ go fuel (text.drop patternBytes.length)
-          else text.head! :: go fuel text.tail
       let bytes := value.textBytes
-      .text (go bytes.length bytes)
+      .text (replaceAll patternBytes replacement.textBytes bytes.length bytes)
 
 /-- The UTF-8 characters of a C string, each as its bytes ({lit}`SQLITE_SKIP_UTF8`). -/
 def utf8Characters (fuel : Nat) (bytes : List UInt8) : List (List UInt8) :=
@@ -111,6 +120,23 @@ def utf8Characters (fuel : Nat) (bytes : List UInt8) : List (List UInt8) :=
   | fuel + 1, text =>
     let rest := utf8Skip text
     text.take (text.length - rest.length) :: utf8Characters fuel rest
+
+/-- The bytes without the characters of the set at the start, as {lit}`trimFunc` cuts them: the
+first character of the set that starts the bytes, again until none does. The fuel bounds the
+cuts. -/
+def trimFront (set : List (List UInt8)) : Nat → List UInt8 → List UInt8
+  | 0, text => text
+  | fuel + 1, text => match set.find? fun character => !character.isEmpty && character.isPrefixOf text with
+    | some character => trimFront set fuel (text.drop character.length)
+    | none => text
+
+/-- The bytes without the characters of the set at the end, as {name}`trimFront` cuts the start. -/
+def trimBack (set : List (List UInt8)) : Nat → List UInt8 → List UInt8
+  | 0, text => text
+  | fuel + 1, text =>
+    match set.find? fun character => !character.isEmpty && character.reverse.isPrefixOf text.reverse with
+    | some character => trimBack set fuel (text.take (text.length - character.length))
+    | none => text
 
 /-- {lit}`trim(x [, characters])` and its sides ({lit}`trimFunc`): the bytes of {lit}`x` without
 the characters of the set at the cut ends; the set is a space without a second argument, and
@@ -122,20 +148,10 @@ def trimValue (side : TrimSide) (value : Value) (characters : Option Value) : Va
       | none => [[32]]
       | some set => let bytes := bytesBeforeNul set.textBytes; utf8Characters bytes.length bytes
     let bytes := value.textBytes
-    let rec front : Nat → List UInt8 → List UInt8
-      | 0, text => text
-      | fuel + 1, text => match set.find? fun character => character.isPrefixOf text with
-        | some character => if text.isEmpty then text else front fuel (text.drop character.length)
-        | none => text
-    let rec back : Nat → List UInt8 → List UInt8
-      | 0, text => text
-      | fuel + 1, text => match set.find? fun character => character.reverse.isPrefixOf text.reverse with
-        | some character => if text.isEmpty then text else back fuel (text.take (text.length - character.length))
-        | none => text
     if set.isEmpty then .text bytes
     else
-      let bytes := if side == .trailing then bytes else front bytes.length bytes
-      .text (if side == .leading then bytes else back bytes.length bytes)
+      let bytes := if side == .trailing then bytes else trimFront set bytes.length bytes
+      .text (if side == .leading then bytes else trimBack set bytes.length bytes)
 
 /-- {lit}`concat(x, ...)` and {lit}`concat_ws(separator, x, ...)` ({lit}`concatFuncCore`): the text of
 all the bytes of the arguments that are not NULL, with the separator between two of them. -/

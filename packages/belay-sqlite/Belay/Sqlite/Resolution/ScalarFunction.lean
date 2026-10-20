@@ -10,8 +10,11 @@ namespace Belay.Sqlite.Resolved
 
 /-- Which ends {lit}`trim` cuts: {lit}`ltrim` the start, {lit}`rtrim` the end, {lit}`trim` both. -/
 inductive TrimSide where
+  /-- {lit}`ltrim`: the start. -/
   | leading
+  /-- {lit}`rtrim`: the end. -/
   | trailing
+  /-- {lit}`trim`: both ends. -/
   | both
   deriving Repr, DecidableEq
 

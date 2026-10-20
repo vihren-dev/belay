@@ -45,6 +45,15 @@ Specification: [ADR 0015](../docs/adr-0015-functions.md), D1, D2 and D3.
   catalog" with `Functions/Codes.lean` (159 modules). Tests: the fast tests, the kernel proofs
   of corpus 36, the function mutants and the restriction examples.
 
+- 2026-10-20: slice end. Corpus 36 recorded (38 cases). Local verdict with corpus 36 claimed:
+  383 cases of corpus v5 and 11 of v4 newly agree (v5: 1,365 → 1,748), corpus 36 has 38
+  AGREE, and no case leaves AGREE or disagrees. The first `just test-full` failed in the
+  documentation inventory: undocumented constructors of `TrimSide` and `PatternResult`, and
+  `let rec` helpers that the inventory cannot classify. Fixed in "fix: documented helpers of
+  the text functions" (`classMembers`, `instrSearch`, `replaceAll`, `trimFront`, `trimBack`,
+  `unhexBytes`, `unistrBytes`).
+
 ## Remaining
 
-- Review, the slice verdict, corpus 36, `just test-full`.
+- `just test-full` after the fix; the claims of corpus 36 and the 394 upstream cases go into
+  the PR B of the ADR.

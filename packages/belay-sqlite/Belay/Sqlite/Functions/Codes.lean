@@ -23,6 +23,22 @@ def hexDigitValue (byte : UInt8) : Option UInt8 :=
   else if 97 ≤ byte && byte ≤ 102 then some (byte - 87)
   else none
 
+/-- The bytes of the hexadecimal digit pairs of a C string, skipping the code points of
+{lit}`skip` between pairs ({lit}`unhexFunc`); none for an odd digit or another character. The
+fuel bounds the steps. -/
+def unhexBytes (skip : List UInt32) : Nat → List UInt8 → Option (List UInt8)
+  | 0, _ => some []
+  | _, [] => some []
+  | fuel + 1, text@(high :: rest) => match hexDigitValue high with
+    | some upper => match rest with
+      | low :: after => match hexDigitValue low with
+        | some lower => (((upper <<< 4) ||| lower) :: ·) <$> unhexBytes skip fuel after
+        | none => none
+      | [] => none
+    | none =>
+      let (character, after) := utf8Read text
+      if skip.contains character then unhexBytes skip fuel after else none
+
 /-- {lit}`unhex(x [, ignored])` ({lit}`unhexFunc`): the BLOB of the hexadecimal digit pairs of the C
 string {lit}`x`; a character of {lit}`ignored` between pairs is skipped. A NULL argument, an odd
 digit, or another character gives NULL. -/
@@ -31,20 +47,8 @@ def unhexValue (value : Value) (ignored : Option Value) : Value :=
   else
     let skip := ((ignored.map fun pass => utf8Characters pass.textBytes.length pass.textBytes).getD []).map
       fun character => (utf8Read character).1
-    let rec go : Nat → List UInt8 → Option (List UInt8)
-      | 0, _ => some []
-      | _, [] => some []
-      | fuel + 1, text@(high :: rest) => match hexDigitValue high with
-        | some upper => match rest with
-          | low :: after => match hexDigitValue low with
-            | some lower => (((upper <<< 4) ||| lower) :: ·) <$> go fuel after
-            | none => none
-          | [] => none
-        | none =>
-          let (character, after) := utf8Read text
-          if skip.contains character then go fuel after else none
     let bytes := bytesBeforeNul value.textBytes
-    match go bytes.length bytes with
+    match unhexBytes skip bytes.length bytes with
     | some blob => .blob blob
     | none => .null
 
@@ -69,6 +73,22 @@ def hexCode (count : Nat) (bytes : List UInt8) : Option UInt32 :=
   if digits.length != count then none
   else digits.foldlM (fun code byte => (hexDigitValue byte).map fun digit => code * 16 + digit.toUInt32) 0
 
+/-- The bytes with their Unicode escapes replaced ({lit}`unistrFunc`): {lit}`\\\\`, {lit}`\\XXXX`,
+{lit}`\\uXXXX`, {lit}`\\+XXXXXX` and {lit}`\\UXXXXXXXX`, before the first NUL; none for another
+backslash. The fuel bounds the steps. -/
+def unistrBytes : Nat → List UInt8 → Option (List UInt8)
+  | 0, text => some text
+  | _, [] => some []
+  | fuel + 1, byte :: rest =>
+    if byte == 0 then some (byte :: rest)
+    else if byte != 92 then (byte :: ·) <$> unistrBytes fuel rest
+    else match rest with
+      | 92 :: after => (92 :: ·) <$> unistrBytes fuel after
+      | 43 :: after => (hexCode 6 after).bind fun code => (utf8Bytes code ++ ·) <$> unistrBytes fuel (after.drop 6)
+      | 117 :: after => (hexCode 4 after).bind fun code => (utf8Bytes code ++ ·) <$> unistrBytes fuel (after.drop 4)
+      | 85 :: after => (hexCode 8 after).bind fun code => (utf8Bytes code ++ ·) <$> unistrBytes fuel (after.drop 8)
+      | after => (hexCode 4 after).bind fun code => (utf8Bytes code ++ ·) <$> unistrBytes fuel (after.drop 4)
+
 /-- {lit}`unistr(x)` ({lit}`unistrFunc`): the text with its escapes replaced: {lit}`\\` by a backslash,
 and {lit}`\XXXX`, {lit}`\uXXXX`, {lit}`\+XXXXXX` and {lit}`\UXXXXXXXX` by the UTF-8 bytes of the code
 point. Escapes count only before the first NUL; the bytes after it stay. NULL gives NULL, and
@@ -76,19 +96,7 @@ any other backslash fails with {lit}`invalid Unicode escape` (none). -/
 def unistrValue (value : Value) : Option Value :=
   if value.isNull then some .null
   else
-    let rec go : Nat → List UInt8 → Option (List UInt8)
-      | 0, text => some text
-      | _, [] => some []
-      | fuel + 1, byte :: rest =>
-        if byte == 0 then some (byte :: rest)
-        else if byte != 92 then (byte :: ·) <$> go fuel rest
-        else match rest with
-          | 92 :: after => (92 :: ·) <$> go fuel after
-          | 43 :: after => (hexCode 6 after).bind fun code => (utf8Bytes code ++ ·) <$> go fuel (after.drop 6)
-          | 117 :: after => (hexCode 4 after).bind fun code => (utf8Bytes code ++ ·) <$> go fuel (after.drop 4)
-          | 85 :: after => (hexCode 8 after).bind fun code => (utf8Bytes code ++ ·) <$> go fuel (after.drop 8)
-          | after => (hexCode 4 after).bind fun code => (utf8Bytes code ++ ·) <$> go fuel (after.drop 4)
     let bytes := value.textBytes
-    (Value.text ·) <$> go bytes.length bytes
+    (Value.text ·) <$> unistrBytes bytes.length bytes
 
 end Belay.Sqlite.Resolved
