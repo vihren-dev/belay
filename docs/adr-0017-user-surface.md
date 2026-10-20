@@ -133,7 +133,7 @@ part of this ADR; this ADR only names them and when the surface needs them:
 | Enforced foreign keys with their actions | S6 (the rebuild that cascades) | pain point 1, the research's first-ranked failure |
 | Triggers | S8 (expand/contract) | 416 cases; pain point 2 |
 
-The first row blocks S4, so its ADR should start before S3 ends.
+Subqueries block S4, so their ADR should start before S3 ends.
 
 ### D6. Elaboration is outside the trusted base
 
