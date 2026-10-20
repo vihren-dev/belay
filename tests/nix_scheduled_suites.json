@@ -1,4 +1,6 @@
 [
   "mutants",
+  "tableMutants",
+  "functionMutants",
   "writers"
 ]

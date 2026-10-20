@@ -90,6 +90,8 @@ under it; the other aggregates do not compare values. -/
 def Resolved.Aggregate.withCollation (collation : Collation) : Resolved.Aggregate → Resolved.Aggregate
   | .min operand _ => .min operand collation
   | .max operand _ => .max operand collation
-  | aggregate@.countRows | aggregate@(.count _) | aggregate@(.sum _) | aggregate@(.avg _) => aggregate
+  | aggregate@.countRows | aggregate@(.count _) | aggregate@(.sum _) | aggregate@(.avg _)
+  | aggregate@(.jsonGroupArray ..) | aggregate@(.jsonGroupObject ..) | aggregate@(.groupConcat ..)
+  | aggregate@(.total _) => aggregate
 
 end Belay.Sqlite

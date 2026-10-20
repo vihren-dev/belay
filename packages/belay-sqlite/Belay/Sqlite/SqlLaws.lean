@@ -17,15 +17,16 @@ def SchemaOnly (script : List Resolved.Statement) : Prop :=
   ∀ statement ∈ script, statement.kind = .definition
 
 /-- No statement in the script is INSERT (with or without {lit}`ON CONFLICT`, or with
-cells that read the clock), UPDATE or DELETE, and no query has a JSON call in its expressions
-({name}`Resolved.Query.expressions`, {name}`Resolved.Expr.isJsonCall` at any depth) or a {lit}`json_each`
+cells that read the clock), UPDATE or DELETE, and no query has a fallible call (a JSON call or
+a function that can fail) in its expressions ({name}`Resolved.Query.expressions`,
+{name}`Resolved.Expr.isFallibleCall` at any depth) or a {lit}`json_each`
 source. This is a syntax guard, not a success claim; the empty script satisfies it. Each
 statement:
 * is not a write ({name}`Resolved.Statement.Kind.write`), and
-* if it is a query, has no JSON call and no {lit}`json_each` source. -/
+* if it is a query, has no fallible call and no {lit}`json_each` source. -/
 def NoWrites (script : List Resolved.Statement) : Prop :=
   ∀ statement ∈ script, statement.kind ≠ .write ∧ ∀ query, statement = .query query →
-    query.expressions.all (!·.any Resolved.Expr.isJsonCall) = true ∧ query.sources.all (!·.source.isEach) = true
+    query.expressions.all (!·.any Resolved.Expr.isFallibleCall) = true ∧ query.sources.all (!·.source.isEach) = true
 
 /-- Each definition in the script is one that the model describes: each ADD COLUMN has a time
 default ({name}`CatalogColumn.clockDefault`) or a successful {name}`readDefaultValue` result,
@@ -36,12 +37,13 @@ def ModeledDefinitions (script : List Resolved.Statement) : Prop :=
     | .createTable .. => True
     | .addColumn _ column => (column.clockDefault || (readDefaultValue column).toOption.isSome) = true
     | .createIndex .. => False
+    | .drop _ => True
     | .insert .. | .upsert .. | .update .. | .delete .. | .begin | .commit | .rollback | .prepareError _
     | .query _ => True
 
 /-- For every position and connection state, a {name}`NoWrites` script with
 {name}`ModeledDefinitions` passes the reached-statement support check, because
-only writes and queries have a data check, and a query without a JSON call passes it. The proof inducts over the script and follows
+only writes and queries have a data check, and a query without a fallible call passes it. The proof inducts over the script and follows
 each actual transition. -/
 theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDefinitions script) :
     supportedSqlFrom position script state = true := by
@@ -55,7 +57,7 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDe
     have ready : statementReady (state.clock position) statement state.database = true := by
       cases statement with
       | query query =>
-        obtain ⟨plain, noEach⟩ : (query.expressions.all fun x => !x.any Resolved.Expr.isJsonCall) = true ∧
+        obtain ⟨plain, noEach⟩ : (query.expressions.all fun x => !x.any Resolved.Expr.isFallibleCall) = true ∧
             query.sources.all (!·.source.isEach) = true := first.2 query rfl
         simp only [statementReady, runStatement, Resolved.Query.runOn]
         cases found : query.source (state.clock position) state.database with
@@ -64,7 +66,7 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDe
           have clean := Resolved.source_fault_of_plain _ state.database query.sources _ source noEach rfl found
           by_cases must : query.mustFail (state.clock position) source.rows = true <;>
             simp [Resolved.Query.run, Resolved.Query.mayFail_of_plain _ query _ plain, clean, must]
-      | createTable | createIndex | addColumn | begin | commit | rollback | insert | upsert | update | delete
+      | createTable | createIndex | addColumn | drop | begin | commit | rollback | insert | upsert | update | delete
       | prepareError => simp_all [statementReady, runStatement]
     have run : (runStatement (state.clock position) statement state.database).ready = true := ready
     simp only [supportedSqlFrom, run, Bool.true_and]

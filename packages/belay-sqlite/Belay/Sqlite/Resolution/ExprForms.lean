@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.Calls
+import Belay.Sqlite.Resolution.FunctionCatalog
 
 set_option doc.verso true
 
@@ -16,8 +17,9 @@ def aggregateIssue (misuse : Bool) (function : String) : ValueIssue :=
   if misuse then .prepare (.misuseOfAggregate function)
   else .restriction [] .aggregateInExpression
 
-/-- The aggregate that a function name names, after ASCII folding: {lit}`count`,
-{lit}`min`, {lit}`max`, {lit}`sum` or {lit}`avg` of one operand. -/
+/-- The aggregate of one operand that a function name names, after ASCII folding:
+{lit}`count`, {lit}`min`, {lit}`max`, {lit}`sum`, {lit}`avg`, {lit}`json_group_array`,
+{lit}`jsonb_group_array`, {lit}`group_concat` or {lit}`total`. -/
 def aggregateNamed (name : String) : Option (Resolved.Expr → Resolved.Aggregate) :=
   match normalizeIdentifier name with
   | "count" => some .count
@@ -25,14 +27,35 @@ def aggregateNamed (name : String) : Option (Resolved.Expr → Resolved.Aggregat
   | "max" => some .max
   | "sum" => some .sum
   | "avg" => some .avg
+  | "json_group_array" => some (.jsonGroupArray · false)
+  | "jsonb_group_array" => some (.jsonGroupArray · true)
+  | "group_concat" => some (.groupConcat · none)
+  | "total" => some .total
   | _ => none
 
-/-- Whether a call is an aggregate of slice 1: {lit}`count(*)`, or a named aggregate
-of one operand. -/
+/-- The aggregate of two operands that a function name names, after ASCII folding:
+{lit}`json_group_object`, {lit}`jsonb_group_object`, and {lit}`group_concat` and {lit}`string_agg`
+with a separator. -/
+def pairAggregateNamed (name : String) : Option (Resolved.Expr → Resolved.Expr → Resolved.Aggregate) :=
+  match normalizeIdentifier name with
+  | "json_group_object" => some (.jsonGroupObject · · false)
+  | "jsonb_group_object" => some (.jsonGroupObject · · true)
+  | "group_concat" | "string_agg" => some fun operand separator => .groupConcat operand (some separator)
+  | _ => none
+
+/-- Whether an aggregate writes its operand as a JSON value, so that the JSON subtype of the
+operand matters: {lit}`json_group_array` and {lit}`json_group_object`. -/
+def Resolved.Aggregate.writesJson : Resolved.Aggregate → Bool
+  | .jsonGroupArray .. | .jsonGroupObject .. => true
+  | .countRows | .count _ | .min .. | .max .. | .sum _ | .avg _ | .groupConcat .. | .total _ => false
+
+/-- Whether a call is an aggregate of the model: {lit}`count(*)`, or a named aggregate
+of one operand ({name}`aggregateNamed`) or of two ({name}`pairAggregateNamed`). -/
 def aggregateCall : Syntax.Expr → Bool
   | .callStar name => normalizeIdentifier name == "count"
   | .call name [_] => (aggregateNamed name).isSome
-  | .call _ [] | .call _ (_ :: _ :: _) => false
+  | .call name [_, _] => (pairAggregateNamed name).isSome
+  | .call _ [] | .call _ (_ :: _ :: _ :: _) => false
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast ..
   | .qualified .. | .collate .. => false
@@ -41,18 +64,11 @@ def aggregateCall : Syntax.Expr → Bool
 def unmodeledFunction : ValueIssue :=
   .restriction [] .unmodeledFunction
 
-/-- The issue of a call with {lit}`*` or one argument that is not an aggregate:
-SQLite's {lit}`wrong number of arguments` for {lit}`COALESCE`, which needs two or more
-arguments; else {name}`unmodeledFunction`. -/
+/-- The issue of a call where the model does not evaluate calls, such as a {lit}`GROUP BY`
+term: SQLite's {lit}`no such function` for a name that names no function of the catalog
+({name}`builtinFunction?`), else {name}`unmodeledFunction`. -/
 def callIssue (name : String) : ValueIssue :=
-  if normalizeIdentifier name == "coalesce" then .prepare (.wrongArgumentCount name) else unmodeledFunction
-
-/-- The issue of a call with two or more arguments that is not {lit}`COALESCE`: SQLite's
-{lit}`wrong number of arguments` for {lit}`COUNT`, whose aggregate takes one argument;
-else {name}`unmodeledFunction`. {lit}`MIN` and {lit}`MAX` with two or more arguments are
-scalar functions, which the model does not evaluate. -/
-def pairIssue (name : String) : ValueIssue :=
-  if normalizeIdentifier name == "count" then .prepare (.wrongArgumentCount name) else unmodeledFunction
+  if (builtinFunction? (normalizeIdentifier name)).isNone then .prepare (.noSuchFunction name) else unmodeledFunction
 
 /-- Whether an expression as written is an unquoted {lit}`TRUE` or {lit}`FALSE`. -/
 def Syntax.Expr.unquotedBoolean : Syntax.Expr → Bool

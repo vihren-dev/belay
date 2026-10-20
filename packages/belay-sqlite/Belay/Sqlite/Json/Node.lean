@@ -51,10 +51,22 @@ inductive JsonError where
   | malformed
   /-- The error {lit}`bad JSON path: '%s'`, with the path text that SQLite reports. -/
   | badPath (path : List UInt8)
-  /-- A BLOB argument (JSONB): the model does not describe it. -/
+  /-- A JSONB argument that the model does not describe: it passes SQLite's quick check but
+  is not valid, or not in the encoding that SQLite's encoder gives. -/
   | blobArgument
+  /-- The error {lit}`JSON cannot hold BLOB values`, of a BLOB value that is not JSONB. -/
+  | blobValue
   /-- The error {lit}`FLAGS parameter to json_valid() must be between 1 and 15`. -/
   | badFlags
+  /-- The error {lit}`json_object() requires an even number of arguments`. -/
+  | objectArgumentCount
+  /-- The error {lit}`json_object() labels must be TEXT`. -/
+  | labelNotText
+  /-- The error {lit}`json_NAME() needs an odd number of arguments` of {lit}`json_set`,
+  {lit}`json_insert` or {lit}`json_replace`, with the name after {lit}`json_`. -/
+  | editArgumentCount (name : List UInt8)
+  /-- The error position of malformed JSON text, which the model does not describe. -/
+  | unmodeledPosition
   deriving Repr, DecidableEq
 
 /-- The label text of an object member and whether it has no escapes, as

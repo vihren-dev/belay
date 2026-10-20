@@ -21,6 +21,9 @@ let
   # depend on how many suites share the CPU (reports/20261006-hosted-model-timeout/README.md).
   testTimeoutSeconds = 300;
   suiteTimeoutSeconds = 1200;
+  # A mutant suite (tests/nix_mutant_suites.json) runs alone on its own CI runner, and its tests
+  # take about 4 minutes each there, so it gets a larger limit; each test keeps its own limit.
+  mutantSuiteTimeoutSeconds = 2700;
   # The conformance suites use only the SQL frontend, not the verification application.
   # tests/test_conformance_frontend.py checks this list against the actual imports.
   frontend = map (name: root + "/${builtins.replaceStrings [ "." ] [ "/" ] name}.py")
@@ -49,7 +52,7 @@ let
     ln -s ${leanPackages."packages/public-doc-tools"} "$out/packages/public-doc-tools"
   '';
   # `seeds`: Lake cache seeds (case-seeds.nix) copied into one writable cache that the tests use (ADR 0010).
-  suite = name: { inputs, runtime, tools ? [], environment ? {}, seeds ? [] }:
+  suite = name: { inputs, runtime, tools ? [], environment ? {}, seeds ? [], timeout ? suiteTimeoutSeconds }:
     let
       files = (builtins.fromJSON (builtins.readFile (root + /tests/nix_suites.json))).${name};
       file = builtins.head files;
@@ -71,7 +74,7 @@ let
             cp -R --no-preserve=mode "$seed/." "$BELAY_TEST_CACHE/"
           done
         ''}
-        timeout ${toString suiteTimeoutSeconds} python3 -m pytest ${file} ${pkgs.lib.concatStringsSep " " extraFiles} --runtime-root ${runtime} \
+        timeout ${toString timeout} python3 -m pytest ${file} ${pkgs.lib.concatStringsSep " " extraFiles} --runtime-root ${runtime} \
           -p no:cacheprovider -p pytest_timeout --timeout=${toString testTimeoutSeconds} \
           --junitxml "$out/junit.xml" -v --durations=10
       '';
@@ -82,7 +85,7 @@ let
     (builtins.attrValues (builtins.fromJSON (builtins.readFile claims)).corpora);
   # Mutants rebuild changed copies of the two Lean packages, so their suites read the
   # complete sources, without local build outputs in `.lake`.
-  mutantInputs = modelInputs ++ map (package: fs.difference (root + "/packages/${package}")
+  mutantInputs = modelInputs ++ [ (root + /tests/mutant_sets.py) ] ++ map (package: fs.difference (root + "/packages/${package}")
     (fs.maybeMissing (root + "/packages/${package}/.lake"))) [ "belay-sqlite" "verifier-conformance" ];
   # Inputs shared by the three suites that the old single model suite contained.
   modelInputs = frontend ++ [
@@ -118,7 +121,7 @@ let
     "authored_transactions" "transaction_evidence" "authored_resolution" "resolution_evidence"
     "authored_queries" "query_evidence" "query_mutants" "authored_evidence" "authored_numbers" "number_evidence"
     "authored_writes" "write_evidence" "write_mutants"
-    "number_mutants" "restriction_examples" "authored_obligations" "obligation_mutants" "obligation_evidence" "authored_row_writes" "row_write_evidence" "row_write_mutants" "authored_deletes" "delete_evidence" "delete_mutants" "authored_joins" "join_evidence" "join_mutants" "authored_using" "using_evidence" "using_mutants" "authored_right" "right_evidence" "right_mutants" "authored_merged" "merged_evidence" "merged_mutants" "authored_keys" "key_evidence" "key_mutants" "authored_aliases" "alias_evidence" "alias_mutants" "authored_upserts" "upsert_evidence" "upsert_mutants" "authored_algorithms" "algorithm_evidence" "algorithm_mutants" "authored_fromless" "fromless_evidence" "fromless_mutants" "authored_json" "json_evidence" "json_mutants" "authored_json_functions" "json_function_evidence" "json_function_mutants" "authored_json_each" "json_each_evidence" "json_each_mutants" "authored_default_writes" "default_write_evidence" "authored_clock" "clock_evidence" "clock_mutants" "authored_date_functions" "date_function_evidence" "date_function_mutants" "authored_date_modifiers" "date_modifier_evidence" "date_modifier_mutants" "authored_indexes" "index_evidence" "index_mutants" "authored_without_rowid" "without_rowid_evidence" "without_rowid_mutants" "authored_collations" "collation_evidence" "collation_mutants" "authored_checks" "check_evidence" "check_mutants" "authored_generated" "generated_evidence" "generated_mutants" "authored_strict" "strict_evidence" "strict_mutants"
+    "number_mutants" "restriction_examples" "authored_obligations" "obligation_mutants" "obligation_evidence" "authored_row_writes" "row_write_evidence" "row_write_mutants" "authored_deletes" "delete_evidence" "delete_mutants" "authored_joins" "join_evidence" "join_mutants" "authored_using" "using_evidence" "using_mutants" "authored_right" "right_evidence" "right_mutants" "authored_merged" "merged_evidence" "merged_mutants" "authored_keys" "key_evidence" "key_mutants" "authored_aliases" "alias_evidence" "alias_mutants" "authored_upserts" "upsert_evidence" "upsert_mutants" "authored_algorithms" "algorithm_evidence" "algorithm_mutants" "authored_fromless" "fromless_evidence" "fromless_mutants" "authored_json" "json_evidence" "json_mutants" "authored_json_functions" "json_function_evidence" "json_function_mutants" "authored_json_each" "json_each_evidence" "json_each_mutants" "authored_default_writes" "default_write_evidence" "authored_clock" "clock_evidence" "clock_mutants" "authored_date_functions" "date_function_evidence" "date_function_mutants" "authored_date_modifiers" "date_modifier_evidence" "date_modifier_mutants" "authored_indexes" "index_evidence" "index_mutants" "authored_without_rowid" "without_rowid_evidence" "without_rowid_mutants" "authored_collations" "collation_evidence" "collation_mutants" "authored_checks" "check_evidence" "check_mutants" "authored_generated" "generated_evidence" "generated_mutants" "authored_strict" "strict_evidence" "strict_mutants" "authored_drops" "drop_evidence" "drop_mutants" "authored_text_functions" "text_function_evidence" "function_mutants" "authored_numeric_functions" "numeric_function_evidence" "numeric_function_mutants" "authored_json_edits" "json_edit_evidence" "json_edit_mutants" "authored_jsonb" "jsonb_evidence" "jsonb_mutants" "authored_aggregates" "aggregate_evidence" "aggregate_mutants" "authored_printf" "printf_evidence" "printf_mutants"
     "upstream_selection" "upstream_catalog" "upstream_sampling" "upstream_profiles" "upstream_functions" "upstream_result_values"
     "corpus_shards" "corpus_workers" "corpus_evidence" "corpus_acquisition" "locked_corpora" "freeze_corpus" "freeze_validation" "freeze_profiles" "workload" "workload_inputs"
     "upstream_assertions"
@@ -299,6 +302,22 @@ in {
     inputs = mutantInputs;
     runtime = conformance;
     tools = modelTools;
+    timeout = mutantSuiteTimeoutSeconds;
+  };
+  # The mutants of writes, joins and table forms; a mutant suite apart from "mutants", which runs
+  # on its own CI runner.
+  tableMutants = suite "tableMutants" {
+    inputs = mutantInputs;
+    runtime = conformance;
+    tools = modelTools;
+    timeout = mutantSuiteTimeoutSeconds;
+  };
+  # The mutants of the SQL functions of ADR 0015; a mutant suite on its own CI runner.
+  functionMutants = suite "functionMutants" {
+    inputs = mutantInputs;
+    runtime = conformance;
+    tools = modelTools;
+    timeout = mutantSuiteTimeoutSeconds;
   };
   # The round trips of the corpus writers of the authored cases; a scheduled suite.
   writers = suite "writers" {

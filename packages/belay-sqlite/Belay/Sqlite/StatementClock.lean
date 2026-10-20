@@ -58,7 +58,7 @@ def Statement.clockExpressions : Statement → List Expr
   | .update _ assignments filter returning => assignments.map (·.2) ++ filter.toList ++ returning.map (·.1)
   | .delete _ filter returning => filter.toList ++ returning.map (·.1)
   | .query inner => inner.expressions
-  | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback | .prepareError _ => []
+  | .createTable .. | .createIndex .. | .addColumn .. | .drop _ | .begin | .commit | .rollback | .prepareError _ => []
 
 /-- Whether a statement reads the clock: it has an expression that reads it
 ({name}`Expr.readsClock`, {name}`Statement.clockExpressions`). The execution gives a

@@ -88,7 +88,8 @@ open Belay.Sqlite Belay.Sqlite.Json Belay.Sqlite.Json.ExampleSupport
 #guard gives (arrowJson (sqlText "{\"a\":1}") (sqlText "x\"y")) .null
 -- The JSON is read before the path: bad JSON with a NULL path is an error.
 #guard fails (arrowJson (sqlText "bad") .null) .malformed
--- A BLOB JSON argument is outside the model.
-#guard fails (extract (.blob [0x7b, 0x7d]) [sqlText "$"]) .blobArgument
+-- A BLOB that is not JSONB is read as text; JSONB with a longer header is not described.
+#guard givesText (extract (.blob [0x7b, 0x7d]) [sqlText "$"]) "{}"
+#guard fails (extract (.blob [0xc7, 1, 0x61]) [sqlText "$"]) .blobArgument
 
 end Belay.Sqlite.Json.PathExamples

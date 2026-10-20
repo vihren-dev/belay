@@ -1,0 +1,61 @@
+# Status: the JSON functions that build or edit text (ADR 0015, slice 3)
+
+Created 2026-10-20. Status: DONE.
+Task file: [task](20261020-json-edit-functions.task.md).
+Specification: [ADR 0015](../docs/adr-0015-functions.md), D5.
+
+## Progress
+
+- 2026-10-20: the C code of SQLite 3.51.0 read: `jsonAppendSqlValue`, `jsonFunctionArgToBlob`,
+  `jsonInsertIntoBlob`, `jsonLookupStep` in edit mode, `jsonCreateEditSubstructure`,
+  `jsonMergePatch`, `jsonTranslateBlobToPrettyText`, `jsonErrorFunc`, `jsonArrayStep` and
+  `jsonObjectStep`.
+
+- 2026-10-20: the scalar functions of the slice ("JSON build and edit functions").
+  - Lean: `Json/Edit.lean` (`editStep`, `editMember`, `createSubstructure` with fuel),
+    `Json/Build.lean` (`sqlValueText`, `sqlValueNode`, `jsonArray`, `jsonObject`, `jsonEdit`,
+    `jsonRemove`), `Json/PatchPretty.lean` (`mergePatch`, `prettyNode`, `jsonPretty`,
+    `jsonErrorPosition`), `Json/BuildExamples.lean`; `Json.apply` takes each argument with its
+    subtype; `Expr.givesJson` and `Arguments.givesJson` in the evaluation block; new
+    `JsonError` constructors with SQLite's messages; `ExprFault.lean` holds the parts of
+    `ExprEval.lean` that are not recursive.
+  - Resolution: the names and arities in `Resolution/Calls.lean`; the restriction
+    `json-subtype` (`Resolved.Expr.subtypeUndescribed`) for value arguments passed on through
+    `coalesce`, `iif`, `nullif`, `min` or `max`.
+  - Native: subqueries, views and CTEs drop the subtype; a direct call, unary `+`, `nullif`,
+    `max`, `CASE` and `coalesce` keep it. A BLOB argument is JSONB (`json_array(x'01')` is
+    `[true]`), so it stays a `may` fault; the task text was amended.
+  - `conformance/authored_json_edits.py`: 13 cases, all agree (kernel proofs in
+    `conformance_query_coverage_test`); `json_edit_evidence.py` (corpus 38);
+    `json_edit_mutants.py`, all killed.
+  - Tests run: `function_catalog`, `test_model_package` (164 modules), `mutant_guards`,
+    `restriction_registry`, `conformance_restriction_examples`, `restriction_costs`,
+    `conformance_authored`, `conformance_predict`, `conformance_query_coverage`,
+    `test_lean_categories`, the JSON edit mutants.
+
+- 2026-10-20: review: two must findings (catch-all patterns in `mergeMembers` and
+  `Resolved.Expr.passesValue`). Fixed in "refactor: review of the JSON build and edit
+  functions" by enumerating the constructors. Tests: the full Lean build with the examples.
+
+- 2026-10-20: the aggregates `json_group_array` and `json_group_object`
+  (`Aggregate.jsonGroupArray`, `Aggregate.jsonGroupObject`, `Json.groupArray`,
+  `Json.groupObject`, `pairAggregateNamed`, the two-operand branch of `resolveResultColumn`).
+  The operand of a JSON aggregate counts as `json_array(operand)` for the faults
+  (`Output.operands`), so a BLOB is a `may` fault; `json-subtype` also applies to the
+  operands. Two more authored cases (15 in all), all agree. Tests: the Lean build with the
+  examples, `conformance_query_coverage`, `conformance_authored`,
+  `conformance_restriction_examples`, `test_model_package`.
+
+- 2026-10-20: review: one must finding (no query-level test of the aggregate faults). Fixed
+  in "refactor: query examples of the JSON aggregate faults": `JsonFaultExamples.lean` checks a
+  `may` fault for a BLOB operand of each aggregate and a certain failure of a failing operand.
+
+- 2026-10-20: `just test-full` passes on "refactor: query examples of the JSON aggregate
+  faults". The slice verdict: v5 1,909 (+141), v4 +28, corpus 38 with 15 cases that agree, no
+  case lost.
+- 2026-10-20: rebased onto "fix: the table mutants run in their own scheduled suite" (#191):
+  the function mutant tests run in the Nix suite `tableMutants`.
+
+## Status
+
+DONE.

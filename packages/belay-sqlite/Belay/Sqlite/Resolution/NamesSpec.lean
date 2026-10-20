@@ -1,4 +1,4 @@
-import Belay.Sqlite.Resolution.CatalogSpec
+import Belay.Sqlite.Resolution.DropSpec
 import Belay.Sqlite.Resolution.WriteCatalogSpec
 
 set_option doc.verso true
@@ -110,6 +110,14 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveAddColumn_step _ _ _ _ _ _ _ (by assumption))
+  | dropTable name ifExists =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    exact keep _ (resolveDropTable_step _ _ _ _ _ (by assumption))
+  | dropIndex name ifExists =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    exact keep _ (resolveDropIndex_step _ _ _ _ _ _ (by assumption))
   | insert table columns rows conflicts algorithm returning =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok

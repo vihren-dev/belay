@@ -81,14 +81,18 @@ theorem DatabaseExtends.add (database : Database) (position : Nat) (table : Tabl
   · exact ⟨old, (Database.table_addColumn_other database column value same).trans oldPresent,
       TableExtends.refl old⟩
 
-/-- For every clock value, statement and database, the database of the primitive
-{name}`step` effect ({name}`effectDatabase`) extends the input database. CREATE/ADD extend existing tables or retain
+/-- For every clock value, database and statement that is not DROP (its
+{name}`Resolved.Statement.kind` is not {name}`Resolved.Statement.Kind.drop`), the database of
+the primitive {name}`step` effect ({name}`effectDatabase`) extends the input database. A DROP
+removes tables, so the theorem says nothing about it. CREATE/ADD extend existing tables or retain
 errors; other constructors return an unchanged error. This is a primitive schema
 fact, not a preservation law for literal SQL writes. The proof follows the
 primitive branches and table-update witnesses. -/
-theorem step_extends (clock : Int) (statement : Resolved.Statement) (database : Database) :
+theorem step_extends (clock : Int) (statement : Resolved.Statement) (database : Database)
+    (kept : statement.kind ≠ .drop) :
     DatabaseExtends database (effectDatabase (step clock statement database)) := by
   cases statement with
+  | drop _ => exact absurd rfl kept
   | createTable target name table =>
     simp only [step]
     split
@@ -153,7 +157,7 @@ theorem runSqlFrom_extends (guard : SchemaOnly script) :
       subst item
       exact guard statement (by simp)
     have tail : SchemaOnly rest := fun item member => guard item (by simp [member])
-    have first := step_extends 0 statement database
+    have first := step_extends 0 statement database (by rw [guard statement (by simp)]; decide)
     cases h : step 0 statement database with
     | error failure => simpa [runSqlFrom, advance_schemaOnly head, h, Outcome.database] using DatabaseExtends.refl database
     | ok result =>

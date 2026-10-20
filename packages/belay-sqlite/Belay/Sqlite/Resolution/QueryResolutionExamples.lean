@@ -32,14 +32,14 @@ def resolvedOne (statement : Syntax.Statement) : Option Resolved.Statement :=
 def queryOf (statement : Syntax.Statement) : Option Resolved.Query :=
   match resolvedOne statement with
   | some (.query query) => some query
-  | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some .begin | some .commit
+  | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some (.drop _) | some .begin | some .commit
   | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.prepareError _) | none => none
 
 /-- The prepare error of a resolution, if it is one. -/
 def errorOf (statement : Syntax.Statement) : Option PrepareError :=
   match resolvedOne statement with
   | some (.prepareError error) => some error
-  | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some .begin | some .commit
+  | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some (.drop _) | some .begin | some .commit
   | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.query _) | none => none
 
 /-- Whether the statement is a model restriction. -/
@@ -61,7 +61,7 @@ def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration
 #guard errorOf (select [.star] (orderBy := [{ expression := .numeric "3", descending := false }])) ==
   some (.expression (.orderByOutOfRange 1 2))
 #guard errorOf (select [written (.callStar "COUNT") "COUNT(*)"] (groupBy := [.numeric "1"])) == some (.expression .aggregateInGroupBy)
-#guard restrictedOne (select [written (.call "group_concat" [.identifier (name! "b") .none]) "group_concat(b)"])
+#guard restrictedOne (select [written (.call "median" [.identifier (name! "b") .none]) "median(b)"])
 -- SQLite's own tables are not in the catalog; querying one is a model restriction.
 #guard restrictedOne (.select [.star] (some { table := (name! "sqlite_master"), alias := none }) [] none [] [] none none)
 -- A declared type that is a standard type name is kept in capitals, as SQLite reports it.

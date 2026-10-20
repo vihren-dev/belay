@@ -18,7 +18,8 @@ def Expr.any (test : Expr → Bool) : Expr → Bool
     test expression || left.any test || right.any test
   | expression@(.not operand) | expression@(.isNull operand _) | expression@(.cast _ operand) =>
     test expression || operand.any test
-  | expression@(.json _ arguments) | expression@(.date _ arguments) => test expression || arguments.any test
+  | expression@(.json _ arguments) | expression@(.date _ arguments) | expression@(.scalar _ arguments) =>
+    test expression || arguments.any test
 
 /-- Whether the test holds for one of the arguments or their subexpressions
 ({name}`Expr.any`). -/
@@ -32,6 +33,15 @@ end
 def Expr.isJsonCall : Expr → Bool
   | .json .. => true
   | .column _ | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic ..
+  | .cast .. | .coalesce .. | .now _ | .date .. | .scalar .. => false
+
+/-- Whether the expression itself is a call that can fail or give a value that the model
+does not describe: a JSON call, or a scalar function that {name}`ScalarFunction.canFail`; its
+parts are not inspected. Use it with {name}`Expr.any`. -/
+def Expr.isFallibleCall : Expr → Bool
+  | .json .. => true
+  | .scalar function _ => function.canFail
+  | .column _ | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic ..
   | .cast .. | .coalesce .. | .now _ | .date .. => false
 
 /-- Whether the expression itself is a date and time function call; its parts are not
@@ -39,28 +49,28 @@ inspected. -/
 def Expr.isDateCall : Expr → Bool
   | .date .. => true
   | .column _ | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic ..
-  | .cast .. | .coalesce .. | .json .. | .now _ => false
+  | .cast .. | .coalesce .. | .json .. | .now _ | .scalar .. => false
 
 /-- Whether the expression itself is {lit}`CURRENT_TIME`, {lit}`CURRENT_DATE` or
 {lit}`CURRENT_TIMESTAMP`; its parts are not inspected. -/
 def Expr.isNow : Expr → Bool
   | .now _ => true
   | .column _ | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic ..
-  | .cast .. | .coalesce .. | .json .. | .date .. => false
+  | .cast .. | .coalesce .. | .json .. | .date .. | .scalar .. => false
 
 /-- Whether the expression itself is the column at the position; its parts are not
 inspected. -/
 def Expr.isColumn (position : Nat) : Expr → Bool
   | .column read => read == position
   | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast ..
-  | .coalesce .. | .json .. | .now _ | .date .. => false
+  | .coalesce .. | .json .. | .now _ | .date .. | .scalar .. => false
 
 /-- Whether the expression itself is a column at the position or after it; its parts are
 not inspected. -/
 def Expr.isColumnFrom (width : Nat) : Expr → Bool
   | .column read => read ≥ width
   | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast ..
-  | .coalesce .. | .json .. | .now _ | .date .. => false
+  | .coalesce .. | .json .. | .now _ | .date .. | .scalar .. => false
 
 /-- Whether the expression reads only columns below the width. -/
 def Expr.readsBelow (width : Nat) (expression : Expr) : Bool := !expression.any (Expr.isColumnFrom width)

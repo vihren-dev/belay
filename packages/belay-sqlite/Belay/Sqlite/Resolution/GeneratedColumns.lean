@@ -12,11 +12,12 @@ namespace Belay.Sqlite
 /-- The issue of a resolved generated expression, or none: a {lit}`CURRENT_TIME`,
 {lit}`CURRENT_DATE` or {lit}`CURRENT_TIMESTAMP` is SQLite's
 {name}`ExprError.nondeterministicGenerated`; a date and time function, whose {lit}`'now'`
-SQLite refuses only when it writes a row, and a JSON function, whose evaluation can fail,
-are {name}`RestrictionKind.generatedFunction`. -/
+SQLite refuses only when it writes a row, and a JSON function or another function whose
+evaluation can fail ({name}`Resolved.Expr.isFallibleCall`), are
+{name}`RestrictionKind.generatedFunction`. -/
 def generatedIssue (resolved : Resolved.Expr) : Option ValueIssue :=
   if resolved.any Resolved.Expr.isNow then some (.prepare .nondeterministicGenerated)
-  else if resolved.any Resolved.Expr.isDateCall || resolved.any Resolved.Expr.isJsonCall then
+  else if resolved.any Resolved.Expr.isDateCall || resolved.any Resolved.Expr.isFallibleCall then
     some (.restriction [] .generatedFunction)
   else none
 

@@ -2,6 +2,7 @@ import Belay.Sqlite.Resolution.Queries
 import Belay.Sqlite.Resolution.StatementCatalog
 import Belay.Sqlite.Resolution.Updates
 import Belay.Sqlite.Resolution.Deletes
+import Belay.Sqlite.Resolution.Drops
 
 set_option doc.verso true
 
@@ -42,6 +43,8 @@ def resolveStatement (context : ResolveContext) (state : ResolveState) (index : 
   | .createIndex name unique table terms filter =>
     state.withCatalog (resolveCreateIndex context state.catalog index name unique table terms filter)
   | .addColumn table column => state.withCatalog (resolveAddColumn context state.catalog index table column)
+  | .dropTable name ifExists => state.withCatalog (resolveDropTable state.catalog name ifExists)
+  | .dropIndex name ifExists => state.withCatalog (resolveDropIndex state.catalog index name ifExists)
   | .insert table columns rows conflicts algorithm returning =>
     state.withCatalog (resolveInsert context state.catalog index table columns rows conflicts algorithm returning)
   | .update table assignments filter returning =>

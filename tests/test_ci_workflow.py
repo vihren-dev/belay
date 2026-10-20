@@ -82,8 +82,9 @@ def test_check_job_substitutes_from_the_public_cache_with_fallback() -> None:
 def test_only_the_publishing_job_receives_the_write_token() -> None:
     """The check and release jobs, which pull requests and tags run, never see the upload token."""
     jobs = workflow_jobs()
-    assert set(jobs) == {"check", "release", "publish-nix-store"}
+    assert set(jobs) == {"check", "mutants", "release", "publish-nix-store"}
     assert "ATTIC_WRITE_TOKEN" not in jobs["check"]
+    assert "ATTIC_WRITE_TOKEN" not in jobs["mutants"]
     assert "ATTIC_WRITE_TOKEN" not in jobs["release"]
     assert "secrets.ATTIC_WRITE_TOKEN" in jobs["publish-nix-store"]
 
@@ -117,3 +118,20 @@ def test_publishing_uploads_the_restored_store_only_on_an_exact_hit() -> None:
     assert 'login vihren https://cache.vihren.dev "$ATTIC_WRITE_TOKEN"' in upload
     assert ("nix path-info --all | grep -v '\\.drv$' | "
             '"$attic" push vihren:sqlite-verifier --stdin') in upload
+
+
+def test_mutant_job_runs_each_mutant_suite_for_the_package_scope() -> None:
+    """The mutants job runs each suite of tests/nix_mutant_suites.json on its own runner, only
+    for the package scope and with the platform guard of the check job, and never saves a cache."""
+    import json
+    job = workflow_jobs()["mutants"]
+    suites = json.loads((ROOT / "tests/nix_mutant_suites.json").read_text())
+    assert f"suite: [{', '.join(suites)}]" in job
+    assert "save: false" in job and "save: ${{" not in job
+    assert "timeout-minutes: 75" in job
+    steps = re.split(r"\n      - ", job.split("\n    steps:\n", 1)[1])
+    working = [step for step in steps if "Skip macOS checks" not in step]
+    assert all(GUARD in step for step in working)
+    package = "steps.scope.outputs.scope == 'package'"
+    assert all(package in step for step in working if "checkout" not in step and "id: scope" not in step)
+    assert 'just test-mutants "$MUTANT_SUITE"' in job

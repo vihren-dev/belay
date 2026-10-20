@@ -45,6 +45,9 @@ instance : Lean.ToJson PrepareError where
     | .tableNameUsed name => Lean.Json.mkObj [("tableNameUsed", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .indexExists name => Lean.Json.mkObj [("indexExists", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .noSuchTable name => Lean.Json.mkObj [("noSuchTable", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .noSuchIndex name => Lean.Json.mkObj [("noSuchIndex", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .tableMayNotBeDropped name =>
+      Lean.Json.mkObj [("tableMayNotBeDropped", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .expression error => Lean.toJson error
 
 /-- A model restriction as JSON: the statement index, the path, the message that users
@@ -85,6 +88,8 @@ deriving instance Lean.ToExpr for ColumnDefault
 deriving instance Lean.ToExpr for Collation
 deriving instance Lean.ToExpr for Resolved.JsonFunction
 deriving instance Lean.ToExpr for Resolved.DateFunction
+deriving instance Lean.ToExpr for Resolved.TrimSide
+deriving instance Lean.ToExpr for Resolved.ScalarFunction
 deriving instance Lean.ToExpr for Resolved.Expr, Resolved.Arguments
 deriving instance Lean.ToExpr for CheckConstraint
 deriving instance Lean.ToExpr for ForeignKey

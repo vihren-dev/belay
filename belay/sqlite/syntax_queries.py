@@ -57,17 +57,36 @@ def call(tree: Tree, start: int, end: int, function: Located, arguments: list[No
 
 def function_call(tree: Tree, node: Node, children: list[Node]) -> Located:
     """A call with `*`, without arguments, or with one or more arguments, with the function
-    name as written."""
-    function = name(tree, children[0])
-    if [child.symbol for child in children] == ["ID", "LP", "STAR", "RP"]:
+    name as written; the name is an identifier, `like`, `glob`, `regexp` or `match`, which
+    SQLite's grammar reads as the `LIKE_KW` token, or `if` or `replace`, which it reads as the
+    keywords `IF` and `REPLACE`."""
+    function = name(tree, children[0]) if children[0].symbol == "ID" else \
+        leaf(tree.text(children[0]), children[0].start, children[0].end)
+    shape = [child.symbol for child in children[1:]]
+    if shape == ["LP", "STAR", "RP"]:
         return constructor("callStar", [("name", function)], node.start, node.end)
-    if [child.symbol for child in children] == ["ID", "LP", "distinct", "exprlist", "RP"]:
+    if shape == ["LP", "distinct", "exprlist", "RP"]:
         absent(tree, children[2], "DISTINCT in a function call")
         arguments = left_list(tree, children[3], {1: ["nexprlist"]})
         items = left_list(tree, arguments[0][0], {1: ["expr"], 3: ["nexprlist", "COMMA", "expr"]}) if arguments else []
         return call(tree, node.start, node.end, function, [item[-1] for item in items])
     raise tree.unsupported(node, "A function call with ORDER BY, FILTER or OVER is not modeled; "
                                  "write the call with its arguments only")
+
+
+def like(tree: Tree, node: Node, children: list[Node]) -> Located:
+    """`x LIKE p [ESCAPE e]` and the other operators of `likeop` (`GLOB`, `REGEXP`, `MATCH`, each
+    optionally with `NOT`): a call of the function named by the operator as written, with the
+    pattern first, the operand second and the escape last, and `not` around it for `NOT`, as
+    SQLite's parser makes them (ADR 0015, slice 1)."""
+    operator = tree.children(children[1])
+    keyword = operator[-1]
+    function = leaf(tree.text(keyword), keyword.start, keyword.end)
+    arguments = [children[2], children[0]] + ([children[4]] if len(children) == 5 else [])
+    called = call(tree, node.start, node.end, function, arguments)
+    if [part.symbol for part in operator] == ["NOT", "LIKE_KW"]:
+        return constructor("not", [("operand", called)], node.start, node.end)
+    return called
 
 
 def query_expression(tree: Tree, node: Node) -> Located:
@@ -109,8 +128,10 @@ def query_expression(tree: Tree, node: Node) -> Located:
         return constructor("not", [("operand", query_expression(tree, children[1]))], node.start, node.end)
     if symbols in (["expr", "ISNULL"], ["expr", "NOTNULL"], ["expr", "NOT", "NULL"]):
         return is_null(tree, node, children[0], symbols[1] != "ISNULL")
-    if symbols[:2] == ["ID", "LP"]:
+    if symbols[:2] in (["ID", "LP"], ["LIKE_KW", "LP"], ["IF", "LP"], ["REPLACE", "LP"]):
         return function_call(tree, node, children)
+    if symbols in (["expr", "likeop", "expr"], ["expr", "likeop", "expr", "ESCAPE", "expr"]):
+        return like(tree, node, children)
     return expression(tree, node)
 
 

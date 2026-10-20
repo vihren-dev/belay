@@ -20,11 +20,18 @@ def Output.scalars : Output → List Expr
   | .scalar term => [term]
   | .aggregate _ => []
 
-/-- The operand of an aggregate result column; none for a scalar or {lit}`COUNT(*)`. -/
+/-- The expressions that an aggregate result column evaluates over each row; none for a
+scalar or {lit}`COUNT(*)`. A value of {lit}`json_group_array` or {lit}`json_group_object` is
+written as {lit}`json_array` writes it, so it is the call {lit}`json_array(value)`, whose fault
+is that of writing the value (a BLOB is JSONB, which the model does not describe). -/
 def Output.operands : Output → List Expr
   | .scalar _ | .aggregate .countRows => []
   | .aggregate (.count operand) | .aggregate (.min operand _) | .aggregate (.max operand _)
   | .aggregate (.sum operand) | .aggregate (.avg operand) => [operand]
+  | .aggregate (.jsonGroupArray operand _) => [.json .array (.cons operand .nil)]
+  | .aggregate (.jsonGroupObject label value _) => [label, .json .array (.cons value .nil)]
+  | .aggregate (.groupConcat operand separator) => operand :: separator.toList
+  | .aggregate (.total operand) => [operand]
 
 /-- The expressions of an {lit}`ORDER BY` key: an expression, or none for a result
 column, which the result columns already cover. -/
@@ -55,9 +62,10 @@ def Query.joined (query : Query) : Bool :=
 def Query.expressions (query : Query) : List Expr :=
   query.filter.toList ++ query.sources.flatMap QuerySource.expressions ++ query.keptExpressions
 
-/-- Whether some JSON call of the query may fail over its source rows. The row with no
-cells, {lit}`[]`, reads NULL in every column. A query that joins sources
-({name}`Query.joined`) and has a JSON call may fail, because SQLite may evaluate a condition over a part of
+/-- Whether some fallible call of the query ({name}`Expr.isFallibleCall`: a JSON call or a
+function that can fail) may fail over its source rows. The row with no cells, {lit}`[]`,
+reads NULL in every column. A query that joins sources ({name}`Query.joined`) and has a
+fallible call may fail, because SQLite may evaluate a condition over a part of
 a joined row. The failures of {lit}`json_each` itself are not JSON calls of an
 expression; {lit}`Query.source` gives their fault. Otherwise:
 * {lit}`WHERE` over every source row and over {lit}`[]`, because SQLite evaluates a
@@ -67,29 +75,46 @@ expression; {lit}`Query.source` gives their fault. Otherwise:
   over every row that passes {lit}`WHERE`, and in an aggregate query also over {lit}`[]`,
   because SQLite evaluates the result row of an empty group over NULL cells. -/
 def Query.mayFail (clock : Int) (query : Query) (rows : List (List Value)) : Bool :=
-  if query.joined then query.expressions.any (·.any Expr.isJsonCall)
+  if query.joined then query.expressions.any (·.any Expr.isFallibleCall)
   else
     let kept := filtered clock query rows ++ if query.aggregate then [[]] else []
     anyMayFail clock ([] :: rows) query.filter.toList ||
     anyMayFail clock kept query.keptExpressions
 
-/-- For every clock value, row and expression without a JSON call at any depth
-({name}`Expr.isJsonCall`, {name}`Expr.any`), the fault of the expression over the row at
+/-- For every clock value, row and expression without a fallible call at any depth
+({name}`Expr.isFallibleCall`, {name}`Expr.any`), the fault of the expression over the row at
 the clock value is {lean}`Fault.none`. Proof sketch: induction over the mutual expression and argument types;
-every node joins or softens the faults of its parts, which are all {lean}`Fault.none`. -/
+every node joins or softens the faults of its parts, which are all {lean}`Fault.none`, and a
+scalar function that cannot fail gives a value ({name}`ScalarFunction.apply_ok`). -/
 theorem Expr.fault_of_plain (clock : Int) (row : List Value) (expression : Expr)
-    (plain : expression.any Expr.isJsonCall = false) : (expression.evaluate clock row).2 = .none := by
+    (plain : expression.any Expr.isFallibleCall = false) : (expression.evaluate clock row).2 = .none := by
   induction expression using Expr.rec
-    (motive_2 := fun arguments => arguments.any Expr.isJsonCall = false → (arguments.evaluate clock row).2 = .none) <;>
-    simp_all [Expr.any, Arguments.any, Expr.isJsonCall, Expr.evaluate, Arguments.evaluate, Fault.join, Fault.soften]
+    (motive_2 := fun arguments => arguments.any Expr.isFallibleCall = false → (arguments.evaluate clock row).2 = .none) <;>
+    simp_all [Expr.any, Arguments.any, Expr.isFallibleCall, Expr.evaluate, Arguments.evaluate, Fault.join, Fault.soften]
+  case scalar function arguments ih =>
+    have safe := plain.1
+    have quiet := ih
+    cases function
+    case iif =>
+      cases arguments with
+      | nil => simp [Expr.evaluate]
+      | cons head tail =>
+        simp only [Arguments.evaluate] at quiet
+        simp only [Expr.evaluate]
+        rcases first : (head.evaluate clock row).2 with _ | _ | _ <;>
+          rcases later : (tail.evaluate clock row).2 with _ | _ | _ <;>
+          simp_all [Fault.join, Fault.soften]
+    all_goals
+      obtain ⟨value, ok⟩ := ScalarFunction.apply_ok _ (arguments.evaluate clock row).1 safe
+      simp [Expr.evaluate, ok, quiet, Fault.join, Fault.ofFunction]
 
-/-- For every clock value, all rows and every query without a JSON call in any of its
-expressions ({name}`Query.expressions`), no JSON call of the query may fail over the rows at
+/-- For every clock value, all rows and every query without a fallible call in any of its
+expressions ({name}`Query.expressions`), no call of the query may fail over the rows at
 the clock value ({name}`Query.mayFail`). Proof sketch: each expression that {name}`Query.mayFail`
 evaluates is one of {name}`Query.expressions`, so {name}`Expr.fault_of_plain` applies to
 it. -/
 theorem Query.mayFail_of_plain (clock : Int) (query : Query) (rows : List (List Value))
-    (plain : query.expressions.all (!·.any Expr.isJsonCall) = true) : query.mayFail clock rows = false := by
+    (plain : query.expressions.all (!·.any Expr.isFallibleCall) = true) : query.mayFail clock rows = false := by
   simp only [List.all_eq_true, Bool.not_eq_true'] at plain
   unfold Query.mayFail anyMayFail
   split

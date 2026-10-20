@@ -21,7 +21,40 @@ when every value is NULL. A tie keeps the earlier value, as SQLite's {lit}`min()
 def extremum (better : Value → Value → Bool) (values : List Value) : Value :=
   (values.filter (!·.isNull)).foldl (fun best value => if best.isNull || better value best then value else best) .null
 
-/-- The value of an aggregate over the rows of one group. -/
+/-- The text of a value as {lit}`group_concat` appends it ({lit}`sqlite3_value_text`): the
+decimal digits of an INTEGER, {name}`realText` of a REAL, and the bytes of TEXT and BLOB. -/
+def concatText : Value → List UInt8
+  | .null => []
+  | .integer value => (toString value).toUTF8.toList
+  | .real bits => realText (Float.ofBits bits)
+  | .text bytes | .blob bytes => bytes
+
+/-- The separator bytes of one row of {lit}`group_concat`: {lit}`,` without a separator argument,
+none for a NULL one, else its text. -/
+def concatSeparator : Option Value → List UInt8
+  | none => [44]
+  | some separator => concatText separator
+
+/-- {lit}`group_concat` over the operand and separator values of a group's rows
+({lit}`groupConcatStep`): NULL operands are skipped; the first other value starts the text,
+and each later one adds the separator of its own row and then its text. -/
+def concatRows : Option (List UInt8) → List (Value × Option Value) → Option (List UInt8)
+  | text, [] => text
+  | text, (value, separator) :: rest =>
+    if value.isNull then concatRows text rest
+    else concatRows (some (match text with
+      | none => concatText value
+      | some text => text ++ concatSeparator separator ++ concatText value)) rest
+
+/-- The value of {lit}`group_concat` ({lit}`groupConcatFinalize`): the TEXT of {name}`concatRows`,
+or NULL when every operand is NULL. -/
+def groupConcatValue (rows : List (Value × Option Value)) : Value :=
+  match concatRows none rows with
+  | some text => .text text
+  | none => .null
+
+/-- The value of an aggregate over the rows of one group. The JSON aggregates read whether
+each value has the JSON subtype ({name}`Expr.givesJson`). -/
 def Aggregate.eval (clock : Int) (rows : List (List Value)) : Aggregate → Value
   | .countRows => .integer rows.length
   | .count operand => .integer (rows.filter fun row => !(operand.eval clock row).isNull).length
@@ -29,12 +62,19 @@ def Aggregate.eval (clock : Int) (rows : List (List Value)) : Aggregate → Valu
   | .max operand collation => extremum (fun a b => collation.compare a b == .gt) (rows.map (operand.eval clock))
   | .sum operand => ((sumOf (rows.map (operand.eval clock))).sumValue).getD .null
   | .avg operand => (sumOf (rows.map (operand.eval clock))).averageValue
+  | .jsonGroupArray operand binary =>
+    Json.groupOutput binary (Json.groupArray (rows.map fun row => (operand.eval clock row, operand.givesJson clock row)))
+  | .jsonGroupObject label value binary => Json.groupOutput binary
+    (Json.groupObject (rows.map fun row => (label.eval clock row, value.eval clock row, value.givesJson clock row)))
+  | .groupConcat operand separator =>
+    groupConcatValue (rows.map fun row => (operand.eval clock row, separator.map (·.eval clock row)))
+  | .total operand => (sumOf (rows.map (operand.eval clock))).totalValue
 
 /-- Whether an aggregate fails over the rows of one group: {lit}`SUM` with an integer
 overflow that no later REAL input cleared. Every other aggregate never fails. -/
 def Aggregate.fails (clock : Int) (rows : List (List Value)) : Aggregate → Bool
   | .sum operand => ((sumOf (rows.map (operand.eval clock))).sumValue).isNone
-  | .countRows | .count _ | .min .. | .max .. | .avg _ => false
+  | .countRows | .count _ | .min .. | .max .. | .avg _ | .jsonGroupArray .. | .jsonGroupObject .. | .groupConcat .. | .total _ => false
 
 /-- The groups of rows by the values of the grouping terms, in the order in which
 each group first appears. Two rows are in one group when each term's values compare

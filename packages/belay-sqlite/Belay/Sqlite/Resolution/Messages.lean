@@ -57,6 +57,8 @@ def ExprError.message : ExprError → String
   | .orderByOutOfRange term columns => s!"{ordinal term} ORDER BY term out of range - should be between 1 and {columns}"
   | .groupByOutOfRange term columns => s!"{ordinal term} GROUP BY term out of range - should be between 1 and {columns}"
   | .wrongArgumentCount function => s!"wrong number of arguments to function {function}()"
+  | .noSuchFunction function => s!"no such function: {function}"
+  | .likelihoodArgument => "second argument to likelihood() must be a constant between 0.0 and 1.0"
   | .ambiguousColumn name => s!"ambiguous column name: {name}"
   | .noSuchSource name => s!"no such table: {name}"
   | .tooManyTables => "at most 64 tables in a join"
@@ -75,6 +77,8 @@ def PrepareError.message : PrepareError → String
   | .tableNameUsed name => s!"there is already a table named {name}"
   | .indexExists name => s!"index {name} already exists"
   | .noSuchTable name => s!"no such table: {name}"
+  | .noSuchIndex name => s!"no such index: {name}"
+  | .tableMayNotBeDropped name => s!"table {name} may not be dropped"
   | .expression error => error.message
 
 end Belay.Sqlite

@@ -19,6 +19,7 @@ The frontend maps these statements, and refuses every other statement as
 - `CREATE [UNIQUE] INDEX` with key terms, each a column name or an expression with
   an optional `ASC` or `DESC`, and an optional `WHERE` filter (ADR 0014, slice 1);
 - `ALTER TABLE … ADD [COLUMN]` with one column definition;
+- `DROP TABLE [IF EXISTS] name` and `DROP INDEX [IF EXISTS] name` (ADR 0014, slice 7);
 - `BEGIN` (optionally `DEFERRED`), `COMMIT`/`END` and `ROLLBACK`, optionally with
   `TRANSACTION`;
 - `INSERT INTO table [(columns)] VALUES` with one or more rows;
@@ -62,7 +63,48 @@ operators `+`, `-`, `*`, `/` and `%`, unary `-` and `+` of any expression,
 slice 2), `json_extract` with one or more paths and the operators `->` and `->>`
 (slice 6b), `json_type`, `json_valid`, `json_array_length` and `json` (slice 6c), and
 `date`, `time`, `datetime`, `julianday`, `unixepoch` and `strftime` with one time value
-or none, which is `now` (slice 6f), and any modifiers, in UTC (slice 6g). A
+or none, which is `now` (slice 6f), and any modifiers, in UTC (slice 6g). ADR 0015,
+slice 1, adds the text and type functions `typeof`, `length`, `octet_length`, `lower`,
+`upper`, `substr`, `substring`, `instr`, `replace`, `trim`, `ltrim`, `rtrim`, `hex`, `unhex`,
+`quote`, `unistr`, `unistr_quote`, `char`, `unicode`, `concat`, `concat_ws`, `ifnull`,
+`nullif`, `iif`, `if`, `likely`, `unlikely`, `likelihood`, scalar `min` and `max`, `abs`,
+`sign`, `zeroblob`, `like` and `glob`, and the operators `LIKE`, `NOT LIKE`, `GLOB` and
+`NOT GLOB` with an optional `ESCAPE`, which are calls of `like` and `glob` with the pattern
+first, as in SQLite. Each follows SQLite's `func.c`: text counts UTF-8 characters, `lower`
+and `upper` change ASCII letters only, and `LIKE` ignores ASCII case only. A function result
+has no affinity. A name that is no function of the pinned library is SQLite's prepare error
+`no such function`, and a number of arguments that the function does not accept is `wrong
+number of arguments to function`; both come after the errors of the arguments. A
+function that can fail while the statement runs, such as `abs` of the smallest integer or a
+`LIKE` with an `ESCAPE` of two characters, fails as SQLite does in a query without `FROM`; in a
+CHECK constraint, an index key or a generated column it is a model restriction, as a JSON
+function is. ADR 0015, slice 2, adds the exact numeric functions `round`, `floor`, `ceil`,
+`ceiling`, `trunc`, `sqrt`, `pi`, `degrees`, `radians` and `mod`, which follow SQLite's
+`func.c` with the results of the C library for these exact operations, including the sign of
+zero (`trunc(-0.5)` is `-0.0`); the transcendental functions (`ln`, `exp`, `pow`, `sin` and
+the others) stay `unmodeled-function`. ADR 0015, slice 3, adds the JSON functions
+`json_quote`, `json_array`, `json_object`, `json_set`, `json_insert`, `json_replace`,
+`json_remove`, `json_patch`, `json_pretty` and `json_error_position`, and the aggregates
+`json_group_array` and `json_group_object` of a whole result column. They write an SQL value as
+SQLite's `jsonAppendSqlValue` does, and read a text value as JSON only when it has SQLite's JSON
+subtype: when it is a direct call of `json`, `->`, one of these functions (except `json_pretty`
+and `json_error_position`), or `json_extract` that selects an array or an object or has two or
+more paths. A JSON call passed on through `coalesce`, `iif`, `nullif`, `min` or `max` is the
+restriction `json-subtype`, also as the operand of a JSON aggregate. The position that `json_error_position` gives for malformed JSON
+is not modeled. ADR 0015, slice 4, adds JSONB: `jsonb`, `jsonb_extract`, `jsonb_array`,
+`jsonb_object`, `jsonb_set`, `jsonb_insert`, `jsonb_replace`, `jsonb_remove`, `jsonb_patch`,
+`jsonb_group_array` and `jsonb_group_object` give SQLite's JSONB BLOB byte for byte, and every
+JSON function reads a BLOB argument as SQLite does: JSONB when it passes SQLite's quick check,
+else JSON text, and as a stored value the error `JSON cannot hold BLOB values`. The model reads
+JSONB that is valid and in the encoding that SQLite's encoder gives for its tree; other JSONB,
+such as a BLOB with a header longer than needed, is outside the supported subset. ADR 0015,
+slice 5, adds the aggregates `group_concat(x [, separator])`, `string_agg(x, separator)` and
+`total(x)` of a whole result column: `group_concat` joins the text of the values that are not
+NULL in the order of the group's rows, each after the first preceded by the separator of its own
+row, and `total` is the REAL sum of `SUM`'s summation, `0.0` for an empty group. ADR 0015,
+slice 6, adds `printf` and `format` with every conversion, flag, width and precision of SQLite's
+`sqlite3_str_vappendf` for SQL functions; a width or precision above 100000 is outside the
+supported subset. A
 `FROM` may end with `json_each(json [, path])` sources, joined by a comma or an inner
 `JOIN` with an optional `ON` condition, whose arguments read the sources before them
 (slice 6d). A comparison applies SQLite's comparison affinity (ADR 0013, D4): with an
@@ -190,6 +232,17 @@ COLUMN to a `STRICT` table with a type that it does not admit, or with a default
 not fit the type, is a model restriction (`add-column-strict-type`), because SQLite reports
 it only while the statement runs.
 
+`DROP TABLE` (ADR 0014, slice 7) removes the table, its rows and its indexes, and `DROP
+INDEX` removes one index; the later catalog objects move to lower positions, and later
+statements resolve against the catalog without the dropped objects. A ROLLBACK brings a
+dropped object back with its rows. SQLite's prepare errors apply, with names compared with
+ASCII case ignored: `no such table` and `no such index`, also for an object of the other
+kind, which `IF EXISTS` turns into a statement that does nothing, and `table sqlite_master
+may not be dropped` for SQLite's schema tables under any of their names, also with `IF
+EXISTS`. The catalog does not name the indexes of UNIQUE and PRIMARY KEY constraints, so a
+DROP INDEX of another name that begins with `sqlite_autoindex_` is a model restriction
+(`drop-constraint-index`). The model has no triggers, views or enforced foreign keys.
+
 A collation (ADR 0014, slice 3) is `BINARY`, `NOCASE` or `RTRIM`, with ASCII case of the
 name ignored. `NOCASE` compares TEXT with the ASCII capitals folded, and `RTRIM` compares
 TEXT without trailing spaces; neither changes a value of another storage class. A column
@@ -280,6 +333,7 @@ should shrink.
 | `generated-function` | A date and time function or a JSON function in a generated column is not modeled | ADR 0014, slice 5 |
 | `generated-loop` | Generated columns that read each other in a loop are not modeled, because SQLite reports the loop while CREATE TABLE runs | ADR 0014, slice 5 |
 | `add-column-generated` | ADD COLUMN of a generated column is not modeled | ADR 0014, slice 5 |
+| `drop-constraint-index` | DROP INDEX of a name that begins with `sqlite_autoindex_` and is no catalog index is not modeled, because the catalog does not name the indexes of UNIQUE and PRIMARY KEY constraints, which SQLite does not drop | ADR 0014, slice 7 |
 | `add-column-strict-type` | ADD COLUMN to a `STRICT` table with a type that it does not admit, or with a default that does not fit the type, is not modeled, because SQLite reports it while the statement runs | ADR 0014, slice 6 |
 | `add-column-constraint` | The added column requires unmodeled default evaluation | ADR 0008 |
 | `constraint-algorithm-update` | UPDATE of a table with ON CONFLICT constraint algorithms is not modeled | ADR 0012 amendment 4, slice 5d |
@@ -288,7 +342,7 @@ should shrink.
 | `update-column-twice` | A column assigned twice in UPDATE is not modeled | ADR 0008 |
 | `join-operator` | A join operator that SQLite refuses with `unknown join type`, such as `INNER OUTER JOIN`, is not modeled | ADR 0012 amendment 2; ADR 0013 amendment 2 |
 | `system-table` | Queries of SQLite's own tables, such as `sqlite_schema`, are not modeled | ADR 0012 slice 1 |
-| `unmodeled-function` | Only `COUNT(*)`, `COUNT`, `MIN`, `MAX`, `SUM` and `AVG` of one argument, `COALESCE` of two or more arguments, `json_extract`, `->`, `->>`, `json_type`, `json_valid`, `json_array_length` and `json` are modeled as functions | ADR 0012 slices 1, 2, 6b and 6c |
+| `unmodeled-function` | A function of the pinned library that the model does not describe, or a form of it that the model does not describe, such as a window function or `sqlite_version()` | ADR 0012 slices 1, 2, 6b and 6c; ADR 0015 |
 | `aggregate-in-expression` | An aggregate inside an expression is not modeled | ADR 0012 slice 1 |
 | `alias-in-expression` | A result column alias inside WHERE or an ORDER BY expression is not modeled | ADR 0012 slice 1 |
 | `group-by-term` | Only a column name, also under COLLATE, or a result column number is modeled in GROUP BY | ADR 0012 slice 1; ADR 0014, slice 3 |
@@ -300,6 +354,7 @@ should shrink.
 | `later-table-in-on` | An ON condition that names a source joined after it is not modeled: SQLite moves it to WHERE without outer joins and refuses it otherwise | ADR 0012 amendment 2; ADR 0013 amendment 2 |
 | `function-join` | `json_each` as the right operand of RIGHT or FULL JOIN, with NATURAL or USING, or before a NATURAL JOIN, is not modeled | ADR 0012 slice 6d; ADR 0013 amendment 2 |
 | `later-source-in-arguments` | An argument of `json_each` that reads a later source is not modeled, because the model joins in written order | ADR 0012 slice 6d; ADR 0013 amendment 2 |
+| `json-subtype` | A JSON call passed on through `coalesce`, `iif`, `nullif`, `min` or `max` as a value argument of `json_quote`, `json_array`, `json_object`, an edit function or a JSON aggregate is not modeled, because SQLite keeps the JSON subtype through such expressions | ADR 0015, slice 3 |
 
 #### Undecided
 
@@ -336,12 +391,13 @@ rounded; and `SUM` and `AVG` with SQLite's summation. A `SUM` that overflows the
 64-bit integers stops the query with `integer overflow`, unless a later REAL input
 makes the sum approximate. JSON functions read JSON and JSON5 text as SQLite 3.51.0
 does, and give SQLite's values and rendered JSON text (slice 6b). A JSON function that
-fails with `malformed JSON`, `bad JSON path` or the `json_valid` flags error stops a query without `FROM` where SQLite
+fails with `malformed JSON`, `bad JSON path`, the `json_valid` flags error, an argument error
+of `json_object` or an edit function, or `JSON cannot hold BLOB values` stops a query without `FROM` where SQLite
 certainly evaluates it. Every other statement in which a JSON function may fail is
 outside the supported subset for that data, because SQLite skips or folds some
 expressions and evaluates a constant `WHERE` term before it reads the rows: a query with
-`FROM`, a write, a failure under `AND`, `OR` or `COALESCE`, and a JSONB (BLOB)
-argument. Each statement sees one clock value, SQLite's
+`FROM`, a write, a failure under `AND`, `OR` or `COALESCE`, and JSONB that the model does not
+read. Each statement sees one clock value, SQLite's
 Julian-day milliseconds from the VFS method `xCurrentTimeInt64`, and different statements
 may see different values (slice 6e2). `CURRENT_TIME`, `CURRENT_DATE` and
 `CURRENT_TIMESTAMP` give it as SQLite's text `HH:MM:SS`, `YYYY-MM-DD` and

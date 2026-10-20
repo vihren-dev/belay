@@ -132,7 +132,7 @@ def test_bundle_policy_matches_existing_nix_test_recipes() -> None:
         targets.add(words[words.index("-A") + 1])
         assert tuple(words[words.index("--option"):]) == NIX_TEST_BUILD_OPTIONS
     assert targets == {"developmentTestReports", "testReports", "tests.atuin", "publicDocumentation",
-                       "scheduledTestReports", "apiReference"}
+                       "scheduledTestReports", "scheduledCheckReports", "scheduledTests.{{suite}}", "apiReference"}
 
 
 def test_ci_failure_retains_phase_status(tmp_path: Path) -> None:

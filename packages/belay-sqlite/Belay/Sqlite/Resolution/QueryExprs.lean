@@ -1,6 +1,6 @@
 import Belay.Sqlite.Resolution.Values
 import Belay.Sqlite.Resolution.MergedNames
-import Belay.Sqlite.Resolution.ExprForms
+import Belay.Sqlite.Resolution.FunctionCalls
 import Belay.Sqlite.Resolution.SyntaxScope
 import Belay.Sqlite.ExprEval
 import Belay.Sqlite.Resolution.ExprAny
@@ -32,11 +32,9 @@ coalesce of merged columns, {lit}`ambiguous column name: x.c`, else
 conditions. An aggregate gives {name}`aggregateIssue`. A numeric literal has the value of
 {name}`queryNumeric`; unary minus of another expression is {lit}`0 - operand` and unary
 plus keeps the value without its affinity, as SQLite generates them; a {lit}`CAST` has
-the affinity of its type name. A call keeps the checks that SQLite makes by its number of
-arguments: without arguments only a date and time function; with one argument a JSON or
-date and time function over its resolved argument, else an aggregate's issue or
-{name}`callIssue`; with two or more {lit}`COALESCE`, a JSON or a date and time function over
-its resolved arguments, else {name}`pairIssue`. The issue path of argument {lit}`k` is
+the affinity of its type name. A call resolves its arguments first, then is {name}`callOperand`, as SQLite
+reports the errors of the arguments before those of the function; {lit}`name(*)` other than
+{lit}`count(*)` is {name}`starCallIssue`. The issue path of argument {lit}`k` is
 {lit}`[1, k]`. A comparison compares under {name}`comparisonCollation`. {lit}`x COLLATE c`
 is the resolved {lit}`x`, whose collation the expression that uses it decides; a name
 {lit}`c` other than {lit}`BINARY`, {lit}`NOCASE` and {lit}`RTRIM` is
@@ -98,21 +96,10 @@ def resolveOperand (dqs : Bool) (scope : Scope) (misuse : Bool) : Syntax.Expr �
   | .positive operand => do
     let a ← (resolveOperand dqs scope misuse operand).mapError (·.under [0])
     .ok (a.1, none)
-  | .call name arguments => match arguments with
-    | [] => match dateFunctionNamed name with
-      | some function => dateCall function .nil
-      | none => .error (callIssue name)
-    | [_] =>
-      if (jsonFunctionNamed name).isSome || (dateFunctionNamed name).isSome then do
-        let resolved ← resolveArguments dqs scope misuse 0 arguments
-        functionCall name resolved (callIssue name)
-      else .error (if (aggregateNamed name).isSome then aggregateIssue misuse name else callIssue name)
-    | _ :: _ :: _ =>
-      if normalizeIdentifier name == "coalesce" || scalarFunctionName name then do
-        let resolved ← resolveArguments dqs scope misuse 0 arguments
-        functionCall name resolved (pairIssue name)
-      else .error (pairIssue name)
-  | call@(.callStar name) => .error (if aggregateCall call then aggregateIssue misuse name else callIssue name)
+  | .call name arguments => do
+    let resolved ← resolveArguments dqs scope misuse 0 arguments
+    callOperand scope misuse name arguments resolved
+  | call@(.callStar name) => .error (if aggregateCall call then aggregateIssue misuse name else starCallIssue name)
   | .null => .ok (.literal .null, none)
   | .string bytes => .ok (.literal (.text bytes), none)
   | .blob bytes => .ok (.literal (.blob bytes), none)

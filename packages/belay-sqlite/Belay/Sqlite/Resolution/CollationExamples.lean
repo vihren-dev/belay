@@ -79,7 +79,7 @@ def outputs (script : List Syntax.Statement) : Option (List (List Value)) :=
     match resolved.getLast?, runSql resolved.dropLast tables.emptyDatabase with
     | some (.query query), .success database => (query.runOn 0 database).map (·.2.rows)
     | some (.query _), .failure .. | some (.query _), .pending .. => none
-    | some (.createTable ..), _ | some (.createIndex ..), _ | some (.addColumn ..), _ | some .begin, _
+    | some (.createTable ..), _ | some (.createIndex ..), _ | some (.addColumn ..), _ | some (.drop _), _ | some .begin, _
     | some .commit, _ | some .rollback, _ | some (.insert ..), _ | some (.upsert ..), _ | some (.update ..), _
     | some (.delete ..), _ | some (.prepareError _), _ | none, _ => none
   | .restricted _ => none
@@ -147,7 +147,7 @@ def failureOf (script : List Syntax.Statement) : Option (Nat × ExecutionError) 
 def indexKeys (script : List Syntax.Statement) : Option (List IndexKey) :=
   match (statements (migration tables script)).getLast? with
   | some (.createIndex _ _ index) => some index.keys
-  | some (.createTable ..) | some (.addColumn ..) | some .begin | some .commit | some .rollback | some (.insert ..)
+  | some (.createTable ..) | some (.addColumn ..) | some (.drop _) | some .begin | some .commit | some .rollback | some (.insert ..)
   | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.query _) | some (.prepareError _) | none => none
 
 -- An index term has an explicit collation, else its column's.

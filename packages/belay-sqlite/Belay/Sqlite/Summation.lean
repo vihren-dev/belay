@@ -123,6 +123,11 @@ def SumState.averageValue (state : SumState) : Value :=
     let total := if state.approximate then state.approximateTotal else Float.ofInt state.integerSum
     realValue (total / Float.ofNat state.count)
 
+/-- The value of {lit}`TOTAL` ({lit}`totalFinalize`): the total as a REAL, {lit}`0.0` without
+inputs; it never fails, because an integer overflow only makes the sum approximate. -/
+def SumState.totalValue (state : SumState) : Value :=
+  realValue (if state.approximate then state.approximateTotal else Float.ofInt state.integerSum)
+
 /-- The state of {lit}`SUM` or {lit}`AVG` after a list of values. -/
 def sumOf (values : List Value) : SumState := values.foldl SumState.add {}
 

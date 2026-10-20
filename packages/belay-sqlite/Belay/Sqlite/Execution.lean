@@ -110,7 +110,7 @@ def queryEffect (database : Database) : Option (Resolved.SourceRows × Resolved.
     else .ok database
   | none => .ok database
 
-/-- The effect of CREATE TABLE, ADD COLUMN, a query or a prepare error, without a position
+/-- The effect of CREATE TABLE, ADD COLUMN, DROP, a query or a prepare error, without a position
 (ADR 0006): the database after it, or the error with the database that it keeps, the
 input database for every error here. SQLite refuses a statement with its prepare
 error. CREATE TABLE adds the table to the catalog ({name}`Catalog.createTable`) with no
@@ -124,6 +124,8 @@ constraint an existing row with the default fails with
 CREATE INDEX builds the index over the table's rows (ADR 0014, D1): a unique index whose
 key has two conflicting rows ({lit}`LiteralData.uniqueRows`) fails with
 {lean}`ExecutionError.constraintViolation` and keeps the catalog.
+DROP removes the objects at its positions with their rows ({name}`Database.drop`); it
+does not fail, since the model has no enforced foreign keys.
 CREATE TABLE or CREATE INDEX at a position other than the end of the catalog (or over
 rows that do not match the catalog), CREATE INDEX of a position without a table, and ADD
 COLUMN at a position without a table fail with {lean}`ExecutionError.unmodeled`:
@@ -164,6 +166,7 @@ def step (clock : Int) (statement : Resolved.Statement) (database : Database) : 
           .error (.constraintViolation, database)
         else .ok { catalog := database.catalog.createIndex name index, rows := database.rows ++ [[]] }
     else .error (.unmodeled, database)
+  | .drop positions => .ok (database.drop positions)
   | .prepareError error => .error (.prepare error, database)
   | .query query => queryEffect database (query.runOn clock database)
   | .begin | .commit | .rollback | .insert .. | .upsert .. | .update .. | .delete .. =>

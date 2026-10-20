@@ -1,0 +1,67 @@
+"""Each mutant of the function tables of ADR 0015 changes the verdict of an authored case.
+
+ADR 0015 adds SQL functions slice by slice, and each slice lists the changes of its rules
+that the conformance suite must notice. The cases are the authored cases of
+`conformance.authored_text_functions` (slice 1), `conformance.authored_numeric_functions`
+(slice 2), `conformance.authored_json_edits` (slice 3), `conformance.authored_jsonb` (slice 4),
+`conformance.authored_aggregates` (slice 5) and `conformance.authored_printf` (slice 6), recorded natively with their outputs. Each measurement builds one base copy for
+its mutants with `measure_set` of `tests/mutant_sets.py`, and each mutant
+copy classifies the case that the mutant names as its target. The tests run in the Nix suite
+`functionMutants`, on their own CI runner.
+"""
+
+from pathlib import Path
+
+import pytest
+
+from conformance import (aggregate_mutants, authored_aggregates, authored_json_edits, authored_jsonb, authored_numeric_functions, authored_text_functions,
+                         function_mutants, json_edit_mutants, jsonb_mutants, numeric_function_mutants,
+                         authored_printf, printf_mutants)
+from tests.mutant_sets import measure_set
+
+pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_lean,
+              pytest.mark.requires_native("parser-library", "sqlite3")]
+
+
+def test_every_text_function_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored cases of the text and type functions notice every changed rule
+    (`conformance.function_mutants`): `length` that counts bytes in text, `lower` that changes
+    non-ASCII bytes, and `LIKE` that compares case (ADR 0015, slice 1)."""
+    measure_set(runtime_root, [authored_text_functions], [(function_mutants.MUTANTS, function_mutants.TARGETS)])
+
+
+def test_every_numeric_function_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored cases of the exact numeric functions notice every changed rule
+    (`conformance.numeric_function_mutants`): `round` that rounds half to even, `floor` that
+    truncates toward zero, and `mod` that keeps an integer result (ADR 0015, slice 2)."""
+    measure_set(runtime_root, [authored_numeric_functions],
+                [(numeric_function_mutants.MUTANTS, numeric_function_mutants.TARGETS)])
+
+
+def test_every_json_edit_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored cases of the JSON build and edit functions notice every changed rule
+    (`conformance.json_edit_mutants`): `json_insert` that overwrites, `json_patch` that keeps a
+    member whose patch is `null`, and `json_array` that quotes a JSON argument (ADR 0015,
+    slice 3)."""
+    measure_set(runtime_root, [authored_json_edits], [(json_edit_mutants.MUTANTS, json_edit_mutants.TARGETS)])
+
+
+def test_every_jsonb_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored JSONB cases notice every changed rule (`conformance.jsonb_mutants`): a header
+    whose size needs one byte written with two, `jsonb_set` that stores SQL text as `TEXT`, and
+    a BLOB that is never read as JSON text (ADR 0015, slice 4)."""
+    measure_set(runtime_root, [authored_jsonb], [(jsonb_mutants.MUTANTS, jsonb_mutants.TARGETS)])
+
+
+def test_every_aggregate_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored cases of `group_concat`, `string_agg` and `total` notice every changed rule
+    (`conformance.aggregate_mutants`): a separator argument that is ignored, `group_concat` that
+    keeps a NULL value, and `total` that gives NULL for an empty group (ADR 0015, slice 5)."""
+    measure_set(runtime_root, [authored_aggregates], [(aggregate_mutants.MUTANTS, aggregate_mutants.TARGETS)])
+
+
+def test_every_printf_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored cases of `printf` and `format` notice every changed rule
+    (`conformance.printf_mutants`): `%d` without the sign flag, `%g` that keeps trailing zeros,
+    and `%q` that does not double quotes (ADR 0015, slice 6)."""
+    measure_set(runtime_root, [authored_printf], [(printf_mutants.MUTANTS, printf_mutants.TARGETS)])

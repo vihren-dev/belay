@@ -31,6 +31,7 @@ EXAMPLES: dict[str, tuple[str, str]] = {
                          "INSERT INTO t(a) VALUES(1) ON CONFLICT(a) DO UPDATE SET b = 2;"),
     "add-column-generated": ("CREATE TABLE t(a INTEGER);", "ALTER TABLE t ADD COLUMN b AS (a + 1);"),
     "add-column-strict-type": ("CREATE TABLE t(a INTEGER) STRICT;", "ALTER TABLE t ADD COLUMN b VARCHAR(5);"),
+    "drop-constraint-index": ("CREATE TABLE t(a INTEGER UNIQUE);", "DROP INDEX sqlite_autoindex_t_1;"),
     "unmodeled-default": ("CREATE TABLE t(a INTEGER DEFAULT -'a');", "SELECT a FROM t;"),
     "index-string-term": ("CREATE TABLE t(a INTEGER);", "CREATE INDEX i ON t('a');"),
     "index-date-function": ("CREATE TABLE t(a TEXT);", "CREATE INDEX i ON t(date(a));"),
@@ -53,7 +54,7 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "later-table-in-on": ("CREATE TABLE t(a INTEGER); CREATE TABLE u(a INTEGER); CREATE TABLE v(a INTEGER);",
                           "SELECT t.a FROM t JOIN u ON v.a = 1 JOIN v;"),
     "system-table": ("CREATE TABLE t(a INTEGER);", "SELECT name FROM sqlite_schema;"),
-    "unmodeled-function": ("CREATE TABLE t(a INTEGER);", "SELECT abs(a) FROM t;"),
+    "unmodeled-function": ("CREATE TABLE t(a INTEGER);", "SELECT ln(a) FROM t;"),
     "aggregate-in-expression": ("CREATE TABLE t(a INTEGER);", "SELECT count(*) + 1 FROM t;"),
     "alias-in-expression": ("CREATE TABLE t(a INTEGER);", "SELECT a AS b FROM t WHERE b = 1;"),
     "group-by-term": ("CREATE TABLE t(a INTEGER);", "SELECT count(*) FROM t GROUP BY a + 1;"),
@@ -66,6 +67,7 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "table-function": ("CREATE TABLE t(a);", "SELECT * FROM json_tree('[1]');"),
     "function-join": ("CREATE TABLE t(a);", "SELECT * FROM t RIGHT JOIN json_each('[1]');"),
     "later-source-in-arguments": ("CREATE TABLE t(a);", "SELECT * FROM t, json_each(b.value) AS a, json_each('[1]') AS b;"),
+    "json-subtype": ("CREATE TABLE t(a);", "SELECT json_array(coalesce(json(a), 1)) FROM t;"),
 }
 """For each restriction id: a schema and a migration that the resolver refuses with it."""
 

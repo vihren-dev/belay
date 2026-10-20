@@ -2,6 +2,7 @@ import Belay.Sqlite.RealText
 import Belay.Sqlite.Json.Read
 import Belay.Sqlite.Json.Path
 import Belay.Sqlite.Json.SqlValue
+import Belay.Sqlite.Json.Jsonb
 
 set_option doc.verso true
 
@@ -25,16 +26,24 @@ def valueText : Value → Option (List UInt8)
 /-- The bytes of a text up to its first NUL byte, as a C string reads them. -/
 def cString (bytes : List UInt8) : List UInt8 := bytes.takeWhile (· != 0)
 
-/-- Parse the JSON argument ({lit}`jsonParseFuncArg`): {lit}`none` for NULL, the tree of
-the value's text, or an error for malformed text. A BLOB is not modelled. -/
+/-- Parse JSON text, or the error {lit}`malformed JSON`. -/
+def parseTextArgument (bytes : List UInt8) : Except JsonError (Option JsonNode) :=
+  match parseJsonText bytes with
+  | some node => .ok (some node)
+  | none => .error .malformed
+
+/-- Parse the JSON argument ({lit}`jsonParseFuncArg`): {lit}`none` for NULL; for a BLOB, the
+tree of JSONB that the model reads ({name}`readBlob`), the text of a BLOB that is not JSONB,
+and {lit}`blobArgument` for JSONB that the model does not describe; else the tree of the
+value's text, or an error for malformed text. -/
 def parseJsonArgument (json : Value) : Except JsonError (Option JsonNode) :=
   match json with
   | .null => .ok none
-  | .blob _ => .error .blobArgument
-  | .integer _ | .real _ | .text _ =>
-    match (valueText json).bind parseJsonText with
-    | some node => .ok (some node)
-    | none => .error .malformed
+  | .blob bytes => match readBlob bytes with
+    | .tree node => .ok (some node)
+    | .notJsonb => parseTextArgument bytes
+    | .undescribed => .error .blobArgument
+  | .integer _ | .real _ | .text _ => parseTextArgument ((valueText json).getD [])
 
 /-- Convert a lookup result for a path text into a node, {lit}`none` for "not found",
 or the error of {lit}`jsonExtractFunc`. -/
@@ -118,6 +127,16 @@ def extract (json : Value) (paths : List Value) : Except JsonError Value :=
     | .ok none => .ok .null
     | .ok (some node) => extractSeveral node paths []
 
+/-- Whether {lit}`json_extract` with one path gives SQLite's JSON subtype: when the path selects
+an array or an object, which it returns as JSON text; false when it fails or selects another
+node or nothing. -/
+def extractGivesJson (json path : Value) : Bool :=
+  match parseJsonArgument json, valueText path with
+  | .ok (some node), some pathBytes => match lookupFullPath node pathBytes with
+    | .ok (some (.array _)) | .ok (some (.object _)) => true
+    | .ok (some _) | .ok none | .error _ => false
+  | .ok (some _), none | .ok none, _ | .error _, _ => false
+
 /-- Select the node of an arrow operator: parse the JSON, then look up the operand;
 {lit}`none` for a NULL argument or no node. -/
 def arrowSelect (json : Value) (path : Value) : Except JsonError (Option JsonNode) :=
@@ -148,12 +167,17 @@ quote doubled. -/
 def quoteSqlText (bytes : List UInt8) : List UInt8 :=
   39 :: (bytes.flatMap fun byte => if byte == 39 then [39, 39] else [byte]) ++ [39]
 
-/-- The error message that SQLite reports, or {lit}`none` for a BLOB argument, which the
-model does not describe. -/
+/-- The error message that SQLite reports, or {lit}`none` for a BLOB argument or an error
+position, which the model does not describe. -/
 def JsonError.message? : JsonError → Option (List UInt8)
   | .malformed => some "malformed JSON".toUTF8.toList
   | .badPath path => some ("bad JSON path: ".toUTF8.toList ++ quoteSqlText path)
   | .blobArgument => none
+  | .blobValue => some "JSON cannot hold BLOB values".toUTF8.toList
   | .badFlags => some "FLAGS parameter to json_valid() must be between 1 and 15".toUTF8.toList
+  | .objectArgumentCount => some "json_object() requires an even number of arguments".toUTF8.toList
+  | .labelNotText => some "json_object() labels must be TEXT".toUTF8.toList
+  | .editArgumentCount name => some ("json_".toUTF8.toList ++ name ++ "() needs an odd number of arguments".toUTF8.toList)
+  | .unmodeledPosition => none
 
 end Belay.Sqlite.Json

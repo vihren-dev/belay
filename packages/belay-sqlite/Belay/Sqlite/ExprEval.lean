@@ -1,7 +1,4 @@
-import Belay.Sqlite.Model
-import Belay.Sqlite.Resolution.QueryForm
-import Belay.Sqlite.Comparison
-import Belay.Sqlite.Json.JsonApply
+import Belay.Sqlite.ExprFault
 import Belay.Sqlite.Date.Functions
 
 set_option doc.verso true
@@ -16,82 +13,6 @@ reports it, {lit}`may` when SQLite may skip it or the model does not describe it
 
 namespace Belay.Sqlite.Resolved
 
-/-- Whether a JSON function of an expression fails over a row. Use
-{lean}`Fault.none` for an expression without a failing call. -/
-inductive Fault where
-  /-- No JSON call fails. -/
-  | none
-  /-- A JSON call fails, but SQLite may skip it, or its error is one that the model does
-  not describe. -/
-  | may
-  /-- A JSON call fails where SQLite certainly evaluates it, with an error that the
-  model describes. -/
-  | must
-  deriving Repr, DecidableEq
-
-/-- The fault of two parts that SQLite both evaluates: the stronger one,
-{lean}`Fault.may.join Fault.must = Fault.must`. -/
-def Fault.join : Fault → Fault → Fault
-  | .none, other => other
-  | .may, .must => .must
-  | .may, .none | .may, .may => .may
-  | .must, .none | .must, .may | .must, .must => .must
-
-/-- The fault of a part that SQLite may skip: a certain failure becomes possible,
-{lean}`Fault.must.soften = Fault.may`. -/
-def Fault.soften : Fault → Fault
-  | .must => .may
-  | .none => .none
-  | .may => .may
-
-/-- The fault of one JSON function result: {lit}`must` for malformed JSON, a bad path or bad
-{lit}`json_valid` flags, which the model describes; {lit}`may` for a JSONB argument, which it
-does not; {lit}`none` for a value. -/
-def Fault.ofJson : Except Json.JsonError Value → Fault
-  | .error .malformed | .error (.badPath _) | .error .badFlags => .must
-  | .error .blobArgument => .may
-  | .ok _ => .none
-
-/-- Whether a REAL is not zero, as a condition. -/
-def realTruthy (bits : UInt64) : Bool := (realScaled bits).any (· != 0)
-
-/-- Whether a value is true as a condition, as SQLite's {lit}`sqlite3VdbeBooleanValue` gives
-it: an integer that is not zero, a REAL that is not zero, and TEXT or BLOB whose numeric
-prefix ({name}`atof`) is not zero; NULL is not true. So {lit}`'1ab'` and {lit}`'0.9'` are
-true and {lit}`'abc'` is not. -/
-def truthy : Value → Bool
-  | .integer value => value != 0
-  | .real bits => realTruthy bits
-  | .text bytes | .blob bytes => realTruthy (atof bytes).1.toBits
-  | .null => false
-
-/-- Whether a value is false as a condition: not NULL and not true. -/
-def falsy (value : Value) : Bool := !value.isNull && !truthy value
-
-/-- A comparison operand after a numeric affinity: TEXT that looks like a number becomes
-that number ({name}`numericText`); every other value stays, so an integer never goes
-through a double. -/
-def numericOperand : Value → Value
-  | .text bytes => numericText bytes
-  | value@(.null) | value@(.integer _) | value@(.real _) | value@(.blob _) => value
-
-/-- Whether a value is TEXT. -/
-def _root_.Belay.Sqlite.Value.isText : Value → Bool
-  | .text _ => true
-  | .null | .integer _ | .real _ | .blob _ => false
-
-/-- The operands of a comparison after SQLite applies its affinity (the comparison
-opcodes of {lit}`sqlite3VdbeExec`): with INTEGER, REAL or NUMERIC, each TEXT operand that
-looks like a number becomes that number ({name}`numericOperand`); with TEXT, when an operand
-is TEXT, each number becomes its text ({name}`storeValue`), which the order would also give
-otherwise; with BLOB or none, the operands stay. -/
-def comparisonOperands : Option Affinity → Value → Value → Value × Value
-  | some .integer, left, right | some .real, left, right | some .numeric, left, right =>
-    (numericOperand left, numericOperand right)
-  | some .text, left, right =>
-    if left.isText || right.isText then (storeValue .text left, storeValue .text right) else (left, right)
-  | some .blob, left, right | none, left, right => (left, right)
-
 mutual
 /-- The value of an expression over the cells of one row, in column order, with its
 {name}`Fault`. A column past the end of the row reads as NULL. {lit}`AND` is false when an
@@ -99,13 +20,17 @@ operand is false, else NULL when an operand is NULL, else true; {lit}`OR` is the
 {lit}`NOT` keeps NULL; a comparison applies its affinity first
 ({name}`comparisonOperands`). Arithmetic and {lit}`CAST` follow {name}`ArithmeticOperator.apply`
 and {name}`castValue`; {lit}`COALESCE` gives its first operand unless that is NULL. A JSON
-function gives the value of {name}`Json.apply` over the values of its arguments, and NULL
-with {name}`Fault.ofJson` when it fails. The fault of {lit}`AND`, {lit}`OR` and
+function gives the value of {name}`Json.apply` over the values of its arguments, each with
+whether it has the JSON subtype ({lit}`Arguments.givesJson`), and NULL with
+{name}`Fault.ofJson` when it fails. The fault of {lit}`AND`, {lit}`OR` and
 {lit}`COALESCE` is softened ({name}`Fault.soften`), because SQLite may skip an operand; every
 other expression joins the faults of its parts ({name}`Fault.join`). {lit}`clock` is the
 statement's clock value in Julian-day milliseconds: a time keyword is its text at the clock
 value ({lit}`TimeKeyword.value`), and a date and time function gives
-{lit}`DateFunction.value` at the clock value. -/
+{lit}`DateFunction.value` at the clock value. A scalar function of ADR 0015 gives
+{name}`ScalarFunction.apply` over its argument values, and NULL with {name}`Fault.ofFunction`
+when it fails; {lit}`iif` gives {name}`iifValue`, and only its first argument is certain
+to run, so the faults of the others are softened. -/
 def Expr.evaluate (clock : Int) (row : List Value) : Expr → Value × Fault
   | .column position => (row.getD position .null, .none)
   | .literal value => (value, .none)
@@ -143,7 +68,7 @@ def Expr.evaluate (clock : Int) (row : List Value) : Expr → Value × Fault
     (if value.isNull then other else value, (fault.join later).soften)
   | .json function arguments =>
     let (values, fault) := arguments.evaluate clock row
-    let result := Json.apply function values
+    let result := Json.apply function (values.zip (arguments.givesJson clock row))
     (match result with
       | .ok value => value
       | .error _ => .null, fault.join (Fault.ofJson result))
@@ -151,6 +76,17 @@ def Expr.evaluate (clock : Int) (row : List Value) : Expr → Value × Fault
     let (values, fault) := arguments.evaluate clock row
     (function.value clock values, fault)
   | .now keyword => (keyword.value clock, .none)
+  | .scalar .iif .nil => (.null, .none)
+  | .scalar .iif (.cons condition rest) =>
+    let (value, fault) := condition.evaluate clock row
+    let (values, later) := rest.evaluate clock row
+    (iifValue (value :: values), fault.join later.soften)
+  | .scalar function arguments =>
+    let (values, fault) := arguments.evaluate clock row
+    let result := function.apply values
+    (match result with
+      | .ok value => value
+      | .error _ => .null, fault.join (Fault.ofFunction result))
 
 /-- The values of the arguments of a call over one row, in written order, with the
 joined fault of the arguments. -/
@@ -160,6 +96,26 @@ def Arguments.evaluate (clock : Int) (row : List Value) : Arguments → List Val
     let (value, fault) := head.evaluate clock row
     let (values, later) := tail.evaluate clock row
     (value :: values, fault.join later)
+
+/-- Whether the value of an expression over one row has SQLite's JSON subtype, which makes a
+JSON function read a text argument as JSON: a call of a function that always gives it
+({name}`JsonFunction.givesJson`), {lit}`json_extract` with two or more paths, and with one path
+when it selects an array or an object ({name}`Json.extractGivesJson`). Any other expression
+gives false; resolution refuses an argument whose subtype the model does not describe
+(restriction {lit}`json-subtype`). -/
+def Expr.givesJson (clock : Int) (row : List Value) : Expr → Bool
+  | .json .extract (.cons json (.cons path .nil)) =>
+    Json.extractGivesJson (json.evaluate clock row).1 (path.evaluate clock row).1
+  | .json .extract (.cons _ (.cons _ (.cons _ _))) => true
+  | .json function _ => function.givesJson
+  | .column _ | .literal _ | .compare _ _ _ _ _ | .and _ _ | .or _ _ | .not _ | .isNull _ _
+  | .arithmetic _ _ _ | .cast _ _ | .coalesce _ _ | .now _ | .date _ _ | .scalar _ _ => false
+
+/-- Whether each argument of a call over one row has SQLite's JSON subtype
+({lit}`Expr.givesJson`), in written order. -/
+def Arguments.givesJson (clock : Int) (row : List Value) : Arguments → List Bool
+  | .nil => []
+  | .cons head tail => head.givesJson clock row :: tail.givesJson clock row
 end
 
 /-- The value of an expression over one row at a clock value: the value of

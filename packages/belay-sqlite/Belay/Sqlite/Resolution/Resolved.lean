@@ -54,6 +54,10 @@ inductive Statement where
   | createIndex (position : Nat) (name : Identifier) (index : CatalogIndex)
   /-- Append the column to the table at the catalog position. -/
   | addColumn (table : Nat) (column : CatalogColumn)
+  /-- Remove the catalog objects at the positions, with their rows ({lit}`Catalog.drop`):
+  DROP TABLE removes its table and the indexes on it, DROP INDEX one index, and a DROP
+  with {lit}`IF EXISTS` of a missing object none. -/
+  | drop (positions : List Nat)
   /-- Start a transaction. -/
   | begin
   /-- Commit the transaction. -/

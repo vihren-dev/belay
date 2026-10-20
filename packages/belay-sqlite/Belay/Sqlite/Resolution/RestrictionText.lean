@@ -25,6 +25,7 @@ def RestrictionKind.id : RestrictionKind → String
   | .upsertGenerated => "upsert-generated"
   | .addColumnGenerated => "add-column-generated"
   | .addColumnStrictType => "add-column-strict-type"
+  | .dropConstraintIndex => "drop-constraint-index"
   | .addColumnConstraint => "add-column-constraint"
   | .rowDependentKey => "row-dependent-key"
   | .conflictWithoutTarget => "conflict-without-target"
@@ -50,6 +51,7 @@ def RestrictionKind.id : RestrictionKind → String
   | .tableFunction => "table-function"
   | .functionJoin => "function-join"
   | .laterSourceInArguments => "later-source-in-arguments"
+  | .jsonSubtype => "json-subtype"
 
 /-- The message of a restriction that users read: what the model does not describe,
 and what to write instead. -/
@@ -60,15 +62,16 @@ def RestrictionKind.message : RestrictionKind → String
   | .unmodeledDefault => "default expression is not modeled; use a literal default"
   | .indexStringTerm => "a string literal as an index key is not modeled; name the column without quotes"
   | .indexDateFunction => "a date and time function in an index key or WHERE clause is not modeled; index the column instead"
-  | .indexJsonFunction => "a JSON function in an index key or WHERE clause is not modeled; index the column instead"
+  | .indexJsonFunction => "a JSON function or another function that can fail, such as abs, like or unistr, in an index key or WHERE clause is not modeled; index the column instead"
   | .unknownCollation => "COLLATE with a name other than BINARY, NOCASE or RTRIM in an expression is not modeled; use one of these collations"
-  | .checkFunction => "a time keyword, a date and time function or a JSON function in a CHECK constraint is not modeled; check the column values instead"
+  | .checkFunction => "a time keyword, a date and time function, a JSON function or another function that can fail, such as abs, like or unistr, in a CHECK constraint is not modeled; check the column values instead"
   | .addColumnCheckError => "a CHECK of ADD COLUMN that names no column of the table, or uses an aggregate, is not modeled; correct the CHECK"
-  | .generatedFunction => "a date and time function or a JSON function in a generated column is not modeled; compute the value in the write"
+  | .generatedFunction => "a date and time function, a JSON function or another function that can fail, such as abs, like or unistr, in a generated column is not modeled; compute the value in the write"
   | .generatedLoop => "generated columns that read each other in a loop are not modeled; SQLite refuses the table"
   | .upsertGenerated => "DO UPDATE of a generated column is not modeled; assign the columns that it reads"
   | .addColumnGenerated => "ADD COLUMN of a generated column is not modeled; create the table with it"
   | .addColumnStrictType => "ADD COLUMN to a STRICT table without one of its types, or with a default that does not fit the type, is not modeled; use INT, INTEGER, REAL, TEXT, BLOB or ANY and a default of that type"
+  | .dropConstraintIndex => "DROP INDEX of a name that begins with sqlite_autoindex_ is not modeled; SQLite does not drop the index of a UNIQUE or PRIMARY KEY constraint"
   | .addColumnConstraint => "the default of the added column is not modeled; use a literal default or no default"
   | .rowDependentKey => "a SET value that reads the row is not modeled for a column of a unique key; assign a constant value"
   | .conflictWithoutTarget => "DO UPDATE without a conflict target is not modeled for a table with more than one key; name the target columns"
@@ -81,7 +84,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .joinOperator => "this join operator is refused by SQLite and not modeled; write JOIN, LEFT JOIN or a comma"
   | .laterTableInOn => "an ON condition that names a table joined after it is not modeled; move the condition to WHERE or to the later join"
   | .systemTable => "queries of SQLite's own tables, such as sqlite_schema, are not modeled; query an application table"
-  | .unmodeledFunction => "only COUNT(*), COUNT, MIN, MAX, SUM and AVG of one argument, COALESCE of two or more arguments, json_extract, ->, ->>, json_type, json_valid, json_array_length and json are modeled as functions"
+  | .unmodeledFunction => "this function, or this form of it, is not modeled; rewrite the expression without it"
   | .aggregateInExpression => "an aggregate inside an expression is not modeled; use the aggregate as a whole result column"
   | .aliasInExpression => "a result column alias inside WHERE or an ORDER BY expression is not modeled; write the column expression"
   | .groupByTerm => "only a column name or a result column number is modeled in GROUP BY"
@@ -90,14 +93,15 @@ def RestrictionKind.message : RestrictionKind → String
   | .windowValue => "only an integer literal is modeled as LIMIT or OFFSET; write an integer"
   | .negativeOffset => "a negative OFFSET is not modeled; write OFFSET 0 or more"
   | .windowedGroupSum => "SUM in a grouped query with LIMIT or OFFSET is not modeled, because SQLite may stop before an overflowing group; remove the window or the SUM"
-  | .constantFunctionError => "a constant value in VALUES or SET whose JSON function fails is not modeled; correct the JSON text or the path"
+  | .constantFunctionError => "a constant value in VALUES or SET whose function fails, such as malformed JSON or abs of the smallest integer, is not modeled; correct the arguments"
   | .tableFunction => "only json_each with one or two arguments is modeled as a table-valued function in FROM; use json_each or a table"
   | .functionJoin => "json_each as the right operand of RIGHT or FULL JOIN, with NATURAL or USING, or before a NATURAL JOIN, is not modeled; write JOIN or LEFT JOIN with ON"
   | .laterSourceInArguments => "an argument of json_each that reads a later source is not modeled; write the source before json_each"
+  | .jsonSubtype => "a JSON value passed on through coalesce, iif, nullif, min or max is not modeled as a JSON function argument; pass the JSON call directly"
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments]
+  [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .dropConstraintIndex, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments, .jsonSubtype]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

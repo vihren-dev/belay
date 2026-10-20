@@ -26,7 +26,7 @@ SQLite evaluates a constant. The value is not yet stored with the column's affin
 def constantCell (dqs : Bool) (expression : Syntax.Expr) : Except ValueIssue Resolved.Cell :=
   resolveOperand dqs [] true expression >>= fun operand =>
     if operand.1.readsClock then
-      if operand.1.any Resolved.Expr.isJsonCall then .error (.restriction [] .constantFunctionError)
+      if operand.1.any Resolved.Expr.isFallibleCall then .error (.restriction [] .constantFunctionError)
       else .ok (.expression operand.1)
     else if operand.1.mayFailOn 0 [] then .error (.restriction [] .constantFunctionError)
     else .ok (.value (operand.1.eval 0 []))

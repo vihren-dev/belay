@@ -3,6 +3,7 @@ import Belay.Sqlite.Operators
 import Belay.Sqlite.Comparison
 import Belay.Sqlite.Resolution.JsonFunction
 import Belay.Sqlite.Resolution.DateFunction
+import Belay.Sqlite.Resolution.ScalarFunction
 import Belay.Sqlite.ClockText
 
 set_option doc.verso true
@@ -49,6 +50,8 @@ inductive Expr where
   /-- A call of a date and time function with its arguments in written order; {lit}`now`
   and a call without a time value read the clock value that evaluation is given. -/
   | date (function : DateFunction) (arguments : Arguments)
+  /-- A call of a scalar function of ADR 0015 with its arguments in written order. -/
+  | scalar (function : ScalarFunction) (arguments : Arguments)
   deriving Repr, DecidableEq
 
 /-- The arguments of a call in written order, as a list that is mutual with
@@ -79,13 +82,30 @@ inductive Aggregate where
   /-- {lit}`AVG(x)`: the average of the operand values that are not NULL, by
   {lit}`SumState.averageValue`. -/
   | avg (operand : Expr)
+  /-- {lit}`json_group_array(x)`: the JSON array of the operand values of the group in order,
+  each written as {lit}`json_array` writes it, NULL as {lit}`null`; {lit}`[]` for an empty group.
+  With {lit}`binary`, {lit}`jsonb_group_array`: the same array as JSONB. -/
+  | jsonGroupArray (operand : Expr) (binary : Bool := false)
+  /-- {lit}`json_group_object(label, value)`: the JSON object of the members of the group in
+  order, the label as text up to its first NUL byte and the value as {lit}`json_object` writes
+  it; a row with a NULL label adds no member; {lit}`{}` for an empty group. With {lit}`binary`,
+  {lit}`jsonb_group_object`: the same object as JSONB. -/
+  | jsonGroupObject (label value : Expr) (binary : Bool := false)
+  /-- {lit}`group_concat(x [, separator])` and {lit}`string_agg(x, separator)`: the text of the
+  operand values that are not NULL, in the order of the group's rows, each after the first
+  preceded by the separator of its own row ({lit}`,` without a separator, nothing for a NULL
+  one); NULL when every value is NULL. -/
+  | groupConcat (operand : Expr) (separator : Option Expr)
+  /-- {lit}`total(x)`: the sum of the operand values that are not NULL as a REAL, by
+  {lit}`SumState.totalValue`; {lit}`0.0` for an empty group, and it never fails. -/
+  | total (operand : Expr)
   deriving Repr, DecidableEq
 
 /-- Whether an aggregate can fail while the statement runs: {lit}`SUM`, on an integer
 overflow. -/
 def Aggregate.canFail : Aggregate → Bool
   | .sum _ => true
-  | .countRows | .count _ | .min .. | .max .. | .avg _ => false
+  | .countRows | .count _ | .min .. | .max .. | .avg _ | .jsonGroupArray .. | .jsonGroupObject .. | .groupConcat .. | .total _ => false
 
 /-- One result column: an expression over a row, or, in an aggregate query, an
 aggregate over a group or an expression over the group's first row, which

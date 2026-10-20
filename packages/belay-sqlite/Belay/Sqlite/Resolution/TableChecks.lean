@@ -10,11 +10,11 @@ misuse and under the profile's {lit}`DQS_DDL`. Checked natively with 3.51.0. -/
 namespace Belay.Sqlite
 
 /-- The model restriction of a resolved CHECK condition, or none: a time keyword or a date
-and time function, which can give another value on each evaluation, and a JSON function,
-whose evaluation can fail, are {name}`RestrictionKind.checkFunction`. -/
+and time function, which can give another value on each evaluation, and a JSON function
+or another function whose evaluation can fail ({name}`Resolved.Expr.isFallibleCall`), are {name}`RestrictionKind.checkFunction`. -/
 def checkIssue (resolved : Resolved.Expr) : Option ValueIssue :=
   if resolved.any Resolved.Expr.isNow || resolved.any Resolved.Expr.isDateCall ||
-      resolved.any Resolved.Expr.isJsonCall then some (.restriction [] .checkFunction)
+      resolved.any Resolved.Expr.isFallibleCall then some (.restriction [] .checkFunction)
   else none
 
 /-- One CHECK constraint over the scope of its table: the condition and its label. -/

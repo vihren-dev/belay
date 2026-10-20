@@ -161,6 +161,77 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  mutants:
+    name: Mutants (${{ matrix.suite }}, ${{ matrix.system }})
+    # The mutant suites of the model (tests/nix_mutant_suites.json) run here, one runner each, in
+    # parallel with the check job and for the package scope only: together they need more time
+    # than the check job has left (pull request #191). They never save a cache.
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [mutants, tableMutants, functionMutants]
+        system: [x86_64-linux, aarch64-darwin]
+        include:
+          - system: x86_64-linux
+            runner: ubuntu-22.04
+          - system: aarch64-darwin
+            runner: macos-14
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 75
+    env:
+      PLATFORM_RUNS: ${{ matrix.system == 'x86_64-linux' || github.event_name != 'pull_request' }}
+    steps:
+      - name: Skip macOS checks on pull requests
+        if: env.PLATFORM_RUNS != 'true'
+        run: echo "macOS mutant suites run on main, tags, manual and nightly runs; Linux checks this pull request."
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        if: env.PLATFORM_RUNS == 'true'
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Select complete checks for the changed inputs
+        if: env.PLATFORM_RUNS == 'true'
+        id: scope
+        run: python3 -m tests.ci_scope
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31
+        if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'package'
+        with:
+          enable_kvm: false
+          set_as_trusted_user: false
+          extra_nix_config: |
+            sandbox = true
+            sandbox-fallback = false
+            keep-outputs = true
+            keep-derivations = true
+            extra-substituters = https://cache.vihren.dev/sqlite-verifier
+            extra-trusted-public-keys = sqlite-verifier:XgeRqTIGBEw3VP8GPrzSvdU+5t1lJz7uEMhIG1lh7QE=
+            connect-timeout = 5
+            fallback = true
+      - name: Restore Nix builds
+        if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'package'
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7
+        env:
+          TAR_OPTIONS: --no-wildcards-match-slash --exclude=nix/store/*.lock
+        with:
+          primary-key: nix-tests-v2-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-${{ hashFiles('**', '!.git/**', '!plans/**', '!reviews/**') }}
+          restore-prefixes-first-match: |
+            nix-tests-v2-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-
+            nix-tests-v1-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-
+          save: false
+      - name: Run the mutant suite
+        if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'package'
+        env:
+          MUTANT_SUITE: ${{ matrix.suite }}
+        run: nix develop path:./nix --command just test-mutants "$MUTANT_SUITE"
+      - name: Retain the mutant suite report
+        if: always() && env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'package'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: mutant-reports-${{ matrix.suite }}-${{ matrix.system }}
+          path: build/nix-tests-mutants/
+          if-no-files-found: warn
+          retention-days: 14
+
   release:
     name: Publish checked native archives
     if: startsWith(github.ref, 'refs/tags/v')
