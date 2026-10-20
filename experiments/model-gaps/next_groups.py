@@ -52,7 +52,11 @@ def measure(report: dict[str, object], directory: Path) -> dict[str, object]:
     verdicts = report[directory.name]["verdicts"]
     cases = [case for case in gaps.records(directory) if verdicts.get(case["name"], [""])[0] == "MODEL_UNSUPPORTED"]
     marked = [marks(case) for case in cases]
-    clean = lambda groups: sum(1 for found in marked if found and found <= DONE | groups)  # noqa: E731
+
+    def clean(groups: set[str]) -> int:
+        """The cases whose marks the groups of ADR 0018 and these groups all remove."""
+        return sum(1 for found in marked if found and found <= DONE | groups)
+
     result: dict[str, object] = {"outOfScope": len(marked), "cleanAfterAdr0018": clean(set()),
                                  "groups": {name: {"uses": sum(1 for found in marked if found & group),
                                                    "cleanWithAdr0018": clean(group)}
