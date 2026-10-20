@@ -102,7 +102,8 @@ compound `SELECT`, `DISTINCT`, `HAVING`, subqueries and table-valued functions i
 `FROM`, schema-qualified tables and columns, `NULLS FIRST` and `NULLS LAST`, and
 other functions are refused. Names keep
 their case as written; quotes are removed as SQLite removes them. Numeric literals
-and declared types keep their text.
+keep their text, and declared types keep their text as SQLite's `sqlite3AddColumn` leaves
+it: without a trailing `GENERATED ALWAYS` (ADR 0014, slice 5), then dequoted.
 
 Every command retains its original half-open UTF-8 byte span; semicolons in names
 and trigger bodies cannot split commands. The CLI requires at least one migration

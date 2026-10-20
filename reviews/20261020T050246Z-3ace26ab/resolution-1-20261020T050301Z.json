@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-20T05:03:01+00:00",
+  "finding": "20261020T050246Z-3ace26ab#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "semantic-subset.md describes the type text as sqlite3AddColumn leaves it"
+}
