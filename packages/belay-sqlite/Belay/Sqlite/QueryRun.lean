@@ -67,7 +67,8 @@ function that can fail) may fail over its source rows. The row with no cells, {l
 reads NULL in every column. A query that joins sources ({name}`Query.joined`) and has a
 fallible call may fail, because SQLite may evaluate a condition over a part of
 a joined row. The failures of {lit}`json_each` itself are not JSON calls of an
-expression; {lit}`Query.source` gives their fault. Otherwise:
+expression; {lit}`Query.source` gives their fault. Otherwise, and also for a joined query,
+whose subqueries can give a value that the model does not describe:
 * {lit}`WHERE` over every source row and over {lit}`[]`, because SQLite evaluates a
   constant term once before it reads the rows (checked: {lit}`DELETE FROM t WHERE
   json_extract('x', '$')` fails over an empty table);
@@ -75,8 +76,7 @@ expression; {lit}`Query.source` gives their fault. Otherwise:
   over every row that passes {lit}`WHERE`, and in an aggregate query also over {lit}`[]`,
   because SQLite evaluates the result row of an empty group over NULL cells. -/
 def Query.mayFail (context : EvalContext) (query : Query) (rows : List (List Value)) : Bool :=
-  if query.joined then query.expressions.any (·.any Expr.isFallibleCall)
-  else
+  (query.joined && query.expressions.any (·.any Expr.isFallibleCall)) ||
     let kept := filtered context query rows ++ if query.aggregate then [[]] else []
     anyMayFail context ([] :: rows) query.filter.toList ||
     anyMayFail context kept query.keptExpressions
@@ -120,11 +120,10 @@ theorem Query.mayFail_of_plain (context : EvalContext) (quiet : context.Quiet) (
     (plain : query.expressions.all (!·.any Expr.isFallibleCall) = true) : query.mayFail context rows = false := by
   simp only [List.all_eq_true, Bool.not_eq_true'] at plain
   unfold Query.mayFail anyMayFail
-  split
-  · simpa using plain
-  · simp only [Bool.or_eq_false_iff, List.any_eq_false, Bool.not_eq_true]
-    refine ⟨fun _ _ expression member => ?_, fun _ _ expression member => ?_⟩ <;>
-      simp [Expr.mayFailOn, Expr.fault_of_plain context quiet _ _ (plain expression (by simp_all [Query.expressions]))]
+  simp only [Bool.or_eq_false_iff, Bool.and_eq_false_iff, List.any_eq_false, Bool.not_eq_true]
+  refine ⟨.inr fun expression member => plain expression member, fun _ _ expression member => ?_,
+    fun _ _ expression member => ?_⟩ <;>
+    simp [Expr.mayFailOn, Expr.fault_of_plain context quiet _ _ (plain expression (by simp_all [Query.expressions]))]
 
 /-- Whether SQLite certainly reports a JSON failure of the query over its source rows,
 which the model describes only for a query without {lit}`FROM` (no source) and without {lit}`LIMIT 0` (checked natively): its {lit}`WHERE`

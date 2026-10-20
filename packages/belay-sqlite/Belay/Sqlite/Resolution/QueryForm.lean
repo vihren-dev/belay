@@ -85,6 +85,9 @@ structure Query where
   offset : Nat
   /-- The {lit}`LIMIT`, or {lean}`(none : Option Nat)` for no limit. -/
   limit : Option Nat
+  /-- The number of cells of the row of the queries around a subquery, which come before its
+  own cells (ADR 0018, D1); {lean}`0` for the query of a statement. -/
+  outer : Nat := 0
   deriving Repr, DecidableEq
 
 end Belay.Sqlite.Resolved

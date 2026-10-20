@@ -48,7 +48,9 @@ when it fails; {lit}`iif` gives {name}`iifValue`, and only its first argument is
 to run, so the faults of the others are softened. A subquery form reads the results of its
 subquery for the row ({name}`EvalContext`), with the subquery's fault: {lit}`EXISTS` is 1 when
 the subquery gives a row, a scalar subquery the first value of its first row or NULL, and
-{lit}`IN` gives {name}`inValue`. -/
+{lit}`IN` gives {name}`inValue`; a scalar subquery or {lit}`IN` whose rows SQLite's plan can
+change ({name}`SubqueryRun.firstCertain`, {name}`SubqueryRun.rowsCertain`) is
+{lean}`Fault.may`. -/
 def Expr.evaluate (context : EvalContext) (row : List Value) : Expr → Value × Fault
   | .column position => (row.getD position .null, .none)
   | .literal value => (value, .none)
@@ -105,16 +107,17 @@ def Expr.evaluate (context : EvalContext) (row : List Value) : Expr → Value ×
     (match result with
       | .ok value => value
       | .error _ => .null, fault.join (Fault.ofFunction result))
-  | .exists index negated =>
+  | .exists index =>
     let run := context.subqueries index row
-    (truth (!run.rows.isEmpty != negated), run.fault)
+    (truth !run.rows.isEmpty, run.fault)
   | .inQuery operand index affinity collation negated =>
     let (value, fault) := operand.evaluate context row
     let run := context.subqueries index row
-    (inValue affinity collation negated value (run.rows.filterMap List.head?), fault.join run.fault)
+    (inValue affinity collation negated value (run.rows.filterMap List.head?),
+      fault.join (if run.rowsCertain then run.fault else .may))
   | .subquery index =>
     let run := context.subqueries index row
-    ((run.rows.head?.bind List.head?).getD .null, run.fault)
+    ((run.rows.head?.bind List.head?).getD .null, if run.firstCertain then run.fault else .may)
 
 /-- The values of the arguments of a call over one row, in written order, with the
 joined fault of the arguments. -/
@@ -137,7 +140,7 @@ def Expr.givesJson (context : EvalContext) (row : List Value) : Expr → Bool
   | .json .extract (.cons _ (.cons _ (.cons _ _))) => true
   | .json function _ => function.givesJson
   | .column _ | .literal _ | .compare _ _ _ _ _ | .and _ _ | .or _ _ | .not _ | .isNull _ _
-  | .arithmetic _ _ _ | .cast _ _ | .coalesce _ _ | .now _ | .date _ _ | .scalar _ _ | .exists _ _
+  | .arithmetic _ _ _ | .cast _ _ | .coalesce _ _ | .now _ | .date _ _ | .scalar _ _ | .exists _
   | .inQuery _ _ _ _ _ | .subquery _ => false
 
 /-- Whether each argument of a call over one row has SQLite's JSON subtype
