@@ -41,9 +41,11 @@ def Fault.soften : Fault → Fault
   | .may => .may
 
 /-- The fault of one JSON function result: {lit}`must` for malformed JSON, a bad path, bad
-{lit}`json_valid` flags and the argument errors of {lit}`json_object` and the edit functions,
-which the model describes; {lit}`may` for a JSONB argument and for the error position of
-malformed JSON, which it does not; {lit}`none` for a value. -/
+{lit}`json_valid` flags, the argument errors of {lit}`json_object` and the edit functions, and
+{lit}`JSON cannot hold BLOB values` for a stored BLOB that is not JSONB, which the model
+describes; {lit}`may` for JSONB that the model does not read (not valid, or not in the encoding
+of its tree) and for the error position of malformed JSON, which it does not describe;
+{lit}`none` for a value. -/
 def Fault.ofJson : Except Json.JsonError Value → Fault
   | .error .malformed | .error (.badPath _) | .error .badFlags | .error .objectArgumentCount
   | .error .labelNotText | .error (.editArgumentCount _) | .error .blobValue => .must

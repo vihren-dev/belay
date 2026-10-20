@@ -1,6 +1,7 @@
 import Belay.Sqlite.Json.JsonbOffset
 import Belay.Sqlite.Json.Bytes
 import Belay.Sqlite.Json.Unescape
+import Belay.Sqlite.Json.Read
 
 set_option doc.verso true
 
@@ -108,7 +109,8 @@ mutual
 /-- Whether the node from {lit}`index` to {lit}`stop` is valid JSONB at a nesting depth
 ({lit}`jsonbValidityCheck`): its header fills the range; a literal has no payload; a number or
 string payload passes its check; the children of an array are valid and fill it; the children
-of an object are labels (a string type) and values in pairs. The depth is at most 1000. -/
+of an object are labels (a string type) and values in pairs. The depth is at most
+{name}`maxDepth`, as for JSON text. -/
 def jsonbValid (blob : Array UInt8) : Nat → Nat → Nat → Nat → Bool
   | 0, _, _, _ => Bool.false
   | fuel + 1, index, stop, depth =>
@@ -117,7 +119,7 @@ def jsonbValid (blob : Array UInt8) : Nat → Nat → Nat → Nat → Bool
     | some (headerLength, size) =>
       let code := byteAt blob index % 16
       let start := index + headerLength
-      if depth > 1000 || start + size != stop then Bool.false
+      if depth > maxDepth || start + size != stop then Bool.false
       else if code ≤ 2 then headerLength + size == 1
       else if code ≤ 6 then jsonbNumberValid blob code start size
       else if code ≤ 9 then jsonbTextValid blob code size start stop
