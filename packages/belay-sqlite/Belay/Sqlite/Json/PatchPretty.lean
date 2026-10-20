@@ -40,11 +40,16 @@ def mergeMembers : Nat → List (JsonNode × JsonNode) → List (JsonNode × Jso
       | some _, none | none, _ => false
     let members := match members.findIdx? same, value with
       | some index, .null => members.eraseIdx index
-      | some index, _ => members.set index ((members.getD index (.null, .null)).1,
+      | some index, .true | some index, .false | some index, .int _ | some index, .int5 _
+      | some index, .float _ | some index, .float5 _ | some index, .text _ | some index, .textj _
+      | some index, .text5 _ | some index, .textraw _ | some index, .array _ | some index, .object _ =>
+        members.set index ((members.getD index (.null, .null)).1,
           mergePatch fuel (members.getD index (.null, .null)).2 value)
       | none, .null => members
       | none, .object _ => members ++ [(label, mergePatch fuel .null value)]
-      | none, _ => members ++ [(label, value)]
+      | none, .true | none, .false | none, .int _ | none, .int5 _ | none, .float _ | none, .float5 _
+      | none, .text _ | none, .textj _ | none, .text5 _ | none, .textraw _ | none, .array _ =>
+        members ++ [(label, value)]
     mergeMembers fuel members rest
 end
 

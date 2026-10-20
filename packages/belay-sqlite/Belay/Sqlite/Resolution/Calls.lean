@@ -62,7 +62,13 @@ subtype: {lit}`COALESCE`, {lit}`iif`, {lit}`nullif`, {lit}`min` and {lit}`max`; 
 inspected. -/
 def Resolved.Expr.passesValue : Resolved.Expr → Bool
   | .coalesce .. | .scalar .iif _ | .scalar (.nullif _) _ | .scalar (.min _) _ | .scalar (.max _) _ => true
-  | .scalar _ _ | .column _ | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic ..
+  | .scalar .typeof _ | .scalar .length _ | .scalar .octetLength _ | .scalar .abs _ | .scalar .sign _
+  | .scalar .zeroblob _ | .scalar .like _ | .scalar .glob _ | .scalar .lower _ | .scalar .upper _
+  | .scalar .substr _ | .scalar .instr _ | .scalar .replace _ | .scalar (.trim _) _ | .scalar .hex _
+  | .scalar .unhex _ | .scalar .quote _ | .scalar .unistrQuote _ | .scalar .char _ | .scalar .unicode _
+  | .scalar .unistr _ | .scalar .concat _ | .scalar .concatWs _ | .scalar .round _ | .scalar .floor _
+  | .scalar .ceil _ | .scalar .trunc _ | .scalar .sqrt _ | .scalar .pi _ | .scalar .degrees _
+  | .scalar .radians _ | .scalar .mod _ | .column _ | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic ..
   | .cast .. | .json .. | .now _ | .date .. => false
 
 /-- Whether the JSON subtype of an argument is not described: the argument passes on a value

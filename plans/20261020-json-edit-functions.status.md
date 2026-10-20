@@ -33,6 +33,10 @@ Specification: [ADR 0015](../docs/adr-0015-functions.md), D5.
     `conformance_authored`, `conformance_predict`, `conformance_query_coverage`,
     `test_lean_categories`, the JSON edit mutants.
 
+- 2026-10-20: review: two must findings (catch-all patterns in `mergeMembers` and
+  `Resolved.Expr.passesValue`). Fixed in "refactor: review of the JSON build and edit
+  functions" by enumerating the constructors. Tests: the full Lean build with the examples.
+
 ## Remaining
 
 - The aggregates `json_group_array` and `json_group_object`.
