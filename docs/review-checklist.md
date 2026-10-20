@@ -8,7 +8,10 @@ sessions.
 ## How to review
 
 - Review only the changes of the given commit, and the definitions that these
-  changes touch. Do not review unchanged code elsewhere.
+  changes touch. Do not review unchanged code elsewhere. For a specification
+  (R18 and R19), also read the documents that govern it and the code, data and
+  measurements that it cites, so that you can judge it against them; report
+  findings only in the specification.
 - Report only violations of the conditions below. Do not report general
   preferences or advice.
 - Do not change any file.
@@ -121,6 +124,40 @@ corpora does not contain or derive recorded SQLite observations, outputs or
 verdicts of corpus cases in order to predict them, for example as a table
 keyed by case name or SQL text. ADR 0011 names this limit of the judge lock.
 *Applies to:* all files.
+
+**R18. Supporting work solves a present problem.** Core work is the SQLite
+model and the evidence that it agrees with SQLite; it serves the goal in
+`AGENTS.md`, and a specification may plan it ahead. Supporting work is
+everything else: tooling, CI, harness features, measurement scripts, process
+and refactors that no core change needs. Each item of supporting work in a new
+or changed specification names the present problem that it solves, with the
+evidence for that problem (a failing check, a measured cost, a core task that it
+blocks, or an owner request), and is the smallest solution. Report supporting
+work for an anticipated future ("later", "at scale", "for consistency", "in
+case"), supporting work larger than its problem, generality that the problem
+does not need (an extension point, a configuration or a shared framework for
+one case), and core work that does not serve the goal. Use **must** for
+supporting work with no present problem.
+*Example of a violation:* a task file that gives every slice three mutants and
+an evidence writer of its own, without a risk in that slice that they check.
+*Applies to:* `docs/adr-*.md`, `plans/*.task.md`.
+
+**R19. Specifications hold against current reality.** A new or changed
+specification, or status file, is true when it is trusted now. Each finding
+names the false assumption: the document assumes X, but the current reality is
+Y. Report a claim about existing code, a dependency, a measurement or SQLite's
+behavior that the repository or the cited evidence contradicts; a contradiction
+with a governing document (`AGENTS.md`, the ADR that a task implements) or
+between two parts of the document; superseded text presented as current, such
+as a status that says "open" for finished work or a changed decision without
+its date; and a top that does not say what the document is for and what its
+status is. Use **must** for a false claim or a contradiction that an
+implementer would act on. The fix is the smallest edit, split, mark as
+historical, or deletion that removes the false assumption; dates, ids and
+evidence stay.
+*Example of a violation:* a task file that says a BLOB argument fails with
+`JSON cannot hold BLOB values`, but SQLite 3.51.0 reads it as JSONB.
+*Applies to:* `docs/*.md`, `plans/*.md`.
 
 ## Output format
 
