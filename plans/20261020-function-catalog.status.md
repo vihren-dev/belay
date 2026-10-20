@@ -38,6 +38,13 @@ Specification: [ADR 0015](../docs/adr-0015-functions.md), D1, D2 and D3.
     has 38 cases, all agree.
   - `sqlite_version()` and `sqlite_source_id()` stay unmodeled (task amended).
 
+- 2026-10-20: review of the slice commit: seven must findings (catch-all match arms in
+  `ScalarFunction.apply` and the pattern searches, `Text.lean` over 200 lines, a missing proof
+  sketch, the replaced `functionCall` and `scalarFunctionName`, JSON-only restriction
+  messages, and the literal length limit). Fixed in "refactor: review of the function
+  catalog" with `Functions/Codes.lean` (159 modules). Tests: the fast tests, the kernel proofs
+  of corpus 36, the function mutants and the restriction examples.
+
 ## Remaining
 
 - Review, the slice verdict, corpus 36, `just test-full`.

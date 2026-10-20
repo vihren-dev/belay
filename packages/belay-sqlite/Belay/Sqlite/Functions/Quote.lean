@@ -1,7 +1,7 @@
 import Belay.Sqlite.RealText
 import Belay.Sqlite.NumberConvert
 import Belay.Sqlite.ByteText
-import Belay.Sqlite.Functions.Text
+import Belay.Sqlite.Functions.Codes
 
 set_option doc.verso true
 

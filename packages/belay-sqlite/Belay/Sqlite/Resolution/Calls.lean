@@ -69,19 +69,4 @@ def dateCall (function : Resolved.DateFunction) (arguments : Resolved.Arguments)
     Except ValueIssue Operand :=
   .ok (.date function arguments, none)
 
-/-- Whether a folded name names a scalar function of the model that resolution resolves
-from its arguments: a JSON function or a date and time function. -/
-def scalarFunctionName (name : String) : Bool :=
-  (jsonFunctionNamed name).isSome || (dateFunctionNamed name).isSome
-
-/-- A call of {lit}`COALESCE`, a JSON function ({name}`jsonCall`) or a date and time
-function ({name}`dateCall`) over its resolved arguments, or the issue of {lit}`issue` for any
-other name. -/
-def functionCall (name : String) (arguments : Resolved.Arguments) (issue : ValueIssue) : Except ValueIssue Operand :=
-  if normalizeIdentifier name == "coalesce" then .ok (coalesceOf arguments, none)
-  else match jsonFunctionNamed name, dateFunctionNamed name with
-    | some function, _ => jsonCall name function arguments
-    | none, some function => dateCall function arguments
-    | none, none => .error issue
-
 end Belay.Sqlite

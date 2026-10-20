@@ -123,7 +123,8 @@ def classSearch (dialect : PatternDialect) (escape : UInt32) : Nat → List UInt
     if string.isEmpty then .noWildcardMatch
     else match patternCompare dialect escape fuel pattern string with
       | .noMatch => classSearch dialect escape fuel pattern (utf8Skip string)
-      | result => result
+      | .matched => .matched
+      | .noWildcardMatch => .noWildcardMatch
 
 /-- Search for an ASCII character after a wildcard, as {lit}`strcspn` does over bytes, in both
 cases for {lit}`LIKE`, and compare the rest of the pattern after each place. -/
@@ -137,7 +138,8 @@ def byteSearch (dialect : PatternDialect) (escape : UInt32) : Nat → UInt32 →
     | [] => .noWildcardMatch
     | _ :: after => match patternCompare dialect escape fuel pattern after with
       | .noMatch => byteSearch dialect escape fuel character pattern after
-      | result => result
+      | .matched => .matched
+      | .noWildcardMatch => .noWildcardMatch
 
 /-- Search for a character of two or more bytes after a wildcard, character by character, and
 compare the rest of the pattern after each place. -/
@@ -149,7 +151,8 @@ def codeSearch (dialect : PatternDialect) (escape : UInt32) : Nat → UInt32 →
     else if found != character then codeSearch dialect escape fuel character pattern after
     else match patternCompare dialect escape fuel pattern after with
       | .noMatch => codeSearch dialect escape fuel character pattern after
-      | result => result
+      | .matched => .matched
+      | .noWildcardMatch => .noWildcardMatch
 end
 
 /-- A fuel that is enough for {name}`patternCompare`: each step consumes a byte of the pattern

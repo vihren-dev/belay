@@ -10,7 +10,8 @@ set_option doc.verso true
 /-! The values of the scalar functions of ADR 0015 over their argument values, as SQLite
 3.51.0's {lit}`func.c` computes them. A failure that SQLite reports while the statement runs
 is the failure {lit}`error`; a value that the model does not describe is {lit}`unmodeled`. {lit}`iif` is lazy, so
-expression evaluation computes it. -/
+expression evaluation computes it, and {lit}`apply` gives it NULL. A number of arguments that
+the catalog does not accept gives NULL. -/
 
 namespace Belay.Sqlite.Resolved
 
@@ -155,10 +156,15 @@ def ScalarFunction.apply : ScalarFunction → List Value → Except FunctionFail
     | none => .error .error
   | .concat, values => .ok (concatValue [] values)
   | .concatWs, separator :: values => .ok (if separator.isNull then .null else concatValue separator.textBytes values)
-  | _, _ => .ok .null
+  | .typeof, _ | .length, _ | .octetLength, _ | .abs, _ | .sign, _ | .zeroblob, _ | .iif, _ | .nullif _, _
+  | .min _, _ | .max _, _ | .like, _ | .glob, _ | .lower, _ | .upper, _ | .substr, _ | .instr, _ | .replace, _
+  | .trim _, _ | .hex, _ | .unhex, _ | .quote, _ | .unistrQuote, _ | .unicode, _ | .unistr, _ | .concatWs, _ =>
+    .ok .null
 
 /-- For every scalar function that cannot fail ({name}`ScalarFunction.canFail` is false) and
-all argument values, {name}`ScalarFunction.apply` gives a value. -/
+all argument values, {name}`ScalarFunction.apply` gives a value. Proof sketch: split on the
+function, which leaves the functions that cannot fail, and on the case of
+{name}`ScalarFunction.apply` for the argument list; each case of these functions is a value. -/
 theorem ScalarFunction.apply_ok (function : ScalarFunction) (values : List Value)
     (safe : function.canFail = false) : ∃ value, function.apply values = .ok value := by
   cases function <;> simp [ScalarFunction.canFail] at safe <;> unfold ScalarFunction.apply <;> split <;>

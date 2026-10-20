@@ -7,8 +7,8 @@ set_option doc.verso true
 
 /-! The text functions of ADR 0015, slice 1, ported from SQLite 3.51.0's {lit}`func.c` over byte
 lists: {lit}`lower`, {lit}`upper`, {lit}`substr`, {lit}`instr`, {lit}`replace`, the {lit}`trim`
-family, {lit}`hex`, {lit}`unhex`, {lit}`char`, {lit}`unicode`, {lit}`unistr`, {lit}`concat` and
-{lit}`concat_ws`. Each function reads its arguments as SQLite's C functions do: some read all
+family, {lit}`concat` and {lit}`concat_ws`; {lit}`Codes.lean` has the functions of bytes and
+code points. Each function reads its arguments as SQLite's C functions do: some read all
 the bytes of a value ({lit}`sqlite3_value_bytes`), others a C string that ends at the first
 NUL. -/
 
@@ -26,12 +26,16 @@ def mapText (change : UInt8 → UInt8) : Value → Value
   | .null => .null
   | value@(.integer _) | value@(.real _) | value@(.text _) | value@(.blob _) => .text (value.textBytes.map change)
 
+/-- SQLite's length limit ({lit}`SQLITE_LIMIT_LENGTH`, 1000000000 by default): the count of
+{lit}`substr` without a count argument. -/
+def lengthLimit : Int := 1000000000
+
 /-- {lit}`substr(x, start [, count])` ({lit}`substrFunc`): characters of text before its first NUL,
 or bytes of a BLOB. A positive start counts from 1, a negative one from the end, and a zero
 start takes one character less; a negative count takes the characters before the start. A
 NULL value, a NULL count, a NULL start of 0, and an empty BLOB, which SQLite reads as no pointer, give
 NULL. Without a count, the count is
-SQLite's length limit, {lit}`1000000000`. -/
+{name}`lengthLimit`. -/
 def substrValue (value start : Value) (count : Option Value) : Value :=
   if value.isNull || value == .blob [] then .null
   else if count.any (·.isNull) then .null
@@ -40,7 +44,7 @@ def substrValue (value start : Value) (count : Option Value) : Value :=
     let blob := value matches .blob _
     let bytes := if blob then value.textBytes else bytesBeforeNul value.textBytes
     let p1 := start.toInt64
-    let p2 := (count.map Value.toInt64).getD 1000000000
+    let p2 := (count.map Value.toInt64).getD lengthLimit
     let length : Int := if blob then bytes.length else if p1 < 0 then
       (bytes.filter fun byte => byte &&& 0xC0 != 0x80).length else 0
     let (p1, p2) :=
@@ -132,89 +136,6 @@ def trimValue (side : TrimSide) (value : Value) (characters : Option Value) : Va
     else
       let bytes := if side == .trailing then bytes else front bytes.length bytes
       .text (if side == .leading then bytes else back bytes.length bytes)
-
-/-- An upper-case hexadecimal digit of a nibble. -/
-def hexDigit (nibble : UInt8) : UInt8 := if nibble < 10 then 48 + nibble else 55 + nibble
-
-/-- {lit}`hex(x)` ({lit}`hexFunc`): two upper-case hexadecimal digits for each byte of the value
-as a BLOB or text; NULL gives empty text. -/
-def hexValue (value : Value) : Value :=
-  .text (value.textBytes.flatMap fun (byte : UInt8) => [hexDigit (byte >>> 4), hexDigit (byte &&& 15)])
-
-/-- The value of a hexadecimal digit, or none. -/
-def hexDigitValue (byte : UInt8) : Option UInt8 :=
-  if 48 ≤ byte && byte ≤ 57 then some (byte - 48)
-  else if 65 ≤ byte && byte ≤ 70 then some (byte - 55)
-  else if 97 ≤ byte && byte ≤ 102 then some (byte - 87)
-  else none
-
-/-- {lit}`unhex(x [, ignored])` ({lit}`unhexFunc`): the BLOB of the hexadecimal digit pairs of the C
-string {lit}`x`; a character of {lit}`ignored` between pairs is skipped. A NULL argument, an odd
-digit, or another character gives NULL. -/
-def unhexValue (value : Value) (ignored : Option Value) : Value :=
-  if value.isNull || ignored.any (·.isNull) then .null
-  else
-    let skip := ((ignored.map fun pass => utf8Characters pass.textBytes.length pass.textBytes).getD []).map
-      fun character => (utf8Read character).1
-    let rec go : Nat → List UInt8 → Option (List UInt8)
-      | 0, _ => some []
-      | _, [] => some []
-      | fuel + 1, text@(high :: rest) => match hexDigitValue high with
-        | some upper => match rest with
-          | low :: after => match hexDigitValue low with
-            | some lower => (((upper <<< 4) ||| lower) :: ·) <$> go fuel after
-            | none => none
-          | [] => none
-        | none =>
-          let (character, after) := utf8Read text
-          if skip.contains character then go fuel after else none
-    let bytes := bytesBeforeNul value.textBytes
-    match go bytes.length bytes with
-    | some blob => .blob blob
-    | none => .null
-
-/-- {lit}`char(x, ...)` ({lit}`charFunc`): the text of the code points of the integer values, with
-{lit}`U+FFFD` for a value below 0 or above {lit}`0x10FFFF`. -/
-def charValue (values : List Value) : Value :=
-  .text (values.flatMap fun value =>
-    let code := value.toInt64
-    utf8Bytes (if code < 0 || code > 0x10FFFF then 0xFFFD else code.toNat.toUInt32))
-
-/-- {lit}`unicode(x)` ({lit}`unicodeFunc`): the code point of the first character of the C string,
-NULL for NULL and for empty text. -/
-def unicodeValue (value : Value) : Value :=
-  if value.isNull then .null
-  else match bytesBeforeNul value.textBytes with
-    | [] => .null
-    | bytes => .integer (utf8Read bytes).1.toNat
-
-/-- Whether the next {lit}`count` bytes are hexadecimal digits, with their value. -/
-def hexCode (count : Nat) (bytes : List UInt8) : Option UInt32 :=
-  let digits := bytes.take count
-  if digits.length != count then none
-  else digits.foldlM (fun code byte => (hexDigitValue byte).map fun digit => code * 16 + digit.toUInt32) 0
-
-/-- {lit}`unistr(x)` ({lit}`unistrFunc`): the text with its escapes replaced: {lit}`\\` by a backslash,
-and {lit}`\XXXX`, {lit}`\uXXXX`, {lit}`\+XXXXXX` and {lit}`\UXXXXXXXX` by the UTF-8 bytes of the code
-point. Escapes count only before the first NUL; the bytes after it stay. NULL gives NULL, and
-any other backslash fails with {lit}`invalid Unicode escape` (none). -/
-def unistrValue (value : Value) : Option Value :=
-  if value.isNull then some .null
-  else
-    let rec go : Nat → List UInt8 → Option (List UInt8)
-      | 0, text => some text
-      | _, [] => some []
-      | fuel + 1, byte :: rest =>
-        if byte == 0 then some (byte :: rest)
-        else if byte != 92 then (byte :: ·) <$> go fuel rest
-        else match rest with
-          | 92 :: after => (92 :: ·) <$> go fuel after
-          | 43 :: after => (hexCode 6 after).bind fun code => (utf8Bytes code ++ ·) <$> go fuel (after.drop 6)
-          | 117 :: after => (hexCode 4 after).bind fun code => (utf8Bytes code ++ ·) <$> go fuel (after.drop 4)
-          | 85 :: after => (hexCode 8 after).bind fun code => (utf8Bytes code ++ ·) <$> go fuel (after.drop 8)
-          | after => (hexCode 4 after).bind fun code => (utf8Bytes code ++ ·) <$> go fuel (after.drop 4)
-    let bytes := value.textBytes
-    (Value.text ·) <$> go bytes.length bytes
 
 /-- {lit}`concat(x, ...)` and {lit}`concat_ws(separator, x, ...)` ({lit}`concatFuncCore`): the text of
 all the bytes of the arguments that are not NULL, with the separator between two of them. -/
