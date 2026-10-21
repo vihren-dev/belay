@@ -61,6 +61,15 @@ def output_wire(event: dict[str, Json]) -> dict[str, Json]:
     return {"result": {"columns": columns, "rows": event["rows"], "changes": changes}, "groups": groups}
 
 
+HIDDEN_ROWID_REASON = "column names rowid, _rowid_ and oid are not modeled; rename the column"
+"""The reason of a case whose table hides its rowid, as the model's restriction of these names says."""
+
+
+class HiddenRowid(ValueError):
+    """A recorded table whose columns take every rowid name, so SQLite's rowid has none and the
+    recorder keys the rows by all columns; the model refuses the names, so the case is out of scope."""
+
+
 def native_tables(observation: dict[str, Json]) -> list[Json]:
     """Decode every recorded table with its PRAGMA metadata and rows; Lean compares them. A
     `WITHOUT ROWID` table has no rowid: its rows get the rowid 0, and Lean compares them by
@@ -68,8 +77,10 @@ def native_tables(observation: dict[str, Json]) -> list[Json]:
     result: list[Json] = []
     for item in observation["tables"]:
         without_rowid = bool(item["withoutRowid"])
-        if item["kind"] != "table" or (not without_rowid and item["rowKey"] not in [["rowid"], ["_rowid_"], ["oid"]]):
+        if item["kind"] != "table":
             raise ValueError("Unexpected row identity in an observed table")
+        if not without_rowid and item["rowKey"] not in [["rowid"], ["_rowid_"], ["oid"]]:
+            raise HiddenRowid(f"table {item['name']} hides its rowid behind its columns")
         indexes = [(native_bindings.decode_rows([index["entry"]])[0], native_bindings.decode_rows(index["columns"]))
                    for index in item["indexes"]]
         rows = [row_wire(0 if without_rowid else integer(native_bindings.decode_cell(row["identity"][0])),
@@ -145,6 +156,8 @@ def prepare(record: dict[str, Json], library: ParserLibrary) -> tuple[dict[str, 
                                and bool(record.get("trace")) and record["trace"][-1].get("primaryCode") == 1)
         return None, {"verdict": "MODEL_UNSUPPORTED" if error.status == "UNSUPPORTED" or native_syntax_error else "HARNESS_ERROR",
                       "frontendStatus": error.status, "error": str(error)}
+    except HiddenRowid as error:
+        return None, {"verdict": "MODEL_UNSUPPORTED", "reason": HIDDEN_ROWID_REASON, "error": str(error)}
     except (ValueError, KeyError, TypeError, IndexError, OSError, RuntimeError, ParserLibraryError) as error:
         return None, {"verdict": "HARNESS_ERROR", "error": str(error)}
 

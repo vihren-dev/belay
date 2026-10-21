@@ -33,6 +33,7 @@
     "tests/conformance_mutation_test.py",
     "tests/conformance_laws_test.py",
     "tests/conformance_record_test.py",
+    "tests/conformance_hidden_rowid_test.py",
     "tests/conformance_trace_test.py",
     "tests/conformance_dqs_test.py",
     "tests/conformance_phase_test.py",
