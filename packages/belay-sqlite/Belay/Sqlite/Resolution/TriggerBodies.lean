@@ -1,6 +1,7 @@
 import Belay.Sqlite.Resolution.WriteResolution
 import Belay.Sqlite.Resolution.SelectResolution
 import Belay.Sqlite.Resolution.TriggerRaise
+import Belay.Sqlite.StatementClock
 
 set_option doc.verso true
 
@@ -15,15 +16,22 @@ namespace Belay.Sqlite
 /-- A restriction of a trigger of the write at the index. -/
 def triggerRestriction (index : Nat) (kind : RestrictionKind) : Restriction := { statement := index, path := [], kind }
 
+/-- The step of a write of a body: a restriction of a trigger form when an expression of it has a
+call that can fail ({name}`Resolved.Expr.isFallibleCall`), whose failure the row engine does not
+describe. -/
+def writeStep (index : Nat) (step : Resolved.Step) : Except Restriction (Except PrepareError Resolved.Step) :=
+  if step.expressions.any (·.any Resolved.Expr.isFallibleCall) then .error (triggerRestriction index .triggerForm)
+  else .ok (.ok step)
+
 /-- The step of a resolved body statement, its prepare error, or a restriction. -/
 def bodyStep (index : Nat) : StatementResolution → Except Restriction (Except PrepareError Resolved.Step)
   | .error restriction => .error restriction
   | .ok (.prepareError error, _) =>
     if error == .expression .raiseOutsideTrigger then .error (triggerRestriction index .raiseForm) else .ok (.error error)
-  | .ok (.insert table rows _ subqueries _, _) => .ok (.ok (.insert table rows [] none subqueries))
-  | .ok (.upsert table rows clauses _ algorithm subqueries _, _) => .ok (.ok (.insert table rows clauses algorithm subqueries))
-  | .ok (.update table assignments filter _ subqueries _, _) => .ok (.ok (.update table assignments filter subqueries))
-  | .ok (.delete table filter _ subqueries _, _) => .ok (.ok (.delete table filter subqueries))
+  | .ok (.insert table rows _ subqueries _, _) => writeStep index (.insert table rows [] none subqueries)
+  | .ok (.upsert table rows clauses _ algorithm subqueries _, _) => writeStep index (.insert table rows clauses algorithm subqueries)
+  | .ok (.update table assignments filter _ subqueries _, _) => writeStep index (.update table assignments filter subqueries)
+  | .ok (.delete table filter _ subqueries _, _) => writeStep index (.delete table filter subqueries)
   | .ok (.query query subqueries, _) => .ok (.ok (.query query subqueries))
   | .ok (.createTable .., _) | .ok (.createIndex .., _) | .ok (.createTrigger .., _) | .ok (.addColumn .., _)
   | .ok (.drop .., _) | .ok (.begin, _) | .ok (.commit, _) | .ok (.rollback, _) | .ok (.setting _, _) =>

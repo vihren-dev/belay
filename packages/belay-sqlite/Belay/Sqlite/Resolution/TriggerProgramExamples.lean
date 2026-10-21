@@ -119,6 +119,13 @@ def restrictedAs (kind : RestrictionKind) (script : List Syntax.Statement) : Boo
 #guard restrictedAs .triggerForm [trigger "r" .after .insert [.insert (name! "log") none [[.numeric "1"]]
     [{ target := none, action := .update [(name! "x", .numeric "2")] none }]], insertT]
 
+-- A function that can fail in a write of a body is a restriction of a trigger form, as the row
+-- engine does not describe its failure.
+#guard restrictedAs .triggerForm [trigger "r" .after .insert
+  [.update (name! "log") [(name! "x", .call "json" [column "new" "a"])] none], insertT]
+-- In an INSERT of a body, such a value is a constant function error, as in a statement.
+#guard restrictedAs .constantFunctionError [trigger "r" .after .insert [logged (.call "json" [column "new" "a"])], insertT]
+
 -- Two triggers of one table, time and event in the starting schema are a restriction.
 #guard match resolveSchemaAndScript defaults (tables ++ [trigger "r" .after .insert [], trigger "s" .after .insert []]) [insertT] with
   | .error issue => issue == .schemaRestricted { statement := 3, path := [], kind := .schemaTriggerOrder }

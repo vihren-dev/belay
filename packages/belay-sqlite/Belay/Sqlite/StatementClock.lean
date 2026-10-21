@@ -47,22 +47,44 @@ def Cell.expression? : Cell → Option Expr
   | .value _ => none
   | .expression term => some term
 
+/-- Every expression of a step of a trigger program that evaluation reads (ADR 0018, D5): the
+expression cells of an INSERT and its clauses, the values and filters of writes, the expressions
+of a query, those of each step's subqueries, and the filter and conditions of a raising SELECT. -/
+def Step.expressions : Step → List Expr
+  | .insert _ rows clauses _ subqueries =>
+    rows.flatten.filterMap Cell.expression? ++ clauses.flatMap ConflictClause.expressions ++ subqueries.flatMap Query.expressions
+  | .update _ assignments filter subqueries => assignments.map (·.2) ++ filter.toList ++ subqueries.flatMap Query.expressions
+  | .delete _ filter subqueries => filter.toList ++ subqueries.flatMap Query.expressions
+  | .query inner subqueries => inner.expressions ++ subqueries.flatMap Query.expressions
+  | .raise filter arms _ => filter.toList ++ arms.map (·.1)
+
+/-- Every expression of the trigger programs of a write's rules: the condition and the steps of
+each program ({name}`Step.expressions`); none without rules. -/
+def WriteRules.expressions (rules : Option WriteRules) : List Expr :=
+  (rules.map fun rules => rules.programs.flatMap fun program =>
+    program.condition.toList ++ program.body.flatMap Step.expressions).getD []
+
 /-- Every expression of a statement that evaluation reads: the expression cells of INSERT
 rows ({name}`Cell.expression?`), the {lit}`RETURNING` columns, the values and filters of
 writes, the clauses of an upsert ({name}`ConflictClause.expressions`), the expressions of a
-query ({name}`Query.expressions`) and those of each statement's subqueries; a schema or transaction statement and a prepare error
-have none. -/
+query ({name}`Query.expressions`), those of each statement's subqueries, and those of the trigger
+programs of a write ({name}`WriteRules.expressions`), DROP TABLE's included; a schema or
+transaction statement and a prepare error have none. -/
 def Statement.clockExpressions : Statement → List Expr
-  | .insert _ rows returning subqueries _ =>
-    rows.flatten.filterMap Cell.expression? ++ returning.map (·.1) ++ subqueries.flatMap Query.expressions
-  | .upsert _ rows clauses returning _ subqueries _ =>
+  | .insert _ rows returning subqueries rules =>
+    rows.flatten.filterMap Cell.expression? ++ returning.map (·.1) ++ subqueries.flatMap Query.expressions ++
+      WriteRules.expressions rules
+  | .upsert _ rows clauses returning _ subqueries rules =>
     rows.flatten.filterMap Cell.expression? ++ clauses.flatMap ConflictClause.expressions ++ returning.map (·.1) ++
-      subqueries.flatMap Query.expressions
-  | .update _ assignments filter returning subqueries _ =>
-    assignments.map (·.2) ++ filter.toList ++ returning.map (·.1) ++ subqueries.flatMap Query.expressions
-  | .delete _ filter returning subqueries _ => filter.toList ++ returning.map (·.1) ++ subqueries.flatMap Query.expressions
+      subqueries.flatMap Query.expressions ++ WriteRules.expressions rules
+  | .update _ assignments filter returning subqueries rules =>
+    assignments.map (·.2) ++ filter.toList ++ returning.map (·.1) ++ subqueries.flatMap Query.expressions ++
+      WriteRules.expressions rules
+  | .delete _ filter returning subqueries rules =>
+    filter.toList ++ returning.map (·.1) ++ subqueries.flatMap Query.expressions ++ WriteRules.expressions rules
+  | .drop _ rules => WriteRules.expressions rules
   | .query inner subqueries => inner.expressions ++ subqueries.flatMap Query.expressions
-  | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit | .rollback
+  | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .begin | .commit | .rollback
   | .prepareError _ | .setting _ => []
 
 /-- Whether a statement reads the clock: it has an expression that reads it

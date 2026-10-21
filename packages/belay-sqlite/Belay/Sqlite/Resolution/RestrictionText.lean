@@ -117,7 +117,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .deferredForeignKey => "with foreign keys on, a write that checks a DEFERRABLE INITIALLY DEFERRED foreign key is not modeled, because SQLite checks such keys at COMMIT; declare the key without INITIALLY DEFERRED"
   | .foreignKeyUpsert => "with foreign keys on, INSERT with ON CONFLICT DO UPDATE on a table with foreign keys to check is not modeled; write the UPDATE as a separate statement"
   | .raiseForm => "RAISE in a trigger is modeled only as the one result column of a SELECT without FROM, alone or as a result of CASE, with a message that cannot fail; write SELECT RAISE(...) WHERE condition or SELECT CASE WHEN condition THEN RAISE(...) END"
-  | .triggerForm => "a trigger with ON CONFLICT DO UPDATE in its body, with a WHEN condition that has a function that can fail or a subquery, or with too many triggers that fire each other, and ON CONFLICT DO UPDATE on a table with a trigger, are not modeled; move the work into separate statements"
+  | .triggerForm => "a trigger with ON CONFLICT DO UPDATE in its body, with a function that can fail in a write of its body, with a WHEN condition that has a function that can fail or a subquery, or with too many triggers that fire each other, and ON CONFLICT DO UPDATE on a table with a trigger, are not modeled; move the work into separate statements"
   | .triggerWritesOwnTable => "a BEFORE UPDATE or BEFORE DELETE trigger that writes its own table is not modeled, because SQLite documents the result as undefined; use an AFTER trigger"
   | .schemaTriggerOrder => "two triggers of one table, time and event in the starting schema are not modeled, because the schema does not say which one SQLite runs first; create them in the script"
 
