@@ -130,7 +130,7 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ ((resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _ _ (fun _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ _ h) (by assumption)).1 ▸ .same)
-  | select results source joins filter groupBy orderBy limit offset subqueries =>
+  | select results source joins filter groupBy orderBy limit offset subqueries having distinct =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ ((resolveSelect_same _ _ _ _ _ _ _ (by assumption)).1 ▸ .same)

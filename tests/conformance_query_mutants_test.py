@@ -31,7 +31,8 @@ from conformance import (algorithm_mutants, alias_mutants, authored_algorithms, 
                          authored_queries, authored_upserts, clock_mutants, date_function_mutants,
                          date_modifier_mutants, fromless_mutants, json_each_mutants, json_function_mutants,
                          json_mutants, upsert_mutants, authored_subqueries, subquery_mutants,
-                         authored_expression_forms, expression_form_mutants)
+                         authored_expression_forms, expression_form_mutants, authored_distinct_having,
+                         distinct_having_mutants)
 from conformance import key_mutants, number_mutants, query_mutants
 from tests.mutant_sets import measure_set
 
@@ -107,3 +108,12 @@ def test_every_expression_form_mutant_changes_a_verdict(runtime_root: Path) -> N
     `WHEN`, and `||` that skips a NULL operand (ADR 0018, slice 2)."""
     measure_set(runtime_root, [authored_expression_forms],
                 [(expression_form_mutants.MUTANTS, expression_form_mutants.TARGETS)])
+
+
+def test_every_distinct_having_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored cases of DISTINCT, HAVING and aggregates inside expressions notice every
+    changed rule (`conformance.distinct_having_mutants`): `HAVING` that keeps a NULL group, an
+    aggregate over the first row of its group only, and `DISTINCT` that keeps every NULL row
+    (ADR 0018, slice 3)."""
+    measure_set(runtime_root, [authored_distinct_having],
+                [(distinct_having_mutants.MUTANTS, distinct_having_mutants.TARGETS)])

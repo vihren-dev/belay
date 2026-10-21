@@ -101,7 +101,9 @@ inductive RestrictionKind where
   | systemTable
   /-- A function of the pinned library that the model does not describe, or a form of it that it does not describe, such as a window function (ADR 0012 slices 1, 2, 6b and 6c; ADR 0015). -/
   | unmodeledFunction
-  /-- An aggregate inside an expression is not modeled (ADR 0012 slice 1). -/
+  /-- An aggregate where the model does not describe it is not modeled, such as the argument of a
+  call that can fail, whose faults the model's scan reads without the aggregate's value (ADR 0012
+  slice 1; ADR 0018, slice 3, models the other aggregates inside expressions). -/
   | aggregateInExpression
   /-- A result column alias inside WHERE or an ORDER BY expression is not modeled (ADR 0012 slice 1). -/
   | aliasInExpression
@@ -109,7 +111,8 @@ inductive RestrictionKind where
   | groupByTerm
   /-- A result column outside GROUP BY in an aggregate query is not modeled (ADR 0012 slice 1). -/
   | bareColumn
-  /-- An aggregate query is modeled with ORDER BY result column numbers or aliases only (ADR 0012 slice 1). -/
+  /-- An {lit}`ORDER BY` term of an aggregate query that reads a column outside the grouping terms
+  is not modeled (ADR 0012 slice 1; ADR 0018, slice 3). -/
   | aggregateOrderBy
   /-- Only an integer literal is modeled as LIMIT or OFFSET (ADR 0012 slice 1). -/
   | windowValue
@@ -152,6 +155,10 @@ inductive RestrictionKind where
   uncorrelated subquery once, but a correlated one over the rows that the statement has
   already changed, in the order in which it writes them (ADR 0018, slice 1). -/
   | subqueryReadsTarget
+  /-- An {lit}`ORDER BY` expression of {lit}`SELECT DISTINCT` that is no result column is not
+  modeled: SQLite sorts each kept row by the value of a row that its plan chooses (ADR 0018,
+  slice 3). -/
+  | distinctOrderBy
   deriving Repr, DecidableEq
 
 end Belay.Sqlite

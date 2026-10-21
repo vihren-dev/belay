@@ -34,12 +34,34 @@ def integerLiteral : Syntax.Expr → Option Int
 def aliasIndex (names : List (Option Identifier)) (name : Identifier) : Option Nat :=
   names.findIdx? fun alias => alias.any (·.sameName name)
 
+mutual
+/-- Whether an expression of an aggregate query reads only its grouping terms and its
+aggregates (ADR 0018, D3): it is a grouping term, a value that reads no cell, or an expression
+of such parts. A column outside the grouping terms, and a subquery, which can read one, are
+bare: SQLite reads them from a row of the group that it chooses. -/
+def Resolved.Expr.grouped (terms : List Resolved.Expr) (expression : Resolved.Expr) : Bool :=
+  terms.contains expression || match expression with
+  | .literal _ | .now _ | .aggregateValue _ => true
+  | .column _ | .exists _ | .inQuery .. | .subquery _ => false
+  | .compare _ _ left right _ | .and left right | .or left right | .arithmetic _ left right | .coalesce left right =>
+    left.grouped terms && right.grouped terms
+  | .not operand | .isNull operand _ | .cast _ operand => operand.grouped terms
+  | .json _ arguments | .date _ arguments | .scalar _ arguments => Resolved.Arguments.grouped terms arguments
+  | .inList operand values .. => operand.grouped terms && Resolved.Arguments.grouped terms values
+
+/-- Whether every argument is grouped ({name}`Resolved.Expr.grouped`). -/
+def Resolved.Arguments.grouped (terms : List Resolved.Expr) : Resolved.Arguments → Bool
+  | .nil => true
+  | .cons head tail => head.grouped terms && Resolved.Arguments.grouped terms tail
+end
+
 /-- Whether a result column of an aggregate query is admitted by the model: an
-aggregate, or a scalar that is one of the grouping terms. SQLite also admits other
-scalars ("bare columns", whose row it chooses); that is a model restriction. -/
+aggregate, or a scalar that reads only the grouping terms and aggregates
+({name}`Resolved.Expr.grouped`). SQLite also admits other scalars ("bare columns", whose row
+it chooses); that is a model restriction. -/
 def groupedOutput (terms : List Resolved.Expr) : Resolved.Output → Bool
   | .aggregate _ => true
-  | .scalar expression => terms.contains expression
+  | .scalar expression => expression.grouped terms
 
 /-- The result column that an {lit}`ORDER BY` or {lit}`GROUP BY` term names: an integer
 {lit}`k` from 1 to the number of columns names column {lit}`k - 1`; an identifier

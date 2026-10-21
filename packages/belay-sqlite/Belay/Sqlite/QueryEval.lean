@@ -120,26 +120,6 @@ also when there are none; else the groups of the grouping terms. -/
 def queryGroups (context : EvalContext) (query : Query) (rows : List (List Value)) : List (List (List Value)) :=
   if query.groupBy.isEmpty then [rows] else groups context query.groupBy rows
 
-/-- The result rows and sort values of a query, one per source row, or one per group
-of an aggregate query. -/
-def records (context : EvalContext) (query : Query) (rows : List (List Value)) : List Record :=
-  let sortValues := fun (output : List Value) (source : List Value) =>
-    query.orderBy.map fun term => match term.key with
-      | .expression expression => expression.eval context source
-      | .output index => output.getD index .null
-  if query.aggregate then
-    (queryGroups context query rows).map fun group =>
-      let output := query.columns.map fun
-        | .scalar expression => expression.eval context (group.headD [])
-        | .aggregate aggregate => aggregate.eval context group
-      (output, sortValues output (group.headD []))
-  else
-    rows.map fun row =>
-      let output := query.columns.map fun
-        | .scalar expression => expression.eval context row
-        | .aggregate aggregate => aggregate.eval context [row]
-      (output, sortValues output row)
-
 /-- The primary-key cells of a row, in key order; a missing cell reads as NULL. -/
 def _root_.Belay.Sqlite.Table.keyCells (table : Table) (row : Row) : List Value :=
   table.shape.primaryKey.map fun position => row.values.getD position .null
@@ -161,15 +141,5 @@ def sourceRows (table : Table) : List (List Value) := table.scanRows.map Row.val
 /-- The rows that the {lit}`WHERE` condition keeps: those where it is true. -/
 def filtered (context : EvalContext) (query : Query) (rows : List (List Value)) : List (List Value) :=
   rows.filter fun row => query.filter.all fun condition => truthy (condition.eval context row)
-
-/-- The result rows of a query over its source rows ({lit}`Query.source`): filter,
-groups and columns, a stable sort by the {lit}`ORDER BY` terms, then the window.
-{lit}`Query.run` gives them with the fault of the query. -/
-def Query.results (context : EvalContext) (query : Query) (rows : List (List Value)) : List (List Value) :=
-  let directions := query.orderBy.map fun term => (term.descending, term.collation)
-  let sorted := stableSort (fun a b => (compareSort directions a.2 b.2).isLE)
-    (records context query (filtered context query rows))
-  let window := sorted.drop query.offset
-  (match query.limit with | some limit => window.take limit | none => window).map Prod.fst
 
 end Belay.Sqlite.Resolved

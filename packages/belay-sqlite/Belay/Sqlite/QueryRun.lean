@@ -1,4 +1,4 @@
-import Belay.Sqlite.QueryEval
+import Belay.Sqlite.QueryResults
 import Belay.Sqlite.Resolution.ExprAny
 
 set_option doc.verso true
@@ -40,11 +40,12 @@ def SortKey.expressions : SortKey → List Expr
   | .output _ => []
 
 /-- The expressions that a query evaluates over each row that passes {lit}`WHERE`: the
-result columns, the aggregate operands, and the {lit}`GROUP BY` and {lit}`ORDER BY`
-keys. -/
+result columns, the aggregate operands, also of the aggregates that its expressions name, the
+{lit}`GROUP BY` and {lit}`ORDER BY` keys, and {lit}`HAVING`. -/
 def Query.keptExpressions (query : Query) : List Expr :=
-  query.columns.flatMap Output.scalars ++ query.columns.flatMap Output.operands ++ query.groupBy.map Prod.fst ++
-    query.orderBy.flatMap (·.key.expressions)
+  query.columns.flatMap Output.scalars ++ query.columns.flatMap Output.operands ++
+    query.aggregates.flatMap (Output.aggregate · |>.operands) ++ query.groupBy.map Prod.fst ++
+    query.orderBy.flatMap (·.key.expressions) ++ query.having.toList
 
 /-- The expressions of a source of {lit}`FROM`: the arguments of a {lit}`json_each` source,
 and the {lit}`ON` condition. -/
@@ -139,11 +140,12 @@ def Query.mustFail (context : EvalContext) (query : Query) (rows : List (List Va
 
 /-- Whether a query fails over its source rows, so that SQLite stops the statement with the
 {lit}`integer overflow` error: an aggregate query without {lit}`LIMIT 0` in which an
-aggregate of a result column fails ({name}`Aggregate.fails`) for some group. With
+aggregate of a result column, or one that its expressions name, fails ({name}`Aggregate.fails`)
+for some group. With
 {lit}`LIMIT 0`, SQLite skips the evaluation and returns no rows. -/
 def Query.fails (context : EvalContext) (query : Query) (rows : List (List Value)) : Bool :=
   query.aggregate && query.limit != some 0 && (queryGroups context query (filtered context query rows)).any fun group =>
-    query.columns.any fun
+    query.aggregates.any (·.fails context group) || query.columns.any fun
       | .aggregate aggregate => aggregate.fails context group
       | .scalar _ => false
 
@@ -163,7 +165,8 @@ structure QueryRun where
 its overflow. -/
 def Query.run (context : EvalContext) (query : Query) (rows : List (List Value)) : QueryRun where
   rows := query.results context rows
-  fault := if query.mustFail context rows then .must else if query.mayFail context rows then .may else .none
+  fault := if query.mustFail context rows then .must
+    else if query.mayFail context rows || !query.distinctCertain context rows then .may else .none
   overflow := query.fails context rows
 
 end Belay.Sqlite.Resolved

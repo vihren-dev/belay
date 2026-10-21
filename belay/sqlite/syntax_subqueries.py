@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 
-from .located import Located, constructor, leaf, sequence, structure
+from .located import Json, Located, leaf, sequence, structure
 from .sql_tree import Node, Tree
 
 Clauses = Callable[[Tree, Node], list[tuple[str, Located]]]
@@ -76,16 +76,22 @@ def lift(tree: Tree, select: Node) -> int:
         clauses = listed.clauses(tree, select)
     finally:
         listed.current = around
-    listed.items[index] = structure(clauses + [("parent", leaf(around, select.start, select.end))],
+    listed.items[index] = structure(clauses[:8] + [("parent", leaf(around, select.start, select.end))] + clauses[8:],
                                     select.start, select.end)
     return index
 
 
-def with_subqueries(name: str, fields: list[tuple[str, Located]], listed: SubqueryList, start: int,
-                    end: int) -> Located:
-    """The statement constructor with its fields and, when it has subqueries, the `subqueries`
-    field after them. A statement without subqueries keeps the JSON form that it had before
-    subqueries were modeled, which frozen records hold; Lean reads a missing list as empty."""
+DEFAULTS: dict[str, Json] = {"subqueries": [], "having": None, "distinct": False}
+"""The fields that a statement's JSON omits when they have these values, so that statements
+without them keep the form that frozen records hold; Lean reads a missing field as its default."""
+
+
+def with_subqueries(name: str, fields: list[tuple[str, Located]], listed: SubqueryList, start: int, end: int,
+                    after: list[tuple[str, Located]] | None = None) -> Located:
+    """The statement constructor with its fields, the `subqueries` field and the fields `after`
+    it, in the order of the Lean constructor, so a path of a Lean issue selects the right part.
+    The JSON omits each field of `DEFAULTS` that has its default value."""
     items = [item for item in listed.items if item is not None]
-    extra = [("subqueries", sequence(items, start, end))] if items else []
-    return constructor(name, fields + extra, start, end)
+    parts = fields + [("subqueries", sequence(items, start, end))] + (after or [])
+    value = {field: part.value for field, part in parts if not (field in DEFAULTS and part.value == DEFAULTS[field])}
+    return Located({name: value}, start, end, tuple(part for _, part in parts))

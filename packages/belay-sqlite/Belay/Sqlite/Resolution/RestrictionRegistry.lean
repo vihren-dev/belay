@@ -29,7 +29,7 @@ inductive RestrictionRegistry where
 def RestrictionKind.registry : RestrictionKind → RestrictionRegistry
   | .rowDependentKey | .conflictWithoutTarget | .mixedConflictAlgorithms | .windowedGroupSum
   | .constantFunctionError | .unknownCollation | .upsertGenerated | .subqueryFallibleCall
-  | .subqueryReadsTarget => .undecided
+  | .subqueryReadsTarget | .distinctOrderBy => .undecided
   | .rowidName => .unrepresented
   | .schemaStatement | .engineTable | .rowidColumnName
   | .unmodeledDefault | .indexStringTerm | .indexDateFunction | .indexJsonFunction | .checkFunction

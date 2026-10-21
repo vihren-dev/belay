@@ -84,10 +84,12 @@ inductive Statement where
   {lean}`(none : Option TableReference)` and no joins. An omitted clause is {lit}`none` or
   an empty list;
   {lit}`LIMIT offset, limit` gives both expressions. The subqueries of the statement are
-  {lit}`subqueries`, in the order of their text ({name}`Subquery`); empty without one. -/
+  {lit}`subqueries`, in the order of their text ({name}`Subquery`); empty without one. The
+  {lit}`HAVING` condition is {lit}`having` and {lit}`SELECT DISTINCT` has {lit}`distinct`
+  (ADR 0018, D3). -/
   | select (columns : List ResultColumn) (source : Option TableReference) (joins : List Join) (filter : Option Expr)
       (groupBy : List Expr) (orderBy : List OrderTerm) (limit : Option Expr) (offset : Option Expr)
-      (subqueries : List Subquery := [])
+      (subqueries : List Subquery := []) (having : Option Expr := none) (distinct : Bool := false)
   deriving Repr, BEq
 
 end Belay.Sqlite.Syntax

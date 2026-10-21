@@ -43,7 +43,7 @@ def Query.windowCertain (context : EvalContext) (query : Query) (rows : List (Li
   limit == some 0 ||
     let directions := query.orderBy.map fun term => (term.descending, term.collation)
     let sorted := stableSort (fun a b => (compareSort directions a.2 b.2).isLE)
-      (records context query (filtered context query rows))
+      (query.uniqueRecords context rows)
     certainCut directions sorted query.offset && limit.all (certainCut directions sorted <| query.offset + ·)
 
 /-- The run of a subquery for an outer row: the rows of {name}`Query.run` over its source rows

@@ -56,6 +56,7 @@ def RestrictionKind.id : RestrictionKind → String
   | .outerAggregate => "outer-aggregate"
   | .subqueryFallibleCall => "subquery-fallible-call"
   | .subqueryReadsTarget => "subquery-reads-target"
+  | .distinctOrderBy => "distinct-order-by"
 
 /-- The message of a restriction that users read: what the model does not describe,
 and what to write instead. -/
@@ -89,11 +90,11 @@ def RestrictionKind.message : RestrictionKind → String
   | .laterTableInOn => "an ON condition that names a table joined after it is not modeled; move the condition to WHERE or to the later join"
   | .systemTable => "queries of SQLite's own tables, such as sqlite_schema, are not modeled; query an application table"
   | .unmodeledFunction => "this function, or this form of it, is not modeled; rewrite the expression without it"
-  | .aggregateInExpression => "an aggregate inside an expression is not modeled; use the aggregate as a whole result column"
+  | .aggregateInExpression => "an aggregate here is not modeled, such as the argument of a function that can fail; use the aggregate as a whole result column"
   | .aliasInExpression => "a result column alias inside WHERE or an ORDER BY expression is not modeled; write the column expression"
   | .groupByTerm => "only a column name or a result column number is modeled in GROUP BY"
   | .bareColumn => "a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it"
-  | .aggregateOrderBy => "an aggregate query is modeled with ORDER BY result column numbers or aliases only"
+  | .aggregateOrderBy => "an ORDER BY term of an aggregate query that reads a column outside GROUP BY is not modeled; order by a grouping term, an aggregate or a result column"
   | .windowValue => "only an integer literal is modeled as LIMIT or OFFSET; write an integer"
   | .negativeOffset => "a negative OFFSET is not modeled; write OFFSET 0 or more"
   | .windowedGroupSum => "SUM in a grouped query with LIMIT or OFFSET is not modeled, because SQLite may stop before an overflowing group; remove the window or the SUM"
@@ -106,10 +107,11 @@ def RestrictionKind.message : RestrictionKind → String
   | .outerAggregate => "an aggregate in a subquery whose argument reads a column of an outer query is not modeled, because SQLite computes it in the outer query; aggregate only columns of the subquery's own tables"
   | .subqueryFallibleCall => "a SELECT without FROM that has both a subquery and a function that can fail is not modeled; select from a table or remove the function"
   | .subqueryReadsTarget => "a subquery of INSERT, UPDATE or DELETE that reads the written table is not modeled, because SQLite evaluates it while the statement changes the table; read the table in a separate statement"
+  | .distinctOrderBy => "an ORDER BY expression of SELECT DISTINCT that is no result column is not modeled; order by a result column"
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .dropConstraintIndex, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments, .jsonSubtype, .subqueryHere, .outerAggregate, .subqueryFallibleCall, .subqueryReadsTarget]
+  [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .dropConstraintIndex, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments, .jsonSubtype, .subqueryHere, .outerAggregate, .subqueryFallibleCall, .subqueryReadsTarget, .distinctOrderBy]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

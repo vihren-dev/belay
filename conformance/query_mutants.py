@@ -23,6 +23,11 @@ FORMS = SQLITE + "Resolution/ExprForms.lean"
 SOURCES = SQLITE + "Resolution/Sources.lean"
 """The resolution of the tables of FROM."""
 
+RESULTS = SQLITE + "QueryResults.lean"
+"""The records, the sort and the window of a query."""
+GROUPING = SQLITE + "Resolution/QueryAggregates.lean"
+"""The aggregates and the grouping terms of a query."""
+
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "null_equals_null": (COMPARISON,
         "  | .is | .isNot =>\n    if left.isNull || right.isNull then truth ((left.isNull && right.isNull) == (operator == .is))\n"
@@ -46,21 +51,21 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "empty_aggregate_no_row": (EVALUATION,
         "  if query.groupBy.isEmpty then [rows] else groups context query.groupBy rows",
         "  if query.groupBy.isEmpty then (if rows.isEmpty then [] else [rows]) else groups context query.groupBy rows"),
-    "limit_one_too_high": (EVALUATION, "window.take limit", "window.take (limit + 1)"),
-    "offset_ignored": (EVALUATION, "let window := sorted.drop query.offset", "let window := sorted"),
+    "limit_one_too_high": (RESULTS, "window.take limit", "window.take (limit + 1)"),
+    "offset_ignored": (RESULTS, "let window := sorted.drop query.offset", "let window := sorted"),
     "no_such_column": (EXPRESSIONS,
         "      else .error (.prepare (.noSuchColumn name))", "      else .ok (.literal .null, none)"),
     "no_such_table": (SOURCES,
         "    else .error (.noSuchTable reference.table)", "    else .error (.value (.restriction path .systemTable))"),
     "no_misuse_of_aggregate": (FORMS,
         "  if misuse then .prepare (.misuseOfAggregate function)", "  if false then .prepare (.misuseOfAggregate function)"),
-    "no_aggregate_in_group_by": (RESOLUTION,
+    "no_aggregate_in_group_by": (GROUPING,
         ".error (if aggregateCall term then .prepare .aggregateInGroupBy else (callIssue name).under [4, item])",
         ".error ((callIssue name).under [4, item])"),
     "no_order_by_out_of_range": (RESOLUTION,
         "    | some (.error ()) => .error (.prepare (.orderByOutOfRange (item + 1) outputs.length))",
         "      | some (.error ()) => .error (.restriction [4, item] .aggregateOrderBy)"),
-    "no_group_by_out_of_range": (RESOLUTION,
+    "no_group_by_out_of_range": (GROUPING,
         "      | some (.error ()) => .error (.prepare (.groupByOutOfRange (item + 1) outputs.length))",
         "        | some (.error ()) => .error (.restriction [3, item] .groupByTerm)"),
 }
@@ -95,9 +100,9 @@ GUARDS: dict[str, str] = {
     "no_such_column": "rule:resolveOperand",
     "no_such_table": "rule:resolveTableReference",
     "no_misuse_of_aggregate": "rule:aggregateIssue",
-    "no_aggregate_in_group_by": "rule:resolveQueryBody",
+    "no_aggregate_in_group_by": "rule:resolveGroupTerm",
     "no_order_by_out_of_range": "rule:resolveQueryBody",
-    "no_group_by_out_of_range": "rule:resolveQueryBody",
+    "no_group_by_out_of_range": "rule:resolveGroupTerm",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
 changes. `conformance.mutant_guards` checks every entry."""

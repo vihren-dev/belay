@@ -120,6 +120,7 @@ def Expr.evaluate (context : EvalContext) (row : List Value) : Expr → Value ×
     let (value, fault) := operand.evaluate context row
     let (candidates, later) := values.evaluate context row
     (inValue affinity collation negated value candidates, fault.join later.soften)
+  | .aggregateValue index => (context.aggregates.getD index .null, .none)
   | .subquery index =>
     let run := context.subqueries index row
     ((run.rows.head?.bind List.head?).getD .null, if run.firstCertain then run.fault else .may)
@@ -145,7 +146,7 @@ def Expr.givesJson (context : EvalContext) (row : List Value) : Expr → Bool
   | .json .extract (.cons _ (.cons _ (.cons _ _))) => true
   | .json function _ => function.givesJson
   | .column _ | .literal _ | .compare _ _ _ _ _ | .and _ _ | .or _ _ | .not _ | .isNull _ _
-  | .arithmetic _ _ _ | .cast _ _ | .coalesce _ _ | .now _ | .date _ _ | .scalar _ _ | .exists _ | .inList ..
+  | .arithmetic _ _ _ | .cast _ _ | .coalesce _ _ | .now _ | .date _ _ | .scalar _ _ | .exists _ | .inList .. | .aggregateValue _
   | .inQuery _ _ _ _ _ | .subquery _ => false
 
 /-- Whether each argument of a call over one row has SQLite's JSON subtype

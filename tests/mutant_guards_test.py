@@ -17,7 +17,7 @@ from conformance import (algorithm_mutants, alias_mutants, clock_mutants, date_f
                          without_rowid_mutants,
                          json_function_mutants, json_mutants, key_mutants, merged_mutants, number_mutants,
                          obligation_mutants, query_mutants, resolve_mutants, right_mutants, row_write_mutants,
-                         drop_mutants, function_mutants, json_edit_mutants, aggregate_mutants, printf_mutants, jsonb_mutants, numeric_function_mutants, strict_mutants, subquery_mutants, expression_form_mutants, upsert_mutants, using_mutants,
+                         drop_mutants, function_mutants, json_edit_mutants, aggregate_mutants, printf_mutants, jsonb_mutants, numeric_function_mutants, strict_mutants, subquery_mutants, expression_form_mutants, distinct_having_mutants, upsert_mutants, using_mutants,
                          write_mutants)
 from conformance.mutant_guards import guard_problems, obligation_problems
 from tests.restriction_registry_test import registry_ids
@@ -34,7 +34,8 @@ ROOT = Path(__file__).resolve().parents[1]
                                    without_rowid_mutants, collation_mutants, check_mutants, generated_mutants,
                                    strict_mutants, drop_mutants, function_mutants,
                                    numeric_function_mutants, json_edit_mutants, jsonb_mutants, aggregate_mutants,
-                                   printf_mutants, subquery_mutants, expression_form_mutants],
+                                   printf_mutants, subquery_mutants, expression_form_mutants,
+                                   distinct_having_mutants],
                          ids=lambda table: table.__name__.rsplit(".", 1)[1])
 def test_every_mutant_names_what_it_guards(table: ModuleType) -> None:
     """Every mutant of the table has a guard, and every guard names something that exists."""

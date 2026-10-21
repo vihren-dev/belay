@@ -2,8 +2,8 @@
 
 A query keeps its result columns, its first table and its joins (`syntax_sources`), or
 none for a SELECT without FROM (ADR 0012, amendment 5, slice 6a), and its WHERE, GROUP BY,
-ORDER BY, LIMIT and OFFSET clauses; a SELECT statement also lists the subqueries of its
-expressions (ADR 0018, D1). Compound SELECT, WITH, DISTINCT, HAVING and NULLS
+ORDER BY, LIMIT and OFFSET clauses, HAVING and DISTINCT (ADR 0018, D3); a SELECT statement
+also lists the subqueries of its expressions (ADR 0018, D1). Compound SELECT, WITH and NULLS
 FIRST or LAST have no constructor and are refused with their source range.
 """
 
@@ -43,8 +43,6 @@ def query_clauses(tree: Tree, select_node: Node) -> list[tuple[str, Located]]:
     (one,) = require(tree, current, ["oneselect"])
     _, distinct, columns, source, where, group, having, order, limit = require(tree, one, [
         "SELECT", "distinct", "selcollist", "from", "where_opt", "groupby_opt", "having_opt", "orderby_opt", "limit_opt"])
-    absent(tree, distinct, "DISTINCT or ALL")
-    absent(tree, having, "HAVING")
     results = result_columns(tree, columns)
     if source.children:
         _, tables = require(tree, source, ["FROM", "seltablist"])
@@ -68,7 +66,10 @@ def query_clauses(tree: Tree, select_node: Node) -> list[tuple[str, Located]]:
     return [("columns", results), ("source", first_table), ("joins", joins),
             ("filter", optional(condition, where)), ("groupBy", sequence(grouping, group.start, group.end)),
             ("orderBy", sequence(ordering, order.start, order.end)), ("limit", optional(count, limit)),
-            ("offset", optional(offset, limit))]
+            ("offset", optional(offset, limit)),
+            ("having", optional(query_expression(tree, tree.children(having)[1]) if having.children else None, having)),
+            ("distinct", leaf([child.symbol for child in tree.children(distinct)] == ["DISTINCT"], distinct.start,
+                              distinct.end))]
 
 
 def select(tree: Tree, command: Node) -> Located:
@@ -77,4 +78,4 @@ def select(tree: Tree, command: Node) -> Located:
     (select_node,) = require(tree, command, ["select"])
     with statement_subqueries(query_clauses) as listed:
         clauses = query_clauses(tree, select_node)
-    return with_subqueries("select", clauses, listed, command.start, command.end)
+    return with_subqueries("select", clauses[:8], listed, command.start, command.end, clauses[8:])

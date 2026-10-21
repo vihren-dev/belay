@@ -1,5 +1,6 @@
 import Belay.Sqlite.Resolution.Collations
 import Belay.Sqlite.Resolution.QueryAffinity
+import Belay.Sqlite.Resolution.SyntaxEquality
 
 set_option doc.verso true
 
@@ -29,10 +30,10 @@ structure SubqueryShape where
   lowest : Option Nat
   deriving Repr, DecidableEq
 
-/-- The subqueries that an expression may name: those after the query whose expressions
-resolution resolves, which is {lit}`current` (none for the statement's query), as
-{lit}`later`, the shape of subquery {lit}`base + k` at position {lit}`k`. Use
-{lean}`({} : SubqueryShapes)` where no subquery is modeled. -/
+/-- What an expression of the current query may name besides its row: the subqueries after
+the query whose expressions resolution resolves, which is {lit}`current` (none for the
+statement's query), as {lit}`later`, the shape of subquery {lit}`base + k` at position {lit}`k`;
+and the aggregates of the query. Use {lean}`({} : SubqueryShapes)` where neither is modeled. -/
 structure SubqueryShapes where
   /-- The index of the subquery whose expressions are resolved, or none for the statement's
   query. -/
@@ -42,6 +43,9 @@ structure SubqueryShapes where
   /-- The number of cells of the queries around the current query, which come first in its
   row; 0 for the statement's query. -/
   outer : Nat := 0
+  /-- The aggregate calls of the current query as written, which an expression names by index
+  ({lit}`Resolved.Expr.aggregateValue`, ADR 0018, D3); empty where no aggregate is modeled. -/
+  aggregates : List Syntax.Expr := []
   deriving Repr
 
 /-- The index of the first subquery after the current query. -/
@@ -68,7 +72,7 @@ mutual
 names ({name}`SubqueryShape.lowest`); none when it reads no cell. -/
 def Resolved.Expr.lowestRead (shapes : SubqueryShapes) : Resolved.Expr → Option Nat
   | .column position => some position
-  | .literal _ | .now _ => none
+  | .literal _ | .now _ | .aggregateValue _ => none
   | .exists index | .subquery index => (shapes.find index).bind (·.lowest)
   | .inQuery operand index .. => minPosition (operand.lowestRead shapes) ((shapes.find index).bind (·.lowest))
   | .compare _ _ left right _ | .and left right | .or left right | .arithmetic _ left right | .coalesce left right =>

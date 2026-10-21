@@ -108,8 +108,7 @@ def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., 
     ("ALTER TABLE t RENAME TO u;", "ALTER TABLE t RENAME TO u"), ("BEGIN IMMEDIATE;", "IMMEDIATE"),
     ("UPDATE OR REPLACE t SET a = 1;", "OR REPLACE"), ("INSERT INTO t SELECT 1;", "SELECT 1"),
     ("INSERT INTO t VALUES (a & 1);", "a & 1"), ("UPDATE t SET a = 1 WHERE a IN u;", "a IN u"),
-    ("UPDATE t SET (a, b) = (1, 2);", "(a, b) = (1, 2)"), ("SELECT DISTINCT 1;", "DISTINCT"),
-    ("EXPLAIN SELECT 1;", "EXPLAIN SELECT 1;"),
+    ("UPDATE t SET (a, b) = (1, 2);", "(a, b) = (1, 2)"), ("EXPLAIN SELECT 1;", "EXPLAIN SELECT 1;"),
 ])
 def test_syntax_without_a_constructor_is_unsupported_at_its_range(
         parse_sql: Callable[..., Tree], sql: str, refused: str) -> None:

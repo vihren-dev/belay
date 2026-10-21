@@ -1,6 +1,7 @@
 import Belay.Sqlite.Resolution.StatementCatalog
 import Belay.Sqlite.Resolution.SourceList
 import Belay.Sqlite.Resolution.QueryTerms
+import Belay.Sqlite.Resolution.QueryAggregates
 
 set_option doc.verso true
 
@@ -94,9 +95,22 @@ def firstCollations (scope : Scope) : List Syntax.ResultColumn → Option Collat
 scopes of the queries around it), with the shapes of the subqueries that its expressions name
 and the aliases of the queries around it, which a name in {lit}`WHERE` can name: the resolved
 query and the affinity of its first result column. See the module documentation for the steps.
-A scalar subquery is no grouping term, so it is a bare column of an aggregate query. -/
+A scalar subquery is no grouping term, so it is a bare column of an aggregate query. The
+aggregate calls of the result columns, {lit}`HAVING` and {lit}`ORDER BY` are the query's aggregates
+(ADR 0018, D3), which make it an aggregate query; {lit}`HAVING` without one is SQLite's
+{lit}`HAVING clause on a non-aggregate query`, and {lit}`HAVING` and {lit}`ORDER BY` expressions
+must read only grouping terms and aggregates ({name}`Resolved.Expr.grouped`). A fallible call
+over an aggregate is {name}`RestrictionKind.aggregateInExpression`, because the model's fault scan
+does not read aggregate values; an {lit}`ORDER BY` expression of {lit}`SELECT DISTINCT` that is no
+result column is {name}`RestrictionKind.distinctOrderBy`. -/
 def resolveQueryBody (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (outerAliases : List Identifier)
     (pending : List PendingSource) (query : Syntax.Subquery) : Except ValueIssue (Resolved.Query × Option Affinity) := do
+  let calls := (query.columns.flatMap (fun
+      | .expression value _ _ => if aggregateCall value then [] else value.aggregateCalls
+      | .star | .sourceStar _ => []) ++ query.having.toList.flatMap Syntax.Expr.aggregateCalls ++
+    query.orderBy.flatMap (·.expression.aggregateCalls)) |> Syntax.Expr.distinctList
+  let shapes := { shapes with aggregates := calls }
+  let aggregates ← resolveAll (fun _ call => resolveAggregateCall dqs scope shapes call) calls
   let outputs := (← resolveAll (resolveResultColumn dqs scope shapes) query.columns).flatten
   let aliases := resultAliases scope query.columns
   let visibleAliases := aliases.filterMap id ++ outerAliases
@@ -106,58 +120,52 @@ def resolveQueryBody (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (out
       if namesAlias scope visibleAliases term then throw (aliasInExpression.under [3])
       else some <$> condition [3] (resolveOperand dqs scope shapes true term)
   let sources ← resolvePendingSources dqs scope pending
-  let aggregate := !query.groupBy.isEmpty || outputs.any fun (output, _) => match output with
+  let aggregate := !query.groupBy.isEmpty || !aggregates.isEmpty || outputs.any fun (output, _) => match output with
     | .aggregate _ => true
     | .scalar _ => false
   let collations := resultCollations scope query.columns
-  let grouped := fun (column : Nat) => match outputs[column]? with
-    | some (.scalar expression, _) => .ok (expression, collations.getD column .binary)
-    | some (.aggregate _, _) | none => .error (.prepare .aggregateInGroupBy)
-  let terms ← resolveAll (fun item term => match term with
-    | .identifier name _ => match scope.resolveName name, aliasIndex aliases name with
-      | .found _ reads, _ => .ok ((scope.nameOperand reads).1, term.collationIn scope)
-      | .missing, some column => grouped column
-      | .missing, none | .ambiguous, _ =>
-        (resolveOperand dqs scope shapes true term).map (·.1, term.collationIn scope) |>.mapError (·.under [4, item])
-    | .callStar name | .call name [] | .call name [_] =>
-      .error (if aggregateCall term then .prepare .aggregateInGroupBy else (callIssue name).under [4, item])
-    | .numeric _ | .negate _ => match namedResult aliases term with
-      | some (.ok column) => grouped column
-      | some (.error ()) => .error (.prepare (.groupByOutOfRange (item + 1) outputs.length))
-      | none => .error (.restriction [4, item] .groupByTerm)
-    | .qualified .. =>
-      (resolveOperand dqs scope shapes true term).map (·.1, term.collationIn scope) |>.mapError (·.under [4, item])
-    | .collate .. =>
-      if term.collatedColumn scope then
-        (resolveOperand dqs scope shapes true term).map (·.1, term.collationIn scope) |>.mapError (·.under [4, item])
-      else .error (.restriction [4, item] .groupByTerm)
-    | .call _ (_ :: _ :: _) | .null | .string _ | .blob _ | .currentTime _ | .positive _ | .compare ..
-    | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast .. | .exists _ | .inQuery .. | .subquery _
-    | .inList .. | .between .. | .caseOf .. | .concatenate .. =>
-      .error (.restriction [4, item] .groupByTerm)) query.groupBy
+  let terms ← resolveAll (resolveGroupTerm dqs scope shapes aliases outputs collations) query.groupBy
   if aggregate && !outputs.all (groupedOutput (terms.map Prod.fst) ·.1) then
     throw (.restriction [0] .bareColumn)
+  let having ← match query.having with
+    | none => pure none
+    | some term =>
+      if !aggregate then throw (.prepare .havingNonAggregate)
+      else if namesAlias scope visibleAliases term then throw (aliasInExpression.under [9])
+      else
+        let resolved ← Belay.Sqlite.condition [9] (resolveOperand dqs scope shapes false term)
+        if resolved.grouped (terms.map Prod.fst) then pure (some resolved) else throw (.restriction [9] .bareColumn)
   let order ← resolveAll (fun item (term : Syntax.OrderTerm) => match namedResult aliases term.expression with
     | some (.ok column) =>
       .ok { key := .output column, descending := term.descending, collation := collations.getD column .binary }
     | some (.error ()) => .error (.prepare (.orderByOutOfRange (item + 1) outputs.length))
     | none =>
-      if aggregate then .error (.restriction [5, item] .aggregateOrderBy)
-      else if namesAlias scope visibleAliases term.expression then
-        .error (aliasInExpression.under [5, item, 0])
-      else (resolveOperand dqs scope shapes false term.expression).map (fun (e, _) =>
-          ({ key := .expression e, descending := term.descending, collation := term.expression.collationIn scope }
-            : Resolved.SortTerm))
-        |>.mapError (·.under [5, item, 0])) query.orderBy
+      if namesAlias scope visibleAliases term.expression then .error (aliasInExpression.under [5, item, 0])
+      else (resolveOperand dqs scope shapes false term.expression).mapError (·.under [5, item, 0]) >>= fun (e, _) =>
+        if aggregate && !e.grouped (terms.map Prod.fst) then .error (.restriction [5, item] .aggregateOrderBy)
+        else if query.distinct && !outputs.any (·.1 == .scalar e) then .error (.restriction [5, item] .distinctOrderBy)
+        else .ok ({ key := .expression e, descending := term.descending, collation := term.expression.collationIn scope }
+          : Resolved.SortTerm)) query.orderBy
+  let feedsCall := fun (expression : Resolved.Expr) =>
+    expression.any fun node => node.isFallibleCall && node.any (· matches .aggregateValue _)
+  let scalars := outputs.filterMap fun (output, _) => match output with
+    | .scalar expression => some expression
+    | .aggregate _ => none
+  let sorted := order.filterMap fun term => match term.key with
+    | .expression expression => some expression
+    | .output _ => none
+  if (scalars ++ having.toList ++ sorted).any feedsCall then
+    throw (.restriction [] .aggregateInExpression)
   let limitValue ← windowValue [6] query.limit
   let offsetValue ← windowValue [7] query.offset
   if offsetValue.any (· < 0) then throw (.restriction [7] .negativeOffset)
-  if windowSkipsFailure query.groupBy query.limit query.offset (outputs.map (·.1)) then
+  if windowSkipsFailure query.groupBy query.limit query.offset (outputs.map (·.1) ++ aggregates.map .aggregate) then
     throw (.restriction [6] .windowedGroupSum)
   return ({ sources, filter := condition, aggregate, groupBy := terms,
             columns := outputs.map (·.1), names := outputs.map (·.2.1), orderBy := order,
             offset := (offsetValue.getD 0).toNat,
             limit := limitValue.bind fun value => if value < 0 then none else some value.toNat,
-            outer := shapes.outer }, (outputs.head?.bind (·.2.2)))
+            outer := shapes.outer, aggregates, having,
+            distinct := if query.distinct then some collations else none }, (outputs.head?.bind (·.2.2)))
 
 end Belay.Sqlite

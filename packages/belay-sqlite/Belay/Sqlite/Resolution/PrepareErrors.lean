@@ -146,6 +146,9 @@ inductive ExprError where
   {lit}`IN` with another number of result columns, with that number ({lit}`sqlite3SubselectError`;
   in a comparison SQLite reports {lit}`row value misused`, with the same error code). -/
   | subqueryColumns (count : Nat)
+  /-- {lit}`HAVING clause on a non-aggregate query`: {lit}`HAVING` in a query without
+  {lit}`GROUP BY` and without an aggregate (ADR 0018, D3). -/
+  | havingNonAggregate
   deriving Repr, DecidableEq
 
 /-- An error that {lit}`sqlite3_prepare_v2` reports for a statement in the first

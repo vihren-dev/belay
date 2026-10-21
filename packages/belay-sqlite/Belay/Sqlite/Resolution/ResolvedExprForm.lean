@@ -66,6 +66,9 @@ inductive Expr where
   value of the operand is among the values, compared under the affinity and the collation of
   the operand, as SQLite compares a list. -/
   | inList (operand : Expr) (values : Arguments) (affinity : Option Affinity) (collation : Collation) (negated : Bool)
+  /-- The value of aggregate {lit}`index` of the query's aggregates over the current group
+  (ADR 0018, D3), as an aggregate inside an expression, such as {lit}`count(*) + 1`. -/
+  | aggregateValue (index : Nat)
   deriving Repr, DecidableEq
 
 /-- The arguments of a call in written order, as a list that is mutual with

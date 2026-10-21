@@ -48,7 +48,8 @@ of a query around the current one is {name}`RestrictionKind.outerAggregate`. {li
 compares under the affinity and the collation of {lit}`x`, but a list of one constant value with an
 explicit collation is {lit}`x = +c`, as SQLite's parser reads it; {lit}`x BETWEEN a AND b` is
 {lit}`x >= a AND x <= b`; {lit}`CASE` is {lit}`iif` of its operands ({lit}`resolveCase`); and
-{lit}`x || y` is the scalar function of the operator. -/
+{lit}`x || y` is the scalar function of the operator; a listed aggregate call
+({name}`SubqueryShapes.aggregates`) that is no misuse names its aggregate by index. -/
 def resolveOperand (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misuse : Bool) :
     Syntax.Expr → Except ValueIssue Operand
   | .identifier name quote => match scope.resolveName name with
@@ -111,8 +112,12 @@ def resolveOperand (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misus
     let resolved ← resolveArguments dqs scope shapes misuse 0 arguments
     if aggregateCall (.call name arguments) && resolved.readsUnder shapes shapes.outer then
       throw (.restriction [] .outerAggregate)
-    callOperand scope misuse name arguments resolved
-  | call@(.callStar name) => .error (if aggregateCall call then aggregateIssue misuse name else starCallIssue name)
+    match misuse, (Syntax.Expr.call name arguments).indexIn shapes.aggregates with
+    | false, some index => .ok (.aggregateValue index, none)
+    | _, _ => callOperand scope misuse name arguments resolved
+  | call@(.callStar name) => match misuse, call.indexIn shapes.aggregates with
+    | false, some index => .ok (.aggregateValue index, none)
+    | _, _ => .error (if aggregateCall call then aggregateIssue misuse name else starCallIssue name)
   | .null => .ok (.literal .null, none)
   | .string bytes => .ok (.literal (.text bytes), none)
   | .blob bytes => .ok (.literal (.blob bytes), none)
@@ -140,8 +145,7 @@ def resolveOperand (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misus
     let a ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0])
     let l ← (resolveOperand dqs scope shapes misuse low).mapError (·.under [1])
     let h ← (resolveOperand dqs scope shapes misuse high).mapError (·.under [2])
-    let both := Resolved.Expr.and
-      (.compare .ge (comparisonAffinity a.2 l.2) a.1 l.1 (comparisonCollation scope operand low))
+    let both := Resolved.Expr.and (.compare .ge (comparisonAffinity a.2 l.2) a.1 l.1 (comparisonCollation scope operand low))
       (.compare .le (comparisonAffinity a.2 h.2) a.1 h.1 (comparisonCollation scope operand high))
     .ok (if negated then .not both else both, none)
   | .caseOf operands hasBase => do
