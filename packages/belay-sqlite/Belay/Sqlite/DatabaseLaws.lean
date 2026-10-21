@@ -47,27 +47,28 @@ theorem Database.table_createTable {database : Database} {position : Nat} {table
     subst present
     simp only [Catalog.tableAt_createTable name shape h, Option.map_some, rows_getD_append_nil]
 
-/-- For every catalog, position that holds a table, name and index, after
-{name}`Catalog.createIndex` the position holds the same table. Proof sketch: the index is
-appended after every existing position. -/
-theorem Catalog.tableAt_createIndex {catalog : Catalog} {position : Nat} {shape : CatalogTable}
-    (name : Identifier) (index : CatalogIndex) (present : catalog.tableAt position = some shape) :
-    (catalog.createIndex name index).tableAt position = some shape := by
+/-- For every catalog, position that holds a table and object, the catalog with the object
+appended holds the same table at the position, as after CREATE INDEX
+({name}`Catalog.createIndex`) and CREATE TRIGGER ({name}`Catalog.createTrigger`). Proof sketch:
+the object is appended after every existing position. -/
+theorem Catalog.tableAt_append {catalog : Catalog} {position : Nat} {shape : CatalogTable}
+    (object : CatalogObject) (present : catalog.tableAt position = some shape) :
+    (catalog ++ [object]).tableAt position = some shape := by
   have below : position < catalog.length := by
     unfold Catalog.tableAt at present
     cases h : catalog[position]? with
     | none => simp [h] at present
     | some _ => exact (List.getElem?_eq_some_iff.mp h).1
   unfold Catalog.tableAt at present ⊢
-  simpa [Catalog.createIndex, List.getElem?_append_left below] using present
+  simpa [List.getElem?_append_left below] using present
 
-/-- For every database, name, index and position with a table in the view, the database
-after CREATE INDEX ({name}`Catalog.createIndex` with an empty row list appended) has the
-same table at that position. Proof sketch: as {name}`Database.table_createTable`, with
-{name}`Catalog.tableAt_createIndex`. -/
-theorem Database.table_createIndex {database : Database} {position : Nat} {table : Table}
-    (name : Identifier) (index : CatalogIndex) (present : database.table position = some table) :
-    ({ catalog := database.catalog.createIndex name index, rows := database.rows ++ [[]] } : Database).table
+/-- For every database, object and position with a table in the view, the database with the
+object appended to the catalog and an empty row list appended has the same table at that
+position. Proof sketch: as {name}`Database.table_createTable`, with
+{name}`Catalog.tableAt_append`. -/
+theorem Database.table_append {database : Database} {position : Nat} {table : Table}
+    (object : CatalogObject) (present : database.table position = some table) :
+    ({ catalog := database.catalog ++ [object], rows := database.rows ++ [[]] } : Database).table
       position = some table := by
   unfold Database.table at present ⊢
   cases h : database.catalog.tableAt position with
@@ -75,7 +76,7 @@ theorem Database.table_createIndex {database : Database} {position : Nat} {table
   | some old =>
     simp only [h, Option.map_some, Option.some.injEq] at present
     subst present
-    simp only [Catalog.tableAt_createIndex name index h, Option.map_some, rows_getD_append_nil]
+    simp only [Catalog.tableAt_append object h, Option.map_some, rows_getD_append_nil]
 
 /-- For every catalog, position that holds a table and column, after
 {name}`Catalog.addColumn` the position holds the table with the column appended. Proof
@@ -92,8 +93,7 @@ theorem Catalog.tableAt_addColumn_same {catalog : Catalog} {position : Nat} {sha
     simp only [found, Option.some.injEq] at present ⊢
     subst present
     simp [Catalog.tableAt, List.getElem?_set_self below]
-  · simp at present
-  · simp at present
+  all_goals simp at present
 
 /-- For every catalog, two distinct positions and column, {name}`Catalog.addColumn` at one
 position leaves the entry at the other position unchanged. Proof sketch: {lit}`List.set`
@@ -103,8 +103,7 @@ theorem Catalog.tableAt_addColumn_other (catalog : Catalog) {position other : Na
   unfold Catalog.addColumn
   split
   · simp [Catalog.tableAt, List.getElem?_set_ne (Ne.symm distinct)]
-  · rfl
-  · rfl
+  all_goals rfl
 
 /-- For every database, position, column and value: if the view has a table at the
 position, then after {name}`Database.addColumn` the view has that table with the column

@@ -27,7 +27,7 @@ def Syntax.Expr.explicitCollation : Syntax.Expr → Option Collation
   | .between operand low high _ => operand.explicitCollation <|> low.explicitCollation <|> high.explicitCollation
   | .caseOf operands _ => Syntax.Expr.firstExplicitCollation operands
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .qualified .. | .callStar _
-  | .exists _ | .subquery _ =>
+  | .exists _ | .subquery _ | .raise .. =>
     none
 
 /-- The first explicit collation of the arguments ({name}`Syntax.Expr.explicitCollation`). -/
@@ -49,7 +49,7 @@ def Syntax.Expr.columnCollation (scope : Scope) : Syntax.Expr → Option Collati
   | .positive operand | .cast operand _ | .collate operand _ => operand.columnCollation scope
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .compare .. | .and .. | .or ..
   | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .exists _ | .inQuery .. | .subquery _
-  | .inList .. | .between .. | .caseOf .. | .concatenate .. => none
+  | .inList .. | .between .. | .caseOf .. | .concatenate .. | .raise .. => none
 
 /-- Whether an expression is a column under one {lit}`COLLATE`: a qualified name, or an
 unqualified name that reads a column of the scope. The model admits such a
@@ -65,7 +65,7 @@ def Syntax.Expr.collatedColumn (scope : Scope) : Syntax.Expr → Bool
   | .collate (.isNull ..) _ | .collate (.callStar _) _ | .collate (.call ..) _ | .collate (.arithmetic ..) _
   | .collate (.cast ..) _ | .collate (.exists _) _ | .collate (.inQuery ..) _ | .collate (.subquery _) _
   | .collate (.inList ..) _ | .collate (.between ..) _ | .collate (.caseOf ..) _ | .collate (.concatenate ..) _
-  | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate ..
+  | .collate (.raise ..) _ | .raise .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate ..
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .qualified .. | .negate _
   | .positive _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
   | .cast .. => false

@@ -25,6 +25,19 @@ inductive QuoteKind where
   | backtick
   deriving Repr, DecidableEq
 
+/-- What {lit}`RAISE` does in a trigger (ADR 0018, D5): {lit}`IGNORE` ends the row, and the
+others fail the statement with that conflict algorithm. -/
+inductive RaiseKind where
+  /-- {lit}`RAISE(IGNORE)`. -/
+  | ignore
+  /-- {lit}`RAISE(ROLLBACK, message)`. -/
+  | rollback
+  /-- {lit}`RAISE(ABORT, message)`. -/
+  | abort
+  /-- {lit}`RAISE(FAIL, message)`. -/
+  | fail
+  deriving Repr, DecidableEq
+
 /-- An expression as written. For example, the literal {lit}`-5` is
 {lean}`Expr.negate (.numeric "5")`. -/
 inductive Expr where
@@ -96,6 +109,9 @@ inductive Expr where
   | caseOf (operands : List Expr) (hasBase : Bool)
   /-- {lit}`left || right`. -/
   | concatenate (left right : Expr)
+  /-- {lit}`RAISE(kind[, message])`, with the message for every kind but {lit}`IGNORE`; it is
+  valid only in a trigger's statements (ADR 0018, D5). -/
+  | raise (kind : RaiseKind) (message : Option Expr)
   deriving Repr, BEq, Inhabited
 
 /-- One result column of a {lit}`SELECT`: {lit}`*`, or an expression with an

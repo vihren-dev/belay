@@ -57,14 +57,13 @@ theorem DatabaseExtends.create (database : Database) (name : Identifier) (table 
       { catalog := database.catalog.createTable name table, rows := database.rows ++ [[]] } :=
   fun _ old present => ⟨old, Database.table_createTable name table present, TableExtends.refl old⟩
 
-/-- For every database, name and index, CREATE INDEX ({name}`Catalog.createIndex` with an
-empty row list appended) extends the database: every table present before is present and
-unchanged. Proof sketch: {name}`Database.table_createIndex` keeps each present table at its
+/-- For every database and object, appending the object to the catalog and an empty row list
+extends the database, as CREATE INDEX and CREATE TRIGGER do: every table keeps its position and
+is unchanged. Proof sketch: {name}`Database.table_append` keeps each present table at its
 position, and {name}`TableExtends.refl` extends it by no columns. -/
-theorem DatabaseExtends.index (database : Database) (name : Identifier) (index : CatalogIndex) :
-    DatabaseExtends database
-      { catalog := database.catalog.createIndex name index, rows := database.rows ++ [[]] } :=
-  fun _ old present => ⟨old, Database.table_createIndex name index present, TableExtends.refl old⟩
+theorem DatabaseExtends.append (database : Database) (object : CatalogObject) :
+    DatabaseExtends database { catalog := database.catalog ++ [object], rows := database.rows ++ [[]] } :=
+  fun _ old present => ⟨old, Database.table_append object present, TableExtends.refl old⟩
 
 /-- For every present table, column and value, {name}`Database.addColumn` at its position
 extends the database. Other tables are unchanged. The proof separates the selected
@@ -124,7 +123,12 @@ theorem step_extends (clock : Int) (statement : Resolved.Statement) (database : 
       · exact DatabaseExtends.refl database
       · split
         · exact DatabaseExtends.refl database
-        · exact DatabaseExtends.index database name index
+        · exact DatabaseExtends.append database _
+    · exact DatabaseExtends.refl database
+  | createTrigger target name trigger =>
+    simp only [step]
+    split
+    · exact DatabaseExtends.append database _
     · exact DatabaseExtends.refl database
   | query query subqueries =>
     have same : effectDatabase (step clock (.query query subqueries) database) = database := by

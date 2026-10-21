@@ -70,7 +70,7 @@ def resolveResultColumn (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (
     | .call _ (_ :: _ :: _ :: _) | .null | .numeric _ | .string _ | .blob _ | .currentTime _
     | .identifier .. | .qualified .. | .negate _ | .positive _ | .compare .. | .and .. | .or .. | .not _
     | .isNull .. | .arithmetic .. | .cast .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList ..
-    | .between .. | .caseOf .. | .concatenate .. =>
+    | .between .. | .caseOf .. | .concatenate .. | .raise .. =>
       let (resolved, affinity) ← (resolveOperand dqs scope shapes false value).mapError (·.under [0, column, 0])
       .ok (named (.scalar resolved) (definedName scope value) affinity)
 

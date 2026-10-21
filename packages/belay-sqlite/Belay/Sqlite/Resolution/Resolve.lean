@@ -5,6 +5,7 @@ import Belay.Sqlite.Resolution.Updates
 import Belay.Sqlite.Resolution.Deletes
 import Belay.Sqlite.Resolution.Drops
 import Belay.Sqlite.Resolution.ResolveState
+import Belay.Sqlite.Resolution.TriggerDefinitions
 
 set_option doc.verso true
 
@@ -47,6 +48,9 @@ def resolveStatement (context : ResolveContext) (state : ResolveState) (index : 
   | .addColumn table column => state.withCatalog (resolveAddColumn context state.catalog index table column)
   | .dropTable name ifExists => state.withWrite context index (resolveDropTable state.catalog name ifExists)
   | .dropIndex name ifExists => state.withCatalog (resolveDropIndex state.catalog index name ifExists)
+  | .createTrigger name ifNotExists time event table condition body =>
+    state.withCatalog (resolveCreateTrigger state.catalog name ifNotExists { table, time, event, condition, body })
+  | .dropTrigger name ifExists => state.withCatalog (resolveDropTrigger state.catalog name ifExists)
   | .insert table columns rows conflicts algorithm returning subqueries =>
     state.withWrite context index (resolveWriteSubqueries context state.catalog index 6 table (fun _ => []) subqueries
       (resolveInsert context state.catalog index table columns rows conflicts algorithm returning))

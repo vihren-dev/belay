@@ -24,7 +24,7 @@ def keyed (name : Identifier) (declaredType : Option String) (constraint : Colum
 def tableOf (statement : Syntax.Statement) : Option CatalogTable :=
   match (catalogOf (schema [statement])).head? with
   | some { entry := .table table, .. } => some table
-  | some { entry := .index _, .. } | none => none
+  | some { entry := .index _, .. } | some { entry := .trigger _, .. } | none => none
 
 /-- {lit}`w(k TEXT PRIMARY KEY, v INTEGER) WITHOUT ROWID`. -/
 def textKeyed : Syntax.Statement :=

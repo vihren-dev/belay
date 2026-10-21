@@ -69,7 +69,7 @@ theorem Catalog.Valid.mono {catalog : Catalog} (valid : catalog.Valid limits)
   split at supported
   · simp only [Bool.and_eq_true] at supported ⊢
     exact ⟨CatalogTable.supported_mono supported.1 more, supported.2⟩
-  · exact supported
+  all_goals exact supported
 
 /-- For every valid catalog under the profile's limits, {name}`Catalog.emptyDatabase`
 satisfies {name}`Conforms`, including the empty catalog. Use it as an empty-data

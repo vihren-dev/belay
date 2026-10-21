@@ -52,6 +52,9 @@ inductive Statement where
   | createTable (position : Nat) (name : Identifier) (table : CatalogTable)
   /-- Create the named index at the catalog position, which is the end of the catalog. -/
   | createIndex (position : Nat) (name : Identifier) (index : CatalogIndex)
+  /-- Create the named trigger at the catalog position, which is the end of the catalog
+  (ADR 0018, D5). -/
+  | createTrigger (position : Nat) (name : Identifier) (trigger : CatalogTrigger)
   /-- Append the column to the table at the catalog position. -/
   | addColumn (table : Nat) (column : CatalogColumn)
   /-- Remove the catalog objects at the positions, with their rows ({lit}`Catalog.drop`):

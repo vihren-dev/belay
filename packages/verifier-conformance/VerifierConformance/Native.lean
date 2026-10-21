@@ -127,7 +127,7 @@ def catalogIndexes (catalog : Catalog) (position : Nat) : List NativeIndex :=
                  | .expression _ => none,
                descending := sortOrders (index.keys.map (·.descending)),
                collations := collationNames (index.keys.map (·.collation.sqlName)) } else none
-    | .table _ => none
+    | .table _ | .trigger _ => none
 
 /-- Whether two index lists hold the same indexes, in any order. -/
 def sameIndexes (model native : List NativeIndex) : Bool :=
@@ -152,12 +152,12 @@ def tableMatches (catalog : Catalog) (position : Nat) (name : Identifier) (table
 
 /-- Whether a model database matches the native tables: every catalog table has exactly
 one native table with its folded name that matches it, no native table is outside the
-catalog, the database has one row list for each catalog object, and an index object holds
-no rows. -/
+catalog, the database has one row list for each catalog object, and an index or trigger
+object holds no rows. -/
 def tablesMatch (database : Database) (natives : List NativeTable) : Bool :=
   let tables := database.catalog.zipIdx.filterMap fun (object, position) => match object.entry with
     | .table table => some (position, object.name, table)
-    | .index _ => none
+    | .index _ | .trigger _ => none
   natives.length == tables.length &&
   tables.all (fun (position, name, table) =>
     match natives.filter (fun native => native.name.sameName name) with
@@ -165,7 +165,7 @@ def tablesMatch (database : Database) (natives : List NativeTable) : Bool :=
     | _ => false) &&
   database.rows.length == database.catalog.length &&
   database.catalog.zipIdx.all (fun (object, position) => match object.entry with
-    | .index _ => (database.rows.getD position []).isEmpty
+    | .index _ | .trigger _ => (database.rows.getD position []).isEmpty
     | .table _ => true)
 
 end Belay.Sqlite.Conformance

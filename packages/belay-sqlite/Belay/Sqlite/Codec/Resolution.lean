@@ -30,6 +30,8 @@ instance : Lean.ToJson PrepareError where
       Lean.Json.mkObj [("noSuchReferencedTable", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .foreignKeyMismatch child parent =>
       Lean.Json.mkObj [("foreignKeyMismatch", Lean.Json.mkObj [("child", Lean.toJson child), ("parent", Lean.toJson parent)])]
+    | .noSuchTrigger name => Lean.Json.mkObj [("noSuchTrigger", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .triggerExists name => Lean.Json.mkObj [("triggerExists", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .expression error => Lean.toJson error
 
 /-- A model restriction as JSON: the statement index, the path, the message that users
@@ -47,6 +49,7 @@ deriving instance Lean.ToExpr for ArithmeticOperator
 deriving instance Lean.ToExpr for Affinity
 deriving instance Lean.ToExpr for ConflictAlgorithm
 deriving instance Lean.ToExpr for Syntax.QuoteKind
+deriving instance Lean.ToExpr for Syntax.RaiseKind
 deriving instance Lean.ToExpr for Syntax.Expr
 deriving instance Lean.ToExpr for Syntax.ResultColumn
 deriving instance Lean.ToExpr for Syntax.OrderTerm
@@ -61,6 +64,9 @@ deriving instance Lean.ToExpr for Syntax.Subquery
 deriving instance Lean.ToExpr for Syntax.ConflictAction
 deriving instance Lean.ToExpr for Syntax.ConflictClause
 deriving instance Lean.ToExpr for Syntax.TableOptions
+deriving instance Lean.ToExpr for Syntax.TriggerTime
+deriving instance Lean.ToExpr for Syntax.TriggerEvent
+deriving instance Lean.ToExpr for Syntax.BodyStatement
 deriving instance Lean.ToExpr for Syntax.Statement
 deriving instance Lean.ToExpr for Limits
 deriving instance Lean.ToExpr for Profile
@@ -83,6 +89,7 @@ deriving instance Lean.ToExpr for CatalogTable
 deriving instance Lean.ToExpr for KeyTerm
 deriving instance Lean.ToExpr for IndexKey
 deriving instance Lean.ToExpr for CatalogIndex
+deriving instance Lean.ToExpr for CatalogTrigger
 deriving instance Lean.ToExpr for CatalogEntry
 deriving instance Lean.ToExpr for CatalogObject
 deriving instance Lean.ToExpr for ExprError

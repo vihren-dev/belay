@@ -14,7 +14,7 @@ position that holds an index or is past the end. -/
 def Catalog.tableAt (catalog : Catalog) (position : Nat) : Option CatalogTable :=
   match catalog[position]? with
   | some { entry := .table table, .. } => some table
-  | some { entry := .index _, .. } => none
+  | some { entry := .index _, .. } | some { entry := .trigger _, .. } => none
   | none => none
 
 /-- Set whether the last foreign key of a table so far is deferred, as
@@ -58,7 +58,7 @@ def Catalog.parentIndexes (catalog : Catalog) (position : Nat) (table : CatalogT
         else (index.keys.mapM fun (key : IndexKey) => match key.term with
           | .column column => some (column, key.collation)
           | .expression _ => none).map (false, ·)
-      | .table _ => none
+      | .table _ | .trigger _ => none
 
 /-- The pairs of an index that the foreign key's referenced columns name, as
 {lit}`sqlite3FkLocateIndex` matches them: the index has one column for each column of the key,
@@ -133,7 +133,7 @@ catalog order and the keys of each in {name}`CatalogTable.allForeignKeys` order.
 def Catalog.foreignKeyLinks (catalog : Catalog) : List ForeignKeyLink :=
   catalog.zipIdx.flatMap fun (object, position) => match object.entry with
     | .table table => table.allForeignKeys.map fun key => { child := position, key, parent := catalog.parentLink key }
-    | .index _ => []
+    | .index _ | .trigger _ => []
 
 /-- The foreign keys of the table at the position, newest first, as SQLite keeps them in the
 table's list. -/

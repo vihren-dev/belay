@@ -190,7 +190,7 @@ def statementOutput (clock : Int) (statement : Resolved.Statement) (before : Sql
     if successful then some ⟨returning.map (·.2), returnedRows context returning (written.map (·.values)), some written.length⟩
     else if constraintFailure then some ⟨returning.map (·.2), [], some written.length⟩ else none
   | .addColumn _ column => some ⟨addColumnOutputNames column, [], none⟩
-  | .createTable .. | .createIndex .. | .drop .. | .begin | .commit | .rollback | .prepareError _ | .setting _ =>
+  | .createTable .. | .createIndex .. | .createTrigger .. | .drop .. | .begin | .commit | .rollback | .prepareError _ | .setting _ =>
     some ⟨[], [], none⟩
 
 end Belay.Sqlite.Conformance

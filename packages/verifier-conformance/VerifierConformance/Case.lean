@@ -46,12 +46,12 @@ def storedRows (table : CatalogTable) (rows : List Row) : List Row :=
 
 /-- The starting database: the catalog, and at each catalog table the rows of the native
 table with its folded name ({name}`storedRows`). A catalog table without a native table,
-and an index, hold no rows. -/
+an index and a trigger hold no rows. -/
 def databaseOf (catalog : Catalog) (natives : List NativeTable) : Database :=
   { catalog, rows := catalog.map fun object => match object.entry with
     | .table table => storedRows table (((natives.find? fun native =>
         native.name.sameName object.name).map (·.rows)).getD [])
-    | .index _ => [] }
+    | .index _ | .trigger _ => [] }
 
 /-- The primary result-code abstraction matches the granularity of ExecutionError. -/
 def primaryCode : Option (Nat × ExecutionError) → Nat
