@@ -38,11 +38,13 @@ slice the local verdict, the corpus, and `just test-full`.
    the list.
 5. **The replay checks the list.** The conformance runner's comparison of a query's output
    (`VerifierConformance`, which the replays, the authored coverage tests and their kernel
-   proofs use) also requires that the rows that SQLite gave, with the rows of each tie group of
+   proofs use) also requires, for a query that succeeds, that the rows that SQLite gave, with the rows of each tie group of
    the native evidence in normal form, are in the model's list. The judge's verdict compares the
    one predicted output (`judge/outputs.py`) and does not change: enforcing the list there is a
    judge change, which needs the owner's approval, and is not part of this slice. The runner's
-   comparison changes no case that agrees today unless the list is wrong.
+   comparison changes no case that agrees today unless the list is wrong. A query that fails,
+   such as an aggregate whose sum overflows, keeps the comparison of its error output, as the
+   model's one result has rows that SQLite never gives then.
 
 ## Tests
 
