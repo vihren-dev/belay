@@ -1,6 +1,6 @@
 # DISTINCT, HAVING and aggregates inside expressions (ADR 0018, slice 3)
 
-Created 2026-10-21. Status: open.
+Created 2026-10-21. Status: DONE (2026-10-21).
 Status file: [status](20261021-distinct-having.status.md).
 Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D3.
 
