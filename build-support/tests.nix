@@ -1,5 +1,5 @@
 # Independent pytest targets: Nix owns isolation, dependency identity and reuse.
-{ pkgs, leanToolchain, leanRuntime, runtime, seedRuntime, modelPackage, parserLibrary, conformance ? runtime, root ? ../.
+{ pkgs, leanToolchain, modelPackage, parserLibrary, conformance, root ? ../.
 # Lean package outputs by their folder in the repository layout (default.nix); the `packages` suite replays them.
 , leanPackages
 # The surface package and the parser library that it links; the `surface` suite checks them.
@@ -11,11 +11,7 @@ let
   fs = pkgs.lib.fileset;
   common = map (name: root + "/${name}") [
     "pytest.ini" "conftest.py" "tests/__init__.py" "tests/runtime_support.py" "tests/runtime_fixtures.py"
-    "tests/runtime_installation.py"
   ];
-  # The belay.toml reader, for targets whose tests take the checked-in cases from belay.toml (ADR 0010).
-  # Only these targets list it, so a change to the reader does not rerun the conformance targets.
-  caseReader = map (name: root + "/${name}") [ "migration_check/__init__.py" "migration_check/project_config.py" ];
   python = name: pkgs.python3.withPackages (ps: [ ps.pytest ps.pytest-timeout ]
     ++ pkgs.lib.optional (name == "model") ps.hypothesis);
   # Each test has its own limit, so a hang fails with the name of the test. Nix runs suites
@@ -26,17 +22,10 @@ let
   # A mutant suite (tests/nix_mutant_suites.json) runs alone on its own CI runner, and its tests
   # take about 4 minutes each there, so it gets a larger limit; each test keeps its own limit.
   mutantSuiteTimeoutSeconds = 2700;
-  # The conformance suites use only the SQL frontend, not the verification application.
+  # The SQL frontend modules that the conformance suites import.
   # tests/test_conformance_frontend.py checks this list against the actual imports.
   frontend = map (name: root + "/${builtins.replaceStrings [ "." ] [ "/" ] name}.py")
     (builtins.fromJSON (builtins.readFile (root + /tests/conformance_frontend.json)));
-  leanRoot = pkgs.runCommand "sqlite-verifier-test-lean" {} ''
-    mkdir -p "$out"
-    ln -s ${leanToolchain} "$out/lean"
-    ln -s ${leanRuntime}/.lake "$out/.lake"
-    mkdir -p "$out/packages"
-    ln -s ${modelPackage} "$out/packages/belay-sqlite-model"
-  '';
   # The package outputs in the repository layout. Each package folder is a real folder, so the relative
   # paths of its requirements resolve here; its entries link to the store, because Lake must not write.
   packageRoot = pkgs.runCommand "sqlite-verifier-test-packages" {} ''
@@ -78,8 +67,7 @@ let
   packageSources = map (package: fs.difference (fs.fileFilter (file: file.hasExt "lean" || file.hasExt "toml")
     (root + "/packages/${package}")) (fs.maybeMissing (root + "/packages/${package}/.lake")))
     (builtins.attrNames (pkgs.lib.filterAttrs (_: type: type == "directory") (builtins.readDir (root + /packages))));
-  # `seeds`: Lake cache seeds (case-seeds.nix) copied into one writable cache that the tests use (ADR 0010).
-  suite = name: { inputs, runtime, tools ? [], environment ? {}, seeds ? [], timeout ? suiteTimeoutSeconds }:
+  suite = name: { inputs, runtime, tools ? [], environment ? {}, timeout ? suiteTimeoutSeconds }:
     let
       files = (builtins.fromJSON (builtins.readFile (root + /tests/nix_suites.json))).${name};
       file = builtins.head files;
@@ -94,13 +82,6 @@ let
       installPhase = ''
         export HOME="$TMPDIR"
         export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
-        ${pkgs.lib.optionalString (seeds != [ ]) ''
-          export BELAY_TEST_CACHE="$TMPDIR/lake-cache" BELAY_TEST_SEEDED=1
-          mkdir -p "$BELAY_TEST_CACHE"
-          for seed in ${pkgs.lib.concatStringsSep " " (map toString seeds)}; do
-            cp -R --no-preserve=mode "$seed/." "$BELAY_TEST_CACHE/"
-          done
-        ''}
         timeout ${toString timeout} python3 -m pytest ${file} ${pkgs.lib.concatStringsSep " " extraFiles} --runtime-root ${runtime} \
           -p no:cacheprovider -p pytest_timeout --timeout=${toString testTimeoutSeconds} \
           --junitxml "$out/junit.xml" -v --durations=10
@@ -209,7 +190,6 @@ let
   # The authored corpora: the locked corpora whose manifest names the evidence that they cover.
   authoredCorpora = builtins.filter (path: (builtins.fromJSON (builtins.readFile (path + "/manifest.json"))) ? evidenceKind)
     lockedCorpora;
-  caseSeeds = import ./case-seeds.nix { inherit pkgs root; runtime = seedRuntime; };
   modelTools = [ native.sqlite native.sqlite346 native.sqlite3534 ];
 in {
   sample = suite "sample" {
@@ -280,30 +260,6 @@ in {
     inputs = map (name: root + "/tests/${name}.py") [ "parser_inputs" "parser_library_inputs" "parser_library_support" ];
     runtime = parserLibrary;
   };
-  atuin = suite "atuin" {
-    inputs = caseReader;
-    inherit runtime;
-  };
-  bundle = suite "bundle" {
-    seeds = builtins.attrValues caseSeeds;
-    inputs = [
-      (fs.fileFilter (file: file.hasExt "py") (root + /migration_check))
-      (fs.fileFilter (file: file.hasExt "py") (root + /belay/sqlite))
-      (fs.fileFilter (file: file.hasExt "json") (root + /conformance/cases))
-      (root + /tests/sql_fixtures.py)
-      (root + /tests/example_cases.py)
-      (root + /experiments/adr-0003-latency/cases.py)
-      # cases.py reads the examples' belay.toml files; the runtime under test contains them too.
-      # Regular files only: no `.belay` links of local proofs-project builds (ADR 0010).
-      (fs.fileFilter (file: file.type == "regular" && file.name != ".DS_Store") (root + /examples))
-      (root + /experiments/adr-0003-latency/stage_timing.py)
-    ];
-    inherit runtime;
-  };
-  cli = suite "cli" {
-    inputs = caseReader;
-    inherit runtime;
-  };
   surface = suite "surface" {
     inputs = [ (root + /tests/surface) (root + /tests/surface_support.py)
                (fs.fileFilter (file: file.hasExt "nix") (root + /build-support)) ] ++ packageSources
@@ -319,10 +275,6 @@ in {
     inputs = [ (root + /tools/__init__.py) (root + /tools/public_doc_inventory.py) (root + /tools/public_doc_coverage.py)
                (root + /tests/public_doc_inventory) ];
     runtime = documentationRoot;
-  };
-  kernel = suite "kernel" {
-    inputs = [ (fs.fileFilter (file: file.hasExt "lean") (root + /tests/kernel_gate)) (root + /tests/kernel_gate_support.py) ];
-    runtime = leanRoot;
   };
   model = suite "model" {
     inputs = modelInputs;

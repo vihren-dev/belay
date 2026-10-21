@@ -1,9 +1,11 @@
 # ADR 0002: Optional local caching inside compile_project()
 
+Superseded by [ADR 0021](adr-0021-remove-the-verifier-product.md) on 2026-10-21: the verifier product and its compilation were removed.
+
 - Status: Superseded 2026-10-01 by [ADR 0003](adr-0003-agent-proof-preparation.md).
   ADR 0003 implements opt-in stage reuse with this ADR's eligibility policy
   (§5.2, §6.1) and moves candidate compilation out of acceptance; see
-  [source staging](source-staging.md). The text below is the original proposal.
+  [source staging](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/source-staging.md). The text below is the original proposal.
 - Date: 2026-09-26
 - Repository examined: `54ea013ab12d16fdc35d9b08bd26078c24c547aa`
 - Decision owner: formal methods / technical lead
@@ -93,7 +95,7 @@ The investigation therefore identifies two separate requirements for reuse:
 compilation must depend only on the identified inputs, and a restored artifact must
 come from the trusted compilation of those inputs. Kernel replay remains necessary
 but does not establish the second requirement by itself. See
-[the current checker](../packages/verifier-gate/ProofChecker.lean), particularly `importData`, `additions`,
+[the current checker](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/packages/verifier-gate/ProofChecker.lean), particularly `importData`, `additions`,
 and `checkProof`.
 
 ### 3.4 What the investigation has not established
@@ -515,12 +517,12 @@ is modified by this feature.
 Consulted 2026-09-26. The design is derived primarily from the repository's pinned
 code, not a claim that the latest Lean documentation proves cache safety.
 
-- [Compilation, snapshots and artifact validation](../migration_check/compile.py)
-- [Closure discovery and compiler sandbox inputs](../migration_check/source_closure.py)
+- [Compilation, snapshots and artifact validation](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/migration_check/compile.py)
+- [Closure discovery and compiler sandbox inputs](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/migration_check/source_closure.py)
 - Sandbox policy and process cleanup (`migration_check/sandbox.py`, removed 2026-09-29)
-- [CLI verification and fresh kernel invocation](../migration_check/cli.py)
-- [Independent replay and target reconstruction](../packages/verifier-gate/ProofChecker.lean)
-- [Existing early-baseline regression](../tests/early_baseline_test.py)
+- [CLI verification and fresh kernel invocation](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/migration_check/cli.py)
+- [Independent replay and target reconstruction](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/packages/verifier-gate/ProofChecker.lean)
+- [Existing early-baseline regression](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/tests/early_baseline_test.py)
 - [Lean build tools and checker overview](https://lean-lang.org/doc/reference/latest/Build-Tools-and-Distribution/)
 - [Lean module semantics](https://lean-lang.org/doc/reference/latest/Source-Files-and-Modules/)
 - [Lean module initializer behavior](https://lean-lang.org/doc/reference/latest/Run-Time-Code/Foreign-Function-Interface/)

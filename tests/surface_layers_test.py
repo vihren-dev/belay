@@ -5,9 +5,8 @@ package and from the Nix build.
    imports a module of `packages/belay`, and no other lakefile requires it.
 2. The surface imports the model only through its roots `Belay.Sqlite.Model` and
    `Belay.Sqlite.Model.Codec`, and otherwise only `Init`, `Std`, `Lean` and its own modules.
-3. The installed runtime, the kernel gate and the conformance runtime do not contain the
-   surface: in `build-support/`, only the surface's own derivation and the `surface` test suite
-   name it.
+3. The conformance runtime does not contain the surface: in `build-support/`, only the
+   surface's own derivation and the `surface` test suite name it.
 """
 
 from pathlib import Path
@@ -90,7 +89,7 @@ and the argument that passes it to the test suites."""
 
 def test_only_the_surface_build_and_its_suite_name_the_surface() -> None:
     """Rule 3: in `build-support/`, only the lines of `SURFACE_BUILD_LINES` and the test suites'
-    file name the surface, so no runtime, gate or conformance build contains it."""
+    file name the surface, so the conformance runtime does not contain it."""
     lines = [f"{path.name}: {line.strip()}" for path in sorted((ROOT / "build-support").glob("*.nix"))
              for line in path.read_text().splitlines() if SURFACE_NAMES.search(line)]
     assert [line for line in lines if not line.startswith(SURFACE_SUITE + ": ") and line not in SURFACE_BUILD_LINES] == []

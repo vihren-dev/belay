@@ -1,13 +1,12 @@
-"""Map a parsed SQL script to statement syntax and build the structural record.
+"""Map a parsed SQL script to statement syntax.
 
 The frontend maps each parser production to one constructor of the Lean
 `Syntax.Statement`, refuses syntax without a constructor, and keeps the source
 range of every node. It reads no schema: Lean resolves names, types, values and
-limits. The record carries the profile's release and build and both scripts.
+limits.
 """
 
 from .located import Json, Located
-from .profiles import ExecutionProfile
 from .sql_tree import Node, Tree
 from .syntax_definitions import add_column, create_table
 from .syntax_drops import drop
@@ -16,10 +15,6 @@ from .syntax_pragmas import pragma
 from .syntax_select import select
 from .syntax_triggers import create_trigger
 from .syntax_writes import delete, insert, transaction, update
-
-SCRIPT_RECORD_VERSION = 5
-"""The version of the structural record that Lean's `decodeScriptRecord` accepts."""
-
 
 def commands(tree: Tree) -> list[Node]:
     """Return each command of the script; refuse wrappers such as EXPLAIN."""
@@ -69,10 +64,3 @@ def statement(tree: Tree, command: Node) -> Located:
 def statements(tree: Tree) -> tuple[Located, ...]:
     """Map every command of a parsed script, in order."""
     return tuple(statement(tree, command) for command in commands(tree))
-
-
-def script_record(profile: ExecutionProfile, schema: tuple[Located, ...],
-                  script: tuple[Located, ...]) -> dict[str, Json]:
-    """Build the structural record of a schema and a script for the given profile."""
-    return {"version": SCRIPT_RECORD_VERSION, "release": profile.engine, "sourceId": profile.source_id,
-            "schema": [item.value for item in schema], "script": [item.value for item in script]}

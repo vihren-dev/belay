@@ -1,8 +1,8 @@
 """The conformance Nix suites declare every frontend module that their tests import.
 
 `build-support/tests.nix` gives the conformance suites only the frontend modules in
-`tests/conformance_frontend.json`, so that a change to the verification application
-leaves their cached results valid. The Nix sandbox would reject a missing module, but
+`tests/conformance_frontend.json`, so that a change to another frontend module leaves
+their cached results valid. The Nix sandbox would reject a missing module, but
 only after a long build; this check finds it on the host in less than a second.
 """
 
@@ -14,8 +14,8 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFORMANCE_SUITES = ("model", "frozen", "harness", "sample", "upstream", "writers")
-"""The Nix suites that receive the narrowed frontend inputs; the others receive the application and frontend."""
-LOCAL_PACKAGES = ("belay", "conformance", "migration_check", "tests", "tools")
+"""The Nix suites that receive the narrowed frontend inputs."""
+LOCAL_PACKAGES = ("belay", "conformance", "tests", "tools")
 """Repository packages whose imports are followed; other imports are standard or pinned libraries."""
 pytestmark = [pytest.mark.unit]
 
@@ -78,22 +78,22 @@ def test_closure_follows_submodules_imported_from_a_package(tmp_path: Path) -> N
     """`from conformance import helper` reaches the frontend modules that helper imports."""
     for name, text in {"tests/example_test.py": "from conformance import helper\n",
                        "conformance/helper.py": "from . import other\n",
-                       "conformance/other.py": "from migration_check.secret import value\n",
-                       "migration_check/secret.py": "value = 1\n"}.items():
+                       "conformance/other.py": "from tools.secret import value\n",
+                       "tools/secret.py": "value = 1\n"}.items():
         (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
         (tmp_path / name).write_text(text, encoding="utf-8")
-    assert "migration_check.secret" in import_closure(["tests/example_test.py"], tmp_path)
+    assert "tools.secret" in import_closure(["tests/example_test.py"], tmp_path)
 
 
 def test_closure_follows_nested_frontend_relative_imports(tmp_path: Path) -> None:
-    """A relative frontend import resolves inside belay.sqlite and exposes application dependencies."""
+    """A relative frontend import resolves inside belay.sqlite and exposes its dependencies outside it."""
     for name, text in {"tests/example_test.py": "from belay.sqlite.sql_model import Table\n",
                        "belay/sqlite/sql_model.py": "from . import helper\n",
-                       "belay/sqlite/helper.py": "from migration_check.secret import value\n",
-                       "migration_check/secret.py": "value = 1\n"}.items():
+                       "belay/sqlite/helper.py": "from tools.secret import value\n",
+                       "tools/secret.py": "value = 1\n"}.items():
         (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
         (tmp_path / name).write_text(text, encoding="utf-8")
-    assert "migration_check.secret" in import_closure(["tests/example_test.py"], tmp_path)
+    assert "tools.secret" in import_closure(["tests/example_test.py"], tmp_path)
 
 
 @pytest.mark.parametrize("suite", CONFORMANCE_SUITES)
@@ -101,8 +101,6 @@ def test_suite_imports_only_declared_frontend_modules(suite: str) -> None:
     """Add a module that a conformance test starts to import to tests/conformance_frontend.json."""
     files = json.loads((ROOT / "tests/nix_suites.json").read_text(encoding="utf-8"))[suite]
     closure = import_closure(files)
-    application = {name for name in closure if name.startswith("migration_check.")}
-    assert not application, f"Suite {suite} imports application modules: {sorted(application)}"
     used = {name for name in closure if name.startswith("belay.sqlite.")}
     undeclared = used - declared_frontend()
     assert not undeclared, (f"Suite {suite} imports frontend modules that its Nix inputs omit: "

@@ -92,12 +92,12 @@ def test_summary_lists_at_most_ten_cases_and_handles_missing_data(tmp_path: Path
     list at ten, mark a report without a timestamp, and give a short summary for an empty build
     folder instead of an error."""
     assert "No JUnit reports in build/." in render_summary(find_reports(tmp_path), SINCE)
-    write_junit(tmp_path / "nix-tests-bundle/junit.xml", None, {"untimed": 5.0})
+    write_junit(tmp_path / "nix-tests-model/junit.xml", None, {"untimed": 5.0})
     assert "No test case ran in this job." in render_summary(find_reports(tmp_path), SINCE)
     write_junit(tmp_path / "test-results/nix.xml", "2026-10-19T12:01:00+00:00",
                 {f"case{index}": float(index) for index in range(15)})
     summary = render_summary(find_reports(tmp_path), SINCE)
-    assert "| nix-tests-bundle/junit.xml | 1 | 0 | 5.0 | no timestamp |" in summary
+    assert "| nix-tests-model/junit.xml | 1 | 0 | 5.0 | no timestamp |" in summary
     listed = [line for line in summary.splitlines() if "tests.probe::case" in line]
     assert len(listed) == 10 and "tests.probe::case14" in listed[0] and "tests.probe::case5 " in listed[-1]
 

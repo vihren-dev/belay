@@ -99,7 +99,7 @@ def test_installed_cli_has_reviewer_options(reviewer: str) -> None:
 @pytest.mark.unit
 @pytest.mark.parametrize("output,review,code", [
     ("- R1 must tools/review.py:12 policy literal\n- R9 should docs/a.md:3 style\n", Review(1, 1, True), 1),
-    ("Summary\n* R4 should GateCore.lean:40 legacy marker\n", Review(0, 1, True), 0),
+    ("Summary\n* R4 should Database.lean:40 legacy marker\n", Review(0, 1, True), 0),
     ("No findings.\n", Review(0, 0, True), 0),
     ("Looks good to me.\n", Review(0, 0, False), 3),
 ])
@@ -137,7 +137,7 @@ def run_review(stubs: Path, extra: dict[str, str]) -> subprocess.CompletedProces
 @pytest.mark.integration
 def test_claude_caller_gets_isolated_codex_review(tmp_path: Path) -> None:
     """A Claude Code caller is reviewed by Codex, which sees no Claude markers and gets the checklist."""
-    stubs = stub_tools(tmp_path / "bin", "- R2 must SqliteVerifier/Contract.lean:10 no plain words")
+    stubs = stub_tools(tmp_path / "bin", "- R2 must Belay/Sqlite/Model/Database.lean:10 no plain words")
     result = run_review(stubs, {"CLAUDECODE": "1", "AI_AGENT": "claude-code"})
     call = json.loads((stubs / "call.json").read_text())
     assert result.returncode == 1, result.stderr

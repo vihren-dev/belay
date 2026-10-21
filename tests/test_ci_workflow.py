@@ -16,7 +16,7 @@ pytestmark = [pytest.mark.unit]
 def check_job_steps() -> list[tuple[str, str]]:
     """Name and condition of each step of the check job, so the tests can verify the platform guard."""
     text = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-    job = text[text.index("\n  check:\n"):text.index("\n  release:\n")]
+    job = text[text.index("\n  check:\n"):text.index("\n  mutants:\n")]
     steps: list[tuple[str, str]] = []
     for block in re.split(r"\n      - ", "\n" + job.split("\n    steps:\n", 1)[1])[1:]:
         name = re.search(r"(?:^|\n\s*)name: (.+)", block)
@@ -49,7 +49,7 @@ def test_every_working_step_is_guarded() -> None:
 
 
 def test_cache_save_is_limited_to_main_and_nightly() -> None:
-    """Pull requests, tags and manual runs can restore caches but cannot publish them."""
+    """Pull requests and manual runs can restore caches but cannot publish them."""
     text = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     expected = ("save: ${{ github.event_name == 'schedule' || "
                 "(github.event_name == 'push' && github.ref == 'refs/heads/main') }}")
@@ -80,12 +80,11 @@ def test_check_job_substitutes_from_the_public_cache_with_fallback() -> None:
 
 
 def test_only_the_publishing_job_receives_the_write_token() -> None:
-    """The check and release jobs, which pull requests and tags run, never see the upload token."""
+    """The check and mutants jobs, which pull requests run, never see the upload token."""
     jobs = workflow_jobs()
-    assert set(jobs) == {"check", "mutants", "release", "publish-nix-store"}
+    assert set(jobs) == {"check", "mutants", "publish-nix-store"}
     assert "ATTIC_WRITE_TOKEN" not in jobs["check"]
     assert "ATTIC_WRITE_TOKEN" not in jobs["mutants"]
-    assert "ATTIC_WRITE_TOKEN" not in jobs["release"]
     assert "secrets.ATTIC_WRITE_TOKEN" in jobs["publish-nix-store"]
 
 
@@ -120,9 +119,9 @@ def test_publishing_uploads_the_restored_store_only_on_an_exact_hit() -> None:
             '"$attic" push vihren:sqlite-verifier --stdin') in upload
 
 
-def test_mutant_job_runs_each_mutant_suite_for_the_package_scope() -> None:
+def test_mutant_job_runs_each_mutant_suite_for_the_full_scope() -> None:
     """The mutants job runs each suite of tests/nix_mutant_suites.json on its own runner, only
-    for the package scope and with the platform guard of the check job, and never saves a cache."""
+    for the full scope and with the platform guard of the check job, and never saves a cache."""
     import json
     job = workflow_jobs()["mutants"]
     suites = json.loads((ROOT / "tests/nix_mutant_suites.json").read_text())
@@ -132,6 +131,6 @@ def test_mutant_job_runs_each_mutant_suite_for_the_package_scope() -> None:
     steps = re.split(r"\n      - ", job.split("\n    steps:\n", 1)[1])
     working = [step for step in steps if "Skip macOS checks" not in step]
     assert all(GUARD in step for step in working)
-    package = "steps.scope.outputs.scope == 'package'"
-    assert all(package in step for step in working if "checkout" not in step and "id: scope" not in step)
+    full = "steps.scope.outputs.scope == 'full'"
+    assert all(full in step for step in working if "checkout" not in step and "id: scope" not in step)
     assert 'just test-mutants "$MUTANT_SUITE"' in job

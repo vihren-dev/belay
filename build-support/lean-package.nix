@@ -1,7 +1,7 @@
 # Build one Lean package under packages/ with Lake (ADR 0010 section 7, stage 1).
 #
 # The package builds in a copy of the repository layout: its sources at `directory` (for
-# example packages/sqlite-verifier) and the outputs of the packages it requires at their own
+# example packages/verifier-conformance) and the outputs of the packages it requires at their own
 # paths (`requires` maps each path to a derivation). Lake replays those outputs without compiling, so each package compiles
 # once, in its own derivation. The output is the package's Lake workspace: its sources, its
 # Lake files and `.lake/build`, which a package or workspace that requires it replays.

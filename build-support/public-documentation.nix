@@ -1,4 +1,4 @@
-# Check authored public documentation without adding tools to the proof runtime.
+# Check authored public documentation without adding tools to the conformance runtime.
 { pkgs, leanToolchain, inventoryTools, docTools, modelPackage }:
 pkgs.stdenv.mkDerivation {
   pname = "sqlite-verifier-public-documentation";

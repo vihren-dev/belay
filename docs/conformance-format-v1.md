@@ -14,9 +14,7 @@ values, statement syntax and catalogs.
 `packages/verifier-conformance/VerifierConformance/Json.lean` adds the case
 and observation records. The Python side is `belay/sqlite/syntax.py` for statement
 syntax, `conformance/native_metadata.py` for native tables and
-`conformance/case_format.py` for values and rows. ADR 0003's `verify-bundle` uses
-the same syntax codec for its structural record (see the
-[data path guide](data-path.md)).
+`conformance/case_format.py` for values and rows.
 
 ## Record
 

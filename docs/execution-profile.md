@@ -1,6 +1,6 @@
 # Supported execution profiles
 
-The production verifier's supported version strings are `3.51.0` and `3.46.0`. Both select SQLite
+The model's supported version strings are `3.51.0` and `3.46.0`. Both select SQLite
 semantics without a migration framework. Unsupported versions reject.
 Lean is independently pinned to 4.34.1.
 
@@ -32,8 +32,8 @@ autocommit. Transaction operations must appear in the supplied SQL; no framework
 rollback, bookkeeping, cache handling or connection-close maintenance is added.
 Configuration-changing SQL remains unsupported. See the semantic subset for
 the exact admitted transaction and data-operation forms.
-The verifier does not run migrations and cannot inspect a live connection to
-enforce these assumptions. A future execution command would need that boundary.
+The model does not run SQL on a live connection and cannot inspect one to
+enforce these assumptions.
 
 The model includes the prepare errors that resolution decides, such as table
 exists, no such table, duplicate column and too many columns, and the

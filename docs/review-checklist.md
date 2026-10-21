@@ -55,14 +55,13 @@ each constructor, without a catch-all `_` case. A new constructor must then caus
 a compile error where it is not handled.
 *Applies to:* `*.lean`.
 
-**R6. Model boundary.** The SQLite model is meant for uses beyond migration
-verification, so it must not depend on that application. The model
-(`Declarations`, `Model`, `Execution`, `LiteralData`, `SqlExecution` and the
-lemmas about them) does not import the verification application (`Contract`,
-`Library`, the demonstrations). A lemma that is only about the model belongs in
-the model, not in an application file. Model docstrings speak about SQLite, not
-about "approved", "candidate" or "proof" data.
-*Applies to:* `packages/belay-sqlite-model/Belay/Sqlite/Model/*.lean`, `packages/sqlite-verifier/SqliteVerifier/*.lean`.
+**R6. Model boundary.** The SQLite model is meant for every use of it, so it
+must not depend on one of its users. The model does not import the surface
+(`packages/belay`) or the conformance runner (`packages/verifier-conformance`).
+A lemma that is only about the model belongs in the model, not in a user's
+file. Model docstrings speak about SQLite, not about the data of one use, such
+as "approved", "candidate" or "proof" data.
+*Applies to:* `packages/belay-sqlite-model/Belay/Sqlite/Model/*.lean`, `packages/belay/**/*.lean`, `packages/verifier-conformance/**/*.lean`.
 
 **R7. SQLite rule or model restriction.** A SQLite rule is a check that SQLite
 itself makes, for example "no two columns with the same name". A model
@@ -72,7 +71,7 @@ check, a supported-subset check, or `step` says which of the two it is. A model
 restriction must never appear in `step` as a modeled failure: then the model
 would predict an error where SQLite succeeds. It belongs in the supported-subset
 check instead.
-*Applies to:* `packages/belay-sqlite-model/Belay/Sqlite/Model/*.lean`, `packages/sqlite-verifier/SqliteVerifier/*.lean`, `belay/sqlite/*.py`, `migration_check/*.py`.
+*Applies to:* `packages/belay-sqlite-model/Belay/Sqlite/Model/*.lean`, `belay/sqlite/*.py`.
 
 **R9. Docstrings.** Each new class, structure, function and module has a
 docstring that gives the reason for the object. Text follows "Writing style" in
@@ -180,6 +179,6 @@ No findings.
 Example:
 
 ```
-- R1 must packages/sqlite-verifier/GateCore.lean:38 The allowed axioms are a literal inside the traversal of `audit`. Fix: define `allowedAxioms` with a docstring and use it in `audit`.
-- R9 should migration_check/bundle.py:25 `verify_bundle` has no reason in its docstring. Fix: say why the bundle is copied before the check.
+- R1 must packages/verifier-conformance/VerifierConformance/Trace.lean:38 The allowed statement kinds are a literal inside the traversal of `trace`. Fix: define `tracedKinds` with a docstring and use it in `trace`.
+- R9 should conformance/predict.py:25 `predict` has no reason in its docstring. Fix: say why the inputs are read before the runner starts.
 ```

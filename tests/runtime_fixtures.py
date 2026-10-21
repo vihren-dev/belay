@@ -38,10 +38,10 @@ def require_file(path: Path, *, executable: bool = False) -> Path:
 
 
 @pytest.fixture(scope="session")
-def lean_sysroot(runtime_root: Path, pytestconfig: pytest.Config) -> Path:
-    """Use the selected bundled toolchain or resolve the pinned source compiler explicitly."""
+def lean_sysroot(runtime_root: Path) -> Path:
+    """Use the selected runtime's toolchain or resolve the pinned source compiler explicitly."""
     bundled = runtime_root / "lean"
-    if pytestconfig.getoption("runtime_variant") == "installed" or (bundled / "bin/lean").is_file():
+    if (bundled / "bin/lean").is_file():
         require_file(bundled / "bin/lean", executable=True)
         return bundled.resolve()
     compiler = shutil.which("lean")
@@ -67,16 +67,9 @@ def lean_libraries(runtime_root: Path) -> tuple[Path, Path]:
     return application, model
 
 
-@pytest.fixture(scope="session")
-def proof_checker(runtime_root: Path) -> Path:
-    """Require the actual checker executable for cases that consume it."""
-    return require_file(runtime_root / ".lake/build/bin/migration-proof-checker", executable=True)
-
-
 @pytest.fixture(autouse=True)
 def selected_prerequisites(request: pytest.FixtureRequest) -> None:
-    """Resource markers drive setup errors; pure cases do not request any runtime fixture. A case
-    that runs the proof checker requests `proof_checker` itself."""
+    """Resource markers drive setup errors; pure cases do not request any runtime fixture."""
     lean = request.node.get_closest_marker("requires_lean")
     if lean is not None:
         request.getfixturevalue("lean_sysroot")

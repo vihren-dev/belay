@@ -94,6 +94,12 @@ the conformance runner. The installed runtime and the conformance runtime contai
 program and the parser library that the program links; they still do not contain the surface. The
 kernel gate contains neither. The D2 test checks these rules.
 
+Amended 2026-10-21 ([ADR 0021](adr-0021-remove-the-verifier-product.md)): the verifier packages,
+the CLI, the installed runtime and the kernel gate were removed. The rules that name them now
+hold for what remains: nothing below the surface imports it (the model, the text package and the
+conformance runner), and the conformance runtime, which is the judge's subject, does not contain
+the surface. `belaySqliteText` serves the conformance harness only.
+
 ### D3. The names
 
 Users import `Belay`. Everything specific to one engine lives under that engine's name,

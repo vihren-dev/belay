@@ -1,18 +1,9 @@
-"""Declare the bounded audit scope without treating an inventory as measured coverage."""
-
-THEOREMS: tuple[str, ...] = (
-    "SqliteVerifier.Examples.all_scripts_execute",
-    "SqliteVerifier.Examples.all_scripts_preserve",
-    "SqliteVerifier.Demonstration.migrationCorrect",
-    "SqliteVerifier.Demonstration.reverseMigrationCorrect",
-    "SqliteVerifier.Demonstration.failureMigrationCorrect",
-    "SqliteVerifier.violates_required_catalog",
-)
+"""The documented claims that the conformance evidence traces, as an inventory and not as measured coverage."""
 
 CLAIMS: tuple[dict[str, str], ...] = (
     {"reference": "R-42316-09582", "snapshot": "conformance/upstream/e_createtable.test:854",
      "claim": "Omitted defaults yield NULL", "model": "packages/belay-sqlite-model/Belay/Sqlite/Model/Database.lean: Table.appendColumns",
-     "evidence": "alter3-3.2; derived ADD then CREATE; all_scripts_preserve"},
+     "evidence": "alter3-3.2; derived ADD then CREATE"},
     {"reference": "R-25473-20557", "snapshot": "conformance/upstream/e_createtable.test:1059",
      "claim": "Column count is bounded",
      "model": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Definitions.lean: resolveAddColumn",
@@ -37,5 +28,4 @@ EXCLUSIONS: tuple[str, ...] = (
     "No denominator for all documented SQLite behavior or the full upstream corpus",
     "Runtime corpus and scoped execution coverage are separate source-bound reports; no whole-SQLite denominator",
     "No native storage-layout, schema-cookie, coercion, or arbitrary-query proof",
-    "No real-pilot acceptance or owner approval inferred from engineering evidence",
 )

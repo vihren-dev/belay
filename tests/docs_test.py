@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def broken_links(root: Path) -> list[str]:
     """Check current documentation; historical plans retain links to their original source layout."""
     errors: list[str] = []
-    paths = [*root.glob("*.md"), *root.glob("docs/**/*.md"), *root.glob("examples/**/*.md")]
+    paths = [*root.glob("*.md"), *root.glob("docs/**/*.md")]
     for path in paths:
         for match in re.finditer(r"\[[^\]]*\]\(([^)]+)\)", path.read_text()):
             target = match[1].split(' "', 1)[0].strip("<>")

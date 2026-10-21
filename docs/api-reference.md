@@ -6,34 +6,6 @@ terms and computed assertions when it compiles declarations with
 `set_option doc.verso true`. The generated HTML includes declaration
 documentation, module documentation, types and links to their source lines.
 
-## CLI inputs and proof roles
-
-Use `--schema` for the pre-migration SQL schema and `--profile` for the SQLite
-semantic version. Approved `--requirements` defines the logical contract for
-states, changes, schema, failures and required outcomes. Approved
-`--interpretation` defines the meaning of starting data and its admission condition.
-
-Candidate `--migration` supplies the SQL to verify. Candidate
-`--next-interpretation` defines the meanings of resulting data and modeled failure
-states. Candidate `--proofs` supplies a proof or refutation of the exact
-verification contract. That contract quantifies over every model-conforming
-starting database satisfying the approved admission condition under the supplied
-schema and profile. Proofs also establish the soundness of the current,
-resulting and failure interpretations.
-
-Read each command's input help:
-
-```sh
-bin/migration-check verify --help
-bin/migration-check prepare --help
-bin/migration-check verify-bundle --help
-```
-
-`prepare` writes a candidate bundle and reports `PREPARED`. `verify-bundle`
-takes that bundle through `--bundle` to check its candidate interpretations and
-proofs against the supplied SQL and approved inputs. The
-[data path guide](data-path.md) explains these commands and their reports.
-
 ## Build and read the reference
 
 From the pinned development shell, build the reference for a committed source
@@ -106,5 +78,4 @@ links, the source revision and the source links.
 authored coverage, exact module and declaration names, zero-based line and
 UTF-16 column selections, source hashes, compiler reference hashes and every
 generated-declaration exclusion. The reference does not contain it.
-Documentation tools are separate Nix targets and are absent from the installed proof runtime.
-Use `bin/migration-check --help` for CLI commands and options.
+Documentation tools are separate Nix targets and are absent from the conformance runtime.

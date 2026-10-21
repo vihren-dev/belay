@@ -112,43 +112,4 @@ deriving instance Lean.ToExpr for Resolved.Program
 deriving instance Lean.ToExpr for Resolved.WriteRules
 deriving instance Lean.ToExpr for Resolved.Statement
 
-/-- The supported version of {lit}`ScriptRecord`, the structural record of a schema
-and a script: {assert}`scriptRecordVersion = 5`. Version 5 gives CREATE TABLE its table
-options (ADR 0014, slice 2); version 4 gave CREATE INDEX its key terms and filter (slice 1);
-version 3 retained each default's source spelling. Earlier versions do not carry this
-metadata. -/
-def scriptRecordVersion : Nat := 5
-
-/-- The structural record of a schema and a script: the SQLite release and build of
-the profile, and the schema and script statements as written. Use an empty schema
-list for an empty starting catalog. -/
-structure ScriptRecord where
-  /-- The wire format version; supported records use {name}`scriptRecordVersion`. -/
-  version : Nat
-  /-- The SQLite release, for example {lit}`3.51.0`. -/
-  release : String
-  /-- The {lit}`sqlite_source_id()` of the build. -/
-  sourceId : String
-  /-- The schema statements as written. -/
-  schema : List Syntax.Statement
-  /-- The script statements as written. -/
-  script : List Syntax.Statement
-  deriving Lean.FromJson, Lean.ToJson
-
-/-- The profile of a record: the documented defaults of its release and build,
-until a measured profile can be given. -/
-def ScriptRecord.profile (record : ScriptRecord) : Profile :=
-  Profile.documented record.release record.sourceId
-
-/-- Resolve the schema and the script of a record. -/
-def ScriptRecord.resolve (record : ScriptRecord) : Except ScriptIssue ResolvedScript :=
-  resolveSchemaAndScript record.profile record.schema record.script
-
-/-- Decode a record, and refuse versions other than {name}`scriptRecordVersion`. -/
-def decodeScriptRecord (json : Lean.Json) : Except String ScriptRecord := do
-  let record : ScriptRecord ← Lean.fromJson? json
-  unless record.version == scriptRecordVersion do
-    throw s!"script record version {record.version} is unsupported; only version {scriptRecordVersion} is supported. Regenerate the record with a matching frontend."
-  return record
-
 end Belay.Sqlite.Model

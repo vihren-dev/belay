@@ -1,6 +1,6 @@
 # Supported subset
 
-The verifier handles SQL in three layers (ADR 0008). The frontend maps the pinned
+The model handles SQL in three layers (ADR 0008). The frontend maps the pinned
 SQLite syntax tree to statement syntax. Lean resolves the syntax against the
 catalog. The execution semantics runs the resolved statements. Each layer has a
 boundary of its own.
@@ -171,8 +171,7 @@ keep their text, and declared types keep their text as SQLite's `sqlite3AddColum
 it: without a trailing `GENERATED ALWAYS` (ADR 0014, slice 5), then dequoted.
 
 Every command retains its original half-open UTF-8 byte span; semicolons in names
-and trigger bodies cannot split commands. The CLI requires at least one migration
-statement. An empty starting schema is allowed.
+and trigger bodies cannot split commands. An empty starting schema is allowed.
 
 ## Schema description
 
@@ -514,8 +513,8 @@ NULL, and a value after the year 9999 gives SQLite's zero date. The date and tim
 functions read the time value `now`, written or read from a column, as the statement's
 clock value, and give SQLite's value for every other time value, NULL for one that SQLite
 cannot read (slice 6f). They apply their modifiers from left to right as SQLite does;
-`localtime` and `utc` use UTC, the time zone of every execution profile (slice 6g). A verification target holds for every clock value of every
-statement. Literal writes
+`localtime` and `utc` use UTC, the time zone of every execution profile (slice 6g). The clock values are inputs of the
+execution: the model fixes no clock. Literal writes
 have checked data-domain obligations: existing key cells and filter cells must
 be integers or NULL, existing constraints must hold, and the random-search branch
 at the maximum rowid is outside the admitted domain. New NOT NULL and uniqueness
@@ -524,17 +523,6 @@ classes are not invented SQLite error outcomes.
 
 An error inside a transaction does not imply rollback. The model distinguishes
 the connection-visible state from its committed snapshot when a transaction
-remains open. A final uncommitted transaction cannot be reported as a committed
-successful migration. Resource, concurrency and crash failures remain outside
-the fixed execution assumptions. See [execution profiles](execution-profile.md)
-and [profile input](profile-inputs.md).
-
-`SqlInputs.lean` contains only literal statement syntax, resolved statements and
-the resulting catalog. The driver seals it separately from candidate definitions,
-and the gates resolve the record again to check it. A resolution result is not
-proof acceptance or evidence of native execution.
-
-The [Atuin example](../examples/atuin/README.md) supplies only the upstream
-nullable shell-column ALTER payload and proves recovery of the approved old
-histories. It does not use transaction or literal DML wrappers; SQLx catalog
-maintenance and invocation remain trusted and outside the verified payload.
+remains open. The model does not report a final uncommitted transaction as
+committed. Resource, concurrency and crash failures remain outside
+the fixed execution assumptions. See [execution profiles](execution-profile.md).

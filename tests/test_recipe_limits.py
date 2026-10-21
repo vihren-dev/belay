@@ -14,11 +14,10 @@ import shlex
 import pytest
 
 from tests.runtime_support import run_command
-from tools.ci_checks import BUNDLE_BUILD_LIMIT_SECONDS
 
 ROOT = Path(__file__).resolve().parents[1]
 SUITE_TARGETS = {"developmentTestReports", "testReports", "scheduledTestReports", "scheduledCheckReports",
-                 "scheduledTests.{{suite}}", "tests.atuin"}
+                 "scheduledTests.{{suite}}"}
 """The `nix-build -A` targets of build-support/default.nix that build test suites."""
 
 
@@ -34,8 +33,8 @@ def built_suites(target: str, suites: set[str], scheduled: set[str], mutants: se
     """The suites that a `nix-build -A` target of the justfile builds: `testReports` the suites
     that are not scheduled, `developmentTestReports` those without the suites that `just test`
     skips (`development_exclusions`), `scheduledTestReports` every scheduled suite,
-    `scheduledCheckReports` the scheduled suites but the mutant suites, `scheduledTests.{{suite}}`
-    one mutant suite, and `tests.atuin` that suite."""
+    `scheduledCheckReports` the scheduled suites but the mutant suites, and `scheduledTests.{{suite}}`
+    one mutant suite."""
     if target == "testReports":
         return suites - scheduled
     if target == "developmentTestReports":
@@ -44,9 +43,8 @@ def built_suites(target: str, suites: set[str], scheduled: set[str], mutants: se
         return scheduled
     if target == "scheduledCheckReports":
         return scheduled - mutants
-    if target == "scheduledTests.{{suite}}":
-        return mutants
-    return {target.split(".", 1)[1]}
+    assert target == "scheduledTests.{{suite}}", target
+    return mutants
 
 pytestmark = [pytest.mark.unit, pytest.mark.environment]
 
@@ -78,7 +76,7 @@ def test_nix_builds_stay_in_the_callers_process_group() -> None:
 @pytest.mark.requires_nix
 def test_suite_limit_ends_before_the_limits_that_build_suites() -> None:
     """The per-suite limit that Nix renders is less than the limit of each recipe that builds the
-    suite, and the bundle suite's limit less than the CI bundle phase."""
+    suite."""
     result = run_command(["nix-instantiate", "--eval", "--strict", "--json",
                           "--extra-experimental-features", "nix-command flakes", "--expr",
                           "builtins.mapAttrs (_: test: test.installPhase) "
@@ -98,4 +96,3 @@ def test_suite_limit_ends_before_the_limits_that_build_suites() -> None:
     for target, enclosing in recipe_limits.items():
         for name in built_suites(target, suites, scheduled, mutants):
             assert suite_limits[name] < enclosing, (name, suite_limits[name], target, enclosing)
-    assert suite_limits["bundle"] < BUNDLE_BUILD_LIMIT_SECONDS, ("ci_checks bundle phase", suite_limits["bundle"])

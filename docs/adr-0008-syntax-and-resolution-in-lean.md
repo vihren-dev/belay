@@ -5,7 +5,7 @@ Audience: designers and reviewers.
 Related: [ADR 0005](adr-0005-conformance-corpus-scale.md),
 [ADR 0006](adr-0006-model-boundary-and-execution-levels.md),
 [ADR 0007](adr-0007-parser-library.md),
-[trust boundary](trust-boundary.md),
+[trust boundary](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/trust-boundary.md),
 [conformance format v1](conformance-format-v1.md).
 
 ## Context
@@ -25,7 +25,7 @@ them as text, not as links.
    computes the resulting schema in `transition`. An error here also proves a
    theorem about other SQL.
 
-The [trust boundary](trust-boundary.md) lists this frontend as trusted code.
+The [trust boundary](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/trust-boundary.md) lists this frontend as trusted code.
 Jobs 2 and 3 have no formal statement. The model extension that ADR 0005
 measures adds the features of its reference workload (ADR 0005, section 1.3):
 queries, joins, aggregates, defaults, triggers and conflict clauses. Most of
@@ -131,7 +131,7 @@ The kernel checks only the agent's proof.
 
 No proof links `resolved` to `resolve script`. The link is the trusted compiled
 gate. The gate already runs as compiled Lean (`migration-proof-checker` and
-`migration-bundle-checker`), and the [trust boundary](trust-boundary.md)
+`migration-bundle-checker`), and the [trust boundary](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/trust-boundary.md)
 already lists it as trusted. Resolution adds no new kind of trust: it relies on
 the same Lean compiler and runtime, including the native implementations of
 core functions. The trust boundary must name resolution as part of the gate.
@@ -139,6 +139,11 @@ core functions. The trust boundary must name resolution as part of the gate.
 The conversion of a computed value to a Lean term is gate code. Tests cover it,
 as they cover the structural codec today: a round trip from value to term and
 back, and rejection of a changed record.
+
+Amended 2026-10-21 ([ADR 0021](adr-0021-remove-the-verifier-product.md)): the gate, the bundle
+checker and the generated inputs were removed with the verifier product. Resolution now runs as
+compiled Lean code in the conformance runner, which calls `resolveSchemaAndScript` on each case.
+The rest of this section is the record of the first design.
 
 ### Specification of resolution
 
@@ -468,8 +473,8 @@ contain the start catalog, `script` as `Syntax`, `resolved` and the profile.
 **Documentation.** The documents that describe the replaced parts change in the
 same work: [conformance format v1](conformance-format-v1.md) for the statement
 encoding, [execution profile](execution-profile.md),
-[data path](data-path.md), [kernel gate](kernel-gate.md),
-[source staging](source-staging.md), [trust boundary](trust-boundary.md),
+[data path](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/data-path.md), [kernel gate](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/kernel-gate.md),
+[source staging](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/source-staging.md), [trust boundary](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/trust-boundary.md),
 [conformance model](conformance-model.md) and
 [conformance generation](conformance-generation.md).
 

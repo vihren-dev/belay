@@ -1,13 +1,15 @@
 # ADR 0010: Compile all Lean code with Lake and reuse outputs from its artifact cache
 
+Superseded by [ADR 0021](adr-0021-remove-the-verifier-product.md) on 2026-10-21 for the verifier product, which was removed. Decision 7 (one Nix derivation for each Lean package) and decision 9 (the toolchain reports its commit) still apply to the model, the conformance runner, the documentation tool and the surface.
+
 Date: 2026-10-09. Status: ACCEPTED on 2026-10-12 (PR #76).
 Audience: designers and reviewers.
 Related: [ADR 0002](adr-0002-compile-project-cache.md),
 [ADR 0003](adr-0003-agent-proof-preparation.md),
 [ADR 0003 trust extension](adr-0003-trust-extension.md),
-[trust boundary](trust-boundary.md),
-[latency experiment](../experiments/prepare-latency/README.md),
-[Lake cache experiment](../experiments/lake-cache/README.md).
+[trust boundary](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/trust-boundary.md),
+[latency experiment](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/experiments/prepare-latency/README.md),
+[Lake cache experiment](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/experiments/lake-cache/README.md).
 
 ## Context
 
@@ -175,7 +177,7 @@ not change when the command line tool is renamed. `prepare` and
 `verify-bundle` on one machine share the default, because one user is one
 trust domain; a separate `verify-bundle` environment has its own.
 The caller protects it in the same way as the installation and the approved
-sources; the [trust boundary](trust-boundary.md) adds the cache to that list.
+sources; the [trust boundary](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/trust-boundary.md) adds the cache to that list.
 A `--no-cache` option compiles everything with an empty, private cache.
 
 ### 5. Reuse of approved outputs replaces the eligibility registry
@@ -325,7 +327,7 @@ a Lean upgrade cannot silently turn every cache hit into a miss.
 The person or agent who works on a proof needs three things: generate Lean from
 the SQL, check the current proof, and export the proof data. The check runs
 after every edit and must be fast. Measured on Linux x86_64 with a warm cache
-([Lake cache experiment](../experiments/lake-cache/README.md), findings 14–15):
+([Lake cache experiment](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/experiments/lake-cache/README.md), findings 14–15):
 
 | Phase | What it does | When | Cost |
 | --- | --- | --- | --- |
@@ -348,7 +350,7 @@ audit command from the verifier library. The command fails the build, with a
 message that names the cause, when:
 
 - the theorem depends on `sorryAx` or on an axiom outside the allowlist of the
-  [kernel gate](kernel-gate.md); the command and the gate read one shared
+  [kernel gate](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/kernel-gate.md); the command and the gate read one shared
   allowlist, `SqliteVerifier.allowedAxioms`;
 - the proofs import a module that is not in the verifier library, the approved
   contract, the generated modules or the proofs project, because
@@ -452,7 +454,7 @@ on CI time, so that a regression is found when it is introduced:
 
 ## Evidence
 
-The [Lake cache experiment](../experiments/lake-cache/README.md) checked each
+The [Lake cache experiment](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/experiments/lake-cache/README.md) checked each
 part of this decision on Linux x86_64:
 
 - reuse across workspaces, cutoff on unchanged outputs, read-only caches, and

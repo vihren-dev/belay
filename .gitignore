@@ -9,4 +9,3 @@ build/
 /lib
 # Tool-owned parts of proofs projects (ADR 0010): the runtime link and generated modules.
 .belay/
-examples/**/Generated/

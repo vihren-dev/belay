@@ -105,6 +105,8 @@ that package translates for the CLI and the harness, so Python no longer loads t
 library. Installing the surface for Lean users, with its native library, stays with the first
 release of the surface (ADR 0016, "Deferred"). Task:
 [`plans/20261021-sql-text-package.task.md`](../plans/20261021-sql-text-package.task.md).
+Amended again 2026-10-21 ([ADR 0021](adr-0021-remove-the-verifier-product.md)): the CLI was
+removed with the verifier product, so the translation program translates for the harness only.
 
 ### D3. S2: concrete databases
 
@@ -154,7 +156,9 @@ judge, as ADR 0016 requires.
 
 Amended 2026-10-21: when the Python translation is gone, the harness uses the elaborator's
 translation, so the guard is the frozen corpora's predictions themselves, which the judge
-compares with native SQLite.
+compares with native SQLite. With the kernel gate removed (ADR 0021), the trusted base is
+Lean's kernel over the model's definitions and the surface's terms; the surface's native code,
+notation and automation stay outside it and outside the judge.
 
 ## Consequences
 
@@ -164,8 +168,8 @@ compares with native SQLite.
 - **The launch examples depend on the model, not only on the surface.** Until the model
   has subqueries, a claim "over every database" can only use the SQL of the model's
   current subset, and the rebuild example waits for foreign keys.
-- **The task after S1 replaces the Python translation.** The CLI and the harness then use the
-  same translation as the elaborator, so one translation exists, tested on the corpora.
+- **The task after S1 replaces the Python translation.** The harness then uses the
+  same translation as the elaborator (the CLI was removed by ADR 0021), so one translation exists, tested on the corpora.
 - **The guide stays the target.** Each slice's task file takes its rows of the guide and
   records what it changed; the guide's open questions are decided in the slice that
   needs them.

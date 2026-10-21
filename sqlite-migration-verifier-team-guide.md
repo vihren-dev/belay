@@ -2,20 +2,20 @@
 
 Version 0.2 · 24 September 2026
 
-This guide defines how people and agents collaborate on the SQLite migration verifier. It accompanies the engineering brief and roadmap. The brief defines the product contract; the roadmap defines the current delivery priorities. This guide assigns responsibility, establishes constructive adversarial review, and explains when to involve the product owner.
+This guide defines how people and agents collaborate on the SQLite model and its surface. The ADRs under `docs/` define the product decisions; the task files under `plans/` define the current delivery priorities. This guide assigns responsibility, establishes constructive adversarial review, and explains when to involve the product owner.
 
 **Team structure.** Begin with the product owner and three technical roles. These are responsibilities, not necessarily four full-time positions. People or agents may cover multiple roles, but a substantive change requires a qualified reviewer other than its author. Assign named occupants and substitutes when work begins. At least two technical members must be able to review consequential Lean definitions and proofs; arrange additional review if that competence is unavailable.
 
-Work as one team delivering complete supported migration features. Specialists communicate directly about shared interfaces. The formal methods lead coordinates architecture and integration; this does not require every technical conversation to pass through the lead. Reconsider the allocation of responsibilities after each roadmap step.
+Work as one team delivering complete supported model and surface features. Specialists communicate directly about shared interfaces. The formal methods lead coordinates architecture and integration; this does not require every technical conversation to pass through the lead. Reconsider the allocation of responsibilities after each roadmap step.
 
 **Product owner.** The human product owner owns intended user value, priorities, the meaning of successful verification, and acceptance of material limitations. They decide product tradeoffs and review the outcome of completed features and roadmap steps. The team prepares concrete alternatives and translates formal consequences into user-visible guarantees before requesting a decision.
 
 - **Responsibilities:** define use cases and acceptance examples with the team; resolve ambiguous intent; decide proposed changes to scope, guarantees, or accepted assumptions; assess demonstrated results; approve the direction of the next roadmap step.
-- **Skills:** understanding database migration workflows, evaluating examples and tradeoffs, and reviewing formal requirements with engineering support. Detailed Lean implementation knowledge is not required.
+- **Skills:** understanding database workflows, evaluating examples and tradeoffs, and reviewing formal requirements with engineering support. Detailed Lean implementation knowledge is not required.
 - **Soft skills:** give clear priorities, distinguish essential outcomes from preferences, expose uncertainty, make explicit decisions, and revise expectations when evidence changes. Make it safe for the team to report problems early.
 - **Challenge:** ask whether the demonstrated feature solves the original problem and whether its assumptions would be realistic for a user.
 
-**Formal methods lead and technical lead.** Own the logical architecture, Lean execution semantics, expected verification theorem, trust boundary, proof acceptance rules, and foundational proof library. Keep the parser, model, interpretation interfaces, and checker coherent. Act as team lead and take responsibility for integrating reviewed changes into the `main` branch within the approved product scope.
+**Formal methods lead and technical lead.** Own the logical architecture, Lean execution semantics, the model's laws, the trust base, and the foundational proof library. Keep the parser, the model and the surface coherent. Act as team lead and take responsibility for integrating reviewed changes into the `main` branch within the approved product scope.
 
 - **Responsibilities:** define and maintain shared formal interfaces; review assumptions and theorem dependencies; prevent vacuous verification and unintended weakening; coordinate feature ownership and cross-component changes; ensure a reviewable integrated result; consolidate product-owner questions.
 - **Skills:** strong Lean 4, operational semantics, proof engineering, abstraction design, dependency analysis, and understanding the distinction between a checked theorem and correspondence with native SQLite.
@@ -29,9 +29,9 @@ Work as one team delivering complete supported migration features. Specialists c
 - **Soft skills:** disciplined skepticism, patient investigation, reproducible reporting, intellectual honesty about incomplete evidence, and persistence in resolving discrepancies without defending a preferred explanation.
 - **Challenge:** try to find native executions that contradict the model, including error paths, configuration differences, coercions, and transaction boundaries. Challenge claims of completeness based only on passing tests.
 
-**Product and integration engineer.** Own the usable path from input files to an accepted or rejected migration: requirements and interpretation authoring, generated obligations, CLI, diagnostics, examples, and development/release infrastructure. Develop public library conveniences with the formal lead.
+**Product and integration engineer.** Own the usable path from SQL text to facts that a Lean developer states and proves: the surface, its diagnostics, examples, and development infrastructure. Develop public library conveniences with the formal lead.
 
-- **Responsibilities:** exercise public interfaces as a user would; integrate components; preserve the connection between supplied inputs and checked theorems; maintain acceptance examples; own local/CI parity, artifact packaging, and release workflows. Establish the repository and tooling specified in the brief: `jj` at `~/work/sqlite-verifier`, GitHub `vihren-dev/sqlite-verifier`, Nix/direnv, `just`, GitHub Actions, GitHub Releases, and MIT licensing.
+- **Responsibilities:** exercise public interfaces as a user would; integrate components; preserve the connection between supplied inputs and checked theorems; maintain acceptance examples; own local/CI parity. Maintain the repository and tooling: `jj` at `~/work/sqlite-verifier`, GitHub `vihren-dev/sqlite-verifier`, Nix/direnv, `just`, GitHub Actions, GitHub Releases, and MIT licensing.
 - **Skills:** Lean requirements and proof authoring, developer-tool and API design, systems integration, automated testing, Nix, CI, packaging, and clear technical writing. Maintain sufficient formal expertise to act as the second Lean reviewer for changes within their competence.
 - **Soft skills:** user empathy, clear error reporting, pragmatic simplification, thorough handoffs, and willingness to challenge an elegant design that is difficult to use. Distinguish demonstrated outcomes from intended behavior.
 - **Challenge:** try to misuse the public interface, substitute inputs, hide data through an interpretation, or obtain success for an invalid example. Test whether a fresh user can reproduce the result and repair a rejected proof from the diagnostics.
@@ -42,12 +42,11 @@ Challenge claims and artifacts respectfully. State the strongest concrete failur
 
 | Work under review | Challenger and attack focus |
 | --- | --- |
-| Requirements and interpretation examples | Formal lead and product engineer challenge hidden assumptions, missing protected data, and whether the stated property matches user intent. Bring unresolved intent to the product owner. |
+| Surface examples and stated facts | Formal lead and product engineer challenge hidden assumptions and whether the stated property matches user intent. Bring unresolved intent to the product owner. |
 | SQL parsing or translation | A non-author with SQLite competence tries ambiguous scripts, embedded semicolons, name-resolution changes, and mismatches between accepted SQL and generated meaning. |
 | SQLite semantics and profile | Non-author reviewers collectively supply Lean and SQLite expertise. Try native/model counterexamples, omitted failure outcomes, and relevant settings outside the assumed environment. |
-| Proof library and generated obligations | A qualified Lean reviewer tries an invalid migration, inconsistent premises, unproved assumptions, or a theorem that establishes less than the CLI promises. |
-| Verification gate and integration | A non-author tries changed SQL, stale inputs, substituted requirements or interpretations, unfinished proofs, and unsupported constructs that might incorrectly receive exit `0`. |
-| CLI, packaging, and release | Another member runs representative accepted and rejected examples through the packaged tool and checks diagnostics and required runtime dependencies. |
+| Model laws and the surface's terms | A qualified Lean reviewer tries inconsistent premises, unproved assumptions, or a theorem that establishes less than its plain-words statement promises. |
+| Surface and integration | Another member runs representative accepted and refused SQL through the surface and checks its diagnostics. |
 
 One reviewer may cover multiple areas when qualified. Add a temporary specialist when necessary. A member cannot supply independent review of their own change by switching role labels. For agents, use a separate review assignment and context focused on the original contract and evidence; another agent's agreement alone is insufficient.
 
@@ -63,7 +62,7 @@ An unsuccessful proof attempt is not by itself a counterexample. An accepted Lea
 
 1. Assign one delivery owner and a challenger. Record the user outcome, relevant approved requirements, acceptance examples, affected interfaces, and known uncertainties. For uncertain investigations, choose a bounded next experiment and a point at which to reassess the approach.
 2. Agree on shared interfaces needed for parallel work. Include the meaning of inputs, states, outcomes, and assumptions. Discuss proposed interface changes with affected owners before relying on them.
-3. Implement a complete usable feature across the required parser, semantics, library, CLI, and conformance work. Raise discrepancies when found. Keep requirement or trust-boundary changes explicit; never quietly adjust them to make a proof or test pass.
+3. Implement a complete usable feature across the required parser, semantics, library, surface, and conformance work. Raise discrepancies when found. Keep requirement or trust-boundary changes explicit; never quietly adjust them to make a proof or test pass.
 4. Run the adversarial review. Give the challenger exact revisions, commands, examples, assumptions, and evidence. Correct substantive findings and have the challenger check the resolution.
 5. Hand reviewed changes to the team lead for integration into `main` and verification through the relevant shared local/CI checks. Record the supported behavior, limitations, and remaining issues. Provide a concrete demonstration for product review. A completed roadmap step also requires a roadmap review and update.
 
@@ -71,11 +70,11 @@ Routine refactors, fixes, and implementation choices within the approved scope a
 
 **Additional working rules for agents.** Apply the same responsibilities and review standards to agent contributions:
 
-- On joining or resuming work, read the current brief, roadmap, this guide, and the active task and decision records. Resolve conflicts against recorded owner decisions; ask when intent remains ambiguous.
+- On joining or resuming work, read the current ADRs, this guide, and the active task and decision records. Resolve conflicts against recorded owner decisions; ask when intent remains ambiguous.
 - Give each assignment a goal, scope, base revision, acceptance evidence, and named reviewer. A temporary worker may implement a bounded part of a feature; the delivery owner remains accountable for its readiness for integration by the team lead.
 - Follow the shared workspace rules above. Identify the workspace and exact revision being handed off and reviewed.
 - Keep decisions and findings in shared durable project records. A handoff states what changed, what was actually checked, unresolved concerns, and the next action. Private conversation history is insufficient for another agent to resume the work.
-- Treat approved requirements and trust policy as constraints. Propose changes separately and route them to the appropriate reviewers or product owner. Local success does not authorize weakening the acceptance gate.
+- Treat approved requirements and trust policy as constraints. Propose changes separately and route them to the appropriate reviewers or product owner. Local success does not authorize weakening the development claims or the judge.
 - Keep expected native observations independent of the formal model. Reviewers should inspect original sources and reproduce relevant behavior, including failures, rather than only summarizing the author's report.
 - Escalate repeated failed approaches when new evidence changes feasibility or direction. Do not hide stalled work behind further task decomposition, repeated proof retries, or optimistic completion claims.
 
@@ -110,7 +109,7 @@ While awaiting a response, continue already-authorized work that does not depend
 
 ## Development resources
 
-The integration engineer owns development storage and release-resource checks.
+The integration engineer owns development storage and resource checks.
 Use `python3 tools/check_resources.py` before environment setup or expensive work.
 It requires 10 GiB free on the actual workspace-output, temporary and
 Nix-store filesystems. It rejects symlinks, unexpected files and more than 1 MiB
@@ -130,8 +129,7 @@ The real snapshot regression is `python3 tests/environment_snapshot_test.py`;
 it uses only tiny explicit path-flake metadata operations and no builds.
 
 Routine work runs focused checks. Integration checkpoints run the complete
-verification suite on both supported platforms. Packaging/runtime changes and
-release candidates also build and test installed archives. Retain current useful
+test suite on both supported platforms. Retain current useful
 local evidence; after integration, identify superseded task-owned generated
 outputs by exact path and ask before deleting them. The integration engineer
 proposes retention/cleanup; the owner authorizes the concrete deletion scope.

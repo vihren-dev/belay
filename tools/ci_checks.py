@@ -1,4 +1,4 @@
-"""Run complete native gates with Darwin's bundle before concurrent suite builds."""
+"""Run the complete checks of a CI scope on one native system, one phase at a time."""
 
 import argparse
 from datetime import datetime, timezone
@@ -19,28 +19,17 @@ from tools.test_reports import write_summary
 SCOPE_RECIPES = {
     "test": ["test-full"],
     "infrastructure": ["test-full", "test-nix"],
-    "packaging": ["test-full", "runtime-package"],
-    "package": ["package"],
+    "full": ["test-full", "test-nix", "test-scheduled-checks"],
 }
 """The `just` recipes for each scope of tests/ci_scope.py; one invocation runs shared dependencies once."""
 
-BUNDLE_FIRST_SYSTEM = "aarch64-darwin"
-"""Darwin completes the bundle gate before the complete recipe starts other test builders."""
-BUNDLE_BUILD_LIMIT_SECONDS = 1500
-"""The limit of the justfile recipes that build test suites: more than the per-suite limit in
-build-support/tests.nix, so a bundle suite that hangs fails with its own name."""
 CHECKS_PHASE_LIMIT_SECONDS = 3600
-"""The limit of the `just` recipes of a scope. On 2026-10-19 `just package` with the scheduled mutant
+"""The limit of the `just` recipes of a scope. On 2026-10-19 the recipes of the largest scope with the scheduled mutant
 suite needed about 33 minutes on Linux (pull request #182) and more than 30 minutes on macOS (run
 39237549400); the mutant suites now run in the CI job `mutants`. The 75-minute job limit stays the
 outer bound."""
-NIX_TEST_BUILD_OPTIONS = ("--option", "sandbox", "true", "--option", "sandbox-fallback", "false",
-                          "--extra-experimental-features", "nix-command flakes")
-"""Use the complete test recipes' sandbox policy for the isolated bundle target."""
-
-
 def run_checks(scope: str, mode: str, system: str, root: Path) -> None:
-    """Use all complete gates and isolate Darwin's bundle phase from model and upstream builders."""
+    """Build the conformance runtime (or set up the host in source mode), then run the scope's recipes."""
     if scope not in SCOPE_RECIPES or mode not in {"source", "build"}:
         raise ValueError(f"Unknown CI scope or build mode: {scope}, {mode}; use a scope from tests/ci_scope.py")
     job_started = datetime.now(timezone.utc)
@@ -79,7 +68,7 @@ def run_checks(scope: str, mode: str, system: str, root: Path) -> None:
 
     if mode == "build":
         environment["SQLITE_VERIFIER_RUNTIME_ROOT"] = run("runtime",
-            ["nix-build", "build-support/default.nix", "-A", "runtime", "--no-out-link",
+            ["nix-build", "build-support/default.nix", "-A", "conformance", "--no-out-link",
              "--extra-experimental-features", "nix-command flakes"], 900)
         runtime = Path(environment["SQLITE_VERIFIER_RUNTIME_ROOT"])
     elif mode == "source":
@@ -93,9 +82,6 @@ def run_checks(scope: str, mode: str, system: str, root: Path) -> None:
                 "lean": run("lean-version", [lean, "--version"], 10),
                 "lake": run("lake-version", [lake, "--version"], 10)}
     (root / "build/ci-environment.json").write_text(json.dumps(versions, indent=2) + "\n")
-    if system == BUNDLE_FIRST_SYSTEM:
-        run("bundle", ["nix-build", "build-support/default.nix", "-A", "tests.bundle",
-            "--out-link", "build/nix-tests-bundle", *NIX_TEST_BUILD_OPTIONS], BUNDLE_BUILD_LIMIT_SECONDS)
     try:
         run("checks-" + scope, ["just", *SCOPE_RECIPES[scope]], CHECKS_PHASE_LIMIT_SECONDS)
     finally:

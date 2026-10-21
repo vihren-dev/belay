@@ -1,9 +1,0 @@
-{
-  "approved/HistoryDecoding.lean": "68a181e297a8631feb4317ed9c3d34423a0740e4019589bd6ec70535ec3effd5",
-  "approved/HistoryMapping.lean": "5c34b6c8c98f713348e772b4e81cd9bc57831f472c5a0e7c7e39443176de6b39",
-  "approved/HistoryModel.lean": "993cf739e47962353ee72ba7c99b0af93c020a076b660d4823d57ed4bc9c7af5",
-  "approved/Interpretation.lean": "873334d6866ec1a3a664ca0a86d7b67e3133f812ad5c64987d7640dcbbf662e4",
-  "approved/Requirements.lean": "029fd1f7f31c793811c4dc903fbaa1d10b213f439394722e839f6680ed07c900",
-  "approved/SchemaBinding.lean": "fbd8b177787ddd5f9935c42b2ae2ddc2e4c1dbc1a114dc320894ebedc6e48066",
-  "schema.sql": "b1cb97162debff911afacb6111907d9aa90e67fbfa1f58ba6ef814919969b6a6"
-}

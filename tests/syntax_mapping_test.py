@@ -12,9 +12,8 @@ import pytest
 
 from belay.sqlite.errors import SqlError
 from belay.sqlite.located import Located
-from belay.sqlite.profiles import DEFAULT_PROFILE
 from belay.sqlite.sql_tree import Node, Tree
-from belay.sqlite.syntax import script_record, statements
+from belay.sqlite.syntax import statements
 from belay.sqlite.syntax_expressions import dequote
 from belay.sqlite.syntax_writes import value_rows
 
@@ -163,14 +162,6 @@ def test_dequote_follows_sqlite() -> None:
     """Doubled quotes are undoubled, brackets do not escape, and text ends at the closing quote."""
     assert [dequote(text) for text in ['"a""b"', "[a]]", "`x`", "'it''s'", '"Some" Type', "plain"]] == [
         'a"b', "a]", "x", "it's", "Some", "plain"]
-
-
-def test_record_names_the_profile_and_both_scripts(parse_sql: Callable[..., Tree]) -> None:
-    """The record carries version 5, the release and build, and the statement JSON."""
-    schema = statements(parse_sql("CREATE TABLE t(a);"))
-    record = script_record(DEFAULT_PROFILE, schema, statements(parse_sql("COMMIT;")))
-    assert record == {"version": 5, "release": "3.51.0", "sourceId": DEFAULT_PROFILE.source_id,
-                      "schema": [schema[0].value], "script": ["commit"]}
 
 
 @pytest.mark.parametrize("literal", ["X'00ff'", "x'00FF'", "- 7", "-7", '"true"', "[true]", "`true`", "'a''b'", "null"])

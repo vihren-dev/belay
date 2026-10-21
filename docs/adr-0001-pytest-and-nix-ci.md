@@ -64,7 +64,7 @@ the linked status file tracks subsequent work and outstanding acceptance checks.
 | `ProofChecker.lean` | Reuses Lean import state within each verification, retaining comparison, replay, audit and kernel checks | Removes repeated imports within a process; no cross-run build or verdict cache |
 | `migration_check/compile.py` | Rejects protected baseline drift before compilation; matching requests still compile isolated source stages | Cached project binaries do not eliminate per-verification source compilation |
 
-The current [performance measurements](ci-performance.md) and
+The current [performance measurements](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/ci-performance.md) and
 [completed performance task](../plans/20260925-ci-performance.status.md) replace
 the earlier 11m46s Linux experiment as the comparison baseline. The examined head
 contains documentation closeout after runtime revision `7a99c71f`, released as

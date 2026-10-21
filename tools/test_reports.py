@@ -13,7 +13,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ElementTree
 
 REPORT_PATTERNS = ("test-results/*.xml", "nix-tests*/junit.xml", "nix-tests*/*/junit.xml")
-"""Report paths under build/: host pytest runs, the Darwin bundle phase and one folder per Nix suite.
+"""Report paths under build/: host pytest runs and one folder per Nix suite.
 Each pattern names its folder levels, because a recursive pattern does not enter the symbolic
 links that the Nix report folders are made of."""
 SLOWEST_CASES = 10

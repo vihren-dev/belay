@@ -1,5 +1,5 @@
 # The test-only conformance library and its runner, which compare the model with native SQLite.
-# Nothing in the installed runtime requires this package.
+# Only the conformance harness and the judge's subject require this package.
 name = "verifierConformance"
 version = "0.1.0"
 defaultTargets = ["conformance-runner"]

@@ -20,8 +20,8 @@ that users see: CLI output, diagnostics and error messages.
 
 Rules for this repository:
 
-- Write each document for one audience: users (README, installation,
-  examples), designers and reviewers (ADRs, trust boundary), or the team
+- Write each document for one audience: users (README, package READMEs,
+  examples), designers and reviewers (ADRs), or the team
   (status and acceptance records). Do not mix them in one document.
 - A docstring tells what the code does and why. Use a negative statement only
   to warn about a real trap.
@@ -59,10 +59,9 @@ are retained; they are not replaced implementation paths.
 
 Until the project has users, follow each stable Lean release. Upgrade within
 two weeks after a stable release, in its own change, with no other work in it.
-Do not adopt release candidates. If a Lean dependency (lean4export, comparator,
-doc-gen4) has no tag for the new version, try to build its latest tag under the
-new version; if that fails, record it in the upgrade issue and wait for the
-dependency. Do not downgrade the toolchain automatically.
+Do not adopt release candidates. If a Lean dependency (doc-gen4) has no tag
+for the new version, try to build its latest tag under the new version; if
+that fails, record it in the upgrade issue and wait for the dependency. Do not downgrade the toolchain automatically.
 
 This policy covers the Lean toolchain and the Lean dependencies built with it.
 It excludes the SQLite versions in the execution profiles: those versions

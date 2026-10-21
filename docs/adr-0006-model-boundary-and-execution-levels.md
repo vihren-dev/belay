@@ -8,8 +8,8 @@ Task: [architecture decision](../plans/20261006-model-architecture.task.md).
 
 ## Context
 
-The [library's Lake package](../packages/sqlite-verifier/lakefile.toml) (at that time the root package) builds the model and verification
-application together. [Its public module](../packages/sqlite-verifier/SqliteVerifier.lean) imports both,
+The [library's Lake package](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/packages/sqlite-verifier/lakefile.toml) (at that time the root package) builds the model and verification
+application together. [Its public module](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/packages/sqlite-verifier/SqliteVerifier.lean) imports both,
 including demonstrations. The model's basic dependency direction is correct,
 but model lemmas in `Library`, `LiteralPreservation`, `SchemaExtension` and
 `SchemaPreservation` pull in the contract. Model validation also reaches it
@@ -174,7 +174,7 @@ Application edits leave the model derivation unchanged; model edits invalidate
 its dependent application and model-test outputs. Component-identity tests
 cover additions, edits, deletion and missing package inputs.
 
-[Runtime assembly](../build-support/runtime.nix) installs application artifacts
+[Runtime assembly](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/build-support/runtime.nix) installs application artifacts
 at `.lake/build/lib/lean` and model artifacts at
 `packages/belay-sqlite/.lake/build/lib/lean`. Keep the model package configuration
 and relative dependency layout available in the installed source snapshot.
@@ -200,7 +200,7 @@ comparison and kernel replay; the axiom policy and independently reconstructed
 verification target retain their meaning. The codec remains transport, not a
 proof oracle. Trust-relevant implementation changes need final owner review.
 
-The [offline archive](../packaging/build_runtime.py) exports the entire Nix
+The [offline archive](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/packaging/build_runtime.py) exports the entire Nix
 closure containing both package outputs. Installed acceptance runs from an
 unrelated directory with poisoned ambient Python/Lean paths: import core model,
 codec and application modules from installed roots; compile a neutral consumer;

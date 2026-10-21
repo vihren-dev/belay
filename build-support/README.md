@@ -1,12 +1,12 @@
 # Immutable project builds
 
-Run `nix-build build-support/default.nix -A runtime --no-out-link` with Nix's
+Run `nix-build build-support/default.nix -A conformance --no-out-link` with Nix's
 `flakes` experimental feature enabled (`builtins.fetchTree` needs it). This is an
 ordinary Nix expression. The flake in `nix/flake.nix` also exposes the same test
 derivations as `checks.<system>`. The development shell remains
 `nix develop path:./nix`, with the existing `nix/flake.lock` pin.
 
-Targets `leanToolchain`, `parserLibrary`, `leanRuntime` and `runtime` share the locked
+Targets `leanToolchain`, `parserLibrary` and `conformance` share the locked
 nixpkgs input. Derivations build offline after their declared archives/packages
 are fetched. Lean is exactly 4.34.1; neither Elan nor a nixpkgs Lean version is
 used. Linux binaries use the pinned loader via autoPatchelf. Darwin upstream
@@ -20,7 +20,7 @@ its source links, so it does not change with the commit.
 `apiReference` copies it and puts the required `referenceRevision` full commit
 hash into the source links. `just reference HASH`
 runs it in a sandbox and links the output at `build/api-reference`. These
-targets are separate from `runtime` and its installed closure. See the
+targets are separate from `conformance` and its closure. See the
 [API reference guide](../docs/api-reference.md).
 
 Reference generation corrects links to recursors that doc-gen4 omits to the
@@ -40,7 +40,7 @@ sources. Nix reads
 (`parserLibrary.grammars`) and one that links `parserLibrary.library`, so a new
 release or grammar builds only its own derivations. `parser/library_steps.py`
 does the checks between the Lemon and compiler steps. The test suite
-`tests.parserLibrary` checks the library. `runtime` and `conformance` contain it
+`tests.parserLibrary` checks the library. `conformance` contains it
 at `lib/`. See the [SQLite syntax boundary](../docs/sqlite-parser.md).
 
 `parserLibrary.grammars` retains each grammar's Lemon outputs and generated
@@ -50,61 +50,46 @@ repository layout that holds the outputs of the packages it requires. Lake
 replays those outputs and compiles only the package's own modules; the output
 is the package's Lake workspace. `tests.packages` checks that a workspace that
 requires an output compiles nothing. The packages are `modelPackage`
-(`packages/belay-sqlite-model`: `Belay.Sqlite.Model` and its codec, with no application
-inputs), `verifierLibrary` (`packages/sqlite-verifier`: the library, the
-engineering examples, `GatePaths` and `GateCore`), `verifierGate`
-(`packages/verifier-gate`: the three executables) and `verifierConformance`
-(`packages/verifier-conformance`: the test-only conformance library and runner)
-and `docTools` (`packages/public-doc-tools`: the documentation inventory).
-`lean4exportPackage` builds the exporter library in the same way.
-`EngineeringExamples` is a separate library for the shipped examples; the
-production application root excludes demonstrations. `leanRuntime/.lake/build/`
-holds the library's outputs and the gate's binaries in the layout that the
-runtime ships.
-`runtime/` assembles those outputs, source/module membership,
-examples, the `belay.sqlite` namespace frontend and the Python CLI.
-The frontend takes explicit parser and profile inputs. It has no dependency on
-the verification application. It maps SQL to statement syntax; the Lean
-`migration-resolver` writes the application's generated modules, and the
-conformance runner resolves statement syntax itself. `just build` uses this same runtime and exposes local development
-paths as links: `.lake/build` and `packages/belay-sqlite-model/.lake/build` (the
-outputs of the two Lake packages), `lean`, and the parsers in `build/`; it does not rebuild Lean through Elan or Lake outside Nix. It never caches a user
-proof verdict or installed test result. Set
-`SQLITE_VERIFIER_RUNTIME_ROOT` to this immutable output before `just test` or
-`just package`. Fixtures make private writable copies of examples; reports remain
-in the checkout's `build/`, so the runtime itself needs no mutable staging copy.
+(`packages/belay-sqlite-model`: `Belay.Sqlite.Model` and its codec),
+`verifierConformance` (`packages/verifier-conformance`: the test-only conformance
+library and runner), `docTools` (`packages/public-doc-tools`: the documentation
+inventory) and `surfacePackage` (`packages/belay`: the surface, linked with the parser
+library).
+The `belay.sqlite` namespace frontend takes explicit parser and profile inputs. It maps
+SQL to statement syntax, and the conformance runner resolves statement syntax itself.
+`just build` builds `conformance` and exposes local development paths as links:
+`.lake/build` and `packages/belay-sqlite-model/.lake/build` (the outputs of the two Lake
+packages), `lean` and `lib`; it does not rebuild Lean through Elan or Lake outside Nix.
+Set `SQLITE_VERIFIER_RUNTIME_ROOT` to this immutable output before `just test`. Reports
+remain in the checkout's `build/`, so the runtime itself needs no mutable staging copy.
 
-`just test-nix` (part of `just package`) runs `tests/test_source_identity.py`, which
+`just test-nix` runs `tests/test_source_identity.py`, which
 checks each declared input through real Nix source identities. Each declared input relation and component-level
 ignore rule is selectable; cases cover additions, edits, renames, deletions and
 missing required inputs. CI runs
-them on both native platforms whenever packaging is selected. Fixtures contain tiny
+them for the `infrastructure` and `full` scopes. Fixtures contain tiny
 synthetic inputs; they never copy a checkout or build a package.
 
 Lean archive digests come from the official GitHub v4.34.1 release asset metadata.
-Nix verifies each downloaded archive against its pinned digest. Native build,
-loader and installed-runtime checks must pass on both supported platforms;
+Nix verifies each downloaded archive against its pinned digest. Native build
+and loader checks must pass on both supported platforms;
 evaluating Linux derivations on Darwin does not validate Linux execution.
 The [upgrade status](../plans/20261006-lean-4-34-1-upgrade.status.md) records
 the actual verification evidence.
 
-`tests.kernel`, `tests.model`, `tests.frozen`, `tests.harness`, `tests.sample`,
-`tests.upstream`, `tests.atuin`, `tests.cli` and `tests.bundle` are independent
-pytest derivations declared in `tests.nix`. `tests/nix_suites.json` gives their test-file ownership and also
-drives the host `--source-checks` exclusions. Kernel inputs are the test/Lean fixtures, shared pytest support,
-pinned Python/pytest and Lean toolchain/library/checker. The model, frozen and
-harness inputs add their explicit conformance helpers, the SQL frontend modules
-in `tests/conformance_frontend.json`, parsers and pinned SQLite; only frozen adds
-the frozen corpora and retained reports. Kernel and conformance targets exclude
-unrelated tests, examples and documentation. Atuin,
-CLI and bundle each add their test files and the complete runtime (including Python
-implementation and examples); bundle also adds the Python sources its stage-reuse
-cases import. Changes to those runtime inputs invalidate all three. Changes to
-shared pytest support invalidate all nine. Nix owns all result reuse.
+`tests.model`, `tests.frozen`, `tests.harness`, `tests.sample`, `tests.upstream`,
+`tests.corpora`, `tests.parserLibrary`, `tests.packages`, `tests.documentation` and
+`tests.surface` are independent pytest derivations declared in `tests.nix`. `tests/nix_suites.json` gives their test-file ownership and also
+drives the host `--source-checks` exclusions. The model, frozen and
+harness inputs are shared pytest support, pinned Python/pytest, their explicit
+conformance helpers, the SQL frontend modules in `tests/conformance_frontend.json`,
+parsers and pinned SQLite; only frozen adds the frozen corpora and retained reports.
+Conformance targets exclude unrelated tests and documentation. Changes to shared
+pytest support invalidate every suite. Nix owns all result reuse.
 The sample owns the frozen v4 and synthetic inputs plus their shared replay and
 validation helpers. Full-only historical evidence and tests do not invalidate it.
 `developmentTests` selects every target except `tests.model` and `tests.frozen`;
-the full target set remains in CI and packaging.
+the full target set remains in CI.
 
 `publicDocumentation` checks the compiled public import closure against its
 source parser and original compiler references. Every authored public
@@ -112,25 +97,15 @@ declaration, constructor and field must have direct checked Verso documentation.
 Missing, ordinary and unclassified documentation fail this development target.
 `just test`, `just test-full` and reference generation run this gate. Its
 inventory tool is the `docTools` package (`packages/public-doc-tools`) with the
-Python driver `tools/public_doc_inventory.py`; neither is in the installed
-proof runtime. `tests.documentation` runs the inventory on small fixtures.
-
-`lean4export.nix` fetches unpatched lean4export at tag `v4.34.0` as a fixed-output source.
-`lean4exportPackage` builds its `Export` library at `build/lean4export`, where
-`packages/verifier-gate/lakefile.toml` expects the path dependency, for
-`migration-bundle-checker` and the repository-owned `migration-proof-exporter`.
-Both executables ship from `leanRuntime`; there is no separately built upstream
-exporter or patch. `prepare` supplies its bundle
-header's trusted imports as explicit omission modules. See the
-[data path guide](../docs/data-path.md) for the upgrade procedure.
+Python driver `tools/public_doc_inventory.py`; neither is in the conformance
+runtime. `tests.documentation` runs the inventory on small fixtures.
 
 `conformanceRuntime` holds only the outputs of `verifierConformance`: the
-`VerifierConformance` Lean library and the test-only `conformance-runner`. It contains no
-verifier library or gate program. `conformance` assembles its compiler, library and parser links. `tests.model` uses
-this runtime, including native acquisition and the model-mutation checks. The
-ordinary `runtime` excludes both the new executable and conformance modules.
+`VerifierConformance` Lean library and the test-only `conformance-runner`.
+`conformance` assembles its compiler, library and parser links. `tests.model` uses
+this runtime, including native acquisition and the model-mutation checks.
 Changes inside `packages/verifier-conformance/` invalidate only the conformance
-package, not the production Lean library.
+package, not the model.
 Use `just conformance-build`, then `python3 -m pytest tests/conformance_model_test.py
 --runtime-root build/conformance`, to force a focused local run. `just conformance
 --repeat 3 --prove` writes the prototype's JSON cases, proofs and timing report.
@@ -142,7 +117,7 @@ Flake equivalence tests stage a temporary Git source boundary so the real Nix 2.
 subdirectory-flake command also works from a dedicated Jujutsu workspace without
 a colocated `.git`. The project itself continues to use Jujutsu.
 
-Run all nine checks through the flake:
+Run all checks of `tests` through the flake:
 
 ```sh
 nix flake check ./nix -L \
@@ -157,29 +132,22 @@ and is suitable for the standalone development shell, not project checks.
 
 The installed Nix 2.18 cannot create result links from `flake check`, so `just test`
 builds `developmentTestReports`, which links each suite of `developmentTests` under its
-name in `build/nix-tests` (for example `build/nix-tests/cli/junit.xml`).
+name in `build/nix-tests` (for example `build/nix-tests/harness/junit.xml`).
 `just test-full` builds `testReports`, with all `tests` in `build/nix-tests-full`, and
 `just test-scheduled` builds `scheduledTestReports` in `build/nix-tests-scheduled`;
 CI keeps these folders.
-`just test-atuin`
-selects only Atuin. `just test-cases tests/kernel_gate_test.py` forces an ordinary
-pytest run. The non-flake `nix-build -A tests.kernel` entrypoints remain available.
+`just test-cases tests/conformance_model_test.py` forces an ordinary
+pytest run. The non-flake `nix-build -A tests.model` entrypoints remain available.
 On a miss, the target runs pytest and saves `junit.xml` under its output.
 On a hit, Nix reuses the successful output; no pytest process runs. Failed pytest executions fail the derivation.
 
 Keep sandboxing enabled for these builds, including manual invocations. This is
 explicit in the recipe and CI configuration because Nix defaults differ by OS.
 Sandboxing blocks undeclared checkout inputs; it is not a guarantee against
-nondeterminism from clocks or platform behavior. Nix daemon tests and installed acceptance remain fresh host executions.
-
-Offline archives export the complete runtime using `nix store make-content-addressed`
-and `nix copy`. The installer verifies imports, creates a GC root and links the
-installation to the imported immutable runtime. It needs no extra signing key,
-loader scan, copied Lean subset or ELF relocation. Installed acceptance still
-executes freshly against the resulting content-addressed runtime.
+nondeterminism from clocks or platform behavior. Nix daemon tests remain fresh host executions.
 
 ADR 0004's optional `conformanceNative.fixture`, `conformanceNative.coverage`,
 `conformanceCoverage`, and `conformanceDocs` derivations rebuild upstream mining,
 source instrumentation, and release requirement evidence separately. They do not
-alter the product engine or library. See [progress and coverage](../docs/conformance-progress.md).
+alter the model. See [progress and coverage](../docs/conformance-progress.md).
 Hypothesis is an input only to `tests.model` and the development shell.

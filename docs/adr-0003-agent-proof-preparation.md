@@ -1,5 +1,7 @@
 # ADR 0003: Separate agent proof preparation from verification
 
+Superseded by [ADR 0021](adr-0021-remove-the-verifier-product.md) on 2026-10-21: the verifier product and its proof data path were removed.
+
 - Status: Implemented and closed 2026-10-01. Accepted 2026-09-29 for the data
   path, by owner decision after P1 (see below); P0–P4 are done. The trust
   milestone stays deferred to a future decision; its design is kept in
@@ -17,13 +19,13 @@
 - Related: [ADR 0001](adr-0001-pytest-and-nix-ci.md) (accepted, partly superseded),
   [ADR 0002](adr-0002-compile-project-cache.md) (superseded by this ADR; its
   eligibility policy is adopted in "Approved contract reuse"), [ADR 0004](adr-0004-model-conformance-validation.md) (depends on this
-  ADR), [latency experiments](../experiments/adr-0003-latency/README.md),
+  ADR), [latency experiments](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/experiments/adr-0003-latency/README.md),
   [deferred trust design](adr-0003-trust-extension.md)
 
 ## Owner decision (2026-09-29)
 
 **Continue with the data path.** P1 ran on macOS and Linux with correct statuses in
-all 468 runs ([results](../experiments/adr-0003-latency/p1-results.md)). Applied
+all 468 runs ([results](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/experiments/adr-0003-latency/p1-results.md)). Applied
 literally, the pre-registered decision rule below gives **ship tuning**: the data
 path was slower than tuning in some required comparisons (refutation SQL edits on
 both platforms by 25–46%, and the small proof edit on macOS by 3%). The owner
@@ -71,16 +73,16 @@ independent kernel, deployment authority) are
 - `migration-check verify` compiles the SQL-derived inputs, the approved contract
   and the candidate sources in separate Lean processes, then runs an independent
   kernel gate over the resulting `.olean` files
-  ([source staging](source-staging.md), [kernel gate](kernel-gate.md)).
+  ([source staging](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/source-staging.md), [kernel gate](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/kernel-gate.md)).
 - The verifier assumes trusted execution and has no OS sandbox
-  ([trust boundary](trust-boundary.md)). Logical checks, approval baselines and
+  ([trust boundary](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/trust-boundary.md)). Logical checks, approval baselines and
   resource limits remain required.
 - A warm verification takes 6.2 s for a small proof and 19.5 s for the Atuin
   example on an Apple Silicon Mac. Most of that is not proof checking (below).
 
 ## Where the time goes
 
-Measured with the [latency experiments](../experiments/adr-0003-latency/README.md)
+Measured with the [latency experiments](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/experiments/adr-0003-latency/README.md)
 (one machine, medians of three warm runs; Linux not measured).
 
 | Example | Total | Lean compile processes | Compile | Kernel gate |
@@ -258,7 +260,7 @@ this step.
 | A1 | Supported proofs export completely and replay without candidate execution | Small, refutation and Atuin exported and replayed on 4.33.0 | Fix the exporter or checker; do not drop the case |
 | A2 | Library-omitted exports are sound when every omitted name resolves to the trusted library | Patch prototype; replay succeeded for all three examples | Keep full exports and accept the 0.9 s parse cost |
 | A3 | Normalized complete-record comparison is the right protection for repeated declarations | 0 mismatches over about 5,100 repeated declarations per example after normalization | Specify the exact comparison in P1 before implementation |
-| A4 | Both acceptance and agent edit-to-result time improve enough over tuning to meet the decision rule | P1: acceptance faster everywhere; edit-to-result 45–59% faster for Atuin proof edits, but slower or marginal for SQL edits ([results](../experiments/adr-0003-latency/p1-results.md)) | Not met as written; owner decision above. P2 re-measures SQL edits after dependency-aware preparation |
+| A4 | Both acceptance and agent edit-to-result time improve enough over tuning to meet the decision rule | P1: acceptance faster everywhere; edit-to-result 45–59% faster for Atuin proof edits, but slower or marginal for SQL edits ([results](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/experiments/adr-0003-latency/p1-results.md)) | Not met as written; owner decision above. P2 re-measures SQL edits after dependency-aware preparation |
 | A6 | Useful approved closures (starting with Atuin) can be qualified as deterministic for reuse | Not reviewed | Compare options with fresh contracts; reuse benefits both options equally |
 | A5 | Direct construction of generated inputs matches today's emitter | P3: 13 parity cases (shipped examples, ADR 0004 cases, every statement constructor and value kind) have the emitter's types and definitionally equal values; parity testing found and fixed an index-ordering difference | Keep compiling generated inputs with Lean |
 
@@ -282,11 +284,11 @@ when latency gains are small is an owner decision under the rule below.
 
 | Package | Scope | Exit criteria |
 | --- | --- | --- |
-| P0: baseline | Done: [latency experiments](../experiments/adr-0003-latency/README.md) | Stage and data-path costs recorded |
-| P1: comparative experiment (done 2026-09-29; [results](../experiments/adr-0003-latency/p1-results.md)) | Prototypes of both options. Tuning: narrowed gate imports and eligible generated-stage reuse. Data path: checker with target reconstruction and axiom policy, library-omitted export (upstream or pinned patch), and a scripted `prepare` using incremental Lake builds. Measure both on macOS and Linux | Correctness: all existing positive, refutation, allowed-failure and Atuin cases give today's statuses through both prototypes; protected-declaration substitution, `sorry`, forbidden axioms and a wrong target fail. Measurements: see below |
-| P2: data path interface (implemented 2026-09-29; [results](../experiments/adr-0003-latency/p2-results.md)) | Make `prepare` and `verify-bundle` supported commands (no longer experimental), installed and tested on both platforms. Make `prepare`'s incremental build follow each module's actual imports, so an edit recompiles only the modules that depend on it (the P1 prototype recompiled every module after the first changed one). Keep tuning's narrowed gate imports and opt-in stage reuse, and the eligibility registry. Decide whether to upstream the library-omitting export option to lean4export or keep the pinned patch. Re-run the P1 matrix | Installed runtime runs both commands on macOS and Linux; `verify` results unchanged; bundle correctness cases pass in the installed runtime. SQL-edit cells re-measured on both platforms and reported against tuning, with any remaining gap explained. Data path no slower than today's `verify` in any cell, beyond measurement noise |
+| P0: baseline | Done: [latency experiments](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/experiments/adr-0003-latency/README.md) | Stage and data-path costs recorded |
+| P1: comparative experiment (done 2026-09-29; [results](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/experiments/adr-0003-latency/p1-results.md)) | Prototypes of both options. Tuning: narrowed gate imports and eligible generated-stage reuse. Data path: checker with target reconstruction and axiom policy, library-omitted export (upstream or pinned patch), and a scripted `prepare` using incremental Lake builds. Measure both on macOS and Linux | Correctness: all existing positive, refutation, allowed-failure and Atuin cases give today's statuses through both prototypes; protected-declaration substitution, `sorry`, forbidden axioms and a wrong target fail. Measurements: see below |
+| P2: data path interface (implemented 2026-09-29; [results](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/experiments/adr-0003-latency/p2-results.md)) | Make `prepare` and `verify-bundle` supported commands (no longer experimental), installed and tested on both platforms. Make `prepare`'s incremental build follow each module's actual imports, so an edit recompiles only the modules that depend on it (the P1 prototype recompiled every module after the first changed one). Keep tuning's narrowed gate imports and opt-in stage reuse, and the eligibility registry. Decide whether to upstream the library-omitting export option to lean4export or keep the pinned patch. Re-run the P1 matrix | Installed runtime runs both commands on macOS and Linux; `verify` results unchanged; bundle correctness cases pass in the installed runtime. SQL-edit cells re-measured on both platforms and reported against tuning, with any remaining gap explained. Data path no slower than today's `verify` in any cell, beyond measurement noise |
 | P3: generated inputs (done 2026-09-30) | Versioned structural encoding and direct construction, shared with ADR 0004 | Matches today's emitter for every supported constructor, literal and result schema. Measured: `verify-bundle` 2.62 s → 2.15 s (small) and 6.69 s → 6.29 s (Atuin) on macOS, one Lean process fewer |
-| P4: documentation and CI (done 2026-09-29; [data path guide](data-path.md)) | Trust-boundary, source-staging, install and CI docs; case mapping | Each property tested at one layer, as in the current test policy |
+| P4: documentation and CI (done 2026-09-29; [data path guide](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/data-path.md)) | Trust-boundary, source-staging, install and CI docs; case mapping | Each property tested at one layer, as in the current test policy |
 
 P3 applies because the data path was adopted. P4 documents and tests the data
 path together with the kept tuning changes.
@@ -330,7 +332,7 @@ is reviewed. Rollback disables `verify-bundle`; the source path is unaffected.
 
 ## References
 
-- [Latency experiments](../experiments/adr-0003-latency/README.md) and the
+- [Latency experiments](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/experiments/adr-0003-latency/README.md) and the
   [deferred trust design](adr-0003-trust-extension.md)
 - [Component research](0003-component-research.md) (proposal input; where it
   conflicts with this ADR, this ADR decides)

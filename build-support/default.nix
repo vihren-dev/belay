@@ -8,7 +8,6 @@
 let
   sources = import ./sources.nix { inherit (pkgs) lib; inherit root; };
   leanToolchain = import ./lean-toolchain.nix { inherit pkgs; };
-  lean4export = import ./lean4export.nix { inherit pkgs; };
   inventoryTools = pkgs.lib.fileset.toSource {
     root = ../.;
     fileset = pkgs.lib.fileset.unions [ ../tools/public_doc_coverage.py ../tools/public_doc_inventory.py ];
@@ -44,7 +43,7 @@ in rec {
     inherit pkgs; inherit (conformanceNative) fixture upstream;
   };
   allTests = import ./tests.nix {
-    inherit pkgs leanToolchain leanRuntime runtime seedRuntime native conformance modelPackage root;
+    inherit pkgs leanToolchain native conformance modelPackage root;
     parserLibrary = parserLibrary.testRoot;
     inherit leanPackages surfacePackage;
     parserLibraryBuild = parserLibrary.library;
@@ -66,21 +65,11 @@ in rec {
   testReports = pkgs.linkFarm "sqlite-verifier-test-reports" tests;
   developmentTestReports = pkgs.linkFarm "sqlite-verifier-development-test-reports" developmentTests;
   scheduledTestReports = pkgs.linkFarm "sqlite-verifier-scheduled-test-reports" scheduledTests;
-  # The scheduled suites that `just package` runs in the check job: all but the mutant suites.
+  # The scheduled suites that the `full` scope runs in the check job: all but the mutant suites.
   scheduledCheckReports = pkgs.linkFarm "sqlite-verifier-scheduled-check-reports"
     (pkgs.lib.removeAttrs scheduledTests mutantSuites);
-  runtime = import ./runtime.nix {
-    inherit pkgs sources leanToolchain verifierLibrary leanRuntime modelPackage;
-    parserLibrary = parserLibrary.library;
-  };
-  # The runtime without examples/, for the case seeds: a change to one example rebuilds only its seed.
-  seedRuntime = import ./runtime.nix {
-    inherit pkgs sources leanToolchain verifierLibrary leanRuntime modelPackage;
-    parserLibrary = parserLibrary.library;
-    src = sources.runtimeWithoutExamples;
-  };
-  # The surface that users import (ADR 0016, D1). It is not part of the installed runtime, the
-  # gate or the conformance runtime; tests.surface checks it and its layer rules.
+  # The surface that users import (ADR 0016, D1). It is not part of the conformance runtime;
+  # tests.surface checks it and its layer rules.
   surfacePackage = leanPackage {
     pname = "belay";
     directory = "packages/belay";
@@ -92,32 +81,8 @@ in rec {
     sharedRequires = [ "packages/belay-sqlite-model" ];
     environment.BELAY_PARSER_LIBRARY = parserLibrary.library;
   };
-  # The in-process SQLite parser library of the verifier and the harness; tests.parserLibrary checks it.
+  # The in-process SQLite parser library of the harness and the surface; tests.parserLibrary checks it.
   parserLibrary = import ./parser-library.nix { inherit pkgs root; };
-  verifierLibrary = leanPackage {
-    pname = "sqlite-verifier-library";
-    directory = "packages/sqlite-verifier";
-    source = sources.verifierLibrary;
-    targets = [ "SqliteVerifier" "EngineeringExamples" "GatePaths" "GateCore" "GateInputs" ];
-    requires."packages/belay-sqlite-model" = modelPackage;
-  };
-  # The exporter library that the gate's executables import; built once, here, not in each gate build.
-  lean4exportPackage = leanPackage {
-    pname = "lean4export-library";
-    directory = "build/lean4export";
-    source = lean4export;
-    # The `Export` library's root does not import `Export.Parse`, which the bundle checker uses.
-    targets = [ "Export" "+Export.Parse" ];
-  };
-  verifierGate = leanPackage {
-    pname = "sqlite-verifier-gate";
-    directory = "packages/verifier-gate";
-    source = sources.verifierGate;
-    targets = [ "migration-proof-checker" "migration-bundle-checker" "migration-proof-exporter" "migration-resolver" ];
-    requires = { "packages/belay-sqlite-model" = modelPackage; "packages/sqlite-verifier" = verifierLibrary;
-                 "build/lean4export" = lean4exportPackage; };
-    executables = true;
-  };
   verifierConformance = leanPackage {
     pname = "sqlite-verifier-conformance-package";
     directory = "packages/verifier-conformance";
@@ -128,9 +93,8 @@ in rec {
   };
   # The built Lean packages by their folder in the repository layout; tests.packages replays them.
   leanPackages = {
-    "packages/belay-sqlite-model" = modelPackage; "packages/sqlite-verifier" = verifierLibrary;
-    "packages/verifier-gate" = verifierGate; "packages/verifier-conformance" = verifierConformance;
-    "packages/public-doc-tools" = docTools; "build/lean4export" = lean4exportPackage;
+    "packages/belay-sqlite-model" = modelPackage; "packages/verifier-conformance" = verifierConformance;
+    "packages/public-doc-tools" = docTools;
   };
   # The documentation inventory's Lean part; publicDocumentation and tests.documentation use it.
   docTools = leanPackage {
@@ -139,16 +103,6 @@ in rec {
     source = sources.docTools;
     targets = [ "PublicDocSyntax" "PublicDocInventory" ];
   };
-  # The library outputs and the gate's binaries in the layout that the installed runtime ships.
-  leanRuntime = pkgs.runCommand "sqlite-verifier-lean-runtime" { } ''
-    mkdir -p "$out/.lake/build/bin" "$out/.lake/build/lib"
-    cp -R ${verifierLibrary}/.lake/build/lib/lean "$out/.lake/build/lib/"
-    # Lake replays the library only when the outputs each trace lists exist, including `ir` (ADR 0010).
-    cp -R ${verifierLibrary}/.lake/build/ir "$out/.lake/build/"
-    cp ${verifierGate}/.lake/build/bin/migration-proof-checker ${verifierGate}/.lake/build/bin/migration-bundle-checker \
-      ${verifierGate}/.lake/build/bin/migration-proof-exporter ${verifierGate}/.lake/build/bin/migration-resolver \
-      "$out/.lake/build/bin/"
-  '';
   # The conformance runner and its library modules, which the harness and the judge's subject run.
   conformanceRuntime = pkgs.runCommand "sqlite-verifier-conformance-runtime" { } ''
     mkdir -p "$out/.lake/build/bin" "$out/.lake/build/lib"

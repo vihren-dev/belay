@@ -1,7 +1,6 @@
 """Resource failures must happen before snapshots, toolchain installs or package copies."""
 
 from pathlib import Path
-import sys
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -11,17 +10,6 @@ from tools.check_resources import (MAX_ENVIRONMENT_BYTES, MIN_FREE_BYTES, check_
                                    check_resources, existing_parent)
 
 pytestmark = [pytest.mark.unit, pytest.mark.environment]
-
-
-def test_package_preflight_precedes_external_work() -> None:
-    """A direct archive invocation must stop before inspecting or copying runtimes."""
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'packaging'))
-    import build_runtime
-    with patch.object(build_runtime, 'check_resources', side_effect=ValueError('capacity')), \
-         patch.object(build_runtime, 'run') as run:
-        with pytest.raises(ValueError, match='capacity'):
-            build_runtime.build(Path(sys.executable))
-        run.assert_not_called()
 
 
 def test_separate_temporary_filesystem() -> None:
