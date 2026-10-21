@@ -75,10 +75,12 @@ in rec {
     directory = "packages/belay-sqlite-text";
     source = sources.text;
     # The shared libraries are what Lake loads for a file that imports the translation.
-    targets = [ "BelaySqliteText" "BelaySqliteText:shared" "parserShim:shared" ];
+    # The program translates the conformance harness's SQL texts.
+    targets = [ "BelaySqliteText" "BelaySqliteText:shared" "parserShim:shared" "belay-sqlite-translate" ];
     requires."packages/belay-sqlite-model" = modelPackage;
     # The translation's precompiled modules call the model's compiled code.
     sharedRequires = [ "packages/belay-sqlite-model" ];
+    executables = true;
     environment.BELAY_PARSER_LIBRARY = parserLibrary.library;
   };
   # The surface that users import (ADR 0016, D1). It is not part of the conformance runtime;
@@ -116,11 +118,13 @@ in rec {
     source = sources.docTools;
     targets = [ "PublicDocSyntax" "PublicDocInventory" ];
   };
-  # The conformance runner and its library modules, which the harness and the judge's subject run.
+  # The conformance runner and its library modules, and the translation program, which the harness
+  # and the judge's subject run. The program finds the parser library by its path in the Nix store.
   conformanceRuntime = pkgs.runCommand "sqlite-verifier-conformance-runtime" { } ''
     mkdir -p "$out/.lake/build/bin" "$out/.lake/build/lib"
     cp -R ${verifierConformance}/.lake/build/lib/lean "$out/.lake/build/lib/"
     cp ${verifierConformance}/.lake/build/bin/conformance-runner "$out/.lake/build/bin/"
+    cp ${textPackage}/.lake/build/bin/belay-sqlite-translate "$out/.lake/build/bin/"
   '';
   conformance = pkgs.runCommand "sqlite-verifier-conformance" {} ''
     mkdir -p "$out"

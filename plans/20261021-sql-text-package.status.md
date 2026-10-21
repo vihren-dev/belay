@@ -35,3 +35,17 @@ Specification: [ADR 0017](../docs/adr-0017-user-surface.md), D2 and D6;
   passes bytes (it compiles and runs: 14,430 texts), and `tests/surface/InvalidUtf8.lean` checks
   that bytes that are not UTF-8 reach the library through the binding: a grammar error at offset 0,
   as the Python binding's test expects.
+- 2026-10-21: the review of that fix had no findings.
+- 2026-10-21: the translation program `belay-sqlite-translate` of the text package
+  (`TranslationProgram.lean`, `Belay/Sqlite/TranslationRequest.lean`) and its test
+  (`tests/translation_program_test.py`). A request has the profile's release, a source name and
+  the SQL as hexadecimal bytes; the answer's `result` is `statements`, `translationRefusal`,
+  `parseRefusal`, `limit`, `noParser` or `error`, and a parsed text also gives its commands.
+  `selectGrammar` now takes the profile's compile options, as `select_grammar` does; the cases of
+  `tests/test_dialect_selection.py` are `#guard`s in `tests/surface/GrammarChecks.lean`. The
+  conformance runtime contains the program, and the layer test checks that its derivation names
+  the text package; the model's roots come from the model's `lakefile.toml`, because the program
+  imports the codec root `Belay.Sqlite.Model.Codec.SyntaxJson`. A scratch comparison over the
+  27,151 texts of the frozen corpora (schema, migration and trace texts) gave the Python
+  translation's answer for each, compared as JSON with sorted keys: values, ranges, refusals and
+  commands. The program starts in about 30 ms; it links the model statically.

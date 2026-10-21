@@ -6,15 +6,17 @@ from the import lines of every Lean package and from the Nix build.
 2. Nothing below the text package imports it: no Lean file of a package other than the surface
    and the text package imports a module of `packages/belay-sqlite-text`, and no lakefile other
    than the surface's requires it.
-3. The surface imports only its own modules, the text package's, the model's roots
-   `Belay.Sqlite.Model` and `Belay.Sqlite.Model.Codec`, `Init`, `Std` and `Lean`; the text package
+3. The surface imports only its own modules, the text package's, the model's roots (the roots of
+   the libraries in the model's `lakefile.toml`), `Init`, `Std` and `Lean`; the text package
    imports only its own modules, the model's roots and Lean's libraries.
-4. The conformance runtime does not contain the surface: in `build-support/`, only the
-   surface's own derivation and the `surface` test suite name it.
+4. The conformance runtime contains the text package's program but not the surface: in
+   `build-support/`, only the surface's own derivation and the `surface` test suite name the
+   surface, and the runtime's derivation names the text package.
 """
 
 from pathlib import Path
 import re
+import tomllib
 
 import pytest
 
@@ -24,8 +26,11 @@ ROOT = Path(__file__).resolve().parents[1]
 PACKAGES = ROOT / "packages"
 SURFACE = PACKAGES / "belay"
 TEXT = PACKAGES / "belay-sqlite-text"
-MODEL_ROOTS = {"Belay.Sqlite.Model", "Belay.Sqlite.Model.Codec"}
-"""The model's root modules, the only model modules that the surface and the text package may import."""
+MODEL_ROOTS = {root for library in tomllib.loads((PACKAGES / "belay-sqlite-model/lakefile.toml").read_text())["lean_lib"]
+               for root in library["roots"] or [library["name"]]}
+"""The model's root modules, the only model modules that the surface and the text package may
+import: the roots of each library of the model, or its name for a library that lists its modules
+by globs."""
 EXTERNAL_ROOTS = {"Init", "Std", "Lean"}
 """The Lean libraries that the surface and the text package may import."""
 SURFACE_NAMES = re.compile(r"surfacePackage|sources\.surface|packages/belay\b(?!-)")
@@ -53,9 +58,11 @@ def modules(package: Path) -> set[str]:
 
 
 def test_the_surface_and_the_text_package_have_modules() -> None:
-    """The rules below read the packages' files; an empty set would make them pass vacuously."""
+    """The rules below read the packages' files and the model's roots; an empty set would make
+    them pass vacuously."""
     assert {"Belay", "Belay.Sqlite"} <= modules(SURFACE)
     assert {"Belay.Sqlite.Parse", "Belay.Sqlite.Translation"} <= modules(TEXT)
+    assert {"Belay.Sqlite.Model", "Belay.Sqlite.Model.Codec", "Belay.Sqlite.Model.Codec.SyntaxJson"} <= MODEL_ROOTS
 
 
 @pytest.mark.parametrize("upper", [SURFACE, TEXT], ids=["surface", "text"])
@@ -101,8 +108,11 @@ and the argument that passes it to the test suites."""
 
 def test_only_the_surface_build_and_its_suite_name_the_surface() -> None:
     """Rule 4: in `build-support/`, only the lines of `SURFACE_BUILD_LINES` and the test suites'
-    file name the surface, so the conformance runtime does not contain it."""
+    file name the surface, so the conformance runtime does not contain it; the runtime's
+    derivation copies the text package's program."""
     lines = [f"{path.name}: {line.strip()}" for path in sorted((ROOT / "build-support").glob("*.nix"))
              for line in path.read_text().splitlines() if SURFACE_NAMES.search(line)]
     assert [line for line in lines if not line.startswith(SURFACE_SUITE + ": ") and line not in SURFACE_BUILD_LINES] == []
     assert "default.nix: surfacePackage = leanPackage {" in lines
+    runtime = (ROOT / "build-support/default.nix").read_text().split("conformanceRuntime = ", 1)[1].split("'';", 1)[0]
+    assert "${textPackage}/.lake/build/bin/belay-sqlite-translate" in runtime

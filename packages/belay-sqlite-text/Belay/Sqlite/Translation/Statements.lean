@@ -59,14 +59,24 @@ def statement (tree : SqlTree) (command : ParseNode) : TranslateM (Located Synta
 def statements (tree : SqlTree) (root : Nat) : TranslateM (Array (Located Syntax.Statement)) := do
   (← commands tree root).mapM (statement tree)
 
+/-- The refusal of a text that SQLite's grammar rejects at the byte offset. -/
+def inputError (offset : Nat) : Refusal :=
+  { status := "INPUT_ERROR", start := offset, stop := 0,
+    message := "SQLite's grammar rejects the SQL at this offset; correct the SQL there and run the command again" }
+
+/-- The refusal of a text that exceeds the parser's limits; the parser stopped at the byte offset
+and did not decide whether the text is valid SQL. -/
+def resourceLimit (offset : Nat) : Refusal :=
+  { status := "UNVERIFIED", start := offset, stop := 0,
+    message := "SQL exceeds the parser's limits of 1 MiB of input and 200,000 syntax-tree nodes; " ++
+      "split the SQL into smaller files" }
+
 /-- The translation of a parse result: the statements with their ranges, or the refusal, with
 the statuses and messages of the Python frontend for a grammar error and the parser's limits. -/
 def translateParse (sql : ByteArray) : ParseResult → Except Refusal (Array (Located Syntax.Statement))
   | .parsed nodes root => (statements { sql, nodes } root).run' {}
-  | .inputError offset => throw (Refusal.mk "INPUT_ERROR"
-      "SQLite's grammar rejects the SQL at this offset; correct the SQL there and run the command again" offset 0)
-  | .resourceLimit offset => throw (Refusal.mk "UNVERIFIED" ("SQL exceeds the parser's limits of 1 MiB of input " ++
-      "and 200,000 syntax-tree nodes; split the SQL into smaller files") offset 0)
+  | .inputError offset => throw (inputError offset)
+  | .resourceLimit offset => throw (resourceLimit offset)
 
 /-- The translation of SQL text, as its bytes, with a grammar of the parser library: the
 statements with their ranges, or the refusal. It fails when the library gives an unusable
