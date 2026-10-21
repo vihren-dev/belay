@@ -1,0 +1,60 @@
+{
+  "caller": "claude",
+  "commit": "e04622b1b349a056ed8cc71e2fc4898007611ae2",
+  "date": "2026-10-21T02:29:48+00:00",
+  "exit": 1,
+  "files": [
+    "plans/20261021-distinct-having.status.md",
+    "plans/20261021-distinct-having.task.md"
+  ],
+  "findings": [
+    {
+      "id": "20261021T022948Z-e04622b1#1",
+      "line": 17,
+      "path": "plans/20261021-distinct-having.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The task specifies `misuse of aggregate function` for aggregates in `GROUP BY`, but the current resolver reports `aggregate functions are not allowed in the GROUP BY clause`. Fix: specify the separate error for `GROUP BY`."
+    },
+    {
+      "id": "20261021T022948Z-e04622b1#2",
+      "line": 27,
+      "path": "plans/20261021-distinct-having.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The task excludes distinct rows that compare equal under a collation, but governing ADR 0018 D3 requires keeping the first such row. Fix: reconcile this restriction with a dated amendment to D3."
+    },
+    {
+      "id": "20261021T022948Z-e04622b1#3",
+      "line": 44,
+      "path": "plans/20261021-distinct-having.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The task requires an authored case to kill the `BINARY` collation mutant, but its supported subset excludes differing rows that a nonbinary collation merges, so the specified cases cannot distinguish that mutant. Fix: remove this mutant requirement or admit a case that distinguishes the collations."
+    }
+  ],
+  "id": "20261021T022948Z-e04622b1",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "fa2475f44035",
+    "R7": "0a38ead152b1",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

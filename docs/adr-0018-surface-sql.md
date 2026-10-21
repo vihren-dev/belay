@@ -99,7 +99,9 @@ describe, stays a restriction with its own id.
 ### D3. `DISTINCT`, and aggregates inside expressions
 
 - `SELECT DISTINCT` removes rows that compare equal under each column's collation, keeping
-  the first of each.
+  one of each. Amended 2026-10-21 (slice 3): when the rows of such a set differ, for example
+  `'a'` and `'A'` under `NOCASE`, SQLite keeps the first that its plan reads, so the model
+  does not describe the statement; it describes sets whose rows are the same.
 - An aggregate inside an expression becomes one more cell of the group's row: the query
   lists its aggregates, evaluation computes them for each group, and an expression names
   the cell. With this, `HAVING`, `count(*) + 1` and an aggregate in `ORDER BY` follow, and

@@ -14,8 +14,9 @@ slice the local verdict, the corpus, and `just test-full`.
 1. **Aggregates inside expressions.** In the result columns, `HAVING` and `ORDER BY` of a
    query, an aggregate may be part of an expression (`count(*) + 1`, `max(v) - min(v)`), with
    the value of the aggregate over the group's rows, also over an empty group. An aggregate
-   in `WHERE`, `GROUP BY` or the argument of another aggregate stays SQLite's
-   `misuse of aggregate function`.
+   in `WHERE` or in the argument of another aggregate stays SQLite's `misuse of aggregate
+   function`, and one in `GROUP BY` stays `aggregate functions are not allowed in the GROUP BY
+   clause`.
 2. **`HAVING`**, with and without `GROUP BY`: it keeps the groups for which it is true. A query
    with `HAVING` and no aggregate and no `GROUP BY` is SQLite's prepare error `HAVING clause on
    a non-aggregate query`.
@@ -24,7 +25,7 @@ slice the local verdict, the corpus, and `just test-full`.
 4. **`SELECT DISTINCT`**: one row of each set of rows that compare equal under each result
    column's collation, before `ORDER BY`, `LIMIT` and `OFFSET`. When the rows of such a set
    differ (for example `'a'` and `'A'` under `NOCASE`), SQLite's plan chooses the one it keeps,
-   so the statement is not described.
+   so the statement is not described (ADR 0018 D3, amended 2026-10-21).
 5. **Restrictions.** A column outside the grouping terms and the aggregates in a result column,
    in `HAVING` or in `ORDER BY` of an aggregate query stays the restriction `bare-column`;
    `DISTINCT` inside an aggregate call stays refused.
@@ -40,8 +41,10 @@ slice the local verdict, the corpus, and `just test-full`.
   `HAVING` on a non-aggregate query and of a nested aggregate.
 - The verdict of every corpus: cases that newly agree and none that leave AGREE.
 - Mutants: `HAVING` that keeps a group for which it is NULL, an aggregate in an expression
-  computed over the first row of its group only, and `DISTINCT` that compares with `BINARY`
-  instead of the column's collation; each killed by an authored case.
+  computed over the first row of its group only, and `DISTINCT` that keeps every NULL row
+  (SQLite's `DISTINCT` treats NULLs as equal); each killed by an authored case. A `DISTINCT`
+  that compares with `BINARY` instead of a column's collation is no mutant: only rows that
+  differ but compare equal tell the two apart, and the model does not describe them.
 
 ## Key points
 
