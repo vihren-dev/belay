@@ -1,6 +1,6 @@
 # Status: the expression forms IN, BETWEEN, CASE and || (ADR 0018, slice 2)
 
-Created 2026-10-20. Status: open.
+Created 2026-10-20. Status: DONE (2026-10-21).
 Task file: [task](20261020-expression-forms.task.md).
 Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D2.
 
@@ -21,6 +21,11 @@ Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D2.
   (9 cases, all agree with kernel proofs), `conformance/expression_form_mutants.py` (four
   mutants, each killed), `conformance/expression_form_evidence.py` (corpus 43).
 
+- 2026-10-21: "the end of the slice". Local verdict: no case leaves AGREE; against slice 1,
+  135 cases of v5, 22 of v4 and 21 of v3 newly agree (against `main`: 142, 24 and 21). The
+  frontend boundary test refused `x || 1`, which is now modeled; it refuses `x & 1` instead.
+  `just test-full` passes. Corpus 43 is recorded with the claims at the end of the ADR. DONE.
+
 ## Remaining
 
-- The local verdict, corpus 43 and `just test-full`.
+- PR A and PR B come at the end of ADR 0018.

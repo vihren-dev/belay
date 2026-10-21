@@ -1,6 +1,6 @@
 # The expression forms IN, BETWEEN, CASE and || (ADR 0018, slice 2)
 
-Created 2026-10-20. Status: open.
+Created 2026-10-20. Status: DONE (2026-10-21).
 Status file: [status](20261020-expression-forms.status.md).
 Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D2.
 
