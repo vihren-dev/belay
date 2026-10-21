@@ -2,6 +2,8 @@
 
 Date: 2026-10-21. Status: PROPOSED. Changed 2026-10-21: the toolchain comes from a root
 `shell.nix`, and the runner links for the Nix loader through `LEAN_CC`, not `patchelf`.
+Changed again 2026-10-21: `just build` no longer links the runtime into the checkout, so
+the local loop builds in `packages/` and does not copy the sources.
 Implementation: one task file and one pull request, after the owner decisions below.
 Audience: designers and reviewers.
 Related: [ADR 0010](adr-0010-lake-builds-and-artifact-cache.md) (Lake builds, one Nix
@@ -57,17 +59,24 @@ not depend on it, but the times above with it are the times of the loop.
    toolchain store path on `PATH` as the Nix builds use, and loads in about 4 s.
    `build-support/locked-nixpkgs.nix` reads the nixpkgs pin from `nix/flake.lock`, so
    both shells get the same packages.
-2. **`just build` takes over the in-tree build directories.** It replaces
-   `.lake/build` and `packages/belay-sqlite/.lake/build` with links into the read-only
-   runtime in the Nix store. `just test` and `just test-full` run it first. A local
-   `lake build` in `packages/` after that fails: clang reports "Permission denied" for
-   each output file under `packages/belay-sqlite/.lake/build/ir`.
-3. **A copy of the sources builds incrementally.** With the two packages copied to
-   `build/dev-probe/` by `rsync -a --delete --exclude .lake`, a second copy and build
-   compiled 0 jobs (0.2 s). A `touch` of a source file compiled 0 jobs, because Lake
-   compares hashes. An edit of `Belay.Sqlite.QueryFunctions` compiled 19 jobs. The copy
-   of the model and the runner takes 218 MB under `.lake`. `rsync` is on the host, but not
-   in the flake dev shell.
+2. **`just build` no longer takes over the in-tree build directories.** On `main` at
+   8f6fa3e3, `just build` replaced `.lake/build` and `packages/belay-sqlite/.lake/build`
+   with links into the read-only runtime in the Nix store, and linked `lean` and `lib`.
+   `just test` and `just test-full` run it first, so a local `lake build` in `packages/`
+   then failed: clang reported "Permission denied" for each output file under
+   `packages/belay-sqlite/.lake/build/ir`. The links served one purpose: the checkout
+   was the default runtime root of the host tests, as ADR 0001 decided when Lean was
+   built in the checkout. The tests do not need them. With the links removed and
+   `--runtime-root build/runtime`, the host tests (607) and the `requires_nix` host tests
+   (86) passed. The commit `build: use build/runtime as the runtime root and stop linking
+   it into the checkout` (on the branch of this ADR) makes `build/runtime` the default
+   runtime root of the test recipes and removes the links. After it, a local build in
+   `packages/verifier-conformance` succeeded, and the same build after `just build`
+   compiled nothing (0.2 s).
+3. **Lake builds incrementally.** Measured in a copy of the two packages: a second
+   build compiled 0 jobs (0.2 s); a `touch` of a source file compiled 0 jobs, because
+   Lake compares hashes; an edit of `Belay.Sqlite.QueryFunctions` compiled 19 jobs. The
+   outputs of the model and the runner take 218 MB under `.lake`.
 4. **Lake's default link gives a runner that does not start on NixOS.** Lake compiles
    and links with the toolchain's bundled clang, which links for the loader
    `/lib64/ld-linux-x86-64.so.2`. NixOS does not have it, and the Nix build fixes the
@@ -104,8 +113,8 @@ not depend on it, but the times above with it are the times of the loop.
 ### D1. A root `shell.nix` with the pinned toolchain
 
 A `shell.nix` at the repository root is the development shell for the local loop. It
-has the packages of the flake dev shell, the toolchain of `build-support/default.nix`,
-and `rsync`. On Linux it sets `LEAN_CC` to the last wrapper of fact 4. The two shells
+has the packages of the flake dev shell and the toolchain of `build-support/default.nix`.
+On Linux it sets `LEAN_CC` to the last wrapper of fact 4. The two shells
 take their package list from one file under `nix/`, which both can import, so that they
 cannot drift apart. `.envrc` loads `shell.nix` (`use nix`). The flake dev shell stays for
 CI, which calls `nix develop path:./nix` (owner decision 3).
@@ -113,12 +122,13 @@ CI, which calls `nix develop path:./nix` (owner decision 3).
 The trial `shell.nix` on the branch of this ADR shows the shell. It keeps its own
 package list until the implementation shares it.
 
-### D2. A separate local build tree
+### D2. Local builds in `packages/`
 
-The local loop copies the Lean packages that it builds from `packages/` to
-`build/dev/packages/`, without their `.lake` directories, and runs `lake build` there. It
-never writes under `packages/`, so `just build` and the local loop do not interfere. A
-copy without changes compiles nothing.
+The local loop runs `lake build` in the Lean packages under `packages/`, in the shell of
+D1. Lake keeps the outputs in each package's `.lake/`, which Git ignores and which
+`just build` does not touch (fact 2). A checkout made before the change of fact 2 can
+still hold the old links; delete them once (`rm .lake/build
+packages/belay-sqlite/.lake/build lean lib` when they are links).
 
 It builds these targets, the ones that model work can break:
 
@@ -134,7 +144,8 @@ Nix.
 ### D3. A local verdict
 
 A recipe builds the runner as in D2 and makes a runtime root in `build/dev/runtime/`: a
-copy of the runner and `lib/` from the Nix parser library. It then runs the judge's `run`
+copy of `packages/verifier-conformance/.lake/build/bin/conformance-runner` and `lib/`
+from the Nix parser library. It then runs the judge's `run`
 mode with `python -m conformance.predict --runtime build/dev/runtime` as the subject, for
 all claimed corpora or for the corpora named on the command line. It prints the judge's
 counts and failures, writes the report to `build/dev/report.json`, and exits with the
@@ -147,7 +158,7 @@ corpora it writes a reduced copy of the claims file under `build/dev/`.
 
 | Recipe | Does |
 | --- | --- |
-| `just dev-build [TARGET...]` | D2: copy and build the targets of D2, or the named ones |
+| `just dev-build [TARGET...]` | D2: build the targets of D2, or the named ones |
 | `just dev-verdict [CORPUS...]` | D3: `dev-build` of the runner, then the local verdict |
 
 Both run in the shell of D1. Both print where their output is and what to run next when
@@ -180,9 +191,9 @@ flags fails here), and runs `just dev-verdict` on one small corpus and checks ex
 - **An edit of a middle model module costs about 10 to 25 s instead of about 150 s**
   before the agent sees whether the runner still builds. A local verdict over all
   corpora took 95 s on a loaded host (load average about 22 on 8 CPUs).
-- **Each jj workspace has its own local tree.** The first `dev-build` in a workspace is
-  a clean build: 61 to 102 s for the runner in the measurements. The tree of the model
-  and the runner takes about 218 MB.
+- **Each jj workspace has its own local outputs.** The first `dev-build` in a workspace
+  is a clean build: 61 to 102 s for the runner in the measurements. The outputs of the
+  model and the runner take about 218 MB.
 - **The `LEAN_CC` wrapper copies the toolchain's built-in flags.** A Lean upgrade can
   change them. The `requires_nix` test of D6 and the first local build after the upgrade
   show it, and the upgrade change updates the wrapper.
@@ -200,13 +211,10 @@ root. A `path:` flake at the root copies the whole working tree, including `buil
 the store at each evaluation, and a `git+file` flake needs a `.git` directory, which
 secondary jj workspaces such as this one do not have.
 
-**Build in place in `packages/`.** Rejected. `just build` replaces the model's build
-directory with a link into the store (fact 2), so the local tree breaks after each
-`just test`.
-
-**Change `just build` so that it no longer links into `packages/`.** Rejected for this
-ADR. The tests that use the in-tree layout would change with it. A separate tree solves
-the problem without them.
+**A copy of the sources in `build/dev/`, built there.** Rejected. It was needed only
+while `just build` linked the runtime into `packages/` (fact 2). It adds a sync step
+before each build, and Lake's messages then name files in the copy, not the files that
+the agent edits.
 
 **`patchelf --set-interpreter` on a copy of the runner after each build.** Rejected. It
 works (fact 4), but it is one more step after every link, and every tool that starts the
