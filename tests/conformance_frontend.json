@@ -13,6 +13,7 @@
   "belay.sqlite.syntax_definitions",
   "belay.sqlite.syntax_drops",
   "belay.sqlite.syntax_expressions",
+  "belay.sqlite.syntax_forms",
   "belay.sqlite.syntax_indexes",
   "belay.sqlite.syntax_queries",
   "belay.sqlite.syntax_select",

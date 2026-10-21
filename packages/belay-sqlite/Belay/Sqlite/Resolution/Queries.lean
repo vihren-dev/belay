@@ -68,7 +68,8 @@ def resolveResultColumn (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (
         .ok (named (.scalar resolved) none affinity)
     | .call _ (_ :: _ :: _ :: _) | .null | .numeric _ | .string _ | .blob _ | .currentTime _
     | .identifier .. | .qualified .. | .negate _ | .positive _ | .compare .. | .and .. | .or .. | .not _
-    | .isNull .. | .arithmetic .. | .cast .. | .collate .. | .exists _ | .inQuery .. | .subquery _ =>
+    | .isNull .. | .arithmetic .. | .cast .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList ..
+    | .between .. | .caseOf .. | .concatenate .. =>
       let (resolved, affinity) ← (resolveOperand dqs scope shapes false value).mapError (·.under [0, column, 0])
       .ok (named (.scalar resolved) (definedName scope value) affinity)
 
@@ -131,7 +132,8 @@ def resolveQueryBody (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (out
         (resolveOperand dqs scope shapes true term).map (·.1, term.collationIn scope) |>.mapError (·.under [4, item])
       else .error (.restriction [4, item] .groupByTerm)
     | .call _ (_ :: _ :: _) | .null | .string _ | .blob _ | .currentTime _ | .positive _ | .compare ..
-    | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast .. | .exists _ | .inQuery .. | .subquery _ =>
+    | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast .. | .exists _ | .inQuery .. | .subquery _
+    | .inList .. | .between .. | .caseOf .. | .concatenate .. =>
       .error (.restriction [4, item] .groupByTerm)) query.groupBy
   if aggregate && !outputs.all (groupedOutput (terms.map Prod.fst) ·.1) then
     throw (.restriction [0] .bareColumn)

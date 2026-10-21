@@ -23,6 +23,11 @@ def namesAlias (scope : Scope) (aliases : List Identifier) : Syntax.Expr → Boo
   | .collate operand _ | .inQuery operand .. =>
     namesAlias scope aliases operand
   | .call _ arguments => namesAliasIn scope aliases arguments
+  | .inList operand values _ => namesAlias scope aliases operand || namesAliasIn scope aliases values
+  | .between operand low high _ =>
+    namesAlias scope aliases operand || namesAlias scope aliases low || namesAlias scope aliases high
+  | .caseOf operands _ => namesAliasIn scope aliases operands
+  | .concatenate left right => namesAlias scope aliases left || namesAlias scope aliases right
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ | .qualified .. | .exists _
   | .subquery _ => false
 
@@ -46,6 +51,10 @@ def mentionsColumn (scope : Scope) : Syntax.Expr → Bool
     mentionsColumn scope operand
   | .exists _ | .inQuery .. | .subquery _ => true
   | .call _ arguments => mentionsColumnIn scope arguments
+  | .inList operand values _ => mentionsColumn scope operand || mentionsColumnIn scope values
+  | .between operand low high _ => mentionsColumn scope operand || mentionsColumn scope low || mentionsColumn scope high
+  | .caseOf operands _ => mentionsColumnIn scope operands
+  | .concatenate left right => mentionsColumn scope left || mentionsColumn scope right
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ => false
 
 /-- Whether some argument names a column in scope ({name}`mentionsColumn`). -/
@@ -65,6 +74,10 @@ def Syntax.Expr.hasQualifiedName : Syntax.Expr → Bool
   | .collate operand _ | .inQuery operand .. =>
     operand.hasQualifiedName
   | .call _ arguments => Syntax.Expr.anyQualifiedName arguments
+  | .inList operand values _ => operand.hasQualifiedName || Syntax.Expr.anyQualifiedName values
+  | .between operand low high _ => operand.hasQualifiedName || low.hasQualifiedName || high.hasQualifiedName
+  | .caseOf operands _ => Syntax.Expr.anyQualifiedName operands
+  | .concatenate left right => left.hasQualifiedName || right.hasQualifiedName
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ | .identifier .. | .exists _
   | .subquery _ => false
 

@@ -62,6 +62,10 @@ inductive Expr where
   /-- A scalar subquery {lit}`(q)`: the first value of the first row of subquery {lit}`index`,
   or NULL when it gives no row. -/
   | subquery (index : Nat)
+  /-- {lit}`operand IN (values)`, or {lit}`NOT IN` when {lit}`negated` (ADR 0018, D2): whether the
+  value of the operand is among the values, compared under the affinity and the collation of
+  the operand, as SQLite compares a list. -/
+  | inList (operand : Expr) (values : Arguments) (affinity : Option Affinity) (collation : Collation) (negated : Bool)
   deriving Repr, DecidableEq
 
 /-- The arguments of a call in written order, as a list that is mutual with

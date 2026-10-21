@@ -55,7 +55,8 @@ def indexTerm (dqs : Bool) (scope : Scope) (columns : List CatalogColumn) : Synt
   | expression@(.qualified ..) | expression@(.negate _) | expression@(.positive _) | expression@(.compare ..)
   | expression@(.and ..) | expression@(.or ..) | expression@(.not _) | expression@(.isNull ..)
   | expression@(.callStar _) | expression@(.call ..) | expression@(.arithmetic ..) | expression@(.cast ..)
-  | expression@(.exists _) | expression@(.inQuery ..) | expression@(.subquery _) =>
+  | expression@(.exists _) | expression@(.inQuery ..) | expression@(.subquery _) | expression@(.inList ..)
+  | expression@(.between ..) | expression@(.caseOf ..) | expression@(.concatenate ..) =>
     indexExpressionTerm dqs scope expression
 
 /-- The key terms of CREATE INDEX in order, with their sort orders and collations: an
