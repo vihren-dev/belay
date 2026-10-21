@@ -165,7 +165,8 @@ def test_unselected_file_invariance(identity_tree: tuple[Path, dict[str, str]], 
 
 def test_model_dependency_invalidates_application_artifacts(
         identity_tree: tuple[Path, dict[str, str]]) -> None:
-    """The actual Nix entrypoint binds model inputs into application and runtime derivations."""
+    """The actual Nix entrypoint binds model inputs into application and runtime derivations, and
+    an application change leaves the model and the conformance runtime alone."""
     root, _ = identity_tree
     def derivations() -> dict[str, str]:
         """Evaluate the production dependency graph with a private source root, without building it."""
@@ -183,7 +184,8 @@ def test_model_dependency_invalidates_application_artifacts(
     application.write_bytes(original+b'\napplication-only change\n')
     changed = derivations()
     assert changed['modelPackage'] == before['modelPackage']
-    assert all(changed[name] != before[name] for name in ('leanRuntime','conformanceRuntime','runtime'))
+    assert changed['conformanceRuntime'] == before['conformanceRuntime']
+    assert all(changed[name] != before[name] for name in ('leanRuntime','runtime'))
     application.write_bytes(original)
     model = root / 'packages/belay-sqlite-model/Belay/Sqlite/Model/Database.lean'
     model.write_bytes(model.read_bytes()+b'\nmodel change\n')

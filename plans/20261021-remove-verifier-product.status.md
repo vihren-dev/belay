@@ -23,3 +23,12 @@ Specification: [ADR 0021](../docs/adr-0021-remove-the-verifier-product.md).
   SQL text task now depends on this task and serves the harness only.
 - 2026-10-21: review of ADR 0021 and the task: one finding, in the SQL text task (the harness
   also reads each statement's end, in `native_trace.py`); fixed. The second review had no findings.
+- 2026-10-21: baseline before the removal: the judge's predictions are kept in
+  `build/baseline-predictions`; the conformance runtime's closure is 3,727 MiB; `just test-full`
+  passes (636 host tests, the Nix suites cached, 1 min 54 s).
+- 2026-10-21: the conformance runtime is the runner's outputs only, with no verifier library or
+  gate program (closure 3,245 MiB). The restriction examples run through `conformance-runner
+  --predict`, without the foreign key scope of a corpus case, so that the foreign key
+  restrictions stay reachable. `lean_libraries` no longer requires `SqliteVerifier.olean`, and
+  `requires_lean` no longer requires the proof checker. `just test-full` and `just test-nix`
+  pass; the predictions are byte-identical to the baseline.

@@ -3,8 +3,8 @@
 The registry of model restrictions (`Resolution/Restrictions.lean`) must not keep a
 restriction that no SQL reaches: such a restriction is dead code that the
 documentation table would still show to users. Each example runs through the
-pinned frontend and the `migration-resolver` of the conformance runtime, which
-must refuse it with the example's restriction id.
+pinned frontend and the `conformance-runner` of the conformance runtime, whose
+model must refuse it with the example's restriction id.
 """
 
 from pathlib import Path
@@ -19,7 +19,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requ
 
 @pytest.mark.parametrize("identifier", sorted(EXAMPLES))
 def test_example_reaches_its_restriction(runtime_root: Path, identifier: str) -> None:
-    """The resolver refuses the example with its restriction id."""
+    """The model refuses the example with its restriction id."""
     schema, migration = EXAMPLES[identifier]
     result = resolve_example(runtime_root, schema, migration)
-    assert (result["status"], result.get("restriction")) == ("restricted", identifier), result
+    assert ("restricted" in result, result.get("restriction")) == (True, identifier), result

@@ -149,12 +149,10 @@ in rec {
       ${verifierGate}/.lake/build/bin/migration-proof-exporter ${verifierGate}/.lake/build/bin/migration-resolver \
       "$out/.lake/build/bin/"
   '';
-  # Test-only model executable and library next to the runtime's; the shipped runtime keeps its commands.
+  # The conformance runner and its library modules, which the harness and the judge's subject run.
   conformanceRuntime = pkgs.runCommand "sqlite-verifier-conformance-runtime" { } ''
-    mkdir -p "$out/.lake/build"
-    cp -R ${leanRuntime}/.lake/build/. "$out/.lake/build/"
-    chmod -R u+w "$out/.lake/build"
-    cp -R ${verifierConformance}/.lake/build/lib/lean/. "$out/.lake/build/lib/lean/"
+    mkdir -p "$out/.lake/build/bin" "$out/.lake/build/lib"
+    cp -R ${verifierConformance}/.lake/build/lib/lean "$out/.lake/build/lib/"
     cp ${verifierConformance}/.lake/build/bin/conformance-runner "$out/.lake/build/bin/"
   '';
   conformance = pkgs.runCommand "sqlite-verifier-conformance" {} ''

@@ -57,10 +57,12 @@ def lean_sysroot(runtime_root: Path, pytestconfig: pytest.Config) -> Path:
 
 @pytest.fixture(scope="session")
 def lean_libraries(runtime_root: Path) -> tuple[Path, Path]:
-    """Require the separately installed application and model roots in trusted precedence order."""
+    """Require the runtime's own library folder and the model's, in import precedence order. The
+    runtime's folder holds the conformance runner's modules in the conformance runtime."""
     application = runtime_root / ".lake/build/lib/lean"
     model = runtime_root / "packages/belay-sqlite-model/.lake/build/lib/lean"
-    require_file(application / "SqliteVerifier.olean")
+    if not application.is_dir():
+        pytest.fail(f"Required runtime library folder is missing: {application}; build the runtime first")
     require_file(model / "Belay/Sqlite/Model.olean")
     return application, model
 
@@ -73,13 +75,13 @@ def proof_checker(runtime_root: Path) -> Path:
 
 @pytest.fixture(autouse=True)
 def selected_prerequisites(request: pytest.FixtureRequest) -> None:
-    """Resource markers drive setup errors; pure cases do not request any runtime fixture."""
+    """Resource markers drive setup errors; pure cases do not request any runtime fixture. A case
+    that runs the proof checker requests `proof_checker` itself."""
     lean = request.node.get_closest_marker("requires_lean")
     if lean is not None:
         request.getfixturevalue("lean_sysroot")
         if lean.args != ("compiler",):
             request.getfixturevalue("lean_libraries")
-            request.getfixturevalue("proof_checker")
     native = request.node.get_closest_marker("requires_native")
     if native is not None:
         for tool in native.args or (PARSER_LIBRARY,):

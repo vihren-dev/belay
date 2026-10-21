@@ -3,21 +3,22 @@
 Every restriction id of `RestrictionKind.id` (`Resolution/RestrictionText.lean`) has
 an example here: a schema and a migration that the resolver refuses with that id.
 The examples show that each restriction can be reached from SQL, and they show users
-what each restriction refuses. `resolve_example` runs one example through the frontend and the resolver, as
-`migration_check.inputs` does for `verify`.
+what each restriction refuses. `resolve_example` runs one example through the frontend and the
+conformance runner, as `conformance.predict` runs a case.
 """
 
 import json
 from pathlib import Path
 import subprocess
-from tempfile import TemporaryDirectory
 
-from belay.sqlite.dialects import ProfileIdentity
+from belay.sqlite.errors import SqlError
 from belay.sqlite.located import Json
-from belay.sqlite.profiles import profile
-from belay.sqlite.sql_tree import SqlError, SqlParser, parse
-from belay.sqlite.syntax import script_record, statements
-from conformance.record_parser import runtime_library
+from belay.sqlite.sql_tree import parse
+from belay.sqlite.syntax import statements
+from conformance.native_connection import SOURCE_ID
+from conformance.predict import RUNNER_TIMEOUT_SECONDS
+from conformance.profile_scope import modeled_profile
+from conformance.record_parser import record_parser, runtime_library
 
 EXAMPLES: dict[str, tuple[str, str]] = {
     "schema-statement": ("CREATE TABLE t(a INTEGER); INSERT INTO t VALUES (1);", "SELECT a FROM t;"),
@@ -91,29 +92,24 @@ EXAMPLES: dict[str, tuple[str, str]] = {
 }
 """For each restriction id: a schema and a migration that the resolver refuses with it."""
 
-PROFILE = "3.51.0"
-"""The execution profile of the examples."""
-
-
 def resolve_example(runtime: Path, schema: str, migration: str) -> dict[str, Json]:
-    """Parse the example with the runtime's parser library and resolve it with the runtime's
-    `migration-resolver`. Return the resolver's result, or `{"status": "frontend", "message": ...}`
-    when the frontend refuses the SQL."""
-    selected = profile(PROFILE)
-    parser = SqlParser.for_profile(runtime_library(runtime), ProfileIdentity(selected.engine, selected.source_id))
+    """Parse the example with the runtime's parser library for the default profile (the pinned
+    SQLite release) and give the model's answer from the runtime's `conformance-runner`:
+    `restricted` and `restriction` for a restricted example, or `{"frontend": ...}` with the message
+    when the frontend refuses the SQL. Unlike a corpus case, an example is not kept out of scope for
+    its foreign keys (`profile_scope.foreign_key_scope`), so that the model's foreign key
+    restrictions can be reached."""
+    parser = record_parser(runtime_library(runtime), {"sourceId": SOURCE_ID})
     try:
-        record = script_record(selected, statements(parse(parser, schema.encode(), "schema.sql")),
-                               statements(parse(parser, migration.encode(), "migration.sql")))
+        model_input = {"profile": modeled_profile({}), "initial": [], "clocks": [],
+                       "schema": [item.value for item in statements(parse(parser, schema.encode(), "schema.sql"))],
+                       "script": [item.value for item in statements(parse(parser, migration.encode(), "migration.sql"))]}
     except SqlError as error:
-        return {"status": "frontend", "message": str(error)}
-    with TemporaryDirectory(prefix="restriction-example-") as directory:
-        record_path, output = Path(directory) / "record.json", Path(directory) / "generated"
-        record_path.write_text(json.dumps(record), encoding="utf-8")
-        output.mkdir()
-        resolved = subprocess.run([str(runtime / ".lake/build/bin/migration-resolver"), str(record_path), str(output)],
-                                  capture_output=True, text=True, timeout=30, check=False)
-    if resolved.returncode:
-        raise RuntimeError(f"migration-resolver failed: {resolved.stderr}")
-    result: dict[str, Json] = json.loads(resolved.stdout)
+        return {"frontend": str(error)}
+    runner = runtime / ".lake/build/bin/conformance-runner"
+    answered = subprocess.run([str(runner), "--predict"], input=json.dumps(model_input) + "\n",
+                              capture_output=True, text=True, timeout=RUNNER_TIMEOUT_SECONDS, check=False)
+    if answered.returncode:
+        raise RuntimeError(f"{runner} exited with {answered.returncode}: {answered.stderr.strip()}")
+    result: dict[str, Json] = json.loads(answered.stdout)
     return result
-
