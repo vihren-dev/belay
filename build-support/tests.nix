@@ -53,13 +53,26 @@ let
     ln -s ${leanToolchain} "$out/lean"
     ln -s ${leanPackages."packages/public-doc-tools"} "$out/packages/public-doc-tools"
   '';
-  # The surface (ADR 0016, D1) in the repository layout, with the model and the parser library.
+  # Candidate B of ADR 0017's S1, the translation in C, linked with the parser library by its path.
+  candidateB = let
+    suffix = if pkgs.stdenv.hostPlatform.isLinux then ".so" else ".dylib";
+    parser = "${parserLibraryBuild}/lib/libsqlite-verifier-parser${suffix}";
+  in pkgs.runCommandCC "sqlite-verifier-surface-candidate-b" {
+    src = fs.toSource { inherit root; fileset = root + /experiments/surface-s1/candidate-b; };
+  } ''
+    mkdir -p "$out/lib"
+    $CC -std=c99 -O1 -Wall -Werror -fPIC -fvisibility=hidden ${if pkgs.stdenv.hostPlatform.isLinux then "-shared" else "-dynamiclib"} \
+      -I${parserLibraryBuild}/include "$src"/experiments/surface-s1/candidate-b/*.c ${parser} \
+      -o "$out/lib/libtranslate-b${suffix}"
+  '';
+  # The surface (ADR 0016, D1) in the repository layout, with the model, the parser library and candidate B.
   surfaceRoot = pkgs.runCommand "sqlite-verifier-test-surface" {} ''
     mkdir -p "$out/packages"
     ln -s ${leanToolchain} "$out/lean"
     ln -s ${surfacePackage} "$out/packages/belay"
     ln -s ${modelPackage} "$out/packages/belay-sqlite-model"
     ln -s ${parserLibraryBuild} "$out/parser-library"
+    ln -s ${candidateB} "$out/candidate-b"
   '';
   # The layer test reads the Lean files and lakefiles of every package and the Nix build.
   packageSources = map (package: fs.difference (fs.fileFilter (file: file.hasExt "lean" || file.hasExt "toml")

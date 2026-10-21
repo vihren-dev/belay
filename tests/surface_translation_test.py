@@ -1,6 +1,7 @@
-"""The Lean port of the SQL translation (`packages/belay/Belay/Sqlite/Translation`, ADR 0017, S1,
-prototype 2, candidate A) gives the Python translation's result (`belay/sqlite/syntax.py`) for
-each SQL text of the authored corpora.
+"""Both candidates of ADR 0017's S1, prototype 2, give the Python translation's result
+(`belay/sqlite/syntax.py`) for each SQL text of the authored corpora: candidate A, the Lean port
+(`packages/belay/Belay/Sqlite/Translation`), and candidate B, the translation in C
+(`experiments/surface-s1/candidate-b`).
 
 The authored corpora are the frozen corpora of `judge/claims.json` whose manifest names the
 evidence that they cover. Each case gives two texts, as the replay reads them
@@ -24,7 +25,7 @@ from conformance.corpus import load
 from conformance.native_replay import schema_sql
 from conformance.record_parser import record_parser
 from tests.runtime_support import run_command
-from tests.surface_support import FIXTURES, lean_path, surface_command
+from tests.surface_support import FIXTURES, SUFFIX, candidate_b, candidate_b_result, lean_path, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -68,10 +69,17 @@ def authored_texts(runtime_root: Path) -> list[dict[str, Json]]:
     return texts
 
 
-def test_lean_translation_equals_python_translation(runtime_root: Path, tmp_path: Path) -> None:
+@pytest.fixture(scope="module")
+def texts(runtime_root: Path) -> list[dict[str, Json]]:
+    """The texts of the authored corpora with the Python translation's results, read once for both
+    candidates."""
+    return authored_texts(runtime_root)
+
+
+def test_lean_translation_equals_python_translation(runtime_root: Path, tmp_path: Path,
+                                                    texts: list[dict[str, Json]]) -> None:
     """For each text of the authored corpora, the Lean port's statements, ranges and refusals are
     the Python translation's (`tests/surface/TranslationEquality.lean` compares them)."""
-    texts = authored_texts(runtime_root)
     assert len(texts) > MINIMUM_TEXTS and any("refusal" in text["python"] for text in texts)  # type: ignore[operator]
     path = tmp_path / "texts.jsonl"
     path.write_text("".join(json.dumps(text) + "\n" for text in texts))
@@ -79,3 +87,12 @@ def test_lean_translation_equals_python_translation(runtime_root: Path, tmp_path
                          environment={**lean_path(runtime_root), "BELAY_TRANSLATION_TEXTS": str(path)}, timeout=120)
     assert result.returncode == 0, result.diagnostic()
     assert f"texts {len(texts)} different 0" in result.stdout, result.diagnostic()
+
+
+def test_c_translation_equals_python_translation(runtime_root: Path, texts: list[dict[str, Json]]) -> None:
+    """For each text of the authored corpora, candidate B's statements, ranges and refusals are the
+    Python translation's; the JSON compares with sorted keys, so `true` and `1` differ."""
+    library = candidate_b(runtime_root / f"candidate-b/lib/libtranslate-b{SUFFIX}")
+    different = [text["sql"] for text in texts if json.dumps(candidate_b_result(library, text["grammar"], text["sql"]),
+                                                               sort_keys=True) != json.dumps(text["python"], sort_keys=True)]
+    assert len(texts) > MINIMUM_TEXTS and not different, different[:5]

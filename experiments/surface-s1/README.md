@@ -119,3 +119,47 @@ Two findings about the package layout:
   a `Belay` folder, so it does not find the model's modules beside the surface's. Lake gives
   `lean` each import's file (`lake lean`, `lake setup-file`) and has no such problem; the tests
   that run `lean` directly can only elaborate files that do not import the model.
+
+### Candidate B: the translation in C
+
+`candidate-b/` ports the same Python modules to C, one C file for each one or two of them. It
+writes the result as JSON: the model's transport of each statement, with the range and the
+located parts of each node, in the form of the Python translation. A refusal ends the
+translation with `longjmp`, where the Python translation raises an exception; all memory of one
+translation is in one arena. The prototype is a library of its own, `belay_translate`
+(`translate_b.h`), linked with the parser library: it calls the parse and reads the parse
+document into nodes (`entry.c`), so that the parser library does not change. A real candidate B
+would sit in the parser library and read the parser's nodes directly, without `entry.c`.
+
+| Measurement | Result |
+| --- | --- |
+| Texts whose result equals the Python translation's (JSON with sorted keys, so `true` and `1` differ) | 14,430 of 14,430 (2,781 refusals) |
+| Parse, translation and JSON decoding in Python (`ctypes`) of all texts | 2.1 s |
+| Size of the translation | 1,519 lines of C code (`entry.c` and `translate_b.h` excluded) |
+| Code that would exist twice: the JSON shape of the model's syntax, which the Lean codec also decodes | 193 lines name a constructor, a field or an enumeration value of the shape; every line of the translation builds that shape |
+
+Its statements are the Python translation's, so they decode to `Syntax.Statement` as those of
+candidate A do. The test `tests/surface_translation_test.py` (the `surface` suite) compares both
+translations over the 1,686 texts of the authored corpora in less than 1 s; the suite builds the
+library with the parser library (`candidateB` in `build-support/tests.nix`).
+
+```sh
+P=build/parser-library
+cc -std=c99 -O1 -Wall -Wextra -fPIC -fvisibility=hidden -shared -I$P/include \
+  experiments/surface-s1/candidate-b/*.c -L$P/lib -lsqlite-verifier-parser -Wl,-rpath,$P/lib \
+  -o build/surface-s1/candidate-b/libtranslate-b.so
+python3 experiments/surface-s1/translate_b.py build/surface-s1/candidate-b/libtranslate-b.so
+```
+
+## Summary for the choice
+
+| | A: Lean port | B: C in the parser library |
+| --- | --- | --- |
+| Equal to the Python translation | 14,430 of 14,430 | 14,430 of 14,430 |
+| Size | 1,131 lines of Lean code | 1,519 lines of C code |
+| Knowledge held twice | The whole translation, beside the Python translation until that is replaced | The JSON shape of the model's syntax, beside the Lean codec, as long as both exist |
+| Where a change to the model's syntax goes | Lean only: the port builds the JSON that the codec reads, and could build `Syntax.Statement` directly | C and the Lean codec, in step |
+| Failure handling | Lean exceptions in a state monad; two `partial` functions | `longjmp` and an arena; memory errors are possible in C |
+| Where the code ships | The surface package only, outside the installed runtime (ADR 0017, D6) | The parser library, which is part of the installed runtime |
+
+Both reach the acceptance bar. The macOS measurement of prototype 1 is still open.
