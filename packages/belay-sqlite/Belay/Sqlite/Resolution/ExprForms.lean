@@ -49,13 +49,13 @@ def Resolved.Aggregate.writesJson : Resolved.Aggregate → Bool
   | .jsonGroupArray .. | .jsonGroupObject .. => true
   | .countRows | .count _ | .min .. | .max .. | .sum _ | .avg _ | .groupConcat .. | .total _ => false
 
-/-- Whether a call is an aggregate of the model: {lit}`count(*)`, or a named aggregate
-of one operand ({name}`aggregateNamed`) or of two ({name}`pairAggregateNamed`). -/
+/-- Whether a call is an aggregate of the model: {lit}`count(*)` and {lit}`count()`, or a
+named aggregate of one operand ({name}`aggregateNamed`) or of two ({name}`pairAggregateNamed`). -/
 def aggregateCall : Syntax.Expr → Bool
-  | .callStar name => normalizeIdentifier name == "count"
+  | .callStar name | .call name [] => normalizeIdentifier name == "count"
   | .call name [_] => (aggregateNamed name).isSome
   | .call name [_, _] => (pairAggregateNamed name).isSome
-  | .call _ [] | .call _ (_ :: _ :: _ :: _) => false
+  | .call _ (_ :: _ :: _ :: _) => false
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast ..
   | .qualified .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate .. => false

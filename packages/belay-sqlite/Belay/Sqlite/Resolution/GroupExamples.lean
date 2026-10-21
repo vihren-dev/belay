@@ -77,6 +77,8 @@ def by_ (expression : Expr) : OrderTerm := { expression, descending := false }
 -- ORDER BY sum(v) DESC, g: the sums 30, 5 and NULL.
 #guard rowsOf (query [written (col "g")] [col "g"] none [{ expression := .call "sum" [col "v"], descending := true },
     by_ (col "g")]) == (.rows [[.integer 1], [.integer 2], [.integer 3]])
+-- count() without an argument is an aggregate too (corpus case select1-2.3): SELECT count() FROM t is 4.
+#guard rowsOf (query [written (.call "Count" [])]) == .rows [[.integer 4]]
 -- An aggregate in an expression over an empty group: SELECT count(*) + 1 FROM t WHERE 0 is 1.
 #guard match (statements (migration database.catalog [.select [written (.arithmetic .add count (.numeric "1"))]
     (some { table := Identifier.ofString "t", alias := none }) [] (some (.numeric "0")) [] [] none none])).head? with
