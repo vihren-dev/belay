@@ -65,6 +65,7 @@ def valueOf (expression : Expr) : Option Value :=
 -- x || y: NULL with a NULL operand, else the text of both: 1 || 2 is '12', 1.5 || 'a' is '1.5a'.
 #guard [valueOf (.concatenate (.numeric "1") (.numeric "2")), valueOf (.concatenate .null (str "a")),
   valueOf (.concatenate (.numeric "1.5") (str "a"))] == [some (.text [49, 50]), some .null, some (.text [49, 46, 53, 97])]
-example : valueOf (.concatenate (.numeric "1e300") (str "")) = some (.text "1.0e+300".toUTF8.toList) := by decide +kernel
+/-- The value of {lit}`1e300 || ''` over the row is the text {lit}`1.0e+300`, SQLite's text of the REAL. -/
+theorem concat_large_real : valueOf (.concatenate (.numeric "1e300") (str "")) = some (.text "1.0e+300".toUTF8.toList) := by decide +kernel
 
 end Belay.Sqlite.Resolution.FormExamples
