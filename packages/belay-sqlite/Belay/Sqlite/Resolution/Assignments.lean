@@ -39,12 +39,14 @@ the rowid alias, and the restriction {name}`RestrictionKind.rowidName` for a tab
 generated column is the issue {lit}`generated` of its name. A value that reads the
 row for a column of a unique key ({lit}`keyColumns`) is a model restriction, and so is a
 value that names no column and whose JSON function may fail. The value may name the
-statement's subqueries ({lit}`shapes`). Paths are relative to the assignment list. -/
+statement's subqueries ({lit}`shapes`). Paths are relative to the assignment list. In a
+trigger's body, {lit}`around` is the trigger's rows (ADR 0018, D5): the value sees them, and a
+value that reads only them does not read the row; elsewhere it is empty. -/
 def resolveAssignment (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (keyColumns : List Nat)
-    (generated : Identifier → ValueIssue) (rowid : Option (Option Nat)) (item : Nat) :
+    (generated : Identifier → ValueIssue) (rowid : Option (Option Nat)) (item : Nat) (around : Scope := []) :
     Identifier × Syntax.Expr → Except ValueIssue (Nat × Resolved.Expr)
   | (name, value) =>
-    (resolveOperand dqs scope shapes true value).mapError (·.under [item, 1]) >>= fun operand =>
+    (resolveOperand dqs (scope ++ around) shapes true value).mapError (·.under [item, 1]) >>= fun operand =>
     (match columnPosition scope.columns name, rowid with
       | some position, _ => .ok position
       | none, some alias => if !rowidName name then .error (.prepare (.noSuchColumn name)) else match alias with
@@ -54,8 +56,8 @@ def resolveAssignment (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (ke
     if (scope.columns[position]?.bind (·.generated)).isSome then .error (generated name)
     else if mentionsColumn scope value && keyColumns.contains position then
       .error (.restriction [item, 1] .rowDependentKey)
-    else if !mentionsColumn scope value && !operand.1.readsClock && operand.1.mayFailOn (.plain 0) [] then
+    else if !mentionsColumn (scope ++ around) value && !operand.1.readsClock && operand.1.mayFailOn (.plain 0) [] then
       .error (.restriction [item, 1] .constantFunctionError)
-    else .ok (position, assignedExpression scope position value operand.1)
+    else .ok (position, assignedExpression (scope ++ around) position value operand.1)
 
 end Belay.Sqlite

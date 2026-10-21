@@ -1,5 +1,5 @@
 import Belay.Sqlite.Resolution.Values
-import Belay.Sqlite.Resolution.Scope
+import Belay.Sqlite.Resolution.ScopeNames
 import Belay.Sqlite.Resolution.Syntax
 import Belay.Sqlite.Resolution.MergedNames
 

@@ -29,7 +29,7 @@ inductive RestrictionRegistry where
 def RestrictionKind.registry : RestrictionKind → RestrictionRegistry
   | .rowDependentKey | .conflictWithoutTarget | .mixedConflictAlgorithms | .windowedGroupSum
   | .constantFunctionError | .unknownCollation | .upsertGenerated | .subqueryFallibleCall
-  | .subqueryReadsTarget | .distinctOrderBy => .undecided
+  | .subqueryReadsTarget | .distinctOrderBy | .triggerWritesOwnTable | .schemaTriggerOrder => .undecided
   | .rowidName => .unrepresented
   | .schemaStatement | .engineTable | .rowidColumnName
   | .unmodeledDefault | .indexStringTerm | .indexDateFunction | .indexJsonFunction | .checkFunction
@@ -39,6 +39,6 @@ def RestrictionKind.registry : RestrictionKind → RestrictionRegistry
   | .unmodeledFunction | .aggregateInExpression | .aliasInExpression | .groupByTerm | .bareColumn
   | .aggregateOrderBy | .windowValue | .negativeOffset | .tableFunction | .laterTableInOn | .functionJoin
   | .laterSourceInArguments | .jsonSubtype | .subqueryHere | .outerAggregate | .deferredForeignKey
-  | .foreignKeyUpsert => .unsupported
+  | .foreignKeyUpsert | .raiseForm | .triggerForm => .unsupported
 
 end Belay.Sqlite

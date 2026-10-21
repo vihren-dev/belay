@@ -40,7 +40,7 @@ DROP TABLE that deletes its rows with their foreign-key actions on such a catalo
 fire the triggers of the child tables: the model does not run triggers yet (ADR 0018, D5). -/
 def runStatement (clock : Int) (statement : Resolved.Statement) (database : Database) : StatementRun :=
   match statement with
-  | .insert target rows returning subqueries foreignKeys => match database.table target with
+  | .insert target rows returning subqueries rules => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
       let context := Resolved.statementContext clock database subqueries
@@ -50,9 +50,9 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
       StatementRun.withKeys (insertOutcome database target keys table values result)
         (LiteralData.insertReady keys table values result && Resolved.subqueriesPlain subqueries && Resolved.cellsReady context rows &&
           !(returningExpressions returning).any (·.any Resolved.Expr.isFallibleCall) && !database.catalog.hasTrigger)
-        (foreignKeys.map fun depth => insertKeys depth target (database.catalog.writePolicy target table.shape none)
+        (rules.map fun rules => insertKeys rules target (database.catalog.writePolicy target table.shape none)
           [] values database subqueries.isEmpty)
-  | .upsert target rows clauses returning algorithm subqueries foreignKeys => match database.table target with
+  | .upsert target rows clauses returning algorithm subqueries rules => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
       let context := Resolved.statementContext clock database subqueries
@@ -65,8 +65,8 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
           | .error (reason, reached, _) => .error (reason, database.setRows target reached.rows))
         (LiteralData.upsertReady keys table clauses values steps && Resolved.subqueriesPlain subqueries &&
           Resolved.cellsReady context rows && upsertJsonReady clauses returning && !database.catalog.hasTrigger)
-        (foreignKeys.map fun depth => insertKeys depth target policy clauses values database subqueries.isEmpty)
-  | .update target assignments filter returning subqueries foreignKeys => match database.table target with
+        (rules.map fun rules => insertKeys rules target policy clauses values database subqueries.isEmpty)
+  | .update target assignments filter returning subqueries rules => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
       let context := Resolved.statementContext clock database subqueries
@@ -76,15 +76,15 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
           else checkedWrite database target keys result)
         (LiteralData.updateReady keys table assignments result && Resolved.subqueriesPlain subqueries &&
           updateJsonReady context table assignments filter returning && !database.catalog.hasTrigger)
-        (foreignKeys.map fun depth => updateKeys context depth target table assignments filter database subqueries.isEmpty)
-  | .delete target filter returning subqueries foreignKeys => match database.table target with
+        (rules.map fun rules => updateKeys context rules target table assignments filter database subqueries.isEmpty)
+  | .delete target filter returning subqueries rules => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
       let context := Resolved.statementContext clock database subqueries
       StatementRun.withKeys (.ok (database.setRows target (LiteralData.deleted context table filter).rows))
         (Resolved.subqueriesPlain subqueries && deleteJsonReady context table filter returning &&
           !database.catalog.hasTrigger)
-        (foreignKeys.map fun depth => deleteKeys context depth target table filter database subqueries.isEmpty)
+        (rules.map fun rules => deleteKeys context rules target table filter database subqueries.isEmpty)
   | .query query subqueries =>
     let ran := query.runOn clock database subqueries
     { effect := queryEffect database ran,
@@ -93,9 +93,9 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
   | .addColumn _ column =>
     { effect := step clock statement database,
       ready := column.clockDefault || (readDefaultValue column).toOption.isSome }
-  | .drop positions foreignKeys =>
-    StatementRun.withKeys (step clock statement database) (!(foreignKeys.isSome && database.catalog.hasTrigger))
-      (foreignKeys.map fun depth => dropKeys depth positions database)
+  | .drop positions rules =>
+    StatementRun.withKeys (step clock statement database) (!(rules.isSome && database.catalog.hasTrigger))
+      (rules.map fun rules => dropKeys rules positions database)
   | .createIndex .. | .createTrigger .. => { effect := step clock statement database, ready := true }
   | .begin | .commit | .rollback | .prepareError _ | .setting _ => { effect := step clock statement database, ready := true }
 

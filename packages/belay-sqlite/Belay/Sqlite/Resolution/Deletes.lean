@@ -11,10 +11,11 @@ namespace Belay.Sqlite
 /-- Resolve DELETE. Path 1 is the filter and path {name}`deleteReturningField` the
 {lit}`RETURNING` columns. SQLite's own tables are a model restriction, as in
 {lit}`SELECT`. The filter may name the statement's resolved subqueries, whose shapes are
-{lit}`shapes`. -/
+{lit}`shapes`. In a trigger's body, the filter also sees the trigger's rows {lit}`trigger`,
+after the table's cells (ADR 0018, D5). -/
 def resolveDelete (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : Identifier)
     (filter : Option Syntax.Expr) (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query)
-    (shapes : SubqueryShapes) : StatementResolution :=
+    (shapes : SubqueryShapes) (trigger : Option TriggerRow := none) : StatementResolution :=
   let dqs := context.profile.dqsDml
   match catalog.findTable tableName with
   | none =>
@@ -24,7 +25,8 @@ def resolveDelete (context : ResolveContext) (catalog : Catalog) (index : Nat) (
     let scope := Scope.single tableName table.columns !table.withoutRowid
     let resolvedCondition : Except ValueIssue (Option Resolved.Expr) := match filter with
       | none => .ok none
-      | some term => some <$> condition [] (resolveOperand dqs scope shapes true term)
+      | some term => some <$> condition [] (resolveOperand dqs (scope ++ (trigger.map (·.scope table.columns.length)).getD [])
+          shapes true term)
     match resolvedCondition with
     | .error issue => issueResolution catalog index [1] issue
     | .ok resolvedFilter => match resolveReturning dqs scope returning with

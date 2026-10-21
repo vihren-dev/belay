@@ -59,11 +59,15 @@ def RestrictionKind.id : RestrictionKind → String
   | .distinctOrderBy => "distinct-order-by"
   | .deferredForeignKey => "deferred-foreign-key"
   | .foreignKeyUpsert => "foreign-key-upsert"
+  | .raiseForm => "raise-form"
+  | .triggerForm => "trigger-form"
+  | .triggerWritesOwnTable => "trigger-writes-own-table"
+  | .schemaTriggerOrder => "schema-trigger-order"
 
 /-- The message of a restriction that users read: what the model does not describe,
 and what to write instead. -/
 def RestrictionKind.message : RestrictionKind → String
-  | .schemaStatement => "a schema contains only CREATE TABLE and CREATE INDEX statements; move the other statement to the script"
+  | .schemaStatement => "a schema contains only CREATE TABLE, CREATE INDEX and CREATE TRIGGER statements; move the other statement to the script"
   | .engineTable => "engine-managed tables other than sqlite_stat1 and sqlite_stat4 are not modeled; remove the table from the schema"
   | .rowidColumnName => "column names rowid, _rowid_ and oid are not modeled; rename the column"
   | .unmodeledDefault => "default expression is not modeled; use a literal default"
@@ -112,10 +116,14 @@ def RestrictionKind.message : RestrictionKind → String
   | .distinctOrderBy => "an ORDER BY expression of SELECT DISTINCT that is no result column is not modeled; order by a result column"
   | .deferredForeignKey => "with foreign keys on, a write that checks a DEFERRABLE INITIALLY DEFERRED foreign key is not modeled, because SQLite checks such keys at COMMIT; declare the key without INITIALLY DEFERRED"
   | .foreignKeyUpsert => "with foreign keys on, INSERT with ON CONFLICT DO UPDATE on a table with foreign keys to check is not modeled; write the UPDATE as a separate statement"
+  | .raiseForm => "RAISE in a trigger is modeled only as the one result column of a SELECT without FROM, alone or as a result of CASE, with a message that cannot fail; write SELECT RAISE(...) WHERE condition or SELECT CASE WHEN condition THEN RAISE(...) END"
+  | .triggerForm => "a trigger with ON CONFLICT DO UPDATE in its body, with a WHEN condition that has a function that can fail or a subquery, or with too many triggers that fire each other is not modeled; move the work into separate statements"
+  | .triggerWritesOwnTable => "a BEFORE UPDATE or BEFORE DELETE trigger that writes its own table is not modeled, because SQLite documents the result as undefined; use an AFTER trigger"
+  | .schemaTriggerOrder => "two triggers of one table, time and event in the starting schema are not modeled, because the schema does not say which one SQLite runs first; create them in the script"
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .dropConstraintIndex, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments, .jsonSubtype, .subqueryHere, .outerAggregate, .subqueryFallibleCall, .subqueryReadsTarget, .distinctOrderBy, .deferredForeignKey, .foreignKeyUpsert]
+  [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .dropConstraintIndex, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments, .jsonSubtype, .subqueryHere, .outerAggregate, .subqueryFallibleCall, .subqueryReadsTarget, .distinctOrderBy, .deferredForeignKey, .foreignKeyUpsert, .raiseForm, .triggerForm, .triggerWritesOwnTable, .schemaTriggerOrder]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

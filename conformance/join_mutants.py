@@ -9,7 +9,7 @@ from conformance.resolve_mutants import SQLITE
 
 QUERY_JOINS = SQLITE + "QueryJoins.lean"
 """The rows of joins."""
-SCOPE = SQLITE + "Resolution/Scope.lean"
+SCOPE = SQLITE + "Resolution/ScopeNames.lean"
 """The resolution of unqualified names over the sources."""
 SOURCES = SQLITE + "Resolution/Sources.lean"
 """The resolution of the tables of FROM and their names."""

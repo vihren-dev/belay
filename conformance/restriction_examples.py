@@ -77,6 +77,17 @@ EXAMPLES: dict[str, tuple[str, str]] = {
                              "PRAGMA foreign_keys = ON; INSERT INTO c VALUES (1);"),
     "foreign-key-upsert": ("CREATE TABLE p(id PRIMARY KEY); CREATE TABLE c(id PRIMARY KEY, x REFERENCES p);",
                            "PRAGMA foreign_keys = ON; INSERT INTO c VALUES (1, NULL) ON CONFLICT(id) DO UPDATE SET x = NULL;"),
+    "raise-form": ("CREATE TABLE t(a);",
+                   "CREATE TRIGGER r BEFORE INSERT ON t BEGIN SELECT 1 WHERE RAISE(IGNORE); END; INSERT INTO t VALUES (1);"),
+    "trigger-form": ("CREATE TABLE t(a UNIQUE); CREATE TABLE u(a);",
+                     "CREATE TRIGGER r AFTER INSERT ON u BEGIN INSERT INTO t VALUES (new.a) ON CONFLICT(a) DO UPDATE SET a = 2; "
+                     "END; INSERT INTO u VALUES (1);"),
+    "trigger-writes-own-table": ("CREATE TABLE t(a);",
+                                 "CREATE TRIGGER r BEFORE DELETE ON t BEGIN DELETE FROM t; END; DELETE FROM t;"),
+    "schema-trigger-order": ("CREATE TABLE t(a); CREATE TABLE log(x); "
+                             "CREATE TRIGGER r AFTER INSERT ON t BEGIN INSERT INTO log VALUES (1); END; "
+                             "CREATE TRIGGER s AFTER INSERT ON t BEGIN INSERT INTO log VALUES (2); END;",
+                             "INSERT INTO t VALUES (1);"),
 }
 """For each restriction id: a schema and a migration that the resolver refuses with it."""
 

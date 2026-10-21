@@ -11,7 +11,8 @@ namespace Belay.Sqlite
 /-- A model restriction of name resolution. The comment of each constructor says what
 the model does not describe and which decision introduced the restriction. -/
 inductive RestrictionKind where
-  /-- A schema contains only CREATE TABLE and CREATE INDEX statements (ADR 0008). -/
+  /-- A schema contains only CREATE TABLE, CREATE INDEX and CREATE TRIGGER statements (ADR 0008;
+  ADR 0018, D5). -/
   | schemaStatement
   /-- Engine-managed tables other than sqlite_stat1 and sqlite_stat4 are not modeled (ADR 0008). -/
   | engineTable
@@ -169,6 +170,24 @@ inductive RestrictionKind where
   foreign key to check is not modeled: SQLite checks the keys of the updated row as an UPDATE
   does (ADR 0018, slice 4). -/
   | foreignKeyUpsert
+  /-- {lit}`RAISE` in a trigger outside the one result column of a SELECT without
+  {lit}`FROM`, where it is the column or a result of its {lit}`CASE`, and a {lit}`RAISE` whose
+  message can fail, are not modeled: the model evaluates {lit}`RAISE` only where SQLite certainly
+  reaches it in a known order (ADR 0018, slice 5). -/
+  | raiseForm
+  /-- A trigger form that the model does not describe: {lit}`ON CONFLICT DO UPDATE` in its
+  body, a {lit}`WHEN` condition with a call that can fail or a subquery, and triggers that fire
+  each other past the bound of the resolution (ADR 0018, slice 5). -/
+  | triggerForm
+  /-- A {lit}`BEFORE UPDATE` or {lit}`BEFORE DELETE` trigger whose program writes the table of
+  its own event, directly or through the triggers and foreign-key actions that it fires, is not
+  modeled: SQLite documents the result of the update or delete as undefined (ADR 0018,
+  slice 5). -/
+  | triggerWritesOwnTable
+  /-- Two triggers of one table, time and event in the starting schema are not modeled: the
+  case record lists the schema in name order, so it does not say which trigger SQLite created
+  last and runs first (ADR 0018, slice 5). -/
+  | schemaTriggerOrder
   deriving Repr, DecidableEq
 
 end Belay.Sqlite

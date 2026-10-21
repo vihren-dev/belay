@@ -1,4 +1,4 @@
-import Belay.Sqlite.Resolution.Scope
+import Belay.Sqlite.Resolution.ScopeNames
 
 set_option doc.verso true
 

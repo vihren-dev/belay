@@ -1,4 +1,4 @@
-import Belay.Sqlite.Resolution.ForeignKeyResolution
+import Belay.Sqlite.Resolution.TriggerRules
 import Belay.Sqlite.Resolution.StatementCatalog
 
 set_option doc.verso true
@@ -28,49 +28,39 @@ def ResolveState.withCatalog (state : ResolveState) (result : StatementResolutio
     Except Restriction (Resolved.Statement × ResolveState) :=
   result.map fun (statement, catalog) => (statement, { state with catalog := catalog })
 
-/-- The state after a write at the zero-based index ({name}`ResolveState.withCatalog`); with
-foreign keys on, the write checks its keys ({name}`enforceForeignKeys`), and a prepare error of
-its keys leaves the state as it was. -/
+/-- The state after a write at the zero-based index ({name}`ResolveState.withCatalog`): with
+foreign keys on, the write checks its keys ({name}`foreignKeyCheck`); it gets the programs of the
+triggers that it may fire ({name}`triggerPrograms`); and with a key to check or a program, the
+rules that it runs row by row ({name}`Resolved.Statement.withRules`), with the profile's trigger
+depth limit. A prepare error of its keys or of a program leaves the state as it was. -/
 def ResolveState.withWrite (context : ResolveContext) (state : ResolveState) (index : Nat)
     (result : StatementResolution) : Except Restriction (Resolved.Statement × ResolveState) := do
   let (statement, next) ← state.withCatalog result
-  if !state.foreignKeys then return (statement, next)
-  match ← enforceForeignKeys context state.catalog index statement with
-  | .prepareError error => return (.prepareError error, state)
-  | checked@(.createTable ..) | checked@(.createIndex ..) | checked@(.createTrigger ..) | checked@(.addColumn ..)
-  | checked@(.drop ..)
-  | checked@.begin | checked@.commit | checked@.rollback | checked@(.insert ..) | checked@(.upsert ..)
-  | checked@(.update ..) | checked@(.delete ..) | checked@(.query ..) | checked@(.setting _) =>
-    return (checked, next)
+  let keys ← if state.foreignKeys then foreignKeyCheck state.catalog index statement else pure (.ok false)
+  match keys with
+  | .error error => return (.prepareError error, state)
+  | .ok keys =>
+    match ← triggerPrograms context state.catalog index keys statement with
+    | .error error => return (.prepareError error, state)
+    | .ok programs =>
+      if keys || !programs.isEmpty then
+        return (statement.withRules { depth := context.profile.limits.triggerDepth, keys, programs }, next)
+      else return (statement, next)
 
-/-- For every resolved statement and trigger depth limit, the write with the limit
-({name}`Resolved.Statement.withForeignKeys`) changes the catalog as the statement does and has
-its form. Proof sketch: each constructor keeps every field that the two functions read. -/
-theorem Resolved.Statement.withForeignKeys_same (statement : Resolved.Statement) (depth : Nat) :
-    (statement.withForeignKeys depth).applyCatalog = statement.applyCatalog ∧
-      (statement.withForeignKeys depth).kind = statement.kind := by
+/-- For every resolved statement and rules, the write with the rules
+({name}`Resolved.Statement.withRules`) changes the catalog as the statement does and has its
+form. Proof sketch: each constructor keeps every field that the two functions read. -/
+theorem Resolved.Statement.withRules_same (statement : Resolved.Statement) (rules : Resolved.WriteRules) :
+    (statement.withRules rules).applyCatalog = statement.applyCatalog ∧
+      (statement.withRules rules).kind = statement.kind := by
   cases statement <;> exact ⟨rfl, rfl⟩
-
-/-- For every context, catalog, index, statement and result: if {name}`enforceForeignKeys`
-gives the result, the result is the statement, a prepare error, or the statement with a trigger
-depth limit. Proof sketch: each branch of the definition gives one of them. -/
-theorem enforceForeignKeys_cases {context : ResolveContext} {catalog : Catalog} {index : Nat}
-    {statement result : Resolved.Statement} (ok : enforceForeignKeys context catalog index statement = .ok result) :
-    result = statement ∨ (∃ error, result = .prepareError error) ∨ ∃ depth, result = statement.withForeignKeys depth := by
-  unfold enforceForeignKeys at ok
-  repeat' split at ok
-  all_goals first
-    | (cases ok; exact .inl rfl)
-    | (cases ok; exact .inr (.inl ⟨_, rfl⟩))
-    | (cases ok; exact .inr (.inr ⟨_, rfl⟩))
-    | cases ok
 
 /-- For every context, state, index, resolution and result of {name}`ResolveState.withWrite`:
 the result is a prepare error with the state unchanged, or comes from a statement of the
 resolution with its catalog, with the same catalog change and form, and keeps the saved catalog
-and the setting. Proof sketch: unfold the definition; {name}`enforceForeignKeys_cases` gives the
-statement, a prepare error or the statement with a limit, and
-{name}`Resolved.Statement.withForeignKeys_same` keeps the catalog change and form. -/
+and the setting. Proof sketch: unfold the definition; each branch gives a prepare error with the
+state, the statement, or the statement with rules, which keeps the catalog change and form
+({name}`Resolved.Statement.withRules_same`). -/
 theorem ResolveState.withWrite_cases {context : ResolveContext} {state next : ResolveState} {index : Nat}
     {result : StatementResolution} {resolved : Resolved.Statement}
     (ok : state.withWrite context index result = .ok (resolved, next)) :
@@ -81,21 +71,12 @@ theorem ResolveState.withWrite_cases {context : ResolveContext} {state next : Re
   rcases result with _ | ⟨statement, catalog⟩
   · cases ok
   · simp only [Except.map, bind, Except.bind, pure, Except.pure] at ok
-    split at ok
-    · cases ok
-      exact .inr ⟨_, _, rfl, rfl, rfl, rfl⟩
-    · split at ok
-      · cases ok
-      · rename_i checked enforced
-        split at ok
-        · cases ok
-          exact .inl ⟨_, rfl, rfl⟩
-        all_goals
-          cases ok
-          rcases enforceForeignKeys_cases enforced with same | ⟨_, same⟩ | ⟨depth, same⟩
-          · exact .inr ⟨_, _, rfl, rfl, by rw [same], by rw [same]⟩
-          · cases same
-          · exact .inr ⟨_, _, rfl, rfl, by rw [same]; exact (Resolved.Statement.withForeignKeys_same _ depth).1,
-              by rw [same]; exact (Resolved.Statement.withForeignKeys_same _ depth).2⟩
+    repeat' split at ok
+    all_goals first
+      | (cases ok; exact .inl ⟨_, rfl, rfl⟩)
+      | (cases ok; exact .inr ⟨_, _, rfl, rfl, (Resolved.Statement.withRules_same _ _).1,
+          (Resolved.Statement.withRules_same _ _).2⟩)
+      | (cases ok; exact .inr ⟨_, _, rfl, rfl, rfl, rfl⟩)
+      | cases ok
 
 end Belay.Sqlite

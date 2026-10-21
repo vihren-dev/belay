@@ -11,7 +11,7 @@ EVALUATION = SQLITE + "ExprEval.lean"
 """The evaluation of expressions, with `IN` of a subquery and the scalar subquery."""
 SUBQUERIES = SQLITE + "Subqueries.lean"
 """The run of a subquery for an outer row."""
-SCOPE = SQLITE + "Resolution/Scope.lean"
+SCOPE = SQLITE + "Resolution/ScopeNames.lean"
 """The resolution of names over the scopes of a query and the queries around it."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
