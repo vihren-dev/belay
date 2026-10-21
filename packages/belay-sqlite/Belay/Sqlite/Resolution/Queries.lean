@@ -110,7 +110,6 @@ def resolveQueryBody (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (out
   let aggregate := !query.groupBy.isEmpty || query.columns.any fun
     | .expression value _ _ => !value.aggregateCalls.isEmpty
     | .star | .sourceStar _ => false
-  if query.having.isSome && !aggregate then throw (.prepare .havingNonAggregate)
   let calls := (query.columns.flatMap (fun
       | .expression value _ _ => if aggregateCall value then [] else value.aggregateCalls
       | .star | .sourceStar _ => []) ++
@@ -119,6 +118,8 @@ def resolveQueryBody (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (out
   let shapes := { shapes with aggregates := calls }
   let aggregates ← resolveAll (fun _ call => resolveAggregateCall dqs scope shapes call) calls
   let outputs := (← resolveAll (resolveResultColumn dqs scope shapes) query.columns).flatten
+  -- SQLite resolves the result columns before it checks HAVING.
+  if query.having.isSome && !aggregate then throw (.prepare .havingNonAggregate)
   let aliases := resultAliases scope query.columns
   let visibleAliases := aliases.filterMap id ++ outerAliases
   let condition ← match query.filter with
