@@ -86,12 +86,15 @@ What the code has today, after slice 1 of ADR 0018:
 ### D2. Pragmas as statements
 
 - `PRAGMA integrity_check` and `PRAGMA quick_check`, with their forms with a table name or a
-  row limit: the row `ok` when every row satisfies the constraints of its table (`NOT NULL`,
-  `CHECK`, the unique keys and the types of a `STRICT` table), and otherwise SQLite's rows for
-  the failures, such as `NULL value in t.a`, in SQLite's order. `Database.Valid` does not
-  include the truth of the constraints, so a law relates the `ok` row to the model's
-  constraint checks (`LiteralData.constraints`), not to `Database.Valid`. The model has no
-  damaged pages or index entries, so the failures that only they cause do not occur.
+  row limit: the row `ok` when every row satisfies the constraints that the pragma checks,
+  and otherwise SQLite's rows for the failures, such as `NULL value in t.a`, in SQLite's
+  order. `integrity_check` checks `NOT NULL`, `CHECK`, the unique keys and the types of a
+  `STRICT` table; `quick_check` checks the same without the unique keys, as SQLite's
+  documentation states. `Database.Valid` does not include the truth of the constraints, so a
+  law for each pragma relates its `ok` row to the model's checks of those constraints
+  (`LiteralData.constraints`, without the unique keys for `quick_check`), not to
+  `Database.Valid`. The model has no damaged pages or index entries, so the failures that only
+  they cause do not occur.
 - `PRAGMA foreign_key_check`, with and without a table name: the rows of SQLite, over the
   foreign keys of the catalog (ADR 0014) and the checks of ADR 0018 D4.
 - `PRAGMA table_info` and `PRAGMA foreign_key_list`, and their table-valued forms
