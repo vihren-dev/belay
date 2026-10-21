@@ -33,7 +33,7 @@ from conformance import (algorithm_mutants, alias_mutants, authored_algorithms, 
                          json_mutants, upsert_mutants, authored_subqueries, subquery_mutants,
                          authored_expression_forms, expression_form_mutants, authored_distinct_having,
                          distinct_having_mutants, authored_foreign_keys, foreign_key_mutants,
-                         authored_triggers, trigger_mutants)
+                         authored_triggers, trigger_mutants, authored_possible_results, possible_result_mutants)
 from conformance import key_mutants, number_mutants, query_mutants
 from tests.mutant_sets import measure_set
 
@@ -134,3 +134,12 @@ def test_every_trigger_mutant_changes_a_verdict(runtime_root: Path) -> None:
     `RAISE(IGNORE)` in an `AFTER` trigger that still runs the later triggers of the row, `UPDATE OF`
     that runs for every `UPDATE`, and a trigger that fires itself."""
     measure_set(runtime_root, [authored_triggers], [(trigger_mutants.MUTANTS, trigger_mutants.TARGETS)])
+
+
+def test_every_possible_result_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored cases of the results that SQLite may give (ADR 0018, slice 6) notice every
+    changed rule (`conformance.possible_result_mutants`): a list that ignores `OFFSET`, a list with
+    only the choice of `Query.results`, a list that cuts a group with one row too many, and groups
+    that `DESC` does not reverse."""
+    measure_set(runtime_root, [authored_possible_results],
+                [(possible_result_mutants.MUTANTS, possible_result_mutants.TARGETS)])

@@ -484,7 +484,13 @@ by a profile. INSERT appends its rows with ordinary automatic rowid allocation;
 UPDATE sets its assignments in each row that its filter selects. A `SELECT`
 changes nothing; its result rows follow ADR 0012: rows in rowid order, the
 `WHERE` filter with three-valued logic, groups, result columns, a stable sort by
-the `ORDER BY` terms with SQLite's comparison of values, then the window.
+the `ORDER BY` terms with SQLite's comparison of values, then the window. As SQLite
+promises the order of `ORDER BY` only, the model also gives every result that SQLite may give
+(ADR 0018, D6): each result has the rows of each tie group of the `ORDER BY` terms (all rows
+without `ORDER BY`) in normal form, sorted by SQLite's comparison with an integer before a real of
+the same value, and a group that `LIMIT` or `OFFSET` cuts gives each choice of as many of its
+rows as the window takes. The one result above, with its groups in normal form, is in the list,
+and the conformance runner checks that SQLite's rows are too.
 Arithmetic, `CAST` and the conversions between text and numbers follow the pinned
 SQLite source step by step: integer arithmetic while the result fits in 64 bits,
 else double arithmetic; NULL for a division by zero or a NaN result; SQLite's own

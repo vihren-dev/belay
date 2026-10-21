@@ -95,15 +95,18 @@ def invalidObservation (observation : Observation) : Bool :=
   | some (_, .unmodeled) => true
   | _ => false
 
-/-- Missing capability stays unsupported; every available output must match native evidence. -/
-def compareOutputs (position : Nat) : List (Option StatementOutput) → List NativeOutput → Verdict
-  | [], [] => .agree
-  | none :: _, _ => .modelUnsupported
-  | some actual :: rest, expected :: expectations =>
-    if matchesOutput expected.result actual expected.groups then
-      compareOutputs (position + 1) rest expectations
+/-- Missing capability stays unsupported; every available output must match native evidence, and
+the rows of a query that succeeds must be one of the results that SQLite may give
+({name}`NativeOutput.fits`, ADR 0018, D6). -/
+def compareOutputs (position : Nat) : List (Option StatementOutput) → List NativeOutput →
+    List (Option (List (List ResultRow))) → Verdict
+  | [], [], _ => .agree
+  | none :: _, _, _ => .modelUnsupported
+  | some actual :: rest, expected :: expectations, possible =>
+    if matchesOutput expected.result actual expected.groups && expected.fits (possible.head?.join) then
+      compareOutputs (position + 1) rest expectations possible.tail
     else .disagree (some position)
-  | _, _ => .disagree (some position)
+  | _, _, _ => .disagree (some position)
 
 /-- The clock assignment of a case: the recorded clock value of each statement, and 0
 beyond them, where SQLite's time keywords give NULL. -/
@@ -136,7 +139,7 @@ def classifyCase (c : Case) : Verdict :=
         match compareSteps 0 rest expectations with
         | .agree => match c.outputs with
           | none => .agree
-          | some natives => compareOutputs 0 outputs natives
+          | some natives => compareOutputs 0 outputs natives pass.possible
         | verdict => verdict
     | _, _ => .disagree none
 
