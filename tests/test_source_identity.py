@@ -12,11 +12,13 @@ ROOT = Path(__file__).resolve().parents[1]
 pytestmark = [pytest.mark.integration, pytest.mark.environment, pytest.mark.requires_nix]
 PACKAGES: dict[str, str] = {"verifier-conformance": "verifierConformance", "public-doc-tools": "docTools"}
 """The Lean package folders under packages/ that `sources.nix` selects one by one, to their attributes."""
-COMPONENTS: set[str] = {"model", "surface", *PACKAGES.values()}
+COMPONENTS: set[str] = {"model", "surface", "text", *PACKAGES.values()}
 DYNAMIC: dict[str, set[str]] = {
     "packages/belay-sqlite-model/Belay/Sqlite/Model/Database.lean": {"model"},
     "packages/belay-sqlite-model/Belay/Sqlite/Model/Codec.lean": {"model"},
     "packages/belay/Belay.lean": {"surface"}, "packages/belay/lakefile.lean": {"surface"},
+    "packages/belay-sqlite-text/Belay/Sqlite/Parse.lean": {"text"},
+    "packages/belay-sqlite-text/lakefile.lean": {"text"},
     **{f"parser/input.{suffix}": set() for suffix in ("py", "c", "h", "y", "json")},
     "packages/verifier-conformance/VerifierConformance/Trace.lean": {"verifierConformance"},
     "packages/verifier-conformance/ConformanceRunner.lean": {"verifierConformance"},
@@ -27,13 +29,15 @@ DYNAMIC: dict[str, set[str]] = {
 FIXED: dict[str, set[str]] = {
     **{f"packages/belay-sqlite-model/{name}": {"model"}
        for name in ("lakefile.toml", "lake-manifest.json", "lean-toolchain")},
-    **{f"packages/belay/{name}": {"surface"} for name in ("lake-manifest.json", "lean-toolchain", "c/parser_shim.c")},
+    **{f"packages/belay/{name}": {"surface"} for name in ("lake-manifest.json", "lean-toolchain")},
+    **{f"packages/belay-sqlite-text/{name}": {"text"} for name in ("lake-manifest.json", "lean-toolchain", "c/parser_shim.c")},
     **{f"packages/{folder}/{name}": {attribute} for folder, attribute in PACKAGES.items()
        for name in ("lakefile.toml", "lake-manifest.json", "lean-toolchain")},
 }
 PARENTS: tuple[str, ...] = (".", "parser", "belay/sqlite", "tests", "tools",
            "conformance", "packages/belay-sqlite-model", "packages/belay-sqlite-model/Belay/Sqlite/Model",
-           "packages/belay", *(f"packages/{folder}" for folder in PACKAGES),
+           "packages/belay", "packages/belay-sqlite-text", "packages/belay-sqlite-text/Belay/Sqlite",
+           *(f"packages/{folder}" for folder in PACKAGES),
            "packages/verifier-conformance/VerifierConformance")
 IGNORED: tuple[str, ...] = (".git", ".jj", ".lake", "build", "dist", "__pycache__")
 PARSER_LIBRARY_INPUTS: dict[str, str] = {

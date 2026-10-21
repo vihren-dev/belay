@@ -56,7 +56,7 @@ def resultJson : Except Refusal (Array (Located Syntax.Statement)) → Json
     let grammar ← IO.ofExcept (json.getObjValAs? String "grammar")
     let sql ← IO.ofExcept (json.getObjValAs? String "sql")
     let start ← IO.monoNanosNow
-    let lean ← translate grammar sql
+    let lean ← translate grammar sql.toUTF8
     nanos := nanos + ((← IO.monoNanosNow) - start)
     texts := texts + 1
     match lean with

@@ -22,17 +22,17 @@ SUFFIX = ".dylib" if sys.platform == "darwin" else ".so"
 
 def module_setup(runtime_root: Path, directory: Path, library: Path | None = None) -> Path:
     """Write the module setup of `lake setup-file` for a file that imports `Belay` to `directory`, and
-    give its path: the `.olean` file of each module of the surface and the model, and the shared
-    libraries to load, in Lake's order: the model's, the shim's and the surface's, or `library` in
-    place of the surface's."""
+    give its path: the `.olean` file of each module of the surface, the text package and the model,
+    and the shared libraries to load, in Lake's order: the model's, the shim's, the text package's
+    and the surface's, or `library` in place of the text package's."""
     modules: dict[str, list[list[str]]] = {}
-    for package in ("belay-sqlite-model", "belay"):
+    for package in ("belay-sqlite-model", "belay-sqlite-text", "belay"):
         folder = runtime_root / f"packages/{package}/.lake/build/lib/lean"
         for olean in sorted(folder.rglob("*.olean")):
             modules[".".join(olean.relative_to(folder).with_suffix("").parts)] = [[str(olean)]]
     libraries = runtime_root / "packages/belay/.lake/build/lib"
     dynlibs = [libraries / f"libbelaySqliteModel_Belay_Sqlite_Model{SUFFIX}", libraries / f"libbelayParserShim{SUFFIX}",
-               library or libraries / f"libbelay_Belay{SUFFIX}"]
+               library or libraries / f"libbelaySqliteText_BelaySqliteText{SUFFIX}", libraries / f"libbelay_Belay{SUFFIX}"]
     path = directory / "setup.json"
     path.write_text(json.dumps({"name": "_unknown", "isModule": False, "importArts": modules,
                                 "dynlibs": [str(item) for item in dynlibs], "plugins": [], "options": {}}))

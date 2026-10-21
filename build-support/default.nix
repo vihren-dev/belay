@@ -45,7 +45,7 @@ in rec {
   allTests = import ./tests.nix {
     inherit pkgs leanToolchain native conformance modelPackage root;
     parserLibrary = parserLibrary.testRoot;
-    inherit leanPackages surfacePackage;
+    inherit leanPackages surfacePackage textPackage;
     parserLibraryBuild = parserLibrary.library;
   };
   # Suites that only main pushes and scheduled runs build (`just test-scheduled`), so that the CI
@@ -68,17 +68,30 @@ in rec {
   # The scheduled suites that the `full` scope runs in the check job: all but the mutant suites.
   scheduledCheckReports = pkgs.linkFarm "sqlite-verifier-scheduled-check-reports"
     (pkgs.lib.removeAttrs scheduledTests mutantSuites);
+  # The binding of the parser library and the translation of SQL text, below the surface
+  # (ADR 0016, D2, amended).
+  textPackage = leanPackage {
+    pname = "belay-sqlite-text";
+    directory = "packages/belay-sqlite-text";
+    source = sources.text;
+    # The shared libraries are what Lake loads for a file that imports the translation.
+    targets = [ "BelaySqliteText" "BelaySqliteText:shared" "parserShim:shared" ];
+    requires."packages/belay-sqlite-model" = modelPackage;
+    # The translation's precompiled modules call the model's compiled code.
+    sharedRequires = [ "packages/belay-sqlite-model" ];
+    environment.BELAY_PARSER_LIBRARY = parserLibrary.library;
+  };
   # The surface that users import (ADR 0016, D1). It is not part of the conformance runtime;
   # tests.surface checks it and its layer rules.
   surfacePackage = leanPackage {
     pname = "belay";
     directory = "packages/belay";
     source = sources.surface;
-    # The shared libraries are what Lake loads for a file that imports `Belay`.
-    targets = [ "Belay" "Belay:shared" "parserShim:shared" ];
+    # The shared library is what Lake loads for a file that imports `Belay`, after the text package's.
+    targets = [ "Belay" "Belay:shared" ];
     requires."packages/belay-sqlite-model" = modelPackage;
-    # The translation's precompiled modules call the model's compiled code.
-    sharedRequires = [ "packages/belay-sqlite-model" ];
+    requires."packages/belay-sqlite-text" = textPackage;
+    sharedRequires = [ "packages/belay-sqlite-model" "packages/belay-sqlite-text" ];
     environment.BELAY_PARSER_LIBRARY = parserLibrary.library;
   };
   # The in-process SQLite parser library of the harness and the surface; tests.parserLibrary checks it.

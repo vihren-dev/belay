@@ -1,6 +1,7 @@
 /* The parser library's C API with Lean's calling convention, for Belay.Sqlite.ParserLibrary.
 ** Each function returns an IO result: the JSON document as a string, or an IO error with the
-** library's result code. Lean strings are UTF-8 and end with a NUL byte that their size counts. */
+** library's result code. The SQL is a byte array, so that text that is not UTF-8 reaches the
+** library's tokenizer, which refuses it. */
 #include <lean/lean.h>
 #include "sqlite-verifier-parser.h"
 
@@ -34,12 +35,12 @@ BELAY_EXPORT lean_obj_res belay_parser_metadata(lean_obj_arg world) {
   return code == SQLITE_VERIFIER_PARSER_OK ? document(bytes, length) : failed("metadata", code);
 }
 
-/* Belay.Sqlite.ParserLibrary.parse: the parse document of the SQL text with the grammar, as a
-** Lean string. It borrows both strings; the library reads the SQL's bytes without its final NUL. */
+/* Belay.Sqlite.ParserLibrary.parse: the parse document of the SQL bytes with the grammar, as a
+** Lean string. It borrows the grammar string and the byte array. */
 BELAY_EXPORT lean_obj_res belay_parser_parse(b_lean_obj_arg grammar, b_lean_obj_arg sql, lean_obj_arg world) {
   char *bytes = NULL;
   size_t length = 0;
-  int code = sqlite_verifier_parser_parse(lean_string_cstr(grammar), (const unsigned char *)lean_string_cstr(sql),
-                                          lean_string_size(sql) - 1, &bytes, &length);
+  int code = sqlite_verifier_parser_parse(lean_string_cstr(grammar), lean_sarray_cptr(sql), lean_sarray_size(sql),
+                                          &bytes, &length);
   return code == SQLITE_VERIFIER_PARSER_OK ? document(bytes, length) : failed("parse", code);
 }

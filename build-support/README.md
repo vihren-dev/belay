@@ -53,8 +53,9 @@ requires an output compiles nothing. The packages are `modelPackage`
 (`packages/belay-sqlite-model`: `Belay.Sqlite.Model` and its codec),
 `verifierConformance` (`packages/verifier-conformance`: the test-only conformance
 library and runner), `docTools` (`packages/public-doc-tools`: the documentation
-inventory) and `surfacePackage` (`packages/belay`: the surface, linked with the parser
-library).
+inventory), `textPackage` (`packages/belay-sqlite-text`: the parser library's binding and
+the translation of SQL text, linked with the parser library) and `surfacePackage`
+(`packages/belay`: the surface, which requires the text package).
 The `belay.sqlite` namespace frontend takes explicit parser and profile inputs. It maps
 SQL to statement syntax, and the conformance runner resolves statement syntax itself.
 `just build` builds `conformance` and exposes local development paths as links:

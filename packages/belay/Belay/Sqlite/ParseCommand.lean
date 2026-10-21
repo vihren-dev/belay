@@ -36,7 +36,7 @@ def textRange (literal : Syntax) (text : String) (start stop : Nat) : Syntax :=
 def elabSqlParse : CommandElab := fun command => do
   let literal := command[1]
   let some text := literal.isStrLit? | throwUnsupportedSyntax
-  match ← liftIO (parseSql Release.default text) with
+  match ← liftIO (parseSql Release.default text.toUTF8) with
   | .parsed nodes _ => logInfo m!"SQLite's grammar accepts {commandCount nodes} commands"
   | .inputError offset =>
     logErrorAt (textRange literal text offset (offset + 1))

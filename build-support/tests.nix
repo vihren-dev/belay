@@ -2,8 +2,9 @@
 { pkgs, leanToolchain, modelPackage, parserLibrary, conformance, root ? ../.
 # Lean package outputs by their folder in the repository layout (default.nix); the `packages` suite replays them.
 , leanPackages
-# The surface package and the parser library that it links; the `surface` suite checks them.
-, surfacePackage, parserLibraryBuild
+# The surface package, the text package below it and the parser library that the text package
+# links; the `surface` suite checks them.
+, surfacePackage, textPackage, parserLibraryBuild
 , native ? import ../nix/sqlite.nix { inherit pkgs; }
 , conformanceNative ? import ./conformance-native.nix { inherit pkgs; }
 }:
@@ -54,11 +55,13 @@ let
       -I${parserLibraryBuild}/include "$src"/experiments/surface-s1/candidate-b/*.c ${parser} \
       -o "$out/lib/libtranslate-b${suffix}"
   '';
-  # The surface (ADR 0016, D1) in the repository layout, with the model, the parser library and candidate B.
+  # The surface (ADR 0016, D1) in the repository layout, with the text package, the model, the
+  # parser library and candidate B.
   surfaceRoot = pkgs.runCommand "sqlite-verifier-test-surface" {} ''
     mkdir -p "$out/packages"
     ln -s ${leanToolchain} "$out/lean"
     ln -s ${surfacePackage} "$out/packages/belay"
+    ln -s ${textPackage} "$out/packages/belay-sqlite-text"
     ln -s ${modelPackage} "$out/packages/belay-sqlite-model"
     ln -s ${parserLibraryBuild} "$out/parser-library"
     ln -s ${candidateB} "$out/candidate-b"

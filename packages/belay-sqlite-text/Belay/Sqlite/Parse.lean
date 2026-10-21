@@ -20,12 +20,13 @@ def loadedMetadata : IO Json := do
   | .ok metadata => parserMetadata.set (some metadata); return metadata
   | .error message => throw <| IO.userError s!"the parser library's metadata is not JSON: {message}"
 
-/-- Parse SQL text with the grammar of the release: the tree, or where SQLite's grammar rejects
-the text. It fails when the library has no grammar for the release or gives a document that is
-not a parse document. For example, {lit}`parseSql Release.default "SELECT 1;"` gives a tree. -/
-def parseSql (release : Release) (sql : String) : IO ParseResult := do
+/-- Parse SQL text, as its UTF-8 bytes, with the grammar of the release: the tree, or where
+SQLite's grammar rejects the text. It fails when the library has no grammar for the release or
+gives a document that is not a parse document. For example,
+{lit}`parseSql Release.default "SELECT 1;".toUTF8` gives a tree. -/
+def parseSql (release : Release) (sql : ByteArray) : IO ParseResult := do
   let grammar ← IO.ofExcept ((selectGrammar (← loadedMetadata) release).mapError IO.userError)
-  match decodeParse grammar sql.utf8ByteSize (← ParserLibrary.parse grammar sql) with
+  match decodeParse grammar sql.size (← ParserLibrary.parse grammar sql) with
   | .ok result => return result
   | .error message => throw <| IO.userError s!"the parser library's parse document is not usable: {message}"
 

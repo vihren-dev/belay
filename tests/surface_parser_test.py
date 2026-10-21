@@ -45,10 +45,11 @@ def test_grammar_selection_checks_elaborate(runtime_root: Path, tmp_path: Path) 
 @pytest.mark.skipif(sys.platform != "linux", reason="patchelf changes the library path of Linux libraries only")
 def test_missing_parser_library_is_a_load_error(runtime_root: Path, tmp_path: Path) -> None:
     """When the parser library is missing, `lean` stops with the loader's error, which names the
-    library, instead of elaborating the file: a copy of the package's shared library whose
-    library path is an empty folder stands for an installation without the parser library."""
-    library = tmp_path / f"libbelay_Belay{SUFFIX}"
-    shutil.copy(runtime_root / f"packages/belay/.lake/build/lib/libbelay_Belay{SUFFIX}", library)
+    library, instead of elaborating the file: a copy of the text package's shared library, which
+    links the parser library, whose library path is an empty folder stands for an installation
+    without the parser library."""
+    library = tmp_path / f"libbelaySqliteText_BelaySqliteText{SUFFIX}"
+    shutil.copy(runtime_root / f"packages/belay/.lake/build/lib/libbelaySqliteText_BelaySqliteText{SUFFIX}", library)
     library.chmod(0o755)
     (tmp_path / "empty").mkdir()
     patch = run_command(["patchelf", "--set-rpath", str(tmp_path / "empty"), str(library)], cwd=tmp_path, timeout=30)

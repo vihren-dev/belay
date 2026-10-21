@@ -61,20 +61,20 @@ def statements (tree : SqlTree) (root : Nat) : TranslateM (Array (Located Syntax
 
 /-- The translation of a parse result: the statements with their ranges, or the refusal, with
 the statuses and messages of the Python frontend for a grammar error and the parser's limits. -/
-def translateParse (sql : String) : ParseResult → Except Refusal (Array (Located Syntax.Statement))
-  | .parsed nodes root => (statements { sql := sql.toUTF8, nodes } root).run' {}
+def translateParse (sql : ByteArray) : ParseResult → Except Refusal (Array (Located Syntax.Statement))
+  | .parsed nodes root => (statements { sql, nodes } root).run' {}
   | .inputError offset => throw (Refusal.mk "INPUT_ERROR"
       "SQLite's grammar rejects the SQL at this offset; correct the SQL there and run the command again" offset 0)
   | .resourceLimit offset => throw (Refusal.mk "UNVERIFIED" ("SQL exceeds the parser's limits of 1 MiB of input " ++
       "and 200,000 syntax-tree nodes; split the SQL into smaller files") offset 0)
 
-/-- The translation of SQL text with a grammar of the parser library: the statements with their
-ranges, or the refusal. It fails when the library gives an unusable document. For example,
-{lit}`translate grammar "COMMIT;"` gives one statement, {name}`Syntax.Statement.commit` at
-bytes 0 to 6. -/
-def translate (grammar sql : String) : IO (Except Refusal (Array (Located Syntax.Statement))) := do
+/-- The translation of SQL text, as its bytes, with a grammar of the parser library: the
+statements with their ranges, or the refusal. It fails when the library gives an unusable
+document. For example, {lit}`translate grammar "COMMIT;".toUTF8` gives one statement,
+{name}`Syntax.Statement.commit` at bytes 0 to 6. -/
+def translate (grammar : String) (sql : ByteArray) : IO (Except Refusal (Array (Located Syntax.Statement))) := do
   let document ← ParserLibrary.parse grammar sql
-  let parse ← IO.ofExcept ((decodeParse grammar sql.utf8ByteSize document).mapError IO.userError)
+  let parse ← IO.ofExcept ((decodeParse grammar sql.size document).mapError IO.userError)
   return translateParse sql parse
 
 end Belay.Sqlite.Translation

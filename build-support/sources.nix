@@ -26,9 +26,14 @@ in {
       (root + /packages/belay-sqlite-model/lean-toolchain)
     ];
   };
-  # The surface (ADR 0016, D1): its Lean files with its lakefile.lean, and the C shim that its
-  # precompiled modules link with the parser library.
+  # The surface (ADR 0016, D1): its Lean files with its lakefile.lean.
   surface = let folder = root + /packages/belay; in fs.toSource {
+    root = folder;
+    fileset = fs.unions [ (extensions [ "lean" ] folder) (folder + "/lake-manifest.json") (folder + "/lean-toolchain") ];
+  };
+  # The text package below the surface (ADR 0016, D2, amended): its Lean files with its
+  # lakefile.lean, and the C shim that its precompiled modules link with the parser library.
+  text = let folder = root + /packages/belay-sqlite-text; in fs.toSource {
     root = folder;
     fileset = fs.unions [ (extensions [ "lean" ] folder) (folder + "/lake-manifest.json") (folder + "/lean-toolchain")
       (folder + "/c/parser_shim.c") ];

@@ -34,7 +34,7 @@ PRELUDE = f'''let
 def expression(root: Path) -> str:
     """Reuse the actual test definitions with a private source tree and unchanged built dependencies."""
     return f'''{PRELUDE} {import_file("tests.nix")} {{
-      inherit pkgs; inherit (builds) leanToolchain conformance modelPackage leanPackages surfacePackage;
+      inherit pkgs; inherit (builds) leanToolchain conformance modelPackage leanPackages surfacePackage textPackage;
       parserLibrary = builds.parserLibrary.testRoot;
       parserLibraryBuild = builds.parserLibrary.library;
       root = /. + {nix_string(root)};
