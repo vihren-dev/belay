@@ -124,7 +124,8 @@ def trigger_time(tree: Tree, node: Node) -> Located:
     which needs a view, is refused."""
     symbols = [child.symbol for child in tree.children(node)]
     if symbols == ["INSTEAD", "OF"]:
-        raise tree.unsupported(node, "INSTEAD OF triggers are not modeled; they need views, which the model does not have")
+        raise tree.unsupported(node, "INSTEAD OF triggers are not modeled, as the model has no views; "
+                               "write the statements on the tables instead")
     return leaf("after" if symbols == ["AFTER"] else "before", node.start, node.end)
 
 
