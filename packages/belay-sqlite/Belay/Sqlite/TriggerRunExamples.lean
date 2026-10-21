@@ -110,6 +110,24 @@ example : run [.pragmaForeignKeys (some true), .createTable (name! "p") [plain "
     trigger "d" .after .delete [logged (column "old" "x")] none "c",
     .delete (name! "p") none] 2 = ([[.integer 1]], false) := by decide +kernel
 
+-- The programs inherit the statement's algorithm: under INSERT OR IGNORE, the duplicate that a
+-- trigger inserts into u(a UNIQUE) is ignored too, as natively both tables keep one row.
+example : run [.createTable (name! "t") [plain "a"] [], .createTable (name! "u") [plain "a" none [.unique]] [],
+    .insert (name! "u") none [[.numeric "1"]] [],
+    trigger "r" .after .insert [.insert (name! "u") none [[column "new" "a"]] []],
+    .insert (name! "t") none [[.numeric "1"]] [] (some .ignore)] 1 = ([[.integer 1]], false) := by decide +kernel
+
+/-- The log after the script with a trigger that logs {lit}`CURRENT_TIMESTAMP`, under a clock of
+Julian day 2460000 for every statement. -/
+def clockLog : List (List Value) :=
+  let script := statements (migration [] (tables ++ [trigger "a" .after .insert [logged (.currentTime "CURRENT_TIMESTAMP")],
+    insertT [[.null, .numeric "1"]]]))
+  ((runSqlAt (fun _ => 2460000 * 86400000) script {}).database.rows.getD 1 []).map (·.values)
+
+-- A statement whose trigger reads the clock reads it: the trigger logs the time, not NULL.
+#guard clockLog.all fun row => row.all (· matches .text _)
+#guard clockLog.length == 1
+
 /-- The change count of the last statement of the script after the two tables. -/
 def changes (script : List Syntax.Statement) : Option (List Row) :=
   match (statements (migration [] (tables ++ script))).reverse with

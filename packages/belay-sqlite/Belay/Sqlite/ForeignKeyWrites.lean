@@ -55,25 +55,30 @@ check keys, none otherwise. -/
 def Resolved.WriteRules.links (rules : Resolved.WriteRules) (catalog : Catalog) : List ForeignKeyLink :=
   if rules.keys then catalog.foreignKeyLinks else []
 
-/-- The frame of a write with the rules at the clock value: its programs, with nothing running. -/
-def Resolved.WriteRules.frame (rules : Resolved.WriteRules) (clock : Int) : RowFrame :=
-  { clock, programs := rules.programs }
+/-- The frame of a write with the rules at the clock value, with the conflict algorithm of its
+{lit}`OR` clause, which its programs inherit: its programs, with nothing running. -/
+def Resolved.WriteRules.frame (rules : Resolved.WriteRules) (clock : Int) (algorithm : Option ConflictAlgorithm) :
+    RowFrame :=
+  { clock, programs := rules.programs, algorithm }
 
 /-- The run of a work with the rules at the clock value ({name}`runRows`), with fuel one more
-than the trigger depth limit, from the rows of the database. -/
+than the trigger depth limit, from the rows of the database; its programs inherit the algorithm. -/
 def rowsKeys (rules : Resolved.WriteRules) (clock : Int) (target : Nat) (work : RowWork) (database : Database)
-    (plain : Bool) : KeyRun :=
+    (plain : Bool) (algorithm : Option ConflictAlgorithm := none) : KeyRun :=
   keyRun database target plain
-    (runRows database.catalog (rules.links database.catalog) (rules.depth + 1) (rules.frame clock) work { rows := database.rows })
+    (runRows database.catalog (rules.links database.catalog) (rules.depth + 1) (rules.frame clock algorithm) work
+      { rows := database.rows })
 
 /-- An INSERT of the rows into the table at the position with the rules: a write of several rows
 when it has more than one row, a key whose algorithm is REPLACE or a trigger of INSERT on the
-table, as SQLite's {lit}`isMultiWrite` is. -/
+table, as SQLite's {lit}`isMultiWrite` is. Its programs inherit the algorithm of its {lit}`OR`
+clause, none without one. -/
 def insertKeys (rules : Resolved.WriteRules) (clock : Int) (target : Nat) (policy : Resolved.ConflictPolicy)
-    (clauses : List Resolved.ConflictClause) (rows : List (List Value)) (database : Database) (plain : Bool) : KeyRun :=
+    (clauses : List Resolved.ConflictClause) (rows : List (List Value)) (database : Database) (plain : Bool)
+    (algorithm : Option ConflictAlgorithm := none) : KeyRun :=
   let multiWrite := rows.length > 1 || policy.keys.contains .replace ||
     rules.programs.any fun program => program.table == target && program.event == .insert
-  rowsKeys rules clock target (.insert target rows policy clauses multiWrite true) database plain
+  rowsKeys rules clock target (.insert target rows policy clauses multiWrite true) database plain algorithm
 
 /-- An UPDATE with the rules: the rows that the filter selects, in scan order, each with its new
 row as {name}`LiteralData.assign` and {name}`LiteralData.movedRowid` give it from the row at the

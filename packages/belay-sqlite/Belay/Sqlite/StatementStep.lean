@@ -63,7 +63,7 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
           | .error (reason, reached, _) => .error (reason, database.setRows target reached.rows))
         (LiteralData.upsertReady keys table clauses values steps && Resolved.subqueriesPlain subqueries &&
           Resolved.cellsReady context rows && upsertJsonReady clauses returning)
-        (rules.map fun rules => insertKeys rules clock target policy clauses values database subqueries.isEmpty)
+        (rules.map fun rules => insertKeys rules clock target policy clauses values database subqueries.isEmpty algorithm)
   | .update target assignments filter returning subqueries rules => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
