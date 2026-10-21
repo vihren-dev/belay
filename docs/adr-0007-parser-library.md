@@ -7,6 +7,11 @@ Related: [SQLite syntax boundary](sqlite-parser.md),
 [ADR 0005](adr-0005-conformance-corpus-scale.md),
 [ADR 0006](adr-0006-model-boundary-and-execution-levels.md).
 
+Amended 2026-10-21 ([ADR 0021](adr-0021-remove-the-verifier-product.md)): the verifier product was removed. Its requirements in this ADR
+no longer apply: `Runtime.locate`, the trust boundary document, the runtime packaging, the
+release archive and the installer tests. The parser library, its API, its dialect table and its
+tests stay; the conformance harness and the surface load the library from an explicit path.
+
 The 2026-10-08 revision describes the code layout after
 [PR #56](https://github.com/vihren-dev/sqlite-verifier/pull/56), which implements
 ADR 0006, and divides the development into two steps.
@@ -202,6 +207,9 @@ the model supports it.
 - **Packaging.** The runtime and the release archive contain the library
   instead of the executables. The installer tests must still show that no
   ambient tool or library is used.
+- **Amended 2026-10-21 ([ADR 0021](adr-0021-remove-the-verifier-product.md)).** The trust boundary document, the release archive and
+  the installer tests of the two items above were removed with the verifier product. The
+  conformance runtime contains the library at `lib/`.
 - **Documentation.** [SQLite syntax boundary](sqlite-parser.md) describes the
   library, the API, the metadata and the dialect table.
 

@@ -59,3 +59,7 @@ Specification: [ADR 0021](../docs/adr-0021-remove-the-verifier-product.md).
   `just test-nix` and `just test-scheduled` (1,836 s) pass; the lock check evaluates to true and `just judge-lock` equals
   `integrity/judge.lock.json`; the predictions are byte-identical to the baseline; the
   conformance runtime's closure is 3,243 MiB (baseline 3,727 MiB).
+- 2026-10-21: review of the removal: two must findings (R19), ADR 0006 and ADR 0007 still required
+  the installed runtime, the archive, the trust boundary document and the installer tests; both
+  now have a dated ADR 0021 amendment. ADR 0001 got the same update, from a search of the other
+  ADRs; their other mentions of the product are dated observations, not requirements.

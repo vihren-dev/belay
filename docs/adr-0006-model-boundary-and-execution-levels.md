@@ -6,6 +6,12 @@ Sources: [#23](https://github.com/vihren-dev/sqlite-verifier/issues/23),
 [#31](https://github.com/vihren-dev/sqlite-verifier/issues/31).
 Task: [architecture decision](../plans/20261006-model-architecture.task.md).
 
+Amended 2026-10-21 ([ADR 0021](adr-0021-remove-the-verifier-product.md)): the verifier product was removed. Its requirements in this ADR
+no longer apply: the root application, the installed runtime and its runtime discovery, the
+checker and exporter programs, trusted module resolution for the gates, the offline archive and
+the installed acceptance, and the evidence that names them. The model package, its boundary, its
+codec and the semantic levels stay; their users are now the conformance runner and the surface.
+
 ## Context
 
 The [library's Lake package](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/packages/sqlite-verifier/lakefile.toml) (at that time the root package) builds the model and verification
@@ -207,6 +213,11 @@ codec and application modules from installed roots; compile a neutral consumer;
 and run verification/preparation/bundle checking with the existing positive,
 checked-refutation and wrong-SQL results. The archive must provide those paths
 without source checkout access, downloads or a model-specific installation step.
+
+Amended 2026-10-21 ([ADR 0021](adr-0021-remove-the-verifier-product.md)): the runtime assembly, runtime discovery, trusted module
+resolution and the offline archive of this section were removed with the verifier product. The
+paragraphs above about them are the record of the first implementation. The model package's
+isolated build, its relative path dependency and its component identities still apply.
 
 ## Implementation acceptance and consequences
 

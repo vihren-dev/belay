@@ -13,6 +13,10 @@ including the requirement to keep every Atuin case. Pytest's own output and
 JUnit XML are the reports. See the
 [test suite simplification task](../plans/20260929-test-suite-simplification.task.md).
 
+Update (2026-10-21): [ADR 0021](adr-0021-remove-the-verifier-product.md) removed the verifier
+product, with its CLI, installed-runtime, archive, kernel gate and Atuin tests and the
+`package` CI scope. The requirements below that name them no longer apply.
+
 - Status: Accepted; implementation in progress
 - Date: 2026-09-26
 - Updated: 2026-09-28
