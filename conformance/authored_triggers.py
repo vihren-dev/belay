@@ -97,6 +97,10 @@ def definitions() -> list[QueryCase]:
              "CREATE TRIGGER f AFTER INSERT ON t BEGIN SELECT RAISE(ROLLBACK, 'no'); END; "
              "BEGIN; INSERT INTO log(x) VALUES (1); INSERT INTO t(v) VALUES (1);",
              (RAISE_STOPS,), ("raise", "rollback", "transaction")),
+        case("rollback-before", TABLES,
+             "CREATE TRIGGER f BEFORE INSERT ON t BEGIN SELECT RAISE(ROLLBACK, 'no') WHERE new.v = 2; END; "
+             "BEGIN; INSERT INTO log(x) VALUES (1); INSERT INTO t(v) VALUES (1), (2);",
+             (RAISE_STOPS,), ("raise", "rollback", "before", "multi-row", "transaction")),
         case("raise-case", TABLES,
              "CREATE TRIGGER f BEFORE INSERT ON t BEGIN SELECT CASE WHEN new.v = 1 THEN RAISE(ABORT, 'one') "
              "WHEN new.v = 2 THEN RAISE(IGNORE) ELSE 0 END; END; "
