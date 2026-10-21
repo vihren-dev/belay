@@ -155,14 +155,15 @@ structure QueryRun where
   /-- The result rows ({name}`Query.results`). -/
   rows : List (List Value)
   /-- {lean}`Fault.must` when SQLite certainly reports a JSON failure ({name}`Query.mustFail`),
-  else {lean}`Fault.may` when a JSON call may fail ({name}`Query.mayFail`), else
-  {lean}`Fault.none`. -/
+  else {lean}`Fault.may` when a JSON call may fail ({name}`Query.mayFail`) or when
+  {lit}`SELECT DISTINCT` keeps rows that SQLite's plan chooses ({name}`Query.distinctCertain`),
+  else {lean}`Fault.none`. -/
   fault : Fault
   /-- Whether SQLite stops the query with {lit}`integer overflow` ({name}`Query.fails`). -/
   overflow : Bool
 
-/-- Run the query over its source rows ({lit}`Query.source`): its result rows, its fault and
-its overflow. -/
+/-- Run the query over its source rows ({lit}`Query.source`): its result rows, its fault (also
+{lean}`Fault.may` for an uncertain {lit}`SELECT DISTINCT`) and its overflow. -/
 def Query.run (context : EvalContext) (query : Query) (rows : List (List Value)) : QueryRun where
   rows := query.results context rows
   fault := if query.mustFail context rows then .must

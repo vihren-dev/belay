@@ -53,7 +53,8 @@ def rowsOf (statement : Syntax.Statement) : Answer :=
     | some (_, run) => .rows run.rows
     | none => .restricted
   | some (.prepareError error) => .error error
-  | _ => .restricted
+  | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some (.drop _) | some .begin | some .commit
+  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | none => .restricted
 
 /-- {lit}`count(*)`, written as a call. -/
 def count : Expr := .callStar "count"
@@ -87,6 +88,13 @@ def by_ (expression : Expr) : OrderTerm := { expression, descending := false }
 #guard match (statements (migration database.catalog [query [written (col "s")] [] none [] true])).head? with
   | some (.query resolved _) => (resolved.runOn 0 database []).map (·.2.fault) == some .may
   | _ => false
+-- HAVING or an ORDER BY aggregate does not make a query an aggregate query: SQLite's prepare errors.
+#guard rowsOf (query [written (.numeric "1")] [] (some (.compare .gt count (.numeric "0")))) ==
+  .error (.expression .havingNonAggregate)
+#guard rowsOf (query [written (col "g")] [] none [by_ count]) == .error (.expression (.misuseOfAggregate "count"))
+-- GROUP BY 1 over a result column with an aggregate.
+#guard rowsOf (query [written (.arithmetic .add count (.numeric "1"))] [.numeric "1"]) ==
+  .error (.expression .aggregateInGroupBy)
 -- A bare column in HAVING is a restriction; a nested aggregate is SQLite's misuse.
 #guard rowsOf (query [written (col "g")] [col "g"] (some (.compare .gt (col "v") (.numeric "6")))) == .restricted
 #guard rowsOf (query [written (.call "sum" [count])]) == (.error (.expression (.misuseOfAggregate "count")))
