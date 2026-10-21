@@ -26,9 +26,16 @@ def targetColumn (tree : SqlTree) (item : Array ParseNode) : TranslateM (Located
   absent (fromEnd item 2) "A direction in an ON CONFLICT target"
   absent (last item) "NULLS FIRST or NULLS LAST in an ON CONFLICT target"
   let located ← queryExpression tree expression
-  match located.value, located.span.parts[0]? with
-  | .identifier column _, some span => return { value := column, span }
-  | _, _ => unsupported expression "Only column names are modeled in an ON CONFLICT target; write the column names"
+  let refusal := "Only column names are modeled in an ON CONFLICT target; write the column names"
+  match located.value with
+  | .identifier column _ =>
+    -- The name's range is the first part of an identifier (`identifier`); the whole range
+    -- stands in if the shape changes.
+    return { value := column, span := located.span.parts[0]?.getD located.span }
+  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .qualified _ _ | .negate _ | .positive _
+  | .compare _ _ _ | .and _ _ | .or _ _ | .not _ | .isNull _ _ | .callStar _ | .call _ _ | .arithmetic _ _ _
+  | .cast _ _ | .collate _ _ | .exists _ | .inQuery _ _ _ | .subquery _ | .inList _ _ _ | .between _ _ _ _
+  | .caseOf _ _ | .concatenate _ _ | .raise _ _ => unsupported expression refusal
 
 /-- The target {lit}`(sortlist) where_opt` of a clause as its column names. -/
 def conflictTarget (tree : SqlTree) (columns condition : ParseNode) : TranslateM (Located (List Identifier)) := do

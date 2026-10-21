@@ -56,10 +56,7 @@ The whole file `ParseTime.lean`, with Lean's start and the JSON reading of the t
 3.1 s.
 
 ```sh
-S=build/lk/packages/belay; M=build/lk/packages/belay-sqlite-model
-LEAN_PATH=$S/.lake/build/lib/lean:$M/.lake/build/lib/lean build/conformance/lean/bin/lean \
-  --load-dynlib=$S/.lake/build/lib/libbelayParserShim.so --plugin=$S/.lake/build/lib/libbelay_Belay.so \
-  experiments/surface-s1/ParseTime.lean
+PATH=build/conformance/lean/bin:$PATH lake -d build/lk/packages/belay lean experiments/surface-s1/ParseTime.lean
 python3 experiments/surface-s1/parse_time.py build/conformance
 ```
 
