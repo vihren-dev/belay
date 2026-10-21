@@ -88,8 +88,10 @@ def Scope.resolveQualified (scope : Scope) (source column : Identifier) : NameRe
   | rows => match Scope.resolveAt real column 0 with
     | .missing => match Scope.resolveName (rows.map fun row => { row with depth := 0, trigger := false }) column with
       | .missing => Scope.resolveName (real.filter (·.depth != 0)) column
-      | found => found
-    | found => found
+      | .ambiguous => .ambiguous
+      | .found first reads => .found first reads
+    | .ambiguous => .ambiguous
+    | .found first reads => .found first reads
 
 /-- The columns of {lit}`source.*` with their positions in the concatenated row: every
 column that is not hidden ({name}`ScopeSource.hidden`) of every source of the query's own
@@ -112,15 +114,17 @@ structure TriggerRow where
   /-- Whether the event has {lit}`OLD`. -/
   old : Bool
 
-/-- The sources of the rows that the event has, with {lit}`NEW`'s cells at the offset and
-{lit}`OLD`'s after them, each with a rowid, so that {lit}`new.rowid` is the restriction of a
-rowid name. -/
+/-- The sources of the rows that the event has, at the offset: {lit}`NEW`'s cells first when
+the event has it, then {lit}`OLD`'s, each with a rowid, so that {lit}`new.rowid` is the
+restriction of a rowid name. -/
 def TriggerRow.scope (row : TriggerRow) (offset : Nat) : Scope :=
   let new : ScopeSource := { name := name! "new", columns := row.columns, offset, trigger := true }
-  let old : ScopeSource := { new with name := name! "old", offset := offset + row.columns.length }
+  let old : ScopeSource :=
+    { new with name := name! "old", offset := offset + if row.new then row.columns.length else 0 }
   (if row.new then [new] else []) ++ (if row.old then [old] else [])
 
-/-- The number of cells of the rows: one for each column in {lit}`NEW` and one in {lit}`OLD`. -/
-def TriggerRow.width (row : TriggerRow) : Nat := 2 * row.columns.length
+/-- The number of cells of the rows: one for each column in each row that the event has. -/
+def TriggerRow.width (row : TriggerRow) : Nat :=
+  ((if row.new then 1 else 0) + (if row.old then 1 else 0)) * row.columns.length
 
 end Belay.Sqlite

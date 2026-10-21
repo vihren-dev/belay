@@ -4,12 +4,13 @@ import Belay.Sqlite.Resolution.ConflictForm
 set_option doc.verso true
 
 /-! The resolved form of the cells of an INSERT row and of a trigger's program (ADR 0018, D5).
-A program reads the trigger's {lit}`NEW` and {lit}`OLD` rows as cells: the {lit}`NEW` cells, one
-for each column of the trigger's table, then the {lit}`OLD` cells. Its condition and the rows of
+A program reads the trigger's {lit}`NEW` and {lit}`OLD` rows as cells, one for each column of the
+trigger's table in each row that its event has: the {lit}`NEW` cells of INSERT and UPDATE, then
+the {lit}`OLD` cells of UPDATE and DELETE. Its condition and the rows of
 an INSERT of its body read them from position 0; an UPDATE or a DELETE of its body reads them
 after the cells of its own table; and a SELECT reads them as the outer cells of a subquery,
-before the cells of its own sources. The cells of a row that an event does not have, such as
-{lit}`OLD` of an INSERT, are NULL; resolution refuses every name of them. -/
+before the cells of its own sources. Resolution refuses every name of a row that the event does
+not have, such as {lit}`OLD` of an INSERT. -/
 
 namespace Belay.Sqlite.Resolved
 

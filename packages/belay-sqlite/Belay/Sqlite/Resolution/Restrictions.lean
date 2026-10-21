@@ -176,8 +176,9 @@ inductive RestrictionKind where
   reaches it in a known order (ADR 0018, slice 5). -/
   | raiseForm
   /-- A trigger form that the model does not describe: {lit}`ON CONFLICT DO UPDATE` in its
-  body, a {lit}`WHEN` condition with a call that can fail or a subquery, and triggers that fire
-  each other past the bound of the resolution (ADR 0018, slice 5). -/
+  body, a {lit}`WHEN` condition with a call that can fail or a subquery, triggers that fire each
+  other past the bound of the resolution, and {lit}`ON CONFLICT DO UPDATE` on a table with a
+  trigger, whose UPDATE triggers the resolution does not follow (ADR 0018, slice 5). -/
   | triggerForm
   /-- A {lit}`BEFORE UPDATE` or {lit}`BEFORE DELETE` trigger whose program writes the table of
   its own event, directly or through the triggers and foreign-key actions that it fires, is not

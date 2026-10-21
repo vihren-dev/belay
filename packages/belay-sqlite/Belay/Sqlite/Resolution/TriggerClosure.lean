@@ -37,8 +37,8 @@ def triggerEvent (columns : List CatalogColumn) : Syntax.TriggerEvent → Resolv
   | .update [] => .update none
   | .update names => .update (some (names.filterMap (columnPosition columns)))
 
-/-- The triggers of the catalog that fire for the request: their positions and definitions. -/
-def Catalog.firedTriggers (catalog : Catalog) (request : FireRequest) : List (Nat × CatalogTrigger) :=
+/-- The triggers of the catalog that fire for the request, in catalog order. -/
+def Catalog.triggersFiring (catalog : Catalog) (request : FireRequest) : List (Nat × CatalogTrigger) :=
   if !request.fire then [] else catalog.zipIdx.filterMap fun (object, position) => match object.entry with
     | .trigger trigger => match catalog.findTable trigger.table with
       | some (table, shape) =>
@@ -46,6 +46,14 @@ def Catalog.firedTriggers (catalog : Catalog) (request : FireRequest) : List (Na
         else none
       | none => none
     | .table _ | .index _ => none
+
+/-- The triggers of the catalog that fire for the request, in the order in which SQLite prepares
+them: the {lit}`BEFORE` triggers, then the {lit}`AFTER` triggers, each newest first. Checked
+natively: of two triggers whose bodies name different missing tables, the error names the table
+of the newer one. -/
+def Catalog.firedTriggers (catalog : Catalog) (request : FireRequest) : List (Nat × CatalogTrigger) :=
+  let fired := (catalog.triggersFiring request).reverse
+  fired.filter (·.2.time == .before) ++ fired.filter (·.2.time == .after)
 
 /-- The write of a step of a program that a write with the conflict algorithm fires: the step's
 own algorithm unless the write has one, as SQLite's {lit}`codeTriggerProgram` chooses it. -/

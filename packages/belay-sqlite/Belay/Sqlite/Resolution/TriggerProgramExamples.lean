@@ -45,7 +45,10 @@ def programs (script : List Syntax.Statement) : List Resolved.Program :=
   match last script with
   | some (.insert _ _ _ _ (some rules)) | some (.upsert _ _ _ _ _ _ (some rules)) | some (.update _ _ _ _ _ (some rules))
   | some (.delete _ _ _ _ (some rules)) | some (.drop _ (some rules)) => rules.programs
-  | some _ | none => []
+  | some (.insert _ _ _ _ none) | some (.upsert _ _ _ _ _ _ none) | some (.update _ _ _ _ _ none)
+  | some (.delete _ _ _ _ none) | some (.drop _ none) | some (.createTable ..) | some (.createIndex ..)
+  | some (.createTrigger ..) | some (.addColumn ..) | some .begin | some .commit | some .rollback
+  | some (.prepareError _) | some (.query ..) | some (.setting _) | none => []
 
 /-- Whether the script after the two tables is a restriction of the kind. -/
 def restrictedAs (kind : RestrictionKind) (script : List Syntax.Statement) : Bool :=
@@ -70,12 +73,31 @@ def restrictedAs (kind : RestrictionKind) (script : List Syntax.Statement) : Boo
 #guard last [trigger "r" .after .insert [.delete (name! "nosuch") none], .delete (name! "t") none] ==
   some (.delete 0 none [] [])
 
+-- A reference to NEW or OLD has the collation of its column and no affinity, as natively
+-- `old.a = '1'` is 0 for the INTEGER value 1 and `old.b = 'X'` is 1 for 'x' under NOCASE; the
+-- OLD cells of a DELETE trigger come first, as the event has no NEW.
+#guard (programs [.createTable (name! "d") [{ plain "a" with declaredType := some "INTEGER" },
+      { plain "b" with constraints := [.collate (name! "NOCASE")] }] [],
+    trigger "r" .after .delete [logged (.compare .eq (column "old" "a") (.string [49])),
+      logged (.compare .eq (column "old" "b") (.string [88]))] "d", .delete (name! "d") none]).map (·.body) ==
+  [[.insert 1 [[.expression (.compare .eq none (.column 0) (.literal (.text [49])))]] [] none [],
+    .insert 1 [[.expression (.compare .eq none (.column 1) (.literal (.text [88])) .nocase)]] [] none []]]
+-- Of two triggers with errors, the newer one's error is the write's, as SQLite prepares it first.
+#guard last [trigger "r" .after .insert [.delete (name! "nosuch1") none], trigger "s" .after .insert
+    [.delete (name! "nosuch2") none], insertT] == some (.prepareError (.noSuchTable (name! "nosuch2")))
+-- With foreign keys on, a body's write checks its keys at prepare also when the write that fires
+-- it has none: a parent table that does not exist is the write's error.
+#guard (statements (migration [] (tables ++ [.createTable (name! "c") [{ plain "x" with
+      constraints := [.references (name! "missing") [] .noAction .noAction] }] [],
+    trigger "r" .after .insert [.insert (name! "c") none [[.numeric "1"]] []], insertT])
+    { defaults with foreignKeys := true })).getLast? == some (.prepareError (.noSuchReferencedTable (name! "missing")))
+
 -- RAISE alone and as a result of CASE; RAISE in WHERE is a restriction.
 #guard (programs [trigger "r" .before .insert [selected (.raise .ignore none)], insertT]).map (·.body) ==
   [[.raise none [] (some .ignore)]]
 #guard (programs [trigger "r" .before .insert [selected (.caseOf [.compare .eq (column "new" "a") (.numeric "1"),
     .raise .abort (some (.string [109]))] false)], insertT]).map (·.body) ==
-  [[.raise none [(.compare .eq (some .blob) (.column 0) (.literal (.integer 1)), some .abort)] none]]
+  [[.raise none [(.compare .eq none (.column 0) (.literal (.integer 1)), some .abort)] none]]
 #guard restrictedAs .raiseForm [trigger "r" .before .insert [selected (.numeric "1") (some (.raise .ignore none))], insertT]
 
 -- Of two triggers of one event, the newest comes first; UPDATE OF b fires only for SET b.
