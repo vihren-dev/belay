@@ -17,6 +17,7 @@ import sys
 
 import pytest
 
+from belay.sqlite.dialects import select_grammar
 from belay.sqlite.errors import SqlError
 from belay.sqlite.located import Json, Located
 from belay.sqlite.parser_library import library_name, load as load_library
@@ -24,7 +25,7 @@ from belay.sqlite.sql_tree import SqlParser, parse
 from belay.sqlite.syntax import statements
 from conformance.corpus import load
 from conformance.native_replay import schema_sql
-from conformance.record_parser import record_parser
+from conformance.record_parser import record_profile
 from tests.runtime_support import run_command
 from tests.surface_support import FIXTURES, SUFFIX, candidate_b, candidate_b_result, surface_command
 
@@ -64,7 +65,7 @@ def authored_texts(runtime_root: Path) -> list[dict[str, Json]]:
             continue
         directory = manifest.parent
         for record in load(directory)[1]:
-            parser = record_parser(library, record)
+            parser = SqlParser(library, select_grammar(library.metadata, record_profile(record)))
             for sql in (schema_sql(record["initial"]["visible"]), record["migrationSql"]):
                 texts.append({"grammar": parser.grammar, "sql": sql, "python": python_result(parser, sql)})
     return texts

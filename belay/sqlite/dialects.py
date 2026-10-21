@@ -9,7 +9,7 @@ dialect has no parser.
 
 from dataclasses import dataclass
 
-from .errors import SqlError
+from .errors import NoParserForDialect
 from .profiles import SUPPORTED_PROFILES
 
 Metadata = dict[str, object]
@@ -23,15 +23,6 @@ class ProfileIdentity:
     version: str
     source_id: str
     compile_options: tuple[str, ...] = ()
-
-
-class NoParserForDialect(SqlError):
-    """The parser library has no dialect for the profile; the profile's SQL is not parsed."""
-
-    def __init__(self, message: str) -> None:
-        """Report the profile as unsupported, with the reason in the message."""
-        super().__init__("UNSUPPORTED", f"No parser for this dialect: {message}. Select a supported "
-                         "profile, or install a verifier whose parser library has this dialect")
 
 
 def _entries(metadata: Metadata, key: str) -> list[dict[str, object]]:

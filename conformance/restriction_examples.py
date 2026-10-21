@@ -13,12 +13,11 @@ import subprocess
 
 from belay.sqlite.errors import SqlError
 from belay.sqlite.located import Json
-from belay.sqlite.sql_tree import parse
-from belay.sqlite.syntax import statements
 from conformance.native_connection import SOURCE_ID
 from conformance.predict import RUNNER_TIMEOUT_SECONDS
 from conformance.profile_scope import modeled_profile
-from conformance.record_parser import record_parser, runtime_library
+from conformance.record_parser import record_parser
+from conformance.sql_text import runtime_translator
 
 EXAMPLES: dict[str, tuple[str, str]] = {
     "schema-statement": ("CREATE TABLE t(a INTEGER); INSERT INTO t VALUES (1);", "SELECT a FROM t;"),
@@ -93,17 +92,17 @@ EXAMPLES: dict[str, tuple[str, str]] = {
 """For each restriction id: a schema and a migration that the resolver refuses with it."""
 
 def resolve_example(runtime: Path, schema: str, migration: str) -> dict[str, Json]:
-    """Parse the example with the runtime's parser library for the default profile (the pinned
-    SQLite release) and give the model's answer from the runtime's `conformance-runner`:
+    """Translate the example with the runtime's translation program for the default profile (the
+    pinned SQLite release) and give the model's answer from the runtime's `conformance-runner`:
     `restricted` and `restriction` for a restricted example, or `{"frontend": ...}` with the message
     when the frontend refuses the SQL. Unlike a corpus case, an example is not kept out of scope for
     its foreign keys (`profile_scope.foreign_key_scope`), so that the model's foreign key
     restrictions can be reached."""
-    parser = record_parser(runtime_library(runtime), {"sourceId": SOURCE_ID})
+    parser = record_parser(runtime_translator(runtime), {"sourceId": SOURCE_ID})
     try:
         model_input = {"profile": modeled_profile({}), "initial": [], "clocks": [],
-                       "schema": [item.value for item in statements(parse(parser, schema.encode(), "schema.sql"))],
-                       "script": [item.value for item in statements(parse(parser, migration.encode(), "migration.sql"))]}
+                       "schema": [item.value for item in parser.translate(schema.encode(), "schema.sql").statements()],
+                       "script": [item.value for item in parser.translate(migration.encode(), "migration.sql").statements()]}
     except SqlError as error:
         return {"frontend": str(error)}
     runner = runtime / ".lake/build/bin/conformance-runner"

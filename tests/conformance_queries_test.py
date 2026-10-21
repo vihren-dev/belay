@@ -13,7 +13,7 @@ import pytest
 from conformance.model_check import compiled
 from conformance.native_record import record_sql
 from conformance.native_replay import prepare
-from conformance.record_parser import runtime_library
+from conformance.sql_text import runtime_translator
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_lean,
               pytest.mark.requires_native("parser-library", "sqlite3")]
@@ -39,7 +39,7 @@ SCHEMA = ("CREATE TABLE t(Abc INTEGER, b TEXT, c); INSERT INTO t VALUES(1,'x',NU
 def test_query_agrees_with_sqlite(runtime_root: Path, query: str) -> None:
     """The model's result rows, column names and errors agree with the recorded native ones."""
     record = record_sql(SCHEMA, query, name="query", outputs=True)
-    case, answer = prepare(record, runtime_library(runtime_root))
+    case, answer = prepare(record, runtime_translator(runtime_root))
     assert case is not None, answer
     assert compiled(case, runtime_root)["verdict"] == "AGREE"
 
@@ -48,6 +48,6 @@ def test_wrong_rows_disagree(runtime_root: Path) -> None:
     """A changed native result row makes the case disagree, so the comparison reads the rows."""
     record = record_sql(SCHEMA, "SELECT b FROM t WHERE abc = 1;", name="query", outputs=True)
     record["trace"][0]["rows"][0][0] = {"text": {"bytes": list(b"other")}}
-    case, answer = prepare(record, runtime_library(runtime_root))
+    case, answer = prepare(record, runtime_translator(runtime_root))
     assert case is not None, answer
     assert compiled(case, runtime_root)["verdict"] == "DISAGREE"

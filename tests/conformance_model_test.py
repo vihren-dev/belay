@@ -11,7 +11,8 @@ from conformance.model_cases import ExpectedTable, cases
 from conformance.native_trace import record
 from conformance.model_check import compiled, prove
 from conformance.pipeline import fixtures
-from conformance.record_parser import default_parser, runtime_library
+from conformance.record_parser import default_parser
+from conformance.sql_text import runtime_translator
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kernel,
               pytest.mark.requires_lean, pytest.mark.requires_native("parser-library", "sqlite3")]
@@ -72,7 +73,7 @@ def test_version_two_outputs(runtime_root: Path, tmp_path: Path) -> None:
         "BEGIN; UPDATE t SET v=7 WHERE id=1; UPDATE t SET v=8 WHERE id=2;"
         "INSERT INTO t(id,v) VALUES(2,8); INSERT INTO t(id,v) VALUES(2,9); COMMIT;",
         name="outputs-v2", outputs=True)
-    case, error = prepare(native, runtime_library(runtime_root))
+    case, error = prepare(native, runtime_translator(runtime_root))
     assert case is not None, error
     assert case["version"] == 5 and case["outputs"] is not None
     answer = compiled(case, runtime_root, emit_lean=True)
@@ -92,16 +93,16 @@ def test_version_two_outputs(runtime_root: Path, tmp_path: Path) -> None:
     for sql, parameters in (("SELECT 1 UNION SELECT 2;", None), ("INSERT INTO t(id,v) VALUES(?,?);", [((1, 3), (1, 4))])):
         unsupported = record_sql("CREATE TABLE t(id INTEGER,v BLOB);", sql,
                                  name="unsupported-output", outputs=True, parameters=parameters)
-        assert prepare(unsupported, runtime_library(runtime_root))[1]["verdict"] == "MODEL_UNSUPPORTED"
+        assert prepare(unsupported, runtime_translator(runtime_root))[1]["verdict"] == "MODEL_UNSUPPORTED"
     ordered = record_sql("CREATE TABLE t(k); INSERT INTO t VALUES(1),(1),(2);",
                          "SELECT k FROM t ORDER BY k LIMIT 1;", name="ordered", outputs=True)
     # The LIMIT cuts the tie group of k = 1; the model's row is a submultiset of it (ADR 0005).
-    model, answer = prepare(ordered, runtime_library(runtime_root))
+    model, answer = prepare(ordered, runtime_translator(runtime_root))
     assert model is not None and compiled(model, runtime_root)["verdict"] == "AGREE", answer
     ordered["trace"][0]["groups"][0]["count"] = 3
-    assert prepare(ordered, runtime_library(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
+    assert prepare(ordered, runtime_translator(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
     native["trace"][0]["columnCount"] = 1
-    assert prepare(native, runtime_library(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
+    assert prepare(native, runtime_translator(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
 
 
 def test_lowered_limit_is_read_from_the_case(runtime_root: Path) -> None:

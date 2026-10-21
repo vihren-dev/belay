@@ -10,13 +10,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from belay.sqlite.sql_tree import SqlParser, parse
-from belay.sqlite.syntax import statements
 from conformance.case_format import CASE_VERSION, Json, case_profile, row_wire
 from conformance.native_connection import Cell, Connection, NativeError, SQL_ERRORS, SOURCE_ID, library_path, load_library
 from conformance.native_library import DEFAULT_ENGINE_VERSION
 from conformance.native_limits import lower_limits, measured_limits
 from conformance.native_metadata import integer, native_table, quoted, table_metadata, text
+from conformance.sql_text import TextParser
 
 
 @dataclass(frozen=True)
@@ -86,11 +85,11 @@ def requested(tables: list[Json], fixture: Fixture) -> list[Json]:
             for table in tables if isinstance(table, dict)]
 
 
-def record(fixture: Fixture, parser: SqlParser, library: Path | None = None, *,
+def record(fixture: Fixture, parser: TextParser, library: Path | None = None, *,
            migration_coverage: bool = False) -> dict[str, Json]:
     """Acquire real evidence; syntax without a model constructor is refused before native execution."""
-    schema = statements(parse(parser, fixture.schema_sql.encode(), "conformance-schema.sql"))
-    script = statements(parse(parser, fixture.migration_sql.encode(), "migration.sql"))
+    schema = parser.translate(fixture.schema_sql.encode(), "conformance-schema.sql").statements()
+    script = parser.translate(fixture.migration_sql.encode(), "migration.sql").statements()
     pinned = load_library(library or library_path())
     if migration_coverage:
         for name in ("__gcov_reset", "__gcov_dump"):

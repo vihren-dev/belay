@@ -51,3 +51,20 @@ Specification: [ADR 0017](../docs/adr-0017-user-surface.md), D2 and D6;
   commands. The program starts in about 30 ms; it links the model statically.
 - 2026-10-21: review of the program: one should finding (R10), fixed: the answers for a request
   that is not usable and for an unusable parse document say what the caller can do.
+- 2026-10-21: the review of that fix had no findings.
+- 2026-10-22: the harness calls the program. `conformance/sql_text.py` keeps
+  one program process for each process ID and runtime (`runtime_translator`); `TextParser` gives
+  each text's `Translation`, whose `parsed()`, `statements()` and `commands()` raise the same
+  `SqlError`s in the same order as before. `record_parser` and `default_parser` give a
+  `TextParser`, and `predict.py`, `native_replay.py`, `native_trace.py`, `native_fixture.py`,
+  `generated_program.py`, `restriction_examples.py`, `corpus.py`, `state_machine.py` and
+  `measure_coverage.py` use it. `progress.py` and `replay_tiers.py` bind the program and the runner
+  by digest, not the parser library. `ParserResourceLimit` and `NoParserForDialect` are in
+  `belay/sqlite/errors.py`. The predictions of all frozen corpora are byte-identical to the
+  baseline (`diff -r`), and they build in 30 s, as before. The conformance suites get
+  `conformance/sql_text.py` with `record_parser.py` (`build-support/tests.nix`). `just build` first
+  stopped at the resource guard (9.88 GiB free); the owner approved `nix-store --gc`, which freed
+  3.2 GiB. `just test-source` (502 tests), `just test` (377 tests in 7 suites) and the model and
+  frozen suites pass.
+- To do in T4: the `parser-library` requirement of `requires_native` still checks the runtime's
+  `lib`; rename it for the program when the C library tests move to the Lean binding.

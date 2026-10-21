@@ -1,10 +1,11 @@
 """`python -m conformance.predict --runtime ROOT`: the subject's predict command (ADR 0011).
 
 The judge (`judge/`) writes one input per line: what a frozen record holds before its
-migration runs. This command maps each input to statement syntax with the frontend, runs the model's
-`conformance-runner --predict` once over all inputs, which resolves and runs them in Lean, and
-writes one prediction per line in the recorded form (`conformance.predict_render`). It never sees an observation that
-SQLite made after the start, and it decides nothing about agreement.
+migration runs. This command maps each input to statement syntax with the text package's
+translation program (`conformance.sql_text`), runs the model's `conformance-runner --predict` once
+over all inputs, which resolves and runs them in Lean, and writes one prediction per line in the
+recorded form (`conformance.predict_render`). It never sees an observation that SQLite made after
+the start, and it decides nothing about agreement.
 """
 
 import argparse
@@ -14,16 +15,14 @@ from pathlib import Path
 import subprocess
 import sys
 
-from belay.sqlite.dialects import NoParserForDialect
-from belay.sqlite.errors import SqlError
+from belay.sqlite.errors import NoParserForDialect, ParserResourceLimit, SqlError
 from belay.sqlite.located import Located
-from belay.sqlite.sql_tree import ParserResourceLimit, parse
-from belay.sqlite.syntax import statements
 from conformance import native_bindings
 from conformance.case_format import UNIX_EPOCH_JULIAN_MILLISECONDS, Json, row_wire
 from conformance.predict_render import output_record, view_record
 from conformance.profile_scope import foreign_key_scope, modeled_profile
-from conformance.record_parser import NO_PARSER_REASON, record_parser, runtime_library
+from conformance.record_parser import NO_PARSER_REASON, record_parser
+from conformance.sql_text import Translator, runtime_translator
 
 RUNNER_TIMEOUT_SECONDS = 600
 """One model run over all inputs of a corpus."""
@@ -54,14 +53,14 @@ def julian_clocks(given: dict[str, Json]) -> list[int]:
     return [clock + UNIX_EPOCH_JULIAN_MILLISECONDS for clock in clocks]
 
 
-def mapped(given: dict[str, Json], library: object) -> tuple[dict[str, Json], list[Located]]:
+def mapped(given: dict[str, Json], translator: Translator) -> tuple[dict[str, Json], list[Located]]:
     """The model input of one case and its statements; frontend refusals, execution
     settings that the model does not implement, and a foreign key in a record without a
     profile raise `SqlError` (`profile_scope`)."""
     profile = modeled_profile(given)
-    parser = record_parser(library, given)
-    schema = statements(parse(parser, given["initialSchemaSql"].encode(), "corpus-schema.sql"))
-    script = statements(parse(parser, given["migrationSql"].encode(), "corpus-migration.sql"))
+    parser = record_parser(translator, given)
+    schema = parser.translate(given["initialSchemaSql"].encode(), "corpus-schema.sql").statements()
+    script = parser.translate(given["migrationSql"].encode(), "corpus-migration.sql").statements()
     foreign_key_scope(given, [*schema, *script])
     return {"profile": profile, "schema": [item.value for item in schema], "script": [item.value for item in script],
             "initial": initial_rows(given["initialRows"]), "clocks": julian_clocks(given)}, script
@@ -101,13 +100,13 @@ def main(arguments: Sequence[str]) -> int:
     parser = argparse.ArgumentParser(prog="python -m conformance.predict", description=main.__doc__)
     parser.add_argument("--runtime", type=Path, required=True, help="conformance runtime root")
     options = parser.parse_args(arguments)
-    library = runtime_library(options.runtime)
+    translator = runtime_translator(options.runtime)
     inputs = [json.loads(line) for line in sys.stdin if line.strip()]
     results: list[dict[str, Json] | None] = []
     pending: list[tuple[int, list[Located], dict[str, Json]]] = []
     for index, given in enumerate(inputs):
         try:
-            model_input, script = mapped(given, library)
+            model_input, script = mapped(given, translator)
             pending.append((index, script, model_input))
             results.append(None)
         except (SqlError, NoParserForDialect, ValueError, KeyError, TypeError, IndexError) as error:

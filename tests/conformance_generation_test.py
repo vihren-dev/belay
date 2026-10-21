@@ -14,7 +14,8 @@ from conformance.native_record import record_sql
 from conformance.native_replay import prepare
 from conformance.regressions import freeze, minimize
 from conformance.state_machine import generate
-from conformance.record_parser import default_parser, runtime_library
+from conformance.record_parser import default_parser
+from conformance.sql_text import runtime_translator
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance,
               pytest.mark.requires_lean, pytest.mark.requires_native("parser-library", "sqlite3")]
@@ -47,7 +48,7 @@ def test_affinity_boundaries_in_a_unique_key(runtime_root: Path, literal: str, v
     compares the stored key cells (`LiteralData.keyCellsEqual`, slice 5a)."""
     native = record_sql("CREATE TABLE t(id INTEGER,UNIQUE(id));",
                         f"INSERT INTO t(id) VALUES({literal});", name=f"boundary-{literal}")
-    case, answer = prepare(native, runtime_library(runtime_root))
+    case, answer = prepare(native, runtime_translator(runtime_root))
     if case is not None:
         answer = compiled(case, runtime_root)
     assert answer["verdict"] == verdict, answer

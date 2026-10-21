@@ -10,7 +10,7 @@ from pathlib import Path
 from types import ModuleType
 
 from conformance.native_replay import prepare
-from conformance.record_parser import runtime_library
+from conformance.sql_text import runtime_translator
 from conformance.resolve_mutants import measure
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,11 +34,11 @@ def measure_set(runtime_root: Path, modules: list[ModuleType], tables: list[tupl
         mutants |= table
         targets |= table_targets
     wanted = {name for names in targets.values() for name in names}
-    library = runtime_library(runtime_root)
+    translator = runtime_translator(runtime_root)
     cases = []
     for module in modules:
         for record in module.records([case for case in module.definitions() if case.name in wanted]):
-            case, answer = prepare(record, library)
+            case, answer = prepare(record, translator)
             assert case is not None, (record["name"], answer)
             cases.append(case)
     result = measure(cases, ROOT, runtime_root, mutants, targets)

@@ -8,7 +8,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 
 from .dialects import ProfileIdentity, select_grammar
-from .errors import SqlError
+from .errors import ParserResourceLimit, SqlError
 from .parser_library import ParserLibrary, ParserLibraryError
 
 
@@ -51,18 +51,6 @@ class Tree:
         """Locate a semantic admission failure in the original input."""
         return SqlError("UNSUPPORTED", message, source=self.source,
                          start=node.start, end=node.end)
-
-
-class ParserResourceLimit(SqlError):
-    """The SQL text exceeds the parser's input or syntax-tree size limit.
-
-    The parser did not decide whether the text is valid SQL, so the result is unverified.
-    """
-
-    def __init__(self, source: str, offset: int) -> None:
-        """Report the limit at the offset where the parser stopped."""
-        super().__init__("UNVERIFIED", "SQL exceeds the parser's limits of 1 MiB of input and 200,000 "
-                         "syntax-tree nodes; split the SQL into smaller files", source=source, start=offset)
 
 
 @dataclass(frozen=True)

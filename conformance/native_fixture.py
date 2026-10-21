@@ -8,8 +8,8 @@ from tempfile import TemporaryDirectory
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from belay.sqlite.errors import SqlError
-from belay.sqlite.sql_tree import SqlParser, parse
 from conformance.record_parser import default_parser
+from conformance.sql_text import TextParser
 from import_fixture import fixture
 
 SOURCE_ID = "2025-11-04 19:38:17 fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b"
@@ -41,7 +41,7 @@ def flat_tcl(results: list[list[dict[str, object]]]) -> list[str]:
     return flat
 
 
-def run(native: str, parser: SqlParser, selected: int | None = None, *, final_only: bool = False) -> dict[str, object]:
+def run(native: str, parser: TextParser, selected: int | None = None, *, final_only: bool = False) -> dict[str, object]:
     """Check native observations independently of the still-unwired formal model."""
     imported = fixture()
     if final_only and selected is not None:
@@ -61,7 +61,7 @@ def run(native: str, parser: SqlParser, selected: int | None = None, *, final_on
         for index, case in enumerate(cases):
             if not final_only and (selected is None or index == selected):
                 try:
-                    parse(parser, case["sql"].encode(), f"upstream-case-{index}.sql")
+                    parser.translate(case["sql"].encode(), f"upstream-case-{index}.sql").parsed()
                 except SqlError as error:
                     raise ValueError(f"Production parser rejected upstream fixture SQL: {error}") from error
             commands.extend([f".print CASE_{index}", case["sql"]])

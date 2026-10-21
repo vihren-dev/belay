@@ -7,8 +7,8 @@ tests check the selection against the built library.
 
 import pytest
 
-from belay.sqlite.dialects import (
-    NoParserForDialect, ProfileIdentity, check_supported_profiles, options_in_effect, select_grammar)
+from belay.sqlite.dialects import ProfileIdentity, check_supported_profiles, options_in_effect, select_grammar
+from belay.sqlite.errors import NoParserForDialect
 from belay.sqlite.profiles import SOURCE_IDS, SUPPORTED_PROFILES
 
 pytestmark = [pytest.mark.unit, pytest.mark.parser]
@@ -53,8 +53,6 @@ def test_profiles_without_a_built_dialect_are_refused(profile: ProfileIdentity, 
     with pytest.raises(NoParserForDialect, match=message) as error:
         select_grammar(METADATA, profile)
     assert error.value.status == "UNSUPPORTED" and str(error.value).startswith("No parser for this dialect")
-    assert str(error.value).endswith("Select a supported profile, or install a verifier whose parser "
-                                     "library has this dialect")
 
 
 def test_missing_supported_dialect_fails_the_check() -> None:

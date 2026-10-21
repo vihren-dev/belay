@@ -12,14 +12,14 @@ import pytest
 from belay.sqlite.errors import SqlError
 from belay.sqlite.quoted_text import quoted_string
 from belay.sqlite.sql_tree import SqlParser, Tree, parse
-from conformance.record_parser import default_parser
+from tests.runtime_fixtures import profile_parser
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_native]
 
 
 def test_result_for_another_grammar_is_rejected(runtime_root: Path) -> None:
     """`parse` refuses a library document for another grammar than the one it requested."""
-    parser = default_parser(runtime_root)
+    parser = profile_parser(runtime_root)
 
     class OtherGrammar:
         """A library whose documents name another grammar."""
