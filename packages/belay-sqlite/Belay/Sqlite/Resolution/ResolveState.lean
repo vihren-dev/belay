@@ -30,9 +30,9 @@ def ResolveState.withCatalog (state : ResolveState) (result : StatementResolutio
 
 /-- The state after a write at the zero-based index ({name}`ResolveState.withCatalog`): with
 foreign keys on, the write checks its keys ({name}`foreignKeyCheck`); it gets the programs of the
-triggers that it may fire ({name}`triggerPrograms`); and with a key to check or a program, the
-rules that it runs row by row ({name}`Resolved.Statement.withRules`), with the profile's trigger
-depth limit. A prepare error of its keys or of a program leaves the state as it was. -/
+triggers that it may fire ({name}`triggerPrograms`), whose writes check their keys with foreign
+keys on; and with a key to check or a program, the rules that it runs row by row
+({name}`Resolved.Statement.withRules`), with the profile's trigger depth limit and the setting. A prepare error of its keys or of a program leaves the state as it was. -/
 def ResolveState.withWrite (context : ResolveContext) (state : ResolveState) (index : Nat)
     (result : StatementResolution) : Except Restriction (Resolved.Statement × ResolveState) := do
   let (statement, next) ← state.withCatalog result
@@ -40,11 +40,12 @@ def ResolveState.withWrite (context : ResolveContext) (state : ResolveState) (in
   match keys with
   | .error error => return (.prepareError error, state)
   | .ok keys =>
-    match ← triggerPrograms context state.catalog index keys statement with
+    match ← triggerPrograms context state.catalog index state.foreignKeys statement with
     | .error error => return (.prepareError error, state)
     | .ok programs =>
       if keys || !programs.isEmpty then
-        return (statement.withRules { depth := context.profile.limits.triggerDepth, keys, programs }, next)
+        return (statement.withRules { depth := context.profile.limits.triggerDepth, keys := state.foreignKeys, programs },
+          next)
       else return (statement, next)
 
 /-- For every resolved statement and rules, the write with the rules

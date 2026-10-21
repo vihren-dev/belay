@@ -80,6 +80,11 @@ def Scope.enclose (outer inner : Scope) : Scope :=
 def Scope.single (name : Identifier) (columns : List CatalogColumn) (hasRowid : Bool := true) : Scope :=
   [{ name, columns, hasRowid }]
 
+/-- Whether the position of the concatenated row is a cell of a trigger's row
+({name}`ScopeSource.trigger`). -/
+def Scope.triggerCell (scope : Scope) (position : Nat) : Bool :=
+  scope.any fun source => source.trigger && source.offset ≤ position && position < source.offset + source.columns.length
+
 /-- The columns of all sources, in the order of the concatenated row. -/
 def Scope.columns (scope : Scope) : List CatalogColumn := scope.flatMap (·.columns)
 

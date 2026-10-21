@@ -56,7 +56,7 @@ def Resolved.Program.writesOwnTable (catalog : Catalog) (keys : Bool) (programs 
   | .before, .update _ | .before, .delete =>
     let start := program.body.filterMap (·.request none)
     ((writtenTables catalog keys programs (closureFuel catalog) start start).map (·.contains program.table)).getD true
-  | .before, .insert | .after, _ => false
+  | .before, .insert | .after, .insert | .after, .update _ | .after, .delete => false
 
 /-- The programs with one more inserted before the first program of an older trigger, so that
 the newest trigger comes first. -/

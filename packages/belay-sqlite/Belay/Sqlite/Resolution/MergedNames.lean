@@ -23,7 +23,8 @@ def coalesceColumns : List Nat → Resolved.Expr
 ({name}`NameResolution.found`): one column with its affinity, or the coalesce of several
 with no affinity. -/
 def Scope.nameOperand (scope : Scope) : List Nat → Operand
-  | [position] => (.column position, scope.columns[position]?.map CatalogColumn.affinity)
+  | [position] => (.column position,
+      if scope.triggerCell position then none else scope.columns[position]?.map CatalogColumn.affinity)
   | reads => (coalesceColumns reads, none)
 
 /-- The index of the source whose cells hold the position of the concatenated row; the
