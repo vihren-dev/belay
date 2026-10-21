@@ -1,6 +1,6 @@
 # The SQLite model moves to `Belay.Sqlite.Model` (ADR 0016, D3)
 
-Created 2026-10-21. Status: OPEN.
+Created 2026-10-21. Status: DONE.
 Status file: [status](20261021-model-move.status.md).
 Specification: [ADR 0016](../docs/adr-0016-model-and-surface.md), D3 and "Order", step 1;
 [ADR 0017](../docs/adr-0017-user-surface.md), D2 (S1, whose first code needs the name).

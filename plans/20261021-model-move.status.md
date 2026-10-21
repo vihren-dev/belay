@@ -1,6 +1,6 @@
 # Status: the SQLite model moves to `Belay.Sqlite.Model` (ADR 0016, D3)
 
-Created 2026-10-21. Status: OPEN.
+Created 2026-10-21. Status: DONE.
 Task file: [task](20261021-model-move.task.md).
 Specification: [ADR 0016](../docs/adr-0016-model-and-surface.md), D3.
 
@@ -19,7 +19,7 @@ Specification: [ADR 0016](../docs/adr-0016-model-and-surface.md), D3.
   corpora before and after the move are equal, byte for byte; no old name stays outside the
   historical records.
 
-## Remaining
-
-- `just test-nix`, `just test-scheduled` and `just runtime-package`, with the checks of S1 at
-  the end of ADR 0017's first slice.
+- 2026-10-21: the stack is on main after #204 and #205 merged. The script, run again on the
+  new base, gives the same tree. The end checks pass: `just test-nix` (after two tests got the
+  surface package of S1), `just test-scheduled` and `just runtime-package`; the predictions of
+  the frozen corpora are unchanged. DONE.
