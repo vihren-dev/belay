@@ -1,6 +1,6 @@
 # Status: DISTINCT, HAVING and aggregates inside expressions (ADR 0018, slice 3)
 
-Created 2026-10-21. Status: open.
+Created 2026-10-21. Status: DONE (2026-10-21).
 Task file: [task](20261021-distinct-having.task.md).
 Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D3.
 
@@ -27,6 +27,16 @@ Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D3.
   in about a second), three mutants, each killed, corpus writer 44, `test_model_package` (180
   core modules).
 
+- 2026-10-21: "the end of the slice". Review fixes: SQLite decides an aggregate query from
+  `GROUP BY` and the result columns, so `HAVING` and an `ORDER BY` aggregate of another query are
+  its prepare errors, `HAVING` is checked after the result columns, and `GROUP BY 1` over a
+  result column with an aggregate is `aggregate functions are not allowed in the GROUP BY
+  clause`. The local verdict found frozen case `select1-2.3` (`SELECT Count() FROM test1`):
+  `count()` without an argument is an aggregate call now. Tests that used `SELECT DISTINCT 1` as
+  unmodeled SQL use `SELECT 1 UNION SELECT 2`; the authored catalog has 30 agreeing cases.
+  Local verdict: no case leaves AGREE; against slice 2, 92 cases of v5, 44 of v4 and 4 of v3
+  newly agree (against `main`: 234, 68 and 25). `just test-full` passes. DONE.
+
 ## Remaining
 
-- The local verdict, corpus 44 and `just test-full`.
+- PR A and PR B come at the end of ADR 0018.
