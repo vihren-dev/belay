@@ -10,6 +10,12 @@ Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D6; ADR 0017, D3 and
 As for slices 1 to 5: local jj commits with the tests that touch each one; at the end of the
 slice the local verdict, the corpus, and `just test-full`.
 
+Amended 2026-10-21: "the corpus" at the end of the slice means its authored cases and their
+corpus writer, checked with kernel proofs and mutants. The corpora of slices 2 to 6 (versions 43
+to 47) are recorded together at the end of ADR 0018, with the claims and the judge lock, in the
+pull request that adds them (CLAUDE.md, "Development claims"), so that one owner-approved change
+records them all.
+
 ## Outcome
 
 1. **The list of results.** For a query over its source rows, the model gives the list of every
