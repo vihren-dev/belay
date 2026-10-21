@@ -1,0 +1,53 @@
+{
+  "caller": "claude",
+  "commit": "7410262b2b42f0b24a65dcfc132b4555f450bc37",
+  "date": "2026-10-21T05:08:15+00:00",
+  "exit": 1,
+  "files": [
+    "plans/20261021-foreign-keys.status.md",
+    "plans/20261021-foreign-keys.task.md",
+    "reviews/20261021T050640Z-68fbc1b2/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261021T050815Z-7410262b#1",
+      "line": 21,
+      "path": "plans/20261021-foreign-keys.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The task assumes that any remaining foreign-key violation makes a write fail, but SQLite permits unrelated writes after violations were inserted with enforcement off. Fix: specify checks on affected keys and add a case that enables enforcement over existing violations."
+    },
+    {
+      "id": "20261021T050815Z-7410262b#2",
+      "line": 27,
+      "path": "plans/20261021-foreign-keys.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The task requires every write involving a malformed foreign key to fail preparation, but SQLite permits parent inserts and child updates that leave foreign-key columns untouched, as its [documentation](https://www.sqlite.org/foreignkeys.html) explains. Fix: limit prepare errors to operations that use the affected foreign key and test the permitted writes."
+    }
+  ],
+  "id": "20261021T050815Z-7410262b",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "fa2475f44035",
+    "R7": "0a38ead152b1",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
