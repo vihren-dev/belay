@@ -42,20 +42,22 @@ def actionDefault (column : CatalogColumn) : Option Value :=
   | some { form := .literal (.value value) _, .. } => some value
   | some { form := .literal (.hexLiteralTooBig _) _, .. } | some { form := .clock _, .. } => none
 
+/-- The place in the parent key's pairs of the key column of the link at the written index: 0
+for a rowid key. -/
+def pairIndex (link : ForeignKeyLink) (key : ParentKey) (index : Nat) : Nat :=
+  match key with
+  | .rowid => 0
+  | .columns pairs => (pairs.findIdx? (·.1 == link.key.columns.getD index 0)).getD index
+
 /-- The cells that an action writes into a child row: the new parent key for {lit}`CASCADE`,
 NULL for {lit}`SET NULL`, the defaults for {lit}`SET DEFAULT` ({name}`actionDefault`). -/
 def actionCells (child parent : CatalogTable) (link : ForeignKeyLink) (key : ParentKey) (new : Row) :
     Syntax.ForeignKeyAction → Option (List (Nat × Value))
   | .cascade => some (link.key.columns.zipIdx.map fun (position, index) =>
-      (position, (parentCell parent key new (pairIndex index)).1))
+      (position, (parentCell parent key new (pairIndex link key index)).1))
   | .setNull => some (link.key.columns.map (·, .null))
   | .setDefault => link.key.columns.mapM fun position => (child.columns[position]?.bind actionDefault).map (position, ·)
   | .noAction | .restrict => some []
-where
-  /-- The place in the parent key's pairs of the key column at the written index. -/
-  pairIndex (index : Nat) : Nat := match key with
-    | .rowid => 0
-    | .columns pairs => (pairs.findIdx? (·.1 == link.key.columns.getD index 0)).getD index
 
 /-- The state after the new row of an UPDATE of a row is checked ({name}`LiteralData.checkedRow`
 over the table with the old row replaced): a rowid alias that is no integer is

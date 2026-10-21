@@ -11,6 +11,23 @@ to check. -/
 
 namespace Belay.Sqlite
 
+/-- Whether the table at the position of the catalog has a foreign key or is referenced by one. -/
+def Catalog.keyed (catalog : Catalog) (table : Nat) : Bool :=
+  let links := catalog.foreignKeyLinks
+  !(childLinks links table).isEmpty || !(parentLinks links table).isEmpty
+
+/-- The foreign-key write of an INSERT of the number of rows with the algorithm into the table at
+the position, for {lit}`foreignKeyWrite`: a write of several rows with more than one row, which
+may replace rows when an algorithm of its keys is REPLACE, and has a key to check when it
+processes a link or may replace rows of a table with keys. -/
+def Catalog.insertWrite (catalog : Catalog) (table count : Nat) (algorithm : Option ConflictAlgorithm) :
+    Option (Nat × ForeignKeyWrite × Bool × Bool) :=
+  (catalog.tableAt table).map fun shape =>
+    let replace := (catalog.writePolicy table shape algorithm).keys.contains .replace
+    let write := ForeignKeyWrite.insert (count > 1) replace
+    (table, write, false, !(processedLinks catalog catalog.foreignKeyLinks table write).isEmpty ||
+      (replace && catalog.keyed table))
+
 /-- What SQLite's foreign-key code prepares for a resolved write of the catalog, with whether a
 key needs it, or none for a statement that is not a write that checks keys: the table, the
 {name}`ForeignKeyWrite`, whether the write is the DELETE of DROP TABLE, and whether the write has
@@ -18,29 +35,17 @@ a key to check. An INSERT writes several rows with more than one row, and may re
 an algorithm of its keys is REPLACE; an UPDATE changes the assigned columns
 ({name}`CatalogTable.changedColumns`). -/
 def foreignKeyWrite (catalog : Catalog) : Resolved.Statement → Option (Nat × ForeignKeyWrite × Bool × Bool)
-  | .insert table rows _ _ _ => insertWrite table rows.length none
-  | .upsert table rows _ _ algorithm _ _ => insertWrite table rows.length algorithm
+  | .insert table rows _ _ _ => catalog.insertWrite table rows.length none
+  | .upsert table rows _ _ algorithm _ _ => catalog.insertWrite table rows.length algorithm
   | .update table assignments _ _ _ _ => (catalog.tableAt table).map fun shape =>
     let changed := shape.changedColumns (assignments.map (·.1))
     let name := ((catalog[table]?).map (·.name)).getD default
     (table, .update changed, false, updateLevel catalog.foreignKeyLinks table name shape changed != 0)
-  | .delete table _ _ _ _ => some (table, .delete, false, keyed table)
+  | .delete table _ _ _ _ => some (table, .delete, false, catalog.keyed table)
   | .drop (table :: _) _ => (catalog.tableAt table).map fun _ =>
     (table, .delete, true, !(parentLinks catalog.foreignKeyLinks table).isEmpty)
   | .drop [] _ | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback
   | .prepareError _ | .query .. | .setting _ => none
-where
-  /-- Whether the table at the position has a key or is referenced by one. -/
-  keyed (table : Nat) : Bool :=
-    let links := catalog.foreignKeyLinks
-    !(childLinks links table).isEmpty || !(parentLinks links table).isEmpty
-  /-- The write of an INSERT of the number of rows with the algorithm. -/
-  insertWrite (table count : Nat) (algorithm : Option ConflictAlgorithm) : Option (Nat × ForeignKeyWrite × Bool × Bool) :=
-    (catalog.tableAt table).map fun shape =>
-      let replace := (catalog.writePolicy table shape algorithm).keys.contains .replace
-      let write := ForeignKeyWrite.insert (count > 1) replace
-      (table, write, false, !(processedLinks catalog catalog.foreignKeyLinks table write).isEmpty || (replace && keyed table))
-
 /-- The write with its trigger depth limit, for a write that has a key to check
 ({name}`foreignKeyWrite`). -/
 def Resolved.Statement.withForeignKeys (depth : Nat) : Resolved.Statement → Resolved.Statement

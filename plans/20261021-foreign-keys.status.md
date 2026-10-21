@@ -42,4 +42,4 @@ Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D4.
 
 ## Remaining
 
-- `just test-full`, the mutant measurements, corpus 45 and its claim (PR B).
+- `just test-full`, corpus 45 and its claim (PR B).
