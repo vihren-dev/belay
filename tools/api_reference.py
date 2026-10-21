@@ -20,11 +20,9 @@ from urllib.parse import quote, unquote, urlsplit
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from tools.source_revision import FULL_COMMIT_HASH_PATTERN
 
-LIBRARY_PACKAGE_DIRECTORY = Path("packages/sqlite-verifier")
-"""Repository location of the verifier library package; doc-gen4 runs in its Lake environment."""
 MODEL_PACKAGE_DIRECTORY = Path("packages/belay-sqlite-model")
-"""Repository location of the independent model package and its source files."""
-PUBLIC_PAGE_ROOTS = frozenset({"SqliteVerifier", "SqliteVerifier.html", "Belay"})
+"""Repository location of the model package and its source files; doc-gen4 runs in its Lake environment."""
+PUBLIC_PAGE_ROOTS = frozenset({"Belay"})
 """Our library page roots; Lean library pages remain outside the correction scope."""
 
 SOURCE_REPOSITORY = "https://github.com/vihren-dev/sqlite-verifier"
@@ -64,18 +62,14 @@ class PageLinks(HTMLParser):
 
 
 def public_sources(root: Path) -> list[Path]:
-    """Enumerate the entry point and library source files selected by the Nix fileset."""
-    library = root / LIBRARY_PACKAGE_DIRECTORY
-    return [library / "SqliteVerifier.lean", *sorted((library / "SqliteVerifier").rglob("*.lean")),
-            *sorted((root / MODEL_PACKAGE_DIRECTORY / "Belay").rglob("*.lean"))]
+    """Enumerate the model's source files, which the Nix fileset of the model package selects."""
+    return sorted((root / MODEL_PACKAGE_DIRECTORY / "Belay").rglob("*.lean"))
 
 
 def module_source_path(root: Path, source: Path) -> Path:
-    """The path of a package source relative to its package, which is the module path; links keep the
+    """The path of a model source relative to its package, which is the module path; links keep the
     repository path."""
-    package = next(root / directory for directory in (LIBRARY_PACKAGE_DIRECTORY, MODEL_PACKAGE_DIRECTORY)
-                   if source.is_relative_to(root / directory))
-    return source.relative_to(package)
+    return source.relative_to(root / MODEL_PACKAGE_DIRECTORY)
 
 
 def source_revision(revision: str) -> str:
@@ -150,8 +144,8 @@ def generate_reference(root: Path, executable: Path, build: Path) -> dict[str, i
         raise ValueError(f"Core documentation database is missing: {database}; build apiReferenceCore first")
 
     def run(*arguments: str) -> None:
-        """Run doc-gen4 in Lake's environment of the library package, so it finds our compiled modules."""
-        subprocess.run(["lake", "env", str(executable), *arguments], cwd=root / LIBRARY_PACKAGE_DIRECTORY,
+        """Run doc-gen4 in Lake's environment of the model package, so it finds our compiled modules."""
+        subprocess.run(["lake", "env", str(executable), *arguments], cwd=root / MODEL_PACKAGE_DIRECTORY,
                        check=True, timeout=COMMAND_TIMEOUT_SECONDS)
 
     modules: list[str] = []

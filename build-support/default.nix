@@ -28,7 +28,7 @@ in rec {
   docGen4 = import ./doc-gen4.nix { inherit pkgs leanToolchain; };
   apiReferenceCore = import ./api-reference-core.nix { inherit pkgs leanToolchain docGen4; };
   apiReferenceBase = import ./api-reference.nix {
-    inherit pkgs leanToolchain docGen4 modelPackage verifierLibrary;
+    inherit pkgs leanToolchain docGen4 modelPackage;
     core = apiReferenceCore;
   };
   apiReference = import ./api-reference-links.nix {
@@ -37,7 +37,7 @@ in rec {
     revision = referenceRevision;
   };
   publicDocumentation = import ./public-documentation.nix {
-    inherit pkgs leanToolchain verifierLibrary inventoryTools docTools modelPackage;
+    inherit pkgs leanToolchain inventoryTools docTools modelPackage;
   };
   conformanceNative = import ./conformance-native.nix { inherit pkgs; };
   conformanceDocs = import ./conformance-docs.nix {

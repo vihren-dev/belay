@@ -32,3 +32,7 @@ Specification: [ADR 0021](../docs/adr-0021-remove-the-verifier-product.md).
   restrictions stay reachable. `lean_libraries` no longer requires `SqliteVerifier.olean`, and
   `requires_lean` no longer requires the proof checker. `just test-full` and `just test-nix`
   pass; the predictions are byte-identical to the baseline.
+- 2026-10-21: the API reference and the documentation inventory start from the model package:
+  doc-gen4 runs in the model's Lake environment, and the inventory's entry is
+  `Belay.Sqlite.Model` (203 modules, complete; before, 211 with the 8 verifier modules). The API
+  reference builds with 268 public modules. `just test-source` and `just test-nix` pass.

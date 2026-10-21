@@ -12,7 +12,7 @@ import subprocess
 import pytest
 
 import tools.api_reference as api_reference
-from tools.api_reference import (CORE_DATABASE, LIBRARY_PACKAGE_DIRECTORY, SOURCE_REPOSITORY,
+from tools.api_reference import (CORE_DATABASE, MODEL_PACKAGE_DIRECTORY, SOURCE_REPOSITORY,
                                   SOURCE_REVISION_PLACEHOLDER, correct_recursor_links, generate_reference)
 from tools.api_reference_links import link_sources
 from tools.ci_store_gc import TARGETS
@@ -22,6 +22,10 @@ pytestmark = [pytest.mark.unit, pytest.mark.environment]
 REVISION = "1234567890abcdef1234567890abcdef12345678"
 """A complete source identity used by the isolated reference fixture."""
 BUILD_SUPPORT = Path(__file__).resolve().parents[1] / "build-support"
+MODEL_SOURCES = {"Belay.Sqlite.Model.Nested.Rows": "Belay/Sqlite/Model/Nested/Rows.lean",
+                 "Belay.Sqlite.Model.Rows": "Belay/Sqlite/Model/Rows.lean",
+                 "Belay.Sqlite.Model": "Belay/Sqlite/Model.lean"}
+"""The modules of the fixture's model package by name, with their sources, in the generator's order."""
 
 
 def test_nix_and_python_source_revision_policy_agree() -> None:
@@ -32,21 +36,21 @@ def test_nix_and_python_source_revision_policy_agree() -> None:
 
 
 def test_core_takes_only_the_toolchain_and_doc_gen4() -> None:
-    """No repository file reaches the core build, the base starts from it and the built library and model
-    packages, and CI keeps both."""
+    """No repository file reaches the core build, the base starts from it and the built model package,
+    and CI keeps both."""
     core = (BUILD_SUPPORT / "api-reference-core.nix").read_text()
     assert "{ pkgs, leanToolchain, docGen4 }:" in core and "../" not in core
     base = (BUILD_SUPPORT / "api-reference.nix").read_text()
-    assert "{ pkgs, leanToolchain, docGen4, core, modelPackage, verifierLibrary }:" in base
+    assert "{ pkgs, leanToolchain, docGen4, core, modelPackage }:" in base
     assert "--revision" not in base and "inventory" not in base
     assert {"apiReferenceCore", "apiReferenceBase"} <= set(TARGETS)
 
 
 def pages(output: Path, ours: str, core: str = "<p id=\"List\"></p>") -> None:
     """One page of ours with a model type, and one Lean library page with `List`."""
-    (output / "SqliteVerifier").mkdir(parents=True)
+    (output / "Belay").mkdir(parents=True)
     (output / "Init").mkdir()
-    (output / "SqliteVerifier/Model.html").write_text('<a id="Value"></a>' + ours)
+    (output / "Belay/Model.html").write_text('<a id="Value"></a>' + ours)
     (output / "Init/Data.html").write_text(core)
 
 
@@ -55,7 +59,7 @@ def test_correction_points_recursors_on_our_pages_at_their_type(tmp_path: Path) 
     lean_page = '<p id="List"></p><a href="#List.casesOn">core</a>'
     pages(tmp_path, '<a href="#Value.rec">own</a><a href="../Init/Data.html#List.rec">list</a>', lean_page)
     assert correct_recursor_links(tmp_path) == 2
-    ours = (tmp_path / "SqliteVerifier/Model.html").read_text()
+    ours = (tmp_path / "Belay/Model.html").read_text()
     assert 'href="#Value"' in ours and 'href="../Init/Data.html#List"' in ours
     assert (tmp_path / "Init/Data.html").read_text() == lean_page
     assert correct_recursor_links(tmp_path) == 0
@@ -67,15 +71,15 @@ def test_correction_changes_only_omitted_recursors(tmp_path: Path, link: str) ->
     page = f'<a id="example%20.rec"></a><a href="{link}">link</a>'
     pages(tmp_path, page)
     assert correct_recursor_links(tmp_path) == 0
-    assert (tmp_path / "SqliteVerifier/Model.html").read_text() == '<a id="Value"></a>' + page
+    assert (tmp_path / "Belay/Model.html").read_text() == '<a id="Value"></a>' + page
 
 
 def source_tree(root: Path) -> Path:
-    """An entry point and two nested library modules in the library package, without compiling Lean."""
-    library = root / LIBRARY_PACKAGE_DIRECTORY
-    (library / "SqliteVerifier/Nested").mkdir(parents=True)
-    for path in ("SqliteVerifier.lean", "SqliteVerifier/Model.lean", "SqliteVerifier/Nested/Rows.lean"):
-        (library / path).write_text("-- fixture\n")
+    """A root module and two nested modules in the model package, without compiling Lean."""
+    model = root / MODEL_PACKAGE_DIRECTORY
+    (model / "Belay/Sqlite/Model/Nested").mkdir(parents=True)
+    for path in MODEL_SOURCES.values():
+        (model / path).write_text("-- fixture\n")
     return root
 
 
@@ -88,7 +92,7 @@ def run_generator(tmp_path: Path, ours: str) -> tuple[list[list[str]], Path]:
 
     def record(command: list[str], **options: object) -> subprocess.CompletedProcess[str]:
         """Accept every doc-gen4 call and keep its arguments."""
-        assert options["cwd"] == root / LIBRARY_PACKAGE_DIRECTORY and options["check"] and options["timeout"]
+        assert options["cwd"] == root / MODEL_PACKAGE_DIRECTORY and options["check"] and options["timeout"]
         calls.append(command)
         return subprocess.CompletedProcess(command, 0)
 
@@ -102,9 +106,7 @@ def test_generator_gives_each_module_its_own_source_uri(tmp_path: Path) -> None:
     """Each public module is added once with its file's placeholder URI, before one `fromDb`."""
     calls, build = run_generator(tmp_path, '<a href="#Value.rec">own</a>')
     prefix = f"{SOURCE_REPOSITORY}/blob/{SOURCE_REVISION_PLACEHOLDER}/"
-    modules = {name: f"{LIBRARY_PACKAGE_DIRECTORY}/{path}" for name, path in (
-        ("SqliteVerifier", "SqliteVerifier.lean"), ("SqliteVerifier.Model", "SqliteVerifier/Model.lean"),
-        ("SqliteVerifier.Nested.Rows", "SqliteVerifier/Nested/Rows.lean"))}
+    modules = {name: f"{MODEL_PACKAGE_DIRECTORY}/{path}" for name, path in MODEL_SOURCES.items()}
     assert all(call[:3] == ["lake", "env", "/tools/doc-gen4"] for call in calls)
     assert [call[3:] for call in calls[:-1]] == [
         ["single", "--build", str(build), module, CORE_DATABASE, prefix + path] for module, path in modules.items()]
@@ -124,15 +126,15 @@ def test_generator_reports_a_missing_core_or_a_fixed_doc_gen4_bug(tmp_path: Path
 def linked_base(root: Path, page: str) -> Path:
     """A base reference with one page and the report of the base build."""
     base = root / "base"
-    (base / "SqliteVerifier").mkdir(parents=True)
-    (base / "SqliteVerifier/Model.html").write_text(page)
+    (base / "Belay").mkdir(parents=True)
+    (base / "Belay/Model.html").write_text(page)
     (base / "reference-check.json").write_text(json.dumps({"public_modules": 1}))
     return base
 
 
 def placeholder_link(line: int) -> str:
     """One generated source link of the base build."""
-    return f'<a href="{SOURCE_REPOSITORY}/blob/{SOURCE_REVISION_PLACEHOLDER}/SqliteVerifier/Model.lean#L{line}">source</a>'
+    return f'<a href="{SOURCE_REPOSITORY}/blob/{SOURCE_REVISION_PLACEHOLDER}/Belay/Sqlite/Model.lean#L{line}">source</a>'
 
 
 def test_link_step_puts_the_commit_into_every_source_link(tmp_path: Path) -> None:
@@ -140,9 +142,9 @@ def test_link_step_puts_the_commit_into_every_source_link(tmp_path: Path) -> Non
     page = placeholder_link(1) + placeholder_link(2)
     base = linked_base(tmp_path, page)
     assert link_sources(base, tmp_path / "out", REVISION) == 2
-    linked = (tmp_path / "out/SqliteVerifier/Model.html").read_text()
+    linked = (tmp_path / "out/Belay/Model.html").read_text()
     assert linked.count(f"{SOURCE_REPOSITORY}/blob/{REVISION}/") == 2 and SOURCE_REVISION_PLACEHOLDER not in linked
-    assert (base / "SqliteVerifier/Model.html").read_text() == page
+    assert (base / "Belay/Model.html").read_text() == page
     report = json.loads((tmp_path / "out/reference-check.json").read_text())
     assert report == {"public_modules": 1, "source_revision": REVISION, "source_links": 2}
 
@@ -156,17 +158,6 @@ def test_link_step_refuses_unlinked_or_foreign_sources(tmp_path: Path, damage: s
     base = linked_base(tmp_path, page)
     with pytest.raises(ValueError):
         link_sources(base, tmp_path / "out", "main" if damage == "revision" else REVISION)
-
-
-def test_generator_maps_model_package_to_module_and_repository_uri(tmp_path: Path) -> None:
-    """Our generator passes a model module name and its exact package source URI to doc-gen4."""
-    model = tmp_path / "source/packages/belay-sqlite-model/Belay/Sqlite/Model/Schema.lean"
-    model.parent.mkdir(parents=True)
-    model.write_text("-- fixture\n")
-    calls, build = run_generator(tmp_path, '<a href="#Value.rec">own</a>')
-    uri = f"{SOURCE_REPOSITORY}/blob/{SOURCE_REVISION_PLACEHOLDER}/packages/belay-sqlite-model/Belay/Sqlite/Model/Schema.lean"
-    assert calls[-2][3:] == ["single", "--build", str(build), "Belay.Sqlite.Model.Schema", CORE_DATABASE, uri]
-    assert calls[-1][-1] == "Belay.Sqlite.Model.Schema"
 
 
 def test_model_pages_receive_our_recursor_correction(tmp_path: Path) -> None:
