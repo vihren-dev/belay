@@ -35,8 +35,9 @@ constraint (ADR 0014, slice 4), and so do CREATE INDEX and the other statement f
 that checks foreign keys (ADR 0018, D4) has the effect of its keys ({name}`insertKeys`,
 {name}`updateKeys`, {name}`deleteKeys`, {name}`dropKeys`) and passes the support check when the
 plain write and the keys both pass it ({name}`StatementRun.withKeys`). A write on a database
-whose catalog has a trigger ({name}`Catalog.hasTrigger`) fails the support check: the model does
-not run triggers yet (ADR 0018, D5). -/
+whose catalog has a trigger ({name}`Catalog.hasTrigger`) fails the support check, and so does a
+DROP TABLE that deletes its rows with their foreign-key actions on such a catalog, whose actions
+fire the triggers of the child tables: the model does not run triggers yet (ADR 0018, D5). -/
 def runStatement (clock : Int) (statement : Resolved.Statement) (database : Database) : StatementRun :=
   match statement with
   | .insert target rows returning subqueries foreignKeys => match database.table target with
@@ -93,7 +94,8 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
     { effect := step clock statement database,
       ready := column.clockDefault || (readDefaultValue column).toOption.isSome }
   | .drop positions foreignKeys =>
-    StatementRun.withKeys (step clock statement database) true (foreignKeys.map fun depth => dropKeys depth positions database)
+    StatementRun.withKeys (step clock statement database) (!(foreignKeys.isSome && database.catalog.hasTrigger))
+      (foreignKeys.map fun depth => dropKeys depth positions database)
   | .createIndex .. | .createTrigger .. => { effect := step clock statement database, ready := true }
   | .begin | .commit | .rollback | .prepareError _ | .setting _ => { effect := step clock statement database, ready := true }
 
