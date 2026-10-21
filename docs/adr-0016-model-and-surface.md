@@ -130,6 +130,11 @@ its first prototype (the guide's open questions 8, 9 and 12 are the candidates):
 2. The change of the first prototype creates the surface package of D1, with the test
    of D2.
 
+Amended 2026-10-21: a script makes the move of D3, so the move can be prepared as a local
+commit while other model work is still in review, on top of it. Its pull request opens only
+when no model pull request below it is open, and the script then runs again on that base,
+so that no open branch has to merge the move.
+
 ## Consequences
 
 - **No preparation without a user of it.** The model, the verifier and CI stay as they
@@ -142,8 +147,8 @@ its first prototype (the guide's open questions 8, 9 and 12 are the candidates):
   modules by name until a trigger in the table needs more.
 - **The move costs one large diff.** About 220 Lean files, the Nix build, the
   conformance tools and their mutant anchors, the tests and the documentation change
-  together. Open branches conflict with it, so it waits for a time with no model work in
-  flight. The runtime's model root gets a new path, so Lake caches from before the move
+  together. Open branches conflict with it, so its pull request waits for a time with no
+  model work in flight (see the amendment in "Order"). The runtime's model root gets a new path, so Lake caches from before the move
   are not reused.
 
 ## Alternatives considered

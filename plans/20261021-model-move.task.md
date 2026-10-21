@@ -44,10 +44,11 @@ Specification: [ADR 0016](../docs/adr-0016-model-and-surface.md), D3 and "Order"
 - **The move is mechanical and one change** (ADR 0016, D3): a script does it, so that it can be
   run again on a new base if a branch below it changes. It comes before the first surface
   code, so no surface module has to move.
-- **Model work in flight.** ADR 0016 says the move waits until no model work is in flight.
-  The pull requests of ADR 0018 (#204 and #205) are open, so the move is a local commit on top
-  of them, and its pull request opens with S1's. If they change before they merge, the script
-  runs again on the new base.
+- **Model work in flight.** ADR 0016 (amended 2026-10-21, "Order") lets a script prepare the
+  move as a local commit on top of model work in review; its pull request opens only when no
+  model pull request below it is open, and the script runs again on that base. The pull
+  requests of ADR 0018 (#204 and #205) are open, so the move is a local commit on top of them
+  until they merge.
 - **Text that names the package by parts.** The mutation tools rewrite `namespace Belay.Sqlite`
   and `end Belay.Sqlite` in copied files, Python code builds paths as
   `packages/belay-sqlite/Belay/Sqlite`, and the mutant tables name files from
