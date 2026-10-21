@@ -13,18 +13,20 @@ of {lit}`Query.results`. -/
 namespace Belay.Sqlite.Resolved
 
 /-- A total order of values: {name}`compareValues`, and among the values that it says are equal
-but differ, an integer before a real, and reals by their bits. For example, the integer 1 comes
+but differ, NULL first, an integer before a real, and reals by their bits, so that a NaN REAL,
+which the model never makes, is not equal to NULL either. For example, the integer 1 comes
 before the real 1.0. -/
 def compareNormal (first second : Value) : Ordering :=
   (compareValues first second).then (match first, second with
     | .integer _, .real _ => .lt
     | .real _, .integer _ => .gt
     | .real a, .real b => compare a b
-    | .null, .null | .null, .integer _ | .null, .real _ | .null, .text _ | .null, .blob _
-    | .integer _, .null | .integer _, .integer _ | .integer _, .text _ | .integer _, .blob _
-    | .real _, .null | .real _, .text _ | .real _, .blob _
-    | .text _, .null | .text _, .integer _ | .text _, .real _ | .text _, .text _ | .text _, .blob _
-    | .blob _, .null | .blob _, .integer _ | .blob _, .real _ | .blob _, .text _ | .blob _, .blob _ => .eq)
+    | .null, .integer _ | .null, .real _ | .null, .text _ | .null, .blob _ => .lt
+    | .integer _, .null | .real _, .null | .text _, .null | .blob _, .null => .gt
+    | .null, .null | .integer _, .integer _ | .integer _, .text _ | .integer _, .blob _
+    | .real _, .text _ | .real _, .blob _
+    | .text _, .integer _ | .text _, .real _ | .text _, .text _ | .text _, .blob _
+    | .blob _, .integer _ | .blob _, .real _ | .blob _, .text _ | .blob _, .blob _ => .eq)
 
 /-- The order of two rows: column by column by {name}`compareNormal`, a shorter row first when
 one is a prefix of the other. -/
