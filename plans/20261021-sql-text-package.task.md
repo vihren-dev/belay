@@ -5,8 +5,8 @@ Status file: [status](20261021-sql-text-package.status.md).
 Specification: [ADR 0017](../docs/adr-0017-user-surface.md), D2 and D6, with their amendments of
 2026-10-21; [ADR 0016](../docs/adr-0016-model-and-surface.md), D2 and its amendment of 2026-10-21.
 Depends on: [S1](20261021-surface-s1.task.md), where the owner chose candidate A, and
-[the removal of the verifier product](20261021-remove-verifier-product.task.md) (ADR 0020).
-Amended 2026-10-21 (ADR 0020): the CLI, the installed runtime and the kernel gate are gone, so the
+[the removal of the verifier product](20261021-remove-verifier-product.task.md) (ADR 0021).
+Amended 2026-10-21 (ADR 0021): the CLI, the installed runtime and the kernel gate are gone, so the
 program serves the harness only, and `located.py`'s path lookup, which only the CLI used, goes.
 
 ## Scope
