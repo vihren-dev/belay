@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.CatalogDrop
+import Belay.Sqlite.Resolution.ParentKeys
 import Belay.Sqlite.Resolution.Profile
 import Belay.Sqlite.StoreValue
 
@@ -32,14 +33,6 @@ structure Database where
   including physical rowids. -/
   rows : List (List Row) := []
   deriving Repr, DecidableEq
-
-/-- The table at a catalog position, or {lean}`(none : Option CatalogTable)` for a
-position that holds an index or is past the end. -/
-def Catalog.tableAt (catalog : Catalog) (position : Nat) : Option CatalogTable :=
-  match catalog[position]? with
-  | some { entry := .table table, .. } => some table
-  | some { entry := .index _, .. } => none
-  | none => none
 
 /-- The table at a catalog position: its catalog entry with its stored rows, or
 {lean}`(none : Option Table)` for a position that holds an index or is past the end. -/

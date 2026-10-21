@@ -90,6 +90,9 @@ inductive Statement where
   | select (columns : List ResultColumn) (source : Option TableReference) (joins : List Join) (filter : Option Expr)
       (groupBy : List Expr) (orderBy : List OrderTerm) (limit : Option Expr) (offset : Option Expr)
       (subqueries : List Subquery := []) (having : Option Expr := none) (distinct : Bool := false)
+  /-- {lit}`PRAGMA foreign_keys = value`, with the value as {lit}`sqlite3GetBoolean` reads it,
+  or the query {lit}`PRAGMA foreign_keys` with {lean}`(none : Option Bool)` (ADR 0018, D4). -/
+  | pragmaForeignKeys (value : Option Bool)
   deriving Repr, BEq
 
 end Belay.Sqlite.Syntax

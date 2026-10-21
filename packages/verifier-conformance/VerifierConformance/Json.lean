@@ -9,7 +9,23 @@ open Belay.Sqlite
 
 namespace Belay.Sqlite
 
-deriving instance Lean.FromJson, Lean.ToJson for Limits, Profile
+deriving instance Lean.FromJson, Lean.ToJson for Limits
+/-- A profile as JSON, with {lit}`foreignKeys` only for a profile that turns foreign keys on, so
+the records of other profiles keep their form. -/
+instance : Lean.ToJson Profile where
+  toJson profile := Lean.Json.mkObj ([("release", Lean.toJson profile.release),
+      ("sourceId", Lean.toJson profile.sourceId), ("limits", Lean.toJson profile.limits),
+      ("dqsDml", Lean.toJson profile.dqsDml), ("dqsDdl", Lean.toJson profile.dqsDdl)] ++
+    (if profile.foreignKeys then [("foreignKeys", Lean.toJson true)] else []))
+
+/-- Read a profile ({name}`Profile`); a missing {lit}`foreignKeys` is a profile with foreign keys
+off. -/
+instance : Lean.FromJson Profile where
+  fromJson? json := do
+    let foreignKeys : Bool := (json.getObjValAs? Bool "foreignKeys").toOption.getD false
+    return { release := ← json.getObjValAs? String "release", sourceId := ← json.getObjValAs? String "sourceId",
+             limits := ← json.getObjValAs? Limits "limits", dqsDml := ← json.getObjValAs? Bool "dqsDml",
+             dqsDdl := ← json.getObjValAs? Bool "dqsDdl", foreignKeys }
 deriving instance Lean.FromJson, Lean.ToJson for Conformance.ErrorPhase
 /-- A native column as JSON, with {lit}`hidden` only for a generated column, so the records of
 other columns keep their form. -/

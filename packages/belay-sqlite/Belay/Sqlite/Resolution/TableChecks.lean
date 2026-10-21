@@ -31,7 +31,7 @@ def columnChecks (dqs : Bool) (scope : Scope) (definition : Syntax.ColumnDefinit
     Except ValueIssue (List CheckConstraint) :=
   definition.constraints.zipIdx.filterMapM fun (constraint, item) => match constraint with
     | .check condition label => some <$> (resolveCheck dqs scope condition label).mapError (·.under [2, item, 0])
-    | .notNull _ | .primaryKey .. | .unique _ | .default .. | .collate _ | .references .. | .generated .. => .ok none
+    | .notNull _ | .primaryKey .. | .unique _ | .default .. | .collate _ | .references .. | .generated .. | .deferral _ => .ok none
 
 /-- The table with the CHECK constraints of its definitions and of its table constraints
 resolved over the scope, in written order: each column's in {name}`CatalogColumn.checks`
@@ -44,7 +44,7 @@ def resolveTableChecks (dqs : Bool) (scope : Scope) (table : CatalogTable)
     (fun checks => { column with checks }) <$> (columnChecks dqs scope definition).mapError (·.under [1, position])
   let tableChecks ← constraints.zipIdx.filterMapM fun (constraint, item) => match constraint with
     | .check condition label => some <$> (resolveCheck dqs scope condition label).mapError (·.under [2, item, 0])
-    | .primaryKey .. | .unique .. | .foreignKey .. => .ok none
+    | .primaryKey .. | .unique .. | .foreignKey .. | .deferral _ => .ok none
   .ok { table with columns := checked ++ table.columns.drop definitions.length, checks := tableChecks }
 
 end Belay.Sqlite

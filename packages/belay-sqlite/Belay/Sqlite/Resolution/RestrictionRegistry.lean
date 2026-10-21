@@ -38,6 +38,7 @@ def RestrictionKind.registry : RestrictionKind → RestrictionRegistry
   | .replaceDefault | .insertColumnTwice | .updateColumnTwice | .joinOperator | .systemTable
   | .unmodeledFunction | .aggregateInExpression | .aliasInExpression | .groupByTerm | .bareColumn
   | .aggregateOrderBy | .windowValue | .negativeOffset | .tableFunction | .laterTableInOn | .functionJoin
-  | .laterSourceInArguments | .jsonSubtype | .subqueryHere | .outerAggregate => .unsupported
+  | .laterSourceInArguments | .jsonSubtype | .subqueryHere | .outerAggregate | .deferredForeignKey
+  | .foreignKeyUpsert => .unsupported
 
 end Belay.Sqlite

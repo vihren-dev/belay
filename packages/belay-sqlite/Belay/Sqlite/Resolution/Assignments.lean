@@ -33,19 +33,24 @@ def assignedExpression (scope : Scope) (position : Nat) (expression : Syntax.Exp
 
 /-- Resolve one {lit}`SET` assignment at item {lit}`item`, in SQLite's order
 ({lit}`sqlite3Update`): the expression first, then the column name. The column name
-must name a column of the table ({lit}`no such column: %s`), and a generated one is the issue
-{lit}`generated` of its name. A value that reads the
+must name a column of the table ({lit}`no such column: %s`), or, for a table with a rowid, be a
+rowid name ({lit}`rowid`, {lit}`_rowid_` or {lit}`oid`), which assigns the rowid: the column of
+the rowid alias, and the restriction {name}`RestrictionKind.rowidName` for a table without one. A
+generated column is the issue {lit}`generated` of its name. A value that reads the
 row for a column of a unique key ({lit}`keyColumns`) is a model restriction, and so is a
 value that names no column and whose JSON function may fail. The value may name the
 statement's subqueries ({lit}`shapes`). Paths are relative to the assignment list. -/
 def resolveAssignment (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (keyColumns : List Nat)
-    (generated : Identifier → ValueIssue) (item : Nat) :
+    (generated : Identifier → ValueIssue) (rowid : Option (Option Nat)) (item : Nat) :
     Identifier × Syntax.Expr → Except ValueIssue (Nat × Resolved.Expr)
   | (name, value) =>
     (resolveOperand dqs scope shapes true value).mapError (·.under [item, 1]) >>= fun operand =>
-    (match columnPosition scope.columns name with
-      | some position => .ok position
-      | none => .error (.prepare (.noSuchColumn name))) >>= fun position =>
+    (match columnPosition scope.columns name, rowid with
+      | some position, _ => .ok position
+      | none, some alias => if !rowidName name then .error (.prepare (.noSuchColumn name)) else match alias with
+        | some position => .ok position
+        | none => .error (.restriction [item, 0] .rowidName)
+      | none, none => .error (.prepare (.noSuchColumn name))) >>= fun position =>
     if (scope.columns[position]?.bind (·.generated)).isSome then .error (generated name)
     else if mentionsColumn scope value && keyColumns.contains position then
       .error (.restriction [item, 1] .rowDependentKey)

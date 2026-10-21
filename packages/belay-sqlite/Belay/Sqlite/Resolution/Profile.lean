@@ -1,7 +1,8 @@
 set_option doc.verso true
 
 /-! The execution profile that name resolution reads: the SQLite release, its
-build, the effective connection limits and the double-quoted-string settings.
+build, the effective connection limits, the double-quoted-string settings and whether foreign
+keys are on.
 SQLite checks most limits while it prepares a statement, so resolution needs them;
 the remaining recorded settings belong to the execution semantics. -/
 
@@ -42,7 +43,8 @@ def Limits.documentedDefaults : Limits where
   triggerDepth := 1000
 
 /-- The parts of an execution profile that name resolution reads. Supply the
-release and source id of the measured build. When no measured profile exists,
+release and source id of the measured build; omit {lit}`foreignKeys` for a profile
+with foreign keys off. When no measured profile exists,
 build one from the documented defaults of the release, as below. -/
 structure Profile where
   /-- The release, as {lit}`sqlite_version()` reports it, for example {lit}`3.51.0`. -/
@@ -56,6 +58,9 @@ structure Profile where
   dqsDml : Bool
   /-- {lit}`SQLITE_DBCONFIG_DQS_DDL`: the same setting for DDL statements. -/
   dqsDdl : Bool
+  /-- Whether foreign keys are on at the start of the script ({lit}`PRAGMA foreign_keys`);
+  {lean}`false`, SQLite's default, when the profile does not turn them on (ADR 0018, D4). -/
+  foreignKeys : Bool := false
   deriving Repr, DecidableEq
 
 /-- A profile with the documented default limits and the default double-quoted

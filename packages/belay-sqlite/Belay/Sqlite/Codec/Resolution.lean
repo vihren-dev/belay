@@ -26,6 +26,10 @@ instance : Lean.ToJson PrepareError where
     | .noSuchIndex name => Lean.Json.mkObj [("noSuchIndex", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .tableMayNotBeDropped name =>
       Lean.Json.mkObj [("tableMayNotBeDropped", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .noSuchReferencedTable name =>
+      Lean.Json.mkObj [("noSuchReferencedTable", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .foreignKeyMismatch child parent =>
+      Lean.Json.mkObj [("foreignKeyMismatch", Lean.Json.mkObj [("child", Lean.toJson child), ("parent", Lean.toJson parent)])]
     | .expression error => Lean.toJson error
 
 /-- A model restriction as JSON: the statement index, the path, the message that users

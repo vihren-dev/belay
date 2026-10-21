@@ -49,7 +49,12 @@ def row_wire(rowid: int, cells: tuple[Cell, ...]) -> Json:
 
 
 def case_profile(release: str, source_id: str, limits: dict[str, int], *,
-                 dqs_dml: bool = True, dqs_ddl: bool = True) -> Json:
-    """The profile of a case as Lean's `Profile`: the engine, the measured limits, and the
-    double-quoted-string settings, which the library keeps on unless a profile turns them off."""
-    return {"release": release, "sourceId": source_id, "limits": dict(limits), "dqsDml": dqs_dml, "dqsDdl": dqs_ddl}
+                 dqs_dml: bool = True, dqs_ddl: bool = True, foreign_keys: bool = False) -> Json:
+    """The profile of a case as Lean's `Profile`: the engine, the measured limits, the
+    double-quoted-string settings, which the library keeps on unless a profile turns them off, and
+    `foreignKeys` only for a profile that turns foreign keys on, so other cases keep their form."""
+    profile: Json = {"release": release, "sourceId": source_id, "limits": dict(limits), "dqsDml": dqs_dml,
+                     "dqsDdl": dqs_ddl}
+    if foreign_keys:
+        profile["foreignKeys"] = True
+    return profile

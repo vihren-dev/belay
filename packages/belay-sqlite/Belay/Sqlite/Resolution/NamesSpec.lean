@@ -73,8 +73,10 @@ def ResolveState.NamesUnique (state : ResolveState) : Prop :=
 /-- The unique-names rule ({lit}`lang_createtable.html`, R-01232-54838): for every
 context, state, index and statement, if the state's catalogs have unique folded names
 and the statement resolves, then the next state's catalogs have unique folded names.
-Proof sketch: BEGIN, COMMIT and ROLLBACK only copy catalogs that have unique names;
-every other statement changes the catalog by one {name}`CatalogStep`. -/
+Proof sketch: BEGIN, COMMIT and ROLLBACK only copy catalogs that have unique names, and
+{lit}`PRAGMA foreign_keys = value` keeps them; every other statement changes the catalog by one
+{name}`CatalogStep`, or is a prepare error of its foreign keys that keeps the state
+({name}`ResolveState.withWrite_cases`). -/
 theorem resolveStatement_namesUnique (context : ResolveContext) (state next : ResolveState)
     (index : Nat) (statement : Syntax.Statement) (resolved : Resolved.Statement)
     (unique : state.NamesUnique)
@@ -84,6 +86,12 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
   have keep : ∀ after, CatalogStep state.catalog after →
       ({ state with catalog := after } : ResolveState).NamesUnique :=
     fun after step => ⟨step.namesUnique current, saved⟩
+  have written : ∀ result, state.withWrite context index result = .ok (resolved, next) →
+      (∀ statement after, result = .ok (statement, after) → CatalogStep state.catalog after) → next.NamesUnique := by
+    intro result ok step
+    rcases ResolveState.withWrite_cases ok with ⟨_, _, rfl⟩ | ⟨statement, after, rfl, rfl, _, _⟩
+    · exact ⟨current, saved⟩
+    · exact keep _ (step statement after rfl)
   cases statement with
   | begin =>
     cases ok
@@ -111,25 +119,31 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
     split at ok <;> cases ok
     exact keep _ (resolveAddColumn_step _ _ _ _ _ _ _ (by assumption))
   | dropTable name ifExists =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
-    split at ok <;> cases ok
-    exact keep _ (resolveDropTable_step _ _ _ _ _ (by assumption))
+    simp only [resolveStatement] at ok
+    exact written _ ok fun _ _ found => resolveDropTable_step _ _ _ _ _ found
   | dropIndex name ifExists =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveDropIndex_step _ _ _ _ _ _ (by assumption))
   | insert table columns rows conflicts algorithm returning subqueries =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
-    split at ok <;> cases ok
-    exact keep _ ((resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _ _ (fun _ _ _ _ h => resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ _ _ h) (by assumption)).1 ▸ .same)
+    simp only [resolveStatement] at ok
+    exact written _ ok fun _ _ found => (resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _ _
+      (fun _ _ _ _ h => resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ _ _ h) found).1 ▸ .same
   | update table assignments filter returning subqueries =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
-    split at ok <;> cases ok
-    exact keep _ ((resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _ _ (fun _ _ _ _ h => resolveUpdate_same _ _ _ _ _ _ _ _ _ _ _ h) (by assumption)).1 ▸ .same)
+    simp only [resolveStatement] at ok
+    exact written _ ok fun _ _ found => (resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _ _
+      (fun _ _ _ _ h => resolveUpdate_same _ _ _ _ _ _ _ _ _ _ _ h) found).1 ▸ .same
   | delete table filter returning subqueries =>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
-    split at ok <;> cases ok
-    exact keep _ ((resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _ _ (fun _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ _ h) (by assumption)).1 ▸ .same)
+    simp only [resolveStatement] at ok
+    exact written _ ok fun _ _ found => (resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _ _
+      (fun _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ _ h) found).1 ▸ .same
+  | pragmaForeignKeys value =>
+    cases value with
+    | some on => cases ok; exact ⟨current, saved⟩
+    | none =>
+      simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+      split at ok <;> cases ok
+      exact keep _ ((resolveSelect_same _ _ _ _ _ _ _ (by assumption)).1 ▸ .same)
   | select results source joins filter groupBy orderBy limit offset subqueries having distinct =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok

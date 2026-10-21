@@ -18,9 +18,10 @@ def Statement.applyCatalog : Statement → Catalog → Catalog
   | .createTable _ name table, catalog => catalog.createTable name table
   | .createIndex _ name index, catalog => catalog.createIndex name index
   | .addColumn position column, catalog => catalog.addColumn position column
-  | .drop positions, catalog => catalog.drop positions
+  | .drop positions _, catalog => catalog.drop positions
   | .begin, catalog | .commit, catalog | .rollback, catalog | .insert .., catalog | .update .., catalog
-  | .upsert .., catalog | .delete .., catalog | .prepareError _, catalog | .query .., catalog => catalog
+  | .upsert .., catalog | .delete .., catalog | .prepareError _, catalog | .query .., catalog
+  | .setting _, catalog => catalog
 
 /-- The form of a resolved statement, for the rules that only classify statements (ADR
 0013, D7). -/
@@ -39,6 +40,8 @@ inductive Statement.Kind where
   | query
   /-- A statement that SQLite refuses to prepare. -/
   | prepareError
+  /-- {lit}`PRAGMA foreign_keys = value`: it changes the setting that resolution follows. -/
+  | setting
   deriving Repr, DecidableEq
 
 /-- The form of the statement ({name}`Statement.Kind`). Every rule that only asks which form
@@ -46,18 +49,20 @@ a statement has reads it, so a new statement form gets a form here first. -/
 @[simp] def Statement.kind : Statement → Statement.Kind
   | .createTable .. | .addColumn .. => .definition
   | .createIndex .. => .index
-  | .drop _ => .drop
+  | .drop .. => .drop
   | .begin | .commit | .rollback => .control
   | .insert .. | .upsert .. | .update .. | .delete .. => .write
   | .query .. => .query
   | .prepareError _ => .prepareError
+  | .setting _ => .setting
 
-/-- Whether the statement is transaction control ({name}`Statement.Kind.control`): BEGIN,
-COMMIT or ROLLBACK. These change the saved catalog of a transaction instead of the
-catalog; every other statement is not control. -/
+/-- Whether the statement is transaction control ({name}`Statement.Kind.control`), BEGIN,
+COMMIT or ROLLBACK, or a setting ({name}`Statement.Kind.setting`). These change the saved
+catalog of a transaction or the setting of foreign keys instead of the catalog; every other
+statement is not control. -/
 def Statement.isControl (statement : Statement) : Bool :=
   match statement.kind with
-  | .control => true
+  | .control | .setting => true
   | .definition | .index | .drop | .write | .query | .prepareError => false
 
 end Belay.Sqlite.Resolved
