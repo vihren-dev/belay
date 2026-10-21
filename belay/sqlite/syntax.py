@@ -14,6 +14,7 @@ from .syntax_drops import drop
 from .syntax_indexes import create_index
 from .syntax_pragmas import pragma
 from .syntax_select import select
+from .syntax_triggers import create_trigger
 from .syntax_writes import delete, insert, transaction, update
 
 SCRIPT_RECORD_VERSION = 5
@@ -44,7 +45,9 @@ def statement(tree: Tree, command: Node) -> Located:
         return create_index(tree, command)
     if symbols[:2] == ["ALTER", "TABLE"]:
         return add_column(tree, command)
-    if symbols[:2] in (["DROP", "TABLE"], ["DROP", "INDEX"]):
+    if symbols == ["createkw", "trigger_decl", "BEGIN", "trigger_cmd_list", "END"]:
+        return create_trigger(tree, command)
+    if symbols[:2] in (["DROP", "TABLE"], ["DROP", "INDEX"], ["DROP", "TRIGGER"]):
         return drop(tree, command)
     if symbols[:1] in (["BEGIN"], ["COMMIT"], ["END"], ["ROLLBACK"]):
         return transaction(tree, command)
@@ -59,8 +62,8 @@ def statement(tree: Tree, command: Node) -> Located:
     if symbols[:1] == ["PRAGMA"]:
         return pragma(tree, command)
     raise tree.unsupported(command, "This statement is not modeled; the model runs CREATE TABLE, CREATE INDEX, "
-                           "ALTER TABLE ADD COLUMN, DROP TABLE, DROP INDEX, BEGIN, COMMIT, ROLLBACK, INSERT, UPDATE, DELETE, "
-                           "SELECT and PRAGMA foreign_keys")
+                           "CREATE TRIGGER, ALTER TABLE ADD COLUMN, DROP TABLE, DROP INDEX, DROP TRIGGER, BEGIN, COMMIT, "
+                           "ROLLBACK, INSERT, UPDATE, DELETE, SELECT and PRAGMA foreign_keys")
 
 
 def statements(tree: Tree) -> tuple[Located, ...]:
