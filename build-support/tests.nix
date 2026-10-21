@@ -93,6 +93,7 @@ let
     (root + /tests/conformance_freeze_capture.py)
     (fs.fileFilter (file: file.hasExt "json") (root + /conformance/cases))
     (root + /packages/belay-sqlite/Belay/Sqlite/StatementStep.lean)
+    (root + /packages/belay-sqlite/Belay/Sqlite/StatementRun.lean)
     (root + /packages/belay-sqlite/Belay/Sqlite/SqlExecution.lean)
     (root + /packages/belay-sqlite/Belay/Sqlite/Execution.lean) (root + /packages/belay-sqlite/Belay/Sqlite/LiteralData.lean)
     (root + /packages/verifier-conformance/VerifierConformance/Trace.lean)
