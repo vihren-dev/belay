@@ -11,6 +11,9 @@ plugin, as {lit}`README.md` says. -/
 
 open Belay.Sqlite Belay.Sqlite.Translation Lean
 
+/-- The number of differences written to the file: enough to see their kinds, and a small file. -/
+def writtenDifferences : Nat := 50
+
 #eval show IO Unit from do
   let lines ← IO.FS.lines "build/surface-s1/texts.jsonl"
   let output ← IO.FS.Handle.mk "build/surface-s1/differences-a.jsonl" .write
@@ -25,7 +28,7 @@ open Belay.Sqlite Belay.Sqlite.Translation Lean
     nanos := nanos + ((← IO.monoNanosNow) - start)
     texts := texts + 1
     if result.compress == python.compress then equal := equal + 1
-    else if texts - equal ≤ 50 then
+    else if texts - equal ≤ writtenDifferences then
       output.putStrLn (Json.mkObj [("case", json.getObjValD "case"), ("role", json.getObjValD "role"),
         ("lean", result), ("python", python)]).compress
     if let .ok items := result.getObjValAs? (Array Json) "statements" then

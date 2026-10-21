@@ -8,6 +8,9 @@ when one differs. -/
 
 open Belay.Sqlite.Translation Lean
 
+/-- The number of differences printed: enough to see their kinds in the test's output. -/
+def printedDifferences : Nat := 5
+
 #eval show IO Unit from do
   let some path ← IO.getEnv "BELAY_TRANSLATION_TEXTS"
     | throw <| IO.userError "BELAY_TRANSLATION_TEXTS is not set; set it to the texts file of the test"
@@ -21,5 +24,5 @@ open Belay.Sqlite.Translation Lean
     unless lean.compress == (json.getObjValD "python").compress do
       different := different.push (Json.mkObj [("sql", sql), ("lean", lean), ("python", json.getObjValD "python")])
   IO.println s!"texts {texts} different {different.size}"
-  for item in different.extract 0 5 do IO.println item.compress
+  for item in different.extract 0 printedDifferences do IO.println item.compress
   unless different.isEmpty do throw <| IO.userError s!"{different.size} of {texts} translations differ"

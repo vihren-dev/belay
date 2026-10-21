@@ -31,6 +31,9 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = "measured.sql"
 """The source name of each diagnostic, which both translations report."""
+MINIMUM_TEXTS = 1000
+"""Fewer texts than the 1,686 of the 42 authored corpora on 2026-10-21: fewer than this means that
+the suite's inputs lost corpora, and the comparison would check too little."""
 
 
 def located(item: Located) -> Json:
@@ -69,7 +72,7 @@ def test_lean_translation_equals_python_translation(runtime_root: Path, tmp_path
     """For each text of the authored corpora, the Lean port's statements, ranges and refusals are
     the Python translation's (`tests/surface/TranslationEquality.lean` compares them)."""
     texts = authored_texts(runtime_root)
-    assert len(texts) > 1000 and any("refusal" in text["python"] for text in texts)  # type: ignore[operator]
+    assert len(texts) > MINIMUM_TEXTS and any("refusal" in text["python"] for text in texts)  # type: ignore[operator]
     path = tmp_path / "texts.jsonl"
     path.write_text("".join(json.dumps(text) + "\n" for text in texts))
     result = run_command(surface_command(runtime_root, FIXTURES / "TranslationEquality.lean"), cwd=tmp_path,
