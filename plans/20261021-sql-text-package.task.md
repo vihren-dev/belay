@@ -35,9 +35,14 @@ the CLI and the gate.
    each with an execution profile, a source name and the SQL bytes, and writes one JSON line for
    each request: the statements with their range trees, in the form that
    `belay/sqlite/located.py` reads today, or the refusal with the status, the source name, the
-   range and the message that `SqlError` has today. It selects the profile's grammar from the
-   library's metadata, as `select_grammar` does today, and it refuses a profile without a
-   grammar. One process translates a whole batch.
+   range and the message that `SqlError` has today, and whether it is the parser's resource
+   limit (`ParserResourceLimit`), which `predict.py` classifies apart. For a text that parses,
+   the line also gives the commands that the grammar found, even when the translation refuses
+   the text: the information that `native_replay.without_trailing_queries` reads from the parse
+   tree today (each command's top-level symbols, a PRAGMA's name, and the refusal of a wrapper
+   such as EXPLAIN). It selects the profile's grammar from the library's metadata, as
+   `select_grammar` does today, and it refuses a profile without a grammar. One process
+   translates a whole batch.
 5. **Python no longer loads the parser library.** The CLI (`migration_check/inputs.py`,
    `runtime.py`) and the conformance tools that parse or translate (`predict.py`,
    `generated_program.py`, `native_fixture.py`, `native_replay.py`, `native_trace.py`,
@@ -66,7 +71,11 @@ the CLI and the gate.
   stays checked, against the Lean translation: through the program (for example with the
   `parse_sql` fixture changed to call it) or as Lean tests in the text package.
 - **The program.** A test sends a batch with valid SQL, a grammar error, a model refusal, text that
-  is not valid UTF-8 and an unknown profile, and checks each result line.
+  is not valid UTF-8, a text over the parser's resource limit and an unknown profile, and checks
+  each result line.
+- **The query diagnostic.** The diagnostic of the corpus report (`conformance/corpus.py`) gives the
+  same categories as before for every frozen corpus, including texts with trailing read-only
+  PRAGMAs that the translation refuses, such as `PRAGMA table_info(t)`.
 - **The CLI.** The runtime-package and installed-runtime tests pass, and the CLI's diagnostics of a
   grammar error, a refusal and invalid UTF-8 have the same messages and ranges as before.
 - **No Python binding.** A test checks that no production Python module (`belay/`,
@@ -93,6 +102,7 @@ the CLI and the gate.
 - **The judge.** The judge lock covers the judge, the claims, the corpora and the oracle, not the
   subject. This task changes only the subject, so it needs no judge pull request unless a claim
   or a corpus changes.
-- **The S1 report** (`experiments/surface-s1/README.md`) is the record of a measurement at its
-  commit. It names that commit for its commands, and is not kept runnable after the Python
-  translation is deleted.
+- **The S1 report** (`experiments/surface-s1/README.md`) is the record of a measurement. Its
+  commands need the Python translation and candidate B. The change that deletes them adds a line
+  to the report: the commands run on the tree before this task, and this task deleted what they
+  need.
