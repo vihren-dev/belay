@@ -40,7 +40,9 @@ theorem Catalog.find_eq_none_iff (catalog : Catalog) (name : Identifier) :
     · simp
 
 /-- For every catalog, name, position and object that {name}`Catalog.find` returns, the object
-is not a trigger: triggers have a namespace of their own. -/
+is not a trigger: triggers have a namespace of their own. Proof sketch:
+{name}`findPosition_eq_some_iff` gives the lookup test of the found object, and its second
+conjunct is that the object is not a trigger. -/
 theorem Catalog.find_not_trigger (catalog : Catalog) (name : Identifier) (position : Nat) (object : CatalogObject)
     (found : catalog.find name = some (position, object)) : object.isTrigger = false := by
   have ⟨_, test, _⟩ := (findPosition_eq_some_iff _ _ _ _).mp found

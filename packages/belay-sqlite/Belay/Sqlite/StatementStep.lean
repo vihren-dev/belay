@@ -34,7 +34,9 @@ accepts such statements. CREATE TABLE passes, as its table has no rows to violat
 constraint (ADR 0014, slice 4), and so do CREATE INDEX and the other statement forms. A write
 that checks foreign keys (ADR 0018, D4) has the effect of its keys ({name}`insertKeys`,
 {name}`updateKeys`, {name}`deleteKeys`, {name}`dropKeys`) and passes the support check when the
-plain write and the keys both pass it ({name}`StatementRun.withKeys`). -/
+plain write and the keys both pass it ({name}`StatementRun.withKeys`). A write on a database
+whose catalog has a trigger ({name}`Catalog.hasTrigger`) fails the support check: the model does
+not run triggers yet (ADR 0018, D5). -/
 def runStatement (clock : Int) (statement : Resolved.Statement) (database : Database) : StatementRun :=
   match statement with
   | .insert target rows returning subqueries foreignKeys => match database.table target with
@@ -46,7 +48,7 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
       let result := LiteralData.inserted table values
       StatementRun.withKeys (insertOutcome database target keys table values result)
         (LiteralData.insertReady keys table values result && Resolved.subqueriesPlain subqueries && Resolved.cellsReady context rows &&
-          !(returningExpressions returning).any (·.any Resolved.Expr.isFallibleCall))
+          !(returningExpressions returning).any (·.any Resolved.Expr.isFallibleCall) && !database.catalog.hasTrigger)
         (foreignKeys.map fun depth => insertKeys depth target (database.catalog.writePolicy target table.shape none)
           [] values database subqueries.isEmpty)
   | .upsert target rows clauses returning algorithm subqueries foreignKeys => match database.table target with
@@ -61,7 +63,7 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
           | .ok (result, _) => .ok (database.setRows target result.rows)
           | .error (reason, reached, _) => .error (reason, database.setRows target reached.rows))
         (LiteralData.upsertReady keys table clauses values steps && Resolved.subqueriesPlain subqueries &&
-          Resolved.cellsReady context rows && upsertJsonReady clauses returning)
+          Resolved.cellsReady context rows && upsertJsonReady clauses returning && !database.catalog.hasTrigger)
         (foreignKeys.map fun depth => insertKeys depth target policy clauses values database subqueries.isEmpty)
   | .update target assignments filter returning subqueries foreignKeys => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
@@ -72,14 +74,15 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
       StatementRun.withKeys (if LiteralData.updateMismatch context table assignments filter then .error (.datatypeMismatch, database)
           else checkedWrite database target keys result)
         (LiteralData.updateReady keys table assignments result && Resolved.subqueriesPlain subqueries &&
-          updateJsonReady context table assignments filter returning)
+          updateJsonReady context table assignments filter returning && !database.catalog.hasTrigger)
         (foreignKeys.map fun depth => updateKeys context depth target table assignments filter database subqueries.isEmpty)
   | .delete target filter returning subqueries foreignKeys => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
       let context := Resolved.statementContext clock database subqueries
       StatementRun.withKeys (.ok (database.setRows target (LiteralData.deleted context table filter).rows))
-        (Resolved.subqueriesPlain subqueries && deleteJsonReady context table filter returning)
+        (Resolved.subqueriesPlain subqueries && deleteJsonReady context table filter returning &&
+          !database.catalog.hasTrigger)
         (foreignKeys.map fun depth => deleteKeys context depth target table filter database subqueries.isEmpty)
   | .query query subqueries =>
     let ran := query.runOn clock database subqueries
