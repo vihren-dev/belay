@@ -138,6 +138,9 @@ faster or more compact Lean check cannot change the totals. An earlier estimate 
    request reads 518,558 tokens, and a compaction starts at about 966,000. Earlier
    compaction (at 200,000 to 300,000 tokens) would read 27% to 37% of the tokens.
    A new session per task saves little (10%), because one task fills the context.
+   Claude Code's `autoCompactWindow` setting (100,000 to 1,000,000 tokens; also
+   `/autocompact`, `--autocompact` and `CLAUDE_CODE_AUTO_COMPACT_WINDOW`) sets the
+   point of compaction.
 2. **Reads and agent-written scripts are the largest items in the context.** Whole-file
    reads and long heredoc scripts stay until the next compaction. Bounded reads
    (line ranges, counts) and edits with `Edit` instead of Python rewrite scripts
@@ -148,3 +151,6 @@ faster or more compact Lean check cannot change the totals. An earlier estimate 
 4. **The codec's root import puts proofs into the runner.** Narrowing it removes 30
    proof modules from the closure and halves the rebuild after many model edits.
    It agrees with ADR 0016 D2, which keeps the codec as a public root.
+   The commit after this experiment makes the change. With it, `just test-full`
+   passes (804 s after the model change, on the loaded host) and `just verdict`
+   passes.
