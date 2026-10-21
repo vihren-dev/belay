@@ -1,0 +1,57 @@
+{
+  "caller": "claude",
+  "commit": "f211db9b3fa348d66563eb0e9df73958e7ae6184",
+  "date": "2026-10-21T14:43:39+00:00",
+  "exit": 1,
+  "files": [
+    "experiments/surface-s1/ParseTime.lean",
+    "experiments/surface-s1/README.md",
+    "experiments/surface-s1/editor.py",
+    "experiments/surface-s1/parse_time.py",
+    "experiments/surface-s1/texts.py",
+    "plans/20261021-surface-s1.status.md",
+    "reviews/20261021T143520Z-f409ee45/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261021T144339Z-f211db9b#1",
+      "line": 60,
+      "path": "experiments/surface-s1/editor.py",
+      "rule": "R11",
+      "severity": "must",
+      "text": "The new editor client has no test for the pinned Lean server’s completion-before-diagnostics sequence, which makes it stop before reading the final diagnostics. Fix: Add a deterministic regression test for this sequence and wait for the final diagnostics before reporting completion."
+    },
+    {
+      "id": "20261021T144339Z-f211db9b#2",
+      "line": 19,
+      "path": "experiments/surface-s1/README.md",
+      "rule": "R13",
+      "severity": "should",
+      "text": "The extraction command creates `texts.jsonl`, but both benchmarks read `sql.jsonl`, so the documented commands fail in a fresh workspace. Fix: Document how to produce `sql.jsonl` from `texts.jsonl` before running the benchmarks."
+    }
+  ],
+  "id": "20261021T144339Z-f211db9b",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "0386162b1d72",
+    "R7": "9700703240a5",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

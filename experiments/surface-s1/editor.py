@@ -1,9 +1,10 @@
 """What the editor shows for a file that uses the parser library (ADR 0017, S1, prototype 1).
 
 The script is a small language server client: it starts `lake serve` in the surface package,
-opens one Lean file, and prints the diagnostics that the server publishes when it has
-processed the file, with the seconds from opening it. The editor's Lean extension starts the
-same server and shows the same diagnostics.
+opens one Lean file, and prints the diagnostics that the server published when it answers
+Lean's `textDocument/waitForDiagnostics` request for that version of the file, which it does
+after it has published all of them, with the seconds from opening it. The editor's Lean
+extension starts the same server and shows the same diagnostics.
 
 Run from the repository root: `python3 experiments/surface-s1/editor.py PACKAGE FILE`, where
 PACKAGE is a built, writable copy of `packages/belay` and FILE a Lean file in it. The
@@ -39,7 +40,7 @@ def receive(stream: IO[bytes]) -> dict[str, Json]:
 
 
 def main() -> None:
-    """Open the file, wait until the server has processed it, and print its diagnostics."""
+    """Open the file, wait until the server has published its diagnostics, and print them."""
     package, source = Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve()
     server = subprocess.Popen(["lake", "serve"], cwd=package, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     assert server.stdin is not None and server.stdout is not None
@@ -51,14 +52,13 @@ def main() -> None:
     started = monotonic()
     send(server.stdin, {"jsonrpc": "2.0", "method": "textDocument/didOpen", "params": {"textDocument": {
         "uri": source.as_uri(), "languageId": "lean4", "version": 1, "text": source.read_text()}}})
+    send(server.stdin, {"jsonrpc": "2.0", "id": 3, "method": "textDocument/waitForDiagnostics",
+                        "params": {"uri": source.as_uri(), "version": 1}})
     diagnostics: list[Json] = []
-    while True:
-        message = receive(server.stdout)
-        method, params = message.get("method"), message.get("params")
-        if method == "textDocument/publishDiagnostics" and isinstance(params, dict):
+    while (message := receive(server.stdout)).get("id") != 3:
+        params = message.get("params")
+        if message.get("method") == "textDocument/publishDiagnostics" and isinstance(params, dict):
             diagnostics = params["diagnostics"]  # type: ignore[assignment]
-        if method == "$/lean/fileProgress" and isinstance(params, dict) and params["processing"] == []:
-            break
     elapsed = monotonic() - started
     for diagnostic in diagnostics:
         assert isinstance(diagnostic, dict)

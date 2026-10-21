@@ -7,8 +7,9 @@ Each line of the output is one text: the corpus, the case, the role, the grammar
 the case's dialect, the SQL, the seconds of the Python binding's parse, and the Python
 translation's result: the statements with the source range of each node, or the refusal.
 
-Run from the repository root: `python3 experiments/surface-s1/texts.py RUNTIME OUTPUT`, with the
-conformance runtime root.
+Run from the repository root: `python3 experiments/surface-s1/texts.py RUNTIME FOLDER`, with the
+conformance runtime root. It writes `texts.jsonl` and `sql.jsonl`, the grammar and the SQL of each
+text, which the parse time measurements read.
 """
 
 import json
@@ -48,12 +49,13 @@ def translation(parser: object, sql: str) -> tuple[float, Json]:
 
 
 def main() -> None:
-    """Write one JSON line for each text of each frozen corpus."""
-    runtime, output = Path(sys.argv[1]), Path(sys.argv[2])
+    """Write one JSON line for each text of each frozen corpus, to both files."""
+    runtime, folder = Path(sys.argv[1]), Path(sys.argv[2])
+    output = folder / "texts.jsonl"
     library = runtime_library(runtime)
     claims = json.loads(Path("judge/claims.json").read_text())["corpora"]
     output.parent.mkdir(parents=True, exist_ok=True)
-    with output.open("w") as lines:
+    with output.open("w") as lines, (folder / "sql.jsonl").open("w") as sql_lines:
         for corpus, claim in sorted(claims.items()):
             _, records = load(Path(claim["path"]))
             for record in records:
@@ -68,6 +70,7 @@ def main() -> None:
                     seconds, result = translation(parser, sql)
                     lines.write(json.dumps({"corpus": corpus, "case": name, "role": role, "grammar": parser.grammar,
                                             "sql": sql, "pythonSeconds": seconds, "python": result}) + "\n")
+                    sql_lines.write(json.dumps({"grammar": parser.grammar, "sql": sql}) + "\n")
 
 
 if __name__ == "__main__":

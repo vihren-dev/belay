@@ -9,14 +9,15 @@ pinned toolchain). Date: 2026-10-21.
 ## The texts
 
 `texts.py` writes the SQL texts of the 48 frozen corpora of `judge/claims.json`, as the replay
-reads them: for each case, the schema SQL of its initial state and its migration SQL. That is
+reads them, to `build/surface-s1/texts.jsonl`, and their grammar and SQL alone to `sql.jsonl`:
+for each case, the schema SQL of its initial state and its migration SQL. That is
 14,430 texts, 1,764,669 bytes, all with one grammar (SQLite 3.51.0 without grammar options).
 For each text it also records the Python binding's parse time and the Python translation's
 result: the statements with the source range of each node, or the refusal (2,781 texts are
 refused: grammar errors, statements that the model does not describe, and parser limits).
 
 ```sh
-python3 experiments/surface-s1/texts.py build/conformance build/surface-s1/texts.jsonl
+python3 experiments/surface-s1/texts.py build/conformance build/surface-s1
 ```
 
 ## Prototype 1: the parser in the Lean process
