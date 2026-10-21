@@ -162,7 +162,7 @@ row of `DO UPDATE` are always ABORT. In the schema, a `PRIMARY KEY`, `UNIQUE` or
 REPLACE of a NOT NULL column with a default is `replace-default`. `UPDATE OR`, a target with a direction, collation,
 `NULLS` order, qualified name or `WHERE`, `WITH`, `FROM` in writes, sort modifiers in keys,
 partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
-options, `AS SELECT`, views, triggers, virtual tables, `EXPLAIN`, `PRAGMA`,
+options, `AS SELECT`, views, `TEMP` and `INSTEAD OF` triggers, virtual tables, `EXPLAIN`, `PRAGMA`,
 compound `SELECT`, `DISTINCT` inside an aggregate call, subqueries and table-valued functions in
 `FROM`, schema-qualified tables and columns, `NULLS FIRST` and `NULLS LAST`, and
 other functions are refused. Names keep
@@ -176,8 +176,9 @@ statement. An empty starting schema is allowed.
 
 ## Schema description
 
-`schema.sql` describes the starting catalog. It may contain only `CREATE TABLE`
-and `CREATE INDEX`, in an order that SQLite can run: an index follows its table.
+`schema.sql` describes the starting catalog. It may contain only `CREATE TABLE`,
+`CREATE INDEX` and `CREATE TRIGGER`, in an order that SQLite can run: an index or a trigger
+follows its table.
 A schema statement that SQLite refuses to prepare, for example a second table
 with the same name, is `INPUT_ERROR` with SQLite's message. The description may
 contain keys, `NOT NULL`, literal defaults, time keyword defaults, indexes and
@@ -287,7 +288,20 @@ EXISTS`. The catalog does not name the indexes of UNIQUE and PRIMARY KEY constra
 DROP INDEX of another name that begins with `sqlite_autoindex_` is a model restriction
 (`drop-constraint-index`). With foreign keys on, `DROP TABLE` first deletes the rows of a table
 that foreign keys reference, with their actions, and fails when a violation remains. The model
-has no triggers or views.
+has no views.
+
+`CREATE TRIGGER [IF NOT EXISTS] name [BEFORE|AFTER] INSERT|UPDATE [OF columns]|DELETE ON table
+[FOR EACH ROW] [WHEN condition] BEGIN statements END` (ADR 0018, D5) has a body of `INSERT ...
+VALUES`, `UPDATE`, `DELETE` and `SELECT` statements, and `DROP TRIGGER [IF EXISTS] name`
+removes one trigger. Trigger names have a namespace of their own, and `DROP TABLE` drops the
+triggers of its table. SQLite's prepare errors apply: `no such table`, `trigger ... already
+exists`, which `IF NOT EXISTS` turns into a statement that does nothing, `cannot create
+trigger on system table`, `no such trigger`, which `IF EXISTS` turns into a statement that does
+nothing, and `RAISE() may only be used within a trigger-program` for `RAISE` outside a
+trigger. The model does not run triggers yet: a write on a catalog with a trigger, and a `DROP
+TABLE` with foreign-key actions on one, are not described. In a trigger, a qualified table
+name, `INDEXED BY`, `UPDATE OR`, `UPDATE FROM`, `INSERT ... SELECT`, `RETURNING` and a subquery
+in `WHEN` are refused.
 
 A collation (ADR 0014, slice 3) is `BINARY`, `NOCASE` or `RTRIM`, with ASCII case of the
 name ignored. `NOCASE` compares TEXT with the ASCII capitals folded, and `RTRIM` compares
