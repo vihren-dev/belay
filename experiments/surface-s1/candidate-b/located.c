@@ -50,9 +50,13 @@ Located *leaf(T *t, const char *json, int start, int end){
   return item;
 }
 
+/* A null leaf at the range, for an absent optional part. */
 Located *leaf_null(T *t, int start, int end){ return leaf(t, "null", start, end); }
+
+/* A boolean leaf at the range. */
 Located *leaf_bool(T *t, int value, int start, int end){ return leaf(t, value ? "true" : "false", start, end); }
 
+/* A number leaf at the range, such as the index of a subquery. */
 Located *leaf_int(T *t, int value, int start, int end){
   char *json = arena(t, 16);
   snprintf(json, 16, "%d", value);

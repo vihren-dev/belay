@@ -37,15 +37,20 @@ Located *create_index(T *t, PNode *command){
 /* The refusal of a PRAGMA foreign_keys value that the model does not read. */
 static const char VALUES[] = "Only on, off, yes, no, true, false, 0 and 1 are modeled as the value of PRAGMA foreign_keys";
 
+/* The boolean words of sqlite3GetBoolean and their values, in the order that the Python
+** translation tries them; each compares with ASCII case ignored. */
+static const struct { const char *word; int value; } BOOLEAN_WORDS[] = {
+  {"on", 1}, {"yes", 1}, {"true", 1}, {"off", 0}, {"no", 0}, {"false", 0}};
+
 /* The boolean of an nmnum value, 0 or 1, or its refusal. */
 static int setting_value(T *t, PNode *node){
-  static const char *const words[] = {"on", "yes", "true", "off", "no", "false"};
   if(is(t, node, "plus_num") && is(t, part(t, node, 0), "INTEGER")){
     char *number = text(t, part(t, node, 0));
     if(!strcmp(number, "0") || !strcmp(number, "1")) return number[0] == '1';
   } else if(is(t, node, "ON") || is(t, node, "nm")){
     const char *word = is(t, node, "nm") ? dequote(t, text(t, part(t, node, 0))) : "on";
-    for(int i = 0; i < 6; i++) if(ascii_equal(word, words[i])) return i < 3;
+    for(size_t i = 0; i < sizeof BOOLEAN_WORDS / sizeof BOOLEAN_WORDS[0]; i++)
+      if(ascii_equal(word, BOOLEAN_WORDS[i].word)) return BOOLEAN_WORDS[i].value;
   }
   refuse(t, node, VALUES);
   return 0;

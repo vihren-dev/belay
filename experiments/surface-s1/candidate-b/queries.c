@@ -8,9 +8,12 @@ static const char *lookup(const char *const table[][2], const char *symbol){
   return NULL;
 }
 
+/* Comparison tokens and their Comparison constructors in Lean, as JSON. */
 static const char *const COMPARISONS[][2] = {{"EQ", "\"eq\""}, {"NE", "\"ne\""}, {"LT", "\"lt\""}, {"LE", "\"le\""},
   {"GT", "\"gt\""}, {"GE", "\"ge\""}, {NULL, NULL}};
+/* Logical tokens and their Syntax.Expr constructor names. */
 static const char *const CONNECTIVES[][2] = {{"AND", "and"}, {"OR", "or"}, {NULL, NULL}};
+/* Arithmetic tokens and their ArithmeticOperator constructors in Lean, as JSON. */
 static const char *const ARITHMETIC[][2] = {{"PLUS", "\"add\""}, {"MINUS", "\"subtract\""}, {"STAR", "\"multiply\""},
   {"SLASH", "\"divide\""}, {"REM", "\"remainder\""}, {NULL, NULL}};
 
