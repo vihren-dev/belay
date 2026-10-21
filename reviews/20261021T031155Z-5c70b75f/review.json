@@ -1,0 +1,54 @@
+{
+  "caller": "claude",
+  "commit": "5c70b75fef2a3d367bb1d1774642f928a312274f",
+  "date": "2026-10-21T03:11:55+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay-sqlite/Belay/Sqlite/QueryRun.lean",
+    "packages/belay-sqlite/Belay/Sqlite/Resolution/GroupExamples.lean",
+    "packages/belay-sqlite/Belay/Sqlite/Resolution/Queries.lean",
+    "packages/belay-sqlite/Belay/Sqlite/Resolution/QueryAggregates.lean",
+    "packages/belay-sqlite/Belay/Sqlite/Resolution/SyntaxEquality.lean",
+    "reviews/20261021T030629Z-4a951d58/resolution-1-20261021T031114Z.json",
+    "reviews/20261021T030629Z-4a951d58/resolution-2-20261021T031114Z.json",
+    "reviews/20261021T030629Z-4a951d58/resolution-3-20261021T031114Z.json",
+    "reviews/20261021T030629Z-4a951d58/resolution-4-20261021T031114Z.json",
+    "reviews/20261021T030629Z-4a951d58/resolution-5-20261021T031114Z.json",
+    "reviews/20261021T030629Z-4a951d58/resolution-6-20261021T031115Z.json",
+    "reviews/20261021T030629Z-4a951d58/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261021T031155Z-5c70b75f#1",
+      "line": 112,
+      "path": "packages/belay-sqlite/Belay/Sqlite/Resolution/Queries.lean",
+      "rule": "R7",
+      "severity": "must",
+      "text": "The early HAVING check reports `HAVING clause on a non-aggregate query` for `SELECT missing FROM t HAVING 1`, but SQLite reports `no such column: missing` because it resolves result columns first. Fix: move this check after result-column resolution and before WHERE resolution, and add a regression case."
+    }
+  ],
+  "id": "20261021T031155Z-5c70b75f",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "fa2475f44035",
+    "R7": "0a38ead152b1",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

@@ -92,6 +92,9 @@ def by_ (expression : Expr) : OrderTerm := { expression, descending := false }
 #guard rowsOf (query [written (.numeric "1")] [] (some (.compare .gt count (.numeric "0")))) ==
   .error (.expression .havingNonAggregate)
 #guard rowsOf (query [written (col "g")] [] none [by_ count]) == .error (.expression (.misuseOfAggregate "count"))
+-- SQLite resolves the result columns first: SELECT missing FROM t HAVING 1 is no such column.
+#guard rowsOf (query [written (col "missing")] [] (some (.numeric "1"))) ==
+  .error (.expression (.noSuchColumn (Identifier.ofString "missing")))
 -- GROUP BY 1 over a result column with an aggregate.
 #guard rowsOf (query [written (.arithmetic .add count (.numeric "1"))] [.numeric "1"]) ==
   .error (.expression .aggregateInGroupBy)
