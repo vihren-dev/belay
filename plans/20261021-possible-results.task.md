@@ -1,6 +1,6 @@
 # The results that SQLite may give (ADR 0018, slice 6)
 
-Created 2026-10-21. Status: open.
+Created 2026-10-21. Status: DONE (2026-10-21).
 Status file: [status](20261021-possible-results.status.md).
 Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D6; ADR 0017, D3 and D5
 (`Output.oneOf`); the target user guide, section "Row order".
