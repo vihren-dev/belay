@@ -32,7 +32,7 @@ from conformance import (algorithm_mutants, alias_mutants, authored_algorithms, 
                          date_modifier_mutants, fromless_mutants, json_each_mutants, json_function_mutants,
                          json_mutants, upsert_mutants, authored_subqueries, subquery_mutants,
                          authored_expression_forms, expression_form_mutants, authored_distinct_having,
-                         distinct_having_mutants)
+                         distinct_having_mutants, authored_foreign_keys, foreign_key_mutants)
 from conformance import key_mutants, number_mutants, query_mutants
 from tests.mutant_sets import measure_set
 
@@ -117,3 +117,11 @@ def test_every_distinct_having_mutant_changes_a_verdict(runtime_root: Path) -> N
     (ADR 0018, slice 3)."""
     measure_set(runtime_root, [authored_distinct_having],
                 [(distinct_having_mutants.MUTANTS, distinct_having_mutants.TARGETS)])
+
+
+def test_every_foreign_key_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored cases of enforced foreign keys (ADR 0018, slice 4) notice every changed
+    rule (`conformance.foreign_key_mutants`): a check of a composite child key with one NULL
+    column, `SET NULL` that deletes the child row, `CASCADE` on update that keeps the old child
+    key, and a lookup that compares the child value without the parent key's affinity."""
+    measure_set(runtime_root, [authored_foreign_keys], [(foreign_key_mutants.MUTANTS, foreign_key_mutants.TARGETS)])

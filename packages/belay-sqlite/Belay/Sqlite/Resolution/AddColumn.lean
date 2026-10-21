@@ -23,16 +23,20 @@ def addedColumn (strict : Bool) (definition : Syntax.ColumnDefinition) : Option 
       (resolveColumnDefault column.affinity ⟨expression, sourceText⟩).map fun resolved =>
         { column with defaultValue := some resolved }
     | .collate name => (Collation.named? name).map fun collation => { column with collation }
-    | .primaryKey .. | .unique _ | .check .. | .references .. | .generated .. => some column)
+    | .primaryKey .. | .unique _ | .check .. | .references .. | .generated .. | .deferral _ => some column)
     (definedColumn strict definition)
 
 /-- The model restriction of an added column that SQLite checks only while ADD COLUMN runs, or
-none: a generated column is {name}`RestrictionKind.addColumnGenerated`, and a column of a
+none: a generated column is {name}`RestrictionKind.addColumnGenerated`, a deferral clause
+before the column's first {lit}`REFERENCES` is {name}`RestrictionKind.addColumnConstraint`,
+because SQLite applies it to a key of another column, and a column of a
 {lit}`STRICT` table without a type that it admits ({name}`StrictType.ofReported`) is
 {name}`RestrictionKind.addColumnStrictType`, as is a default that does not fit the type
 ({lit}`strictDefaultFits`, after the column is built). -/
 def addColumnRestriction (table : CatalogTable) (definition : Syntax.ColumnDefinition) : Option RestrictionKind :=
   if definition.constraints.any (· matches .generated ..) then some .addColumnGenerated
+  else if (definition.constraints.takeWhile (!· matches .references ..)).any (· matches .deferral _) then
+    some .addColumnConstraint
   else if table.strict && (StrictType.ofReported (reportedType definition.declaredType)).isNone then
     some .addColumnStrictType
   else none
@@ -46,12 +50,23 @@ def strictDefaultFits (column : CatalogColumn) : Bool :=
   | some strictType, .ok value => strictType.fits value
   | some _, .error _ | none, _ => true
 
+/-- The foreign keys of a column added at the position, from its constraints in written order:
+each {lit}`REFERENCES` adds one, and a deferral clause sets whether the last of them so far is
+deferred. -/
+def addedForeignKeys (position : Nat) (constraints : List Syntax.ColumnConstraint) : List ForeignKey :=
+  constraints.foldl (fun keys constraint => match constraint with
+    | .references target columns onDelete onUpdate =>
+      keys ++ [{ table := target, columns := [position], referenced := columns, onDelete, onUpdate }]
+    | .deferral deferred => updateLast keys fun key => { key with deferred }
+    | .notNull _ | .primaryKey .. | .unique _ | .default .. | .collate _ | .check .. | .generated .. => keys) []
+
 /-- Resolve ALTER TABLE ADD COLUMN. Path 1 is the column definition. Its CHECK constraints
 resolve over the table with the new column ({name}`columnChecks`); one that SQLite cannot
 resolve is {name}`RestrictionKind.addColumnCheckError`, as SQLite reports it while the
 statement runs. A default that does not fit the column's strict type
 ({name}`strictDefaultFits`) is {name}`RestrictionKind.addColumnStrictType`. Its
-{lit}`REFERENCES` constraints are its foreign keys. -/
+{lit}`REFERENCES` constraints are its foreign keys, and a deferral clause sets whether the last
+of them so far is deferred. -/
 def resolveAddColumn (context : ResolveContext) (catalog : Catalog) (index : Nat)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition) : StatementResolution :=
   match catalog.findTable tableName with
@@ -83,11 +98,7 @@ def resolveAddColumn (context : ResolveContext) (catalog : Catalog) (index : Nat
         | .error (.prepare _) => restrict index [1] .addColumnCheckError
         | .error (.restriction path reason) => restrict index (1 :: path) reason
         | .ok checks =>
-          let foreignKeys := definition.constraints.filterMap fun
-            | .references target columns onDelete onUpdate =>
-              some { table := target, columns := [table.columns.length], referenced := columns, onDelete, onUpdate }
-            | .notNull _ | .primaryKey .. | .unique _ | .default .. | .collate _ | .check .. | .generated .. => none
-          let column := { column with checks, foreignKeys }
+          let column := { column with checks, foreignKeys := addedForeignKeys table.columns.length definition.constraints }
           .ok (.addColumn position column, catalog.addColumn position column)
 
 end Belay.Sqlite

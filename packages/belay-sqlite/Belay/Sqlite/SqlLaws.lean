@@ -17,16 +17,20 @@ def SchemaOnly (script : List Resolved.Statement) : Prop :=
   ∀ statement ∈ script, statement.kind = .definition
 
 /-- No statement in the script is INSERT (with or without {lit}`ON CONFLICT`, or with
-cells that read the clock), UPDATE or DELETE, and no query has a fallible call (a JSON call or
+cells that read the clock), UPDATE or DELETE, no DROP TABLE deletes rows for foreign keys, and
+no query has a fallible call (a JSON call or
 a function that can fail) in its expressions ({name}`Resolved.Query.expressions`,
 {name}`Resolved.Expr.isFallibleCall` at any depth) or a {lit}`json_each`
 source. This is a syntax guard, not a success claim; the empty script satisfies it. Each
 statement:
-* is not a write ({name}`Resolved.Statement.Kind.write`), and
+* is not a write ({name}`Resolved.Statement.Kind.write`),
+* if it is a DROP, checks no foreign keys, and
 * if it is a query, has no subqueries, no {lit}`DISTINCT`, no fallible call and no
   {lit}`json_each` source. -/
 def NoWrites (script : List Resolved.Statement) : Prop :=
-  ∀ statement ∈ script, statement.kind ≠ .write ∧ ∀ query subqueries, statement = .query query subqueries →
+  ∀ statement ∈ script, statement.kind ≠ .write ∧
+    (∀ positions keys, statement = .drop positions keys → keys = none) ∧
+    ∀ query subqueries, statement = .query query subqueries →
     subqueries = [] ∧ query.distinct = none ∧ query.expressions.all (!·.any Resolved.Expr.isFallibleCall) = true ∧
       query.sources.all (!·.source.isEach) = true
 
@@ -39,9 +43,9 @@ def ModeledDefinitions (script : List Resolved.Statement) : Prop :=
     | .createTable .. => True
     | .addColumn _ column => (column.clockDefault || (readDefaultValue column).toOption.isSome) = true
     | .createIndex .. => False
-    | .drop _ => True
+    | .drop .. => True
     | .insert .. | .upsert .. | .update .. | .delete .. | .begin | .commit | .rollback | .prepareError _
-    | .query .. => True
+    | .query .. | .setting _ => True
 
 /-- For every position and connection state, a {name}`NoWrites` script with
 {name}`ModeledDefinitions` passes the reached-statement support check, because
@@ -61,7 +65,7 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDe
       | query query subqueries =>
         obtain ⟨none, single, plain, noEach⟩ : subqueries = [] ∧ query.distinct = none ∧
             (query.expressions.all fun x => !x.any Resolved.Expr.isFallibleCall) = true ∧
-            query.sources.all (!·.source.isEach) = true := first.2 query subqueries rfl
+            query.sources.all (!·.source.isEach) = true := first.2.2 query subqueries rfl
         subst none
         simp only [statementReady, runStatement, Resolved.Query.runOn, Resolved.statementContext_nil, Resolved.subqueriesPlain, List.all_nil,
           Bool.true_and]
@@ -72,8 +76,12 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDe
           by_cases must : query.mustFail (Resolved.EvalContext.plain (state.clock position)) source.rows = true <;>
             simp [Resolved.Query.run, Resolved.Query.mayFail_of_plain _ (Resolved.EvalContext.plain_quiet _) query _ plain, clean, must,
               Resolved.Query.distinctCertain, single]
-      | createTable | createIndex | addColumn | drop | begin | commit | rollback | insert | upsert | update | delete
-      | prepareError => simp_all [statementReady, runStatement]
+      | drop positions keys =>
+        have none := first.2.1 positions keys rfl
+        subst none
+        simp [statementReady, runStatement, StatementRun.withKeys]
+      | createTable | createIndex | addColumn | begin | commit | rollback | insert | upsert | update | delete
+      | prepareError | setting => simp_all [statementReady, runStatement]
     have run : (runStatement (state.clock position) statement state.database).ready = true := ready
     simp only [supportedSqlFrom, run, Bool.true_and]
     cases advanceWith position statement state (runStatement (state.clock position) statement state.database).effect with

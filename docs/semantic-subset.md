@@ -220,12 +220,33 @@ ADD COLUMN with a CHECK checks the existing rows with the new default and fails 
 result code 1 when one fails. A time keyword, a date and time function or a JSON function
 in a CHECK is the restriction `check-function`, and a CHECK of ADD COLUMN that SQLite
 cannot resolve is `add-column-check-error`, as SQLite reports it while the statement runs.
-Foreign keys are off in every modeled profile, as in SQLite by default: a `REFERENCES`
-clause or a `FOREIGN KEY` constraint has no effect on writes apart from its prepare
-errors, and the catalog keeps it with its `ON DELETE` and `ON UPDATE` actions, as
-`PRAGMA foreign_key_list` reports it. A record without an execution profile and with a
-foreign key is out of scope, as its setup may have turned foreign keys on. A CREATE TABLE with constraints and defaults runs in the
+The catalog keeps each `REFERENCES` clause and `FOREIGN KEY` constraint with its `ON DELETE`
+and `ON UPDATE` actions, as `PRAGMA foreign_key_list` reports it, and whether it is
+`DEFERRABLE INITIALLY DEFERRED`. With foreign keys off, SQLite's default, a foreign key has no
+effect on writes apart from its prepare errors; enforced foreign keys are described below. A
+record without an execution profile and with a foreign key is out of scope, as its setup may
+have turned foreign keys on. A CREATE TABLE with constraints and defaults runs in the
 migration as in the schema.
+
+Foreign keys (ADR 0018, D4) are on when the execution profile turns them on.
+`PRAGMA foreign_keys = value` (`on`, `off`, `yes`, `no`, `true`, `false`, `0` or `1`) changes
+the setting outside a transaction and does nothing inside one, and `PRAGMA foreign_keys` is one
+row with the column `foreign_keys`, 1 or 0. With foreign keys on, `INSERT`, `UPDATE`, `DELETE`,
+the rows that `REPLACE` deletes and the implicit `DELETE` that `DROP TABLE` runs for a table
+that foreign keys reference count violations as SQLite's `sqlite3FkCheck` does, row by row in
+rowid order (primary-key order for a `WITHOUT ROWID` table), and a statement that ends with a
+count other than zero is `FOREIGN KEY constraint failed` and changes nothing. A child key
+looks up its parent under the parent index's affinity and collation, a parent row finds its
+child rows as `parent = child` compares them, and a child key with a NULL column needs no
+parent. The actions `CASCADE`, `SET NULL`, `SET DEFAULT`, `RESTRICT` and `NO ACTION` run after
+each deleted row and after each updated row whose parent key changes, also in chains and for a
+table that references itself, with every constraint of their rows ABORT. A write that
+processes a foreign key whose parent key is no primary key or `UNIQUE` index is
+`foreign key mismatch`, and one whose parent table does not exist is `no such table`, except in
+the implicit `DELETE` of `DROP TABLE`. A deferred foreign key is the restriction
+`deferred-foreign-key`, `ON CONFLICT DO UPDATE` on a table with a key to check is
+`foreign-key-upsert`, and a write whose actions nest deeper than the trigger depth limit, or
+whose `REPLACE` deletes more than one row with foreign keys, is not described.
 
 A generated column (ADR 0014, slice 5) is `VIRTUAL` or `STORED`, and `PRAGMA table_xinfo`
 reports it with `hidden` 2 or 3. Its expression resolves over the table's columns after the
@@ -264,7 +285,9 @@ kind, which `IF EXISTS` turns into a statement that does nothing, and `table sql
 may not be dropped` for SQLite's schema tables under any of their names, also with `IF
 EXISTS`. The catalog does not name the indexes of UNIQUE and PRIMARY KEY constraints, so a
 DROP INDEX of another name that begins with `sqlite_autoindex_` is a model restriction
-(`drop-constraint-index`). The model has no triggers, views or enforced foreign keys.
+(`drop-constraint-index`). With foreign keys on, `DROP TABLE` first deletes the rows of a table
+that foreign keys reference, with their actions, and fails when a violation remains. The model
+has no triggers or views.
 
 A collation (ADR 0014, slice 3) is `BINARY`, `NOCASE` or `RTRIM`, with ASCII case of the
 name ignored. `NOCASE` compares TEXT with the ASCII capitals folded, and `RTRIM` compares
@@ -380,6 +403,8 @@ should shrink.
 | `json-subtype` | A JSON call passed on through `coalesce`, `iif`, `nullif`, `min` or `max` as a value argument of `json_quote`, `json_array`, `json_object`, an edit function or a JSON aggregate is not modeled, because SQLite keeps the JSON subtype through such expressions | ADR 0015, slice 3 |
 | `subquery-here` | A subquery outside the expressions of a `SELECT` that the model resolves, such as in an `ON` condition, a `json_each` argument or another statement, is not modeled | ADR 0018, slice 1 |
 | `outer-aggregate` | An aggregate in a subquery whose argument reads a column of a query around it is not modeled, because SQLite computes an aggregate whose argument reads only outer columns in the outer query | ADR 0018, slice 1 |
+| `deferred-foreign-key` | With foreign keys on, a write that checks a `DEFERRABLE INITIALLY DEFERRED` foreign key is not modeled, because SQLite counts its violations until `COMMIT` | ADR 0018, slice 4 |
+| `foreign-key-upsert` | With foreign keys on, `INSERT` with `ON CONFLICT DO UPDATE` on a table with a foreign key to check is not modeled | ADR 0018, slice 4 |
 
 #### Undecided
 
@@ -400,7 +425,7 @@ should shrink.
 
 | Id | Restriction | Introduced by |
 | --- | --- | --- |
-| `rowid-name` | A rowid name that is not a column is not modeled in an expression over a table; in VALUES it resolves as any other name | ADR 0012 slice 3a; extended 2026-10-14 |
+| `rowid-name` | A rowid name that is not a column is not modeled in an expression over a table, or as the SET column of a table without an `INTEGER PRIMARY KEY`; in VALUES it resolves as any other name, and as the SET column of a table with an `INTEGER PRIMARY KEY` it assigns that column | ADR 0012 slice 3a; extended 2026-10-14 and 2026-10-21 |
 
 ## Execution
 

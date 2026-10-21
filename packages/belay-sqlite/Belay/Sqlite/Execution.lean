@@ -128,8 +128,9 @@ constraint an existing row with the default fails with
 CREATE INDEX builds the index over the table's rows (ADR 0014, D1): a unique index whose
 key has two conflicting rows ({lit}`LiteralData.uniqueRows`) fails with
 {lean}`ExecutionError.constraintViolation` and keeps the catalog.
-DROP removes the objects at its positions with their rows ({name}`Database.drop`); it
-does not fail, since the model has no enforced foreign keys.
+DROP removes the objects at its positions with their rows ({name}`Database.drop`) and does
+not fail; the DELETE that DROP TABLE runs first when foreign keys reference the table is part of
+the statement's run ({lit}`runStatement`). {lit}`PRAGMA foreign_keys = value` changes nothing.
 CREATE TABLE or CREATE INDEX at a position other than the end of the catalog (or over
 rows that do not match the catalog), CREATE INDEX of a position without a table, and ADD
 COLUMN at a position without a table fail with {lean}`ExecutionError.unmodeled`:
@@ -170,7 +171,8 @@ def step (clock : Int) (statement : Resolved.Statement) (database : Database) : 
           .error (.constraintViolation, database)
         else .ok { catalog := database.catalog.createIndex name index, rows := database.rows ++ [[]] }
     else .error (.unmodeled, database)
-  | .drop positions => .ok (database.drop positions)
+  | .drop positions _ => .ok (database.drop positions)
+  | .setting _ => .ok database
   | .prepareError error => .error (.prepare error, database)
   | .query query subqueries => queryEffect database (query.runOn clock database subqueries)
   | .begin | .commit | .rollback | .insert .. | .upsert .. | .update .. | .delete .. =>

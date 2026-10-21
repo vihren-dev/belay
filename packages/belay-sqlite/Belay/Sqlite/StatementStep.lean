@@ -1,6 +1,7 @@
 import Belay.Sqlite.SqlState
 import Belay.Sqlite.RowDelete
 import Belay.Sqlite.UpsertRun
+import Belay.Sqlite.StatementRun
 import Belay.Sqlite.JsonReady
 import Belay.Sqlite.StatementClock
 
@@ -13,44 +14,6 @@ committed snapshot; an explicit COMMIT/ROLLBACK, or an INSERT that fails with th
 ROLLBACK algorithm, changes transaction state. Other statement errors stop execution
 without inferring connection closure, framework cleanup, or transaction rollback. -/
 namespace Belay.Sqlite
-
-/-- The unique keys of the table at the position in the database's catalog
-({name}`Catalog.uniqueKeys`), which every write to it keeps unique. -/
-def Database.keys (database : Database) (target : Nat) (table : Table) : List UniqueKey :=
-  database.catalog.uniqueKeys target table.shape
-
-/-- Store a write's result when it satisfies the constraints of the given keys and its
-rowids are distinct ({name}`LiteralData.rowidsDistinct`), or fail with
-{lean}`ExecutionError.constraintViolation` and the input database. -/
-def checkedWrite (database : Database) (target : Nat) (keys : List UniqueKey) (result : Table) : Effect :=
-  if LiteralData.constraints keys result && LiteralData.rowidsDistinct result then
-    .ok (database.setRows target result.rows)
-  else .error (.constraintViolation, database)
-
-/-- The outcome of INSERT: SQLite inserts the rows in order, and refuses a rowid alias
-that is not an integer before the constraints of its row
-({name}`LiteralData.aliasMismatch`), so the first such row is
-{lean}`ExecutionError.datatypeMismatch` unless the rows before it already fail; with no
-such row, {name}`checkedWrite` of the table with all rows inserted ({lit}`result`, which is
-{name}`LiteralData.inserted`). A failure keeps the input database. -/
-def insertOutcome (database : Database) (target : Nat) (keys : List UniqueKey) (table : Table)
-    (rows : List (List Value)) (result : Table) : Effect :=
-  match rows.findIdx? (LiteralData.aliasMismatch table.shape) with
-  | some index =>
-    let before := LiteralData.inserted table (rows.take index)
-    if LiteralData.constraints keys before && LiteralData.rowidsDistinct before then
-      .error (.datatypeMismatch, database)
-    else .error (.constraintViolation, database)
-  | none => checkedWrite database target keys result
-
-/-- What running one statement on a database gives: its effect, and whether the model
-describes it on the database (the support check). Both read the same computation of the
-write or the query. -/
-structure StatementRun where
-  /-- The effect of the statement ({lit}`literalStep`). -/
-  effect : Effect
-  /-- Whether the model describes the statement on the database ({lit}`statementReady`). -/
-  ready : Bool
 
 /-- Run one statement at a clock value, computing each write and query once for its
 effect and its support check (ADR 0013, D8). The effect: INSERT and UPDATE with ABORT
@@ -68,20 +31,25 @@ statement's subqueries have no fallible call ({name}`Resolved.subqueriesPlain`),
 evaluate a subquery for rows that the model does not reach; a position without a table passes and fails during execution
 instead. ADD COLUMN must have modeled default readback, a model restriction, because SQLite
 accepts such statements. CREATE TABLE passes, as its table has no rows to violate a
-constraint (ADR 0014, slice 4), and so do CREATE INDEX and the other statement forms. -/
+constraint (ADR 0014, slice 4), and so do CREATE INDEX and the other statement forms. A write
+that checks foreign keys (ADR 0018, D4) has the effect of its keys ({name}`insertKeys`,
+{name}`updateKeys`, {name}`deleteKeys`, {name}`dropKeys`) and passes the support check when the
+plain write and the keys both pass it ({name}`StatementRun.withKeys`). -/
 def runStatement (clock : Int) (statement : Resolved.Statement) (database : Database) : StatementRun :=
   match statement with
-  | .insert target rows returning subqueries => match database.table target with
+  | .insert target rows returning subqueries foreignKeys => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
       let context := Resolved.statementContext clock database subqueries
       let keys := database.keys target table
       let values := Resolved.rowsAt context table.shape.columns rows
       let result := LiteralData.inserted table values
-      { effect := insertOutcome database target keys table values result,
-        ready := LiteralData.insertReady keys table values result && Resolved.subqueriesPlain subqueries && Resolved.cellsReady context rows &&
-          !(returningExpressions returning).any (·.any Resolved.Expr.isFallibleCall) }
-  | .upsert target rows clauses returning algorithm subqueries => match database.table target with
+      StatementRun.withKeys (insertOutcome database target keys table values result)
+        (LiteralData.insertReady keys table values result && Resolved.subqueriesPlain subqueries && Resolved.cellsReady context rows &&
+          !(returningExpressions returning).any (·.any Resolved.Expr.isFallibleCall))
+        (foreignKeys.map fun depth => insertKeys depth target (database.catalog.writePolicy target table.shape none)
+          [] values database subqueries.isEmpty)
+  | .upsert target rows clauses returning algorithm subqueries foreignKeys => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
       let context := Resolved.statementContext clock database subqueries
@@ -89,28 +57,30 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
       let policy := database.catalog.writePolicy target table.shape algorithm
       let values := Resolved.rowsAt context table.shape.columns rows
       let steps := LiteralData.upsertSteps context keys policy clauses table values
-      { effect := match LiteralData.upsertSummary table steps with
+      StatementRun.withKeys (match LiteralData.upsertSummary table steps with
           | .ok (result, _) => .ok (database.setRows target result.rows)
-          | .error (reason, reached, _) => .error (reason, database.setRows target reached.rows),
-        ready := LiteralData.upsertReady keys table clauses values steps && Resolved.subqueriesPlain subqueries &&
-          Resolved.cellsReady context rows &&
-          upsertJsonReady clauses returning }
-  | .update target assignments filter returning subqueries => match database.table target with
+          | .error (reason, reached, _) => .error (reason, database.setRows target reached.rows))
+        (LiteralData.upsertReady keys table clauses values steps && Resolved.subqueriesPlain subqueries &&
+          Resolved.cellsReady context rows && upsertJsonReady clauses returning)
+        (foreignKeys.map fun depth => insertKeys depth target policy clauses values database subqueries.isEmpty)
+  | .update target assignments filter returning subqueries foreignKeys => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
       let context := Resolved.statementContext clock database subqueries
       let keys := database.keys target table
       let result := LiteralData.updated context table assignments filter
-      { effect := if LiteralData.updateMismatch context table assignments filter then .error (.datatypeMismatch, database)
-          else checkedWrite database target keys result,
-        ready := LiteralData.updateReady keys table assignments result && Resolved.subqueriesPlain subqueries &&
-          updateJsonReady context table assignments filter returning }
-  | .delete target filter returning subqueries => match database.table target with
+      StatementRun.withKeys (if LiteralData.updateMismatch context table assignments filter then .error (.datatypeMismatch, database)
+          else checkedWrite database target keys result)
+        (LiteralData.updateReady keys table assignments result && Resolved.subqueriesPlain subqueries &&
+          updateJsonReady context table assignments filter returning)
+        (foreignKeys.map fun depth => updateKeys context depth target table assignments filter database subqueries.isEmpty)
+  | .delete target filter returning subqueries foreignKeys => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
       let context := Resolved.statementContext clock database subqueries
-      { effect := .ok (database.setRows target (LiteralData.deleted context table filter).rows),
-        ready := Resolved.subqueriesPlain subqueries && deleteJsonReady context table filter returning }
+      StatementRun.withKeys (.ok (database.setRows target (LiteralData.deleted context table filter).rows))
+        (Resolved.subqueriesPlain subqueries && deleteJsonReady context table filter returning)
+        (foreignKeys.map fun depth => deleteKeys context depth target table filter database subqueries.isEmpty)
   | .query query subqueries =>
     let ran := query.runOn clock database subqueries
     { effect := queryEffect database ran,
@@ -119,8 +89,10 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
   | .addColumn _ column =>
     { effect := step clock statement database,
       ready := column.clockDefault || (readDefaultValue column).toOption.isSome }
-  | .createIndex .. | .drop _ => { effect := step clock statement database, ready := true }
-  | .begin | .commit | .rollback | .prepareError _ => { effect := step clock statement database, ready := true }
+  | .drop positions foreignKeys =>
+    StatementRun.withKeys (step clock statement database) true (foreignKeys.map fun depth => dropKeys depth positions database)
+  | .createIndex .. => { effect := step clock statement database, ready := true }
+  | .begin | .commit | .rollback | .prepareError _ | .setting _ => { effect := step clock statement database, ready := true }
 
 /-- The effect of one statement at a clock value ({name}`runStatement`). This computation
 does not establish the separate stored-value support obligation. -/
@@ -150,8 +122,8 @@ def advanceWith (position : Nat) (statement : Resolved.Statement) (state : SqlSt
   | .rollback => match state.snapshot with
     | none => .halt (.failure position .noActiveTransaction state.database)
     | some original => .next { state with database := original, snapshot := none }
-  | .createTable .. | .createIndex .. | .addColumn .. | .drop _ | .insert .. | .upsert .. | .update .. | .delete ..
-  | .prepareError _ | .query .. =>
+  | .createTable .. | .createIndex .. | .addColumn .. | .drop .. | .insert .. | .upsert .. | .update .. | .delete ..
+  | .prepareError _ | .query .. | .setting _ =>
     state.publish position effect
 
 /-- Evaluate one statement at its supplied zero-based position ({name}`advanceWith` of its

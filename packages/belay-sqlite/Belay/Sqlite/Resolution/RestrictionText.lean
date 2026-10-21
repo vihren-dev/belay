@@ -57,6 +57,8 @@ def RestrictionKind.id : RestrictionKind → String
   | .subqueryFallibleCall => "subquery-fallible-call"
   | .subqueryReadsTarget => "subquery-reads-target"
   | .distinctOrderBy => "distinct-order-by"
+  | .deferredForeignKey => "deferred-foreign-key"
+  | .foreignKeyUpsert => "foreign-key-upsert"
 
 /-- The message of a restriction that users read: what the model does not describe,
 and what to write instead. -/
@@ -85,7 +87,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .replaceDefault => "REPLACE of a NOT NULL column with a default is not modeled; write the value instead of NULL"
   | .insertColumnTwice => "a column named twice in INSERT is not modeled; name each column once"
   | .updateColumnTwice => "a column assigned twice in UPDATE is not modeled; assign each column once"
-  | .rowidName => "the rowid names rowid, _rowid_ and oid are not modeled in expressions over a table; name the table's columns"
+  | .rowidName => "the rowid names rowid, _rowid_ and oid are not modeled in expressions over a table, or as the SET column of a table without an INTEGER PRIMARY KEY; name the table's columns"
   | .joinOperator => "this join operator is refused by SQLite and not modeled; write JOIN, LEFT JOIN or a comma"
   | .laterTableInOn => "an ON condition that names a table joined after it is not modeled; move the condition to WHERE or to the later join"
   | .systemTable => "queries of SQLite's own tables, such as sqlite_schema, are not modeled; query an application table"
@@ -108,10 +110,12 @@ def RestrictionKind.message : RestrictionKind → String
   | .subqueryFallibleCall => "a SELECT without FROM that has both a subquery and a function that can fail is not modeled; select from a table or remove the function"
   | .subqueryReadsTarget => "a subquery of INSERT, UPDATE or DELETE that reads the written table is not modeled, because SQLite evaluates it while the statement changes the table; read the table in a separate statement"
   | .distinctOrderBy => "an ORDER BY expression of SELECT DISTINCT that is no result column is not modeled; order by a result column"
+  | .deferredForeignKey => "with foreign keys on, a write that checks a DEFERRABLE INITIALLY DEFERRED foreign key is not modeled, because SQLite checks such keys at COMMIT; declare the key without INITIALLY DEFERRED"
+  | .foreignKeyUpsert => "with foreign keys on, INSERT with ON CONFLICT DO UPDATE on a table with foreign keys to check is not modeled; write the UPDATE as a separate statement"
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .dropConstraintIndex, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments, .jsonSubtype, .subqueryHere, .outerAggregate, .subqueryFallibleCall, .subqueryReadsTarget, .distinctOrderBy]
+  [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .dropConstraintIndex, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments, .jsonSubtype, .subqueryHere, .outerAggregate, .subqueryFallibleCall, .subqueryReadsTarget, .distinctOrderBy, .deferredForeignKey, .foreignKeyUpsert]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

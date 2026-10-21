@@ -171,6 +171,15 @@ inductive PrepareError where
   /-- {lit}`table %s may not be dropped` ({lit}`sqlite3DropTable`), for SQLite's schema
   tables: {lit}`sqlite_master` and {lit}`sqlite_temp_master` under any of their names. -/
   | tableMayNotBeDropped (name : Identifier)
+  /-- {lit}`no such table: main.%s` ({lit}`sqlite3LocateTable` in {lit}`sqlite3FkCheck`): with
+  foreign keys on, a write processes a foreign key whose parent table, named as the key writes
+  it, does not exist (ADR 0018, D4). -/
+  | noSuchReferencedTable (name : Identifier)
+  /-- {lit}`foreign key mismatch - "%w" referencing "%w"` ({lit}`sqlite3FkLocateIndex`): with
+  foreign keys on, a write processes a foreign key, of the child table with the first name,
+  whose parent, with the second name as the key writes it, has no primary key or unique index
+  on the referenced columns (ADR 0018, D4). -/
+  | foreignKeyMismatch (child parent : Identifier)
   /-- An error that names no catalog object ({name}`ExprError`). -/
   | expression (error : ExprError)
   deriving Repr, DecidableEq

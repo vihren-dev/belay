@@ -73,6 +73,10 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "subquery-fallible-call": ("CREATE TABLE t(a);", "SELECT json((SELECT a FROM t));"),
     "subquery-reads-target": ("CREATE TABLE t(a);", "UPDATE t SET a = (SELECT max(a) FROM t);"),
     "distinct-order-by": ("CREATE TABLE t(a, b);", "SELECT DISTINCT a FROM t ORDER BY b;"),
+    "deferred-foreign-key": ("CREATE TABLE p(id PRIMARY KEY); CREATE TABLE c(x REFERENCES p DEFERRABLE INITIALLY DEFERRED);",
+                             "PRAGMA foreign_keys = ON; INSERT INTO c VALUES (1);"),
+    "foreign-key-upsert": ("CREATE TABLE p(id PRIMARY KEY); CREATE TABLE c(id PRIMARY KEY, x REFERENCES p);",
+                           "PRAGMA foreign_keys = ON; INSERT INTO c VALUES (1, NULL) ON CONFLICT(id) DO UPDATE SET x = NULL;"),
 }
 """For each restriction id: a schema and a migration that the resolver refuses with it."""
 

@@ -7,7 +7,8 @@ refused with its source range.
 
 from .located import Located, constructor, leaf, sequence, structure
 from .sql_tree import Node, Tree
-from .syntax_constraints import ascii_equal, check, constraint_name, declared_type, foreign_key, generated, references
+from .syntax_constraints import (ascii_equal, check, constraint_name, declared_type, deferral, foreign_key, generated,
+                                 references)
 from .syntax_expressions import dequote, expression, identifier, name, term
 from .syntax_shapes import MODELED_FORMS, absent, left_list, require
 
@@ -85,8 +86,9 @@ def column_constraint(tree: Tree, node: Node, current: str | None) -> Located:
 def column_definition(tree: Tree, column: Node, constraints: Node) -> tuple[Located, str | None]:
     """Map a column name, its declared type text as SQLite's tokens leave it (without a
     trailing `GENERATED ALWAYS`, then dequoted, as `sqlite3AddColumn` does), and its constraints,
-    with the constraint name in effect after them. `CONSTRAINT name` and a deferral clause
-    map to no constraint: a name only labels the CHECK constraints after it."""
+    with the constraint name in effect after them. `CONSTRAINT name` maps to no constraint:
+    a name only labels the CHECK constraints after it. A deferral clause is a `deferral`
+    constraint (`syntax_constraints.deferral`)."""
     column_name, type_token = require(tree, column, ["nm", "typetoken"])
     declared = dequote(declared_type(tree.text(type_token))) if type_token.children else None
     items: list[Located] = []
@@ -96,7 +98,9 @@ def column_definition(tree: Tree, column: Node, constraints: Node) -> tuple[Loca
         symbols = [part.symbol for part in parts]
         if symbols == ["CONSTRAINT", "nm"]:
             current = constraint_name(tree, parts[1])
-        elif symbols != ["defer_subclause"]:
+        elif symbols == ["defer_subclause"]:
+            items.append(deferral(tree, parts[0]))
+        else:
             items.append(column_constraint(tree, item[-1], current))
     return structure([("name", name(tree, column_name)),
                       ("declaredType", leaf(declared, type_token.start, type_token.end)),
@@ -150,7 +154,8 @@ def table_options(tree: Tree, node: Node) -> Located:
 
 
 def create_table(tree: Tree, command: Node) -> Located:
-    """Map CREATE TABLE with column definitions and table constraints."""
+    """Map CREATE TABLE with column definitions and table constraints; the deferral clause of a
+    FOREIGN KEY is a `deferral` table constraint after it."""
     declaration, arguments = require(tree, command, ["create_table", "create_table_args"])
     header = require(tree, declaration, ["createkw", "temp", "TABLE", "ifnotexists", "nm", "dbnm"])
     body = require(tree, arguments, ["LP", "columnlist", "conslist_opt", "RP", "table_option_set"])
@@ -175,6 +180,8 @@ def create_table(tree: Tree, command: Node) -> Located:
                 current = constraint_name(tree, parts[1])
             else:
                 constraints.append(table_constraint(tree, item[-1], current))
+                if parts[-1].symbol == "defer_subclause_opt" and parts[-1].children:
+                    constraints.append(deferral(tree, tree.children(parts[-1])[0]))
     return constructor("createTable", [("name", name(tree, header[4])),
                                        ("columns", sequence(columns, body[1].start, body[1].end)),
                                        ("constraints", sequence(constraints, body[2].start, body[2].end)),

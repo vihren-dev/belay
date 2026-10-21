@@ -12,6 +12,7 @@ from .sql_tree import Node, Tree
 from .syntax_definitions import add_column, create_table
 from .syntax_drops import drop
 from .syntax_indexes import create_index
+from .syntax_pragmas import pragma
 from .syntax_select import select
 from .syntax_writes import delete, insert, transaction, update
 
@@ -55,9 +56,11 @@ def statement(tree: Tree, command: Node) -> Located:
         return delete(tree, command)
     if symbols == ["select"]:
         return select(tree, command)
+    if symbols[:1] == ["PRAGMA"]:
+        return pragma(tree, command)
     raise tree.unsupported(command, "This statement is not modeled; the model runs CREATE TABLE, CREATE INDEX, "
-                           "ALTER TABLE ADD COLUMN, DROP TABLE, DROP INDEX, BEGIN, COMMIT, ROLLBACK, INSERT, UPDATE, DELETE "
-                           "and SELECT")
+                           "ALTER TABLE ADD COLUMN, DROP TABLE, DROP INDEX, BEGIN, COMMIT, ROLLBACK, INSERT, UPDATE, DELETE, "
+                           "SELECT and PRAGMA foreign_keys")
 
 
 def statements(tree: Tree) -> tuple[Located, ...]:

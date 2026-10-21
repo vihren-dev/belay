@@ -92,7 +92,7 @@ theorem step_extends (clock : Int) (statement : Resolved.Statement) (database : 
     (kept : statement.kind ≠ .drop) :
     DatabaseExtends database (effectDatabase (step clock statement database)) := by
   cases statement with
-  | drop _ => exact absurd rfl kept
+  | drop _ _ => exact absurd rfl kept
   | createTable target name table =>
     simp only [step]
     split
@@ -136,11 +136,12 @@ theorem step_extends (clock : Int) (statement : Resolved.Statement) (database : 
   | begin => exact DatabaseExtends.refl database
   | commit => exact DatabaseExtends.refl database
   | rollback => exact DatabaseExtends.refl database
-  | insert _ _ _ => exact DatabaseExtends.refl database
-  | upsert _ _ _ _ _ => exact DatabaseExtends.refl database
-  | update _ _ _ _ => exact DatabaseExtends.refl database
-  | delete _ _ _ => exact DatabaseExtends.refl database
+  | insert => exact DatabaseExtends.refl database
+  | upsert => exact DatabaseExtends.refl database
+  | update => exact DatabaseExtends.refl database
+  | delete => exact DatabaseExtends.refl database
   | prepareError _ => exact DatabaseExtends.refl database
+  | setting _ => exact DatabaseExtends.refl database
 
 /-- For every script containing only CREATE/ADD, idle starting database and
 position, the computed SQL result extends the starting database. Invalid schema

@@ -53,16 +53,17 @@ writes, the clauses of an upsert ({name}`ConflictClause.expressions`), the expre
 query ({name}`Query.expressions`) and those of each statement's subqueries; a schema or transaction statement and a prepare error
 have none. -/
 def Statement.clockExpressions : Statement → List Expr
-  | .insert _ rows returning subqueries =>
+  | .insert _ rows returning subqueries _ =>
     rows.flatten.filterMap Cell.expression? ++ returning.map (·.1) ++ subqueries.flatMap Query.expressions
-  | .upsert _ rows clauses returning _ subqueries =>
+  | .upsert _ rows clauses returning _ subqueries _ =>
     rows.flatten.filterMap Cell.expression? ++ clauses.flatMap ConflictClause.expressions ++ returning.map (·.1) ++
       subqueries.flatMap Query.expressions
-  | .update _ assignments filter returning subqueries =>
+  | .update _ assignments filter returning subqueries _ =>
     assignments.map (·.2) ++ filter.toList ++ returning.map (·.1) ++ subqueries.flatMap Query.expressions
-  | .delete _ filter returning subqueries => filter.toList ++ returning.map (·.1) ++ subqueries.flatMap Query.expressions
+  | .delete _ filter returning subqueries _ => filter.toList ++ returning.map (·.1) ++ subqueries.flatMap Query.expressions
   | .query inner subqueries => inner.expressions ++ subqueries.flatMap Query.expressions
-  | .createTable .. | .createIndex .. | .addColumn .. | .drop _ | .begin | .commit | .rollback | .prepareError _ => []
+  | .createTable .. | .createIndex .. | .addColumn .. | .drop .. | .begin | .commit | .rollback | .prepareError _
+  | .setting _ => []
 
 /-- Whether a statement reads the clock: it has an expression that reads it
 ({name}`Expr.readsClock`, {name}`Statement.clockExpressions`). The execution gives a

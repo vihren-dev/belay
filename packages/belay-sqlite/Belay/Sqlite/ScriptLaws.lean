@@ -176,6 +176,6 @@ theorem effect_write_ok (clock : Int) {database : Database} {target : Nat} {tabl
     literalStep clock (.insert target rows returning) database =
       .ok (database.setRows target (LiteralData.inserted table (Resolved.rowsAt (Resolved.EvalContext.plain clock) table.shape.columns rows)).rows) := by
   simp only [literalStep, runStatement, Resolved.statementContext_nil, present, insertOutcome, aligned, checkedWrite,
-    checked, ite_true]
+    checked, ite_true, StatementRun.withKeys, Option.map]
 
 end Belay.Sqlite

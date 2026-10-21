@@ -86,7 +86,9 @@ inductive RestrictionKind where
   /-- A rowid name ({lit}`rowid`, {lit}`_rowid_` or {lit}`oid`) that is not a column is
   not modeled in an expression: introduced for RETURNING in ADR 0012 slice 3a, and
   extended to queries and write expressions on 2026-10-14, where SQLite reads the
-  rowid and the model would report {lit}`no such column`. -/
+  rowid and the model would report {lit}`no such column`. As the column of a {lit}`SET`
+  assignment it assigns the rowid alias; for a table without one it is this restriction, since a
+  resolved write has no assignment of the physical rowid (2026-10-21). -/
   | rowidName
   /-- A join operator that SQLite refuses with {lit}`unknown join type`, such as
   {lit}`INNER OUTER JOIN`, is not modeled: the model has no such prepare error (ADR 0012,
@@ -159,6 +161,14 @@ inductive RestrictionKind where
   modeled: SQLite sorts each kept row by the value of a row that its plan chooses (ADR 0018,
   slice 3). -/
   | distinctOrderBy
+  /-- With foreign keys on, a write that processes a foreign key that is
+  {lit}`DEFERRABLE INITIALLY DEFERRED` is not modeled: SQLite counts its violations across the
+  statements of the transaction and checks the count at {lit}`COMMIT` (ADR 0018, slice 4). -/
+  | deferredForeignKey
+  /-- With foreign keys on, an INSERT with {lit}`ON CONFLICT DO UPDATE` whose table has a
+  foreign key to check is not modeled: SQLite checks the keys of the updated row as an UPDATE
+  does (ADR 0018, slice 4). -/
+  | foreignKeyUpsert
   deriving Repr, DecidableEq
 
 end Belay.Sqlite

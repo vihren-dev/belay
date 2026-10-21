@@ -3,14 +3,16 @@
 These tests check the rule of ADR 0014, slice 4, for foreign keys: a record without an
 execution profile (versions 1 to 3) may have turned foreign keys on in its setup, which the
 subject cannot see, so such a record with a foreign key stays out of scope; a profiled
-record, and a record without a foreign key, stay in scope.
+record, and a record without a foreign key, stay in scope; and a profile with foreign keys on
+is modeled (ADR 0018, D4).
 """
 
 import pytest
 
 from belay.sqlite.errors import SqlError
 from belay.sqlite.located import Located, leaf
-from conformance.profile_scope import foreign_key_scope, has_foreign_key
+from conformance.execution_profile import ExecutionProfile
+from conformance.profile_scope import foreign_key_scope, has_foreign_key, modeled_profile
 
 pytestmark = [pytest.mark.unit]
 
@@ -40,3 +42,13 @@ def test_profiled_records_and_records_without_foreign_keys_stay_in_scope(version
     """A profiled record says whether foreign keys are on, and a record without a foreign key
     does not depend on it."""
     foreign_key_scope({"name": "case", "nativeVersion": version}, statements)
+
+
+def test_a_profile_with_foreign_keys_on_is_modeled() -> None:
+    """`conformance.profile_scope.modeled_profile` admits a profile with foreign keys on (ADR 0018,
+    D4) and writes the setting into the case profile, which Lean resolution starts from; the case
+    profile of a profile without them has no `foreignKeys`, so earlier cases keep their form."""
+    on = ExecutionProfile("keys", 1, "3.51.0", "source", ("THREADSAFE=1",), foreign_keys=True)
+    off = ExecutionProfile("plain", 1, "3.51.0", "source", ("THREADSAFE=1",))
+    assert modeled_profile({"name": "on", "nativeVersion": 5, "profile": on.to_wire()})["foreignKeys"] is True
+    assert "foreignKeys" not in modeled_profile({"name": "off", "nativeVersion": 5, "profile": off.to_wire()})

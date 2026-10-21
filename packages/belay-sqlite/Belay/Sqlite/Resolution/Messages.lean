@@ -72,6 +72,10 @@ def ExprError.message : ExprError → String
   | .subqueryColumns count => s!"sub-select returns {count} columns - expected 1"
   | .havingNonAggregate => "HAVING clause on a non-aggregate query"
 
+/-- A name as SQLite's {lit}`%w` writes it inside double quotes: each double quote doubled. -/
+def quotedName (name : Identifier) : String :=
+  String.join ((toString name).toList.map fun character => if character == '"' then "\"\"" else character.toString)
+
 /-- SQLite's message for a prepare error, for example {lit}`no such table: t`. -/
 def PrepareError.message : PrepareError → String
   | .tableExists name => s!"table {name} already exists"
@@ -81,6 +85,9 @@ def PrepareError.message : PrepareError → String
   | .noSuchTable name => s!"no such table: {name}"
   | .noSuchIndex name => s!"no such index: {name}"
   | .tableMayNotBeDropped name => s!"table {name} may not be dropped"
+  | .noSuchReferencedTable name => s!"no such table: main.{name}"
+  | .foreignKeyMismatch child parent =>
+    s!"foreign key mismatch - \"{quotedName child}\" referencing \"{quotedName parent}\""
   | .expression error => error.message
 
 end Belay.Sqlite

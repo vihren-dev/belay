@@ -7,7 +7,9 @@ gives each CHECK the label that SQLite reports when it fails: the name in effect
 source text between the parentheses without outer white space, dequoted when it starts
 with a quote. Foreign keys keep their column lists and their `ON DELETE` and `ON UPDATE`
 actions, which `PRAGMA foreign_key_list` reports; a later clause of an action replaces an
-earlier one, and `MATCH`, `ON INSERT` and a deferral clause do not show.
+earlier one, and `MATCH` and `ON INSERT` do not show. A deferral clause is a `deferral`
+constraint of its own (`deferral`), as SQLite's grammar has it: it sets whether the last
+foreign key of the table so far is deferred (ADR 0018, D4).
 """
 
 from .located import Located, constructor, leaf, sequence
@@ -123,6 +125,16 @@ def references(tree: Tree, node: Node, parts: list[Node]) -> Located:
     on_delete, on_update = actions(tree, parts[3])
     return constructor("references", [("table", name(tree, parts[1])), ("columns", optional_names(tree, parts[2])),
                                       ("onDelete", on_delete), ("onUpdate", on_update)], node.start, node.end)
+
+
+def deferral(tree: Tree, node: Node) -> Located:
+    """Map a `defer_subclause` to `deferral`, deferred only for `DEFERRABLE INITIALLY DEFERRED`,
+    as `sqlite3DeferForeignKey` receives it: `NOT DEFERRABLE ...`, `DEFERRABLE` and
+    `DEFERRABLE INITIALLY IMMEDIATE` are immediate."""
+    parts = tree.children(node)
+    initially = [child.symbol for child in tree.children(parts[-1])]
+    deferred = parts[0].symbol == "DEFERRABLE" and initially == ["INITIALLY", "DEFERRED"]
+    return constructor("deferral", [("deferred", leaf(deferred, node.start, node.end))], node.start, node.end)
 
 
 def foreign_key(tree: Tree, node: Node, parts: list[Node]) -> Located:

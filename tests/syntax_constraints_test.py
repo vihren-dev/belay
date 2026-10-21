@@ -44,6 +44,22 @@ def test_checks_names_and_foreign_keys(parse_sql: Callable[..., Tree]) -> None:
     assert [item["check"]["label"] for item in second["createTable"]["constraints"]] == ["z", "a != 5"]
 
 
+def test_deferral_clauses_are_constraints_of_their_own(parse_sql: Callable[..., Tree]) -> None:
+    """A deferral clause maps to `deferral`, after the constraint that it follows, deferred only
+    for `DEFERRABLE INITIALLY DEFERRED` (ADR 0018, D4): in a column definition, as SQLite's
+    grammar has it, and after a FOREIGN KEY table constraint."""
+    sql = ("CREATE TABLE t(a REFERENCES p DEFERRABLE INITIALLY DEFERRED NOT DEFERRABLE INITIALLY DEFERRED, "
+           "b DEFERRABLE, FOREIGN KEY (a) REFERENCES p DEFERRABLE INITIALLY DEFERRED, "
+           "FOREIGN KEY (b) REFERENCES p DEFERRABLE INITIALLY IMMEDIATE, FOREIGN KEY (a) REFERENCES p);")
+    (table,) = mapped(parse_sql, sql)
+    columns, constraints = table["createTable"]["columns"], table["createTable"]["constraints"]
+    assert [list(item) for item in columns[0]["constraints"]] == [["references"], ["deferral"], ["deferral"]]
+    assert [item["deferral"]["deferred"] for item in columns[0]["constraints"][1:]] == [True, False]
+    assert columns[1]["constraints"] == [{"deferral": {"deferred": False}}]
+    assert [list(item)[0] for item in constraints] == ["foreignKey", "deferral", "foreignKey", "deferral", "foreignKey"]
+    assert [constraints[1]["deferral"]["deferred"], constraints[3]["deferral"]["deferred"]] == [True, False]
+
+
 def test_generated_columns_keep_their_kind_and_sqlite_type(parse_sql: Callable[..., Tree]) -> None:
     """`AS (expr)` maps with its kind token as written, quotes included, or none, which
     resolution reads, and the declared type as `sqlite3AddColumn` leaves it: a trailing

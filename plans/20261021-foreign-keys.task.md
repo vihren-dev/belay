@@ -76,9 +76,10 @@ TABLE`, 15 `REPLACE`, 22 a trigger, and 11 a deferred constraint. Corpus v4 has 
   and collation of the parent key; NULL child keys; composite keys; foreign keys turned on over
   existing violations, with writes that do not change those rows, one that does, and an update
   of a parent key that fixes one; the prepare errors of each write that processes a foreign
-  key, with a one-row and a multi-row parent insert, an `INSERT ... SELECT` of one row, and an
-  `INSERT OR REPLACE` into a parent with an `INTEGER PRIMARY KEY` and into one without a key,
-  and the writes to the same tables that SQLite permits.
+  key, with a one-row and a multi-row parent insert, and an `INSERT OR REPLACE` into a parent
+  with an `INTEGER PRIMARY KEY` and into one without a key, and the writes to the same tables
+  that SQLite permits. (Amended 2026-10-21: the case of an `INSERT ... SELECT` of one row is
+  dropped, because the frontend refuses `INSERT ... SELECT`, which ADR 0019 D4 adds.)
 - The verdict of every corpus: cases that newly agree and none that leave AGREE.
 - Mutants: a check that ignores a NULL in a composite child key the wrong way (a key with one
   NULL column must not be checked), `SET NULL` that deletes the child row, `CASCADE` on update
