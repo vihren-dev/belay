@@ -11,7 +11,9 @@ the function. The operators `->` and `->>` are a `call` of the function named `-
 0012, amendment 5, slice 6b). `=` is a `compare` with the operator `eq`, as the other
 comparisons are (ADR 0013, D3). `EXISTS (q)`, `x [NOT] IN (q)` and a scalar subquery `(q)`
 name a subquery of the statement's list (`syntax_subqueries`, ADR 0018, D1); `IN` of a list,
-`BETWEEN`, `CASE` and `||` are their own forms (ADR 0018, D2). Other statements
+`BETWEEN`, `CASE` and `||` are their own forms (ADR 0018, D2). `RAISE(IGNORE)` and
+`RAISE(ROLLBACK|ABORT|FAIL, message)` are the `raise` form (ADR 0018, D5); Lean decides where a
+trigger may have it. Other statements
 keep the expressions of `syntax_expressions.expression`. A schema-qualified column has no constructor and is
 refused with its source range; `syntax_select` maps the SELECT statement.
 """
@@ -26,6 +28,8 @@ COMPARISONS = {"EQ": "eq", "NE": "ne", "LT": "lt", "LE": "le", "GT": "gt", "GE":
 """Comparison tokens and their `Comparison` constructors in Lean."""
 CONNECTIVES = {"AND": "and", "OR": "or"}
 """Logical tokens and their `Syntax.Expr` constructors in Lean."""
+RAISE_KINDS = {"ROLLBACK": "rollback", "ABORT": "abort", "FAIL": "fail"}
+"""The `raisetype` tokens of `RAISE(kind, message)` and their `Syntax.RaiseKind` constructors."""
 ARITHMETIC = {"PLUS": "add", "MINUS": "subtract", "STAR": "multiply", "SLASH": "divide", "REM": "remainder"}
 """Arithmetic tokens and their `ArithmeticOperator` constructors in Lean."""
 
@@ -139,6 +143,13 @@ def query_expression(tree: Tree, node: Node) -> Located:
         return function_call(tree, node, children)
     if symbols in (["expr", "likeop", "expr"], ["expr", "likeop", "expr", "ESCAPE", "expr"]):
         return like(tree, node, children)
+    if symbols == ["RAISE", "LP", "IGNORE", "RP"]:
+        return constructor("raise", [("kind", leaf("ignore", children[2].start, children[2].end)),
+                                     ("message", leaf(None, node.start, node.end))], node.start, node.end)
+    if symbols == ["RAISE", "LP", "raisetype", "COMMA", "expr", "RP"]:
+        kind = tree.children(children[2])[0]
+        return constructor("raise", [("kind", leaf(RAISE_KINDS[kind.symbol], kind.start, kind.end)),
+                                     ("message", query_expression(tree, children[4]))], node.start, node.end)
     return expression(tree, node)
 
 

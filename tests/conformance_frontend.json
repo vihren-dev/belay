@@ -21,5 +21,6 @@
   "belay.sqlite.syntax_subqueries",
   "belay.sqlite.syntax_shapes",
   "belay.sqlite.syntax_sources",
+  "belay.sqlite.syntax_triggers",
   "belay.sqlite.syntax_writes"
 ]
