@@ -69,6 +69,14 @@ def ExprError.message : ExprError → String
   | .conflictTargetMismatch => "ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE constraint"
   | .noTablesSpecified => "no tables specified"
   | .tooManyEachArguments => "too many arguments on json_each() - max 2"
+  | .subqueryColumns count => s!"sub-select returns {count} columns - expected 1"
+  | .havingNonAggregate => "HAVING clause on a non-aggregate query"
+  | .raiseOutsideTrigger => "RAISE() may only be used within a trigger-program"
+  | .triggerOnSystemTable => "cannot create trigger on system table"
+
+/-- A name as SQLite's {lit}`%w` writes it inside double quotes: each double quote doubled. -/
+def quotedName (name : Identifier) : String :=
+  String.join ((toString name).toList.map fun character => if character == '"' then "\"\"" else character.toString)
 
 /-- SQLite's message for a prepare error, for example {lit}`no such table: t`. -/
 def PrepareError.message : PrepareError → String
@@ -79,6 +87,11 @@ def PrepareError.message : PrepareError → String
   | .noSuchTable name => s!"no such table: {name}"
   | .noSuchIndex name => s!"no such index: {name}"
   | .tableMayNotBeDropped name => s!"table {name} may not be dropped"
+  | .noSuchReferencedTable name => s!"no such table: main.{name}"
+  | .noSuchTrigger name => s!"no such trigger: {name}"
+  | .triggerExists name => s!"trigger {name} already exists"
+  | .foreignKeyMismatch child parent =>
+    s!"foreign key mismatch - \"{quotedName child}\" referencing \"{quotedName parent}\""
   | .expression error => error.message
 
 end Belay.Sqlite

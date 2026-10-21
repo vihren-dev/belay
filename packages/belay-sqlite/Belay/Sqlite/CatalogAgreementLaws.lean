@@ -1,4 +1,5 @@
 import Belay.Sqlite.StepCatalogLaws
+import Belay.Sqlite.Resolution.ResolveFoldSpec
 
 set_option doc.verso true
 
@@ -48,6 +49,7 @@ theorem runSqlAt_catalog {context : ResolveContext} {catalog next : Catalog} {sc
     (clean : (runSqlAt clock resolved database).error? = none) :
     (runSqlAt clock resolved database).database.catalog = next := by
   rw [resolve_after context catalog next script resolved resolution]
-  exact runSqlFrom_agrees _ 0 { database, clock := scriptClock clock resolved } { catalog } ⟨start, rfl⟩ _ rfl clean
+  exact runSqlFrom_agrees _ 0 { database, clock := scriptClock clock resolved }
+    { catalog, foreignKeys := context.profile.foreignKeys } ⟨start, rfl⟩ _ rfl clean
 
 end Belay.Sqlite

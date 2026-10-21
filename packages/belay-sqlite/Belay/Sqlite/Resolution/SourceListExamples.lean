@@ -27,8 +27,8 @@ def each (alias : Identifier) (argument : Expr) : TableReference :=
 
 /-- The query of a resolved statement; none for any other statement and for no statement. -/
 def queryOf : Option Resolved.Statement → Option Resolved.Query
-  | some (.query query) => some query
-  | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some (.drop _) | some .begin | some .commit
+  | some (.query query _) => some query
+  | some (.createTable ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..) | some (.setting _) | some .begin | some .commit
   | some .rollback | some (.insert ..) | some (.update ..) | some (.upsert ..) | some (.delete ..)
   | some (.prepareError _) | none => none
 
@@ -36,7 +36,7 @@ def queryOf : Option Resolved.Statement → Option Resolved.Query
 {name}`database`; none when it does not resolve to a query or a table is missing. -/
 def rowsOf (results : List ResultColumn) (source : TableReference) (joins : List Join) : Option (List (List Value)) :=
   (queryOf (resolvedOne results source joins)).bind fun query =>
-    (query.source 0 database).map fun source => query.results 0 source.rows
+    (query.source (.plain 0) database).map fun source => query.results (.plain 0) source.rows
 
 /-- A result column of {lit}`x.c`. -/
 def named (source column : Identifier) : ResultColumn :=

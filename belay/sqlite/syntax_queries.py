@@ -9,8 +9,12 @@ arguments (`call`), with the function name as written: Lean folds the name and d
 the function. The operators `->` and `->>` are a `call` of the function named `->` or
 `->>` with two arguments, as SQLite's parser makes them calls of those functions (ADR
 0012, amendment 5, slice 6b). `=` is a `compare` with the operator `eq`, as the other
-comparisons are (ADR 0013, D3). Other statements keep the expressions of
-`syntax_expressions.expression`. A schema-qualified column has no constructor and is
+comparisons are (ADR 0013, D3). `EXISTS (q)`, `x [NOT] IN (q)` and a scalar subquery `(q)`
+name a subquery of the statement's list (`syntax_subqueries`, ADR 0018, D1); `IN` of a list,
+`BETWEEN`, `CASE` and `||` are their own forms (ADR 0018, D2). `RAISE(IGNORE)` and
+`RAISE(ROLLBACK|ABORT|FAIL, message)` are the `raise` form (ADR 0018, D5); Lean decides where a
+trigger may have it. Other statements
+keep the expressions of `syntax_expressions.expression`. A schema-qualified column has no constructor and is
 refused with its source range; `syntax_select` maps the SELECT statement.
 """
 
@@ -18,11 +22,14 @@ from .located import Located, constructor, leaf, sequence, structure
 from .sql_tree import Node, Tree
 from .syntax_shapes import absent, left_list, require
 from .syntax_expressions import dequote, expression, name
+from .syntax_forms import list_form, subquery
 
 COMPARISONS = {"EQ": "eq", "NE": "ne", "LT": "lt", "LE": "le", "GT": "gt", "GE": "ge"}
 """Comparison tokens and their `Comparison` constructors in Lean."""
 CONNECTIVES = {"AND": "and", "OR": "or"}
 """Logical tokens and their `Syntax.Expr` constructors in Lean."""
+RAISE_KINDS = {"ROLLBACK": "rollback", "ABORT": "abort", "FAIL": "fail"}
+"""The `raisetype` tokens of `RAISE(kind, message)` and their `Syntax.RaiseKind` constructors."""
 ARITHMETIC = {"PLUS": "add", "MINUS": "subtract", "STAR": "multiply", "SLASH": "divide", "REM": "remainder"}
 """Arithmetic tokens and their `ArithmeticOperator` constructors in Lean."""
 
@@ -95,6 +102,10 @@ def query_expression(tree: Tree, node: Node) -> Located:
     symbols = [child.symbol for child in children]
     if symbols == ["LP", "expr", "RP"]:
         return query_expression(tree, children[1])
+    lifted = (subquery(tree, node, children, symbols, query_expression)
+              or list_form(tree, node, children, symbols, query_expression))
+    if lifted is not None:
+        return lifted
     if len(symbols) == 3 and symbols[0] == symbols[2] == "expr":
         if symbols[1] in COMPARISONS:
             return compare(tree, node, COMPARISONS[symbols[1]], children[0], children[2])
@@ -132,6 +143,13 @@ def query_expression(tree: Tree, node: Node) -> Located:
         return function_call(tree, node, children)
     if symbols in (["expr", "likeop", "expr"], ["expr", "likeop", "expr", "ESCAPE", "expr"]):
         return like(tree, node, children)
+    if symbols == ["RAISE", "LP", "IGNORE", "RP"]:
+        return constructor("raise", [("kind", leaf("ignore", children[2].start, children[2].end)),
+                                     ("message", leaf(None, node.start, node.end))], node.start, node.end)
+    if symbols == ["RAISE", "LP", "raisetype", "COMMA", "expr", "RP"]:
+        kind = tree.children(children[2])[0]
+        return constructor("raise", [("kind", leaf(RAISE_KINDS[kind.symbol], kind.start, kind.end)),
+                                     ("message", query_expression(tree, children[4]))], node.start, node.end)
     return expression(tree, node)
 
 

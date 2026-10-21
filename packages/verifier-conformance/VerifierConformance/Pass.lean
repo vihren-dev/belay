@@ -1,5 +1,5 @@
 import VerifierConformance.Trace
-import VerifierConformance.Outputs
+import VerifierConformance.PossibleOutputs
 
 /-! One classification pass over a script (ADR 0013, D2): each reached statement runs
 once, and the pass keeps the observation before it, its output and whether the model
@@ -10,14 +10,16 @@ verification target. -/
 namespace Belay.Sqlite.Conformance
 
 /-- What one pass over a script gives: the observation before each executed statement and
-of the final outcome, the output of each executed statement, and whether every reached
-statement passes {lit}`statementReady`. -/
+of the final outcome, the output of each executed statement and the results that SQLite may
+give for it, and whether every reached statement passes {lit}`statementReady`. -/
 structure Pass where
   /-- The initial snapshot and one observation after each executed statement; a halt ends
   them. -/
   observations : List Observation
   /-- The output of each executed statement, up to and including a halting one. -/
   outputs : List (Option StatementOutput)
+  /-- The results that SQLite may give for each executed statement ({name}`possibleOutput`). -/
+  possible : List (Option (List (List ResultRow)))
   /-- Whether every reached statement passes {lit}`statementReady`. -/
   supported : Bool
 
@@ -27,20 +29,22 @@ that effect ({lit}`advanceWith`) and observed; a halt ends the pass with the obs
 its outcome. -/
 def passFrom (position : Nat) (script : List Resolved.Statement) (state : SqlState) : Pass :=
   match script with
-  | [] => { observations := [observeState state], outputs := [], supported := true }
+  | [] => { observations := [observeState state], outputs := [], possible := [], supported := true }
   | statement :: rest =>
     let clock := state.clock position
     let run := runStatement clock statement state.database
     let ready := run.ready
     let transition := advanceWith position statement state run.effect
     let output := statementOutput clock statement state transition
+    let possible := possibleOutput clock statement state transition
     match transition with
     | .next next =>
       let later := passFrom (position + 1) rest next
       { observations := observeState state :: later.observations, outputs := output :: later.outputs,
-        supported := ready && later.supported }
+        possible := possible :: later.possible, supported := ready && later.supported }
     | .halt outcome =>
-      { observations := [observeState state, observeOutcome outcome], outputs := [output], supported := ready }
+      { observations := [observeState state, observeOutcome outcome], outputs := [output], possible := [possible],
+        supported := ready }
 
 /-- The observations of a complete case, which begins outside a transaction as
 {lit}`runSql` does. -/

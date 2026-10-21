@@ -54,6 +54,10 @@ inductive ColumnConstraint where
   without one; resolution reads {lit}`VIRTUAL` and {lit}`STORED` with ASCII case ignored
   (ADR 0014, slice 5). -/
   | generated (expression : Expr) (kind : Option Identifier)
+  /-- A deferral clause, which sets whether the last foreign key of the table so far is
+  deferred, as SQLite's {lit}`sqlite3DeferForeignKey` does: true only for
+  {lit}`DEFERRABLE INITIALLY DEFERRED` (ADR 0018, D4). -/
+  | deferral (deferred : Bool)
   deriving Repr, BEq
 
 /-- One column of CREATE TABLE or ADD COLUMN. Use {lean}`(none : Option String)`
@@ -80,6 +84,9 @@ inductive TableConstraint where
   {name}`ColumnConstraint.references`; {lit}`referenced` is empty without a column list. -/
   | foreignKey (columns : List Identifier) (table : Identifier) (referenced : List Identifier)
       (onDelete onUpdate : ForeignKeyAction)
+  /-- The deferral clause of the {lit}`FOREIGN KEY` before it, as for
+  {name}`ColumnConstraint.deferral`. -/
+  | deferral (deferred : Bool)
   deriving Repr, BEq
 
 end Belay.Sqlite.Syntax

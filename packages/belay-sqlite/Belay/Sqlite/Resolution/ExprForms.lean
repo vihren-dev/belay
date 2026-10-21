@@ -49,16 +49,16 @@ def Resolved.Aggregate.writesJson : Resolved.Aggregate → Bool
   | .jsonGroupArray .. | .jsonGroupObject .. => true
   | .countRows | .count _ | .min .. | .max .. | .sum _ | .avg _ | .groupConcat .. | .total _ => false
 
-/-- Whether a call is an aggregate of the model: {lit}`count(*)`, or a named aggregate
-of one operand ({name}`aggregateNamed`) or of two ({name}`pairAggregateNamed`). -/
+/-- Whether a call is an aggregate of the model: {lit}`count(*)` and {lit}`count()`, or a
+named aggregate of one operand ({name}`aggregateNamed`) or of two ({name}`pairAggregateNamed`). -/
 def aggregateCall : Syntax.Expr → Bool
-  | .callStar name => normalizeIdentifier name == "count"
+  | .callStar name | .call name [] => normalizeIdentifier name == "count"
   | .call name [_] => (aggregateNamed name).isSome
   | .call name [_, _] => (pairAggregateNamed name).isSome
-  | .call _ [] | .call _ (_ :: _ :: _ :: _) => false
+  | .call _ (_ :: _ :: _ :: _) => false
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast ..
-  | .qualified .. | .collate .. => false
+  | .qualified .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate .. | .raise .. => false
 
 /-- The restriction for a function call that the model does not evaluate. -/
 def unmodeledFunction : ValueIssue :=
@@ -75,7 +75,7 @@ def Syntax.Expr.unquotedBoolean : Syntax.Expr → Bool
   | .identifier name quote => quote == .none && booleanKeywordName name
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .qualified .. | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast ..
-  | .collate .. => false
+  | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate .. | .raise .. => false
 
 /-- Whether a comparison is SQLite's truth test: {lit}`IS` or {lit}`IS NOT` whose right
 operand is an unquoted {lit}`TRUE` or {lit}`FALSE` that names no column, so it resolved to

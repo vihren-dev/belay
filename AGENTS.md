@@ -168,8 +168,8 @@ reviews commits from Codex sessions.
 - Exit code 0: no "must" findings. Fix "should" findings, or reject or defer
   them with a reason.
 - Exit code 1: fix each "must" finding in a `refactor:` commit before the next
-  feature commit, and review that commit too. After two review rounds with new
-  "must" findings, stop and report to the owner.
+  feature commit, and review that commit too. After four review rounds in a row
+  with new "must" findings, stop and report to the owner.
 - Record the outcome of every finding with
   `just review-resolve FINDING-ID fixed`, or `rejected "REASON"`, or
   `deferred "REASON"`. `just review` prints the finding ids. Reject a finding

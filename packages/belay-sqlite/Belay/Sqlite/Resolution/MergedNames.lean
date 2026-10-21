@@ -1,4 +1,4 @@
-import Belay.Sqlite.Resolution.Scope
+import Belay.Sqlite.Resolution.ScopeNames
 import Belay.Sqlite.Resolution.QueryAffinity
 import Belay.Sqlite.Resolution.Values
 
@@ -20,10 +20,12 @@ def coalesceColumns : List Nat → Resolved.Expr
   | position :: rest => .coalesce (.column position) (coalesceColumns rest)
 
 /-- The operand of a name that reads the columns at the positions
-({name}`NameResolution.found`): one column with its affinity, or the coalesce of several
-with no affinity. -/
+({name}`NameResolution.found`): one column with its affinity, except a cell of a trigger's
+{lit}`NEW` or {lit}`OLD` row ({name}`Scope.triggerCell`), which has no affinity, as in SQLite
+(ADR 0018, D5); or the coalesce of several with no affinity. -/
 def Scope.nameOperand (scope : Scope) : List Nat → Operand
-  | [position] => (.column position, scope.columns[position]?.map CatalogColumn.affinity)
+  | [position] => (.column position,
+      if scope.triggerCell position then none else scope.columns[position]?.map CatalogColumn.affinity)
   | reads => (coalesceColumns reads, none)
 
 /-- The index of the source whose cells hold the position of the concatenated row; the

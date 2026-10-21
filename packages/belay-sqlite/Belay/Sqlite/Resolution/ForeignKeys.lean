@@ -2,15 +2,15 @@ import Belay.Sqlite.Resolution.Syntax
 
 set_option doc.verso true
 
-/-! The foreign keys of a table (ADR 0014, D2 as amended). Every profile of the model runs
-with foreign keys off, as SQLite does by default, so a foreign key changes no write; the
-catalog keeps it because {lit}`PRAGMA foreign_key_list` reports it. -/
+/-! The foreign keys of a table (ADR 0014, D2 as amended). The catalog keeps them because
+{lit}`PRAGMA foreign_key_list` reports them, and the writes check them when foreign keys are on
+(ADR 0018, D4). -/
 
 namespace Belay.Sqlite
 
 /-- One foreign key: the referenced table as written, the positions of its columns in the
 table, the referenced columns as written (empty without a column list, which SQLite
-reports as NULL), and its actions. -/
+reports as NULL), its actions, and whether it is deferred. -/
 structure ForeignKey where
   /-- The referenced table, as written. -/
   table : Identifier
@@ -22,6 +22,9 @@ structure ForeignKey where
   onDelete : Syntax.ForeignKeyAction
   /-- The {lit}`ON UPDATE` action. -/
   onUpdate : Syntax.ForeignKeyAction
+  /-- Whether the key is {lit}`DEFERRABLE INITIALLY DEFERRED`, which SQLite checks at
+  {lit}`COMMIT`; {lean}`false` for an immediate key. -/
+  deferred : Bool := false
   deriving Repr, DecidableEq
 
 end Belay.Sqlite

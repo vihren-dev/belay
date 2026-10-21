@@ -58,9 +58,10 @@ of all of them. More than {name}`maximumJoinTables` sources is SQLite's
 {lit}`at most 64 tables in a join`; then each reference resolves in order
 ({name}`resolveReference`, {name}`functionJoinChecked`); then each join in order ({name}`mergeJoins`), whose
 generated conditions coalesce the left columns when any join is a right or full join. No
-{lit}`FROM` gives no source and the empty scope. -/
-def resolveSources (catalog : Catalog) (source : Option Syntax.TableReference) (joins : List Syntax.Join) :
-    Except SourceIssue (List PendingSource × Scope) := do
+{lit}`FROM` gives no source and the empty scope. The first cell is at {lit}`start`: 0 for a
+statement's query, after the outer cells for a subquery. -/
+def resolveSources (catalog : Catalog) (source : Option Syntax.TableReference) (joins : List Syntax.Join)
+    (start : Nat := 0) : Except SourceIssue (List PendingSource × Scope) := do
   let some source := source | .ok ([], [])
   if joins.length + 1 > maximumJoinTables then throw (.value (.prepare .tooManyTables))
   let (firstItem, firstSource) ← resolveReference catalog [1] source
@@ -70,7 +71,7 @@ def resolveSources (catalog : Catalog) (source : Option Syntax.TableReference) (
     let earlier := source :: (joins.take item).map (·.source)
     functionJoinChecked (earlier.any (·.arguments.isSome)) item join operator
     .ok resolved) (joins.zip operators)
-  let placed := Scope.place (firstSource :: joined.map Prod.snd)
+  let placed := Scope.place (firstSource :: joined.map Prod.snd) start
   let (scope, conditions) ← mergeJoins (operators.any rightOrFull) (placed.take 1) 0
     (joins.zip (operators.zip (placed.drop 1)))
   let first : PendingSource := { item := firstItem, kind := .inner, condition := .none }

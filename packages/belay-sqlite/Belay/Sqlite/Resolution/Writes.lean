@@ -32,10 +32,12 @@ def writablePositions (columns : List CatalogColumn) : List Nat :=
 {lit}`ON CONFLICT` clauses ({name}`resolveConflict`) and path 5 the {lit}`RETURNING`
 columns. An INSERT without clauses whose algorithms are all ABORT
 ({name}`insertPolicy`) is {name}`Resolved.Statement.insert`; any other INSERT is
-{name}`Resolved.Statement.upsert`. -/
+{name}`Resolved.Statement.upsert`. The values may name the statement's resolved subqueries,
+whose shapes are {lit}`shapes`. -/
 def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : Identifier)
     (names : Option (List Identifier)) (rows : List (List Syntax.Expr)) (conflicts : List Syntax.ConflictClause)
-    (algorithm : Option ConflictAlgorithm) (returning : List Syntax.ResultColumn) : StatementResolution :=
+    (algorithm : Option ConflictAlgorithm) (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query)
+    (shapes : SubqueryShapes) (trigger : Option TriggerRow := none) : StatementResolution :=
   let width := (rows.head?.map List.length).getD 0
   if rows.any (·.length != width) then prepareError catalog (.expression .valuesDiffer) else
   match catalog.findTable tableName with
@@ -47,7 +49,8 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
     match positions with
     | .error error => prepareError catalog (.expression error)
     | .ok positions =>
-      match resolveAll (fun row values => (resolveAll (fun _ => constantCell context.profile.dqsDml)
+      let around := (trigger.map (·.scope 0)).getD []
+      match resolveAll (fun row values => (resolveAll (fun _ item => constantCell context.profile.dqsDml shapes item around)
           values).mapError (·.under [row])) rows with
       | .error issue => issueResolution catalog index [2] issue
       | .ok values =>
@@ -71,7 +74,7 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
                 if policy.mixed then restrict index [] .mixedConflictAlgorithms
                 else if replacesDefault table policy then restrict index [] .replaceDefault
                 else if clauses.isEmpty && policy.aborts then
-                  .ok (.insert position full columns, catalog)
-                else .ok (.upsert position full clauses columns algorithm, catalog)
+                  .ok (.insert position full columns subqueries, catalog)
+                else .ok (.upsert position full clauses columns algorithm subqueries, catalog)
 
 end Belay.Sqlite

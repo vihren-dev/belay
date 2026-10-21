@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.Resolve
+import Belay.Sqlite.Resolution.CatalogSpec
 
 set_option doc.verso true
 
@@ -125,7 +126,8 @@ theorem resolveCreateIndex_used (context : ResolveContext) (catalog : Catalog) (
   | none => simp [hfind] at used
   | some result =>
     obtain ⟨_, object⟩ := result
+    have live := Catalog.find_not_trigger _ _ _ _ hfind
     cases object with
-    | mk objectName entry => cases entry <;> simp
+    | mk objectName entry => cases entry <;> simp_all [CatalogObject.isTrigger, CatalogEntry.isTrigger]
 
 end Belay.Sqlite

@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.CatalogDrop
+import Belay.Sqlite.Resolution.ParentKeys
 import Belay.Sqlite.Resolution.Profile
 import Belay.Sqlite.StoreValue
 
@@ -32,14 +33,6 @@ structure Database where
   including physical rowids. -/
   rows : List (List Row) := []
   deriving Repr, DecidableEq
-
-/-- The table at a catalog position, or {lean}`(none : Option CatalogTable)` for a
-position that holds an index or is past the end. -/
-def Catalog.tableAt (catalog : Catalog) (position : Nat) : Option CatalogTable :=
-  match catalog[position]? with
-  | some { entry := .table table, .. } => some table
-  | some { entry := .index _, .. } => none
-  | none => none
 
 /-- The table at a catalog position: its catalog entry with its stored rows, or
 {lean}`(none : Option Table)` for a position that holds an index or is past the end. -/
@@ -84,7 +77,8 @@ def CatalogTable.supported (limits : Limits) (table : CatalogTable) : Bool :=
 /-- Admit one catalog object. A table satisfies {lit}`CatalogTable.supported`, and
 a reserved name is allowed only for a statistics table with exactly its typeless
 columns and no keys. An index names a table position of the catalog, a supported
-key of that table and a name that is not reserved. -/
+key of that table and a name that is not reserved. A trigger has a name that is not reserved
+and names a table of the catalog. -/
 def CatalogObject.supported (limits : Limits) (catalog : Catalog) (object : CatalogObject) : Bool :=
   match object.entry with
   | .table table => table.supported limits && (!reservedName object.name ||
@@ -92,10 +86,13 @@ def CatalogObject.supported (limits : Limits) (catalog : Catalog) (object : Cata
         table == { columns := names.map fun name => { name, declaredType := none } })
   | .index index => !reservedName object.name &&
       (catalog.tableAt index.table).any fun table => index.supported table.columns.length
+  | .trigger trigger => !reservedName object.name && (catalog.findTable trigger.table).isSome
 
-/-- Admit a catalog: unique folded object names and every object supported. -/
+/-- Admit a catalog: unique folded names of its tables and indexes, and every object
+supported. -/
 def Catalog.supported (limits : Limits) (catalog : Catalog) : Bool :=
-  catalog.foldedNames.eraseDups.length == catalog.length && catalog.all (·.supported limits catalog)
+  catalog.foldedNames.eraseDups.length == (catalog.filter (!·.isTrigger)).length &&
+    catalog.all (·.supported limits catalog)
 
 /-- For the given limits, the catalog satisfies {name}`Catalog.supported`. The
 empty catalog is valid under every limit. -/

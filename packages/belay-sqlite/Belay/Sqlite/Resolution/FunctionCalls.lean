@@ -25,7 +25,7 @@ def likelihoodConstant : Syntax.Expr → Bool
   | .numeric text => realToken text && (atof text.toUTF8.toList).1 ≤ 1.0
   | .null | .string _ | .blob _ | .currentTime _ | .identifier .. | .qualified .. | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast ..
-  | .collate .. => false
+  | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate .. | .raise .. => false
 
 /-- The collation of a call that compares its arguments ({lit}`SQLITE_FUNC_NEEDCOLL`): the
 explicit or column collation of the left-most argument that has one, else {lit}`BINARY`. A

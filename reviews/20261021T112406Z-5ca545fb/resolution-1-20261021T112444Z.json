@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-21T11:24:44+00:00",
+  "finding": "20261021T112406Z-5ca545fb#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "added rollback-before, RAISE(ROLLBACK) in a BEFORE trigger on a later row"
+}

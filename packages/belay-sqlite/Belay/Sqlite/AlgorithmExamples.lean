@@ -19,7 +19,7 @@ def everywhere (algorithm : ConflictAlgorithm) : Resolved.ConflictPolicy :=
 /-- The run of {lit}`INSERT OR algorithm` of the rows. -/
 def run (algorithm : ConflictAlgorithm) (rows : List (List Value)) :
     Except (ExecutionError × Table × List Row) (Table × List Row) :=
-  LiteralData.upsertRun 0 keys (everywhere algorithm) [] table rows
+  LiteralData.upsertRun (.plain 0) keys (everywhere algorithm) [] table rows
 
 /-- The values of the table of a run: the final table, or the table before the failing
 row. -/
@@ -53,7 +53,7 @@ def mixed : List (List Value) :=
 -- REPLACE of a NULL in a NOT NULL column without a default is ABORT.
 #guard errorOf .replace [[.integer 7, .integer 7, .null]] == some .constraintViolation
 -- A REPLACE key is checked after an ABORT key: the row fails and deletes nothing.
-#guard (match LiteralData.upsertRun 0 keys { keys := [.replace, .abort], notNull := [] } [] table [[.integer 1, .integer 2, letter 120]] with
+#guard (match LiteralData.upsertRun (.plain 0) keys { keys := [.replace, .abort], notNull := [] } [] table [[.integer 1, .integer 2, letter 120]] with
   | .error (reason, _, _) => some reason
   | .ok _ => none) == some .constraintViolation
 

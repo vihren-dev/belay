@@ -1,4 +1,4 @@
-import Belay.Sqlite.Resolution.Catalog
+import Belay.Sqlite.Resolution.TriggerProgram
 import Belay.Sqlite.Resolution.PrepareErrors
 import Belay.Sqlite.Resolution.ConflictPolicy
 import Belay.Sqlite.Resolution.RestrictionText
@@ -31,18 +31,6 @@ def Restriction.reason (restriction : Restriction) : String := restriction.kind.
 
 namespace Resolved
 
-/-- One cell of a resolved INSERT row: a value that resolution computed and stored with the
-column's affinity, or an expression that reads the statement's clock, such as a
-{lit}`VALUES` item {lit}`CURRENT_TIMESTAMP` or an omitted column with that default, which the
-execution evaluates at the statement's clock value and stores with the column's affinity.
-An expression cell reads no column. Use {lean}`Cell.value` for a known value. -/
-inductive Cell where
-  /-- A value, stored with the column's affinity. -/
-  | value (value : Value)
-  /-- An expression that reads the clock and no column. -/
-  | expression (expression : Expr)
-  deriving Repr, DecidableEq
-
 /-- One statement after name resolution. For example, an INSERT into the table at
 catalog position 0 with one full row is {lean}`Statement.insert 0 [[Cell.value Value.null]] []`.
 A write names its table by catalog position; execution reads the table's columns, keys
@@ -52,12 +40,17 @@ inductive Statement where
   | createTable (position : Nat) (name : Identifier) (table : CatalogTable)
   /-- Create the named index at the catalog position, which is the end of the catalog. -/
   | createIndex (position : Nat) (name : Identifier) (index : CatalogIndex)
+  /-- Create the named trigger at the catalog position, which is the end of the catalog
+  (ADR 0018, D5). -/
+  | createTrigger (position : Nat) (name : Identifier) (trigger : CatalogTrigger)
   /-- Append the column to the table at the catalog position. -/
   | addColumn (table : Nat) (column : CatalogColumn)
   /-- Remove the catalog objects at the positions, with their rows ({lit}`Catalog.drop`):
   DROP TABLE removes its table and the indexes on it, DROP INDEX one index, and a DROP
-  with {lit}`IF EXISTS` of a missing object none. -/
-  | drop (positions : List Nat)
+  with {lit}`IF EXISTS` of a missing object none. With {lit}`rules`, DROP TABLE of a table
+  that foreign keys reference first deletes its rows with their foreign-key actions, as SQLite
+  does (ADR 0018, D4), and the triggers that the actions fire run (D5). -/
+  | drop (positions : List Nat) (rules : Option WriteRules := none)
   /-- Start a transaction. -/
   | begin
   /-- Commit the transaction. -/
@@ -67,31 +60,46 @@ inductive Statement where
   /-- Insert full rows, with one cell for each column in table order ({name}`Cell`), and
   keep every unique key of the table ({name}`Catalog.uniqueKeys`) unique. The
   {lit}`RETURNING` columns are an expression over the written row and its name each,
-  none without {lit}`RETURNING`; the execution semantics does not read them. -/
+  none without {lit}`RETURNING`; the execution semantics does not read them. The
+  subqueries are those that the cells name by index (ADR 0018, D1), as for a query. With
+  foreign keys on and a key that the write must check, or with a trigger that it may fire,
+  {lit}`rules` are what it runs row by row ({name}`WriteRules`); they are none without either
+  (ADR 0018, D4 and D5). -/
   | insert (table : Nat) (rows : List (List Cell)) (returning : List (Expr × String))
+      (subqueries : List Query := []) (rules : Option WriteRules := none)
   /-- In every row where the optional filter condition is true (every row without a
   filter), set each column position to its expression, evaluated on the old row and
   stored with the column's affinity. A literal update of slice 3a is the special case
   of {lit}`.literal` values and the filter {lit}`column = integer`. The unique keys and
-  the {lit}`RETURNING` columns are as for INSERT. -/
+  the {lit}`RETURNING` columns, the subqueries and {lit}`rules` are as for INSERT. -/
   | update (table : Nat) (assignments : List (Nat × Expr)) (filter : Option Expr)
-      (returning : List (Expr × String))
+      (returning : List (Expr × String)) (subqueries : List Query := []) (rules : Option WriteRules := none)
   /-- INSERT with {lit}`ON CONFLICT` clauses or a conflict algorithm other than ABORT: the
   rows as for {name}`Statement.insert`, the clauses in written order, and the statement's
   {lit}`OR` algorithm, if any. The algorithm of each constraint is
   {name}`Catalog.writePolicy` of that algorithm. Each row is handled by the first clause
   whose target key has a conflicting row, or else by the algorithms of the constraints
-  that it fails. -/
+  that it fails. The subqueries and {lit}`rules` are as for INSERT. -/
   | upsert (table : Nat) (rows : List (List Cell)) (clauses : List ConflictClause)
       (returning : List (Expr × String)) (algorithm : Option ConflictAlgorithm)
+      (subqueries : List Query := []) (rules : Option WriteRules := none)
   /-- Remove every row where the optional filter condition is true (every row without a
   filter). The {lit}`RETURNING` columns are evaluated on each removed row; the
-  execution semantics does not read them. -/
+  execution semantics does not read them. The subqueries and {lit}`rules` are as for
+  INSERT. -/
   | delete (table : Nat) (filter : Option Expr) (returning : List (Expr × String))
+      (subqueries : List Query := []) (rules : Option WriteRules := none)
   /-- SQLite refuses to prepare the statement with this error. -/
   | prepareError (error : PrepareError)
-  /-- Run a query: it reads the database, changes nothing, and has result rows. -/
-  | query (query : Query)
+  /-- Run a query: it reads the database, changes nothing, and has result rows. The
+  subqueries are those that its expressions name by index (ADR 0018, D1); a subquery's
+  expressions name only subqueries after it in the list. -/
+  | query (query : Query) (subqueries : List Query)
+  /-- {lit}`PRAGMA foreign_keys = value`, with the setting after it: the value outside a
+  transaction, and the setting before it inside one, where SQLite ignores the pragma. It
+  changes no table, gives no row and never fails; resolution follows the setting (ADR 0018,
+  D4). -/
+  | setting (foreignKeys : Bool)
   deriving Repr, DecidableEq
 
 end Resolved

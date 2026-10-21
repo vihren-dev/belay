@@ -7,16 +7,17 @@ its references. -/
 
 namespace Belay.Sqlite
 
-/-- For every UPDATE whose resolution is a prepare error that names a catalog object:
+/-- For every UPDATE, with any subqueries and shapes, whose resolution is a prepare error that names a catalog object:
 the error is {lit}`no such table` for the statement's table, no table has the folded
 name, and the catalog is unchanged. Proof sketch: split every branch of the
 resolver; after the table lookup, the assignments, the filter and the
 {lit}`RETURNING` columns give errors that name no catalog object. -/
 theorem resolveUpdate_named (context : ResolveContext) (catalog after : Catalog) (index : Nat)
     (tableName : Identifier) (assignments : List (Identifier × Syntax.Expr)) (filter : Option Syntax.Expr)
-    (returning : List Syntax.ResultColumn)
+    (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query) (shapes : SubqueryShapes)
     (error : PrepareError) (named : ∀ cause, error ≠ .expression cause)
-    (ok : resolveUpdate context catalog index tableName assignments filter returning = .ok (.prepareError error, after)) :
+    (ok : resolveUpdate context catalog index tableName assignments filter returning subqueries shapes =
+      .ok (.prepareError error, after)) :
     error = .noSuchTable tableName ∧ catalog.findTable tableName = none ∧ after = catalog := by
   unfold resolveUpdate at ok
   simp only [prepareError, restrict, issueResolution] at ok
@@ -27,13 +28,13 @@ theorem resolveUpdate_named (context : ResolveContext) (catalog after : Catalog)
     | exact absurd rfl (named _)
     | (simp_all; done)
 
-/-- For every UPDATE: when no table has the folded name, the resolution is
+/-- For every UPDATE, with any subqueries and shapes: when no table has the folded name, the resolution is
 {lit}`no such table`, and the catalog is unchanged. -/
 theorem resolveUpdate_missing (context : ResolveContext) (catalog : Catalog) (index : Nat)
     (tableName : Identifier) (assignments : List (Identifier × Syntax.Expr)) (filter : Option Syntax.Expr)
-    (returning : List Syntax.ResultColumn)
+    (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query) (shapes : SubqueryShapes)
     (missing : catalog.findTable tableName = none) :
-    resolveUpdate context catalog index tableName assignments filter returning =
+    resolveUpdate context catalog index tableName assignments filter returning subqueries shapes =
       .ok (.prepareError (.noSuchTable tableName), catalog) := by
   unfold resolveUpdate
   simp [missing, prepareError]

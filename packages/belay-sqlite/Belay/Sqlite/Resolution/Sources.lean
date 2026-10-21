@@ -12,10 +12,11 @@ child 3 its {lit}`USING` list. -/
 namespace Belay.Sqlite
 
 /-- The columns of {lit}`source.*` ({name}`Scope.starColumns?`) with their expansions
-({name}`Scope.starOperand`) and their names, or SQLite's {lit}`no such table: source` when no source has the name. -/
-def sourceStarColumns (scope : Scope) (source : Identifier) : Except ValueIssue (List (Resolved.Expr × String)) :=
+({name}`Scope.starOperand`), as operands with their affinities, and their names, or SQLite's
+{lit}`no such table: source` when no source has the name. -/
+def sourceStarColumns (scope : Scope) (source : Identifier) : Except ValueIssue (List (Operand × String)) :=
   match scope.starColumns? source with
-  | some columns => columns.mapM fun (position, column) => (·.1, column.name.text) <$> scope.starOperand position column
+  | some columns => columns.mapM fun (position, column) => (·, column.name.text) <$> scope.starOperand position column
   | none => .error (.prepare (.noSuchSource source))
 
 /-- The number of tables in a join that SQLite accepts ({lit}`SQLITE_MAX_SRCLIST`). -/
@@ -39,7 +40,8 @@ instance : MonadLift (Except ValueIssue) (Except SourceIssue) := ⟨Except.mapEr
 source with its name (the alias, else the table name as declared, as SQLite names it in
 messages). A missing table is SQLite's
 {lit}`no such table: %s`; one of SQLite's own tables is a model restriction, as in a
-query of one table. -/
+query of one table, and so is a name of an eponymous table-valued function
+({name}`eponymousName`), which SQLite reads without arguments. -/
 def resolveTableReference (catalog : Catalog) (path : List Nat) (reference : Syntax.TableReference) :
     Except SourceIssue (Nat × ScopeSource) :=
   match catalog.findTable reference.table with
@@ -48,6 +50,7 @@ def resolveTableReference (catalog : Catalog) (path : List Nat) (reference : Syn
     .ok (position, { name := reference.alias.getD declared, columns := table.columns, hasRowid := !table.withoutRowid })
   | none =>
     if reservedName reference.table then .error (.value (.restriction path .systemTable))
+    else if eponymousName reference.table then .error (.value (.restriction path .tableFunction))
     else .error (.noSuchTable reference.table)
 
 /-- The flags that the keywords of a join operator set, as SQLite's {lit}`sqlite3JoinType`
@@ -130,7 +133,7 @@ def resolveJoinCondition (dqs : Bool) (scope : Scope) (index : Nat) : JoinCondit
   | .none => .ok none
   | .merged condition => .ok (some condition)
   | .written path term => do
-    let resolved ← condition path (resolveOperand dqs scope true term)
+    let resolved ← condition path (resolveOperand dqs scope {} true term)
     let bound := scope.cellsBefore (index + 1)
     if resolved.readsBelow bound then .ok (some resolved)
     else throw (.restriction path .laterTableInOn)

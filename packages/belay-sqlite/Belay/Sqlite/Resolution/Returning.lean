@@ -34,7 +34,7 @@ def definedName (scope : Scope) : Syntax.Expr → Option String
     | .found .. | .missing | .ambiguous => none
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
-  | .cast .. | .collate .. => none
+  | .cast .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate .. | .raise .. => none
 
 /-- One {lit}`RETURNING` column at position {lit}`item`: the expressions and names it
 gives. The paths of its issues start at the column's position. {lit}`*` is every visible
@@ -45,7 +45,7 @@ def returningColumn (dqs : Bool) (scope : Scope) (item : Nat) :
   | .star => .ok (scope.visible.map fun (position, column) => (.column position, column.name.text))
   | .sourceStar _ => .error (.prepare .returningSourceStar)
   | .expression value alias text => do
-      let (resolved, _) ← (resolveOperand dqs scope true value).mapError (·.under [item, 0])
+      let (resolved, _) ← (resolveOperand dqs scope {} true value).mapError (·.under [item, 0])
       .ok [(resolved, (alias.map (·.text)).getD ((definedName scope value).getD text))]
 
 /-- Whether a result column is {lit}`source.*`. -/

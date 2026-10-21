@@ -142,6 +142,19 @@ inductive ExprError where
   /-- {lit}`too many arguments on json_each() - max 2`: a {lit}`json_each` source in
   {lit}`FROM` with three or more arguments. -/
   | tooManyEachArguments
+  /-- {lit}`sub-select returns %d columns - expected 1`: a scalar subquery or the subquery of
+  {lit}`IN` with another number of result columns, with that number ({lit}`sqlite3SubselectError`;
+  in a comparison SQLite reports {lit}`row value misused`, with the same error code). -/
+  | subqueryColumns (count : Nat)
+  /-- {lit}`HAVING clause on a non-aggregate query`: {lit}`HAVING` in a query without
+  {lit}`GROUP BY` and without an aggregate (ADR 0018, D3). -/
+  | havingNonAggregate
+  /-- {lit}`RAISE() may only be used within a trigger-program`: {lit}`RAISE` in a statement that
+  is no trigger's (ADR 0018, D5). -/
+  | raiseOutsideTrigger
+  /-- {lit}`cannot create trigger on system table`: CREATE TRIGGER on a table whose name begins
+  with {lit}`sqlite_` (ADR 0018, D5). -/
+  | triggerOnSystemTable
   deriving Repr, DecidableEq
 
 /-- An error that {lit}`sqlite3_prepare_v2` reports for a statement in the first
@@ -164,6 +177,22 @@ inductive PrepareError where
   /-- {lit}`table %s may not be dropped` ({lit}`sqlite3DropTable`), for SQLite's schema
   tables: {lit}`sqlite_master` and {lit}`sqlite_temp_master` under any of their names. -/
   | tableMayNotBeDropped (name : Identifier)
+  /-- {lit}`no such table: main.%s` ({lit}`sqlite3LocateTable` of the main schema): with foreign
+  keys on, a write processes a foreign key whose parent table, named as the key writes it, does
+  not exist (ADR 0018, D4); or CREATE TRIGGER names a table that does not exist, or a trigger's
+  statement does when a write prepares it (D5). -/
+  | noSuchReferencedTable (name : Identifier)
+  /-- {lit}`foreign key mismatch - "%w" referencing "%w"` ({lit}`sqlite3FkLocateIndex`): with
+  foreign keys on, a write processes a foreign key, of the child table with the first name,
+  whose parent, with the second name as the key writes it, has no primary key or unique index
+  on the referenced columns (ADR 0018, D4). -/
+  | foreignKeyMismatch (child parent : Identifier)
+  /-- {lit}`no such trigger: %S` ({lit}`sqlite3DropTrigger`), for DROP TRIGGER without
+  {lit}`IF EXISTS` of a name that no trigger has (ADR 0018, D5). -/
+  | noSuchTrigger (name : Identifier)
+  /-- {lit}`trigger %T already exists` ({lit}`sqlite3BeginTrigger`), for CREATE TRIGGER without
+  {lit}`IF NOT EXISTS` (ADR 0018, D5). -/
+  | triggerExists (name : Identifier)
   /-- An error that names no catalog object ({name}`ExprError`). -/
   | expression (error : ExprError)
   deriving Repr, DecidableEq

@@ -79,6 +79,9 @@ inductive ScalarFunction where
   | unicode
   /-- {lit}`unistr(x)`: the text with its Unicode escapes replaced. -/
   | unistr
+  /-- The operator {lit}`x || y` (ADR 0018, D2), which no name calls: NULL when an operand is
+  NULL, else the text of both. -/
+  | pipes
   /-- {lit}`concat(x, ...)`. -/
   | concat
   /-- {lit}`concat_ws(separator, x, ...)`. -/
@@ -114,7 +117,7 @@ functions fail only through their arguments. -/
 def ScalarFunction.canFail : ScalarFunction → Bool
   | .abs | .zeroblob | .like | .glob | .unistr | .printf => true
   | .typeof | .length | .octetLength | .sign | .iif | .nullif _ | .min _ | .max _ | .lower | .upper | .substr
-  | .instr | .replace | .trim _ | .hex | .unhex | .quote | .unistrQuote | .char | .unicode | .concat
+  | .instr | .replace | .trim _ | .hex | .unhex | .quote | .unistrQuote | .char | .unicode | .concat | .pipes
   | .concatWs | .round | .floor | .ceil | .trunc | .sqrt | .pi | .degrees | .radians | .mod => false
 
 end Belay.Sqlite.Resolved

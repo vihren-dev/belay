@@ -15,16 +15,19 @@ catalog: both are absent, or both are present with equal catalogs. -/
 def SqlState.Agrees (sql : SqlState) (state : ResolveState) : Prop :=
   sql.database.catalog = state.catalog ∧ sql.snapshot.map (·.catalog) = state.saved
 
-/-- For every clock value, statement, database and result: if {name}`literalStep` succeeds
-with the result, then the result's catalog is {name}`Resolved.Statement.applyCatalog` of
-the statement on the database's catalog, and the statement is not transaction control.
-Proof sketch: CREATE TABLE, CREATE INDEX, ADD COLUMN and DROP call the catalog functions, writes store rows
-only ({name}`Database.setRows`), a query returns the database, and every other statement
-fails. -/
+/-- For every clock value, statement that is not {lit}`PRAGMA foreign_keys = value`, database and
+result: if {name}`literalStep` succeeds with the result, then the result's catalog is
+{name}`Resolved.Statement.applyCatalog` of the statement on the database's catalog, and the
+statement is not transaction control. Proof sketch: CREATE TABLE, CREATE INDEX, CREATE TRIGGER, ADD
+COLUMN and DROP call the catalog functions, writes store rows only ({name}`Database.setRows`, and the rows
+of a write that checks foreign keys over the input catalog, {name}`keyRun_ok_catalog`), a query
+returns the database, and every other statement fails. -/
 theorem literalStep_success_catalog {clock : Int} {statement : Resolved.Statement} {database result : Database}
+    (notSetting : ∀ on, statement ≠ .setting on)
     (success : literalStep clock statement database = .ok result) :
     result.catalog = statement.applyCatalog database.catalog ∧ statement.isControl = false := by
   cases statement with
+  | setting on => exact absurd rfl (notSetting on)
   | createTable target name table =>
     simp only [literalStep, runStatement, step] at success
     split at success
@@ -36,39 +39,76 @@ theorem literalStep_success_catalog {clock : Int} {statement : Resolved.Statemen
     · cases success
     · repeat' split at success
       all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
-  | insert target rows returning =>
-    simp only [literalStep, runStatement, insertOutcome, checkedWrite] at success
-    repeat' split at success
-    all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
-  | upsert target rows clauses returning algorithm =>
+  | insert target rows returning subqueries foreignKeys =>
+    cases foreignKeys with
+    | none =>
+      simp only [literalStep, runStatement, insertOutcome, checkedWrite, StatementRun.withKeys, Option.map] at success
+      repeat' split at success
+      all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
+    | some depth =>
+      simp only [literalStep, runStatement] at success
+      split at success
+      · cases success
+      · simp only [StatementRun.withKeys, Option.map, insertKeys] at success
+        exact ⟨keyRun_ok_catalog success, rfl⟩
+  | upsert target rows clauses returning algorithm subqueries foreignKeys =>
+    cases foreignKeys with
+    | none =>
+      simp only [literalStep, runStatement, StatementRun.withKeys, Option.map] at success
+      repeat' split at success
+      all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
+    | some depth =>
+      simp only [literalStep, runStatement] at success
+      split at success
+      · cases success
+      · simp only [StatementRun.withKeys, Option.map, insertKeys] at success
+        exact ⟨keyRun_ok_catalog success, rfl⟩
+  | update target assignments filter returning subqueries foreignKeys =>
+    cases foreignKeys with
+    | none =>
+      simp only [literalStep, runStatement, checkedWrite, StatementRun.withKeys, Option.map] at success
+      repeat' split at success
+      all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
+    | some depth =>
+      simp only [literalStep, runStatement] at success
+      split at success
+      · cases success
+      · simp only [StatementRun.withKeys, Option.map, updateKeys, rowsKeys] at success
+        exact ⟨keyRun_ok_catalog success, rfl⟩
+  | delete target filter returning subqueries foreignKeys =>
+    cases foreignKeys with
+    | none =>
+      simp only [literalStep, runStatement, StatementRun.withKeys, Option.map] at success
+      split at success
+      · cases success
+      · cases success; exact ⟨rfl, rfl⟩
+    | some depth =>
+      simp only [literalStep, runStatement] at success
+      split at success
+      · cases success
+      · simp only [StatementRun.withKeys, Option.map, deleteKeys, rowsKeys] at success
+        exact ⟨keyRun_ok_catalog success, rfl⟩
+  | query query subqueries =>
     simp only [literalStep, runStatement] at success
-    repeat' split at success
-    all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
-  | update target assignments filter returning =>
-    simp only [literalStep, runStatement, checkedWrite] at success
-    repeat' split at success
-    all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
-  | delete target filter returning =>
-    simp only [literalStep, runStatement] at success
-    split at success
-    · cases success
-    · cases success; exact ⟨rfl, rfl⟩
-  | query query =>
-    simp only [literalStep, runStatement] at success
-    cases ran : query.runOn clock database with
+    cases ran : query.runOn clock database subqueries with
     | none => simp only [ran, queryEffect] at success; cases success; exact ⟨rfl, rfl⟩
     | some pair =>
       obtain ⟨_, run⟩ := pair
       simp only [ran, queryEffect] at success
       repeat' split at success
       all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
-  | createIndex target name index =>
+  | createIndex target name index | createTrigger target name index =>
     simp only [literalStep, runStatement, step] at success
     repeat' split at success
     all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
-  | drop positions =>
-    simp only [literalStep, runStatement, step] at success
-    cases success; exact ⟨rfl, rfl⟩
+  | drop positions foreignKeys =>
+    cases foreignKeys with
+    | none =>
+      simp only [literalStep, runStatement, step, StatementRun.withKeys, Option.map] at success
+      cases success; exact ⟨rfl, rfl⟩
+    | some depth =>
+      simp only [literalStep, runStatement, StatementRun.withKeys, Option.map] at success
+      exact ⟨dropKeys_ok_catalog success, rfl⟩
   | begin | commit | rollback | prepareError =>
     simp [literalStep, runStatement, step] at success
 
@@ -77,8 +117,8 @@ connection state agrees with the resolution state ({name}`SqlState.Agrees`) and
 {name}`advance` continues, then the next connection state agrees with
 {name}`ResolveState.after` of the statement. Proof sketch: BEGIN saves the database whose
 catalog the resolution saves, COMMIT drops both, ROLLBACK restores the snapshot whose
-catalog the resolution restores, and every other statement follows
-{name}`literalStep_success_catalog`. -/
+catalog the resolution restores, {lit}`PRAGMA foreign_keys = value` keeps the database, and
+every other statement follows {name}`literalStep_success_catalog`. -/
 theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {sql next : SqlState} {state : ResolveState}
     (agrees : sql.Agrees state) (continued : advance position statement sql = .next next) :
     next.Agrees (state.after statement) := by
@@ -108,10 +148,17 @@ theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {sql ne
       rw [some_] at saved
       simp only [Option.map_some] at saved
       simp [SqlState.Agrees, ResolveState.after, ← saved]
-  | createTable | createIndex | addColumn | drop | insert | update | upsert | delete | prepareError | query =>
+  | setting on =>
     simp only [advance, advanceWith] at continued
     obtain ⟨result, stepped, rfl⟩ := Conformance.SqlState.publish_next continued
-    obtain ⟨changed, control⟩ := literalStep_success_catalog stepped
+    simp only [literalStep, runStatement, step] at stepped
+    cases stepped
+    exact ⟨catalog, saved⟩
+  | createTable | createIndex | createTrigger | addColumn | drop | insert | update | upsert | delete | prepareError
+  | query =>
+    simp only [advance, advanceWith] at continued
+    obtain ⟨result, stepped, rfl⟩ := Conformance.SqlState.publish_next continued
+    obtain ⟨changed, control⟩ := literalStep_success_catalog (fun _ => by simp) stepped
     rw [state.after_of_isControl control]
     exact ⟨changed.trans (catalog ▸ rfl), saved⟩
 
@@ -139,7 +186,8 @@ theorem advance_halt_error {position : Nat} {statement : Resolved.Statement} {sq
     split at halted
     · cases halted; simp [Outcome.error?]
     · cases halted
-  | createTable | createIndex | addColumn | drop | insert | update | upsert | delete | prepareError | query =>
+  | createTable | createIndex | createTrigger | addColumn | drop | insert | update | upsert | delete | prepareError
+  | query | setting =>
     simp only [advance, advanceWith] at halted
     obtain ⟨_, _, _, rfl⟩ := Conformance.SqlState.publish_halt halted
     simp [SqlState.failed_error]

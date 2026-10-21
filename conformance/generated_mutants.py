@@ -17,10 +17,10 @@ WRITES = SQLITE + "Resolution/Writes.lean"
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "generated_not_recomputed": (ROW_UPDATE,
         "  { row with values := generatedCells columns (assignments.foldl (fun values (position, expression) =>\n"
-        "      values.set position (storeValue (positionAffinity columns position) (expression.eval clock context))) "
+        "      values.set position (storeValue (positionAffinity columns position) (expression.eval context cells))) "
         "row.values) }",
         "  { row with values := assignments.foldl (fun values (position, expression) =>\n"
-        "      values.set position (storeValue (positionAffinity columns position) (expression.eval clock context))) "
+        "      values.set position (storeValue (positionAffinity columns position) (expression.eval context cells))) "
         "row.values }"),
     "stored_hidden_virtual": (NATIVE, "  | some { stored := true, .. } => 3", "  | some { stored := true, .. } => 2"),
     "insert_fills_generated": (WRITES, "      | none => .ok (writablePositions table.columns)",

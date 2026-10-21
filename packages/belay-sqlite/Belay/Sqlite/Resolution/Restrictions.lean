@@ -11,7 +11,8 @@ namespace Belay.Sqlite
 /-- A model restriction of name resolution. The comment of each constructor says what
 the model does not describe and which decision introduced the restriction. -/
 inductive RestrictionKind where
-  /-- A schema contains only CREATE TABLE and CREATE INDEX statements (ADR 0008). -/
+  /-- A schema contains only CREATE TABLE, CREATE INDEX and CREATE TRIGGER statements (ADR 0008;
+  ADR 0018, D5). -/
   | schemaStatement
   /-- Engine-managed tables other than sqlite_stat1 and sqlite_stat4 are not modeled (ADR 0008). -/
   | engineTable
@@ -86,7 +87,9 @@ inductive RestrictionKind where
   /-- A rowid name ({lit}`rowid`, {lit}`_rowid_` or {lit}`oid`) that is not a column is
   not modeled in an expression: introduced for RETURNING in ADR 0012 slice 3a, and
   extended to queries and write expressions on 2026-10-14, where SQLite reads the
-  rowid and the model would report {lit}`no such column`. -/
+  rowid and the model would report {lit}`no such column`. As the column of a {lit}`SET`
+  assignment it assigns the rowid alias; for a table without one it is this restriction, since a
+  resolved write has no assignment of the physical rowid (2026-10-21). -/
   | rowidName
   /-- A join operator that SQLite refuses with {lit}`unknown join type`, such as
   {lit}`INNER OUTER JOIN`, is not modeled: the model has no such prepare error (ADR 0012,
@@ -101,7 +104,9 @@ inductive RestrictionKind where
   | systemTable
   /-- A function of the pinned library that the model does not describe, or a form of it that it does not describe, such as a window function (ADR 0012 slices 1, 2, 6b and 6c; ADR 0015). -/
   | unmodeledFunction
-  /-- An aggregate inside an expression is not modeled (ADR 0012 slice 1). -/
+  /-- An aggregate where the model does not describe it is not modeled, such as the argument of a
+  call that can fail, whose faults the model's scan reads without the aggregate's value (ADR 0012
+  slice 1; ADR 0018, slice 3, models the other aggregates inside expressions). -/
   | aggregateInExpression
   /-- A result column alias inside WHERE or an ORDER BY expression is not modeled (ADR 0012 slice 1). -/
   | aliasInExpression
@@ -109,7 +114,8 @@ inductive RestrictionKind where
   | groupByTerm
   /-- A result column outside GROUP BY in an aggregate query is not modeled (ADR 0012 slice 1). -/
   | bareColumn
-  /-- An aggregate query is modeled with ORDER BY result column numbers or aliases only (ADR 0012 slice 1). -/
+  /-- An {lit}`ORDER BY` term of an aggregate query that reads a column outside the grouping terms
+  is not modeled (ADR 0012 slice 1; ADR 0018, slice 3). -/
   | aggregateOrderBy
   /-- Only an integer literal is modeled as LIMIT or OFFSET (ADR 0012 slice 1). -/
   | windowValue
@@ -135,6 +141,55 @@ inductive RestrictionKind where
   {lit}`iif`, {lit}`nullif`, {lit}`min` or {lit}`max`: SQLite keeps the JSON subtype through such
   expressions, which the model does not describe (ADR 0015, slice 3). -/
   | jsonSubtype
+  /-- A subquery outside the expressions of a {lit}`SELECT` that the model resolves, such as in an
+  {lit}`ON` condition, a {lit}`json_each` argument or another statement, is not modeled
+  (ADR 0018, slice 1). -/
+  | subqueryHere
+  /-- An aggregate in a subquery whose argument reads a cell of a query around it is not
+  modeled: SQLite computes an aggregate whose argument reads only outer columns in the outer
+  query (checked natively: {lit}`SELECT (SELECT count(t.k) FROM u) FROM t` gives one row)
+  (ADR 0018, slice 1). -/
+  | outerAggregate
+  /-- A query without {lit}`FROM` that has both a subquery and a call that can fail is not
+  modeled: the model reports a certain failure of such a query, which a value of the subquery
+  that SQLite's plan chooses could avoid (ADR 0018, slice 1). -/
+  | subqueryFallibleCall
+  /-- A subquery of a write that reads the written table is not modeled: SQLite evaluates an
+  uncorrelated subquery once, but a correlated one over the rows that the statement has
+  already changed, in the order in which it writes them (ADR 0018, slice 1). -/
+  | subqueryReadsTarget
+  /-- An {lit}`ORDER BY` expression of {lit}`SELECT DISTINCT` that is no result column is not
+  modeled: SQLite sorts each kept row by the value of a row that its plan chooses (ADR 0018,
+  slice 3). -/
+  | distinctOrderBy
+  /-- With foreign keys on, a write that processes a foreign key that is
+  {lit}`DEFERRABLE INITIALLY DEFERRED` is not modeled: SQLite counts its violations across the
+  statements of the transaction and checks the count at {lit}`COMMIT` (ADR 0018, slice 4). -/
+  | deferredForeignKey
+  /-- With foreign keys on, an INSERT with {lit}`ON CONFLICT DO UPDATE` whose table has a
+  foreign key to check is not modeled: SQLite checks the keys of the updated row as an UPDATE
+  does (ADR 0018, slice 4). -/
+  | foreignKeyUpsert
+  /-- {lit}`RAISE` in a trigger outside the one result column of a SELECT without
+  {lit}`FROM`, where it is the column or a result of its {lit}`CASE`, and a {lit}`RAISE` whose
+  message can fail, are not modeled: the model evaluates {lit}`RAISE` only where SQLite certainly
+  reaches it in a known order (ADR 0018, slice 5). -/
+  | raiseForm
+  /-- A trigger form that the model does not describe: {lit}`ON CONFLICT DO UPDATE` in its
+  body, a write of its body or a {lit}`WHEN` condition with a call that can fail, a {lit}`WHEN`
+  condition with a subquery, triggers that fire each
+  other past the bound of the resolution, and {lit}`ON CONFLICT DO UPDATE` on a table with a
+  trigger, whose UPDATE triggers the resolution does not follow (ADR 0018, slice 5). -/
+  | triggerForm
+  /-- A {lit}`BEFORE UPDATE` or {lit}`BEFORE DELETE` trigger whose program writes the table of
+  its own event, directly or through the triggers and foreign-key actions that it fires, is not
+  modeled: SQLite documents the result of the update or delete as undefined (ADR 0018,
+  slice 5). -/
+  | triggerWritesOwnTable
+  /-- Two triggers of one table, time and event in the starting schema are not modeled: the
+  case record lists the schema in name order, so it does not say which trigger SQLite created
+  last and runs first (ADR 0018, slice 5). -/
+  | schemaTriggerOrder
   deriving Repr, DecidableEq
 
 end Belay.Sqlite

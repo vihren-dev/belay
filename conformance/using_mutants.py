@@ -10,6 +10,8 @@ from conformance.resolve_mutants import SQLITE
 
 SCOPE = SQLITE + "Resolution/Scope.lean"
 """The names in scope, with the merged columns."""
+SCOPE_NAMES = SQLITE + "Resolution/ScopeNames.lean"
+"""The resolution of names over the scope."""
 MERGED_LEFT = SQLITE + "Resolution/MergedLeft.lean"
 """The left side of the generated condition."""
 JOIN_USING = SQLITE + "Resolution/JoinUsing.lean"
@@ -17,9 +19,9 @@ JOIN_USING = SQLITE + "Resolution/JoinUsing.lean"
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "star_keeps_merged": (SCOPE,
-        "  scope.flatMap fun source => source.placedColumns fun index => !source.merged.contains index && !source.hidden.contains index",
-        "  scope.flatMap fun source => source.placedColumns fun index => !source.hidden.contains index"),
-    "unqualified_sees_merged": (SCOPE, "    if source.merged.contains index then match source.mergeRule with",
+        "    source.placedColumns fun index => !source.merged.contains index && !source.hidden.contains index",
+        "    source.placedColumns fun index => !source.hidden.contains index"),
+    "unqualified_sees_merged": (SCOPE_NAMES, "    if source.merged.contains index then match source.mergeRule with",
         "    if false then match source.mergeRule with"),
     "condition_uses_right_most": (MERGED_LEFT,
         "  | first :: rest => some (left.nameOperand (if coalesced then first :: rest else [first]))",

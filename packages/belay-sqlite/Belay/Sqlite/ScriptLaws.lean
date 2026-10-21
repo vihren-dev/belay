@@ -58,32 +58,41 @@ theorem advance_effect (position : Nat) (statement : Resolved.Statement) (state 
 @[simp] theorem advance_addColumn (step : Nat) (state : SqlState) (target : Nat) (column : CatalogColumn) :
     advance step (.addColumn target column) state = state.publish step (literalStep (state.clock step) (.addColumn target column) state.database) := rfl
 
-/-- For every position, state and INSERT, {name}`advance` publishes its effect
+/-- For every position, state and INSERT with any subqueries, {name}`advance` publishes its effect
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
-@[simp] theorem advance_insert (step : Nat) (state : SqlState) (target : Nat) (rows : List (List Resolved.Cell)) (returning : List (Resolved.Expr × String)) :
-    advance step (.insert target rows returning) state = state.publish step (literalStep (state.clock step) (.insert target rows returning) state.database) := rfl
+@[simp] theorem advance_insert (step : Nat) (state : SqlState) (target : Nat) (rows : List (List Resolved.Cell)) (returning : List (Resolved.Expr × String))
+    (subqueries : List Resolved.Query) :
+    advance step (.insert target rows returning subqueries) state =
+      state.publish step (literalStep (state.clock step) (.insert target rows returning subqueries) state.database) := rfl
 
-/-- For every position, state and INSERT with clauses or an algorithm, {name}`advance` publishes its effect
+/-- For every position, state and INSERT with clauses or an algorithm and any subqueries, {name}`advance` publishes its effect
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
 @[simp] theorem advance_upsert (step : Nat) (state : SqlState) (target : Nat) (rows : List (List Resolved.Cell)) (clauses : List Resolved.ConflictClause)
-    (returning : List (Resolved.Expr × String)) (algorithm : Option ConflictAlgorithm) :
-    advance step (.upsert target rows clauses returning algorithm) state = state.publish step (literalStep (state.clock step) (.upsert target rows clauses returning algorithm) state.database) := rfl
+    (returning : List (Resolved.Expr × String)) (algorithm : Option ConflictAlgorithm) (subqueries : List Resolved.Query) :
+    advance step (.upsert target rows clauses returning algorithm subqueries) state =
+      state.publish step (literalStep (state.clock step) (.upsert target rows clauses returning algorithm subqueries) state.database) :=
+  rfl
 
-/-- For every position, state and UPDATE, {name}`advance` publishes its effect
+/-- For every position, state and UPDATE with any subqueries, {name}`advance` publishes its effect
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
 @[simp] theorem advance_update (step : Nat) (state : SqlState) (target : Nat) (assignments : List (Nat × Resolved.Expr)) (filter : Option Resolved.Expr)
-    (returning : List (Resolved.Expr × String)) :
-    advance step (.update target assignments filter returning) state = state.publish step (literalStep (state.clock step) (.update target assignments filter returning) state.database) := rfl
+    (returning : List (Resolved.Expr × String)) (subqueries : List Resolved.Query) :
+    advance step (.update target assignments filter returning subqueries) state =
+      state.publish step (literalStep (state.clock step) (.update target assignments filter returning subqueries) state.database) := rfl
 
-/-- For every position, state and DELETE, {name}`advance` publishes its effect
+/-- For every position, state and DELETE with any subqueries, {name}`advance` publishes its effect
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
-@[simp] theorem advance_delete (step : Nat) (state : SqlState) (target : Nat) (filter : Option Resolved.Expr) (returning : List (Resolved.Expr × String)) :
-    advance step (.delete target filter returning) state = state.publish step (literalStep (state.clock step) (.delete target filter returning) state.database) := rfl
+@[simp] theorem advance_delete (step : Nat) (state : SqlState) (target : Nat) (filter : Option Resolved.Expr) (returning : List (Resolved.Expr × String))
+    (subqueries : List Resolved.Query) :
+    advance step (.delete target filter returning subqueries) state =
+      state.publish step (literalStep (state.clock step) (.delete target filter returning subqueries) state.database) := rfl
 
-/-- For every position, state and a query, {name}`advance` publishes its effect
+/-- For every position, state, query and list of subqueries, {name}`advance` publishes its effect
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
-@[simp] theorem advance_query (step : Nat) (state : SqlState) (query : Resolved.Query) :
-    advance step (.query query) state = state.publish step (literalStep (state.clock step) (.query query) state.database) := rfl
+@[simp] theorem advance_query (step : Nat) (state : SqlState) (query : Resolved.Query)
+    (subqueries : List Resolved.Query) :
+    advance step (.query query subqueries) state =
+      state.publish step (literalStep (state.clock step) (.query query subqueries) state.database) := rfl
 
 /-- For every position, state and a statement that SQLite refuses, {name}`advance` publishes its effect
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
@@ -149,8 +158,8 @@ theorem effect_addColumn_ok (clock : Int) {database : Database} {target : Nat} {
     literalStep clock (.addColumn target column) database = .ok (database.addColumn target column value) := by
   simp [literalStep, runStatement, step, present, constant, read, allowed, checked]
 
-/-- For every clock value, database, position, table, rows and {lit}`RETURNING` columns:
-when the table is at the position, no row at the clock value ({name}`Resolved.rowsAt`) has
+/-- For every clock value, database, position, table, rows and {lit}`RETURNING` columns of an
+INSERT without subqueries: when the table is at the position, no row at the clock value ({name}`Resolved.rowsAt` in the plain context of the clock value) has
 a rowid alias that SQLite refuses ({name}`LiteralData.aliasMismatch`), and the table with
 the rows inserted ({name}`LiteralData.inserted`) meets {name}`LiteralData.constraints` (its
 NOT NULL cells and its unique keys) and has distinct rowids, INSERT succeeds with the
@@ -160,12 +169,13 @@ premises select the successful branches of {name}`insertOutcome` and
 theorem effect_write_ok (clock : Int) {database : Database} {target : Nat} {table : Table}
     {rows : List (List Resolved.Cell)} {returning : List (Resolved.Expr × String)}
     (present : database.table target = some table)
-    (aligned : (Resolved.rowsAt clock table.shape.columns rows).findIdx? (LiteralData.aliasMismatch table.shape) = none)
+    (aligned : (Resolved.rowsAt (Resolved.EvalContext.plain clock) table.shape.columns rows).findIdx? (LiteralData.aliasMismatch table.shape) = none)
     (checked : (LiteralData.constraints (database.keys target table)
-        (LiteralData.inserted table (Resolved.rowsAt clock table.shape.columns rows)) &&
-      LiteralData.rowidsDistinct (LiteralData.inserted table (Resolved.rowsAt clock table.shape.columns rows))) = true) :
+        (LiteralData.inserted table (Resolved.rowsAt (Resolved.EvalContext.plain clock) table.shape.columns rows)) &&
+      LiteralData.rowidsDistinct (LiteralData.inserted table (Resolved.rowsAt (Resolved.EvalContext.plain clock) table.shape.columns rows))) = true) :
     literalStep clock (.insert target rows returning) database =
-      .ok (database.setRows target (LiteralData.inserted table (Resolved.rowsAt clock table.shape.columns rows)).rows) := by
-  simp only [literalStep, runStatement, present, insertOutcome, aligned, checkedWrite, checked, ite_true]
+      .ok (database.setRows target (LiteralData.inserted table (Resolved.rowsAt (Resolved.EvalContext.plain clock) table.shape.columns rows)).rows) := by
+  simp only [literalStep, runStatement, Resolved.statementContext_nil, present, insertOutcome, aligned, checkedWrite,
+    checked, ite_true, StatementRun.withKeys, Option.map]
 
 end Belay.Sqlite

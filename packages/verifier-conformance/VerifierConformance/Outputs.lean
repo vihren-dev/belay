@@ -60,9 +60,11 @@ def matchesOutput (expected actual : StatementOutput)
     matchesGroups ordered expected.rows && matchesGroups ordered actual.rows
 
 /-- The {lit}`RETURNING` rows of a write: each {lit}`RETURNING` expression evaluated over
-each written row, in order. A write without {lit}`RETURNING` returns no rows. -/
-def returnedRows (clock : Int) (returning : List (Resolved.Expr × String)) (written : List (List Value)) : List ResultRow :=
-  if returning.isEmpty then [] else written.map fun row => returning.map fun (expression, _) => expression.eval clock row
+each written row in the statement's evaluation context, in order. A write without
+{lit}`RETURNING` returns no rows. -/
+def returnedRows (context : Resolved.EvalContext) (returning : List (Resolved.Expr × String)) (written : List (List Value)) :
+    List ResultRow :=
+  if returning.isEmpty then [] else written.map fun row => returning.map fun (expression, _) => expression.eval context row
 
 /-- The error with which a transition stops: the reason of a failure, or the error of a
 pending transaction; none for a transition that continues or succeeds. -/
@@ -126,7 +128,10 @@ change count; a query whose table is missing has no output. A query that fails w
 {lit}`GROUP BY`; with {lit}`GROUP BY`, SQLite may return the rows of other groups
 before the failing one, in an order the model does not describe, so it has no output. A
 query whose JSON function fails, which has no {lit}`FROM` and so at most one row, has its
-column names and no rows. -/
+column names and no rows. A write that checks foreign keys (ADR 0018, D4) has the rows that
+its keys' run wrote ({name}`StatementRun.keyRows`): its {lit}`RETURNING` rows and change count
+when it succeeds, and its {lit}`RETURNING` names, no rows and the rows that a FAIL failure kept
+when it fails a constraint. {lit}`PRAGMA foreign_keys = value` has no output columns. -/
 def statementOutput (clock : Int) (statement : Resolved.Statement) (before : SqlState)
     (transition : SqlTransition) : Option StatementOutput :=
   let successful := match transition with | .next _ => true | .halt _ => false
@@ -134,47 +139,58 @@ def statementOutput (clock : Int) (statement : Resolved.Statement) (before : Sql
   let overflow := haltError transition == some .integerOverflow
   let functionFailure := haltError transition == some .functionError
   match statement with
-  | .insert target rows returning =>
+  | .insert target rows returning subqueries none =>
+    let context := Resolved.statementContext clock before.database subqueries
     let names := returning.map (·.2)
     if successful then do
       let table ← before.database.table target
-      let values := Resolved.rowsAt clock table.shape.columns rows
+      let values := Resolved.rowsAt context table.shape.columns rows
       let written := ((LiteralData.inserted table values).rows.drop table.rows.length).map (·.values)
-      return ⟨names, returnedRows clock returning written, some rows.length⟩
+      return ⟨names, returnedRows context returning written, some rows.length⟩
     else if constraintFailure then some ⟨names, [], some 0⟩ else none
-  | .upsert target rows clauses returning algorithm =>
+  | .upsert target rows clauses returning algorithm subqueries none =>
+    let context := Resolved.statementContext clock before.database subqueries
     let names := returning.map (·.2)
     let run := (before.database.table target).map fun table =>
-      LiteralData.upsertRun clock (before.database.keys target table)
+      LiteralData.upsertRun context (before.database.keys target table)
         (before.database.catalog.writePolicy target table.shape algorithm) clauses table
-        (Resolved.rowsAt clock table.shape.columns rows)
+        (Resolved.rowsAt context table.shape.columns rows)
     if successful then do
       let (_, written) ← (← run).toOption
-      return ⟨names, returnedRows clock returning (written.map (·.values)), some written.length⟩
+      return ⟨names, returnedRows context returning (written.map (·.values)), some written.length⟩
     else if constraintFailure then some ⟨names, [], some ((run.map keptCount).getD 0)⟩ else none
-  | .update target assignments filter returning =>
+  | .update target assignments filter returning subqueries none =>
+    let context := Resolved.statementContext clock before.database subqueries
     let names := returning.map (·.2)
     if successful then do
       let table ← before.database.table target
-      let chosen := table.scanRows.filter (LiteralData.selected clock filter)
-      let written := chosen.map fun row => (LiteralData.assign clock table.shape.columns assignments row).values
-      return ⟨names, returnedRows clock returning written,
+      let chosen := table.scanRows.filter (LiteralData.selected context filter)
+      let written := chosen.map fun row => (LiteralData.assign context table.shape.columns assignments row).values
+      return ⟨names, returnedRows context returning written,
         some chosen.length⟩
     else if constraintFailure then some ⟨names, [], some 0⟩ else none
-  | .delete target filter returning =>
+  | .delete target filter returning subqueries none =>
+    let context := Resolved.statementContext clock before.database subqueries
     let names := returning.map (·.2)
     if successful then do
       let table ← before.database.table target
-      let chosen := table.scanRows.filter (LiteralData.selected clock filter)
-      return ⟨names, returnedRows clock returning (chosen.map (·.values)), some chosen.length⟩
+      let chosen := table.scanRows.filter (LiteralData.selected context filter)
+      return ⟨names, returnedRows context returning (chosen.map (·.values)), some chosen.length⟩
     else none
-  | .query query =>
+  | .query query subqueries =>
+    let context := Resolved.statementContext clock before.database subqueries
     if successful then
-      (query.source clock before.database).map fun source => ⟨query.names, (query.run clock source.rows).rows, none⟩
+      (query.source context before.database).map fun source => ⟨query.names, (query.run context source.rows).rows, none⟩
     else if (overflow && query.groupBy.isEmpty) || functionFailure then some ⟨query.names, [], none⟩
     else none
+  | .insert _ _ returning subqueries (some _) | .upsert _ _ _ returning _ subqueries (some _)
+  | .update _ _ _ returning subqueries (some _) | .delete _ _ returning subqueries (some _) =>
+    let context := Resolved.statementContext clock before.database subqueries
+    let written := ((runStatement clock statement before.database).keyRows).getD []
+    if successful then some ⟨returning.map (·.2), returnedRows context returning (written.map (·.values)), some written.length⟩
+    else if constraintFailure then some ⟨returning.map (·.2), [], some written.length⟩ else none
   | .addColumn _ column => some ⟨addColumnOutputNames column, [], none⟩
-  | .createTable .. | .createIndex .. | .drop _ | .begin | .commit | .rollback | .prepareError _ =>
+  | .createTable .. | .createIndex .. | .createTrigger .. | .drop .. | .begin | .commit | .rollback | .prepareError _ | .setting _ =>
     some ⟨[], [], none⟩
 
 end Belay.Sqlite.Conformance

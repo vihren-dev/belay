@@ -41,7 +41,7 @@ def table_rows(event: dict[str, Json], name: str, *, persisted: bool = False) ->
 def test_catalog_keeps_legacy_sql_and_complete_outputs(authored: dict[str, dict[str, Json]],
                                                       runtime_root: Path) -> None:
     """Legacy scenarios gain evidence; explicit profiles cannot produce false model agreements:
-    no case disagrees, the 28 cases whose SQL and default execution settings the model
+    no case disagrees, the 30 cases whose SQL and default execution settings the model
     implements agree, among them the CREATE INDEX cases that run (ADR 0014, slice 1), the
     index with `COLLATE NOCASE` (slice 3), the CHECK that aborts a write (`check-abort`,
     slice 4) and the DROP INDEX (`drop-index`, slice 7), and the others stay out of scope
@@ -58,7 +58,7 @@ def test_catalog_keeps_legacy_sql_and_complete_outputs(authored: dict[str, dict[
             output_wire(event)
             assert event["columnCount"] == len(event["columns"])
     result = replay(list(authored.values()), runtime_root)
-    assert result["counts"] == {"MODEL_UNSUPPORTED": 15, "AGREE": 28}
+    assert result["counts"] == {"MODEL_UNSUPPORTED": 13, "AGREE": 30}
 
 
 def test_retained_authored_evidence_and_coverage(authored: dict[str, dict[str, Json]]) -> None:

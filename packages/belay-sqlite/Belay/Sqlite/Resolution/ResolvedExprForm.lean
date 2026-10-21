@@ -52,6 +52,23 @@ inductive Expr where
   | date (function : DateFunction) (arguments : Arguments)
   /-- A call of a scalar function of ADR 0015 with its arguments in written order. -/
   | scalar (function : ScalarFunction) (arguments : Arguments)
+  /-- {lit}`EXISTS (q)` (ADR 0018, D1): whether subquery {lit}`index` of the statement gives a
+  row for the expression's row. {lit}`NOT EXISTS (q)` is {lit}`NOT` of it, as SQLite parses it. -/
+  | exists (index : Nat)
+  /-- {lit}`operand IN (q)`, or {lit}`NOT IN` when {lit}`negated`: whether the value of the
+  operand is among the values of subquery {lit}`index`, compared under the affinity and the
+  collation that resolution chose, as {lit}`=` compares them. -/
+  | inQuery (operand : Expr) (index : Nat) (affinity : Option Affinity) (collation : Collation) (negated : Bool)
+  /-- A scalar subquery {lit}`(q)`: the first value of the first row of subquery {lit}`index`,
+  or NULL when it gives no row. -/
+  | subquery (index : Nat)
+  /-- {lit}`operand IN (values)`, or {lit}`NOT IN` when {lit}`negated` (ADR 0018, D2): whether the
+  value of the operand is among the values, compared under the affinity and the collation of
+  the operand, as SQLite compares a list. -/
+  | inList (operand : Expr) (values : Arguments) (affinity : Option Affinity) (collation : Collation) (negated : Bool)
+  /-- The value of aggregate {lit}`index` of the query's aggregates over the current group
+  (ADR 0018, D3), as an aggregate inside an expression, such as {lit}`count(*) + 1`. -/
+  | aggregateValue (index : Nat)
   deriving Repr, DecidableEq
 
 /-- The arguments of a call in written order, as a list that is mutual with

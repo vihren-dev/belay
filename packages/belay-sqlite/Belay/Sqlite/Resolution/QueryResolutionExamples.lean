@@ -31,16 +31,16 @@ def resolvedOne (statement : Syntax.Statement) : Option Resolved.Statement :=
 /-- The query of a resolution, if it is one. -/
 def queryOf (statement : Syntax.Statement) : Option Resolved.Query :=
   match resolvedOne statement with
-  | some (.query query) => some query
-  | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some (.drop _) | some .begin | some .commit
+  | some (.query query _) => some query
+  | some (.createTable ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..) | some (.setting _) | some .begin | some .commit
   | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.prepareError _) | none => none
 
 /-- The prepare error of a resolution, if it is one. -/
 def errorOf (statement : Syntax.Statement) : Option PrepareError :=
   match resolvedOne statement with
   | some (.prepareError error) => some error
-  | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some (.drop _) | some .begin | some .commit
-  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.query _) | none => none
+  | some (.createTable ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..) | some (.setting _) | some .begin | some .commit
+  | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.query ..) | none => none
 
 /-- Whether the statement is a model restriction. -/
 def restrictedOne (statement : Syntax.Statement) : Bool := restricted (migration catalog [statement])
@@ -157,7 +157,7 @@ def bare (columns : List ResultColumn) (filter : Option Expr := none) (groupBy :
 
 /-- The rows of a resolved query over its source of one row with no cells. -/
 def bareRows (statement : Syntax.Statement) : Option (List (List Value)) :=
-  (queryOf statement).map fun query => query.results 0 [[]]
+  (queryOf statement).map fun query => query.results (.plain 0) [[]]
 
 /-- The condition {lit}`1 = 0`, which is false. -/
 def never : Expr := .compare .eq (.numeric "1") (.numeric "0")

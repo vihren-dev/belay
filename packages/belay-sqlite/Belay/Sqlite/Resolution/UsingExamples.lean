@@ -24,8 +24,8 @@ def over (results : List ResultColumn) (source : TableReference) (joins : List J
 /-- The query of a resolution over {name}`sources`, if it is one. -/
 def queryOver (results : List ResultColumn) (source : TableReference) (joins : List Join) : Option Resolved.Query :=
   match over results source joins with
-  | some (.query query) => some query
-  | some (.createTable ..) | some (.createIndex ..) | some (.addColumn ..) | some (.drop _) | some .begin | some .commit
+  | some (.query query _) => some query
+  | some (.createTable ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..) | some (.setting _) | some .begin | some .commit
   | some .rollback | some (.insert ..) | some (.upsert ..) | some (.update ..) | some (.delete ..) | some (.prepareError _) | none => none
 
 /-- A join with {lit}`USING` and the names. -/

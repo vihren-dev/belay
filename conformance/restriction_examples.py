@@ -55,11 +55,11 @@ EXAMPLES: dict[str, tuple[str, str]] = {
                           "SELECT t.a FROM t JOIN u ON v.a = 1 JOIN v;"),
     "system-table": ("CREATE TABLE t(a INTEGER);", "SELECT name FROM sqlite_schema;"),
     "unmodeled-function": ("CREATE TABLE t(a INTEGER);", "SELECT ln(a) FROM t;"),
-    "aggregate-in-expression": ("CREATE TABLE t(a INTEGER);", "SELECT count(*) + 1 FROM t;"),
+    "aggregate-in-expression": ("CREATE TABLE t(a INTEGER);", "SELECT json(count(*)) FROM t;"),
     "alias-in-expression": ("CREATE TABLE t(a INTEGER);", "SELECT a AS b FROM t WHERE b = 1;"),
     "group-by-term": ("CREATE TABLE t(a INTEGER);", "SELECT count(*) FROM t GROUP BY a + 1;"),
     "bare-column": ("CREATE TABLE t(a INTEGER, b INTEGER);", "SELECT a, count(*) FROM t GROUP BY b;"),
-    "aggregate-order-by": ("CREATE TABLE t(a INTEGER);", "SELECT count(*) FROM t GROUP BY a ORDER BY a;"),
+    "aggregate-order-by": ("CREATE TABLE t(a INTEGER, b INTEGER);", "SELECT count(*) FROM t GROUP BY a ORDER BY b;"),
     "window-value": ("CREATE TABLE t(a INTEGER);", "SELECT a FROM t LIMIT 'x';"),
     "negative-offset": ("CREATE TABLE t(a INTEGER);", "SELECT a FROM t LIMIT 1 OFFSET -1;"),
     "windowed-group-sum": ("CREATE TABLE t(a INTEGER);", "SELECT sum(a) FROM t GROUP BY a LIMIT 1;"),
@@ -68,6 +68,26 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "function-join": ("CREATE TABLE t(a);", "SELECT * FROM t RIGHT JOIN json_each('[1]');"),
     "later-source-in-arguments": ("CREATE TABLE t(a);", "SELECT * FROM t, json_each(b.value) AS a, json_each('[1]') AS b;"),
     "json-subtype": ("CREATE TABLE t(a);", "SELECT json_array(coalesce(json(a), 1)) FROM t;"),
+    "subquery-here": ("CREATE TABLE t(a);", "SELECT * FROM t JOIN t AS b ON EXISTS (SELECT 1);"),
+    "outer-aggregate": ("CREATE TABLE t(a);", "SELECT (SELECT count(t.a) FROM t AS b) FROM t;"),
+    "subquery-fallible-call": ("CREATE TABLE t(a);", "SELECT json((SELECT a FROM t));"),
+    "subquery-reads-target": ("CREATE TABLE t(a);", "UPDATE t SET a = (SELECT max(a) FROM t);"),
+    "distinct-order-by": ("CREATE TABLE t(a, b);", "SELECT DISTINCT a FROM t ORDER BY b;"),
+    "deferred-foreign-key": ("CREATE TABLE p(id PRIMARY KEY); CREATE TABLE c(x REFERENCES p DEFERRABLE INITIALLY DEFERRED);",
+                             "PRAGMA foreign_keys = ON; INSERT INTO c VALUES (1);"),
+    "foreign-key-upsert": ("CREATE TABLE p(id PRIMARY KEY); CREATE TABLE c(id PRIMARY KEY, x REFERENCES p);",
+                           "PRAGMA foreign_keys = ON; INSERT INTO c VALUES (1, NULL) ON CONFLICT(id) DO UPDATE SET x = NULL;"),
+    "raise-form": ("CREATE TABLE t(a);",
+                   "CREATE TRIGGER r BEFORE INSERT ON t BEGIN SELECT 1 WHERE RAISE(IGNORE); END; INSERT INTO t VALUES (1);"),
+    "trigger-form": ("CREATE TABLE t(a UNIQUE); CREATE TABLE u(a);",
+                     "CREATE TRIGGER r AFTER INSERT ON u BEGIN INSERT INTO t VALUES (new.a) ON CONFLICT(a) DO UPDATE SET a = 2; "
+                     "END; INSERT INTO u VALUES (1);"),
+    "trigger-writes-own-table": ("CREATE TABLE t(a);",
+                                 "CREATE TRIGGER r BEFORE DELETE ON t BEGIN DELETE FROM t; END; DELETE FROM t;"),
+    "schema-trigger-order": ("CREATE TABLE t(a); CREATE TABLE log(x); "
+                             "CREATE TRIGGER r AFTER INSERT ON t BEGIN INSERT INTO log VALUES (1); END; "
+                             "CREATE TRIGGER s AFTER INSERT ON t BEGIN INSERT INTO log VALUES (2); END;",
+                             "INSERT INTO t VALUES (1);"),
 }
 """For each restriction id: a schema and a migration that the resolver refuses with it."""
 

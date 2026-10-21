@@ -24,7 +24,7 @@ def schemaTableName? (name : Identifier) : Option Identifier :=
 def Catalog.findIndex (catalog : Catalog) (name : Identifier) : Option Nat :=
   match catalog.find name with
   | some (position, { entry := .index _, .. }) => some position
-  | some (_, { entry := .table _, .. }) | none => none
+  | some (_, { entry := .table _, .. }) | some (_, { entry := .trigger _, .. }) | none => none
 
 /-- Whether the name begins with {lit}`sqlite_autoindex_`, with ASCII case ignored: the
 prefix of the names that SQLite gives the indexes of UNIQUE and PRIMARY KEY constraints,

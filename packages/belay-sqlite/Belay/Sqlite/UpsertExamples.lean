@@ -45,19 +45,19 @@ def aborts : Resolved.ConflictPolicy := { keys := [], notNull := [] }
 
 /-- The values of the rows after an UPSERT, or none for an error. -/
 def valuesAfter (clauses : List Resolved.ConflictClause) (rows : List (List Value)) : Option (List (List Value)) :=
-  match LiteralData.upsertRun 0 keys aborts clauses table rows with
+  match LiteralData.upsertRun (.plain 0) keys aborts clauses table rows with
   | .ok (result, _) => some (result.rows.map (·.values))
   | .error _ => none
 
 /-- The error of an UPSERT, or none. -/
 def errorOf (clauses : List Resolved.ConflictClause) (rows : List (List Value)) : Option ExecutionError :=
-  match LiteralData.upsertRun 0 keys aborts clauses table rows with
+  match LiteralData.upsertRun (.plain 0) keys aborts clauses table rows with
   | .ok _ => none
   | .error (reason, _, _) => some reason
 
 /-- The values of the rows that {lit}`RETURNING` reads, or none for an error. -/
 def returned (clauses : List Resolved.ConflictClause) (rows : List (List Value)) : Option (List (List Value)) :=
-  match LiteralData.upsertRun 0 keys aborts clauses table rows with
+  match LiteralData.upsertRun (.plain 0) keys aborts clauses table rows with
   | .ok (_, written) => some (written.map (·.values))
   | .error _ => none
 
@@ -84,7 +84,7 @@ def returned (clauses : List Resolved.ConflictClause) (rows : List (List Value))
     [[.integer 1, .integer 9, letter 120]] == some .constraintViolation
 -- NOT NULL fails before conflict handling.
 #guard errorOf [nothingOnK] [[.integer 1, .integer 9, .null]] == some .constraintViolation
--- RETURNING reads the inserted and the updated 0 rows, not the skipped ones.
+-- RETURNING reads the inserted and the updated (.plain 0) rows, not the skipped ones.
 #guard returned [setV [0] excludedV (some (.compare .ne none (.column 0) (.literal (.integer 2))))]
     [[.integer 1, .integer 9, letter 120], [.integer 2, .integer 9, letter 121], [.integer 7, .integer 7, letter 122]] ==
   some [[.integer 1, .integer 1, letter 120], [.integer 7, .integer 7, letter 122]]

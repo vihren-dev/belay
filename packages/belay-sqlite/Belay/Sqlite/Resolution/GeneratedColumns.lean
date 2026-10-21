@@ -25,7 +25,7 @@ def generatedIssue (resolved : Resolved.Expr) : Option ValueIssue :=
 def Syntax.ColumnDefinition.generatedExpression (definition : Syntax.ColumnDefinition) : Option (Nat × Syntax.Expr) :=
   definition.constraints.zipIdx.findSome? fun (constraint, item) => match constraint with
     | .generated expression _ => some (item, expression)
-    | .notNull _ | .primaryKey .. | .unique _ | .default .. | .collate _ | .check .. | .references .. => none
+    | .notNull _ | .primaryKey .. | .unique _ | .default .. | .collate _ | .check .. | .references .. | .deferral _ => none
 
 /-- One generated expression over the scope: a qualified name is
 {name}`ExprError.qualifiedGenerated`; else the resolved operand and its
@@ -33,7 +33,7 @@ def Syntax.ColumnDefinition.generatedExpression (definition : Syntax.ColumnDefin
 def resolveGeneratedExpression (dqs : Bool) (scope : Scope) (expression : Syntax.Expr) :
     Except ValueIssue Resolved.Expr := do
   if expression.hasQualifiedName then throw (.prepare .qualifiedGenerated)
-  let (resolved, _) ← resolveOperand dqs scope true expression
+  let (resolved, _) ← resolveOperand dqs scope {} true expression
   match generatedIssue resolved with
   | some issue => .error issue
   | none => .ok resolved

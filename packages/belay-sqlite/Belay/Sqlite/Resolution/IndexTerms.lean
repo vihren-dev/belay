@@ -26,7 +26,7 @@ def indexExpressionIssue (filter : Bool) (resolved : Resolved.Expr) : Option Val
 {name}`indexExpressionIssue`. -/
 def indexExpressionTerm (dqs : Bool) (scope : Scope) (expression : Syntax.Expr) : Except ValueIssue KeyTerm :=
   if expression.hasQualifiedName then .error (.prepare .qualifiedIndexTerm) else do
-    let (resolved, _) ← resolveOperand dqs scope true expression
+    let (resolved, _) ← resolveOperand dqs scope {} true expression
     match indexExpressionIssue false resolved with
     | some issue => .error issue
     | none => .ok (.expression resolved)
@@ -54,7 +54,9 @@ def indexTerm (dqs : Bool) (scope : Scope) (columns : List CatalogColumn) : Synt
   | expression@.null | expression@(.numeric _) | expression@(.blob _) | expression@(.currentTime _)
   | expression@(.qualified ..) | expression@(.negate _) | expression@(.positive _) | expression@(.compare ..)
   | expression@(.and ..) | expression@(.or ..) | expression@(.not _) | expression@(.isNull ..)
-  | expression@(.callStar _) | expression@(.call ..) | expression@(.arithmetic ..) | expression@(.cast ..) =>
+  | expression@(.callStar _) | expression@(.call ..) | expression@(.arithmetic ..) | expression@(.cast ..)
+  | expression@(.exists _) | expression@(.inQuery ..) | expression@(.subquery _) | expression@(.inList ..)
+  | expression@(.between ..) | expression@(.caseOf ..) | expression@(.concatenate ..) | expression@(.raise ..) =>
     indexExpressionTerm dqs scope expression
 
 /-- The key terms of CREATE INDEX in order, with their sort orders and collations: an
@@ -74,7 +76,7 @@ none: aggregates are misuse, and the resolved condition has its
 def indexFilter (dqs : Bool) (scope : Scope) : Option Syntax.Expr → Except ValueIssue (Option Resolved.Expr)
   | none => .ok none
   | some term => do
-    let resolved ← condition [] (resolveOperand dqs scope true term)
+    let resolved ← condition [] (resolveOperand dqs scope {} true term)
     match indexExpressionIssue true resolved with
     | some issue => .error issue
     | none => .ok (some resolved)

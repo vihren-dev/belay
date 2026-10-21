@@ -8,7 +8,7 @@ mutant is one text change in a copy of the model, which
 
 from conformance.resolve_mutants import SQLITE
 
-SCOPE = SQLITE + "Resolution/Scope.lean"
+SCOPE = SQLITE + "Resolution/ScopeNames.lean"
 """The resolution of unqualified names over the sources."""
 MERGED_NAMES = SQLITE + "Resolution/MergedNames.lean"
 """The operands of merged names and the expansion of `*`."""

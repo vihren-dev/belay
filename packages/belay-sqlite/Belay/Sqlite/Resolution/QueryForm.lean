@@ -85,6 +85,17 @@ structure Query where
   offset : Nat
   /-- The {lit}`LIMIT`, or {lean}`(none : Option Nat)` for no limit. -/
   limit : Option Nat
+  /-- The number of cells of the row of the queries around a subquery, which come before its
+  own cells (ADR 0018, D1); {lean}`0` for the query of a statement. -/
+  outer : Nat := 0
+  /-- The aggregates that the query's expressions name by index ({lit}`Expr.aggregateValue`),
+  computed over each group (ADR 0018, D3); empty when no expression names one. -/
+  aggregates : List Aggregate := []
+  /-- The {lit}`HAVING` condition over each group, or {lean}`(none : Option Expr)` without it. -/
+  having : Option Expr := none
+  /-- The collation of each result column of {lit}`SELECT DISTINCT`, under which equal rows are
+  one row; {lean}`(none : Option (List Collation))` without {lit}`DISTINCT`. -/
+  distinct : Option (List Collation) := none
   deriving Repr, DecidableEq
 
 end Belay.Sqlite.Resolved

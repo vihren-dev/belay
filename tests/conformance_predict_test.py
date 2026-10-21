@@ -100,16 +100,22 @@ def profiled(runtime_root: Path, name: str, setup: str = "CREATE TABLE t(a INTEG
 def test_profiled_records_use_their_limits_and_phases(runtime_root: Path) -> None:
     """`conformance.profile_scope.modeled_profile` and `VerifierConformance.Predict`: a record
     whose profile uses only the default execution settings is predicted under its recorded
-    limits, with the error phase; one with foreign keys is out of scope, and the reason names
-    the setting."""
-    default, keyed = profiled(runtime_root, "default"), profiled(runtime_root, "keyed", foreign_keys=True)
+    limits, with the error phase; one with foreign keys on is predicted with them on (ADR 0018,
+    D4), so its write without a parent row fails; one with recursive triggers is out of scope,
+    and the reason names the setting."""
+    default = profiled(runtime_root, "default")
+    keyed = profiled(runtime_root, "keyed", "CREATE TABLE p(id PRIMARY KEY); CREATE TABLE c(x REFERENCES p);",
+                     "INSERT INTO c VALUES (1);", foreign_keys=True)
+    recursive = profiled(runtime_root, "recursive", recursive_triggers=True)
     assert default["nativeVersion"] == 5 and default["trace"][0]["phase"] == "step"
-    first, second = predict(runtime_root, default, keyed)
+    first, second, third = predict(runtime_root, default, keyed, recursive)
     assert first["status"] == "predicted" and first["supported"], first
     assert [step["phase"] for step in first["steps"]] == [None, "step"]
     assert first["steps"][1]["primaryCode"] == 19
-    assert second["status"] == "unsupported"
-    assert second["reason"].startswith("keyed: the model does not implement foreign keys")
+    assert second["status"] == "predicted" and second["supported"], second
+    assert second["steps"][1]["primaryCode"] == 19 and keyed["trace"][0]["primaryCode"] == 19
+    assert third["status"] == "unsupported"
+    assert third["reason"].startswith("recursive: the model does not implement recursive triggers")
 
 
 def test_prediction_uses_the_recorded_column_limit(runtime_root: Path) -> None:

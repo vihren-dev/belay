@@ -10,20 +10,32 @@ namespace Belay.Sqlite
 /-- Whether a statement is BEGIN, COMMIT or ROLLBACK. -/
 def Syntax.Statement.transactionControl : Syntax.Statement → Bool
   | .begin | .commit | .rollback => true
-  | .createTable .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropIndex .. | .insert .. | .update ..
-  | .delete .. | .select .. => false
+  | .createTable .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropIndex .. | .createTrigger ..
+  | .dropTrigger .. | .insert .. | .update .. | .delete .. | .select .. | .pragmaForeignKeys _ => false
 
 /-- For every statement that is not BEGIN, COMMIT or ROLLBACK and that resolves, the
 saved catalog of the next state is the saved catalog of the state. Proof sketch:
 each such statement goes through {name}`ResolveState.withCatalog`, which changes only
-the current catalog. -/
+the current catalog, or {name}`ResolveState.withWrite`, which keeps the saved catalog
+({name}`ResolveState.withWrite_cases`); {lit}`PRAGMA foreign_keys` changes only the setting. -/
 theorem resolveStatement_saved (context : ResolveContext) (state next : ResolveState) (index : Nat)
     (statement : Syntax.Statement) (resolved : Resolved.Statement)
     (plain : statement.transactionControl = false)
     (ok : resolveStatement context state index statement = .ok (resolved, next)) :
     next.saved = state.saved := by
-  cases statement <;> simp [Syntax.Statement.transactionControl] at plain <;>
-    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+  have written : ∀ result, state.withWrite context index result = .ok (resolved, next) → next.saved = state.saved := by
+    intro result ok
+    rcases ResolveState.withWrite_cases ok with ⟨_, _, rfl⟩ | ⟨_, _, _, rfl, _, _⟩ <;> rfl
+  cases statement <;> simp [Syntax.Statement.transactionControl] at plain
+  case dropTable | insert | update | delete => exact written _ ok
+  case pragmaForeignKeys value =>
+    cases value with
+    | some on => cases ok; rfl
+    | none =>
+      simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+      repeat' split at ok
+      all_goals first | (cases ok; done) | (cases ok; rfl)
+  all_goals simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
   all_goals (repeat' split at ok)
   all_goals first | (cases ok; done) | (cases ok; rfl)
 

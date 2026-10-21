@@ -47,7 +47,7 @@ condition. -/
 def resolveConflictFilter (dqs : Bool) (scope : Scope) (clause : Nat) :
     Option Syntax.Expr → Except ValueIssue (Option Resolved.Expr)
   | none => .ok none
-  | some term => some <$> condition [clause, 1, 1] (resolveOperand dqs scope true term)
+  | some term => some <$> condition [clause, 1, 1] (resolveOperand dqs scope {} true term)
 
 /-- Resolve the action of a clause at {lit}`clause`: {lit}`DO NOTHING` as it is;
 {lit}`DO UPDATE` with its assignments in order, then its filter as a condition, over
@@ -55,10 +55,11 @@ the scope ({name}`upsertScope`). A column assigned twice is
 {name}`RestrictionKind.updateColumnTwice`. A {lit}`DO UPDATE` without target on a table
 with more than one key is {name}`RestrictionKind.conflictWithoutTarget`. -/
 def resolveConflictAction (dqs : Bool) (scope : Scope) (keys : List UniqueKey) (clause : Nat)
-    (targeted : Bool) : Syntax.ConflictAction → Except ValueIssue Resolved.ConflictAction
+    (targeted : Bool) (rowid : Option (Option Nat)) : Syntax.ConflictAction → Except ValueIssue Resolved.ConflictAction
   | .nothing => .ok .nothing
   | .update assignments filter =>
-    (resolveAll (resolveAssignment dqs scope [] fun _ => .restriction [] .upsertGenerated) assignments).mapError (·.under [clause, 1, 0]) >>= fun resolved =>
+    (resolveAll (resolveAssignment dqs scope {} [] (fun _ => .restriction [] .upsertGenerated) rowid) assignments).mapError
+      (·.under [clause, 1, 0]) >>= fun resolved =>
     resolveConflictFilter dqs scope clause filter >>= fun resolvedFilter =>
     if (resolved.map Prod.fst).eraseDups.length != resolved.length then
       .error (.restriction [clause, 1, 0] .updateColumnTwice)
@@ -71,7 +72,7 @@ def resolveConflict (dqs : Bool) (tableName : Identifier) (table : CatalogTable)
     (clause : Nat) (written : Syntax.ConflictClause) : Except ValueIssue Resolved.ConflictClause :=
   resolveConflictTarget table.columns keys clause written.target >>= fun target =>
   resolveConflictAction dqs (upsertScope tableName table.columns !table.withoutRowid) keys clause target.isSome
-    written.action
+    (if table.withoutRowid then none else some table.rowidAlias) written.action
     >>= fun action => .ok { target, action }
 
 end Belay.Sqlite

@@ -16,23 +16,28 @@ the filter as a condition; then a column assigned twice is a model restriction. 
 {lit}`SET` value that reads the row for a key column is the restriction
 {name}`RestrictionKind.rowDependentKey` of its assignment. A table with a constraint
 algorithm other than ABORT is {name}`RestrictionKind.constraintAlgorithmUpdate`, after
-every other check. -/
+every other check. The values and the filter may name the statement's resolved subqueries,
+whose shapes are {lit}`shapes`. In a trigger's body, the values and the filter also see the
+trigger's rows {lit}`trigger`, after the table's cells (ADR 0018, D5). -/
 def resolveUpdate (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : Identifier)
     (assignments : List (Identifier × Syntax.Expr)) (filter : Option Syntax.Expr)
-    (returning : List Syntax.ResultColumn) : StatementResolution :=
+    (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query) (shapes : SubqueryShapes)
+    (trigger : Option TriggerRow := none) : StatementResolution :=
   let dqs := context.profile.dqsDml
   match catalog.findTable tableName with
   | none => prepareError catalog (.noSuchTable tableName)
   | some (position, table) =>
     let keys := catalog.uniqueKeys position table
     let scope := Scope.single tableName table.columns !table.withoutRowid
-    match resolveAll (resolveAssignment dqs scope (keys.flatMap (·.reads table.columns.length))
-        (fun name => .prepare (.updateGenerated name))) assignments with
+    let around := (trigger.map (·.scope table.columns.length)).getD []
+    match resolveAll (fun item => resolveAssignment dqs scope shapes (keys.flatMap (·.reads table.columns.length))
+        (fun name => .prepare (.updateGenerated name)) (if table.withoutRowid then none else some table.rowidAlias) item
+        around) assignments with
     | .error issue => issueResolution catalog index [1] issue
     | .ok resolved =>
       let resolvedCondition : Except ValueIssue (Option Resolved.Expr) := match filter with
         | none => .ok none
-        | some term => some <$> condition [] (resolveOperand dqs scope true term)
+        | some term => some <$> condition [] (resolveOperand dqs (scope ++ around) shapes true term)
       match resolvedCondition with
       | .error issue => issueResolution catalog index [2] issue
       | .ok resolvedFilter =>
@@ -44,7 +49,7 @@ def resolveUpdate (context : ResolveContext) (catalog : Catalog) (index : Nat) (
           | .ok columns =>
             if (catalog.keyAlgorithms position table).all (· == .abort) &&
                 table.columns.all (·.notNullAlgorithm == .abort) then
-              .ok (.update position resolved resolvedFilter columns, catalog)
+              .ok (.update position resolved resolvedFilter columns subqueries, catalog)
             else restrict index [] .constraintAlgorithmUpdate
 
 end Belay.Sqlite

@@ -68,14 +68,17 @@ What the code has today:
 
 A resolved statement holds a list of its subqueries. An expression names a subquery by
 its index in that list: `EXISTS (q)`, `x IN (q)` and a scalar subquery `(q)`. A
-subquery's own expressions name only subqueries after it in the list, so evaluation
-recurses on a list that gets shorter, which keeps the recursion structural and the
-kernel able to reduce it. `Expr` and `Query` stay separate types.
+subquery's own expressions name only subqueries after it in the list, so the nesting is at
+most as deep as the list is long. Evaluation is stratified by that bound: the results of
+the subqueries at one depth come from the evaluation of the depth below, with the length
+of the list as fuel, which keeps the recursion structural and the kernel able to reduce
+it. `Expr` and `Query` stay separate types.
 
-Evaluation gets a context: the clock, the database's tables, the statement's subqueries
-and the outer rows. A correlated reference names a cell of an outer row by its depth and
-position. Resolution gives the scope of each enclosing query, as SQLite resolves a name
-first in its own query and then outward.
+Evaluation gets a context: the clock, the database's tables and the results of the
+statement's subqueries. A subquery's row is the row of the queries around it followed by
+its own cells, so a correlated reference is a cell position, as any other column
+reference. Resolution gives the scope of each enclosing query, as SQLite resolves a name
+first in its own query and then outward, and shifts the positions.
 
 The context changes the type of evaluation, so every caller changes in the slice that
 adds it: the queries, the writes, CHECK constraints, generated columns, index terms and
@@ -96,7 +99,9 @@ describe, stays a restriction with its own id.
 ### D3. `DISTINCT`, and aggregates inside expressions
 
 - `SELECT DISTINCT` removes rows that compare equal under each column's collation, keeping
-  the first of each.
+  one of each. Amended 2026-10-21 (slice 3): when the rows of such a set differ, for example
+  `'a'` and `'A'` under `NOCASE`, SQLite keeps the first that its plan reads, so the model
+  does not describe the statement; it describes sets whose rows are the same.
 - An aggregate inside an expression becomes one more cell of the group's row: the query
   lists its aggregates, evaluation computes them for each group, and an expression names
   the cell. With this, `HAVING`, `count(*) + 1` and an aggregate in `ORDER BY` follow, and

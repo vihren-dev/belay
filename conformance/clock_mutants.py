@@ -25,8 +25,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "clock_seconds_rounded": (FUNCTIONS, "    else twoDigitBytes (doubleToInt32 x.seconds)",
         "    else twoDigitBytes (doubleToInt32 (x.seconds + 0.5))"),
     "clock_default_at_resolution": (STATEMENT,
-        "  | .expression term => storeValue affinity (term.eval clock [])",
-        "  | .expression term => storeValue affinity (term.eval defaultDateClock [])"),
+        "  | .expression term => storeValue affinity (term.eval context [])",
+        "  | .expression term => storeValue affinity (term.eval (.plain defaultDateClock) [])"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the replacement. The
 names follow the list in the task of slice 6e2: one clock value, the first statement's, for

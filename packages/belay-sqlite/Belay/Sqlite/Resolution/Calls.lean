@@ -69,24 +69,34 @@ def Resolved.JsonFunction.accepts : Resolved.JsonFunction → Nat → Bool
   | .jsonbSet, _ | .jsonbInsert, _ | .jsonbReplace, _ | .jsonbRemove, _ => true
 
 /-- Whether the expression itself passes on the value of one of its arguments with its JSON
-subtype: {lit}`COALESCE`, {lit}`iif`, {lit}`nullif`, {lit}`min` and {lit}`max`; its parts are not
+subtype: {lit}`COALESCE`, {lit}`iif`, {lit}`nullif`, {lit}`min`, {lit}`max` and a scalar subquery; its parts are not
 inspected. -/
 def Resolved.Expr.passesValue : Resolved.Expr → Bool
-  | .coalesce .. | .scalar .iif _ | .scalar (.nullif _) _ | .scalar (.min _) _ | .scalar (.max _) _ => true
+  | .coalesce .. | .scalar .iif _ | .scalar (.nullif _) _ | .scalar (.min _) _ | .scalar (.max _) _
+  | .subquery _ => true
   | .scalar .typeof _ | .scalar .length _ | .scalar .octetLength _ | .scalar .abs _ | .scalar .sign _
   | .scalar .zeroblob _ | .scalar .like _ | .scalar .glob _ | .scalar .lower _ | .scalar .upper _
   | .scalar .substr _ | .scalar .instr _ | .scalar .replace _ | .scalar (.trim _) _ | .scalar .hex _
   | .scalar .unhex _ | .scalar .quote _ | .scalar .unistrQuote _ | .scalar .char _ | .scalar .unicode _
-  | .scalar .unistr _ | .scalar .concat _ | .scalar .concatWs _ | .scalar .round _ | .scalar .floor _
+  | .scalar .unistr _ | .scalar .concat _ | .scalar .pipes _ | .scalar .concatWs _ | .scalar .round _ | .scalar .floor _
   | .scalar .ceil _ | .scalar .trunc _ | .scalar .sqrt _ | .scalar .pi _ | .scalar .degrees _
   | .scalar .radians _ | .scalar .mod _ | .scalar .printf _ | .column _ | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic ..
-  | .cast .. | .json .. | .now _ | .date .. => false
+  | .cast .. | .json .. | .now _ | .date .. | .exists .. | .inQuery .. | .inList .. | .aggregateValue _ => false
+
+/-- Whether the expression itself is a scalar subquery, whose value may have the JSON subtype
+of a JSON call in the subquery, which the expression does not show; its parts are not
+inspected. -/
+def Resolved.Expr.isSubquery : Resolved.Expr → Bool
+  | .subquery _ => true
+  | .column _ | .literal _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast ..
+  | .coalesce .. | .json .. | .now _ | .date .. | .scalar .. | .exists .. | .inQuery .. | .inList .. | .aggregateValue _ => false
 
 /-- Whether the JSON subtype of an argument is not described: the argument passes on a value
-({name}`Resolved.Expr.passesValue`) and has a JSON call inside. A direct JSON call is described
-({lit}`Expr.givesJson`), and any other expression gives no subtype. -/
+({name}`Resolved.Expr.passesValue`) and has a JSON call or a scalar subquery inside
+({name}`Resolved.Expr.isSubquery`). A direct JSON call is described ({lit}`Expr.givesJson`),
+and any other expression gives no subtype. -/
 def Resolved.Expr.subtypeUndescribed (argument : Resolved.Expr) : Bool :=
-  argument.passesValue && argument.any Resolved.Expr.isJsonCall
+  argument.passesValue && (argument.any Resolved.Expr.isJsonCall || argument.any Resolved.Expr.isSubquery)
 
 /-- The arguments of a call in written order. -/
 def Resolved.Arguments.toList : Resolved.Arguments → List Resolved.Expr

@@ -1,0 +1,87 @@
+import Belay.Sqlite.QueryRun
+import Belay.Sqlite.QueryFunctions
+
+set_option doc.verso true
+
+/-! The subqueries of a statement (ADR 0018, D1): the run of one subquery for an outer row,
+and the evaluation context of a statement whose expressions name its subqueries by index.
+A subquery's row is the outer row followed by the subquery's own cells, so its sources are
+joined after the outer row, and a correlated reference is a cell position. -/
+
+namespace Belay.Sqlite.Resolved
+
+/-- The source rows of a subquery for an outer row: its sources joined in written order
+({name}`QuerySource.join`) from the outer row, so each row starts with the outer cells; none
+when a table is missing. An outer row with fewer cells than {name}`Query.outer`, such as the
+row without cells over which the model evaluates a constant term, is filled with NULL, so the
+subquery's own cells keep their positions. With no outer cells this is {name}`Query.source`. -/
+def Query.sourceAfter (context : EvalContext) (outer : List Value) (query : Query) (database : Database) :
+    Option SourceRows :=
+  let cells := outer ++ List.replicate (query.outer - outer.length) .null
+  query.sources.foldlM (QuerySource.join context database) { rows := [cells], width := cells.length, fault := .none }
+
+/-- Whether SQLite gives the same first values on both sides of a cut before {lit}`position` of
+the sorted records, in every order that the {lit}`ORDER BY` terms allow: the cut is at the start
+or after the end, or the records around it are not tied, or every record tied with the one
+after the cut has the same first value. -/
+def certainCut (directions : List (Bool × Collation)) (sorted : List Record) (position : Nat) : Bool :=
+  match position, sorted[position]? with
+  | 0, _ | _, none => true
+  | before + 1, some after =>
+    match sorted[before]? with
+    | none => true
+    | some previous =>
+      compareSort directions previous.2 after.2 != .eq ||
+        (sorted.filter (compareSort directions ·.2 after.2 == .eq)).all (·.1.head? == after.1.head?)
+
+/-- Whether the first values of a subquery's window are the same in every order that its
+{lit}`ORDER BY` terms allow, for a window of at most {lit}`limit` rows after its
+{lit}`OFFSET`: no rows, or both cuts of the window are certain ({name}`certainCut`). Without
+{lit}`ORDER BY` every record is tied, as SQLite may read the rows in any order. -/
+def Query.windowCertain (context : EvalContext) (query : Query) (rows : List (List Value)) (limit : Option Nat) :
+    Bool :=
+  limit == some 0 ||
+    let directions := query.orderBy.map fun term => (term.descending, term.collation)
+    let sorted := stableSort (fun a b => (compareSort directions a.2 b.2).isLE)
+      (query.uniqueRecords context rows)
+    certainCut directions sorted query.offset && limit.all (certainCut directions sorted <| query.offset + ·)
+
+/-- The run of a subquery for an outer row: the rows of {name}`Query.run` over its source rows
+({name}`Query.sourceAfter`), with the fault of the sources and of the run softened to
+{lean}`Fault.may`, because SQLite evaluates a subquery only when it needs its value. A missing
+table and an integer overflow, which the model does not describe inside a subquery, are
+{lean}`Fault.may` too. Its first row is certain when the window of one row is
+({name}`Query.windowCertain`), and its rows when its own window is. -/
+def Query.subqueryRun (context : EvalContext) (database : Database) (outer : List Value) (query : Query) :
+    SubqueryRun :=
+  match query.sourceAfter context outer database with
+  | none => { rows := [], fault := .may }
+  | some source =>
+    let run := query.run context source.rows
+    { rows := run.rows, fault := if run.overflow then .may else (source.fault.join run.fault).soften,
+      firstCertain := query.windowCertain context source.rows (some (min 1 (query.limit.getD 1))),
+      rowsCertain := query.windowCertain context source.rows query.limit }
+
+/-- The context of a statement's subqueries at a nesting depth: with no depth left, the plain
+context; else subquery {lit}`index` runs ({name}`Query.subqueryRun`) in the context one depth
+below, which serves the subqueries that its own expressions name, all later in the list. -/
+def subqueryContext (clock : Int) (database : Database) (subqueries : List Query) : Nat → EvalContext
+  | 0 => .plain clock
+  | depth + 1 =>
+    { clock, subqueries := fun index outer => match subqueries[index]? with
+        | some query => query.subqueryRun (subqueryContext clock database subqueries depth) database outer
+        | none => { rows := [], fault := .none } }
+
+/-- The evaluation context of a statement at a clock value over a database: its subqueries at
+the depth of their number ({name}`subqueryContext`), which bounds their nesting because each
+subquery's expressions name only later ones. Without subqueries it is the plain context. -/
+def statementContext (clock : Int) (database : Database) (subqueries : List Query) : EvalContext :=
+  subqueryContext clock database subqueries subqueries.length
+
+/-- For every clock value and database, the context of a statement without subqueries is the
+plain context of the clock value. Proof sketch: an empty list gives depth 0, and
+{name}`subqueryContext` at depth 0 is the plain context by definition. -/
+@[simp] theorem statementContext_nil (clock : Int) (database : Database) :
+    statementContext clock database [] = .plain clock := rfl
+
+end Belay.Sqlite.Resolved

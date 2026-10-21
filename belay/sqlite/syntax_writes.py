@@ -5,7 +5,9 @@ UPDATE keeps its assignments, its optional WHERE expression and its RETURNING
 columns; DELETE keeps its optional WHERE expression and its RETURNING columns. Values, assignments and the filter are query expressions
 (`syntax_queries.query_expression`); Lean decides which of them the model admits in a
 write. Each write has a `returning` field with its RETURNING result columns as in
-SELECT, empty without RETURNING (ADR 0013, D3).
+SELECT, empty without RETURNING (ADR 0013, D3), and a `subqueries` field with the subqueries
+of its values, assignments and filter when it has some (`syntax_subqueries`, ADR 0018, D1); a subquery in
+RETURNING or ON CONFLICT is refused.
 The ON CONFLICT clauses of INSERT are `syntax_conflicts.conflict_clauses`; an INSERT
 without them has an empty list. The algorithm of `INSERT OR algorithm` and `REPLACE INTO`
 is `syntax_conflicts.insert_algorithm`. `UPDATE OR`, FROM, SELECT sources and named or
@@ -18,6 +20,11 @@ from .syntax_conflicts import assignment_list, conflict_clauses, insert_algorith
 from .syntax_shapes import absent, left_list, require
 from .syntax_expressions import name
 from .syntax_queries import query_expression, result_columns
+from .syntax_select import query_clauses
+from .syntax_subqueries import no_subqueries, statement_subqueries, with_subqueries
+
+IN_CLAUSE = ("A subquery in RETURNING or ON CONFLICT is not modeled; read the value in a separate statement")
+"""The refusal of a subquery in RETURNING or ON CONFLICT, whose scope the model does not describe."""
 
 
 def transaction(tree: Tree, command: Node) -> Located:
@@ -63,7 +70,8 @@ def returning(tree: Tree, command: Node, parts: list[Node]) -> Located:
     `RETURNING selcollist`, or an empty list without them."""
     if not parts:
         return sequence([], command.end, command.end)
-    return result_columns(tree, parts[1])
+    with no_subqueries(IN_CLAUSE):
+        return result_columns(tree, parts[1])
 
 
 def insert(tree: Tree, command: Node) -> Located:
@@ -73,7 +81,8 @@ def insert(tree: Tree, command: Node) -> Located:
         tree, command, ["with", "insert_cmd", "INTO", "xfullname", "idlist_opt", "select", "upsert"])
     absent(tree, with_, "A WITH clause")
     algorithm = insert_algorithm(tree, operation)
-    conflicts, returned = conflict_clauses(tree, upsert)
+    with no_subqueries(IN_CLAUSE):
+        conflicts, returned = conflict_clauses(tree, upsert)
     (table,) = require(tree, target, ["nm"])
     if columns.children:
         _, listed, _ = require(tree, columns, ["LP", "idlist", "RP"])
@@ -81,10 +90,12 @@ def insert(tree: Tree, command: Node) -> Located:
         column_list = sequence(names, columns.start, columns.end)
     else:
         column_list = leaf(None, columns.start, columns.end)
-    return constructor("insert", [("table", name(tree, table)), ("columns", column_list),
-                                  ("rows", value_rows(tree, source)), ("conflicts", conflicts),
-                                  ("algorithm", algorithm), ("returning", returning(tree, command, returned))],
-                       command.start, command.end)
+    with statement_subqueries(query_clauses) as listed:
+        rows = value_rows(tree, source)
+    return with_subqueries("insert", [("table", name(tree, table)), ("columns", column_list), ("rows", rows),
+                                      ("conflicts", conflicts), ("algorithm", algorithm),
+                                      ("returning", returning(tree, command, returned))],
+                           listed, command.start, command.end)
 
 
 def update(tree: Tree, command: Node) -> Located:
@@ -97,11 +108,12 @@ def update(tree: Tree, command: Node) -> Located:
     absent(tree, indexed, "INDEXED BY")
     absent(tree, from_, "UPDATE FROM")
     (table,) = require(tree, target, ["nm"])
-    filter_, returned = filter_and_returning(tree, where, "UPDATE")
-    return constructor("update", [("table", name(tree, table)),
-                                  ("assignments", assignment_list(tree, assignments)),
-                                  ("filter", filter_), ("returning", returning(tree, command, returned))],
-                       command.start, command.end)
+    with statement_subqueries(query_clauses) as listed:
+        mapped = assignment_list(tree, assignments)
+        filter_, returned = filter_and_returning(tree, where, "UPDATE")
+    return with_subqueries("update", [("table", name(tree, table)), ("assignments", mapped),
+                                      ("filter", filter_), ("returning", returning(tree, command, returned))],
+                           listed, command.start, command.end)
 
 
 def filter_and_returning(tree: Tree, where: Node, statement: str) -> tuple[Located, list[Node]]:
@@ -122,6 +134,8 @@ def delete(tree: Tree, command: Node) -> Located:
     absent(tree, with_, "A WITH clause")
     absent(tree, indexed, "INDEXED BY")
     (table,) = require(tree, target, ["nm"])
-    filter_, returned = filter_and_returning(tree, where, "DELETE")
-    return constructor("delete", [("table", name(tree, table)), ("filter", filter_),
-                                  ("returning", returning(tree, command, returned))], command.start, command.end)
+    with statement_subqueries(query_clauses) as listed:
+        filter_, returned = filter_and_returning(tree, where, "DELETE")
+    return with_subqueries("delete", [("table", name(tree, table)), ("filter", filter_),
+                                      ("returning", returning(tree, command, returned))],
+                           listed, command.start, command.end)

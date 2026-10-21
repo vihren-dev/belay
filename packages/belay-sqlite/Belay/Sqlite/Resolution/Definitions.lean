@@ -4,6 +4,7 @@ import Belay.Sqlite.Resolution.ReadDefaults
 import Belay.Sqlite.Resolution.IndexTerms
 import Belay.Sqlite.Resolution.GeneratedColumns
 import Belay.Sqlite.Resolution.TableOptions
+import Belay.Sqlite.Resolution.ParentKeys
 
 set_option doc.verso true
 
@@ -71,6 +72,7 @@ def applyConstraint (tableName : Identifier) (definition : Syntax.ColumnDefiniti
                               onDelete, onUpdate }
     .ok { table with columns := updateLast table.columns fun column =>
       { column with foreignKeys := column.foreignKeys ++ [key] } }
+  | .deferral deferred => .ok (table.deferLast deferred)
 
 /-- Add the column definitions in written order: {lit}`too many columns on %s` when
 a column would exceed the limit, then {lit}`duplicate column name: %s`, then each
@@ -90,7 +92,8 @@ def addDefinitions (limit : Nat) (tableName : Identifier) (table : CatalogTable)
 /-- Apply the table constraints in written order. A table PRIMARY KEY with one
 column of declared type INTEGER is a rowid alias, whatever its sort order. A CHECK waits
 for {name}`resolveTableChecks`. A {lit}`FOREIGN KEY` adds a {name}`ForeignKey` after SQLite's
-checks: the number of referenced columns, then each column. -/
+checks: the number of referenced columns, then each column; its deferral clause sets whether it
+is deferred ({name}`CatalogTable.deferLast`). -/
 def addTableConstraints (tableName : Identifier) (table : CatalogTable) :
     List Syntax.TableConstraint → Except ExprError CatalogTable
   | [] => .ok table
@@ -116,6 +119,7 @@ def addTableConstraints (tableName : Identifier) (table : CatalogTable) :
       | none => .error (.unknownForeignKeyColumn name)
     let key : ForeignKey := { table := target, columns := positions, referenced, onDelete, onUpdate }
     addTableConstraints tableName { table with foreignKeys := table.foreignKeys ++ [key] } rest
+  | .deferral deferred :: rest => addTableConstraints tableName (table.deferLast deferred) rest
 
 /-- The exact statistics tables that ANALYZE creates, which a catalog description may contain. -/
 def statisticsTable (name : Identifier) (columns : List Syntax.ColumnDefinition)
@@ -141,7 +145,7 @@ def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : N
   else match catalog.find name with
   | some (_, { entry := .table _, .. }) => prepareError catalog (.tableExists name)
   | some (_, { entry := .index _, .. }) => prepareError catalog (.indexNameUsed name)
-  | none =>
+  | some (_, { entry := .trigger _, .. }) | none =>
     match addDefinitions context.profile.limits.columns name { columns := [], strict := options.strict } columns >>=
         (addTableConstraints name · constraints) with
     | .error error => prepareError catalog (.expression error)
@@ -181,7 +185,7 @@ def resolveCreateIndex (context : ResolveContext) (catalog : Catalog) (index : N
     else match catalog.find name with
     | some (_, { entry := .table _, .. }) => prepareError catalog (.tableNameUsed name)
     | some (_, { entry := .index _, .. }) => prepareError catalog (.indexExists name)
-    | none =>
+    | some (_, { entry := .trigger _, .. }) | none =>
       let scope := Scope.single tableName table.columns !table.withoutRowid
       let dqs := context.profile.dqsDdl
       match indexKeys dqs scope table.columns terms with

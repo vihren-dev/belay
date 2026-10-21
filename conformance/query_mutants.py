@@ -23,6 +23,11 @@ FORMS = SQLITE + "Resolution/ExprForms.lean"
 SOURCES = SQLITE + "Resolution/Sources.lean"
 """The resolution of the tables of FROM."""
 
+RESULTS = SQLITE + "QueryResults.lean"
+"""The records, the sort and the window of a query."""
+GROUPING = SQLITE + "Resolution/QueryAggregates.lean"
+"""The aggregates and the grouping terms of a query."""
+
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "null_equals_null": (COMPARISON,
         "  | .is | .isNot =>\n    if left.isNull || right.isNull then truth ((left.isNull && right.isNull) == (operator == .is))\n"
@@ -40,28 +45,28 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "if descending then collation.compare b a else collation.compare a b",
         "if descending then collation.compare b a\n  else if a.isNull != b.isNull then (if a.isNull then .gt else .lt) else collation.compare a b"),
     "count_counts_null": (EVALUATION,
-        "  | .count operand => .integer (rows.filter fun row => !(operand.eval clock row).isNull).length",
+        "  | .count operand => .integer (rows.filter fun row => !(operand.eval context row).isNull).length",
         "  | .count _ => .integer rows.length"),
     "extremum_over_null": (EVALUATION, "(values.filter (!·.isNull)).foldl", "values.foldl"),
     "empty_aggregate_no_row": (EVALUATION,
-        "  if query.groupBy.isEmpty then [rows] else groups clock query.groupBy rows",
-        "  if query.groupBy.isEmpty then (if rows.isEmpty then [] else [rows]) else groups clock query.groupBy rows"),
-    "limit_one_too_high": (EVALUATION, "window.take limit", "window.take (limit + 1)"),
-    "offset_ignored": (EVALUATION, "let window := sorted.drop query.offset", "let window := sorted"),
+        "  if query.groupBy.isEmpty then [rows] else groups context query.groupBy rows",
+        "  if query.groupBy.isEmpty then (if rows.isEmpty then [] else [rows]) else groups context query.groupBy rows"),
+    "limit_one_too_high": (RESULTS, "window.take limit", "window.take (limit + 1)"),
+    "offset_ignored": (RESULTS, "let window := sorted.drop query.offset", "let window := sorted"),
     "no_such_column": (EXPRESSIONS,
         "      else .error (.prepare (.noSuchColumn name))", "      else .ok (.literal .null, none)"),
     "no_such_table": (SOURCES,
         "    else .error (.noSuchTable reference.table)", "    else .error (.value (.restriction path .systemTable))"),
     "no_misuse_of_aggregate": (FORMS,
         "  if misuse then .prepare (.misuseOfAggregate function)", "  if false then .prepare (.misuseOfAggregate function)"),
-    "no_aggregate_in_group_by": (RESOLUTION,
+    "no_aggregate_in_group_by": (GROUPING,
         ".error (if aggregateCall term then .prepare .aggregateInGroupBy else (callIssue name).under [4, item])",
         ".error ((callIssue name).under [4, item])"),
     "no_order_by_out_of_range": (RESOLUTION,
-        "      | some (.error ()) => .error (.prepare (.orderByOutOfRange (item + 1) outputs.length))",
+        "    | some (.error ()) => .error (.prepare (.orderByOutOfRange (item + 1) outputs.length))",
         "      | some (.error ()) => .error (.restriction [4, item] .aggregateOrderBy)"),
-    "no_group_by_out_of_range": (RESOLUTION,
-        "        | some (.error ()) => .error (.prepare (.groupByOutOfRange (item + 1) outputs.length))",
+    "no_group_by_out_of_range": (GROUPING,
+        "      | some (.error ()) => .error (.prepare (.groupByOutOfRange (item + 1) outputs.length))",
         "        | some (.error ()) => .error (.restriction [3, item] .groupByTerm)"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the
@@ -95,9 +100,9 @@ GUARDS: dict[str, str] = {
     "no_such_column": "rule:resolveOperand",
     "no_such_table": "rule:resolveTableReference",
     "no_misuse_of_aggregate": "rule:aggregateIssue",
-    "no_aggregate_in_group_by": "rule:resolveSelect",
-    "no_order_by_out_of_range": "rule:resolveSelect",
-    "no_group_by_out_of_range": "rule:resolveSelect",
+    "no_aggregate_in_group_by": "rule:resolveGroupTerm",
+    "no_order_by_out_of_range": "rule:resolveQueryBody",
+    "no_group_by_out_of_range": "rule:resolveGroupTerm",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant
 changes. `conformance.mutant_guards` checks every entry."""

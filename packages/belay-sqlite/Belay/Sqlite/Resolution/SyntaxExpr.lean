@@ -25,6 +25,19 @@ inductive QuoteKind where
   | backtick
   deriving Repr, DecidableEq
 
+/-- What {lit}`RAISE` does in a trigger (ADR 0018, D5): {lit}`IGNORE` ends the row, and the
+others fail the statement with that conflict algorithm. -/
+inductive RaiseKind where
+  /-- {lit}`RAISE(IGNORE)`. -/
+  | ignore
+  /-- {lit}`RAISE(ROLLBACK, message)`. -/
+  | rollback
+  /-- {lit}`RAISE(ABORT, message)`. -/
+  | abort
+  /-- {lit}`RAISE(FAIL, message)`. -/
+  | fail
+  deriving Repr, DecidableEq
+
 /-- An expression as written. For example, the literal {lit}`-5` is
 {lean}`Expr.negate (.numeric "5")`. -/
 inductive Expr where
@@ -77,6 +90,28 @@ inductive Expr where
   /-- {lit}`operand COLLATE name` (ADR 0014, slice 3): the operand's value with the named
   collation, as written. -/
   | collate (operand : Expr) (name : Identifier)
+  /-- {lit}`EXISTS (q)` (ADR 0018, D1), where {lit}`q` is subquery {lit}`index` of the
+  statement ({lit}`Subquery`); {lit}`NOT EXISTS` is {lit}`NOT` of it, as SQLite parses it. -/
+  | exists (index : Nat)
+  /-- {lit}`operand IN (q)`, or {lit}`operand NOT IN (q)` when {lit}`negated`, where {lit}`q` is
+  subquery {lit}`index` of the statement. -/
+  | inQuery (operand : Expr) (index : Nat) (negated : Bool)
+  /-- A scalar subquery {lit}`(q)`, where {lit}`q` is subquery {lit}`index` of the statement. -/
+  | subquery (index : Nat)
+  /-- {lit}`operand IN (values)`, or {lit}`operand NOT IN (values)` when {lit}`negated`, with the
+  values in written order; empty for {lit}`IN ()` (ADR 0018, D2). -/
+  | inList (operand : Expr) (values : List Expr) (negated : Bool)
+  /-- {lit}`operand BETWEEN low AND high`, or {lit}`NOT BETWEEN` when {lit}`negated`. -/
+  | between (operand low high : Expr) (negated : Bool)
+  /-- {lit}`CASE [base] WHEN ... THEN ... [ELSE ...] END`: the operands in written order, the
+  base expression first when {lit}`hasBase`, then the {lit}`WHEN` and {lit}`THEN` expressions in
+  pairs, then the {lit}`ELSE` expression, if any, as SQLite's parser holds them. -/
+  | caseOf (operands : List Expr) (hasBase : Bool)
+  /-- {lit}`left || right`. -/
+  | concatenate (left right : Expr)
+  /-- {lit}`RAISE(kind[, message])`, with the message for every kind but {lit}`IGNORE`; it is
+  valid only in a trigger's statements (ADR 0018, D5). -/
+  | raise (kind : RaiseKind) (message : Option Expr)
   deriving Repr, BEq, Inhabited
 
 /-- One result column of a {lit}`SELECT`: {lit}`*`, or an expression with an
@@ -126,6 +161,37 @@ structure OrderTerm where
   expression : Expr
   /-- Whether the term is {lit}`DESC`; {lean}`false` for {lit}`ASC` or no direction. -/
   descending : Bool
+  deriving Repr, BEq
+
+/-- A subquery of a statement as written (ADR 0018, D1): its clauses, as those of
+{lit}`Syntax.Statement.select`, and the query around it, an earlier subquery by its index in
+the statement's list or {lean}`(none : Option Nat)` for the statement's query. The frontend
+lists the subqueries in the order of their text, so a subquery comes after the query around
+it; an expression names a subquery by its index ({lit}`Expr.exists`, {lit}`Expr.inQuery`,
+{lit}`Expr.subquery`). -/
+structure Subquery where
+  /-- The result columns. -/
+  columns : List ResultColumn
+  /-- The first table of {lit}`FROM`, or none without {lit}`FROM`. -/
+  source : Option TableReference
+  /-- The joins after the first table, in order. -/
+  joins : List Join
+  /-- The {lit}`WHERE` condition. -/
+  filter : Option Expr
+  /-- The {lit}`GROUP BY` terms. -/
+  groupBy : List Expr
+  /-- The {lit}`ORDER BY` terms. -/
+  orderBy : List OrderTerm
+  /-- The {lit}`LIMIT` expression. -/
+  limit : Option Expr
+  /-- The {lit}`OFFSET` expression. -/
+  offset : Option Expr
+  /-- The index of the subquery around this one, or none for the statement's query. -/
+  parent : Option Nat
+  /-- The {lit}`HAVING` condition (ADR 0018, D3). -/
+  having : Option Expr := none
+  /-- Whether the query is {lit}`SELECT DISTINCT`. -/
+  distinct : Bool := false
   deriving Repr, BEq
 
 end Belay.Sqlite.Syntax

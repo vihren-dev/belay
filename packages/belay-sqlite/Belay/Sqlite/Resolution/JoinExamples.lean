@@ -46,7 +46,7 @@ def joinU : Resolved.QuerySource :=
 #guard resolvedOne [.star] (table (name! "t")) [joined [] (table (name! "u")) (some onA)] ==
   some (.query { sources := [.first 0, joinU], filter := none, aggregate := false, groupBy := [],
                  columns := [.scalar (.column 0), .scalar (.column 1), .scalar (.column 2), .scalar (.column 3)],
-                 names := ["a", "b", "a", "c"], orderBy := [], offset := 0, limit := none })
+                 names := ["a", "b", "a", "c"], orderBy := [], offset := 0, limit := none } [])
 -- An unqualified name of a column of both tables is SQLite's ambiguous column name.
 #guard resolvedOne [.expression (.identifier (name! "a") .none) none "a"] (table (name! "t")) [joined [] (table (name! "u"))] ==
   some (.prepareError (.expression (.ambiguousColumn (name! "a"))))
@@ -90,10 +90,10 @@ def right : Table :=
 def equal : Option Resolved.Expr := some (.compare .eq none (.column 0) (.column 1))
 
 -- An inner join keeps the matching row; a left join also pads the unmatched left row.
-#guard Resolved.joinRows 0 1 (Resolved.sourceRows left) { kind := .inner, source := .table 1, condition := equal } 1
+#guard Resolved.joinRows (.plain 0) 1 (Resolved.sourceRows left) { kind := .inner, source := .table 1, condition := equal } 1
     (Resolved.sourceRows right) ==
   [[.integer 1, .integer 1]]
-#guard Resolved.joinRows 0 1 (Resolved.sourceRows left) { kind := .left, source := .table 1, condition := equal } 1
+#guard Resolved.joinRows (.plain 0) 1 (Resolved.sourceRows left) { kind := .left, source := .table 1, condition := equal } 1
     (Resolved.sourceRows right) ==
   [[.integer 1, .integer 1], [.integer 2, .null]]
 

@@ -1,0 +1,82 @@
+import Belay.Sqlite.ForeignKeyRows
+import Belay.Sqlite.UpsertRun
+
+set_option doc.verso true
+
+/-! One row of an INSERT that runs row by row (ADR 0018, D4 and D5), in the order of SQLite's
+{lit}`sqlite3Insert`: the rowid alias, the {lit}`BEFORE INSERT` programs, the constraints of
+the row with their algorithms ({lit}`UpsertRun`), the rows that REPLACE deletes with their
+foreign keys, the foreign keys of the row, the write, and the {lit}`AFTER INSERT` programs. -/
+
+namespace Belay.Sqlite
+
+/-- The most rows that REPLACE may delete for one INSERT row of a table with foreign keys to
+check, in a write that the model describes: SQLite deletes them in an order of its indexes that
+the model does not follow, and the order changes the counts and the actions. -/
+def replacedRowsDescribed : Nat := 1
+
+/-- The algorithm of a failed constraint of an INSERT row: IGNORE skips the row, FAIL and
+ROLLBACK stop the statement with the state, and every other algorithm fails as ABORT. -/
+def failedRow (state : KeyState) : ConflictAlgorithm → Except KeyStop KeyState
+  | .ignore => pure state
+  | .fail => throw (.stopped .fail state)
+  | .rollback => throw (.stopped .rollback state)
+  | .abort | .replace => throw (.error .constraintViolation)
+
+/-- The {lit}`NEW` cells of a {lit}`BEFORE INSERT` program: the proposed row's cells with the
+rowid alias as written, and -1 for a NULL alias, as SQLite has assigned no rowid yet. -/
+def beforeInsertCells (table : Table) (values : List Value) : List Value :=
+  let cells := (LiteralData.proposedRow table values).values
+  match table.shape.rowidAlias with
+  | some position => cells.set position (match values[position]? with
+    | some .null | none => .integer (-1)
+    | some value => value)
+  | none => cells
+
+/-- One row of an INSERT into the table at the position in the frame: a rowid alias that is no
+integer is {lit}`datatype mismatch`; with {lit}`BEFORE INSERT` programs, the types of a
+{lit}`STRICT` table are checked and the programs run ({name}`beforeInsertCells`), and may end
+the row; then the row as {lit}`UpsertRun` describes its constraints over the table as the
+programs left it: a {lit}`DO NOTHING` clause skips the row, a {lit}`DO UPDATE` clause is not
+described, a row that conflicts on REPLACE keys deletes the conflicting row with its foreign
+keys and actions but no trigger, and more than {name}`replacedRowsDescribed` such rows are not
+described; then {name}`newSteps` checks the row, scanning the child rows only for a write of
+several rows; then the row is inserted, and the {lit}`AFTER INSERT` programs run over its cells. -/
+def insertRow (catalog : Catalog) (links : List ForeignKeyLink) (nested : NestedRun) (frame : RowFrame) (target : Nat)
+    (policy : Resolved.ConflictPolicy) (clauses : List Resolved.ConflictClause) (multiWrite record : Bool)
+    (state : KeyState) (values : List Value) : Except KeyStop KeyState := do
+  let some table := (state.database catalog).table target | throw .undescribed
+  if LiteralData.aliasMismatch table.shape values then throw (.error .datatypeMismatch)
+  if !(frame.fired target .before .insert).isEmpty &&
+      !LiteralData.typesFit table.shape (LiteralData.proposedRow table values) then throw (.error .constraintViolation)
+  let (state, ended) ← runPrograms catalog nested frame target .before .insert (beforeInsertCells table values) state
+  if ended then return state
+  let some table := (state.database catalog).table target | throw .undescribed
+  let keys := catalog.uniqueKeys target table.shape
+  let proposed := LiteralData.proposedRow table values
+  if !LiteralData.boundedInteger proposed.rowid then throw .undescribed
+  if let some column := LiteralData.nullColumn table.shape.columns proposed.values then
+    return ← failedRow state (LiteralData.algorithmAt policy.notNull column)
+  if !LiteralData.typesFit table.shape proposed then throw (.error .constraintViolation)
+  if !LiteralData.checksHold table.shape proposed then return ← failedRow state policy.check
+  if let some (clause, _) := LiteralData.handlingClause keys clauses table proposed then
+    match clause.action with
+    | .nothing => return state
+    | .update .. => throw .undescribed
+  if let some index := LiteralData.blockingKey keys policy.keys table proposed then
+    return ← failedRow state (LiteralData.algorithmAt policy.keys index)
+  let replaced := table.rows.filter fun row => (List.range keys.length).any fun index =>
+    LiteralData.algorithmAt policy.keys index == .replace && (keys[index]?).any (LiteralData.keyEqual · row proposed)
+  if replaced.length > replacedRowsDescribed then throw .undescribed
+  let state ← replaced.foldlM (fun state row => deleteRow catalog links nested frame target false false false state row.rowid)
+    state
+  let state ← newSteps catalog state target proposed (childLinks links target) (parentLinks links target) multiWrite none []
+  let some current := (state.database catalog).table target | throw .undescribed
+  match LiteralData.checkedRow keys { current with rows := current.rows ++ [proposed] } proposed with
+  | .error reason => throw (.error reason)
+  | .ok (next, _) =>
+    let written := if record then state.written ++ [proposed] else state.written
+    let state := { state.changeRows target fun _ => next.rows with written }
+    return (← runPrograms catalog nested frame target .after .insert proposed.values state).1
+
+end Belay.Sqlite

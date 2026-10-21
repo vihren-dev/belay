@@ -4,6 +4,7 @@ import Belay.Sqlite.Resolution.ReadDefaults
 import Belay.Sqlite.Resolution.Resolved
 import Belay.Sqlite.QueryFunctions
 import Belay.Sqlite.QueryRun
+import Belay.Sqlite.Subqueries
 
 set_option doc.verso true
 
@@ -93,11 +94,14 @@ def Outcome.persistedDatabase : Outcome → Database
   | .pending persisted _ _ => persisted
   | outcome => outcome.database
 
-/-- A query over a database at a clock value: its source rows ({name}`Resolved.Query.source`)
-and its run over them ({name}`Resolved.Query.run`); none when a table is missing. -/
-def Resolved.Query.runOn (query : Resolved.Query) (clock : Int) (database : Database) :
-    Option (Resolved.SourceRows × Resolved.QueryRun) :=
-  (query.source clock database).map fun source => (source, query.run clock source.rows)
+/-- A query over a database at a clock value with the subqueries of its statement: its
+source rows ({name}`Resolved.Query.source`) and its run over them ({name}`Resolved.Query.run`),
+both in the statement's context ({name}`Resolved.statementContext`); none when a table is
+missing. -/
+def Resolved.Query.runOn (query : Resolved.Query) (clock : Int) (database : Database)
+    (subqueries : List Resolved.Query) : Option (Resolved.SourceRows × Resolved.QueryRun) :=
+  let context := Resolved.statementContext clock database subqueries
+  (query.source context database).map fun source => (source, query.run context source.rows)
 
 /-- The effect of a query with its run ({name}`Resolved.Query.runOn`): it changes nothing; it
 fails with {lean}`ExecutionError.integerOverflow` when it overflows, else with
@@ -123,9 +127,11 @@ constraint an existing row with the default fails with
 {lean}`ExecutionError.unmodeled` and is excluded by the support check.
 CREATE INDEX builds the index over the table's rows (ADR 0014, D1): a unique index whose
 key has two conflicting rows ({lit}`LiteralData.uniqueRows`) fails with
-{lean}`ExecutionError.constraintViolation` and keeps the catalog.
-DROP removes the objects at its positions with their rows ({name}`Database.drop`); it
-does not fail, since the model has no enforced foreign keys.
+{lean}`ExecutionError.constraintViolation` and keeps the catalog. CREATE TRIGGER adds the trigger
+to the catalog ({name}`Catalog.createTrigger`) with no rows.
+DROP removes the objects at its positions with their rows ({name}`Database.drop`) and does
+not fail; the DELETE that DROP TABLE runs first when foreign keys reference the table is part of
+the statement's run ({lit}`runStatement`). {lit}`PRAGMA foreign_keys = value` changes nothing.
 CREATE TABLE or CREATE INDEX at a position other than the end of the catalog (or over
 rows that do not match the catalog), CREATE INDEX of a position without a table, and ADD
 COLUMN at a position without a table fail with {lean}`ExecutionError.unmodeled`:
@@ -166,9 +172,14 @@ def step (clock : Int) (statement : Resolved.Statement) (database : Database) : 
           .error (.constraintViolation, database)
         else .ok { catalog := database.catalog.createIndex name index, rows := database.rows ++ [[]] }
     else .error (.unmodeled, database)
-  | .drop positions => .ok (database.drop positions)
+  | .createTrigger target name trigger =>
+    if target == database.catalog.length && database.rows.length == database.catalog.length then
+      .ok { catalog := database.catalog.createTrigger name trigger, rows := database.rows ++ [[]] }
+    else .error (.unmodeled, database)
+  | .drop positions _ => .ok (database.drop positions)
+  | .setting _ => .ok database
   | .prepareError error => .error (.prepare error, database)
-  | .query query => queryEffect database (query.runOn clock database)
+  | .query query subqueries => queryEffect database (query.runOn clock database subqueries)
   | .begin | .commit | .rollback | .insert .. | .upsert .. | .update .. | .delete .. =>
     .error (.unmodeled, database)
 

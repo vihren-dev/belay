@@ -13,7 +13,7 @@ from conformance.case_format import Json
 from conformance.model_check import compiled_many
 
 MUTANTS = {
-    "update_ignored": ("StatementStep", "LiteralData.updated clock table assignments filter", "table"),
+    "update_ignored": ("StatementStep", "LiteralData.updated context table assignments filter", "table"),
     "add_unpadded": ("Execution", "(database.addColumn target column value)",
                      "{ database with catalog := database.catalog.addColumn target column }"),
     "rollback_ignored": ("StatementStep", ".next { state with database := original, snapshot := none }",
@@ -45,9 +45,9 @@ def measure(cases: list[dict[str, Json]], runtime: Path) -> dict[str, Json]:
     hashes: dict[str, str] = {}
     for name, (target, before, after) in MUTANTS.items():
         for filename in (*(f"packages/belay-sqlite/Belay/Sqlite/{name}.lean"
-                           for name in ("Execution", "LiteralData", "StatementStep", "SqlExecution")),
+                           for name in ("Execution", "LiteralData", "StatementRun", "StatementStep", "SqlExecution")),
                          *(f"packages/verifier-conformance/VerifierConformance/{name}.lean"
-                           for name in ("Trace", "Outputs", "Pass", "Native", "Case"))):
+                           for name in ("Trace", "Outputs", "PossibleOutputs", "Pass", "Native", "Case"))):
             text = (root / filename).read_text()
             hashes[filename] = hashlib.sha256(text.encode()).hexdigest()
             if Path(filename).stem == target:

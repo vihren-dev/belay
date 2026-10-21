@@ -28,7 +28,8 @@ inductive RestrictionRegistry where
 * {lit}`rowidName`: a resolved expression has no read of the physical rowid. -/
 def RestrictionKind.registry : RestrictionKind → RestrictionRegistry
   | .rowDependentKey | .conflictWithoutTarget | .mixedConflictAlgorithms | .windowedGroupSum
-  | .constantFunctionError | .unknownCollation | .upsertGenerated => .undecided
+  | .constantFunctionError | .unknownCollation | .upsertGenerated | .subqueryFallibleCall
+  | .subqueryReadsTarget | .distinctOrderBy | .triggerWritesOwnTable | .schemaTriggerOrder => .undecided
   | .rowidName => .unrepresented
   | .schemaStatement | .engineTable | .rowidColumnName
   | .unmodeledDefault | .indexStringTerm | .indexDateFunction | .indexJsonFunction | .checkFunction
@@ -37,6 +38,7 @@ def RestrictionKind.registry : RestrictionKind → RestrictionRegistry
   | .replaceDefault | .insertColumnTwice | .updateColumnTwice | .joinOperator | .systemTable
   | .unmodeledFunction | .aggregateInExpression | .aliasInExpression | .groupByTerm | .bareColumn
   | .aggregateOrderBy | .windowValue | .negativeOffset | .tableFunction | .laterTableInOn | .functionJoin
-  | .laterSourceInArguments | .jsonSubtype => .unsupported
+  | .laterSourceInArguments | .jsonSubtype | .subqueryHere | .outerAggregate | .deferredForeignKey
+  | .foreignKeyUpsert | .raiseForm | .triggerForm => .unsupported
 
 end Belay.Sqlite
