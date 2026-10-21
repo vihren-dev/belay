@@ -49,3 +49,5 @@ Specification: [ADR 0017](../docs/adr-0017-user-surface.md), D2 and D6;
   27,151 texts of the frozen corpora (schema, migration and trace texts) gave the Python
   translation's answer for each, compared as JSON with sorted keys: values, ranges, refusals and
   commands. The program starts in about 30 ms; it links the model statically.
+- 2026-10-21: review of the program: one should finding (R10), fixed: the answers for a request
+  that is not usable and for an unusable parse document say what the caller can do.
