@@ -79,7 +79,11 @@ operators `+`, `-`, `*`, `/` and `%`, unary `-` and `+` of any expression,
 slice 2), `x [NOT] IN (values)`, also with an empty list, which compares under the affinity
 and the collation of `x` (a list of one constant value is SQLite's `x = +c`), `x [NOT]
 BETWEEN a AND b` as `x >= a AND x <= b`, `CASE` with and without a base (a base compares as
-`=` does), and `x || y`, NULL with a NULL operand (ADR 0018, slice 2), `json_extract` with one or more paths and the operators `->` and `->>`
+`=` does), and `x || y`, NULL with a NULL operand (ADR 0018, slice 2), aggregates inside the
+expressions of the result columns, `HAVING` and `ORDER BY` of a query, such as `count(*) + 1`,
+`HAVING` with and without `GROUP BY`, and `SELECT DISTINCT`, which keeps one row of each set of
+equal rows; when the rows of such a set differ, the statement is not described (ADR 0018,
+slice 3), `json_extract` with one or more paths and the operators `->` and `->>`
 (slice 6b), `json_type`, `json_valid`, `json_array_length` and `json` (slice 6c), and
 `date`, `time`, `datetime`, `julianday`, `unixepoch` and `strftime` with one time value
 or none, which is `now` (slice 6f), and any modifiers, in UTC (slice 6g). ADR 0015,
@@ -159,7 +163,7 @@ REPLACE of a NOT NULL column with a default is `replace-default`. `UPDATE OR`, a
 `NULLS` order, qualified name or `WHERE`, `WITH`, `FROM` in writes, sort modifiers in keys,
 partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
 options, `AS SELECT`, views, triggers, virtual tables, `EXPLAIN`, `PRAGMA`,
-compound `SELECT`, `DISTINCT`, `HAVING`, subqueries and table-valued functions in
+compound `SELECT`, `DISTINCT` inside an aggregate call, subqueries and table-valued functions in
 `FROM`, schema-qualified tables and columns, `NULLS FIRST` and `NULLS LAST`, and
 other functions are refused. Names keep
 their case as written; quotes are removed as SQLite removes them. Numeric literals
@@ -362,11 +366,11 @@ should shrink.
 | `join-operator` | A join operator that SQLite refuses with `unknown join type`, such as `INNER OUTER JOIN`, is not modeled | ADR 0012 amendment 2; ADR 0013 amendment 2 |
 | `system-table` | Queries of SQLite's own tables, such as `sqlite_schema`, are not modeled | ADR 0012 slice 1 |
 | `unmodeled-function` | A function of the pinned library that the model does not describe, or a form of it that the model does not describe, such as a window function or `sqlite_version()` | ADR 0012 slices 1, 2, 6b and 6c; ADR 0015 |
-| `aggregate-in-expression` | An aggregate inside an expression is not modeled | ADR 0012 slice 1 |
+| `aggregate-in-expression` | An aggregate where the model does not describe it, such as the argument of a function that can fail, is not modeled | ADR 0012 slice 1; ADR 0018, slice 3 |
 | `alias-in-expression` | A result column alias inside WHERE or an ORDER BY expression is not modeled | ADR 0012 slice 1 |
 | `group-by-term` | Only a column name, also under COLLATE, or a result column number is modeled in GROUP BY | ADR 0012 slice 1; ADR 0014, slice 3 |
 | `bare-column` | A result column outside GROUP BY in an aggregate query is not modeled | ADR 0012 slice 1 |
-| `aggregate-order-by` | An aggregate query is modeled with ORDER BY result column numbers or aliases only | ADR 0012 slice 1 |
+| `aggregate-order-by` | An `ORDER BY` term of an aggregate query that reads a column outside `GROUP BY` is not modeled | ADR 0012 slice 1; ADR 0018, slice 3 |
 | `window-value` | Only an integer literal is modeled as LIMIT or OFFSET | ADR 0012 slice 1 |
 | `negative-offset` | A negative OFFSET is not modeled | ADR 0012 slice 1 |
 | `table-function` | Only `json_each` with one or two arguments is modeled as a table-valued function in FROM | ADR 0012 slice 6d |
@@ -390,6 +394,7 @@ should shrink.
 | `upsert-generated` | DO UPDATE of a generated column is not modeled, because SQLite refuses it only when a row conflicts | ADR 0014, slice 5 |
 | `subquery-fallible-call` | A query without `FROM` that has a subquery and a call that can fail is not modeled, because a value of the subquery that SQLite's plan chooses could avoid the failure | ADR 0018, slice 1 |
 | `subquery-reads-target` | A subquery of `INSERT`, `UPDATE` or `DELETE` that reads the written table is not modeled, because SQLite evaluates a correlated one over the rows that the statement has already changed | ADR 0018, slice 1 |
+| `distinct-order-by` | An `ORDER BY` expression of `SELECT DISTINCT` that is no result column is not modeled, because SQLite sorts each kept row by the value of a row that its plan chooses | ADR 0018, slice 3 |
 
 #### Unrepresented
 

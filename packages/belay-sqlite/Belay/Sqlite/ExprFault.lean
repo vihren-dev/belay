@@ -132,6 +132,9 @@ structure EvalContext where
   clock : Int
   /-- The results of subquery {lit}`index` for an outer row. -/
   subqueries : Nat → List Value → SubqueryRun
+  /-- The values of the query's aggregates over the current group (ADR 0018, D3); empty
+  outside the group of an aggregate query. -/
+  aggregates : List Value := []
 
 /-- The context of a statement without subqueries at a clock value: a subquery that it
 names gives no rows and no fault, which resolution never needs. -/

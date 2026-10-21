@@ -52,9 +52,9 @@ def resolveStatement (context : ResolveContext) (state : ResolveState) (index : 
   | .update table assignments filter returning subqueries =>
     state.withCatalog (resolveWriteSubqueries context state.catalog index 4 table (writtenScope table) subqueries
       (resolveUpdate context state.catalog index table assignments filter returning))
-  | .select columns source joins filter groupBy orderBy limit offset subqueries =>
+  | .select columns source joins filter groupBy orderBy limit offset subqueries having distinct =>
     state.withCatalog (resolveSelect context state.catalog index
-      { columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none } subqueries)
+      { columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none, having, distinct } subqueries)
   | .delete table filter returning subqueries =>
     state.withCatalog (resolveWriteSubqueries context state.catalog index 3 table (writtenScope table) subqueries
       (resolveDelete context state.catalog index table filter returning))

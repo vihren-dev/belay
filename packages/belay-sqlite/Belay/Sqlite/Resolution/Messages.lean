@@ -70,6 +70,7 @@ def ExprError.message : ExprError → String
   | .noTablesSpecified => "no tables specified"
   | .tooManyEachArguments => "too many arguments on json_each() - max 2"
   | .subqueryColumns count => s!"sub-select returns {count} columns - expected 1"
+  | .havingNonAggregate => "HAVING clause on a non-aggregate query"
 
 /-- SQLite's message for a prepare error, for example {lit}`no such table: t`. -/
 def PrepareError.message : PrepareError → String

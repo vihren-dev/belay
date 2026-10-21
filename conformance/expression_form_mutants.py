@@ -18,8 +18,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "    | _, _ => .ok (.inList a.1 resolved a.2 ((values.head?.bind (·.columnCollation scope)).getD\n"
         "        (operand.collationIn scope)) negated, none)\n"),
     "between_null_first": (EXPRESSIONS,
-        "    let both := Resolved.Expr.and\n",
-        "    let both := Resolved.Expr.arithmetic .multiply\n"),
+        "    let both := Resolved.Expr.and (.compare .ge",
+        "    let both := Resolved.Expr.arithmetic .multiply (.compare .ge"),
     "case_null_base_matches": (EXPRESSIONS,
         "          .compare .eq (comparisonAffinity value.2 resolved.2) value.1 resolved.1 (comparisonCollation scope written operand)\n",
         "          .compare .is (comparisonAffinity value.2 resolved.2) value.1 resolved.1 (comparisonCollation scope written operand)\n"),

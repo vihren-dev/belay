@@ -135,7 +135,7 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
     split at ok <;> cases ok
     obtain ⟨same, unchanged, control⟩ := resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _ _ (fun _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ _ h) (by assumption)
     exact ordinary _ control (same.trans unchanged.symm)
-  | select results source joins filter groupBy orderBy limit offset subqueries =>
+  | select results source joins filter groupBy orderBy limit offset subqueries having distinct =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     obtain ⟨same, unchanged, control⟩ := resolveSelect_same _ _ _ _ _ _ _ (by assumption)

@@ -55,11 +55,11 @@ EXAMPLES: dict[str, tuple[str, str]] = {
                           "SELECT t.a FROM t JOIN u ON v.a = 1 JOIN v;"),
     "system-table": ("CREATE TABLE t(a INTEGER);", "SELECT name FROM sqlite_schema;"),
     "unmodeled-function": ("CREATE TABLE t(a INTEGER);", "SELECT ln(a) FROM t;"),
-    "aggregate-in-expression": ("CREATE TABLE t(a INTEGER);", "SELECT count(*) + 1 FROM t;"),
+    "aggregate-in-expression": ("CREATE TABLE t(a INTEGER);", "SELECT json(count(*)) FROM t;"),
     "alias-in-expression": ("CREATE TABLE t(a INTEGER);", "SELECT a AS b FROM t WHERE b = 1;"),
     "group-by-term": ("CREATE TABLE t(a INTEGER);", "SELECT count(*) FROM t GROUP BY a + 1;"),
     "bare-column": ("CREATE TABLE t(a INTEGER, b INTEGER);", "SELECT a, count(*) FROM t GROUP BY b;"),
-    "aggregate-order-by": ("CREATE TABLE t(a INTEGER);", "SELECT count(*) FROM t GROUP BY a ORDER BY a;"),
+    "aggregate-order-by": ("CREATE TABLE t(a INTEGER, b INTEGER);", "SELECT count(*) FROM t GROUP BY a ORDER BY b;"),
     "window-value": ("CREATE TABLE t(a INTEGER);", "SELECT a FROM t LIMIT 'x';"),
     "negative-offset": ("CREATE TABLE t(a INTEGER);", "SELECT a FROM t LIMIT 1 OFFSET -1;"),
     "windowed-group-sum": ("CREATE TABLE t(a INTEGER);", "SELECT sum(a) FROM t GROUP BY a LIMIT 1;"),
@@ -72,6 +72,7 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "outer-aggregate": ("CREATE TABLE t(a);", "SELECT (SELECT count(t.a) FROM t AS b) FROM t;"),
     "subquery-fallible-call": ("CREATE TABLE t(a);", "SELECT json((SELECT a FROM t));"),
     "subquery-reads-target": ("CREATE TABLE t(a);", "UPDATE t SET a = (SELECT max(a) FROM t);"),
+    "distinct-order-by": ("CREATE TABLE t(a, b);", "SELECT DISTINCT a FROM t ORDER BY b;"),
 }
 """For each restriction id: a schema and a migration that the resolver refuses with it."""
 

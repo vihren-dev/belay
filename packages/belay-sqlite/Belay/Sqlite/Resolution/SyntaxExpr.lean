@@ -172,6 +172,10 @@ structure Subquery where
   offset : Option Expr
   /-- The index of the subquery around this one, or none for the statement's query. -/
   parent : Option Nat
+  /-- The {lit}`HAVING` condition (ADR 0018, D3). -/
+  having : Option Expr := none
+  /-- Whether the query is {lit}`SELECT DISTINCT`. -/
+  distinct : Bool := false
   deriving Repr, BEq
 
 end Belay.Sqlite.Syntax

@@ -56,8 +56,7 @@ def test_postfix_null_tests_map_to_is_null(parse_sql: Callable[..., Tree], sql: 
 
 
 @pytest.mark.parametrize(("sql", "refused"), [
-    ("SELECT 1 HAVING 1;", "HAVING 1"), ("SELECT DISTINCT a FROM t;", "DISTINCT"),
-    ("SELECT a FROM t GROUP BY a HAVING a > 1;", "HAVING a > 1"), ("SELECT main.t.a FROM t;", "main.t.a"),
+    ("SELECT main.t.a FROM t;", "main.t.a"),
     ("SELECT a FROM main.t;", ".t"), ("SELECT a FROM t ORDER BY a NULLS LAST;", "NULLS LAST"),
     ("SELECT count(DISTINCT a) FROM t;", "DISTINCT"),
     ("SELECT a FROM t UNION SELECT a FROM t;", "SELECT a FROM t UNION SELECT a FROM t"),
@@ -167,3 +166,16 @@ def test_select_without_from_has_no_source(parse_sql: Callable[..., Tree]) -> No
     assert select["filter"] == {"compare": {"operator": "eq", "left": {"numeric": {"text": "1"}},
                                             "right": {"numeric": {"text": "1"}}}}
     assert select["limit"] == {"numeric": {"text": "2"}}
+
+
+def test_having_and_distinct_map_only_when_written(parse_sql: Callable[..., Tree]) -> None:
+    """`syntax_select.query_clauses`: `HAVING` maps to `having` and `SELECT DISTINCT` to
+    `distinct` (ADR 0018, D3); a statement without them has neither field, so its JSON keeps the
+    form of frozen records, and `ALL` is no `DISTINCT`."""
+    [grouped, plain, every] = [item.value for item in statements(parse_sql(
+        "SELECT DISTINCT a FROM t GROUP BY a HAVING count(*) > 1; SELECT a FROM t; SELECT ALL a FROM t;"))]
+    assert grouped["select"]["distinct"] is True
+    assert grouped["select"]["having"] == {"compare": {"operator": "gt", "left": {"callStar": {"name": "count"}},
+                                                       "right": {"numeric": {"text": "1"}}}}
+    assert "having" not in plain["select"] and "distinct" not in plain["select"]
+    assert "distinct" not in every["select"]

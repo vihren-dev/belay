@@ -23,10 +23,11 @@ a function that can fail) in its expressions ({name}`Resolved.Query.expressions`
 source. This is a syntax guard, not a success claim; the empty script satisfies it. Each
 statement:
 * is not a write ({name}`Resolved.Statement.Kind.write`), and
-* if it is a query, has no subqueries, no fallible call and no {lit}`json_each` source. -/
+* if it is a query, has no subqueries, no {lit}`DISTINCT`, no fallible call and no
+  {lit}`json_each` source. -/
 def NoWrites (script : List Resolved.Statement) : Prop :=
   ∀ statement ∈ script, statement.kind ≠ .write ∧ ∀ query subqueries, statement = .query query subqueries →
-    subqueries = [] ∧ query.expressions.all (!·.any Resolved.Expr.isFallibleCall) = true ∧
+    subqueries = [] ∧ query.distinct = none ∧ query.expressions.all (!·.any Resolved.Expr.isFallibleCall) = true ∧
       query.sources.all (!·.source.isEach) = true
 
 /-- Each definition in the script is one that the model describes: each ADD COLUMN has a time
@@ -58,7 +59,7 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDe
     have ready : statementReady (state.clock position) statement state.database = true := by
       cases statement with
       | query query subqueries =>
-        obtain ⟨none, plain, noEach⟩ : subqueries = [] ∧
+        obtain ⟨none, single, plain, noEach⟩ : subqueries = [] ∧ query.distinct = none ∧
             (query.expressions.all fun x => !x.any Resolved.Expr.isFallibleCall) = true ∧
             query.sources.all (!·.source.isEach) = true := first.2 query subqueries rfl
         subst none
@@ -69,7 +70,8 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDe
         | some source =>
           have clean := Resolved.source_fault_of_plain _ state.database query.sources _ source noEach rfl found
           by_cases must : query.mustFail (Resolved.EvalContext.plain (state.clock position)) source.rows = true <;>
-            simp [Resolved.Query.run, Resolved.Query.mayFail_of_plain _ (Resolved.EvalContext.plain_quiet _) query _ plain, clean, must]
+            simp [Resolved.Query.run, Resolved.Query.mayFail_of_plain _ (Resolved.EvalContext.plain_quiet _) query _ plain, clean, must,
+              Resolved.Query.distinctCertain, single]
       | createTable | createIndex | addColumn | drop | begin | commit | rollback | insert | upsert | update | delete
       | prepareError => simp_all [statementReady, runStatement]
     have run : (runStatement (state.clock position) statement state.database).ready = true := ready

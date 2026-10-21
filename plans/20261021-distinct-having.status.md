@@ -8,6 +8,25 @@ Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D3.
 
 - 2026-10-21: the task file, from native probes and the code of slices 1 and 2.
 
+- 2026-10-21: "aggregates in expressions, HAVING and DISTINCT". A resolved query lists its
+  aggregates (`Query.aggregates`), and an expression names one by index
+  (`Expr.aggregateValue`), which evaluation reads from the group's context
+  (`Query.groupContext`, `EvalContext.aggregates`); `QueryResults.lean` holds the records with
+  `HAVING` and `DISTINCT`. Resolution collects the aggregate calls of the result columns,
+  `HAVING` and `ORDER BY` (`QueryAggregates.lean`), checks that `HAVING` and `ORDER BY` read
+  only grouping terms and aggregates (`Resolved.Expr.grouped`), and gives SQLite's `HAVING
+  clause on a non-aggregate query`. `SELECT DISTINCT` whose equal rows differ is not described
+  (`Query.distinctCertain`); ADR 0018 D3 is amended for it. New restriction
+  `distinct-order-by`; `aggregate-in-expression` now covers a fallible call over an aggregate
+  and `aggregate-order-by` a term outside the grouping terms. The syntax holds `having` and
+  `distinct`, which the frontend writes only when present (`Codec/SyntaxJson.lean` reads a
+  missing one as absent). The derived `BEq` of `Syntax.Expr` does not reduce in the kernel, so
+  the aggregate lookup uses a structural equality (`SyntaxEquality.lean`); with the derived one,
+  the kernel proofs failed or timed out. Tests: `Resolution/GroupExamples.lean`, the syntax
+  tests, `conformance/authored_distinct_having.py` (12 cases, all agree with kernel proofs, each
+  in about a second), three mutants, each killed, corpus writer 44, `test_model_package` (180
+  core modules).
+
 ## Remaining
 
-- All outcomes and tests.
+- The local verdict, corpus 44 and `just test-full`.
