@@ -115,48 +115,53 @@ def insertRowsKeys (catalog : Catalog) (links : List ForeignKeyLink) (fuel targe
     | (state, none) => insertRowsKeys catalog links fuel target policy clauses multiWrite state rest
     | (state, some reason) => pure (state, some reason)
 
-/-- An INSERT of the rows into the table at the position that checks foreign keys, with the
-trigger depth limit: a write of several rows when it has more than one row or a key whose
-algorithm is REPLACE, as SQLite's {lit}`isMultiWrite` is. -/
-def insertKeys (depth target : Nat) (policy : Resolved.ConflictPolicy)
+/-- The foreign-key links that a write with the rules checks: those of the catalog when the rules
+check keys, none otherwise. -/
+def Resolved.WriteRules.links (rules : Resolved.WriteRules) (catalog : Catalog) : List ForeignKeyLink :=
+  if rules.keys then catalog.foreignKeyLinks else []
+
+/-- An INSERT of the rows into the table at the position with the rules, whose trigger depth
+limit bounds its nested writes: a write of several rows when it has more than one row or a key
+whose algorithm is REPLACE, as SQLite's {lit}`isMultiWrite` is. -/
+def insertKeys (rules : Resolved.WriteRules) (target : Nat) (policy : Resolved.ConflictPolicy)
     (clauses : List Resolved.ConflictClause) (rows : List (List Value)) (database : Database) (plain : Bool) : KeyRun :=
   let multiWrite := rows.length > 1 || policy.keys.contains .replace
   keyRun database target plain
-    (insertRowsKeys database.catalog database.catalog.foreignKeyLinks (depth + 1) target policy clauses multiWrite
+    (insertRowsKeys database.catalog (rules.links database.catalog) (rules.depth + 1) target policy clauses multiWrite
       { rows := database.rows } rows)
 
-/-- The run of a DELETE or UPDATE work that checks foreign keys ({name}`runRows`), with the
-trigger depth limit. -/
-def rowsKeys (depth target : Nat) (work : RowWork) (database : Database) (plain : Bool) : KeyRun :=
+/-- The run of a DELETE or UPDATE work with the rules ({name}`runRows`), whose trigger depth limit
+bounds its nested writes. -/
+def rowsKeys (rules : Resolved.WriteRules) (target : Nat) (work : RowWork) (database : Database) (plain : Bool) : KeyRun :=
   keyRun database target plain
-    ((·, none) <$> runRows database.catalog database.catalog.foreignKeyLinks (depth + 1) work { rows := database.rows })
+    ((·, none) <$> runRows database.catalog (rules.links database.catalog) (rules.depth + 1) work { rows := database.rows })
 
 /-- An UPDATE that checks foreign keys: the rows that the filter selects, in scan order, each
 with its new row as {name}`LiteralData.assign` and {name}`LiteralData.movedRowid` give it from the
 row at the time SQLite writes it. -/
-def updateKeys (context : Resolved.EvalContext) (depth target : Nat) (table : Table)
+def updateKeys (context : Resolved.EvalContext) (rules : Resolved.WriteRules) (target : Nat) (table : Table)
     (assignments : List (Nat × Resolved.Expr)) (filter : Option Resolved.Expr) (database : Database) (plain : Bool) :
     KeyRun :=
   let rowids := (table.scanRows.filter (LiteralData.selected context filter)).map (·.rowid)
   let change (row : Row) := LiteralData.movedRowid table.shape.rowidAlias
     (LiteralData.assign context table.shape.columns assignments row)
-  rowsKeys depth target (.update target change (table.shape.changedColumns (assignments.map (·.1))) rowids true)
+  rowsKeys rules target (.update target change (table.shape.changedColumns (assignments.map (·.1))) rowids true)
     database plain
 
 /-- A DELETE that checks foreign keys: the rows that the filter selects, in scan order. -/
-def deleteKeys (context : Resolved.EvalContext) (depth target : Nat) (table : Table)
+def deleteKeys (context : Resolved.EvalContext) (rules : Resolved.WriteRules) (target : Nat) (table : Table)
     (filter : Option Resolved.Expr) (database : Database) (plain : Bool) : KeyRun :=
   let rowids := (table.scanRows.filter (LiteralData.selected context filter)).map (·.rowid)
-  rowsKeys depth target (.delete target rowids true false) database plain
+  rowsKeys rules target (.delete target rowids true false) database plain
 
 /-- DROP TABLE of a table that foreign keys reference: SQLite first deletes every row of the
 table with {lit}`disableTriggers` ({name}`oldSteps` with {lit}`ignore`), then fails when the counter
 is not zero and otherwise removes the objects at the positions from the database after the
 DELETE. -/
-def dropKeys (depth : Nat) (positions : List Nat) (database : Database) : KeyRun :=
+def dropKeys (rules : Resolved.WriteRules) (positions : List Nat) (database : Database) : KeyRun :=
   match positions, positions.head?.bind database.table with
   | target :: _, some table =>
-    let run := rowsKeys depth target (.delete target (table.scanRows.map (·.rowid)) false true) database true
+    let run := rowsKeys rules target (.delete target (table.scanRows.map (·.rowid)) false true) database true
     match run.effect with
     | .ok after => { run with effect := .ok (after.drop positions) }
     | .error _ => run
@@ -172,12 +177,12 @@ theorem keyRun_ok_catalog {input result : Database} {target : Nat} {plain : Bool
   repeat' split at ok
   all_goals first | (cases ok; rfl) | cases ok
 
-/-- For every database, positions, depth and result: if DROP TABLE with foreign keys
+/-- For every database, positions, rules and result: if DROP TABLE with foreign keys
 ({name}`dropKeys`) succeeds, the result's catalog is the input catalog without the objects at the
 positions, as for the plain DROP. Proof sketch: the DELETE keeps the catalog
 ({name}`keyRun_ok_catalog`) and {name}`Database.drop` removes the objects. -/
-theorem dropKeys_ok_catalog {database result : Database} {depth : Nat} {positions : List Nat}
-    (ok : (dropKeys depth positions database).effect = .ok result) :
+theorem dropKeys_ok_catalog {database result : Database} {rules : Resolved.WriteRules} {positions : List Nat}
+    (ok : (dropKeys rules positions database).effect = .ok result) :
     result.catalog = database.catalog.drop positions := by
   unfold dropKeys at ok
   split at ok

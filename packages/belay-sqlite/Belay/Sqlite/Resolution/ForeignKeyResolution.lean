@@ -6,8 +6,7 @@ set_option doc.verso true
 
 /-! The foreign keys of a resolved write when foreign keys are on (ADR 0018, D4): the prepare
 errors of the keys that SQLite prepares for it ({name}`Belay.Sqlite.Catalog.foreignKeyIssues`), the
-restrictions of the slice, and the trigger depth limit that the write carries when it has a key
-to check. -/
+restrictions of the slice, and whether the write has a key to check. -/
 
 namespace Belay.Sqlite
 
@@ -46,16 +45,16 @@ def foreignKeyWrite (catalog : Catalog) : Resolved.Statement → Option (Nat × 
     (table, .delete, true, !(parentLinks catalog.foreignKeyLinks table).isEmpty)
   | .drop [] _ | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .begin | .commit | .rollback
   | .prepareError _ | .query .. | .setting _ => none
-/-- The write with its trigger depth limit, for a write that has a key to check
-({name}`foreignKeyWrite`). -/
-def Resolved.Statement.withForeignKeys (depth : Nat) : Resolved.Statement → Resolved.Statement
-  | .insert table rows returning subqueries _ => .insert table rows returning subqueries (some depth)
+/-- The write with the rules that it runs row by row ({name}`Resolved.WriteRules`): those of a
+write that has a key to check ({name}`foreignKeyWrite`) or a trigger that it may fire. -/
+def Resolved.Statement.withRules (rules : Resolved.WriteRules) : Resolved.Statement → Resolved.Statement
+  | .insert table rows returning subqueries _ => .insert table rows returning subqueries (some rules)
   | .upsert table rows clauses returning algorithm subqueries _ =>
-    .upsert table rows clauses returning algorithm subqueries (some depth)
+    .upsert table rows clauses returning algorithm subqueries (some rules)
   | .update table assignments filter returning subqueries _ =>
-    .update table assignments filter returning subqueries (some depth)
-  | .delete table filter returning subqueries _ => .delete table filter returning subqueries (some depth)
-  | .drop positions _ => .drop positions (some depth)
+    .update table assignments filter returning subqueries (some rules)
+  | .delete table filter returning subqueries _ => .delete table filter returning subqueries (some rules)
+  | .drop positions _ => .drop positions (some rules)
   | statement@(.createTable ..) | statement@(.createIndex ..) | statement@(.createTrigger ..) | statement@(.addColumn ..)
   | statement@.begin
   | statement@.commit | statement@.rollback | statement@(.prepareError _) | statement@(.query ..)
@@ -67,22 +66,22 @@ def Resolved.Statement.updatesOnConflict : Resolved.Statement → Bool
   | .insert .. | .update .. | .delete .. | .drop .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn ..
   | .begin | .commit | .rollback | .prepareError _ | .query .. | .setting _ => false
 
-/-- A resolved write at the zero-based index, over the catalog before it, with foreign keys on:
-the prepare error of its keys ({name}`Catalog.foreignKeyIssues`) as the statement; a key that is
-deferred is {name}`RestrictionKind.deferredForeignKey`, and a {lit}`DO UPDATE` clause on a table
-with a key to check is {name}`RestrictionKind.foreignKeyUpsert`; otherwise the write with the
-trigger depth limit of the profile when it has a key to check. Every other statement stays. -/
-def enforceForeignKeys (context : ResolveContext) (catalog : Catalog) (index : Nat) (statement : Resolved.Statement) :
-    Except Restriction Resolved.Statement :=
+/-- The foreign keys of a resolved write at the zero-based index, over the catalog before it,
+with foreign keys on: the prepare error of its keys ({name}`Catalog.foreignKeyIssues`); a key
+that is deferred is {name}`RestrictionKind.deferredForeignKey`, and a {lit}`DO UPDATE` clause on
+a table with a key to check is {name}`RestrictionKind.foreignKeyUpsert`; otherwise whether the
+write has a key to check. Every other statement has none. -/
+def foreignKeyCheck (catalog : Catalog) (index : Nat) (statement : Resolved.Statement) :
+    Except Restriction (Except PrepareError Bool) :=
   match foreignKeyWrite catalog statement with
-  | none => .ok statement
+  | none => .ok (.ok false)
   | some (table, write, ignore, checked) =>
     match catalog.foreignKeyIssues table write ignore with
-    | .error error => .ok (.prepareError error)
+    | .error error => .ok (.error error)
     | .ok deferred =>
       if deferred then .error { statement := index, path := [], kind := .deferredForeignKey }
-      else if !checked then .ok statement
+      else if !checked then .ok (.ok false)
       else if statement.updatesOnConflict then .error { statement := index, path := [], kind := .foreignKeyUpsert }
-      else .ok (statement.withForeignKeys context.profile.limits.triggerDepth)
+      else .ok (.ok true)
 
 end Belay.Sqlite

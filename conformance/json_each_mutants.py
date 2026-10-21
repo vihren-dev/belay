@@ -31,8 +31,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "each_not_correlated": (FUNCTIONS, "(row, Json.eachRows (json.eval context row) (path.map (·.eval context row)))",
         "(row, Json.eachRows (json.eval context []) (path.map (·.eval context [])))"),
     "each_hidden_in_star": (SCOPE,
-        "  scope.inner.flatMap fun source => source.placedColumns fun index => !source.merged.contains index && !source.hidden.contains index",
-        "  scope.inner.flatMap fun source => source.placedColumns fun index => !source.merged.contains index"),
+        "    source.placedColumns fun index => !source.merged.contains index && !source.hidden.contains index",
+        "    source.placedColumns fun index => !source.merged.contains index"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the replacement. The
 names follow the list in the task of slice 6d: `id` as the element index; `key` of an array

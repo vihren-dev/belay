@@ -298,8 +298,18 @@ triggers of its table. SQLite's prepare errors apply: `no such table`, `trigger 
 exists`, which `IF NOT EXISTS` turns into a statement that does nothing, `cannot create
 trigger on system table`, `no such trigger`, which `IF EXISTS` turns into a statement that does
 nothing, and `RAISE() may only be used within a trigger-program` for `RAISE` outside a
-trigger. The model does not run triggers yet: a write on a catalog with a trigger, and a `DROP
-TABLE` with foreign-key actions on one, are not described. In a trigger, a qualified table
+trigger. A write resolves the program of every trigger that it may fire, also through the
+statements of those programs and the foreign-key actions, as SQLite prepares them with the
+write: a name that a body or a `WHEN` condition cannot resolve, such as `OLD` in an `INSERT`
+trigger or a missing table, is a prepare error of the write. `NEW` and `OLD` are seen only as
+qualified names; a source of the same name in the query wins for its columns. `RAISE` in a
+trigger is modeled as the one result column of a `SELECT` without `FROM`, alone or as a result
+of its `CASE` (`raise-form` elsewhere); `ON CONFLICT DO UPDATE` in a body and a `WHEN` with a
+subquery or a function that can fail are `trigger-form`; a `BEFORE UPDATE` or `BEFORE DELETE`
+trigger that writes its own table is `trigger-writes-own-table`; and two triggers of one table,
+time and event in the starting schema are `schema-trigger-order`. The model does not run
+triggers yet: a write on a catalog with a trigger, and a `DROP TABLE` with foreign-key actions
+on one, are not described. In a trigger, a qualified table
 name, `INDEXED BY`, `UPDATE OR`, `UPDATE FROM`, `INSERT ... SELECT`, `RETURNING` and a subquery
 in `WHEN` are refused.
 
@@ -381,7 +391,7 @@ should shrink.
 
 | Id | Restriction | Introduced by |
 | --- | --- | --- |
-| `schema-statement` | A schema contains only CREATE TABLE and CREATE INDEX statements | ADR 0008 |
+| `schema-statement` | A schema contains only CREATE TABLE, CREATE INDEX and CREATE TRIGGER statements | ADR 0008, ADR 0018 |
 | `engine-table` | Engine-managed tables other than sqlite_stat1 and sqlite_stat4 are not modeled | ADR 0008 |
 | `rowid-column-name` | Column names `rowid`, `_rowid_` and `oid` are not modeled | ADR 0008 |
 | `unmodeled-default` | Only literal defaults and the time keywords are modeled | ADR 0008 |
@@ -419,6 +429,8 @@ should shrink.
 | `outer-aggregate` | An aggregate in a subquery whose argument reads a column of a query around it is not modeled, because SQLite computes an aggregate whose argument reads only outer columns in the outer query | ADR 0018, slice 1 |
 | `deferred-foreign-key` | With foreign keys on, a write that checks a `DEFERRABLE INITIALLY DEFERRED` foreign key is not modeled, because SQLite counts its violations until `COMMIT` | ADR 0018, slice 4 |
 | `foreign-key-upsert` | With foreign keys on, `INSERT` with `ON CONFLICT DO UPDATE` on a table with a foreign key to check is not modeled | ADR 0018, slice 4 |
+| `raise-form` | `RAISE` in a trigger outside the one result column of a `SELECT` without `FROM`, alone or as a result of its `CASE`, or with a message that can fail, is not modeled | ADR 0018, slice 5 |
+| `trigger-form` | A trigger with `ON CONFLICT DO UPDATE` in its body, with a `WHEN` condition that has a function that can fail or a subquery, or with too many triggers that fire each other, is not modeled | ADR 0018, slice 5 |
 
 #### Undecided
 
@@ -434,6 +446,8 @@ should shrink.
 | `subquery-fallible-call` | A query without `FROM` that has a subquery and a call that can fail is not modeled, because a value of the subquery that SQLite's plan chooses could avoid the failure | ADR 0018, slice 1 |
 | `subquery-reads-target` | A subquery of `INSERT`, `UPDATE` or `DELETE` that reads the written table is not modeled, because SQLite evaluates a correlated one over the rows that the statement has already changed | ADR 0018, slice 1 |
 | `distinct-order-by` | An `ORDER BY` expression of `SELECT DISTINCT` that is no result column is not modeled, because SQLite sorts each kept row by the value of a row that its plan chooses | ADR 0018, slice 3 |
+| `trigger-writes-own-table` | A `BEFORE UPDATE` or `BEFORE DELETE` trigger that writes its own table, also through the triggers and actions that it fires, is not modeled, because SQLite documents the result as undefined | ADR 0018, slice 5 |
+| `schema-trigger-order` | Two triggers of one table, time and event in the starting schema are not modeled, because the schema does not say which one runs first | ADR 0018, slice 5 |
 
 #### Unrepresented
 

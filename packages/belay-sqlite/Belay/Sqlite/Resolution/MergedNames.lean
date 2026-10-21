@@ -1,4 +1,4 @@
-import Belay.Sqlite.Resolution.Scope
+import Belay.Sqlite.Resolution.ScopeNames
 import Belay.Sqlite.Resolution.QueryAffinity
 import Belay.Sqlite.Resolution.Values
 

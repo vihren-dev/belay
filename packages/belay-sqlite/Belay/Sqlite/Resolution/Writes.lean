@@ -37,7 +37,7 @@ whose shapes are {lit}`shapes`. -/
 def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : Identifier)
     (names : Option (List Identifier)) (rows : List (List Syntax.Expr)) (conflicts : List Syntax.ConflictClause)
     (algorithm : Option ConflictAlgorithm) (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query)
-    (shapes : SubqueryShapes) : StatementResolution :=
+    (shapes : SubqueryShapes) (trigger : Option TriggerRow := none) : StatementResolution :=
   let width := (rows.head?.map List.length).getD 0
   if rows.any (·.length != width) then prepareError catalog (.expression .valuesDiffer) else
   match catalog.findTable tableName with
@@ -49,7 +49,8 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
     match positions with
     | .error error => prepareError catalog (.expression error)
     | .ok positions =>
-      match resolveAll (fun row values => (resolveAll (fun _ => constantCell context.profile.dqsDml shapes)
+      let around := (trigger.map (·.scope 0)).getD []
+      match resolveAll (fun row values => (resolveAll (fun _ item => constantCell context.profile.dqsDml shapes item around)
           values).mapError (·.under [row])) rows with
       | .error issue => issueResolution catalog index [2] issue
       | .ok values =>

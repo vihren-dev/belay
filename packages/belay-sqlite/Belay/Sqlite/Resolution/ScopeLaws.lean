@@ -1,4 +1,4 @@
-import Belay.Sqlite.Resolution.Scope
+import Belay.Sqlite.Resolution.ScopeNames
 
 set_option doc.verso true
 
@@ -40,8 +40,8 @@ theorem resolveName_single (scope : Scope) (keep : ∀ source ∈ scope, source.
     intro depth
     have step : ∀ (sources : Scope) (state : NameResolution), state.single →
         (∀ source ∈ sources, source.mergeRule = .keepLeft) →
-        (sources.foldl (fun result source => if source.depth == depth then Scope.resolveStep name result source else result)
-          state).single := by
+        (sources.foldl (fun result source =>
+          if source.depth == depth && !source.trigger then Scope.resolveStep name result source else result) state).single := by
       intro sources
       induction sources with
       | nil => intro state holds _; exact holds
