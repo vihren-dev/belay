@@ -1,6 +1,6 @@
 # Status: remove the migration verifier product
 
-Created 2026-10-21. Status: OPEN.
+Created 2026-10-21. Status: DONE (2026-10-21).
 Task: [task file](20261021-remove-verifier-product.task.md).
 Specification: [ADR 0021](../docs/adr-0021-remove-the-verifier-product.md).
 
@@ -63,3 +63,5 @@ Specification: [ADR 0021](../docs/adr-0021-remove-the-verifier-product.md).
   the installed runtime, the archive, the trust boundary document and the installer tests; both
   now have a dated ADR 0021 amendment. ADR 0001 got the same update, from a search of the other
   ADRs; their other mentions of the product are dated observations, not requirements.
+- 2026-10-21: the second review had no findings. DONE: every outcome and test of the task file
+  holds. Next: the SQL text task (`plans/20261021-sql-text-package.task.md`).

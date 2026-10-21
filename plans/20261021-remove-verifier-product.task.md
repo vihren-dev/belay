@@ -1,6 +1,6 @@
 # Remove the migration verifier product (ADR 0021)
 
-Created 2026-10-21. Status: OPEN.
+Created 2026-10-21. Status: DONE (2026-10-21).
 Status file: [status](20261021-remove-verifier-product.status.md).
 Specification: [ADR 0021](../docs/adr-0021-remove-the-verifier-product.md), D1 to D5.
 Depends on: [S1](20261021-surface-s1.task.md) (the surface package and its layer test).
