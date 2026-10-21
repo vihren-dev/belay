@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-21T12:08:36+00:00",
+  "finding": "20261021T120747Z-1cdd7f1c#2",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "These are one-off measurement scripts whose results are recorded in the README. Their outputs were checked by hand (identical output after the split, identical predictions from both runners). Tests for them would be supporting code without a present problem."
+}
