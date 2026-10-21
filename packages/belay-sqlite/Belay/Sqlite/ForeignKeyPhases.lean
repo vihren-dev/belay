@@ -60,7 +60,7 @@ def childRows (database : Database) (link : ForeignKeyLink) (key : ParentKey) (p
     ({ child with rows := child.rows ++ extra }).scanRows.filter fun candidate =>
       childMatches child.shape shape link key row candidate &&
         !(exclude && link.child == parent && candidate.rowid == row.rowid)
-  | _, _ => []
+  | none, _ | some _, none => []
 
 /-- The steps before a row of the table at the position is deleted, or before the old row of
 an update is replaced: for each key of the row, newest first, one less when the counter is not

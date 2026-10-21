@@ -1,4 +1,5 @@
 import Belay.Sqlite.StepCatalogLaws
+import Belay.Sqlite.Resolution.ResolveFoldSpec
 
 set_option doc.verso true
 

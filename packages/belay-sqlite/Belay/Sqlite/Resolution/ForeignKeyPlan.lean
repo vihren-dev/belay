@@ -83,7 +83,7 @@ def writeLinks (catalog : Catalog) (links : List ForeignKeyLink) (position : Nat
         link.key.childChanged changed || link.key.selfReferences name
       (children ++ (parentLinks links position).filter (·.key.parentChanged table changed),
         children ++ parentLinks links position)
-  | _ => ([], [])
+  | some { entry := .index _, .. } | none => ([], [])
 
 /-- The links that a write of the table at the position processes ({name}`writeLinks`): those
 that SQLite locates for it. -/
@@ -101,17 +101,20 @@ def actionWrites (catalog : Catalog) (links : List ForeignKeyLink) (position : N
     List (Nat × ForeignKeyWrite) :=
   let childUpdate (link : ForeignKeyLink) : Nat × ForeignKeyWrite :=
     (link.child, .update (((catalog.tableAt link.child).map (·.changedColumns link.key.columns)).getD link.key.columns))
+  let located (link : ForeignKeyLink) : Bool := match link.parent with
+    | .located .. => true
+    | .mismatch _ | .missing => false
   match catalog.tableAt position, write with
   | some _, .delete => (parentLinks links position).filterMap fun (link : ForeignKeyLink) =>
-    match link.parent, link.key.onDelete with
-    | .located .., .cascade => some (link.child, .delete)
-    | .located .., .setNull | .located .., .setDefault => some (childUpdate link)
-    | _, _ => none
+    if !located link then none else match link.key.onDelete with
+    | .cascade => some (link.child, .delete)
+    | .setNull | .setDefault => some (childUpdate link)
+    | .restrict | .noAction => none
   | some table, .update changed => (parentLinks links position).filterMap fun (link : ForeignKeyLink) =>
-    if !link.key.parentChanged table changed then none else match link.parent, link.key.onUpdate with
-      | .located .., .cascade | .located .., .setNull | .located .., .setDefault => some (childUpdate link)
-      | _, _ => none
-  | _, _ => []
+    if !located link || !link.key.parentChanged table changed then none else match link.key.onUpdate with
+      | .cascade | .setNull | .setDefault => some (childUpdate link)
+      | .restrict | .noAction => none
+  | some _, .insert .. | none, _ => []
 
 /-- The prepare error of one processed link, if any: a parent table that does not exist is
 {lit}`no such table: main.%s`, and a parent without a parent key is
@@ -128,10 +131,11 @@ def linkError (catalog : Catalog) (link : ForeignKeyLink) : Option PrepareError 
 counts the violations of a key that is {lit}`DEFERRABLE INITIALLY DEFERRED` ({name}`writeLinks`). A write with {lit}`ignore`, the
 DELETE of DROP TABLE, reports no error for its own links, as SQLite's {lit}`disableTriggers`
 does; the writes of its actions report them. Each action write runs once, as SQLite prepares
-each action once per statement; the fuel bounds the writes. -/
+each action once per statement; the fuel bounds the writes, and work left past the fuel gives
+{lean}`true`, so that the write stays a restriction. -/
 def foreignKeyIssues (catalog : Catalog) (links : List ForeignKeyLink) :
     Nat → List (Nat × ForeignKeyWrite) → List (Nat × ForeignKeyWrite × Bool) → Except PrepareError Bool
-  | 0, _, _ => .ok false
+  | 0, _, work => .ok !work.isEmpty
   | _ + 1, _, [] => .ok false
   | fuel + 1, seen, (position, write, ignore) :: rest => do
     let (counted, processed) := writeLinks catalog links position write
@@ -139,7 +143,7 @@ def foreignKeyIssues (catalog : Catalog) (links : List ForeignKeyLink) :
       if let some error := processed.findSome? (linkError catalog) then throw error
     let replaced := match write with
       | .insert _ true => if (childLinks links position ++ parentLinks links position).isEmpty then [] else [(position, .delete)]
-      | _ => []
+      | .insert _ false | .delete | .update _ => []
     let next := (replaced ++ actionWrites catalog links position write).filter (!seen.contains ·)
     let later ← foreignKeyIssues catalog links fuel (seen ++ next) (rest ++ next.map fun (p, w) => (p, w, false))
     return counted.any (·.key.deferred) || later

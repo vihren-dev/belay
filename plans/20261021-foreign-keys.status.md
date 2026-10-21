@@ -32,12 +32,13 @@ Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D4.
   resolved to `no such column: rowid`; SQLite assigns the rowid, so a rowid name as a `SET`
   column now assigns the `INTEGER PRIMARY KEY` and is the restriction `rowid-name` for a table
   without one (corpus case `fkey2-1.1.4.16.1`).
-- 2026-10-21: the authored corpus `conformance/authored_foreign_keys.py` (36 cases, each ends at
-  its one failing statement, under a measured profile with foreign keys on), its writer
+- 2026-10-21: the authored corpus `conformance/authored_foreign_keys.py` (35 cases; a case with an
+  expected failure stops at that statement, under a measured profile with foreign keys on), its writer
   `conformance/foreign_key_evidence.py` (corpus 45), the mutants `conformance/foreign_key_mutants.py`,
   the restriction examples, `docs/semantic-subset.md`, and Lean examples with kernel proofs
   (`ForeignKeyExamples.lean`). Kernel proofs of the corpus: 10.7 s. Local verdict over every
-  corpus: no case leaves AGREE; 96 cases of v5, 4 of v3 and 1 each of v1, v2 and v4 newly agree.
+  corpus, with the rowid fix: no case leaves AGREE and none disagrees; 97 cases of v5, 4 of v3
+  and 1 each of v1, v2 and v4 newly agree. The four mutants change their verdicts (43.9 s).
 
 ## Remaining
 

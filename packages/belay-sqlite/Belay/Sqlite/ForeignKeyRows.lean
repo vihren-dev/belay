@@ -79,16 +79,19 @@ def runAction (catalog : Catalog) (run : RowWork → KeyState → Except KeyStop
     Except KeyStop KeyState :=
   match link.parent, catalog.tableAt position, catalog.tableAt link.child with
   | .located _ key, some parent, some child =>
-    if action == .noAction || new.any (keyUnchanged parent key old ·) then pure state else
     let targets := (childRows (state.database catalog) link key position old [] false).map (·.rowid)
-    if action == .restrict then (if targets.isEmpty then pure state else throw (.error .constraintViolation)) else
     let acted (state : KeyState) := { state with acted := if targets.isEmpty then state.acted else state.acted ++ [link.child] }
-    match actionCells child parent link key (new.getD old) action, new, action with
-    | none, _, _ => throw .undescribed
-    | some _, none, .cascade => acted <$> run (.delete link.child targets false false) state
-    | some cells, _, _ => acted <$> run (.update link.child (setCells child cells) (child.changedColumns link.key.columns)
-        targets false) state
-  | _, _, _ => pure state
+    if new.any (keyUnchanged parent key old ·) then pure state else
+    match action, new with
+    | .noAction, _ => pure state
+    | .restrict, _ => if targets.isEmpty then pure state else throw (.error .constraintViolation)
+    | .cascade, none => acted <$> run (.delete link.child targets false false) state
+    | .cascade, some _ | .setNull, _ | .setDefault, _ =>
+      match actionCells child parent link key (new.getD old) action with
+      | none => throw .undescribed
+      | some cells => acted <$> run (.update link.child (setCells child cells) (child.changedColumns link.key.columns)
+          targets false) state
+  | .located .., none, _ | .located .., some _, none | .mismatch _, _, _ | .missing, _, _ => pure state
 
 /-- Run the work with the links of the catalog, with fuel for the depth of
 the actions: each action runs with one less ({name}`runAction`), and the work is not described
@@ -128,6 +131,6 @@ def runRows (catalog : Catalog) (links : List ForeignKeyLink) : Nat → RowWork 
           rows.map fun (row : Row) => if row.rowid == rowid then new else row
         parents.foldlM (fun state link =>
           runAction catalog (runRows catalog links fuel) link link.key.onUpdate position old (some new) state) state
-      | _, _ => pure state) state
+      | none, _ | some _, some { entry := .index _, .. } | some _, none => pure state) state
 
 end Belay.Sqlite

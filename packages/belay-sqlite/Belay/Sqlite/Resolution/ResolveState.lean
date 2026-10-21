@@ -37,7 +37,10 @@ def ResolveState.withWrite (context : ResolveContext) (state : ResolveState) (in
   if !state.foreignKeys then return (statement, next)
   match ← enforceForeignKeys context state.catalog index statement with
   | .prepareError error => return (.prepareError error, state)
-  | checked => return (checked, next)
+  | checked@(.createTable ..) | checked@(.createIndex ..) | checked@(.addColumn ..) | checked@(.drop ..)
+  | checked@.begin | checked@.commit | checked@.rollback | checked@(.insert ..) | checked@(.upsert ..)
+  | checked@(.update ..) | checked@(.delete ..) | checked@(.query ..) | checked@(.setting _) =>
+    return (checked, next)
 
 /-- For every resolved statement and trigger depth limit, the write with the limit
 ({name}`Resolved.Statement.withForeignKeys`) changes the catalog as the statement does and has
@@ -86,13 +89,12 @@ theorem ResolveState.withWrite_cases {context : ResolveContext} {state next : Re
         split at ok
         · cases ok
           exact .inl ⟨_, rfl, rfl⟩
-        · rename_i other
+        all_goals
           cases ok
-          rcases enforceForeignKeys_cases enforced with same | ⟨error, rfl⟩ | ⟨depth, rfl⟩
-          · subst same
-            exact .inr ⟨_, _, rfl, rfl, rfl, rfl⟩
-          · exact (other error rfl).elim
-          · exact .inr ⟨_, _, rfl, rfl, (Resolved.Statement.withForeignKeys_same _ depth).1,
-              (Resolved.Statement.withForeignKeys_same _ depth).2⟩
+          rcases enforceForeignKeys_cases enforced with same | ⟨_, same⟩ | ⟨depth, same⟩
+          · exact .inr ⟨_, _, rfl, rfl, by rw [same], by rw [same]⟩
+          · cases same
+          · exact .inr ⟨_, _, rfl, rfl, by rw [same]; exact (Resolved.Statement.withForeignKeys_same _ depth).1,
+              by rw [same]; exact (Resolved.Statement.withForeignKeys_same _ depth).2⟩
 
 end Belay.Sqlite

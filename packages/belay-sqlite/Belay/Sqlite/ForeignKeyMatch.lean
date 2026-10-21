@@ -59,7 +59,7 @@ def parentFound (parent : CatalogTable) (key : ParentKey) (link : ForeignKeyLink
   match key with
   | .rowid => match keyed.map numericStore with
     | [.integer rowid] => itself.any (·.rowid == rowid) || rows.any (·.rowid == rowid)
-    | _ => false
+    | [] | [.null] | [.real _] | [.text _] | [.blob _] | _ :: _ :: _ => false
   | .columns pairs =>
     itself.any (fun row => (pairs.zip keyed).all fun ((_, position), value) =>
       LiteralData.keyCellsEqual value (row.values.getD position .null)) ||

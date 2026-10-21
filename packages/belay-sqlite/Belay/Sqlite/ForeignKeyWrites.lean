@@ -24,10 +24,24 @@ structure KeyRun where
   rowids. -/
   ready : Bool
 
+/-- The failure of an INSERT row that stops the statement and keeps the rows that it reached:
+the FAIL algorithm or the ROLLBACK algorithm of a failed constraint. -/
+inductive StopAlgorithm where
+  /-- FAIL ({lean}`ExecutionError.constraintFail`). -/
+  | fail
+  /-- ROLLBACK ({lean}`ExecutionError.constraintRollback`). -/
+  | rollback
+  deriving Repr, DecidableEq
+
+/-- The most rows that REPLACE may delete for one INSERT row of a table with foreign keys to
+check, in a write that the model describes: SQLite deletes them in an order of its indexes that
+the model does not follow, and the order changes the counts and the actions. -/
+def replacedRowsDescribed : Nat := 1
+
 /-- The end of a write that checks foreign keys over the input database: a counter other than
 zero fails as ABORT, also after a FAIL failure; a FAIL failure keeps the rows that it reached,
 and every other error keeps the input database. -/
-def keyRun (input : Database) (target : Nat) (plain : Bool) : Except KeyStop (KeyState × Option ExecutionError) → KeyRun
+def keyRun (input : Database) (target : Nat) (plain : Bool) : Except KeyStop (KeyState × Option StopAlgorithm) → KeyRun
   | .error .undescribed => { effect := .error (.unmodeled, input), written := [], ready := false }
   | .error (.error reason) => { effect := .error (reason, input), written := [], ready := true }
   | .ok (state, failure) =>
@@ -37,10 +51,10 @@ def keyRun (input : Database) (target : Nat) (plain : Bool) : Except KeyStop (Ke
       (target :: state.acted).all fun position =>
         ((state.database input.catalog).rowsAt position).all (LiteralData.boundedInteger ·.rowid)
     match failure with
-    | some .constraintRollback => { effect := .error (.constraintRollback, state.database input.catalog), written := [], ready }
-    | some reason =>
+    | some .rollback => { effect := .error (.constraintRollback, state.database input.catalog), written := [], ready }
+    | some .fail =>
       if state.counter != 0 then { effect := .error (.constraintViolation, input), written := [], ready }
-      else { effect := .error (reason, state.database input.catalog), written := state.written, ready }
+      else { effect := .error (.constraintFail, state.database input.catalog), written := state.written, ready }
     | none =>
       if state.counter != 0 then { effect := .error (.constraintViolation, input), written := [], ready }
       else { effect := .ok (state.database input.catalog), written := state.written, ready }
@@ -48,21 +62,22 @@ def keyRun (input : Database) (target : Nat) (plain : Bool) : Except KeyStop (Ke
 /-- The algorithm of a failed constraint of an INSERT row: IGNORE skips the row, FAIL and
 ROLLBACK stop the statement with their error and keep the state, and every other algorithm
 fails as ABORT. -/
-def failedRow (state : KeyState) : ConflictAlgorithm → Except KeyStop (KeyState × Option ExecutionError)
+def failedRow (state : KeyState) : ConflictAlgorithm → Except KeyStop (KeyState × Option StopAlgorithm)
   | .ignore => pure (state, none)
-  | .fail => pure (state, some .constraintFail)
-  | .rollback => pure (state, some .constraintRollback)
+  | .fail => pure (state, some .fail)
+  | .rollback => pure (state, some .rollback)
   | .abort | .replace => throw (.error .constraintViolation)
 
 /-- One row of an INSERT that checks foreign keys, as {lit}`UpsertRun` describes its constraints,
 with its keys: a row that conflicts on REPLACE keys deletes the conflicting row with its foreign
-keys and actions ({name}`runRows`), and more than one such row is not described; then
+keys and actions ({name}`runRows`), and more than {name}`replacedRowsDescribed` such rows are not
+described; then
 {name}`newSteps` checks the row, scanning the child rows only for a write of several rows; then
 the row is inserted. A {lit}`DO NOTHING` clause skips the row; a {lit}`DO UPDATE` clause is
 not described. The second result is a FAIL or ROLLBACK failure, which stops the statement. -/
 def insertRowKeys (catalog : Catalog) (links : List ForeignKeyLink) (fuel : Nat) (target : Nat) (policy : Resolved.ConflictPolicy)
     (clauses : List Resolved.ConflictClause) (multiWrite : Bool) (state : KeyState) (values : List Value) :
-    Except KeyStop (KeyState × Option ExecutionError) := do
+    Except KeyStop (KeyState × Option StopAlgorithm) := do
   let some table := (state.database catalog).table target | throw .undescribed
   let keys := catalog.uniqueKeys target table.shape
   if LiteralData.aliasMismatch table.shape values then throw (.error .datatypeMismatch)
@@ -80,7 +95,7 @@ def insertRowKeys (catalog : Catalog) (links : List ForeignKeyLink) (fuel : Nat)
     return ← failedRow state (LiteralData.algorithmAt policy.keys index)
   let replaced := table.rows.filter fun row => (List.range keys.length).any fun index =>
     LiteralData.algorithmAt policy.keys index == .replace && (keys[index]?).any (LiteralData.keyEqual · row proposed)
-  if replaced.length > 1 then throw .undescribed
+  if replaced.length > replacedRowsDescribed then throw .undescribed
   let state ← runRows catalog links fuel (.delete target (replaced.map (·.rowid)) false false) state
   let state ← newSteps catalog state target proposed (childLinks links target) (parentLinks links target) multiWrite none []
   let some current := (state.database catalog).table target | throw .undescribed
@@ -93,7 +108,7 @@ def insertRowKeys (catalog : Catalog) (links : List ForeignKeyLink) (fuel : Nat)
 failure. -/
 def insertRowsKeys (catalog : Catalog) (links : List ForeignKeyLink) (fuel target : Nat) (policy : Resolved.ConflictPolicy)
     (clauses : List Resolved.ConflictClause) (multiWrite : Bool) :
-    KeyState → List (List Value) → Except KeyStop (KeyState × Option ExecutionError)
+    KeyState → List (List Value) → Except KeyStop (KeyState × Option StopAlgorithm)
   | state, [] => pure (state, none)
   | state, values :: rest => do
     match ← insertRowKeys catalog links fuel target policy clauses multiWrite state values with
@@ -151,7 +166,7 @@ def dropKeys (depth : Nat) (positions : List Nat) (database : Database) : KeyRun
 succeeds with the database, the database has the input's catalog. Proof sketch: the success is
 the state's rows over the input catalog ({name}`KeyState.database`). -/
 theorem keyRun_ok_catalog {input result : Database} {target : Nat} {plain : Bool}
-    {outcome : Except KeyStop (KeyState × Option ExecutionError)}
+    {outcome : Except KeyStop (KeyState × Option StopAlgorithm)}
     (ok : (keyRun input target plain outcome).effect = .ok result) : result.catalog = input.catalog := by
   unfold keyRun at ok
   repeat' split at ok

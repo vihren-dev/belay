@@ -7,8 +7,8 @@ refused with its source range.
 
 from .located import Located, constructor, leaf, sequence, structure
 from .sql_tree import Node, Tree
-from .syntax_constraints import (ascii_equal, check, constraint_name, declared_type, deferral, foreign_key, generated,
-                                 references)
+from .syntax_constraints import ascii_equal, check, constraint_name, declared_type, deferral, foreign_key, generated
+from .syntax_constraints import references
 from .syntax_expressions import dequote, expression, identifier, name, term
 from .syntax_shapes import MODELED_FORMS, absent, left_list, require
 
@@ -86,9 +86,8 @@ def column_constraint(tree: Tree, node: Node, current: str | None) -> Located:
 def column_definition(tree: Tree, column: Node, constraints: Node) -> tuple[Located, str | None]:
     """Map a column name, its declared type text as SQLite's tokens leave it (without a
     trailing `GENERATED ALWAYS`, then dequoted, as `sqlite3AddColumn` does), and its constraints,
-    with the constraint name in effect after them. `CONSTRAINT name` maps to no constraint:
-    a name only labels the CHECK constraints after it. A deferral clause is a `deferral`
-    constraint (`syntax_constraints.deferral`)."""
+    with the constraint name in effect after them. `CONSTRAINT name` maps to no constraint, as it
+    only labels later CHECK constraints; a deferral clause is `syntax_constraints.deferral`."""
     column_name, type_token = require(tree, column, ["nm", "typetoken"])
     declared = dequote(declared_type(tree.text(type_token))) if type_token.children else None
     items: list[Located] = []

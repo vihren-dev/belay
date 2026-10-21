@@ -167,46 +167,4 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
     obtain ⟨same, unchanged, control⟩ := resolveSelect_same _ _ _ _ _ _ _ (by assumption)
     exact ordinary _ control (same.trans unchanged.symm)
 
-/-- For every context, script, index and state with a successful resolution, the final
-state is the fold of {name}`ResolveState.after` over the resolved statements. Proof
-sketch: induction on the script with {name}`resolveStatement_after`. -/
-theorem resolveFrom_after (context : ResolveContext) :
-    ∀ (script : List Syntax.Statement) (index : Nat) (state final : ResolveState)
-      (resolved : List Resolved.Statement),
-      resolveFrom context index state script = .ok (resolved, final) →
-      final = resolved.foldl ResolveState.after state
-  | [], index, state, final, resolved, ok => by
-    simp only [resolveFrom] at ok
-    cases ok
-    rfl
-  | statement :: rest, index, state, final, resolved, ok => by
-    simp only [resolveFrom, bind, Except.bind] at ok
-    split at ok
-    · cases ok
-    · rename_i first headOk
-      split at ok
-      · cases ok
-      · rename_i later restOk
-        simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at ok
-        obtain ⟨rfl, rfl⟩ := ok
-        have head := resolveStatement_after context state first.2 index statement first.1 headOk
-        have tail := resolveFrom_after context rest (index + 1) first.2 later.2 later.1 restOk
-        rw [List.foldl_cons, ← head]
-        exact tail
-
-/-- For every context, catalog and script with a successful resolution, the resulting
-catalog is the catalog of the fold of {name}`ResolveState.after` over the resolved
-statements from the catalog outside a transaction, with the profile's setting of foreign keys.
-Proof sketch: unfold {name}`resolve`; a restriction contradicts the premise, and a resolution
-is the state of {name}`resolveFrom_after` from position zero outside a transaction. -/
-theorem resolve_after (context : ResolveContext) (catalog next : Catalog) (script : List Syntax.Statement)
-    (resolved : List Resolved.Statement) (ok : resolve context catalog script = .resolved resolved next) :
-    next = (resolved.foldl ResolveState.after { catalog, foreignKeys := context.profile.foreignKeys }).catalog := by
-  unfold resolve at ok
-  split at ok
-  · rename_i result found
-    cases ok
-    rw [resolveFrom_after context script 0 _ _ _ found]
-  · cases ok
-
 end Belay.Sqlite
