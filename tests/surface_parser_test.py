@@ -57,6 +57,14 @@ def test_grammar_error_is_at_its_position_in_the_text(runtime_root: Path, tmp_pa
     assert "Rejected.lean:6:21: error: SQLite's grammar rejects the SQL here" in result.stdout, result.diagnostic()
 
 
+def test_grammar_selection_checks_elaborate(runtime_root: Path, tmp_path: Path) -> None:
+    """The `#guard` checks of `selectGrammar` (`Belay/Sqlite/Grammar.lean`) hold: it finds the
+    dialect without grammar options, and its errors end with what the user can do."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "GrammarChecks.lean"), cwd=tmp_path,
+                         environment=lean_path(runtime_root), timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+
+
 @pytest.mark.skipif(sys.platform != "linux", reason="patchelf changes the library path of Linux libraries only")
 def test_missing_parser_library_is_a_load_error(runtime_root: Path, tmp_path: Path) -> None:
     """When the parser library is missing, `lean` stops with the loader's error, which names the
