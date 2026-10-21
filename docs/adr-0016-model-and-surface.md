@@ -85,6 +85,15 @@ The surface's suite holds a test of these rules, extended from
 repository, for the first two rules, and the packages that the installed runtime, the
 gate and the conformance runtime are built from (`build-support/`), for the third.
 
+Amended 2026-10-21 (ADR 0017, S1): the parser binding and the translation of SQL text to the
+model's syntax are a package of their own below the surface, `belaySqliteText` in
+`packages/belay-sqlite-text`, because the CLI and the conformance harness use the translation
+that the elaborator uses. The surface requires and imports it. It imports only the model's roots
+and Lean's libraries, and nothing below it imports it: not the model, the verifier packages or
+the conformance runner. The installed runtime and the conformance runtime contain its translation
+program and the parser library that the program links; they still do not contain the surface. The
+kernel gate contains neither. The D2 test checks these rules.
+
 ### D3. The names
 
 Users import `Belay`. Everything specific to one engine lives under that engine's name,

@@ -99,6 +99,13 @@ the Python translation is then replaced, not kept beside it, as the repository's
 for replaced code requires; the conformance harness keeps working because it reads the
 same syntax.
 
+Amended 2026-10-21: the owner chose candidate A, the Lean port. The port and the parser binding
+move from the surface to a package below it (ADR 0016, D2, amended), and a translation program of
+that package translates for the CLI and the harness, so Python no longer loads the parser
+library. Installing the surface for Lean users, with its native library, stays with the first
+release of the surface (ADR 0016, "Deferred"). Task:
+[`plans/20261021-sql-text-package.task.md`](../plans/20261021-sql-text-package.task.md).
+
 ### D3. S2: concrete databases
 
 S2 delivers the guide's first example and its reference rows for `Value`, `Database`,
@@ -145,6 +152,10 @@ the frozen corpora's texts, and the text of each claim shown next to its stateme
 The surface's native code, notation and automation stay outside the kernel gate and the
 judge, as ADR 0016 requires.
 
+Amended 2026-10-21: when the Python translation is gone, the harness uses the elaborator's
+translation, so the guard is the frozen corpora's predictions themselves, which the judge
+compares with native SQLite.
+
 ## Consequences
 
 - **The first user-visible result is S2.** It is the guide's first example over today's
@@ -153,8 +164,8 @@ judge, as ADR 0016 requires.
 - **The launch examples depend on the model, not only on the surface.** Until the model
   has subqueries, a claim "over every database" can only use the SQL of the model's
   current subset, and the rebuild example waits for foreign keys.
-- **S1 replaces the Python translation.** The CLI and the harness then use the same
-  translation as the elaborator, so one translation exists, tested on the corpora.
+- **The task after S1 replaces the Python translation.** The CLI and the harness then use the
+  same translation as the elaborator, so one translation exists, tested on the corpora.
 - **The guide stays the target.** Each slice's task file takes its rows of the guide and
   records what it changed; the guide's open questions are decided in the slice that
   needs them.
