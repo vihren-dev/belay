@@ -306,8 +306,9 @@ qualified names; a source of the same name in the query wins for its columns. A 
 them has the collation of its column and, as in SQLite, no affinity: in a trigger on
 `t(a INTEGER)`, `new.a = '1'` is 0 for the value 1. `RAISE` in a
 trigger is modeled as the one result column of a `SELECT` without `FROM`, alone or as a result
-of its `CASE` (`raise-form` elsewhere); `ON CONFLICT DO UPDATE` in a body, a function that can fail in a write of a body, and a
-`WHEN` with a subquery or a function that can fail are `trigger-form`; a `BEFORE UPDATE` or `BEFORE DELETE`
+of its `CASE` (`raise-form` elsewhere); `ON CONFLICT DO UPDATE` in a body, a function that can fail in a write of a body that no
+earlier rule restricts (in the `VALUES` of an `INSERT` it is `constant-function-error`, as in a
+statement), and a `WHEN` with a subquery or a function that can fail are `trigger-form`; a `BEFORE UPDATE` or `BEFORE DELETE`
 trigger that writes its own table is `trigger-writes-own-table`; and two triggers of one table,
 time and event in the starting schema are `schema-trigger-order`.
 
@@ -450,7 +451,7 @@ should shrink.
 | `deferred-foreign-key` | With foreign keys on, a write that checks a `DEFERRABLE INITIALLY DEFERRED` foreign key is not modeled, because SQLite counts its violations until `COMMIT` | ADR 0018, slice 4 |
 | `foreign-key-upsert` | With foreign keys on, `INSERT` with `ON CONFLICT DO UPDATE` on a table with a foreign key to check is not modeled | ADR 0018, slice 4 |
 | `raise-form` | `RAISE` in a trigger outside the one result column of a `SELECT` without `FROM`, alone or as a result of its `CASE`, or with a message that can fail, is not modeled | ADR 0018, slice 5 |
-| `trigger-form` | A trigger with `ON CONFLICT DO UPDATE` in its body, with a function that can fail in a write of its body, with a `WHEN` condition that has a function that can fail or a subquery, or with too many triggers that fire each other, and `ON CONFLICT DO UPDATE` on a table with a trigger, are not modeled | ADR 0018, slice 5 |
+| `trigger-form` | A trigger with `ON CONFLICT DO UPDATE` in its body, with a function that can fail in a write of its body that no other restriction covers, with a `WHEN` condition that has a function that can fail or a subquery, or with too many triggers that fire each other, and `ON CONFLICT DO UPDATE` on a table with a trigger, are not modeled | ADR 0018, slice 5 |
 
 #### Undecided
 
