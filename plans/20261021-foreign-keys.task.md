@@ -26,10 +26,13 @@ slice the local verdict, the corpus, and `just test-full`.
      matches, while the count is above zero (an update that changes no column of the parent key
      does neither, and neither does an `INSERT` that is no multi-row write; see below).
    An `INSERT` is a multi-row write, as SQLite's `isMultiWrite` flag gives it, when its rows come
-   from a `SELECT` or from more than one `VALUES` row, when the table has a trigger, or when a
-   `REPLACE` resolution can delete a row of a `UNIQUE` index of the table
-   (`sqlite3Insert`, `sqlite3GenerateConstraintChecks`); an `INSERT` with one `VALUES` row and
-   none of these is not.
+   from a `SELECT` or from more than one `VALUES` row, when the table has an `INSERT` trigger
+   (slice 5), or when the `INSERT` resolves a conflict of the rowid (an `INTEGER PRIMARY KEY`) or
+   of a `UNIQUE` index with `REPLACE`, by its `OR REPLACE` algorithm or the constraint's own: with
+   foreign keys on, `sqlite3GenerateConstraintChecks` codes each such resolution with
+   `sqlite3MultiWrite` (`sqlite3Insert` sets the flag for a `SELECT` and a trigger). An `INSERT`
+   with one `VALUES` row and none of these is not, also with `OR REPLACE` into a table that has
+   neither a rowid key nor a `UNIQUE` index.
    The rows that `REPLACE` deletes and the implicit `DELETE` of `DROP TABLE` are deletes. A
    statement whose count is above zero at its end is SQLite's `FOREIGN KEY constraint failed`
    and changes nothing. A key compares under the parent key's affinity and collation. So
@@ -73,8 +76,9 @@ TABLE`, 15 `REPLACE`, 22 a trigger, and 11 a deferred constraint. Corpus v4 has 
   and collation of the parent key; NULL child keys; composite keys; foreign keys turned on over
   existing violations, with writes that do not change those rows, one that does, and an update
   of a parent key that fixes one; the prepare errors of each write that processes a foreign
-  key, with a one-row and a multi-row parent insert, and the writes to the same tables that
-  SQLite permits.
+  key, with a one-row and a multi-row parent insert, an `INSERT ... SELECT` of one row, and an
+  `INSERT OR REPLACE` into a parent with an `INTEGER PRIMARY KEY` and into one without a key,
+  and the writes to the same tables that SQLite permits.
 - The verdict of every corpus: cases that newly agree and none that leave AGREE.
 - Mutants: a check that ignores a NULL in a composite child key the wrong way (a key with one
   NULL column must not be checked), `SET NULL` that deletes the child row, `CASCADE` on update
@@ -93,7 +97,8 @@ TABLE`, 15 `REPLACE`, 22 a trigger, and 11 a deferred constraint. Corpus v4 has 
   is zero, and the new one adds one. With children of the keys 1 and 2 where only 1 has a
   parent, `UPDATE p SET id = 2 WHERE id = 1` succeeds (the old key adds one, the new key removes
   it), and with only a child of 1 it fails. With the parent key `p(b)` not unique,
-  `INSERT INTO p VALUES (1, 2)`, `INSERT OR REPLACE INTO p VALUES (1, 2)`, `UPDATE p SET a = 1`,
+  `INSERT INTO p VALUES (1, 2)`, `INSERT OR REPLACE INTO p VALUES (1, 2)` (no key to replace),
+  `UPDATE p SET a = 1`,
   `UPDATE c SET y = 3`, `DROP TABLE p` and `DROP TABLE c` succeed, and `INSERT INTO p VALUES
   (1, 2), (3, 4)`, `INSERT INTO p SELECT 1, 2`, `UPDATE p SET b = 1`, `DELETE FROM p`,
   `INSERT INTO c VALUES (NULL, 1)`, `UPDATE c SET x = 3` and `DELETE FROM c` are
