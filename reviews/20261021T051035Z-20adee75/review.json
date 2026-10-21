@@ -1,0 +1,62 @@
+{
+  "caller": "claude",
+  "commit": "20adee75ba16ff1b156607abd78b48260d50d0b2",
+  "date": "2026-10-21T05:10:35+00:00",
+  "exit": 1,
+  "files": [
+    "plans/20261021-foreign-keys.task.md",
+    "reviews/20261021T050815Z-7410262b/resolution-1-20261021T050923Z.json",
+    "reviews/20261021T050815Z-7410262b/resolution-2-20261021T050923Z.json",
+    "reviews/20261021T050815Z-7410262b/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261021T051035Z-20adee75#1",
+      "line": 40,
+      "path": "plans/20261021-foreign-keys.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The task excludes child deletes from foreign-key preparation checks, but SQLite 3.51.0 rejects `DELETE FROM c` when `c(x REFERENCES p(b))` references a non-unique `p(b)`, contrary also to line 81. Fix: include child deletes and correct the claimed native result."
+    },
+    {
+      "id": "20261021T051035Z-20adee75#2",
+      "line": 41,
+      "path": "plans/20261021-foreign-keys.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The task says parent inserts do not use malformed foreign keys and succeed, but SQLite 3.51.0 rejects a multi-row parent insert with `foreign key mismatch`. Fix: distinguish single-row parent inserts from inserts that require foreign-key processing and add a multi-row case."
+    },
+    {
+      "id": "20261021T051035Z-20adee75#3",
+      "line": 23,
+      "path": "plans/20261021-foreign-keys.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The count rule omits decrements for new parent keys during updates, but SQLite 3.51.0 permits updating parent key 1 to 2 with existing child keys 1 and 2 because the new key cancels the added violation. Fix: include the new-parent-key decrement for updates and test this case."
+    }
+  ],
+  "id": "20261021T051035Z-20adee75",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "fa2475f44035",
+    "R7": "0a38ead152b1",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
