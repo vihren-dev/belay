@@ -74,6 +74,7 @@ def Resolved.Expr.lowestRead (shapes : SubqueryShapes) : Resolved.Expr → Optio
   | .compare _ _ left right _ | .and left right | .or left right | .arithmetic _ left right | .coalesce left right =>
     minPosition (left.lowestRead shapes) (right.lowestRead shapes)
   | .not operand | .isNull operand _ | .cast _ operand => operand.lowestRead shapes
+  | .inList operand values .. => minPosition (operand.lowestRead shapes) (Resolved.Arguments.lowestRead shapes values)
   | .json _ arguments | .date _ arguments | .scalar _ arguments => Resolved.Arguments.lowestRead shapes arguments
 
 /-- The lowest cell position that the arguments read ({name}`Resolved.Expr.lowestRead`). -/

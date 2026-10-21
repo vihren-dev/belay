@@ -9,6 +9,18 @@ Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D2.
 - 2026-10-21: the task file, from native probes and SQLite's code (`sqlite3ExprCodeIN`,
   `sqlite3CodeRhsOfIN`, the parser's rewrite of a one-value list).
 
+- 2026-10-21: "the four forms". Syntax `inList`, `between`, `caseOf` (one operand list and a
+  base flag, so resolution walks it as call arguments) and `concatenate`; the frontend maps
+  them in `belay/sqlite/syntax_forms.py`. Resolution: an `IN` list is the resolved `inList`
+  under the left operand's affinity and collation (one constant value with an explicit
+  collation is `x = +c`, as SQLite's parser rewrites it); `BETWEEN` is `x >= a AND x <= b`;
+  `CASE` is `iif` of its operands, with `base = when` comparisons (`resolveCase`), since SQLite
+  itself codes `iif` as `CASE`; `||` is the scalar function `pipes`. Evaluation of an `IN` list
+  reuses `inValue` and softens the faults of the values. Tests: `Resolution/FormExamples.lean`
+  (the native probes, one kernel proof), the syntax tests, `conformance/authored_expression_forms.py`
+  (9 cases, all agree with kernel proofs), `conformance/expression_form_mutants.py` (four
+  mutants, each killed), `conformance/expression_form_evidence.py` (corpus 43).
+
 ## Remaining
 
-- All outcomes and tests.
+- The local verdict, corpus 43 and `just test-full`.

@@ -85,6 +85,17 @@ inductive Expr where
   | inQuery (operand : Expr) (index : Nat) (negated : Bool)
   /-- A scalar subquery {lit}`(q)`, where {lit}`q` is subquery {lit}`index` of the statement. -/
   | subquery (index : Nat)
+  /-- {lit}`operand IN (values)`, or {lit}`operand NOT IN (values)` when {lit}`negated`, with the
+  values in written order; empty for {lit}`IN ()` (ADR 0018, D2). -/
+  | inList (operand : Expr) (values : List Expr) (negated : Bool)
+  /-- {lit}`operand BETWEEN low AND high`, or {lit}`NOT BETWEEN` when {lit}`negated`. -/
+  | between (operand low high : Expr) (negated : Bool)
+  /-- {lit}`CASE [base] WHEN ... THEN ... [ELSE ...] END`: the operands in written order, the
+  base expression first when {lit}`hasBase`, then the {lit}`WHEN` and {lit}`THEN` expressions in
+  pairs, then the {lit}`ELSE` expression, if any, as SQLite's parser holds them. -/
+  | caseOf (operands : List Expr) (hasBase : Bool)
+  /-- {lit}`left || right`. -/
+  | concatenate (left right : Expr)
   deriving Repr, BEq, Inhabited
 
 /-- One result column of a {lit}`SELECT`: {lit}`*`, or an expression with an

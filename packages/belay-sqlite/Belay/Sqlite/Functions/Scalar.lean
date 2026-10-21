@@ -141,6 +141,7 @@ def ScalarFunction.apply : ScalarFunction → List Value → Except FunctionFail
     | some result => .ok result
     | none => .error .error
   | .concat, values => .ok (concatValue [] values)
+  | .pipes, [left, right] => .ok (if left.isNull || right.isNull then .null else .text (left.textBytes ++ right.textBytes))
   | .concatWs, separator :: values => .ok (if separator.isNull then .null else concatValue separator.textBytes values)
   | .round, [value] => .ok (roundValue value none)
   | .round, [value, digits] => .ok (roundValue value (some digits))
@@ -156,7 +157,7 @@ def ScalarFunction.apply : ScalarFunction → List Value → Except FunctionFail
   | .round, _ | .floor, _ | .ceil, _ | .trunc, _ | .sqrt, _ | .pi, _ | .degrees, _ | .radians, _ | .mod, _
   | .typeof, _ | .length, _ | .octetLength, _ | .abs, _ | .sign, _ | .zeroblob, _ | .iif, _ | .nullif _, _
   | .min _, _ | .max _, _ | .like, _ | .glob, _ | .lower, _ | .upper, _ | .substr, _ | .instr, _ | .replace, _
-  | .trim _, _ | .hex, _ | .unhex, _ | .quote, _ | .unistrQuote, _ | .unicode, _ | .unistr, _ | .concatWs, _ =>
+  | .trim _, _ | .hex, _ | .unhex, _ | .quote, _ | .unistrQuote, _ | .unicode, _ | .unistr, _ | .concatWs, _ | .pipes, _ =>
     .ok .null
 
 /-- For every scalar function that cannot fail ({name}`ScalarFunction.canFail` is false) and

@@ -44,7 +44,11 @@ resolved before ({name}`SubqueryShapes.find`), else it is {name}`RestrictionKind
 scalar subquery has the affinity of its result column, {lit}`x IN (q)` compares under
 {name}`comparisonAffinity` and {name}`inCollation`, and both need one result column, else SQLite's
 {lit}`sub-select returns %d columns - expected 1`. An aggregate whose arguments read a cell
-of a query around the current one is {name}`RestrictionKind.outerAggregate`. -/
+of a query around the current one is {name}`RestrictionKind.outerAggregate`. {lit}`x IN (list)`
+compares under the affinity and the collation of {lit}`x`, but a list of one constant value with an
+explicit collation is {lit}`x = +c`, as SQLite's parser reads it; {lit}`x BETWEEN a AND b` is
+{lit}`x >= a AND x <= b`; {lit}`CASE` is {lit}`iif` of its operands ({lit}`resolveCase`); and
+{lit}`x || y` is the scalar function of the operator. -/
 def resolveOperand (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misuse : Bool) :
     Syntax.Expr → Except ValueIssue Operand
   | .identifier name quote => match scope.resolveName name with
@@ -120,6 +124,33 @@ def resolveOperand (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misus
     | some shape =>
       if shape.columns == 1 then .ok (.subquery index, shape.affinity) else .error (.prepare (.subqueryColumns shape.columns))
     | none => .error (.restriction [] .subqueryHere)
+  | .inList operand values negated => do
+    let a ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0])
+    let resolved ← resolveArguments dqs scope shapes misuse 0 values
+    match values, resolved with
+    | [value], .cons element .nil =>
+      if value.explicitCollation.isSome && (element.lowestRead shapes).isNone &&
+          !element.any Resolved.Expr.namesSubquery && !element.readsClock then
+        -- SQLite's parser reads `x IN (c)` for one constant `c` as `x = +c`.
+        let compared := .compare .eq a.2 a.1 element (comparisonCollation scope operand value)
+        .ok (if negated then .not compared else compared, none)
+      else .ok (.inList a.1 resolved a.2 (operand.collationIn scope) negated, none)
+    | _, _ => .ok (.inList a.1 resolved a.2 (operand.collationIn scope) negated, none)
+  | .between operand low high negated => do
+    let a ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0])
+    let l ← (resolveOperand dqs scope shapes misuse low).mapError (·.under [1])
+    let h ← (resolveOperand dqs scope shapes misuse high).mapError (·.under [2])
+    let both := Resolved.Expr.and
+      (.compare .ge (comparisonAffinity a.2 l.2) a.1 l.1 (comparisonCollation scope operand low))
+      (.compare .le (comparisonAffinity a.2 h.2) a.1 h.1 (comparisonCollation scope operand high))
+    .ok (if negated then .not both else both, none)
+  | .caseOf operands hasBase => do
+    let arguments ← resolveCase dqs scope shapes misuse hasBase none 0 operands
+    .ok (.scalar .iif arguments, none)
+  | .concatenate left right => do
+    let a ← (resolveOperand dqs scope shapes misuse left).mapError (·.under [0])
+    let b ← (resolveOperand dqs scope shapes misuse right).mapError (·.under [1])
+    .ok (.scalar .pipes (.cons a.1 (.cons b.1 .nil)), none)
   | .inQuery operand index negated => do
     let a ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0])
     match shapes.find index with
@@ -138,6 +169,27 @@ def resolveArguments (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (mis
     let a ← (resolveOperand dqs scope shapes misuse argument).mapError (·.under [1, index])
     let tail ← resolveArguments dqs scope shapes misuse (index + 1) rest
     .ok (.cons a.1 tail)
+
+/-- Resolve the operands of {lit}`CASE` from operand {lit}`index` as the arguments of {lit}`iif`,
+which gives SQLite's value of {lit}`CASE`: the base expression first when {lit}`needsBase`, which
+is then {lit}`base` and not an argument; each {lit}`WHEN` value that is not the last operand,
+compared with the base as {lit}`=` compares them ({name}`comparisonAffinity`,
+{name}`comparisonCollation`) when there is a base; every other operand as it is. The issue of
+operand {lit}`k` is at {lit}`[0, k]`. -/
+def resolveCase (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misuse : Bool) (needsBase : Bool)
+    (base : Option (Syntax.Expr × Operand)) (index : Nat) : List Syntax.Expr → Except ValueIssue Resolved.Arguments
+  | [] => .ok .nil
+  | operand :: rest => do
+    let resolved ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0, index])
+    if needsBase then resolveCase dqs scope shapes misuse false (some (operand, resolved)) (index + 1) rest
+    else
+      let isWhen := (index - (if base.isSome then 1 else 0)) % 2 == 0 && !rest.isEmpty
+      let item := match base, isWhen with
+        | some (written, value), true =>
+          .compare .eq (comparisonAffinity value.2 resolved.2) value.1 resolved.1 (comparisonCollation scope written operand)
+        | _, _ => resolved.1
+      let tail ← resolveCase dqs scope shapes misuse false base (index + 1) rest
+      .ok (.cons item tail)
 end
 
 end Belay.Sqlite

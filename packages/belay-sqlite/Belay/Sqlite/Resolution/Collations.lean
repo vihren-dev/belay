@@ -20,9 +20,12 @@ def Syntax.Expr.explicitCollation : Syntax.Expr → Option Collation
   | .positive operand | .negate operand | .cast operand _ | .not operand | .isNull operand _
   | .inQuery operand .. =>
     operand.explicitCollation
-  | .compare _ left right | .and left right | .or left right | .arithmetic _ left right =>
+  | .compare _ left right | .and left right | .or left right | .arithmetic _ left right | .concatenate left right =>
     left.explicitCollation <|> right.explicitCollation
   | .call _ arguments => Syntax.Expr.firstExplicitCollation arguments
+  | .inList operand values _ => operand.explicitCollation <|> Syntax.Expr.firstExplicitCollation values
+  | .between operand low high _ => operand.explicitCollation <|> low.explicitCollation <|> high.explicitCollation
+  | .caseOf operands _ => Syntax.Expr.firstExplicitCollation operands
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .qualified .. | .callStar _
   | .exists _ | .subquery _ =>
     none
@@ -45,7 +48,8 @@ def Syntax.Expr.columnCollation (scope : Scope) : Syntax.Expr → Option Collati
     | .missing | .ambiguous => none
   | .positive operand | .cast operand _ | .collate operand _ => operand.columnCollation scope
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .compare .. | .and .. | .or ..
-  | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .exists _ | .inQuery .. | .subquery _ => none
+  | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .exists _ | .inQuery .. | .subquery _
+  | .inList .. | .between .. | .caseOf .. | .concatenate .. => none
 
 /-- Whether an expression is a column under one {lit}`COLLATE`: a qualified name, or an
 unqualified name that reads a column of the scope. The model admits such a
@@ -60,7 +64,8 @@ def Syntax.Expr.collatedColumn (scope : Scope) : Syntax.Expr → Bool
   | .collate (.compare ..) _ | .collate (.and ..) _ | .collate (.or ..) _ | .collate (.not _) _
   | .collate (.isNull ..) _ | .collate (.callStar _) _ | .collate (.call ..) _ | .collate (.arithmetic ..) _
   | .collate (.cast ..) _ | .collate (.exists _) _ | .collate (.inQuery ..) _ | .collate (.subquery _) _
-  | .exists _ | .inQuery .. | .subquery _
+  | .collate (.inList ..) _ | .collate (.between ..) _ | .collate (.caseOf ..) _ | .collate (.concatenate ..) _
+  | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate ..
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .qualified .. | .negate _
   | .positive _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
   | .cast .. => false

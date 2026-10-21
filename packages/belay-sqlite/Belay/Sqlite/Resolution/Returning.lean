@@ -34,7 +34,7 @@ def definedName (scope : Scope) : Syntax.Expr → Option String
     | .found .. | .missing | .ambiguous => none
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
-  | .cast .. | .collate .. | .exists _ | .inQuery .. | .subquery _ => none
+  | .cast .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate .. => none
 
 /-- One {lit}`RETURNING` column at position {lit}`item`: the expressions and names it
 gives. The paths of its issues start at the column's position. {lit}`*` is every visible

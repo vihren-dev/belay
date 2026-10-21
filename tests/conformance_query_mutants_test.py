@@ -30,7 +30,8 @@ from conformance import (algorithm_mutants, alias_mutants, authored_algorithms, 
                          authored_json_each, authored_json_functions, authored_keys, authored_numbers,
                          authored_queries, authored_upserts, clock_mutants, date_function_mutants,
                          date_modifier_mutants, fromless_mutants, json_each_mutants, json_function_mutants,
-                         json_mutants, upsert_mutants, authored_subqueries, subquery_mutants)
+                         json_mutants, upsert_mutants, authored_subqueries, subquery_mutants,
+                         authored_expression_forms, expression_form_mutants)
 from conformance import key_mutants, number_mutants, query_mutants
 from tests.mutant_sets import measure_set
 
@@ -97,3 +98,12 @@ def test_every_subquery_mutant_changes_a_verdict(runtime_root: Path) -> None:
     does not read the outer row, a scalar subquery that gives its last row, and a name that
     resolves outward first (ADR 0018, slice 1)."""
     measure_set(runtime_root, [authored_subqueries], [(subquery_mutants.MUTANTS, subquery_mutants.TARGETS)])
+
+
+def test_every_expression_form_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored cases of the expression forms notice every changed rule
+    (`conformance.expression_form_mutants`): an `IN` list under a right column's collation,
+    `BETWEEN` that gives NULL before it checks for false, `CASE` whose NULL base matches a NULL
+    `WHEN`, and `||` that skips a NULL operand (ADR 0018, slice 2)."""
+    measure_set(runtime_root, [authored_expression_forms],
+                [(expression_form_mutants.MUTANTS, expression_form_mutants.TARGETS)])

@@ -76,7 +76,10 @@ comparisons, `IS` and `IS NOT`, `AND`, `OR`, `NOT`, `IS NULL` and its forms,
 parentheses, `COUNT(*)`, `COUNT`, `MIN`, `MAX`, `SUM` and `AVG` of one argument, the arithmetic
 operators `+`, `-`, `*`, `/` and `%`, unary `-` and `+` of any expression,
 `CAST(expression AS type)`, and `COALESCE` of two or more arguments (ADR 0012,
-slice 2), `json_extract` with one or more paths and the operators `->` and `->>`
+slice 2), `x [NOT] IN (values)`, also with an empty list, which compares under the affinity
+and the collation of `x` (a list of one constant value is SQLite's `x = +c`), `x [NOT]
+BETWEEN a AND b` as `x >= a AND x <= b`, `CASE` with and without a base (a base compares as
+`=` does), and `x || y`, NULL with a NULL operand (ADR 0018, slice 2), `json_extract` with one or more paths and the operators `->` and `->>`
 (slice 6b), `json_type`, `json_valid`, `json_array_length` and `json` (slice 6c), and
 `date`, `time`, `datetime`, `julianday`, `unixepoch` and `strftime` with one time value
 or none, which is `now` (slice 6f), and any modifiers, in UTC (slice 6g). ADR 0015,

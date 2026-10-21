@@ -44,7 +44,7 @@ def writtenReadBack (affinity : Affinity) (written : Syntax.DefaultExpression) :
   | .null | .string _ | .blob _ | .currentTime _ | .identifier ..
   | .negate _ | .positive _ | .compare .. | .and .. | .or .. | .not _
   | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast .. | .qualified .. | .collate .. | .exists _
-  | .inQuery .. | .subquery _ =>
+  | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate .. =>
     (literalDefault written.expression).map (storeValue affinity)
 
 /-- The resolved default of a written DEFAULT for a column of the affinity
@@ -58,7 +58,7 @@ def resolveColumnDefault (affinity : Affinity) (written : Syntax.DefaultExpressi
     | .currentTime keyword => some (.clock (timeKeywordNamed keyword))
     | .null | .numeric _ | .string _ | .blob _ | .identifier .. | .negate _ | .positive _
     | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call ..
-    | .arithmetic .. | .cast .. | .qualified .. | .collate .. | .exists _ | .inQuery .. | .subquery _ =>
+    | .arithmetic .. | .cast .. | .qualified .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate .. =>
       match literalDefault written.expression, writtenReadBack affinity written with
       | .ok value, .ok readBack => some (.literal (.value value) readBack)
       | .error (.prepare (.hexLiteralTooBig text)), .ok readBack => some (.literal (.hexLiteralTooBig text) readBack)

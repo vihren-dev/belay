@@ -19,7 +19,8 @@ The cases of `conformance.authored_queries`, `conformance.authored_numbers`,
 `conformance.authored_text_functions`, `conformance.authored_numeric_functions`,
 `conformance.authored_json_edits`, `conformance.authored_jsonb`,
 `conformance.authored_aggregates` and `conformance.authored_printf` (ADR 0015, slices 1 to 6),
-and `conformance.authored_subqueries` (ADR 0018, slice 1) are
+and `conformance.authored_subqueries` and `conformance.authored_expression_forms` (ADR 0018,
+slices 1 and 2) are
 recorded natively as version 5 records with statement outputs, name requirement
 identifiers of the pinned documentation, and replay through resolution, the
 execution semantics and query evaluation. Every case agrees with the model, and the
@@ -39,7 +40,7 @@ from conformance import (authored_algorithms, authored_aliases, authored_checks,
                          authored_drops, authored_generated,
                          authored_fromless, authored_indexes, authored_joins, authored_json, authored_json_each,
                          authored_aggregates, authored_printf, authored_json_edits, authored_jsonb, authored_json_functions,
-                         authored_subqueries,
+                         authored_subqueries, authored_expression_forms,
                          authored_keys,
                          authored_merged, authored_numbers,
                          authored_queries, authored_right, authored_row_writes, authored_strict,
@@ -60,7 +61,8 @@ CASE_SETS = [authored_queries, authored_numbers, authored_writes, authored_row_w
              authored_default_writes, authored_clock, authored_date_functions, authored_date_modifiers,
              authored_indexes, authored_without_rowid, authored_collations, authored_checks, authored_generated,
              authored_strict, authored_drops, authored_text_functions, authored_numeric_functions,
-             authored_json_edits, authored_jsonb, authored_aggregates, authored_printf, authored_subqueries]
+             authored_json_edits, authored_jsonb, authored_aggregates, authored_printf, authored_subqueries,
+             authored_expression_forms]
 """The authored case modules: each has `definitions` and `records`."""
 
 
