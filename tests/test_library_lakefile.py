@@ -29,7 +29,7 @@ def test_runtime_lakefile_keeps_libraries_and_moves_requirements() -> None:
     package = tomllib.loads(PACKAGE.read_text())
     result = tomllib.loads(generator().library_lakefile(package))
     assert result["lean_lib"] == package["lean_lib"]
-    assert result["require"] == [{"name": "belaySqlite", "path": "packages/belay-sqlite"}]
+    assert result["require"] == [{"name": "belaySqliteModel", "path": "packages/belay-sqlite-model"}]
     assert result["enableArtifactCache"] is False
     assert (result["name"], result["version"]) == (package["name"], package["version"])
 

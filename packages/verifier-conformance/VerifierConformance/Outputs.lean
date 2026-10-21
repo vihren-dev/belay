@@ -1,9 +1,9 @@
-import Belay.Sqlite.SqlExecution
-import Belay.Sqlite.QueryFunctions
+import Belay.Sqlite.Model.SqlExecution
+import Belay.Sqlite.Model.QueryFunctions
 
 /-! ADR 0005 output comparison uses native tie groups, without evaluating SQL. -/
 
-namespace Belay.Sqlite.Conformance
+namespace Belay.Sqlite.Model.Conformance
 
 /-- Returned cells retain storage classes and exact payloads. -/
 abbrev ResultRow := List Value
@@ -118,7 +118,7 @@ alias), or of the new values of the selected rows. A successful INSERT with
 failure counts the rows before the failing one ({name}`keptCount`). A
 successful DELETE changes each row that its filter selects, and its {lit}`RETURNING` rows
 are {name}`returnedRows` of the old values of those rows. UPDATE and DELETE return their
-rows in scan order ({name}`Belay.Sqlite.Table.scanRows`): rowid order, or key order for a
+rows in scan order ({name}`Belay.Sqlite.Model.Table.scanRows`): rowid order, or key order for a
 {lit}`WITHOUT ROWID` table. A write that fails a
 constraint or a rowid alias ({lit}`datatype mismatch`) returns its {lit}`RETURNING` names
 and no rows. A query has its result column
@@ -193,4 +193,4 @@ def statementOutput (clock : Int) (statement : Resolved.Statement) (before : Sql
   | .createTable .. | .createIndex .. | .createTrigger .. | .drop .. | .begin | .commit | .rollback | .prepareError _ | .setting _ =>
     some ⟨[], [], none⟩
 
-end Belay.Sqlite.Conformance
+end Belay.Sqlite.Model.Conformance

@@ -1,8 +1,8 @@
 import SqliteVerifier.Library
 import SqliteVerifier.SchemaProjection
-import Belay.Sqlite.ScriptLaws
-import Belay.Sqlite.SchemaExtensionLaws
-import Belay.Sqlite.SchemaClockLaws
+import Belay.Sqlite.Model.ScriptLaws
+import Belay.Sqlite.Model.SchemaExtensionLaws
+import Belay.Sqlite.Model.SchemaClockLaws
 
 set_option doc.verso true
 
@@ -12,7 +12,7 @@ catalogs and the resolved script are those that resolution computes for
 {lit}`CREATE TABLE invoices(amount INTEGER)` and the migration
 {lit}`ALTER TABLE invoices ADD COLUMN note TEXT; CREATE TABLE audit(message TEXT);`. -/
 
-open Belay.Sqlite
+open Belay.Sqlite.Model
 
 namespace SqliteVerifier.Demonstration
 
@@ -147,7 +147,7 @@ table. Its theorem covers arbitrary admitted stored invoice data under every
 profile that allows two columns:
 
 ```lean
-open Belay.Sqlite SqliteVerifier
+open Belay.Sqlite.Model SqliteVerifier
 example (profile : Profile) (columns : 2 ≤ profile.limits.columns) :
     VerificationConditions Demonstration.startCatalog
       Demonstration.script (fun _ => True) Demonstration.requirements

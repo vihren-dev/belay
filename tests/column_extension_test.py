@@ -10,8 +10,8 @@ pytestmark = [pytest.mark.integration, pytest.mark.kernel,
               pytest.mark.requires_lean("compiler")]
 
 CHECKS = """
-import Belay.Sqlite
-open Belay.Sqlite
+import Belay.Sqlite.Model
+open Belay.Sqlite.Model
 
 def oldColumn : CatalogColumn := { name := name! "old", declaredType := some "BLOB" }
 def addedColumn : CatalogColumn := { name := name! "added", declaredType := some "INTEGER" }

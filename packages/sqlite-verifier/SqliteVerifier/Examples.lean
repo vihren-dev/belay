@@ -1,5 +1,5 @@
 import SqliteVerifier.ContractProofs
-import Belay.Sqlite.PreservationLaws
+import Belay.Sqlite.Model.PreservationLaws
 
 set_option doc.verso true
 
@@ -7,7 +7,7 @@ set_option doc.verso true
 that the native SQLite implementation refines these definitions. Statements are
 resolved, so errors that resolution decides appear as prepare errors. -/
 
-open Belay.Sqlite
+open Belay.Sqlite.Model
 
 namespace SqliteVerifier.Examples
 

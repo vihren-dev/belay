@@ -4,7 +4,7 @@ import VerifierConformance.Predict
 --emit-lean serializes the decoded case as a closed term for kernel regression checks.
 --predict reads ADR 0011 prediction inputs and writes the model's predictions. -/
 
-open Lean Belay.Sqlite.Conformance
+open Lean Belay.Sqlite.Model.Conformance
 
 /-- Report transport problems independently of semantic agreement. -/
 def harnessError (message : String) : Json :=

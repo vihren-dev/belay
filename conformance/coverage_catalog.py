@@ -11,23 +11,23 @@ THEOREMS: tuple[str, ...] = (
 
 CLAIMS: tuple[dict[str, str], ...] = (
     {"reference": "R-42316-09582", "snapshot": "conformance/upstream/e_createtable.test:854",
-     "claim": "Omitted defaults yield NULL", "model": "packages/belay-sqlite/Belay/Sqlite/Model.lean: Table.appendColumns",
+     "claim": "Omitted defaults yield NULL", "model": "packages/belay-sqlite-model/Belay/Sqlite/Model/Database.lean: Table.appendColumns",
      "evidence": "alter3-3.2; derived ADD then CREATE; all_scripts_preserve"},
     {"reference": "R-25473-20557", "snapshot": "conformance/upstream/e_createtable.test:1059",
      "claim": "Column count is bounded",
-     "model": "packages/belay-sqlite/Belay/Sqlite/Resolution/Definitions.lean: resolveAddColumn",
+     "model": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Definitions.lean: resolveAddColumn",
      "evidence": "derived column-limit cases at 2,000 columns and under a limit lowered to 5; native MAX_COLUMN pin"},
     {"reference": "R-27775-64721", "snapshot": "conformance/upstream/e_createtable.test:1074",
      "claim": "Runtime limits can be lowered",
-     "model": "packages/belay-sqlite/Belay/Sqlite/Resolution/Profile.lean: Profile.limits",
+     "model": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Profile.lean: Profile.limits",
      "evidence": "native model cases recorded under a column limit lowered to 5; Lean resolution examples under a lowered limit"},
     {"reference": "lang_altertable.html#alter_table_add_column",
      "snapshot": "conformance/upstream/lang_altertable.html",
-     "claim": "ADD appends a column", "model": "packages/belay-sqlite/Belay/Sqlite/Model.lean: Table.appendColumns",
+     "claim": "ADD appends a column", "model": "packages/belay-sqlite-model/Belay/Sqlite/Model/Database.lean: Table.appendColumns",
      "evidence": "derived ADD cases and model preservation; physical no-rewrite claim unmeasured"},
     {"reference": "limits.html#max_column", "snapshot": "conformance/upstream/limits.html",
      "claim": "Default maximum column count is 2000",
-     "model": "packages/belay-sqlite/Belay/Sqlite/Resolution/Profile.lean: Limits.documentedDefaults",
+     "model": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Profile.lean: Limits.documentedDefaults",
      "evidence": "native MAX_COLUMN pin and derived boundary case"},
 )
 

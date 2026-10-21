@@ -1,16 +1,16 @@
 import SqliteVerifier.Library
-import Belay.Sqlite.PreservationLaws
-import Belay.Sqlite.SchemaClockLaws
+import Belay.Sqlite.Model.PreservationLaws
+import Belay.Sqlite.Model.SchemaClockLaws
 
 set_option doc.verso true
 
 /-! The verification conditions of a schema-only script that keeps one table's projection
 (ADR 0013, D8): CREATE TABLE and ADD COLUMN extend every table that they keep
-({name}`Belay.Sqlite.runSql_extends`), so the projection of the observed columns stays the
+({name}`Belay.Sqlite.Model.runSql_extends`), so the projection of the observed columns stays the
 same, and the proof of such a migration only shows that the script succeeds. -/
 
 namespace SqliteVerifier
-open Belay.Sqlite
+open Belay.Sqlite.Model
 
 /-- Establish all verification fields for a script of CREATE TABLE and ADD COLUMN
 statements ({name}`SchemaOnly`, {name}`ModeledDefinitions`) whose interpretations project

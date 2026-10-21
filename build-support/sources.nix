@@ -25,12 +25,12 @@ let
   ];
 in {
   model = fs.toSource {
-    root = root + /packages/belay-sqlite;
+    root = root + /packages/belay-sqlite-model;
     fileset = fs.unions [
-      (extensions [ "lean" ] (root + /packages/belay-sqlite/Belay))
-      (root + /packages/belay-sqlite/lakefile.toml)
-      (root + /packages/belay-sqlite/lake-manifest.json)
-      (root + /packages/belay-sqlite/lean-toolchain)
+      (extensions [ "lean" ] (root + /packages/belay-sqlite-model/Belay))
+      (root + /packages/belay-sqlite-model/lakefile.toml)
+      (root + /packages/belay-sqlite-model/lake-manifest.json)
+      (root + /packages/belay-sqlite-model/lean-toolchain)
     ];
   };
   runtime = source (fs.unions [ runtimeFiles

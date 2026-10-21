@@ -1,4 +1,4 @@
-import Belay.Sqlite.SqlLaws
+import Belay.Sqlite.Model.SqlLaws
 
 set_option doc.verso true
 
@@ -6,7 +6,7 @@ set_option doc.verso true
 They exercise ordinary tables and values at catalog positions, not
 application-specific policy. -/
 
-open Belay.Sqlite
+open Belay.Sqlite.Model
 
 namespace SqliteVerifier.SqlExamples
 

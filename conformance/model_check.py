@@ -96,7 +96,7 @@ def prove_all(terms: list[str], runtime: Path, directory: Path, *, cases: list[d
 def kernel_check(runtime: Path, destination: Path) -> str:
     """Run the pinned Lean on a proof file over the runtime's modules and audit its axioms."""
     checked = subprocess.run([str(runtime / "lean/bin/lean"), str(destination)],
-                             env={**os.environ, "LEAN_PATH": os.pathsep.join(str(runtime / path) for path in (".lake/build/lib/lean", "packages/belay-sqlite/.lake/build/lib/lean"))},
+                             env={**os.environ, "LEAN_PATH": os.pathsep.join(str(runtime / path) for path in (".lake/build/lib/lean", "packages/belay-sqlite-model/.lake/build/lib/lean"))},
                              capture_output=True, text=True, timeout=120)
     if checked.returncode:
         raise AssertionError(checked.stdout + checked.stderr)

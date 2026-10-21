@@ -7,7 +7,7 @@ Handwritten column names below describe the application mapping, not a SQL schem
 
 namespace SchemaBinding
 
-open Belay.Sqlite SqliteVerifier
+open Belay.Sqlite.Model SqliteVerifier
 
 /-- The complete sealed {name}`Generated.startCatalog`; use it for catalog-bound
 application interpretation rather than duplicating declarations. -/

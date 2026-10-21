@@ -3,7 +3,7 @@ import Interpretation
 /-! Empty and populated accepted states show the protected assumptions are
 inhabited, without restricting the universal proof to these fixtures. -/
 namespace AtuinWitness
-open Belay.Sqlite SqliteVerifier
+open Belay.Sqlite.Model SqliteVerifier
 
 /-- Canonical application UUIDs and distinct timestamps form decodable histories. -/
 def historyRows : List Row := [

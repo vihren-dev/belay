@@ -3,7 +3,7 @@ import Requirements
 /-! The approved initial interpretation is pinned to the resolution of schema.sql.
 Complete decoder-definedness is an explicit condition on starting storage. -/
 namespace Interpretation
-open Belay.Sqlite SqliteVerifier
+open Belay.Sqlite.Model SqliteVerifier
 
 /-- Every stored history must decode; malformed rows cannot silently disappear. -/
 def admitted (database : Database) : Prop :=

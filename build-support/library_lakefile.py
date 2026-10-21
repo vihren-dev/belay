@@ -16,7 +16,7 @@ from pathlib import Path
 import sys
 import tomllib
 
-RUNTIME_PATHS = {"belaySqlite": "packages/belay-sqlite"}
+RUNTIME_PATHS = {"belaySqliteModel": "packages/belay-sqlite-model"}
 """Requirement name to its folder in the installed runtime."""
 
 

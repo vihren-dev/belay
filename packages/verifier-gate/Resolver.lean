@@ -1,4 +1,4 @@
-import Belay.Sqlite.Codec.Source
+import Belay.Sqlite.Model.Codec.Source
 
 /-! `migration-resolver RECORD OUTPUT_DIR`: resolve the frontend's structural record
 and write the generated input modules as Lean source. When the record resolves,
@@ -13,7 +13,7 @@ writes one JSON object on standard output:
 The gates do not trust this output: they resolve the record again. See ADR 0008,
 "Where resolution runs". -/
 
-open Lean Belay.Sqlite
+open Lean Belay.Sqlite.Model
 
 /-- The JSON of a model restriction in the schema or the script, with its message and its
 stable id. -/

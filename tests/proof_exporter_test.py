@@ -107,7 +107,7 @@ def test_current_native_export(name: str, runtime_root: Path, example_factory: C
         "bundleSha256": hashlib.sha256(payloads[0]).hexdigest(), "checks": reports}, sort_keys=True))
 
 
-@pytest.mark.parametrize("module", ["SqliteVerifier.Candidate", "Belay.Sqlite.Candidate",
+@pytest.mark.parametrize("module", ["SqliteVerifier.Candidate", "Belay.Sqlite.Model.Candidate",
                                     "belay.Sqlite.Candidate"])
 def test_candidate_module_under_library_namespace(module: str, runtime_root: Path,
         example_factory: Callable[[str], Path], tmp_path: Path,
@@ -136,8 +136,8 @@ theorem Proofs.migrationCorrect : Generated.expected := {module}.checked
 
 
 @pytest.mark.parametrize("arguments,diagnostic", [
-    (["--omit=Missing", "SqliteVerifier", "--", "Belay.Sqlite.Schema"], "omitted module is not imported"),
-    (["--omit=", "SqliteVerifier", "--", "Belay.Sqlite.Schema"], "Lean name"),
+    (["--omit=Missing", "SqliteVerifier", "--", "Belay.Sqlite.Model.Schema"], "omitted module is not imported"),
+    (["--omit=", "SqliteVerifier", "--", "Belay.Sqlite.Model.Schema"], "Lean name"),
     (["--skip-trusted", "SqliteVerifier"], "unknown exporter option"),
     ([], "no export module"),
 ])
@@ -147,7 +147,7 @@ def test_invalid_exporter_arguments(runtime_root: Path, tmp_path: Path,
     result = command_runner([str(runtime_root / ".lake/build/bin/migration-proof-exporter"), *arguments],
         cwd=tmp_path, timeout=30, environment={"LEAN_SYSROOT": str(runtime_root / "lean"),
             "LEAN_PATH": os.pathsep.join(str(runtime_root / path) for path in
-                (".lake/build/lib/lean", "packages/belay-sqlite/.lake/build/lib/lean"))})
+                (".lake/build/lib/lean", "packages/belay-sqlite-model/.lake/build/lib/lean"))})
     assert result.returncode != 0 and diagnostic in result.stderr, result.diagnostic()
 
 

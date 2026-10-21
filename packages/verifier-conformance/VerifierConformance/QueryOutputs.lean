@@ -1,5 +1,5 @@
 import VerifierConformance.Pass
-import Belay.Sqlite.QueryExamples
+import Belay.Sqlite.Model.QueryExamples
 
 set_option doc.verso true
 
@@ -7,10 +7,10 @@ set_option doc.verso true
 the script continues, and its output is the result column names and rows. A write with
 {lit}`RETURNING` (slice 3a) outputs its change count and one row for each written row. -/
 
-namespace Belay.Sqlite.Conformance.QueryOutputs
+namespace Belay.Sqlite.Model.Conformance.QueryOutputs
 
 open Resolved.QueryExamples in
-/-- A database with the example table of {lit}`Belay.Sqlite.Resolved.QueryExamples`
+/-- A database with the example table of {lit}`Belay.Sqlite.Model.Resolved.QueryExamples`
 at catalog position 0. -/
 def database : Database := .ofTables [((name! "t"), table)]
 
@@ -36,4 +36,4 @@ open Resolved.QueryExamples in
 #guard (passFrom 0 [.delete 0 none [(.column 1, "v")]] { database }).outputs ==
   [some ⟨["v"], table.scanRows.map (fun row => [row.values.getD 1 .null]), some table.rows.length⟩]
 
-end Belay.Sqlite.Conformance.QueryOutputs
+end Belay.Sqlite.Model.Conformance.QueryOutputs

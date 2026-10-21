@@ -5,8 +5,8 @@ version = "0.1.0"
 defaultTargets = ["conformance-runner"]
 
 [[require]]
-name = "belaySqlite"
-path = "../belay-sqlite"
+name = "belaySqliteModel"
+path = "../belay-sqlite-model"
 
 [[lean_lib]]
 name = "VerifierConformance"

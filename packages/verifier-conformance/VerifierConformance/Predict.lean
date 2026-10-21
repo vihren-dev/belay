@@ -11,7 +11,7 @@ with the recorded observations. -/
 
 open Lean
 
-namespace Belay.Sqlite.Conformance
+namespace Belay.Sqlite.Model.Conformance
 
 /-- The starting rows of one table, by its name in {lit}`sqlite_schema`. -/
 structure NamedRows where
@@ -122,4 +122,4 @@ def predict (p : PredictInput) : Json :=
       pass.supported && !pass.observations.any invalidObservation
     Json.mkObj [("supported", toJson supported), ("steps", toJson steps), ("outputs", toJson pass.outputs)]
 
-end Belay.Sqlite.Conformance
+end Belay.Sqlite.Model.Conformance

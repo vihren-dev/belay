@@ -9,7 +9,7 @@ error. The resolved script is the one for the migration
 CREATE TABLE audit (message TEXT); CREATE TABLE unreached (message TEXT);`: the
 second CREATE of {lit}`audit` is SQLite's prepare error. -/
 
-open Belay.Sqlite
+open Belay.Sqlite.Model
 
 namespace SqliteVerifier.Demonstration
 

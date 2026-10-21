@@ -13,7 +13,7 @@ corpora that check every step).
 ## Overview
 
 Slices 1 to 6g of ADR 0012 added forms to the model in
-[`packages/belay-sqlite`](../packages/belay-sqlite) without a restructuring pass. A
+[`packages/belay-sqlite`](../packages/belay-sqlite-model) without a restructuring pass. A
 review on 2026-10-17 (first a structural read, then three deep reads of resolution,
 execution with its proofs, and values with query evaluation, with measurements) found the
 code healthy and the structure costly. This ADR records the causes, decides the new

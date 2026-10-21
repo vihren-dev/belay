@@ -8,8 +8,8 @@ profile, and no error phase. The runner refuses all older versions. Frozen
 corpus records are not cases: they keep SQL text and native observations, and
 replay builds a version 4 case from them each time.
 
-`packages/belay-sqlite/Belay/Sqlite/Codec.lean` and
-`packages/belay-sqlite/Belay/Sqlite/Codec/Resolution.lean` own the codecs for
+`packages/belay-sqlite-model/Belay/Sqlite/Model/Codec.lean` and
+`packages/belay-sqlite-model/Belay/Sqlite/Model/Codec/Resolution.lean` own the codecs for
 values, statement syntax and catalogs.
 `packages/verifier-conformance/VerifierConformance/Json.lean` adds the case
 and observation records. The Python side is `belay/sqlite/syntax.py` for statement

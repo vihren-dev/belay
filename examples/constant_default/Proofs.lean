@@ -1,12 +1,12 @@
 import Generated
-import Belay.Sqlite.SchemaExtensionLaws
+import Belay.Sqlite.Model.SchemaExtensionLaws
 import SqliteVerifier.SchemaProjection
 
 set_option doc.verso true
 
 /-! Prove successful default initialization for every admitted invoice table. -/
 namespace Proofs
-open Belay.Sqlite SqliteVerifier
+open Belay.Sqlite.Model SqliteVerifier
 
 /-- The resolved addition binds the exact default and NOT NULL metadata in the contract.
 The proof reduces the sealed generated statement. -/

@@ -10,7 +10,7 @@ pkgs.stdenv.mkDerivation {
   buildPhase = ''
     mkdir -p packages
     cp -R ${verifierLibrary} packages/sqlite-verifier
-    cp -R ${modelPackage} packages/belay-sqlite
+    cp -R ${modelPackage} packages/belay-sqlite-model
     export LEAN_PATH=${verifierLibrary}/.lake/build/lib/lean:${modelPackage}/.lake/build/lib/lean
     python3 ${inventoryTools}/tools/public_doc_inventory.py --root "$PWD" \
       --lean ${leanToolchain}/bin/lean --tools ${docTools} --output "$PWD/build/public-doc-inventory.json"

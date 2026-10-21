@@ -4,7 +4,7 @@ A case carries the profile of the native connection (`case_profile`), the schema
 and migration as the Lean `Syntax` JSON of `belay.sqlite.syntax`, and each native
 observation as tables with their PRAGMA metadata (`conformance.native_metadata`),
 typed rows and the phase of an error. Lean decodes it with
-`Belay.Sqlite.Conformance.decodeCase`.
+`Belay.Sqlite.Model.Conformance.decodeCase`.
 """
 
 from typing import TypeAlias

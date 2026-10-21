@@ -1,11 +1,11 @@
-import Belay.Sqlite.SqlExecution
+import Belay.Sqlite.Model.SqlExecution
 
 set_option doc.verso true
 
 /-! General proof obligations are separate from additive proof conveniences.
 Approved predicates determine permitted changes, applicability, and failure safety. -/
 
-open Belay.Sqlite
+open Belay.Sqlite.Model
 
 namespace SqliteVerifier
 

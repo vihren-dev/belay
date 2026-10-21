@@ -59,9 +59,9 @@ def lean_sysroot(runtime_root: Path, pytestconfig: pytest.Config) -> Path:
 def lean_libraries(runtime_root: Path) -> tuple[Path, Path]:
     """Require the separately installed application and model roots in trusted precedence order."""
     application = runtime_root / ".lake/build/lib/lean"
-    model = runtime_root / "packages/belay-sqlite/.lake/build/lib/lean"
+    model = runtime_root / "packages/belay-sqlite-model/.lake/build/lib/lean"
     require_file(application / "SqliteVerifier.olean")
-    require_file(model / "Belay/Sqlite.olean")
+    require_file(model / "Belay/Sqlite/Model.olean")
     return application, model
 
 

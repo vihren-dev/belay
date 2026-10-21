@@ -24,10 +24,10 @@ setup: build
 build: resources
     mkdir -p build .lake
     timeout --foreground 900 nix-build build-support/default.nix -A runtime --out-link build/runtime --extra-experimental-features 'nix-command flakes'
-    rm -rf .lake/build packages/belay-sqlite/.lake/build
-    mkdir -p packages/belay-sqlite/.lake
+    rm -rf .lake/build packages/belay-sqlite-model/.lake/build
+    mkdir -p packages/belay-sqlite-model/.lake
     ln -sfn ../build/runtime/.lake/build .lake/build
-    ln -sfn ../../../build/runtime/packages/belay-sqlite/.lake/build packages/belay-sqlite/.lake/build
+    ln -sfn ../../../build/runtime/packages/belay-sqlite-model/.lake/build packages/belay-sqlite-model/.lake/build
     ln -sfn build/runtime/lean lean
     ln -sfn build/runtime/lib lib
 

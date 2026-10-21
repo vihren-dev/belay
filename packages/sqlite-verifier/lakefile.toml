@@ -5,8 +5,8 @@ version = "0.1.0"
 defaultTargets = ["SqliteVerifier"]
 
 [[require]]
-name = "belaySqlite"
-path = "../belay-sqlite"
+name = "belaySqliteModel"
+path = "../belay-sqlite-model"
 
 [[lean_lib]]
 name = "SqliteVerifier"

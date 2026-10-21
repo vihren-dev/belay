@@ -18,7 +18,7 @@ from conformance.restriction_examples import EXAMPLES
 
 pytestmark = [pytest.mark.unit]
 ROOT = Path(__file__).resolve().parents[1]
-RESOLUTION = ROOT / "packages/belay-sqlite/Belay/Sqlite/Resolution"
+RESOLUTION = ROOT / "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution"
 
 
 def registry_ids() -> dict[str, str]:

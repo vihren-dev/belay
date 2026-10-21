@@ -10,7 +10,7 @@ Creates under WORK_DIR:
   `build/ir`. The shipped runtime omits `ir`, and Lake then treats every
   `SqliteVerifier` module as not built, because each trace lists a `.c` output.
   This simulates a runtime that ships `ir`.
-- `shim/`: library-only Lake packages for `SqliteVerifier` and `belaySqlite`. They
+- `shim/`: library-only Lake packages for `SqliteVerifier` and `belaySqliteModel`. They
   point at the runtime's sources and outputs and set `enableArtifactCache = false`,
   so Lake never tries to copy read-only library outputs into the cache. The
   runtime's own lakefile cannot be used: it requires `lean4export`, which the
@@ -36,8 +36,8 @@ version = "0.1.0"
 enableArtifactCache = false
 
 [[require]]
-name = "belaySqlite"
-path = "packages/belay-sqlite"
+name = "belaySqliteModel"
+path = "packages/belay-sqlite-model"
 
 [[lean_lib]]
 name = "SqliteVerifier"
@@ -88,13 +88,13 @@ def runtime_lake_with_ir(work: Path, shim: Path) -> None:
 
 
 def shim_packages(work: Path) -> Path:
-    """Create the library-only `sqliteVerifier` and `belaySqlite` packages over the runtime.
+    """Create the library-only `sqliteVerifier` and `belaySqliteModel` packages over the runtime.
 
     Lake finds prebuilt libraries only through packages; it replaces `LEAN_PATH` when it compiles.
     """
     shim = work / "shim"
     shutil.rmtree(shim, ignore_errors=True)
-    belay_source, belay = RUNTIME / "packages/belay-sqlite", shim / "packages/belay-sqlite"
+    belay_source, belay = RUNTIME / "packages/belay-sqlite-model", shim / "packages/belay-sqlite-model"
     belay.mkdir(parents=True)
     for name in ("SqliteVerifier", "SqliteVerifier.lean", "lean-toolchain"):
         (shim / name).symlink_to(RUNTIME / name)

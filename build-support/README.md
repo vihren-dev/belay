@@ -50,7 +50,7 @@ repository layout that holds the outputs of the packages it requires. Lake
 replays those outputs and compiles only the package's own modules; the output
 is the package's Lake workspace. `tests.packages` checks that a workspace that
 requires an output compiles nothing. The packages are `modelPackage`
-(`packages/belay-sqlite`: `Belay.Sqlite` and its codec, with no application
+(`packages/belay-sqlite-model`: `Belay.Sqlite.Model` and its codec, with no application
 inputs), `verifierLibrary` (`packages/sqlite-verifier`: the library, the
 engineering examples, `GatePaths` and `GateCore`), `verifierGate`
 (`packages/verifier-gate`: the three executables) and `verifierConformance`
@@ -67,7 +67,7 @@ The frontend takes explicit parser and profile inputs. It has no dependency on
 the verification application. It maps SQL to statement syntax; the Lean
 `migration-resolver` writes the application's generated modules, and the
 conformance runner resolves statement syntax itself. `just build` uses this same runtime and exposes local development
-paths as links: `.lake/build` and `packages/belay-sqlite/.lake/build` (the
+paths as links: `.lake/build` and `packages/belay-sqlite-model/.lake/build` (the
 outputs of the two Lake packages), `lean`, and the parsers in `build/`; it does not rebuild Lean through Elan or Lake outside Nix. It never caches a user
 proof verdict or installed test result. Set
 `SQLITE_VERIFIER_RUNTIME_ROOT` to this immutable output before `just test` or

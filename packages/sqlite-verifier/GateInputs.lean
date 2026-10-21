@@ -1,5 +1,5 @@
 import GateCore
-import Belay.Sqlite.Codec.Resolution
+import Belay.Sqlite.Model.Codec.Resolution
 
 /-! The generated inputs of a request, checked against the frontend's structural
 record. Both gates resolve the record's schema and script again with the compiled
@@ -7,7 +7,7 @@ record. Both gates resolve the record's schema and script again with the compile
 result. A changed generated file therefore cannot change the target. See ADR 0008,
 "Where resolution runs". -/
 
-open Lean Belay.Sqlite
+open Lean Belay.Sqlite.Model
 
 namespace ProofChecker
 

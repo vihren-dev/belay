@@ -20,9 +20,9 @@ in rec {
   # The standalone model and its separate transport codec, without application inputs.
   modelPackage = leanPackage {
     pname = "belay-sqlite-model";
-    directory = "packages/belay-sqlite";
+    directory = "packages/belay-sqlite-model";
     source = sources.model;
-    targets = [ "Belay.Sqlite" "Belay.Sqlite.Codec" ];
+    targets = [ "Belay.Sqlite.Model" "Belay.Sqlite.Model.Codec" ];
   };
   sqlite3534 = native.sqlite3534;
   docGen4 = import ./doc-gen4.nix { inherit pkgs leanToolchain; };
@@ -85,7 +85,7 @@ in rec {
     directory = "packages/sqlite-verifier";
     source = sources.verifierLibrary;
     targets = [ "SqliteVerifier" "EngineeringExamples" "GatePaths" "GateCore" "GateInputs" ];
-    requires."packages/belay-sqlite" = modelPackage;
+    requires."packages/belay-sqlite-model" = modelPackage;
   };
   # The exporter library that the gate's executables import; built once, here, not in each gate build.
   lean4exportPackage = leanPackage {
@@ -100,7 +100,7 @@ in rec {
     directory = "packages/verifier-gate";
     source = sources.verifierGate;
     targets = [ "migration-proof-checker" "migration-bundle-checker" "migration-proof-exporter" "migration-resolver" ];
-    requires = { "packages/belay-sqlite" = modelPackage; "packages/sqlite-verifier" = verifierLibrary;
+    requires = { "packages/belay-sqlite-model" = modelPackage; "packages/sqlite-verifier" = verifierLibrary;
                  "build/lean4export" = lean4exportPackage; };
     executables = true;
   };
@@ -109,12 +109,12 @@ in rec {
     directory = "packages/verifier-conformance";
     source = sources.verifierConformance;
     targets = [ "VerifierConformance" "conformance-runner" ];
-    requires."packages/belay-sqlite" = modelPackage;
+    requires."packages/belay-sqlite-model" = modelPackage;
     executables = true;
   };
   # The built Lean packages by their folder in the repository layout; tests.packages replays them.
   leanPackages = {
-    "packages/belay-sqlite" = modelPackage; "packages/sqlite-verifier" = verifierLibrary;
+    "packages/belay-sqlite-model" = modelPackage; "packages/sqlite-verifier" = verifierLibrary;
     "packages/verifier-gate" = verifierGate; "packages/verifier-conformance" = verifierConformance;
     "packages/public-doc-tools" = docTools; "build/lean4export" = lean4exportPackage;
   };
@@ -148,7 +148,7 @@ in rec {
     ln -s ${leanToolchain} "$out/lean"
     ln -s ${conformanceRuntime}/.lake "$out/.lake"
     mkdir -p "$out/packages"
-    ln -s ${modelPackage} "$out/packages/belay-sqlite"
+    ln -s ${modelPackage} "$out/packages/belay-sqlite-model"
     ln -s ${parserLibrary.library}/lib "$out/lib"
   '';
   # The runner built against an instrumented copy of the model's sources, which compiles here.
@@ -157,7 +157,7 @@ in rec {
     directory = "packages/verifier-conformance";
     source = sources.verifierConformance;
     targets = [ "conformance-runner" ];
-    requires."packages/belay-sqlite" = sources.model;
+    requires."packages/belay-sqlite-model" = sources.model;
     executables = true;
   }).overrideAttrs (old: {
     postPatch = ''

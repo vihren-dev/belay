@@ -160,14 +160,14 @@ def test_installed_model_and_codec_consumer(runtime_root: Path, tmp_path: Path,
         command_runner: Callable[..., CommandResult]) -> None:
     """An unrelated installed consumer compiles core, codec and application imports from both roots."""
     source = tmp_path / 'NeutralConsumer.lean'
-    source.write_text('import Belay.Sqlite\nimport Belay.Sqlite.Codec.Resolution\nimport SqliteVerifier\n'
-        '#check Belay.Sqlite.Conforms.setRows\n#check Belay.Sqlite.TableExtends.project\n'
+    source.write_text('import Belay.Sqlite.Model\nimport Belay.Sqlite.Model.Codec.Resolution\nimport SqliteVerifier\n'
+        '#check Belay.Sqlite.Model.Conforms.setRows\n#check Belay.Sqlite.Model.TableExtends.project\n'
         '#check SqliteVerifier.VerificationConditions\n'
-        'def record : Belay.Sqlite.ScriptRecord := ⟨5, "3.51.0", "build", [], []⟩\n'
-        '#eval match Belay.Sqlite.decodeScriptRecord (Lean.toJson record) with\n'
+        'def record : Belay.Sqlite.Model.ScriptRecord := ⟨5, "3.51.0", "build", [], []⟩\n'
+        '#eval match Belay.Sqlite.Model.decodeScriptRecord (Lean.toJson record) with\n'
         '  | .ok value => value.version == 5 && value.resolve.toOption.isSome\n  | .error _ => false\n')
     roots = (runtime_root / '.lake/build/lib/lean',
-             runtime_root / 'packages/belay-sqlite/.lake/build/lib/lean')
+             runtime_root / 'packages/belay-sqlite-model/.lake/build/lib/lean')
     result = command_runner([str(runtime_root / 'lean/bin/lean'), str(source)],cwd=tmp_path,
         timeout=30,environment={'LEAN_SYSROOT':str(runtime_root / 'lean'),
                                'LEAN_PATH':os.pathsep.join(map(str,roots))})

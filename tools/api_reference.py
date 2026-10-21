@@ -22,7 +22,7 @@ from tools.source_revision import FULL_COMMIT_HASH_PATTERN
 
 LIBRARY_PACKAGE_DIRECTORY = Path("packages/sqlite-verifier")
 """Repository location of the verifier library package; doc-gen4 runs in its Lake environment."""
-MODEL_PACKAGE_DIRECTORY = Path("packages/belay-sqlite")
+MODEL_PACKAGE_DIRECTORY = Path("packages/belay-sqlite-model")
 """Repository location of the independent model package and its source files."""
 PUBLIC_PAGE_ROOTS = frozenset({"SqliteVerifier", "SqliteVerifier.html", "Belay"})
 """Our library page roots; Lean library pages remain outside the correction scope."""

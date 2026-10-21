@@ -59,7 +59,7 @@ def test_valid_migration_artifacts(invoke: Callable[..., dict[str, object]], tmp
     assert {path.name for path in artifacts.iterdir()} == {"SchemaInputs.lean", "SqlInputs.lean", "Generated.lean", "inputs.json"}
     assert "def startCatalog" in (artifacts / "SchemaInputs.lean").read_text()
     assert "def startCatalog" not in (artifacts / "SqlInputs.lean").read_text()
-    assert "Belay.Sqlite.Resolved.Statement.addColumn" in (artifacts / "SqlInputs.lean").read_text()
+    assert "Belay.Sqlite.Model.Resolved.Statement.addColumn" in (artifacts / "SqlInputs.lean").read_text()
     assert "VerificationConditions" in (artifacts / "Generated.lean").read_text()
 
 
@@ -168,11 +168,11 @@ def test_approved_transitive_dependency(invoke: Callable[..., dict[str, object]]
 def test_caller_model_namespace_remains_untrusted(invoke: Callable[..., dict[str, object]],
                                                  candidate: Path) -> None:
     """A caller-owned model namespace resolves and is replayed without becoming a protected module."""
-    helper = candidate / 'Belay/Sqlite/Caller.lean'
+    helper = candidate / 'Belay/Sqlite/Model/Caller.lean'
     helper.parent.mkdir(parents=True)
-    helper.write_text('def Belay.Sqlite.callerValue : Nat := 7\n')
+    helper.write_text('def Belay.Sqlite.Model.callerValue : Nat := 7\n')
     proof = candidate / 'Proofs.lean'
-    proof.write_text(proof.read_text().replace('import Generated', 'import Generated\nimport Belay.Sqlite.Caller')
+    proof.write_text(proof.read_text().replace('import Generated', 'import Generated\nimport Belay.Sqlite.Model.Caller')
         .replace('  SqliteVerifier.Demonstration.migrationCorrect',
-                 '  by\n    have checked : Belay.Sqlite.callerValue = 7 := rfl\n    exact SqliteVerifier.Demonstration.migrationCorrect'))
+                 '  by\n    have checked : Belay.Sqlite.Model.callerValue = 7 := rfl\n    exact SqliteVerifier.Demonstration.migrationCorrect'))
     invoke('VERIFIED')

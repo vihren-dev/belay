@@ -1,6 +1,6 @@
 """The function catalog of the model matches the pinned library (ADR 0015, D1).
 
-`Belay/Sqlite/Resolution/FunctionCatalog.lean` lists each function name with the numbers of
+`Belay/Sqlite/Model/Resolution/FunctionCatalog.lean` lists each function name with the numbers of
 arguments that its scalar, aggregate or window form accepts. Resolution reports SQLite's
 `no such function` and `wrong number of arguments` from it, so a name or a number that
 differs from the library would give a wrong prepare error. The test reads the Lean table and
@@ -18,7 +18,7 @@ from conformance.native_connection import Connection, library_path
 from conformance.native_library import load_library
 
 pytestmark = [pytest.mark.integration, pytest.mark.requires_native("sqlite3")]
-CATALOG = Path(__file__).resolve().parents[1] / "packages/belay-sqlite/Belay/Sqlite/Resolution/FunctionCatalog.lean"
+CATALOG = Path(__file__).resolve().parents[1] / "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/FunctionCatalog.lean"
 ENTRY = re.compile(r'^  \| "(?P<name>[^"]+)" => some \{ (?P<forms>[^}]*) \}$', re.MULTILINE)
 FORM = re.compile(r"(?P<kind>scalar|aggregate|window) := some \(\.(?P<arity>counts \[[^]]*\]|atLeast \d+)\)")
 WINDOW_ONLY = {"cume_dist", "dense_rank", "first_value", "lag", "last_value", "lead", "nth_value", "ntile",

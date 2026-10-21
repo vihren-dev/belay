@@ -35,7 +35,7 @@ def test_workspace_requiring_runtime_compiles_no_library_module(
         f'[[require]]\nname = "sqliteVerifier"\npath = "{runtime_root}"\n\n'
         '[[lean_lib]]\nname = "Probe"\nroots = ["Probe"]\n')
     (workspace / "Probe.lean").write_text(
-        "import SqliteVerifier\nimport SqliteVerifier.Demonstration\nimport Belay.Sqlite\n"
+        "import SqliteVerifier\nimport SqliteVerifier.Demonstration\nimport Belay.Sqlite.Model\n"
         "example : True := trivial\n")
     environment = {"HOME": str(tmp_path), "PATH": f"{runtime_root / 'lean/bin'}{os.pathsep}/usr/bin:/bin",
                    "LAKE_CACHE_DIR": str(tmp_path / "cache")}

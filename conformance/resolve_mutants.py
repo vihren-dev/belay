@@ -5,7 +5,7 @@ ADR 0008 ("How `resolve` is tested", Mutants) requires that each listed change o
 suite is known to test each rule. Resolution functions are called through dot
 notation (`catalog.find`), so a copy of single definitions in a private namespace
 would still call the originals. Each mutant is therefore a real copy of the
-`belay-sqlite` and `verifier-conformance` packages with one text change, which Lake
+`belay-sqlite-model` and `verifier-conformance` packages with one text change, which Lake
 rebuilds from one shared base build. The build covers only the import closure of
 `VerifierConformance.Case`, which has no proof modules, so a mutant that breaks a
 proof still builds. The Lean interpreter then classifies the cases, given as the
@@ -26,7 +26,7 @@ from tempfile import TemporaryDirectory
 from conformance.case_format import Json
 from conformance.model_check import compiled_many
 
-SQLITE = "belay-sqlite/Belay/Sqlite/"
+SQLITE = "belay-sqlite-model/Belay/Sqlite/Model/"
 """The model sources, relative to `packages/`."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
@@ -95,9 +95,9 @@ BUILD_TIMEOUT_SECONDS = 600
 """One Lake build of a copy; a fresh base build takes about 12 seconds."""
 RUN_TIMEOUT_SECONDS = 300
 """One interpreted classification of all case terms."""
-AGREE = "Belay.Sqlite.Conformance.Verdict.agree"
+AGREE = "Belay.Sqlite.Model.Conformance.Verdict.agree"
 """The printed verdict of an agreeing case."""
-UNSUPPORTED = "Belay.Sqlite.Conformance.Verdict.modelUnsupported"
+UNSUPPORTED = "Belay.Sqlite.Model.Conformance.Verdict.modelUnsupported"
 """The printed verdict of a case outside the model's scope, such as a boundary case of an obligation."""
 MAX_REC_DEPTH = 100000
 """Lean's `maxRecDepth` for elaborating the case terms, as the kernel proofs of the cases use."""
@@ -110,7 +110,7 @@ def classifier(terms: list[str]) -> str:
     definitions = "".join(f"def case{index} : Case :=\n  " + term.replace("\n", "\n  ") + "\n"
                           for index, term in enumerate(terms))
     names = ", ".join(f"case{index}" for index in range(len(terms)))
-    return ("import VerifierConformance.Case\nopen Belay.Sqlite Belay.Sqlite.Conformance\n"
+    return ("import VerifierConformance.Case\nopen Belay.Sqlite.Model Belay.Sqlite.Model.Conformance\n"
             f"set_option maxRecDepth {MAX_REC_DEPTH}\n"
             f"{definitions}def cases : List Case := [{names}]\n"
             "def main : IO Unit := for c in cases do IO.println (reprStr (classifyCase c))\n")
@@ -166,7 +166,7 @@ def measure(cases: list[dict[str, Json]], repository: Path, runtime: Path,
     with TemporaryDirectory(prefix="resolve-mutants-") as directory:
         root = Path(directory)
         base = root / "base"
-        for package in ("belay-sqlite", "verifier-conformance"):
+        for package in ("belay-sqlite-model", "verifier-conformance"):
             shutil.copytree(repository / "packages" / package, base / package,
                             ignore=shutil.ignore_patterns(".lake", "build"))
         original = verdicts(base, lean, classifier(terms))

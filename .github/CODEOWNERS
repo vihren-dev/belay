@@ -14,7 +14,7 @@
 /packages/sqlite-verifier/GateCore.lean @tzanko-matev
 /packages/verifier-gate/ProofChecker.lean @tzanko-matev
 /packages/verifier-gate/BundleChecker.lean @tzanko-matev
-/packages/belay-sqlite/Belay/Sqlite/Codec.lean @tzanko-matev
+/packages/belay-sqlite-model/Belay/Sqlite/Model/Codec.lean @tzanko-matev
 /migration_check/prepare.py @tzanko-matev
 /migration_check/bundle.py @tzanko-matev
 /migration_check/baseline.py @tzanko-matev

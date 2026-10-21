@@ -1,5 +1,5 @@
 import VerifierConformance.Json
-open Belay.Sqlite.Conformance
+open Belay.Sqlite.Model.Conformance
 set_option maxRecDepth 100000
 set_option maxHeartbeats 30000000
 def fixture : Case :=
@@ -17,24 +17,24 @@ def fixture : Case :=
                  dqsDdl := true },
     schemaSql := "CREATE TABLE t(id INTEGER NOT NULL,v BLOB,UNIQUE(id));",
     migrationSql := "INSERT INTO t(id,v) VALUES(2,0);",
-    schema := [Belay.Sqlite.Syntax.Statement.createTable
+    schema := [Belay.Sqlite.Model.Syntax.Statement.createTable
                  "t"
                  [{ name := "id",
                     declaredType := some "INTEGER",
-                    constraints := [Belay.Sqlite.Syntax.ColumnConstraint.notNull] },
+                    constraints := [Belay.Sqlite.Model.Syntax.ColumnConstraint.notNull] },
                   { name := "v", declaredType := some "BLOB", constraints := [] }]
-                 [Belay.Sqlite.Syntax.TableConstraint.unique ["id"]]],
-    script := [Belay.Sqlite.Syntax.Statement.insert
+                 [Belay.Sqlite.Model.Syntax.TableConstraint.unique ["id"]]],
+    script := [Belay.Sqlite.Model.Syntax.Statement.insert
                  "t"
                  (some ["id", "v"])
-                 [[Belay.Sqlite.Syntax.Expr.numeric "2", Belay.Sqlite.Syntax.Expr.numeric "0"]]],
+                 [[Belay.Sqlite.Model.Syntax.Expr.numeric "2", Belay.Sqlite.Model.Syntax.Expr.numeric "0"]]],
     initial := [{ name := "t",
                   columns := [{ name := "id", declaredType := "INTEGER", notNull := true, defaultValue := none },
                               { name := "v", declaredType := "BLOB", notNull := false, defaultValue := none }],
                   primaryKey := [],
                   uniqueKeys := [[0]],
                   indexes := [],
-                  rows := [{ rowid := 1, values := [Belay.Sqlite.Value.integer 1, Belay.Sqlite.Value.blob []] }] }],
+                  rows := [{ rowid := 1, values := [Belay.Sqlite.Model.Value.integer 1, Belay.Sqlite.Model.Value.blob []] }] }],
     nativeTrace := [{ visible := [{ name := "t",
                                     columns := [{ name := "id",
                                                   declaredType := "INTEGER",
@@ -48,7 +48,7 @@ def fixture : Case :=
                                     uniqueKeys := [[0]],
                                     indexes := [],
                                     rows := [{ rowid := 1,
-                                               values := [Belay.Sqlite.Value.integer 1, Belay.Sqlite.Value.blob []] }] }],
+                                               values := [Belay.Sqlite.Model.Value.integer 1, Belay.Sqlite.Model.Value.blob []] }] }],
                       persisted := [{ name := "t",
                                       columns := [{ name := "id",
                                                     declaredType := "INTEGER",
@@ -62,8 +62,8 @@ def fixture : Case :=
                                       uniqueKeys := [[0]],
                                       indexes := [],
                                       rows := [{ rowid := 1,
-                                                 values := [Belay.Sqlite.Value.integer 1,
-                                                            Belay.Sqlite.Value.blob []] }] }],
+                                                 values := [Belay.Sqlite.Model.Value.integer 1,
+                                                            Belay.Sqlite.Model.Value.blob []] }] }],
                       transactionOpen := false,
                       primaryCode := 0,
                       extendedCode := 0,
@@ -81,10 +81,10 @@ def fixture : Case :=
                                     uniqueKeys := [[0]],
                                     indexes := [],
                                     rows := [{ rowid := 1,
-                                               values := [Belay.Sqlite.Value.integer 1, Belay.Sqlite.Value.blob []] },
+                                               values := [Belay.Sqlite.Model.Value.integer 1, Belay.Sqlite.Model.Value.blob []] },
                                              { rowid := 2,
-                                               values := [Belay.Sqlite.Value.integer 2,
-                                                          Belay.Sqlite.Value.integer 0] }] }],
+                                               values := [Belay.Sqlite.Model.Value.integer 2,
+                                                          Belay.Sqlite.Model.Value.integer 0] }] }],
                       persisted := [{ name := "t",
                                       columns := [{ name := "id",
                                                     declaredType := "INTEGER",
@@ -98,10 +98,10 @@ def fixture : Case :=
                                       uniqueKeys := [[0]],
                                       indexes := [],
                                       rows := [{ rowid := 1,
-                                                 values := [Belay.Sqlite.Value.integer 1, Belay.Sqlite.Value.blob []] },
+                                                 values := [Belay.Sqlite.Model.Value.integer 1, Belay.Sqlite.Model.Value.blob []] },
                                                { rowid := 2,
-                                                 values := [Belay.Sqlite.Value.integer 2,
-                                                            Belay.Sqlite.Value.integer 0] }] }],
+                                                 values := [Belay.Sqlite.Model.Value.integer 2,
+                                                            Belay.Sqlite.Model.Value.integer 0] }] }],
                       transactionOpen := false,
                       primaryCode := 0,
                       extendedCode := 0,

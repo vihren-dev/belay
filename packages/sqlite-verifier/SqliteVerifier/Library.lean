@@ -1,12 +1,12 @@
 import SqliteVerifier.ContractProofs
-import Belay.Sqlite.ModelLaws
+import Belay.Sqlite.Model.ModelLaws
 
 set_option doc.verso true
 
 /-! Application interpretations use structural model facts and retain flexible
 logical contracts. They name tables; the catalog gives each name's position. -/
 
-open Belay.Sqlite
+open Belay.Sqlite.Model
 
 namespace SqliteVerifier
 

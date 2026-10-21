@@ -2,7 +2,7 @@ import Generated
 
 /-! A checked refutation identifies the unfulfilled standing catalog requirement. -/
 namespace Proofs
-open Belay.Sqlite
+open Belay.Sqlite.Model
 
 /-- The table that the migration creates. -/
 def audit : CatalogTable := { columns := [{ name := name! "message", declaredType := some "TEXT" }] }

@@ -33,9 +33,9 @@ def test_colliding_model_is_refused_by_both_gates(runtime_root: Path, lean_sysro
         lean_libraries: tuple[Path, Path], tmp_path: Path) -> None:
     """A duplicate installed module fails before either gate imports caller declarations."""
     application = tmp_path / 'application'
-    duplicate = application / 'Belay/Sqlite.olean'
+    duplicate = application / 'Belay/Sqlite/Model.olean'
     duplicate.parent.mkdir(parents=True)
-    shutil.copyfile(lean_libraries[1] / 'Belay/Sqlite.olean', duplicate)
+    shutil.copyfile(lean_libraries[1] / 'Belay/Sqlite/Model.olean', duplicate)
     with pytest.raises(ValueError, match='conflicts'):
         validate_libraries(lean_sysroot, (application, lean_libraries[1]))
     trusted, candidate = tmp_path / 'trusted', tmp_path / 'candidate'
@@ -60,13 +60,13 @@ def test_candidate_model_namespace_is_exported(runtime_root: Path, example_facto
         import shutil
         shutil.copytree(example_factory(original), examples / name)
     candidate = examples / 'add_column_then_table'
-    helper = candidate / 'Belay/Sqlite/Candidate.lean'
+    helper = candidate / 'Belay/Sqlite/Model/Candidate.lean'
     helper.parent.mkdir(parents=True)
-    list_candidate_module(candidate, 'Belay.Sqlite.Candidate')
+    list_candidate_module(candidate, 'Belay.Sqlite.Model.Candidate')
     helper.write_text("import Generated\nimport SqliteVerifier.Demonstration\n"
-        "theorem Belay.Sqlite.callerProof : Generated.expected := SqliteVerifier.Demonstration.migrationCorrect Generated.profile (by decide)\n")
-    (candidate / 'Proofs.lean').write_text("import Belay.Sqlite.Candidate\n"
-        "theorem Proofs.migrationCorrect : Generated.expected := Belay.Sqlite.callerProof\n")
+        "theorem Belay.Sqlite.Model.callerProof : Generated.expected := SqliteVerifier.Demonstration.migrationCorrect Generated.profile (by decide)\n")
+    (candidate / 'Proofs.lean').write_text("import Belay.Sqlite.Model.Candidate\n"
+        "theorem Proofs.migrationCorrect : Generated.expected := Belay.Sqlite.Model.callerProof\n")
     _bundle, report = prepare_check(runtime_root, examples, tmp_path,
                                     *case_inputs(examples, CASES['small'])[:4], command_runner)
     assert report['status'] == 'VERIFIED', report

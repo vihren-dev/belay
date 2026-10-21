@@ -7,7 +7,7 @@ and initial interpretation; the proof accounts for its changed statement order.
 The resolved script is the one for
 {lit}`CREATE TABLE audit(message TEXT); ALTER TABLE invoices ADD COLUMN note TEXT;`. -/
 
-open Belay.Sqlite
+open Belay.Sqlite.Model
 
 namespace SqliteVerifier.Demonstration
 

@@ -77,7 +77,7 @@ class Runtime:
                 f"MIGRATION_CHECK_LEAN_SYSROOT to a Lean {PINNED_LEAN_VERSION} installation.",
             )
         runtime = cls(root, sysroot, (root / ".lake/build/lib/lean",
-                      root / "packages/belay-sqlite/.lake/build/lib/lean"), installed_library(root, sys.platform),
+                      root / "packages/belay-sqlite-model/.lake/build/lib/lean"), installed_library(root, sys.platform),
                       root / ".lake/build/bin/migration-proof-checker")
         if (not all(path.is_dir() for path in runtime.libraries) or not runtime.parser_library.is_file()
                 or not runtime.checker.is_file()):

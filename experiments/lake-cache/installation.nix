@@ -22,11 +22,11 @@ let
   });
   libraryGlobs = ''["SqliteVerifier", "SqliteVerifier.Contract", "SqliteVerifier.ContractProofs", "SqliteVerifier.Library", "SqliteVerifier.NullableProjection", "SqliteVerifier.ApplicationKeys", "SqliteVerifier.ApplicationKeyPreservation"]'';
 in pkgs.runCommand "sqlite-verifier-lake-installation" { } ''
-  mkdir -p "$out/packages/sqlite-verifier" "$out/packages/belay-sqlite"
+  mkdir -p "$out/packages/sqlite-verifier" "$out/packages/belay-sqlite-model"
 
-  cp -R ${modelPackage}/. "$out/packages/belay-sqlite/"
-  chmod -R u+w "$out/packages/belay-sqlite"
-  sed -i '/^defaultTargets/a enableArtifactCache = false' "$out/packages/belay-sqlite/lakefile.toml"
+  cp -R ${modelPackage}/. "$out/packages/belay-sqlite-model/"
+  chmod -R u+w "$out/packages/belay-sqlite-model"
+  sed -i '/^defaultTargets/a enableArtifactCache = false' "$out/packages/belay-sqlite-model/lakefile.toml"
 
   library="$out/packages/sqlite-verifier"
   cp -R ${sources.lean}/SqliteVerifier ${sources.lean}/SqliteVerifier.lean ${sources.lean}/lean-toolchain "$library/"
@@ -39,8 +39,8 @@ in pkgs.runCommand "sqlite-verifier-lake-installation" { } ''
   enableArtifactCache = false
 
   [[require]]
-  name = "belaySqlite"
-  path = "../belay-sqlite"
+  name = "belaySqliteModel"
+  path = "../belay-sqlite-model"
 
   [[lean_lib]]
   name = "SqliteVerifier"

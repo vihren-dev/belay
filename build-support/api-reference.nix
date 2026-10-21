@@ -16,7 +16,7 @@ pkgs.stdenv.mkDerivation {
   buildPhase = ''
     export HOME="$TMPDIR"
     mkdir -p build packages
-    cp -R ${modelPackage} packages/belay-sqlite
+    cp -R ${modelPackage} packages/belay-sqlite-model
     cp -R ${verifierLibrary} packages/sqlite-verifier
     chmod -R u+w packages
     cp -R ${core} build/reference

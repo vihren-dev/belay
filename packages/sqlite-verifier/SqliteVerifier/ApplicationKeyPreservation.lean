@@ -1,9 +1,9 @@
-import Belay.Sqlite.ModelProjectionLaws
+import Belay.Sqlite.Model.ModelProjectionLaws
 import SqliteVerifier.ApplicationKeys
 
 set_option doc.verso true
 
-open Belay.Sqlite
+open Belay.Sqlite.Model
 
 namespace SqliteVerifier
 

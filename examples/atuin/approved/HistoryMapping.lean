@@ -4,7 +4,7 @@ import HistoryDecoding
 /-! The approved mapping reads the complete pre-migration business model from
 storage. Undefined decoding rejects the complete observation. -/
 namespace HistoryMapping
-open Belay.Sqlite SqliteVerifier HistoryModel
+open Belay.Sqlite.Model SqliteVerifier HistoryModel
 
 /-- Every physical history row contributes one decoded business entry. The history
 table is at its position in the sealed starting catalog; positions do not change. -/

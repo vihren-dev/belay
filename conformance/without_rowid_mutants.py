@@ -31,7 +31,7 @@ TARGETS: dict[str, tuple[str, ...]] = {
 """The authored case of `conformance.authored_without_rowid` that each mutant changes."""
 
 GUARDS: dict[str, str] = {
-    "without_rowid_insertion_order": "rule:_root_.Belay.Sqlite.Table.scanRows",
+    "without_rowid_insertion_order": "rule:_root_.Belay.Sqlite.Model.Table.scanRows",
     "without_rowid_null_key": "rule:CatalogTable.asWithoutRowid",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant

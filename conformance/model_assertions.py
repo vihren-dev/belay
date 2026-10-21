@@ -12,7 +12,7 @@ def audit_axioms(output: str) -> None:
 
 
 HEADER = ("import VerifierConformance.Json\n"
-          "open Belay.Sqlite.Conformance\n"
+          "open Belay.Sqlite.Model.Conformance\n"
           "set_option maxRecDepth 100000\nset_option maxHeartbeats 30000000\n")
 """The imports and options of a proof file."""
 FOOTER = "#print axioms unsupported_not_checked\n#print axioms trace_final\n"

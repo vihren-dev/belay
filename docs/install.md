@@ -27,8 +27,8 @@ creates indirect Nix garbage-collection roots inside the installation. It does
 not download Lean, use elan, modify shell configuration, or replace another
 installation. The entrypoint uses the pinned Python in isolated mode, bundled
 Lean 4.34.1, pinned parsers and checkers, and both compiled libraries.
-The application library is at `.lake/build/lib/lean`. The reusable `Belay.Sqlite`
-model and codec are at `packages/belay-sqlite/.lake/build/lib/lean`. The archive
+The application library is at `.lake/build/lib/lean`. The reusable `Belay.Sqlite.Model`
+model and codec are at `packages/belay-sqlite-model/.lake/build/lib/lean`. The archive
 also supplies the independent Python frontend as `belay.sqlite`.
 Installed files are immutable Nix outputs; copy examples elsewhere before editing them. Ambient
 `PYTHONPATH`, `LEAN_PATH`, and Lean selection do not select its runtime.

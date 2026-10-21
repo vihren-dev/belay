@@ -3,7 +3,7 @@ import HistoryMapping
 /-! Reusable preservation requirements concern only the pre-migration business
 model. The resulting storage layout is the candidate interpretation's responsibility. -/
 namespace Requirements
-open Belay.Sqlite SqliteVerifier HistoryModel
+open Belay.Sqlite.Model SqliteVerifier HistoryModel
 
 /-- Application state contains histories, independent of SQL bookkeeping and rowids. -/
 abbrev LogicalState := List History

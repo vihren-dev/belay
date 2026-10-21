@@ -1,5 +1,5 @@
-import Belay.Sqlite.SchemaPreservationLaws
-import Belay.Sqlite.LiteralPreservationLaws
+import Belay.Sqlite.Model.SchemaPreservationLaws
+import Belay.Sqlite.Model.LiteralPreservationLaws
 
 set_option doc.verso true
 
@@ -7,7 +7,7 @@ set_option doc.verso true
 definition steps. Native SQL comparisons and complete application examples are
 checked separately. -/
 
-open Belay.Sqlite
+open Belay.Sqlite.Model
 
 namespace SqliteVerifier.SchemaExamples
 

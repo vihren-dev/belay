@@ -7,7 +7,7 @@ set_option doc.verso true
 small engineering case. Admission requires distinct non-NULL amounts; a real
 application can select its own business identifier and protected fields. -/
 
-open Belay.Sqlite
+open Belay.Sqlite.Model
 
 namespace SqliteVerifier.ApplicationKeyDemonstration
 

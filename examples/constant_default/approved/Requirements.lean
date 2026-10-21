@@ -4,7 +4,7 @@ set_option doc.verso true
 
 /-! Preserve every invoice amount and require the declared priority default. -/
 namespace Requirements
-open Belay.Sqlite SqliteVerifier
+open Belay.Sqlite.Model SqliteVerifier
 
 /-- Each invoice rowid and amount remains a protected observation. -/
 abbrev LogicalState := LogicalRows

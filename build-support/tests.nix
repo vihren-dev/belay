@@ -33,7 +33,7 @@ let
     ln -s ${leanToolchain} "$out/lean"
     ln -s ${leanRuntime}/.lake "$out/.lake"
     mkdir -p "$out/packages"
-    ln -s ${modelPackage} "$out/packages/belay-sqlite"
+    ln -s ${modelPackage} "$out/packages/belay-sqlite-model"
   '';
   # The package outputs in the repository layout. Each package folder is a real folder, so the relative
   # paths of its requirements resolve here; its entries link to the store, because Lake must not write.
@@ -86,16 +86,16 @@ let
   # Mutants rebuild changed copies of the two Lean packages, so their suites read the
   # complete sources, without local build outputs in `.lake`.
   mutantInputs = modelInputs ++ [ (root + /tests/mutant_sets.py) ] ++ map (package: fs.difference (root + "/packages/${package}")
-    (fs.maybeMissing (root + "/packages/${package}/.lake"))) [ "belay-sqlite" "verifier-conformance" ];
+    (fs.maybeMissing (root + "/packages/${package}/.lake"))) [ "belay-sqlite-model" "verifier-conformance" ];
   # Inputs shared by the three suites that the old single model suite contained.
   modelInputs = frontend ++ [
     claims
     (root + /tests/conformance_freeze_capture.py)
     (fs.fileFilter (file: file.hasExt "json") (root + /conformance/cases))
-    (root + /packages/belay-sqlite/Belay/Sqlite/StatementStep.lean)
-    (root + /packages/belay-sqlite/Belay/Sqlite/StatementRun.lean)
-    (root + /packages/belay-sqlite/Belay/Sqlite/SqlExecution.lean)
-    (root + /packages/belay-sqlite/Belay/Sqlite/Execution.lean) (root + /packages/belay-sqlite/Belay/Sqlite/LiteralData.lean)
+    (root + /packages/belay-sqlite-model/Belay/Sqlite/Model/StatementStep.lean)
+    (root + /packages/belay-sqlite-model/Belay/Sqlite/Model/StatementRun.lean)
+    (root + /packages/belay-sqlite-model/Belay/Sqlite/Model/SqlExecution.lean)
+    (root + /packages/belay-sqlite-model/Belay/Sqlite/Model/Execution.lean) (root + /packages/belay-sqlite-model/Belay/Sqlite/Model/LiteralData.lean)
     (root + /packages/verifier-conformance/VerifierConformance/Trace.lean)
     (root + /packages/verifier-conformance/VerifierConformance/Outputs.lean)
     (root + /packages/verifier-conformance/VerifierConformance/PossibleOutputs.lean)
@@ -104,7 +104,7 @@ let
     (root + /packages/verifier-conformance/VerifierConformance/Case.lean)
     (root + /packages/verifier-conformance/VerifierConformance/Predict.lean)
     (fs.fileFilter (file: file.hasExt "py" || file.hasExt "json") (root + /judge))
-    (root + /packages/belay-sqlite/Belay/Sqlite/Laws.lean)
+    (root + /packages/belay-sqlite-model/Belay/Sqlite/Model/Laws.lean)
     (root + /conformance/requirements-3.51.0.json)
     (root + /conformance/regressions)
     (root + /conformance/synthetic-workload)

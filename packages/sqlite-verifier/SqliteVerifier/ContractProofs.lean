@@ -6,7 +6,7 @@ set_option doc.verso true
 They remain separate from its definitions, so callers can supply the primitive
 verification fields directly when these helpers do not fit their proof. -/
 
-open Belay.Sqlite
+open Belay.Sqlite.Model
 
 namespace SqliteVerifier
 

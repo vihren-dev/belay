@@ -8,7 +8,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 LIBRARY_ROOT = ROOT / "packages/sqlite-verifier"
-MODEL_ROOT = ROOT / "packages/belay-sqlite"
+MODEL_ROOT = ROOT / "packages/belay-sqlite-model"
 PRODUCTION_ROOT_MODULE = "SqliteVerifier"
 """The public application root that every proof check imports as its trusted base."""
 EXAMPLES_LIBRARY = "EngineeringExamples"

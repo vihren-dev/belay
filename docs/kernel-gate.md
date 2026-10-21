@@ -13,7 +13,7 @@ All five paths must be existing absolute directories. The driver supplies the
 pinned Lean 4.34.1 installation, controls the environment, and seals the library
 and approved stage before compiling candidate files. The gate ignores `LEAN_PATH`.
 It searches the pinned Lean standard library, packaged `SqliteVerifier` application
-library, `Belay.Sqlite` model library, approved stage and candidate stage, in that
+library, `Belay.Sqlite.Model` model library, approved stage and candidate stage, in that
 order. Missing or colliding installed modules fail before caller declarations
 are loaded. Exact artifact paths preserve this order when a caller adds a module
 below an installed namespace. That caller module still requires kernel replay.

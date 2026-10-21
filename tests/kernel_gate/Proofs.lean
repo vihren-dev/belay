@@ -3,7 +3,7 @@ import Generated
 set_option doc.verso true
 
 /-! A real closed proof exercises replay against the formal model. -/
-open Belay.Sqlite SqliteVerifier
+open Belay.Sqlite.Model SqliteVerifier
 namespace Proofs
 /-- The fixture's observation covers every admitted empty-catalog database. -/
 theorem sound : SoundRepresentation Requirements.contract Generated.profile Interpretation.current := by

@@ -125,7 +125,7 @@ def case_run(name: str, work: Path, installation: Path) -> dict[str, object]:
 
     sysroot = installation / "lean"
     libraries = [installation / "packages/sqlite-verifier/.lake/build/lib/lean",
-                 installation / "packages/belay-sqlite/.lake/build/lib/lean"]
+                 installation / "packages/belay-sqlite-model/.lake/build/lib/lean"]
     trusted_imports = library_imports([contract, proofs / "Generated", proofs])
     bundle = base / "proof.bundle"
     search = [sysroot / "lib/lean", *libraries, proofs / ".lake/build/lib/lean"]

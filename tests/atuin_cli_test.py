@@ -83,7 +83,7 @@ def test_valid_migration_preserves_history(pilot: Path, verify: Callable[..., di
     assert 'def startCatalog' in schema_inputs and 'release := "3.46.0"' in schema_inputs
     for name in ('schema.sql', 'migration.sql'):
         assert inputs[name] == hashlib.sha256((pilot / name).read_bytes()).hexdigest()
-    assert 'Belay.Sqlite.Resolved.Statement.addColumn' in (artifacts / 'SqlInputs.lean').read_text()
+    assert 'Belay.Sqlite.Model.Resolved.Statement.addColumn' in (artifacts / 'SqlInputs.lean').read_text()
     assert 'profile.json' not in inputs
     assert json.loads((artifacts / 'inputs.json').read_text()) == inputs
 

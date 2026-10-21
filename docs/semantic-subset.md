@@ -392,7 +392,7 @@ change.
 Each model restriction has a stable id. A rejection reports it in the field
 `restriction`, next to its message, and the conformance predictions record it too.
 The registry is `RestrictionKind` in
-`packages/belay-sqlite/Belay/Sqlite/Resolution/Restrictions.lean`, with the ids and
+`packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/Restrictions.lean`, with the ids and
 messages in `RestrictionText.lean`. Every id has one row in this table;
 `tests/restriction_registry_test.py` checks that the table and the registry list the
 same ids. `conformance/restriction_examples.py` has, for every id, a schema and a

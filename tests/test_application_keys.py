@@ -11,7 +11,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.requires_lean("compiler")]
 
 KEY_CHECKS = """
 import SqliteVerifier.ApplicationKeys
-open Belay.Sqlite SqliteVerifier
+open Belay.Sqlite.Model SqliteVerifier
 
 def columns : List CatalogColumn := [
   { name := name! "id", declaredType := some "INTEGER" },

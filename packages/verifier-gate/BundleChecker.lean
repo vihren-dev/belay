@@ -46,7 +46,7 @@ def definition (env : Environment) (name : Name) (type value : Expr) : ConstantI
 /-- Build `Generated.script`, `resolved` and `nextCatalog` from the resolution of the
 frontend's record. The compiled `SchemaInputs` must equal the same resolution, so the
 constructed declarations describe the same request as the contract's inputs. -/
-def generatedDeclarations (env : Environment) (resolution : Belay.Sqlite.ResolvedScript) :
+def generatedDeclarations (env : Environment) (resolution : Belay.Sqlite.Model.ResolvedScript) :
     IO (Std.HashMap Name ConstantInfo) := do
   requireValues env (schemaValues resolution)
   return Std.HashMap.ofList ((sqlValues resolution).map fun (name, type, value) =>
@@ -81,7 +81,7 @@ def exportedAdditions (trusted : Environment) (exported : Export.ExportedEnv) :
   return fresh
 
 /-- Read the frontend's structural record and resolve it. -/
-def readGenerated (path : System.FilePath) : IO Belay.Sqlite.ResolvedScript := do
+def readGenerated (path : System.FilePath) : IO Belay.Sqlite.Model.ResolvedScript := do
   resolveRecord (← readRecord path)
 
 /-- Read the version-1 header: `{"bundle": 1, "trusted_imports": ["Mod", ...]}`. -/

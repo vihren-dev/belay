@@ -10,17 +10,17 @@ import pytest
 from tests.runtime_support import run_command
 
 ROOT = Path(__file__).resolve().parents[1]
-PACKAGE = ROOT / "packages/belay-sqlite"
-MODEL_ROOTS = ("Belay.Sqlite.SchemaExtensionLaws", "Belay.Sqlite.SchemaPreservationLaws",
-               "Belay.Sqlite.LiteralPreservationLaws", "Belay.Sqlite.ModelProjectionLaws",
-               "Belay.Sqlite.Laws")
+PACKAGE = ROOT / "packages/belay-sqlite-model"
+MODEL_ROOTS = ("Belay.Sqlite.Model.SchemaExtensionLaws", "Belay.Sqlite.Model.SchemaPreservationLaws",
+               "Belay.Sqlite.Model.LiteralPreservationLaws", "Belay.Sqlite.Model.ModelProjectionLaws",
+               "Belay.Sqlite.Model.Laws")
 """Mixed-file facts and conformance laws must have a structural import closure."""
 APPLICATION_MODULES = {"SqliteVerifier.Contract", "SqliteVerifier.ContractProofs",
                        "SqliteVerifier.Library", "SqliteVerifier.NullableProjection"}
 """These modules supply logical contracts or application observations, not model facts."""
 ALLOWED_EXTERNAL_IMPORT_ROOTS = {"Init"}
 """The core model uses only Lean's prelude, without `Std` or the Lean compiler API."""
-PROJECT_MODULE_PREFIXES = ("Belay.Sqlite",)
+PROJECT_MODULE_PREFIXES = ("Belay.Sqlite.Model",)
 """Follow the model package namespace without opening application dependencies."""
 pytestmark = [pytest.mark.integration, pytest.mark.requires_lean("compiler")]
 
@@ -75,10 +75,10 @@ def test_neutral_consumer_uses_structural_facts(isolated_model: Path,
     """Lookup, updates, projections and conformance laws remain usable without a logical contract."""
     source = isolated_model / "Consumer.lean"
     source.write_text("\n".join(f"import {module}" for module in MODEL_ROOTS) + "\n" +
-        "#check Belay.Sqlite.Conforms.setRows\n#check Belay.Sqlite.Database.setRows_comm\n"
-        "#check Belay.Sqlite.TableExtends.project\n#check Belay.Sqlite.Database.table_addColumn\n"
-        "#check Belay.Sqlite.Table.project_newColumn\n"
-        "#check Belay.Sqlite.Conformance.statement_atomicity\n")
+        "#check Belay.Sqlite.Model.Conforms.setRows\n#check Belay.Sqlite.Model.Database.setRows_comm\n"
+        "#check Belay.Sqlite.Model.TableExtends.project\n#check Belay.Sqlite.Model.Database.table_addColumn\n"
+        "#check Belay.Sqlite.Model.Table.project_newColumn\n"
+        "#check Belay.Sqlite.Model.Conformance.statement_atomicity\n")
     result = run_command([str(lean_sysroot / "bin/lean"), str(source)], cwd=isolated_model,
         environment={**os.environ, "LEAN_PATH": str(isolated_model), "LEAN_SRC_PATH": str(isolated_model)},
         timeout=15)
