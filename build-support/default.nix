@@ -46,7 +46,8 @@ in rec {
   allTests = import ./tests.nix {
     inherit pkgs leanToolchain leanRuntime runtime seedRuntime native conformance modelPackage root;
     parserLibrary = parserLibrary.testRoot;
-    inherit leanPackages;
+    inherit leanPackages surfacePackage;
+    parserLibraryBuild = parserLibrary.library;
   };
   # Suites that only main pushes and scheduled runs build (`just test-scheduled`), so that the CI
   # time of pull requests does not grow; tests/nix_scheduled_suites.json lists them.
@@ -77,6 +78,17 @@ in rec {
     inherit pkgs sources leanToolchain verifierLibrary leanRuntime modelPackage;
     parserLibrary = parserLibrary.library;
     src = sources.runtimeWithoutExamples;
+  };
+  # The surface that users import (ADR 0016, D1). It is not part of the installed runtime, the
+  # gate or the conformance runtime; tests.surface checks it and its layer rules.
+  surfacePackage = leanPackage {
+    pname = "belay";
+    directory = "packages/belay";
+    source = sources.surface;
+    # The shared libraries are what Lake loads for a file that imports `Belay`.
+    targets = [ "Belay" "Belay:shared" "parserShim:shared" ];
+    requires."packages/belay-sqlite-model" = modelPackage;
+    environment.BELAY_PARSER_LIBRARY = parserLibrary.library;
   };
   # The in-process SQLite parser library of the verifier and the harness; tests.parserLibrary checks it.
   parserLibrary = import ./parser-library.nix { inherit pkgs root; };

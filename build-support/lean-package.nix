@@ -5,12 +5,13 @@
 # paths (`requires` maps each path to a derivation). Lake replays those outputs without compiling, so each package compiles
 # once, in its own derivation. The output is the package's Lake workspace: its sources, its
 # Lake files and `.lake/build`, which a package or workspace that requires it replays.
-{ pkgs, leanToolchain, pname, directory, source, targets, requires ? { }, executables ? false }:
+# `environment` adds variables to the build, for example the parser library that a lakefile reads.
+{ pkgs, leanToolchain, pname, directory, source, targets, requires ? { }, executables ? false, environment ? { } }:
 let
   lib = pkgs.lib;
   # Executables link against the C runtime libraries; on Linux the binaries need their store paths.
   linux = executables && pkgs.stdenv.hostPlatform.isLinux;
-in pkgs.stdenv.mkDerivation {
+in pkgs.stdenv.mkDerivation ({
   inherit pname;
   version = "0.1.0";
   src = source;
@@ -37,4 +38,4 @@ in pkgs.stdenv.mkDerivation {
   installPhase = ''
     cp -R . "$out"
   '';
-}
+} // environment)

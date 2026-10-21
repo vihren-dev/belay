@@ -131,5 +131,9 @@
   ],
   "writers": [
     "tests/conformance_corpus_writers_test.py"
+  ],
+  "surface": [
+    "tests/surface_parser_test.py",
+    "tests/surface_layers_test.py"
   ]
 }

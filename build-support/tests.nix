@@ -2,6 +2,8 @@
 { pkgs, leanToolchain, leanRuntime, runtime, seedRuntime, modelPackage, parserLibrary, conformance ? runtime, root ? ../.
 # Lean package outputs by their folder in the repository layout (default.nix); the `packages` suite replays them.
 , leanPackages
+# The surface package and the parser library that it links; the `surface` suite checks them.
+, surfacePackage, parserLibraryBuild
 , native ? import ../nix/sqlite.nix { inherit pkgs; }
 , conformanceNative ? import ./conformance-native.nix { inherit pkgs; }
 }:
@@ -51,6 +53,18 @@ let
     ln -s ${leanToolchain} "$out/lean"
     ln -s ${leanPackages."packages/public-doc-tools"} "$out/packages/public-doc-tools"
   '';
+  # The surface (ADR 0016, D1) in the repository layout, with the model and the parser library.
+  surfaceRoot = pkgs.runCommand "sqlite-verifier-test-surface" {} ''
+    mkdir -p "$out/packages"
+    ln -s ${leanToolchain} "$out/lean"
+    ln -s ${surfacePackage} "$out/packages/belay"
+    ln -s ${modelPackage} "$out/packages/belay-sqlite-model"
+    ln -s ${parserLibraryBuild} "$out/parser-library"
+  '';
+  # The layer test reads the Lean files and lakefiles of every package and the Nix build.
+  packageSources = map (package: fs.difference (fs.fileFilter (file: file.hasExt "lean" || file.hasExt "toml")
+    (root + "/packages/${package}")) (fs.maybeMissing (root + "/packages/${package}/.lake")))
+    (builtins.attrNames (pkgs.lib.filterAttrs (_: type: type == "directory") (builtins.readDir (root + /packages))));
   # `seeds`: Lake cache seeds (case-seeds.nix) copied into one writable cache that the tests use (ADR 0010).
   suite = name: { inputs, runtime, tools ? [], environment ? {}, seeds ? [], timeout ? suiteTimeoutSeconds }:
     let
@@ -271,6 +285,11 @@ in {
   cli = suite "cli" {
     inputs = caseReader;
     inherit runtime;
+  };
+  surface = suite "surface" {
+    inputs = [ (root + /tests/surface) (fs.fileFilter (file: file.hasExt "nix") (root + /build-support)) ] ++ packageSources;
+    runtime = surfaceRoot;
+    tools = pkgs.lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.patchelf;
   };
   packages = suite "packages" {
     inputs = [ ];

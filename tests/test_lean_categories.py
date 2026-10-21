@@ -35,7 +35,7 @@ class Rules:
 
 REPOSITORY_RULES = Rules(
     package=("packages/",),
-    direct_fixture=("tests/kernel_gate/", "tests/public_doc_inventory/", "conformance/regressions/"),
+    direct_fixture=("tests/kernel_gate/", "tests/public_doc_inventory/", "tests/surface/", "conformance/regressions/"),
     excluded=("experiments/",),
     case_roots=("examples", "tests/cases"),
 )

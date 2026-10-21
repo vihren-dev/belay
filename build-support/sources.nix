@@ -38,6 +38,13 @@ in {
   # The runtime without examples/: case seeds build against it, so a change to one example
   # rebuilds only that example's seed (ADR 0010 section 8).
   runtimeWithoutExamples = source runtimeFiles;
+  # The surface (ADR 0016, D1): its Lean files with its lakefile.lean, and the C shim that its
+  # precompiled modules link with the parser library.
+  surface = let folder = root + /packages/belay; in fs.toSource {
+    root = folder;
+    fileset = fs.unions [ (extensions [ "lean" ] folder) (folder + "/lake-manifest.json") (folder + "/lean-toolchain")
+      (folder + "/c/parser_shim.c") ];
+  };
   verifierLibrary = package "sqlite-verifier";
   verifierGate = package "verifier-gate";
   verifierConformance = package "verifier-conformance";
