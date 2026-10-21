@@ -9,19 +9,72 @@ the index of an earlier subquery. Outside a list, a subquery is refused with its
 
 namespace Belay.Sqlite.Translation
 
-open Lean (Json)
+open Belay.Sqlite.Model
+
+/-- The clauses of a {lit}`select` production, which {lit}`Syntax.Subquery`,
+{lit}`Syntax.Statement.select` and {lit}`Syntax.BodyStatement.select` share, each with its
+ranges. -/
+structure Clauses where
+  /-- The result columns. -/
+  columns : Located (List Syntax.ResultColumn)
+  /-- The first table of {lit}`FROM`, or none without {lit}`FROM`. -/
+  source : Located (Option Syntax.TableReference)
+  /-- The joins after the first table. -/
+  joins : Located (List Syntax.Join)
+  /-- The {lit}`WHERE` condition. -/
+  filter : Located (Option Syntax.Expr)
+  /-- The {lit}`GROUP BY` terms. -/
+  groupBy : Located (List Syntax.Expr)
+  /-- The {lit}`ORDER BY` terms. -/
+  orderBy : Located (List Syntax.OrderTerm)
+  /-- The {lit}`LIMIT` expression. -/
+  limit : Located (Option Syntax.Expr)
+  /-- The {lit}`OFFSET` expression. -/
+  offset : Located (Option Syntax.Expr)
+  /-- The {lit}`HAVING` condition. -/
+  having : Located (Option Syntax.Expr)
+  /-- Whether the query is {lit}`SELECT DISTINCT`. -/
+  distinct : Located Bool
+  deriving Inhabited
+
+/-- The ranges of the eight clauses before the {lit}`subqueries` or {lit}`parent` field, in the
+order of the constructors' fields. -/
+def Clauses.leading (clauses : Clauses) : Array Span :=
+  #[clauses.columns.span, clauses.source.span, clauses.joins.span, clauses.filter.span, clauses.groupBy.span,
+    clauses.orderBy.span, clauses.limit.span, clauses.offset.span]
+
+/-- The clauses as a subquery, with the index of the query around it. -/
+def Clauses.subquery (clauses : Clauses) (parent : Located (Option Nat)) (start stop : Nat) : Located Syntax.Subquery :=
+  let value : Syntax.Subquery := {
+    columns := clauses.columns.value
+    source := clauses.source.value
+    joins := clauses.joins.value
+    filter := clauses.filter.value
+    groupBy := clauses.groupBy.value
+    orderBy := clauses.orderBy.value
+    limit := clauses.limit.value
+    offset := clauses.offset.value
+    parent := parent.value
+    having := clauses.having.value
+    distinct := clauses.distinct.value }
+  composite value start stop (clauses.leading ++ #[parent.span, clauses.having.span, clauses.distinct.span])
+
+/-- The ranges of a {lit}`SELECT` constructor's fields: the clauses with the subqueries between
+the eight leading clauses and {lit}`having`. -/
+def Clauses.selectSpans (clauses : Clauses) (subqueries : Located (List Syntax.Subquery)) : Array Span :=
+  clauses.leading ++ #[subqueries.span, clauses.having.span, clauses.distinct.span]
 
 /-- The mappers that the parts of a query call for their operands and nested queries; the
 translation's root ties them to its own functions, as they call each other. -/
 structure Mappers where
   /-- Map an {lit}`expr` production of a query. -/
-  expression : SqlTree → ParseNode → TranslateM Located
-  /-- Map a {lit}`select` production to the clauses of {lit}`Syntax.Subquery` without its parent. -/
-  clauses : SqlTree → ParseNode → TranslateM (Array (String × Located))
+  expression : SqlTree → ParseNode → TranslateM (Located Syntax.Expr)
+  /-- Map a {lit}`select` production to its clauses. -/
+  clauses : SqlTree → ParseNode → TranslateM Clauses
 
 /-- Run the action with a new subquery list for one statement open, and give its subqueries;
 the scope around it is kept. -/
-def statementSubqueries (action : TranslateM α) : TranslateM (α × Array Located) := do
+def statementSubqueries (action : TranslateM α) : TranslateM (α × Array (Located Syntax.Subquery)) := do
   let around ← get
   set { around with active := some {} }
   let result ← action
@@ -51,23 +104,8 @@ def lift (mappers : Mappers) (tree : SqlTree) (select : ParseNode) : TranslateM 
   let clauses ← mappers.clauses tree select
   let scope ← get
   let items := (scope.active.map (·.items)).getD #[]
-  let parent := leaf (match around with | some position => (position : Json) | none => .null) select.start select.stop
-  let item := structure' (clauses.extract 0 8 ++ #[("parent", parent)] ++ clauses.extract 8 clauses.size)
-    select.start select.stop
+  let item := clauses.subquery (leaf around select.start select.stop) select.start select.stop
   set { scope with active := some { items := items.set! index (some item), current := around } }
   return index
-
-/-- The fields that a statement's JSON omits when they have these values, so that statements
-without them keep the form that frozen records hold. -/
-def defaultFields : List (String × Json) := [("subqueries", .arr #[]), ("having", .null), ("distinct", false)]
-
-/-- The statement constructor with its fields, the {lit}`subqueries` field and the fields
-{lit}`after` it, in the order of the Lean constructor; its JSON omits each field of
-{name}`defaultFields` that has its default value. -/
-def withSubqueries (name : String) (fields : Array (String × Located)) (items : Array Located) (start stop : Nat)
-    (after : Array (String × Located) := #[]) : Located :=
-  let parts := fields ++ #[("subqueries", sequence items start stop)] ++ after
-  let kept := parts.filter fun (field, part) => defaultFields.lookup field != some part.value
-  { value := Json.mkObj [(name, fieldObject kept)], start, stop, children := parts.map (·.2) }
 
 end Belay.Sqlite.Translation

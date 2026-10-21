@@ -88,6 +88,8 @@ in rec {
     # The shared libraries are what Lake loads for a file that imports `Belay`.
     targets = [ "Belay" "Belay:shared" "parserShim:shared" ];
     requires."packages/belay-sqlite-model" = modelPackage;
+    # The translation's precompiled modules call the model's compiled code.
+    sharedRequires = [ "packages/belay-sqlite-model" ];
     environment.BELAY_PARSER_LIBRARY = parserLibrary.library;
   };
   # The in-process SQLite parser library of the verifier and the harness; tests.parserLibrary checks it.

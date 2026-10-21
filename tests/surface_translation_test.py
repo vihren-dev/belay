@@ -11,6 +11,7 @@ message and range; the measurement over all frozen corpora is in `experiments/su
 """
 
 import json
+import os
 from pathlib import Path
 import sys
 
@@ -25,7 +26,7 @@ from conformance.corpus import load
 from conformance.native_replay import schema_sql
 from conformance.record_parser import record_parser
 from tests.runtime_support import run_command
-from tests.surface_support import FIXTURES, SUFFIX, candidate_b, candidate_b_result, lean_path, surface_command
+from tests.surface_support import FIXTURES, SUFFIX, candidate_b, candidate_b_result, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -83,8 +84,8 @@ def test_lean_translation_equals_python_translation(runtime_root: Path, tmp_path
     assert len(texts) > MINIMUM_TEXTS and any("refusal" in text["python"] for text in texts)  # type: ignore[operator]
     path = tmp_path / "texts.jsonl"
     path.write_text("".join(json.dumps(text) + "\n" for text in texts))
-    result = run_command(surface_command(runtime_root, FIXTURES / "TranslationEquality.lean"), cwd=tmp_path,
-                         environment={**lean_path(runtime_root), "BELAY_TRANSLATION_TEXTS": str(path)}, timeout=120)
+    result = run_command(surface_command(runtime_root, FIXTURES / "TranslationEquality.lean", tmp_path), cwd=tmp_path,
+                         environment={**os.environ, "BELAY_TRANSLATION_TEXTS": str(path)}, timeout=120)
     assert result.returncode == 0, result.diagnostic()
     assert f"texts {len(texts)} different 0" in result.stdout, result.diagnostic()
 

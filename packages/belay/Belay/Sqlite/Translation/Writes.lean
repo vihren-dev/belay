@@ -8,12 +8,14 @@ of its values, assignments and filter; a subquery in RETURNING or ON CONFLICT is
 
 namespace Belay.Sqlite.Translation
 
+open Belay.Sqlite.Model
+
 /-- The refusal of a subquery in RETURNING or ON CONFLICT. -/
 def inWriteClause : String := "A subquery in RETURNING or ON CONFLICT is not modeled; read the value in a separate statement"
 
 /-- {lit}`BEGIN [DEFERRED] [TRANSACTION]`, {lit}`COMMIT` or {lit}`END [TRANSACTION]`, and
 {lit}`ROLLBACK [TRANSACTION]`. -/
-def transaction (tree : SqlTree) (command : ParseNode) : TranslateM Located := do
+def transaction (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
   let keyword := (tree.children command)[0]!.symbol
   let option ← if keyword == "BEGIN" then do
       let parts ← require tree command ["BEGIN", "transtype", "trans_opt"]
@@ -23,11 +25,11 @@ def transaction (tree : SqlTree) (command : ParseNode) : TranslateM Located := d
     else pure (← require tree command [keyword, "trans_opt"])[1]!
   unless tree.symbols option == [] || tree.symbols option == ["TRANSACTION"] do
     unsupported option "Named transactions are not modeled; remove the transaction name"
-  let kind := match keyword with | "BEGIN" => "begin" | "ROLLBACK" => "rollback" | _ => "commit"
-  return leaf kind command.start command.stop
+  let statement : Syntax.Statement := match keyword with | "BEGIN" => .begin | "ROLLBACK" => .rollback | _ => .commit
+  return leaf statement command.start command.stop
 
 /-- The VALUES rows of an INSERT source in text order; a SELECT source is refused. -/
-def valueRows (tree : SqlTree) (node : ParseNode) : TranslateM Located := do
+def valueRows (tree : SqlTree) (node : ParseNode) : TranslateM (Located (List (List Syntax.Expr))) := do
   let selectNode := (← require tree node ["selectnowith"])[0]!
   let one := (← require tree selectNode ["oneselect"])[0]!
   unless tree.symbols one == ["values"] || tree.symbols one == ["mvalues"] do
@@ -49,20 +51,25 @@ def valueRows (tree : SqlTree) (node : ParseNode) : TranslateM Located := do
 
 /-- The {lit}`returning` field of a write: the result columns of the parts
 {lit}`RETURNING selcollist`, or an empty list without them. -/
-def returning (tree : SqlTree) (command : ParseNode) (parts : Array ParseNode) : TranslateM Located := do
+def returning (tree : SqlTree) (command : ParseNode) (parts : Array ParseNode) :
+    TranslateM (Located (List Syntax.ResultColumn)) := do
   if parts.isEmpty then return sequence #[] command.stop command.stop
   noSubqueries inWriteClause (resultColumns queryMappers tree parts[1]!)
 
 /-- The column list of an {lit}`idlist_opt` node, or none. -/
-def columnList (tree : SqlTree) (columns : ParseNode) : TranslateM Located := do
-  if columns.children.isEmpty then return leaf .null columns.start columns.stop
+def columnList (tree : SqlTree) (columns : ParseNode) : TranslateM (Located (Option (List Identifier))) := do
+  if columns.children.isEmpty then return missing columns.start columns.stop
   let listed := (← require tree columns ["LP", "idlist", "RP"])[1]!
   let items ← leftList tree listed [(1, ["nm"]), (3, ["idlist", "COMMA", "nm"])]
-  return sequence (← items.mapM fun item => plainName tree (last item)) columns.start columns.stop
+  return (sequence (← items.mapM fun item => identifierName tree (last item)) columns.start columns.stop).present
+
+/-- The subqueries of a statement, at the statement's range. -/
+def subqueryList (items : Array (Located Syntax.Subquery)) (command : ParseNode) : Located (List Syntax.Subquery) :=
+  sequence items command.start command.stop
 
 /-- {lit}`INSERT [OR algorithm] INTO table [(columns)] VALUES rows [ON CONFLICT ...] [RETURNING columns]`,
 and {lit}`REPLACE INTO`. -/
-def insert (tree : SqlTree) (command : ParseNode) : TranslateM Located := do
+def insert (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
   let parts ← require tree command ["with", "insert_cmd", "INTO", "xfullname", "idlist_opt", "select", "upsert"]
   absent parts[0]! "A WITH clause"
   let algorithm ← insertAlgorithm tree parts[1]!
@@ -70,27 +77,29 @@ def insert (tree : SqlTree) (command : ParseNode) : TranslateM Located := do
   let table := (← require tree parts[3]! ["nm"])[0]!
   let columns ← columnList tree parts[4]!
   let (rows, items) ← statementSubqueries (valueRows tree parts[5]!)
-  let tableName ← plainName tree table
-  return withSubqueries "insert" #[("table", tableName), ("columns", columns), ("rows", rows),
-    ("conflicts", conflicts), ("algorithm", algorithm), ("returning", ← returning tree command returned)]
-    items command.start command.stop
+  let tableName ← identifierName tree table
+  let results ← returning tree command returned
+  let subqueries := subqueryList items command
+  return composite (.insert tableName.value columns.value rows.value conflicts.value algorithm.value results.value
+      subqueries.value) command.start command.stop
+    #[tableName.span, columns.span, rows.span, conflicts.span, algorithm.span, results.span, subqueries.span]
 
 /-- The optional WHERE filter and the {lit}`RETURNING selcollist` parts of a
-{lit}`where_opt_ret` node, which UPDATE and DELETE share; a missing filter is a null leaf. -/
+{lit}`where_opt_ret` node, which UPDATE and DELETE share; a missing filter is absent at the node. -/
 def filterAndReturning (tree : SqlTree) (whereNode : ParseNode) (statement : String) :
-    TranslateM (Located × Array ParseNode) := do
+    TranslateM (Located (Option Syntax.Expr) × Array ParseNode) := do
   let parts := tree.children whereNode
   let symbols := tree.symbols whereNode
   unless [[], ["WHERE", "expr"], ["RETURNING", "selcollist"], ["WHERE", "expr", "RETURNING", "selcollist"]].contains symbols do
     unsupported whereNode s!"Unsupported {statement} clause; write [WHERE expression] [RETURNING columns]"
-  let filter ← if symbols.take 1 == ["WHERE"] then queryExpression tree parts[1]!
-    else pure (leaf .null whereNode.start whereNode.stop)
+  let filter ← if symbols.take 1 == ["WHERE"] then Located.present <$> queryExpression tree parts[1]!
+    else pure (missing whereNode.start whereNode.stop)
   let returned := if symbols.drop (symbols.length - 2) == ["RETURNING", "selcollist"] then
     parts.extract (parts.size - 2) parts.size else #[]
   return (filter, returned)
 
 /-- {lit}`UPDATE table SET assignments [WHERE expression] [RETURNING columns]`. -/
-def update (tree : SqlTree) (command : ParseNode) : TranslateM Located := do
+def update (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
   let parts ← require tree command ["with", "UPDATE", "orconf", "xfullname", "indexed_opt", "SET", "setlist", "from",
     "where_opt_ret"]
   absent parts[0]! "A WITH clause"
@@ -102,19 +111,23 @@ def update (tree : SqlTree) (command : ParseNode) : TranslateM Located := do
     let mapped ← assignmentList tree parts[6]!
     let (filter, returned) ← filterAndReturning tree parts[8]! "UPDATE"
     return (mapped, filter, returned)
-  let tableName ← plainName tree table
-  return withSubqueries "update" #[("table", tableName), ("assignments", mapped), ("filter", filter),
-    ("returning", ← returning tree command returned)] items command.start command.stop
+  let tableName ← identifierName tree table
+  let results ← returning tree command returned
+  let subqueries := subqueryList items command
+  return composite (.update tableName.value mapped.value filter.value results.value subqueries.value) command.start
+    command.stop #[tableName.span, mapped.span, filter.span, results.span, subqueries.span]
 
 /-- {lit}`DELETE FROM table [WHERE expression] [RETURNING columns]`. -/
-def delete (tree : SqlTree) (command : ParseNode) : TranslateM Located := do
+def delete (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
   let parts ← require tree command ["with", "DELETE", "FROM", "xfullname", "indexed_opt", "where_opt_ret"]
   absent parts[0]! "A WITH clause"
   absent parts[4]! "INDEXED BY"
   let table := (← require tree parts[3]! ["nm"])[0]!
   let ((filter, returned), items) ← statementSubqueries (filterAndReturning tree parts[5]! "DELETE")
-  let tableName ← plainName tree table
-  return withSubqueries "delete" #[("table", tableName), ("filter", filter), ("returning", ← returning tree command returned)]
-    items command.start command.stop
+  let tableName ← identifierName tree table
+  let results ← returning tree command returned
+  let subqueries := subqueryList items command
+  return composite (.delete tableName.value filter.value results.value subqueries.value) command.start command.stop
+    #[tableName.span, filter.span, results.span, subqueries.span]
 
 end Belay.Sqlite.Translation

@@ -8,8 +8,10 @@ OFFSET, HAVING and DISTINCT. Compound SELECT, WITH and NULLS FIRST or LAST are r
 
 namespace Belay.Sqlite.Translation
 
+open Belay.Sqlite.Model
+
 /-- The ORDER BY terms of a {lit}`sortlist` in text order, with their direction. -/
-def orderTerms (mappers : Mappers) (tree : SqlTree) (node : ParseNode) : TranslateM (Array Located) := do
+def orderTerms (mappers : Mappers) (tree : SqlTree) (node : ParseNode) : TranslateM (Array (Located Syntax.OrderTerm)) := do
   let items ← leftList tree node [(3, ["expr", "sortorder", "nulls"]),
     (5, ["sortlist", "COMMA", "expr", "sortorder", "nulls"])]
   items.mapM fun item => do
@@ -18,15 +20,16 @@ def orderTerms (mappers : Mappers) (tree : SqlTree) (node : ParseNode) : Transla
     absent (last item) "NULLS FIRST or NULLS LAST"
     let descending := tree.symbols direction == ["DESC"]
     let expression ← mappers.expression tree term
-    return structure' #[("expression", expression), ("descending", leaf descending direction.start direction.stop)]
-      term.start (max term.stop direction.stop)
+    return composite { expression := expression.value, descending } term.start (max term.stop direction.stop)
+      #[expression.span, spanOf direction]
 
-/-- An optional part: the located value, or a null leaf at the clause. -/
-def optionalAt (located : Option Located) (node : ParseNode) : Located :=
-  located.getD (leaf .null node.start node.stop)
+/-- An optional part: the located value, or absent at the clause. -/
+def optionalAt (located : Option (Located α)) (node : ParseNode) : Located (Option α) :=
+  (located.map (·.present)).getD (missing node.start node.stop)
 
 /-- The LIMIT and OFFSET expressions of a {lit}`limit_opt` node. -/
-def limitClause (mappers : Mappers) (tree : SqlTree) (limit : ParseNode) : TranslateM (Option Located × Option Located) := do
+def limitClause (mappers : Mappers) (tree : SqlTree) (limit : ParseNode) :
+    TranslateM (Option (Located Syntax.Expr) × Option (Located Syntax.Expr)) := do
   let bounds := tree.children limit
   match tree.symbols limit with
   | [] => return (none, none)
@@ -39,10 +42,9 @@ def limitClause (mappers : Mappers) (tree : SqlTree) (limit : ParseNode) : Trans
     return (some (← mappers.expression tree bounds[3]!), some first)
   | _ => unsupported limit "Unsupported LIMIT form; write LIMIT n [OFFSET m]"
 
-/-- The clauses of a {lit}`select` production, in the order of {lit}`Syntax.Subquery` and of their
-text, so the subqueries of their expressions are listed in that order. -/
-def queryClausesWith (mappers : Mappers) (tree : SqlTree) (selectNode : ParseNode) :
-    TranslateM (Array (String × Located)) := do
+/-- The clauses of a {lit}`select` production, mapped in the order of their text, so the
+subqueries of their expressions are listed in that order. -/
+def queryClausesWith (mappers : Mappers) (tree : SqlTree) (selectNode : ParseNode) : TranslateM Clauses := do
   let current := (← require tree selectNode ["selectnowith"])[0]!
   let one := (← require tree current ["oneselect"])[0]!
   let parts ← require tree one ["SELECT", "distinct", "selcollist", "from", "where_opt", "groupby_opt",
@@ -51,8 +53,10 @@ def queryClausesWith (mappers : Mappers) (tree : SqlTree) (selectNode : ParseNod
     (parts[1]!, parts[3]!, parts[4]!, parts[5]!, parts[6]!, parts[7]!, parts[8]!)
   let results ← resultColumns mappers tree parts[2]!
   let (firstTable, joins) ← if source.children.isEmpty then
-      pure (leaf .null source.start source.stop, sequence #[] source.start source.stop)
-    else fromClause mappers tree (← require tree source ["FROM", "seltablist"])[1]!
+      pure (missing source.start source.stop, sequence #[] source.start source.stop)
+    else do
+      let (first, joins) ← fromClause mappers tree (← require tree source ["FROM", "seltablist"])[1]!
+      pure (first.present, joins)
   let condition ← if whereNode.children.isEmpty then pure none
     else some <$> mappers.expression tree (tree.children whereNode)[1]!
   let grouping ← if group.children.isEmpty then pure #[] else do
@@ -62,9 +66,10 @@ def queryClausesWith (mappers : Mappers) (tree : SqlTree) (selectNode : ParseNod
   let (count, offset) ← limitClause mappers tree limit
   let havingPart ← if having.children.isEmpty then pure none
     else some <$> mappers.expression tree (tree.children having)[1]!
-  return #[("columns", results), ("source", firstTable), ("joins", joins), ("filter", optionalAt condition whereNode),
-    ("groupBy", sequence grouping group.start group.stop), ("orderBy", sequence ordering order.start order.stop),
-    ("limit", optionalAt count limit), ("offset", optionalAt offset limit), ("having", optionalAt havingPart having),
-    ("distinct", leaf (tree.symbols distinct == ["DISTINCT"]) distinct.start distinct.stop)]
+  return {
+    columns := results, source := firstTable, joins, filter := optionalAt condition whereNode,
+    groupBy := sequence grouping group.start group.stop, orderBy := sequence ordering order.start order.stop,
+    limit := optionalAt count limit, offset := optionalAt offset limit, having := optionalAt havingPart having,
+    distinct := leaf (tree.symbols distinct == ["DISTINCT"]) distinct.start distinct.stop }
 
 end Belay.Sqlite.Translation

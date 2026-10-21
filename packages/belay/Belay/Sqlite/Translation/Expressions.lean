@@ -9,7 +9,7 @@ token text. -/
 
 namespace Belay.Sqlite.Translation
 
-open Lean (Json)
+open Belay.Sqlite.Model
 
 /-- The character that closes one of SQLite's quote characters. -/
 def closingQuote : Char → Option Char
@@ -45,9 +45,13 @@ def token (tree : SqlTree) (node : ParseNode) : TranslateM ParseNode := do
   unsupported node s!"Unsupported SQL form: {node.symbol}; write a plain name or literal"
 
 /-- An {lit}`nm` production or a name token as written, with its quotes removed. -/
-def plainName (tree : SqlTree) (node : ParseNode) : TranslateM Located := do
+def plainName (tree : SqlTree) (node : ParseNode) : TranslateM (Located String) := do
   let item ← if node.children.isEmpty then pure node else token tree node
   return leaf (dequote (tree.text item)) node.start node.stop
+
+/-- The name of an {lit}`nm` production or a name token as an {name}`Identifier`. -/
+def identifierName (tree : SqlTree) (node : ParseNode) : TranslateM (Located Identifier) :=
+  (·.map Identifier.ofString) <$> plainName tree node
 
 /-- The value of a hexadecimal digit. -/
 def hexDigit (character : Char) : Option Nat :=
@@ -57,45 +61,40 @@ def hexDigit (character : Char) : Option Nat :=
   else none
 
 /-- The bytes of pairs of hexadecimal digits. -/
-def hexBytes : List Char → Option (List Nat)
-  | high :: low :: rest => do return ((← hexDigit high) * 16 + (← hexDigit low)) :: (← hexBytes rest)
+def hexBytes : List Char → Option (List UInt8)
+  | high :: low :: rest => do return ((← hexDigit high) * 16 + (← hexDigit low)).toUInt8 :: (← hexBytes rest)
   | [] => some []
   | [_] => none
 
 /-- A {lit}`term` production: NULL, a numeric, string or blob literal, or a time keyword. -/
-def term (tree : SqlTree) (node : ParseNode) : TranslateM Located := do
+def term (tree : SqlTree) (node : ParseNode) : TranslateM (Located Syntax.Expr) := do
   let item ← token tree node
   let text := tree.text item
+  let literal (value : Syntax.Expr) := composite value node.start node.stop #[spanOf item]
   match item.symbol with
-  | "NULL" => return leaf "null" node.start node.stop
-  | "INTEGER" | "FLOAT" | "QNUMBER" =>
-    return constructor "numeric" #[("text", leaf text item.start item.stop)] node.start node.stop
-  | "STRING" =>
-    return constructor "string" #[("bytes", leaf (byteList (dequote text).toUTF8) item.start item.stop)]
-      node.start node.stop
+  | "NULL" => return leaf .null node.start node.stop
+  | "INTEGER" | "FLOAT" | "QNUMBER" => return literal (.numeric text)
+  | "STRING" => return literal (.string (dequote text).toUTF8.toList)
   | "BLOB" =>
     match hexBytes ((text.toList.drop 2).dropLast) with
-    | some bytes =>
-      return constructor "blob" #[("bytes", leaf (.arr (bytes.toArray.map fun (byte : Nat) => (byte : Json)))
-        item.start item.stop)] node.start node.stop
+    | some bytes => return literal (.blob bytes)
     | none => unsupported node "A blob literal needs pairs of hexadecimal digits; correct the literal"
-  | "CTIME_KW" =>
-    return constructor "currentTime" #[("keyword", leaf text item.start item.stop)] node.start node.stop
+  | "CTIME_KW" => return literal (.currentTime text)
   | symbol => unsupported node s!"Unsupported literal: {symbol}; write NULL, a number, a string or a blob"
 
-/-- The {lit}`Syntax.QuoteKind` constructor of an identifier from its first character. -/
-def quoteKind (text : String) : String :=
+/-- How an identifier was quoted, from its first character. -/
+def quoteKind (text : String) : Syntax.QuoteKind :=
   match text.toList.head? with
-  | some '"' => "double"
-  | some '[' => "bracket"
-  | some '`' => "backtick"
-  | _ => "none"
+  | some '"' => .double
+  | some '[' => .bracket
+  | some '`' => .backtick
+  | _ => .none
 
 /-- An identifier token, with how it was quoted. -/
-def identifier (tree : SqlTree) (node : ParseNode) : Located :=
+def identifier (tree : SqlTree) (node : ParseNode) : Located Syntax.Expr :=
   let text := tree.text node
-  constructor "identifier" #[("name", leaf (dequote text) node.start node.stop),
-    ("quote", leaf (quoteKind text) node.start node.stop)] node.start node.stop
+  composite (.identifier (Identifier.ofString (dequote text)) (quoteKind text)) node.start node.stop
+    #[spanOf node, spanOf node]
 
 /-- The tokens of SQLite's {lit}`expr ::= ID|INDEXED|JOIN_KW` production: those three and the
 keywords of {lit}`%fallback ID` in the pinned {lit}`parse.y` of 3.51.0. The parse tree keeps a
@@ -110,15 +109,19 @@ def identifierTokens : List String :=
 
 /-- An {lit}`expr` production outside a query: a literal, a column name or a sign, or its
 refusal. -/
-partial def expression (tree : SqlTree) (node : ParseNode) : TranslateM Located := do
+partial def expression (tree : SqlTree) (node : ParseNode) : TranslateM (Located Syntax.Expr) := do
   let parts := tree.children node
   match tree.symbols node with
   | ["term"] => term tree parts[0]!
   | [symbol] =>
     if identifierTokens.contains symbol then return identifier tree parts[0]!
     unsupported node "Unsupported expression; write a literal, a column name or a sign"
-  | ["MINUS", "expr"] => return constructor "negate" #[("operand", ← expression tree parts[1]!)] node.start node.stop
-  | ["PLUS", "expr"] => return constructor "positive" #[("operand", ← expression tree parts[1]!)] node.start node.stop
+  | ["MINUS", "expr"] =>
+    let operand ← expression tree parts[1]!
+    return composite (.negate operand.value) node.start node.stop #[operand.span]
+  | ["PLUS", "expr"] =>
+    let operand ← expression tree parts[1]!
+    return composite (.positive operand.value) node.start node.stop #[operand.span]
   | _ => unsupported node "Unsupported expression; write a literal, a column name or a sign"
 
 end Belay.Sqlite.Translation

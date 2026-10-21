@@ -12,6 +12,8 @@ candidate A). The port of {lit}`commands`, {lit}`statement` and {lit}`statements
 
 namespace Belay.Sqlite.Translation
 
+open Belay.Sqlite.Model
+
 /-- The commands of the script in text order; a wrapper such as EXPLAIN is refused. -/
 def commands (tree : SqlTree) (root : Nat) : TranslateM (Array ParseNode) := do
   let mut result : Array ParseNode := #[]
@@ -30,7 +32,7 @@ def commands (tree : SqlTree) (root : Nat) : TranslateM (Array ParseNode) := do
   return result
 
 /-- One command as a statement, or the refusal of a statement that has no syntax constructor. -/
-def statement (tree : SqlTree) (command : ParseNode) : TranslateM Located := do
+def statement (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
   let symbols := tree.symbols command
   if symbols == ["create_table", "create_table_args"] then return ← createTable tree command
   if symbols.take 3 == ["createkw", "uniqueflag", "INDEX"] then return ← createIndex tree command
@@ -43,34 +45,36 @@ def statement (tree : SqlTree) (command : ParseNode) : TranslateM Located := do
   if symbols.take 2 == ["with", "DELETE"] then return ← delete tree command
   if symbols == ["select"] then
     let (clauses, items) ← statementSubqueries (queryClauses tree (tree.children command)[0]!)
-    return withSubqueries "select" (clauses.extract 0 8) items command.start command.stop (clauses.extract 8 clauses.size)
+    let subqueries := subqueryList items command
+    return composite (.select clauses.columns.value clauses.source.value clauses.joins.value clauses.filter.value
+        clauses.groupBy.value clauses.orderBy.value clauses.limit.value clauses.offset.value subqueries.value
+        clauses.having.value clauses.distinct.value)
+      command.start command.stop (clauses.selectSpans subqueries)
   if symbols.take 1 == ["PRAGMA"] then return ← pragma tree command
   unsupported command ("This statement is not modeled; the model runs CREATE TABLE, CREATE INDEX, " ++
     "CREATE TRIGGER, ALTER TABLE ADD COLUMN, DROP TABLE, DROP INDEX, DROP TRIGGER, BEGIN, COMMIT, " ++
     "ROLLBACK, INSERT, UPDATE, DELETE, SELECT and PRAGMA foreign_keys")
 
 /-- Every command of a parsed script as a statement, in order. -/
-def statements (tree : SqlTree) (root : Nat) : TranslateM (Array Located) := do
+def statements (tree : SqlTree) (root : Nat) : TranslateM (Array (Located Syntax.Statement)) := do
   (← commands tree root).mapM (statement tree)
 
 /-- The translation of a parse result: the statements with their ranges, or the refusal, with
 the statuses and messages of the Python frontend for a grammar error and the parser's limits. -/
-def translateParse (sql : String) : ParseResult → Except Refusal (Array Located)
+def translateParse (sql : String) : ParseResult → Except Refusal (Array (Located Syntax.Statement))
   | .parsed nodes root => (statements { sql := sql.toUTF8, nodes } root).run' {}
   | .inputError offset => throw (Refusal.mk "INPUT_ERROR"
       "SQLite's grammar rejects the SQL at this offset; correct the SQL there and run the command again" offset 0)
   | .resourceLimit offset => throw (Refusal.mk "UNVERIFIED" ("SQL exceeds the parser's limits of 1 MiB of input " ++
       "and 200,000 syntax-tree nodes; split the SQL into smaller files") offset 0)
 
-/-- The translation of SQL text with a grammar of the parser library as JSON, in the form that
-{lit}`experiments/surface-s1/texts.py` writes the Python translation's result:
-{lit}`{"statements": [...]}` with each located statement, or {lit}`{"refusal": diagnostic}` with
-the source name {lit}`measured.sql`. It fails when the library gives an unusable document. -/
-def translationJson (grammar sql : String) : IO Lean.Json := do
+/-- The translation of SQL text with a grammar of the parser library: the statements with their
+ranges, or the refusal. It fails when the library gives an unusable document. For example,
+{lit}`translate grammar "COMMIT;"` gives one statement, {name}`Syntax.Statement.commit` at
+bytes 0 to 6. -/
+def translate (grammar sql : String) : IO (Except Refusal (Array (Located Syntax.Statement))) := do
   let document ← ParserLibrary.parse grammar sql
   let parse ← IO.ofExcept ((decodeParse grammar sql.utf8ByteSize document).mapError IO.userError)
-  return match translateParse sql parse with
-    | .ok items => Lean.Json.mkObj [("statements", .arr (items.map Located.toJson))]
-    | .error refusal => Lean.Json.mkObj [("refusal", refusal.toJson "measured.sql")]
+  return translateParse sql parse
 
 end Belay.Sqlite.Translation

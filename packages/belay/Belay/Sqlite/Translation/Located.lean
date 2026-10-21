@@ -1,65 +1,58 @@
-import Lean.Data.Json
+import Belay.Sqlite.Model
 
 set_option doc.verso true
 
-/-! Statement syntax as the model's JSON transport, with the source range of each node (ADR 0017,
-S1, prototype 2, candidate A). The port of {lit}`belay/sqlite/located.py`: a model restriction
-names a statement index and a node path, and each path step is the position of a constructor
-argument or a structure field, then the index in a list, so the tree keeps that shape. -/
+/-! Statement syntax with the source range of each node (ADR 0017, S1, prototype 2, candidate
+A). The port of {lit}`belay/sqlite/located.py`: a model restriction names a statement index and
+a node path, and each path step is the position of a constructor argument or a structure field,
+then the index in a list. A located value holds the model's syntax value and a tree of ranges in
+that shape, so that a path selects the range of the node that a restriction refers to. -/
 
 namespace Belay.Sqlite.Translation
 
-open Lean (Json)
-
-/-- One syntax value as JSON, its half-open UTF-8 byte range in the SQL text, and its located
-parts in path order. For example, the name {lit}`t` at bytes 14 to 15 is
-{lit}`{ value := "t", start := 14, stop := 15 }`. -/
-structure Located where
-  /-- The value in the model's JSON transport. -/
-  value : Json
+/-- The half-open UTF-8 byte range of a syntax node in the SQL text and the ranges of its parts
+in path order: the constructor arguments or fields, or the list items. For example, the name
+{lit}`t` at bytes 14 to 15 has {lit}`{ start := 14, stop := 15 }`. -/
+structure Span where
   /-- The first byte of the range. -/
   start : Nat
   /-- The byte after the range. -/
   stop : Nat
-  /-- The located parts: constructor arguments or fields in order, or list items. -/
-  children : Array Located := #[]
+  /-- The ranges of the parts, in path order. -/
+  parts : Array Span := #[]
+  deriving Inhabited, BEq, Repr
+
+/-- A syntax value of the model and its ranges ({name}`Span`). -/
+structure Located (α : Type) where
+  /-- The value, for example a {lit}`Syntax.Statement`. -/
+  value : α
+  /-- The ranges of the value and of its parts. -/
+  span : Span
   deriving Inhabited
 
 /-- A value without located parts, such as a name or a flag. -/
-def leaf (value : Json) (start stop : Nat) : Located := { value, start, stop }
+def leaf (value : α) (start stop : Nat) : Located α := { value, span := { start, stop } }
+
+/-- A value with the ranges of its parts, in path order. -/
+def composite (value : α) (start stop : Nat) (parts : Array Span) : Located α :=
+  { value, span := { start, stop, parts } }
 
 /-- A list value whose path steps are the item indexes. -/
-def sequence (items : Array Located) (start stop : Nat) : Located :=
-  { value := .arr (items.map (·.value)), start, stop, children := items }
+def sequence (items : Array (Located α)) (start stop : Nat) : Located (List α) :=
+  composite (items.toList.map (·.value)) start stop (items.map (·.span))
 
-/-- An object of the fields in order, and the fields as located parts. -/
-def fieldObject (fields : Array (String × Located)) : Json :=
-  Json.mkObj (fields.toList.map fun (field, part) => (field, part.value))
+/-- The value changed by the function, with the same ranges. -/
+def Located.map (change : α → β) (item : Located α) : Located β := { item with value := change item.value }
 
-/-- A constructor with named arguments, encoded as Lean derives it: {lit}`{name: {field: value}}`. -/
-def constructor (name : String) (fields : Array (String × Located)) (start stop : Nat) : Located :=
-  { value := Json.mkObj [(name, fieldObject fields)], start, stop, children := fields.map (·.2) }
+/-- A present optional part: the value in {lit}`some`, with its own ranges, as the model's path
+steps do not count the {lit}`some`. -/
+def Located.present (item : Located α) : Located (Option α) := item.map some
 
-/-- A structure value, encoded as an object of its fields in declaration order. -/
-def structure' (fields : Array (String × Located)) (start stop : Nat) : Located :=
-  { value := fieldObject fields, start, stop, children := fields.map (·.2) }
+/-- An absent optional part at the range of its clause. -/
+def missing (start stop : Nat) : Located (Option α) := leaf none start stop
 
-/-- A Lean pair, encoded as a two-element array. -/
-def pair (first second : Located) (start stop : Nat) : Located :=
-  { value := .arr #[first.value, second.value], start, stop, children := #[first, second] }
-
-/-- The located value as the JSON that {lit}`experiments/surface-s1/texts.py` writes for the
-Python translation: its value, range and located parts. -/
-partial def Located.toJson (item : Located) : Json :=
-  Json.mkObj [("value", item.value), ("start", item.start), ("end", item.stop),
-    ("children", .arr (item.children.map Located.toJson))]
-
-/-- A string, or null for none. -/
-def optionalText : Option String → Json
-  | some text => .str text
-  | none => .null
-
-/-- A list of byte values as JSON numbers. -/
-def byteList (bytes : ByteArray) : Json := .arr (bytes.toList.toArray.map fun byte => (byte.toNat : Json))
+/-- A Lean pair. -/
+def pair (first : Located α) (second : Located β) (start stop : Nat) : Located (α × β) :=
+  composite (first.value, second.value) start stop #[first.span, second.span]
 
 end Belay.Sqlite.Translation

@@ -6,7 +6,10 @@
 # once, in its own derivation. The output is the package's Lake workspace: its sources, its
 # Lake files and `.lake/build`, which a package or workspace that requires it replays.
 # `environment` adds variables to the build, for example the parser library that a lakefile reads.
-{ pkgs, leanToolchain, pname, directory, source, targets, requires ? { }, executables ? false, environment ? { } }:
+# `sharedRequires` names required packages whose shared libraries Lake links here, because the
+# package's precompiled modules load them; the output keeps them beside its own in `.lake/build/lib`.
+{ pkgs, leanToolchain, pname, directory, source, targets, requires ? { }, executables ? false, environment ? { }
+, sharedRequires ? [ ] }:
 let
   lib = pkgs.lib;
   # Executables link against the C runtime libraries; on Linux the binaries need their store paths.
@@ -37,5 +40,8 @@ in pkgs.stdenv.mkDerivation ({
   '';
   installPhase = ''
     cp -R . "$out"
-  '';
+  '' + lib.concatStrings (map (path: ''
+    find "$NIX_BUILD_TOP/workspace/${path}/.lake/build/lib" \
+      -maxdepth 1 \( -name 'lib*.so' -o -name 'lib*.dylib' \) -exec cp {} "$out/.lake/build/lib/" \;
+  '') sharedRequires);
 } // environment)

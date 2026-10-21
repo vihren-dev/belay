@@ -8,13 +8,15 @@ call goes to a part of the parse tree, whose nodes come before their parents. -/
 
 namespace Belay.Sqlite.Translation
 
+open Belay.Sqlite.Model
+
 mutual
   /-- Map an {lit}`expr` production of a query ({name}`queryExpressionWith`). -/
-  partial def queryExpression (tree : SqlTree) (node : ParseNode) : TranslateM Located :=
+  partial def queryExpression (tree : SqlTree) (node : ParseNode) : TranslateM (Located Syntax.Expr) :=
     queryExpressionWith ⟨queryExpression, queryClauses⟩ tree node
 
   /-- Map the clauses of a {lit}`select` production ({name}`queryClausesWith`). -/
-  partial def queryClauses (tree : SqlTree) (node : ParseNode) : TranslateM (Array (String × Located)) :=
+  partial def queryClauses (tree : SqlTree) (node : ParseNode) : TranslateM Clauses :=
     queryClausesWith ⟨queryExpression, queryClauses⟩ tree node
 end
 

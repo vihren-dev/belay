@@ -9,9 +9,13 @@ set_option doc.verso true
 
 namespace Belay.Sqlite.Translation
 
+open Belay.Sqlite.Model
 open Lean (Json)
 
 deriving instance Inhabited for Belay.Sqlite.ParseNode
+
+/-- The range of a node, without parts. -/
+def spanOf (node : ParseNode) : Span := { start := node.start, stop := node.stop }
 
 /-- The checked parse tree of an SQL text: the text's UTF-8 bytes and the nodes of the parse
 document, which {name}`Belay.Sqlite.decodeParse` checked. -/
@@ -60,7 +64,7 @@ def Refusal.toJson (refusal : Refusal) (source : String) : Json :=
 subquery being mapped. A slot is empty until its subquery is mapped. -/
 structure SubqueryList where
   /-- The mapped subqueries. -/
-  items : Array (Option Located) := #[]
+  items : Array (Option (Located Syntax.Subquery)) := #[]
   /-- The subquery whose clauses are mapped now, or none for the statement's own query. -/
   current : Option Nat := none
 

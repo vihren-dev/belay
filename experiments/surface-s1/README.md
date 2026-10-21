@@ -83,42 +83,54 @@ the library but not what to do. A clearer message needs the surface to load the 
 Each candidate goes from SQL text to the model's statement syntax, with the source range of each
 node as `belay/sqlite/located.py` keeps it, and has the same refusals as the Python translation.
 The comparison takes each text of `texts.jsonl` and compares the candidate's result with the
-Python translation's result as JSON: the statements with the value, the range and the located
-parts of each node, or the refusal with its status, message and range.
+Python translation's result: the statements with the value, the range and the located parts of
+each node, or the refusal with its status, message and range.
 
 ### Candidate A: a Lean port of the Python translation
 
 `packages/belay/Belay/Sqlite/Translation/` ports `belay/sqlite/syntax*.py`, `located.py` and the
 refusals of `sql_tree.py`, one Lean file for each Python module or less, from the parse tree of
-prototype 1. A node is a `Located` value: the JSON of the model's transport, its range and its
-located parts. The functions call each other through the subqueries of a query, so the two that
-close the loop are `partial` (`Mappers.lean`); the subquery list of a statement is the state of
-the translation's monad, where the Python translation keeps it in a context variable.
+prototype 1. A node is a `Located` value: the model's syntax value, such as a `Syntax.Statement`
+or a `Syntax.Expr`, and a tree of ranges (`Span`) in the shape of the model's path steps. No JSON
+is between the parse tree and the model's syntax. The functions call each other through the
+subqueries of a query, so the two that close the loop are `partial` (`Mappers.lean`); the subquery
+list of a statement is the state of the translation's monad, where the Python translation keeps it
+in a context variable.
+
+The comparison (`tests/surface/TranslationEquality.lean`) decodes each Python statement with the
+model's codec (`Belay.Sqlite.Model.Codec.SyntaxJson`) and compares it with the port's value, and
+compares the Python ranges with the port's ranges. A check of the comparison: with each port range
+one byte longer, 10,298 texts differ; with each port value replaced by `COMMIT`, 10,297 differ.
 
 | Measurement | Result |
 | --- | --- |
-| Texts whose result equals the Python translation's | 14,430 of 14,430 (2,781 refusals) |
-| Statements that decode to `Syntax.Statement` (`Belay.Sqlite.Model.Codec.SyntaxJson`) | 28,179 of 28,179 |
-| Parse and translation of all texts, while a file elaborates | 3.25 s (the parse alone: 2.57 s) |
-| Code that would exist twice: the port, beside the Python translation until it is replaced | 1,131 lines of Lean code (1,657 with documentation), beside 1,398 lines of Python code |
+| Texts whose result equals the Python translation's | 14,430 of 14,430 (2,781 refusals, 28,179 statements) |
+| Parse and translation of all texts, while a file elaborates | 3.0 s (the parse alone: 2.57 s) |
+| Code that would exist twice: the port, beside the Python translation until it is replaced | 1,223 lines of Lean code (1,791 with documentation), beside 1,398 lines of Python code |
 
 The code lines count no blank lines, comments or docstrings. The test
-`tests/surface_translation_test.py` (the `surface` suite) compares both translations over the
-1,686 texts of the 42 authored corpora in 3 s.
+`tests/surface_translation_test.py` (the `surface` suite) runs the same comparison over the 1,686
+texts of the 42 authored corpora in 3 s.
 
 ```sh
-PATH=build/conformance/lean/bin:$PATH lake -d build/lk/packages/belay lean experiments/surface-s1/TranslateA.lean
+BELAY_TRANSLATION_TEXTS=build/surface-s1/texts.jsonl PATH=build/conformance/lean/bin:$PATH \
+  lake -d build/lk/packages/belay lean tests/surface/TranslationEquality.lean
 ```
 
-Two findings about the package layout:
+Three findings about the package layout:
 
 - A Lake library whose root is `Belay` takes every module under `Belay` as its own, the model's
   modules too, so a surface file that imported the codec did not build. The surface's library
   now names its modules (`globs` in `packages/belay/lakefile.lean`).
 - `lean` with `LEAN_PATH` looks for the modules under `Belay` only in the first folder that has
   a `Belay` folder, so it does not find the model's modules beside the surface's. Lake gives
-  `lean` each import's file (`lake lean`, `lake setup-file`) and has no such problem; the tests
-  that run `lean` directly can only elaborate files that do not import the model.
+  `lean` the file of each import (`lake lean`, `lake setup-file`); the tests write the same
+  module setup and give it to `lean` with `--setup` (`tests/surface_support.py`).
+- The port's precompiled modules call the model's compiled code, so Lake builds the model's
+  shared library for the surface and loads it before the surface's for a file that imports
+  `Belay`. The model's Nix package has its C files, so the surface's Nix build only compiles and
+  links them, and keeps the library (`sharedRequires` in `build-support/lean-package.nix`); the
+  other packages' builds do not change.
 
 ### Candidate B: the translation in C
 
@@ -156,10 +168,12 @@ python3 experiments/surface-s1/translate_b.py build/surface-s1/candidate-b/libtr
 | | A: Lean port | B: C in the parser library |
 | --- | --- | --- |
 | Equal to the Python translation | 14,430 of 14,430 | 14,430 of 14,430 |
-| Size | 1,131 lines of Lean code | 1,519 lines of C code |
+| Size | 1,223 lines of Lean code | 1,519 lines of C code |
 | Knowledge held twice | The whole translation, beside the Python translation until that is replaced | The JSON shape of the model's syntax, beside the Lean codec, as long as both exist |
-| Where a change to the model's syntax goes | Lean only: the port builds the JSON that the codec reads, and could build `Syntax.Statement` directly | C and the Lean codec, in step |
+| Where a change to the model's syntax goes | Lean only: the port builds `Syntax.Statement` values, so the compiler checks each constructor | C and the Lean codec, in step |
 | Failure handling | Lean exceptions in a state monad; two `partial` functions | `longjmp` and an arena; memory errors are possible in C |
-| Where the code ships | The surface package only, outside the installed runtime (ADR 0017, D6) | The parser library, which is part of the installed runtime |
+| Where the code ships | The surface package. When it replaces the Python translation, the CLI and the harness need it too, so the installed runtime gets a Lean program that runs it | The parser library, which is part of the installed runtime; the CLI and the harness call it as they call the parser |
 
 Both reach the acceptance bar. The macOS measurement of prototype 1 is still open.
+
+The owner chose candidate A on 2026-10-21.

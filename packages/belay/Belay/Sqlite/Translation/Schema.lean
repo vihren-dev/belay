@@ -7,32 +7,35 @@ set_option doc.verso true
 
 namespace Belay.Sqlite.Translation
 
+open Belay.Sqlite.Model
+
 /-- {lit}`DROP TABLE|INDEX|TRIGGER [IF EXISTS] name`, with the name as written. -/
-def drop (tree : SqlTree) (command : ParseNode) : TranslateM Located := do
+def drop (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
   let kind := ((tree.children command)[1]?.map (·.symbol)).getD ""
   let parts ← require tree command ["DROP", kind, "ifexists", "fullname"]
   let full := parts[3]!
   unless tree.symbols full == ["nm"] do unsupported full "A schema name is not modeled; remove it"
-  let constructorName := match kind with | "TABLE" => "dropTable" | "INDEX" => "dropIndex" | _ => "dropTrigger"
+  let make : Identifier → Bool → Syntax.Statement := match kind with
+    | "TABLE" => .dropTable | "INDEX" => .dropIndex | _ => .dropTrigger
   let existsNode := parts[2]!
-  return constructor constructorName #[("name", ← plainName tree (tree.children full)[0]!),
-    ("ifExists", leaf (!existsNode.children.isEmpty) existsNode.start existsNode.stop)] command.start command.stop
+  let dropped ← identifierName tree (tree.children full)[0]!
+  return composite (make dropped.value (!existsNode.children.isEmpty)) command.start command.stop
+    #[dropped.span, spanOf existsNode]
 
 /-- {lit}`CREATE [UNIQUE] INDEX name ON table(terms) [WHERE filter]`. -/
-def createIndex (tree : SqlTree) (command : ParseNode) : TranslateM Located := do
+def createIndex (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
   let parts ← require tree command ["createkw", "uniqueflag", "INDEX", "ifnotexists", "nm", "dbnm", "ON", "nm",
     "LP", "sortlist", "RP", "where_opt"]
   absent parts[3]! "IF NOT EXISTS"
   absent parts[5]! "A schema name"
   let whereParts := tree.children parts[11]!
-  let filter ← if whereParts.isEmpty then pure (leaf .null parts[11]!.start parts[11]!.stop)
-    else queryExpression tree whereParts[1]!
-  let indexName ← plainName tree parts[4]!
-  let table ← plainName tree parts[7]!
-  let terms ← orderTerms queryMappers tree parts[9]!
-  return constructor "createIndex" #[("name", indexName),
-    ("unique", leaf (!parts[1]!.children.isEmpty) parts[1]!.start parts[1]!.stop), ("table", table),
-    ("terms", sequence terms parts[9]!.start parts[9]!.stop), ("filter", filter)] command.start command.stop
+  let filter ← if whereParts.isEmpty then pure (missing parts[11]!.start parts[11]!.stop)
+    else Located.present <$> queryExpression tree whereParts[1]!
+  let indexName ← identifierName tree parts[4]!
+  let table ← identifierName tree parts[7]!
+  let terms := sequence (← orderTerms queryMappers tree parts[9]!) parts[9]!.start parts[9]!.stop
+  return composite (.createIndex indexName.value (!parts[1]!.children.isEmpty) table.value terms.value filter.value)
+    command.start command.stop #[indexName.span, spanOf parts[1]!, table.span, terms.span, filter.span]
 
 /-- The boolean words of {lit}`sqlite3GetBoolean`, in the order that the Python translation
 tries them. -/
@@ -61,15 +64,15 @@ def settingValue (tree : SqlTree) (node : ParseNode) : TranslateM Bool := do
 
 /-- {lit}`PRAGMA foreign_keys [= value]` and {lit}`PRAGMA foreign_keys(value)`, whose value is
 none for the query form. -/
-def pragma (tree : SqlTree) (command : ParseNode) : TranslateM Located := do
+def pragma (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
   let parts := tree.children command
   unless parts.size ≥ 3 && asciiEqual (dequote (tree.text parts[1]!)) "foreign_keys" && parts[2]!.children.isEmpty do
     unsupported command "Only PRAGMA foreign_keys is modeled, without a schema name"
   let value ← match tree.symbols command with
-    | ["PRAGMA", "nm", "dbnm"] => pure Lean.Json.null
+    | ["PRAGMA", "nm", "dbnm"] => pure none
     | ["PRAGMA", "nm", "dbnm", "EQ", "nmnum"] | ["PRAGMA", "nm", "dbnm", "LP", "nmnum", "RP"] =>
-      Lean.Json.bool <$> settingValue tree parts[4]!
+      some <$> settingValue tree parts[4]!
     | _ => unsupported command pragmaValues
-  return constructor "pragmaForeignKeys" #[("value", leaf value command.start command.stop)] command.start command.stop
+  return composite (.pragmaForeignKeys value) command.start command.stop #[spanOf command]
 
 end Belay.Sqlite.Translation

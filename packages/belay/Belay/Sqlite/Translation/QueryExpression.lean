@@ -8,9 +8,11 @@ set_option doc.verso true
 
 namespace Belay.Sqlite.Translation
 
+open Belay.Sqlite.Model
+
 /-- Map an {lit}`expr` production of a query, or refuse it with its range; operands and nested
 queries go through the mappers. -/
-def queryExpressionWith (mappers : Mappers) (tree : SqlTree) (node : ParseNode) : TranslateM Located := do
+def queryExpressionWith (mappers : Mappers) (tree : SqlTree) (node : ParseNode) : TranslateM (Located Syntax.Expr) := do
   let parts := tree.children node
   let symbols := tree.symbols node
   if symbols == ["LP", "expr", "RP"] then return ← mappers.expression tree parts[1]!
@@ -25,23 +27,23 @@ def queryExpressionWith (mappers : Mappers) (tree : SqlTree) (node : ParseNode) 
       #[parts[0]!, parts[2]!]
   | ["expr", "COLLATE", "ID"] | ["expr", "COLLATE", "STRING"] => do
     let operand ← mappers.expression tree parts[0]!
-    return constructor "collate" #[("operand", operand), ("name", ← plainName tree parts[2]!)] node.start node.stop
-  | ["expr", "IS", "NOT", "expr"] => operation mappers tree node "compare" "isNot" parts[0]! parts[3]!
-  | ["MINUS", "expr"] => unary mappers tree node "negate" parts[1]!
-  | ["PLUS", "expr"] => unary mappers tree node "positive" parts[1]!
+    let collation ← identifierName tree parts[2]!
+    return composite (.collate operand.value collation.value) node.start node.stop #[operand.span, collation.span]
+  | ["expr", "IS", "NOT", "expr"] => operation mappers tree node (.compare .isNot) parts[0]! parts[3]!
+  | ["MINUS", "expr"] => unary mappers tree node .negate parts[1]!
+  | ["PLUS", "expr"] => unary mappers tree node .positive parts[1]!
   | ["CAST", "LP", "expr", "AS", "typetoken", "RP"] => do
     let operand ← mappers.expression tree parts[2]!
-    return constructor "cast" #[("operand", operand),
-      ("typeName", leaf (tree.text parts[4]!) parts[4]!.start parts[4]!.stop)] node.start node.stop
+    return composite (.cast operand.value (tree.text parts[4]!)) node.start node.stop #[operand.span, spanOf parts[4]!]
   | ["nm", "DOT", "nm"] => do
-    let source ← plainName tree parts[0]!
-    return constructor "qualified" #[("source", source), ("column", ← plainName tree parts[2]!)] node.start node.stop
+    let source ← identifierName tree parts[0]!
+    let column ← identifierName tree parts[2]!
+    return composite (.qualified source.value column.value) node.start node.stop #[source.span, column.span]
   | ["nm", "DOT", "nm", "DOT", "nm"] => unsupported node "A schema-qualified column is not modeled; write source.column"
-  | ["NOT", "expr"] => unary mappers tree node "not" parts[1]!
+  | ["NOT", "expr"] => unary mappers tree node .not parts[1]!
   | ["expr", "ISNULL"] | ["expr", "NOTNULL"] | ["expr", "NOT", "NULL"] => do
     let operand ← mappers.expression tree parts[0]!
-    return constructor "isNull" #[("operand", operand), ("negated", leaf (symbols[1]! != "ISNULL") node.start node.stop)]
-      node.start node.stop
+    return composite (.isNull operand.value (symbols[1]! != "ISNULL")) node.start node.stop #[operand.span, spanOf node]
   | "ID" :: "LP" :: _ | "LIKE_KW" :: "LP" :: _ | "IF" :: "LP" :: _ | "REPLACE" :: "LP" :: _ =>
     functionCall mappers tree node parts
   | ["expr", "likeop", "expr"] | ["expr", "likeop", "expr", "ESCAPE", "expr"] => like mappers tree node parts
@@ -50,31 +52,34 @@ def queryExpressionWith (mappers : Mappers) (tree : SqlTree) (node : ParseNode) 
   | _ => expression tree node
 
 /-- The alias of an {lit}`as` node: {lit}`AS name`, a bare name, or none. -/
-def alias (tree : SqlTree) (node : ParseNode) : TranslateM Located := do
+def alias (tree : SqlTree) (node : ParseNode) : TranslateM (Located (Option Identifier)) := do
   let parts := tree.children node
-  if tree.symbols node == ["AS", "nm"] then return ← plainName tree parts[1]!
-  if h : 0 < parts.size then return leaf (dequote (tree.text parts[0])) node.start node.stop
-  return leaf .null node.start node.stop
+  if tree.symbols node == ["AS", "nm"] then return (← identifierName tree parts[1]!).present
+  if h : 0 < parts.size then return leaf (some (Identifier.ofString (dequote (tree.text parts[0])))) node.start node.stop
+  return missing node.start node.stop
 
 /-- {lit}`*`, {lit}`source.*`, or an expression with its optional alias and its text, which SQLite
 uses as the column's name. -/
 def resultColumn (mappers : Mappers) (tree : SqlTree) (node : ParseNode) (parts : Array ParseNode) :
-    TranslateM Located := do
+    TranslateM (Located Syntax.ResultColumn) := do
   match parts.toList.map (·.symbol) with
-  | ["scanpt", "STAR"] => return leaf "star" parts[1]!.start parts[1]!.stop
+  | ["scanpt", "STAR"] => return leaf .star parts[1]!.start parts[1]!.stop
   | ["scanpt", "nm", "DOT", "STAR"] =>
-    return constructor "sourceStar" #[("source", ← plainName tree parts[1]!)] parts[1]!.start parts[3]!.stop
+    let source ← identifierName tree parts[1]!
+    return composite (.sourceStar source.value) parts[1]!.start parts[3]!.stop #[source.span]
   | ["scanpt", "expr", "scanpt", "as"] =>
     let named ← alias tree parts[3]!
     let value := parts[1]!
-    return constructor "expression" #[("value", ← mappers.expression tree value), ("alias", named),
-      ("text", leaf (tree.text value) value.start value.stop)] value.start (max value.stop parts[3]!.stop)
+    let mapped ← mappers.expression tree value
+    return composite (.expression mapped.value named.value (tree.text value)) value.start (max value.stop parts[3]!.stop)
+      #[mapped.span, named.span, spanOf value]
   | _ => unsupported node "Only `*` and expressions are modeled as result columns; write the column names"
 
 /-- The result columns of a {lit}`selcollist` node in text order. Like the Python translation, it
 maps them from the last to the first. -/
-def resultColumns (mappers : Mappers) (tree : SqlTree) (node : ParseNode) : TranslateM Located := do
-  let mut items : Array Located := #[]
+def resultColumns (mappers : Mappers) (tree : SqlTree) (node : ParseNode) :
+    TranslateM (Located (List Syntax.ResultColumn)) := do
+  let mut items : Array (Located Syntax.ResultColumn) := #[]
   let mut current := node
   let mut fuel := tree.nodes.size + 1
   while fuel > 0 do

@@ -9,6 +9,8 @@ reference, and its optional ON condition and USING column names. -/
 
 namespace Belay.Sqlite.Translation
 
+open Belay.Sqlite.Model
+
 /-- One source of a {lit}`seltablist`: its joined prefix, name, schema, alias and constraint nodes, and
 the mapped arguments of a table-valued function, or none for a table. -/
 structure SourceParts where
@@ -23,7 +25,7 @@ structure SourceParts where
   /-- The {lit}`on_using` node. -/
   constraint : ParseNode
   /-- The arguments of a table-valued function. -/
-  arguments : Option Located
+  arguments : Option (Located (List Syntax.Expr))
   deriving Inhabited
 
 /-- The parts of one source; a subquery or {lit}`INDEXED BY` is refused. Like the Python
@@ -44,35 +46,36 @@ def sourceParts (mappers : Mappers) (tree : SqlTree) (node : ParseNode) : Transl
       "FROM; write table names and joins")
 
 /-- A table or table-valued function with its optional alias; a schema name is refused. -/
-def tableReference (tree : SqlTree) (source : SourceParts) : TranslateM Located := do
+def tableReference (tree : SqlTree) (source : SourceParts) : TranslateM (Located Syntax.TableReference) := do
   absent source.schema "A schema name"
-  let table ← plainName tree source.table
+  let table ← identifierName tree source.table
   let named ← alias tree source.aliasNode
-  let arguments := source.arguments.getD (leaf .null source.table.start source.table.stop)
-  return structure' #[("table", table), ("alias", named), ("arguments", arguments)] source.table.start
-    (max source.table.stop source.aliasNode.stop)
+  let arguments := (source.arguments.map (·.present)).getD (missing source.table.start source.table.stop)
+  return composite { table := table.value, alias := named.value, arguments := arguments.value } source.table.start
+    (max source.table.stop source.aliasNode.stop) #[table.span, named.span, arguments.span]
 
 /-- The keywords of a {lit}`joinop` before {lit}`JOIN`, as written; none for {lit}`,` and a plain
 {lit}`JOIN`. -/
-def joinOperator (tree : SqlTree) (node : ParseNode) : Located :=
+def joinOperator (tree : SqlTree) (node : ParseNode) : Located (List String) :=
   let words := (tree.children node).filter (fun part => part.symbol != "COMMA" && part.symbol != "JOIN")
   sequence (words.map fun part => leaf (tree.text part) part.start part.stop) node.start node.stop
 
-/-- The ON condition and the USING column names of an {lit}`on_using` node, each a null leaf when
-absent. -/
-def joinConstraint (mappers : Mappers) (tree : SqlTree) (node : ParseNode) : TranslateM (Located × Located) := do
+/-- The ON condition and the USING column names of an {lit}`on_using` node, each absent at the
+node's range without its clause. -/
+def joinConstraint (mappers : Mappers) (tree : SqlTree) (node : ParseNode) :
+    TranslateM (Located (Option Syntax.Expr) × Located (Option (List Identifier))) := do
   let parts := tree.children node
-  let missing := leaf .null node.start node.stop
   match tree.symbols node with
-  | ["ON", "expr"] => return (← mappers.expression tree parts[1]!, missing)
+  | ["ON", "expr"] => return ((← mappers.expression tree parts[1]!).present, missing node.start node.stop)
   | ["USING", "LP", "idlist", "RP"] =>
     let items ← leftList tree parts[2]! [(1, ["nm"]), (3, ["idlist", "COMMA", "nm"])]
-    let names ← items.mapM fun item => plainName tree (last item)
-    return (missing, sequence names parts[2]!.start parts[2]!.stop)
-  | _ => return (missing, missing)
+    let names ← items.mapM fun item => identifierName tree (last item)
+    return (missing node.start node.stop, (sequence names parts[2]!.start parts[2]!.stop).present)
+  | _ => return (missing node.start node.stop, missing node.start node.stop)
 
 /-- The first source of a {lit}`seltablist` and its joins in order. -/
-def fromClause (mappers : Mappers) (tree : SqlTree) (tables : ParseNode) : TranslateM (Located × Located) := do
+def fromClause (mappers : Mappers) (tree : SqlTree) (tables : ParseNode) :
+    TranslateM (Located Syntax.TableReference × Located (List Syntax.Join)) := do
   let mut items : Array (ParseNode × SourceParts) := #[]
   let mut current := tables
   let mut fuel := tree.nodes.size + 1
@@ -86,13 +89,17 @@ def fromClause (mappers : Mappers) (tree : SqlTree) (tables : ParseNode) : Trans
   let (firstNode, firstParts) := items[0]!
   absent firstParts.constraint "ON or USING on the first table"
   let first ← tableReference tree firstParts
-  let mut joins : Array Located := #[]
+  let mut joins : Array (Located Syntax.Join) := #[]
   for (node, source) in items.extract 1 items.size do
     let operator := (← require tree source.joined ["seltablist", "joinop"])[1]!
     let (condition, usingColumns) ← joinConstraint mappers tree source.constraint
     let reference ← tableReference tree source
-    joins := joins.push (structure' #[("operator", joinOperator tree operator), ("source", reference),
-      ("condition", condition), ("usingColumns", usingColumns)] operator.start node.stop)
+    let keywords := joinOperator tree operator
+    let join : Syntax.Join :=
+      { operator := keywords.value, source := reference.value, condition := condition.value,
+        usingColumns := usingColumns.value }
+    joins := joins.push (composite join operator.start node.stop
+      #[keywords.span, reference.span, condition.span, usingColumns.span])
   return (first, sequence joins firstNode.stop tables.stop)
 
 end Belay.Sqlite.Translation
