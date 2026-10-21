@@ -23,6 +23,12 @@ Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D6.
   as the judge compares the one predicted output. `just test-full` passes, after the mutation
   checks learned to copy `PossibleOutputs.lean`.
 
+- 2026-10-21, end of ADR 0018: `just runtime-package` passes. `just test-nix` and
+  `just test-scheduled` each found one failure, both fixed in one commit: the core import closure
+  test expected 190 modules (now 203), and the measurement of the 17 number and query-without-FROM
+  mutants took more than its limit of 300 seconds beside the other mutant suite, so it is three
+  measurements, each at most 124 seconds alone.
+
 ## Remaining
 
 - Nothing for the slice. Recording corpus 47 belongs to the end of ADR 0018, with corpora 43
