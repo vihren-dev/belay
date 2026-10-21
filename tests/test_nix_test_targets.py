@@ -44,8 +44,9 @@ PRELUDE = f'''let
 def expression(root: Path) -> str:
     """Reuse the actual test definitions with a private source tree and unchanged runtime dependencies."""
     return f'''{PRELUDE} {import_file("tests.nix")} {{
-      inherit pkgs; inherit (builds) leanToolchain leanRuntime conformance modelPackage leanPackages;
+      inherit pkgs; inherit (builds) leanToolchain leanRuntime conformance modelPackage leanPackages surfacePackage;
       parserLibrary = builds.parserLibrary.testRoot;
+      parserLibraryBuild = builds.parserLibrary.library;
       runtime = {runtime_expression(root, "runtime")};
       seedRuntime = {runtime_expression(root, "runtimeWithoutExamples")};
       root = /. + {nix_string(root)};
@@ -63,7 +64,7 @@ def test_bounded_commands_keep_complete_suite_ownership() -> None:
     ownership = json.loads((ROOT / 'tests/nix_suites.json').read_text())
     assert set(scripts) == set(ownership) == {'atuin', 'bundle', 'cli', 'kernel', 'model', 'frozen', 'corpora',
                                                'harness', 'sample', 'upstream', 'parserLibrary', 'packages',
-                                               'documentation', 'mutants', 'tableMutants', 'functionMutants',
+                                               'documentation', 'mutants', 'tableMutants', 'functionMutants', 'surface',
                                                'writers'}
     mutant_suites = set(json.loads((ROOT / 'tests/nix_mutant_suites.json').read_text()))
     for name, script in scripts.items():
@@ -89,6 +90,7 @@ def source_tree(tmp_path: Path) -> Path:
         path = tmp_path / "experiments/adr-0003-latency" / name
         path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / "experiments/adr-0003-latency" / name, path)
+    shutil.copytree(ROOT / "experiments/surface-s1/candidate-b", tmp_path / "experiments/surface-s1/candidate-b")
     return tmp_path
 
 

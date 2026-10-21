@@ -13,10 +13,11 @@ pytestmark = [pytest.mark.integration, pytest.mark.environment, pytest.mark.requ
 PACKAGES: dict[str, str] = {"sqlite-verifier": "verifierLibrary", "verifier-gate": "verifierGate",
                             "verifier-conformance": "verifierConformance", "public-doc-tools": "docTools"}
 """The Lean package folders under packages/ that `sources.nix` selects one by one, to their attributes."""
-COMPONENTS: set[str] = {"runtime", "runtimeWithoutExamples", "model", *PACKAGES.values()}
+COMPONENTS: set[str] = {"runtime", "runtimeWithoutExamples", "model", "surface", *PACKAGES.values()}
 DYNAMIC: dict[str, set[str]] = {
     "packages/belay-sqlite-model/Belay/Sqlite/Model/Database.lean": {"model"},
     "packages/belay-sqlite-model/Belay/Sqlite/Model/Codec.lean": {"model"},
+    "packages/belay/Belay.lean": {"surface"}, "packages/belay/lakefile.lean": {"surface"},
     **{f"parser/input.{suffix}": set() for suffix in ("py", "c", "h", "y", "json")},
     "packages/sqlite-verifier/SqliteVerifier/Contract.lean": {"verifierLibrary"},
     "packages/sqlite-verifier/SqliteVerifier/ContractProofs.lean": {"verifierLibrary"},
@@ -34,6 +35,7 @@ DYNAMIC: dict[str, set[str]] = {
 FIXED: dict[str, set[str]] = {
     **{f"packages/belay-sqlite-model/{name}": {"model"}
        for name in ("lakefile.toml", "lake-manifest.json", "lean-toolchain")},
+    **{f"packages/belay/{name}": {"surface"} for name in ("lake-manifest.json", "lean-toolchain", "c/parser_shim.c")},
     **{f"packages/{folder}/{name}": {attribute} for folder, attribute in PACKAGES.items()
        for name in ("lakefile.toml", "lake-manifest.json", "lean-toolchain")},
     **{name: {"runtime", "runtimeWithoutExamples"}
@@ -41,6 +43,7 @@ FIXED: dict[str, set[str]] = {
 }
 PARENTS: tuple[str, ...] = (".", "parser", "migration_check", "belay/sqlite", "tests", "packaging", "tools",
            "conformance", "examples", "packages/belay-sqlite-model", "packages/belay-sqlite-model/Belay/Sqlite/Model",
+           "packages/belay",
            *(f"packages/{folder}" for folder in PACKAGES), "packages/sqlite-verifier/SqliteVerifier",
            "packages/verifier-conformance/VerifierConformance")
 IGNORED: tuple[str, ...] = (".git", ".jj", ".lake", "build", "dist", "__pycache__")
