@@ -24,7 +24,12 @@ slice the local verdict, the corpus, and `just test-full`.
    * as a parent, the old key adds one for each child row that it matches, before the action of
      the foreign key runs on those rows, and the new key removes one for each child row that it
      matches, while the count is above zero (an update that changes no column of the parent key
-     does neither, and neither does an `INSERT` of one row).
+     does neither, and neither does an `INSERT` that is no multi-row write; see below).
+   An `INSERT` is a multi-row write, as SQLite's `isMultiWrite` flag gives it, when its rows come
+   from a `SELECT` or from more than one `VALUES` row, when the table has a trigger, or when a
+   `REPLACE` resolution can delete a row of a `UNIQUE` index of the table
+   (`sqlite3Insert`, `sqlite3GenerateConstraintChecks`); an `INSERT` with one `VALUES` row and
+   none of these is not.
    The rows that `REPLACE` deletes and the implicit `DELETE` of `DROP TABLE` are deletes. A
    statement whose count is above zero at its end is SQLite's `FOREIGN KEY constraint failed`
    and changes nothing. A key compares under the parent key's affinity and collation. So
@@ -40,10 +45,12 @@ slice the local verdict, the corpus, and `just test-full`.
    `foreign key mismatch - "child" referencing "parent"`, and one whose parent table does not
    exist is `no such table: main.parent`. A write processes a foreign key as the counts of
    outcome 2 do: every `INSERT` into and `DELETE` from the child, an `UPDATE` of a column of the
-   child's key, an `INSERT` of more than one row into the parent, a `DELETE` from the parent and
-   an `UPDATE` of a column of the parent key. Other writes to either table succeed: an `INSERT`
-   of one row into the parent, and an `UPDATE` of another column of either table. `DROP TABLE`
-   ignores the error, as `sqlite3FkDropTable` does.
+   child's key, an `INSERT` into the parent that is a multi-row write, a `DELETE` from the parent
+   and an `UPDATE` of a column of the parent key. Other writes to either table succeed: an
+   `INSERT` into the parent that is no multi-row write, and an `UPDATE` of another column of
+   either table. `DROP TABLE` ignores the error, as `sqlite3FkDropTable` does. An `INSERT` with
+   `ON CONFLICT ... DO UPDATE` into a table with a foreign key, as child or parent, stays a
+   restriction, because the slice does not check how SQLite processes its keys.
 5. **Restrictions.** A foreign key with `DEFERRABLE INITIALLY DEFERRED`, and
    `PRAGMA defer_foreign_keys`, stay restrictions: the slice's measurement (below) shows 11 of
    the 307 out-of-scope cases of v5 that turn foreign keys on use them, and they need a count of
