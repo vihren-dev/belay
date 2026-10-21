@@ -64,5 +64,10 @@ def last (script : List Syntax.Statement) : Option Resolved.Statement := (statem
 -- A write on a catalog with a trigger fails the support check; without the trigger it passes.
 #guard !supportedSqlFrom 0 (statements (migration [] [tableT, trigger "r", insertOne])) { database := {} }
 #guard supportedSqlFrom 0 (statements (migration [] [tableT, insertOne])) { database := {} }
+-- So does DROP TABLE of a parent whose CASCADE deletes child rows of a table with a trigger.
+#guard !supportedSqlFrom 0 (statements (migration [] [.pragmaForeignKeys (some true),
+    .createTable (name! "p") [{ plain "id" with constraints := [.primaryKey false] }] [],
+    .createTable (name! "t") [{ plain "a" with constraints := [.references (name! "p") [] .cascade .noAction] }] [],
+    trigger "r", .dropTable (name! "p") false])) { database := {} }
 
 end Belay.Sqlite.TriggerExamples
