@@ -32,7 +32,7 @@ let
 in
 pkgs.mkShell ({
   packages = [ pkgs.just pkgs.coreutils testPython native.sqlite native.sqlite346 native.sqlite3534
-               leanToolchain pkgs.rsync ]
+               leanToolchain ]
     ++ pkgs.lib.optionals linux [ pkgs.patchelf ];
   SQLITE_VERIFIER_SHELL = "default";
   SQLITE_VERIFIER_SYSTEM = system;
