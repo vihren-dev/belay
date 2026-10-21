@@ -17,8 +17,10 @@ slice the local verdict, the corpus, and `just test-full`.
    order of the `ORDER BY` terms. They form tie groups: the longest runs of records that the
    `ORDER BY` terms do not separate (`compareSort` gives `eq`); a query without `ORDER BY` has
    one group of all its records. Each result is the rows of the window, group by group, in the
-   order of the groups, and the rows of each group in normal form: sorted by
-   `compareValues`, column by column. A group that the window holds whole gives all its rows; a
+   order of the groups, and the rows of each group in normal form: sorted column by column by
+   a total order of values, `compareValues` with a tie-breaker for the values that it says are
+   equal but that differ, an integer before a real of the same value and reals by their bits,
+   so that the normal form of a list of rows is one list. A group that the window holds whole gives all its rows; a
    group that `OFFSET` or `LIMIT` cuts gives, in each result, one of the ways to choose as many
    of its rows as the window takes from it. The list has each result once.
 2. **One result when the window cuts no tie.** A query without `LIMIT` and `OFFSET`, or whose
@@ -34,10 +36,13 @@ slice the local verdict, the corpus, and `just test-full`.
    `Query.results`; and `Query.results` with the rows of each of its groups in normal form is in
    the list. So the corpora, which check `Query.results` against SQLite, check one element of
    the list.
-5. **The corpora check the list.** The comparison of a query's output also requires that the
-   rows that SQLite gave, with the rows of each tie group of the native evidence in normal form,
-   are in the model's list. The comparison changes no verdict that agrees today unless the list
-   is wrong.
+5. **The replay checks the list.** The conformance runner's comparison of a query's output
+   (`VerifierConformance`, which the replays, the authored coverage tests and their kernel
+   proofs use) also requires that the rows that SQLite gave, with the rows of each tie group of
+   the native evidence in normal form, are in the model's list. The judge's verdict compares the
+   one predicted output (`judge/outputs.py`) and does not change: enforcing the list there is a
+   judge change, which needs the owner's approval, and is not part of this slice. The runner's
+   comparison changes no case that agrees today unless the list is wrong.
 
 ## Tests
 
@@ -52,7 +57,8 @@ slice the local verdict, the corpus, and `just test-full`.
   `DESC` and a collation; `LIMIT` without `ORDER BY` over a table with an index that changes
   SQLite's order; `DISTINCT`, `GROUP BY` and an aggregate query with `LIMIT`; a window that cuts
   no tie; `LIMIT 0`.
-- The verdict of every corpus: no case leaves AGREE.
+- The verdict of every corpus: no case leaves AGREE; and the replay of the frozen corpora by
+  the runner, with the new check, changes no case that agrees.
 - Mutants: a list that ignores `OFFSET`, a list with only the choice of `Query.results`, a
   list that cuts a group with one row too many, and groups that `DESC` does not reverse; each
   killed by an authored case.
@@ -70,7 +76,8 @@ slice the local verdict, the corpus, and `just test-full`.
 - **`Query.results` takes the first rows of a cut group in record order**, which is the scan
   order of the source. The law places that choice in the list; the mutant with only that
   choice needs a case where SQLite takes other rows, such as an index that changes its order.
-- **The comparison is subject code.** The new check is in `VerifierConformance` (`Case.lean`,
-  `Outputs.lean`), which the predictions run; it changes neither the judge nor its claims.
-- **Files.** `QueryResults.lean` (or a new module beside it), `Subqueries.lean` (`runOn`),
+- **Two comparisons.** The runner compares in Lean (`Case.lean`, `Outputs.lean`); the judge
+  compares the predicted outputs in Python (`judge/outputs.py`), with the same tie groups. Only
+  the runner gets the new check; the judge, its lock and the claims stay as they are.
+- **Files.** `QueryResults.lean` (or a new module beside it), `Execution.lean` (`runOn`),
   `VerifierConformance/Outputs.lean` and `Case.lean`.
