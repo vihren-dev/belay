@@ -110,6 +110,8 @@ def resolve_example(runtime: Path, schema: str, migration: str) -> dict[str, Jso
     answered = subprocess.run([str(runner), "--predict"], input=json.dumps(model_input) + "\n",
                               capture_output=True, text=True, timeout=RUNNER_TIMEOUT_SECONDS, check=False)
     if answered.returncode:
-        raise RuntimeError(f"{runner} exited with {answered.returncode}: {answered.stderr.strip()}")
+        raise RuntimeError(f"{runner} exited with {answered.returncode}: {answered.stderr.strip()}. Read the "
+                           "runner's message, rebuild the conformance runtime (nix-build build-support/default.nix "
+                           "-A conformance), and run the example again.")
     result: dict[str, Json] = json.loads(answered.stdout)
     return result

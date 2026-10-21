@@ -124,9 +124,9 @@ exporter or patch. `prepare` supplies its bundle
 header's trusted imports as explicit omission modules. See the
 [data path guide](../docs/data-path.md) for the upgrade procedure.
 
-`conformanceRuntime` adds the outputs of `verifierConformance`, the separate
-`VerifierConformance` Lean library and test-only `conformance-runner`, to those of
-`leanRuntime`; `conformance` assembles its compiler, library and parser links. `tests.model` uses
+`conformanceRuntime` holds only the outputs of `verifierConformance`: the
+`VerifierConformance` Lean library and the test-only `conformance-runner`. It contains no
+verifier library or gate program. `conformance` assembles its compiler, library and parser links. `tests.model` uses
 this runtime, including native acquisition and the model-mutation checks. The
 ordinary `runtime` excludes both the new executable and conformance modules.
 Changes inside `packages/verifier-conformance/` invalidate only the conformance
