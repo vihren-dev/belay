@@ -88,7 +88,7 @@ def Catalog.parentKey (catalog : Catalog) (position : Nat) (parent : CatalogTabl
   let aliasNamed := match parent.rowidAlias, key.referenced with
     | some _, [] => true
     | some alias, [name] => (parent.columns[alias]?).any (·.name.sameName name)
-    | _, _ => false
+    | some _, _ :: _ :: _ | none, _ => false
   if key.columns.length == 1 && aliasNamed then some .rowid
   else
     let indexes := catalog.parentIndexes position parent
