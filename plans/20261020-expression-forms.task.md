@@ -34,8 +34,7 @@ slice the local verdict, the corpus, and `just test-full`.
   the affinity and collation rules of the `IN` list, of `BETWEEN` and of `CASE` with a base;
   the NULL matrix of the `IN` list; the text of integers, REAL values and BLOBs in `||`.
 - The verdict of every corpus: cases that newly agree and none that leave AGREE.
-- Mutants: an `IN` list whose values compare under the collation of a column on the right, `BETWEEN` that evaluates `x <= b` before the NULL check of `x >= a` as `AND`
-  does not (a false lower bound with a NULL upper bound must give 0), `CASE` whose NULL
+- Mutants: an `IN` list whose values compare under the collation of a column on the right, `BETWEEN` that gives NULL when either comparison is NULL, before it checks whether the other comparison is false (a false lower bound with a NULL upper bound must give 0), `CASE` whose NULL
   base matches a NULL `WHEN`, and `||` that skips a NULL operand as `concat` does; each
   killed by an authored case.
 
