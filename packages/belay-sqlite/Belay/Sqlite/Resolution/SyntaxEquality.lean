@@ -31,7 +31,10 @@ def Syntax.Expr.same : Syntax.Expr → Syntax.Expr → Bool
   | .inList a xs n, .inList b ys m => n == m && a.same b && Syntax.Expr.sameList xs ys
   | .between a l h n, .between b k g m => n == m && a.same b && l.same k && h.same g
   | .caseOf xs n, .caseOf ys m => n == m && Syntax.Expr.sameList xs ys
-  | _, _ => false
+  | .null, _ | .numeric _, _ | .string _, _ | .blob _, _ | .currentTime _, _ | .identifier .., _ | .qualified .., _
+  | .negate _, _ | .positive _, _ | .compare .., _ | .and .., _ | .or .., _ | .not _, _ | .isNull .., _
+  | .callStar _, _ | .call .., _ | .arithmetic .., _ | .cast .., _ | .collate .., _ | .exists _, _
+  | .inQuery .., _ | .subquery _, _ | .inList .., _ | .between .., _ | .caseOf .., _ | .concatenate .., _ => false
 
 /-- Whether two lists of expressions are the same, item by item ({name}`Syntax.Expr.same`). -/
 def Syntax.Expr.sameList : List Syntax.Expr → List Syntax.Expr → Bool

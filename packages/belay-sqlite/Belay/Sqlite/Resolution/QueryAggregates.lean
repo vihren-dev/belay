@@ -55,18 +55,23 @@ def resolveAggregateCall (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) 
       if operand.subtypeUndescribed then throw (.restriction [1, 1] .jsonSubtype)
       .ok (aggregate label operand)
     | none => .error (.restriction [] .aggregateInExpression)
-  | _ => .error (.restriction [] .aggregateInExpression)
+  | .call _ (_ :: _ :: _ :: _) | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier ..
+  | .qualified .. | .negate _ | .positive _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic ..
+  | .cast .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf ..
+  | .concatenate .. => .error (.restriction [] .aggregateInExpression)
 
 /-- Resolve {lit}`GROUP BY` term {lit}`item` of a query whose result columns are {lit}`outputs`,
 with aliases {lit}`aliases` and collations {lit}`collations`: a column name, also under one
 {lit}`COLLATE`, or a qualified name, with its collation; a result column number or alias, with
-the column's collation; an aggregate is SQLite's {lit}`aggregate functions are not allowed in the
-GROUP BY clause`; any other term is {name}`RestrictionKind.groupByTerm`. -/
+the column's collation; an aggregate, also inside the result column that a number or an alias
+names, is SQLite's {lit}`aggregate functions are not allowed in the GROUP BY clause`; any other term is {name}`RestrictionKind.groupByTerm`. -/
 def resolveGroupTerm (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (aliases : List (Option Identifier))
     (outputs : List (Resolved.Output × String × Option Affinity)) (collations : List Collation) (item : Nat)
     (term : Syntax.Expr) : Except ValueIssue (Resolved.Expr × Collation) :=
   let grouped := fun (column : Nat) => match outputs[column]? with
-    | some (.scalar expression, _) => .ok (expression, collations.getD column .binary)
+    | some (.scalar expression, _) =>
+      if expression.any (· matches .aggregateValue _) then .error (.prepare .aggregateInGroupBy)
+      else .ok (expression, collations.getD column .binary)
     | some (.aggregate _, _) | none => .error (.prepare .aggregateInGroupBy)
   match term with
     | .identifier name _ => match scope.resolveName name, aliasIndex aliases name with

@@ -96,19 +96,26 @@ scopes of the queries around it), with the shapes of the subqueries that its exp
 and the aliases of the queries around it, which a name in {lit}`WHERE` can name: the resolved
 query and the affinity of its first result column. See the module documentation for the steps.
 A scalar subquery is no grouping term, so it is a bare column of an aggregate query. The
-aggregate calls of the result columns, {lit}`HAVING` and {lit}`ORDER BY` are the query's aggregates
-(ADR 0018, D3), which make it an aggregate query; {lit}`HAVING` without one is SQLite's
-{lit}`HAVING clause on a non-aggregate query`, and {lit}`HAVING` and {lit}`ORDER BY` expressions
+query is an aggregate query when it has {lit}`GROUP BY` or an aggregate in a result column, and
+then the aggregate calls of its result columns, {lit}`HAVING` and {lit}`ORDER BY` are its
+aggregates (ADR 0018, D3); {lit}`HAVING` in another query is SQLite's {lit}`HAVING clause on a
+non-aggregate query`, and an aggregate in its {lit}`ORDER BY` SQLite's misuse. {lit}`HAVING` and
+{lit}`ORDER BY` expressions
 must read only grouping terms and aggregates ({name}`Resolved.Expr.grouped`). A fallible call
 over an aggregate is {name}`RestrictionKind.aggregateInExpression`, because the model's fault scan
 does not read aggregate values; an {lit}`ORDER BY` expression of {lit}`SELECT DISTINCT` that is no
 result column is {name}`RestrictionKind.distinctOrderBy`. -/
 def resolveQueryBody (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (outerAliases : List Identifier)
     (pending : List PendingSource) (query : Syntax.Subquery) : Except ValueIssue (Resolved.Query × Option Affinity) := do
+  let aggregate := !query.groupBy.isEmpty || query.columns.any fun
+    | .expression value _ _ => !value.aggregateCalls.isEmpty
+    | .star | .sourceStar _ => false
+  if query.having.isSome && !aggregate then throw (.prepare .havingNonAggregate)
   let calls := (query.columns.flatMap (fun
       | .expression value _ _ => if aggregateCall value then [] else value.aggregateCalls
-      | .star | .sourceStar _ => []) ++ query.having.toList.flatMap Syntax.Expr.aggregateCalls ++
-    query.orderBy.flatMap (·.expression.aggregateCalls)) |> Syntax.Expr.distinctList
+      | .star | .sourceStar _ => []) ++
+    (if aggregate then query.having.toList.flatMap Syntax.Expr.aggregateCalls ++
+      query.orderBy.flatMap (·.expression.aggregateCalls) else [])) |> Syntax.Expr.distinctList
   let shapes := { shapes with aggregates := calls }
   let aggregates ← resolveAll (fun _ call => resolveAggregateCall dqs scope shapes call) calls
   let outputs := (← resolveAll (resolveResultColumn dqs scope shapes) query.columns).flatten
@@ -120,9 +127,6 @@ def resolveQueryBody (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (out
       if namesAlias scope visibleAliases term then throw (aliasInExpression.under [3])
       else some <$> condition [3] (resolveOperand dqs scope shapes true term)
   let sources ← resolvePendingSources dqs scope pending
-  let aggregate := !query.groupBy.isEmpty || !aggregates.isEmpty || outputs.any fun (output, _) => match output with
-    | .aggregate _ => true
-    | .scalar _ => false
   let collations := resultCollations scope query.columns
   let terms ← resolveAll (resolveGroupTerm dqs scope shapes aliases outputs collations) query.groupBy
   if aggregate && !outputs.all (groupedOutput (terms.map Prod.fst) ·.1) then
@@ -130,8 +134,7 @@ def resolveQueryBody (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (out
   let having ← match query.having with
     | none => pure none
     | some term =>
-      if !aggregate then throw (.prepare .havingNonAggregate)
-      else if namesAlias scope visibleAliases term then throw (aliasInExpression.under [9])
+      if namesAlias scope visibleAliases term then throw (aliasInExpression.under [9])
       else
         let resolved ← Belay.Sqlite.condition [9] (resolveOperand dqs scope shapes false term)
         if resolved.grouped (terms.map Prod.fst) then pure (some resolved) else throw (.restriction [9] .bareColumn)
@@ -141,7 +144,7 @@ def resolveQueryBody (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (out
     | some (.error ()) => .error (.prepare (.orderByOutOfRange (item + 1) outputs.length))
     | none =>
       if namesAlias scope visibleAliases term.expression then .error (aliasInExpression.under [5, item, 0])
-      else (resolveOperand dqs scope shapes false term.expression).mapError (·.under [5, item, 0]) >>= fun (e, _) =>
+      else (resolveOperand dqs scope shapes (!aggregate) term.expression).mapError (·.under [5, item, 0]) >>= fun (e, _) =>
         if aggregate && !e.grouped (terms.map Prod.fst) then .error (.restriction [5, item] .aggregateOrderBy)
         else if query.distinct && !outputs.any (·.1 == .scalar e) then .error (.restriction [5, item] .distinctOrderBy)
         else .ok ({ key := .expression e, descending := term.descending, collation := term.expression.collationIn scope }
