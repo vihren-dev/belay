@@ -1,6 +1,6 @@
 # Status: the results that SQLite may give (ADR 0018, slice 6)
 
-Created 2026-10-21. Status: open.
+Created 2026-10-21. Status: DONE (2026-10-21).
 Task file: [task](20261021-possible-results.task.md).
 Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D6.
 
@@ -18,6 +18,12 @@ Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D6.
   `possible_result_evidence.py` for corpus 47) agrees with kernel proofs, and the four mutants
   (`possible_result_mutants.py`) are each killed.
 
+- 2026-10-21: the review added NULL before a NaN REAL in the normal form, with kernel examples.
+  The local verdict (`build/verdict-pr`) changes no verdict against the verdict after slice 5,
+  as the judge compares the one predicted output. `just test-full` passes, after the mutation
+  checks learned to copy `PossibleOutputs.lean`.
+
 ## Remaining
 
-- The local verdict and `just test-full`.
+- Nothing for the slice. Recording corpus 47 belongs to the end of ADR 0018, with corpora 43
+  to 46.
