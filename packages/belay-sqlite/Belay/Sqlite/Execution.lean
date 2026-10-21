@@ -127,7 +127,8 @@ constraint an existing row with the default fails with
 {lean}`ExecutionError.unmodeled` and is excluded by the support check.
 CREATE INDEX builds the index over the table's rows (ADR 0014, D1): a unique index whose
 key has two conflicting rows ({lit}`LiteralData.uniqueRows`) fails with
-{lean}`ExecutionError.constraintViolation` and keeps the catalog.
+{lean}`ExecutionError.constraintViolation` and keeps the catalog. CREATE TRIGGER adds the trigger
+to the catalog ({name}`Catalog.createTrigger`) with no rows.
 DROP removes the objects at its positions with their rows ({name}`Database.drop`) and does
 not fail; the DELETE that DROP TABLE runs first when foreign keys reference the table is part of
 the statement's run ({lit}`runStatement`). {lit}`PRAGMA foreign_keys = value` changes nothing.
@@ -170,6 +171,10 @@ def step (clock : Int) (statement : Resolved.Statement) (database : Database) : 
         if index.unique && !LiteralData.uniqueRows index.uniqueKey table.rows then
           .error (.constraintViolation, database)
         else .ok { catalog := database.catalog.createIndex name index, rows := database.rows ++ [[]] }
+    else .error (.unmodeled, database)
+  | .createTrigger target name trigger =>
+    if target == database.catalog.length && database.rows.length == database.catalog.length then
+      .ok { catalog := database.catalog.createTrigger name trigger, rows := database.rows ++ [[]] }
     else .error (.unmodeled, database)
   | .drop positions _ => .ok (database.drop positions)
   | .setting _ => .ok database

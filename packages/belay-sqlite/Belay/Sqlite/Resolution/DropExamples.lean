@@ -56,7 +56,7 @@ def errorOf (statement : Syntax.Statement) : Option PrepareError :=
 -- The index of the later table keeps its table: a duplicate fails after the DROP.
 #guard (match (tables.drop [0, 1]).getLast? with
   | some { entry := .index index, .. } => index.table == 0
-  | some { entry := .table _, .. } | none => false)
+  | some { entry := .table _, .. } | some { entry := .trigger _, .. } | none => false)
 #guard failure [.dropTable (name! "t") false, insertInto (name! "u") "1", insertInto (name! "u") "1"] ==
   some (2, .constraintViolation)
 -- A ROLLBACK undoes the DROP; a CREATE after a DROP may reuse the name.

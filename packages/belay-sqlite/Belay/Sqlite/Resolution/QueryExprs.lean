@@ -10,11 +10,8 @@ import Belay.Sqlite.Resolution.SubqueryShapes
 
 set_option doc.verso true
 
-/-! Resolution of the expressions of a query (ADR 0012, slice 1): names become
-column positions, and the affinity rules of a comparison are checked. A
-comparison whose affinity rule would convert a literal or the values of a column
-is a model restriction, so that evaluation compares the stored values as they
-are. -/
+/-! Resolution of the expressions of a query (ADR 0012, slice 1): names become column
+positions, and each comparison keeps the affinity and collation that evaluation applies. -/
 
 namespace Belay.Sqlite
 
@@ -49,7 +46,8 @@ compares under the affinity and the collation of {lit}`x`, but a list of one con
 explicit collation is {lit}`x = +c`, as SQLite's parser reads it; {lit}`x BETWEEN a AND b` is
 {lit}`x >= a AND x <= b`; {lit}`CASE` is {lit}`iif` of its operands ({lit}`resolveCase`); and
 {lit}`x || y` is the scalar function of the operator; a listed aggregate call
-({name}`SubqueryShapes.aggregates`) that is no misuse names its aggregate by index. -/
+({name}`SubqueryShapes.aggregates`) that is no misuse names its aggregate by index; {lit}`RAISE`
+outside a trigger's statements is {name}`ExprError.raiseOutsideTrigger`. -/
 def resolveOperand (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misuse : Bool) :
     Syntax.Expr → Except ValueIssue Operand
   | .identifier name quote => match scope.resolveName name with
@@ -155,6 +153,7 @@ def resolveOperand (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misus
     let a ← (resolveOperand dqs scope shapes misuse left).mapError (·.under [0])
     let b ← (resolveOperand dqs scope shapes misuse right).mapError (·.under [1])
     .ok (.scalar .pipes (.cons a.1 (.cons b.1 .nil)), none)
+  | .raise .. => .error (.prepare .raiseOutsideTrigger)
   | .inQuery operand index negated => do
     let a ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0])
     match shapes.find index with

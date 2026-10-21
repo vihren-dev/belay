@@ -1,5 +1,6 @@
 import Belay.Sqlite.Resolution.DropSpec
 import Belay.Sqlite.Resolution.WriteCatalogSpec
+import Belay.Sqlite.Resolution.TriggerDefinitionSpec
 
 set_option doc.verso true
 
@@ -24,6 +25,8 @@ theorem resolveCreateTable_step (context : ResolveContext) (catalog after : Cata
   all_goals first
     | (cases ok; exact .same)
     | (cases ok; exact .append _ (by assumption))
+    | (exact absurd (Catalog.find_not_trigger _ _ _ _ (by assumption)) (by simp [CatalogObject.isTrigger,
+        CatalogEntry.isTrigger]))
     | (cases ok)
 
 /-- For every successful resolution of CREATE INDEX, the catalog changes by one
@@ -42,6 +45,8 @@ theorem resolveCreateIndex_step (context : ResolveContext) (catalog after : Cata
   all_goals first
     | (cases ok; exact .same)
     | (cases ok; exact .append _ (by assumption))
+    | (exact absurd (Catalog.find_not_trigger _ _ _ _ (by assumption)) (by simp [CatalogObject.isTrigger,
+        CatalogEntry.isTrigger]))
     | (cases ok)
 
 /-- For every successful resolution of ADD COLUMN, the catalog changes by one
@@ -63,7 +68,7 @@ theorem resolveAddColumn_step (context : ResolveContext) (catalog after : Catalo
   obtain ⟨name, entry⟩ := object
   cases (by assumption : entry = .table _)
   simp only [Catalog.addColumn, atPosition]
-  exact .replace _ _ _ atPosition
+  exact .replace _ _ _ atPosition rfl
 
 /-- The resolution state keeps unique names: the current catalog has unique folded
 names, and so does the catalog that an open transaction saved, if there is one. -/
@@ -125,6 +130,14 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveDropIndex_step _ _ _ _ _ _ (by assumption))
+  | createTrigger name ifNotExists time event table condition body =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    exact keep _ (resolveCreateTrigger_step _ _ _ _ _ _ (by assumption))
+  | dropTrigger name ifExists =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    exact keep _ (resolveDropTrigger_step _ _ _ _ _ (by assumption))
   | insert table columns rows conflicts algorithm returning subqueries =>
     simp only [resolveStatement] at ok
     exact written _ ok fun _ _ found => (resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _ _

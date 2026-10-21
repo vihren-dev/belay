@@ -62,8 +62,8 @@ def Statement.clockExpressions : Statement → List Expr
     assignments.map (·.2) ++ filter.toList ++ returning.map (·.1) ++ subqueries.flatMap Query.expressions
   | .delete _ filter returning subqueries _ => filter.toList ++ returning.map (·.1) ++ subqueries.flatMap Query.expressions
   | .query inner subqueries => inner.expressions ++ subqueries.flatMap Query.expressions
-  | .createTable .. | .createIndex .. | .addColumn .. | .drop .. | .begin | .commit | .rollback | .prepareError _
-  | .setting _ => []
+  | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit | .rollback
+  | .prepareError _ | .setting _ => []
 
 /-- Whether a statement reads the clock: it has an expression that reads it
 ({name}`Expr.readsClock`, {name}`Statement.clockExpressions`). The execution gives a

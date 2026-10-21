@@ -23,7 +23,7 @@ def Syntax.Expr.aggregateCalls (expression : Syntax.Expr) : List Syntax.Expr :=
   | .inList operand values _ => operand.aggregateCalls ++ Syntax.Expr.aggregateCallsIn values
   | .between operand low high _ => operand.aggregateCalls ++ low.aggregateCalls ++ high.aggregateCalls
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .qualified .. | .callStar _
-  | .exists _ | .subquery _ => []
+  | .exists _ | .subquery _ | .raise .. => []
 
 /-- The aggregate calls of each expression in order ({name}`Syntax.Expr.aggregateCalls`). -/
 def Syntax.Expr.aggregateCallsIn : List Syntax.Expr → List Syntax.Expr
@@ -58,7 +58,7 @@ def resolveAggregateCall (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) 
   | .call _ (_ :: _ :: _ :: _) | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier ..
   | .qualified .. | .negate _ | .positive _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic ..
   | .cast .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf ..
-  | .concatenate .. => .error (.restriction [] .aggregateInExpression)
+  | .concatenate .. | .raise .. => .error (.restriction [] .aggregateInExpression)
 
 /-- Resolve {lit}`GROUP BY` term {lit}`item` of a query whose result columns are {lit}`outputs`,
 with aliases {lit}`aliases` and collations {lit}`collations`: a column name, also under one
@@ -93,7 +93,7 @@ def resolveGroupTerm (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (ali
       else .error (.restriction [4, item] .groupByTerm)
     | .call _ (_ :: _ :: _) | .null | .string _ | .blob _ | .currentTime _ | .positive _ | .compare ..
     | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast .. | .exists _ | .inQuery .. | .subquery _
-    | .inList .. | .between .. | .caseOf .. | .concatenate .. =>
+    | .inList .. | .between .. | .caseOf .. | .concatenate .. | .raise .. =>
       .error (.restriction [4, item] .groupByTerm)
 
 end Belay.Sqlite

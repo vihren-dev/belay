@@ -11,12 +11,13 @@ change once, so the theorems that relate them can state it. -/
 namespace Belay.Sqlite.Resolved
 
 /-- The catalog after the statement succeeds on the given catalog: CREATE TABLE, CREATE
-INDEX, ADD COLUMN and DROP apply their catalog function, and every other statement leaves the catalog unchanged. Transaction control is not a
+INDEX, CREATE TRIGGER, ADD COLUMN and DROP apply their catalog function, and every other statement leaves the catalog unchanged. Transaction control is not a
 catalog change here; {lit}`ResolveState.after` handles it. For example,
 {lean}`(Statement.begin.applyCatalog [] : Catalog)` is the empty catalog. -/
 def Statement.applyCatalog : Statement → Catalog → Catalog
   | .createTable _ name table, catalog => catalog.createTable name table
   | .createIndex _ name index, catalog => catalog.createIndex name index
+  | .createTrigger _ name trigger, catalog => catalog.createTrigger name trigger
   | .addColumn position column, catalog => catalog.addColumn position column
   | .drop positions _, catalog => catalog.drop positions
   | .begin, catalog | .commit, catalog | .rollback, catalog | .insert .., catalog | .update .., catalog
@@ -30,6 +31,8 @@ inductive Statement.Kind where
   | definition
   /-- CREATE INDEX. -/
   | index
+  /-- CREATE TRIGGER (ADR 0018, D5). -/
+  | trigger
   /-- DROP INDEX or DROP TABLE: a removal from the catalog. -/
   | drop
   /-- BEGIN, COMMIT or ROLLBACK: transaction control. -/
@@ -49,6 +52,7 @@ a statement has reads it, so a new statement form gets a form here first. -/
 @[simp] def Statement.kind : Statement → Statement.Kind
   | .createTable .. | .addColumn .. => .definition
   | .createIndex .. => .index
+  | .createTrigger .. => .trigger
   | .drop .. => .drop
   | .begin | .commit | .rollback => .control
   | .insert .. | .upsert .. | .update .. | .delete .. => .write
@@ -63,6 +67,6 @@ statement is not control. -/
 def Statement.isControl (statement : Statement) : Bool :=
   match statement.kind with
   | .control | .setting => true
-  | .definition | .index | .drop | .write | .query | .prepareError => false
+  | .definition | .index | .trigger | .drop | .write | .query | .prepareError => false
 
 end Belay.Sqlite.Resolved

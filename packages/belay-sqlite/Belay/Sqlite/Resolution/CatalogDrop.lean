@@ -15,10 +15,11 @@ def keptBelow (positions : List Nat) (position : Nat) : Nat :=
   ((List.range position).filter fun below => !positions.contains below).length
 
 /-- The entry with its catalog positions after the drop: an index names the new position
-of its table ({name}`keptBelow`), and a table has no catalog positions. -/
+of its table ({name}`keptBelow`), and a table and a trigger have no catalog positions. -/
 def CatalogEntry.afterDrop (positions : List Nat) : CatalogEntry → CatalogEntry
   | .table shape => .table shape
   | .index found => .index { found with table := keptBelow positions found.table }
+  | .trigger found => .trigger found
 
 /-- The catalog without the objects at the positions, in catalog order, each kept object
 with its catalog positions after the drop ({name}`CatalogEntry.afterDrop`). Positions past
@@ -28,10 +29,12 @@ def Catalog.drop (catalog : Catalog) (positions : List Nat) : Catalog :=
     { object with entry := object.entry.afterDrop positions }
 
 /-- The positions that DROP TABLE removes for the table at the position: the table, then
-each index on it in catalog order. -/
+each index and each trigger on it in catalog order; a trigger names its table by name. -/
 def Catalog.tableObjects (catalog : Catalog) (position : Nat) : List Nat :=
+  let name := (catalog[position]?).map (·.name)
   position :: catalog.zipIdx.filterMap fun (object, place) => match object.entry with
     | .index found => if found.table == position then some place else none
+    | .trigger found => if name.any found.table.sameName then some place else none
     | .table _ => none
 
 /-- For every catalog and list of positions, the folded names of {name}`Catalog.drop` are a
@@ -40,14 +43,22 @@ sketch: the folded names of the catalog are those of its {lit}`zipIdx`; a drop f
 list and keeps each name, so its names are the map of a filtered list, a sublist. -/
 theorem Catalog.foldedNames_drop_sublist (catalog : Catalog) (positions : List Nat) :
     (catalog.drop positions).foldedNames.Sublist catalog.foldedNames := by
-  have whole : (catalog.zipIdx.map fun (pair : CatalogObject × Nat) => pair.1.name.folded) = catalog.foldedNames := by
+  have kind : ∀ entry : CatalogEntry, (entry.afterDrop positions).isTrigger = entry.isTrigger := by
+    intro entry; cases entry <;> rfl
+  have whole : ((catalog.zipIdx.filter fun (pair : CatalogObject × Nat) => !pair.1.isTrigger).map
+      fun (pair : CatalogObject × Nat) => pair.1.name.folded) = catalog.foldedNames := by
     simp only [Catalog.foldedNames]
     conv => rhs; rw [← List.zipIdx_map_fst 0 catalog]
-    rw [List.map_map]
+    rw [List.filter_map, List.map_map]
     rfl
   rw [← whole]
-  simp only [Catalog.drop, Catalog.foldedNames, List.map_map]
-  exact (List.filter_sublist).map _
+  simp only [Catalog.drop, Catalog.foldedNames, List.filter_map, List.map_map]
+  have same : ((fun (object : CatalogObject) => !object.isTrigger) ∘ fun (pair : CatalogObject × Nat) =>
+      ({ pair.1 with entry := pair.1.entry.afterDrop positions } : CatalogObject)) =
+      fun (pair : CatalogObject × Nat) => !pair.1.isTrigger := by
+    funext pair; simp only [Function.comp, CatalogObject.isTrigger, kind]
+  rw [same]
+  exact (List.filter_sublist.filter _).map _
 
 /-- For every catalog with unique folded names and every list of positions,
 {name}`Catalog.drop` keeps the folded names unique. Proof sketch: a sublist of a list without

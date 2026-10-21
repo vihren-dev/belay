@@ -43,7 +43,7 @@ def ModeledDefinitions (script : List Resolved.Statement) : Prop :=
     | .createTable .. => True
     | .addColumn _ column => (column.clockDefault || (readDefaultValue column).toOption.isSome) = true
     | .createIndex .. => False
-    | .drop .. => True
+    | .createTrigger .. | .drop .. => True
     | .insert .. | .upsert .. | .update .. | .delete .. | .begin | .commit | .rollback | .prepareError _
     | .query .. | .setting _ => True
 
@@ -80,7 +80,7 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites script) (modeled : ModeledDe
         have none := first.2.1 positions keys rfl
         subst none
         simp [statementReady, runStatement, StatementRun.withKeys]
-      | createTable | createIndex | addColumn | begin | commit | rollback | insert | upsert | update | delete
+      | createTable | createIndex | createTrigger | addColumn | begin | commit | rollback | insert | upsert | update | delete
       | prepareError | setting => simp_all [statementReady, runStatement]
     have run : (runStatement (state.clock position) statement state.database).ready = true := ready
     simp only [supportedSqlFrom, run, Bool.true_and]

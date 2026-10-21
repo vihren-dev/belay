@@ -1,5 +1,6 @@
 import Belay.Sqlite.Resolution.SyntaxDefinitions
 import Belay.Sqlite.Resolution.ConflictAlgorithm
+import Belay.Sqlite.Resolution.SyntaxEquality
 
 set_option doc.verso true
 
@@ -35,6 +36,48 @@ structure TableOptions where
   /-- {lit}`STRICT` (ADR 0014, slice 6). -/
   strict : Bool := false
   deriving Repr, BEq
+
+deriving instance DecidableEq for ResultColumn, OrderTerm, TableReference, Join, Subquery
+deriving instance DecidableEq for ConflictAction, ConflictClause
+
+/-- When a trigger runs, relative to the write of its row (ADR 0018, D5). -/
+inductive TriggerTime where
+  /-- {lit}`BEFORE`, also without a time. -/
+  | before
+  /-- {lit}`AFTER`. -/
+  | after
+  deriving Repr, DecidableEq
+
+/-- The event of a trigger: {lit}`INSERT`, {lit}`UPDATE` with the columns of {lit}`UPDATE OF`
+(empty for every {lit}`UPDATE`), or {lit}`DELETE`. -/
+inductive TriggerEvent where
+  /-- {lit}`INSERT`. -/
+  | insert
+  /-- {lit}`UPDATE [OF columns]`, with the column names as written; empty without
+  {lit}`OF`. -/
+  | update (columns : List Identifier)
+  /-- {lit}`DELETE`. -/
+  | delete
+  deriving Repr, DecidableEq
+
+/-- One statement of a trigger's body as written: an INSERT with {lit}`VALUES` rows, an UPDATE,
+a DELETE or a SELECT, each as the statement of the same name, without {lit}`RETURNING`, which
+a trigger's body cannot have (ADR 0018, D5). -/
+inductive BodyStatement where
+  /-- An INSERT, as {lit}`Statement.insert`. -/
+  | insert (table : Identifier) (columns : Option (List Identifier)) (rows : List (List Expr))
+      (conflicts : List ConflictClause) (algorithm : Option ConflictAlgorithm := none)
+      (subqueries : List Subquery := [])
+  /-- An UPDATE, as {lit}`Statement.update`. -/
+  | update (table : Identifier) (assignments : List (Identifier × Expr)) (filter : Option Expr)
+      (subqueries : List Subquery := [])
+  /-- A DELETE, as {lit}`Statement.delete`. -/
+  | delete (table : Identifier) (filter : Option Expr) (subqueries : List Subquery := [])
+  /-- A SELECT, as {lit}`Statement.select`. -/
+  | select (columns : List ResultColumn) (source : Option TableReference) (joins : List Join) (filter : Option Expr)
+      (groupBy : List Expr) (orderBy : List OrderTerm) (limit : Option Expr) (offset : Option Expr)
+      (subqueries : List Subquery := []) (having : Option Expr := none) (distinct : Bool := false)
+  deriving Repr, BEq, DecidableEq
 
 /-- One statement as written. For example, {lit}`COMMIT` is
 {lean}`Statement.commit`. -/
@@ -93,6 +136,23 @@ inductive Statement where
   /-- {lit}`PRAGMA foreign_keys = value`, with the value as {lit}`sqlite3GetBoolean` reads it,
   or the query {lit}`PRAGMA foreign_keys` with {lean}`(none : Option Bool)` (ADR 0018, D4). -/
   | pragmaForeignKeys (value : Option Bool)
+  /-- {lit}`CREATE TRIGGER [IF NOT EXISTS] name time event ON table [FOR EACH ROW] [WHEN
+  condition] BEGIN body END` (ADR 0018, D5), with the statements of the body in order;
+  {lit}`ifNotExists` is true with {lit}`IF NOT EXISTS`. -/
+  | createTrigger (name : Identifier) (ifNotExists : Bool) (time : TriggerTime) (event : TriggerEvent)
+      (table : Identifier) (condition : Option Expr) (body : List BodyStatement)
+  /-- {lit}`DROP TRIGGER [IF EXISTS] name` (ADR 0018, D5). -/
+  | dropTrigger (name : Identifier) (ifExists : Bool)
   deriving Repr, BEq
+
+/-- The statement of the same form as a body statement, without {lit}`RETURNING`, which
+resolution reads as any other statement. -/
+def BodyStatement.statement : BodyStatement → Statement
+  | .insert table columns rows conflicts algorithm subqueries =>
+    .insert table columns rows conflicts algorithm [] subqueries
+  | .update table assignments filter subqueries => .update table assignments filter [] subqueries
+  | .delete table filter subqueries => .delete table filter [] subqueries
+  | .select columns source joins filter groupBy orderBy limit offset subqueries having distinct =>
+    .select columns source joins filter groupBy orderBy limit offset subqueries having distinct
 
 end Belay.Sqlite.Syntax

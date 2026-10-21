@@ -18,8 +18,8 @@ def SqlState.Agrees (sql : SqlState) (state : ResolveState) : Prop :=
 /-- For every clock value, statement that is not {lit}`PRAGMA foreign_keys = value`, database and
 result: if {name}`literalStep` succeeds with the result, then the result's catalog is
 {name}`Resolved.Statement.applyCatalog` of the statement on the database's catalog, and the
-statement is not transaction control. Proof sketch: CREATE TABLE, CREATE INDEX, ADD COLUMN and
-DROP call the catalog functions, writes store rows only ({name}`Database.setRows`, and the rows
+statement is not transaction control. Proof sketch: CREATE TABLE, CREATE INDEX, CREATE TRIGGER, ADD
+COLUMN and DROP call the catalog functions, writes store rows only ({name}`Database.setRows`, and the rows
 of a write that checks foreign keys over the input catalog, {name}`keyRun_ok_catalog`), a query
 returns the database, and every other statement fails. -/
 theorem literalStep_success_catalog {clock : Int} {statement : Resolved.Statement} {database result : Database}
@@ -97,7 +97,7 @@ theorem literalStep_success_catalog {clock : Int} {statement : Resolved.Statemen
       simp only [ran, queryEffect] at success
       repeat' split at success
       all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
-  | createIndex target name index =>
+  | createIndex target name index | createTrigger target name index =>
     simp only [literalStep, runStatement, step] at success
     repeat' split at success
     all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
@@ -154,7 +154,8 @@ theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {sql ne
     simp only [literalStep, runStatement, step] at stepped
     cases stepped
     exact ⟨catalog, saved⟩
-  | createTable | createIndex | addColumn | drop | insert | update | upsert | delete | prepareError | query =>
+  | createTable | createIndex | createTrigger | addColumn | drop | insert | update | upsert | delete | prepareError
+  | query =>
     simp only [advance, advanceWith] at continued
     obtain ⟨result, stepped, rfl⟩ := Conformance.SqlState.publish_next continued
     obtain ⟨changed, control⟩ := literalStep_success_catalog (fun _ => by simp) stepped
@@ -185,8 +186,8 @@ theorem advance_halt_error {position : Nat} {statement : Resolved.Statement} {sq
     split at halted
     · cases halted; simp [Outcome.error?]
     · cases halted
-  | createTable | createIndex | addColumn | drop | insert | update | upsert | delete | prepareError | query
-  | setting =>
+  | createTable | createIndex | createTrigger | addColumn | drop | insert | update | upsert | delete | prepareError
+  | query | setting =>
     simp only [advance, advanceWith] at halted
     obtain ⟨_, _, _, rfl⟩ := Conformance.SqlState.publish_halt halted
     simp [SqlState.failed_error]

@@ -12,12 +12,14 @@ deriving instance Lean.FromJson, Lean.ToJson for Comparison, ArithmeticOperator
 deriving instance Lean.FromJson, Lean.ToJson for ConflictAlgorithm
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.QuoteKind
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ForeignKeyAction
+deriving instance Lean.FromJson, Lean.ToJson for Syntax.RaiseKind
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.Expr, Syntax.DefaultExpression, Syntax.ColumnConstraint
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ResultColumn, Syntax.OrderTerm
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ColumnDefinition, Syntax.TableConstraint
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.TableReference, Syntax.Join
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.Subquery
 deriving instance Lean.FromJson, Lean.ToJson for Syntax.ConflictAction, Syntax.ConflictClause
+deriving instance Lean.FromJson, Lean.ToJson for Syntax.TriggerTime, Syntax.TriggerEvent, Syntax.BodyStatement
 /-- The table options as JSON, with {lit}`strict` only for a {lit}`STRICT` table, so the
 records of other tables keep their form. -/
 instance : Lean.ToJson Syntax.TableOptions where

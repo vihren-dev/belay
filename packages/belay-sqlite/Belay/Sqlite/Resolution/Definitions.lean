@@ -145,7 +145,7 @@ def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : N
   else match catalog.find name with
   | some (_, { entry := .table _, .. }) => prepareError catalog (.tableExists name)
   | some (_, { entry := .index _, .. }) => prepareError catalog (.indexNameUsed name)
-  | none =>
+  | some (_, { entry := .trigger _, .. }) | none =>
     match addDefinitions context.profile.limits.columns name { columns := [], strict := options.strict } columns >>=
         (addTableConstraints name · constraints) with
     | .error error => prepareError catalog (.expression error)
@@ -185,7 +185,7 @@ def resolveCreateIndex (context : ResolveContext) (catalog : Catalog) (index : N
     else match catalog.find name with
     | some (_, { entry := .table _, .. }) => prepareError catalog (.tableNameUsed name)
     | some (_, { entry := .index _, .. }) => prepareError catalog (.indexExists name)
-    | none =>
+    | some (_, { entry := .trigger _, .. }) | none =>
       let scope := Scope.single tableName table.columns !table.withoutRowid
       let dqs := context.profile.dqsDdl
       match indexKeys dqs scope table.columns terms with

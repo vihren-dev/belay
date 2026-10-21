@@ -37,7 +37,8 @@ def ResolveState.withWrite (context : ResolveContext) (state : ResolveState) (in
   if !state.foreignKeys then return (statement, next)
   match ← enforceForeignKeys context state.catalog index statement with
   | .prepareError error => return (.prepareError error, state)
-  | checked@(.createTable ..) | checked@(.createIndex ..) | checked@(.addColumn ..) | checked@(.drop ..)
+  | checked@(.createTable ..) | checked@(.createIndex ..) | checked@(.createTrigger ..) | checked@(.addColumn ..)
+  | checked@(.drop ..)
   | checked@.begin | checked@.commit | checked@.rollback | checked@(.insert ..) | checked@(.upsert ..)
   | checked@(.update ..) | checked@(.delete ..) | checked@(.query ..) | checked@(.setting _) =>
     return (checked, next)

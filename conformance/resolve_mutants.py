@@ -43,15 +43,17 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "{ state with catalog := state.saved.getD state.catalog, saved := none }",
         "{ state with catalog := state.catalog, saved := none }"),
     "table_index_same_name": (SQLITE + "Resolution/Definitions.lean",
-        "  | some (_, { entry := .index _, .. }) => prepareError catalog (.indexNameUsed name)\n  | none =>",
-        "  | some (_, { entry := .index _, .. }) | none =>"),
+        "  | some (_, { entry := .index _, .. }) => prepareError catalog (.indexNameUsed name)\n"
+        "  | some (_, { entry := .trigger _, .. }) | none =>",
+        "  | some (_, { entry := .index _, .. }) | some (_, { entry := .trigger _, .. }) | none =>"),
     "constant_column_limit": (SQLITE + "Resolution/AddColumn.lean",
         "table.columns.length + 1 > context.profile.limits.columns", "table.columns.length + 1 > 2000"),
     "no_table_exists": (SQLITE + "Resolution/Definitions.lean",
         "  | some (_, { entry := .table _, .. }) => prepareError catalog (.tableExists name)\n"
-        "  | some (_, { entry := .index _, .. }) => prepareError catalog (.indexNameUsed name)\n  | none =>",
         "  | some (_, { entry := .index _, .. }) => prepareError catalog (.indexNameUsed name)\n"
-        "  | some (_, { entry := .table _, .. }) | none =>"),
+        "  | some (_, { entry := .trigger _, .. }) | none =>",
+        "  | some (_, { entry := .index _, .. }) => prepareError catalog (.indexNameUsed name)\n"
+        "  | some (_, { entry := .table _, .. }) | some (_, { entry := .trigger _, .. }) | none =>"),
     "no_too_many_columns": (SQLITE + "Resolution/AddColumn.lean",
         "    else if table.columns.length + 1 > context.profile.limits.columns then\n"
         "      prepareError catalog (.expression (.tooManyColumns tableName))\n", ""),

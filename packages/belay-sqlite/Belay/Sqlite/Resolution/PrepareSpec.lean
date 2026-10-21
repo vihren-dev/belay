@@ -1,4 +1,5 @@
 import Belay.Sqlite.Resolution.Resolve
+import Belay.Sqlite.Resolution.CatalogSpec
 
 set_option doc.verso true
 
@@ -43,7 +44,8 @@ theorem resolveCreateTable_used (context : ResolveContext) (catalog : Catalog) (
   | none => simp [found] at used
   | some result =>
     obtain ⟨_, object⟩ := result
-    cases entry : object.entry <;> cases object <;> simp_all
+    have live := Catalog.find_not_trigger _ _ _ _ found
+    cases entry : object.entry <;> cases object <;> simp_all [CatalogObject.isTrigger, CatalogEntry.isTrigger]
 
 /-- For every INSERT, with any subqueries and shapes, whose resolution is a prepare error that
 names a catalog object:

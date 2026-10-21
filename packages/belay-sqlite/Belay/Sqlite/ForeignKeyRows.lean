@@ -133,6 +133,7 @@ def runRows (catalog : Catalog) (links : List ForeignKeyLink) : Nat → RowWork 
           rows.map fun (row : Row) => if row.rowid == rowid then new else row
         parents.foldlM (fun state link =>
           runAction catalog (runRows catalog links fuel) link link.key.onUpdate position old (some new) state) state
-      | none, _ | some _, some { entry := .index _, .. } | some _, none => pure state) state
+      | none, _ | some _, some { entry := .index _, .. } | some _, some { entry := .trigger _, .. } | some _, none =>
+        pure state) state
 
 end Belay.Sqlite

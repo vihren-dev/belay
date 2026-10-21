@@ -83,7 +83,7 @@ def writeLinks (catalog : Catalog) (links : List ForeignKeyLink) (position : Nat
         link.key.childChanged changed || link.key.selfReferences name
       (children ++ (parentLinks links position).filter (·.key.parentChanged table changed),
         children ++ parentLinks links position)
-  | some { entry := .index _, .. } | none => ([], [])
+  | some { entry := .index _, .. } | some { entry := .trigger _, .. } | none => ([], [])
 
 /-- The links that a write of the table at the position processes ({name}`writeLinks`): those
 that SQLite locates for it. -/

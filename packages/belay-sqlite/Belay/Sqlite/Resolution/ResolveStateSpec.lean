@@ -1,5 +1,6 @@
 import Belay.Sqlite.Resolution.WriteCatalogSpec
 import Belay.Sqlite.Resolution.DropSpec
+import Belay.Sqlite.Resolution.TriggerDefinitionSpec
 
 set_option doc.verso true
 
@@ -22,7 +23,8 @@ def ResolveState.after (state : ResolveState) : Resolved.Statement → ResolveSt
   | .commit => { state with saved := none }
   | .rollback => { state with catalog := state.saved.getD state.catalog, saved := none }
   | .setting foreignKeys => { state with foreignKeys }
-  | statement@(.createTable ..) | statement@(.createIndex ..) | statement@(.addColumn ..) | statement@(.drop ..)
+  | statement@(.createTable ..) | statement@(.createIndex ..) | statement@(.createTrigger ..)
+  | statement@(.addColumn ..) | statement@(.drop ..)
   | statement@(.insert ..) | statement@(.update ..) | statement@(.upsert ..) | statement@(.delete ..)
   | statement@(.prepareError _) | statement@(.query ..) =>
     { state with catalog := statement.applyCatalog state.catalog }
@@ -37,7 +39,8 @@ theorem ResolveState.after_of_isControl (state : ResolveState) {statement : Reso
     state.after statement = { state with catalog := statement.applyCatalog state.catalog } := by
   cases statement with
   | begin | commit | rollback | setting => cases ordinary
-  | createTable | createIndex | addColumn | drop | insert | update | upsert | delete | prepareError | query => rfl
+  | createTable | createIndex | createTrigger | addColumn | drop | insert | update | upsert | delete | prepareError
+  | query => rfl
 
 /-- For every successful resolution of CREATE TABLE, the catalog after it is
 {name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
@@ -134,6 +137,16 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     obtain ⟨equal, control⟩ := resolveDropIndex_applyCatalog _ _ _ _ _ _ (by assumption)
+    exact ordinary _ control equal
+  | createTrigger name ifNotExists time event table condition body =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    obtain ⟨equal, control⟩ := resolveCreateTrigger_applyCatalog _ _ _ _ _ _ (by assumption)
+    exact ordinary _ control equal
+  | dropTrigger name ifExists =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    obtain ⟨equal, control⟩ := resolveDropTrigger_applyCatalog _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
   | insert table columns rows conflicts algorithm returning subqueries =>
     simp only [resolveStatement] at ok

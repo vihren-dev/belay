@@ -44,7 +44,7 @@ def foreignKeyWrite (catalog : Catalog) : Resolved.Statement → Option (Nat × 
   | .delete table _ _ _ _ => some (table, .delete, false, catalog.keyed table)
   | .drop (table :: _) _ => (catalog.tableAt table).map fun _ =>
     (table, .delete, true, !(parentLinks catalog.foreignKeyLinks table).isEmpty)
-  | .drop [] _ | .createTable .. | .createIndex .. | .addColumn .. | .begin | .commit | .rollback
+  | .drop [] _ | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .begin | .commit | .rollback
   | .prepareError _ | .query .. | .setting _ => none
 /-- The write with its trigger depth limit, for a write that has a key to check
 ({name}`foreignKeyWrite`). -/
@@ -56,14 +56,15 @@ def Resolved.Statement.withForeignKeys (depth : Nat) : Resolved.Statement → Re
     .update table assignments filter returning subqueries (some depth)
   | .delete table filter returning subqueries _ => .delete table filter returning subqueries (some depth)
   | .drop positions _ => .drop positions (some depth)
-  | statement@(.createTable ..) | statement@(.createIndex ..) | statement@(.addColumn ..) | statement@.begin
+  | statement@(.createTable ..) | statement@(.createIndex ..) | statement@(.createTrigger ..) | statement@(.addColumn ..)
+  | statement@.begin
   | statement@.commit | statement@.rollback | statement@(.prepareError _) | statement@(.query ..)
   | statement@(.setting _) => statement
 
 /-- Whether the statement is an INSERT with a {lit}`DO UPDATE` clause. -/
 def Resolved.Statement.updatesOnConflict : Resolved.Statement → Bool
   | .upsert _ _ clauses .. => clauses.any fun clause => (clause.action matches .update ..)
-  | .insert .. | .update .. | .delete .. | .drop .. | .createTable .. | .createIndex .. | .addColumn ..
+  | .insert .. | .update .. | .delete .. | .drop .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn ..
   | .begin | .commit | .rollback | .prepareError _ | .query .. | .setting _ => false
 
 /-- A resolved write at the zero-based index, over the catalog before it, with foreign keys on:
