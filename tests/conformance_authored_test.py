@@ -58,7 +58,7 @@ def test_catalog_keeps_legacy_sql_and_complete_outputs(authored: dict[str, dict[
             output_wire(event)
             assert event["columnCount"] == len(event["columns"])
     result = replay(list(authored.values()), runtime_root)
-    assert result["counts"] == {"MODEL_UNSUPPORTED": 15, "AGREE": 28}
+    assert result["counts"] == {"MODEL_UNSUPPORTED": 13, "AGREE": 30}
 
 
 def test_retained_authored_evidence_and_coverage(authored: dict[str, dict[str, Json]]) -> None:
