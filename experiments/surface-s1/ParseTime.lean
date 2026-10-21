@@ -14,9 +14,9 @@ open Belay.Sqlite Lean
   for line in lines do
     let json ← IO.ofExcept (Json.parse line)
     let grammar ← IO.ofExcept (json.getObjValAs? String "grammar")
-    let sql ← IO.ofExcept (json.getObjValAs? String "sql")
+    let sql := (← IO.ofExcept (json.getObjValAs? String "sql")).toUTF8
     let start ← IO.monoNanosNow
-    let result ← IO.ofExcept (decodeParse grammar sql.utf8ByteSize (← ParserLibrary.parse grammar sql))
+    let result ← IO.ofExcept (decodeParse grammar sql.size (← ParserLibrary.parse grammar sql))
     times := times.push ((← IO.monoNanosNow) - start)
     if let .parsed .. := result then parsed := parsed + 1
   let sorted := times.qsort (· < ·)

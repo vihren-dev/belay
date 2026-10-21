@@ -1,7 +1,7 @@
 /* The parser library's C API with Lean's calling convention, for Belay.Sqlite.ParserLibrary.
 ** Each function returns an IO result: the JSON document as a string, or an IO error with the
 ** library's result code. The SQL is a byte array, so that text that is not UTF-8 reaches the
-** library's tokenizer, which refuses it. */
+** library, which refuses it. */
 #include <lean/lean.h>
 #include "sqlite-verifier-parser.h"
 

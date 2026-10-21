@@ -42,6 +42,17 @@ def test_grammar_selection_checks_elaborate(runtime_root: Path, tmp_path: Path) 
     assert result.returncode == 0, result.diagnostic()
 
 
+def test_bytes_that_are_not_utf8_are_a_grammar_error(runtime_root: Path, tmp_path: Path) -> None:
+    """The binding (`Belay/Sqlite/ParserLibrary.lean`, `c/parser_shim.c` of the text package) passes
+    the SQL as bytes: a byte 0xFF inside a string literal reaches the parser library, which checks
+    that the whole text is UTF-8 before it tokenizes, and the result is a grammar error at offset 0,
+    as for the Python binding before (`tests/parser_binding_test.py`)."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "InvalidUtf8.lean", tmp_path), cwd=tmp_path,
+                         timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+    assert "invalid UTF-8: Belay.Sqlite.ParseResult.inputError 0" in result.stdout, result.diagnostic()
+
+
 @pytest.mark.skipif(sys.platform != "linux", reason="patchelf changes the library path of Linux libraries only")
 def test_missing_parser_library_is_a_load_error(runtime_root: Path, tmp_path: Path) -> None:
     """When the parser library is missing, `lean` stops with the loader's error, which names the

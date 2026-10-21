@@ -31,3 +31,7 @@ Specification: [ADR 0017](../docs/adr-0017-user-surface.md), D2 and D6;
   keeps `Belay`, `Belay.Sqlite` and `ParseCommand`; the surface build replays the text package and
   compiles only its own modules. The layer test checks the rules of the amended D2 for both
   packages. The surface suite (12 tests), the layer test and the Nix identity tests pass.
+- 2026-10-21: review of the move: two must findings, fixed. `experiments/surface-s1/ParseTime.lean`
+  passes bytes (it compiles and runs: 14,430 texts), and `tests/surface/InvalidUtf8.lean` checks
+  that bytes that are not UTF-8 reach the library through the binding: a grammar error at offset 0,
+  as the Python binding's test expects.
