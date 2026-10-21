@@ -15,10 +15,10 @@ open Lean Elab Command
 number of commands, or SQLite's grammar error at its position. -/
 syntax (name := sqlParse) "#sql_parse " str : command
 
-/-- The number of commands of a parse tree: its {lit}`ecmd` nodes that are not an empty
-statement. -/
+/-- The number of commands of a parse tree: its {lit}`ecmd` nodes that are more than an empty
+statement's {lit}`;`, with or without {lit}`EXPLAIN` before them. -/
 def commandCount (nodes : Array ParseNode) : Nat :=
-  (nodes.filter fun node => node.symbol == "ecmd" && node.children.size == 2).size
+  (nodes.filter fun node => node.symbol == "ecmd" && node.children.size ≥ 2).size
 
 /-- The source range of a byte range of a string literal's text, when the literal has no
 escapes, so that each byte of the text is a byte of the source; else the literal's range. -/

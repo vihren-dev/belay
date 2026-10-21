@@ -74,15 +74,24 @@ def test_the_surface_imports_only_the_model_roots_and_lean() -> None:
     assert found == []
 
 
+SURFACE_SUITE = "tests.nix"
+"""The Nix file of the test suites, whose `surface` suite builds its runtime root from the
+surface package; any line of it may name the surface."""
+SURFACE_BUILD_LINES = frozenset({
+    "sources.nix: surface = let folder = root + /packages/belay; in fs.toSource {",
+    "default.nix: surfacePackage = leanPackage {",
+    'default.nix: directory = "packages/belay";',
+    "default.nix: source = sources.surface;",
+    "default.nix: inherit leanPackages surfacePackage;",
+})
+"""The other lines of `build-support/` that may name the surface: its sources, its derivation,
+and the argument that passes it to the test suites."""
+
+
 def test_only_the_surface_build_and_its_suite_name_the_surface() -> None:
-    """Rule 3: in `build-support/`, the surface appears in its sources (`sources.nix`), its
-    derivation and the arguments of the test suites (`default.nix`) and in the `surface` suite
-    (`tests.nix`), and in no runtime, gate or conformance build."""
+    """Rule 3: in `build-support/`, only the lines of `SURFACE_BUILD_LINES` and the test suites'
+    file name the surface, so no runtime, gate or conformance build contains it."""
     lines = [f"{path.name}: {line.strip()}" for path in sorted((ROOT / "build-support").glob("*.nix"))
              for line in path.read_text().splitlines() if SURFACE_NAMES.search(line)]
-    allowed = [line for line in lines if line.startswith("tests.nix: ") or line in {
-        "default.nix: surfacePackage = leanPackage {", 'default.nix: directory = "packages/belay";',
-        "default.nix: source = sources.surface;", "default.nix: inherit leanPackages surfacePackage;",
-        "sources.nix: surface = let folder = root + /packages/belay; in fs.toSource {"}]
-    assert lines == allowed
+    assert [line for line in lines if not line.startswith(SURFACE_SUITE + ": ") and line not in SURFACE_BUILD_LINES] == []
     assert "default.nix: surfacePackage = leanPackage {" in lines

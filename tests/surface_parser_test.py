@@ -41,20 +41,20 @@ def lean_path(runtime_root: Path) -> dict[str, str]:
 
 def test_accepted_sql_shows_its_command_count(runtime_root: Path, tmp_path: Path) -> None:
     """`#sql_parse` (`Belay/Sqlite/ParseCommand.lean`) parses valid SQL in the Lean process and
-    shows the number of commands that SQLite's grammar accepts."""
+    shows the number of commands that SQLite's grammar accepts, also under `EXPLAIN`."""
     result = run_command(surface_command(runtime_root, FIXTURES / "Accepted.lean"), cwd=tmp_path,
                          environment=lean_path(runtime_root), timeout=60)
     assert result.returncode == 0, result.diagnostic()
-    assert "SQLite's grammar accepts 2 commands" in result.stdout, result.diagnostic()
+    assert "SQLite's grammar accepts 3 commands" in result.stdout, result.diagnostic()
 
 
 def test_grammar_error_is_at_its_position_in_the_text(runtime_root: Path, tmp_path: Path) -> None:
     """A grammar error of the parser library is an error at the byte of the SQL text where SQLite's
-    grammar rejects it: `FORM` in `#sql_parse "SELECT * FORM t;"` is column 21."""
+    grammar rejects it: `FORM` in `#sql_parse "SELECT * FORM t;"` is line 6, column 21."""
     result = run_command(surface_command(runtime_root, FIXTURES / "Rejected.lean"), cwd=tmp_path,
                          environment=lean_path(runtime_root), timeout=60)
     assert result.returncode == 1, result.diagnostic()
-    assert "Rejected.lean:2:21: error: SQLite's grammar rejects the SQL here" in result.stdout, result.diagnostic()
+    assert "Rejected.lean:6:21: error: SQLite's grammar rejects the SQL here" in result.stdout, result.diagnostic()
 
 
 @pytest.mark.skipif(sys.platform != "linux", reason="patchelf changes the library path of Linux libraries only")

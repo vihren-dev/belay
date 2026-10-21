@@ -24,9 +24,13 @@ structure Release where
 def Release.default : Release :=
   { version := "3.51.0", sourceId := "2025-11-04 19:38:17 fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b" }
 
+/-- What a user can do when the parser library has no grammar for a release. -/
+def grammarAdvice : String :=
+  "; select SQLite 3.51.0 or 3.46.0, or rebuild the parser library with a dialect of this release"
+
 /-- The grammar identity of the release's dialect without grammar options, from the library's
 metadata document; an error names the release and what the library has. -/
-def selectGrammar (metadata : Json) (release : Release) : Except String String := do
+def findGrammar (metadata : Json) (release : Release) : Except String String := do
   let releases ← (← metadata.getObjVal? "releases").getArr?
   let dialects ← (← metadata.getObjVal? "dialects").getArr?
   let some entry := releases.find? (fun entry => (entry.getObjValAs? String "version").toOption == some release.version)
@@ -38,5 +42,10 @@ def selectGrammar (metadata : Json) (release : Release) : Except String String :
       (dialect.getObjValAs? (Array Json) "grammarOptions").toOption.map (·.isEmpty) == some true
   let some dialect := matching[0]? | throw s!"the parser library has no dialect of SQLite {release.version} without grammar options"
   dialect.getObjValAs? String "grammar"
+
+/-- The grammar identity of the release's dialect ({name}`findGrammar`); an error also says what
+the user can do. -/
+def selectGrammar (metadata : Json) (release : Release) : Except String String :=
+  (findGrammar metadata release).mapError (· ++ grammarAdvice)
 
 end Belay.Sqlite
