@@ -309,9 +309,27 @@ trigger is modeled as the one result column of a `SELECT` without `FROM`, alone 
 of its `CASE` (`raise-form` elsewhere); `ON CONFLICT DO UPDATE` in a body and a `WHEN` with a
 subquery or a function that can fail are `trigger-form`; a `BEFORE UPDATE` or `BEFORE DELETE`
 trigger that writes its own table is `trigger-writes-own-table`; and two triggers of one table,
-time and event in the starting schema are `schema-trigger-order`. The model does not run
-triggers yet: a write on a catalog with a trigger, and a `DROP TABLE` with foreign-key actions
-on one, are not described. In a trigger, a qualified table
+time and event in the starting schema are `schema-trigger-order`.
+
+A write with triggers runs row by row, as with foreign keys on, in rowid order (primary-key order
+for a `WITHOUT ROWID` table). For each row, the `BEFORE` triggers run after the rowid alias
+check (`datatype mismatch`) and, when the table has a `BEFORE` trigger of the event, the types
+of a `STRICT` table, and before NOT NULL, CHECK and the unique keys; the `AFTER` triggers run
+after the row is written and after its foreign-key actions. Of the triggers of one time and
+event, the one created last runs first. `WHEN` is evaluated for each row, and NULL and false
+skip the trigger. In a `BEFORE INSERT` trigger, `NEW` of a rowid alias is -1 when the row gives
+NULL. A body statement runs with the conflict algorithm of the statement that fired it when
+that has one, else with its own; the writes of foreign-key actions pass on ABORT.
+`RAISE(IGNORE)` ends the row: the rest of its trigger, the triggers after it, and in a `BEFORE`
+trigger the row's own write. `RAISE(ABORT, ...)`, `RAISE(FAIL, ...)` and `RAISE(ROLLBACK, ...)`
+fail the statement as a constraint failure with that algorithm. With recursive triggers off,
+SQLite's default and the only setting that the model describes, a trigger does not run while it
+already runs. The rows that `REPLACE` deletes and the implicit `DELETE` of `DROP TABLE` fire no
+`DELETE` trigger; the writes of foreign-key actions fire the triggers of the child table. The
+change count of a statement counts its own rows only. A write nested deeper than the trigger
+depth limit, an `UPDATE` of a body that fails a constraint under an inherited algorithm other
+than ABORT, and a write whose statement or body statement has subqueries while a trigger or an
+action changes a table are not described. In a trigger, a qualified table
 name, `INDEXED BY`, `UPDATE OR`, `UPDATE FROM`, `INSERT ... SELECT`, `RETURNING` and a subquery
 in `WHEN` are refused.
 

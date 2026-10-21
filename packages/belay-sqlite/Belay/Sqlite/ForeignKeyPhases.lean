@@ -29,12 +29,27 @@ structure KeyState where
   /-- The rows that the statement wrote: the new rows of INSERT and UPDATE, the old rows of
   DELETE. -/
   written : List Row := []
+  /-- Whether a statement of a trigger's body with subqueries ran (ADR 0018, D5), whose
+  subqueries read the tables while the write changes them. -/
+  subqueried : Bool := false
 
-/-- Why a write that checks foreign keys stops: the error of the statement, or a case that the
-model does not describe, such as actions nested deeper than the fuel. -/
+/-- The failure of a row that stops the statement and keeps the rows that it reached: the FAIL
+algorithm or the ROLLBACK algorithm of a failed constraint or of {lit}`RAISE`. -/
+inductive StopAlgorithm where
+  /-- FAIL ({lean}`ExecutionError.constraintFail`). -/
+  | fail
+  /-- ROLLBACK ({lean}`ExecutionError.constraintRollback`). -/
+  | rollback
+  deriving Repr, DecidableEq
+
+/-- Why a write that runs row by row stops: the error of the statement, a FAIL or ROLLBACK
+failure with the state that it reached, or a case that the model does not describe, such as
+writes nested deeper than the fuel. -/
 inductive KeyStop where
-  /-- The statement fails with the error. -/
+  /-- The statement fails with the error and keeps nothing. -/
   | error (reason : ExecutionError)
+  /-- The statement stops with the algorithm and the state that it reached. -/
+  | stopped (algorithm : StopAlgorithm) (state : KeyState)
   /-- The model does not describe the statement on the database. -/
   | undescribed
 

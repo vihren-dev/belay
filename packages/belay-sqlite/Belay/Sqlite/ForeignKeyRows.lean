@@ -1,10 +1,9 @@
-import Belay.Sqlite.ForeignKeyPhases
-import Belay.Sqlite.Upsert
+import Belay.Sqlite.TriggerRun
 
 set_option doc.verso true
 
-/-! The rows that a DELETE or an UPDATE writes when it checks foreign keys (ADR 0018, D4), and
-the writes of the actions of its keys. SQLite first finds the rows of the statement, then
+/-! The rows that a DELETE or an UPDATE writes row by row, with their foreign keys (ADR 0018, D4)
+and triggers (D5), and the writes of the actions of its keys. SQLite first finds the rows of the statement, then
 writes them in rowid order, or primary-key order for a {lit}`WITHOUT ROWID` table, and skips a
 row that an earlier action deleted. After a row is deleted, and after the new row of an update
 is written when its parent key changes, each key that references the table runs its action
@@ -15,16 +14,6 @@ when the parent key changes ({name}`Belay.Sqlite.keyUnchanged`). Each action is 
 the same counter, and every constraint of its rows is ABORT. -/
 
 namespace Belay.Sqlite
-
-/-- The rows of one DELETE or UPDATE of a table that checks foreign keys, with the rowids of
-its rows in order: an UPDATE gives each row its new row and changes the positions. A write
-whose rows the statement itself names records them ({name}`KeyState.written`); with
-{lit}`ignore`, the DELETE of DROP TABLE, its own keys follow {name}`oldSteps`. -/
-inductive RowWork where
-  /-- Delete the rows. -/
-  | delete (table : Nat) (rowids : List Int) (record ignore : Bool)
-  /-- Update the rows, each to its new row, changing the positions. -/
-  | update (table : Nat) (change : Row → Row) (changed : List Nat) (rowids : List Int) (record : Bool)
 
 /-- The row with each position set to its value, stored with the column's affinity, its
 generated columns computed and its rowid moved with its alias, as an UPDATE writes it. -/
@@ -87,53 +76,79 @@ def runAction (catalog : Catalog) (run : RowWork → KeyState → Except KeyStop
     match action, new with
     | .noAction, _ => pure state
     | .restrict, _ => if targets.isEmpty then pure state else throw (.error .constraintViolation)
-    | .cascade, none => acted <$> run (.delete link.child targets false false) state
+    | .cascade, none => acted <$> run (.delete link.child targets false false true) state
     | .cascade, some _ | .setNull, _ | .setDefault, _ =>
       match actionCells child parent link key (new.getD old) action with
       | none => throw .undescribed
-      | some cells => acted <$> run (.update link.child (setCells child cells) (child.changedColumns link.key.columns)
-          targets false) state
+      | some cells => acted <$> run (.update link.child (setCells child cells) link.key.columns
+          (child.changedColumns link.key.columns) targets false) state
   | .located .., none, _ | .located .., some _, none | .mismatch _, _, _ | .missing, _, _ => pure state
 
-/-- Run the work with the links of the catalog, with fuel for the depth of
-the actions: each action runs with one less ({name}`runAction`), and the work is not described
-without fuel, as SQLite fails beyond its trigger depth limit. An update checks its new row
-({name}`checkedUpdate`) and, when it changes a key ({name}`updateLevel`), runs
-{name}`oldSteps` and {name}`newSteps` for the changed keys of the table, those that reference
-the table itself, and the changed parent keys; SQLite keeps the old row's record while it
-checks the new row when the level is 1 and the rowid or primary key stays. -/
-def runRows (catalog : Catalog) (links : List ForeignKeyLink) : Nat → RowWork → KeyState → Except KeyStop KeyState
-  | 0, _, _ => throw .undescribed
-  | fuel + 1, .delete position rowids record ignore, state => rowids.foldlM (fun (state : KeyState) rowid =>
-      match ((state.database catalog).rowsAt position).find? (·.rowid == rowid) with
-      | none => pure state
-      | some row => do
-        let state ← oldSteps catalog state position row (childLinks links position) (parentLinks links position) ignore
-        let written := if record then state.written ++ [row] else state.written
-        let state := { state.changeRows position fun rows => rows.filter (·.rowid != rowid) with written }
-        (parentLinks links position).foldlM (fun state link =>
-          runAction catalog (runRows catalog links fuel) link link.key.onDelete position row none state) state) state
-  | fuel + 1, .update position change changed rowids record, state => rowids.foldlM (fun (state : KeyState) rowid =>
-      match ((state.database catalog).rowsAt position).find? (·.rowid == rowid), catalog[position]? with
-      | some old, some { name, entry := .table shape } => do
-        let new := change old
-        checkedUpdate catalog state position old new
-        let level := updateLevel links position name shape changed
-        let children := (childLinks links position).filter fun link =>
-          link.key.childChanged changed || link.key.selfReferences name
-        let parents := (parentLinks links position).filter (·.key.parentChanged shape changed)
-        let before ← if level != 0 then oldSteps catalog state position old children parents false else pure state
-        let moved := shape.rowidAlias.any changed.contains || (shape.withoutRowid && shape.primaryKey.any changed.contains)
-        let stale := if level ≤ 1 && !moved then some old else none
-        let removed := before.changeRows position fun rows => rows.filter (·.rowid != rowid)
-        let checked ← if level != 0 then newSteps catalog removed position new children parents true stale changed
-          else pure removed
-        let written := if record then checked.written ++ [new] else checked.written
-        let state := { checked with rows := before.rows, written }.changeRows position fun rows =>
-          rows.map fun (row : Row) => if row.rowid == rowid then new else row
-        parents.foldlM (fun state link =>
-          runAction catalog (runRows catalog links fuel) link link.key.onUpdate position old (some new) state) state
-      | none, _ | some _, some { entry := .index _, .. } | some _, some { entry := .trigger _, .. } | some _, none =>
-        pure state) state
+/-- The frame of the write of a foreign-key action: SQLite runs it as a program whose writes
+inherit ABORT. -/
+def RowFrame.action (frame : RowFrame) : RowFrame := { frame with algorithm := some .abort }
+
+/-- Delete the row with the rowid from the table at the position, if it is still there, as
+SQLite's {lit}`sqlite3GenerateRowDelete` does: with {lit}`fire`, the {lit}`BEFORE DELETE`
+programs over the row's {lit}`OLD` cells, which may end the row; then {name}`oldSteps`, the
+delete, the actions of the keys that reference the table ({name}`runAction`, through
+{lit}`nested`), and with {lit}`fire` the {lit}`AFTER DELETE` programs. -/
+def deleteRow (catalog : Catalog) (links : List ForeignKeyLink) (nested : NestedRun) (frame : RowFrame) (position : Nat)
+    (record ignore fire : Bool) (state : KeyState) (rowid : Int) : Except KeyStop KeyState := do
+  let some found := ((state.database catalog).rowsAt position).find? (·.rowid == rowid) | pure state
+  let (state, ended) ← if fire then runPrograms catalog nested frame position .before .delete found.values state
+    else pure (state, false)
+  if ended then return state
+  let some row := ((state.database catalog).rowsAt position).find? (·.rowid == rowid) | pure state
+  let state ← oldSteps catalog state position row (childLinks links position) (parentLinks links position) ignore
+  let written := if record then state.written ++ [row] else state.written
+  let state := { state.changeRows position fun rows => rows.filter (·.rowid != rowid) with written }
+  let state ← (parentLinks links position).foldlM (fun state link =>
+    runAction catalog (nested frame.action) link link.key.onDelete position row none state) state
+  if fire then return (← runPrograms catalog nested frame position .after .delete row.values state).1
+  return state
+
+/-- Update the row with the rowid of the table at the position to its new row, if it is still
+there: a rowid alias that is no integer is {lit}`datatype mismatch`; with {lit}`BEFORE UPDATE`
+programs for the {lit}`SET` columns, the types of a {lit}`STRICT` table are checked and the
+programs run over the {lit}`NEW` then {lit}`OLD` cells, and may end the row; then the checks of
+the new row ({name}`checkedUpdate`), which fail as ABORT and are not described under another
+inherited algorithm; with a changed key ({name}`updateLevel`), {name}`oldSteps` and
+{name}`newSteps` for the changed keys, where SQLite keeps the old row's record while it checks
+the new row when the level is 1 and the rowid or primary key stays; the write; the actions of
+the changed parent keys; and the {lit}`AFTER UPDATE` programs. -/
+def updateRow (catalog : Catalog) (links : List ForeignKeyLink) (nested : NestedRun) (frame : RowFrame) (position : Nat)
+    (change : Row → Row) (assigned changed : List Nat) (record : Bool) (state : KeyState) (rowid : Int) :
+    Except KeyStop KeyState :=
+  match ((state.database catalog).rowsAt position).find? (·.rowid == rowid), catalog[position]? with
+  | some old, some { name, entry := .table shape } => do
+    let new := change old
+    let event := Resolved.TriggerEvent.update (some assigned)
+    if LiteralData.aliasCellMismatch shape.rowidAlias new then throw (.error .datatypeMismatch)
+    if !(frame.fired position .before event).isEmpty && !LiteralData.typesFit shape new then
+      throw (.error .constraintViolation)
+    let (state, ended) ← runPrograms catalog nested frame position .before event (new.values ++ old.values) state
+    if ended then return state
+    match checkedUpdate catalog state position old new with
+    | .error stop => if frame.algorithm.all (· == .abort) then throw stop else throw .undescribed
+    | .ok () => pure ()
+    let level := updateLevel links position name shape changed
+    let children := (childLinks links position).filter fun link =>
+      link.key.childChanged changed || link.key.selfReferences name
+    let parents := (parentLinks links position).filter (·.key.parentChanged shape changed)
+    let before ← if level != 0 then oldSteps catalog state position old children parents false else pure state
+    let moved := shape.rowidAlias.any changed.contains || (shape.withoutRowid && shape.primaryKey.any changed.contains)
+    let stale := if level ≤ 1 && !moved then some old else none
+    let removed := before.changeRows position fun rows => rows.filter (·.rowid != rowid)
+    let checked ← if level != 0 then newSteps catalog removed position new children parents true stale changed
+      else pure removed
+    let written := if record then checked.written ++ [new] else checked.written
+    let state := { checked with rows := before.rows, written }.changeRows position fun rows =>
+      rows.map fun (row : Row) => if row.rowid == rowid then new else row
+    let state ← parents.foldlM (fun state link =>
+      runAction catalog (nested frame.action) link link.key.onUpdate position old (some new) state) state
+    return (← runPrograms catalog nested frame position .after event (new.values ++ old.values) state).1
+  | none, _ | some _, some { entry := .index _, .. } | some _, some { entry := .trigger _, .. } | some _, none =>
+    pure state
 
 end Belay.Sqlite
