@@ -77,3 +77,45 @@ extension does, and prints the diagnostics when the server has processed the fil
 With the library missing, the server elaborates nothing after the import, and the error names
 the library but not what to do. A clearer message needs the surface to load the library itself
 (for example with `dlopen`) instead of through the plugin's link.
+
+## Prototype 2: the translation in the elaborator
+
+Each candidate goes from SQL text to the model's statement syntax, with the source range of each
+node as `belay/sqlite/located.py` keeps it, and has the same refusals as the Python translation.
+The comparison takes each text of `texts.jsonl` and compares the candidate's result with the
+Python translation's result as JSON: the statements with the value, the range and the located
+parts of each node, or the refusal with its status, message and range.
+
+### Candidate A: a Lean port of the Python translation
+
+`packages/belay/Belay/Sqlite/Translation/` ports `belay/sqlite/syntax*.py`, `located.py` and the
+refusals of `sql_tree.py`, one Lean file for each Python module or less, from the parse tree of
+prototype 1. A node is a `Located` value: the JSON of the model's transport, its range and its
+located parts. The functions call each other through the subqueries of a query, so the two that
+close the loop are `partial` (`Mappers.lean`); the subquery list of a statement is the state of
+the translation's monad, where the Python translation keeps it in a context variable.
+
+| Measurement | Result |
+| --- | --- |
+| Texts whose result equals the Python translation's | 14,430 of 14,430 (2,781 refusals) |
+| Statements that decode to `Syntax.Statement` (`Belay.Sqlite.Model.Codec.SyntaxJson`) | 28,179 of 28,179 |
+| Parse and translation of all texts, while a file elaborates | 3.25 s (the parse alone: 2.57 s) |
+| Code that would exist twice: the port, beside the Python translation until it is replaced | 1,131 lines of Lean code (1,657 with documentation), beside 1,398 lines of Python code |
+
+The code lines count no blank lines, comments or docstrings. The test
+`tests/surface_translation_test.py` (the `surface` suite) compares both translations over the
+1,686 texts of the 42 authored corpora in 3 s.
+
+```sh
+PATH=build/conformance/lean/bin:$PATH lake -d build/lk/packages/belay lean experiments/surface-s1/TranslateA.lean
+```
+
+Two findings about the package layout:
+
+- A Lake library whose root is `Belay` takes every module under `Belay` as its own, the model's
+  modules too, so a surface file that imported the codec did not build. The surface's library
+  now names its modules (`globs` in `packages/belay/lakefile.lean`).
+- `lean` with `LEAN_PATH` looks for the modules under `Belay` only in the first folder that has
+  a `Belay` folder, so it does not find the model's modules beside the surface's. Lake gives
+  `lean` each import's file (`lake lean`, `lake setup-file`) and has no such problem; the tests
+  that run `lean` directly can only elaborate files that do not import the model.

@@ -20,9 +20,15 @@ package belay
 require belaySqliteModel from "../belay-sqlite-model"
 
 /-- The surface library. Its modules are precompiled, so that the interpreter that runs a
-file's commands calls the parser library's native code. -/
+file's commands calls the parser library's native code. The library names its modules: a root
+{lit}`Belay` would make Lake take every module under {lit}`Belay`, the model's too, as part of
+this package. -/
 @[default_target]
 lean_lib Belay where
+  roots := #[]
+  globs := #[.one `Belay, .one `Belay.Sqlite, .one `Belay.Sqlite.Grammar, .one `Belay.Sqlite.Parse,
+    .one `Belay.Sqlite.ParseCommand, .one `Belay.Sqlite.ParserLibrary, .one `Belay.Sqlite.ParseTree,
+    .andSubmodules `Belay.Sqlite.Translation]
   precompileModules := true
   moreLinkArgs := #["-L" ++ (parserLibrary / "lib").toString, "-lsqlite-verifier-parser",
     "-Wl,-rpath," ++ (parserLibrary / "lib").toString]

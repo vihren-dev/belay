@@ -182,6 +182,20 @@ let
     (root + /conformance/corpus-v3)
     (root + /conformance/corpus-v2)
   ];
+  # The conformance modules that `conformance.corpus` imports to read a locked corpus.
+  corpusModules = map (name: root + "/conformance/${name}.py") [
+    "case_format" "corpus" "corpus_acquisition" "corpus_evidence" "corpus_shards" "corpus_workers" "replay_support"
+    "execution_profile" "native_limits" "freeze_profiles" "freeze_validation" "model_assertions" "model_check"
+    "native_acquisition" "native_binding_types" "native_binding_validation" "native_bindings"
+    "native_call_recording" "native_clock" "native_connection" "native_library" "native_metadata"
+    "native_observation" "native_record" "native_replay" "profile_scope" "record_versions" "native_statements" "native_storage"
+    "native_trace" "native_workers" "locked_corpora" "query_window" "record_parser"
+    "upstream_binding_policy" "upstream_bindings" "upstream_catalog" "upstream_helpers"
+    "upstream_profiles" "upstream_result_values" "upstream_sampling"
+  ];
+  # The authored corpora: the locked corpora whose manifest names the evidence that they cover.
+  authoredCorpora = builtins.filter (path: (builtins.fromJSON (builtins.readFile (path + "/manifest.json"))) ? evidenceKind)
+    lockedCorpora;
   caseSeeds = import ./case-seeds.nix { inherit pkgs root; runtime = seedRuntime; };
   modelTools = [ native.sqlite native.sqlite346 native.sqlite3534 ];
 in {
@@ -210,16 +224,7 @@ in {
   # corpora and the modules that the validation imports, so a change elsewhere reuses the
   # result. A module missing from this list fails the suite with an import error.
   corpora = suite "corpora" {
-    inputs = frontend ++ [ claims ] ++ lockedCorpora ++ map (name: root + "/conformance/${name}.py") [
-      "case_format" "corpus" "corpus_acquisition" "corpus_evidence" "corpus_shards" "corpus_workers" "replay_support"
-      "execution_profile" "native_limits" "freeze_profiles" "freeze_validation" "model_assertions" "model_check"
-      "native_acquisition" "native_binding_types" "native_binding_validation" "native_bindings"
-      "native_call_recording" "native_clock" "native_connection" "native_library" "native_metadata"
-      "native_observation" "native_record" "native_replay" "profile_scope" "record_versions" "native_statements" "native_storage"
-      "native_trace" "native_workers" "locked_corpora" "query_window" "record_parser"
-      "upstream_binding_policy" "upstream_bindings" "upstream_catalog" "upstream_helpers"
-      "upstream_profiles" "upstream_result_values" "upstream_sampling"
-    ];
+    inputs = frontend ++ [ claims ] ++ lockedCorpora ++ corpusModules;
     runtime = pkgs.emptyDirectory;
   };
   upstream = suite "upstream" {
@@ -287,7 +292,9 @@ in {
     inherit runtime;
   };
   surface = suite "surface" {
-    inputs = [ (root + /tests/surface) (fs.fileFilter (file: file.hasExt "nix") (root + /build-support)) ] ++ packageSources;
+    inputs = [ (root + /tests/surface) (root + /tests/surface_support.py)
+               (fs.fileFilter (file: file.hasExt "nix") (root + /build-support)) ] ++ packageSources
+             ++ frontend ++ [ claims ] ++ authoredCorpora ++ corpusModules;
     runtime = surfaceRoot;
     tools = pkgs.lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.patchelf;
   };

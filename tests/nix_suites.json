@@ -134,6 +134,7 @@
   ],
   "surface": [
     "tests/surface_parser_test.py",
-    "tests/surface_layers_test.py"
+    "tests/surface_layers_test.py",
+    "tests/surface_translation_test.py"
   ]
 }
