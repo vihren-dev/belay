@@ -5,9 +5,9 @@ set_option doc.verso true
 
 /-! Examples of trigger definitions (ADR 0018, D5), checked when the package builds: CREATE
 TRIGGER and its prepare errors, the namespace of trigger names, {lit}`IF NOT EXISTS`, DROP
-TRIGGER, the triggers that DROP TABLE drops, {lit}`RAISE` outside a trigger, and the support
-check, which does not describe a write while the catalog has a trigger. The authored corpus of
-the slice checks the same rules against native SQLite. -/
+TRIGGER, the triggers that DROP TABLE drops and {lit}`RAISE` outside a trigger. The authored corpus of
+the slice checks the same rules against native SQLite; {lit}`TriggerRunExamples.lean` runs the
+triggers. -/
 
 namespace Belay.Sqlite.TriggerExamples
 
@@ -23,9 +23,6 @@ def tableT : Syntax.Statement := .createTable (name! "t") [plain "a"] []
 def trigger (name : String) (table : String := "t") (ifNotExists : Bool := false) : Syntax.Statement :=
   .createTrigger (Identifier.ofString name) ifNotExists .after .insert (Identifier.ofString table) none
     [.delete (name! "t") none]
-
-/-- {lit}`INSERT INTO t VALUES (1)`. -/
-def insertOne : Syntax.Statement := .insert (name! "t") none [[.numeric "1"]] []
 
 /-- The names of the triggers of the catalog after the script, in catalog order. -/
 def triggerNames (script : List Syntax.Statement) : List Identifier :=
@@ -60,14 +57,5 @@ def last (script : List Syntax.Statement) : Option Resolved.Statement := (statem
 #guard last [.select [.expression (.raise .ignore none) none "RAISE(IGNORE)"] none [] none [] [] none none] ==
   some (.prepareError (.expression .raiseOutsideTrigger))
 #guard (PrepareError.expression .raiseOutsideTrigger).message == "RAISE() may only be used within a trigger-program"
-
--- A write on a catalog with a trigger fails the support check; without the trigger it passes.
-#guard !supportedSqlFrom 0 (statements (migration [] [tableT, trigger "r", insertOne])) { database := {} }
-#guard supportedSqlFrom 0 (statements (migration [] [tableT, insertOne])) { database := {} }
--- So does DROP TABLE of a parent whose CASCADE deletes child rows of a table with a trigger.
-#guard !supportedSqlFrom 0 (statements (migration [] [.pragmaForeignKeys (some true),
-    .createTable (name! "p") [{ plain "id" with constraints := [.primaryKey false] }] [],
-    .createTable (name! "t") [{ plain "a" with constraints := [.references (name! "p") [] .cascade .noAction] }] [],
-    trigger "r", .dropTable (name! "p") false])) { database := {} }
 
 end Belay.Sqlite.TriggerExamples
