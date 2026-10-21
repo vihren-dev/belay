@@ -20,3 +20,6 @@ Specification: [ADR 0017](../docs/adr-0017-user-surface.md), D2 and D6;
 ## Progress log
 
 - 2026-10-21: the task file, with the amendments of ADR 0016 D2 and ADR 0017 D2 and D6.
+- 2026-10-21: review of the task file: the program also gives the commands that the query
+  diagnostic reads and the parser's resource limit, and the S1 report will say where its
+  commands run. The second review had no findings.
