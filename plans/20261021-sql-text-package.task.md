@@ -37,7 +37,7 @@ between the harness and the runner.
 4. **The translation program.** An executable of the text package reads requests as JSON lines,
    each with an execution profile, a source name and the SQL bytes, and writes one JSON line for
    each request: the statements with what the harness reads of them today (each statement's
-   value and its start offset), or the refusal with the status, the source name, the
+   value and its byte range, start and end), or the refusal with the status, the source name, the
    range and the message that `SqlError` has today, and whether it is the parser's resource
    limit (`ParserResourceLimit`), which `predict.py` classifies apart. For a text that parses,
    the line also gives the commands that the grammar found, even when the translation refuses
@@ -97,8 +97,9 @@ between the harness and the runner.
   shared library loads first (`sharedRequires` in `build-support/lean-package.nix`). The program
   links the parser library by an absolute rpath into the Nix store.
 - **`located.py`.** Its path lookup (`span(path)`) had one caller, the CLI's diagnostics. The
-  harness reads each statement's value (`predict.py`, `profile_scope.py`) and its start
-  (`predict.py`); its `Json` type alias has importers across `conformance/`.
+  harness reads each statement's value (`predict.py`, `profile_scope.py`) and its byte range: the
+  start in `predict.py` and `native_replay.py`, the start and the end in `native_trace.py`, which
+  runs each statement on its own. The `Json` type alias has importers across `conformance/`.
 - **The judge.** The judge lock covers the judge, the claims, the corpora and the oracle, not the
   subject. This task changes only the subject, so it needs no judge pull request unless a claim
   or a corpus changes.
