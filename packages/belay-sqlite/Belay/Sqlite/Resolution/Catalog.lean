@@ -43,6 +43,9 @@ def Catalog.createIndex (catalog : Catalog) (name : Identifier) (index : Catalog
 def Catalog.createTrigger (catalog : Catalog) (name : Identifier) (trigger : CatalogTrigger) : Catalog :=
   catalog ++ [{ name, entry := .trigger trigger }]
 
+/-- Whether the catalog has a trigger. -/
+def Catalog.hasTrigger (catalog : Catalog) : Bool := catalog.any (·.isTrigger)
+
 /-- The first trigger of the catalog whose folded name equals the folded given name, with its
 position. -/
 def Catalog.findTrigger (catalog : Catalog) (name : Identifier) : Option (Nat × CatalogTrigger) :=
