@@ -6,7 +6,7 @@ set_option doc.verso true
 /-! Examples of enforced foreign keys (ADR 0018, D4), each checked by the kernel: the setting
 and {lit}`PRAGMA foreign_keys`, a child without a parent, the actions of a parent's DELETE and
 UPDATE, a table that references itself, DROP TABLE, the prepare errors and the restriction of
-a deferred key. The authored corpus of the slice checks the same rules against native SQLite. -/
+a deferred key, and the fuel of the prepare check. The authored corpus of the slice checks the same rules against native SQLite. -/
 
 namespace Belay.Sqlite.ForeignKeyExamples
 
@@ -102,5 +102,9 @@ example : run [.createTable (name! "t") [{ name := name! "id", declaredType := s
 -- A deferred key is a restriction when a write checks it; with foreign keys off it is not.
 #guard restricted (migration [] (schema .noAction .noAction [.deferral true]) keysOn)
 #guard !restricted (migration [] (schema .noAction .noAction [.deferral true]) defaults)
+
+-- Work left past the fuel of the prepare check keeps the write a restriction; no work leaves none.
+example : (foreignKeyIssues [] [] 0 [] [(0, .delete, false)]).toOption = some true := by decide +kernel
+example : (foreignKeyIssues [] [] 0 [] []).toOption = some false := by decide +kernel
 
 end Belay.Sqlite.ForeignKeyExamples
