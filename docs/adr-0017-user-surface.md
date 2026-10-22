@@ -64,9 +64,9 @@ task file, and each ends with users able to do more than before.
 | Slice | What a user can do after it | Guide sections |
 | --- | --- | --- |
 | S1. SQL text in Lean | Nothing new yet: the elaborator turns SQL text into the model's syntax, in the Lean process and in the editor | "Writing SQL in Lean files" (first part); open questions 8 and 9 |
-| S2. Concrete databases | Build a database with `db!`, write scripts with `sql`, run them with `db.run`, see results with `#eval` and `#sql`, and prove facts about one database with `decide`; SQL that does not parse is an error at its position, `sql!` and `db!` also report resolution errors there, and `sql` resolves when it runs | "A first example", "Values", "Databases", "Scripts", "Row order" (without `Output.oneOf`) |
+| S2. Concrete databases | Build a database with `db!`, write scripts with `sql`, run them with `db.run`, see results with `#eval` and `#sql`, and prove facts about one database with `decide`; SQL that does not parse is an error at its position, `sql!` and `db!` also report resolution errors there, and `sql` resolves when it runs; a `Database` carries its validity, and `Holds`, `Empty` and `Fails` hold or fail for one database by `decide` (amended 2026-10-22, D3) | "A first example", "Values", "Databases", "Scripts", "Row order", and the examples of "Queries as propositions" over one database |
 | S3. Parameters and programs | Scripts with `$x` and `:name`; programs in `do` notation with `send`, `query`, `single`; `Run`; `Env` with a clock (amended 2026-10-22, D3) | "Parameters", "Programs", "The execution environment" |
-| S4. Claims over every database | `Holds`, `Empty` and `Fails`; level 2 (`succeeds where`) with the lemma library | "Queries as propositions", "Level 2" |
+| S4. Claims over every database | `Holds`, `Empty` and `Fails` over every database; level 2 (`succeeds where`) with the lemma library | "Queries as propositions", "Level 2" |
 | S5. Counterexamples | `#sql_check` and `sql_refute`: a search over small databases whose witness the kernel checks, shown as a script that `sqlite3` replays | "Check before you prove", "Counterexamples for any statement" |
 | S6. Triples and equivalence | Triples from `Std.Do`, `≈` and its patterns, level 3 | "Level 3"; open questions 2, 11 and 12 |
 | S7. SQL files | `sql_file`, `sql_module`, `against :=`, and the check tool | "SQL in separate files" |
@@ -152,6 +152,20 @@ The guide's run needs model work that this decision did not name, and S2 does it
 - **No clock in S2.** The guide's `Env.default` has no clock, so a statement that reads the
   clock gives `Output.unmodeled`. `Env`, with a clock, comes with S3.
 
+Amended a third time 2026-10-22 (owner decisions 6 and 7). This replaces the first amendment's
+sentences on the surface's `Database`:
+
+- **The `Database` carries its validity in S2.** It holds a model database and its proof of
+  `Database.Valid`, and `Database.Raw` is the model database without the proof. `db!` and each
+  run decide `Database.Valid` for the database that they give, and the decision is the proof
+  ([ADR 0022](adr-0022-database-validity.md), D5, amended). So `db.notNull`, `db.check`,
+  `db.unique` and `db.rowid_unique` need no hypothesis, as the guide says. A run whose result
+  is not valid ends with `Output.unmodeled`, and its database is the one at its start. For a
+  claim over every database, the check must be proved, which ADR 0022's theorems do before S4.
+- **`Holds`, `Empty` and `Fails` for one database.** Their definitions come in S2, so the
+  examples of the guide's "Queries as propositions" over one database are proved by `decide`.
+  Their lemmas, and the claims over every database, stay in S4.
+
 ### D4. The surface never approximates
 
 SQL that the model does not describe is an elaboration error that gives the model's
@@ -179,7 +193,7 @@ part of this ADR; this ADR only names them and when the surface needs them:
 | `DISTINCT` and `HAVING` | S4 (level 2 of the unique index) | 185 cases; pain point 3 |
 | Enforced foreign keys with their actions | S6 (the rebuild that cascades) | pain point 1, the research's first-ranked failure |
 | Triggers | S8 (expand/contract) | 416 cases; pain point 2 |
-| The theorems that statements keep each fact of a valid database ([ADR 0022](adr-0022-database-validity.md)) | S4 ("keys unique"), and the `Database` that carries its validity | guide "Databases" |
+| The theorems that statements keep each fact of a valid database ([ADR 0022](adr-0022-database-validity.md)) | S4: "keys unique", and runs of the bundled database over every database, whose check the theorems replace (D3, amended 2026-10-22) | guide "Databases" |
 
 Subqueries block S4, so their ADR should start before S3 ends.
 
@@ -241,13 +255,12 @@ A slice that finishes one removes it from this table, or moves it to the slice t
 | Evidence for the statements after an error: the native oracle runs on after a failed statement, and a new corpus records such scripts | The oracle and the corpora stop at the first error; the change is a judge change (ADR 0011), with its own pull request and the owner's approval | Before S4, whose claims quantify over runs that can contain errors; earlier if a guide example depends on it |
 | `Env` with a clock, so that `CURRENT_TIMESTAMP` and `date('now')` run | S2 gives `Output.unmodeled` for a statement that reads the clock (D3, amended 2026-10-22) | S3 (D1) |
 | `random()`, `randomblob()`, `changes()`, `last_insert_rowid()` and `total_changes()`, which the guide's `Env` lists | The model resolves them as unmodeled functions; they need model work | A model ADR, before the slice whose examples use them |
-| The `Database` that carries its validity, and the guide's `db.notNull` without a hypothesis | Needs the theorems that the statements keep the atoms | ADR 0022, D5; D5 of this ADR |
+| The theorems that replace the check of a run of the bundled database, so that a claim over every database gets the facts of the run's result | S2's run checks `Database.Valid` for each concrete run (D3, amended 2026-10-22) | ADR 0022, slices 2 to 4, before S4 |
+| `pragma_table_info` and the other table-valued pragma functions, with which the guide states facts of a schema | The model resolves them as a restriction | A model ADR, before S4, whose claims over every database need schema facts |
 
 ## Not decided here
 
 - The details of each slice after S2: its task file decides them, from the guide.
-- How `db!` gives the proof of `Database.Valid` for the database that it builds (D3): the
-  owner decides it for the S2 task file.
 - The candidate of D2 item 2, until its measurement.
 - The editor features that the guide lists (hovers, code actions, warnings for traps)
   and SQL in docstrings: each comes with the slice whose users need it.
@@ -270,3 +283,7 @@ Decided on 2026-10-22, for the S2 task file:
    guide documents it.
 5. **The clock.** S2 has no clock: a statement that reads it gives `Output.unmodeled`, and
    `Env` with a clock comes with S3.
+6. **The bundled database in S2** (D3, amended 2026-10-22; ADR 0022, owner decision 5): the
+   surface's `Database` carries its proof of `Database.Valid`, and a run checks it.
+7. **`Holds`, `Empty` and `Fails` for one database in S2**; their lemmas and the claims over
+   every database stay in S4.

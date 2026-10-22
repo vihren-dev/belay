@@ -121,10 +121,10 @@ the fact. It is reported to the owner, and no proof assumes it away.
 
 | Slice | Content | Needed by |
 | --- | --- | --- |
-| 1 | the atoms, their checks, the two bundles, the rename | ADR 0017 S2: `db!` proves `Database.Valid` |
+| 1 | the atoms, their checks, the two bundles, the rename | ADR 0017 S2: the checked run of the bundled database (D5, amended) |
 | 2 | the theorem of "keys unique" | ADR 0017 S4: a lookup by key gives at most one row |
-| 3 | the theorems of the other Valid atoms | the bundled database (D5) |
-| 4 | the theorems of the Admitted atoms | the bundled database (D5) |
+| 3 | the theorems of the other Valid atoms | ADR 0017 S4: a run of the bundled database over every database (D5, amended) |
+| 4 | the theorems of the Admitted atoms | ADR 0017 S4, as slice 3 |
 | 5 | the theorem of "foreign keys hold" | ADR 0017 S6: the rebuild that cascades |
 
 For the constraint atoms, INSERT, UPDATE and upsert are the easier case: each table that they
@@ -143,6 +143,28 @@ the surface's `Database` is the model's, and `db!` gives a proof of `Database.Va
 A decision for later, with the bundled type: a script with a statement that has no theorem for
 an atom cannot give a bundled result. Either elaboration refuses such a statement in a bundled
 run, or the run gives a database with the weaker bundle.
+
+Amended 2026-10-22 (owner decision 5): the bundled database comes in S2, with a run that checks
+instead of proves. The surface's `Database` holds a model database and its proof of
+`Database.Valid`; a plain model database without the proof has its own name, `Database.Raw`,
+for the claims that must cover databases with broken constraints (`Database.Admitted`). A run
+computes the model's result as before, and then decides `Database.Valid` for the database at
+its end (slice 1). When it holds, that decision is the proof of the bundled result. When it
+does not, the run's outputs end with `Output.unmodeled`, whose reason says that the result is
+not a valid database, and the run's database is the one at its start; the model's result stays
+readable as a `Database.Raw`. The run never presents a database that is not valid as one that
+is.
+
+- **For one concrete database** this gives the guide's experience: `db.notNull` needs no
+  hypothesis, for the database of `db!` and for the database after a run, and `decide` checks
+  the run.
+- **For a claim over every database** (ADR 0017, S4 and later), a proof must show that the
+  check holds, which is the theorems of D3. Slices 2 to 4 therefore come before S4; with them,
+  the check is proved to hold, and the run can give the proof without the check.
+- **The else branch is a finding** while the model describes no statement that bypasses a
+  constraint: a run that reaches it shows an error of the model, which D3 reports to the
+  owner. When the model describes such a statement, the else branch is how a run treats it,
+  which decides the question of the previous paragraph for runs of the bundled database.
 
 ## Consequences
 
@@ -164,12 +186,14 @@ the only door (the workspace rule on flexibility and usability).
 **Add the constraints to today's invariant.** Rejected: claims would then silently exclude
 databases that SQLite can reach, against ADR 0012's rule.
 
-**Bundle the surface's database in S2.** Rejected: `db.run` cannot give the proof before the
-theorems of D3 exist.
+**Bundle the surface's database in S2.** Rejected at first: `db.run` cannot give the proof before
+the theorems of D3 exist. Amended 2026-10-22: a check gives the proof for each concrete run, so
+S2 bundles the database (D5, amended), and the theorems move to before S4.
 
 ## Not decided here
 
-- The bundled database (D5) and how a run treats a statement without a theorem.
+- How elaboration treats a statement that has no theorem for an atom, in a claim over every
+  database, when the model describes such a statement (D5, amended).
 - Whether the cells of stored generated columns become an atom.
 - The model of `PRAGMA ignore_check_constraints` and `writable_schema`.
 
@@ -182,3 +206,6 @@ Decided on 2026-10-22, in the design discussion of S2:
 3. **Foreign keys are an atom outside `Database.Valid`.**
 4. **A theorem for each atom**, with conditions on the connection, delivered slice by slice; the
    postponed work is documented, and the guide keeps its scope.
+5. **The bundled database in S2, with a checked run** (D5, amended 2026-10-22): the
+   surface's `Database` carries its proof of `Database.Valid`, `Database.Raw` is the plain
+   database, and the theorems of D3 replace the check before S4.
