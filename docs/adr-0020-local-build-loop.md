@@ -7,7 +7,7 @@ so the local loop builds in `packages/`.
 Changed 2026-10-22: based on the layout of ADR 0021 and the text package (pull requests
 #209 to #212). The targets, the runtime root, the shell's parser library and the
 measurements follow that layout.
-Implementation: one task file and one pull request, after the owner decisions below.
+Implementation: one task file and one pull request, after the open owner decisions below.
 Audience: designers and reviewers.
 Related: [ADR 0010](adr-0010-lake-builds-and-artifact-cache.md) (Lake builds, one Nix
 derivation per Lean package), [ADR 0011](adr-0011-product-trust-and-development-integrity.md)
@@ -153,7 +153,7 @@ It builds these targets, the ones that model work can break:
 | `belay-sqlite-model` | `Belay.Sqlite.Model`, `Belay.Sqlite.Model.Codec` (the targets of `modelPackage`) |
 | `belay-sqlite-text` | `BelaySqliteText`, `BelaySqliteText:shared`, `parserShim:shared`, `belay-sqlite-translate` |
 | `verifier-conformance` | `conformance-runner` |
-| `belay` | `Belay`, `Belay:shared` (owner decision 1) |
+| `belay` | `Belay`, `Belay:shared` (owner decision 1, decided) |
 
 The documentation tool stays with Nix.
 
@@ -259,11 +259,13 @@ context. It does not build the programs or run the corpora.
 
 ## Owner decisions
 
+Decided on 2026-10-22:
+
+1. **The surface package in D2.** The local loop builds it. A model change can break the
+   surface, and after the text package it built in 2 s.
+
 To be decided:
 
-1. **The surface package in D2.** Recommended: build it. A model change can break the
-   surface, and after the text package it built in 2 s. The alternative leaves it to the
-   Nix checks before each commit.
 2. **The rule of D5.** Recommended as written: the local loop while editing, the Nix
    checks before each commit.
 3. **The flake dev shell.** Recommended: keep it for CI, with the package list shared
