@@ -15,7 +15,7 @@ from conformance.native_replay import HIDDEN_ROWID_REASON, prepare
 from conformance.sql_text import runtime_translator
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance,
-              pytest.mark.requires_lean, pytest.mark.requires_native("parser-library", "sqlite3")]
+              pytest.mark.requires_lean, pytest.mark.requires_native("translation-program", "sqlite3")]
 
 
 def test_hidden_rowid_is_out_of_scope(runtime_root: Path) -> None:

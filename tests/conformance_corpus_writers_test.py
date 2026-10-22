@@ -41,7 +41,7 @@ from conformance.authored_resolution import definitions as resolution_definition
 from conformance.corpus import load
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance,
-              pytest.mark.requires_native("parser-library", "sqlite3")]
+              pytest.mark.requires_native("translation-program", "sqlite3")]
 
 
 @pytest.mark.parametrize(("evidence", "cases", "version"), [(query_evidence, authored_queries, 7),

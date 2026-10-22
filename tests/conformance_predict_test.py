@@ -18,7 +18,7 @@ from judge.catalog import tables_form
 from judge.records import subject_input
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance,
-              pytest.mark.requires_lean, pytest.mark.requires_native("parser-library", "sqlite3")]
+              pytest.mark.requires_lean, pytest.mark.requires_native("translation-program", "sqlite3")]
 
 PREDICT_TIMEOUT_SECONDS = 60
 """One predict run over one small case."""

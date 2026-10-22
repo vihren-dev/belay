@@ -1,9 +1,7 @@
 [
   "belay.sqlite.__init__",
-  "belay.sqlite.dialects",
   "belay.sqlite.errors",
   "belay.sqlite.located",
-  "belay.sqlite.parser_library",
   "belay.sqlite.profiles",
   "belay.sqlite.quoted_text"
 ]

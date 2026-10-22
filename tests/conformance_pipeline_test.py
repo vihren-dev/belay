@@ -14,7 +14,7 @@ from conformance.pipeline import fixtures
 from conformance.record_parser import default_parser
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kernel,
-              pytest.mark.requires_lean, pytest.mark.requires_native("parser-library", "sqlite3")]
+              pytest.mark.requires_lean, pytest.mark.requires_native("translation-program", "sqlite3")]
 
 
 @pytest.mark.parametrize("ending", ["COMMIT;", "ROLLBACK;", "", "BEGIN; COMMIT;",

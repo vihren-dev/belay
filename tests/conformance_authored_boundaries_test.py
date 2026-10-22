@@ -17,7 +17,7 @@ from conformance.requirement_coverage import resolved_ids
 from conformance.sql_text import runtime_translator
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance,
-              pytest.mark.requires_native("sqlite3", "parser-library")]
+              pytest.mark.requires_native("sqlite3", "translation-program")]
 
 
 @pytest.fixture(scope="module")

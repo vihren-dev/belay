@@ -153,7 +153,7 @@ def test_cli_defaults_to_frozen_v5(tmp_path: Path, monkeypatch: pytest.MonkeyPat
 
 @pytest.mark.integration
 @pytest.mark.requires_lean
-@pytest.mark.requires_native("parser-library")
+@pytest.mark.requires_native("translation-program")
 @pytest.mark.parametrize("version", [4, 5])
 def test_actual_frozen_partition_requirement_inventory_and_identities(runtime_root: Path, version: int) -> None:
     """`conformance.progress.loaded_progress` on the frozen corpora: each case appears once.

@@ -131,7 +131,6 @@ in rec {
     ln -s ${conformanceRuntime}/.lake "$out/.lake"
     mkdir -p "$out/packages"
     ln -s ${modelPackage} "$out/packages/belay-sqlite-model"
-    ln -s ${parserLibrary.library}/lib "$out/lib"
   '';
   # The runner built against an instrumented copy of the model's sources, which compiles here.
   conformanceCoverage = (leanPackage {

@@ -45,8 +45,7 @@ def test_grammar_selection_checks_elaborate(runtime_root: Path, tmp_path: Path) 
 def test_bytes_that_are_not_utf8_are_a_grammar_error(runtime_root: Path, tmp_path: Path) -> None:
     """The binding (`Belay/Sqlite/ParserLibrary.lean`, `c/parser_shim.c` of the text package) passes
     the SQL as bytes: a byte 0xFF inside a string literal reaches the parser library, which checks
-    that the whole text is UTF-8 before it tokenizes, and the result is a grammar error at offset 0,
-    as for the Python binding before (`tests/parser_binding_test.py`)."""
+    that the whole text is UTF-8 before it tokenizes, and the result is a grammar error at offset 0."""
     result = run_command(surface_command(runtime_root, FIXTURES / "InvalidUtf8.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()

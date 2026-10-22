@@ -13,7 +13,7 @@ import pytest
 
 from conformance import sql_text
 from conformance.native_library import DEFAULT_ENGINE_VERSION, SOURCE_ID
-from tests.runtime_fixtures import require_file
+from tests.runtime_fixtures import TRANSLATION_PROGRAM_PATH, require_file
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser]
 
@@ -103,3 +103,9 @@ def test_a_program_that_closes_its_output_is_stopped(tmp_path: Path) -> None:
     with pytest.raises(RuntimeError, match="stopped: closing"):
         translator.answer(sql_text.ProfileIdentity(DEFAULT_ENGINE_VERSION, SOURCE_ID), b"COMMIT;", "closed.sql")
     assert translator.process.returncode == -signal.SIGKILL
+
+
+def test_the_test_plugin_names_the_program_path_of_the_client() -> None:
+    """The test plugin (`tests/runtime_fixtures.py`), which cannot import the harness, requires
+    the program at the path where the client starts it."""
+    assert TRANSLATION_PROGRAM_PATH == sql_text.PROGRAM

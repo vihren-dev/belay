@@ -27,7 +27,7 @@ from conformance import (authored_checks, authored_collations, authored_deletes,
 from tests.mutant_sets import measure_set
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_lean,
-              pytest.mark.requires_native("parser-library", "sqlite3")]
+              pytest.mark.requires_native("translation-program", "sqlite3")]
 
 
 def test_every_index_and_without_rowid_mutant_changes_a_verdict(runtime_root: Path) -> None:

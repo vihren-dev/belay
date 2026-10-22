@@ -88,3 +88,14 @@ Specification: [ADR 0017](../docs/adr-0017-user-surface.md), D2 and D6;
   and that `decodeParse` refuses a document for another grammar. The program writes an object's
   fields in sorted order, so a test of field order compares the set of fields. `just test-source`,
   `just test` and the model and frozen suites pass.
+- 2026-10-22: Python no longer loads the parser library. `belay/sqlite/parser_library.py` and
+  `dialects.py` are deleted with `tests/parser_test.py`, `parser_binding_test.py` and
+  `test_dialect_selection.py`; `ProfileIdentity` is in `conformance/sql_text.py`. The checks of
+  `parser_test.py` (status and byte spans of each input in each default grammar) are a test of
+  `tests/parser_library_test.py`, through the library's C driver. The binding's lock, its load
+  cache and its API version check had no other caller; the Lean shim compiles against the
+  library's header and links the library by its store path. The conformance runtime has no `lib`
+  link, and the `requires_native` requirement `translation-program` checks the program.
+  `tests/test_no_python_parser_binding.py` checks that no module of `belay/` or `conformance/`
+  names the library. `docs/sqlite-parser.md` and `docs/conformance-format-v1.md` describe the
+  program. `just test`, `just test-nix` and the model and frozen suites pass.

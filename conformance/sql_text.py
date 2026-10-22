@@ -17,7 +17,6 @@ import subprocess
 import threading
 from typing import IO
 
-from belay.sqlite.dialects import ProfileIdentity
 from belay.sqlite.errors import NoParserForDialect, ParserResourceLimit, SqlError
 from belay.sqlite.located import Json, Located
 
@@ -26,6 +25,16 @@ PROGRAM = ".lake/build/bin/belay-sqlite-translate"
 ANSWER_TIMEOUT_SECONDS = 60
 """The time for one request and its answer: the program parses and translates 27,151 texts in
 less than 10 s, so a text at the parser's limit of 1 MiB takes much less."""
+
+
+@dataclass(frozen=True)
+class ProfileIdentity:
+    """The parts of an execution profile that decide its syntax: the release, the SQLite source
+    id of its build and the compile options that `PRAGMA compile_options` reports."""
+
+    version: str
+    source_id: str
+    compile_options: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

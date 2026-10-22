@@ -54,7 +54,7 @@ from conformance.sql_text import runtime_translator
 from conformance.requirement_coverage import resolved_ids
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kernel, pytest.mark.requires_lean,
-              pytest.mark.requires_native("parser-library", "sqlite3")]
+              pytest.mark.requires_native("translation-program", "sqlite3")]
 ROOT = Path(__file__).resolve().parents[1]
 CASE_SETS = [authored_queries, authored_numbers, authored_writes, authored_row_writes, authored_deletes, authored_joins,
              authored_using, authored_right, authored_merged, authored_keys, authored_aliases, authored_upserts,

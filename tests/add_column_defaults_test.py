@@ -14,7 +14,7 @@ from conformance.native_replay import prepare
 from conformance.sql_text import runtime_translator
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kernel,
-              pytest.mark.requires_lean, pytest.mark.requires_native("parser-library", "sqlite3", "sqlite3-3.46.0")]
+              pytest.mark.requires_lean, pytest.mark.requires_native("translation-program", "sqlite3", "sqlite3-3.46.0")]
 
 LITERALS = ["NULL", "7", "1.50", "'7'", "X'00ff'", "TRUE", "[true]",
             "-9223372036854775808", "0x1ffffffffffffffff", "-0x1ffffffffffffffff"]

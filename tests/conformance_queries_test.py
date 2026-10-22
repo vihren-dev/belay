@@ -16,7 +16,7 @@ from conformance.native_replay import prepare
 from conformance.sql_text import runtime_translator
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_lean,
-              pytest.mark.requires_native("parser-library", "sqlite3")]
+              pytest.mark.requires_native("translation-program", "sqlite3")]
 SCHEMA = ("CREATE TABLE t(Abc INTEGER, b TEXT, c); INSERT INTO t VALUES(1,'x',NULL),(2,'y',2.5),"
           "(1,'z','q'),(NULL,'w',X'00'),(3,NULL,1);")
 """A table with NULL, integer, REAL, text and blob values, and a repeated key."""

@@ -36,7 +36,7 @@ from conformance import key_mutants, number_mutants, query_mutants
 from tests.mutant_sets import Mutants, Targets, measure_set
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_lean,
-              pytest.mark.requires_native("parser-library", "sqlite3")]
+              pytest.mark.requires_native("translation-program", "sqlite3")]
 
 def test_every_query_mutant_changes_a_verdict(runtime_root: Path) -> None:
     """The authored query cases notice every changed rule of query semantics

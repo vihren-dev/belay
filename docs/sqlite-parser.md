@@ -1,28 +1,27 @@
 # SQLite syntax boundary
 
-The verifier and the conformance harness parse SQL with SQLite's own grammar and
-tokenizer, compiled into one shared library that they load into their own
-process: `lib/libsqlite-verifier-parser.so` (`.dylib` on macOS) in the runtime.
-Nix builds it as `parserLibrary.library` in `build-support/default.nix`, and
-`just build` links it at `lib/` in the checkout. Test inside the pinned
-development shell: `just test-cases tests/parser_test.py`. No database is
-opened and no SQL is executed, prepared, or schema-resolved.
+The surface and the conformance harness parse SQL with SQLite's own grammar and
+tokenizer, compiled into one shared library: `libsqlite-verifier-parser.so`
+(`.dylib` on macOS). Nix builds it as `parserLibrary.library` in
+`build-support/default.nix`. No database is opened and no SQL is executed,
+prepared, or schema-resolved.
 
-`belay/sqlite/parser_library.py` loads the library with `ctypes`, only from the
-runtime's explicit path, once for each process. It refuses a library with
-another API version, or without a dialect for each profile in
-`belay/sqlite/profiles.py`, and it holds its own lock for each call: the
-library makes no promise for concurrent calls. `belay/sqlite/dialects.py`
-selects the grammar of a profile from its release, its SQLite source id and the
-grammar options among its compile options, and never falls back to another
-dialect. `verify` uses the default dialect of its profile's release. The
-conformance harness uses the dialect of each case's recorded profile; a case
-without a built dialect is `MODEL_UNSUPPORTED` with the reason "no parser for
-this dialect".
+The text package (`packages/belay-sqlite-text`) is the only caller of the
+library's C API outside the library's own tests. Its binding
+(`Belay.Sqlite.ParserLibrary`, `c/parser_shim.c`) links the library with its
+folder in the Nix store as the run-time search path, and passes the SQL as
+bytes. `Belay.Sqlite.selectGrammar` selects the grammar of a profile from its
+release, its SQLite source id and the grammar options among its compile
+options, and never falls back to another dialect. The surface parses in the
+Lean process while a file elaborates. The conformance harness runs the
+package's program `belay-sqlite-translate` in the conformance runtime
+(`conformance/sql_text.py`), with the dialect of each case's recorded profile;
+a case without a built dialect is `MODEL_UNSUPPORTED` with the reason "no
+parser for this dialect".
 
-A parse runs in the verifier's process. It has no deadline and no crash
-containment: the input and node limits bound it, and Lemon's LALR parsing is
-linear in the number of tokens.
+A parse has no deadline and no crash containment in its process: the input and
+node limits bound it, and Lemon's LALR parsing is linear in the number of
+tokens. The harness's client stops a program that gives no answer in 60 s.
 
 A successful parse document has status `PARSED`, never `VERIFIED`. It contains
 the grammar identity as `grammar`, a root node index, and a flat node array.
@@ -37,7 +36,7 @@ bytes, are sufficient for downstream semantic translation.
 `INPUT_ERROR` indicates invalid UTF-8, embedded NUL, a lexical error, or rejection
 by the grammar. `RESOURCE_LIMIT` indicates the 1 MiB input or 200,000-node bound
 or allocation failure. Errors include a byte offset where available;
-whole-text encoding/size errors use offset zero. The frontend maps
+whole-text encoding/size errors use offset zero. The translation maps
 `RESOURCE_LIMIT` to `UNVERIFIED`: resource exhaustion is not evidence of
 invalid SQL or a violated requirement.
 
@@ -77,7 +76,7 @@ equivalence proof.
 ## Coverage
 
 Each pinned default grammar has 409 productions, independently generated from
-its release's sources. The regression suite (`tests/parser_test.py`) exercises
+its release's sources. The library's suite (`tests/parser_library_test.py`) exercises
 21 scripts in each grammar
 across DDL, DML, CTEs, windows, triggers,
 virtual tables, pragmas, transaction control, and EXPLAIN; malformed input,

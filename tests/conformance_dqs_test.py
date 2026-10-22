@@ -16,7 +16,7 @@ from conformance.record_parser import default_parser
 from tests.runtime_fixtures import profile_parser
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance,
-              pytest.mark.requires_native("sqlite3", "sqlite3-3.46.0", "parser-library")]
+              pytest.mark.requires_native("sqlite3", "sqlite3-3.46.0", "translation-program")]
 SCHEMA = 'CREATE TABLE "t"("id" INTEGER NOT NULL,"value" TEXT,UNIQUE("id"));'
 
 

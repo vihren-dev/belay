@@ -9,12 +9,11 @@ is `MODEL_UNSUPPORTED`, and the parse with another dialect never replaces it.
 
 from pathlib import Path
 
-from belay.sqlite.dialects import ProfileIdentity
 from conformance.case_format import Json
 from conformance.execution_profile import profile_from_wire, recorded_profile
 from conformance.native_library import DEFAULT_ENGINE_VERSION, SOURCE_ID
 from conformance.record_versions import PROFILED
-from conformance.sql_text import TextParser, Translator, runtime_translator
+from conformance.sql_text import ProfileIdentity, TextParser, Translator, runtime_translator
 
 NO_PARSER_REASON = "no parser for this dialect"
 """The reason of a `MODEL_UNSUPPORTED` case whose recorded profile has no built dialect."""

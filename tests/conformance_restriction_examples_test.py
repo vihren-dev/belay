@@ -14,7 +14,7 @@ import pytest
 from conformance.restriction_examples import EXAMPLES, resolve_example
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_lean,
-              pytest.mark.requires_native("parser-library")]
+              pytest.mark.requires_native("translation-program")]
 
 
 @pytest.mark.parametrize("identifier", sorted(EXAMPLES))

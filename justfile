@@ -20,7 +20,7 @@ resources:
 # Prepare the pinned conformance runtime through the same Nix build that the tests use.
 setup: build
 
-# Build the conformance runtime and expose its toolchain, model and parser library at the repository root.
+# Build the conformance runtime and expose its toolchain, model and programs at the repository root.
 build: resources conformance-build
     mkdir -p .lake
     rm -rf .lake/build packages/belay-sqlite-model/.lake/build
@@ -28,7 +28,6 @@ build: resources conformance-build
     ln -sfn ../build/conformance/.lake/build .lake/build
     ln -sfn ../../../build/conformance/packages/belay-sqlite-model/.lake/build packages/belay-sqlite-model/.lake/build
     ln -sfn build/conformance/lean lean
-    ln -sfn build/conformance/lib lib
 
 # Run an explicitly selected scenario without rebuilding its prerequisites.
 [positional-arguments]

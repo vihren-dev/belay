@@ -114,7 +114,7 @@ def test_original_control_references_survive_minimization() -> None:
     native_replay([minimized])
 
 
-@pytest.mark.requires_native("parser-library")
+@pytest.mark.requires_native("translation-program")
 @pytest.mark.parametrize("damage", ["version", "missing", "duplicate", "setup-count", "source-name", "source-value", "expected"])
 def test_malformed_inputs_fail_before_profile_unsupported(profile: ExecutionProfile, damage: str,
                                                           runtime_root: Path) -> None:

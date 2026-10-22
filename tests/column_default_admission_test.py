@@ -11,7 +11,7 @@ from conformance.native_replay import prepare
 from conformance.sql_text import runtime_translator
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kernel,
-              pytest.mark.requires_lean, pytest.mark.requires_native("parser-library", "sqlite3")]
+              pytest.mark.requires_lean, pytest.mark.requires_native("translation-program", "sqlite3")]
 
 LITERALS = ["NULL", "7", "1.5", "'7'", "'λ'", "X'00ff'", "-9223372036854775808", "TRUE", '"true"', "x'00FF'", "- 7", "[true]", "`true`"]
 """Default syntax covers each storage class, a signed boundary and quoted boolean spelling."""

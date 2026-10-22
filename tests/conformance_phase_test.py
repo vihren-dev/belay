@@ -16,7 +16,7 @@ from conformance.native_trace import Fixture, record
 from conformance.record_parser import default_parser
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance,
-              pytest.mark.requires_native("sqlite3", "parser-library")]
+              pytest.mark.requires_native("sqlite3", "translation-program")]
 SCHEMA = "CREATE TABLE t(id INTEGER NOT NULL, UNIQUE(id));"
 ROWS = {"t": [(1, ((1, 1),))]}
 """One stored row, so that inserting its key again violates the UNIQUE constraint."""
