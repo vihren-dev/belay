@@ -55,18 +55,17 @@ def failedDefinition (environment : Environment) (name : Name) : Bool :=
 
 /-- Elaborate the term as a {name}`Database` and give its value. It gives
 {lean}`(none : Option Database)`, without a new error, when the term has an error or uses a
-definition with an error, also through other definitions of the file ({name}`reachedConstants`,
+definition with an error, also through a local definition or other definitions of the file ({name}`reachedConstants`,
 {name}`failedDefinition`), because Lean already shows that error. It is an error at the term
 when the term depends on a variable, when it is not fully known, when it uses a noncomputable
 definition, or when Lean cannot evaluate it. -/
 def evaluateDatabase (term : Syntax) : TermElabM (Option Database) := do
   let value ← elabTermEnsuringType term (mkConst ``Database)
   synthesizeSyntheticMVarsNoPostponing
-  let value ← instantiateMVars value
+  let value ← zetaReduce (← instantiateMVars value)
   let environment ← getEnv
   let reached ← reachedConstants value
   if value.hasSyntheticSorry || reached.any (failedDefinition environment) then return none
-  let value ← zetaReduce value
   if value.hasFVar then
     throwErrorAt term "sql! resolves against the value of the database, but the database term \
       depends on a variable and has no value while the file elaborates; use sql, which resolves \

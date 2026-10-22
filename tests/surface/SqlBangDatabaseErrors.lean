@@ -72,3 +72,13 @@ def onFailed : Script := sql! failed r"SELECT id FROM invoices"
 
 #guard_msgs (positions := true) in
 def onWrapped : Script := sql! wrapped r"SELECT id FROM invoices"
+
+-- A local definition with an error shows only that error.
+/--
+@ +1:68...80
+error: Invalid field `missingField`: The environment does not contain `Belay.Sqlite.Database.missingField`, so it is not possible to project the field `missingField` from an expression
+  Database.empty
+of type `Database`
+-/
+#guard_msgs (positions := true) in
+def onFailedLocal : Script := let copy : Database := Database.empty.missingField; sql! copy r"SELECT 1"
