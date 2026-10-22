@@ -99,3 +99,12 @@ Specification: [ADR 0017](../docs/adr-0017-user-surface.md), D2 and D6;
   `tests/test_no_python_parser_binding.py` checks that no module of `belay/` or `conformance/`
   names the library. `docs/sqlite-parser.md` and `docs/conformance-format-v1.md` describe the
   program. `just test`, `just test-nix` and the model and frozen suites pass.
+- 2026-10-22: review of T4c: three should findings, fixed: the tracked `lib` link is deleted, the
+  test names its module threshold, and the T4 item above is marked done. The docs
+  (`build-support/README.md`, `docs/conformance-fixtures.md`) no longer name the runtime's `lib`
+  or a Python frontend.
+- 2026-10-22: the query diagnostic of the corpus report (`conformance/corpus.py`) is unchanged.
+  For each claimed corpus, the totals, the verdict counts and the category of each of the 1,327
+  cases with a diagnostic are byte-identical on this tree and on the tree before the task
+  (porlvkzz, with its own conformance runtime). Five of these cases have a trailing read-only
+  PRAGMA that the projection drops, for example `fkey1:fkey1-3.2:5` (`BLOCKED_ONLY_BY_QUERIES`).
