@@ -1,6 +1,6 @@
 # ADR 0020: A local incremental build loop for model work
 
-Date: 2026-10-21. Status: PROPOSED.
+Date: 2026-10-21. Status: ACCEPTED (2026-10-22).
 Changed 2026-10-21: the toolchain comes from a root `shell.nix`; executables link for the
 Nix loader through `LEAN_CC`; `just build` no longer links its runtime into the checkout,
 so the local loop builds in `packages/`.
@@ -8,7 +8,8 @@ Changed 2026-10-22: based on the layout of ADR 0021 and the text package (pull r
 #209 to #212). The targets, the runtime root, the shell's parser library and the
 measurements follow that layout. Later the same day: agent sessions load `.envrc` through
 direnv (fact 8), so D1, D5 and D6 rely on it; owner decisions 2 and 3 are decided.
-Implementation: one task file and one pull request.
+Implementation: one task file and one pull request; the task is
+[`plans/20261022-local-build-loop.task.md`](../plans/20261022-local-build-loop.task.md).
 Audience: designers and reviewers.
 Related: [ADR 0010](adr-0010-lake-builds-and-artifact-cache.md) (Lake builds, one Nix
 derivation per Lean package), [ADR 0011](adr-0011-product-trust-and-development-integrity.md)
