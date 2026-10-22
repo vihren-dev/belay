@@ -1,8 +1,9 @@
 # belay
 
 The surface: the library that Lean developers import, `Belay`, with the SQLite surface under
-`Belay.Sqlite` (ADR 0016). It imports the model only through its roots, `Belay.Sqlite.Model`
-and `Belay.Sqlite.Model.Codec`, and reads SQL text with the text package below it,
+`Belay.Sqlite` (ADR 0016). It imports the model only through its roots, `Belay.Sqlite.Model`,
+`Belay.Sqlite.Model.Codec` and `Belay.Sqlite.Model.Codec.Resolution` (the terms of statement
+syntax that `sql r"..."` gives), and reads SQL text with the text package below it,
 `packages/belay-sqlite-text`.
 
 The text package calls the SQLite parser library while a file elaborates, so the modules of
