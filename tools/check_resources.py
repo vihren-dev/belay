@@ -9,6 +9,9 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 MIN_FREE_BYTES = 10 * 1024 ** 3
 MAX_ENVIRONMENT_BYTES = 1024 ** 2
+ENVIRONMENT_FILES = frozenset({'flake.nix', 'flake.lock', 'sqlite.nix', 'dev-shell.nix'})
+"""The files of `nix/`, the source of the flake dev shell. A small fixed set keeps the snapshot
+that `nix develop path:./nix` copies into the store small, and a change of one of them visible."""
 
 
 def check_environment(root: Path) -> int:
@@ -16,7 +19,7 @@ def check_environment(root: Path) -> int:
     directory = root / 'nix'
     if directory.is_symlink() or not directory.is_dir():
         raise ValueError(f'Environment must be a real directory: {directory}')
-    expected = {'flake.nix', 'flake.lock', 'sqlite.nix', 'dev-shell.nix'}
+    expected = ENVIRONMENT_FILES
     size = 0
     found: set[str] = set()
     for path in directory.iterdir():

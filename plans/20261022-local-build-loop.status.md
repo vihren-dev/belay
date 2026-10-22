@@ -14,5 +14,6 @@ Source files: `shell.nix`, `nix/flake.nix`, `.envrc`, `justfile`, `tools/check_r
   packages and variables; `nix/flake.nix` and `shell.nix` import it. The flake dev shell's
   derivation is unchanged on both systems (`sicj83z1…` on x86_64-linux, `2dg63zw2…` on
   aarch64-darwin). `shell.nix` differs from the trial only in the order of two packages.
-  `.envrc` loads `shell.nix` with `use nix` and watches its inputs. The four lists of the
+  `.envrc` loads `shell.nix` with `use nix` and watches its inputs (all of `parser/` with
+  `watch_dir`). README and team guide describe both shells. The four lists of the
   files of `nix/` have the new file. `just test-nix`: 67 passed.

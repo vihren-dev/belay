@@ -32,10 +32,12 @@ nix develop path:./nix
 just test
 ```
 
-Alternatively, install direnv with Nix-flake integration and run `direnv allow`.
-The committed `nix/flake.lock` fixes Nix dependencies. The small `nix/`
-directory is the complete environment source; always use the explicit `path:`
-reference, including from non-Git Jujutsu workspaces. See the
+Alternatively, install direnv and run `direnv allow`. Then `.envrc` loads
+`shell.nix`, which has the same packages and also the pinned Lean toolchain for
+local Lean builds; nix-direnv only caches it. The committed `nix/flake.lock`
+fixes Nix dependencies for both shells. The small `nix/` directory is the
+complete source of the flake shell; always use the explicit `path:` reference,
+including from non-Git Jujutsu workspaces. See the
 [resource and cleanup policy](sqlite-migration-verifier-team-guide.md#development-resources).
 The resource check rejects less than 10 GiB free before expensive work. `just build`
 builds the conformance runtime through Nix, including the exact official Lean release

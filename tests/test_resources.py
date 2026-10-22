@@ -35,7 +35,8 @@ def test_separate_temporary_filesystem() -> None:
 
 
 def test_environment_and_capacity_boundaries(tmp_path: Path) -> None:
-    """Accept small pins, reject oversized/symlinked inputs and low-space destinations."""
+    """`check_environment` accepts the files of `ENVIRONMENT_FILES` and rejects oversized or
+    symlinked inputs, and `check_resources` rejects low-space destinations."""
     environment = tmp_path / 'nix'
     environment.mkdir()
     flake = environment / 'flake.nix'
