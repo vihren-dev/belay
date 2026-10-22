@@ -19,3 +19,11 @@ def test_guide_values_examples_hold(runtime_root: Path, tmp_path: Path) -> None:
     result = run_command(surface_command(runtime_root, FIXTURES / "GuideValues.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
+
+
+def test_guide_databases_examples_hold(runtime_root: Path, tmp_path: Path) -> None:
+    """The section "Databases" (`Belay/Sqlite/Database.lean`): `Database.empty`, `db.rows`, and the
+    facts of a valid database, which need no hypothesis."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "GuideDatabases.lean", tmp_path), cwd=tmp_path,
+                         timeout=60)
+    assert result.returncode == 0, result.diagnostic()
