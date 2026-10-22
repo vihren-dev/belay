@@ -74,15 +74,15 @@ def firstOf (expression : Expr) : Syntax.Statement :=
 
 -- LIMIT 1 without ORDER BY: SQLite may give either row, so the output is oneOf.
 #guard outputs [createT, insertT "1" "b", insertT "2" "a", firstOf (.identifier (name! "name") .none)] ==
-  [.done 0, .done 1, .done 1, .oneOf [[[textValue "b"]], [[textValue "a"]]]]
+  [.done 0, .done 1, .done 1, .oneOf [[[textValue "a"]], [[textValue "b"]]]]
 
 -- When every possible result is the same, the output is rows.
 #guard outputs [createT, insertT "1" "b", insertT "2" "a", firstOf (.numeric "1")] ==
   [.done 0, .done 1, .done 1, .rows [[.integer 1]]]
 
--- Equal results count once; no result is unmodeled.
+-- Equal results count once, the results are sorted, and no result is unmodeled.
 #guard Output.ofResults [[[.integer 1]], [[.integer 1]]] == .rows [[.integer 1]]
-#guard Output.ofResults [[[.integer 1]], [[.integer 2]], [[.integer 1]]] == .oneOf [[[.integer 1]], [[.integer 2]]]
+#guard Output.ofResults [[[.integer 2]], [[.integer 1]], [[.integer 2]]] == .oneOf [[[.integer 1]], [[.integer 2]]]
 #guard Output.ofResults [] == .unmodeled "the model gives no result for this query"
 
 end Belay.Sqlite.Model.ScriptRunExamples

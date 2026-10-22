@@ -23,7 +23,7 @@ inductive Output where
   ({name}`ExecutionError.primaryCode`). -/
   | error (code : Nat)
   /-- A query whose rows depend on an order that SQLite does not promise, with one entry for
-  each result that SQLite may give. -/
+  each result that SQLite may give, in a fixed order ({lit}`compareResults`). -/
   | oneOf (results : List (List (List Value)))
   /-- A statement that the model does not describe, with the reason. A run stops at it. -/
   | unmodeled (reason : String)
@@ -39,11 +39,20 @@ support check fails, or it writes to a position without a table. -/
 def unmodeledHere : String :=
   "the model does not describe what SQLite does for this statement on this database"
 
+/-- The order of two results of a query: row by row by {name}`Resolved.compareRows`, a result
+with fewer rows first when its rows begin the other. -/
+def compareResults : List (List Value) → List (List Value) → Ordering
+  | [], [] => .eq
+  | [], _ :: _ => .lt
+  | _ :: _, [] => .gt
+  | first :: rest, other :: others => (Resolved.compareRows first other).then (compareResults rest others)
+
 /-- The output of a query from the results that SQLite may give for it: one result as
 {name}`Output.rows`, more than one different result as {name}`Output.oneOf`, each result
-once, in the order of the list. -/
+once, sorted by {name}`compareResults`, so that the output does not depend on the order in
+which the model finds the results. -/
 def Output.ofResults (results : List (List (List Value))) : Output :=
-  match results.eraseDups with
+  match Resolved.stableSort (fun a b => (compareResults a b).isLE) results.eraseDups with
   | [result] => .rows result
   | [] => .unmodeled "the model gives no result for this query"
   | first :: second :: rest => .oneOf (first :: second :: rest)
