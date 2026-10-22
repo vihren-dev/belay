@@ -10,14 +10,6 @@ make, and the binding refuses a parse document for another grammar than the one 
 
 open Belay.Sqlite Belay.Sqlite.Model Belay.Sqlite.Translation
 
-/-- The range that a model path selects: each step is a part's position; a step past the known
-parts stops at the node before it. -/
-def Belay.Sqlite.Translation.Span.select (span : Span) : List Nat → Nat × Nat
-  | [] => (span.start, span.stop)
-  | step :: rest => match span.parts[step]? with
-    | some part => part.select rest
-    | none => (span.start, span.stop)
-
 /-- The text of the range that the path selects in the statement. -/
 def textAt (text : String) (item : Located Syntax.Statement) (path : List Nat) : String :=
   let (start, stop) := item.span.select path

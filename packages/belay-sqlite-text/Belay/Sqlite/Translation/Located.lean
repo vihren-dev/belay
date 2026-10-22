@@ -22,6 +22,30 @@ structure Span where
   parts : Array Span := #[]
   deriving Inhabited, BEq, Repr
 
+/-- The range that a model path selects ({name}`Belay.Sqlite.Model.Restriction.path`): each step
+is the position of a part, and a step past the known parts stops at the node before it. For
+example, {assert}`({ start := 0, stop := 9, parts := #[{ start := 4, stop := 5 }] } : Span).select [0] = (4, 5)`,
+{assert}`({ start := 0, stop := 9, parts := #[{ start := 4, stop := 5 }] } : Span).select [] = (0, 9)`
+and {assert}`({ start := 0, stop := 9, parts := #[{ start := 4, stop := 5 }] } : Span).select [3] = (0, 9)`. -/
+def Span.select (span : Span) : List Nat → Nat × Nat
+  | [] => (span.start, span.stop)
+  | step :: rest => match span.parts[step]? with
+    | some part => part.select rest
+    | none => (span.start, span.stop)
+
+/-- The ranges of the nodes without parts, in path order, so that a search for a name, which
+has no path, can look at each name and literal of a statement. A node without parts is one
+leaf. A leaf is not always a name or a literal: the translation gives some whole expressions,
+and even whole statements, no parts, so a leaf can contain other leaves, the same range can
+come more than once, and path order is not always text order. For example, on
+{lean}`({ start := 0, stop := 9, parts := #[{ start := 4, stop := 5 }] } : Span)` the leaves
+are {lit}`#[(4, 5)]`. -/
+def Span.leaves (span : Span) : Array (Nat × Nat) :=
+  if span.parts.isEmpty then #[(span.start, span.stop)]
+  else span.parts.attach.flatMap fun ⟨part, _⟩ => part.leaves
+termination_by span
+decreasing_by cases span; have := Array.sizeOf_lt_of_mem ‹part ∈ _›; simp_all; omega
+
 /-- A syntax value of the model and its ranges ({name}`Span`). -/
 structure Located (α : Type) where
   /-- The value, for example a {lit}`Syntax.Statement`. -/

@@ -19,6 +19,7 @@ import Belay.Sqlite.Model.Resolution.UpdateSpec
 import Belay.Sqlite.Model.Resolution.DefinitionSpec
 import Belay.Sqlite.Model.Resolution.TransactionSpec
 import Belay.Sqlite.Model.Resolution.Messages
+import Belay.Sqlite.Model.Resolution.ErrorNames
 import Belay.Sqlite.Model.Resolution.SchemaScript
 
 /-! Name resolution: statement syntax, the execution profile, the catalog, the resolved

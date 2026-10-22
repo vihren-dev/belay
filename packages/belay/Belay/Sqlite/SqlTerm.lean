@@ -36,10 +36,14 @@ def literalStatements (literal : Syntax) : TermElabM (Array (Translation.Located
   | .error refusal =>
     throwErrorAt (textRange literal text refusal.start (max refusal.stop (refusal.start + 1))) refusal.message
 
+/-- The term of the script of the statements, which {lit}`sql` gives and {lit}`sql!` gives
+too, so that the two terms are equal by {lit}`rfl`. -/
+def scriptExpr (items : Array (Translation.Located Belay.Sqlite.Model.Syntax.Statement)) : Expr :=
+  mkApp (mkConst ``Script.mk) (toExpr (items.toList.map (·.value)))
+
 /-- Elaborate {lit}`sql "SQL"` to the script of its statements. -/
 @[term_elab sqlTerm]
 def elabSql : TermElab := fun term _ => do
-  let items ← literalStatements term[1]
-  return mkApp (mkConst ``Script.mk) (toExpr (items.toList.map (·.value)))
+  return scriptExpr (← literalStatements term[1])
 
 end Belay.Sqlite

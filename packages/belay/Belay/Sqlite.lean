@@ -4,6 +4,9 @@ import Belay.Sqlite.Values
 import Belay.Sqlite.Database
 import Belay.Sqlite.Script
 import Belay.Sqlite.SqlTerm
+import Belay.Sqlite.SqlDiagnostics
+import Belay.Sqlite.EvalDatabase
+import Belay.Sqlite.SqlBang
 import Belay.Sqlite.Run
 import Belay.Sqlite.RunLaws
 

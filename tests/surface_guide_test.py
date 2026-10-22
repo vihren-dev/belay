@@ -55,7 +55,8 @@ def test_sql_errors_are_at_their_position_in_the_text(runtime_root: Path, tmp_pa
 def test_guide_run_examples_hold(runtime_root: Path, tmp_path: Path) -> None:
     """The guide's runs (`Belay/Sqlite/Run.lean`, `Belay/Sqlite/RunLaws.lean`, the model's
     `Model/OutputRepr.lean`): "A first example", "Row order" and the runs of "Scripts", with the
-    outputs that `#eval` shows and the facts that the kernel checks."""
+    outputs that `#eval` shows and the facts that the kernel checks; and `sql! shop r"..."`
+    (`Belay/Sqlite/SqlBang.lean`) gives the script of `sql r"..."`."""
     result = run_command(surface_command(runtime_root, FIXTURES / "GuideRuns.lean", tmp_path), cwd=tmp_path,
                          timeout=120)
     assert result.returncode == 0, result.diagnostic()
@@ -69,4 +70,35 @@ def test_run_examples_hold(runtime_root: Path, tmp_path: Path) -> None:
     and the check that keeps the start database when the database at the end is not valid."""
     result = run_command(surface_command(runtime_root, FIXTURES / "RunExamples.lean", tmp_path), cwd=tmp_path,
                          timeout=120)
+    assert result.returncode == 0, result.diagnostic()
+
+
+def test_sql_bang_errors_are_at_the_name_or_node(runtime_root: Path, tmp_path: Path) -> None:
+    """`sql! db r"..."` (`Belay/Sqlite/SqlBang.lean`, `Belay/Sqlite/SqlDiagnostics.lean`) shows
+    SQLite's prepare errors at the name, or at the statement when the text writes the name more
+    than once, the first model restriction at its node, and a grammar error at its offset. The
+    fixture checks each message and position with `#guard_msgs (positions := true)`."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "SqlBangErrors.lean", tmp_path), cwd=tmp_path,
+                         timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+
+
+def test_sql_bang_database_errors_are_at_the_term(runtime_root: Path, tmp_path: Path) -> None:
+    """The database term of `sql! db r"..."` (`Belay/Sqlite/EvalDatabase.lean`): an error at the
+    term when it depends on a variable, is not fully known or is noncomputable, a value for a
+    local definition, and no second error when the term uses a definition with an error, also
+    through another definition. The fixture checks each message and position with
+    `#guard_msgs (positions := true)`."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "SqlBangDatabaseErrors.lean", tmp_path),
+                         cwd=tmp_path, timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+
+
+def test_sql_diagnostics_are_byte_ranges_of_the_text(runtime_root: Path, tmp_path: Path) -> None:
+    """The pure part of `sql!`: `Span.select` and `Span.leaves` (`Translation/Located.lean`), the name
+    search `nameRange?` and `scriptDiagnostics` (`Belay/Sqlite/SqlDiagnostics.lean`), and
+    `PrepareError.name?` of the model, over hand-built spans and translated texts, where a leaf
+    can cover a whole expression."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "SqlDiagnosticsChecks.lean", tmp_path),
+                         cwd=tmp_path, timeout=60)
     assert result.returncode == 0, result.diagnostic()

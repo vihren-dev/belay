@@ -2,7 +2,7 @@ import Belay
 
 /-! A fixture of `tests/surface_guide_test.py`: the examples of the user guide's sections
 "A first example", "Scripts" and "Row order" that run a script (`Belay/Sqlite/Run.lean`,
-`Belay/Sqlite/RunLaws.lean`, `Belay/Sqlite/Database.lean`, and the display of outputs in
+`Belay/Sqlite/RunLaws.lean`, `Belay/Sqlite/Database.lean`, `Belay/Sqlite/SqlBang.lean`, and the display of outputs in
 `Belay/Sqlite/Model/OutputRepr.lean`). The guide writes `decide`; here each proof about a run
 is `decide +kernel`. The guide's `db! r"..."` is `(Database.empty.run (sql r"...")).db` here.
 The guide's `#sql` example of "A first example" is not in this file. The file fails to elaborate when an example does not hold. -/
@@ -18,6 +18,9 @@ def shop : Database := (Database.empty.run (sql r"
     status TEXT NOT NULL DEFAULT 'open'
   );
   INSERT INTO invoices (id, customer, amount) VALUES (1, 'acme', 10), (2, 'zeta', 0);")).db
+
+-- "Scripts": `sql! shop r"..."` checks the text against `shop` and gives the script of `sql r"..."`.
+example : (sql! shop r"SELECT id FROM invoices") = sql r"SELECT id FROM invoices" := rfl
 
 /-- Close the invoices with the amount 0. -/
 def closeZero : Script := sql r"UPDATE invoices SET status = 'closed' WHERE amount = 0"
