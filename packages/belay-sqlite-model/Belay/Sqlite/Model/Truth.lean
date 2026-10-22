@@ -27,14 +27,14 @@ def Value.truth (value : Value) : Truth :=
 
 /-- Three-valued AND: false when one side is false, else unknown when one side is unknown. -/
 def Truth.and : Truth → Truth → Truth
-  | .false, _ | _, .false => .false
-  | .unknown, _ | _, .unknown => .unknown
+  | .false, .false | .false, .true | .false, .unknown | .true, .false | .unknown, .false => .false
+  | .unknown, .unknown | .unknown, .true | .true, .unknown => .unknown
   | .true, .true => .true
 
 /-- Three-valued OR: true when one side is true, else unknown when one side is unknown. -/
 def Truth.or : Truth → Truth → Truth
-  | .true, _ | _, .true => .true
-  | .unknown, _ | _, .unknown => .unknown
+  | .true, .true | .true, .false | .true, .unknown | .false, .true | .unknown, .true => .true
+  | .unknown, .unknown | .unknown, .false | .false, .unknown => .unknown
   | .false, .false => .false
 
 /-- Three-valued NOT: unknown stays unknown. -/
@@ -56,30 +56,38 @@ def Value.not (value : Value) : Value :=
   if value.isNull then .null else Model.truth (!Resolved.truthy value)
 
 /-- For every Boolean, SQLite reads the value 1 or 0 ({name}`truth`) as true exactly when the
-Boolean is true. -/
+Boolean is true. Proof sketch: each Boolean gives the integer 1 or 0, and the definitions
+compute. -/
 @[simp] theorem truthy_truth (holds : Bool) : Resolved.truthy (truth holds) = holds := by
   cases holds <;> rfl
 
-/-- For every Boolean, the value 1 or 0 ({name}`truth`) is not NULL. -/
+/-- For every Boolean, the value 1 or 0 ({name}`truth`) is not NULL. Proof sketch: each Boolean
+gives an integer, and the definitions compute. -/
 @[simp] theorem isNull_truth (holds : Bool) : (truth holds).isNull = false := by
   cases holds <;> rfl
 
-/-- NULL is NULL. -/
+/-- NULL is NULL. Proof sketch: the definition computes. -/
 @[simp] theorem Value.isNull_null : Value.null.isNull = true := rfl
 
-/-- For every value: if it is NULL, SQLite does not read it as true. -/
+/-- For every value: if it is NULL, SQLite does not read it as true. Proof sketch: case analysis
+on the value; only NULL is NULL, and {name}`Resolved.truthy` gives false for it. -/
 theorem Value.truthy_of_isNull {value : Value} (null : value.isNull = true) : Resolved.truthy value = false := by
   cases value <;> simp_all [Value.isNull, Resolved.truthy]
 
 /-- For every value, its truth is {lean}`Truth.true` exactly when SQLite reads it as true
-({name}`Resolved.truthy`), which is when a {lit}`WHERE` keeps its row. -/
+({name}`Resolved.truthy`), which is when a {lit}`WHERE` keeps its row. Proof sketch: split on whether the value is NULL
+and, if not, on whether SQLite reads it as true; a NULL value is not true
+({name}`Value.truthy_of_isNull`). -/
 theorem Value.truth_eq_true (value : Value) : value.truth = .true ↔ Resolved.truthy value = true := by
   cases null : value.isNull
   · cases t : Resolved.truthy value <;> simp [Value.truth, null, t]
   · simp [Value.truth, null, Value.truthy_of_isNull null]
 
 /-- For all values {lit}`a` and {lit}`b`, the truth of {lit}`a AND b` ({name}`Value.and`) is the
-three-valued AND ({name}`Truth.and`) of their truths. -/
+three-valued AND ({name}`Truth.and`) of their truths. Proof sketch: split on whether each value is
+NULL and whether SQLite reads it as true; a NULL value is not true
+({name}`Value.truthy_of_isNull`), and the values 1 and 0 are not NULL and are true and false
+({name}`isNull_truth`, {name}`truthy_truth`), so each case simplifies to equal sides. -/
 theorem Value.truth_and (a b : Value) : (a.and b).truth = a.truth.and b.truth := by
   cases na : a.isNull <;> cases nb : b.isNull <;>
     (try have := Value.truthy_of_isNull na) <;> (try have := Value.truthy_of_isNull nb) <;>
@@ -87,7 +95,8 @@ theorem Value.truth_and (a b : Value) : (a.and b).truth = a.truth.and b.truth :=
     simp_all [Value.and, Value.truth, Truth.and, Resolved.falsy]
 
 /-- For all values {lit}`a` and {lit}`b`, the truth of {lit}`a OR b` ({name}`Value.or`) is the
-three-valued OR ({name}`Truth.or`) of their truths. -/
+three-valued OR ({name}`Truth.or`) of their truths. Proof sketch: the case split of
+{name}`Value.truth_and`. -/
 theorem Value.truth_or (a b : Value) : (a.or b).truth = a.truth.or b.truth := by
   cases na : a.isNull <;> cases nb : b.isNull <;>
     (try have := Value.truthy_of_isNull na) <;> (try have := Value.truthy_of_isNull nb) <;>
@@ -95,7 +104,8 @@ theorem Value.truth_or (a b : Value) : (a.or b).truth = a.truth.or b.truth := by
     simp_all [Value.or, Value.truth, Truth.or]
 
 /-- For every value, the truth of {lit}`NOT a` ({name}`Value.not`) is the three-valued NOT
-({name}`Truth.not`) of its truth. -/
+({name}`Truth.not`) of its truth. Proof sketch: split on whether the value is NULL and whether
+SQLite reads it as true; each case simplifies to equal sides. -/
 theorem Value.truth_not (value : Value) : value.not.truth = value.truth.not := by
   cases null : value.isNull
   · cases t : Resolved.truthy value <;> simp [Value.not, Value.truth, Truth.not, null, t]

@@ -61,7 +61,8 @@ instance : Std.TransCmp Value.compare := by
 
 /-- For every value of nonzero rank ({name}`Value.rank`), NULL comes before it in
 {name}`Value.compare`. Rank 0 holds NULL and also a NaN REAL, which the model never makes and
-which compares equal to NULL. -/
+which compares equal to NULL. Proof sketch: NULL has rank 0, and a nonzero rank is positive, so
+the first comparison of {name}`Value.compare`, by rank, gives {lean}`Ordering.lt`. -/
 theorem Value.compare_null (value : Value) (ranked : value.rank ≠ 0) : Value.compare .null value = .lt := by
   have before : Ord.compare (0 : Nat) value.rank = .lt := Nat.compare_eq_lt.mpr (Nat.pos_of_ne_zero ranked)
   have null : Value.rank .null = 0 := rfl

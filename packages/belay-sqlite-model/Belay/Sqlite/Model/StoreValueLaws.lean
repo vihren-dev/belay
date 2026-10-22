@@ -109,7 +109,9 @@ theorem Value.store_null (affinity : Affinity) : Value.store affinity .null = .n
 
 /-- For all bytes, a TEXT value stored under INTEGER affinity is {name}`numericText` of its
 bytes: the number when the text is a number, and the same TEXT otherwise. For example,
-{assert}`Value.store .integer (.text [49, 50]) = .integer 12`. -/
+{assert}`Value.store .integer (.text [49, 50]) = .integer 12`. Proof sketch: {name}`Value.store`
+under INTEGER affinity is {name}`numericStore`, which is {name}`numericText` on TEXT, by
+definition. -/
 theorem Value.store_integer_text (bytes : List UInt8) : Value.store .integer (.text bytes) = numericText bytes :=
   rfl
 
