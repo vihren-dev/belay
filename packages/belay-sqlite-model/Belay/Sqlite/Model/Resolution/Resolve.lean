@@ -26,52 +26,56 @@ def foreignKeysQuery (on : Bool) : Syntax.Subquery :=
   { columns := [.expression (.numeric digit) (some (name! "foreign_keys")) digit], source := none, joins := [],
     filter := none, groupBy := [], orderBy := [], limit := none, offset := none, parent := none }
 
-/-- Resolve one statement at its zero-based index. BEGIN in an open transaction and
+/-- Resolve one statement against the state, with no statement index: a restriction is one
+inside the statement ({name}`NodeRestriction`). BEGIN in an open transaction and
 COMMIT or ROLLBACK without one fail when SQLite runs them, not when it prepares
 them, so they resolve and leave the error to the execution semantics: such a BEGIN
 keeps the first saved catalog, and such a ROLLBACK keeps the current catalog.
 {lit}`PRAGMA foreign_keys` is the query {name}`foreignKeysQuery`; setting it changes the state's
 setting outside a transaction and nothing inside one, as SQLite does. -/
-def resolveStatement (context : ResolveContext) (state : ResolveState) (index : Nat) :
-    Syntax.Statement → Except Restriction (Resolved.Statement × ResolveState)
+def resolveStatement (context : ResolveContext) (state : ResolveState) :
+    Syntax.Statement → Except NodeRestriction (Resolved.Statement × ResolveState)
   | .begin => .ok (.begin, { state with saved := state.saved.getD state.catalog })
   | .commit => .ok (.commit, { state with saved := none })
   | .rollback => .ok (.rollback, { state with catalog := state.saved.getD state.catalog, saved := none })
-  | .pragmaForeignKeys none => state.withCatalog (resolveSelect context state.catalog index (foreignKeysQuery state.foreignKeys) [])
+  | .pragmaForeignKeys none => state.withCatalog (resolveSelect context state.catalog (foreignKeysQuery state.foreignKeys) [])
   | .pragmaForeignKeys (some on) =>
     let foreignKeys := if state.saved.isSome then state.foreignKeys else on
     .ok (.setting foreignKeys, { state with foreignKeys })
   | .createTable name columns constraints options =>
-    state.withCatalog (resolveCreateTable context state.catalog index name columns constraints options)
+    state.withCatalog (resolveCreateTable context state.catalog name columns constraints options)
   | .createIndex name unique table terms filter =>
-    state.withCatalog (resolveCreateIndex context state.catalog index name unique table terms filter)
-  | .addColumn table column => state.withCatalog (resolveAddColumn context state.catalog index table column)
-  | .dropTable name ifExists => state.withWrite context index (resolveDropTable state.catalog name ifExists)
-  | .dropIndex name ifExists => state.withCatalog (resolveDropIndex state.catalog index name ifExists)
+    state.withCatalog (resolveCreateIndex context state.catalog name unique table terms filter)
+  | .addColumn table column => state.withCatalog (resolveAddColumn context state.catalog table column)
+  | .dropTable name ifExists => state.withWrite context (resolveDropTable state.catalog name ifExists)
+  | .dropIndex name ifExists => state.withCatalog (resolveDropIndex state.catalog name ifExists)
   | .createTrigger name ifNotExists time event table condition body =>
     state.withCatalog (resolveCreateTrigger state.catalog name ifNotExists { table, time, event, condition, body })
   | .dropTrigger name ifExists => state.withCatalog (resolveDropTrigger state.catalog name ifExists)
   | .insert table columns rows conflicts algorithm returning subqueries =>
-    state.withWrite context index (resolveWriteSubqueries context state.catalog index 6 table (fun _ => []) subqueries
-      (resolveInsert context state.catalog index table columns rows conflicts algorithm returning))
+    state.withWrite context (resolveWriteSubqueries context state.catalog 6 table (fun _ => []) subqueries
+      (resolveInsert context state.catalog table columns rows conflicts algorithm returning))
   | .update table assignments filter returning subqueries =>
-    state.withWrite context index (resolveWriteSubqueries context state.catalog index 4 table (writtenScope table) subqueries
-      (resolveUpdate context state.catalog index table assignments filter returning))
+    state.withWrite context (resolveWriteSubqueries context state.catalog 4 table (writtenScope table) subqueries
+      (resolveUpdate context state.catalog table assignments filter returning))
   | .select columns source joins filter groupBy orderBy limit offset subqueries having distinct =>
-    state.withCatalog (resolveSelect context state.catalog index
+    state.withCatalog (resolveSelect context state.catalog
       { columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none, having, distinct } subqueries)
   | .delete table filter returning subqueries =>
-    state.withWrite context index (resolveWriteSubqueries context state.catalog index 3 table (writtenScope table) subqueries
-      (resolveDelete context state.catalog index table filter returning))
+    state.withWrite context (resolveWriteSubqueries context state.catalog 3 table (writtenScope table) subqueries
+      (resolveDelete context state.catalog table filter returning))
 
-/-- Resolve the statements from a zero-based index and a state, in order. -/
+/-- Resolve the statements from a zero-based index and a state, in order. A restriction of a
+statement gets the statement's index ({name}`NodeRestriction.at`). -/
 def resolveFrom (context : ResolveContext) (index : Nat) (state : ResolveState) :
     List Syntax.Statement → Except Restriction (List Resolved.Statement × ResolveState)
   | [] => .ok ([], state)
-  | statement :: rest => do
-    let (resolved, next) ← resolveStatement context state index statement
-    let (later, final) ← resolveFrom context (index + 1) next rest
-    return (resolved :: later, final)
+  | statement :: rest =>
+    match resolveStatement context state statement with
+    | .error restriction => .error (restriction.at index)
+    | .ok (resolved, next) => do
+      let (later, final) ← resolveFrom context (index + 1) next rest
+      return (resolved :: later, final)
 
 /-- Resolve a script against a starting catalog, from index zero outside a
 transaction, with foreign keys on when the profile turns them on. The result has one

@@ -55,7 +55,8 @@ inductive RunStep where
 
 /-- Run one statement at its zero-based index on the connection:
 
-* resolve it against {name}`Connection.resolveState`; a restriction ends the run with its reason;
+* resolve it against {name}`Connection.resolveState`; a restriction ends the run with its reason
+  ({name}`NodeRestriction.reason`);
 * a statement that reads the clock ({name}`Resolved.Statement.readsClock`) ends the run;
 * run it with {name}`runStatement`; a statement that fails the support check ends the run;
 * advance the connection with {name}`advanceWith`, and give {name}`Output.ofStep`; an output
@@ -63,7 +64,7 @@ inductive RunStep where
 * after an error, the connection is {name}`Connection.afterError` of the outcome. -/
 def runScriptStep (context : ResolveContext) (index : Nat) (connection : Connection) (statement : Syntax.Statement) :
     RunStep :=
-  match resolveStatement context connection.resolveState index statement with
+  match resolveStatement context connection.resolveState statement with
   | .error restriction => .ended restriction.reason
   | .ok (resolved, after) =>
     if resolved.readsClock then .ended clockUnmodeled

@@ -83,12 +83,11 @@ def FireRequest.keyRequests (catalog : Catalog) (links : List ForeignKeyLink) (r
   | .insert _ true => { table := request.table, event := .delete, fire := false } :: actions
   | .insert _ false | .delete | .update _ => actions
 
-/-- Resolve the program of the trigger at the position over the catalog, for the write at the
-index: its condition over the trigger's rows, which may not name a subquery or call a function
-that can fail ({name}`RestrictionKind.triggerForm`), and its body statements in order
+/-- Resolve the program of the trigger at the position over the catalog, for a write: its
+condition over the trigger's rows, which may not name a subquery or call a function that can fail ({name}`RestrictionKind.triggerForm`), and its body statements in order
 ({name}`resolveBodyStatement`); the first prepare error stops. -/
-def resolveProgram (context : ResolveContext) (catalog : Catalog) (index position : Nat) (trigger : CatalogTrigger) :
-    Except Restriction (Except PrepareError Resolved.Program) := do
+def resolveProgram (context : ResolveContext) (catalog : Catalog) (position : Nat) (trigger : CatalogTrigger) :
+    Except NodeRestriction (Except PrepareError Resolved.Program) := do
   let some (table, shape) := catalog.findTable trigger.table | pure (.error (.noSuchTable trigger.table))
   let row : TriggerRow := { columns := shape.columns, new := !(trigger.event matches .delete),
                             old := !(trigger.event matches .insert) }
@@ -96,18 +95,18 @@ def resolveProgram (context : ResolveContext) (catalog : Catalog) (index positio
     | none => pure (.ok none)
     | some term => match condition [] (resolveOperand context.profile.dqsDml (row.scope 0) {} true term) with
       | .error (.prepare error) =>
-        if error == .raiseOutsideTrigger then throw (triggerRestriction index .raiseForm) else pure (.error (.expression error))
-      | .error (.restriction path kind) => throw { statement := index, path, kind }
+        if error == .raiseOutsideTrigger then throw (triggerRestriction .raiseForm) else pure (.error (.expression error))
+      | .error (.restriction path kind) => throw { path, kind }
       | .ok resolved =>
         if resolved.any Resolved.Expr.isFallibleCall || resolved.any Resolved.Expr.namesSubquery then
-          throw (triggerRestriction index .triggerForm)
+          throw (triggerRestriction .triggerForm)
         else pure (.ok (some resolved))
   match condition with
   | .error error => pure (.error error)
   | .ok condition =>
     let body ← trigger.body.foldlM (fun (steps : Except PrepareError (List Resolved.Step)) statement => match steps with
       | .error error => pure (.error error)
-      | .ok steps => (·.map (steps ++ [·])) <$> resolveBodyStatement context catalog index row statement) (.ok [])
+      | .ok steps => (·.map (steps ++ [·])) <$> resolveBodyStatement context catalog row statement) (.ok [])
     pure (body.map fun body => { trigger := position, table, time := trigger.time,
                                   event := triggerEvent shape.columns trigger.event, width := shape.columns.length,
                                   condition, body })
@@ -117,28 +116,28 @@ requests: each request resolves the triggers that it fires and have no program y
 writes of their bodies and, with foreign keys on, its {name}`FireRequest.keyRequests`; a request
 of a body checks its foreign keys ({name}`Catalog.foreignKeyIssues`). Requests left past the fuel
 are {name}`RestrictionKind.triggerForm`. -/
-def triggerClosure (context : ResolveContext) (catalog : Catalog) (index : Nat) (keys : Bool) :
+def triggerClosure (context : ResolveContext) (catalog : Catalog) (keys : Bool) :
     Nat → List FireRequest → List FireRequest → List Resolved.Program →
-      Except Restriction (Except PrepareError (List Resolved.Program))
-  | 0, _, work, programs => if work.isEmpty then pure (.ok programs) else throw (triggerRestriction index .triggerForm)
+      Except NodeRestriction (Except PrepareError (List Resolved.Program))
+  | 0, _, work, programs => if work.isEmpty then pure (.ok programs) else throw (triggerRestriction .triggerForm)
   | _ + 1, _, [], programs => pure (.ok programs)
   | fuel + 1, seen, request :: rest, programs => do
     if keys && request.body then
       match catalog.foreignKeyIssues request.table (request.write catalog) with
       | .error error => return .error error
-      | .ok deferred => if deferred then throw (triggerRestriction index .deferredForeignKey)
+      | .ok deferred => if deferred then throw (triggerRestriction .deferredForeignKey)
     let mut programs := programs
     let mut next : List FireRequest := if keys then request.keyRequests catalog catalog.foreignKeyLinks else []
     for (position, trigger) in catalog.firedTriggers request do
       let program ← match programs.find? (·.trigger == position) with
         | some program => pure (.ok program)
-        | none => resolveProgram context catalog index position trigger
+        | none => resolveProgram context catalog position trigger
       match program with
       | .error error => return .error error
       | .ok program =>
         if !programs.any (·.trigger == position) then programs := programs ++ [program]
         next := next ++ program.body.filterMap (·.request request.algorithm)
     let fresh := next.eraseDups.filter fun item => !seen.contains item && !rest.contains item
-    triggerClosure context catalog index keys fuel (seen ++ fresh) (rest ++ fresh) programs
+    triggerClosure context catalog keys fuel (seen ++ fresh) (rest ++ fresh) programs
 
 end Belay.Sqlite.Model

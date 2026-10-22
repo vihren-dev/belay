@@ -26,8 +26,8 @@ theorem resolveDropTable_step (catalog after : Catalog) (name : Identifier) (ifE
 /-- For every successful resolution of DROP INDEX, the catalog changes by one
 {name}`CatalogStep`: unchanged after a prepare error, else the removal of its positions.
 Proof sketch: as for DROP TABLE; the restriction branch has no resolution. -/
-theorem resolveDropIndex_step (catalog after : Catalog) (index : Nat) (name : Identifier) (ifExists : Bool)
-    (statement : Resolved.Statement) (ok : resolveDropIndex catalog index name ifExists = .ok (statement, after)) :
+theorem resolveDropIndex_step (catalog after : Catalog) (name : Identifier) (ifExists : Bool)
+    (statement : Resolved.Statement) (ok : resolveDropIndex catalog name ifExists = .ok (statement, after)) :
     CatalogStep catalog after := by
   unfold resolveDropIndex at ok
   simp only [prepareError, restrict] at ok
@@ -49,9 +49,9 @@ theorem resolveDropTable_applyCatalog (catalog after : Catalog) (name : Identifi
 /-- For every successful resolution of DROP INDEX, the catalog after it is
 {name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
 transaction control. Proof sketch: as for DROP TABLE. -/
-theorem resolveDropIndex_applyCatalog (catalog after : Catalog) (index : Nat) (name : Identifier)
+theorem resolveDropIndex_applyCatalog (catalog after : Catalog) (name : Identifier)
     (ifExists : Bool) (statement : Resolved.Statement)
-    (ok : resolveDropIndex catalog index name ifExists = .ok (statement, after)) :
+    (ok : resolveDropIndex catalog name ifExists = .ok (statement, after)) :
     after = statement.applyCatalog catalog ∧ statement.isControl = false := by
   unfold resolveDropIndex at ok
   simp only [prepareError, restrict] at ok

@@ -73,7 +73,7 @@ transition is {name}`advance` by definition, so its output and its next connecti
 stated ones. -/
 theorem runScriptStep_resolved {context : ResolveContext} {index : Nat} {connection : Connection}
     {statement : Syntax.Statement} {resolved : Resolved.Statement} {after : ResolveState}
-    (ok : resolveStatement context connection.resolveState index statement = .ok (resolved, after)) :
+    (ok : resolveStatement context connection.resolveState statement = .ok (resolved, after)) :
     (∃ reason, runScriptStep context index connection statement = .ended reason) ∨
     ∃ next, runScriptStep context index connection statement = .continued
         (Output.ofStep (connection.state.clock index) resolved connection.state
@@ -133,13 +133,13 @@ theorem runScriptFrom_agrees (context : ResolveContext) :
     simp only [resolveFrom, bind, Except.bind] at ok
     split at ok
     · cases ok
-    · rename_i first headOk
+    · rename_i head headState headOk
       split at ok
       · cases ok
       · rename_i later restOk
         simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at ok
         obtain ⟨rfl, rfl⟩ := ok
-        rcases runScriptStep_resolved headOk with ⟨reason, ended⟩ | ⟨next, continued, nextState⟩
+        rcases runScriptStep_resolved (index := index) headOk with ⟨reason, ended⟩ | ⟨next, continued, nextState⟩
         · refine .inl ⟨[], reason, ?_, List.nil_prefix⟩
           simp [runScriptFrom, ended]
         · simp only [runScriptFrom, continued, sqlTraceFrom]
@@ -147,8 +147,8 @@ theorem runScriptFrom_agrees (context : ResolveContext) :
           · exact .inr ⟨_, rfl, fun _ ended => by cases ended⟩
           · rename_i state advanced
             have agrees := advance_agrees (state := connection.resolveState) ⟨rfl, rfl⟩ advanced
-            rw [← resolveStatement_after context _ _ index statement first.1 headOk] at agrees
-            have resolves : next.resolveState = first.2 := by
+            rw [← resolveStatement_after context _ _ statement head headOk] at agrees
+            have resolves : next.resolveState = headState := by
               rw [nextState state advanced]
               exact Connection.resolveState_of_agrees agrees
             rw [← resolves] at restOk

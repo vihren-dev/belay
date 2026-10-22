@@ -12,7 +12,7 @@ namespace Belay.Sqlite.Model
 query and its subqueries, or SQLite's {lit}`no such table: %s`, a prepare error or a
 restriction. A query without {lit}`FROM` that has a subquery and a call that can fail is
 {name}`RestrictionKind.subqueryFallibleCall`. -/
-def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat) (query : Syntax.Subquery)
+def resolveSelect (context : ResolveContext) (catalog : Catalog) (query : Syntax.Subquery)
     (subqueries : List Syntax.Subquery) : StatementResolution :=
   let dqs := context.profile.dqsDml
   let resolved : Except SourceIssue (Resolved.Query × List Resolved.Query) := do
@@ -28,16 +28,16 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (index : Nat) (
   match resolved with
   | .ok (resolvedQuery, resolvedSubqueries) => .ok (.query resolvedQuery resolvedSubqueries, catalog)
   | .error (.noSuchTable name) => prepareError catalog (.noSuchTable name)
-  | .error (.value issue) => issueResolution catalog index [] issue
+  | .error (.value issue) => issueResolution catalog [] issue
 
 /-- For every successful resolution of a {lit}`SELECT`, the catalog is unchanged and the
 resolved statement applied to the input catalog gives the input catalog again
 ({lit}`Resolved.Statement.applyCatalog`); the statement is not transaction control.
 Proof sketch: every branch of the resolver returns the input catalog and a query or a
 prepare error. -/
-theorem resolveSelect_same (context : ResolveContext) (catalog after : Catalog) (index : Nat)
+theorem resolveSelect_same (context : ResolveContext) (catalog after : Catalog)
     (query : Syntax.Subquery) (subqueries : List Syntax.Subquery) (statement : Resolved.Statement)
-    (ok : resolveSelect context catalog index query subqueries = .ok (statement, after)) :
+    (ok : resolveSelect context catalog query subqueries = .ok (statement, after)) :
     after = catalog ∧ statement.applyCatalog catalog = catalog ∧ statement.isControl = false := by
   unfold resolveSelect at ok
   simp only [prepareError, issueResolution] at ok

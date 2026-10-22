@@ -18,12 +18,12 @@ saved catalog of the next state is the saved catalog of the state. Proof sketch:
 each such statement goes through {name}`ResolveState.withCatalog`, which changes only
 the current catalog, or {name}`ResolveState.withWrite`, which keeps the saved catalog
 ({name}`ResolveState.withWrite_cases`); {lit}`PRAGMA foreign_keys` changes only the setting. -/
-theorem resolveStatement_saved (context : ResolveContext) (state next : ResolveState) (index : Nat)
+theorem resolveStatement_saved (context : ResolveContext) (state next : ResolveState)
     (statement : Syntax.Statement) (resolved : Resolved.Statement)
     (plain : statement.transactionControl = false)
-    (ok : resolveStatement context state index statement = .ok (resolved, next)) :
+    (ok : resolveStatement context state statement = .ok (resolved, next)) :
     next.saved = state.saved := by
-  have written : ∀ result, state.withWrite context index result = .ok (resolved, next) → next.saved = state.saved := by
+  have written : ∀ result, state.withWrite context result = .ok (resolved, next) → next.saved = state.saved := by
     intro result ok
     rcases ResolveState.withWrite_cases ok with ⟨_, _, rfl⟩ | ⟨_, _, _, rfl, _, _⟩ <;> rfl
   cases statement <;> simp [Syntax.Statement.transactionControl] at plain
@@ -57,7 +57,7 @@ theorem resolveFrom_saved (context : ResolveContext) (statements : List Syntax.S
     rename_i later hlater
     cases ok
     rw [ih (fun s h => plain s (List.mem_cons_of_mem _ h)) _ _ _ _ hlater,
-      resolveStatement_saved _ _ _ _ _ _ (plain _ List.mem_cons_self) hfirst]
+      resolveStatement_saved _ _ _ _ _ (plain _ List.mem_cons_self) hfirst]
 
 /-- For every list of statements without BEGIN, COMMIT or ROLLBACK, followed by
 ROLLBACK, from a state whose saved catalog is the given catalog: if the list resolves,
@@ -84,7 +84,7 @@ theorem resolveFrom_rollback (context : ResolveContext) (saved : Catalog) (state
     split at ok <;> try contradiction
     rename_i later hlater
     cases ok
-    have keeps := resolveStatement_saved _ _ _ _ _ _ (plain _ List.mem_cons_self) hfirst
+    have keeps := resolveStatement_saved _ _ _ _ _ (plain _ List.mem_cons_self) hfirst
     exact ih (fun s h => plain s (List.mem_cons_of_mem _ h)) _ _ _ _ (keeps.trans open_) hlater
 
 /-- The transaction rule ({lit}`lang_transaction.html`): for every context, index and

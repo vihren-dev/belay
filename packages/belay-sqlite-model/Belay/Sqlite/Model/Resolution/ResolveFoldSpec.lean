@@ -24,14 +24,14 @@ theorem resolveFrom_after (context : ResolveContext) :
     simp only [resolveFrom, bind, Except.bind] at ok
     split at ok
     · cases ok
-    · rename_i first headOk
+    · rename_i head next headOk
       split at ok
       · cases ok
       · rename_i later restOk
         simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at ok
         obtain ⟨rfl, rfl⟩ := ok
-        have head := resolveStatement_after context state first.2 index statement first.1 headOk
-        have tail := resolveFrom_after context rest (index + 1) first.2 later.2 later.1 restOk
+        have head := resolveStatement_after context state next statement head headOk
+        have tail := resolveFrom_after context rest (index + 1) next later.2 later.1 restOk
         rw [List.foldl_cons, ← head]
         exact tail
 

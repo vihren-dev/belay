@@ -46,10 +46,10 @@ theorem ResolveState.after_of_isControl (state : ResolveState) {statement : Reso
 {name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
 transaction control. Proof sketch: every branch returns the input catalog with a prepare
 error, or the CREATE TABLE at the end of the catalog with {name}`Catalog.createTable`. -/
-theorem resolveCreateTable_applyCatalog (context : ResolveContext) (catalog after : Catalog) (index : Nat)
+theorem resolveCreateTable_applyCatalog (context : ResolveContext) (catalog after : Catalog)
     (name : Identifier) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
     (options : Syntax.TableOptions) (statement : Resolved.Statement)
-    (ok : resolveCreateTable context catalog index name columns constraints options = .ok (statement, after)) :
+    (ok : resolveCreateTable context catalog name columns constraints options = .ok (statement, after)) :
     after = statement.applyCatalog catalog ∧ statement.isControl = false := by
   unfold resolveCreateTable at ok
   simp only [issueResolution, prepareError, restrict] at ok
@@ -60,11 +60,11 @@ theorem resolveCreateTable_applyCatalog (context : ResolveContext) (catalog afte
 {name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
 transaction control. Proof sketch: as for CREATE TABLE, with {name}`Catalog.createIndex`.
 -/
-theorem resolveCreateIndex_applyCatalog (context : ResolveContext) (catalog after : Catalog) (index : Nat)
+theorem resolveCreateIndex_applyCatalog (context : ResolveContext) (catalog after : Catalog)
     (name : Identifier) (unique : Bool) (tableName : Identifier) (terms : List Syntax.OrderTerm)
     (filter : Option Syntax.Expr)
     (statement : Resolved.Statement)
-    (ok : resolveCreateIndex context catalog index name unique tableName terms filter = .ok (statement, after)) :
+    (ok : resolveCreateIndex context catalog name unique tableName terms filter = .ok (statement, after)) :
     after = statement.applyCatalog catalog ∧ statement.isControl = false := by
   unfold resolveCreateIndex at ok
   simp only [issueResolution, prepareError, restrict] at ok
@@ -74,16 +74,16 @@ theorem resolveCreateIndex_applyCatalog (context : ResolveContext) (catalog afte
 /-- For every successful resolution of ADD COLUMN, the catalog after it is
 {name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
 transaction control. Proof sketch: as for CREATE TABLE, with {name}`Catalog.addColumn`. -/
-theorem resolveAddColumn_applyCatalog (context : ResolveContext) (catalog after : Catalog) (index : Nat)
+theorem resolveAddColumn_applyCatalog (context : ResolveContext) (catalog after : Catalog)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition) (statement : Resolved.Statement)
-    (ok : resolveAddColumn context catalog index tableName definition = .ok (statement, after)) :
+    (ok : resolveAddColumn context catalog tableName definition = .ok (statement, after)) :
     after = statement.applyCatalog catalog ∧ statement.isControl = false := by
   unfold resolveAddColumn at ok
   simp only [prepareError, restrict] at ok
   repeat' split at ok
   all_goals first | (cases ok; exact ⟨rfl, rfl⟩) | (cases ok)
 
-/-- For every context, state, index and statement that resolves, the next state is
+/-- For every context, state and statement that resolves, the next state is
 {name}`ResolveState.after` of the resolved statement. Proof sketch: transaction control
 resolves to itself and {lit}`PRAGMA foreign_keys = value` to its setting; every other statement
 gives a resolved statement that is not control and the catalog of
@@ -91,15 +91,15 @@ gives a resolved statement that is not control and the catalog of
 foreign keys keeps both or is a prepare error that keeps the state
 ({name}`ResolveState.withWrite_cases`).
 -/
-theorem resolveStatement_after (context : ResolveContext) (state next : ResolveState) (index : Nat)
+theorem resolveStatement_after (context : ResolveContext) (state next : ResolveState)
     (statement : Syntax.Statement) (resolved : Resolved.Statement)
-    (ok : resolveStatement context state index statement = .ok (resolved, next)) :
+    (ok : resolveStatement context state statement = .ok (resolved, next)) :
     next = state.after resolved := by
   have ordinary : ∀ after, resolved.isControl = false → after = resolved.applyCatalog state.catalog →
       ({ state with catalog := after } : ResolveState) = state.after resolved := by
     intro after control equal
     rw [state.after_of_isControl control, equal]
-  have written : ∀ result, state.withWrite context index result = .ok (resolved, next) →
+  have written : ∀ result, state.withWrite context result = .ok (resolved, next) →
       (∀ statement after, result = .ok (statement, after) →
         after = statement.applyCatalog state.catalog ∧ statement.isControl = false) →
       next = state.after resolved := by
@@ -118,17 +118,17 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
   | createTable name columns constraints options =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    obtain ⟨equal, control⟩ := resolveCreateTable_applyCatalog _ _ _ _ _ _ _ _ _ (by assumption)
+    obtain ⟨equal, control⟩ := resolveCreateTable_applyCatalog _ _ _ _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
   | createIndex name unique table terms filter =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    obtain ⟨equal, control⟩ := resolveCreateIndex_applyCatalog _ _ _ _ _ _ _ _ _ _ (by assumption)
+    obtain ⟨equal, control⟩ := resolveCreateIndex_applyCatalog _ _ _ _ _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
   | addColumn table column =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    obtain ⟨equal, control⟩ := resolveAddColumn_applyCatalog _ _ _ _ _ _ _ (by assumption)
+    obtain ⟨equal, control⟩ := resolveAddColumn_applyCatalog _ _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
   | dropTable name ifExists =>
     simp only [resolveStatement] at ok
@@ -136,7 +136,7 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
   | dropIndex name ifExists =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    obtain ⟨equal, control⟩ := resolveDropIndex_applyCatalog _ _ _ _ _ _ (by assumption)
+    obtain ⟨equal, control⟩ := resolveDropIndex_applyCatalog _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
   | createTrigger name ifNotExists time event table condition body =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
@@ -151,20 +151,20 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
   | insert table columns rows conflicts algorithm returning subqueries =>
     simp only [resolveStatement] at ok
     exact written _ ok fun _ _ found =>
-      let ⟨same, unchanged, control⟩ := resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _ _
-        (fun _ _ _ _ h => resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ _ _ h) found
+      let ⟨same, unchanged, control⟩ := resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _
+        (fun _ _ _ _ h => resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ _ h) found
       ⟨same.trans unchanged.symm, control⟩
   | update table assignments filter returning subqueries =>
     simp only [resolveStatement] at ok
     exact written _ ok fun _ _ found =>
-      let ⟨same, unchanged, control⟩ := resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _ _
-        (fun _ _ _ _ h => resolveUpdate_same _ _ _ _ _ _ _ _ _ _ _ h) found
+      let ⟨same, unchanged, control⟩ := resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _
+        (fun _ _ _ _ h => resolveUpdate_same _ _ _ _ _ _ _ _ _ _ h) found
       ⟨same.trans unchanged.symm, control⟩
   | delete table filter returning subqueries =>
     simp only [resolveStatement] at ok
     exact written _ ok fun _ _ found =>
-      let ⟨same, unchanged, control⟩ := resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _ _
-        (fun _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ _ h) found
+      let ⟨same, unchanged, control⟩ := resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _
+        (fun _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ h) found
       ⟨same.trans unchanged.symm, control⟩
   | pragmaForeignKeys value =>
     cases value with
@@ -172,12 +172,12 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
     | none =>
       simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
       split at ok <;> cases ok
-      obtain ⟨same, unchanged, control⟩ := resolveSelect_same _ _ _ _ _ _ _ (by assumption)
+      obtain ⟨same, unchanged, control⟩ := resolveSelect_same _ _ _ _ _ _ (by assumption)
       exact ordinary _ control (same.trans unchanged.symm)
   | select results source joins filter groupBy orderBy limit offset subqueries having distinct =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
-    obtain ⟨same, unchanged, control⟩ := resolveSelect_same _ _ _ _ _ _ _ (by assumption)
+    obtain ⟨same, unchanged, control⟩ := resolveSelect_same _ _ _ _ _ _ (by assumption)
     exact ordinary _ control (same.trans unchanged.symm)
 
 end Belay.Sqlite.Model

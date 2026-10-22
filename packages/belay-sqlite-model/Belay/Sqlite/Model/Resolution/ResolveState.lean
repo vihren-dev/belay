@@ -25,22 +25,22 @@ structure ResolveState where
 /-- The state after a statement that is not transaction control: the catalog after
 the statement, and the same saved catalog and setting. -/
 def ResolveState.withCatalog (state : ResolveState) (result : StatementResolution) :
-    Except Restriction (Resolved.Statement × ResolveState) :=
+    Except NodeRestriction (Resolved.Statement × ResolveState) :=
   result.map fun (statement, catalog) => (statement, { state with catalog := catalog })
 
-/-- The state after a write at the zero-based index ({name}`ResolveState.withCatalog`): with
+/-- The state after a write ({name}`ResolveState.withCatalog`): with
 foreign keys on, the write checks its keys ({name}`foreignKeyCheck`); it gets the programs of the
 triggers that it may fire ({name}`triggerPrograms`), whose writes check their keys with foreign
 keys on; and with a key to check or a program, the rules that it runs row by row
 ({name}`Resolved.Statement.withRules`), with the profile's trigger depth limit and the setting. A prepare error of its keys or of a program leaves the state as it was. -/
-def ResolveState.withWrite (context : ResolveContext) (state : ResolveState) (index : Nat)
-    (result : StatementResolution) : Except Restriction (Resolved.Statement × ResolveState) := do
+def ResolveState.withWrite (context : ResolveContext) (state : ResolveState)
+    (result : StatementResolution) : Except NodeRestriction (Resolved.Statement × ResolveState) := do
   let (statement, next) ← state.withCatalog result
-  let keys ← if state.foreignKeys then foreignKeyCheck state.catalog index statement else pure (.ok false)
+  let keys ← if state.foreignKeys then foreignKeyCheck state.catalog statement else pure (.ok false)
   match keys with
   | .error error => return (.prepareError error, state)
   | .ok keys =>
-    match ← triggerPrograms context state.catalog index state.foreignKeys statement with
+    match ← triggerPrograms context state.catalog state.foreignKeys statement with
     | .error error => return (.prepareError error, state)
     | .ok programs =>
       if keys || !programs.isEmpty then
@@ -56,15 +56,15 @@ theorem Resolved.Statement.withRules_same (statement : Resolved.Statement) (rule
       (statement.withRules rules).kind = statement.kind := by
   cases statement <;> exact ⟨rfl, rfl⟩
 
-/-- For every context, state, index, resolution and result of {name}`ResolveState.withWrite`:
+/-- For every context, state, resolution and result of {name}`ResolveState.withWrite`:
 the result is a prepare error with the state unchanged, or comes from a statement of the
 resolution with its catalog, with the same catalog change and form, and keeps the saved catalog
 and the setting. Proof sketch: unfold the definition; each branch gives a prepare error with the
 state, the statement, or the statement with rules, which keeps the catalog change and form
 ({name}`Resolved.Statement.withRules_same`). -/
-theorem ResolveState.withWrite_cases {context : ResolveContext} {state next : ResolveState} {index : Nat}
+theorem ResolveState.withWrite_cases {context : ResolveContext} {state next : ResolveState}
     {result : StatementResolution} {resolved : Resolved.Statement}
-    (ok : state.withWrite context index result = .ok (resolved, next)) :
+    (ok : state.withWrite context result = .ok (resolved, next)) :
     (∃ error, resolved = .prepareError error ∧ next = state) ∨
       ∃ statement catalog, result = .ok (statement, catalog) ∧ next = { state with catalog } ∧
         resolved.applyCatalog = statement.applyCatalog ∧ resolved.kind = statement.kind := by

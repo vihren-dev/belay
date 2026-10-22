@@ -50,12 +50,12 @@ table, is {name}`PrepareError.noSuchIndex`, and with {lit}`IF EXISTS` a DROP of 
 catalog does not name the indexes of UNIQUE and PRIMARY KEY constraints, which SQLite
 refuses to drop, so another name of their form ({name}`constraintIndexName`) is
 {name}`RestrictionKind.dropConstraintIndex`. -/
-def resolveDropIndex (catalog : Catalog) (index : Nat) (name : Identifier) (ifExists : Bool) :
+def resolveDropIndex (catalog : Catalog) (name : Identifier) (ifExists : Bool) :
     StatementResolution :=
   match catalog.findIndex name with
   | some position => .ok (.drop [position], catalog.drop [position])
   | none =>
-    if constraintIndexName name then restrict index [0] .dropConstraintIndex
+    if constraintIndexName name then restrict [0] .dropConstraintIndex
     else if ifExists then .ok (.drop [], catalog.drop [])
     else prepareError catalog (.noSuchIndex name)
 

@@ -26,8 +26,8 @@ structure ResolveContext where
   mode : Mode
 
 /-- The resolution of one statement: the resolved statement and the catalog after
-it succeeds, or a model restriction. -/
-abbrev StatementResolution := Except Restriction (Resolved.Statement × Catalog)
+it succeeds, or a model restriction inside the statement. -/
+abbrev StatementResolution := Except NodeRestriction (Resolved.Statement × Catalog)
 
 /-- SQLite's constant-default preparation check for the forms classified here:
 literals, time keywords, signs, equality and qualified column references.
@@ -105,14 +105,14 @@ def Syntax.ColumnConstraint.modeledDefault : Syntax.ColumnConstraint → Bool
 def prepareError (catalog : Catalog) (error : PrepareError) : StatementResolution :=
   .ok (.prepareError error, catalog)
 
-/-- A model restriction at a path of statement {lit}`index`. -/
-def restrict (index : Nat) (path : List Nat) (kind : RestrictionKind) : StatementResolution :=
-  .error { statement := index, path := path, kind := kind }
+/-- A model restriction at a path of the statement. -/
+def restrict (path : List Nat) (kind : RestrictionKind) : StatementResolution :=
+  .error { path := path, kind := kind }
 
 /-- Turn a value issue into the statement's resolution: a prepare error keeps the
 catalog, a restriction refuses the script. -/
-def issueResolution (catalog : Catalog) (index : Nat) (path : List Nat) : ValueIssue → StatementResolution
+def issueResolution (catalog : Catalog) (path : List Nat) : ValueIssue → StatementResolution
   | .prepare error => prepareError catalog (.expression error)
-  | .restriction inner reason => restrict index (path ++ inner) reason
+  | .restriction inner reason => restrict (path ++ inner) reason
 
 end Belay.Sqlite.Model
