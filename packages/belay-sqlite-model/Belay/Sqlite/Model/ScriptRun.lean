@@ -41,9 +41,9 @@ def Connection.afterError (connection : Connection) (foreignKeys : Bool) : Outco
   | .pending persisted visible _ =>
     { state := { connection.state with database := visible, snapshot := some persisted }, foreignKeys }
 
-/-- The reason of a statement that reads the clock, when the run has no clock. -/
+/-- The reason of a statement that reads the clock: this run gives no clock value. -/
 def clockUnmodeled : String :=
-  "the statement reads the clock, and the run has no clock; give the run a clock"
+  "the statement reads the clock, which this run does not describe; write the time as a literal value"
 
 /-- What one statement of a run gives: its output and the connection after it, or the reason
 why the run ends at it. -/
@@ -75,9 +75,10 @@ def runScriptStep (context : ResolveContext) (index : Nat) (connection : Connect
         let transition := advanceWith index resolved connection.state run.effect
         match Output.ofStep clock resolved connection.state transition with
         | .unmodeled reason => .ended reason
-        | output => .continued output (match transition with
-          | .next state => { state, foreignKeys := after.foreignKeys }
-          | .halt outcome => connection.afterError after.foreignKeys outcome)
+        | output@(.rows _) | output@(.done _) | output@(.error _) | output@(.oneOf _) =>
+          .continued output (match transition with
+            | .next state => { state, foreignKeys := after.foreignKeys }
+            | .halt outcome => connection.afterError after.foreignKeys outcome)
 
 /-- The result of a run: the output of each statement that ran, in order, and the connection
 at the end. -/

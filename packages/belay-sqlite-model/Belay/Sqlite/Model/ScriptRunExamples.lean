@@ -6,8 +6,9 @@ set_option doc.verso true
 /-! Examples of {name}`Belay.Sqlite.Model.runScriptFrom`, checked by {lit}`#guard` when the
 package builds. They check that the run goes on after an error, as SQLite does: a failed INSERT
 and a later query, an error in a transaction and a later COMMIT, {lit}`OR ROLLBACK`, which ends
-the transaction, a query of a dropped table, which SQLite refuses to prepare, and a statement
-that reads the clock or random values, which ends the run. -/
+the transaction, a query of a dropped table, which SQLite refuses to prepare, a failed
+{lit}`ADD COLUMN`, which leaves the catalog as it was, the results of {lit}`LIMIT 1` without
+{lit}`ORDER BY`, and a statement that reads the clock or random values, which ends the run. -/
 
 namespace Belay.Sqlite.Model.ScriptRunExamples
 
@@ -58,5 +59,30 @@ def textValue (text : String) : Value := .text text.toUTF8.toList
 #guard match outputs [.select [.expression (.call "random" []) none ""] none [] none [] [] none none, selectNames] with
   | [.unmodeled _] => true
   | _ => false
+
+-- A failed ADD COLUMN leaves the catalog as it was: a later query of the new column is a
+-- prepare error (error 1), because the run resolves it against the database's catalog.
+#guard outputs [createT, insertT "1" "a",
+  .addColumn (name! "t") { name := name! "c", declaredType := some "INTEGER", constraints := [.notNull] },
+  .select [.expression (.identifier (name! "c") .none) none ""] (some { table := name! "t", alias := none })
+    [] none [] [] none none] == [.done 0, .done 1, .error 1, .error 1]
+
+/-- {lit}`SELECT expression FROM t LIMIT 1`. -/
+def firstOf (expression : Expr) : Syntax.Statement :=
+  .select [.expression expression none ""] (some { table := name! "t", alias := none }) [] none [] []
+    (some (.numeric "1")) none
+
+-- LIMIT 1 without ORDER BY: SQLite may give either row, so the output is oneOf.
+#guard outputs [createT, insertT "1" "b", insertT "2" "a", firstOf (.identifier (name! "name") .none)] ==
+  [.done 0, .done 1, .done 1, .oneOf [[[textValue "b"]], [[textValue "a"]]]]
+
+-- When every possible result is the same, the output is rows.
+#guard outputs [createT, insertT "1" "b", insertT "2" "a", firstOf (.numeric "1")] ==
+  [.done 0, .done 1, .done 1, .rows [[.integer 1]]]
+
+-- Equal results count once; no result is unmodeled.
+#guard Output.ofResults [[[.integer 1]], [[.integer 1]]] == .rows [[.integer 1]]
+#guard Output.ofResults [[[.integer 1]], [[.integer 2]], [[.integer 1]]] == .oneOf [[[.integer 1]], [[.integer 2]]]
+#guard Output.ofResults [] == .unmodeled "the model gives no result for this query"
 
 end Belay.Sqlite.Model.ScriptRunExamples

@@ -54,7 +54,9 @@ theorem sqlTraceFrom_final : ∀ (position : Nat) (script : List Resolved.Statem
 
 /-- For every state and resolution state: if the state agrees with the resolution state
 ({name}`SqlState.Agrees`), the connection with the state and the resolution state's setting
-has that resolution state. -/
+has that resolution state. Proof sketch: the catalogs and the saved catalogs are equal by the
+agreement, and the setting is the resolution state's; the structures are then equal field by
+field. -/
 theorem Connection.resolveState_of_agrees {state : SqlState} {target : ResolveState} (agrees : state.Agrees target) :
     ({ state, foreignKeys := target.foreignKeys } : Connection).resolveState = target := by
   obtain ⟨catalog, saved⟩ := agrees
@@ -65,7 +67,10 @@ theorem Connection.resolveState_of_agrees {state : SqlState} {target : ResolveSt
 if the statement resolves against the connection's resolution state, then the step of the run
 either ends, or continues with the output of {name}`Output.ofStep` of the transition of
 {name}`advance`, and when that transition continues with a state, the next connection has that
-state and the resolution state's setting. -/
+state and the resolution state's setting. Proof sketch: unfold the step with the resolution;
+the clock, the support check and an {name}`Output.unmodeled` end it, and otherwise the step's
+transition is {name}`advance` by definition, so its output and its next connection are the
+stated ones. -/
 theorem runScriptStep_resolved {context : ResolveContext} {index : Nat} {connection : Connection}
     {statement : Syntax.Statement} {resolved : Resolved.Statement} {after : ResolveState}
     (ok : resolveStatement context connection.resolveState index statement = .ok (resolved, after)) :
@@ -82,8 +87,12 @@ theorem runScriptStep_resolved {context : ResolveContext} {index : Nat} {connect
     · exact .inl ⟨_, rfl⟩
     · split
       · exact .inl ⟨_, rfl⟩
-      · refine .inr ⟨_, rfl, fun state continued => ?_⟩
-        simp only [advance, literalStep] at continued
+      all_goals
+        rename_i stepped
+        have unfolded : advance index resolved connection.state = advanceWith index resolved connection.state
+            (runStatement (connection.state.clock index) resolved connection.state.database).effect := rfl
+        rw [unfolded, stepped]
+        refine .inr ⟨_, rfl, fun state continued => ?_⟩
         simp only [continued]
 
 /-- The agreement of the two runs (ADR 0017, D3). For every context, script, index, connection,

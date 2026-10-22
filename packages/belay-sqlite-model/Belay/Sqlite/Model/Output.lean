@@ -70,12 +70,18 @@ def Output.ofStep (clock : Int) (statement : Resolved.Statement) (before : SqlSt
     Output :=
   match haltError transition with
   | some .unmodeled => .unmodeled unmodeledHere
-  | some failure => .error failure.primaryCode
+  | some failure@(.prepare _) | some failure@.transactionAlreadyActive | some failure@.noActiveTransaction
+  | some failure@.constraintViolation | some failure@.constraintFail | some failure@.constraintRollback
+  | some failure@.integerOverflow | some failure@.datatypeMismatch | some failure@.functionError
+  | some failure@.nullColumnDefault | some failure@.nonConstantColumnDefault | some failure@.checkColumnDefault =>
+    .error failure.primaryCode
   | none => match statement with
     | .query .. => match possibleOutput clock statement before transition with
       | some results => .ofResults results
       | none => .unmodeled "the model gives no result for this query"
-    | _ => match statementOutput clock statement before transition with
+    | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit
+    | .rollback | .insert .. | .upsert .. | .update .. | .delete .. | .prepareError _ | .setting _ =>
+      match statementOutput clock statement before transition with
       | some output =>
         if statement.returnsRows then .rows (Resolved.normalForm output.rows) else .done (output.changes.getD 0)
       | none => .unmodeled "the model gives no output for this statement"
