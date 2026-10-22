@@ -73,3 +73,5 @@ Specification: [ADR 0017](../docs/adr-0017-user-surface.md), D2 and D6;
   deferred: the Python `select_grammar` has no production caller, and T4 deletes it.
 - 2026-10-22: review of the deadline: one should finding (R11), fixed: the client stops a program
   that closed its output before it reads the program's error output; a test checks it.
+- 2026-10-22: review of that fix: one should finding (R11), fixed: the test asserts that the
+  client's `SIGKILL` ended the program, so a program that ends by itself fails it.

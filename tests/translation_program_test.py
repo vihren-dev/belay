@@ -6,6 +6,7 @@ in one process: the harness sends all SQL texts of a corpus through it, with its
 
 import json
 from pathlib import Path
+import signal
 import subprocess
 
 import pytest
@@ -96,7 +97,9 @@ def test_a_program_that_does_not_answer_is_stopped(tmp_path: Path, monkeypatch: 
 
 def test_a_program_that_closes_its_output_is_stopped(tmp_path: Path) -> None:
     """The client stops a program that closes its output but keeps running, before it reads the
-    program's error output, so that the read ends at once."""
+    program's error output, so that the read ends at once: the program ends by the client's
+    `SIGKILL`, not by the end of its `sleep`."""
     translator = stalled_translator(tmp_path, "echo closing >&2; exec 1>&-; sleep 5")
     with pytest.raises(RuntimeError, match="stopped: closing"):
         translator.answer(sql_text.ProfileIdentity(DEFAULT_ENGINE_VERSION, SOURCE_ID), b"COMMIT;", "closed.sql")
+    assert translator.process.returncode == -signal.SIGKILL
