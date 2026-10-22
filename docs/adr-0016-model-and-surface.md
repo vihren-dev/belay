@@ -2,7 +2,8 @@
 
 Date: 2026-10-20. Revised 2026-10-20, after ADR 0015 was merged and the rule for
 supporting code (`AGENTS.md`, "Goal, core and supporting code") was adopted; the owner
-decided the names the same day (D3). Status: PROPOSED.
+decided the names the same day (D3). Status: IMPLEMENTED in pull request #209: the move of D3
+and the surface package of D1 came with ADR 0017's S1, as "Order" says.
 Implementation: when the surface ADR's first prototype starts (see "Order").
 Audience: designers and reviewers.
 Related: [ADR 0006](adr-0006-model-boundary-and-execution-levels.md) (the model

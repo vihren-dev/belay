@@ -1,6 +1,6 @@
 # Enforced foreign keys (ADR 0018, slice 4)
 
-Created 2026-10-21. Status: open.
+Created 2026-10-21. Status: DONE (pull requests #204 and #205).
 Status file: [status](20261021-foreign-keys.status.md).
 Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D4.
 
