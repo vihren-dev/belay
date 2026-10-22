@@ -75,3 +75,8 @@ Specification: [ADR 0017](../docs/adr-0017-user-surface.md), D2 and D6;
   that closed its output before it reads the program's error output; a test checks it.
 - 2026-10-22: review of that fix: one should finding (R11), fixed: the test asserts that the
   client's `SIGKILL` ended the program, so a program that ends by itself fails it.
+- 2026-10-22: candidate B (`experiments/surface-s1/candidate-b/`, `translate_b.py`, `candidateB`
+  in `build-support/tests.nix`) and the equality test (`tests/surface_translation_test.py`,
+  `tests/surface/TranslationEquality.lean`) are deleted; the identical predictions are now the
+  guard of ADR 0017 D6. The surface suite no longer gets the parser library. The S1 report says
+  that its commands run on the tree before this task (commit `d0b1d728` of `main`).

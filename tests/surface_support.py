@@ -1,14 +1,12 @@
-"""The `lean` command of the surface suite's tests for a file that imports `Belay`, and the
-binding of candidate B's library (ADR 0017, S1).
+"""The `lean` command of the surface suite's tests for a file that imports `Belay`.
 
-The runtime root of the `surface` suite holds the built package, the model, the parser library
-and candidate B (`build-support/tests.nix`). The command gives `lean` the module setup that Lake's
+The runtime root of the `surface` suite holds the built surface, the text package and the model
+(`build-support/tests.nix`). The command gives `lean` the module setup that Lake's
 `setup-file` gives the editor's server for such a file: the file of each module, because `lean`
 with a search path looks for the modules under `Belay` only in the first folder that has a
 `Belay` folder, and the shared libraries that the surface's precompiled modules need.
 """
 
-import ctypes
 import json
 from pathlib import Path
 import sys
@@ -44,26 +42,3 @@ def surface_command(runtime_root: Path, source: Path, directory: Path, library: 
     return [str(runtime_root / "lean/bin/lean"), f"--setup={module_setup(runtime_root, directory, library)}",
             str(source)]
 
-
-def candidate_b(path: Path) -> ctypes.CDLL:
-    """Load candidate B's library (`experiments/surface-s1/candidate-b/translate_b.h`) and declare
-    its two functions."""
-    library = ctypes.CDLL(str(path))
-    library.belay_translate.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_size_t,
-                                        ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_size_t)]
-    library.belay_translate.restype = ctypes.c_int
-    library.belay_translate_free.argtypes = [ctypes.c_void_p]
-    return library
-
-
-def candidate_b_result(library: ctypes.CDLL, grammar: str, sql: str) -> object:
-    """Candidate B's result for one text, decoded: the statements or the refusal."""
-    document, length = ctypes.c_void_p(), ctypes.c_size_t()
-    data = sql.encode()
-    status = library.belay_translate(grammar.encode(), data, len(data), ctypes.byref(document), ctypes.byref(length))
-    if status != 0:
-        raise RuntimeError(f"belay_translate failed with status {status}")
-    try:
-        return json.loads(ctypes.string_at(document, length.value))
-    finally:
-        library.belay_translate_free(document)

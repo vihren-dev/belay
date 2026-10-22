@@ -3,6 +3,12 @@
 The measurements of ADR 0017, D2, for the owner's choice of the translation candidate.
 Task: [`plans/20261021-surface-s1.task.md`](../../plans/20261021-surface-s1.task.md).
 
+The commands of this report run on the tree before the task
+[`plans/20261021-sql-text-package.task.md`](../../plans/20261021-sql-text-package.task.md), for
+example on commit `d0b1d728` of `main`. That task deleted what they need: the Python translation
+and its binding of the parser library, candidate B (`candidate-b/`, `translate_b.py`) and the
+equality test `tests/surface_translation_test.py` with its fixture.
+
 Machine: Linux x86_64, Intel Xeon E3-1275 v6 at 3.80 GHz, 8 threads. Lean 4.34.1 (the
 pinned toolchain). Date: 2026-10-21.
 

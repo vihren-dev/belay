@@ -46,7 +46,6 @@ in rec {
     inherit pkgs leanToolchain native conformance modelPackage root;
     parserLibrary = parserLibrary.testRoot;
     inherit leanPackages surfacePackage textPackage;
-    parserLibraryBuild = parserLibrary.library;
   };
   # Suites that only main pushes and scheduled runs build (`just test-scheduled`), so that the CI
   # time of pull requests does not grow; tests/nix_scheduled_suites.json lists them.

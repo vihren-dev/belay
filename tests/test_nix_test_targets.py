@@ -36,7 +36,6 @@ def expression(root: Path) -> str:
     return f'''{PRELUDE} {import_file("tests.nix")} {{
       inherit pkgs; inherit (builds) leanToolchain conformance modelPackage leanPackages surfacePackage textPackage;
       parserLibrary = builds.parserLibrary.testRoot;
-      parserLibraryBuild = builds.parserLibrary.library;
       root = /. + {nix_string(root)};
     }}'''
 
@@ -73,7 +72,6 @@ def source_tree(tmp_path: Path) -> Path:
     for name in ('tests', 'belay', 'conformance', 'docs', 'packages', 'reports', 'nix', 'build-support', 'tools'):
         shutil.copytree(ROOT / name, tmp_path / name,
                         ignore=shutil.ignore_patterns('__pycache__', '*.pyc', 'upstream'))
-    shutil.copytree(ROOT / "experiments/surface-s1/candidate-b", tmp_path / "experiments/surface-s1/candidate-b")
     return tmp_path
 
 
