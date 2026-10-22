@@ -32,3 +32,6 @@ Source files: `shell.nix`, `nix/flake.nix`, `.envrc`, `justfile`, `tools/check_r
 - 2026-10-22: DONE. ADR 0020's D1 names `nix/dev-shell.nix` instead of the trial.
   `just test-full` passed (742 s). Pull request: the implementation, on top of the ADR's
   pull request #203.
+- 2026-10-22: after the owner's review, the checks before a build (shell variables, old
+  `.lake/build` links) and the timeout handler are removed. Outside the shell the recipes
+  warn and run; Lake's own errors show what failed. Task item 5 is amended.

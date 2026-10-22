@@ -29,13 +29,12 @@ decisions.
    the claims file under `build/dev/`. It writes the report to `build/dev/report.json`,
    prints the judge's counts and failures, and exits with the judge's exit code. It does
    not change `judge/`, `judge/claims.json` or the lock.
-5. **Errors say what to do next.** Outside the shell of `shell.nix` (no `LEAN_CC` on
-   Linux, or no `BELAY_PARSER_LIBRARY`), both recipes stop before they build and say how
-   to get the shell: change into the repository so that direnv loads it, or ask the owner
-   to run `direnv allow`. A `.lake/build` in `packages/` that is a link into the Nix
-   store (left by `just build` before ADR 0020) stops them with the command that deletes
-   it. An unknown package or corpus stops them with the known names; Lake reports an unknown
-   target of a known package.
+5. **Warnings, not checks.** Outside the shell of `shell.nix` (no `LEAN_CC` on Linux, or
+   no `BELAY_PARSER_LIBRARY`), both recipes print a warning that says how to get the
+   shell, and run anyway: Lake's or the program's own error then shows what failed. An
+   unknown package or corpus stops them with the known names; Lake reports an unknown
+   target of a known package. (Amended 2026-10-22 by the owner: the checks before a build
+   that stopped the recipes were supporting code without a present problem.)
 6. **Agent rule and texts (D5).** `AGENTS.md` has the rule of D5: the local loop while
    editing, the Nix checks before each commit, only Nix results as evidence, and direnv
    loads the shell. The first comment of the `justfile` says that direnv loads the shell.
@@ -48,8 +47,8 @@ decisions.
   claims as `judge/claims.json` and no others, and an unknown corpus is refused; the
   runtime root that `dev-verdict` makes holds the two programs at the paths that
   `conformance.predict` and `conformance.sql_text` read; target arguments resolve to the
-  packages and targets of item 3, and unknown packages are refused; the environment check
-  refuses a missing `LEAN_CC` or `BELAY_PARSER_LIBRARY` with the message of item 5.
+  packages and targets of item 3, and unknown packages are refused; the warning of item 5
+  names a missing `LEAN_CC` or `BELAY_PARSER_LIBRARY`.
 - The environment tests accept the new file under `nix/` and still refuse other files.
 - A `requires_nix` test runs in the loaded shell of `shell.nix` and skips with a message
   outside it. It runs `just dev-build` twice and checks that the second run compiles

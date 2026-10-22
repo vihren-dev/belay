@@ -1,7 +1,7 @@
 """Tests of `tools.dev_loop`, the local build loop of `just dev-build` and `just dev-verdict`.
 
 The unit tests check the parts that can be wrong without notice: the reduced claims file, the
-layout of the local runtime root, the target arguments and the checks before a build. The
+layout of the local runtime root, the target arguments and the warning outside the shell. The
 `requires_nix` test runs the loop in the shell of `shell.nix`, and skips outside it.
 """
 
@@ -15,9 +15,8 @@ import pytest
 
 from conformance.predict import RUNNER
 from conformance.sql_text import PROGRAM
-from tools import dev_loop
-from tools.dev_loop import (PACKAGE_TARGETS, DevLoopError, check_ready, make_runtime_root, reduced_claims,
-                            resolved_targets, shell_problem, stale_links)
+from tools.dev_loop import (PACKAGE_TARGETS, DevLoopError, make_runtime_root, reduced_claims, resolved_targets,
+                            shell_problem)
 
 ROOT = Path(__file__).resolve().parents[1]
 CLAIMS = json.loads((ROOT / "judge/claims.json").read_text(encoding="utf-8"))
@@ -67,37 +66,13 @@ def test_target_arguments_name_packages_and_targets() -> None:
 
 
 @pytest.mark.unit
-def test_checks_before_a_build_name_the_next_step(tmp_path: Path) -> None:
-    """`check_ready` refuses an environment without the variables of `shell.nix` (`LEAN_CC`
-    only on Linux) and a `.lake/build` link into the store, and says what to do."""
+def test_warning_outside_the_shell_names_the_missing_variables() -> None:
+    """`shell_problem` warns when a variable of `shell.nix` is missing (`LEAN_CC` only on
+    Linux), names it, and says how to load the shell."""
     assert shell_problem(SHELL, linux=True) is None
     assert shell_problem({"BELAY_PARSER_LIBRARY": "/nix/store/parser"}, linux=False) is None
     message = shell_problem({"BELAY_PARSER_LIBRARY": "/nix/store/parser"}, linux=True)
     assert message and "LEAN_CC is not set" in message and "direnv allow" in message
-    with pytest.raises(DevLoopError, match="BELAY_PARSER_LIBRARY is not set"):
-        check_ready(tmp_path, {"LEAN_CC": "/nix/store/lean-cc"}, linux=True)
-    store = tmp_path / "store-build"
-    store.mkdir()
-    link = tmp_path / "packages/belay-sqlite-model/.lake/build"
-    link.parent.mkdir(parents=True)
-    link.symlink_to(store)
-    assert stale_links(tmp_path) == [link]
-    with pytest.raises(DevLoopError, match=f"rm {link}"):
-        check_ready(tmp_path, SHELL, linux=True)
-
-
-@pytest.mark.unit
-def test_a_timeout_stops_the_loop_with_a_message(monkeypatch: pytest.MonkeyPatch,
-                                                 capsys: pytest.CaptureFixture[str]) -> None:
-    """`dev_loop.main` turns a build that runs out of time into exit code 2 and a message that
-    names the command and its time limit, not a traceback."""
-    def stuck(*_: object) -> int:
-        """A build that runs out of time."""
-        raise subprocess.TimeoutExpired(["lake", "build", "conformance-runner"], 1800)
-    monkeypatch.setattr(dev_loop, "check_ready", lambda *_: None)
-    monkeypatch.setattr(dev_loop, "build", stuck)
-    assert dev_loop.main(["build"]) == 2
-    assert "`lake build conformance-runner` did not finish in 1800 s" in capsys.readouterr().err
 
 
 def just(*arguments: str, timeout: int) -> subprocess.CompletedProcess[str]:

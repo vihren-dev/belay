@@ -4,7 +4,8 @@
 compiles only the modules that it changes. `verdict [CORPUS...]` builds the two programs of
 the conformance subject, copies them into the runtime root `build/dev/runtime/`, and runs the
 judge over the claimed corpora with them. Both need the shell of `shell.nix`, which `.envrc`
-loads: it has the pinned toolchain and the Nix build's parser library. A local result is
+loads: it has the pinned toolchain and the Nix build's parser library. Outside it, the loop
+warns and runs anyway, and Lake's or the program's own error shows what failed. A local result is
 feedback while editing, not evidence; the Nix checks before each commit decide.
 """
 
@@ -44,7 +45,7 @@ JUDGE_TIMEOUT_SECONDS = 3600
 
 
 class DevLoopError(Exception):
-    """A problem that stops the loop before it builds, with what to do next."""
+    """An argument that names no package or claimed corpus, with the names to use."""
 
 
 def resolved_targets(arguments: Sequence[str]) -> dict[str, tuple[str, ...]]:
@@ -66,22 +67,14 @@ def resolved_targets(arguments: Sequence[str]) -> dict[str, tuple[str, ...]]:
 
 
 def shell_problem(environment: Mapping[str, str], linux: bool) -> str | None:
-    """Why the current environment is not the shell of `shell.nix`, or None when it is."""
+    """The warning when the current environment is not the shell of `shell.nix`, or None when it is."""
     missing = [name for name, linux_only in SHELL_VARIABLES.items()
                if (linux or not linux_only) and not environment.get(name)]
     if not missing:
         return None
-    return (f"{' and '.join(missing)} {'is' if len(missing) == 1 else 'are'} not set: this is not the "
-            f"shell of shell.nix. Change into "
-            f"{ROOT} so that direnv loads it, or, if direnv reports that .envrc is blocked, ask "
-            f"the owner to run `direnv allow` there.")
-
-
-def stale_links(root: Path) -> list[Path]:
-    """The `.lake/build` links into the Nix store that `just build` made before ADR 0020.
-
-    Lake cannot write through them: the outputs in the store are read-only."""
-    return [path for path in sorted((root / "packages").glob("*/.lake/build")) if path.is_symlink()]
+    return (f"warning: {' and '.join(missing)} {'is' if len(missing) == 1 else 'are'} not set, so this "
+            f"is not the shell of shell.nix and the build can fail. Change into {ROOT} so that direnv "
+            f"loads the shell, or ask the owner to run `direnv allow` there.")
 
 
 def reduced_claims(document: Mapping[str, Json], corpora: Sequence[str]) -> dict[str, Json]:
@@ -103,17 +96,6 @@ def make_runtime_root(runtime: Path, packages: Path) -> None:
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.unlink(missing_ok=True)
         shutil.copy2(source, destination)
-
-
-def check_ready(root: Path, environment: Mapping[str, str], linux: bool) -> None:
-    """Stop before a build that cannot work, and say what to do."""
-    problem = shell_problem(environment, linux)
-    if problem:
-        raise DevLoopError(problem)
-    links = stale_links(root)
-    if links:
-        raise DevLoopError(f"{', '.join(map(str, links))}: a link into the read-only Nix store, which "
-                           f"an older `just build` made. Delete it: rm {' '.join(map(str, links))}")
 
 
 def build(root: Path, targets: Mapping[str, Sequence[str]]) -> int:
@@ -159,18 +141,15 @@ def main(arguments: Sequence[str]) -> int:
         print("usage: python3 -m tools.dev_loop build [PACKAGE | PACKAGE/TARGET]... | verdict [CORPUS]...",
               file=sys.stderr)
         return 2
+    warning = shell_problem(os.environ, sys.platform.startswith("linux"))
+    if warning:
+        print(f"dev-{arguments[0]}: {warning}", file=sys.stderr)
     try:
-        check_ready(ROOT, os.environ, sys.platform.startswith("linux"))
         if arguments[0] == "build":
             return build(ROOT, resolved_targets(arguments[1:]))
         return verdict(ROOT, arguments[1:])
     except DevLoopError as error:
         print(f"dev-{arguments[0]}: {error}", file=sys.stderr)
-        return 2
-    except subprocess.TimeoutExpired as error:
-        print(f"dev-{arguments[0]}: `{' '.join(map(str, error.cmd))}` did not finish in {error.timeout:.0f} s "
-              f"and was stopped. Look for another build or judge run in {ROOT} that holds the machine, "
-              f"then run the recipe again.", file=sys.stderr)
         return 2
 
 
