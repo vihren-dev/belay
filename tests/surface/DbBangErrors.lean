@@ -9,11 +9,11 @@ one. -/
 
 open Belay.Sqlite
 
--- A NOT NULL column without a value: an error at the statement. The model does not keep the
--- constraint that fails, so the message says that it does not name it.
+-- A NOT NULL column without a value: an error at the statement, with SQLite's message, which
+-- names the column, and what to do.
 /--
 @ +8:2...49
-error: constraint failed; the model does not name the constraint that fails. Run the statement in the sqlite3 shell to see SQLite's message
+error: NOT NULL constraint failed: invoices.customer; correct the row, or the statement that writes it
 -/
 #guard_msgs (positions := true) in
 def notNullMissing : Database := db! r"
@@ -29,7 +29,7 @@ def notNullMissing : Database := db! r"
 -- statement that fails shows its error.
 /--
 @ +1:68...97
-error: constraint failed; the model does not name the constraint that fails. Run the statement in the sqlite3 shell to see SQLite's message
+error: UNIQUE constraint failed: t.a; correct the row, or the statement that writes it
 ---
 @ +1:114...116
 error: table t has no column named zz

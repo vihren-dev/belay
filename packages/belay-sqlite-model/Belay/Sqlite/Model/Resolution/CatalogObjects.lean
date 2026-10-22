@@ -92,9 +92,11 @@ def CatalogTable.allForeignKeys (table : CatalogTable) : List ForeignKey :=
   table.columns.flatMap (·.foreignKeys) ++ table.foreignKeys
 
 /-- Every CHECK constraint of the table: those of each column in column order, then those
-of the table constraints. SQLite keeps one list in written order; the two orders differ
-only in which label a row reports when several CHECK constraints fail, and every failure
-has the same result code. -/
+of the table constraints. This is SQLite's order of the constraints in the text of
+{lit}`CREATE TABLE`, which gives the column definitions before the table constraints; ADD
+COLUMN writes its column after the last column definition, so its constraints come before
+those of the table constraints too. When several CHECK constraints fail for a row, SQLite
+names the first of this list (SQLite 3.51, measured with the {lit}`sqlite3` shell). -/
 def CatalogTable.allChecks (table : CatalogTable) : List CheckConstraint :=
   table.columns.flatMap (·.checks) ++ table.checks
 

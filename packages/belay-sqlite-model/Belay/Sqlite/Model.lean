@@ -21,6 +21,7 @@ import Belay.Sqlite.Model.PossibleOutput
 import Belay.Sqlite.Model.ScriptRunLaws
 import Belay.Sqlite.Model.ScriptRunAppend
 import Belay.Sqlite.Model.ScriptRunFailure
+import Belay.Sqlite.Model.FailingConstraintLaws
 import Belay.Sqlite.Model.ExecutionMessages
 import Belay.Sqlite.Model.ValidityFailure
 import Belay.Sqlite.Model.OutputRepr
@@ -41,6 +42,7 @@ import Belay.Sqlite.Model.Resolution
 
 /-! SQLite states, the facts of an admitted and of a valid database, supported execution, the
 output of each statement and the results that SQLite may give for it,
-a run of statement syntax that continues after an error,
+a run of statement syntax that continues after an error, the constraints that a failed write
+names,
 structural preservation facts, and name
 resolution from statement syntax to resolved statements with its specification. -/

@@ -120,9 +120,36 @@ def test_db_bang_errors_are_at_the_statement_or_name(runtime_root: Path, tmp_pat
     assert result.returncode == 0, result.diagnostic()
 
 
+def test_db_bang_names_the_constraint_of_an_insert(runtime_root: Path, tmp_path: Path) -> None:
+    """`db! r"..."` names the constraint that a plain INSERT or CREATE UNIQUE INDEX fails with
+    SQLite 3.51's message (`constraintMessage` of `Model/ExecutionMessages.lean`, from
+    `failingConstraints` of `Model/FailingConstraints.lean`, through
+    `Belay/Sqlite/DbDiagnostics.lean`): NOT NULL in table order, the order of the unique keys, the
+    columns or the index of a key, CHECK labels, STRICT types and NOT NULL before CHECK, and both
+    candidates when a PRIMARY KEY and a UNIQUE constraint fail. The fixture has the native texts
+    and checks each message and position with `#guard_msgs (positions := true)`."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "DbBangConstraintMessages.lean", tmp_path),
+                         cwd=tmp_path, timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+
+
+def test_db_bang_names_the_constraint_of_other_writes(runtime_root: Path, tmp_path: Path) -> None:
+    """`db! r"..."` names the constraint that an INSERT with ON CONFLICT or an algorithm, or an
+    UPDATE, fails with SQLite 3.51's message, and each candidate for an UPDATE of several rows
+    (`failingConstraints` of `Model/FailingConstraints.lean`, `Catalog.updateReport` of
+    `Model/UpdateFailure.lean`); it gives SQLite's text for a CHECK of ADD COLUMN, and
+    `triggerOrKeyConstraintMessage` for a write that can fire a trigger or that checks foreign keys. The
+    fixture checks each message and position with `#guard_msgs (positions := true)`."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "DbBangConstraintWrites.lean", tmp_path),
+                         cwd=tmp_path, timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+
+
 def test_db_bang_messages_and_failing_atoms_are_computed(runtime_root: Path, tmp_path: Path) -> None:
     """The model functions of the errors of `db!`: `ExecutionError.message`
-    (`Model/ExecutionMessages.lean`) for each constructor, `Database.failingAtom?`
+    (`Model/ExecutionMessages.lean`) for each constructor, `LiteralData.tableFailures` and
+    `keyCandidates` on hand-built tables and keys, `Resolved.Statement.writeRules` of resolved
+    INSERTs with and without a trigger, `Database.failingAtom?`
     (`Model/ValidityFailure.lean`) on plain databases with a NULL in a NOT NULL column, a duplicate
     key, a duplicate rowid, a failed CHECK, a value that does not fit a STRICT type, both of these,
     and no rows list; `ValidityAtom.name` for each atom; and the term or the error that names the

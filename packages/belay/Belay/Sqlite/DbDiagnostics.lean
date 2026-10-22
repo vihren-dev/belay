@@ -19,25 +19,37 @@ def missingFailureMessage (code : Nat) : String :=
   s!"the model gives the statement SQLite's result code {code} but no error for it. This is a " ++
     "defect of the model; report the SQL text to the maintainers of the model"
 
-/-- What the user can do after the error, appended to SQLite's message. The texts of a constraint
-or function failure say it already. -/
-def failureAction : ExecutionError → String
+/-- What the user can do after the error of the statement, appended to SQLite's message. A
+failed {lit}`CREATE UNIQUE INDEX` writes no row, so its text names the rows of the table and the
+index. The texts of a function failure, and of a constraint failure in a write that can fire a
+trigger or that checks foreign keys ({name}`triggerOrKeyConstraintMessage`), say it already. -/
+def failureAction (statement : Resolved.Statement) : ExecutionError → String
   | .transactionAlreadyActive | .noActiveTransaction =>
     "; remove the statement, or add the BEGIN or COMMIT that it needs"
   | .integerOverflow | .datatypeMismatch | .nullColumnDefault | .nonConstantColumnDefault
   | .checkColumnDefault | .unmodeled | .prepare _ =>
     "; correct the statement, or the statements before it that give the data that it reads"
-  | .constraintViolation | .constraintFail | .constraintRollback | .functionError => ""
+  | .constraintViolation | .constraintFail | .constraintRollback => match statement with
+    | .createIndex .. => "; remove the rows whose values of the index are equal, or change the index"
+    | .insert .. | .upsert .. | .update .. | .delete .. | .drop .. | .createTable .. | .createTrigger ..
+    | .addColumn .. | .begin | .commit | .rollback | .prepareError _ | .query .. | .setting _ =>
+      match statement.writeRules with
+      | some _ => ""
+      | none => "; correct the row, or the statement that writes it"
+  | .functionError => ""
 
 /-- The error of a statement whose output is {name}`Output.error` with the code: a prepare
 error at its name ({name}`prepareDiagnostic`), and every other error with its message
-({name}`ExecutionError.message`, then {name}`failureAction`) at the statement. The error comes from
-{name}`runScriptStepFailure`, which gives an error of that code for each such output
-({name}`runScriptStep_error_failure`); when it gives none, the message is
-{name}`missingFailureMessage`. -/
+({name}`ExecutionError.message` at the clock value of the statement on the database of the
+connection, then {name}`failureAction`) at the statement. The error comes from
+{name}`runScriptStepFailure`, which runs the statement on the same clock value and database
+and gives an error of that code for each such output ({name}`runScriptStep_error_failure`); when
+it gives none, the message is {name}`missingFailureMessage`. -/
 def failureDiagnostic (bytes : ByteArray) (index : Nat) (connection : Connection)
     (item : Located Syntax.Statement) (code : Nat) : Diagnostic :=
   let (start, stop) := statementRange item
+  let clock := connection.state.clock index
+  let database := connection.state.database
   match runScriptStepFailure runContext index connection item.value with
   | some (_, .prepare error) => prepareDiagnostic bytes item error
   | some (statement, failure@.unmodeled) | some (statement, failure@.transactionAlreadyActive)
@@ -46,7 +58,7 @@ def failureDiagnostic (bytes : ByteArray) (index : Nat) (connection : Connection
   | some (statement, failure@.integerOverflow) | some (statement, failure@.datatypeMismatch)
   | some (statement, failure@.functionError) | some (statement, failure@.nullColumnDefault)
   | some (statement, failure@.nonConstantColumnDefault) | some (statement, failure@.checkColumnDefault) =>
-    { start, stop, message := failure.message statement ++ failureAction failure }
+    { start, stop, message := failure.message clock statement database ++ failureAction statement failure }
   | none => { start, stop, message := missingFailureMessage code }
 
 /-- The errors of a statement with its output: {name}`failureDiagnostic` for
