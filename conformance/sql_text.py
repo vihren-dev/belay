@@ -14,6 +14,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import threading
 from typing import IO
 
 from belay.sqlite.dialects import ProfileIdentity
@@ -22,6 +23,9 @@ from belay.sqlite.located import Json, Located
 
 PROGRAM = ".lake/build/bin/belay-sqlite-translate"
 """The translation program in a conformance runtime root."""
+ANSWER_TIMEOUT_SECONDS = 60
+"""The time for one request and its answer: the program parses and translates 27,151 texts in
+less than 10 s, so a text at the parser's limit of 1 MiB takes much less."""
 
 
 @dataclass(frozen=True)
@@ -87,19 +91,32 @@ class Translator:
                                         stderr=subprocess.PIPE, text=True, encoding="utf-8")
 
     def answer(self, profile: ProfileIdentity, sql: bytes, source: str) -> dict[str, Json]:
-        """Send one request and read its answer line."""
+        """Send one request and read its answer line. A program that does not answer within
+        `ANSWER_TIMEOUT_SECONDS` is stopped, so that a stalled program cannot block the harness."""
         stdin, stdout = self.process.stdin, self.process.stdout
         assert stdin is not None and stdout is not None
         request = {"profile": {"version": profile.version, "sourceId": profile.source_id,
                                "compileOptions": list(profile.compile_options)}, "source": source, "sqlHex": sql.hex()}
+        expired = threading.Event()
+
+        def stop() -> None:
+            """Stop the program that did not answer in time."""
+            expired.set()
+            self.process.kill()
+        deadline = threading.Timer(ANSWER_TIMEOUT_SECONDS, stop)
+        deadline.start()
         try:
             stdin.write(json.dumps(request) + "\n")
             stdin.flush()
+            line = stdout.readline()
         except BrokenPipeError:
-            pass
-        line = stdout.readline()
+            line = ""
+        finally:
+            deadline.cancel()
         if not line:
-            raise RuntimeError(f"The translation program {self.program} stopped: {stopped(self.process.stderr)}. "
+            reason = (f"it gave no answer for {source} in {ANSWER_TIMEOUT_SECONDS} s" if expired.is_set()
+                      else stopped(self.process.stderr))
+            raise RuntimeError(f"The translation program {self.program} stopped: {reason}. "
                                "Rebuild the conformance runtime and run the command again")
         return json.loads(line)
 

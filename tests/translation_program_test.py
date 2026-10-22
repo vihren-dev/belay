@@ -1,6 +1,7 @@
 """The translation program of the text package (`packages/belay-sqlite-text/TranslationProgram.lean`
 and `Belay/Sqlite/TranslationRequest.lean`) answers a batch of requests, one JSON line for each,
-in one process: the harness sends all SQL texts of a corpus through it.
+in one process: the harness sends all SQL texts of a corpus through it, with its client
+`conformance/sql_text.py`.
 """
 
 import json
@@ -9,6 +10,7 @@ import subprocess
 
 import pytest
 
+from conformance import sql_text
 from conformance.native_library import DEFAULT_ENGINE_VERSION, SOURCE_ID
 from tests.runtime_fixtures import require_file
 
@@ -72,3 +74,16 @@ def test_a_wrapper_has_no_commands(runtime_root: Path) -> None:
     [answer] = answers(runtime_root, request(b"EXPLAIN SELECT 1;"))
     assert answer["result"] == "translationRefusal" and answer["commands"] is None
     assert "command wrapper, such as EXPLAIN" in answer["refusal"]["message"]
+
+
+def test_a_program_that_does_not_answer_is_stopped(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The harness's client (`conformance/sql_text.py`) stops a program that gives no answer
+    within its deadline and names the text, so that a stalled program cannot block a replay."""
+    program = tmp_path / sql_text.PROGRAM
+    program.parent.mkdir(parents=True)
+    program.write_text("#!/bin/sh\nexec sleep 30\n")
+    program.chmod(0o755)
+    monkeypatch.setattr(sql_text, "ANSWER_TIMEOUT_SECONDS", 0.5)
+    translator = sql_text.Translator(tmp_path)
+    with pytest.raises(RuntimeError, match="gave no answer for stalled.sql in 0.5 s"):
+        translator.answer(sql_text.ProfileIdentity(DEFAULT_ENGINE_VERSION, SOURCE_ID), b"COMMIT;", "stalled.sql")
