@@ -145,6 +145,16 @@ def test_db_bang_names_the_constraint_of_other_writes(runtime_root: Path, tmp_pa
     assert result.returncode == 0, result.diagnostic()
 
 
+def test_db_bang_names_column_failures_in_sqlite_order(runtime_root: Path, tmp_path: Path) -> None:
+    """`db!` names the NOT NULL or STRICT column that an INSERT or an UPDATE fails in SQLite 3.51's
+    order of checks (`columnFailures` of `Model/RowCheckOrder.lean`): NOT NULL first in a table
+    without a generated column, and the types first, ordinary columns before generated ones, in a
+    table with one. The fixture checks each message and position with
+    `#guard_msgs (positions := true)`; each expected text is the native shell's."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "DbBangCheckOrder.lean", tmp_path),
+                         cwd=tmp_path, timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+
 def test_db_bang_messages_and_failing_atoms_are_computed(runtime_root: Path, tmp_path: Path) -> None:
     """The model functions of the errors of `db!`: `ExecutionError.message`
     (`Model/ExecutionMessages.lean`) for each constructor, `LiteralData.tableFailures` and

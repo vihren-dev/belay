@@ -44,7 +44,7 @@ theorem insertFailure_isSome {keys : List UniqueKey} {table : Table} {values : L
 /-- The failure of one row of an INSERT with clauses or algorithms, along the branches of
 {name}`upsertRow`:
 
-* the row by itself ({name}`rowFailure`: NOT NULL, then {lit}`STRICT`, then CHECK);
+* the row by itself ({name}`rowFailure`: NOT NULL and {lit}`STRICT` in SQLite's order, then CHECK);
 * with a clause {lit}`DO NOTHING` that handles the row, none;
 * with a clause {lit}`DO UPDATE`, the first failure of the table with the updated row;
 * otherwise the keys that are not REPLACE and on which the row conflicts, when there are some;
@@ -67,7 +67,8 @@ def upsertRowFailure (context : Resolved.EvalContext) (keys : List UniqueKey) (p
     | failing@(_ :: _) => some (.keys failing)
 
 /-- For every list of keys, table, row and error: if {name}`checkedRow` fails with the error, then
-{name}`firstFailure` of the table gives some failure. -/
+{name}`firstFailure` of the table gives some failure. Proof sketch: {name}`checkedRow` fails only
+when the table fails its checks, and then {name}`firstFailure_isSome` applies. -/
 theorem checkedRow_failure {keys : List UniqueKey} {next : Table} {written : Row} {reason : ExecutionError}
     (failed : checkedRow keys next written = .error reason) : (firstFailure keys next).isSome := by
   simp only [checkedRow] at failed

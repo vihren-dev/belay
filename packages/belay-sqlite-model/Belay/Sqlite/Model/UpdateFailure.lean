@@ -60,7 +60,8 @@ def Catalog.rowCandidates (catalog : Catalog) (table : Nat) (exact : Bool) : Tab
     catalog.candidates table failure
 
 /-- For every catalog, table position, flag and failure: {name}`Catalog.rowCandidates` is not
-empty. -/
+empty. Proof sketch: by cases on the failure; keys that are not empty map to a list that is not
+empty, and each other case is {name}`Catalog.candidates_ne_nil`. -/
 theorem Catalog.rowCandidates_ne_nil (catalog : Catalog) (table : Nat) (exact : Bool) (failure : TableFailure) :
     catalog.rowCandidates table exact failure ≠ [] := by
   cases failure with

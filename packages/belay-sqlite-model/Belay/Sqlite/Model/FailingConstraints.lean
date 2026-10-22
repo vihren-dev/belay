@@ -82,7 +82,8 @@ def failingConstraints (clock : Int) (statement : Resolved.Statement) (database 
   | .setting _ => { candidates := [] }
 
 /-- For every table position and optional failure that is some: the candidates of the failure
-({name}`Catalog.candidates`), or none for no failure, are not empty. -/
+({name}`Catalog.candidates`), or none for no failure, are not empty. Proof sketch: the failure is
+some, so the candidates are those of {name}`Catalog.candidates_ne_nil`. -/
 theorem candidates_getD_ne_nil {catalog : Catalog} {target : Nat} {failure : Option TableFailure}
     (found : failure.isSome) : (failure.map (catalog.candidates target)).getD [] ≠ [] := by
   cases failure with

@@ -100,7 +100,8 @@ def Catalog.candidates (catalog : Catalog) (table : Nat) (failure : TableFailure
   | [] => [.row table failure]
   | found@(_ :: _) => found
 
-/-- For every catalog, table position and failure: {name}`Catalog.candidates` is not empty. -/
+/-- For every catalog, table position and failure: {name}`Catalog.candidates` is not empty. Proof
+sketch: by cases on the keyed candidates; an empty list gives the one candidate of the row. -/
 theorem Catalog.candidates_ne_nil (catalog : Catalog) (table : Nat) (failure : TableFailure) :
     catalog.candidates table failure ≠ [] := by
   unfold Catalog.candidates; split <;> simp
