@@ -38,8 +38,8 @@ def Table.ChecksHold (table : Table) : Prop :=
 
 /-- For the given keys and table: for every key, no two rows of the table, in either order of
 the list, conflict on it ({name}`LiteralData.keyEqual`). Two rows with a NULL in the key do not
-conflict, nor do two rows of a partial index whose filter is false for one of them. With no
-keys or with at most one row it holds. -/
+conflict, nor do two rows of a partial index whose filter is false or NULL for one of them.
+With no keys or with at most one row it holds. -/
 def Table.KeysUnique (keys : List UniqueKey) (table : Table) : Prop :=
   ∀ key ∈ keys, table.rows.Pairwise fun first second => LiteralData.keyEqual key first second = false
 

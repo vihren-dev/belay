@@ -46,8 +46,8 @@ theorem check (db : Database) : db.raw.ChecksHold := db.valid.check
 
 /-- For every database: no two rows of a table conflict on its PRIMARY KEY, a UNIQUE
 constraint or a unique index ({name}`Belay.Sqlite.Model.Database.KeysUnique`). Two rows with a
-NULL in the key do not conflict, nor do two rows of a partial index whose filter is false for
-one of them. A table without keys or with at most one row satisfies it. Proof sketch: the field
+NULL in the key do not conflict, nor do two rows of a partial index whose filter is false or
+NULL for one of them. A table without keys or with at most one row satisfies it. Proof sketch: the field
 of the stored proof of validity. -/
 theorem unique (db : Database) : db.raw.KeysUnique := db.valid.unique
 
