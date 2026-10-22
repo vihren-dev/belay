@@ -19,5 +19,6 @@ package's too, as part of this package. -/
 @[default_target]
 lean_lib Belay where
   roots := #[]
-  globs := #[.one `Belay, .one `Belay.Sqlite, .one `Belay.Sqlite.ParseCommand, .one `Belay.Sqlite.Values, .one `Belay.Sqlite.Database]
+  globs := #[.one `Belay, .one `Belay.Sqlite, .one `Belay.Sqlite.ParseCommand, .one `Belay.Sqlite.Values, .one `Belay.Sqlite.Database,
+    .one `Belay.Sqlite.Script, .one `Belay.Sqlite.SqlLiteral, .one `Belay.Sqlite.SqlTerm]
   precompileModules := true

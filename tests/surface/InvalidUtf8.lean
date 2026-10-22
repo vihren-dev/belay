@@ -8,5 +8,5 @@ refuses the text as a grammar error at offset 0. The text is `SELECT 'a` and the
 open Belay.Sqlite
 
 #eval show IO Unit from do
-  let sql := "SELECT 'a".toUTF8.push 0xFF ++ "';".toUTF8
-  IO.println s!"invalid UTF-8: {repr (← parseSql Release.default sql)}"
+  let text := "SELECT 'a".toUTF8.push 0xFF ++ "';".toUTF8
+  IO.println s!"invalid UTF-8: {repr (← parseSql Release.default text)}"
