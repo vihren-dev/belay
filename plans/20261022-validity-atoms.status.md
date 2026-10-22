@@ -1,6 +1,6 @@
 # Status: the facts of a valid database (ADR 0022, slice 1)
 
-Created 2026-10-22. Status: OPEN.
+Created 2026-10-22. Status: DONE (2026-10-22).
 Task: [task file](20261022-validity-atoms.task.md).
 Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D1, D2 and D4.
 
@@ -35,3 +35,4 @@ Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D1, D2 and D4.
   `unique_disabled` (`conformance/mutation_check.py`) searched for the old text of the unique
   check, and `tests/shared_table_shape_test.py` used positional projections of the old
   `Database.Valid`. Both now use the new forms, and both tests pass.
+- 2026-10-22: `just test-full` passes. DONE.

@@ -158,6 +158,14 @@ SQL that the model does not describe is an elaboration error that gives the mode
 restriction and its message, at the position of the form. No slice adds a meaning that
 the model does not have. A guide example that needs model work waits for it (D5).
 
+Amended 2026-10-22 (owner decision 4): the forms differ in what they find at elaboration.
+Syntax that the translation refuses is an elaboration error for every form. `sql!` and `db!`
+also resolve at elaboration, so a statement that the model does not describe is an
+elaboration error there, at its position. `sql` only parses at elaboration: a statement that
+the model does not describe when it runs gives `Output.unmodeled` with the restriction, and
+the run stops at it (D3). Neither path gives a statement a meaning that the model does not
+have.
+
 ### D5. Model work that the surface waits for
 
 The guide's claims and examples need model ADRs. They are core work on the model, not

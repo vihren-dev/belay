@@ -1,6 +1,6 @@
 # The facts of a valid database (ADR 0022, slice 1)
 
-Created 2026-10-22. Status: OPEN.
+Created 2026-10-22. Status: DONE (2026-10-22).
 Status file: [status](20261022-validity-atoms.status.md).
 Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D1, D2 and D4 (slice 1).
 Needed by: S2 of the user surface ([ADR 0017](../docs/adr-0017-user-surface.md), D3, amended
