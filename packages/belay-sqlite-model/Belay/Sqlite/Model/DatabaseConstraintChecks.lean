@@ -12,7 +12,8 @@ namespace Belay.Sqlite.Model
 
 /-- For every two lists and every property of pairs: the property holds for every pair of the
 zip of the lists exactly when it holds for the elements at every position at which both lists
-have one. -/
+have one. Proof sketch: a pair is in the zip exactly when both lists have its elements at
+one position. -/
 theorem zip_forall_iff {α β} (first : List α) (second : List β) (property : α × β → Prop) :
     (∀ pair ∈ first.zip second, property pair) ↔
       ∀ (position : Nat) a b, first[position]? = some a → second[position]? = some b → property (a, b) := by
@@ -31,7 +32,8 @@ theorem uniqueRows_iff (key : UniqueKey) (rows : List Row) :
       List.pairwise_cons, Bool.not_eq_true]
 
 /-- For every table, {name}`LiteralData.notNullRows` is {lean}`true` exactly when the table
-satisfies {name}`Table.NotNull`. -/
+satisfies {name}`Table.NotNull`. Proof sketch: rewrite the zip with {name}`zip_forall_iff`,
+then split on whether the column has NOT NULL. -/
 theorem Table.notNullRows_iff (table : Table) : LiteralData.notNullRows table = true ↔ table.NotNull := by
   simp only [LiteralData.notNullRows, Table.NotNull, List.all_eq_true, zip_forall_iff]
   refine forall_congr' fun row => imp_congr_right fun _ => forall_congr' fun position =>
@@ -39,24 +41,29 @@ theorem Table.notNullRows_iff (table : Table) : LiteralData.notNullRows table = 
   cases column.notNull <;> simp
 
 /-- For every table, {name}`LiteralData.typedRows` is {lean}`true` exactly when the table
-satisfies {name}`Table.TypesFit`. -/
+satisfies {name}`Table.TypesFit`. Proof sketch: rewrite the zip with
+{name}`zip_forall_iff`. -/
 theorem Table.typedRows_iff (table : Table) : LiteralData.typedRows table = true ↔ table.TypesFit := by
   simp only [LiteralData.typedRows, LiteralData.typesFit, Table.TypesFit, List.all_eq_true, zip_forall_iff]
 
 /-- For every table, {name}`LiteralData.checkedRows` is {lean}`true` exactly when the table
-satisfies {name}`Table.ChecksHold`. -/
+satisfies {name}`Table.ChecksHold`. Proof sketch: both sides are the same nested
+{lit}`List.all`, read as membership. -/
 theorem Table.checkedRows_iff (table : Table) : LiteralData.checkedRows table = true ↔ table.ChecksHold := by
   simp only [LiteralData.checkedRows, LiteralData.checksHold, Table.ChecksHold, List.all_eq_true]
 
 /-- For every keys and table, {name}`LiteralData.keysUnique` is {lean}`true` exactly when the
-table satisfies {name}`Table.KeysUnique` for the keys. -/
+table satisfies {name}`Table.KeysUnique` for the keys. Proof sketch: each key's check is
+{name}`uniqueRows_iff`. -/
 theorem Table.keysUnique_iff (keys : List UniqueKey) (table : Table) :
     LiteralData.keysUnique keys table = true ↔ table.KeysUnique keys := by
   simp only [LiteralData.keysUnique, Table.KeysUnique, List.all_eq_true, uniqueRows_iff]
 
 /-- For every keys and table, {name}`LiteralData.constraints` is {lean}`true` exactly when the
 table satisfies {name}`Table.NotNull`, {name}`Table.TypesFit`, {name}`Table.ChecksHold` and
-{name}`Table.KeysUnique` for the keys: the writes check the facts of a valid table. -/
+{name}`Table.KeysUnique` for the keys: the writes check the facts of a valid table. Proof
+sketch: {name}`LiteralData.constraints` is the conjunction of the four checks, and each has its
+lemma. -/
 theorem Table.constraints_iff (keys : List UniqueKey) (table : Table) :
     LiteralData.constraints keys table = true ↔
       table.NotNull ∧ table.TypesFit ∧ table.ChecksHold ∧ table.KeysUnique keys := by

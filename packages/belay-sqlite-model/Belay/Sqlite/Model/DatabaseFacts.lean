@@ -75,7 +75,8 @@ structure Table.Admitted (table : Table) : Prop where
   rowsAliased : table.RowsAliased
 
 /-- For every table without rows, the table satisfies {name}`Table.Admitted`: each of its facts
-is about rows. -/
+is about rows. Proof sketch: each field quantifies over the rows, and with no rows
+{lit}`simp` closes it. -/
 theorem Table.Admitted.ofEmpty {table : Table} (empty : table.rows = []) : table.Admitted := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩ <;>
     simp [Table.RowidsDistinct, Table.RowidsInRange, Table.RowsWide, Table.RowsStored, Table.RowsAliased, empty]
@@ -124,7 +125,8 @@ structure Database.Admitted (profile : Profile) (database : Database) : Prop whe
   rowsAliased : database.RowsAliased
 
 /-- For every admitted database and every table at a position of it, the table satisfies
-{name}`Table.Admitted`. -/
+{name}`Table.Admitted`. Proof sketch: each database field holds at every table, so it gives
+the table field at the table's position. -/
 theorem Database.Admitted.table {database : Database} {position : Nat} {table : Table}
     (admitted : database.Admitted profile)
     (present : database.table position = some table) : table.Admitted :=
@@ -134,7 +136,9 @@ theorem Database.Admitted.table {database : Database} {position : Nat} {table : 
 
 /-- For every database: if its catalog satisfies {name}`Catalog.Valid` under the profile's
 limits, it satisfies {name}`Database.RowsShaped`, and every table satisfies
-{name}`Table.Admitted`, then the database satisfies {name}`Database.Admitted`. -/
+{name}`Table.Admitted`, then the database satisfies {name}`Database.Admitted`. Proof sketch:
+the catalog and row-shape fields are the premises, and each other field takes the same field of
+{name}`Table.Admitted` at each table. -/
 theorem Database.Admitted.ofTables {database : Database} (catalogSupported : database.catalog.Valid profile.limits)
     (rowsShaped : database.RowsShaped) (tables : database.EveryTable fun _ table => table.Admitted) :
     database.Admitted profile :=

@@ -10,7 +10,8 @@ its negation, for a concrete database. -/
 namespace Belay.Sqlite.Model
 
 /-- For every table at a position of a database, the position is below the catalog's length:
-{name}`Database.table` gives no table past the end. -/
+{name}`Database.table` gives no table past the end. Proof sketch: a table comes from a catalog
+entry at the position, and a successful list lookup gives the bound. -/
 theorem Database.table_lt {database : Database} {position : Nat} {table : Table}
     (present : database.table position = some table) : position < database.catalog.length := by
   unfold Database.table Catalog.tableAt at present

@@ -56,6 +56,10 @@ example : invoices.rows.getD 0 [] = [stored 1 [.integer 1, textValue "acme", .in
     stored 2 [.integer 2, textValue "zeta", .integer 0, textValue "open"]] := by decide +kernel
 example : invoices.Valid defaults := by decide +kernel
 
+-- A catalog over the column limit of a profile, and a database with no row list for its table.
+example : ¬invoices.Admitted lowered := by decide +kernel
+example : ¬({ invoices with rows := [] } : Database).RowsShaped := by decide +kernel
+
 -- A NULL in a NOT NULL column: admitted, not valid.
 example : (withRows invoices [stored 1 [.integer 1, .null, .integer 10, textValue "open"]]).Admitted defaults ∧
     ¬(withRows invoices [stored 1 [.integer 1, .null, .integer 10, textValue "open"]]).NotNull ∧

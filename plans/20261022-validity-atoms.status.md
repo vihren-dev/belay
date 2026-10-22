@@ -28,3 +28,6 @@ Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D1, D2 and D4.
   (`Table.Admitted.appendColumns`, `Conforms.setRows`). The CHECK mutant
   `check_skipped` now removes `checkedRows` from `constraints`. `just test-source`:
   450 passed. The predictions are byte-identical to the baseline.
+- 2026-10-22: review fixes: proof sketches for the library lemmas of `DatabaseFacts`,
+  `DatabaseFactChecks` and `DatabaseConstraintChecks`, and failing examples for the catalog
+  support (`lowered`) and the row-list shape.
