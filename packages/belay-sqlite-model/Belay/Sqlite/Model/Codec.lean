@@ -1,5 +1,29 @@
 import Lean
-import Belay.Sqlite.Model
+import Belay.Sqlite.Model.Declarations
+import Belay.Sqlite.Model.Comparison
+import Belay.Sqlite.Model.QueryEval
+import Belay.Sqlite.Model.QueryJoins
+import Belay.Sqlite.Model.QueryFunctions
+import Belay.Sqlite.Model.Database
+import Belay.Sqlite.Model.Execution
+import Belay.Sqlite.Model.LiteralData
+import Belay.Sqlite.Model.SqlExecution
+import Belay.Sqlite.Model.RowUpdate
+import Belay.Sqlite.Model.UpsertRun
+import Belay.Sqlite.Model.Resolution.Profile
+import Belay.Sqlite.Model.Resolution.Syntax
+import Belay.Sqlite.Model.Resolution.Catalog
+import Belay.Sqlite.Model.Resolution.Resolved
+import Belay.Sqlite.Model.Resolution.RestrictionRegistry
+import Belay.Sqlite.Model.Resolution.Values
+import Belay.Sqlite.Model.Resolution.ReadDefaults
+import Belay.Sqlite.Model.Resolution.Context
+import Belay.Sqlite.Model.Resolution.Definitions
+import Belay.Sqlite.Model.Resolution.AddColumn
+import Belay.Sqlite.Model.Resolution.Writes
+import Belay.Sqlite.Model.Resolution.Resolve
+import Belay.Sqlite.Model.Resolution.Messages
+import Belay.Sqlite.Model.Resolution.SchemaScript
 
 set_option doc.verso true
 
@@ -8,7 +32,10 @@ constructs data; the kernel still checks every proposition about those values.
 {lit}`Belay.Sqlite.Model.Codec.Resolution` adds statement syntax, catalogs and resolved
 statements.
 
-This module imports {module}`Lean`; the {module}`Belay.Sqlite.Model` core does not. -/
+This module imports {module}`Lean`; the model's modules, such as
+{module}`Belay.Sqlite.Model.Declarations`, do not. It imports only the model's definitions,
+so that programs that use it, such as the conformance runner, do not compile the
+model's proofs. -/
 
 namespace Belay.Sqlite.Model
 
