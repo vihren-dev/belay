@@ -22,8 +22,9 @@ def test_guide_values_examples_hold(runtime_root: Path, tmp_path: Path) -> None:
 
 
 def test_guide_databases_examples_hold(runtime_root: Path, tmp_path: Path) -> None:
-    """The section "Databases" (`Belay/Sqlite/Database.lean`): `Database.empty`, `db.rows`, and the
-    facts of a valid database, which need no hypothesis."""
+    """The section "Databases" (`Belay/Sqlite/Database.lean`, `Belay/Sqlite/DbBang.lean`):
+    `Database.empty`, a database of `db!`, `db.rows`, and the facts of a valid database, which
+    need no hypothesis."""
     result = run_command(surface_command(runtime_root, FIXTURES / "GuideDatabases.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
@@ -55,8 +56,10 @@ def test_sql_errors_are_at_their_position_in_the_text(runtime_root: Path, tmp_pa
 def test_guide_run_examples_hold(runtime_root: Path, tmp_path: Path) -> None:
     """The guide's runs (`Belay/Sqlite/Run.lean`, `Belay/Sqlite/RunLaws.lean`, the model's
     `Model/OutputRepr.lean`): "A first example", "Row order" and the runs of "Scripts", with the
-    outputs that `#eval` shows and the facts that the kernel checks; and `sql! shop r"..."`
-    (`Belay/Sqlite/SqlBang.lean`) gives the script of `sql r"..."`."""
+    outputs that `#eval` shows and the facts that the kernel checks; `sql! shop r"..."`
+    (`Belay/Sqlite/SqlBang.lean`) gives the script of `sql r"..."`; and `db!`
+    (`Belay/Sqlite/DbBang.lean`) gives the database that the run of its text gives, with a proof
+    that uses only Lean's standard axioms."""
     result = run_command(surface_command(runtime_root, FIXTURES / "GuideRuns.lean", tmp_path), cwd=tmp_path,
                          timeout=120)
     assert result.returncode == 0, result.diagnostic()
@@ -101,4 +104,29 @@ def test_sql_diagnostics_are_byte_ranges_of_the_text(runtime_root: Path, tmp_pat
     can cover a whole expression."""
     result = run_command(surface_command(runtime_root, FIXTURES / "SqlDiagnosticsChecks.lean", tmp_path),
                          cwd=tmp_path, timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+
+
+def test_db_bang_errors_are_at_the_statement_or_name(runtime_root: Path, tmp_path: Path) -> None:
+    """`db! r"..."` (`Belay/Sqlite/DbBang.lean`, `Belay/Sqlite/DbDiagnostics.lean`) shows a statement
+    that fails at the statement, each one when several fail, a prepare error at the name, a model
+    restriction at its node and a clock read at the statement with no error after them, a
+    grammar error at its offset, a refused form at the statement, and an open transaction at the
+    end of the text, but not after a run that ends early; `sql!` on a failed `db!` gives no
+    second error. The fixture checks each
+    message and position with `#guard_msgs (positions := true)`."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "DbBangErrors.lean", tmp_path), cwd=tmp_path,
+                         timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+
+
+def test_db_bang_messages_and_failing_atoms_are_computed(runtime_root: Path, tmp_path: Path) -> None:
+    """The model functions of the errors of `db!`: `ExecutionError.message`
+    (`Model/ExecutionMessages.lean`) for each constructor, `Database.failingAtom?`
+    (`Model/ValidityFailure.lean`) on plain databases with a NULL in a NOT NULL column, a duplicate
+    key, a duplicate rowid, a failed CHECK, a value that does not fit a STRICT type, both of these,
+    and no rows list; `ValidityAtom.name` for each atom; and the term or the error that names the
+    atom (`databaseTerm` and `invalidDatabaseMessage` of `Belay/Sqlite/DbBang.lean`)."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "DbBangChecks.lean", tmp_path), cwd=tmp_path,
+                         timeout=60)
     assert result.returncode == 0, result.diagnostic()

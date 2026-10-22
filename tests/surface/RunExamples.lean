@@ -16,16 +16,16 @@ elaborate when an example does not hold. -/
 
 open Belay.Sqlite
 
-/-- The guide's database `shop`: the table `invoices` with two rows, built by a run on the empty
-database. -/
-def shop : Database := (Database.empty.run (sql r"
+/-- The guide's database `shop`: the table `invoices` with two rows, built with `db!`
+(`Belay/Sqlite/DbBang.lean`). -/
+def shop : Database := db! r"
   CREATE TABLE invoices (
     id INTEGER PRIMARY KEY,
     customer TEXT NOT NULL,
     amount INTEGER NOT NULL CHECK (amount >= 0),
     status TEXT NOT NULL DEFAULT 'open'
   );
-  INSERT INTO invoices (id, customer, amount) VALUES (1, 'acme', 10), (2, 'zeta', 0);")).db
+  INSERT INTO invoices (id, customer, amount) VALUES (1, 'acme', 10), (2, 'zeta', 0);"
 
 /-- The ids of all invoices, in id order. -/
 def ids : Script := sql r"SELECT id FROM invoices ORDER BY id"
@@ -126,9 +126,9 @@ example : (shop.run (sql r"SELECT customer FROM invoices LIMIT 1")).outputs = [.
 example : (shop.run (sql r"SELECT 1 FROM invoices LIMIT 1")).outputs = [.rows [[1]]] := by decide +kernel
 
 /-- The guide's table `customers` of "Row order", without the index. -/
-def people : Database := (Database.empty.run (sql r"
+def people : Database := db! r"
   CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT NOT NULL, address TEXT, notes TEXT);
-  INSERT INTO customers VALUES (1, 'bob', 'x', 'y'), (2, 'ada', 'x', 'y');")).db
+  INSERT INTO customers VALUES (1, 'bob', 'x', 'y'), (2, 'ada', 'x', 'y');"
 
 /-- A query without `ORDER BY`: SQLite gives bob, ada without the index and ada, bob with it. -/
 def names : Script := sql r"SELECT name FROM customers"

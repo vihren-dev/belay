@@ -2,22 +2,41 @@ import Belay
 
 /-! A fixture of `tests/surface_guide_test.py`: the examples of the user guide's sections
 "A first example", "Scripts" and "Row order" that run a script (`Belay/Sqlite/Run.lean`,
-`Belay/Sqlite/RunLaws.lean`, `Belay/Sqlite/Database.lean`, `Belay/Sqlite/SqlBang.lean`, and the display of outputs in
-`Belay/Sqlite/Model/OutputRepr.lean`). The guide writes `decide`; here each proof about a run
-is `decide +kernel`. The guide's `db! r"..."` is `(Database.empty.run (sql r"...")).db` here.
-The guide's `#sql` example of "A first example" is not in this file. The file fails to elaborate when an example does not hold. -/
+`Belay/Sqlite/RunLaws.lean`, `Belay/Sqlite/Database.lean`, `Belay/Sqlite/SqlBang.lean`,
+`Belay/Sqlite/DbBang.lean`, and the display of outputs in `Belay/Sqlite/Model/OutputRepr.lean`).
+The guide writes `decide`; here each proof about a run is `decide +kernel`. The guide's `#sql`
+example of "A first example" is not in this file. The file fails to elaborate when an example
+does not hold. -/
 
 open Belay.Sqlite
 
 /-- The guide's first database: table `invoices` with two open invoices, of 10 and of 0. -/
-def shop : Database := (Database.empty.run (sql r"
+def shop : Database := db! r"
   CREATE TABLE invoices (
     id INTEGER PRIMARY KEY,
     customer TEXT NOT NULL,
     amount INTEGER NOT NULL CHECK (amount >= 0),
     status TEXT NOT NULL DEFAULT 'open'
   );
-  INSERT INTO invoices (id, customer, amount) VALUES (1, 'acme', 10), (2, 'zeta', 0);")).db
+  INSERT INTO invoices (id, customer, amount) VALUES (1, 'acme', 10), (2, 'zeta', 0);"
+
+/-- The script of `shop`'s text. -/
+def shopScript : Script := sql r"
+  CREATE TABLE invoices (
+    id INTEGER PRIMARY KEY,
+    customer TEXT NOT NULL,
+    amount INTEGER NOT NULL CHECK (amount >= 0),
+    status TEXT NOT NULL DEFAULT 'open'
+  );
+  INSERT INTO invoices (id, customer, amount) VALUES (1, 'acme', 10), (2, 'zeta', 0);"
+
+-- "A first example": `db!` gives the database that the run of its text gives on the empty
+-- database, and its proof of validity uses no axiom beyond Lean's standard ones.
+example : shop.raw = (Database.Raw.run {} shopScript).connection.state.database := by decide +kernel
+
+/-- info: 'shop' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms shop
 
 -- "Scripts": `sql! shop r"..."` checks the text against `shop` and gives the script of `sql r"..."`.
 example : (sql! shop r"SELECT id FROM invoices") = sql r"SELECT id FROM invoices" := rfl
@@ -75,15 +94,15 @@ example : (shop.run missingTable).outputs = [.error 1, .rows [[1], [2]]] := by
   decide +kernel
 
 /-- The database of the guide's example of row order, without the index. -/
-def unindexed : Database := (Database.empty.run (sql r"
+def unindexed : Database := db! r"
   CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT NOT NULL, address TEXT, notes TEXT);
-  INSERT INTO customers VALUES (1, 'bob', 'x', 'y'), (2, 'ada', 'x', 'y');")).db
+  INSERT INTO customers VALUES (1, 'bob', 'x', 'y'), (2, 'ada', 'x', 'y');"
 
 /-- The database of the example, with the index. -/
-def indexed : Database := (Database.empty.run (sql r"
+def indexed : Database := db! r"
   CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT NOT NULL, address TEXT, notes TEXT);
   INSERT INTO customers VALUES (1, 'bob', 'x', 'y'), (2, 'ada', 'x', 'y');
-  CREATE INDEX customers_name ON customers (name);")).db
+  CREATE INDEX customers_name ON customers (name);"
 
 -- The index of `indexed` exists: a second index of the same name fails with error 1.
 example : (indexed.run (sql r"CREATE INDEX customers_name ON customers (name)")).outputs = [.error 1] := by
@@ -117,10 +136,10 @@ example : (indexed.run (sql r"SELECT 1 FROM customers LIMIT 1")).outputs = [.row
 /-- Three customers with the same name, `ada`, with the notes `m`, `z` and `a` in rowid order,
 and the customer `bob`. The `Value.compare` order of the notes is neither the rowid order nor its
 reverse. -/
-def namesakes : Database := (Database.empty.run (sql r"
+def namesakes : Database := db! r"
   CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT NOT NULL, address TEXT, notes TEXT);
   INSERT INTO customers VALUES (1, 'ada', 'x', 'm'), (2, 'ada', 'x', 'z'), (3, 'ada', 'x', 'a'),
-    (4, 'bob', 'x', 'y');")).db
+    (4, 'bob', 'x', 'y');"
 
 -- "Row order": the rows come in the order of `ORDER BY`; the three rows that `ORDER BY name`
 -- does not separate are sorted by `Value.compare` among themselves, not in rowid order.

@@ -1,8 +1,8 @@
 import Belay
 
 /-! A fixture of `tests/surface_guide_test.py`: the examples of the user guide's section
-"Databases" over the surface's `Database` (`Belay/Sqlite/Database.lean`). The file fails to
-elaborate when an example does not hold. -/
+"Databases" over the surface's `Database` (`Belay/Sqlite/Database.lean`) and `db!`
+(`Belay/Sqlite/DbBang.lean`). The file fails to elaborate when an example does not hold. -/
 
 open Belay.Sqlite
 
@@ -10,11 +10,9 @@ open Belay.Sqlite
 example : Database.empty.catalog = [] := rfl
 example : Database.empty.rows "invoices" = none := by decide
 
-/-- A valid database with table `invoices(id)` and two rows; `by decide +kernel` proves it valid. -/
-def twoInvoices : Database :=
-  ⟨Belay.Sqlite.Model.Database.ofTables [(Belay.Sqlite.Model.Identifier.ofString "invoices",
-    { shape := { columns := [{ name := Belay.Sqlite.Model.Identifier.ofString "id", declaredType := none }] },
-      rows := [{ rowid := 1, values := [1] }, { rowid := 2, values := [2] }] })], by decide +kernel⟩
+/-- A database with the table `invoices(id)` and two rows, built with `db!`
+(`Belay/Sqlite/DbBang.lean`), which proves it valid. -/
+def twoInvoices : Database := db! r"CREATE TABLE invoices (id); INSERT INTO invoices VALUES (1), (2)"
 
 -- `db.rows` reads a table by its name, with ASCII case ignored, and gives `none` for another name.
 example : twoInvoices.rows "invoices" = some [[1], [2]] := by decide +kernel

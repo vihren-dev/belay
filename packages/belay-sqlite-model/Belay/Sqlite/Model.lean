@@ -20,6 +20,9 @@ import Belay.Sqlite.Model.StatementOutput
 import Belay.Sqlite.Model.PossibleOutput
 import Belay.Sqlite.Model.ScriptRunLaws
 import Belay.Sqlite.Model.ScriptRunAppend
+import Belay.Sqlite.Model.ScriptRunFailure
+import Belay.Sqlite.Model.ExecutionMessages
+import Belay.Sqlite.Model.ValidityFailure
 import Belay.Sqlite.Model.OutputRepr
 import Belay.Sqlite.Model.SchemaClockLaws
 import Belay.Sqlite.Model.SqlLaws

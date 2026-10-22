@@ -9,14 +9,14 @@ elaborate when a message or a position is not the expected one. -/
 open Belay.Sqlite
 
 /-- The guide's database `shop`: the table `invoices` with two rows. -/
-def shop : Database := (Database.empty.run (sql r"
+def shop : Database := db! r"
   CREATE TABLE invoices (
     id INTEGER PRIMARY KEY,
     customer TEXT NOT NULL,
     amount INTEGER NOT NULL CHECK (amount >= 0),
     status TEXT NOT NULL DEFAULT 'open'
   );
-  INSERT INTO invoices (id, customer, amount) VALUES (1, 'acme', 10), (2, 'zeta', 0);")).db
+  INSERT INTO invoices (id, customer, amount) VALUES (1, 'acme', 10), (2, 'zeta', 0);"
 
 -- A misspelled column: SQLite's prepare error, at the name.
 /--

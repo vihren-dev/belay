@@ -10,7 +10,7 @@ elaborate when a message or a position is not the expected one. -/
 open Belay.Sqlite
 
 /-- A database with the table `invoices`. -/
-def shop : Database := (Database.empty.run (sql r"CREATE TABLE invoices (id INTEGER PRIMARY KEY);")).db
+def shop : Database := db! r"CREATE TABLE invoices (id INTEGER PRIMARY KEY);"
 
 -- A database that is a variable has no value while the file elaborates: an error at the term.
 /--
