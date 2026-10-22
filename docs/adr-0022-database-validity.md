@@ -37,9 +37,10 @@ Measured on this tree on 2026-10-22:
   that another program wrote, or after writes with foreign keys off.
 - **The model checks the constraints already.** `LiteralData.constraints`
   (`Model/LiteralData.lean:90`) checks NOT NULL, the types of a `STRICT` table, CHECK and the
-  unique keys of the catalog (`Catalog.uniqueKeys`). A write stores its result only when the
-  result passes it (`checkedWrite`, `Model/StatementRun.lean:19`), and the model describes a write
-  only when the table passes it before (`tableReady`). So the model does not describe a write to
+  unique keys of the catalog (`Catalog.uniqueKeys`). INSERT, UPDATE and upsert store their result
+  only when the result passes it (`checkedWrite`, `Model/StatementRun.lean:19`), and the model
+  describes them only when the table passes it before (`tableReady`). DELETE uses neither: it
+  removes the selected rows from any table (`runStatement`, `Model/StatementStep.lean`), also from
   a table whose constraints fail.
 - **No statement has a preservation theorem.** The model has lemmas for single operations
   (`Conforms.setRows`, `Conforms.addColumn`, `Conforms.createTable`,
@@ -100,7 +101,10 @@ For each atom, a theorem says that a statement that the model describes keeps th
 theorem can require a condition on the connection, for example that foreign keys are on. A
 statement that can break an atom, such as `PRAGMA ignore_check_constraints` if the model
 describes it, has no theorem for that atom; the theorems of the other atoms still apply to it.
-A frame lemma says that a statement that does not write a table keeps every atom of that table.
+A frame lemma says that a statement keeps an atom of a table when it changes nothing that the atom
+reads: the table's rows and catalog entry, and also its indexes for "keys unique" and the parent
+tables for "foreign keys hold". A DELETE of a parent row with foreign keys off changes no row of
+the child table, but breaks the child's "foreign keys hold".
 
 The theorems are about the model's statement step (`runStatement`) and its runs (`runSql`). A
 failed statement keeps the database that the model gives for it. The model refuses
@@ -120,8 +124,10 @@ the fact. It is reported to the owner, and no proof assumes it away.
 | 4 | the theorems of the Admitted atoms | the bundled database (D5) |
 | 5 | the theorem of "foreign keys hold" | ADR 0017 S6: the rebuild that cascades |
 
-For the constraint atoms, a write is the easy case: `checkedWrite` stores only a result that
-passes the checks. Schema statements, triggers and foreign key actions are the work. No slice
+For the constraint atoms, INSERT, UPDATE and upsert are the easy case: `checkedWrite` stores only
+a result that passes the checks. DELETE removes rows, and each constraint atom is a fact of each
+row or of each pair of rows, which fewer rows keep. Schema statements, triggers and foreign key
+actions are the work. No slice
 changes what a statement does, so the predictions, the claims and the judge lock do not change.
 
 ### D5. The bundled database stays open
