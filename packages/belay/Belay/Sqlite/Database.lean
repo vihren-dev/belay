@@ -33,18 +33,28 @@ abbrev Raw := Belay.Sqlite.Model.Database
 /-- The database without tables. -/
 def empty : Database := ⟨{}, by decide⟩
 
-/-- No NOT NULL column of the database holds NULL ({name}`Belay.Sqlite.Model.Database.NotNull`). -/
+/-- For every database: in every row of every table, a NOT NULL column holds no NULL
+({name}`Belay.Sqlite.Model.Database.NotNull`). A table without rows satisfies it. Proof sketch:
+the field of the stored proof of validity. -/
 theorem notNull (db : Database) : db.raw.NotNull := db.valid.notNull
 
-/-- The CHECK constraint of every table holds for every row
-({name}`Belay.Sqlite.Model.Database.ChecksHold`). -/
+/-- For every database: every row of every table satisfies every CHECK constraint of its
+table, which means that the condition is not false on the row: a condition that is NULL passes
+({name}`Belay.Sqlite.Model.Database.ChecksHold`). A table without CHECK constraints or without
+rows satisfies it. Proof sketch: the field of the stored proof of validity. -/
 theorem check (db : Database) : db.raw.ChecksHold := db.valid.check
 
-/-- No two rows of a table conflict on a PRIMARY KEY, a UNIQUE constraint or a unique index
-({name}`Belay.Sqlite.Model.Database.KeysUnique`). -/
+/-- For every database: no two rows of a table conflict on its PRIMARY KEY, a UNIQUE
+constraint or a unique index ({name}`Belay.Sqlite.Model.Database.KeysUnique`). Two rows with a
+NULL in the key do not conflict, nor do two rows of a partial index whose filter is false for
+one of them. A table without keys or with at most one row satisfies it. Proof sketch: the field
+of the stored proof of validity. -/
 theorem unique (db : Database) : db.raw.KeysUnique := db.valid.unique
 
-/-- No two rows of a table share a rowid ({name}`Belay.Sqlite.Model.Database.RowidsDistinct`). -/
+/-- For every database: no two rows of a table share a rowid
+({name}`Belay.Sqlite.Model.Database.RowidsDistinct`). Proof sketch: a valid database is
+admitted, and an admitted database has distinct rowids
+({name}`Belay.Sqlite.Model.Database.Valid.rowid_unique`). -/
 theorem rowid_unique (db : Database) : db.raw.RowidsDistinct := db.valid.rowid_unique
 
 /-- The catalog of the database: its tables, columns, keys, constraints, indexes and triggers. -/
