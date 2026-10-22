@@ -33,7 +33,8 @@ theorem Database.Raw.run_append (raw : Database.Raw) (p q : Script) :
 /-- For every start database and model result, the outputs of the checked run
 ({name}`Run.checked`) depend only on the result: its outputs when the database at its end is
 valid or when the model's run ended, and otherwise its outputs and the output
-{name}`Output.unmodeled` with {name}`invalidReason`. -/
+{name}`Output.unmodeled` with {name}`invalidReason`. Proof sketch: a case split on the
+validity of the database at the end; each case unfolds {name}`Run.checked`. -/
 theorem Run.checked_outputs (start : Database) (result : ScriptRun) :
     (Run.checked start result).outputs =
       if result.connection.state.database.Valid Profile.pinned ∨ result.ended then result.outputs
@@ -69,7 +70,8 @@ theorem Run.checked_modeled {start : Database} {result : ScriptRun}
 
 /-- For every connection: if no transaction is open, foreign keys are off, and the clock is 0
 at every position, the connection is the idle connection to its database
-({name}`Database.Raw.connection`). -/
+({name}`Database.Raw.connection`). Proof sketch: split the connection into its database,
+snapshot, clock and setting; the hypotheses fix all of them except the database. -/
 theorem Connection.eq_idle {connection : Connection} (outside : connection.state.snapshot = none)
     (setting : connection.foreignKeys = false) (clock : connection.state.clock = fun _ => 0) :
     connection = Database.Raw.connection connection.state.database := by

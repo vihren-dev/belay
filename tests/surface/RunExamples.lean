@@ -111,6 +111,11 @@ example : (shop.run (closeZero ++ sql r"SELECT random()" ++ ids)).outputs.map Ou
 example : (shop.run (closeZero ++ sql r"SELECT CURRENT_TIMESTAMP" ++ ids)).outputs =
     [.done 1, .unmodeled Belay.Sqlite.Model.clockUnmodeled] := by decide +kernel
 
+-- A REAL shows as a literal that reads back as the same double.
+/-- info: [rows [[1.0e-08, 1.123456789, 0.1, 3.333333333333333148e-01]]] -/
+#guard_msgs in
+#eval (shop.run (sql r"SELECT 0.00000001, 1.123456789, 0.1, 1.0 / 3")).outputs
+
 -- `LIMIT 1` without `ORDER BY`: SQLite may give either row, so the output is `Output.oneOf`.
 -- When every result is the same, the output is `Output.rows`.
 /-- info: [oneOf [[["acme"]], [["zeta"]]]] -/

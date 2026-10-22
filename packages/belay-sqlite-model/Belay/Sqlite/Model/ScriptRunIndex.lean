@@ -34,7 +34,8 @@ theorem advanceWith_atPosition (first second : Nat) (statement : Resolved.Statem
       Outcome.atPosition] <;> split <;> simp_all
 
 /-- For every position and transition, the error of a halt ({name}`haltError`) is the same with
-the failure positions set to the position. -/
+the failure positions set to the position. Proof sketch: case analysis on the transition and its
+outcome; {name}`haltError` reads the reason of a failure, never its position. -/
 @[simp] theorem haltError_atPosition (position : Nat) (transition : SqlTransition) :
     haltError (transition.atPosition position) = haltError transition := by
   cases transition with
@@ -89,7 +90,8 @@ theorem runScriptStep_index (context : ResolveContext) (first second : Nat) (con
 
 /-- For every state, position, effect and next state: if the effect's transition
 ({name}`SqlState.publish`) continues with the next state, the next state has the clock of the
-state. -/
+state. Proof sketch: only an effect without an error continues, and it changes only the
+database. -/
 theorem SqlState.publish_clock {state next : SqlState} {position : Nat} {effect : Effect}
     (continued : state.publish position effect = .next next) : next.clock = state.clock := by
   cases effect with
@@ -107,7 +109,9 @@ theorem advanceWith_clock {position : Nat} {statement : Resolved.Statement} {sta
     | (cases snapshot : state.snapshot <;> simp [advanceWith, snapshot] at continued <;> subst continued <;> rfl)
 
 /-- For every connection, setting, position, statement and effect, the connection after the
-statement's transition ({name}`Connection.afterStep`) has the clock of the connection. -/
+statement's transition ({name}`Connection.afterStep`) has the clock of the connection. Proof
+sketch: a transition that continues keeps the clock ({name}`advanceWith_clock`); after a halt,
+{name}`Connection.afterError` builds the state with the connection's clock. -/
 theorem Connection.afterStep_clock (connection : Connection) (foreignKeys : Bool) (position : Nat)
     (statement : Resolved.Statement) (effect : Effect) :
     (connection.afterStep foreignKeys (advanceWith position statement connection.state effect)).state.clock =

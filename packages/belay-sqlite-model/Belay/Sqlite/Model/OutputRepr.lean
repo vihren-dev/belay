@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Output
+import Belay.Sqlite.Model.Functions.Quote
 
 set_option doc.verso true
 
@@ -16,13 +17,15 @@ def hexBytes (bytes : List UInt8) : String :=
     String.ofList (if digits.length < 2 then '0' :: digits else digits))
 
 /-- The value as the literal that gives it: an integer as its digits, a text as a Lean string
-literal, a REAL as its decimal, NULL as {lit}`null`, and a BLOB as {lit}`x'...'`, as in SQL. A
+literal, a REAL as SQLite's {lit}`quote` writes it ({name}`Resolved.quoteReal`, a text that reads
+back as the same double, for example {lit}`1.0e-08`), NULL as {lit}`null`, and a BLOB as
+{lit}`x'...'`, as in SQL. A
 text whose bytes are not UTF-8 shows its bytes as {lit}`text x'...'`. For example, the value
 {lean}`Value.text "acme".toUTF8.toList` shows as {lit}`"acme"`. -/
 def Value.display : Value → Std.Format
   | .null => "null"
   | .integer value => repr value
-  | .real bits => toString (Float.ofBits bits)
+  | .real bits => String.ofList ((Resolved.quoteReal (Float.ofBits bits)).map fun byte => Char.ofNat byte.toNat)
   | .text bytes => match String.fromUTF8? ⟨bytes.toArray⟩ with
     | some decoded => repr decoded
     | none => s!"text x'{hexBytes bytes}'"

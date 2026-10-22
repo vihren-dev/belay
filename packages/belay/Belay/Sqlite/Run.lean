@@ -52,7 +52,8 @@ structure Run where
 /-- The reason of the output that ends a run whose database at its end is not valid. -/
 def invalidReason : String :=
   "the database at the end of the run is not valid: a NOT NULL, CHECK, type, key or rowid " ++
-    "constraint fails; the run keeps the database at its start"
+    "constraint fails; the run keeps the database at its start. To see the database that the " ++
+    "run reached, run the script with Database.Raw.run on db.raw"
 
 /-- The run that the model's result gives from the start database, with the check: when the
 database at the end is valid ({name}`Database.Valid`), the decision is the proof of the
