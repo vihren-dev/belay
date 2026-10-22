@@ -1,4 +1,5 @@
-"""The frontend maps a single-table SELECT to statement syntax (`belay.sqlite.syntax_queries`).
+"""The translation maps a single-table SELECT to statement syntax (`packages/belay-sqlite-text/Belay/Sqlite/Translation/Select.lean` and the
+modules that it uses, through the text package's program).
 
 These tests check the JSON that Lean's `Syntax.Statement.select` decoder reads, the
 source text of result columns, the LIMIT forms, and the refusal of query syntax
@@ -10,8 +11,7 @@ from collections.abc import Callable
 import pytest
 
 from belay.sqlite.errors import SqlError
-from belay.sqlite.sql_tree import Tree
-from belay.sqlite.syntax import statements
+from conformance.sql_text import Translation
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_native]
 
@@ -21,11 +21,11 @@ def column(name: str) -> dict[str, object]:
     return {"identifier": {"name": name, "quote": "none"}}
 
 
-def test_select_keeps_columns_text_and_clauses(parse_sql: Callable[..., Tree]) -> None:
+def test_select_keeps_columns_text_and_clauses(parse_sql: Callable[..., Translation]) -> None:
     """Every clause maps; a result column keeps its alias and its source text exactly."""
-    [select] = [item.value for item in statements(parse_sql(
+    [select] = [item.value for item in parse_sql(
         "SELECT *, a AS x, count(*), min(b), b  <>  1 FROM t WHERE a IS NOT NULL AND NOT b < 2 "
-        "GROUP BY a ORDER BY 1 DESC, b LIMIT 1, 2;"))]
+        "GROUP BY a ORDER BY 1 DESC, b LIMIT 1, 2;").statements()]
     assert select == {"select": {
         "columns": ["star",
                     {"expression": {"value": column("a"), "alias": "x", "text": "a"}},
@@ -49,9 +49,9 @@ def test_select_keeps_columns_text_and_clauses(parse_sql: Callable[..., Tree]) -
     ("SELECT a FROM t WHERE a ISNULL;", False), ("SELECT a FROM t WHERE a NOTNULL;", True),
     ("SELECT a FROM t WHERE a NOT NULL;", True),
 ])
-def test_postfix_null_tests_map_to_is_null(parse_sql: Callable[..., Tree], sql: str, operand: bool) -> None:
+def test_postfix_null_tests_map_to_is_null(parse_sql: Callable[..., Translation], sql: str, operand: bool) -> None:
     """`ISNULL`, `NOTNULL` and `NOT NULL` are `IS NULL` and its negation."""
-    [select] = [item.value for item in statements(parse_sql(sql))]
+    [select] = [item.value for item in parse_sql(sql).statements()]
     assert select["select"]["filter"] == {"isNull": {"operand": column("a"), "negated": operand}}
 
 
@@ -63,20 +63,20 @@ def test_postfix_null_tests_map_to_is_null(parse_sql: Callable[..., Tree], sql: 
     ("SELECT a & 1 FROM t;", "a & 1"), ("SELECT a FROM (SELECT 1 AS a);", "(SELECT 1 AS a)"),
 ])
 def test_query_syntax_outside_the_slice_is_unsupported_at_its_range(
-        parse_sql: Callable[..., Tree], sql: str, refused: str) -> None:
+        parse_sql: Callable[..., Translation], sql: str, refused: str) -> None:
     """Each refusal is UNSUPPORTED, and its byte range is the refused syntax."""
     with pytest.raises(SqlError) as raised:
-        statements(parse_sql(sql))
+        parse_sql(sql).statements()
     assert raised.value.status == "UNSUPPORTED"
     assert sql.encode()[raised.value.start:raised.value.end].decode() == refused
 
 
-def test_writes_map_query_expressions_and_returning(parse_sql: Callable[..., Tree]) -> None:
+def test_writes_map_query_expressions_and_returning(parse_sql: Callable[..., Translation]) -> None:
     """VALUES items, SET values and the WHERE expression are query expressions, and the
     write's `returning` field holds its RETURNING result columns as in SELECT (slice 3a;
     ADR 0013, D3)."""
-    [insert, update] = [item.value for item in statements(parse_sql(
-        "INSERT INTO t VALUES (1 + 2) RETURNING *, a AS x; UPDATE t SET a = CAST(b AS INT) WHERE a < 1 RETURNING a;"))]
+    [insert, update] = [item.value for item in parse_sql(
+        "INSERT INTO t VALUES (1 + 2) RETURNING *, a AS x; UPDATE t SET a = CAST(b AS INT) WHERE a < 1 RETURNING a;").statements()]
     write = insert["insert"]
     assert write["rows"] == [[{"arithmetic": {"operator": "add", "left": {"numeric": {"text": "1"}},
                                               "right": {"numeric": {"text": "2"}}}}]]
@@ -87,11 +87,11 @@ def test_writes_map_query_expressions_and_returning(parse_sql: Callable[..., Tre
     assert write["returning"] == [{"expression": {"value": column("a"), "alias": None, "text": "a"}}]
 
 
-def test_delete_maps_filter_and_returning(parse_sql: Callable[..., Tree]) -> None:
-    """`syntax_writes.delete`: DELETE keeps its table, its optional WHERE expression and its
+def test_delete_maps_filter_and_returning(parse_sql: Callable[..., Translation]) -> None:
+    """`delete` (`Writes.lean`): DELETE keeps its table, its optional WHERE expression and its
     RETURNING result columns, empty without the clause, as for UPDATE (slice 3c)."""
-    [plain, returned] = [item.value for item in statements(parse_sql(
-        "DELETE FROM t; DELETE FROM t WHERE a ISNULL RETURNING a;"))]
+    [plain, returned] = [item.value for item in parse_sql(
+        "DELETE FROM t; DELETE FROM t WHERE a ISNULL RETURNING a;").statements()]
     assert plain == {"delete": {"table": "t", "filter": None, "returning": []}}
     assert returned == {"delete": {"table": "t", "filter": {"isNull": {"operand": column("a"), "negated": False}},
                                    "returning": [{"expression": {"value": column("a"), "alias": None, "text": "a"}}]}}
@@ -101,20 +101,20 @@ def test_delete_maps_filter_and_returning(parse_sql: Callable[..., Tree]) -> Non
     ("WITH x AS (SELECT 1) DELETE FROM t;", "WITH x AS (SELECT 1)"),
     ("DELETE FROM t INDEXED BY i;", "INDEXED BY i"), ("DELETE FROM main.t;", "main.t"),
 ])
-def test_delete_forms_outside_the_slice_are_refused(parse_sql: Callable[..., Tree], sql: str, refused: str) -> None:
-    """`syntax_writes.delete` refuses WITH, INDEXED BY and a schema-qualified table at their range."""
+def test_delete_forms_outside_the_slice_are_refused(parse_sql: Callable[..., Translation], sql: str, refused: str) -> None:
+    """`delete` refuses WITH, INDEXED BY and a schema-qualified table at their range."""
     with pytest.raises(SqlError) as raised:
-        statements(parse_sql(sql))
+        parse_sql(sql).statements()
     assert raised.value.status == "UNSUPPORTED"
     assert sql.encode()[raised.value.start:raised.value.end].decode() == refused
 
 
-def test_joins_map_sources_kinds_and_conditions(parse_sql: Callable[..., Tree]) -> None:
-    """`syntax_sources.from_clause`: the first table with its alias, then each join with its
+def test_joins_map_sources_kinds_and_conditions(parse_sql: Callable[..., Translation]) -> None:
+    """`fromClause` (`Sources.lean`): the first table with its alias, then each join with its
     operator keywords as written, its table and its ON condition or USING names; `x.c` and
     `x.*` map to their constructors (slice 4)."""
-    [query] = [item.value for item in statements(parse_sql(
-        "SELECT x.a, u.* FROM t AS x Left JOIN u ON x.a = u.a, v NATURAL join w CROSS JOIN y USING (b);"))]
+    [query] = [item.value for item in parse_sql(
+        "SELECT x.a, u.* FROM t AS x Left JOIN u ON x.a = u.a, v NATURAL join w CROSS JOIN y USING (b);").statements()]
     select = query["select"]
     assert select["source"] == {"table": "t", "alias": "x", "arguments": None}
     assert select["columns"][0]["expression"]["value"] == {"qualified": {"source": "x", "column": "a"}}
@@ -128,12 +128,12 @@ def test_joins_map_sources_kinds_and_conditions(parse_sql: Callable[..., Tree]) 
         {"operator": ["CROSS"], "source": {"table": "y", "alias": None, "arguments": None}, "condition": None, "usingColumns": ["b"]}]
 
 
-def test_table_valued_functions_map_with_their_arguments(parse_sql: Callable[..., Tree]) -> None:
-    """`syntax_sources.from_clause`: a table-valued function in FROM is a source with its name
+def test_table_valued_functions_map_with_their_arguments(parse_sql: Callable[..., Translation]) -> None:
+    """`fromClause`: a table-valued function in FROM is a source with its name
     as written, its alias and its arguments as query expressions; a table has no arguments
     (ADR 0012, amendment 5, slice 6d)."""
-    [query] = [item.value for item in statements(parse_sql(
-        "SELECT * FROM t, Json_Each(t.j, '$.a') AS e JOIN json_each('[1]') ON 1 = 1, json_each();"))]
+    [query] = [item.value for item in parse_sql(
+        "SELECT * FROM t, Json_Each(t.j, '$.a') AS e JOIN json_each('[1]') ON 1 = 1, json_each();").statements()]
     select = query["select"]
     assert select["source"] == {"table": "t", "alias": None, "arguments": None}
     assert [join["source"] for join in select["joins"]] == [
@@ -145,11 +145,11 @@ def test_table_valued_functions_map_with_their_arguments(parse_sql: Callable[...
                                                           "right": {"numeric": {"text": "1"}}}}
 
 
-def test_fallback_keywords_are_column_names(parse_sql: Callable[..., Tree]) -> None:
-    """`syntax_expressions.expression`: a keyword that SQLite's grammar falls back to an
+def test_fallback_keywords_are_column_names(parse_sql: Callable[..., Translation]) -> None:
+    """`expression` (`Expressions.lean`): a keyword that SQLite's grammar falls back to an
     identifier, such as `key`, names a column; the parse tree keeps the keyword's own
     symbol (`IDENTIFIER_TOKENS`, ADR 0012, amendment 5, slice 6d)."""
-    [query] = [item.value for item in statements(parse_sql("SELECT key, path, id, Replace FROM t WHERE key = 1;"))]
+    [query] = [item.value for item in parse_sql("SELECT key, path, id, Replace FROM t WHERE key = 1;").statements()]
     select = query["select"]
     assert [column["expression"]["value"] for column in select["columns"]] == [
         column("key"), column("path"), column("id"), column("Replace")]
@@ -157,10 +157,10 @@ def test_fallback_keywords_are_column_names(parse_sql: Callable[..., Tree]) -> N
                                             "right": {"numeric": {"text": "1"}}}}
 
 
-def test_select_without_from_has_no_source(parse_sql: Callable[..., Tree]) -> None:
-    """`syntax_select.select`: a SELECT without FROM has a null source and no joins, and
+def test_select_without_from_has_no_source(parse_sql: Callable[..., Translation]) -> None:
+    """`statement` (`Statements.lean`): a SELECT without FROM has a null source and no joins, and
     keeps its other clauses (ADR 0012, amendment 5, slice 6a)."""
-    [statement] = [item.value for item in statements(parse_sql("SELECT 1 WHERE 1 = 1 LIMIT 2;"))]
+    [statement] = [item.value for item in parse_sql("SELECT 1 WHERE 1 = 1 LIMIT 2;").statements()]
     select = statement["select"]
     assert select["source"] is None and select["joins"] == []
     assert select["filter"] == {"compare": {"operator": "eq", "left": {"numeric": {"text": "1"}},
@@ -168,12 +168,12 @@ def test_select_without_from_has_no_source(parse_sql: Callable[..., Tree]) -> No
     assert select["limit"] == {"numeric": {"text": "2"}}
 
 
-def test_having_and_distinct_map_only_when_written(parse_sql: Callable[..., Tree]) -> None:
-    """`syntax_select.query_clauses`: `HAVING` maps to `having` and `SELECT DISTINCT` to
+def test_having_and_distinct_map_only_when_written(parse_sql: Callable[..., Translation]) -> None:
+    """`queryClauses` (`Select.lean`): `HAVING` maps to `having` and `SELECT DISTINCT` to
     `distinct` (ADR 0018, D3); a statement without them has neither field, so its JSON keeps the
     form of frozen records, and `ALL` is no `DISTINCT`."""
-    [grouped, plain, every] = [item.value for item in statements(parse_sql(
-        "SELECT DISTINCT a FROM t GROUP BY a HAVING count(*) > 1; SELECT a FROM t; SELECT ALL a FROM t;"))]
+    [grouped, plain, every] = [item.value for item in parse_sql(
+        "SELECT DISTINCT a FROM t GROUP BY a HAVING count(*) > 1; SELECT a FROM t; SELECT ALL a FROM t;").statements()]
     assert grouped["select"]["distinct"] is True
     assert grouped["select"]["having"] == {"compare": {"operator": "gt", "left": {"callStar": {"name": "count"}},
                                                        "right": {"numeric": {"text": "1"}}}}

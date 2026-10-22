@@ -7,21 +7,20 @@ import pytest
 
 from belay.sqlite.errors import SqlError
 from belay.sqlite.profiles import DEFAULT_PROFILE, profile
-from belay.sqlite.sql_tree import Tree
-from belay.sqlite.syntax import statements
+from conformance.sql_text import Translation
 
 pytestmark = pytest.mark.parser
 
 
 @pytest.mark.integration
 @pytest.mark.requires_native
-def test_no_framework_directives_or_reserved_catalog_names(parse_sql: Callable[..., Tree]) -> None:
+def test_no_framework_directives_or_reserved_catalog_names(parse_sql: Callable[..., Translation]) -> None:
     """Comments stay comments, and application bookkeeping names are ordinary tables."""
     assert profile('3.51.0') == DEFAULT_PROFILE
     assert profile('3.46.0').engine == "3.46.0"
-    schema = statements(parse_sql('CREATE TABLE _sqlx_migrations(x TEXT);', '3.46.0'))
-    plain = statements(parse_sql('ALTER TABLE _sqlx_migrations ADD y TEXT;', '3.46.0'))
-    commented = statements(parse_sql('-- no-transaction\nALTER TABLE _sqlx_migrations ADD y TEXT;', '3.46.0'))
+    schema = parse_sql('CREATE TABLE _sqlx_migrations(x TEXT);', '3.46.0').statements()
+    plain = parse_sql('ALTER TABLE _sqlx_migrations ADD y TEXT;', '3.46.0').statements()
+    commented = parse_sql('-- no-transaction\nALTER TABLE _sqlx_migrations ADD y TEXT;', '3.46.0').statements()
     assert [item.value for item in plain] == [item.value for item in commented]
     assert len(schema) == len(plain) == 1
 

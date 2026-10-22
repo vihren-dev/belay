@@ -1,9 +1,9 @@
 """The version 5 conformance case: the measured profile, statement syntax and native truth.
 
 A case carries the profile of the native connection (`case_profile`), the schema
-and migration as the Lean `Syntax` JSON of `belay.sqlite.syntax`, and each native
-observation as tables with their PRAGMA metadata (`conformance.native_metadata`),
-typed rows and the phase of an error. Lean decodes it with
+and migration as the Lean `Syntax` JSON of the translation program (`conformance.sql_text`),
+and each native observation as tables with their PRAGMA metadata
+(`conformance.native_metadata`), typed rows and the phase of an error. Lean decodes it with
 `Belay.Sqlite.Model.Conformance.decodeCase`.
 """
 

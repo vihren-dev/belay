@@ -1,9 +1,10 @@
-"""The frontend maps parser productions to statement syntax and keeps source ranges.
+"""The translation maps parser productions to statement syntax and keeps source ranges.
 
-These tests check `belay.sqlite.syntax` and its modules against the pinned parser
-library: the JSON that Lean's `Syntax.Statement` decoder reads, the lexical
-decoding of names and literals, the refusal of syntax without a constructor, and
-the byte range that a Lean node path selects.
+These tests check `packages/belay-sqlite-text/Belay/Sqlite/Translation` through the text
+package's program: the JSON that Lean's `Syntax.Statement` decoder reads, the lexical decoding of
+names and literals, and the refusal of syntax without a constructor at its range.
+`tests/surface/TranslationChecks.lean` checks the range that a Lean node path selects and the
+lexical helpers.
 """
 
 from collections.abc import Callable
@@ -11,18 +12,14 @@ from collections.abc import Callable
 import pytest
 
 from belay.sqlite.errors import SqlError
-from belay.sqlite.located import Located
-from belay.sqlite.sql_tree import Node, Tree
-from belay.sqlite.syntax import statements
-from belay.sqlite.syntax_expressions import dequote
-from belay.sqlite.syntax_writes import value_rows
+from conformance.sql_text import Translation
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_native]
 
 
-def mapped(parse_sql: Callable[..., Tree], sql: str) -> list[object]:
+def mapped(parse_sql: Callable[..., Translation], sql: str) -> list[object]:
     """Return the syntax JSON of every statement of the SQL."""
-    return [item.value for item in statements(parse_sql(sql))]
+    return [item.value for item in parse_sql(sql).statements()]
 
 
 def column(name: str, declared: str | None, constraints: list[object] | None = None) -> dict[str, object]:
@@ -30,7 +27,7 @@ def column(name: str, declared: str | None, constraints: list[object] | None = N
     return {"name": name, "declaredType": declared, "constraints": constraints or []}
 
 
-def test_definitions_keep_names_types_and_constraints_as_written(parse_sql: Callable[..., Tree]) -> None:
+def test_definitions_keep_names_types_and_constraints_as_written(parse_sql: Callable[..., Translation]) -> None:
     """Names keep their case, types keep SQLite's dequoted span, and every constraint maps."""
     sql = ('CREATE TABLE [Big T](a VARCHAR ( 10 ) NOT NULL PRIMARY KEY DESC, "B" "Some" Type UNIQUE, '
            "c DEFAULT -1, d DEFAULT CURRENT_TIMESTAMP, e DEFAULT 'x''y', f, PRIMARY KEY(a), UNIQUE(c, d));"
@@ -55,7 +52,7 @@ def test_definitions_keep_names_types_and_constraints_as_written(parse_sql: Call
             {"default": {"sourceText": "y", "value": {"identifier": {"name": "y", "quote": "none"}}}}])}}]
 
 
-def test_collations_keep_their_names_as_written(parse_sql: Callable[..., Tree]) -> None:
+def test_collations_keep_their_names_as_written(parse_sql: Callable[..., Translation]) -> None:
     """`COLLATE` maps on a column, quoted or not, and as an expression, also in `ORDER BY` and
     an index term, with the name as written; resolution decides what the name means
     (ADR 0014, slice 3)."""
@@ -74,7 +71,7 @@ def test_collations_keep_their_names_as_written(parse_sql: Callable[..., Tree]) 
                                               "descending": False}]
 
 
-def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., Tree]) -> None:
+def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., Translation]) -> None:
     """INSERT keeps its optional columns and rows, with no ON CONFLICT clauses; UPDATE keeps
     assignments and its filter."""
     sql = ("BEGIN DEFERRED TRANSACTION; INSERT INTO t VALUES (0x1F, \"q\"), (NULL, X'00ff'); "
@@ -110,10 +107,10 @@ def test_writes_keep_rows_assignments_and_numeric_text(parse_sql: Callable[..., 
     ("UPDATE t SET (a, b) = (1, 2);", "(a, b) = (1, 2)"), ("EXPLAIN SELECT 1;", "EXPLAIN SELECT 1;"),
 ])
 def test_syntax_without_a_constructor_is_unsupported_at_its_range(
-        parse_sql: Callable[..., Tree], sql: str, refused: str) -> None:
+        parse_sql: Callable[..., Translation], sql: str, refused: str) -> None:
     """Each refusal is UNSUPPORTED and its byte range is the refused syntax."""
     with pytest.raises(SqlError) as raised:
-        statements(parse_sql(sql))
+        parse_sql(sql).statements()
     assert raised.value.status == "UNSUPPORTED"
     assert sql.encode()[raised.value.start:raised.value.end].decode() == refused
 
@@ -125,47 +122,16 @@ def test_syntax_without_a_constructor_is_unsupported_at_its_range(
     ("CREATE TABLE t(a DEFAULT (1));", "use NOT NULL, PRIMARY KEY, UNIQUE, COLLATE, CHECK, REFERENCES or DEFAULT with a literal"),
     ("VACUUM;", "the model runs CREATE TABLE"),
 ])
-def test_refusals_say_which_form_to_use(parse_sql: Callable[..., Tree], sql: str, advice: str) -> None:
-    """Refusals from `require`, `left_list`, `value_rows` and the dispatch name the modeled forms."""
+def test_refusals_say_which_form_to_use(parse_sql: Callable[..., Translation], sql: str, advice: str) -> None:
+    """Refusals from `require`, `leftList`, `valueRows` and the dispatch (`Shapes.lean`, `Writes.lean`,
+    `Statements.lean`) name the modeled forms."""
     with pytest.raises(SqlError) as raised:
-        statements(parse_sql(sql))
+        parse_sql(sql).statements()
     assert advice in str(raised.value)
 
 
-def test_malformed_values_list_names_the_modeled_forms() -> None:
-    """`value_rows` refuses a VALUES list node with a shape that the grammar does not produce."""
-    nodes = (Node("COMMA", 0, 1, ()), Node("mvalues", 0, 1, (0,)), Node("oneselect", 0, 1, (1,)),
-             Node("selectnowith", 0, 1, (2,)), Node("select", 0, 1, (3,)))
-    with pytest.raises(SqlError) as raised:
-        value_rows(Tree("fixture.sql", b",", nodes, 4), nodes[4])
-    assert raised.value.status == "UNSUPPORTED"
-    assert "rewrite it with the modeled forms" in str(raised.value)
-
-
-def test_node_paths_select_source_ranges(parse_sql: Callable[..., Tree]) -> None:
-    """A Lean restriction path selects the range of the node it names, or of its deepest known part."""
-    sql = "CREATE TABLE t(a, rowid TEXT); INSERT INTO t(a) VALUES (1), (2.5); UPDATE t SET a = 1, b = -x;"
-    create, insert, update = statements(parse_sql(sql))
-    text = sql.encode()
-
-    def at(located: Located, path: list[int]) -> str:
-        """Return the source text of the range that `Located.span` selects for the path."""
-        start, end = located.span(path)
-        return text[start:end].decode()
-    assert at(create, [1, 1]) == "rowid TEXT"
-    assert at(insert, [2, 1, 0]) == "2.5"
-    assert at(update, [1, 1, 1, 0]) == "x"
-    assert at(update, [1, 1, 1, 0, 9]) == "x"
-
-
-def test_dequote_follows_sqlite() -> None:
-    """Doubled quotes are undoubled, brackets do not escape, and text ends at the closing quote."""
-    assert [dequote(text) for text in ['"a""b"', "[a]]", "`x`", "'it''s'", '"Some" Type', "plain"]] == [
-        'a"b', "a]", "x", "it's", "Some", "plain"]
-
-
 @pytest.mark.parametrize("literal", ["X'00ff'", "x'00FF'", "- 7", "-7", '"true"', "[true]", "`true`", "'a''b'", "null"])
-def test_default_source_spelling(parse_sql: Callable[..., Tree], literal: str) -> None:
+def test_default_source_spelling(parse_sql: Callable[..., Translation], literal: str) -> None:
     """Default syntax retains the text needed to predict SQLite catalog metadata."""
     statement = mapped(parse_sql, f"CREATE TABLE t(v BLOB DEFAULT {literal});")[0]
     constraint = statement["createTable"]["columns"][0]["constraints"][0]

@@ -14,7 +14,7 @@ import pytest
 from tests.runtime_support import run_command
 
 if TYPE_CHECKING:
-    from belay.sqlite.sql_tree import SqlParser, Tree
+    from conformance.sql_text import TextParser, Translation
 
 PARSER_LIBRARY = "parser-library"
 """The `requires_native` requirement of the runtime's SQLite parser library."""
@@ -86,34 +86,25 @@ def selected_prerequisites(request: pytest.FixtureRequest) -> None:
         pytest.fail("Required Nix command is missing; enter the pinned shell")
 
 
-def profile_parser(runtime_root: Path, version: str = "3.51.0") -> SqlParser:
-    """Return the runtime library's parser for the supported profile of a SQLite release.
+def profile_parser(runtime_root: Path, version: str = "3.51.0") -> TextParser:
+    """Return the runtime's translation program for the supported profile of a SQLite release.
 
     The implementation imports stay inside the function: Nix test targets that do not
     declare the Python sources still load this plugin.
     """
     from belay.sqlite.dialects import ProfileIdentity
-    from belay.sqlite.parser_library import installed_library, load
     from belay.sqlite.profiles import profile
-    from belay.sqlite.sql_tree import SqlParser
+    from conformance.sql_text import TextParser, runtime_translator
 
     selected = profile(version)
-    library = load(installed_library(runtime_root.resolve(), sys.platform))
-    return SqlParser.for_profile(library, ProfileIdentity(selected.engine, selected.source_id))
+    return TextParser.for_profile(runtime_translator(runtime_root), ProfileIdentity(selected.engine, selected.source_id))
 
 
 @pytest.fixture
-def sql_parser(runtime_root: Path) -> Callable[..., SqlParser]:
-    """Select the runtime library's parser of a supported profile, by SQLite release."""
-    return lambda version="3.51.0": profile_parser(runtime_root, version)
-
-
-@pytest.fixture
-def parse_sql(sql_parser: Callable[..., SqlParser]) -> Callable[..., Tree]:
-    """Parse SQL with the runtime library's grammar for the requested SQLite release."""
-    from belay.sqlite.sql_tree import parse
-
-    def parse_with_selected_grammar(sql: str, version: str = "3.51.0") -> Tree:
-        """Parse with the grammar of the release's supported profile."""
-        return parse(sql_parser(version), sql.encode(), "fixture.sql")
-    return parse_with_selected_grammar
+def parse_sql(runtime_root: Path) -> Callable[..., Translation]:
+    """Translate SQL with the runtime's translation program, with the grammar of the requested
+    SQLite release (`packages/belay-sqlite-text`)."""
+    def translate_with_selected_grammar(sql: str, version: str = "3.51.0") -> Translation:
+        """Translate with the grammar of the release's supported profile."""
+        return profile_parser(runtime_root, version).translate(sql.encode(), "fixture.sql")
+    return translate_with_selected_grammar

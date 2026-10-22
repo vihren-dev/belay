@@ -1,7 +1,7 @@
 """Single-table queries agree with native SQLite (ADR 0012, slice 1).
 
 Each query is recorded with its outputs by `conformance.native_record.record_sql`,
-mapped by `belay.sqlite.syntax_queries`, resolved by `Resolution/Queries.lean` and
+mapped by the text package's translation, resolved by `Resolution/Queries.lean` and
 evaluated by `QueryEval.lean`; the compiled runner compares the result rows with
 the rules of ADR 0005 (multisets, tie groups) and the database state.
 """

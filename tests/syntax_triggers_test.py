@@ -1,6 +1,7 @@
-"""The mapping of CREATE TRIGGER, DROP TRIGGER and RAISE to Syntax JSON (`belay.sqlite.syntax_triggers`).
+"""The mapping of CREATE TRIGGER, DROP TRIGGER and RAISE to Syntax JSON (`packages/belay-sqlite-text/Belay/Sqlite/Translation/Triggers.lean`,
+through the text package's program).
 
-ADR 0018, D5: the frontend keeps a trigger's name, time, event, table, `WHEN` condition and
+ADR 0018, D5: the translation keeps a trigger's name, time, event, table, `WHEN` condition and
 body statements, each body statement with every field of `Syntax.BodyStatement`, maps `RAISE`
 as an expression, and refuses the forms that the model does not describe.
 """
@@ -10,15 +11,14 @@ from collections.abc import Callable
 import pytest
 
 from belay.sqlite.errors import SqlError
-from belay.sqlite.sql_tree import Tree
-from belay.sqlite.syntax import statements
+from conformance.sql_text import Translation
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_native]
 
 
-def mapped(parse_sql: Callable[..., Tree], sql: str) -> list[object]:
+def mapped(parse_sql: Callable[..., Translation], sql: str) -> list[object]:
     """Return the syntax JSON of every statement of the SQL."""
-    return [item.value for item in statements(parse_sql(sql))]
+    return [item.value for item in parse_sql(sql).statements()]
 
 
 def column(name: str) -> dict[str, object]:
@@ -31,7 +31,7 @@ def qualified(source: str, name: str) -> dict[str, object]:
     return {"qualified": {"source": source, "column": name}}
 
 
-def test_trigger_keeps_time_event_condition_and_body(parse_sql: Callable[..., Tree]) -> None:
+def test_trigger_keeps_time_event_condition_and_body(parse_sql: Callable[..., Translation]) -> None:
     """`create_trigger` maps each part of the trigger, and every field of each body statement,
     the subqueries of each statement in its own list."""
     sql = ("CREATE TRIGGER IF NOT EXISTS r AFTER UPDATE OF a, b ON t FOR EACH ROW WHEN new.a > 1 BEGIN "
@@ -55,7 +55,7 @@ def test_trigger_keeps_time_event_condition_and_body(parse_sql: Callable[..., Tr
     assert select["select"]["having"] is None and select["select"]["distinct"] is False
 
 
-def test_trigger_defaults_and_drop(parse_sql: Callable[..., Tree]) -> None:
+def test_trigger_defaults_and_drop(parse_sql: Callable[..., Translation]) -> None:
     """A trigger without a time is BEFORE, `UPDATE` without OF has no columns, and DROP TRIGGER
     keeps `IF EXISTS`; RAISE keeps its kind and message."""
     sql = ("CREATE TRIGGER r UPDATE ON t BEGIN SELECT RAISE(FAIL, 'no'); END; DROP TRIGGER r; DROP TRIGGER IF EXISTS r;")
@@ -78,9 +78,9 @@ def test_trigger_defaults_and_drop(parse_sql: Callable[..., Tree]) -> None:
     ("CREATE TRIGGER r AFTER INSERT ON t BEGIN INSERT INTO t SELECT 1; END;", "Only VALUES rows"),
     ("CREATE TRIGGER r AFTER INSERT ON t BEGIN INSERT INTO t VALUES (1) RETURNING a; END;", "RETURNING"),
 ])
-def test_unmodeled_trigger_forms_are_refused(parse_sql: Callable[..., Tree], sql: str, message: str) -> None:
+def test_unmodeled_trigger_forms_are_refused(parse_sql: Callable[..., Translation], sql: str, message: str) -> None:
     """`create_trigger` refuses TEMP, INSTEAD OF, a schema name, a subquery in WHEN, UPDATE OR,
     INDEXED BY, INSERT ... SELECT and RETURNING with their source range."""
     with pytest.raises(SqlError) as raised:
-        statements(parse_sql(sql))
+        parse_sql(sql).statements()
     assert raised.value.status == "UNSUPPORTED" and message in str(raised.value)

@@ -1,7 +1,7 @@
-"""The frontend maps CHECK, CONSTRAINT names, foreign keys and generated columns
-(`belay.sqlite.syntax_constraints`).
+"""The translation maps CHECK, CONSTRAINT names, foreign keys and generated columns
+(`packages/belay-sqlite-text/Belay/Sqlite/Translation/Constraints.lean`, through the text package's program).
 
-These tests check, against the pinned parser library, the label that the frontend gives
+These tests check, against the pinned parser library, the label that the translation gives
 each CHECK, as SQLite's parser tracks the constraint name in effect, and the column lists
 that foreign keys keep (ADR 0014, slice 4).
 """
@@ -9,19 +9,18 @@ that foreign keys keep (ADR 0014, slice 4).
 from collections.abc import Callable
 
 import pytest
+from conformance.sql_text import Translation
 
-from belay.sqlite.sql_tree import Tree
-from belay.sqlite.syntax import statements
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_native]
 
 
-def mapped(parse_sql: Callable[..., Tree], sql: str) -> list[object]:
+def mapped(parse_sql: Callable[..., Translation], sql: str) -> list[object]:
     """Return the syntax JSON of every statement of the SQL."""
-    return [item.value for item in statements(parse_sql(sql))]
+    return [item.value for item in parse_sql(sql).statements()]
 
 
-def test_checks_names_and_foreign_keys(parse_sql: Callable[..., Tree]) -> None:
+def test_checks_names_and_foreign_keys(parse_sql: Callable[..., Translation]) -> None:
     """CHECK maps with SQLite's label: the `CONSTRAINT` name in effect, which reaches from
     the last column into the table constraints until a comma, else the trimmed text,
     dequoted when it starts with a quote; foreign keys keep their column lists and their
@@ -44,7 +43,7 @@ def test_checks_names_and_foreign_keys(parse_sql: Callable[..., Tree]) -> None:
     assert [item["check"]["label"] for item in second["createTable"]["constraints"]] == ["z", "a != 5"]
 
 
-def test_deferral_clauses_are_constraints_of_their_own(parse_sql: Callable[..., Tree]) -> None:
+def test_deferral_clauses_are_constraints_of_their_own(parse_sql: Callable[..., Translation]) -> None:
     """A deferral clause maps to `deferral`, after the constraint that it follows, deferred only
     for `DEFERRABLE INITIALLY DEFERRED` (ADR 0018, D4): in a column definition, as SQLite's
     grammar has it, and after a FOREIGN KEY table constraint."""
@@ -60,7 +59,7 @@ def test_deferral_clauses_are_constraints_of_their_own(parse_sql: Callable[..., 
     assert [constraints[1]["deferral"]["deferred"], constraints[3]["deferral"]["deferred"]] == [True, False]
 
 
-def test_generated_columns_keep_their_kind_and_sqlite_type(parse_sql: Callable[..., Tree]) -> None:
+def test_generated_columns_keep_their_kind_and_sqlite_type(parse_sql: Callable[..., Translation]) -> None:
     """`AS (expr)` maps with its kind token as written, quotes included, or none, which
     resolution reads, and the declared type as `sqlite3AddColumn` leaves it: a trailing
     `GENERATED ALWAYS` goes, then the type is dequoted (ADR 0014, slice 5)."""
@@ -80,7 +79,7 @@ def test_generated_columns_keep_their_kind_and_sqlite_type(parse_sql: Callable[.
     ("\u00e9\u00e9\u00e9\u00e9\u00e9always", "\u00e9\u00e9\u00e9\u00e9\u00e9"),
     ('"TEXT GENERATED ALWAYS"', "TEXT GENERATED ALWAYS"), ('"Big" GENERATED ALWAYS', "Big"),
     ("'Odd''Q' GENERATED ALWAYS", "Odd'Q")])
-def test_declared_type_follows_sqlite(parse_sql: Callable[..., Tree], written: str, reported: str) -> None:
+def test_declared_type_follows_sqlite(parse_sql: Callable[..., Translation], written: str, reported: str) -> None:
     """The type rule of `sqlite3AddColumn`, each case checked natively with 3.51.0: the word
     length counts UTF-8 bytes, the words compare in either ASCII case, a comment between
     them keeps them, and a quoted type keeps them, as it ends with its quote."""

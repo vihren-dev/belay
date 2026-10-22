@@ -12,9 +12,10 @@ replay builds a version 4 case from them each time.
 `packages/belay-sqlite-model/Belay/Sqlite/Model/Codec/Resolution.lean` own the codecs for
 values, statement syntax and catalogs.
 `packages/verifier-conformance/VerifierConformance/Json.lean` adds the case
-and observation records. The Python side is `belay/sqlite/syntax.py` for statement
-syntax, `conformance/native_metadata.py` for native tables and
-`conformance/case_format.py` for values and rows.
+and observation records. Statement syntax comes from the text package's translation program
+(`packages/belay-sqlite-text`, called by `conformance/sql_text.py`); the Python side is
+`conformance/native_metadata.py` for native tables and `conformance/case_format.py` for values
+and rows.
 
 ## Record
 
@@ -23,7 +24,7 @@ syntax, `conformance/native_metadata.py` for native tables and
 | `version` | Integer `4`. Other versions are harness errors. |
 | `profile` | The measured profile of the native connection, as Lean's `Profile`: `release`, `sourceId`, `limits` (the fields of `conformance/native_limits.py`, as `sqlite3_limit(db, id, -1)` reported them) and `dqsDml`, `dqsDdl`. The runner resolves under this profile. A case built from a frozen corpus record has SQLite's documented default limits, which the recorder of those records kept. |
 | `schemaSql`, `migrationSql` | Original SQL, kept separately. |
-| `schema`, `script` | Statement syntax of the schema and migration SQL, as `belay.sqlite.syntax` maps them. |
+| `schema`, `script` | Statement syntax of the schema and migration SQL, as the translation program maps them. |
 | `initial` | Native tables before the migration. |
 | `nativeTrace` | Initial observation, then one observation per executed statement. |
 | `requirements` | Array of requirement-ID strings; `[]` when there are none. |

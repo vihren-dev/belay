@@ -5,22 +5,5 @@
   "belay.sqlite.located",
   "belay.sqlite.parser_library",
   "belay.sqlite.profiles",
-  "belay.sqlite.quoted_text",
-  "belay.sqlite.sql_tree",
-  "belay.sqlite.syntax",
-  "belay.sqlite.syntax_conflicts",
-  "belay.sqlite.syntax_constraints",
-  "belay.sqlite.syntax_definitions",
-  "belay.sqlite.syntax_drops",
-  "belay.sqlite.syntax_expressions",
-  "belay.sqlite.syntax_forms",
-  "belay.sqlite.syntax_indexes",
-  "belay.sqlite.syntax_pragmas",
-  "belay.sqlite.syntax_queries",
-  "belay.sqlite.syntax_select",
-  "belay.sqlite.syntax_subqueries",
-  "belay.sqlite.syntax_shapes",
-  "belay.sqlite.syntax_sources",
-  "belay.sqlite.syntax_triggers",
-  "belay.sqlite.syntax_writes"
+  "belay.sqlite.quoted_text"
 ]

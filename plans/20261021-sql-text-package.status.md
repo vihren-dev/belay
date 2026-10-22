@@ -80,3 +80,11 @@ Specification: [ADR 0017](../docs/adr-0017-user-surface.md), D2 and D6;
   `tests/surface/TranslationEquality.lean`) are deleted; the identical predictions are now the
   guard of ADR 0017 D6. The surface suite no longer gets the parser library. The S1 report says
   that its commands run on the tree before this task (commit `d0b1d728` of `main`).
+- 2026-10-22: the Python translation is deleted (`belay/sqlite/syntax*.py`, `sql_tree.py`), and
+  `located.py` keeps `Json` and a `Located` of value, start and end. The `parse_sql` fixture gives
+  the program's `Translation`: 42 of the 46 `syntax_*` tests check the translation through the
+  program, and `tests/surface/TranslationChecks.lean` (`tests/surface_translation_checks_test.py`)
+  checks the other four (the ranges of model paths, also in a subquery, `dequote`, `valueRows`)
+  and that `decodeParse` refuses a document for another grammar. The program writes an object's
+  fields in sorted order, so a test of field order compares the set of fields. `just test-source`,
+  `just test` and the model and frozen suites pass.
