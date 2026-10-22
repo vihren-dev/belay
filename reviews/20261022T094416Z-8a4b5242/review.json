@@ -1,0 +1,57 @@
+{
+  "caller": "claude",
+  "commit": "8a4b524245e9536876fbbc246df45d78f2ecf6cf",
+  "date": "2026-10-22T09:44:16+00:00",
+  "exit": 1,
+  "files": [
+    "plans/20261022-surface-s2.status.md",
+    "plans/20261022-surface-s2.task.md",
+    "reviews/20261022T094132Z-a572eaae/resolution-1-20261022T094246Z.json",
+    "reviews/20261022T094132Z-a572eaae/resolution-2-20261022T094246Z.json",
+    "reviews/20261022T094132Z-a572eaae/resolution-3-20261022T094247Z.json",
+    "reviews/20261022T094132Z-a572eaae/resolution-4-20261022T094247Z.json",
+    "reviews/20261022T094132Z-a572eaae/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261022T094416Z-8a4b5242#1",
+      "line": 67,
+      "path": "plans/20261022-surface-s2.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The database-only composition law assumes transaction closure preserves all required state, but `p` can change `PRAGMA foreign_keys`, which `Database` does not store, so a subsequent `q` querying that setting gives different results after restarting from `(db.run p).db`. Fix: preserve the foreign-key setting in connection-state composition and require its initial value to be restored for the database-only law."
+    },
+    {
+      "id": "20261022T094416Z-8a4b5242#2",
+      "line": 131,
+      "path": "plans/20261022-surface-s2.task.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The transaction key point still says an error leaves the transaction open, contradicting the new rollback exception in outcome 2 and `SqlState.failed`. Fix: add the same rollback exception to this key point."
+    }
+  ],
+  "id": "20261022T094416Z-8a4b5242",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
