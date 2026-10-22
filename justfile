@@ -1,4 +1,5 @@
-# Shared entry points. Enter nix develop path:./nix once for a batch of checks.
+# Shared entry points. direnv loads the development shell (.envrc, shell.nix) when you change
+# into the repository; outside direnv, enter `nix develop path:./nix` once for a batch of checks.
 #
 # `timeout --foreground` keeps nix-build in the caller's process group, so a caller that kills
 # the group on its deadline (tests/runtime_support.py) stops nix-build too. Nix builds run in
@@ -88,6 +89,16 @@ judge-lock:
 restriction-costs:
     timeout --foreground 1800 nix-build integrity/judge.nix -A predictions --out-link build/predictions --extra-experimental-features 'nix-command flakes' >&2
     python3 -m conformance.restriction_costs --predictions build/predictions
+
+# Build the Lean packages incrementally with Lake in the shell of shell.nix: the targets that model work can break, or the named PACKAGE or PACKAGE/TARGET.
+[positional-arguments]
+dev-build *args:
+    python3 -m tools.dev_loop build "$@"
+
+# Run the judge with the programs of dev-build over all claimed corpora or the named ones; not evidence, `just verdict` decides.
+[positional-arguments]
+dev-verdict *args:
+    python3 -m tools.dev_loop verdict "$@"
 
 # Run the locked judge on this commit's subject, as the verdict job does.
 verdict:

@@ -24,6 +24,8 @@ from conformance.profile_scope import foreign_key_scope, modeled_profile
 from conformance.record_parser import NO_PARSER_REASON, record_parser
 from conformance.sql_text import Translator, runtime_translator
 
+RUNNER = ".lake/build/bin/conformance-runner"
+"""The model's conformance runner in a conformance runtime root."""
 RUNNER_TIMEOUT_SECONDS = 600
 """One model run over all inputs of a corpus."""
 
@@ -111,7 +113,7 @@ def main(arguments: Sequence[str]) -> int:
             results.append(None)
         except (SqlError, NoParserForDialect, ValueError, KeyError, TypeError, IndexError) as error:
             results.append(refusal(given, error))
-    runner = options.runtime / ".lake/build/bin/conformance-runner"
+    runner = options.runtime / RUNNER
     answered = subprocess.run([str(runner), "--predict"], input="".join(json.dumps(item[2]) + "\n" for item in pending),
                               capture_output=True, text=True, timeout=RUNNER_TIMEOUT_SECONDS, check=False)
     if answered.returncode:
