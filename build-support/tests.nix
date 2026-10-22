@@ -92,6 +92,8 @@ let
     (root + /packages/belay-sqlite-model/Belay/Sqlite/Model/SqlExecution.lean)
     (root + /packages/belay-sqlite-model/Belay/Sqlite/Model/Execution.lean) (root + /packages/belay-sqlite-model/Belay/Sqlite/Model/LiteralData.lean)
     (root + /packages/verifier-conformance/VerifierConformance/Trace.lean)
+    (root + /packages/belay-sqlite-model/Belay/Sqlite/Model/StatementOutput.lean)
+    (root + /packages/belay-sqlite-model/Belay/Sqlite/Model/PossibleOutput.lean)
     (root + /packages/verifier-conformance/VerifierConformance/Outputs.lean)
     (root + /packages/verifier-conformance/VerifierConformance/PossibleOutputs.lean)
     (root + /packages/verifier-conformance/VerifierConformance/Pass.lean)

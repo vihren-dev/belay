@@ -53,14 +53,11 @@ def databaseOf (catalog : Catalog) (natives : List NativeTable) : Database :=
         native.name.sameName object.name).map (·.rows)).getD [])
     | .index _ | .trigger _ => [] }
 
-/-- The primary result-code abstraction matches the granularity of ExecutionError. -/
+/-- The primary result code of an observation's error: 0 without an error, and
+{name}`ExecutionError.primaryCode` of the error. -/
 def primaryCode : Option (Nat × ExecutionError) → Nat
   | none => 0
-  | some (_, .constraintViolation) | some (_, .constraintFail) | some (_, .constraintRollback) => 19
-  | some (_, .datatypeMismatch) => 20
-  | some (_, .unmodeled) | some (_, .prepare _) | some (_, .transactionAlreadyActive)
-  | some (_, .noActiveTransaction) | some (_, .integerOverflow) | some (_, .functionError)
-  | some (_, .nullColumnDefault) | some (_, .nonConstantColumnDefault) | some (_, .checkColumnDefault) => 1
+  | some (_, error) => error.primaryCode
 
 /-- The phase in which SQLite reports a modeled error: a prepare error of resolution
 in {lit}`sqlite3_prepare_v2`, and every other modeled error in {lit}`sqlite3_step`. -/

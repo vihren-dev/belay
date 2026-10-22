@@ -17,7 +17,7 @@ UPDATES = SQLITE + "Resolution/Updates.lean"
 """The resolution of UPDATE, which stores each constant value."""
 EXECUTION = SQLITE + "StatementStep.lean"
 """The checked write of INSERT and UPDATE."""
-OUTPUTS = "verifier-conformance/VerifierConformance/Outputs.lean"
+OUTPUTS = "belay-sqlite-model/Belay/Sqlite/Model/StatementOutput.lean"
 """The outputs of statements, with the change count."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

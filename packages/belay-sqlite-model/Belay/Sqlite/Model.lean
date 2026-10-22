@@ -15,6 +15,8 @@ import Belay.Sqlite.Model.ForeignKeysHold
 import Belay.Sqlite.Model.Execution
 import Belay.Sqlite.Model.LiteralData
 import Belay.Sqlite.Model.SqlExecution
+import Belay.Sqlite.Model.StatementOutput
+import Belay.Sqlite.Model.PossibleOutput
 import Belay.Sqlite.Model.SchemaClockLaws
 import Belay.Sqlite.Model.SqlLaws
 import Belay.Sqlite.Model.ScriptLaws
@@ -30,6 +32,7 @@ import Belay.Sqlite.Model.Laws
 import Belay.Sqlite.Model.CatalogAgreementLaws
 import Belay.Sqlite.Model.Resolution
 
-/-! SQLite states, the facts of an admitted and of a valid database, supported execution,
+/-! SQLite states, the facts of an admitted and of a valid database, supported execution, the
+output of each statement and the results that SQLite may give for it,
 structural preservation facts, and name
 resolution from statement syntax to resolved statements with its specification. -/
