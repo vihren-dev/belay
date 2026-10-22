@@ -23,7 +23,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "check_replace_skips": (UPSERT_RUN, CHECK_STEP,
         CHECK_STEP.replace("failedConstraint table policy.check",
                            "failedConstraint table (if policy.check == .replace then .ignore else policy.check)")),
-    "check_skipped": (LITERAL_DATA, "  table.rows.all (checksHold table.shape) &&\n", ""),
+    "check_skipped": (LITERAL_DATA, "checkedRows table && ", ""),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the replacement.
 The names follow the list in the task of slice 4: a CHECK that NULL fails, CHECK after the

@@ -8,6 +8,10 @@ import Belay.Sqlite.Model.QueryJoinLaws
 import Belay.Sqlite.Model.StoreValueLaws
 import Belay.Sqlite.Model.Resolution.ReadDefaultLaws
 import Belay.Sqlite.Model.Database
+import Belay.Sqlite.Model.DatabaseFacts
+import Belay.Sqlite.Model.DatabaseConstraints
+import Belay.Sqlite.Model.DatabaseConstraintChecks
+import Belay.Sqlite.Model.ForeignKeysHold
 import Belay.Sqlite.Model.Execution
 import Belay.Sqlite.Model.LiteralData
 import Belay.Sqlite.Model.SqlExecution
@@ -26,5 +30,6 @@ import Belay.Sqlite.Model.Laws
 import Belay.Sqlite.Model.CatalogAgreementLaws
 import Belay.Sqlite.Model.Resolution
 
-/-! SQLite states, supported execution, structural preservation facts, and name
+/-! SQLite states, the facts of an admitted and of a valid database, supported execution,
+structural preservation facts, and name
 resolution from statement syntax to resolved statements with its specification. -/

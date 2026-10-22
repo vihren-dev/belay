@@ -8,24 +8,25 @@ set_option doc.verso true
 size. -/
 namespace Belay.Sqlite.Model
 
-/-- For every valid table and list of column/value pairs, {name}`Table.appendColumns`
-remains valid. With no rows, rowid and width conditions are vacuous. Column
-support is a separate catalog check. The proof preserves old cells and rowids,
-adds equal numbers of columns and cells, and uses idempotence of
-{name}`storeValue` for the appended cells. -/
-theorem Table.Valid.appendColumns {table : Table} {columns : List (CatalogColumn × Value)} (valid : table.Valid) :
-    (table.appendColumns columns).Valid := by
-  refine ⟨?_, ?_⟩
-  · simpa [Table.appendColumns, Row.appendValues, List.map_map, Function.comp_def] using valid.1
+/-- For every admitted table and list of column/value pairs, {name}`Table.appendColumns`
+gives an admitted table ({name}`Table.Admitted`). With no rows, each fact is vacuous. Column
+support is a separate catalog check. The proof keeps old cells and rowids, adds equal numbers
+of columns and cells, and uses idempotence of {name}`storeValue` for the appended cells. -/
+theorem Table.Admitted.appendColumns {table : Table} {columns : List (CatalogColumn × Value)}
+    (admitted : table.Admitted) : (table.appendColumns columns).Admitted := by
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  · simpa [Table.RowidsDistinct, Table.appendColumns, Row.appendValues, List.map_map, Function.comp_def] using
+      admitted.rowidsDistinct
   · intro row member
     obtain ⟨original, oldMember, rfl⟩ := List.mem_map.mp member
-    obtain ⟨rowid, width, stored, aliased⟩ := valid.2 original oldMember
-    refine ⟨rowid, by simp [Row.appendValues, Table.appendColumns, width], ?_, ?_⟩
-    rotate_left
-    · intro position alias
-      have cell := aliased position alias
-      have old : position < original.values.length := (List.getElem?_eq_some_iff.mp cell).1
-      simpa [Table.appendColumns, Row.appendValues, List.getElem?_append_left old] using cell
+    exact admitted.rowidsInRange original oldMember
+  · intro row member
+    obtain ⟨original, oldMember, rfl⟩ := List.mem_map.mp member
+    simp [Row.appendValues, Table.appendColumns, admitted.rowsWide original oldMember]
+  · intro row member
+    obtain ⟨original, oldMember, rfl⟩ := List.mem_map.mp member
+    have width := admitted.rowsWide original oldMember
+    have stored := admitted.rowsStored original oldMember
     intro position column value columnAt cellAt
     simp only [Table.appendColumns, Row.appendValues] at columnAt cellAt
     by_cases old : position < original.values.length
@@ -42,6 +43,12 @@ theorem Table.Valid.appendColumns {table : Table} {columns : List (CatalogColumn
         subst column
         subst value
         exact storeValue_storeValue _ _
+  · intro row member
+    obtain ⟨original, oldMember, rfl⟩ := List.mem_map.mp member
+    intro position alias
+    have cell := admitted.rowsAliased original oldMember position alias
+    have old : position < original.values.length := (List.getElem?_eq_some_iff.mp cell).1
+    simpa [Table.appendColumns, Row.appendValues, List.getElem?_append_left old] using cell
 
 /-- For every catalog, position and column, {name}`Catalog.addColumn` keeps the number of
 catalog objects. -/
@@ -57,21 +64,23 @@ theorem Catalog.length_addColumn (catalog : Catalog) (position : Nat) (column : 
 Then {name}`Database.addColumn` satisfies {name}`Conforms` with the extended catalog. A
 position without a table cannot satisfy the second assumption. Use this theorem after
 checking the new catalog. Proof sketch: the changed table is the old valid table with the
-column appended ({name}`Database.table_addColumn`, {name}`Table.Valid.appendColumns`);
+column appended ({name}`Database.table_addColumn`, {name}`Table.Admitted.appendColumns`);
 every other position is unchanged ({name}`Database.table_addColumn_other`). -/
 theorem Conforms.addColumn {catalog : Catalog} {database : Database} {table : Table} {column : CatalogColumn}
     (value : Value) (conforms : Conforms profile catalog database) (present : database.table position = some table)
     (catalogValid : (catalog.addColumn position column).Valid profile.limits) :
     Conforms profile (catalog.addColumn position column) (database.addColumn position column value) := by
-  obtain ⟨same, _, length, each⟩ := conforms
+  obtain ⟨same, admitted⟩ := conforms
   subst same
-  refine ⟨rfl, catalogValid, by simp [Database.addColumn, Catalog.length_addColumn, length], fun other => ⟨?_, ?_⟩⟩
+  have length := admitted.rowsShaped.1
+  refine ⟨rfl, Database.Admitted.ofTables catalogValid
+    ⟨by simp [Database.addColumn, Catalog.length_addColumn, length], fun other => ?_⟩ fun other => ?_⟩
   · intro absent
     by_cases equal : other = position
     · subst other
       have kept := Database.table_addColumn column value present
       simp [Database.table, absent] at kept
-    · have unchanged := (each other).1
+    · have unchanged := admitted.rowsShaped.2 other
       change (database.catalog.addColumn position column).tableAt other = none at absent
       rw [Catalog.tableAt_addColumn_other _ column equal] at absent
       simpa [Database.addColumn, List.getD_eq_getElem?_getD, List.getElem?_modify, Ne.symm equal] using
@@ -81,9 +90,9 @@ theorem Conforms.addColumn {catalog : Catalog} {database : Database} {table : Ta
     · subst other
       rw [Database.table_addColumn column value present] at found
       cases found
-      exact ((each position).2 table present).appendColumns
+      exact (admitted.table present).appendColumns
     · rw [Database.table_addColumn_other database column value equal] at found
-      exact (each other).2 result found
+      exact admitted.table found
 /-- For every catalog, name, table and position below the catalog length,
 {name}`Catalog.createTable` keeps the entry at the position. -/
 theorem Catalog.tableAt_createTable_below (catalog : Catalog) (name : Identifier) (table : CatalogTable)
@@ -116,16 +125,18 @@ theorem Conforms.createTable {catalog : Catalog} {database : Database} (name : I
     (catalogValid : (catalog.createTable name table).Valid profile.limits) :
     Conforms profile (catalog.createTable name table)
       { catalog := database.catalog.createTable name table, rows := database.rows ++ [[]] } := by
-  obtain ⟨same, _, length, each⟩ := conforms
+  obtain ⟨same, admitted⟩ := conforms
   subst same
-  refine ⟨rfl, catalogValid, by simp [Catalog.createTable, length], fun position => ⟨?_, ?_⟩⟩
+  have length := admitted.rowsShaped.1
+  refine ⟨rfl, Database.Admitted.ofTables catalogValid
+    ⟨by simp [Catalog.createTable, length], fun position => ?_⟩ fun position => ?_⟩
   · intro absent
     change (database.catalog.createTable name table).tableAt position = none at absent
     change (database.rows ++ [[]]).getD position [] = []
     rw [rows_getD_append_nil]
     rcases Nat.lt_trichotomy position database.catalog.length with below | equal | above
     · rw [Catalog.tableAt_createTable_below _ _ _ below] at absent
-      exact (each position).1 absent
+      exact admitted.rowsShaped.2 position absent
     · subst equal
       rw [Catalog.tableAt_createTable_end] at absent
       cases absent
@@ -136,15 +147,14 @@ theorem Conforms.createTable {catalog : Catalog} {database : Database} (name : I
           position = database.table position := by
         simp only [Database.table, Catalog.tableAt_createTable_below _ _ _ below, rows_getD_append_nil]
       rw [kept] at found
-      exact (each position).2 result found
+      exact admitted.table found
     · subst equal
       simp only [Database.table, Catalog.tableAt_createTable_end, Option.map_some, Option.some.injEq,
         rows_getD_append_nil] at found
       subst found
       have empty : database.rows.getD database.catalog.length [] = [] := by
         simp [List.getD_eq_getElem?_getD, List.getElem?_eq_none (by omega : database.rows.length ≤ database.catalog.length)]
-      rw [empty]
-      exact ⟨by simp, fun _ member => by simp at member⟩
+      exact Table.Admitted.ofEmpty empty
     · simp [Database.table, Catalog.tableAt_createTable_above _ _ _ above] at found
 
 end Belay.Sqlite.Model

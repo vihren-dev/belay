@@ -77,7 +77,7 @@ theorem LiteralData.insertRow_constraints (old : constraints keys table = true)
       keyEqual key row { rowid := newRowid table values, values := newCells table values (newRowid table values) } =
         false) :
     constraints keys (insertRow table values) = true := by
-  simp only [constraints, Bool.and_eq_true] at old ⊢
+  simp only [constraints, notNullRows, typedRows, checkedRows, keysUnique, Bool.and_eq_true] at old ⊢
   refine ⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩
   · simpa [insertRow, List.all_append, nonnull] using old.1.1.1
   · simpa [insertRow, List.all_append, typed] using old.1.1.2

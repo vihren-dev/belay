@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.ExprEval
+import Belay.Sqlite.Model.DatabaseFacts
 
 set_option doc.verso true
 
@@ -82,17 +83,31 @@ def checksHold (shape : CatalogTable) (row : Row) : Bool :=
 def typesFit (shape : CatalogTable) (row : Row) : Bool :=
   (shape.columns.zip row.values).all fun (column, value) => column.strictType.all (·.fits value)
 
-/-- Check NOT NULL cells, the types of a {lit}`STRICT` table ({name}`typesFit`), the CHECK
-constraints of every row, and the pairwise uniqueness
-of every given key. NOT NULL checks inspect only zipped column/cell pairs; row width is
-checked separately. A table with no rows satisfies them all. In the admitted domain
-these checks represent ABORT constraints, rather than admission restrictions. -/
+/-- Check that no NOT NULL column holds NULL in a row of the table. It inspects only zipped
+column/cell pairs; row width is a separate fact ({lit}`Table.RowsWide`). A table with no rows
+passes. -/
+def notNullRows (table : Table) : Bool :=
+  table.rows.all fun row => (table.shape.columns.zip row.values).all
+    fun (column, value) => !column.notNull || value != .null
+
+/-- Check that every row of the table satisfies {name}`typesFit`. A table with no rows passes. -/
+def typedRows (table : Table) : Bool := table.rows.all (typesFit table.shape)
+
+/-- Check that every row of the table satisfies {name}`checksHold`. A table with no rows passes. -/
+def checkedRows (table : Table) : Bool := table.rows.all (checksHold table.shape)
+
+/-- Check that no two rows of the table conflict on any of the given keys ({name}`uniqueRows`).
+With no keys, or with at most one row, it passes. -/
+def keysUnique (keys : List UniqueKey) (table : Table) : Bool := keys.all fun key => uniqueRows key table.rows
+
+/-- Check NOT NULL cells ({name}`notNullRows`), the types of a {lit}`STRICT` table
+({name}`typedRows`), the CHECK constraints of every row ({name}`checkedRows`), and the pairwise
+uniqueness of every given key ({name}`keysUnique`). Row width is checked separately. A table with
+no rows satisfies them all. In the admitted domain these checks represent ABORT constraints,
+rather than admission restrictions. The facts of a valid database ({lit}`Database.Valid`) are
+stated with the same four checks. -/
 def constraints (keys : List UniqueKey) (table : Table) : Bool :=
-  table.rows.all (fun row => (table.shape.columns.zip row.values).all
-    (fun (column, value) => !column.notNull || value != .null)) &&
-  table.rows.all (typesFit table.shape) &&
-  table.rows.all (checksHold table.shape) &&
-  keys.all (fun key => uniqueRows key table.rows)
+  notNullRows table && typedRows table && checkedRows table && keysUnique keys table
 
 /-- Require {name}`constraints` on the table before a write: its NOT NULL cells and its
 unique keys hold. SQLite guarantees them for every table that it stores. -/

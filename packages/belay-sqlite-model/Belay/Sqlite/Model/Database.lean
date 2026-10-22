@@ -7,9 +7,9 @@ set_option doc.verso true
 
 /-! The database: a catalog and the stored rows of each catalog object. No coercions,
 SQL expressions or native-engine correctness are assumed here. The catalog is the only
-record of the schema; {lit}`Database.table` pairs a table's catalog entry with its rows,
-and {lit}`Conforms` relates a database to a catalog and the limits of a profile, and
-deliberately overapproximates native data. -/
+record of the schema; {lit}`Database.table` pairs a table's catalog entry with its rows.
+The facts of an admitted and of a valid database are in {lit}`DatabaseFacts` and
+{lit}`DatabaseConstraints`. -/
 
 namespace Belay.Sqlite.Model
 
@@ -103,61 +103,8 @@ catalog's validity can be proved with {lit}`decide`. -/
 instance Catalog.decidableValid (limits : Limits) (catalog : Catalog) : Decidable (catalog.Valid limits) :=
   inferInstanceAs (Decidable (catalog.supported limits = true))
 
-/-- For the given rowid, require both signed 64-bit bounds:
-* It is at least negative two to the power 63.
-* It is less than two to the power 63. -/
-def validRowid (rowid : Int) : Prop := -(2 ^ 63 : Int) ≤ rowid ∧ rowid < 2 ^ 63
-
-/-- For the given columns and row: for every position at which both a column and a
-cell exist, the cell equals {name}`storeValue` of itself with the column's affinity.
-Positions without a column or without a cell impose nothing. SQLite stores every
-value that it writes in this form, so every database that SQLite reaches meets it
-(ADR 0012, amendment 1, question 5). -/
-def Row.Stored (columns : List CatalogColumn) (row : Row) : Prop :=
-  ∀ (position : Nat) (column : CatalogColumn) (value : Value),
-    columns[position]? = some column → row.values[position]? = some value →
-    storeValue column.affinity value = value
-
-/-- For the given rowid alias and row: when the table has a rowid alias at a position,
-the row's cell there is the integer rowid of the row. Without an alias it requires
-nothing. SQLite stores an alias as the rowid itself, so every database that SQLite reaches
-meets it (ADR 0012, amendment 4, slice 5b). -/
-def Row.Aliased (alias : Option Nat) (row : Row) : Prop :=
-  ∀ position, alias = some position → row.values[position]? = some (.integer row.rowid)
-
-/-- For the given table, require of every stored row: it satisfies {name}`validRowid`,
-has one cell per column, is {name}`Row.Stored` for the table's columns, and is
-{name}`Row.Aliased` for the table's rowid alias. With no rows it imposes nothing. -/
-def Table.RowsValid (table : Table) : Prop :=
-  ∀ row ∈ table.rows, validRowid row.rowid ∧ row.values.length = table.shape.columns.length ∧
-    row.Stored table.shape.columns ∧ row.Aliased table.shape.rowidAlias
-
-/-- For the given table, require both conditions:
-* Its physical rowids have no duplicates.
-* Its rows satisfy {name}`Table.RowsValid`.
-With no rows, both conditions impose nothing; column support is a catalog check. -/
-def Table.Valid (table : Table) : Prop :=
-  (table.rows.map Row.rowid).Nodup ∧ table.RowsValid
-
-/-- For the given profile and database, require each of these:
-* The catalog satisfies {name}`Catalog.Valid` under the profile's limits.
-* {lit}`rows` has exactly one entry for each catalog object.
-* At a position without a table (an index), the stored row list is empty.
-* Every table that {name}`Database.table` gives satisfies {name}`Table.Valid`.
-Native representability and constraint truth are separate claims. -/
-def Database.Valid (profile : Profile) (database : Database) : Prop :=
-  database.catalog.Valid profile.limits ∧ database.rows.length = database.catalog.length ∧ ∀ position,
-    (database.catalog.tableAt position = none → database.rows.getD position [] = []) ∧
-    ∀ table, database.table position = some table → table.Valid
-
-/-- For the given profile, catalog and database, require both:
-* The database's catalog is the given catalog.
-* The database satisfies {name}`Database.Valid` under the profile. -/
-def Conforms (profile : Profile) (catalog : Catalog) (database : Database) : Prop :=
-  database.catalog = catalog ∧ database.Valid profile
-
-/-- A database with the catalog and no rows at any position. Show {name}`Conforms`,
-including catalog validity, separately. -/
+/-- A database with the catalog and no rows at any position. Show its admission
+({lit}`Catalog.emptyDatabase_conforms`), including catalog validity, separately. -/
 def Catalog.emptyDatabase (catalog : Catalog) : Database :=
   { catalog, rows := catalog.map fun _ => [] }
 

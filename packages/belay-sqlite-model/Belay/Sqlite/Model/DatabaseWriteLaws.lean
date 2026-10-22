@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.DatabaseLaws
+import Belay.Sqlite.Model.DatabaseFacts
 
 set_option doc.verso true
 
@@ -8,14 +9,15 @@ the new rows are valid, and writes to distinct positions commute. -/
 namespace Belay.Sqlite.Model
 
 /-- For every conforming database, position, table in its view and rows: if the table with
-the rows satisfies {name}`Table.Valid`, then storing the rows at the position
+the rows satisfies {name}`Table.Admitted`, then storing the rows at the position
 ({name}`Database.setRows`) conforms to the same catalog. Use this for one-table writes.
 The proof separates the changed position from the others. -/
 theorem Conforms.setRows {database : Database} {position : Nat} {table : Table} {rows : List Row}
     (conforms : Conforms profile catalog database) (present : database.table position = some table)
-    (valid : ({ table with rows } : Table).Valid) : Conforms profile catalog (database.setRows position rows) := by
-  obtain ⟨same, catalogValid, length, each⟩ := conforms
+    (valid : ({ table with rows } : Table).Admitted) : Conforms profile catalog (database.setRows position rows) := by
+  obtain ⟨same, admitted⟩ := conforms
   subst same
+  have length := admitted.rowsShaped.1
   have found : database.catalog.tableAt position = some table.shape := by
     cases h : database.catalog.tableAt position with
     | none => simp [Database.table, h] at present
@@ -27,14 +29,15 @@ theorem Conforms.setRows {database : Database} {position : Nat} {table : Table} 
     cases h : database.catalog[position]? with
     | none => simp [h] at found
     | some _ => exact length ▸ (List.getElem?_eq_some_iff.mp h).1
-  refine ⟨rfl, catalogValid, by simp [Database.setRows, length], fun other => ⟨?_, ?_⟩⟩
+  refine ⟨rfl, Database.Admitted.ofTables admitted.catalogSupported
+    ⟨by simp [Database.setRows, length], fun other => ?_⟩ fun other => ?_⟩
   · intro absent
     change database.catalog.tableAt other = none at absent
     by_cases equal : other = position
     · subst other
       simp [absent] at found
     · simpa [Database.setRows, List.getD_eq_getElem?_getD, List.getElem?_set_ne (Ne.symm equal)] using
-        (each other).1 absent
+        admitted.rowsShaped.2 other absent
   · intro result found
     by_cases equal : other = position
     · subst other
@@ -42,7 +45,7 @@ theorem Conforms.setRows {database : Database} {position : Nat} {table : Table} 
       cases found
       exact valid
     · rw [Database.table_setRows_other database rows equal] at found
-      exact (each other).2 result found
+      exact admitted.table found
 
 /-- For every database, two distinct positions and two row lists, storing the rows in
 either order gives the same database. Use this equality for independent writes. Proof

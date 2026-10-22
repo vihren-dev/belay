@@ -17,3 +17,14 @@ Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D1, D2 and D4.
 ## Progress log
 
 - 2026-10-22: the task file.
+- 2026-10-22: the atoms and both bundles. `DatabaseFacts.lean` has `Database.EveryTable`,
+  the row atoms (moved from `Database.lean`), `Table.Admitted`, `Database.Admitted` and
+  `Conforms` over it; `DatabaseFactChecks.lean` decides them. `DatabaseConstraints.lean`
+  has `NotNull`, `TypesFit`, `ChecksHold`, `KeysUnique` and `Database.Valid`;
+  `DatabaseConstraintChecks.lean` decides them with the checks that
+  `LiteralData.constraints` now combines (`notNullRows`, `typedRows`, `checkedRows`,
+  `keysUnique`). `ForeignKeysHold.lean` states the foreign keys with `parentFound`.
+  `ValidityExamples.lean` has the cases of the task file. The laws use `Admitted`
+  (`Table.Admitted.appendColumns`, `Conforms.setRows`). The CHECK mutant
+  `check_skipped` now removes `checkedRows` from `constraints`. `just test-source`:
+  450 passed. The predictions are byte-identical to the baseline.

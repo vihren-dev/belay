@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.QueryLaws
+import Belay.Sqlite.Model.DatabaseFacts
 import Belay.Sqlite.Model.QueryFunctions
 
 set_option doc.verso true
@@ -30,14 +31,14 @@ theorem Query.source_none (context : EvalContext) (query : Query) (database : Da
   simp only [Query.source, none_, List.foldlM]
   rfl
 
-/-- For every valid table, every row of {name}`sourceRows` has one cell per column.
-Proof sketch: the scanned rows are a permutation of the table's rows
+/-- For every table that satisfies {name}`Table.RowsWide`, every row of {name}`sourceRows` has
+one cell per column. Proof sketch: the scanned rows are a permutation of the table's rows
 ({name}`Belay.Sqlite.Model.Table.scanRows_perm`), each of which has one cell per column. -/
-theorem sourceRows_width {table : Table} (valid : table.Valid) :
+theorem sourceRows_width {table : Table} (wide : table.RowsWide) :
     ∀ cells ∈ sourceRows table, cells.length = table.shape.columns.length := by
   intro cells member
   obtain ⟨row, sorted, rfl⟩ := List.mem_map.mp member
-  exact (valid.2 row (table.scanRows_perm.mem_iff.mp sorted)).2.1
+  exact wide row (table.scanRows_perm.mem_iff.mp sorted)
 
 /-- For every evaluation context, width, left row of that width, join, and candidate rows of
 {lit}`columns` cells each, every row of {name}`joinMatches` in the context has the width plus {lit}`columns` cells. Proof
@@ -76,7 +77,7 @@ theorem joinRow_width (context : EvalContext) {width : Nat} {leftRow : List Valu
 row is a left row followed by a candidate or by NULL padding, or, for a right or full join,
 NULL padding of the width followed by a candidate. Proof sketch: a row of the first part has
 the width by {name}`joinRow_width`; an added right row is a candidate after the width's
-NULLs. Use {name}`sourceRows_width` for the rows of a valid table. -/
+NULLs. Use {name}`sourceRows_width` for the rows of a table with one cell per column. -/
 theorem joinRows_width (context : EvalContext) {width : Nat} {left : List (List Value)} {candidates : List (List Value)} {columns : Nat} (join : QuerySource)
     (valid : ∀ cells ∈ candidates, cells.length = columns) (widths : ∀ row ∈ left, row.length = width) :
     ∀ row ∈ joinRows context width left join columns candidates, row.length = width + columns := by

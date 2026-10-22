@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-22T07:31:06+00:00",
+  "finding": "20261022T073051Z-d3f0a621#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the link points to ADR 0017, D3"
+}

@@ -30,8 +30,8 @@ def extended : Table := original.appendColumns [(addedColumn, .text [55]), (text
 #guard (original.appendColumns []).rows == original.rows
 #guard (({ original with rows := [] }).appendColumns [(addedColumn, .integer 7)]).rows.isEmpty
 
-example (table : Table) (valid : table.Valid) (columns : List (CatalogColumn × Value)) :
-    (table.appendColumns columns).Valid := valid.appendColumns
+example (table : Table) (admitted : table.Admitted) (columns : List (CatalogColumn × Value)) :
+    (table.appendColumns columns).Admitted := admitted.appendColumns
 example (table : Table) (first second : List (CatalogColumn × Value)) :
     (table.appendColumns first).appendColumns second = table.appendColumns (first ++ second) :=
   table.appendColumns_append first second

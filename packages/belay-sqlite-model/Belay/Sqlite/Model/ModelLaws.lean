@@ -81,15 +81,14 @@ theorem Catalog.emptyDatabase_conforms (valid : catalog.Valid profile.limits) :
     intro position
     simp only [List.getD_eq_getElem?_getD, List.getElem?_map]
     cases catalog[position]? <;> rfl
-  refine ⟨rfl, valid, by simp [Catalog.emptyDatabase], fun position => ⟨fun _ => empty position, ?_⟩⟩
-  intro table present
+  refine ⟨rfl, Database.Admitted.ofTables valid ⟨by simp [Catalog.emptyDatabase], fun position _ => empty position⟩ ?_⟩
+  intro position table present
   cases found : catalog.tableAt position with
   | none => simp [Catalog.emptyDatabase, Database.table, found] at present
   | some shape =>
     simp only [Catalog.emptyDatabase, Database.table, found, Option.map_some, Option.some.injEq] at present
     subst table
-    simp only [empty]
-    exact ⟨by simp, fun _ member => by simp at member⟩
+    exact Table.Admitted.ofEmpty (empty position)
 
 /-- For every conforming database and table in its view, the catalog entry at that
 position is the table's shape. The table-presence premise excludes absence. Use
@@ -108,18 +107,18 @@ theorem Conforms.shape (conforms : Conforms profile catalog database)
 
 /-- For every profile, catalog, database, position and shape, assume
 {name}`Conforms` and a table entry with that shape at the position. Then the view has
-a table at the position with exactly that shape, and it satisfies {name}`Table.Valid`.
+a table at the position with exactly that shape, and it satisfies {name}`Table.Admitted`.
 A position without a table cannot meet the premise. Proof sketch: the catalog is the
 database's, so {name}`Database.table` builds the table from the entry, and validity holds
 for every table of the view. -/
 theorem Conforms.table {shape : CatalogTable} (conforms : Conforms profile catalog database)
     (lookup : catalog.tableAt position = some shape) :
-    ∃ table, database.table position = some table ∧ table.shape = shape ∧ table.Valid := by
-  obtain ⟨same, _, _, each⟩ := conforms
+    ∃ table, database.table position = some table ∧ table.shape = shape ∧ table.Admitted := by
+  obtain ⟨same, admitted⟩ := conforms
   subst same
   have present : database.table position = some { shape, rows := database.rows.getD position [] } := by
     simp [Database.table, lookup]
-  exact ⟨_, present, rfl, (each position).2 _ present⟩
+  exact ⟨_, present, rfl, admitted.table present⟩
 
 /-- For every before/after table and name list, assume {name}`TableExtends` and
 {name}`Covers` before. Then coverage holds after; with no names it is vacuous.
