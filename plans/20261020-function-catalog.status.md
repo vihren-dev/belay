@@ -57,7 +57,7 @@ Specification: [ADR 0015](../docs/adr-0015-functions.md), D1, D2 and D3.
   restricted example was `abs(a)`, modeled since this slice; "fix: the predict test and the
   restriction example use ln()" uses `ln(a)` (the recorder refuses `random()`).
 
-## Remaining
+## Done
 
-- `just test-full` after the fixes; the claims of corpus 36 and the 394 upstream cases go into
-  the PR B of the ADR.
+- 2026-10-22: the claims of corpus 36 are in `judge/claims.json`; they were merged with the
+  other claims of ADR 0015 in pull request #197, after the model in #196.
