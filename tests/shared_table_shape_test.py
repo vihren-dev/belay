@@ -66,11 +66,11 @@ example : ¬Conforms profile catalog {} := by
   simp [catalog, catalogWith] at equal
 example : ¬Conforms profile catalog { catalog, rows := [[]] } := by
   intro conforms
-  have equal := conforms.2.2.1
+  have equal := conforms.2.rowsShaped.1
   simp [catalog, catalogWith] at equal
 example : ¬Conforms profile catalog { catalog, rows := [[], [⟨1, [.null, .null, .null]⟩]] } := by
   intro conforms
-  have empty := (conforms.2.2.2 1).1 rfl
+  have empty := conforms.2.rowsShaped.2 1 rfl
   simp at empty
 #guard !(catalog ++ catalog).supported profile.limits
 example : catalog.tableAt 0 = some shape := rfl

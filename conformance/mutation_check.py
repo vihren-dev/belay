@@ -18,7 +18,7 @@ MUTANTS = {
                      "{ database with catalog := database.catalog.addColumn target column }"),
     "rollback_ignored": ("StatementStep", ".next { state with database := original, snapshot := none }",
                          ".next { state with snapshot := none }"),
-    "unique_disabled": ("LiteralData", "keys.all (fun key => uniqueRows key table.rows)", "true"),
+    "unique_disabled": ("LiteralData", "keys.all fun key => uniqueRows key table.rows", "true"),
 }
 
 

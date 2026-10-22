@@ -31,3 +31,7 @@ Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D1, D2 and D4.
 - 2026-10-22: review fixes: proof sketches for the library lemmas of `DatabaseFacts`,
   `DatabaseFactChecks` and `DatabaseConstraintChecks`, and failing examples for the catalog
   support (`lowered`) and the row-list shape.
+- 2026-10-22: `just test-full` found two callers of the old forms: the mutant
+  `unique_disabled` (`conformance/mutation_check.py`) searched for the old text of the unique
+  check, and `tests/shared_table_shape_test.py` used positional projections of the old
+  `Database.Valid`. Both now use the new forms, and both tests pass.
