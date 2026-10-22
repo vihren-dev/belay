@@ -1,7 +1,7 @@
-# Trial development shell for ADR 0020: the tools of nix/flake.nix's dev shell, plus the
-# pinned Lean toolchain and the parser library of the Nix builds, so that a local
-# `lake build` uses the same Lean and links the same parser.
-# Enter it with `nix-shell`, or with direnv and `use nix` in .envrc.
+# The development shell that .envrc loads: the packages of nix/dev-shell.nix, which the
+# flake dev shell also has, plus the pinned Lean toolchain and the parser library of the Nix
+# builds, so that a local `lake build` (just dev-build) uses the same Lean and links the same
+# parser.
 { system ? builtins.currentSystem }:
 let
   pkgs = import ./build-support/locked-nixpkgs.nix { inherit system; };
@@ -9,7 +9,7 @@ let
   # The same derivations, and so the same store paths, as the Nix builds use.
   build = import ./build-support/default.nix { inherit system pkgs native; };
   leanToolchain = build.leanToolchain;
-  testPython = pkgs.python3.withPackages (ps: [ ps.pytest ps.hypothesis ]);
+  shell = import ./nix/dev-shell.nix { inherit pkgs native system; };
   linux = pkgs.stdenv.hostPlatform.isLinux;
   # Lake compiles and links with the toolchain's bundled clang. That clang links for the
   # loader /lib64/ld-linux-x86-64.so.2, which NixOS does not have. With LEAN_CC set, Lake
@@ -33,12 +33,7 @@ let
   '';
 in
 pkgs.mkShell ({
-  packages = [ pkgs.just pkgs.coreutils testPython native.sqlite native.sqlite346 native.sqlite3534
-               leanToolchain ]
-    ++ pkgs.lib.optionals linux [ pkgs.patchelf ];
-  SQLITE_VERIFIER_SHELL = "default";
-  SQLITE_VERIFIER_SYSTEM = system;
-  SQLITE_VERIFIER_PYTHON = "${pkgs.python3}/bin/python3";
+  packages = shell.packages ++ [ leanToolchain ];
   # The text package's lakefile reads it when Lake loads the package, as its Nix build does.
   BELAY_PARSER_LIBRARY = "${build.parserLibrary.library}";
-} // pkgs.lib.optionalAttrs linux { LEAN_CC = "${leanCc}"; })
+} // shell.environment // pkgs.lib.optionalAttrs linux { LEAN_CC = "${leanCc}"; })

@@ -42,7 +42,8 @@ def test_environment_and_capacity_boundaries(tmp_path: Path) -> None:
     flake.write_text('{}')
     (environment / 'flake.lock').write_text('{}')
     (environment / 'sqlite.nix').write_text('{}')
-    assert check_environment(tmp_path) == 6
+    (environment / 'dev-shell.nix').write_text('{}')
+    assert check_environment(tmp_path) == 8
     with patch('tools.check_resources.shutil.disk_usage', return_value=SimpleNamespace(free=MIN_FREE_BYTES)):
         check_resources(tmp_path)
     with patch('tools.check_resources.shutil.disk_usage', return_value=SimpleNamespace(free=MIN_FREE_BYTES - 1)):

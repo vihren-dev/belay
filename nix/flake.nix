@@ -20,16 +20,9 @@
       devShells = forSystems (system:
         let
           tools = packagesFor system;
-          testPython = tools.pkgs.python3.withPackages (ps: [ ps.pytest ps.hypothesis ]);
-          runtimePackages = with tools.pkgs; [ just coreutils testPython tools.sqlite tools.sqlite346 tools.sqlite3534 ]
-            ++ lib.optionals stdenv.hostPlatform.isLinux [ patchelf ];
+          shell = import ./dev-shell.nix { inherit system; inherit (tools) pkgs; native = tools; };
         in {
-          default = tools.pkgs.mkShell {
-            packages = runtimePackages;
-            SQLITE_VERIFIER_SHELL = "default";
-            SQLITE_VERIFIER_SYSTEM = system;
-            SQLITE_VERIFIER_PYTHON = "${tools.pkgs.python3}/bin/python3";
-          };
+          default = tools.pkgs.mkShell ({ inherit (shell) packages; } // shell.environment);
         });
     };
 }

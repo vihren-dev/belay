@@ -222,6 +222,7 @@ in {
       (root + /nix/flake.nix)
       (root + /nix/flake.lock)
       (root + /nix/sqlite.nix)
+      (root + /nix/dev-shell.nix)
       (root + /build-support/conformance-native.nix)
       (root + /tests/upstream_profile_calls.test)
       (root + /tests/upstream_helper_calls.test)
