@@ -3,7 +3,8 @@
 Created 2026-10-22. Status: OPEN.
 Status file: [status](20261022-validity-atoms.status.md).
 Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D1, D2 and D4 (slice 1).
-Needed by: [S2](20261022-surface-s2.task.md), whose `db!` proves `Database.Valid`.
+Needed by: S2 of the user surface ([ADR 0017](../docs/adr-0017-user-surface.md), D3, amended
+2026-10-22), whose `db!` proves `Database.Valid`.
 
 ## Scope
 
@@ -49,9 +50,11 @@ that carries its validity (ADR 0022, D5); the surface.
   it holds and one on which it fails, both proved with `decide +kernel`. The failing cases
   include: a NULL in a NOT NULL column, a CHECK that is false, a text in a `STRICT INTEGER`
   column, two rows equal on a UNIQUE column, two rows equal on a partial unique index whose filter
-  is true for both and two whose filter is false for one, two texts equal under `NOCASE` on a
-  unique index with that collation, two equal rowids, a rowid out of range, a short row, a cell
+  is true for both, two texts equal under `NOCASE` on a unique index with that collation, two equal rowids, a rowid out of range, a short row, a cell
   not in its stored form, an alias cell that is not the rowid, a child row without a parent.
+- **Cases that hold although they look like failures.** Two rows equal on a partial unique index
+  whose filter is false for one of them, and two rows with NULL in the same UNIQUE column: SQLite
+  stores both, and "keys unique" holds (`LiteralData.keyEqual`).
 - **The bundles.** `decide +kernel` proves `Database.Valid` for the guide's first example
   database (the table `invoices` with two rows), and proves for a database with a NULL in a NOT
   NULL column that it is `Database.Admitted` and not `Database.Valid`.
