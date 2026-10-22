@@ -6,8 +6,9 @@ Nix loader through `LEAN_CC`; `just build` no longer links its runtime into the 
 so the local loop builds in `packages/`.
 Changed 2026-10-22: based on the layout of ADR 0021 and the text package (pull requests
 #209 to #212). The targets, the runtime root, the shell's parser library and the
-measurements follow that layout.
-Implementation: one task file and one pull request, after the open owner decisions below.
+measurements follow that layout. Later the same day: agent sessions load `.envrc` through
+direnv (fact 8), so D1, D5 and D6 rely on it; owner decisions 2 and 3 are decided.
+Implementation: one task file and one pull request.
 Audience: designers and reviewers.
 Related: [ADR 0010](adr-0010-lake-builds-and-artifact-cache.md) (Lake builds, one Nix
 derivation per Lean package), [ADR 0011](adr-0011-product-trust-and-development-integrity.md)
@@ -122,6 +123,17 @@ modules). The times above include it. This ADR does not depend on it.
 7. **The judge runs without Nix.** `python -m judge run --root . --claims FILE -- COMMAND`
    gives each claimed corpus's inputs to the command and checks the claims. Its claims
    file maps each corpus name to its claim, so a copy with fewer corpora checks fewer.
+8. **Agent sessions load `.envrc`, and cannot start a new Nix shell.** Since 2026-10-22
+   the owner's user configuration (not this repository) gives each Claude Code session
+   the direnv environment of its working directory: a hook runs `direnv export bash`
+   when the session starts and each time it changes directory, and the session's later
+   commands get the result. A second hook refuses commands that run `nix develop` or
+   `nix-shell`, because each call made a new `/tmp/nix-shell.*` directory with its own
+   pytest data (30 directories and 6.8 GB on 2026-10-21). direnv loads an `.envrc` only
+   after `direnv allow` in that directory, again after each change of the file, and once
+   for each jj workspace. The owner runs it; an agent runs it only with the owner's
+   permission. Checked on 2026-10-22: after a change into this workspace, a command found
+   the dev shell's `just`, `TMPDIR` was not set, and `nix-shell --version` was refused.
 
 ## Decision
 
@@ -132,8 +144,10 @@ has the packages of the flake dev shell and the toolchain of `build-support/defa
 It sets `BELAY_PARSER_LIBRARY` to `parserLibrary.library` of the same build (fact 5), and
 on Linux it sets `LEAN_CC` to the last wrapper of fact 4. The two shells take their
 package list from one file under `nix/`, which both can import, so that they cannot
-drift apart. `.envrc` loads `shell.nix` (`use nix`). The flake dev shell stays for CI,
-which calls `nix develop path:./nix` (owner decision 3).
+drift apart. `.envrc` loads `shell.nix` (`use nix`), so each agent session that changes
+into the repository has the shell of the local loop (fact 8). The flake dev shell stays
+for CI, which calls `nix develop path:./nix`, and for users who enter it by hand (owner
+decision 3).
 
 The trial `shell.nix` on the branch of this ADR shows the shell. It keeps its own
 package list until the implementation shares it.
@@ -185,6 +199,17 @@ they fail, as the repository's rule for error messages requires.
 loop; before each commit, run the Nix checks that the existing rules require. A local
 result is not evidence: commit messages, status files and pull requests cite Nix
 results only. This follows ADR 0011: a result on a developer machine decides nothing.
+(Owner decision 2.)
+
+The rule also says that direnv loads the shell (fact 8): agents run `just` and `lake`
+directly and do not enter a shell. When a tool of the shell is missing, the agent asks
+the owner to run `direnv allow`. Two texts that tell readers to enter the shell change
+with it:
+
+- The first comment of the `justfile` says that direnv loads the shell, and names
+  `nix develop path:./nix` only for a shell outside direnv.
+- The README keeps `nix develop path:./nix` for users. Its direnv sentence says that
+  `.envrc` loads `shell.nix`, which needs direnv, and that nix-direnv only caches it.
 
 ### D6. Tests
 
@@ -194,8 +219,10 @@ The test suite checks the parts that are our code and can be wrong without notic
   corpora as `judge/claims.json`, and no others.
 - The local runtime root has the layout that `conformance.predict` reads.
 
-A test marked `requires_nix` (outside the Nix suites, because it needs `nix-shell` on
-the host) runs `just dev-build` twice and checks that the second run compiles no job,
+A test marked `requires_nix` (outside the Nix suites, because it needs the shell of D1
+on the host) runs in the shell that direnv loaded and does not start a shell itself
+(fact 8). It skips with a message when `LEAN_CC` (on Linux) or `BELAY_PARSER_LIBRARY` is
+not set. It runs `just dev-build` twice and checks that the second run compiles no job,
 checks that the runner and the translation program start (so a Lean upgrade that
 changes the toolchain's flags fails here), and runs `just dev-verdict` on one small
 corpus and checks exit code 0. The pull request records one measurement on the same
@@ -215,6 +242,9 @@ commit: the counts of `just dev-verdict` equal those of `just verdict`.
 - **Two ways to build can disagree.** Nothing in the local loop is evidence, and the
   Nix checks before each commit catch a difference. The loop uses the same toolchain,
   parser library and sources, so a difference shows a bug in the loop.
+- **The `.envrc` change needs `direnv allow` in each workspace.** Until the owner runs
+  it, direnv loads nothing there, and the session has neither the shell of D1 nor the
+  flake shell. The agent sees that `just` or `lean` is missing and asks the owner.
 - **The Nix CI times do not change.** This ADR changes only the agent's edit loop.
 
 ## Alternatives considered
@@ -263,13 +293,10 @@ Decided on 2026-10-22:
 
 1. **The surface package in D2.** The local loop builds it. A model change can break the
    surface, and after the text package it built in 2 s.
-
-To be decided:
-
-2. **The rule of D5.** Recommended as written: the local loop while editing, the Nix
-   checks before each commit.
-3. **The flake dev shell.** Recommended: keep it for CI, with the package list shared
-   with `shell.nix`. The alternative replaces it with `shell.nix` everywhere, which
+2. **The rule of D5.** As written: the local loop while editing, the Nix checks before
+   each commit.
+3. **The flake dev shell.** Keep it for CI, with the package list shared with
+   `shell.nix`. The rejected alternative replaced it with `shell.nix` everywhere, which
    changes the CI workflows and the README.
 
 ## Sources
