@@ -139,6 +139,21 @@ and changed tests and checks, including checks that tools run during a build.
   cases that we need, names the upstream report, and is removed when the fix
   arrives.
 
+## The local build loop
+
+direnv loads the development shell of `shell.nix` when a session changes into
+the repository. Run `just`, `lake` and `python3` directly. Do not start a shell
+with `nix develop` or `nix-shell`. If `just dev-build` says that the shell is
+not loaded, ask the owner to run `direnv allow` in the workspace.
+
+- While you edit the Lean packages under `packages/`, check each edit with
+  `just dev-build`. When the edit can change a prediction, also run
+  `just dev-verdict`, for all corpora or for the ones that the edit touches.
+- Before each commit, run the Nix checks that the other rules require, for
+  example `just test-full` or `just verdict`.
+- A local result is not evidence (ADR 0011, ADR 0020). Commit messages, status
+  files and pull requests cite only results of the Nix checks.
+
 ## Development claims
 
 The verdict job checks the claims in `judge/claims.json` against the frozen

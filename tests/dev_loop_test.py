@@ -92,6 +92,7 @@ def test_a_timeout_stops_the_loop_with_a_message(monkeypatch: pytest.MonkeyPatch
     """`dev_loop.main` turns a build that runs out of time into exit code 2 and a message that
     names the command and its time limit, not a traceback."""
     def stuck(*_: object) -> int:
+        """A build that runs out of time."""
         raise subprocess.TimeoutExpired(["lake", "build", "conformance-runner"], 1800)
     monkeypatch.setattr(dev_loop, "check_ready", lambda *_: None)
     monkeypatch.setattr(dev_loop, "build", stuck)

@@ -27,3 +27,5 @@ Source files: `shell.nix`, `nix/flake.nix`, `.envrc`, `justfile`, `tools/check_r
   (4 unit tests and the `requires_nix` test, which passed in the shell); `just test-source`
   454 passed; `just test-nix` 68 passed. The first comment of the `justfile` says that
   direnv loads the shell.
+- 2026-10-22: the agent rule of D5 in `AGENTS.md` ("The local build loop"), item 6. The
+  README's direnv sentence changed with the shell commit.
