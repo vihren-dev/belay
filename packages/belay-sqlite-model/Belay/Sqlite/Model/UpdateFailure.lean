@@ -8,14 +8,16 @@ table at that time (SQLite 3.51, measured with the {lit}`sqlite3` shell). The mo
 table after the UPDATE ({name}`Belay.Sqlite.Model.LiteralData.updated`) and checks it once.
 
 For an UPDATE of one row the two agree: the table at that time is the table after the UPDATE. For
-an UPDATE of several rows, the candidates are the first failure of each changed row: its NOT NULL,
-{lit}`STRICT` or CHECK failure, or else each key on which its new values conflict with another
-row in its old values or in its new values. The argument that this list contains SQLite's choice:
-SQLite fails at the first changed row {lit}`r` that fails, in the order that it visits the rows.
-The failure of {lit}`r` by itself does not depend on the other rows, and SQLite names it first.
-When {lit}`r` has none, SQLite names a key on which {lit}`r` conflicts with a row {lit}`j` of the
-table at that time. That row is in its old values (SQLite has not changed it yet) or in its new
-values, so the key is in the list.
+an UPDATE of several rows, the candidates are the failures that can be the first failure of each
+changed row: its NOT NULL, {lit}`STRICT` or CHECK failure, a rowid of another row, or each key on
+which its new values conflict with another row in its old values or in its new values, in SQLite's
+order of checks.
+The argument that this list contains SQLite's choice: SQLite fails at the first changed row
+{lit}`r` that fails, in the order that it visits the rows. The failures of {lit}`r` by itself do
+not depend on the other rows. A rowid or a key on which {lit}`r` conflicts is that of a row
+{lit}`j` of the table at that time, which is in its old values (SQLite has not changed it yet) or
+in its new values. So the first failure of {lit}`r` in SQLite's order is in the list, whether
+the conflicts before it happen in SQLite's order of the rows or not.
 The argument does not use the form of the keys: it holds for keys with expression terms and for
 partial unique indexes whose filter reads an assigned column. The list can contain constraints
 that SQLite does not name in any order of the rows.
@@ -34,15 +36,31 @@ def rowConflicts (keys : List UniqueKey) (states : List (List Row)) (position : 
   (List.range keys.length).filter fun index => (keys[index]?).any fun key =>
     states.any fun rows => rows.zipIdx.any fun (other, place) => place != position && keyEqual key other row
 
-/-- The first failure of a changed row of the table after an UPDATE ({lit}`result`): its failure
-by itself ({name}`rowFailure`), or else the keys on which it conflicts with another row of the
-table before the UPDATE ({lit}`before`) or after it ({name}`rowConflicts`); none when it has
-neither. -/
-def changedRowFailure (keys : List UniqueKey) (before result : Table) (position : Nat) (row : Row) :
-    Option TableFailure :=
-  (rowFailure result.shape row).orElse fun _ => match rowConflicts keys [before.rows, result.rows] position row with
-    | [] => none
-    | failing@(_ :: _) => some (.keys failing)
+/-- Whether the row at the position has the rowid of another row of one of the lists of rows,
+the rows of the table before and after an UPDATE. -/
+def rowidConflicts (states : List (List Row)) (position : Nat) (row : Row) : Bool :=
+  states.any fun rows => rows.zipIdx.any fun (other, place) => place != position && other.rowid == row.rowid
+
+/-- The failures that can be the first failure of a changed row of the table after an UPDATE
+({lit}`result`), in SQLite's order of checks: its first failure by itself before the rowid check
+({name}`beforeRowidFailures` of the row alone), when it has one; otherwise a rowid that another row
+of the table before the UPDATE ({lit}`before`) or after it has ({name}`rowidConflicts`), and then
+its first failure after the rowid check ({name}`afterRowidFailures`), or else the keys on which it
+conflicts with another row ({name}`rowConflicts`). A conflict depends on the rows that SQLite has
+changed at that time, so the failures after a conflict are in the list too. The list is empty
+when the row has none of these. -/
+def changedRowFailures (keys : List UniqueKey) (before result : Table) (position : Nat) (row : Row) :
+    List TableFailure :=
+  let alone : Table := { shape := result.shape, rows := [row] }
+  match (beforeRowidFailures alone).head? with
+  | some failure => [failure]
+  | none =>
+    (if rowidConflicts [before.rows, result.rows] position row then [.rowid] else []) ++
+    match (afterRowidFailures alone).head? with
+    | some failure => [failure]
+    | none => match rowConflicts keys [before.rows, result.rows] position row with
+      | [] => []
+      | failing@(_ :: _) => [.keys failing]
 
 /-- The positions of the rows of the table that the UPDATE changes ({name}`selected`). -/
 def selectedPositions (context : Resolved.EvalContext) (filter : Option Resolved.Expr) (table : Table) : List Nat :=
@@ -73,16 +91,20 @@ theorem Catalog.rowCandidates_ne_nil (catalog : Catalog) (table : Nat) (exact : 
     simp only [Catalog.rowCandidates]; exact Catalog.candidates_ne_nil _ _ _
 
 /-- The report of a plain UPDATE of the table at the position, from the positions of the changed
-rows and the tables before the UPDATE ({lit}`before`) and after it ({lit}`result`): the {name}`Catalog.rowCandidates` of the
-{name}`LiteralData.changedRowFailure` of each changed row, exact when at most one row changes. A
+rows and the tables before the UPDATE ({lit}`before`) and after it ({lit}`result`): the
+{name}`Catalog.rowCandidates` of the {name}`LiteralData.changedRowFailures` of each changed row,
+exact when at most one row changes. With one changed row, no other row changes, so its conflicts
+do not depend on an order, and the first of its failures is SQLite's. A
 table whose changed rows have no failure (a table that failed before the UPDATE) gives the
 candidates of each of its failures ({name}`LiteralData.tableFailures`). With several changed rows
 the reason is {name}`CandidateReason.rowOrder`. -/
 def Catalog.updateReport (catalog : Catalog) (table : Nat) (keys : List UniqueKey) (positions : List Nat)
     (before result : Table) : ConstraintReport :=
   let exact := positions.length ≤ 1
-  let failures := match positions.filterMap fun position =>
-      (result.rows[position]?).bind (LiteralData.changedRowFailure keys before result position) with
+  let rowFailures := fun position =>
+    ((result.rows[position]?).map (LiteralData.changedRowFailures keys before result position)).getD []
+  let failures := match positions.flatMap fun position =>
+      if exact then (rowFailures position).take 1 else rowFailures position with
     | [] => LiteralData.tableFailures keys result
     | found@(_ :: _) => found
   { candidates := failures.flatMap (catalog.rowCandidates table exact),

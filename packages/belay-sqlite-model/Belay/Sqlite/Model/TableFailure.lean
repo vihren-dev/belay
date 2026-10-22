@@ -23,14 +23,25 @@ the order of the keys. -/
 def failingKeys (keys : List UniqueKey) (table : Table) : List Nat :=
   (keys.zipIdx.filter fun (key, _) => !uniqueRows key table.rows).map (·.2)
 
-/-- Every failure of the table, in this order: the NOT NULL and {lit}`STRICT` failures of each row
-in SQLite's order ({name}`columnFailures`), the CHECK constraint of each row
-({name}`failingCheck`), a repeated rowid ({name}`rowidsDistinct`), and the keys that fail
+/-- The failures that SQLite finds before the rowid check, in its order: the early types
+({name}`earlyTypeFailures`), NOT NULL ({name}`notNullFailures`), the late types
+({name}`lateTypeFailures`) in a table with a CHECK constraint, and the CHECK constraint of each
+row ({name}`failingCheck`). -/
+def beforeRowidFailures (table : Table) : List TableFailure :=
+  earlyTypeFailures table ++ notNullFailures table ++
+  (if table.shape.hasChecks then lateTypeFailures table else []) ++
+  table.rows.filterMap (fun row => (failingCheck table.shape row).map (.check ·.label))
+
+/-- The failures that SQLite finds after the rowid check and before the keys: the late types
+({name}`lateTypeFailures`) in a table without a CHECK constraint. -/
+def afterRowidFailures (table : Table) : List TableFailure :=
+  if table.shape.hasChecks then [] else lateTypeFailures table
+
+/-- Every failure of the table, in SQLite's order: {name}`beforeRowidFailures`, a repeated rowid
+({name}`rowidsDistinct`), {name}`afterRowidFailures`, and the keys that fail
 ({name}`failingKeys`), if any. -/
 def tableFailures (keys : List UniqueKey) (table : Table) : List TableFailure :=
-  columnFailures table ++
-  table.rows.filterMap (fun row => (failingCheck table.shape row).map (.check ·.label)) ++
-  (if rowidsDistinct table then [] else [.rowid]) ++
+  beforeRowidFailures table ++ (if rowidsDistinct table then [] else [.rowid]) ++ afterRowidFailures table ++
   (match failingKeys keys table with | [] => [] | failing@(_ :: _) => [.keys failing])
 
 /-- The first failure of the table ({name}`tableFailures`), none when the table has none. -/
@@ -38,11 +49,24 @@ def firstFailure (keys : List UniqueKey) (table : Table) : Option TableFailure :
   (tableFailures keys table).head?
 
 /-- The failure of one row by itself: the first NOT NULL, {lit}`STRICT` or CHECK failure, in
-SQLite's order
-({name}`firstFailure` of a table of the row alone, with no key). SQLite checks these before the
-keys of the row. -/
+SQLite's order ({name}`firstFailure` of a table of the row alone, with no key). SQLite checks
+these before the keys of the row. -/
 def rowFailure (shape : CatalogTable) (row : Row) : Option TableFailure :=
   firstFailure [] { shape, rows := [row] }
+
+/-- For every list of keys and table: {name}`tableFailures` is empty exactly when the list of the
+same failures in the order NOT NULL, types, CHECK, rowid, keys is empty. Proof sketch: emptiness
+of a concatenation does not depend on the order of its parts; {name}`notNullFailures_eq_nil_iff`
+and {name}`typeFailures_eq_nil_iff` replace the groups by the checks over every column. -/
+theorem tableFailures_eq_nil_iff_ordered (keys : List UniqueKey) (table : Table) :
+    tableFailures keys table = [] ↔ (allNullFailures table ++ allStrictFailures table ++
+      table.rows.filterMap (fun row => (failingCheck table.shape row).map (.check ·.label)) ++
+      (if rowidsDistinct table then [] else [.rowid]) ++
+      (match failingKeys keys table with | [] => [] | failing@(_ :: _) => [.keys failing])) = [] := by
+  have types := typeFailures_eq_nil_iff table
+  simp only [List.append_eq_nil_iff, ← notNullFailures_eq_nil_iff, ← types, tableFailures, beforeRowidFailures,
+    afterRowidFailures]
+  split <;> simp only [and_assoc, and_left_comm, and_comm, true_and]
 
 /-- For every list of keys and table: {name}`failingKeys` is empty exactly when
 {name}`keysUnique` is {lean}`true`. Proof sketch: both say that each key passes
@@ -62,13 +86,14 @@ theorem failingKeys_eq_nil_iff (keys : List UniqueKey) (table : Table) :
 /-- For every list of keys and table: {name}`tableFailures` is empty exactly when the table
 passes {name}`constraints` of the keys and {name}`rowidsDistinct`, the checks with which a write
 fails. So the failures are those of the write's own checks, not of a second definition. Proof
-sketch: each part of the list is empty exactly when its check passes ({name}`columnFailures_eq_nil_iff`
-for NOT NULL and the types, whatever their order); NOT NULL and CHECK compare
+sketch: the order of the failures does not matter ({name}`tableFailures_eq_nil_iff_ordered`); each
+part of the list is empty exactly when its check passes; NOT NULL and CHECK compare
 by the first failing element, and the keys by {name}`failingKeys_eq_nil_iff`. -/
 theorem tableFailures_eq_nil_iff (keys : List UniqueKey) (table : Table) :
     tableFailures keys table = [] ↔ (constraints keys table && rowidsDistinct table) = true := by
   have keysNil := failingKeys_eq_nil_iff keys table
-  simp only [tableFailures, List.append_eq_nil_iff, columnFailures_eq_nil_iff, List.filterMap_eq_nil_iff, Option.map_eq_none_iff,
+  rw [tableFailures_eq_nil_iff_ordered]
+  simp only [allNullFailures, allStrictFailures, List.append_eq_nil_iff, List.filterMap_eq_nil_iff, Option.map_eq_none_iff,
     constraints, notNullRows, typedRows, checkedRows, checksHold, typesFit, Bool.and_eq_true,
     List.all_eq_true, nullColumn, List.findIdx?_eq_none_iff, failingCheck, List.find?_eq_none,
     strictColumn, Bool.not_eq_true']

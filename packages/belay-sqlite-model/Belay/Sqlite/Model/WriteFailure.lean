@@ -44,7 +44,10 @@ theorem insertFailure_isSome {keys : List UniqueKey} {table : Table} {values : L
 /-- The failure of one row of an INSERT with clauses or algorithms, along the branches of
 {name}`upsertRow`:
 
-* the row by itself ({name}`rowFailure`: NOT NULL and {lit}`STRICT` in SQLite's order, then CHECK);
+* the row by itself ({name}`rowFailure`: NOT NULL, {lit}`STRICT` and CHECK in SQLite's order). As
+  {name}`upsertRow` does, this checks the late types before the conflicts of the row; SQLite checks
+  them after the rowid in a table without a CHECK constraint, so for a row that fails both the
+  message names the type where SQLite names the rowid;
 * with a clause {lit}`DO NOTHING` that handles the row, none;
 * with a clause {lit}`DO UPDATE`, the first failure of the table with the updated row;
 * otherwise the keys that are not REPLACE and on which the row conflicts, when there are some;

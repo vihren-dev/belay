@@ -27,14 +27,27 @@ inductive TableFailure where
   | keys (failing : List Nat)
   deriving Repr, DecidableEq
 
-/-- Whether the column is generated, or, for {lean}`false`, not generated. -/
-def CatalogColumn.isGeneratedAs (generated : Bool) (column : CatalogColumn) : Bool :=
-  column.generated.isSome == generated
+/-- How a column gets its value: from the write, or generated {lit}`VIRTUAL` or {lit}`STORED`. -/
+inductive ColumnKind where
+  /-- A column that is not generated. -/
+  | ordinary
+  /-- A generated {lit}`VIRTUAL` column. -/
+  | virtual
+  /-- A generated {lit}`STORED` column. -/
+  | stored
+  deriving Repr, DecidableEq
 
-/-- For every column: it is not generated exactly when it is not generated as true. -/
-theorem CatalogColumn.isGeneratedAs_false (column : CatalogColumn) :
-    column.isGeneratedAs false = !column.isGeneratedAs true := by
-  simp only [CatalogColumn.isGeneratedAs]; cases column.generated <;> rfl
+/-- The kind of the column: ordinary, {lit}`VIRTUAL` or {lit}`STORED`. -/
+def CatalogColumn.kind (column : CatalogColumn) : ColumnKind :=
+  match column.generated with
+  | none => .ordinary
+  | some generated => if generated.stored then .stored else .virtual
+
+/-- Whether the table has a generated column. -/
+def CatalogTable.hasGenerated (shape : CatalogTable) : Bool := shape.columns.any (·.generated.isSome)
+
+/-- Whether the table has a CHECK constraint ({name}`CatalogTable.allChecks`). -/
+def CatalogTable.hasChecks (shape : CatalogTable) : Bool := !shape.allChecks.isEmpty
 
 namespace LiteralData
 
@@ -44,40 +57,45 @@ def strictColumn (shape : CatalogTable) (row : Row) : Option (Nat × Value) :=
   ((shape.columns.zip row.values).zipIdx.find? fun ((column, value), _) =>
     !column.strictType.all (·.fits value)).map fun ((_, value), position) => (position, value)
 
-/-- {name}`nullColumn` among the columns that are generated, or not generated
-({name}`CatalogColumn.isGeneratedAs`): the first such NOT NULL column that holds NULL, at its
-position in the table. -/
-def nullColumnAmong (generated : Bool) (columns : List CatalogColumn) (values : List Value) : Option Nat :=
-  (columns.zip values).findIdx? fun (column, value) =>
-    column.isGeneratedAs generated && (column.notNull && value == .null)
+/-- The NOT NULL failure of each row, among the columns that pass {lit}`keep`: the first such NOT
+NULL column that holds NULL, at its position in the table. -/
+def nullFailuresWhere (keep : CatalogColumn → Bool) (table : Table) : List TableFailure :=
+  table.rows.filterMap fun row => ((table.shape.columns.zip row.values).findIdx? fun (column, value) =>
+    keep column && (column.notNull && value == .null)).map .notNull
 
-/-- {name}`strictColumn` among the columns that are generated, or not generated: the first such
-column whose cell does not fit its type, at its position in the table, with the cell. -/
-def strictColumnAmong (generated : Bool) (shape : CatalogTable) (row : Row) : Option (Nat × Value) :=
-  ((shape.columns.zip row.values).zipIdx.find? fun ((column, value), _) =>
-    column.isGeneratedAs generated && !column.strictType.all (·.fits value)).map
-      fun ((_, value), position) => (position, value)
+/-- The {lit}`STRICT` failure of each row among the columns of the kind: the first such column
+whose cell does not fit its type, at its position in the table, with the cell. -/
+def strictFailuresOf (kind : ColumnKind) (table : Table) : List TableFailure :=
+  table.rows.filterMap fun row => (((table.shape.columns.zip row.values).zipIdx.find? fun ((column, value), _) =>
+    column.kind == kind && !column.strictType.all (·.fits value)).map fun ((_, value), position) => (position, value)).map
+      fun (column, value) => .strictType column value
 
-/-- The NOT NULL failures of each row among the columns that are generated, or not generated. -/
-def nullFailures (generated : Bool) (table : Table) : List TableFailure :=
-  table.rows.filterMap fun row => (nullColumnAmong generated table.shape.columns row.values).map .notNull
+/-- The type failures that SQLite finds before NOT NULL: in a table with a generated column, those
+of the ordinary columns, then those of the {lit}`VIRTUAL` columns; none in another table. -/
+def earlyTypeFailures (table : Table) : List TableFailure :=
+  if table.shape.hasGenerated then strictFailuresOf .ordinary table ++ strictFailuresOf .virtual table else []
 
-/-- The {lit}`STRICT` failures of each row among the columns that are generated, or not
-generated. -/
-def strictFailures (generated : Bool) (table : Table) : List TableFailure :=
-  table.rows.filterMap fun row =>
-    (strictColumnAmong generated table.shape row).map fun (column, value) => .strictType column value
+/-- The type failures of SQLite's late type check: in a table with a generated column, those of the
+{lit}`STORED` columns; in another table, those of every column, which are all ordinary. -/
+def lateTypeFailures (table : Table) : List TableFailure :=
+  if table.shape.hasGenerated then strictFailuresOf .stored table
+  else strictFailuresOf .ordinary table ++ strictFailuresOf .virtual table ++ strictFailuresOf .stored table
 
-/-- The NOT NULL and {lit}`STRICT` failures of the table, in SQLite's order of checks (see the
-module docstring). -/
-def columnFailures (table : Table) : List TableFailure :=
-  if table.shape.columns.any (·.generated.isSome) then
-    strictFailures false table ++ strictFailures true table ++ nullFailures false table ++ nullFailures true table
-  else nullFailures false table ++ nullFailures true table ++ strictFailures false table ++ strictFailures true table
+/-- The NOT NULL failures: those of the ordinary columns, then those of the generated columns. -/
+def notNullFailures (table : Table) : List TableFailure :=
+  nullFailuresWhere (·.kind == .ordinary) table ++ nullFailuresWhere (!·.kind == .ordinary) table
 
-/-- For every predicate {lit}`keep` and {lit}`test` over a list: no element passes
-{lit}`keep` and {lit}`test`, and no element fails {lit}`keep` and passes {lit}`test`, exactly when no
-element passes {lit}`test`. -/
+/-- The NOT NULL failure of each row over every column ({name}`nullColumn`). -/
+def allNullFailures (table : Table) : List TableFailure :=
+  table.rows.filterMap fun row => (nullColumn table.shape.columns row.values).map .notNull
+
+/-- The {lit}`STRICT` failure of each row over every column ({name}`strictColumn`). -/
+def allStrictFailures (table : Table) : List TableFailure :=
+  table.rows.filterMap fun row => (strictColumn table.shape row).map fun (column, value) => .strictType column value
+
+/-- For all predicates {lit}`keep` and {lit}`test` over a list: no element passes {lit}`keep` and
+{lit}`test`, and no element fails {lit}`keep` and passes {lit}`test`, exactly when no element
+passes {lit}`test`. Proof sketch: by cases on {lit}`keep` of each element. -/
 theorem findIdx?_split_eq_none_iff {α : Type} (list : List α) (keep test : α → Bool) :
     (list.findIdx? (fun x => keep x && test x) = none ∧ list.findIdx? (fun x => !keep x && test x) = none) ↔
       list.findIdx? test = none := by
@@ -90,52 +108,50 @@ theorem findIdx?_split_eq_none_iff {α : Type} (list : List α) (keep test : α 
   · intro none
     exact ⟨fun x member => by simp [none x member], fun x member => by simp [none x member]⟩
 
-/-- For every predicate {lit}`keep` and {lit}`test` over a list: {lit}`find?` finds no element that
-passes {lit}`keep` and {lit}`test`, and none that fails {lit}`keep` and passes {lit}`test`, exactly
-when it finds no element that passes {lit}`test`. -/
-theorem find?_split_eq_none_iff {α : Type} (list : List α) (keep test : α → Bool) :
-    (list.find? (fun x => keep x && test x) = none ∧ list.find? (fun x => !keep x && test x) = none) ↔
-      list.find? test = none := by
+/-- For every function {lit}`kindOf` to {name}`ColumnKind` and predicate {lit}`test` over a
+list: for each of the three kinds, {lit}`find?` finds no element of the kind that passes
+{lit}`test`, exactly when it finds no element that passes {lit}`test`. Proof sketch: by cases on
+the kind of each element. -/
+theorem find?_kinds_eq_none_iff {α : Type} (list : List α) (kindOf : α → ColumnKind) (test : α → Bool) :
+    (list.find? (fun x => kindOf x == .ordinary && test x) = none ∧
+      list.find? (fun x => kindOf x == .virtual && test x) = none ∧
+      list.find? (fun x => kindOf x == .stored && test x) = none) ↔ list.find? test = none := by
   simp only [List.find?_eq_none]
   constructor
-  · intro ⟨kept, other⟩ x member
-    cases found : keep x
-    · simpa [found] using other x member
-    · simpa [found] using kept x member
+  · rintro ⟨ordinary, virtual, stored⟩ x member
+    cases found : kindOf x
+    · simpa [found] using ordinary x member
+    · simpa [found] using virtual x member
+    · simpa [found] using stored x member
   · intro none
-    exact ⟨fun x member => by simp [none x member], fun x member => by simp [none x member]⟩
+    exact ⟨fun x member => by simp [none x member], fun x member => by simp [none x member],
+      fun x member => by simp [none x member]⟩
 
-/-- For every table: {name}`columnFailures` is empty exactly when no row has a NULL in a NOT NULL
-column ({name}`nullColumn`) and no row has a cell that does not fit its {lit}`STRICT` type
-({name}`strictColumn`), whatever the order of the checks. Proof sketch: the columns that are
-generated and those that are not cover each column, so the two lists of a check are empty
-exactly when the check over every column finds nothing ({name}`findIdx?_split_eq_none_iff`,
-{name}`find?_split_eq_none_iff`). -/
-theorem columnFailures_eq_nil_iff (table : Table) :
-    columnFailures table = [] ↔
-      (table.rows.filterMap (fun row => (nullColumn table.shape.columns row.values).map TableFailure.notNull) = [] ∧
-        table.rows.filterMap (fun row => (strictColumn table.shape row).map fun (column, value) =>
-          TableFailure.strictType column value) = []) := by
-  have nulls : (nullFailures false table = [] ∧ nullFailures true table = []) ↔
-      table.rows.filterMap (fun row => (nullColumn table.shape.columns row.values).map TableFailure.notNull) = [] := by
-    simp only [nullFailures, List.filterMap_eq_nil_iff, Option.map_eq_none_iff, ← forall_and]
+/-- For every table: {name}`notNullFailures` is empty exactly when {name}`allNullFailures` is
+empty. Proof sketch: for each row, the ordinary and the generated columns cover each column
+({name}`findIdx?_split_eq_none_iff`). -/
+theorem notNullFailures_eq_nil_iff (table : Table) : notNullFailures table = [] ↔ allNullFailures table = [] := by
+  simp only [notNullFailures, allNullFailures, nullFailuresWhere, List.append_eq_nil_iff, List.filterMap_eq_nil_iff,
+    Option.map_eq_none_iff, ← forall_and]
+  refine forall_congr' fun row => imp_congr_right fun _ => ?_
+  simpa [nullColumn] using findIdx?_split_eq_none_iff (table.shape.columns.zip row.values)
+    (fun pair => pair.1.kind == .ordinary) (fun pair => pair.1.notNull && pair.2 == .null)
+
+/-- For every table: {name}`earlyTypeFailures` and {name}`lateTypeFailures` are both empty exactly
+when {name}`allStrictFailures` is empty. Proof sketch: with or without a generated column, the two
+lists hold the failures of the three kinds of columns, which cover each column
+({name}`find?_kinds_eq_none_iff`). -/
+theorem typeFailures_eq_nil_iff (table : Table) :
+    (earlyTypeFailures table = [] ∧ lateTypeFailures table = []) ↔ allStrictFailures table = [] := by
+  have kinds : (strictFailuresOf .ordinary table = [] ∧ strictFailuresOf .virtual table = [] ∧
+      strictFailuresOf .stored table = []) ↔ allStrictFailures table = [] := by
+    simp only [strictFailuresOf, allStrictFailures, List.filterMap_eq_nil_iff, Option.map_eq_none_iff, ← forall_and]
     refine forall_congr' fun row => imp_congr_right fun _ => ?_
-    have split := findIdx?_split_eq_none_iff (table.shape.columns.zip row.values)
-      (fun pair => pair.1.isGeneratedAs true) (fun pair => pair.1.notNull && pair.2 == .null)
-    simp only [nullColumnAmong, nullColumn]
-    simpa [CatalogColumn.isGeneratedAs_false, and_comm] using split
-  have stricts : (strictFailures false table = [] ∧ strictFailures true table = []) ↔
-      table.rows.filterMap (fun row => (strictColumn table.shape row).map fun (column, value) =>
-        TableFailure.strictType column value) = [] := by
-    simp only [strictFailures, List.filterMap_eq_nil_iff, Option.map_eq_none_iff, ← forall_and]
-    refine forall_congr' fun row => imp_congr_right fun _ => ?_
-    have split := find?_split_eq_none_iff ((table.shape.columns.zip row.values).zipIdx)
-      (fun entry => entry.1.1.isGeneratedAs true) (fun entry => !entry.1.1.strictType.all (·.fits entry.1.2))
-    simp only [strictColumnAmong, strictColumn]
-    simpa [CatalogColumn.isGeneratedAs_false, and_comm] using split
-  rw [← nulls, ← stricts]
-  unfold columnFailures
-  split <;> simp only [List.append_eq_nil_iff, and_assoc, and_left_comm, and_comm]
+    simpa [strictColumn] using find?_kinds_eq_none_iff ((table.shape.columns.zip row.values).zipIdx)
+      (fun entry => entry.1.1.kind) (fun entry => !entry.1.1.strictType.all (·.fits entry.1.2))
+  rw [← kinds]
+  unfold earlyTypeFailures lateTypeFailures
+  split <;> simp only [List.append_eq_nil_iff, true_and, and_left_comm, and_comm]
 
 end LiteralData
 end Belay.Sqlite.Model
