@@ -37,11 +37,14 @@ Measured on this tree on 2026-10-22:
   that another program wrote, or after writes with foreign keys off.
 - **The model checks the constraints already.** `LiteralData.constraints`
   (`Model/LiteralData.lean:90`) checks NOT NULL, the types of a `STRICT` table, CHECK and the
-  unique keys of the catalog (`Catalog.uniqueKeys`). INSERT, UPDATE and upsert store their result
-  only when the result passes it (`checkedWrite`, `Model/StatementRun.lean:19`), and the model
-  describes them only when the table passes it before (`tableReady`). DELETE uses neither: it
-  removes the selected rows from any table (`runStatement`, `Model/StatementStep.lean`), also from
-  a table whose constraints fail.
+  unique keys of the catalog (`Catalog.uniqueKeys`). INSERT, UPDATE and upsert store a table only
+  after it passes this check. Plain INSERT and UPDATE check their whole result once
+  (`checkedWrite`, `Model/StatementRun.lean:19`). Upsert, and the writes that check foreign keys
+  or run triggers, check the table after each row (`checkedRow`, `Model/Upsert.lean:57`), and a
+  FAIL failure keeps the rows that the write stored before it. The model describes these writes
+  only when the table passes the check before (`tableReady`). DELETE uses neither check: it
+  removes the selected rows from any table (`runStatement`, `Model/StatementStep.lean`), also
+  from a table whose constraints fail.
 - **No statement has a preservation theorem.** The model has lemmas for single operations
   (`Conforms.setRows`, `Conforms.addColumn`, `Conforms.createTable`,
   `Catalog.emptyDatabase_conforms`), not for a statement. ADR 0012 says that "a preservation
@@ -124,10 +127,11 @@ the fact. It is reported to the owner, and no proof assumes it away.
 | 4 | the theorems of the Admitted atoms | the bundled database (D5) |
 | 5 | the theorem of "foreign keys hold" | ADR 0017 S6: the rebuild that cascades |
 
-For the constraint atoms, INSERT, UPDATE and upsert are the easy case: `checkedWrite` stores only
-a result that passes the checks. DELETE removes rows, and each constraint atom is a fact of each
-row or of each pair of rows, which fewer rows keep. Schema statements, triggers and foreign key
-actions are the work. No slice
+For the constraint atoms, INSERT, UPDATE and upsert are the easier case: each table that they
+store passed the checks, after the whole write or after each row, and a proof follows those
+steps, also for the rows that a FAIL failure keeps. DELETE removes rows, and each constraint
+atom is a fact of each row or of each pair of rows, which fewer rows keep. Schema statements,
+trigger programs and foreign key actions are the larger work. No slice
 changes what a statement does, so the predictions, the claims and the judge lock do not change.
 
 ### D5. The bundled database stays open
