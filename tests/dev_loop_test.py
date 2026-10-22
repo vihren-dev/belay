@@ -15,6 +15,7 @@ import pytest
 
 from conformance.predict import RUNNER
 from conformance.sql_text import PROGRAM
+from tools import dev_loop
 from tools.dev_loop import (PACKAGE_TARGETS, DevLoopError, check_ready, make_runtime_root, reduced_claims,
                             resolved_targets, shell_problem, stale_links)
 
@@ -83,6 +84,19 @@ def test_checks_before_a_build_name_the_next_step(tmp_path: Path) -> None:
     assert stale_links(tmp_path) == [link]
     with pytest.raises(DevLoopError, match=f"rm {link}"):
         check_ready(tmp_path, SHELL, linux=True)
+
+
+@pytest.mark.unit
+def test_a_timeout_stops_the_loop_with_a_message(monkeypatch: pytest.MonkeyPatch,
+                                                 capsys: pytest.CaptureFixture[str]) -> None:
+    """`dev_loop.main` turns a build that runs out of time into exit code 2 and a message that
+    names the command and its time limit, not a traceback."""
+    def stuck(*_: object) -> int:
+        raise subprocess.TimeoutExpired(["lake", "build", "conformance-runner"], 1800)
+    monkeypatch.setattr(dev_loop, "check_ready", lambda *_: None)
+    monkeypatch.setattr(dev_loop, "build", stuck)
+    assert dev_loop.main(["build"]) == 2
+    assert "`lake build conformance-runner` did not finish in 1800 s" in capsys.readouterr().err
 
 
 def just(*arguments: str, timeout: int) -> subprocess.CompletedProcess[str]:
