@@ -97,7 +97,11 @@ What the code has today, after slice 1 of ADR 0018:
   `STRICT` table; `quick_check` checks the same without the unique keys, as SQLite's
   documentation states. A law for each pragma relates its `ok` row to the constraint atoms
   of `Database.Valid` (ADR 0022, D1): `NotNull`, `ChecksHold`, `TypesFit` and `KeysUnique`
-  for `integrity_check`, and the same without `KeysUnique` for `quick_check`. The pragmas run
+  for `integrity_check`, and the same without `KeysUnique` for `quick_check`. The form
+  without a table name, also with a row limit, checks every table, so its law uses the
+  database form of each atom. The form with a table name checks only that table and its
+  indexes, and gives `ok` when another table fails a constraint, so its law uses the table
+  form of each atom (`Table.NotNull` and the others) for the named table only. The pragmas run
   on any database that SQLite can reach, so each law has `Database.Admitted` as its
   hypothesis, not `Database.Valid`. The model has no damaged pages or index entries, so the
   failures that only they cause do not occur. (Amended 2026-10-22: the first text related the
