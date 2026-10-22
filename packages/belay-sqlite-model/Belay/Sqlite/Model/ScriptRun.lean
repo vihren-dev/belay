@@ -41,6 +41,12 @@ def Connection.afterError (connection : Connection) (foreignKeys : Bool) : Outco
   | .pending persisted visible _ =>
     { state := { connection.state with database := visible, snapshot := some persisted }, foreignKeys }
 
+/-- The connection after a statement's transition: the state of a transition that continues,
+with the setting that the statement leaves, or {name}`Connection.afterError` of a halt. -/
+def Connection.afterStep (connection : Connection) (foreignKeys : Bool) : SqlTransition → Connection
+  | .next state => { state, foreignKeys }
+  | .halt outcome => connection.afterError foreignKeys outcome
+
 /-- The reason of a statement that reads the clock: this run gives no clock value. -/
 def clockUnmodeled : String :=
   "the statement reads the clock, which this run does not describe; write the time as a literal value"
@@ -61,7 +67,7 @@ inductive RunStep where
 * run it with {name}`runStatement`; a statement that fails the support check ends the run;
 * advance the connection with {name}`advanceWith`, and give {name}`Output.ofStep`; an output
   {name}`Output.unmodeled` ends the run;
-* after an error, the connection is {name}`Connection.afterError` of the outcome. -/
+* the connection after it is {name}`Connection.afterStep` of the transition. -/
 def runScriptStep (context : ResolveContext) (index : Nat) (connection : Connection) (statement : Syntax.Statement) :
     RunStep :=
   match resolveStatement context connection.resolveState statement with
@@ -77,9 +83,7 @@ def runScriptStep (context : ResolveContext) (index : Nat) (connection : Connect
         match Output.ofStep clock resolved connection.state transition with
         | .unmodeled reason => .ended reason
         | output@(.rows _) | output@(.done _) | output@(.error _) | output@(.oneOf _) =>
-          .continued output (match transition with
-            | .next state => { state, foreignKeys := after.foreignKeys }
-            | .halt outcome => connection.afterError after.foreignKeys outcome)
+          .continued output (connection.afterStep after.foreignKeys transition)
 
 /-- The result of a run: the output of each statement that ran, in order, and the connection
 at the end. -/

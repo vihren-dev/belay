@@ -19,6 +19,8 @@ import Belay.Sqlite.Model.SqlExecution
 import Belay.Sqlite.Model.StatementOutput
 import Belay.Sqlite.Model.PossibleOutput
 import Belay.Sqlite.Model.ScriptRunLaws
+import Belay.Sqlite.Model.ScriptRunAppend
+import Belay.Sqlite.Model.OutputRepr
 import Belay.Sqlite.Model.SchemaClockLaws
 import Belay.Sqlite.Model.SqlLaws
 import Belay.Sqlite.Model.ScriptLaws

@@ -34,6 +34,11 @@ def Output.endsRun : Output → Bool
   | .unmodeled _ => true
   | .rows _ | .done _ | .error _ | .oneOf _ => false
 
+/-- Whether the output is a statement's error: only {name}`Output.error` is. -/
+def Output.isError : Output → Bool
+  | .error _ => true
+  | .rows _ | .done _ | .oneOf _ | .unmodeled _ => false
+
 /-- The reason of a statement whose run the model does not describe on the database: its
 support check fails, or it writes to a position without a table. -/
 def unmodeledHere : String :=

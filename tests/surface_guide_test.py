@@ -50,3 +50,23 @@ def test_sql_errors_are_at_their_position_in_the_text(runtime_root: Path, tmp_pa
         assert f"ScriptErrors.lean:{position}: error: SQLite's grammar rejects the SQL at this offset" in \
             result.stdout, result.diagnostic()
     assert "ScriptErrors.lean:14:30: error: This statement is not modeled" in result.stdout, result.diagnostic()
+
+
+def test_guide_run_examples_hold(runtime_root: Path, tmp_path: Path) -> None:
+    """The guide's runs (`Belay/Sqlite/Run.lean`, `Belay/Sqlite/RunLaws.lean`, the model's
+    `Model/OutputRepr.lean`): "A first example", "Row order" and the runs of "Scripts", with the
+    outputs that `#eval` shows and the facts that the kernel checks."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "GuideRuns.lean", tmp_path), cwd=tmp_path,
+                         timeout=120)
+    assert result.returncode == 0, result.diagnostic()
+
+
+def test_run_examples_hold(runtime_root: Path, tmp_path: Path) -> None:
+    """The run of `db.run` (`Belay/Sqlite/Run.lean`, over the model's `runScriptFrom`), the facts of
+    `Belay/Sqlite/Database.lean` and the display of outputs: errors that do not stop the run,
+    transactions, `PRAGMA foreign_keys`, a table that an earlier statement drops, statements that
+    the model does not describe, row order, the facts of a valid database without a hypothesis,
+    and the check that keeps the start database when the database at the end is not valid."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "RunExamples.lean", tmp_path), cwd=tmp_path,
+                         timeout=120)
+    assert result.returncode == 0, result.diagnostic()

@@ -93,7 +93,7 @@ theorem runScriptStep_resolved {context : ResolveContext} {index : Nat} {connect
             (runStatement (connection.state.clock index) resolved connection.state.database).effect := rfl
         rw [unfolded, stepped]
         refine .inr ⟨_, rfl, fun state continued => ?_⟩
-        simp only [continued]
+        simp only [continued, Connection.afterStep]
 
 /-- The agreement of the two runs (ADR 0017, D3). For every context, script, index, connection,
 resolved statements and final resolution state: if {name}`resolveFrom` resolves the script from

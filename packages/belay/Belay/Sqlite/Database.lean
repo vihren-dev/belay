@@ -13,22 +13,22 @@ export Belay.Sqlite.Model (Profile Profile.pinned Catalog Database.Valid Databas
   Database.ForeignKeysHold Database.NotNull Database.ChecksHold Database.TypesFit Database.KeysUnique
   Database.RowidsDistinct)
 
+/-- The model database without the proof that it is valid. A claim that must also cover a
+database that SQLite does not write with its statements, such as a file that another program
+wrote, is stated over it, with the hypothesis {name}`Belay.Sqlite.Model.Database.Admitted`. -/
+abbrev Database.Raw := Belay.Sqlite.Model.Database
+
 /-- A database with its proof that it is valid under the pinned profile
 ({name}`Belay.Sqlite.Model.Profile.pinned`): every fact of an admitted database holds, and the
 NOT NULL, CHECK, type and key constraints of every table hold. For example,
 {lit}`Database.empty` has no tables. -/
 structure Database where
   /-- The model database, without the proof. -/
-  raw : Belay.Sqlite.Model.Database
+  raw : Database.Raw
   /-- The proof that the model database is valid under the pinned profile. -/
   valid : raw.Valid Profile.pinned
 
 namespace Database
-
-/-- The model database without the proof that it is valid. A claim that must also cover a
-database that SQLite does not write with its statements, such as a file that another program
-wrote, is stated over it, with the hypothesis {name}`Belay.Sqlite.Model.Database.Admitted`. -/
-abbrev Raw := Belay.Sqlite.Model.Database
 
 /-- The database without tables. -/
 def empty : Database := ⟨{}, by decide⟩
