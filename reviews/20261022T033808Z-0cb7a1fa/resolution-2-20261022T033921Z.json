@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-22T03:39:21+00:00",
+  "finding": "20261022T033808Z-0cb7a1fa#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "MINIMUM_PRODUCTION_MODULES names the threshold and says why"
+}

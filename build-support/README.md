@@ -40,8 +40,8 @@ sources. Nix reads
 (`parserLibrary.grammars`) and one that links `parserLibrary.library`, so a new
 release or grammar builds only its own derivations. `parser/library_steps.py`
 does the checks between the Lemon and compiler steps. The test suite
-`tests.parserLibrary` checks the library. `conformance` contains it
-at `lib/`. See the [SQLite syntax boundary](../docs/sqlite-parser.md).
+`tests.parserLibrary` checks the library. The translation program of `conformance`
+links it by its path in the Nix store. See the [SQLite syntax boundary](../docs/sqlite-parser.md).
 
 `parserLibrary.grammars` retains each grammar's Lemon outputs and generated
 parser. Each Lean package under `packages/` has its own `lakefile.toml` and its
@@ -56,11 +56,12 @@ library and runner), `docTools` (`packages/public-doc-tools`: the documentation
 inventory), `textPackage` (`packages/belay-sqlite-text`: the parser library's binding and
 the translation of SQL text, linked with the parser library) and `surfacePackage`
 (`packages/belay`: the surface, which requires the text package).
-The `belay.sqlite` namespace frontend takes explicit parser and profile inputs. It maps
-SQL to statement syntax, and the conformance runner resolves statement syntax itself.
+The harness sends SQL text to the text package's translation program
+(`belay-sqlite-translate`) in `conformance`, which gives the model's statement syntax. The
+conformance runner resolves statement syntax itself.
 `just build` builds `conformance` and exposes local development paths as links:
 `.lake/build` and `packages/belay-sqlite-model/.lake/build` (the outputs of the two Lake
-packages), `lean` and `lib`; it does not rebuild Lean through Elan or Lake outside Nix.
+packages) and `lean`; it does not rebuild Lean through Elan or Lake outside Nix.
 Set `SQLITE_VERIFIER_RUNTIME_ROOT` to this immutable output before `just test`. Reports
 remain in the checkout's `build/`, so the runtime itself needs no mutable staging copy.
 
