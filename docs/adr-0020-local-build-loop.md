@@ -188,11 +188,14 @@ corpora it writes a reduced copy of the claims file under `build/dev/`.
 
 | Recipe | Does |
 | --- | --- |
-| `just dev-build [TARGET...]` | D2: build the targets of D2, or the named ones |
-| `just dev-verdict [CORPUS...]` | D3: `dev-build` of the two programs, then the local verdict |
+| `just dev-build` | D2: `lake build` of the targets of D2 in each package |
+| `just dev-verdict [CORPUS...]` | D3: `lake build` of the two programs, then the local verdict |
 
-Both run in the shell of D1. Both print where their output is and what to run next when
-they fail, as the repository's rule for error messages requires.
+Both are plain recipes that run `lake build`, `cp` and the judge, in the shell of D1.
+Outside it they print a warning and run anyway; Lake's own errors show what failed. To
+build one target, run `lake build TARGET` in its package. (Amended 2026-10-22 by the
+owner: a first version in Python had target arguments and checks before a build, which
+no present problem needed.)
 
 ### D5. How agents use it
 
@@ -214,19 +217,14 @@ with it:
 
 ### D6. Tests
 
-The test suite checks the parts that are our code and can be wrong without notice:
-
-- The reduced claims file for a subset of corpora holds the same claims for those
-  corpora as `judge/claims.json`, and no others.
-- The local runtime root has the layout that `conformance.predict` reads.
-
-A test marked `requires_nix` (outside the Nix suites, because it needs the shell of D1
+The recipes are our code, and one test checks them. A test marked `requires_nix` (outside the Nix suites, because it needs the shell of D1
 on the host) runs in the shell that direnv loaded and does not start a shell itself
 (fact 8). It skips with a message when `LEAN_CC` (on Linux) or `BELAY_PARSER_LIBRARY` is
 not set. It runs `just dev-build` twice and checks that the second run compiles no job,
 checks that the runner and the translation program start (so a Lean upgrade that
 changes the toolchain's flags fails here), and runs `just dev-verdict` on one small
-corpus and checks exit code 0. The pull request records one measurement on the same
+corpus and checks exit code 0 and that the report has only that corpus, which also
+checks the layout of the runtime root and the reduced claims file. The pull request records one measurement on the same
 commit: the counts of `just dev-verdict` equal those of `just verdict`.
 
 ## Consequences

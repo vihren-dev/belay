@@ -15,26 +15,25 @@ decisions.
 2. **direnv loads `shell.nix`.** `.envrc` keeps the resource check and loads `shell.nix`
    with `use nix`. It watches the files that `shell.nix` imports, so that a change of
    them loads the shell again.
-3. **`just dev-build [TARGET...]`** runs `lake build` in the packages under `packages/`.
-   Without arguments it builds the targets of D2: the model (`Belay.Sqlite.Model`,
+3. **`just dev-build`** runs `lake build` in the packages under `packages/`, for the
+   targets of D2: the model (`Belay.Sqlite.Model`,
    `Belay.Sqlite.Model.Codec`), the text package (`BelaySqliteText`,
    `BelaySqliteText:shared`, `parserShim:shared`, `belay-sqlite-translate`), the runner
-   (`conformance-runner`) and the surface (`Belay`, `Belay:shared`). A `PACKAGE` argument
-   builds that package's targets of D2; a `PACKAGE/TARGET` argument builds one target.
-   A second run without edits compiles nothing.
+   (`conformance-runner`) and the surface (`Belay`, `Belay:shared`). A second run without
+   edits compiles nothing.
 4. **`just dev-verdict [CORPUS...]`** builds the runner and the translation program as in
    item 3, copies them into `build/dev/runtime/.lake/build/bin/`, and runs
    `python -m judge run` with `python -m conformance.predict --runtime build/dev/runtime`
    as the subject: over all claimed corpora, or over the named ones with a reduced copy of
-   the claims file under `build/dev/`. It writes the report to `build/dev/report.json`,
-   prints the judge's counts and failures, and exits with the judge's exit code. It does
-   not change `judge/`, `judge/claims.json` or the lock.
-5. **Warnings, not checks.** Outside the shell of `shell.nix` (no `LEAN_CC` on Linux, or
-   no `BELAY_PARSER_LIBRARY`), both recipes print a warning that says how to get the
-   shell, and run anyway: Lake's or the program's own error then shows what failed. An
-   unknown package or corpus stops them with the known names; Lake reports an unknown
-   target of a known package. (Amended 2026-10-22 by the owner: the checks before a build
-   that stopped the recipes were supporting code without a present problem.)
+   the claims file under `build/dev/`. The judge writes the report to
+   `build/dev/report.json`, prints its counts and failures, and sets the exit code. The
+   recipe does not change `judge/`, `judge/claims.json` or the lock.
+5. **Plain recipes, warnings, not checks.** Both are `just` recipes that run `lake build`,
+   `cp` and the judge. Outside the shell of `shell.nix` (no `BELAY_PARSER_LIBRARY`), they
+   print a warning that says how to get the shell, and run anyway: Lake's or the
+   program's own error then shows what failed. (Amended 2026-10-22 by the owner: a first
+   version in Python, with target arguments and checks before a build, was supporting
+   code without a present problem.)
 6. **Agent rule and texts (D5).** `AGENTS.md` has the rule of D5: the local loop while
    editing, the Nix checks before each commit, only Nix results as evidence, and direnv
    loads the shell. The first comment of the `justfile` says that direnv loads the shell.
@@ -43,17 +42,11 @@ decisions.
 
 ## Tests
 
-- Unit tests (host, fast): the reduced claims file holds, for the named corpora, the same
-  claims as `judge/claims.json` and no others, and an unknown corpus is refused; the
-  runtime root that `dev-verdict` makes holds the two programs at the paths that
-  `conformance.predict` and `conformance.sql_text` read; target arguments resolve to the
-  packages and targets of item 3, and unknown packages are refused; the warning of item 5
-  names a missing `LEAN_CC` or `BELAY_PARSER_LIBRARY`.
 - The environment tests accept the new file under `nix/` and still refuse other files.
 - A `requires_nix` test runs in the loaded shell of `shell.nix` and skips with a message
   outside it. It runs `just dev-build` twice and checks that the second run compiles
   nothing, starts the runner and the translation program, and runs `just dev-verdict` on
-  one small corpus with exit code 0.
+  one small corpus with exit code 0 and a report of only that corpus.
 - One measurement for the pull request: on one commit, the counts of `just dev-verdict`
   equal those of `just verdict` for all corpora.
 

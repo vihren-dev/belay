@@ -35,3 +35,10 @@ Source files: `shell.nix`, `nix/flake.nix`, `.envrc`, `justfile`, `tools/check_r
 - 2026-10-22: after the owner's review, the checks before a build (shell variables, old
   `.lake/build` links) and the timeout handler are removed. Outside the shell the recipes
   warn and run; Lake's own errors show what failed. Task item 5 is amended.
+- 2026-10-22: after the owner's review, `tools/dev_loop.py` is replaced by plain recipes in
+  the `justfile` (`lake build` per package, `cp`, a one-line reduced claims file, the
+  judge) and a private recipe that warns outside the shell. `conformance.predict.RUNNER`
+  is removed again. ADR 0020's D4 and D6 and task items 3 to 5 are amended. The test
+  file has only the `requires_nix` test, which also checks that the report of
+  `just dev-verdict corpus-v10` has only that corpus. A full `just dev-verdict` (59 s)
+  again wrote a report identical to that of `just verdict`.

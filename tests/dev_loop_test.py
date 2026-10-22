@@ -1,8 +1,6 @@
-"""Tests of `tools.dev_loop`, the local build loop of `just dev-build` and `just dev-verdict`.
+"""Test of the local build loop, the recipes `just dev-build` and `just dev-verdict`.
 
-The unit tests check the parts that can be wrong without notice: the reduced claims file, the
-layout of the local runtime root, the target arguments and the warning outside the shell. The
-`requires_nix` test runs the loop in the shell of `shell.nix`, and skips outside it.
+It runs the recipes in the shell of `shell.nix`, and skips outside it.
 """
 
 import json
@@ -13,66 +11,7 @@ import sys
 
 import pytest
 
-from conformance.predict import RUNNER
-from conformance.sql_text import PROGRAM
-from tools.dev_loop import (PACKAGE_TARGETS, DevLoopError, make_runtime_root, reduced_claims, resolved_targets,
-                            shell_problem)
-
 ROOT = Path(__file__).resolve().parents[1]
-CLAIMS = json.loads((ROOT / "judge/claims.json").read_text(encoding="utf-8"))
-SHELL = {"BELAY_PARSER_LIBRARY": "/nix/store/parser", "LEAN_CC": "/nix/store/lean-cc"}
-
-
-@pytest.mark.unit
-def test_reduced_claims_copy_the_named_claims_and_no_others() -> None:
-    """`reduced_claims` keeps the claims of the named corpora unchanged and drops the others,
-    so that a local verdict over a subset checks the same claims as the verdict job."""
-    reduced = reduced_claims(CLAIMS, ["corpus-v2", "corpus-v1", "corpus-v2"])
-    assert set(reduced["corpora"]) == {"corpus-v1", "corpus-v2"}
-    assert all(reduced["corpora"][name] == CLAIMS["corpora"][name] for name in reduced["corpora"])
-    assert {key: value for key, value in reduced.items() if key != "corpora"} == \
-        {key: value for key, value in CLAIMS.items() if key != "corpora"}
-    with pytest.raises(DevLoopError, match="no claim for corpus-v999"):
-        reduced_claims(CLAIMS, ["corpus-v1", "corpus-v999"])
-
-
-@pytest.mark.unit
-def test_runtime_root_holds_the_programs_where_predict_reads_them(tmp_path: Path) -> None:
-    """`make_runtime_root` copies the local translation program and runner to the paths that
-    `conformance.sql_text` and `conformance.predict` read, and replaces older copies."""
-    packages = tmp_path / "packages"
-    for package, target in (("belay-sqlite-text", "belay-sqlite-translate"),
-                            ("verifier-conformance", "conformance-runner")):
-        program = packages / package / ".lake/build/bin" / target
-        program.parent.mkdir(parents=True)
-        program.write_text(f"{target} 1\n")
-    runtime = tmp_path / "runtime"
-    make_runtime_root(runtime, packages)
-    (packages / "verifier-conformance/.lake/build/bin/conformance-runner").write_text("conformance-runner 2\n")
-    make_runtime_root(runtime, packages)
-    assert (runtime / PROGRAM).read_text() == "belay-sqlite-translate 1\n"
-    assert (runtime / RUNNER).read_text() == "conformance-runner 2\n"
-
-
-@pytest.mark.unit
-def test_target_arguments_name_packages_and_targets() -> None:
-    """`resolved_targets` builds all targets without arguments, a package's targets for
-    `PACKAGE`, one target for `PACKAGE/TARGET`, in build order, and refuses other packages."""
-    assert resolved_targets([]) == PACKAGE_TARGETS
-    assert resolved_targets(["belay", "verifier-conformance/conformance-runner", "belay/Belay"]) == {
-        "verifier-conformance": ("conformance-runner",), "belay": ("Belay", "Belay:shared")}
-    with pytest.raises(DevLoopError, match="unknown package 'model'"):
-        resolved_targets(["model/Belay.Sqlite.Model"])
-
-
-@pytest.mark.unit
-def test_warning_outside_the_shell_names_the_missing_variables() -> None:
-    """`shell_problem` warns when a variable of `shell.nix` is missing (`LEAN_CC` only on
-    Linux), names it, and says how to load the shell."""
-    assert shell_problem(SHELL, linux=True) is None
-    assert shell_problem({"BELAY_PARSER_LIBRARY": "/nix/store/parser"}, linux=False) is None
-    message = shell_problem({"BELAY_PARSER_LIBRARY": "/nix/store/parser"}, linux=True)
-    assert message and "LEAN_CC is not set" in message and "direnv allow" in message
 
 
 def just(*arguments: str, timeout: int) -> subprocess.CompletedProcess[str]:
@@ -85,10 +24,12 @@ def just(*arguments: str, timeout: int) -> subprocess.CompletedProcess[str]:
 def test_local_loop_builds_incrementally_and_runs_the_judge() -> None:
     """In the shell of `shell.nix`: `just dev-build` compiles nothing on a second run, the
     programs it links start (a Lean upgrade that changes the flags of the `LEAN_CC` wrapper
-    fails here), and `just dev-verdict` on one small corpus exits with 0."""
-    problem = shell_problem(os.environ, sys.platform.startswith("linux"))
-    if problem:
-        pytest.skip(problem)
+    fails here), and `just dev-verdict` on one small corpus checks only that corpus's claim,
+    with the programs at the paths that `conformance.predict` reads, and exits with 0."""
+    needed = ["BELAY_PARSER_LIBRARY", *(["LEAN_CC"] if sys.platform.startswith("linux") else [])]
+    missing = [name for name in needed if not os.environ.get(name)]
+    if missing:
+        pytest.skip(f"{', '.join(missing)} not set: not the shell of shell.nix")
     first = just("dev-build", timeout=1200)
     assert first.returncode == 0, first.stdout[-4000:] + first.stderr[-4000:]
     second = just("dev-build", timeout=300)
@@ -101,3 +42,5 @@ def test_local_loop_builds_incrementally_and_runs_the_judge() -> None:
         assert started.returncode == 0, f"{program}: {started.returncode} {started.stderr[-2000:]}"
     judged = just("dev-verdict", "corpus-v10", timeout=600)
     assert judged.returncode == 0, judged.stdout[-4000:] + judged.stderr[-4000:]
+    report = json.loads((ROOT / "build/dev/report.json").read_text(encoding="utf-8"))
+    assert list(report) == ["corpus-v10"]

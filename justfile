@@ -90,15 +90,26 @@ restriction-costs:
     timeout --foreground 1800 nix-build integrity/judge.nix -A predictions --out-link build/predictions --extra-experimental-features 'nix-command flakes' >&2
     python3 -m conformance.restriction_costs --predictions build/predictions
 
-# Build the Lean packages incrementally with Lake in the shell of shell.nix: the targets that model work can break, or the named PACKAGE or PACKAGE/TARGET.
-[positional-arguments]
-dev-build *args:
-    python3 -m tools.dev_loop build "$@"
+# Build the Lean packages incrementally with Lake in the shell of shell.nix: the targets that model work can break.
+dev-build: _dev-shell-warning
+    cd packages/belay-sqlite-model && lake build Belay.Sqlite.Model Belay.Sqlite.Model.Codec
+    cd packages/belay-sqlite-text && lake build BelaySqliteText BelaySqliteText:shared parserShim:shared belay-sqlite-translate
+    cd packages/verifier-conformance && lake build conformance-runner
+    cd packages/belay && lake build Belay Belay:shared
 
-# Run the judge with the programs of dev-build over all claimed corpora or the named ones; not evidence, `just verdict` decides.
+# Run the judge with locally built programs over all claimed corpora or the named ones; not evidence, `just verdict` decides.
 [positional-arguments]
-dev-verdict *args:
-    python3 -m tools.dev_loop verdict "$@"
+dev-verdict *corpora: _dev-shell-warning
+    cd packages/belay-sqlite-text && lake build belay-sqlite-translate
+    cd packages/verifier-conformance && lake build conformance-runner
+    mkdir -p build/dev/runtime/.lake/build/bin
+    cp -f packages/belay-sqlite-text/.lake/build/bin/belay-sqlite-translate packages/verifier-conformance/.lake/build/bin/conformance-runner build/dev/runtime/.lake/build/bin/
+    python3 -c 'import json, sys; c = json.load(open("judge/claims.json")); c["corpora"] = {n: c["corpora"][n] for n in sys.argv[1:] or c["corpora"]}; json.dump(c, open("build/dev/claims.json", "w"))' "$@"
+    python3 -m judge run --root . --claims build/dev/claims.json --report build/dev/report.json -- python3 -m conformance.predict --runtime build/dev/runtime
+
+# Warn when the shell of shell.nix, which has the pinned Lean toolchain, is not loaded.
+_dev-shell-warning:
+    @[ -n "${BELAY_PARSER_LIBRARY:-}" ] || echo "warning: this is not the shell of shell.nix. Change into the repository so that direnv loads it, or ask the owner to run 'direnv allow' there." >&2
 
 # Run the locked judge on this commit's subject, as the verdict job does.
 verdict:
