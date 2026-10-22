@@ -65,7 +65,7 @@ task file, and each ends with users able to do more than before.
 | --- | --- | --- |
 | S1. SQL text in Lean | Nothing new yet: the elaborator turns SQL text into the model's syntax, in the Lean process and in the editor | "Writing SQL in Lean files" (first part); open questions 8 and 9 |
 | S2. Concrete databases | Build a database with `db!`, write scripts with `sql`, run them with `db.run`, see results with `#eval` and `#sql`, and prove facts about one database with `decide`; SQL that does not parse is an error at its position, `sql!` and `db!` also report resolution errors there, and `sql` resolves when it runs | "A first example", "Values", "Databases", "Scripts", "Row order" (without `Output.oneOf`) |
-| S3. Parameters and programs | Scripts with `$x` and `:name`; programs in `do` notation with `send`, `query`, `single`; `Run` | "Parameters", "Programs" |
+| S3. Parameters and programs | Scripts with `$x` and `:name`; programs in `do` notation with `send`, `query`, `single`; `Run`; `Env` with a clock (amended 2026-10-22, D3) | "Parameters", "Programs", "The execution environment" |
 | S4. Claims over every database | `Holds`, `Empty` and `Fails`; level 2 (`succeeds where`) with the lemma library | "Queries as propositions", "Level 2" |
 | S5. Counterexamples | `#sql_check` and `sql_refute`: a search over small databases whose witness the kernel checks, shown as a script that `sqlite3` replays | "Check before you prove", "Counterexamples for any statement" |
 | S6. Triples and equivalence | Triples from `Std.Do`, `≈` and its patterns, level 3 | "Level 3"; open questions 2, 11 and 12 |
@@ -129,6 +129,28 @@ becomes `Database.Admitted`. In S2 the surface's `Database` is the model's, `db!
 that proof. The `Database` that carries its validity, so that a proof needs no hypothesis, waits
 for ADR 0022's theorems that the statements keep the atoms. The examples of `Output.oneOf` are
 part of S2: ADR 0018's slice 6 gave the model every result that SQLite may give.
+
+Amended again 2026-10-22 (owner decisions 3 to 5, after the measurement for the S2 task file).
+The guide's run needs model work that this decision did not name, and S2 does it:
+
+- **Outputs in the model.** The output of each statement (its rows, its number of changes and
+  its result code) is computed today only in the conformance package
+  (`VerifierConformance/Outputs.lean`, `PossibleOutputs.lean`, `primaryCode` in `Case.lean`).
+  It moves into the model, and the conformance package uses it from there. The rows of a query
+  come from `Resolved.Query.possibleOn`: one result gives `Output.rows`, in the normal form of
+  the guide, and more than one gives `Output.oneOf`.
+- **A run that continues after an error.** The model gets a run that resolves each statement
+  against the state at the time that it runs (`resolveStatement`), runs it, and continues
+  after an error, as the guide's "Scripts" section describes. A theorem states that it agrees
+  with `runSqlFrom` up to and including the first error. The native oracle stops at the first
+  error, so no corpus case shows the statements after one; that evidence is deferred (see
+  "Deferred, with their triggers").
+- **A statement that the model does not describe, found when it runs**, gives
+  `Output.unmodeled` with the model's restriction, and the run stops there: the model cannot
+  say what SQLite does next, and it never approximates (D4). `sql` does not resolve at
+  elaboration, so this is how its unmodeled statements show. The guide documents it.
+- **No clock in S2.** The guide's `Env.default` has no clock, so a statement that reads the
+  clock gives `Output.unmodeled`. `Env`, with a clock, comes with S3.
 
 ### D4. The surface never approximates
 
@@ -201,9 +223,23 @@ replaced code forbids the old path.
 Rejected: the guide's first promise is that the model never approximates, and a claim
 proved over an approximation is not a claim about SQLite.
 
+## Deferred, with their triggers
+
+Each part of the guide that a slice does not finish is listed here, with where it is picked up.
+A slice that finishes one removes it from this table, or moves it to the slice that does.
+
+| Deferred part | Why | Picked up |
+| --- | --- | --- |
+| Evidence for the statements after an error: the native oracle runs on after a failed statement, and a new corpus records such scripts | The oracle and the corpora stop at the first error; the change is a judge change (ADR 0011), with its own pull request and the owner's approval | Before S4, whose claims quantify over runs that can contain errors; earlier if a guide example depends on it |
+| `Env` with a clock, so that `CURRENT_TIMESTAMP` and `date('now')` run | S2 gives `Output.unmodeled` for a statement that reads the clock (D3, amended 2026-10-22) | S3 (D1) |
+| `random()`, `randomblob()`, `changes()`, `last_insert_rowid()` and `total_changes()`, which the guide's `Env` lists | The model resolves them as unmodeled functions; they need model work | A model ADR, before the slice whose examples use them |
+| The `Database` that carries its validity, and the guide's `db.notNull` without a hypothesis | Needs the theorems that the statements keep the atoms | ADR 0022, D5; D5 of this ADR |
+
 ## Not decided here
 
 - The details of each slice after S2: its task file decides them, from the guide.
+- How `db!` gives the proof of `Database.Valid` for the database that it builds (D3): the
+  owner decides it for the S2 task file.
 - The candidate of D2 item 2, until its measurement.
 - The editor features that the guide lists (hovers, code actions, warnings for traps)
   and SQL in docstrings: each comes with the slice whose users need it.
@@ -217,3 +253,12 @@ Decided on 2026-10-20:
 1. **The order of D1**, with counterexamples (S5) before triples (S6).
 2. **D5: the model work.** The next model ADR covers all of D5, starting with
    subqueries, so that no slice of the surface waits for the model.
+
+Decided on 2026-10-22, for the S2 task file:
+
+3. **Statements after an error.** S2's run continues after an error; a theorem relates it to
+   `runSqlFrom` up to the first error, and the native evidence for what follows is deferred.
+4. **Unmodeled statements at run time** give `Output.unmodeled`, which ends the run, and the
+   guide documents it.
+5. **The clock.** S2 has no clock: a statement that reads it gives `Output.unmodeled`, and
+   `Env` with a clock comes with S3.
