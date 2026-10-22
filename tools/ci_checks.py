@@ -73,9 +73,10 @@ def run_checks(scope: str, mode: str, system: str, root: Path) -> None:
         runtime = Path(environment["SQLITE_VERIFIER_RUNTIME_ROOT"])
     elif mode == "source":
         run("setup", ["just", "setup"], 330)
+        runtime = root / "build/conformance"
     else:
         raise ValueError(f"Unknown build mode: {mode}")
-    toolchain = (runtime if mode == "build" else root) / "lean/bin"
+    toolchain = runtime / "lean/bin"
     lean = str(toolchain / "lean") if toolchain.is_dir() else "lean"
     lake = str(toolchain / "lake") if toolchain.is_dir() else "lake"
     versions = {"python": sys.version,

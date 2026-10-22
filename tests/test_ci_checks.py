@@ -59,6 +59,8 @@ def test_ci_modes_retain_fresh_checks(tmp_path: Path, mode: str, system: str) ->
     original_bin = tmp_path / "original-bin"
     original_bin.mkdir()
     (runtime / "lean/bin").mkdir(parents=True)
+    # Source mode reads the toolchain from the build/conformance out-link of `just setup`.
+    (tmp_path / "build/conformance/lean/bin").mkdir(parents=True)
     for compiler in (original_bin / "clang", runtime / "lean/bin/clang"):
         compiler.write_text("#!/bin/sh\nexit 0\n")
         compiler.chmod(0o755)
@@ -95,6 +97,8 @@ def test_ci_modes_retain_fresh_checks(tmp_path: Path, mode: str, system: str) ->
     else:
         assert commands[0] == ["just", "setup"]
         assert "SQLITE_VERIFIER_UNIT_CHECKS" not in environments[-1]
+        assert [str(tmp_path / "build/conformance/lean/bin/lean"), "--version"] in commands
+        assert [str(tmp_path / "build/conformance/lean/bin/lake"), "--version"] in commands
     assert all(row["exit_code"] == 0 for row in json.loads((tmp_path / "build/ci-phases.json").read_text()))
 
 

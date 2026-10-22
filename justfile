@@ -20,19 +20,13 @@ resources:
 # Prepare the pinned conformance runtime through the same Nix build that the tests use.
 setup: build
 
-# Build the conformance runtime and expose its toolchain, model and programs at the repository root.
+# Build the conformance runtime at build/conformance, the default runtime root of the test recipes.
 build: resources conformance-build
-    mkdir -p .lake
-    rm -rf .lake/build packages/belay-sqlite-model/.lake/build
-    mkdir -p packages/belay-sqlite-model/.lake
-    ln -sfn ../build/conformance/.lake/build .lake/build
-    ln -sfn ../../../build/conformance/packages/belay-sqlite-model/.lake/build packages/belay-sqlite-model/.lake/build
-    ln -sfn build/conformance/lean lean
 
 # Run an explicitly selected scenario without rebuilding its prerequisites.
 [positional-arguments]
 test-cases *args:
-    python3 -m pytest --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD}" "$@"
+    python3 -m pytest --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD/build/conformance}" "$@"
 
 # Build the conformance runtime: the toolchain, the model, the conformance runner and the parser library.
 conformance-build:
@@ -57,7 +51,7 @@ test-list *args:
 
 # Check pinned tools through the same scenario interface.
 smoke:
-    timeout --foreground 15 python3 -m pytest tests/test_toolchain_smoke.py --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD}"
+    timeout --foreground 15 python3 -m pytest tests/test_toolchain_smoke.py --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD/build/conformance}"
 
 # Fresh development replay includes every authored/synthetic case and a stable upstream sample.
 test: build documentation-inventory test-source
@@ -74,7 +68,7 @@ documentation-inventory: resources
 
 # Test ownership is shared with Nix; all source-owned checks run on the host.
 test-source:
-    timeout --foreground 600 python3 -u -m pytest -v tests -m "not requires_nix" --source-checks --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD}" --junitxml build/test-results/source.xml
+    timeout --foreground 600 python3 -u -m pytest -v tests -m "not requires_nix" --source-checks --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD/build/conformance}" --junitxml build/test-results/source.xml
 
 # Review a commit (default: @-) with the other agent tool against docs/review-checklist.md (REVIEWER= overrides).
 [positional-arguments]
@@ -106,7 +100,7 @@ review-stats *args:
 
 # Check Nix source identities, test-target commands and environment snapshots.
 test-nix:
-    timeout --foreground 600 python3 -u -m pytest -v tests -m requires_nix --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD}" --junitxml build/test-results/nix.xml
+    timeout --foreground 600 python3 -u -m pytest -v tests -m requires_nix --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD/build/conformance}" --junitxml build/test-results/nix.xml
 
 # Run all scheduled suites (tests/nix_scheduled_suites.json), which pull requests skip, also the
 # mutant suites that CI runs in their own job.

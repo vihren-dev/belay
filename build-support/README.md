@@ -59,11 +59,11 @@ the translation of SQL text, linked with the parser library) and `surfacePackage
 The harness sends SQL text to the text package's translation program
 (`belay-sqlite-translate`) in `conformance`, which gives the model's statement syntax. The
 conformance runner resolves statement syntax itself.
-`just build` builds `conformance` and exposes local development paths as links:
-`.lake/build` and `packages/belay-sqlite-model/.lake/build` (the outputs of the two Lake
-packages) and `lean`; it does not rebuild Lean through Elan or Lake outside Nix.
-Set `SQLITE_VERIFIER_RUNTIME_ROOT` to this immutable output before `just test`. Reports
-remain in the checkout's `build/`, so the runtime itself needs no mutable staging copy.
+`just build` builds `conformance` at `build/conformance`; it does not rebuild Lean through
+Elan or Lake outside Nix, and it writes nothing into the checkout's `packages/`. The test
+recipes use `build/conformance` as their runtime root; set `SQLITE_VERIFIER_RUNTIME_ROOT` to
+use another immutable runtime output. Reports remain in the checkout's `build/`, so the
+runtime itself needs no mutable staging copy.
 
 `just test-nix` runs `tests/test_source_identity.py`, which
 checks each declared input through real Nix source identities. Each declared input relation and component-level
