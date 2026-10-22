@@ -66,8 +66,8 @@ Specification: [ADR 0017](../docs/adr-0017-user-surface.md), D2 and D6;
   stopped at the resource guard (9.88 GiB free); the owner approved `nix-store --gc`, which freed
   3.2 GiB. `just test-source` (502 tests), `just test` (377 tests in 7 suites) and the model and
   frozen suites pass.
-- To do in T4: the `parser-library` requirement of `requires_native` still checks the runtime's
-  `lib`; rename it for the program when the C library tests move to the Lean binding.
+- Done in T4c (2026-10-22): the `parser-library` requirement of `requires_native` checked the
+  runtime's `lib`; it is now `translation-program`, which checks the program.
 - 2026-10-22: review of the switch: two should findings. R11 fixed: the client stops a program that
   gives no answer within 60 s, and a test checks it with a program that never answers. R10
   deferred: the Python `select_grammar` has no production caller, and T4 deletes it.
