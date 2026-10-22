@@ -4,6 +4,9 @@ Question: which changes make model development faster and use fewer tokens?
 
 Measured 2026-10-21 on one Linux x86_64 host (8 CPUs, shared with other sessions:
 load average 8 to 11 during the runs), Lean and Lake 4.34.1, at `main` 8f6fa3e3.
+These measurements predate the move of the model to `packages/belay-sqlite-model`
+(`Belay.Sqlite.Model`) and the removal of the verifier product (ADR 0021), so the paths
+below are the paths of that commit. ADR 0020 records the same measurements after them.
 The token data comes from the transcript of the Claude Code development session from
 2026-10-09 to 2026-10-21. This file gives aggregate numbers only.
 
@@ -151,6 +154,6 @@ faster or more compact Lean check cannot change the totals. An earlier estimate 
 4. **The codec's root import puts proofs into the runner.** Narrowing it removes 30
    proof modules from the closure and halves the rebuild after many model edits.
    It agrees with ADR 0016 D2, which keeps the codec as a public root.
-   The commit after this experiment makes the change. With it, `just test-full`
-   passes (804 s after the model change, on the loaded host) and `just verdict`
-   passes.
+   The commit `perf: import only the model's definitions in the codec` makes the
+   change on the new layout, where it removes 32 proof modules (216 to 182 modules).
+   With it, `just test-full` and `just verdict` pass.
