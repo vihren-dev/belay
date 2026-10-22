@@ -7,7 +7,7 @@ Audience: designers and reviewers.
 Related: [ADR 0012](adr-0012-query-semantics.md) (decision 5, the admitted databases),
 [ADR 0016](adr-0016-model-and-surface.md) (the layer rules),
 [ADR 0017](adr-0017-user-surface.md) (the user surface, D3 and D5),
-ADR 0019 (proposed in pull request #207; D2, `PRAGMA integrity_check`).
+[ADR 0019](adr-0019-guide-sql.md) (D2, `PRAGMA integrity_check`).
 
 ## Overview
 
@@ -172,8 +172,8 @@ is.
   databases a claim over `Database` covers, and points to `Database.Admitted` for the others.
 - **ADR 0012's preservation sentence** is corrected by an amendment that points here.
 - **ADR 0019, D2** gets a simpler law: the `ok` row of `integrity_check` is the Valid constraint
-  atoms, and of `quick_check` the same without "keys unique". Its text names
-  `Database.Admitted` where it says `Database.Valid` today.
+  atoms, and of `quick_check` the same without "keys unique", under `Database.Admitted`
+  (done with ADR 0019's acceptance, 2026-10-22).
 - **The work is a matrix** of atoms and statement forms, which the slices deliver one atom at a
   time, so each slice is useful alone.
 

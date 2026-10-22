@@ -193,6 +193,7 @@ part of this ADR; this ADR only names them and when the surface needs them:
 | `DISTINCT` and `HAVING` | S4 (level 2 of the unique index) | 185 cases; pain point 3 |
 | Enforced foreign keys with their actions | S6 (the rebuild that cascades) | pain point 1, the research's first-ranked failure |
 | Triggers | S8 (expand/contract) | 416 cases; pain point 2 |
+| Parameters, pragmas, compound `SELECT` and the table rebuild ([ADR 0019](adr-0019-guide-sql.md), D7) | S3: parameters (slice 1); S4: `pragma_table_info` and `EXCEPT` (slices 2 and 3); S6: `INSERT ... SELECT`, `RENAME` and `foreign_key_check` (slices 2, 4 and 5) | guide "Parameters", "Queries as propositions" and the lead example |
 | The theorems that statements keep each fact of a valid database ([ADR 0022](adr-0022-database-validity.md)) | S4: "keys unique", and runs of the bundled database over every database, whose check the theorems replace (D3, amended 2026-10-22) | guide "Databases" |
 
 Subqueries block S4, so their ADR should start before S3 ends.
@@ -256,7 +257,7 @@ A slice that finishes one removes it from this table, or moves it to the slice t
 | `Env` with a clock, so that `CURRENT_TIMESTAMP` and `date('now')` run | S2 gives `Output.unmodeled` for a statement that reads the clock (D3, amended 2026-10-22) | S3 (D1) |
 | `random()`, `randomblob()`, `changes()`, `last_insert_rowid()` and `total_changes()`, which the guide's `Env` lists | The model resolves them as unmodeled functions; they need model work | A model ADR, before the slice whose examples use them |
 | The theorems that replace the check of a run of the bundled database, so that a claim over every database gets the facts of the run's result | S2's run checks `Database.Valid` for each concrete run (D3, amended 2026-10-22) | ADR 0022, slices 2 to 4, before S4 |
-| `pragma_table_info` and the other table-valued pragma functions, with which the guide states facts of a schema | The model resolves them as a restriction | A model ADR, before S4, whose claims over every database need schema facts |
+| `pragma_table_info` and the other table-valued pragma functions, with which the guide states facts of a schema | The model resolves them as a restriction | [ADR 0019](adr-0019-guide-sql.md), slice 2 (D2), before S4, whose claims over every database need schema facts |
 
 ## Not decided here
 

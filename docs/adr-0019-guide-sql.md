@@ -1,13 +1,15 @@
 # ADR 0019: Parameters, pragmas, compound queries and the table rebuild
 
-Date: 2026-10-20. Status: PROPOSED.
-Implementation: after ADR 0018, slice by slice, each with its own task file, as local
-commits; the pull requests come when the ADR is done.
+Date: 2026-10-20. Status: ACCEPTED on 2026-10-22 (owner decisions below).
+Implementation: slice by slice, in the order of D7, each with its own task file, as local
+commits; each slice gets its pull requests at its end (owner decision 3), because the slices
+of [ADR 0017](adr-0017-user-surface.md) that need them come between them.
 Audience: designers and reviewers.
 Related: [ADR 0018](adr-0018-surface-sql.md) (the SQL that the user surface needs; its
 "Not decided here" lists most of this work), [ADR 0017](adr-0017-user-surface.md) (the user
 surface), [ADR 0012](adr-0012-query-semantics.md) (queries), [ADR 0014](adr-0014-schema-features.md)
-(schema features), [ADR 0011](adr-0011-product-trust-and-development-integrity.md) (the judge).
+(schema features), [ADR 0011](adr-0011-product-trust-and-development-integrity.md) (the judge),
+[ADR 0022](adr-0022-database-validity.md) (the facts of a valid database, which D2 reads).
 
 ## Overview
 
@@ -82,6 +84,9 @@ What the code has today, after slice 1 of ADR 0018:
   the bound integer.
 - The script carries the values. ADR 0017's S3 binds them from `$x` and `:name` in Lean
   source; a corpus case binds none.
+- Amended 2026-10-22: ADR 0017's S2 adds a run that resolves each statement when it runs and
+  continues after an error (ADR 0017, D3, amended). That run carries the bound values too,
+  and gives them to each statement that it runs.
 
 ### D2. Pragmas as statements
 
@@ -90,11 +95,14 @@ What the code has today, after slice 1 of ADR 0018:
   and otherwise SQLite's rows for the failures, such as `NULL value in t.a`, in SQLite's
   order. `integrity_check` checks `NOT NULL`, `CHECK`, the unique keys and the types of a
   `STRICT` table; `quick_check` checks the same without the unique keys, as SQLite's
-  documentation states. `Database.Valid` does not include the truth of the constraints, so a
-  law for each pragma relates its `ok` row to the model's checks of those constraints
-  (`LiteralData.constraints`, without the unique keys for `quick_check`), not to
-  `Database.Valid`. The model has no damaged pages or index entries, so the failures that only
-  they cause do not occur.
+  documentation states. A law for each pragma relates its `ok` row to the constraint atoms
+  of `Database.Valid` (ADR 0022, D1): `NotNull`, `ChecksHold`, `TypesFit` and `KeysUnique`
+  for `integrity_check`, and the same without `KeysUnique` for `quick_check`. The pragmas run
+  on any database that SQLite can reach, so each law has `Database.Admitted` as its
+  hypothesis, not `Database.Valid`. The model has no damaged pages or index entries, so the
+  failures that only they cause do not occur. (Amended 2026-10-22: the first text related the
+  `ok` row to `LiteralData.constraints`, because `Database.Valid` did not include the
+  constraints before ADR 0022.)
 - `PRAGMA foreign_key_check`, with and without a table name: the rows of SQLite, over the
   foreign keys of the catalog (ADR 0014) and the checks of ADR 0018 D4.
 - `PRAGMA table_info` and `PRAGMA foreign_key_list`, and their table-valued forms
@@ -158,6 +166,10 @@ slice works as in ADR 0015: an authored corpus with kernel proofs, mutants for t
 that are easy to get subtly wrong, the verdict of every corpus, and `just test-full` at the
 slice's end.
 
+Amended 2026-10-22: slice 1 starts after ADR 0017's S2, whose run it gives the bound values,
+and ends before S3. Slices 2 and 3 end before S4, and slices 4 and 5 before S6. Slice 6 has
+no slice of ADR 0017 that waits for it.
+
 ## Consequences
 
 - **The guide's lead example becomes a model example.** With ADR 0018 slice 4 and slices 2
@@ -176,6 +188,10 @@ slice's end.
 it changes meaning: `ORDER BY ?` bound to 1 sorts by a constant, and `ORDER BY 1` sorts by
 the first result column. The surface never approximates (ADR 0017 D4).
 
+**Pragmas or compound `SELECT` first.** Each makes about ten times more cases of v5 clean
+than parameters do, but ADR 0017's S3 cannot start without parameters, and slices 2 and 3
+come before S4, which needs them, in either order.
+
 **Views and `WITH` before compound `SELECT`.** Views make more cases of v4 clean, but the
 guide needs `EXCEPT`, and compound `SELECT` makes more cases of v5 clean.
 
@@ -190,7 +206,8 @@ mode, the page size, the cache). They stay out until a measurement shows a gain.
 
 ## Owner decisions
 
-To be decided:
+Decided on 2026-10-22:
 
 1. **The order of D7**, parameters first.
 2. **D1: parameters in the model**, not substituted by the surface.
+3. **A pull request for each slice**, at the slice's end, for this ADR.
