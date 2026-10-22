@@ -1,6 +1,6 @@
 # Status: one SQL translation, the text package below the surface
 
-Created 2026-10-21. Status: OPEN.
+Created 2026-10-21. Status: DONE (2026-10-22).
 Task: [task file](20261021-sql-text-package.task.md).
 Specification: [ADR 0017](../docs/adr-0017-user-surface.md), D2 and D6;
 [ADR 0016](../docs/adr-0016-model-and-surface.md), D2; all with their amendments of 2026-10-21.
@@ -108,3 +108,7 @@ Specification: [ADR 0017](../docs/adr-0017-user-surface.md), D2 and D6;
   cases with a diagnostic are byte-identical on this tree and on the tree before the task
   (porlvkzz, with its own conformance runtime). Five of these cases have a trailing read-only
   PRAGMA that the projection drops, for example `fkey1:fkey1-3.2:5` (`BLOCKED_ONLY_BY_QUERIES`).
+- 2026-10-22: T5. `nix-build integrity/judge.nix -A predictions --check` rebuilds the predictions
+  in 33 s (30 s before the task), and they are byte-identical to the baseline (`diff -r`).
+  `just test-full` (450 source tests; 727 tests in 10 Nix suites), `just test-nix` (67 tests) and
+  `just test-scheduled` (72 tests in 4 suites) pass. The task is DONE.

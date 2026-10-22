@@ -1,6 +1,6 @@
 # One SQL translation: the text package below the surface (ADR 0017, D2)
 
-Created 2026-10-21. Status: OPEN.
+Created 2026-10-21. Status: DONE (2026-10-22).
 Status file: [status](20261021-sql-text-package.status.md).
 Specification: [ADR 0017](../docs/adr-0017-user-surface.md), D2 and D6, with their amendments of
 2026-10-21; [ADR 0016](../docs/adr-0016-model-and-surface.md), D2 and its amendment of 2026-10-21.
