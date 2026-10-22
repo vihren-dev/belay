@@ -140,7 +140,7 @@ theorem add_column_shape (constant : column.clockDefault = false)
       (table.appendColumns [(column, value)]).rows.length = table.rows.length ∧
       (table.appendColumns [(column, value)]).rows.map Row.rowid = table.rows.map Row.rowid ∧
       (table.appendColumns [(column, value)]).rows.map Row.values =
-        table.rows.map (fun row => row.values ++ [storeValue column.affinity value]) := by
+        table.rows.map (fun row => row.values ++ [Value.store column.affinity value]) := by
   simp only [advance, advanceWith, literalStep, runStatement, step, SqlState.publish] at success
   repeat (split at * <;> simp_all)
   all_goals subst_vars

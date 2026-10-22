@@ -5,7 +5,7 @@ set_option doc.verso true
 
 /-! Defaults for fields absent from old records after ADD COLUMN. SQLite uses
 {lit}`sqlite3ValueFromExpr` here, which differs from expression evaluation for
-INSERT. Affinity conversion still uses the shared {name}`Belay.Sqlite.Model.storeValue`. -/
+INSERT. Affinity conversion still uses the shared {name}`Belay.Sqlite.Model.Value.store`. -/
 
 namespace Belay.Sqlite.Model
 
@@ -32,7 +32,7 @@ def readNumericDefault (affinity : Affinity) (token : String) (negated : Bool) :
         if text.toList.any (fun c => c == '.' || c == 'e' || c == 'E') then realLiteral text.toList negated
         else numericText bytes
       else .text bytes
-  storeValue affinity value
+  Value.store affinity value
 
 /-- The value that old rows read for a written default after ADD COLUMN, stored with the
 affinity: numeric tokens use {name}`readNumericDefault`; other literal forms use
@@ -45,7 +45,7 @@ def writtenReadBack (affinity : Affinity) (written : Syntax.DefaultExpression) :
   | .negate _ | .positive _ | .compare .. | .and .. | .or .. | .not _
   | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast .. | .qualified .. | .collate .. | .exists _
   | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate .. | .raise .. =>
-    (literalDefault written.expression).map (storeValue affinity)
+    (literalDefault written.expression).map (Value.store affinity)
 
 /-- The resolved default of a written DEFAULT for a column of the affinity
 ({name}`ColumnDefault`), evaluated once: a time keyword is {lean}`DefaultForm.clock`; a
@@ -82,7 +82,7 @@ apart ({name}`CatalogColumn.clockDefault`). For omitted INSERT values use
 def readDefaultValue (column : CatalogColumn) : Except ValueIssue Value :=
   match column.defaultValue with
   | none => .ok .null
-  | some { form := .literal _ readBack, .. } => .ok (storeValue column.affinity readBack)
+  | some { form := .literal _ readBack, .. } => .ok (Value.store column.affinity readBack)
   | some { form := .clock _, .. } => .error (.restriction [] .unmodeledDefault)
 
 end Belay.Sqlite.Model

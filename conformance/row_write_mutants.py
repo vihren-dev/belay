@@ -22,16 +22,16 @@ OUTPUTS = "belay-sqlite-model/Belay/Sqlite/Model/StatementOutput.lean"
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "set_reads_new_row": (ROW_UPDATE,
-        "values.set position (storeValue (positionAffinity columns position) (expression.eval context cells))) row.values) }",
-        "values.set position (storeValue (positionAffinity columns position) (expression.eval context values))) row.values) }"),
+        "values.set position (Value.store (positionAffinity columns position) (expression.eval context cells))) row.values) }",
+        "values.set position (Value.store (positionAffinity columns position) (expression.eval context values))) row.values) }"),
     "null_filter_selects": (ROW_UPDATE,
         "  filter.all fun condition => Resolved.truthy (condition.eval context row.values)",
         "  filter.all fun condition => !Resolved.falsy (condition.eval context row.values)"),
     "no_store_affinity": (ROW_UPDATE,
-        "values.set position (storeValue (positionAffinity columns position) (expression.eval context cells))) row.values) }",
+        "values.set position (Value.store (positionAffinity columns position) (expression.eval context cells))) row.values) }",
         "values.set position (expression.eval context cells)) row.values) }"),
     "cast_as_store_affinity": (ROWS,
-        "  | .value written => .value (storeValue affinity written)",
+        "  | .value written => .value (Value.store affinity written)",
         "  | .value written => .value (castValue affinity written)"),
     "real_column_keeps_integer": (STORE,
         "  | .integer whole => .real (positiveZero (Float.ofInt whole).toBits)", "  | .integer whole => .integer whole"),
@@ -63,7 +63,7 @@ GUARDS: dict[str, str] = {
     "set_reads_new_row": "rule:assignFrom", "null_filter_selects": "rule:selected",
     "no_store_affinity": "rule:assignFrom",
     "cast_as_store_affinity": "rule:Resolved.Cell.stored", "real_column_keeps_integer": "rule:realRead",
-    "text_column_keeps_number": "rule:storeValue",
+    "text_column_keeps_number": "rule:Value.store",
     "change_count_every_row": "rule:statementOutput",
 }
 """What each mutant guards: `rule:` and the Lean declaration of its file that the mutant

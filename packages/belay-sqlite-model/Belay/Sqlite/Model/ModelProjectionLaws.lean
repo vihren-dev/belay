@@ -44,7 +44,7 @@ theorem Table.project_newColumn {table : Table} {column : CatalogColumn} (value 
     (width : ∀ row ∈ table.rows, row.values.length = table.shape.columns.length)
     (fresh : columnPosition table.shape.columns column.name = none) :
     (table.appendColumns [(column, value)]).project [column.name] =
-      constantExtension (storeValue column.affinity value) (table.project fields) := by
+      constantExtension (Value.store column.affinity value) (table.project fields) := by
   have absent : findPosition (fun old => old.name.sameName column.name) table.shape.columns = none := by
     simpa [columnPosition] using fresh
   have found : columnPosition (table.shape.columns ++ [column]) column.name = some table.shape.columns.length := by

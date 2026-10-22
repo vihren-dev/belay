@@ -12,12 +12,12 @@ of {lit}`Query.results`. -/
 
 namespace Belay.Sqlite.Model.Resolved
 
-/-- A total order of values: {name}`compareValues`, and among the values that it says are equal
+/-- A total order of values: {name}`Value.compare`, and among the values that it says are equal
 but differ, NULL first, an integer before a real, and reals by their bits, so that a NaN REAL,
 which the model never makes, is not equal to NULL either. For example, the integer 1 comes
 before the real 1.0. -/
 def compareNormal (first second : Value) : Ordering :=
-  (compareValues first second).then (match first, second with
+  (Value.compare first second).then (match first, second with
     | .integer _, .real _ => .lt
     | .real _, .integer _ => .gt
     | .real a, .real b => compare a b

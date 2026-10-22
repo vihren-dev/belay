@@ -99,13 +99,13 @@ def _root_.Belay.Sqlite.Model.Value.isText : Value → Bool
 /-- The operands of a comparison after SQLite applies its affinity (the comparison
 opcodes of {lit}`sqlite3VdbeExec`): with INTEGER, REAL or NUMERIC, each TEXT operand that
 looks like a number becomes that number ({name}`numericOperand`); with TEXT, when an operand
-is TEXT, each number becomes its text ({name}`storeValue`), which the order would also give
+is TEXT, each number becomes its text ({name}`Value.store`), which the order would also give
 otherwise; with BLOB or none, the operands stay. -/
 def comparisonOperands : Option Affinity → Value → Value → Value × Value
   | some .integer, left, right | some .real, left, right | some .numeric, left, right =>
     (numericOperand left, numericOperand right)
   | some .text, left, right =>
-    if left.isText || right.isText then (storeValue .text left, storeValue .text right) else (left, right)
+    if left.isText || right.isText then (Value.store .text left, Value.store .text right) else (left, right)
   | some .blob, left, right | none, left, right => (left, right)
 
 /-- The rows that a subquery gives for one outer row, with the fault of its evaluation

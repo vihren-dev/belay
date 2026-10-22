@@ -91,9 +91,9 @@ R-03366-15091):
   writes a whole REAL as its integer and reads the integer back as the same double,
   which for a zero is {lit}`+0.0`. Every REAL result goes through {name}`positiveZero`.
 
-{assert}`storeValue .integer (.text [49, 50]) = .integer 12`. Use
+{assert}`Value.store .integer (.text [49, 50]) = .integer 12`. Use
 {name}`Affinity.blob` for a column without affinity: it changes no value. -/
-def storeValue (affinity : Affinity) (value : Value) : Value :=
+def Value.store (affinity : Affinity) (value : Value) : Value :=
   match affinity, value with
   | .blob, value => value
   | .text, .integer _ | .text, .real _ => .text value.textBytes

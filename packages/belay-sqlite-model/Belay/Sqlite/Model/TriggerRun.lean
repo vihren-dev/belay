@@ -53,7 +53,7 @@ affinity, as {name}`Resolved.Cell.valueAt` gives it over no cells. -/
 def Resolved.Cell.valueWith (context : Resolved.EvalContext) (cells : List Value) (affinity : Affinity) :
     Resolved.Cell → Value
   | .value stored => stored
-  | .expression term => storeValue affinity (term.eval context cells)
+  | .expression term => Value.store affinity (term.eval context cells)
 
 /-- The rows of an INSERT of a trigger's body over the trigger's cells ({name}`Resolved.Cell.valueWith`). -/
 def rowsWith (context : Resolved.EvalContext) (cells : List Value) (columns : List CatalogColumn)

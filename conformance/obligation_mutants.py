@@ -48,8 +48,8 @@ COVERED_ELSEWHERE: dict[str, str] = {
                             "alias is a constant that SQLite's integers bound; a larger value is a REAL and a "
                             "datatype mismatch",
     "insert-row-width": "reason:resolution gives one value per column (RowSpec.fullRow_rowWidth)",
-    "insert-stored-form": "reason:resolution stores every written value with storeValue, which is idempotent "
-                          "(StoreValueLaws.storeValue_storeValue)",
+    "insert-stored-form": "reason:resolution stores every written value with Value.store, which is idempotent "
+                          "(StoreValueLaws.Value.store_store)",
     "insert-table-ready": "reason:SQLite keeps the NOT NULL cells and unique keys of every table that it stores, "
                           "so every native state passes tableReady",
     "insert-rowid-bounded": "reason:after the largest rowid SQLite chooses a random rowid, so a native "

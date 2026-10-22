@@ -45,7 +45,7 @@ the parent cell under the parent column's collation ({name}`LiteralData.keyCells
 def indexHolds (parent : CatalogTable) (pairs : List (Nat × Nat)) (values : List Value) (row : Row) : Bool :=
   (pairs.zip values).all fun ((_, position), value) => match parent.columns[position]? with
     | none => false
-    | some column => LiteralData.keyCellsEqual (row.values.getD position .null) (storeValue (indexAffinity column) value)
+    | some column => LiteralData.keyCellsEqual (row.values.getD position .null) (Value.store (indexAffinity column) value)
         column.collation
 
 /-- Whether the rows hold a parent row for the child row's values ({lit}`fkLookupParent`): for a

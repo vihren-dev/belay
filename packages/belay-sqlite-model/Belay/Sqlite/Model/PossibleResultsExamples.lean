@@ -92,7 +92,7 @@ example : possible (jobs ++ [selectT [name "p"] [] (some 1) none [name "p"]]) = 
   decide +kernel
 
 -- The normal form is one list for any input order: NULL comes before a NaN REAL, which
--- compareValues alone would call equal, and the integer 1 before the real 1.0.
+-- Value.compare alone would call equal, and the integer 1 before the real 1.0.
 example : Resolved.normalForm [[.real 0x7FF8000000000000], [.null]] = Resolved.normalForm [[.null], [.real 0x7FF8000000000000]] := by
   decide +kernel
 example : Resolved.normalForm [[.real 0x3FF0000000000000], [.integer 1]] = [[.integer 1], [.real 0x3FF0000000000000]] := by

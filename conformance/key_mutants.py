@@ -21,7 +21,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
     "key_text_without_case": (LITERAL_DATA, BODY,
         "  first != .null && second != .null && (match first, second with\n"
         f"    | .text a, .text b => a.map {FOLD} == b.map {FOLD}\n"
-        "    | _, _ => compareValues first second == .eq)"),
+        "    | _, _ => Value.compare first second == .eq)"),
     "storage_classes_ignored": (LITERAL_DATA, BODY,
         "  first != .null && second != .null && first.scaled == second.scaled && first.bytes == second.bytes"),
     "integer_real_unequal": (LITERAL_DATA, BODY,

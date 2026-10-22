@@ -14,10 +14,10 @@ namespace LiteralData
 {assert}`boundedInteger 0 = true`; the upper bound itself is excluded. -/
 def boundedInteger (value : Int) : Bool := decide (-(2 ^ 63 : Int) ≤ value ∧ value < 2 ^ 63)
 
-/-- Whether a value is in the stored form of an affinity: {name}`storeValue` keeps it.
+/-- Whether a value is in the stored form of an affinity: {name}`Value.store` keeps it.
 This is the form of every cell that SQLite stores ({name}`Row.Stored`).
 {assert}`storedForm .integer (.integer 5) = true`. -/
-def storedForm (affinity : Affinity) (value : Value) : Bool := storeValue affinity value == value
+def storedForm (affinity : Affinity) (value : Value) : Bool := Value.store affinity value == value
 
 /-- Read the cell at a column position, or {name}`Option.none` for a missing cell,
 so a malformed row cannot supply an invented value. -/
@@ -138,7 +138,7 @@ def generatedCells (columns : List CatalogColumn) (values : List Value) : List V
   let generated := columns.zipIdx.filterMap fun (column, position) =>
     column.generated.map fun how => (position, column.affinity, how.expression)
   generated.foldl (fun cells _ => generated.foldl (fun cells (position, affinity, expression) =>
-    cells.set position (storeValue affinity (expression.eval (.plain 0) cells))) cells) values
+    cells.set position (Value.store affinity (expression.eval (.plain 0) cells))) cells) values
 
 /-- The cells of a new row with the rowid: the alias cell, if the table has an alias, is
 the integer rowid, so a NULL alias takes the new rowid; then the generated columns are

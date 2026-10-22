@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.ExprFault
+import Belay.Sqlite.Model.Truth
 import Belay.Sqlite.Model.Date.Functions
 
 set_option doc.verso true
@@ -63,16 +63,14 @@ def Expr.evaluate (context : EvalContext) (row : List Value) : Expr → Value ×
   | .and left right =>
     let (a, first) := left.evaluate context row
     let (b, second) := right.evaluate context row
-    (if falsy a || falsy b then truth false else if a.isNull || b.isNull then .null else truth true,
-      (first.join second).soften)
+    (Value.and a b, (first.join second).soften)
   | .or left right =>
     let (a, first) := left.evaluate context row
     let (b, second) := right.evaluate context row
-    (if truthy a || truthy b then truth true else if a.isNull || b.isNull then .null else truth false,
-      (first.join second).soften)
+    (Value.or a b, (first.join second).soften)
   | .not operand =>
     let (value, fault) := operand.evaluate context row
-    (if value.isNull then .null else truth (!truthy value), fault)
+    (Value.not value, fault)
   | .isNull operand negated =>
     let (value, fault) := operand.evaluate context row
     (truth (value.isNull != negated), fault)

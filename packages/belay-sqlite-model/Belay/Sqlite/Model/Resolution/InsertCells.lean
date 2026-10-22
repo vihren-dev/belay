@@ -40,12 +40,12 @@ column's affinity; or the time keyword of a default that is one, such as
 def omittedCell (column : CatalogColumn) : Except ValueIssue Resolved.Cell :=
   match column.defaultValue with
   | some { form := .clock keyword, .. } => .ok (.expression (.now keyword))
-  | some { form := .literal .., .. } | none => (defaultValue column).map fun value => .value (storeValue column.affinity value)
+  | some { form := .literal .., .. } | none => (defaultValue column).map fun value => .value (Value.store column.affinity value)
 
-/-- A written cell stored with a column's affinity: a value is stored ({name}`storeValue`);
+/-- A written cell stored with a column's affinity: a value is stored ({name}`Value.store`);
 an expression stays as it is, and the execution stores its value. -/
 def Resolved.Cell.stored (affinity : Affinity) : Resolved.Cell → Resolved.Cell
-  | .value written => .value (storeValue affinity written)
+  | .value written => .value (Value.store affinity written)
   | .expression term => .expression term
 
 /-- One full row of cells in table order: the written cell of a named column stored with

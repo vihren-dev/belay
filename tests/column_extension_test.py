@@ -39,7 +39,7 @@ example (table : Table) (column : CatalogColumn) (value : Value)
     (width : ∀ row ∈ table.rows, row.values.length = table.shape.columns.length)
     (fresh : columnPosition table.shape.columns column.name = none) :
     (table.appendColumns [(column, value)]).project [column.name] =
-      constantExtension (storeValue column.affinity value) (table.project [name! "old"]) :=
+      constantExtension (Value.store column.affinity value) (table.project [name! "old"]) :=
   Table.project_newColumn value width fresh
 """
 

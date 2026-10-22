@@ -43,7 +43,7 @@ def test_stateful_modes(runtime_root: Path, error_seeking: bool) -> None:
     ("1e20", "AGREE"), ("9223372036854775808", "AGREE"),
 ])
 def test_affinity_boundaries_in_a_unique_key(runtime_root: Path, literal: str, verdict: str) -> None:
-    """Store-time affinity (`StoreValue.storeValue`) in a unique INTEGER key: a value that is
+    """Store-time affinity (`StoreValue.Value.store`) in a unique INTEGER key: a value that is
     stored as an integer and a value that stays REAL both agree with native SQLite, which
     compares the stored key cells (`LiteralData.keyCellsEqual`, slice 5a)."""
     native = record_sql("CREATE TABLE t(id INTEGER,UNIQUE(id));",

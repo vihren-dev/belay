@@ -23,14 +23,14 @@ def Database.EveryTable (property : Nat → Table → Prop) (database : Database
 def validRowid (rowid : Int) : Prop := -(2 ^ 63 : Int) ≤ rowid ∧ rowid < 2 ^ 63
 
 /-- For the given columns and row: for every position at which both a column and a
-cell exist, the cell equals {name}`storeValue` of itself with the column's affinity.
+cell exist, the cell equals {name}`Value.store` of itself with the column's affinity.
 Positions without a column or without a cell impose nothing. SQLite stores every
 value that it writes in this form, so every database that SQLite reaches meets it
 (ADR 0012, amendment 1, question 5). -/
 def Row.Stored (columns : List CatalogColumn) (row : Row) : Prop :=
   ∀ (position : Nat) (column : CatalogColumn) (value : Value),
     columns[position]? = some column → row.values[position]? = some value →
-    storeValue column.affinity value = value
+    Value.store column.affinity value = value
 
 /-- For the given rowid alias and row: when the table has a rowid alias at a position,
 the row's cell there is the integer rowid of the row. Without an alias it requires

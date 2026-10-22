@@ -15,10 +15,10 @@ namespace Belay.Sqlite.Model.Resolved
 /-- The value of an INSERT cell in an evaluation context, for a column of the affinity: a value
 cell is its value, which resolution stored already; an expression cell is the value of its
 expression in the context, which reads no column, stored with the affinity
-({name}`storeValue`). -/
+({name}`Value.store`). -/
 def Cell.valueAt (context : EvalContext) (affinity : Affinity) : Cell → Value
   | .value stored => stored
-  | .expression term => storeValue affinity (term.eval context [])
+  | .expression term => Value.store affinity (term.eval context [])
 
 /-- The rows of an INSERT in an evaluation context: each cell's value ({name}`Cell.valueAt`) for the
 affinity of its column; a cell past the last column has BLOB affinity. -/

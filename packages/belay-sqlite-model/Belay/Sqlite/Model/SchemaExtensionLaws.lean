@@ -11,7 +11,7 @@ namespace Belay.Sqlite.Model
 /-- For every admitted table and list of column/value pairs, {name}`Table.appendColumns`
 gives an admitted table ({name}`Table.Admitted`). With no rows, each fact is vacuous. Column
 support is a separate catalog check. The proof keeps old cells and rowids, adds equal numbers
-of columns and cells, and uses idempotence of {name}`storeValue` for the appended cells. -/
+of columns and cells, and uses idempotence of {name}`Value.store` for the appended cells. -/
 theorem Table.Admitted.appendColumns {table : Table} {columns : List (CatalogColumn × Value)}
     (admitted : table.Admitted) : (table.appendColumns columns).Admitted := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
@@ -42,7 +42,7 @@ theorem Table.Admitted.appendColumns {table : Table} {columns : List (CatalogCol
         simp [List.getElem?_map, found] at columnAt cellAt
         subst column
         subst value
-        exact storeValue_storeValue _ _
+        exact Value.store_store _ _
   · intro row member
     obtain ⟨original, oldMember, rfl⟩ := List.mem_map.mp member
     intro position alias

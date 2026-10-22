@@ -54,7 +54,7 @@ def RowWidth (columns : List CatalogColumn) (positions : List Nat)
       (∀ keyword, columns[index].defaultValue.map (·.form) = some (.clock keyword) →
         full[index]? = some (.expression (.now keyword))) ∧
       ((∀ keyword, columns[index].defaultValue.map (·.form) ≠ some (.clock keyword)) →
-        (defaultValue columns[index]).map (fun value => .value (storeValue columns[index].affinity value)) =
+        (defaultValue columns[index]).map (fun value => .value (Value.store columns[index].affinity value)) =
           .ok (full[index]?.getD (.value .null))))
 
 /-- For all inputs, a successful {name}`fullCells` gives cells that satisfy
