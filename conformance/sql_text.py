@@ -114,6 +114,9 @@ class Translator:
         finally:
             deadline.cancel()
         if not line:
+            # A program that closed its output may still run; stop it, so that its error output ends.
+            self.process.kill()
+            self.process.wait()
             reason = (f"it gave no answer for {source} in {ANSWER_TIMEOUT_SECONDS} s" if expired.is_set()
                       else stopped(self.process.stderr))
             raise RuntimeError(f"The translation program {self.program} stopped: {reason}. "

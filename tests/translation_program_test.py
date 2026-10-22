@@ -76,14 +76,27 @@ def test_a_wrapper_has_no_commands(runtime_root: Path) -> None:
     assert "command wrapper, such as EXPLAIN" in answer["refusal"]["message"]
 
 
+def stalled_translator(root: Path, script: str) -> sql_text.Translator:
+    """A client of a stand-in program with the shell script's behavior."""
+    program = root / sql_text.PROGRAM
+    program.parent.mkdir(parents=True)
+    program.write_text("#!/bin/sh\n" + script + "\n")
+    program.chmod(0o755)
+    return sql_text.Translator(root)
+
+
 def test_a_program_that_does_not_answer_is_stopped(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The harness's client (`conformance/sql_text.py`) stops a program that gives no answer
     within its deadline and names the text, so that a stalled program cannot block a replay."""
-    program = tmp_path / sql_text.PROGRAM
-    program.parent.mkdir(parents=True)
-    program.write_text("#!/bin/sh\nexec sleep 30\n")
-    program.chmod(0o755)
     monkeypatch.setattr(sql_text, "ANSWER_TIMEOUT_SECONDS", 0.5)
-    translator = sql_text.Translator(tmp_path)
+    translator = stalled_translator(tmp_path, "exec sleep 5")
     with pytest.raises(RuntimeError, match="gave no answer for stalled.sql in 0.5 s"):
         translator.answer(sql_text.ProfileIdentity(DEFAULT_ENGINE_VERSION, SOURCE_ID), b"COMMIT;", "stalled.sql")
+
+
+def test_a_program_that_closes_its_output_is_stopped(tmp_path: Path) -> None:
+    """The client stops a program that closes its output but keeps running, before it reads the
+    program's error output, so that the read ends at once."""
+    translator = stalled_translator(tmp_path, "echo closing >&2; exec 1>&-; sleep 5")
+    with pytest.raises(RuntimeError, match="stopped: closing"):
+        translator.answer(sql_text.ProfileIdentity(DEFAULT_ENGINE_VERSION, SOURCE_ID), b"COMMIT;", "closed.sql")

@@ -71,3 +71,5 @@ Specification: [ADR 0017](../docs/adr-0017-user-surface.md), D2 and D6;
 - 2026-10-22: review of the switch: two should findings. R11 fixed: the client stops a program that
   gives no answer within 60 s, and a test checks it with a program that never answers. R10
   deferred: the Python `select_grammar` has no production caller, and T4 deletes it.
+- 2026-10-22: review of the deadline: one should finding (R11), fixed: the client stops a program
+  that closed its output before it reads the program's error output; a test checks it.
