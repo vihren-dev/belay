@@ -71,7 +71,9 @@ def Database.failingAtom? (profile : Profile) (database : Database) : Option Val
 
 /-- For every profile and database: {name}`Database.failingAtom?` gives no atom exactly when
 the database satisfies {name}`Database.Valid` under the profile. So when it gives an atom, the
-database is not valid. -/
+database is not valid. Proof sketch: if no atom fails, each test of an atom passed, and
+the passed tests give the fields of {name}`Database.Valid`; if the database is valid, each
+field excludes the branch that names its atom. -/
 theorem Database.failingAtom?_eq_none_iff (profile : Profile) (database : Database) :
     database.failingAtom? profile = none ↔ database.Valid profile := by
   constructor

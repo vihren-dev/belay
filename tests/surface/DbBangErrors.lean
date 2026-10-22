@@ -106,3 +106,11 @@ def onFailedDb : Script := sql! keyConflict r"SELECT a FROM t"
 def committed : Database := db! r"CREATE TABLE t (a NOT NULL PRIMARY KEY); BEGIN; INSERT INTO t VALUES (1); COMMIT"
 
 example : committed.rows "t" = some [[1]] := by decide +kernel
+
+-- A COMMIT without a transaction: SQLite's message and what to do, at the statement.
+/--
+@ +1:64...70
+error: cannot commit - no transaction is active; remove the statement, or add the BEGIN or COMMIT that it needs
+-/
+#guard_msgs (positions := true) in
+def commitAlone : Database := db! r"CREATE TABLE t (a INTEGER); COMMIT"

@@ -80,7 +80,8 @@ theorem runScriptStep_error_failure {context : ResolveContext} {index : Nat} {co
 /-- For every clock, statement, state, transition and error: if the transition stops with the
 error ({name}`haltError`) and the error is not {name}`ExecutionError.unmodeled`, then
 {name}`Output.ofStep` gives {name}`Output.error` with the error's
-{name}`ExecutionError.primaryCode`. -/
+{name}`ExecutionError.primaryCode`. Proof sketch: rewrite the halt error into
+{name}`Output.ofStep`, then split on the constructors of the error. -/
 theorem Output.ofStep_halted {clock : Int} {statement : Resolved.Statement} {before : SqlState}
     {transition : SqlTransition} {failure : ExecutionError} (halted : haltError transition = some failure)
     (modeled : failure ≠ .unmodeled) : Output.ofStep clock statement before transition = .error failure.primaryCode := by
