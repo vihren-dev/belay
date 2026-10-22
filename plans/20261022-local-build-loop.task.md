@@ -34,7 +34,8 @@ decisions.
    to get the shell: change into the repository so that direnv loads it, or ask the owner
    to run `direnv allow`. A `.lake/build` in `packages/` that is a link into the Nix
    store (left by `just build` before ADR 0020) stops them with the command that deletes
-   it. An unknown package, target or corpus stops them with the known names.
+   it. An unknown package or corpus stops them with the known names; Lake reports an unknown
+   target of a known package.
 6. **Agent rule and texts (D5).** `AGENTS.md` has the rule of D5: the local loop while
    editing, the Nix checks before each commit, only Nix results as evidence, and direnv
    loads the shell. The first comment of the `justfile` says that direnv loads the shell.
@@ -47,7 +48,7 @@ decisions.
   claims as `judge/claims.json` and no others, and an unknown corpus is refused; the
   runtime root that `dev-verdict` makes holds the two programs at the paths that
   `conformance.predict` and `conformance.sql_text` read; target arguments resolve to the
-  packages and targets of item 3, and unknown ones are refused; the environment check
+  packages and targets of item 3, and unknown packages are refused; the environment check
   refuses a missing `LEAN_CC` or `BELAY_PARSER_LIBRARY` with the message of item 5.
 - The environment tests accept the new file under `nix/` and still refuse other files.
 - A `requires_nix` test runs in the loaded shell of `shell.nix` and skips with a message
