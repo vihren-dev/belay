@@ -34,6 +34,9 @@ SUBJECT_PROGRAMS: dict[str, tuple[str, str]] = {
     RUNNER: ("verifier-conformance", "conformance-runner"),
 }
 """Each program of a conformance runtime root, by its path there, and its package and target."""
+SHELL_VARIABLES: dict[str, bool] = {"BELAY_PARSER_LIBRARY": False, "LEAN_CC": True}
+"""The variables that `shell.nix` sets for local Lean builds, and whether only Linux needs the
+variable: `LEAN_CC` links programs for the NixOS loader, and macOS has no such wrapper."""
 LAKE_TIMEOUT_SECONDS = 1800
 """One `lake build` of a package; a clean build of the model took about one minute."""
 JUDGE_TIMEOUT_SECONDS = 3600
@@ -64,8 +67,8 @@ def resolved_targets(arguments: Sequence[str]) -> dict[str, tuple[str, ...]]:
 
 def shell_problem(environment: Mapping[str, str], linux: bool) -> str | None:
     """Why the current environment is not the shell of `shell.nix`, or None when it is."""
-    missing = [name for name in ("BELAY_PARSER_LIBRARY", *(("LEAN_CC",) if linux else ()))
-               if not environment.get(name)]
+    missing = [name for name, linux_only in SHELL_VARIABLES.items()
+               if (linux or not linux_only) and not environment.get(name)]
     if not missing:
         return None
     return (f"{' and '.join(missing)} {'is' if len(missing) == 1 else 'are'} not set: this is not the "
@@ -163,6 +166,11 @@ def main(arguments: Sequence[str]) -> int:
         return verdict(ROOT, arguments[1:])
     except DevLoopError as error:
         print(f"dev-{arguments[0]}: {error}", file=sys.stderr)
+        return 2
+    except subprocess.TimeoutExpired as error:
+        print(f"dev-{arguments[0]}: `{' '.join(map(str, error.cmd))}` did not finish in {error.timeout:.0f} s "
+              f"and was stopped. Look for another build or judge run in {ROOT} that holds the machine, "
+              f"then run the recipe again.", file=sys.stderr)
         return 2
 
 
