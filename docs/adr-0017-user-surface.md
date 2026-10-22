@@ -122,6 +122,14 @@ every result that SQLite may give is model work (D5). Two choices belong to its 
 `Database.Valid` as a field, as the guide describes, and how `db!` proves it for the
 database that it builds.
 
+Amended 2026-10-22 ([ADR 0022](adr-0022-database-validity.md)): `Database.Valid` becomes the
+strong notion that the guide describes, built from named facts (atoms), and today's invariant
+becomes `Database.Admitted`. In S2 the surface's `Database` is the model's, `db!` also proves
+`Database.Valid` for the database that it builds, and the guide's accessors read the atoms from
+that proof. The `Database` that carries its validity, so that a proof needs no hypothesis, waits
+for ADR 0022's theorems that the statements keep the atoms. The examples of `Output.oneOf` are
+part of S2: ADR 0018's slice 6 gave the model every result that SQLite may give.
+
 ### D4. The surface never approximates
 
 SQL that the model does not describe is an elaboration error that gives the model's
@@ -141,6 +149,7 @@ part of this ADR; this ADR only names them and when the surface needs them:
 | `DISTINCT` and `HAVING` | S4 (level 2 of the unique index) | 185 cases; pain point 3 |
 | Enforced foreign keys with their actions | S6 (the rebuild that cascades) | pain point 1, the research's first-ranked failure |
 | Triggers | S8 (expand/contract) | 416 cases; pain point 2 |
+| The theorems that statements keep each fact of a valid database ([ADR 0022](adr-0022-database-validity.md)) | S4 ("keys unique"), and the `Database` that carries its validity | guide "Databases" |
 
 Subqueries block S4, so their ADR should start before S3 ends.
 
