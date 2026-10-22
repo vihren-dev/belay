@@ -150,8 +150,8 @@ into the repository has the shell of the local loop (fact 8). The flake dev shel
 for CI, which calls `nix develop path:./nix`, and for users who enter it by hand (owner
 decision 3).
 
-The trial `shell.nix` on the branch of this ADR shows the shell. It keeps its own
-package list until the implementation shares it.
+The shared file is `nix/dev-shell.nix`. With it, the flake dev shell's derivation did not
+change.
 
 ### D2. Local builds in `packages/`
 

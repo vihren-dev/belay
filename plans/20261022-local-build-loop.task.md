@@ -1,6 +1,6 @@
 # The local incremental build loop (ADR 0020)
 
-Created 2026-10-22. Status: OPEN.
+Created 2026-10-22. Status: DONE (2026-10-22).
 Status file: [status](20261022-local-build-loop.status.md).
 Specification: [ADR 0020](../docs/adr-0020-local-build-loop.md), D1 to D6 and the owner
 decisions.

@@ -1,6 +1,6 @@
 # Status: the local incremental build loop (ADR 0020)
 
-Created 2026-10-22. Status: OPEN.
+Created 2026-10-22. Status: DONE (2026-10-22).
 Task file: [task](20261022-local-build-loop.task.md).
 Specification: [ADR 0020](../docs/adr-0020-local-build-loop.md).
 Source files: `shell.nix`, `nix/flake.nix`, `.envrc`, `justfile`, `tools/check_resources.py`,
@@ -29,3 +29,6 @@ Source files: `shell.nix`, `nix/flake.nix`, `.envrc`, `justfile`, `tools/check_r
   direnv loads the shell.
 - 2026-10-22: the agent rule of D5 in `AGENTS.md` ("The local build loop"), item 6. The
   README's direnv sentence changed with the shell commit.
+- 2026-10-22: DONE. ADR 0020's D1 names `nix/dev-shell.nix` instead of the trial.
+  `just test-full` passed (742 s). Pull request: the implementation, on top of the ADR's
+  pull request #203.
