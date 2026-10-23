@@ -103,6 +103,10 @@ is supported over the catalog; ADD COLUMN: `Database.AddColumnCondition`; DROP:
   runs a nested DELETE of no rows and drops its state), `runProgram_keysUnique` uses it, and the
   rows that REPLACE deletes are deleted in the frame with the algorithm REPLACE and the setting
   `recursive` as `fire`. No statement of a theorem changes.
+- 2026-10-23: `Connection.afterStep` takes the whole resolution state (`after : ResolveState`) instead of
+  the setting `foreignKeys`, and `runScriptStep` is `runScriptStepWith` and `ranScriptStep`.
+  `Connection.afterStep_keysUnique` takes the resolution state as its second argument; its
+  statement and the statements of the run theorems do not change otherwise.
 
 ## Findings
 
@@ -124,7 +128,8 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3).
    - Possible ways: the `runSqlFrom` theorem with the hypothesis of option a) and the
      `runScriptFrom` theorem without it (with the resolver facts); or option a) for both.
    - Part 1 does not depend on the answer: its theorems state the conditions as hypotheses.
-     The task file is not amended for decision 1 until the owner answers.
+     The owner answered on 2026-10-23 (option A, see "Owner decisions"); the task file was
+     amended in the spec commit after the answer.
 
 ## Progress log
 
@@ -168,3 +173,11 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3).
 - 2026-10-23: review round 9 (the task amendment): three R19 musts (finding 1 named the resolver
   instead of resolved statements written directly; the CREATE INDEX fact of slice 4 is false for a
   syntax without terms; the slice-4 theorem must assume `Database.Admitted` at the start), fixed.
+- 2026-10-23: review round 10 (the refactor of the task file): no findings. The run theorems:
+  the invariant of a state and an outcome and the step `advance_keysUnique`
+  (`KeysUniqueRunStep`), `runSqlFrom_keysUnique` and `runSql_keysUnique` over `RunConditions`
+  (`KeysUniqueRuns`), `runScriptFrom_keysUnique` over `ScriptConditions`
+  (`KeysUniqueScriptRun`), the kernel examples of a run with an INSERT, an upsert, a cascading
+  DELETE and a ROLLBACK and of finding 1 as a run (`KeysUniqueRunExamples`, globs only), and the
+  test of the formulas and the axioms `tests/keys_unique_theorems_test.py`. Tests:
+  `tests/test_model_package.py -m unit`, `tests/keys_unique_theorems_test.py`.
