@@ -106,18 +106,25 @@ of the resolver over a valid catalog.
   (`Database.lean`) checks it for each index. The run theorems assume it because it gives the
   second condition of a later ADD COLUMN in slice 4.
 
-Finding 1: a resolved statement is not always valid over the catalog. The resolver gives a ready
-CREATE INDEX whose filter reads past the width of its table; a later ADD COLUMN with a default
-then makes two rows conflict (`KeysUniqueExamples.lean`). So the run theorems cannot derive the
-conditions from the resolved script, and they take them as a hypothesis.
+Finding 1: `runSqlFrom` takes any list of resolved statements, also statements that the resolver
+does not give. A resolved CREATE INDEX whose filter reads past the width of its table is ready,
+and a later ADD COLUMN with a default then makes two rows conflict. `KeysUniqueExamples.lean`
+writes these resolved statements directly and runs them. So the `runSqlFrom` theorem cannot
+derive the conditions from its script, and it takes them as a hypothesis.
 
 ## Direction for slice 4
 
-Slice 4 removes the hypothesis from the `runScriptFrom` theorem. It must prove these resolver
-facts for the statements that `runScriptFrom` resolves over a connection whose catalog is valid
-(`Catalog.Valid`):
+Slice 4 removes the hypothesis from the `runScriptFrom` theorem. That theorem then assumes that
+the start database, and the snapshot when there is one, satisfy `Database.Admitted` (with
+`Catalog.Valid` and `Table.RowsWide`): without wide rows, the counterexample `shortRows` of
+"Conditions" breaks the atom at an ADD COLUMN. Slice 4 must prove these resolver facts for the
+statements that `runScriptFrom` resolves over such a connection:
 
-- each resolved CREATE INDEX is supported over the catalog, so the runs keep `Catalog.Valid`;
+- each resolved CREATE INDEX with at least one term is supported over the catalog, so the runs
+  keep `Catalog.Valid`. The resolver accepts a CREATE INDEX syntax without terms
+  (`resolveCreateIndex`, `Resolution/Definitions.lean`), which `CatalogIndex.supported`
+  refuses; SQL text cannot write it, so the fact assumes at least one term in the syntax, or
+  slice 4 makes the resolver refuse it;
 - the runs keep `Table.RowsWide` (`Database.Admitted`);
 - with these two facts, each resolved ADD COLUMN meets `Database.AddColumnCondition`;
 - each resolved DROP over a valid catalog meets `Catalog.DropCondition` (the resolver drops the

@@ -165,3 +165,6 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3).
 - 2026-10-23: review round 8 (the refactor): no findings. The task file states the run
   hypothesis of the owner decision that replaced 1 d) (CREATE INDEX, ADD COLUMN and DROP),
   finding 1, and the direction for slice 4.
+- 2026-10-23: review round 9 (the task amendment): three R19 musts (finding 1 named the resolver
+  instead of resolved statements written directly; the CREATE INDEX fact of slice 4 is false for a
+  syntax without terms; the slice-4 theorem must assume `Database.Admitted` at the start), fixed.
