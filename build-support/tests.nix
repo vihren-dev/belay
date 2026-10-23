@@ -129,7 +129,7 @@ let
     "upstream_bindings" "upstream_binding_policy" "upstream_display" "upstream_evidence"
     "upstream_helpers"
     "native_fixture" "import_fixture" "schema" "predict" "predict_render" "replay_support"
-    "case_format" "native_connection" "native_library" "native_clock" "native_probe" "native_ordering" "query_window" "native_metadata" "native_record" "native_statements" "native_replay" "profile_scope" "record_versions" "record_parser" "sql_text" "upstream_pilot" "upstream_fidelity" "corpus" "generated_program" "mutation_check" "state_machine" "regressions" "progress" "measure_coverage" "native_trace" "pipeline"
+    "case_format" "native_connection" "native_library" "native_clock" "native_probe" "native_ordering" "query_window" "native_metadata" "native_record" "native_statements" "native_statement_end" "native_replay" "profile_scope" "record_versions" "record_parser" "sql_text" "upstream_pilot" "upstream_fidelity" "corpus" "generated_program" "mutation_check" "state_machine" "regressions" "progress" "measure_coverage" "native_trace" "pipeline"
   ];
   # Frozen corpora and retained reports: large, rarely changed, read only by the frozen suite.
   frozenData = [
