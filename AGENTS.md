@@ -149,10 +149,33 @@ not loaded, ask the owner to run `direnv allow` in the workspace.
 - While you edit the Lean packages under `packages/`, check each edit with
   `just dev-build`. When the edit can change a prediction, also run
   `just dev-verdict`, for all corpora or for the ones that the edit touches.
-- Before each commit, run the Nix checks that the other rules require, for
-  example `just test-full` or `just verdict`.
+- Before each commit, run the checks that "Checks and their cadence" gives for
+  a commit.
 - A local result is not evidence (ADR 0011, ADR 0020). Commit messages, status
   files and pull requests cite only results of the Nix checks.
+
+## Checks and their cadence
+
+`just test-full` takes about 15 minutes. Run each check at the point that this
+table gives, and not more frequently.
+
+| When | Checks |
+| --- | --- |
+| Each edit of `packages/` | `just dev-build`. Also `just dev-verdict` when the edit can change a prediction. |
+| Each commit | The tests that touch the change, for example its test files with `python3 -m pytest`, then `just review`. The status file names the tests. |
+| End of each slice of the task file | After the review of the slice's last commit: `just test-full` and `just verdict`. |
+| End of the task, before its pull requests | `just test-nix` and `just test-scheduled`, once. |
+
+Rules for the time while checks run:
+
+- Do not wait for a check without work. While a check runs, start the next
+  step in a second jj workspace. Remove the workspace when its commits are in
+  the main line.
+- A question to the owner does not stop the work. Continue with the work that
+  does not need the answer. Stop only when no such work remains.
+- Before `just review`, check the change yourself against R3 (proof sketches)
+  and R19 (specifications against current reality). Most "must" findings come
+  from these two conditions.
 
 ## Development claims
 
