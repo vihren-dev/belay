@@ -119,6 +119,10 @@ its columns, which needs decision 3.
   the keys-unique slice), `runProgram_holds` uses it, and the rows that REPLACE deletes are
   deleted in the frame with the algorithm REPLACE and the setting `recursive` as `fire`. No
   statement of a theorem changes.
+- 2026-10-23: `Connection.afterStep` takes the whole resolution state (`after : ResolveState`) instead of
+  the setting `foreignKeys`, and `runScriptStep` is `runScriptStepWith` and `ranScriptStep`.
+  `Connection.afterStep_holds` takes the resolution state as its second argument; its statement
+  and the statements of the run theorems do not change otherwise.
 
 ## Findings
 
@@ -165,3 +169,9 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3). None y
   instance (`keysUniqueFacts`, `rowsKeys_keysUnique`, `dropKeys_keysUnique`, same statements as before),
   and `RowLocalAtom.facts` is the instance of the three atoms. The slice-2 status file keeps the old names
   in its log.
+- 2026-10-23: part 2, commit 2 (`refactor:`): the run theorems of slice 2 take the property of databases
+  and the condition of statements as parameters (`RunHoldsStep`, `RunHolds`, `ScriptRunHolds`:
+  `StatementKeeps`, `runSqlFrom_holds`, `runSql_holds`, `runScriptFrom_holds`); `KeysUniqueRunStep`,
+  `KeysUniqueRuns` and `KeysUniqueScriptRun` are the instances with the statements of slice 2 unchanged
+  (`tests/keys_unique_theorems_test.py` passes). Review of commit 1: one R19 must (the task file said that
+  the invariant is fixed), fixed here.
