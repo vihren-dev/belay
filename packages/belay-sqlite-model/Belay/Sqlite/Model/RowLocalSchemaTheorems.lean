@@ -11,7 +11,8 @@ namespace Belay.Sqlite.Model
 /-- For every clock value, parameter list and CREATE TABLE and database: if the database satisfies {name}`Database.NotNull`,
 the effect of {name}`runStatement` satisfies it on the databases that a run keeps
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_createTable_rowLocal` with {name}`Table.notNullAtom`. -/
+{name}`ExecutionError.constraintFail`; any other error
+requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_createTable_rowLocal` with {name}`Table.notNullAtom`. -/
 theorem runStatement_createTable_notNull (clock : Int) (parameters : List Value) (target : Nat) (name : Identifier) (shape : CatalogTable)
     {database : Database}
     (notNull : database.NotNull) :
@@ -21,7 +22,8 @@ theorem runStatement_createTable_notNull (clock : Int) (parameters : List Value)
 /-- For every clock value, parameter list and CREATE TABLE and database: if the database satisfies {name}`Database.TypesFit`,
 the effect of {name}`runStatement` satisfies it on the databases that a run keeps
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_createTable_rowLocal` with {name}`Table.typesFitAtom`. -/
+{name}`ExecutionError.constraintFail`; any other error
+requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_createTable_rowLocal` with {name}`Table.typesFitAtom`. -/
 theorem runStatement_createTable_typesFit (clock : Int) (parameters : List Value) (target : Nat) (name : Identifier) (shape : CatalogTable)
     {database : Database}
     (fits : database.TypesFit) :
@@ -31,7 +33,8 @@ theorem runStatement_createTable_typesFit (clock : Int) (parameters : List Value
 /-- For every clock value, parameter list and CREATE TABLE and database: if the database satisfies {name}`Database.ChecksHold`,
 the effect of {name}`runStatement` satisfies it on the databases that a run keeps
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_createTable_rowLocal` with {name}`Table.checksHoldAtom`. -/
+{name}`ExecutionError.constraintFail`; any other error
+requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_createTable_rowLocal` with {name}`Table.checksHoldAtom`. -/
 theorem runStatement_createTable_checksHold (clock : Int) (parameters : List Value) (target : Nat) (name : Identifier) (shape : CatalogTable)
     {database : Database}
     (holds : database.ChecksHold) :
@@ -41,7 +44,8 @@ theorem runStatement_createTable_checksHold (clock : Int) (parameters : List Val
 /-- For every clock value, parameter list and CREATE INDEX and database: if the database satisfies {name}`Database.NotNull`,
 the effect of {name}`runStatement` satisfies it on the databases that a run keeps
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_createIndex_rowLocal` with {name}`Table.notNullAtom`. -/
+{name}`ExecutionError.constraintFail`; any other error
+requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_createIndex_rowLocal` with {name}`Table.notNullAtom`. -/
 theorem runStatement_createIndex_notNull (clock : Int) (parameters : List Value) (target : Nat) (name : Identifier) (index : CatalogIndex)
     {database : Database}
     (notNull : database.NotNull) :
@@ -51,7 +55,8 @@ theorem runStatement_createIndex_notNull (clock : Int) (parameters : List Value)
 /-- For every clock value, parameter list and CREATE INDEX and database: if the database satisfies {name}`Database.TypesFit`,
 the effect of {name}`runStatement` satisfies it on the databases that a run keeps
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_createIndex_rowLocal` with {name}`Table.typesFitAtom`. -/
+{name}`ExecutionError.constraintFail`; any other error
+requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_createIndex_rowLocal` with {name}`Table.typesFitAtom`. -/
 theorem runStatement_createIndex_typesFit (clock : Int) (parameters : List Value) (target : Nat) (name : Identifier) (index : CatalogIndex)
     {database : Database}
     (fits : database.TypesFit) :
@@ -61,7 +66,8 @@ theorem runStatement_createIndex_typesFit (clock : Int) (parameters : List Value
 /-- For every clock value, parameter list and CREATE INDEX and database: if the database satisfies {name}`Database.ChecksHold`,
 the effect of {name}`runStatement` satisfies it on the databases that a run keeps
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_createIndex_rowLocal` with {name}`Table.checksHoldAtom`. -/
+{name}`ExecutionError.constraintFail`; any other error
+requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_createIndex_rowLocal` with {name}`Table.checksHoldAtom`. -/
 theorem runStatement_createIndex_checksHold (clock : Int) (parameters : List Value) (target : Nat) (name : Identifier) (index : CatalogIndex)
     {database : Database}
     (holds : database.ChecksHold) :
@@ -71,7 +77,8 @@ theorem runStatement_createIndex_checksHold (clock : Int) (parameters : List Val
 /-- For every clock value, parameter list and CREATE TRIGGER and database: if the database satisfies {name}`Database.NotNull`,
 the effect of {name}`runStatement` satisfies it on the databases that a run keeps
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_createTrigger_rowLocal` with {name}`Table.notNullAtom`. -/
+{name}`ExecutionError.constraintFail`; any other error
+requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_createTrigger_rowLocal` with {name}`Table.notNullAtom`. -/
 theorem runStatement_createTrigger_notNull (clock : Int) (parameters : List Value) (target : Nat) (name : Identifier) (trigger : CatalogTrigger)
     {database : Database}
     (notNull : database.NotNull) :
@@ -81,7 +88,8 @@ theorem runStatement_createTrigger_notNull (clock : Int) (parameters : List Valu
 /-- For every clock value, parameter list and CREATE TRIGGER and database: if the database satisfies {name}`Database.TypesFit`,
 the effect of {name}`runStatement` satisfies it on the databases that a run keeps
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_createTrigger_rowLocal` with {name}`Table.typesFitAtom`. -/
+{name}`ExecutionError.constraintFail`; any other error
+requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_createTrigger_rowLocal` with {name}`Table.typesFitAtom`. -/
 theorem runStatement_createTrigger_typesFit (clock : Int) (parameters : List Value) (target : Nat) (name : Identifier) (trigger : CatalogTrigger)
     {database : Database}
     (fits : database.TypesFit) :
@@ -91,7 +99,8 @@ theorem runStatement_createTrigger_typesFit (clock : Int) (parameters : List Val
 /-- For every clock value, parameter list and CREATE TRIGGER and database: if the database satisfies {name}`Database.ChecksHold`,
 the effect of {name}`runStatement` satisfies it on the databases that a run keeps
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_createTrigger_rowLocal` with {name}`Table.checksHoldAtom`. -/
+{name}`ExecutionError.constraintFail`; any other error
+requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_createTrigger_rowLocal` with {name}`Table.checksHoldAtom`. -/
 theorem runStatement_createTrigger_checksHold (clock : Int) (parameters : List Value) (target : Nat) (name : Identifier) (trigger : CatalogTrigger)
     {database : Database}
     (holds : database.ChecksHold) :
@@ -101,7 +110,8 @@ theorem runStatement_createTrigger_checksHold (clock : Int) (parameters : List V
 /-- For every clock value, parameter list and DROP without foreign key rules and trigger programs and database: if the database satisfies {name}`Database.NotNull`,
 the effect of {name}`runStatement` satisfies it on the databases that a run keeps
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_drop_rowLocal`; DROP has no condition. -/
+{name}`ExecutionError.constraintFail`; any other error
+requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_drop_rowLocal`; DROP has no condition. -/
 theorem runStatement_drop_notNull (clock : Int) (parameters : List Value) (positions : List Nat) {database : Database}
     (notNull : database.NotNull) :
     (runStatement clock parameters (.drop positions none) database).effect.Satisfies Database.NotNull :=
@@ -110,7 +120,8 @@ theorem runStatement_drop_notNull (clock : Int) (parameters : List Value) (posit
 /-- For every clock value, parameter list and DROP without foreign key rules and trigger programs and database: if the database satisfies {name}`Database.TypesFit`,
 the effect of {name}`runStatement` satisfies it on the databases that a run keeps
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_drop_rowLocal`; DROP has no condition. -/
+{name}`ExecutionError.constraintFail`; any other error
+requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_drop_rowLocal`; DROP has no condition. -/
 theorem runStatement_drop_typesFit (clock : Int) (parameters : List Value) (positions : List Nat) {database : Database}
     (fits : database.TypesFit) :
     (runStatement clock parameters (.drop positions none) database).effect.Satisfies Database.TypesFit :=
@@ -119,7 +130,8 @@ theorem runStatement_drop_typesFit (clock : Int) (parameters : List Value) (posi
 /-- For every clock value, parameter list and DROP without foreign key rules and trigger programs and database: if the database satisfies {name}`Database.ChecksHold`,
 the effect of {name}`runStatement` satisfies it on the databases that a run keeps
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_drop_rowLocal`; DROP has no condition. -/
+{name}`ExecutionError.constraintFail`; any other error
+requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_drop_rowLocal`; DROP has no condition. -/
 theorem runStatement_drop_checksHold (clock : Int) (parameters : List Value) (positions : List Nat) {database : Database}
     (holds : database.ChecksHold) :
     (runStatement clock parameters (.drop positions none) database).effect.Satisfies Database.ChecksHold :=
