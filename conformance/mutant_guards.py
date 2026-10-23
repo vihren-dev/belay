@@ -10,7 +10,9 @@ mutant, what a surviving mutant would leave untested:
 - `obligation:NAME`: a conjunct of an admission obligation, from the table of
   obligation conjuncts that the caller gives (`obligation_mutants.OBLIGATIONS`).
 
-`guard_problems` lists every link that is missing or names nothing that exists.
+`guard_problems` lists every link that is missing or names nothing that exists, and every
+mutant whose text does not match exactly one place, which `resolve_mutants.mutate` requires.
+`proof_modules_in_closure` lists the proof modules that the mutant build would compile.
 """
 
 from pathlib import Path
@@ -19,6 +21,15 @@ import re
 DECLARATION = re.compile(r"^(?:@\[[^\]]*\]\s*)?(?:private |protected )?(?:noncomputable )?"
                          r"(?:def|theorem|abbrev|instance|structure|inductive) ([\w.']+)", re.MULTILINE)
 """The start of a top-level Lean declaration and its name."""
+
+IMPORT = re.compile(r"^import\s+([\w.]+)", re.MULTILINE)
+"""An import of a Lean module."""
+
+PROOF_MODULE = re.compile(r"(?:Laws|Spec|Lemmas)$")
+"""The last name part of a module that holds proofs about the model's definitions."""
+
+MODEL_ROOT = "Belay.Sqlite.Model"
+"""The model's root module, which imports every proof module."""
 
 GUARD_KINDS = ("rule", "restriction", "obligation")
 """The kinds of guard that the module docstring describes, as the prefix before the colon."""
@@ -42,6 +53,10 @@ def guard_problems(mutants: dict[str, tuple[str, str, str]], guards: dict[str, s
     nothing that exists, as one message per problem. `packages` is the `packages/` folder."""
     problems = [f"{name}: no guard; add it to GUARDS" for name in mutants if name not in guards]
     problems += [f"{name}: guard of no mutant; remove it from GUARDS" for name in guards if name not in mutants]
+    for name, (path, before, _) in mutants.items():
+        count = (packages / path).read_text().count(before)
+        if count != 1:
+            problems.append(f"{name}: its text matches {count} places in {path}; change it to match exactly one")
     for name, guard in guards.items():
         kind, _, target = guard.partition(":")
         if kind == "restriction" and target not in restriction_ids:
@@ -82,3 +97,21 @@ def obligation_problems(obligations: dict[str, tuple[str, str, str]], covered: d
         if not (kind == "restriction" and target in restriction_ids or kind == "reason" and target):
             problems.append(f"{name}: {evidence} is neither restriction: with a registry id nor reason: with text")
     return problems
+
+
+def proof_modules_in_closure(sources: list[Path], root: str) -> list[str]:
+    """The proof modules (`PROOF_MODULE`, and `MODEL_ROOT`) in the import closure of `root`, sorted.
+    `sources` are the source folders of the packages that the mutant build copies; an import
+    from outside them is not followed. The mutant build compiles this closure and no proof, so
+    that a mutant that breaks a proof still builds and runs (`resolve_mutants`)."""
+    found: set[str] = set()
+    pending = [root]
+    while pending:
+        module = pending.pop()
+        relative = module.replace(".", "/") + ".lean"
+        files = [source / relative for source in sources if (source / relative).is_file()]
+        if module in found or not files:
+            continue
+        found.add(module)
+        pending.extend(IMPORT.findall(files[0].read_text()))
+    return sorted(module for module in found if PROOF_MODULE.search(module) or module == MODEL_ROOT)
