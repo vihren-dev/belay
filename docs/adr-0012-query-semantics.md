@@ -459,6 +459,13 @@ filter of 3b, its change count and its `RETURNING` rows. Items 4 to 6 do not cha
    "keys unique" of `Database.Valid`: `runStatement_keysUnique` for the statement step, and
    `runSqlFrom_keysUnique`, `runSql_keysUnique` and `runScriptFrom_keysUnique` for the runs.
    No preservation theorem of `Database.Admitted` exists yet (ADR 0022, slice 4).
+
+   Amended 2026-10-23: ADR 0022, slice 3 gives the preservation theorems of the other
+   constraint atoms of `Database.Valid`: `runStatement_notNull`, `runStatement_typesFit` and
+   `runStatement_checksHold` for the statement step, with the run theorems of `runSqlFrom`,
+   `runSql` and `runScriptFrom` for each atom and for the four atoms together
+   (`runSql_constraintAtoms`). No theorem of `Database.Admitted` (slice 4) or of "foreign keys
+   hold" (slice 5) exists yet.
 6. **`DELETE`.** Decided on 2026-10-14: its own slice, 3c, right after 3b. It
    reuses the filter of 3b, keeps 3b focused, and makes migrations that delete
    rows, where application data is lost, verifiable early.

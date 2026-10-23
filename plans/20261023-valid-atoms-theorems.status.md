@@ -1,7 +1,7 @@
 # Status: the theorems of the other Valid atoms (ADR 0022, slice 3)
 
-Created 2026-10-23. Status: open; the owner decided on 2026-10-23 (below). Part 1 is in progress
-in workspace adr22s3.
+Created 2026-10-23. Status: open; the owner decided on 2026-10-23 (below). Parts 1 and 2 are
+written in workspace adr22s3; `just test-full` and `just verdict` of the slice are open.
 Task: [task file](20261023-valid-atoms-theorems.task.md).
 Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D1, D3 and D4 (slice 3).
 Needed by: [ADR 0017](../docs/adr-0017-user-surface.md), S4.
@@ -197,3 +197,6 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3). None y
   over a script with a CHECK, a NOT NULL column, a STRICT table, an upsert, a cascading DELETE and
   a ROLLBACK; SET NULL into a NOT NULL column fails and keeps the database) and
   `Resolved.Statement.atomsCondition_of_unconditioned`.
+- 2026-10-23: review of commits 5 and 6 (the refactor and the examples): no findings. The records of
+  slice 3 in ADR 0022, D4 and ADR 0012, decision 5. Next: `just test-full` and `just verdict` of
+  the slice (the lead runs them); the task is not marked DONE.
