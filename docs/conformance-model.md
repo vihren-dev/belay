@@ -151,7 +151,7 @@ through one JSON-lines runner process; reports separate native acquisition and
 compiled batch time (including transport). Optional proof-term emission and kernel
 checks run separately, outside the timing.
 Parsing is bounded to five seconds, each compiled batch to 30 seconds, and
-concrete kernel checks to 120 seconds. The 2,000-column case is compiled only.
+each Lean run of a kernel proof file to 270 seconds. The 2,000-column case is compiled only.
 
 The tier-two denominator is the 16 authored derived cases, plus the
 injected transport regression. [Stateful generation](conformance-generation.md)
