@@ -28,7 +28,10 @@ theorem resolveStatement_saved (context : ResolveContext) (state next : ResolveS
     rcases ResolveState.withWrite_cases ok with ⟨_, _, rfl⟩ | ⟨_, _, _, rfl, _, _⟩ <;> rfl
   cases statement <;> simp [Syntax.Statement.transactionControl] at plain
   case dropTable | insert | update | delete => exact written _ ok
-  case pragma pragma => rcases resolvePragma_cases ok with ⟨_, _, rfl⟩ | ⟨rfl, _, _⟩ <;> rfl
+  case pragma pragma =>
+    rcases resolvePragma_cases ok with ⟨setting, _, _, rfl⟩ | ⟨rfl, _, _⟩
+    · cases setting <;> rfl
+    · rfl
   all_goals simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
   all_goals (repeat' split at ok)
   all_goals first | (cases ok; done) | (cases ok; rfl)

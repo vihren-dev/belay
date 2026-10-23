@@ -12,12 +12,15 @@ namespace Belay.Sqlite.Model.Syntax
 inductive PragmaSetting where
   /-- {lit}`foreign_keys` (ADR 0018, D4). -/
   | foreignKeys
+  /-- {lit}`recursive_triggers` (ADR 0019, D2). -/
+  | recursiveTriggers
   deriving Repr, BEq, DecidableEq
 
 /-- The name of the setting as SQLite gives it to the column of its query, for example
 {lit}`foreign_keys`. -/
 def PragmaSetting.sqlName : PragmaSetting → String
   | .foreignKeys => "foreign_keys"
+  | .recursiveTriggers => "recursive_triggers"
 
 /-- A {lit}`PRAGMA` statement of the model. The names of the tables are as written; the
 frontend removes their quotes. -/

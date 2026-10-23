@@ -151,7 +151,9 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
     exact written _ ok fun _ _ found => (resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _
       (fun _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ h) found).1 ▸ .same
   | pragma pragma =>
-    rcases resolvePragma_cases ok with ⟨_, _, rfl⟩ | ⟨rfl, _, _⟩ <;> exact ⟨current, saved⟩
+    rcases resolvePragma_cases ok with ⟨setting, _, _, rfl⟩ | ⟨rfl, _, _⟩
+    · cases setting <;> exact ⟨current, saved⟩
+    · exact ⟨current, saved⟩
   | select results source joins filter groupBy orderBy limit offset subqueries having distinct =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
@@ -183,6 +185,6 @@ theorem resolve_namesUnique (context : ResolveContext) (catalog after : Catalog)
   split at ok <;> try contradiction
   rename_i result hresult
   cases ok
-  exact (general _ _ _ _ _ ⟨unique, by simp⟩ hresult).1
+  exact (general _ _ _ _ _ ⟨unique, by simp [ResolveState.initial]⟩ hresult).1
 
 end Belay.Sqlite.Model

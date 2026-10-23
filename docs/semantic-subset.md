@@ -247,6 +247,11 @@ record without an execution profile and with a foreign key is out of scope, as i
 have turned foreign keys on. A CREATE TABLE with constraints and defaults runs in the
 migration as in the schema.
 
+Recursive triggers (ADR 0019, D2) are on when the execution profile turns them on.
+`PRAGMA recursive_triggers = value`, with the values of `PRAGMA foreign_keys`, changes the
+setting also inside a transaction, and `PRAGMA recursive_triggers` is one row with the column
+`recursive_triggers`, 1 or 0. The triggers below describe the effect of the setting.
+
 Foreign keys (ADR 0018, D4) are on when the execution profile turns them on.
 `PRAGMA foreign_keys = value` (`on`, `off`, `yes`, `no`, `true`, `false`, `0` or `1`) changes
 the setting outside a transaction and does nothing inside one, and `PRAGMA foreign_keys` is one
@@ -383,13 +388,16 @@ that has one, else with its own; the writes of foreign-key actions pass on ABORT
 `RAISE(IGNORE)` ends the row: the rest of its trigger, the triggers after it, and in a `BEFORE`
 trigger the row's own write. `RAISE(ABORT, ...)`, `RAISE(FAIL, ...)` and `RAISE(ROLLBACK, ...)`
 fail the statement as a constraint failure with that algorithm. With recursive triggers off,
-SQLite's default and the only setting that the model describes, a trigger does not run while it
-already runs. The rows that `REPLACE` deletes and the implicit `DELETE` of `DROP TABLE` fire no
+SQLite's default, a trigger does not run while it already runs, and the rows that `REPLACE`
+deletes fire no `DELETE` trigger. With them on (ADR 0019, D2), a trigger also runs while it
+already runs, and the rows that `REPLACE` deletes fire the `DELETE` triggers, whose body
+statements run with the algorithm REPLACE. The implicit `DELETE` of `DROP TABLE` fires no
 `DELETE` trigger; the writes of foreign-key actions fire the triggers of the child table. The
-change count of a statement counts its own rows only. A write nested deeper than the trigger
-depth limit, an `UPDATE` of a body that fails a constraint under an inherited algorithm other
-than ABORT, and a write whose statement or body statement has subqueries while a trigger or an
-action changes a table are not described. In a trigger, a qualified table
+change count of a statement counts its own rows only. A write whose programs need more nested
+frames than the trigger depth limit is not described: SQLite counts the frame of a program when
+it starts the program, also when its `WHEN` condition is false. An `UPDATE` of a body that
+fails a constraint under an inherited algorithm other than ABORT, and a write whose statement or
+body statement has subqueries while a trigger or an action changes a table are not described. In a trigger, a qualified table
 name, `INDEXED BY`, `UPDATE OR`, `UPDATE FROM`, `INSERT ... SELECT`, `RETURNING` and a subquery
 in `WHEN` are refused.
 

@@ -54,7 +54,7 @@ def schemaStatementRestriction (schema : List Syntax.Statement) : Option Restric
 def Resolved.Statement.prepareError? : Resolved.Statement → Option PrepareError
   | .prepareError error => some error
   | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit
-  | .rollback | .insert .. | .upsert .. | .update .. | .delete .. | .query .. | .setting _ => none
+  | .rollback | .insert .. | .upsert .. | .update .. | .delete .. | .query .. | .setting .. => none
 
 /-- Whether two triggers of a schema may both fire for one write, so that their order matters:
 the same folded table name, the same time and the same kind of event. -/
