@@ -191,3 +191,9 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3). None y
   theorems cover them when they land (`runStatement_rowLocal` has a case for each constructor).
   Tests: `tests/test_model_package.py -m unit`, `tests/keys_unique_theorems_test.py`,
   `tests/valid_atoms_theorems_test.py`.
+- 2026-10-23: review of commit 4: five R2 musts (the plain words of the statement theorems, the
+  run conditions and the script conditions omitted the cases that require nothing), fixed in a
+  `refactor:` commit (review: no findings). Commit 6: `ValidAtomsExamples` (a run of the corollary
+  over a script with a CHECK, a NOT NULL column, a STRICT table, an upsert, a cascading DELETE and
+  a ROLLBACK; SET NULL into a NOT NULL column fails and keeps the database) and
+  `Resolved.Statement.atomsCondition_of_unconditioned`.

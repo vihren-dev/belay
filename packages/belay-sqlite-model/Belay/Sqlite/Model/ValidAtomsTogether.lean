@@ -31,6 +31,15 @@ def Resolved.Statement.AtomsCondition (database : Database) (statement : Resolve
   statement.RunCondition database ∧ statement.NotNullCondition database ∧ statement.TypesFitCondition database ∧
     statement.ChecksHoldCondition database
 
+/-- For every database and statement: if the statement has no run condition
+({name}`Resolved.Statement.unconditioned`: it is not CREATE INDEX, ADD COLUMN or DROP), it meets
+{name}`Resolved.Statement.AtomsCondition` on the database. Proof sketch: a case split on the
+statement; each remaining case has four conditions that are {lit}`True`. -/
+theorem Resolved.Statement.atomsCondition_of_unconditioned {database : Database} :
+    ∀ {statement : Resolved.Statement}, statement.unconditioned = true → statement.AtomsCondition database := by
+  intro statement unconditioned
+  cases statement <;> first | exact ⟨trivial, trivial, trivial, trivial⟩ | exact nomatch unconditioned
+
 /-- For every four properties of an effect: if the effect satisfies each of them
 ({name}`Effect.Satisfies`), it satisfies their conjunction. Proof sketch: a database that a run keeps
 from the effect has each property. -/
