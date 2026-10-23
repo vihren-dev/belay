@@ -68,6 +68,7 @@ def RestrictionKind.id : RestrictionKind → String
   | .compoundOrderByTerm => "compound-order-by-term"
   | .foreignKeyMismatchOrder => "foreign-key-mismatch-order"
   | .connectionCounterRead => "connection-counter-read"
+  | .nondeterministicErrorOrder => "nondeterministic-error-order"
 
 /-- The message of a restriction that users read: what the model does not describe,
 and what to write instead. -/
@@ -129,12 +130,13 @@ def RestrictionKind.message : RestrictionKind → String
   | .compoundSubqueryColumn => "x IN (q) and a scalar subquery (q) are not modeled when q is a compound SELECT with an operator other than UNION ALL and an ORDER BY term with COLLATE, because SQLite then reads the column of a derived table; remove the COLLATE from the ORDER BY of q"
   | .compoundOrderByTerm => "this ORDER BY term of a compound SELECT is not modeled, because the model cannot match it with a result column as SQLite does, or SQLite then names a result column at random; order by a result column number or an AS alias, and give the columns different names"
   | .connectionCounterRead => "last_insert_rowid() in INSERT, and total_changes() in a write that runs trigger programs or foreign-key actions, are not modeled, because the counter changes while the statement runs; read the value in a separate statement"
+  | .nondeterministicErrorOrder => "a call of changes(), total_changes(), last_insert_rowid(), random() or randomblob() in a generated column, an index expression or the filter of a partial index is not modeled when the expression has another error, because which error SQLite reports depends on the order of its walk; write the call alone, or remove the other error"
   | .foreignKeyMismatchOrder => "PRAGMA foreign_key_check without a table name is not modeled when two or more tables have a foreign key mismatch, because SQLite checks the tables in an internal order; name the table, for example PRAGMA foreign_key_check(t)"
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
   [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .parameterErrorOrder, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .dropConstraintIndex, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments, .jsonSubtype, .subqueryHere, .outerAggregate, .subqueryFallibleCall, .subqueryReadsTarget, .distinctOrderBy, .deferredForeignKey, .foreignKeyUpsert, .raiseForm, .triggerForm, .triggerWritesOwnTable, .schemaTriggerOrder,
-    .compoundSubqueryColumn, .compoundOrderByTerm, .foreignKeyMismatchOrder, .connectionCounterRead]
+    .compoundSubqueryColumn, .compoundOrderByTerm, .foreignKeyMismatchOrder, .connectionCounterRead, .nondeterministicErrorOrder]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

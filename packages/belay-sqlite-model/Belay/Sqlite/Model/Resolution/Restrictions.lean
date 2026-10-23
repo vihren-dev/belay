@@ -205,6 +205,11 @@ inductive RestrictionKind where
   order of SQLite's {lit}`insert.c`, and the other write changes it with the rows of the programs
   and actions (ADR 0024, D2). -/
   | connectionCounterRead
+  /-- A call of {lit}`changes()`, {lit}`total_changes()`, {lit}`last_insert_rowid()`, {lit}`random()` or
+  {lit}`randomblob(n)` in a generated column, an index expression or the filter of a partial index,
+  in an expression where SQLite's walk of names can also find another error: which error SQLite
+  reports depends on the order of the walk (ADR 0024, D5). -/
+  | nondeterministicErrorOrder
   deriving Repr, DecidableEq
 
 end Belay.Sqlite.Model

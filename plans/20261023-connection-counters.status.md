@@ -137,6 +137,22 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   `test_every_trigger_mutant_changes_a_verdict`, `test_every_foreign_key_mutant_changes_a_verdict`,
   `test_every_subquery_mutant_changes_a_verdict` and `test_every_date_function_and_modifier_mutant_changes_a_verdict`
   (a runtime assembled from the local builds). Nix evidence is pending.
+- 2026-10-23: commit 4 (schema positions, outcome 6, and R11 of the review of commit 3).
+  `Resolution/NondeterministicCalls.lean` finds a call of `changes()`, `total_changes()`,
+  `last_insert_rowid()`, `random()` or `randomblob(n)` in a syntactic walk and resolves the
+  expression without the calls (`prohibitNondeterministic`): no other error gives the error of
+  the position, a missing column wins in either order, and another prepare error gives the new
+  restriction `nondeterministic-error-order` (registry `.unsupported`, because SQLite keeps the
+  last error of its walk, so `count(a) + changes()` gives the non-deterministic error and
+  `changes() + count(a)` the misuse, and the model does not follow the order). Three entry
+  points use it: `resolveGeneratedExpression`, `indexExpressionTerm` and `indexFilter`. CHECK and
+  DEFAULT keep their restrictions. `Resolution/NondeterministicExamples.lean` holds the kernel
+  examples (five functions in three positions, nested calls, the missing column, a wrong number of
+  arguments, the restriction), `conformance/restriction_examples.py` and
+  `docs/semantic-subset.md` have the new restriction. Tests: the package build (`just dev-build`,
+  951 jobs), `just dev-verdict` (no DISAGREE; the counts of commit 3), `tests/restriction_registry_test.py`,
+  `tests/mutant_guards_test.py` (52 passed with the registry test) and the 59 restriction examples
+  run through the dev runtime. Nix evidence is pending.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 

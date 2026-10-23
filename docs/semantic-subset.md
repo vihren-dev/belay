@@ -217,7 +217,13 @@ migration builds the index over the existing rows; a unique index over rows that
 conflict fails with SQLite's constraint error and leaves the catalog unchanged. An
 `ON CONFLICT` target names only a key of columns without a filter. SQLite's prepare
 errors apply: a qualified name in a term, `CURRENT_TIME`, `CURRENT_DATE` and
-`CURRENT_TIMESTAMP` in a term or the filter, and an aggregate. A string literal as a
+`CURRENT_TIMESTAMP` in a term or the filter, and an aggregate. The same error applies
+to a call of `changes()`, `total_changes()`, `last_insert_rowid()`, `random()` or
+`randomblob(n)` in a term or the filter, and in a generated column: SQLite gives
+`non-deterministic functions prohibited in ...`, unless a missing column is also in the
+expression, which SQLite reports instead. When the expression has another error that
+SQLite reports in an order the model does not follow, the restriction
+`nondeterministic-error-order` applies. A string literal as a
 term, a date and time function, a JSON function and a rowid name in the filter are
 model restrictions.
 
@@ -523,6 +529,7 @@ should shrink.
 | `compound-subquery-column` | `x IN (q)` and a scalar subquery `(q)` over a compound `SELECT` with an operator other than `UNION ALL` and an `ORDER BY` term with `COLLATE` are not modeled, because SQLite then reads the column of a derived table | ADR 0019, D3 |
 | `compound-order-by-term` | An `ORDER BY` term of a compound `SELECT` that the model cannot match with a result column as SQLite does, such as an aggregate, or a `COLLATE` term after which SQLite names a result column at random, is not modeled | ADR 0019, D3 |
 | `connection-counter-read` | `last_insert_rowid()` in an `INSERT` or an upsert, and `total_changes()` in a write that runs trigger programs or foreign-key actions, are not modeled, because the counter changes while the statement runs | ADR 0024, D2 |
+| `nondeterministic-error-order` | A call of `changes()`, `total_changes()`, `last_insert_rowid()`, `random()` or `randomblob(n)` in a generated column, an index expression or an index filter, in an expression with another error of its walk of names, is not modeled, because the error that SQLite reports depends on the order of the walk | ADR 0024, D5 |
 
 #### Undecided
 
