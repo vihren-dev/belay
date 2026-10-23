@@ -4,10 +4,9 @@ import Belay.Sqlite.Model.Operators
 set_option doc.verso true
 
 /-! Expressions and clauses as written, before name resolution; {lit}`Syntax` adds the
-statements. Names are the decoded identifier text, with their case kept; omitted parts
-are {lit}`none`. The frontend maps each parser production to one constructor without
-reading the schema, and refuses syntax that has no constructor. Numeric literals keep their
-token text, because SQLite's conversion rules are not lexical. -/
+statements. Names are the decoded identifier text, with their case kept; omitted parts are
+{lit}`none`. The frontend maps each parser production to one constructor without reading the
+schema, and refuses syntax that has no constructor. Numeric literals keep their token text. -/
 
 namespace Belay.Sqlite.Model.Syntax
 

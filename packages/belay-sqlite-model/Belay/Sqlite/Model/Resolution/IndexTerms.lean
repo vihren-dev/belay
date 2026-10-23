@@ -1,5 +1,5 @@
 import Belay.Sqlite.Model.Resolution.QueryExprs
-import Belay.Sqlite.Model.Resolution.SyntaxParameters
+import Belay.Sqlite.Model.Resolution.ParameterOrder
 
 set_option doc.verso true
 
@@ -22,13 +22,13 @@ def indexExpressionIssue (filter : Bool) (resolved : Resolved.Expr) : Option Val
   else none
 
 /-- A key term as an expression over the scope of the indexed table: a parameter is
-{name}`ExprError.parameterInIndex`; a qualified name is
+{name}`ExprError.parameterInIndex` in SQLite's order ({name}`prohibitParameter`); a qualified name is
 {name}`ExprError.qualifiedIndexTerm`; else the resolved operand
 ({name}`resolveOperand`, with aggregates as misuse) and its
 {name}`indexExpressionIssue`. -/
 def indexExpressionTerm (dqs : Bool) (scope : Scope) (expression : Syntax.Expr) : Except ValueIssue KeyTerm :=
-  if expression.hasParameter then .error (.prepare (.parameterInIndex false))
-  else if expression.hasQualifiedName then .error (.prepare .qualifiedIndexTerm) else do
+  prohibitParameter dqs scope (.parameterInIndex false) expression >>= fun _ =>
+  if expression.hasQualifiedName then .error (.prepare .qualifiedIndexTerm) else do
     let (resolved, _) ← resolveOperand dqs scope {} true expression
     match indexExpressionIssue false resolved with
     | some issue => .error issue
@@ -75,12 +75,12 @@ def indexKeys (dqs : Bool) (scope : Scope) (columns : List CatalogColumn) (terms
       indexTerm dqs scope columns term.expression).mapError (·.under [item, 0])
 
 /-- The filter of a partial index as a condition over the scope of the indexed table, or
-none: a parameter is {name}`ExprError.parameterInIndex` with {lit}`filter`, aggregates are
+none: a parameter is {name}`ExprError.parameterInIndex` with {lit}`filter` in SQLite's order, aggregates are
 misuse, and the resolved condition has its {name}`indexExpressionIssue`. -/
 def indexFilter (dqs : Bool) (scope : Scope) : Option Syntax.Expr → Except ValueIssue (Option Resolved.Expr)
   | none => .ok none
   | some term => do
-    if term.hasParameter then throw (.prepare (.parameterInIndex true))
+    prohibitParameter dqs scope (.parameterInIndex true) term
     let resolved ← condition [] (resolveOperand dqs scope {} true term)
     match indexExpressionIssue true resolved with
     | some issue => .error issue

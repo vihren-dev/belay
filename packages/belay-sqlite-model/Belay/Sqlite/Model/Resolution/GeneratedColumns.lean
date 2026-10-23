@@ -28,12 +28,12 @@ def Syntax.ColumnDefinition.generatedExpression (definition : Syntax.ColumnDefin
     | .notNull _ | .primaryKey .. | .unique _ | .default .. | .collate _ | .check .. | .references .. | .deferral _ => none
 
 /-- One generated expression over the scope: a parameter is
-{name}`ExprError.parameterInGenerated`; a qualified name is
+{name}`ExprError.parameterInGenerated` in SQLite's order ({name}`prohibitParameter`); a qualified name is
 {name}`ExprError.qualifiedGenerated`; else the resolved operand and its
 {name}`generatedIssue`. -/
 def resolveGeneratedExpression (dqs : Bool) (scope : Scope) (expression : Syntax.Expr) :
     Except ValueIssue Resolved.Expr := do
-  if expression.hasParameter then throw (.prepare .parameterInGenerated)
+  prohibitParameter dqs scope .parameterInGenerated expression
   if expression.hasQualifiedName then throw (.prepare .qualifiedGenerated)
   let (resolved, _) ← resolveOperand dqs scope {} true expression
   match generatedIssue resolved with

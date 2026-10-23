@@ -27,16 +27,18 @@ def fromT : Option TableReference := some { table := name! "t", alias := none }
 /-- The resolved query of {lit}`SELECT expression FROM t` with the {lit}`GROUP BY` and
 {lit}`ORDER BY` terms, or none. -/
 def queryOf (expression : Expr) (groupBy : List Expr := []) (orderBy : List OrderTerm := []) : Option Resolved.Query :=
-  match statements (migration catalog [.select [.expression expression none "e"] fromT [] none groupBy orderBy none none]) with
-  | [.query query _] => some query
-  | _ => none
+  match (statements (migration catalog [.select [.expression expression none "e"] fromT [] none groupBy orderBy none none])).head? with
+  | some (.query query _) => some query
+  | some (.createTable ..) | some (.createIndex ..) | some (.createTrigger ..) | some (.addColumn ..) | some (.drop ..)
+  | some .begin | some .commit | some .rollback | some (.insert ..) | some (.update ..) | some (.upsert ..)
+  | some (.delete ..) | some (.prepareError _) | some (.setting _) | none => none
 
 /-- The value of an expression in {lit}`SELECT expression FROM t` over the row, with the values
 bound to its parameters, or none when the query does not resolve to one scalar column. -/
 def valueOf (expression : Expr) (values : List Value) : Option Value :=
-  match queryOf expression with
-  | some { columns := [.scalar resolved], .. } => some (resolved.eval { Resolved.EvalContext.plain 0 with parameters := values } row)
-  | _ => none
+  match (queryOf expression).map Resolved.Query.columns with
+  | some [.scalar resolved] => some (resolved.eval { Resolved.EvalContext.plain 0 with parameters := values } row)
+  | some _ | none => none
 
 -- A parameter reads item N of the values, from 1; a number without an item is NULL.
 #guard [valueOf (.parameter 2) [.integer 4, .integer 5], valueOf (.parameter 3) [.integer 4], valueOf (.parameter 1) []] ==
@@ -61,21 +63,21 @@ def last (script : List Syntax.Statement) : Option Resolved.Statement := (statem
 
 /-- The prepare error of the last statement of the script over {name}`catalog`, or none. -/
 def errorOf (script : List Syntax.Statement) : Option PrepareError :=
-  match last script with
-  | some (.prepareError error) => some error
-  | _ => none
+  (last script).bind Resolved.Statement.prepareError?
 
 -- Resolution keeps a parameter in a VALUES cell and in a SET value: it does not compute it.
-#guard match last [.insert (name! "t") none [[.parameter 1, .numeric "2"]] []] with
-  | some (.insert _ [[.expression (.parameter 1), .value (.text [50])]] ..) => true
-  | _ => false
-#guard match last [.update (name! "t") [(name! "s", .parameter 1)] none] with
-  | some (.update _ [(1, .parameter 1)] ..) => true
-  | _ => false
+#guard last [.insert (name! "t") none [[.parameter 1, .numeric "2"]] []] matches
+  some (.insert _ [[.expression (.parameter 1), .value (.text [50])]] ..)
+#guard last [.update (name! "t") [(name! "s", .parameter 1)] none] matches some (.update _ [(1, .parameter 1)] ..)
 
--- SQLite's prepare errors of a parameter in a definition.
-#guard errorOf [.createTable (name! "c") [{ name := (name! "a"), declaredType := none, constraints := [.check (.parameter 1) "?"] }] []] ==
-  some (.expression .parameterInCheck)
+-- SQLite's prepare errors of a parameter in a definition. SQLite gives them in the order of
+-- its name walk: a name that does not resolve before the parameter comes first, and a name
+-- after it or a non-deterministic function before it comes later.
+#guard errorOf [.createTable (name! "c") [constrained (.check (.compare .gt (col "nosuch") (.parameter 1)) "?")] []] ==
+  some (.expression (.noSuchColumn (name! "nosuch")))
+#guard [errorOf [.createTable (name! "c") [constrained (.check (.compare .gt (.parameter 1) (col "nosuch")) "?")] []],
+    errorOf [.createTable (name! "c") [constrained (.check (.compare .gt (.call "random" []) (.parameter 1)) "?")] []]] ==
+  [some (.expression .parameterInCheck), some (.expression .parameterInCheck)]
 #guard errorOf [.createTable (name! "g") [column (name! "b"),
     constrained (.generated (.arithmetic .add (col "b") (.parameter 1)) none)] []] ==
   some (.expression .parameterInGenerated)
@@ -83,6 +85,10 @@ def errorOf (script : List Syntax.Statement) : Option PrepareError :=
   some (.expression (.parameterInIndex false))
 #guard errorOf [.createIndex (name! "x") false (name! "t") [key (name! "i")] (some (.compare .gt (col "i") (.parameter 1)))] ==
   some (.expression (.parameterInIndex true))
+#guard [errorOf [.createIndex (name! "x") false (name! "t") [key (name! "i")] (some (.compare .gt (col "nosuch") (.parameter 1)))],
+    errorOf [.createTable (name! "g") [column (name! "b"),
+      constrained (.generated (.arithmetic .add (col "nosuch") (.parameter 1)) none)] []]] ==
+  [some (.expression (.noSuchColumn (name! "nosuch"))), some (.expression (.noSuchColumn (name! "nosuch")))]
 #guard errorOf [.createTable (name! "d") [{ name := (name! "a"), declaredType := none, constraints := [.default (.parameter 1) "?"] }] []] ==
   some (.expression (.defaultNotConstant (name! "a")))
 #guard errorOf [.createTrigger (name! "r") false .after .insert (name! "t") none [.select [.expression (.parameter 1) none "?"]
