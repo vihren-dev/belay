@@ -1,0 +1,268 @@
+# Status: the theorems of the Admitted atoms (ADR 0022, slice 4)
+
+Created 2026-10-23. Status: OPEN. The owner has not decided yet; decision 3 repeats the decision
+of 2026-10-23 for slice 3.
+Task: [task file](20261023-admitted-atoms-theorems.task.md).
+Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D1, D3 and D4 (slice 4).
+Needed by: [ADR 0017](../docs/adr-0017-user-surface.md), S4.
+Depends on: [slice 2](20261023-keys-unique.task.md) and
+[slice 3](20261023-valid-atoms-theorems.task.md), which are in this line of changes.
+
+## Relevant files
+
+All paths below are in `packages/belay-sqlite-model/Belay/Sqlite/Model/` unless they start with
+`packages/` or `tests/`.
+
+- The atoms: `DatabaseFacts.lean` (the Admitted atoms, `Database.Admitted` at line 111,
+  `Table.Admitted`), `DatabaseFactChecks.lean` (the checks and their `_iff` lemmas),
+  `DatabaseConstraints.lean` (`Database.Valid`), `Database.lean` (`supportedKey` at line 64,
+  `CatalogTable.supported`, `CatalogObject.supported`, `Catalog.supported`, `Database.drop`,
+  `Database.setRows`, `Database.addColumn`), `Resolution/Keys.lean` (`CatalogIndex.supported`,
+  line 80).
+- The statement step: `StatementStep.lean` (`runStatement`, `advanceWith`, `runSqlFrom`,
+  `supportedSqlFrom` at line 189), `StatementRun.lean` (`StatementRun`, `checkedWrite`),
+  `StatementClock.lean` (`Cell.valueAt`, `rowsAt`), `Execution.lean` (`step`), `LiteralData.lean`
+  (`insertReady` at line 185, `nextRowid`, `boundedInteger`), `RowUpdate.lean` (`updateReady`),
+  `UpsertRun.lean` (`upsertReady`), `Upsert.lean` (`checkedRow`), `ForeignKeyWrites.lean`
+  (`keyReady`), `RowInsert.lean` (`insertRow`, line 58), `TriggerRun.lean` (`runStep`,
+  `runProgram`).
+- Existing lemmas of the Admitted atoms: `DatabaseWriteLaws.lean` (`Conforms.setRows`),
+  `SchemaExtensionLaws.lean` (`Table.Admitted.appendColumns`, `Conforms.addColumn`,
+  `Conforms.createTable`), `LiteralPreservationLaws.lean` (`LiteralData.rowid_lt_next`).
+- The resolver: `Resolution/Resolve.lean` (`resolveStatement`), `Resolution/Definitions.lean`
+  (`resolveCreateTable`, `resolveCreateIndex` at line 177), `Resolution/TriggerDefinitions.lean`,
+  `Resolution/AddColumn.lean` (`strictDefaultFits` at line 48), `Resolution/Drops.lean`,
+  `Resolution/CatalogDrop.lean` (`Catalog.drop`, `tableObjects`, `keptBelow`),
+  `Resolution/IndexTerms.lean` (`indexKeys`, line 70), `Resolution/TableChecks.lean`,
+  `Resolution/KeyMerge.lean`, `Resolution/QueryExprs.lean` (`resolveOperand`),
+  `Resolution/Scope.lean`, `Resolution/ExprAny.lean` (`Resolved.Expr.readsBelow`, line 99),
+  `Resolution/InsertCells.lean` (`fullCells`, `omittedCell`, `constantCell`),
+  `Resolution/PrepareErrors.lean` (the prepare errors), `Resolution/Messages.lean`.
+- The generic layer of slices 2 and 3: `RowEngineFacts.lean`, `RunHolds.lean`,
+  `RunHoldsStep.lean`, `ScriptRunHolds.lean`, `RowLocalAtoms.lean`, `RowLocalFrame.lean`,
+  `RowLocalStatement.lean`, `RowLocalAddColumn.lean` (`RowsWideAt`, `ChecksReadBelowAt`,
+  `StrictDefaultFitsAt`), `KeysUniqueRunStep.lean` (`Resolved.Statement.RunCondition`),
+  `KeysUniqueScriptRun.lean`, `KeysUniqueDrop.lean` (`Catalog.DropCondition` at line 19),
+  `KeysUniqueAddColumn.lean` (`AddColumnCondition`), `ValidAtomsTogether.lean`
+  (`Database.ConstraintAtoms`), `ValidAtomsExamples.lean`.
+- The run: `ScriptRun.lean` (`runScriptStepWith` at line 108, `runScriptFrom`).
+- The surface: `packages/belay/Belay/Sqlite/ProgramRun.lean` (`Sql.runFrom`, `Run.checked`),
+  `packages/belay/Belay/Sqlite/Run.lean` (`runContext`, line 20), `RunLaws.lean`, `ProgramLaws.lean`.
+- The text translation: `packages/belay-sqlite-text/Belay/Sqlite/Translation/Schema.lean`
+  (`createIndex`, line 26).
+- Tests: `tests/valid_atoms_theorems_test.py` (the model for the new test),
+  `tests/shared_table_shape_test.py` (`compile_checks`), `tests/test_model_package.py`.
+
+## Size estimate
+
+These are estimates from the size of slices 2 and 3 and from reading the code. No part has been
+built yet. Slice 2 part 1 is 1279 Lean lines in 10 modules; slice 3 is estimated at 1000 to 1600
+lines. The last row group is the least certain: the proof of `rowsStored` and `rowidsInRange`
+through the row engine with `ready` has no model in slices 2 and 3.
+
+| Work | Lines |
+| --- | --- |
+| `CatalogTable.supported` with the CHECK condition, repair of the proofs and examples that use `Catalog.Valid` | 60–120 |
+| The lemma that `resolveOperand` over one table reads below its width (`resolveArguments`, `resolveCase`, calls, names) | 250–400 |
+| Decisions 4 and 5: the index with no terms, the repeated key column | 40–100 |
+| `Catalog.Valid` after CREATE TABLE, CREATE INDEX, CREATE TRIGGER and ADD COLUMN | 250–400 |
+| `Catalog.Valid` after DROP (the closure of the drop), `Catalog.DropCondition` from it | 100–160 |
+| The conditions of ADD COLUMN from the resolver (`strictDefaultFits`, `RowsWideAt`, `AddColumnCondition`) | 100–160 |
+| **Part 1** | **800–1340** |
+| Frame lemmas, `setRows`, append and sublist laws for the seven atoms | 100–160 |
+| Schema statements for the seven atoms (CREATE, DROP, ADD COLUMN) | 150–250 |
+| Plain INSERT, UPDATE, DELETE and upsert with `ready` | 200–320 |
+| Row engine instance with `ready`, trigger programs, and the lemma that resolved INSERT rows are wide and stored | 250–450 |
+| Statement theorems over all of `runStatement` | 80–120 |
+| **Part 2** | **780–1300** |
+| An extension of the generic layer for the condition that sees `ready` | 60–120 |
+| Run theorems for `runSqlFrom` and `runScriptFrom` for the seven atoms, and the bundle | 150–250 |
+| The corollary for `Database.Valid`, and the surface form | 80–160 |
+| Examples (counterexamples, the concrete run) and the test file | 120–200 |
+| **Part 3** | **410–730** |
+
+Total: about 2000–3400 lines in 20 to 30 new modules, each below 200 lines. This is larger than slice 3
+because the resolver facts are new work. They need the CHECK lemma, which is the largest single
+proof. Slice 3 is estimated at 1000 to 1600 lines. The task file proposes three parts (decision 7).
+
+## Owner decisions
+
+1. **How the statement theorems of the table atoms handle `ready`.** `runStatement` returns a
+   `StatementRun` with `effect`, `ready` and `keyRows`. A write that is not ready is a write that
+   the model does not describe (`insertReady`, `updateReady`, `upsertReady`, `keyReady`).
+   `runScriptFrom` ends the run when `ready` is false (`ScriptRun.lean:118`), so every
+   continued step is ready. The Admitted atoms cannot drop `ready`, unlike the atoms of slices 2
+   and 3: an INSERT into a table with the rowid 2^63-1 gives the rowid 2^63 with the effect `ok`,
+   which breaks "rowids in range". A resolved INSERT with a `.value` cell that is not in stored
+   form breaks "rows stored" (`Cell.valueAt` takes a `.value` as it is). A resolved INSERT row
+   with fewer values than columns breaks "rows wide".
+   - a) The statement theorems and the `runSqlFrom` theorems assume `ready` (for `runSqlFrom`,
+     `supportedSqlFrom`, which says it at each reached statement). The `runScriptFrom` theorems
+     assume nothing: the run gives `ready`. The generic layer gets a variant whose condition sees
+     the clock and the parameters.
+   - b) The theorems assume explicit conditions on the statement (rowids, stored values, width).
+     They cannot state the 2^63 case without describing `nextRowid`, which would copy the model.
+
+   Recommendation: a). It uses the check the model already makes, it is the form of
+   `supportedSqlFrom`, and `ready` is the model's own statement of "described". Option b) repeats
+   `ready` in a second form and must keep both in step.
+2. **Which atoms each statement theorem assumes.** ADR 0022, D3 asks for a theorem for each atom.
+   Slice 3 proved each constraint atom from its own atom alone. The Admitted atoms interact: a
+   write checks the distinct rowids together with the constraints (`checkedRow`), and "rowids
+   distinct" for a table with an alias also follows from "keys unique" and "rows aliased".
+   - a) One theorem for each atom. A theorem assumes its own atom and the other atoms that its
+     docstring lists (the least that the proof needs, for example `catalogSupported` for the
+     schema statements). The run invariant is the whole bundle `Database.Admitted`, so the
+     corollary for `Database.Valid` is direct.
+   - b) Every theorem assumes the whole bundle `Database.Admitted`.
+
+   Recommendation: a). It keeps D3 ("a theorem for each atom") and the claims of S4 can state only
+   the atoms they need. The cost is a list of assumptions for each theorem, which part 2 measures
+   and records in "Findings". If a list grows to the whole bundle for most atoms, part 2 falls back to
+   b) and records it.
+3. **The CHECK condition for `runScriptFrom`.** Decided by the owner on 2026-10-23 as decision 3 a)
+   of slice 3, and carried over here unchanged: slice 4 adds "each CHECK reads only the columns
+   of its table" to `CatalogTable.supported` (so to `Database.Admitted`), proves that the runs keep it
+   (the resolver fact, the lemma on `resolveOperand`), and removes the hypothesis `ChecksReadBelowAt`
+   from the `runScriptFrom` theorem of "checks hold". The alternative stays recorded:
+   - b) The `runScriptFrom` theorem of "checks hold" keeps the hypothesis.
+
+   Recommendation: a), as decided. SQLite does not open a database whose CHECK names a missing
+   column (`malformed database schema (t) - no such column: zz`, native 3.51.0), so the fact holds
+   for each database SQLite reaches (ADR 0012, decision 5). A guard in the resolver instead (a
+   branch that refuses a CHECK that reads past the width) would be dead code that hides an error
+   of the model, and is not recommended.
+4. **CREATE INDEX with no terms.** `resolveCreateIndex` accepts a syntax with an empty term list
+   (`indexKeys` returns `.ok []`), makes a ready statement, and gives an index that
+   `CatalogIndex.supported` refuses (it needs a nonempty key list). Measured with the probes below:
+   `supported` is false and the statement is not a restriction. SQL text cannot make it: the
+   grammar needs at least one term (`sortlist`, translated at
+   `packages/belay-sqlite-text/Belay/Sqlite/Translation/Schema.lean:26`), and native SQLite 3.51.0
+   gives `Error: in prepare, near ")": syntax error` for `CREATE INDEX i ON t()`. A Lean user can
+   build the `Syntax.Statement` directly, so a hypothesis on the syntax cannot be discharged for
+   the programs of the surface.
+   - a) The resolver refuses a CREATE INDEX with no terms with a prepare error (the error
+     SQLite gives is a syntax error), as the other refusals of `resolveCreateIndex` do. The
+     theorem has no hypothesis on the syntax.
+   - b) The resolver refuses it with a restriction (a new kind in the restriction registry and its
+     text).
+   - c) The theorem assumes at least one term in the syntax of each CREATE INDEX, and the
+     `runScriptFrom` theorem keeps that hypothesis.
+
+   Recommendation: a). It does what native SQLite does, it adds one prepare error and no
+   restriction, and it removes the hypothesis. Option b) says "the model does not describe it",
+   which is untrue, because SQLite describes it as an error. Option c) leaves a hypothesis that no
+   caller can check, because it is a fact about the program text.
+5. **Repeated key columns.** `PRIMARY KEY(a, a)` and `UNIQUE(a, a)` work in native SQLite 3.51.0
+   (the index keeps both columns; `PRAGMA index_info` shows `a, a`, and a conflict reports `UNIQUE
+   constraint failed: t.a, t.a`). The model resolves `CREATE TABLE t(a, b, PRIMARY KEY(a, a))` to a
+   table with the key `[0, 0]`, and `supportedKey` refuses it (`Database.lean:64`: no repeated
+   column). The statement is not a restriction. So `Catalog.Valid` is stricter than the databases
+   that SQLite reaches (ADR 0012, decision 5), and a CREATE TABLE that the resolver accepts gives
+   a catalog that is not `Catalog.Valid`.
+   - a) `supportedKey` allows repeated columns, as `CatalogIndex.supported` does
+     (`Resolution/Keys.lean:79`). The key facts of slice 2 (`KeysUnique`) must hold for a key with a
+     repeated column. The atom `KeysUnique` compares the cells of each key position, so the
+     expected change is small; the proof has to confirm it.
+   - b) The resolver refuses a repeated key column with a restriction.
+
+   Recommendation: a). It keeps ADR 0012, decision 5 ("the Admitted set is the databases SQLite
+   reaches") and removes a refusal that SQLite does not make. Option b) turns a working SQLite
+   statement into an unmodeled one without need. `supportedKey` is used in
+   `CatalogTable.supported` only, and in one docstring (`KeysUniqueAddColumn.lean:34`), so a)
+   is a small change.
+6. **The surface.** The task requires the corollary for `runScriptFrom` (the model). The
+   program run `Sql.runFrom` is a free-monad run with `runScriptStep` at each step, and
+   `Run.checked` decides `Database.Valid Profile.pinned` at the end.
+   - a) Slice 4 proves the corollary for the model and also a short induction over `Sql α` for
+     `Sql.runFrom` (in the surface package): the database after the run is `Valid` when the start
+     database is. S4 then can drop the check of `Run.checked` or turn it into a lemma.
+   - b) Slice 4 proves the model corollary only. S4 proves the induction when it needs it.
+
+   Recommendation: a). The induction is small (an estimated 60–120 lines) and the model
+   facts are in hand; S4 needs exactly this theorem (ADR 0022, D5). The removal of the check
+   `Run.checked` stays in S4, because it changes the surface.
+7. **The split.**
+   - a) One task file in three parts (task file, "Parts"), each with `just test-full` and `just
+     verdict`: resolver facts, statement theorems, run theorems with the corollary.
+   - b) Two parts, as slices 2 and 3 (the resolver facts and the statement theorems in part 1).
+
+   Recommendation: a). The estimate of part 1 plus part 2 is about 1600–2600 lines, twice a part of
+   slice 3. Part 1 changes `CatalogTable.supported`, which every later proof uses, so it should land
+   and be checked alone.
+
+## Findings
+
+Measured on 2026-10-23, before the slice began. The probes ran as Lean files against the model
+(`migration`, `catalogOf` and `restricted` of `Resolution/Examples`), and the native results with
+`sqlite3` 3.51.0.
+
+1. **CREATE INDEX with no terms is resolved and ready, and not supported** (decision 4). Probe:
+   `supported = false`, `restricted = false`. The grammar and the native result are in decision 4.
+2. **`PRIMARY KEY(a, a)` and `UNIQUE(a, a)` are resolved, not restricted, and not supported**
+   (decision 5). Probe: `supported = false`, `restricted = false`, one statement. `PRIMARY KEY()` and
+   `UNIQUE()` with an empty list cannot come from SQL text; they resolve to a supported table
+   because the empty key merges with an empty primary key. `CREATE TABLE t()` gives the prepare
+   error `onlyGeneratedColumns`.
+3. **`Catalog.DropCondition` is too weak for `Catalog.Valid` after a DROP.** It covers only unique
+   indexes (`KeysUniqueDrop.lean:19`). `Catalog.Valid` after a DROP needs more: every kept index
+   keeps its table, and every kept trigger keeps its table (`CatalogObject.supported`, the
+   `catalog.tableAt index.table` and `findTable trigger.table` cases). The resolver's
+   `tableObjects` (`Resolution/CatalogDrop.lean`) removes the table, the indexes of the table
+   (`found.table == position`) and the triggers of the table (`sameName`), so the closure holds;
+   a lemma must state it. `Catalog.DropCondition` follows from the closure and from
+   `Catalog.Valid` (`index.table` is a table position). DROP INDEX and DROP TRIGGER remove one
+   object that nothing else names.
+4. **`ready` is needed for three Admitted atoms.** "Rowids in range": `nextRowid` is the maximum plus
+   one and can be 2^63; the model says "SQLite's random-search branch at the maximum rowid requires
+   separate admission" (`LiteralData.lean:119`), and `insertRow` throws `undescribed` when
+   `!boundedInteger proposed.rowid` (`RowInsert.lean:58`). "Rows stored": a `.value` cell is not stored
+   by `rowsAt`; `insertReady` checks `storedForm`. "Rows wide": `insertReady` checks
+   `values.length == width`. Decision 1. The expected counterexample for the examples: a table with a row of
+   rowid 2^63-1 and an INSERT, with `effect = ok` and `ready = false`.
+5. **`ready` includes the tables that triggers write.** `keyReady` (`ForeignKeyWrites.lean:28`)
+   bounds the rowids of the target and of every acted table, and `acted` includes the tables that
+   trigger programs write (`KeyState.afterStep`, `TriggerRun.lean`). It also checks `tableReady`
+   for each acted table. A CASCADE can write an unbounded `Value.integer` (the type is `Int`) to an
+   alias cell; the proof of "rows aliased" must show that `keyReady` excludes it. A finding if it does not.
+6. **Nested INSERT rows of trigger programs have no `ready` check.** `runStep` (`TriggerRun.lean`)
+   builds the rows with `rowsWith`, and `RowWork.insert` has no width or stored check. They rely on the
+   resolver: the body is resolved at the time of the write against the current catalog, and
+   `fullCells` (`Resolution/InsertCells.lean`) gives one cell for each column and stores the written
+   cells (`Resolved.Cell.stored`) and the defaults (`omittedCell`). `constantCell` itself does not
+   store. A lemma for "resolved INSERT rows are wide and stored" is required; if it fails, it is a
+   finding.
+7. **The generic layer's `condition` does not see the clock or the parameters.** `StatementKeeps`
+   takes a condition of the statement and the database. `ready` depends on the run, so the
+   generic layer needs a variant (the size estimate has a row for it).
+8. **`runScriptFrom` gets `ready` for free.** `runScriptStepWith` ends the run with `unmodeledHere`
+   when `!run.ready` (`ScriptRun.lean:118`). For `runSqlFrom`, `supportedSqlFrom` is the predicate.
+9. **Other measured statements were fine** (`supported` true, CHECKs below the width): a CHECK on a
+   column and a table CHECK, ADD COLUMN with a CHECK, a duplicate column in a different case (a prepare
+   error), an expression unique index with a filter, a trigger, DROP TABLE with a trigger, and a
+   `WITHOUT ROWID` table with a primary key.
+10. **ADD COLUMN.** The resolver checks the column limit, duplicate names, the name `rowid`
+    (a restriction), `strictDefaultFits` (the restriction `add-column-strict-type`), and the new
+    CHECKs over the new width. `AddColumnCondition` follows from `Catalog.Valid`, `supportedKey`
+    (positions below the width) and `CatalogIndex.supported`. `RowsWideAt` follows from
+    `Admitted.rowsWide`. `StrictDefaultFitsAt` needs a lemma that the CHECKs and keys of the
+    definition do not change `strictDefaultFits` or `readDefaultValue`.
+11. **The CHECK lemma.** `readsBelow` checks `.column` nodes only (`isColumnFrom`) and ignores
+    subquery bodies, so the lemma is about the expressions that `resolveOperand` makes over
+    `Scope.single`. The CREATE TABLE path is `resolveTableChecks` and `resolveCheck`; the ADD COLUMN
+    path is `columnChecks` over `table.columns ++ [column]`. The estimate is 250–400 lines.
+12. **The record of slice 3 in ADR 0022, D4 is out of date.** It says "The pragma forms of
+    ADR 0019, slice 2 are not in this line of changes". They are in the base now
+    (`Resolved.Statement.setting` has two fields; `RowLocalStatement` has the case). The commit that
+    adds these plan files amends that sentence with a dated note (2026-10-23). The slice-4
+    implementer need not do it.
+13. **The class of slice 2's finding.** Slice 2 found
+    that a resolved CREATE INDEX of an index that `CatalogIndex.supported` refuses breaks "keys unique"
+    at a later ADD COLUMN. Findings 1 and 2 are the two known inputs of that class. The resolver fact
+    of part 1 is stated for every CREATE INDEX, so it finds any other input; one that fails is a
+    finding.
+
+## Progress log
+
+- 2026-10-23: the task file and this status file, and the dated amendment in ADR 0022, D4. No code
+  yet.
