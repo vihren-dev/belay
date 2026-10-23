@@ -189,6 +189,12 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   and the field check. Tests: `just dev-build`, `just dev-verdict`, the new test file and the
   test files for predict, continuing cases, the model, generation, records, shards and storage.
   Nix evidence is pending.
+- 2026-10-23: refactor after the review of commit 6. The writer of a case omits `counters`
+  with an explicit match on every JSON constructor (R5), and the errors of
+  `conformance/record_counters.py` name the record field, state the requirement and say to
+  record the case again (R10). The format documents (R13) change with the recorder in the judge
+  commits (PR B), where version 7 first exists. Tests: `just dev-build` and
+  `tests/conformance_counters_test.py`, `tests/conformance_model_test.py`. Nix evidence is pending.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 

@@ -104,5 +104,5 @@ def test_counters_are_checked_before_the_model_sees_them() -> None:
     for counters in bad:
         with pytest.raises(ValueError, match="counter"):
             counters_wire({"nativeVersion": 7, "counters": counters})
-    with pytest.raises(ValueError, match="without them"):
+    with pytest.raises(ValueError, match="only version 7 holds counters"):
         counters_wire({"nativeVersion": 6, "counters": COUNTERS})
