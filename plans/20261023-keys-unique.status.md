@@ -105,3 +105,6 @@ None yet. A proof that fails is recorded here with a counterexample (ADR 0022, D
   `KeysUniqueWrites`, `KeysUniqueUpsert`, `KeysUniqueCreate`).
 - 2026-10-23: refactor after review round 1 (five R3 musts: proof sketches of the helper
   theorems; one R19 should: no local check results in this file), fixed.
+- 2026-10-23: review round 2 (the refactor): no findings. ADD COLUMN: `Database.AddColumnCondition`
+  (rows wide, each key of the target reads below the old width), `Resolved.Expr.evaluate_append`
+  (`ExprAppendLaws`) and `runStatement_addColumn_keysUnique` (`KeysUniqueAddColumn`).
