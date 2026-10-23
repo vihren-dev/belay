@@ -121,8 +121,9 @@ What the code has today, after slice 1 of ADR 0018:
     each cell of a table that is not `STRICT` (`NUMERIC value in t.a`, `TEXT value in t.a`),
     and the key order of a `WITHOUT ROWID` table (`row not in PRIMARY KEY order for t`). Under
     `Database.Admitted` the first check never fails (`Table.RowsStored`). The second fails
-    only when two rows have the same primary key, which `KeysUnique` excludes. Thus the laws
-    above stay true. The model gives the key-order row and not the stored-form rows.
+    only when two rows have the same primary key. A key column of a `WITHOUT ROWID` table is
+    NOT NULL, so `NotNull` and `KeysUnique` together exclude this. Thus the laws above stay
+    true. The model gives the key-order row and not the stored-form rows.
   - **The evidence.** No modeled statement reaches a database whose constraints fail (ADR 0022,
     D5). Thus the corpora show only the row `ok`. Lean examples with kernel proofs over
     databases built in Lean show the failure rows, and native probes are their reference.
