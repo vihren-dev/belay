@@ -44,14 +44,20 @@ of ADR 0024 requires:
    `DROP INDEX` and a `DROP TABLE` of a table that no foreign key references leave all three.
    A counter that adds to an unknown value stays unknown (`total_changes()` after a start with
    an unknown total).
-3. **A failed plain INSERT.** After an INSERT without clauses or algorithms that fails,
-   `last_insert_rowid()` is the rowid of the last row before the failing row, or the value from
-   before when the first row fails. The failing row is the first row such that the rows up to
-   it fail a constraint, the distinct rowids or the rowid alias check. Probes (table with
-   rowid 1): `VALUES (10), (11), (1)` with a UNIQUE `v` that holds 1 gives 3; `(20), (20)` gives
-   2; a NOT NULL, CHECK or `datatype mismatch`
-   failure at the second or third row gives the rowid of the row before it; a first row that
-   fails leaves the value. So the model knows this counter, and does not make it unknown (D1).
+3. **A failed INSERT.** `last_insert_rowid()` is the rowid of the last row that the
+   statement inserted before the failure, or the value from before when it inserted none.
+   - A plain INSERT (no clauses or algorithms, no trigger program, no foreign-key check)
+     checks each row before it inserts it, so the last row is the row before the failing row:
+     the first row such that the rows up to it fail a constraint, the distinct rowids or the
+     rowid alias check. Probes (table with rowid 1): `VALUES (10), (11), (1)` with a UNIQUE `v`
+     that holds 1 gives 3; `(20), (20)` gives 2; a NOT NULL, CHECK or `datatype mismatch`
+     failure at the second or third row gives the rowid of the row before it; a first row that
+     fails leaves the value. So the model knows this counter, and does not make it unknown (D1).
+   - A write that runs row by row knows its last inserted row. Probes: a `RAISE(ABORT)` of an
+     AFTER INSERT program comes after the insert of its row (`VALUES (20, 1), (21, -1), (22, 1)`
+     gives 21; one row 10 gives 10); of a BEFORE INSERT program, before it (`(40, 1), (41, -1)`
+     gives 40); an immediate foreign-key failure comes at the end of the statement
+     (`VALUES (30, 1), (31, 2), (32, 1)` with no parent 2 gives 32).
 4. **One computation.** The step of a statement (`runStatement`) gives the counts with its
    effect, from the same computation. `Output.done` and `statementOutput` read that count;
    `statementOutput` no longer computes a count, and no longer calls `runStatement` a second
@@ -188,7 +194,6 @@ with `WITH RECURSIVE`, which the frontend refuses for a write.
   Check `judge/claims.json`, `record_versions.py` and the open stacks again when the corpus is
   recorded.
 - **Judge-locked files** (ADR 0011): `judge/*.py`, `judge/*.json`, each claimed corpus,
-  `nix/sqlite.nix` and `nix/flake.lock`. The lock does not cover `conformance/native_*.py`; the
-  owner's review of PR B protects the recorder.
+  `nix/sqlite.nix`, `nix/flake.lock`; not `conformance/native_*.py` (the owner reviews PR B).
 - **Files below 200 lines**, docstrings that give the reason, and plain words for each new
   proposition (`AGENTS.md`); `StatementStep.lean` has 199 lines today.
