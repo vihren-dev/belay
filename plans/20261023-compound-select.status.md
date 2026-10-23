@@ -24,6 +24,11 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D3 and D7.
   (ADR 0019 D3, task file outcome 9); slice 3 refuses them with a restriction.
 - 2026-10-23: review round 2 of the amendment (one must) fixed: after the rewrite, a scalar
   subquery reads only the affinity of the derived table's column, and no collation.
+- 2026-10-23: the run of a resolved compound (`Resolved.Compound`, `CompoundRows.lean`,
+  `CompoundRun.lean`): the four operators, the duplicate rule, the kept row, and the points where
+  SQLite runs a term and reads the window, with the examples of outcomes 1 to 3, 8 and 10
+  (`CompoundExamples.lean`, `CompoundFailureExamples.lean`). Resolution and the frontend do not
+  give a compound yet; the local verdict is unchanged.
 
 ## Owner decisions
 
