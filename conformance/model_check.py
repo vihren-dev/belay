@@ -77,6 +77,14 @@ def prove_batch(terms: list[str], runtime: Path, destination: Path, *, cases: li
     return output
 
 
+KERNEL_CHECK_TIMEOUT_SECONDS = 270
+"""The limit of one Lean run of a proof file. It is below the 300-second limit of each test
+(`testTimeoutSeconds` in `build-support/tests.nix`), so that a slow proof fails with the name of
+its file. It is not lower, because one file holds `PROOF_BATCH` cases and one case can be
+expensive: in October 2026 the file with `jsonb-header-sizes` took 55 seconds on x86_64-linux
+and more than 120 seconds on the aarch64-darwin runner."""
+
+
 PROOF_BATCH = 8
 """Cases per kernel proof file of `prove_all`: Lean loads the imports once for each file, about
 0.7 s, which is most of the time of a one-case proof."""
@@ -97,7 +105,8 @@ def kernel_check(runtime: Path, destination: Path) -> str:
     """Run the pinned Lean on a proof file over the runtime's modules and audit its axioms."""
     checked = subprocess.run([str(runtime / "lean/bin/lean"), str(destination)],
                              env={**os.environ, "LEAN_PATH": os.pathsep.join(str(runtime / path) for path in (".lake/build/lib/lean", "packages/belay-sqlite-model/.lake/build/lib/lean"))},
-                             capture_output=True, text=True, timeout=120)
+                             capture_output=True, text=True,
+                             timeout=KERNEL_CHECK_TIMEOUT_SECONDS)
     if checked.returncode:
         raise AssertionError(checked.stdout + checked.stderr)
     audit_axioms(checked.stdout)

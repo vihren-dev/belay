@@ -69,9 +69,11 @@ resolution (ADR 0008). Each mutant is a copy of the `belay-sqlite-model` and
 `verifier-conformance` packages with one change, such as folding non-ASCII
 letters, keeping the catalog after ROLLBACK, a constant column limit of 2,000, or
 one removed prepare-error condition. Lake builds only the import closure of
-`VerifierConformance.Case`, which has no proof modules, so a mutant that breaks a
-proof still builds. A mutant is killed when any case gets a verdict other than
-AGREE; three mutants move a case out of the model's scope instead of making it
+`VerifierConformance.Case`. It has no `Laws`, `Spec` or `Lemmas` module and not the model's root,
+which imports them all; `tests/mutant_guards_test.py` checks this. So a mutant that breaks a
+theorem of these modules still builds. Some definition modules in the closure, for example
+`Truth.lean` and `SqlExecution.lean`, have theorems too; a mutant that breaks one fails to build.
+A mutant is killed when any case gets a verdict other than AGREE; three mutants move a case out of the model's scope instead of making it
 disagree. The `mutants` Nix suite requires every mutant to be killed.
 
 `conformance/authored_resolution.py` holds the coverage cases of ADR 0008 for the
@@ -151,7 +153,7 @@ through one JSON-lines runner process; reports separate native acquisition and
 compiled batch time (including transport). Optional proof-term emission and kernel
 checks run separately, outside the timing.
 Parsing is bounded to five seconds, each compiled batch to 30 seconds, and
-concrete kernel checks to 120 seconds. The 2,000-column case is compiled only.
+each Lean run of a kernel proof file to 270 seconds. The 2,000-column case is compiled only.
 
 The tier-two denominator is the 16 authored derived cases, plus the
 injected transport regression. [Stateful generation](conformance-generation.md)
