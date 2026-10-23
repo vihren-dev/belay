@@ -1,6 +1,6 @@
 # Status: the theorem of "keys unique" (ADR 0022, slice 2)
 
-Created 2026-10-23. Status: open; no code yet. Three owner decisions are open (below).
+Created 2026-10-23. Status: open; part 1 in progress. Three owner decisions are open (below).
 Task: [task file](20261023-keys-unique.task.md).
 Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D3 and D4 (slice 2).
 Needed by: [ADR 0017](../docs/adr-0017-user-surface.md), S4.
@@ -83,6 +83,13 @@ they land, mostly in the row engine for `recursive_triggers`.
    uses the same statement step (`runScriptStep`), so the added work is small (about 60 lines,
    in the estimate above).
 
+## Changes at the rebase onto the pragma and evidence-after-error stacks
+
+- 2026-10-23: `Resolved.Statement.setting` now has a second field, the value of the setting
+  (`setting setting on`). The hypothesis `writesNone` of `runStatement_keeps_database` and
+  `runStatement_writesNone_keysUnique` therefore reads `∃ setting on, statement = .setting
+  setting on`. It still means "the statement is a setting"; the statements do not change.
+
 ## Findings
 
 None yet. A proof that fails is recorded here with a counterexample (ADR 0022, D3).
@@ -92,3 +99,8 @@ None yet. A proof that fails is recorded here with a counterexample (ADR 0022, D
 - 2026-10-23: the task file and this status file. Review round 1: two R19 musts (the filters
   of partial indexes in the ADD COLUMN condition; the result type of `runScriptFrom`), fixed.
   Round 2: no findings.
+- 2026-10-23: part 1, first commit: `Effect.KeysUnique`, the frame lemma, the lookup lemma, and
+  the theorems for plain INSERT, UPDATE, DELETE, upsert, CREATE TABLE, CREATE INDEX, CREATE
+  TRIGGER and the statements that write no row (`KeysUniqueFrame`, `KeysUniqueLookup`,
+  `KeysUniqueWrites`, `KeysUniqueUpsert`, `KeysUniqueCreate`). Checks: `just dev-build`,
+  `tests/test_model_package.py -m unit`; `#print axioms` gives only the three standard axioms.

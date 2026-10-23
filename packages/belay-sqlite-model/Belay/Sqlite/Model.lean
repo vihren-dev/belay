@@ -12,6 +12,11 @@ import Belay.Sqlite.Model.Database
 import Belay.Sqlite.Model.DatabaseFacts
 import Belay.Sqlite.Model.DatabaseConstraints
 import Belay.Sqlite.Model.DatabaseConstraintChecks
+import Belay.Sqlite.Model.KeysUniqueFrame
+import Belay.Sqlite.Model.KeysUniqueLookup
+import Belay.Sqlite.Model.KeysUniqueWrites
+import Belay.Sqlite.Model.KeysUniqueUpsert
+import Belay.Sqlite.Model.KeysUniqueCreate
 import Belay.Sqlite.Model.ForeignKeysHold
 import Belay.Sqlite.Model.Execution
 import Belay.Sqlite.Model.LiteralData
@@ -49,8 +54,9 @@ import Belay.Sqlite.Model.Resolution
 import Belay.Sqlite.Model.Resolution.QuerySpec
 import Belay.Sqlite.Model.Resolution.ScopeLaws
 
-/-! SQLite states, the facts of an admitted and of a valid database, supported execution, the
-output of each statement and the results that SQLite may give for it, the laws of the check
-pragmas and of {lit}`foreign_key_check`, a run of statement syntax that continues after an error, the constraints that a failed
-write names, structural preservation facts, and name resolution from statement syntax to
-resolved statements with its specification and laws. -/
+/-! SQLite states, the facts of an admitted and of a valid database, the theorems of the statements
+that keep the unique keys, supported execution, the output of each statement and the results that
+SQLite may give for it, the laws of the check pragmas and of {lit}`foreign_key_check`, a run of
+statement syntax that continues after an error, the constraints that a failed write names,
+structural preservation facts, and name resolution from statement syntax to resolved statements
+with its specification and laws. -/
