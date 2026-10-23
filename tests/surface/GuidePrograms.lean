@@ -46,7 +46,8 @@ def addCustomer (name email : String) : Sql Bool := do
     (sql r"INSERT INTO customers (id, name, email) VALUES ($next, $name, $email)")
   pure outputs.allOk
 
--- A script on its own line in a `do` block is sent, and its value is dropped.
+/-- Close the invoices with the amount 0, then count the open invoices. A script on its own
+line in a `do` block is sent, and its value is dropped. -/
 def closeAndCount : Sql (Option Value) := do
   closeZero
   single (sql r"SELECT count(*) FROM invoices WHERE status = 'open'")
@@ -55,6 +56,7 @@ example : (shop.run closeAndCount).value = some (some 1) := by decide +kernel
 example : (shop.run closeAndCount).outputs = [.done 1, .rows [[1]]] := by decide +kernel
 
 -- "Running a program".
+/-- Add a customer, count the customers, delete that customer and count again. -/
 def demo : Run (Option Value × Option Value) := start.run do
   sql r"INSERT INTO customers (id, name, email) VALUES (3, 'eve', 'eve@z')"
   let before ← single (sql r"SELECT count(*) FROM customers")
@@ -68,8 +70,8 @@ def demo : Run (Option Value × Option Value) := start.run do
 
 example : (start.run (addCustomer "eve" "eve@z")).value = some true := by decide +kernel
 
--- Lean code in `IO` runs programs one after another. The fixture elaborates `main`; it does not
--- run it.
+/-- Count the customers, then add one on the database that the count left. Lean code in `IO`
+runs programs one after another. The fixture elaborates `main`; it does not run it. -/
 def main : IO Unit := do
   let run := start.run (single (sql r"SELECT count(*) FROM customers"))
   IO.println s!"customers: {run.value}"
@@ -79,7 +81,8 @@ def main : IO Unit := do
 -- `db.run p` and `p.run db` are the same run.
 example : start.run (addCustomer "eve" "eve@z") = (addCustomer "eve" "eve@z").run start := rfl
 
--- "The execution environment": `run` takes the environment as a named argument.
+-- "The execution environment".
+/-- Read `CURRENT_TIMESTAMP` under `clockAt`: `run` takes the environment as a named argument. -/
 def stamped : Run (Option Value) := start.run (env := clockAt "2026-10-20 12:00:00") do
   single (sql r"SELECT CURRENT_TIMESTAMP")
 
