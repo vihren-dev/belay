@@ -91,18 +91,12 @@ def translateParse (sql : ByteArray) : ParseResult → Except Refusal (Array Par
 
 /-- The translation of SQL text, as its bytes, with a grammar of the parser library: the
 statements with their ranges and parameter tokens, or the refusal. It fails when the library
-gives an unusable document. For example, {lit}`translateParameterized grammar "SELECT :a;".toUTF8`
-gives one statement with the parameter {lit}`:a` of number 1 at bytes 7 to 9. -/
-def translateParameterized (grammar : String) (sql : ByteArray) :
+gives an unusable document. For example, {lit}`translate grammar "SELECT :a;".toUTF8` gives
+one statement with the parameter {lit}`:a` of number 1 at bytes 7 to 9. -/
+def translate (grammar : String) (sql : ByteArray) :
     IO (Except Refusal (Array ParameterizedStatement)) := do
   let document ← ParserLibrary.parse grammar sql
   let parse ← IO.ofExcept ((decodeParse grammar sql.size document).mapError IO.userError)
   return translateParse sql parse
-
-/-- The statements of {name}`translateParameterized` with their ranges, without the parameter
-tokens. For example, {lit}`translate grammar "COMMIT;".toUTF8` gives one statement,
-{name}`Syntax.Statement.commit` at bytes 0 to 6. -/
-def translate (grammar : String) (sql : ByteArray) : IO (Except Refusal (Array (Located Syntax.Statement))) := do
-  return (← translateParameterized grammar sql).map (·.map (·.statement))
 
 end Belay.Sqlite.Translation

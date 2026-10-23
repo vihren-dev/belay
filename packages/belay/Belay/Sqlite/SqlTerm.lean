@@ -33,7 +33,7 @@ grammar of the default release, or the refusal. -/
 def translateText (text : String) :
     IO (Except Translation.Refusal (Array Translation.ParameterizedStatement)) := do
   let grammar ← IO.ofExcept ((selectGrammar (← loadedMetadata) Release.default).mapError IO.userError)
-  Translation.translateParameterized grammar text.toUTF8
+  Translation.translate grammar text.toUTF8
 
 /-- The statements of the literal's SQL text, or an error at the position where SQLite's grammar
 rejects the text or the translation refuses a form. -/

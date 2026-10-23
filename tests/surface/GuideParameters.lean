@@ -1,6 +1,6 @@
 import Belay
 
-/-! A fixture of `tests/surface_guide_test.py`: the examples of the user guide's section
+/-! A fixture of `tests/surface_parameters_test.py`: the examples of the user guide's section
 "Parameters" that need no program, and the parameters of `sql r"..."`
 (`Belay/Sqlite/SqlParameters.lean`, `Belay/Sqlite/SqlTerm.lean`, the coercions of
 `Belay/Sqlite/Values.lean`): `$x` is the Lean variable `x` coerced to `Value`, every other
@@ -19,8 +19,12 @@ def shop : Database := db! r"
   INSERT INTO customers VALUES (1, 'acme');"
 
 -- The guide's examples.
+/-- The guide's `nameOf`: the name of the customer with the id, which `$id` reads from the Lean
+variable `id`. -/
 def nameOf (id : Int64) : Script := sql r"SELECT name FROM customers WHERE id = $id"
 
+/-- The guide's `setAmount`: a function of the arguments `amount` and `id`, in the order of their
+first appearance. -/
 def setAmount := sql r"UPDATE invoices SET amount = :amount WHERE id = :id"
 
 /-- info: setAmount (amount id : Value) : Script -/
@@ -83,6 +87,7 @@ example : (shop.run (setAmount (id := 1) (amount := 15) ++ sql r"SELECT amount F
 
 -- `Holds`, `Empty` and `Fails` take a query with a `$x` value or an argument: the check that the
 -- script is a query (`check_query`) does not depend on the values.
+/-- The query holds on the database when table `invoices` has `n` rows; `n` is a Lean variable. -/
 def countIs (n : Value) (db : Database) : Prop :=
   Holds (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n") db
 example : countIs 2 shop := by unfold countIs; decide +kernel
