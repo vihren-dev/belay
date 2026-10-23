@@ -141,9 +141,9 @@ What the code has today, after slice 1 of ADR 0018:
   - When an operator is not `UNION ALL` and an `ORDER BY` term has `COLLATE`, SQLite sorts the
     compound as the subquery of `SELECT * FROM (compound)`. Then a term without `COLLATE` sorts
     under the collation of the left-most `SELECT`'s expression, `BINARY` when it has none. Also,
-    `x IN (q)` and a scalar `(q)` then read the column of that subquery: the collation of the
-    left-most `SELECT`'s expression, and the affinity that SQLite gives to a column of a
-    subquery in `FROM` (D5). For example,
+    `x IN (q)` then reads the column of that subquery: the collation of the left-most
+    `SELECT`'s expression, and the affinity that SQLite gives to a column of a subquery in
+    `FROM` (D5). A scalar `(q)` reads only that affinity, and has no collation. For example,
     `'A' IN (SELECT 'a' COLLATE NOCASE UNION SELECT 'b' WHERE 0 ORDER BY 1 COLLATE BINARY)` is
     1. Slice 3 refuses such an `IN` or scalar subquery with a restriction, and slice 4 adds it
     with the columns of a subquery in `FROM`.
