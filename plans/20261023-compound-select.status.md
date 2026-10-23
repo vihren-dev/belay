@@ -1,7 +1,7 @@
 # Status: compound SELECT (ADR 0019, slice 3)
 
-Created 2026-10-23. Status: IN PROGRESS (the run, the resolution and the frontend of a compound are
-in; the authored corpus, the mutants and the surface fixture are next).
+Created 2026-10-23. Status: IN PROGRESS (the run, the resolution and the frontend of a compound,
+the authored corpus, the mutants and the surface fixture are in; the judge change is next).
 Task file: [task](20261023-compound-select.task.md).
 Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D3 and D7.
 
@@ -56,6 +56,8 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D3 and D7.
   of it. Tests: `tests/conformance_query_coverage_test.py`, `tests/conformance_corpus_writers_test.py`,
   `tests/conformance_query_mutants_test.py -k compound`, `tests/mutant_guards_test.py` and
   `tests/surface_guide_test.py`.
+- 2026-10-23: review of the corpus (one should) fixed: the status line and "Remaining" give the
+  done work and the next steps.
 
 ## Owner decisions
 
@@ -129,6 +131,8 @@ edit of `packages/`.
 
 ## Remaining
 
-- The implementation, the authored corpus, the mutants, the surface fixture, `just test-full` and
-  `just verdict` at the end of the slice; `just test-nix` and `just test-scheduled` before the pull
-  requests; the judge change (owner's approval) and the work as two pull requests.
+- The judge change: corpus version 49 recorded by `conformance/compound_evidence.py`, its claim,
+  the newly agreeing cases in `mustAgree`, and `integrity/judge.lock.json` (owner's approval).
+- `just test-full` and `just verdict` at the end of the slice; `just test-nix` and
+  `just test-scheduled` before the pull requests; the judge change and the work as two pull
+  requests.
