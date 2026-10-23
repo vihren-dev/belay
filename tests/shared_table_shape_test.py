@@ -1,6 +1,6 @@
 """The database carries the one schema truth, and conformance checks the row lists against it.
 
-`Belay.Sqlite.Database` stores the catalog beside the rows, and `Belay.Sqlite.Conforms`
+`Belay.Sqlite.Model.Database` stores the catalog beside the rows, and `Belay.Sqlite.Model.Conforms`
 requires that catalog to be the given one under the profile and the rows to have one
 list per catalog object, with none at an index (`Model.lean`). The codec transports rows
 and values (`Codec.lean`). The replaced model types of ADR 0008 must not exist.
@@ -20,8 +20,8 @@ pytestmark = [pytest.mark.integration, pytest.mark.kernel,
               pytest.mark.requires_lean("compiler")]
 
 SHAPE_CHECKS = """
-import Belay.Sqlite
-open Belay.Sqlite
+import Belay.Sqlite.Model
+open Belay.Sqlite.Model
 def idColumn : CatalogColumn := { name := name! "id", declaredType := some "BIGINT", notNull := true }
 def stamp : CatalogColumn :=
   { name := name! "stamp", declaredType := some "TIMESTAMP", defaultValue := some { form := .clock .timestamp, sourceText := "CURRENT_TIMESTAMP" } }
@@ -66,11 +66,11 @@ example : ¬Conforms profile catalog {} := by
   simp [catalog, catalogWith] at equal
 example : ¬Conforms profile catalog { catalog, rows := [[]] } := by
   intro conforms
-  have equal := conforms.2.2.1
+  have equal := conforms.2.rowsShaped.1
   simp [catalog, catalogWith] at equal
 example : ¬Conforms profile catalog { catalog, rows := [[], [⟨1, [.null, .null, .null]⟩]] } := by
   intro conforms
-  have empty := (conforms.2.2.2 1).1 rfl
+  have empty := conforms.2.rowsShaped.2 1 rfl
   simp at empty
 #guard !(catalog ++ catalog).supported profile.limits
 example : catalog.tableAt 0 = some shape := rfl
@@ -108,9 +108,9 @@ def test_row_codec_golden(tmp_path: Path, lean_sysroot: Path, lean_libraries: tu
     """Our codec preserves every row, rowid and typed cell, and refuses a byte above 255."""
     invalid = [{"rowid": 0, "values": [{"blob": {"bytes": [256]}}]}, {"rowid": 0}, {"values": []}]
     invalid_terms = ", ".join(lean_string(json.dumps(record)) for record in invalid)
-    source = "import Belay.Sqlite.Codec\n"
+    source = "import Belay.Sqlite.Model.Codec\n"
     source += f"""
-open Belay.Sqlite Lean
+open Belay.Sqlite.Model Lean
 def golden := {lean_string(json.dumps(GOLDEN))}
 def checkGolden : IO Unit := do
   let input ← IO.ofExcept (Json.parse golden)
@@ -134,7 +134,7 @@ def test_replaced_model_names_absent(name: str, tmp_path: Path, lean_sysroot: Pa
                                      lean_libraries: tuple[Path, Path]) -> None:
     """The compiler rejects each model name that ADR 0008 replaced; no compatibility alias exists."""
     source = tmp_path / "ReplacedName.lean"
-    source.write_text(f"import Belay.Sqlite\nimport Belay.Sqlite.Codec.Resolution\n#check Belay.Sqlite.{name}\n")
+    source.write_text(f"import Belay.Sqlite.Model\nimport Belay.Sqlite.Model.Codec.Resolution\n#check Belay.Sqlite.Model.{name}\n")
     result = run_command([str(lean_sysroot / "bin/lean"), str(source)], cwd=tmp_path,
         timeout=10, environment={**os.environ, "LEAN_PATH": os.pathsep.join(map(str, lean_libraries))})
     assert result.returncode != 0 and "error(lean.unknownIdentifier)" in result.stdout, result.diagnostic()

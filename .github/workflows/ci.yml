@@ -4,7 +4,6 @@ on:
   pull_request:
   push:
     branches: [main]
-    tags: ["v*"]
   workflow_dispatch:
   # Nightly checks and references run on both platforms. Pull requests run
   # checks and build the reference on Linux only.
@@ -15,8 +14,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && github.run_id || github.ref }}
-  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') && github.event_name != 'workflow_dispatch' && github.event_name != 'schedule' }}
+  group: ${{ github.workflow }}-${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' && github.event_name != 'schedule' }}
 
 jobs:
   check:
@@ -40,7 +39,7 @@ jobs:
     steps:
       - name: Skip macOS checks on pull requests
         if: env.PLATFORM_RUNS != 'true'
-        run: echo "macOS checks and the API reference run on main, tags, manual and nightly runs; Linux checks this pull request."
+        run: echo "macOS checks and the API reference run on main, manual and nightly runs; Linux checks this pull request."
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         if: env.PLATFORM_RUNS == 'true'
         with:
@@ -132,39 +131,11 @@ jobs:
             build/ci-environment.json
           if-no-files-found: warn
           retention-days: 14
-      - name: Retain proof runtime closure
-        if: always() && env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope != 'docs'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: runtime-closure-${{ matrix.system }}
-          path: |
-            build/nix-runtime-roots
-          if-no-files-found: warn
-          retention-days: 14
-      - name: Retain development source snapshot
-        if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'package'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: development-source-${{ matrix.system }}
-          path: dist/sqlite-verifier-source.tar.gz
-          if-no-files-found: error
-          retention-days: 14
-      - name: Retain checked native runtime
-        if: env.PLATFORM_RUNS == 'true' && (steps.scope.outputs.scope == 'package' || steps.scope.outputs.scope == 'packaging')
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: runtime-${{ matrix.system }}
-          compression-level: 0
-          path: |
-            dist/sqlite-verifier-${{ matrix.system }}.tar.gz
-            dist/sqlite-verifier-${{ matrix.system }}.tar.gz.sha256
-          if-no-files-found: error
-          retention-days: 14
 
   mutants:
     name: Mutants (${{ matrix.suite }}, ${{ matrix.system }})
     # The mutant suites of the model (tests/nix_mutant_suites.json) run here, one runner each, in
-    # parallel with the check job and for the package scope only: together they need more time
+    # parallel with the check job and for the full scope only: together they need more time
     # than the check job has left (pull request #191). They never save a cache.
     strategy:
       fail-fast: false
@@ -183,7 +154,7 @@ jobs:
     steps:
       - name: Skip macOS checks on pull requests
         if: env.PLATFORM_RUNS != 'true'
-        run: echo "macOS mutant suites run on main, tags, manual and nightly runs; Linux checks this pull request."
+        run: echo "macOS mutant suites run on main, manual and nightly runs; Linux checks this pull request."
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         if: env.PLATFORM_RUNS == 'true'
         with:
@@ -194,7 +165,7 @@ jobs:
         id: scope
         run: python3 -m tests.ci_scope
       - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31
-        if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'package'
+        if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'full'
         with:
           enable_kvm: false
           set_as_trusted_user: false
@@ -208,7 +179,7 @@ jobs:
             connect-timeout = 5
             fallback = true
       - name: Restore Nix builds
-        if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'package'
+        if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'full'
         uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7
         env:
           TAR_OPTIONS: --no-wildcards-match-slash --exclude=nix/store/*.lock
@@ -219,46 +190,18 @@ jobs:
             nix-tests-v1-${{ matrix.system }}-${{ hashFiles('nix/*.nix', 'nix/flake.lock') }}-
           save: false
       - name: Run the mutant suite
-        if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'package'
+        if: env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'full'
         env:
           MUTANT_SUITE: ${{ matrix.suite }}
         run: nix develop path:./nix --command just test-mutants "$MUTANT_SUITE"
       - name: Retain the mutant suite report
-        if: always() && env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'package'
+        if: always() && env.PLATFORM_RUNS == 'true' && steps.scope.outputs.scope == 'full'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: mutant-reports-${{ matrix.suite }}-${{ matrix.system }}
           path: build/nix-tests-mutants/
           if-no-files-found: warn
           retention-days: 14
-
-  release:
-    name: Publish checked native archives
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: check
-    runs-on: ubuntu-22.04
-    timeout-minutes: 10
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          persist-credentials: false
-      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
-        with:
-          pattern: runtime-*
-          path: release-assets
-          merge-multiple: true
-      - name: Verify asset checksums and create release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          (cd release-assets && sha256sum --check ./*.sha256)
-          flags=()
-          if [[ "$RELEASE_TAG" == *-* ]]; then flags+=(--prerelease); fi
-          gh release create "$RELEASE_TAG" "${flags[@]}" --verify-tag --title "SQLite verifier $RELEASE_TAG" \
-            --notes-file docs/release-notes.md release-assets/*.tar.gz release-assets/*.sha256
 
   publish-nix-store:
     name: Publish Nix store (${{ matrix.system }})

@@ -1,13 +1,13 @@
 import VerifierConformance.Native
 import VerifierConformance.Pass
-import Belay.Sqlite.Resolution.SchemaScript
+import Belay.Sqlite.Model.Resolution.SchemaScript
 
 /-! ADR 0004's finite comparison authority. Native observations remain empirical
 inputs; proving checkCase certifies only the model's agreement with those inputs.
 A case carries statement syntax: the model resolves it, then executes it, and
 compares each step's catalog and tables with the native ones. -/
 
-namespace Belay.Sqlite.Conformance
+namespace Belay.Sqlite.Model.Conformance
 
 /-- A version 5 case: the measured profile of the native connection, the SQL
 texts, their statement syntax, the native tables before the migration, and native
@@ -157,4 +157,4 @@ def checkCase (c : Case) : Bool := decide (classifyCase c = .agree)
 theorem unsupported_not_checked (c : Case) (h : classifyCase c = .modelUnsupported) :
     checkCase c = false := by simp [checkCase, h]
 
-end Belay.Sqlite.Conformance
+end Belay.Sqlite.Model.Conformance

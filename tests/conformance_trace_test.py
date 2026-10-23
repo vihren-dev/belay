@@ -15,7 +15,7 @@ def test_production_trace(tmp_path: Path, lean_sysroot: Path, lean_libraries: tu
     """Snapshots preserve writes, commits, rollbacks, failure positions and stop-on-error."""
     proof = tmp_path / "TraceChecks.lean"
     proof.write_text('''import VerifierConformance.Pass
-open Belay.Sqlite Belay.Sqlite.Conformance
+open Belay.Sqlite.Model Belay.Sqlite.Model.Conformance
 
 def columns : List CatalogColumn := [{ name := name! "value", declaredType := some "INTEGER" }]
 def original : Table := {
@@ -73,7 +73,7 @@ def test_statement_outputs(tmp_path: Path, lean_sysroot: Path, lean_libraries: t
     """Native groups allow tie permutations and cuts while rejecting corrupted outputs."""
     proof = tmp_path / "OutputChecks.lean"
     proof.write_text('''import VerifierConformance.Outputs
-open Belay.Sqlite Belay.Sqlite.Conformance
+open Belay.Sqlite.Model Belay.Sqlite.Model.Conformance
 
 def a : ResultRow := [.integer 1]
 def b : ResultRow := [.integer 2]

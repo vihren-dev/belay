@@ -20,7 +20,7 @@ from conformance import (aggregate_mutants, authored_aggregates, authored_json_e
 from tests.mutant_sets import measure_set
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.requires_lean,
-              pytest.mark.requires_native("parser-library", "sqlite3")]
+              pytest.mark.requires_native("translation-program", "sqlite3")]
 
 
 def test_every_text_function_mutant_changes_a_verdict(runtime_root: Path) -> None:

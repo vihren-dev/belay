@@ -50,11 +50,11 @@ from conformance import (authored_algorithms, authored_aliases, authored_checks,
                          authored_using, authored_without_rowid, authored_writes)
 from conformance.model_check import compiled_many, prove_all
 from conformance.native_replay import prepare
-from conformance.record_parser import runtime_library
+from conformance.sql_text import runtime_translator
 from conformance.requirement_coverage import resolved_ids
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kernel, pytest.mark.requires_lean,
-              pytest.mark.requires_native("parser-library", "sqlite3")]
+              pytest.mark.requires_native("translation-program", "sqlite3")]
 ROOT = Path(__file__).resolve().parents[1]
 CASE_SETS = [authored_queries, authored_numbers, authored_writes, authored_row_writes, authored_deletes, authored_joins,
              authored_using, authored_right, authored_merged, authored_keys, authored_aliases, authored_upserts,
@@ -79,10 +79,10 @@ def test_coverage_cases_agree_with_kernel_proofs(cases: ModuleType, runtime_root
     for record in records:
         assert record["nativeVersion"] == 5 and record["requirements"]
         assert all((event["phase"] is None) == (event["primaryCode"] == 0) for event in record["trace"])
-    library = runtime_library(runtime_root)
+    translator = runtime_translator(runtime_root)
     prepared = []
     for record in records:
-        case, answer = prepare(record, library)
+        case, answer = prepare(record, translator)
         assert case is not None and case["outputs"] is not None, (record["name"], answer)
         prepared.append(case)
     answers = compiled_many(prepared, runtime_root, emit_lean=True)

@@ -65,8 +65,8 @@ def test_default_preparation_boundary(version: str, tmp_path: Path, lean_sysroot
     catalog 0 (name! "t") {{ name := name! "added", declaredType := some "BLOB", constraints := [.default ({expression}) "unused in preparation classification"] }}).toOption.map
   (fun pair => pair.1 == .prepareError (.expression (.defaultNotConstant (name! "added"))))).getD false
 ''' for (_, expression), prepared in zip(CASES, prepares, strict=True))
-    source = f'''import Belay.Sqlite.Resolution.AddColumn
-open Belay.Sqlite
+    source = f'''import Belay.Sqlite.Model.Resolution.AddColumn
+open Belay.Sqlite.Model
 def catalog : Catalog := [{{ name := name! "t", entry := .table {{
   columns := [{{name := name! "id", declaredType := some "BLOB"}}] }} }}]
 {checks}'''

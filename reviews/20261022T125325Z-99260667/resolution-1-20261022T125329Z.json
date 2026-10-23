@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-22T12:53:29+00:00",
+  "finding": "20261022T125325Z-99260667#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The next commit replaces tools/dev_loop.py and its main with plain just recipes; the code this test would check no longer exists"
+}

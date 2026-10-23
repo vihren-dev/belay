@@ -3,13 +3,12 @@
 import json
 from pathlib import Path
 import re
-import shlex
 import subprocess
 from unittest.mock import patch
 
 import pytest
 
-from tools.ci_checks import CHECKS_PHASE_LIMIT_SECONDS, NIX_TEST_BUILD_OPTIONS, run_checks
+from tools.ci_checks import CHECKS_PHASE_LIMIT_SECONDS, run_checks
 from tests.runtime_support import CommandResult, CommandTimeout
 
 pytestmark = [pytest.mark.unit, pytest.mark.environment]
@@ -18,7 +17,7 @@ OWNER_JOB_LIMIT_MINUTES = 75
 """Owner feedback of 2026-10-08 restores the aggregate job ceiling; child deadlines stay independent."""
 
 
-@pytest.mark.parametrize("scope", ["test", "package"])
+@pytest.mark.parametrize("scope", ["test", "full"])
 @pytest.mark.parametrize("mode", ["source", "build"])
 @pytest.mark.parametrize("system", ["aarch64-darwin", "x86_64-linux"])
 def test_hosted_job_keeps_owner_limit_and_child_deadlines(
@@ -54,12 +53,14 @@ def test_hosted_job_keeps_owner_limit_and_child_deadlines(
 @pytest.mark.parametrize("mode", ["source", "build"])
 @pytest.mark.parametrize("system", ["aarch64-darwin", "x86_64-linux"])
 def test_ci_modes_retain_fresh_checks(tmp_path: Path, mode: str, system: str) -> None:
-    """Both modes retain complete host recipes and the selected native system's bundle schedule."""
+    """Both modes run the complete host recipes of each scope, the build mode on the conformance runtime."""
     runtime = tmp_path / "runtime"
     (runtime / "build").mkdir(parents=True)
     original_bin = tmp_path / "original-bin"
     original_bin.mkdir()
     (runtime / "lean/bin").mkdir(parents=True)
+    # Source mode reads the toolchain from the build/conformance out-link of `just setup`.
+    (tmp_path / "build/conformance/lean/bin").mkdir(parents=True)
     for compiler in (original_bin / "clang", runtime / "lean/bin/clang"):
         compiler.write_text("#!/bin/sh\nexit 0\n")
         compiler.chmod(0o755)
@@ -77,28 +78,15 @@ def test_ci_modes_retain_fresh_checks(tmp_path: Path, mode: str, system: str) ->
 
     with patch("tools.ci_checks.check_resources"), patch("tools.ci_checks.run_command", side_effect=run), \
          patch.dict("os.environ", {"SQLITE_VERIFIER_SYSTEM": system, "PATH": str(original_bin), "CC": "clang"}, clear=True):
-        run_checks("package", mode, system, tmp_path)
-        assert commands[-1] == ["just", "package"]
-        if system == "aarch64-darwin":
-            assert commands[-2][3] == "tests.bundle"
+        run_checks("full", mode, system, tmp_path)
+        assert commands[-1] == ["just", "test-full", "test-nix", "test-scheduled-checks"]
         run_checks("infrastructure", mode, system, tmp_path)
         assert commands[-1] == ["just", "test-full", "test-nix"]
-        run_checks("packaging", mode, system, tmp_path)
-        assert commands[-1] == ["just", "test-full", "runtime-package"]
         run_checks("test", mode, system, tmp_path)
     assert commands[-1] == ["just", "test-full"]
     assert set(echoes) == {True}, "Every phase streams its output to the CI log"
-    bundle_commands = [command for command in commands if "tests.bundle" in command]
-    if system == "aarch64-darwin":
-        assert len(bundle_commands) == 4
-        assert commands[-2] == bundle_commands[-1]
-        assert bundle_commands[0] == bundle_commands[1] == [
-            "nix-build", "build-support/default.nix", "-A", "tests.bundle",
-            "--out-link", "build/nix-tests-bundle", *NIX_TEST_BUILD_OPTIONS]
-    else:
-        assert bundle_commands == []
     if mode == "build":
-        assert commands[0][3] == "runtime"
+        assert commands[0][3] == "conformance"
         assert environments[-1]["SQLITE_VERIFIER_RUNTIME_ROOT"] == str(runtime)
         assert "SQLITE_VERIFIER_UNIT_CHECKS" not in environments[-1]
         assert environments[-1]["CC"] == "clang"
@@ -109,6 +97,8 @@ def test_ci_modes_retain_fresh_checks(tmp_path: Path, mode: str, system: str) ->
     else:
         assert commands[0] == ["just", "setup"]
         assert "SQLITE_VERIFIER_UNIT_CHECKS" not in environments[-1]
+        assert [str(tmp_path / "build/conformance/lean/bin/lean"), "--version"] in commands
+        assert [str(tmp_path / "build/conformance/lean/bin/lake"), "--version"] in commands
     assert all(row["exit_code"] == 0 for row in json.loads((tmp_path / "build/ci-phases.json").read_text()))
 
 
@@ -117,22 +107,6 @@ def test_unknown_scope_is_rejected(tmp_path: Path) -> None:
     with patch("tools.ci_checks.run_command") as run, pytest.raises(ValueError, match="Unknown CI scope"):
         run_checks("docs", "build", "x86_64-linux", tmp_path)
     run.assert_not_called()
-
-
-def test_bundle_policy_matches_existing_nix_test_recipes() -> None:
-    """The isolated phase uses the actual complete recipes' isolation options, so their policies cannot drift."""
-    recipes = (Path(__file__).resolve().parents[1] / "justfile").read_text().splitlines()
-    targets: set[str] = set()
-    for line in recipes:
-        if " nix-build " not in line or line.lstrip().startswith("#"):
-            continue
-        words = shlex.split(line)
-        if words[:2] != ["timeout", "--foreground"] or words[3:4] != ["nix-build"] or "--option" not in words:
-            continue
-        targets.add(words[words.index("-A") + 1])
-        assert tuple(words[words.index("--option"):]) == NIX_TEST_BUILD_OPTIONS
-    assert targets == {"developmentTestReports", "testReports", "tests.atuin", "publicDocumentation",
-                       "scheduledTestReports", "scheduledCheckReports", "scheduledTests.{{suite}}", "apiReference"}
 
 
 def test_ci_failure_retains_phase_status(tmp_path: Path) -> None:

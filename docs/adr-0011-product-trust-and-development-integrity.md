@@ -4,7 +4,7 @@ Date: 2026-10-12. Status: ACCEPTED on 2026-10-12 (PR #90).
 Implementation: [task](../plans/20261012-development-integrity.task.md).
 Audience: designers and reviewers.
 Related: [ADR 0003](adr-0003-agent-proof-preparation.md),
-[ADR 0005](adr-0005-conformance-corpus-scale.md), [kernel gate](kernel-gate.md),
+[ADR 0005](adr-0005-conformance-corpus-scale.md), [kernel gate](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/kernel-gate.md),
 [review checklist](review-checklist.md), [CI](ci.md), `.github/CODEOWNERS`.
 
 ## Overview
@@ -274,6 +274,12 @@ lists it in its own section. (ADR 0010 moved the Lean files into packages:
 libraries to `packages/sqlite-verifier/`, and the two checkers to
 `packages/verifier-gate/`.) With enforced code-owner review on this set,
 review condition R8 has no remaining purpose and is removed.
+
+Amended 2026-10-21 ([ADR 0021](adr-0021-remove-the-verifier-product.md), D3): the verifier
+product and its gates were removed, so the repository has no product trust base. What a user
+trusts is Lean's kernel over the model's definitions and the surface's terms, and the
+conformance evidence that the judge grades. `.github/CODEOWNERS` keeps only the development
+integrity lines of decisions 2 to 4.
 
 ## Consequences
 

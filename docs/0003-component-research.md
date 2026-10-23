@@ -1,5 +1,7 @@
 # ADR 0003 component research and concrete implementation proposal
 
+Superseded by [ADR 0021](adr-0021-remove-the-verifier-product.md) on 2026-10-21: the verifier product and its proof data path were removed.
+
 Date: 2026-09-28. Status: proposed implementation of
 [ADR 0003](adr-0003-agent-proof-preparation.md), based on source inspection.
 No toolchain build, exported SQLite proof, or performance benchmark was run in
@@ -14,7 +16,7 @@ qualification remains an implementation gate, not an established result.
 > latency milestone stays on 4.33.0, where lean4export and comparator have
 > `v4.33.0` tags and lean4export was built and measured); "no toolchain build or
 > exported proof was run" (see the
-> [latency experiments](../experiments/adr-0003-latency/README.md)). The
+> [latency experiments](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/experiments/adr-0003-latency/README.md)). The
 > checker must replay into the imported trusted library, not an empty environment.
 
 ## Recommended stack

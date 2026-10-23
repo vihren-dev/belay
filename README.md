@@ -1,25 +1,25 @@
-# SQLite migration verifier
+# Belay: a Lean model of SQLite
 
-A Lean verifier for preserving business information across SQLite migrations. The engineering
-contract is in [the brief](sqlite-migration-verifier-engineering-brief.md), with
-acceptance tracked in [the Step 1 task](plans/20260924-step-1-schema-extensions.task.md).
-The CLI verifies the documented schema-extension subset. The owner accepted the
-source-backed Atuin case study and preservation contract on 2026-09-25; see the
-[acceptance review](docs/atuin-pilot-review.md). Native release artifacts pass
-cross-platform validation and installed-package tests before publication.
+A semantic model of SQLite as a Lean library. Lean developers state and prove facts about
+SQLite databases, statements and queries. The conformance evidence checks that the model
+behaves as native SQLite does.
 
-## Install
+The repository has three parts:
 
-Native archives support Apple Silicon macOS and x86_64 Linux. They include the
-pinned Lean runtime and an offline Nix cache; Nix must already be installed.
-Follow [the installation guide](docs/install.md), then try the bundled examples.
-[GitHub Releases](https://github.com/vihren-dev/sqlite-verifier/releases) publishes
-archives only after both platform checks and extracted-installation tests pass.
-Prereleases are engineering previews; product acceptance is recorded separately.
-The first stable release is [v0.1.1](https://github.com/vihren-dev/sqlite-verifier/releases/tag/v0.1.1),
-published on 2026-09-28 after complete source and installed-runtime checks passed
-twice on both platforms. Step 1 is complete; see the
-[CI measurements](docs/ci-performance.md) for the measured runtime improvements.
+- **The model**, `packages/belay-sqlite-model` (`Belay.Sqlite.Model`): SQLite's statement
+  syntax, its resolution against a catalog and the execution semantics. It imports only
+  Lean's `Init`. The [checked Lean API reference](docs/api-reference.md) documents it.
+- **The conformance evidence**: the frozen corpora under `conformance/`, which the
+  conformance runner predicts with the model and the pinned native SQLite checks. The
+  verdict job grades the claims in `judge/claims.json` against them; see
+  [conformance coverage](docs/coverage.md) and [CI](docs/ci.md).
+- **The surface**, `packages/belay` (`Belay`, with `Belay.Sqlite`): the library that Lean
+  developers import. It reads SQL text with the SQLite parser while a file elaborates; see
+  [its README](packages/belay/README.md).
+
+The model supports the statements and the data of the
+[semantic subset](docs/semantic-subset.md), under the
+[execution profiles](docs/execution-profile.md).
 
 ## Development
 
@@ -32,13 +32,15 @@ nix develop path:./nix
 just test
 ```
 
-Alternatively, install direnv with Nix-flake integration and run `direnv allow`.
-The committed `nix/flake.lock` fixes Nix dependencies. The small `nix/`
-directory is the complete environment source; always use the explicit `path:`
-reference, including from non-Git Jujutsu workspaces. See the
+Alternatively, install direnv and run `direnv allow`. Then `.envrc` loads
+`shell.nix`, which has the same packages and also the pinned Lean toolchain for
+local Lean builds; nix-direnv only caches it. The committed `nix/flake.lock`
+fixes Nix dependencies for both shells. The small `nix/` directory is the
+complete source of the flake shell; always use the explicit `path:` reference,
+including from non-Git Jujutsu workspaces. See the
 [resource and cleanup policy](sqlite-migration-verifier-team-guide.md#development-resources).
 The resource check rejects less than 10 GiB free before expensive work. `just build`
-builds the complete runtime through Nix, including the exact official Lean release
+builds the conformance runtime through Nix, including the exact official Lean release
 in `lean-toolchain`. Initial dependency fetching needs network access; unchanged
 builds reuse Nix outputs. No Elan or Mathlib is required.
 
@@ -49,77 +51,14 @@ and readline disabled. `nix build path:./nix#sqlite` builds that engine independ
 SQLite's compile settings can be inspected with `sqlite3 :memory: 'PRAGMA compile_options;'`.
 These native checks are evidence, not a proof of correspondence with SQLite C.
 
-`just build` compiles the upstream-derived parser, public Lean library, and
-independent kernel checker.
-`just test` builds prerequisites, reuses independently cached Nix test targets,
+`just build` builds the model, the conformance runner and the upstream-derived parser
+library. `just test` builds prerequisites, reuses independently cached Nix test targets,
 and runs the remaining source tests through pytest. Its conformance tier replays
 all authored and synthetic cases plus a stable upstream sample.
-`just test-full` also runs the complete model suite; CI and packaging use it.
-`just test-atuin` selects only the cached Atuin target. `just test-nix` checks the
-Nix build and installer infrastructure; `just package` runs it.
-
-Agents can also prepare proofs separately and submit an exported bundle:
-`migration-check prepare` builds and exports, and `migration-check verify-bundle`
-checks the bundle without compiling candidate source. See the
-[data path guide](docs/data-path.md).
-
-Lean source executes with your permissions. The verifier assumes trusted execution
-and does not sandbox tactics; see the [trust boundary](docs/trust-boundary.md).
-Commands run under explicit timeouts and are also the entry points for CI.
-Test scopes and limitations are described in [conformance coverage](docs/coverage.md).
-`just package` runs the shared checks, builds a native runtime archive in `dist/`,
-and tests its actual installed entrypoint before retaining a source snapshot.
-See [CI and release procedure](docs/ci.md).
-
-## Verify one migration
-
-The [checked Lean API reference](docs/api-reference.md) includes the public
-library walkthrough. Read the [CLI input and proof roles](docs/api-reference.md#cli-inputs-and-proof-roles)
-and run `bin/migration-check verify --help` for the required paths and options.
-
-Inside the development environment, after `just build`:
-
-```sh
-bin/migration-check verify --profile 3.51.0 \
-  --schema examples/approved/schema.sql \
-  --requirements examples/approved/Requirements.lean \
-  --interpretation examples/approved/Interpretation.lean \
-  --migration examples/add_column_then_table/migration.sql \
-  --next-interpretation examples/add_column_then_table/NextInterpretation.lean \
-  --proofs examples/add_column_then_table/Proofs.lean \
-  --format json
-```
-
-The approved requirements define the logical contract. The approved current
-interpretation defines the meaning of starting data and which starting databases
-are admitted. The migration, next interpretation and proofs are candidate inputs.
-The verification contract covers every model-conforming starting database that
-satisfies the approved admission condition under the selected profile and schema.
-
-Exit zero means the exact generated verification contract passed independent
-kernel replay and dependency checking. Human-format success is silent; JSON
-reports `VERIFIED`. `VIOLATED` requires a checked negative theorem. Missing,
-rejected, or unfinished proofs are `UNVERIFIED`; unsupported SQL/configuration
-and invalid input have separate diagnostics.
-
-`--artifacts NEW_DIRECTORY` exports `SqlInputs.lean`, the target convenience
-module `Generated.lean`, and exact input/dependency hashes. It does not create an
-approval or a certificate. Once reviewed and protected by the caller,
-`--approved-baseline inputs.json` requires the same approved Lean source closure,
-including transitive dependencies. The baseline compares `approved/` Lean hashes and, when included, the
-`schema.sql` hash; all shipped invoice and Atuin baselines protect both. Migration SQL and profile
-are bound to each invocation separately. Protect the
-baseline, trusted verifier installation, and any additional desired inputs in
-the calling project/CI.
-
-The [Atuin example](examples/atuin/README.md) protects the pre-migration history
-model while allowing the new schema to evolve. Its contract does not prescribe
-the new shell field or verify SQLx bookkeeping.
-
-Start with the [examples](examples/README.md), [semantic subset](docs/semantic-subset.md),
-[fixed execution profile](docs/execution-profile.md), and
-[trust boundary](docs/trust-boundary.md). General logical predicates and
-interpretations remain available beneath the named-projection helpers.
+`just test-full` also runs the complete model suite; CI uses it. `just test-nix` checks
+the Nix build infrastructure. `just verdict` grades the development claims as the
+verdict job does. Commands run under explicit timeouts and are also the entry points
+for CI.
 
 ## License
 

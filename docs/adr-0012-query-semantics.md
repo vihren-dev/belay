@@ -447,6 +447,13 @@ filter of 3b, its change count and its `RETURNING` rows. Items 4 to 6 do not cha
    that SQLite can reach. A property of the databases that the model's own statements
    can reach (for example, no REAL value in an INTEGER column) must never be used to
    admit a database, so the model defines no such notion.
+
+   Amended 2026-10-22 ([ADR 0022](adr-0022-database-validity.md)): no preservation theorem
+   exists yet; ADR 0022 plans one theorem for each fact. The invariant of this decision becomes
+   `Database.Admitted`, and stays the notion that admits a database. The new
+   `Database.Valid` adds the truth of the declared constraints. It is SQLite's guarantee for
+   its own statements, not a property of the model's statements, and it admits no database: a
+   claim states it as a hypothesis.
 6. **`DELETE`.** Decided on 2026-10-14: its own slice, 3c, right after 3b. It
    reuses the filter of 3b, keeps 3b focused, and makes migrations that delete
    rows, where application data is lost, verifiable early.

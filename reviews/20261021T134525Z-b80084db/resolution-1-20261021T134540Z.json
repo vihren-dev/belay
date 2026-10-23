@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-21T13:45:40+00:00",
+  "finding": "20261021T134525Z-b80084db#1",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "shell.nix is a trial for ADR 0020, which is PROPOSED. D6 of the ADR plans this test (a requires_nix test that builds the runner in the shell and checks that it starts); it comes with the implementation."
+}

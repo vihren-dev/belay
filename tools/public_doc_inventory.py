@@ -64,7 +64,7 @@ def main() -> int:
     """Accept an explicit source directory, imported entry point, compiler and retained report path."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path.cwd())
-    parser.add_argument("--entry", default="SqliteVerifier")
+    parser.add_argument("--entry", default="Belay.Sqlite.Model")
     parser.add_argument("--lean", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--tools", type=Path, required=True, help="Built packages/public-doc-tools package")

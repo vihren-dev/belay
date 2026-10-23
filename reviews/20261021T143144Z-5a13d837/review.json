@@ -1,0 +1,99 @@
+{
+  "caller": "claude",
+  "commit": "5a13d837ddd81802e923b1a01ffb6f2f73745f78",
+  "date": "2026-10-21T14:31:44+00:00",
+  "exit": 1,
+  "files": [
+    "build-support/default.nix",
+    "build-support/lean-package.nix",
+    "build-support/sources.nix",
+    "build-support/tests.nix",
+    "packages/belay/Belay/Sqlite/Grammar.lean",
+    "packages/belay/Belay/Sqlite/Parse.lean",
+    "packages/belay/Belay/Sqlite/ParseCommand.lean",
+    "packages/belay/Belay/Sqlite/ParseTree.lean",
+    "packages/belay/Belay/Sqlite/ParserLibrary.lean",
+    "packages/belay/Belay/Sqlite.lean",
+    "packages/belay/Belay.lean",
+    "packages/belay/README.md",
+    "packages/belay/c/parser_shim.c",
+    "packages/belay/lake-manifest.json",
+    "packages/belay/lakefile.lean",
+    "packages/belay/lean-toolchain",
+    "plans/20261021-surface-s1.status.md",
+    "plans/20261021-surface-s1.task.md",
+    "reviews/20261021T141740Z-4272a2ce/review.json",
+    "tests/nix_suites.json",
+    "tests/surface/Accepted.lean",
+    "tests/surface/Rejected.lean",
+    "tests/surface_layers_test.py",
+    "tests/surface_parser_test.py",
+    "tests/test_lean_categories.py"
+  ],
+  "findings": [
+    {
+      "id": "20261021T143144Z-5a13d837#1",
+      "line": 17,
+      "path": "plans/20261021-surface-s1.status.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The status claims correct reporting of valid SQL commands, but `EXPLAIN SELECT 1;` and `EXPLAIN QUERY PLAN SELECT 1;` each report zero commands because `commandCount` excludes three-child `ecmd` nodes. Fix: record this limitation and its correction as remaining work."
+    },
+    {
+      "id": "20261021T143144Z-5a13d837#2",
+      "line": 33,
+      "path": "packages/belay/Belay/Sqlite/Grammar.lean",
+      "rule": "R10",
+      "severity": "must",
+      "text": "The grammar-selection errors reach users through `parseSql` without explaining how to recover. Fix: tell users to select a supported release or rebuild the parser library with the required dialect."
+    },
+    {
+      "id": "20261021T143144Z-5a13d837#3",
+      "line": 83,
+      "path": "tests/surface_layers_test.py",
+      "rule": "R1",
+      "severity": "should",
+      "text": "The permitted Nix references and the exception for `tests.nix` are literals inside the checking mechanism. Fix: move this policy into named definitions with docstrings."
+    },
+    {
+      "id": "20261021T143144Z-5a13d837#4",
+      "line": 10,
+      "path": "packages/belay/c/parser_shim.c",
+      "rule": "R9",
+      "severity": "should",
+      "text": "The four new functions have no individual documentation explaining their purpose and ownership responsibilities. Fix: document each function, including how it transfers or releases allocated values."
+    },
+    {
+      "id": "20261021T143144Z-5a13d837#5",
+      "line": 1,
+      "path": "tests/surface/Accepted.lean",
+      "rule": "R9",
+      "severity": "should",
+      "text": "The new `Accepted.lean` and `Rejected.lean` modules lack docstrings explaining their test purpose. Fix: add module docstrings identifying the `#sql_parse` behavior each fixture checks."
+    }
+  ],
+  "id": "20261021T143144Z-5a13d837",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "0386162b1d72",
+    "R7": "9700703240a5",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

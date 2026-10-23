@@ -1,7 +1,6 @@
 """Resource failures must happen before snapshots, toolchain installs or package copies."""
 
 from pathlib import Path
-import sys
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -11,17 +10,6 @@ from tools.check_resources import (MAX_ENVIRONMENT_BYTES, MIN_FREE_BYTES, check_
                                    check_resources, existing_parent)
 
 pytestmark = [pytest.mark.unit, pytest.mark.environment]
-
-
-def test_package_preflight_precedes_external_work() -> None:
-    """A direct archive invocation must stop before inspecting or copying runtimes."""
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'packaging'))
-    import build_runtime
-    with patch.object(build_runtime, 'check_resources', side_effect=ValueError('capacity')), \
-         patch.object(build_runtime, 'run') as run:
-        with pytest.raises(ValueError, match='capacity'):
-            build_runtime.build(Path(sys.executable))
-        run.assert_not_called()
 
 
 def test_separate_temporary_filesystem() -> None:
@@ -47,14 +35,16 @@ def test_separate_temporary_filesystem() -> None:
 
 
 def test_environment_and_capacity_boundaries(tmp_path: Path) -> None:
-    """Accept small pins, reject oversized/symlinked inputs and low-space destinations."""
+    """`check_environment` accepts the files of `ENVIRONMENT_FILES` and rejects oversized or
+    symlinked inputs, and `check_resources` rejects low-space destinations."""
     environment = tmp_path / 'nix'
     environment.mkdir()
     flake = environment / 'flake.nix'
     flake.write_text('{}')
     (environment / 'flake.lock').write_text('{}')
     (environment / 'sqlite.nix').write_text('{}')
-    assert check_environment(tmp_path) == 6
+    (environment / 'dev-shell.nix').write_text('{}')
+    assert check_environment(tmp_path) == 8
     with patch('tools.check_resources.shutil.disk_usage', return_value=SimpleNamespace(free=MIN_FREE_BYTES)):
         check_resources(tmp_path)
     with patch('tools.check_resources.shutil.disk_usage', return_value=SimpleNamespace(free=MIN_FREE_BYTES - 1)):

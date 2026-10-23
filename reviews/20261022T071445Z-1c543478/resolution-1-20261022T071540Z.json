@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-22T07:15:40+00:00",
+  "finding": "20261022T071445Z-1c543478#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the context and D4 limit checkedWrite and tableReady to INSERT, UPDATE and upsert, and say why DELETE keeps the constraint atoms"
+}

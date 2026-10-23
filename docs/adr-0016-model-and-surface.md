@@ -2,7 +2,8 @@
 
 Date: 2026-10-20. Revised 2026-10-20, after ADR 0015 was merged and the rule for
 supporting code (`AGENTS.md`, "Goal, core and supporting code") was adopted; the owner
-decided the names the same day (D3). Status: PROPOSED.
+decided the names the same day (D3). Status: IMPLEMENTED in pull request #209: the move of D3
+and the surface package of D1 came with ADR 0017's S1, as "Order" says.
 Implementation: when the surface ADR's first prototype starts (see "Order").
 Audience: designers and reviewers.
 Related: [ADR 0006](adr-0006-model-boundary-and-execution-levels.md) (the model
@@ -85,6 +86,21 @@ The surface's suite holds a test of these rules, extended from
 repository, for the first two rules, and the packages that the installed runtime, the
 gate and the conformance runtime are built from (`build-support/`), for the third.
 
+Amended 2026-10-21 (ADR 0017, S1): the parser binding and the translation of SQL text to the
+model's syntax are a package of their own below the surface, `belaySqliteText` in
+`packages/belay-sqlite-text`, because the CLI and the conformance harness use the translation
+that the elaborator uses. The surface requires and imports it. It imports only the model's roots
+and Lean's libraries, and nothing below it imports it: not the model, the verifier packages or
+the conformance runner. The installed runtime and the conformance runtime contain its translation
+program and the parser library that the program links; they still do not contain the surface. The
+kernel gate contains neither. The D2 test checks these rules.
+
+Amended 2026-10-21 ([ADR 0021](adr-0021-remove-the-verifier-product.md)): the verifier packages,
+the CLI, the installed runtime and the kernel gate were removed. The rules that name them now
+hold for what remains: nothing below the surface imports it (the model, the text package and the
+conformance runner), and the conformance runtime, which is the judge's subject, does not contain
+the surface. `belaySqliteText` serves the conformance harness only.
+
 ### D3. The names
 
 Users import `Belay`. Everything specific to one engine lives under that engine's name,
@@ -130,6 +146,11 @@ its first prototype (the guide's open questions 8, 9 and 12 are the candidates):
 2. The change of the first prototype creates the surface package of D1, with the test
    of D2.
 
+Amended 2026-10-21: a script makes the move of D3, so the move can be prepared as a local
+commit while other model work is still in review, on top of it. Its pull request opens only
+when no model pull request below it is open, and the script then runs again on that base,
+so that no open branch has to merge the move.
+
 ## Consequences
 
 - **No preparation without a user of it.** The model, the verifier and CI stay as they
@@ -142,8 +163,8 @@ its first prototype (the guide's open questions 8, 9 and 12 are the candidates):
   modules by name until a trigger in the table needs more.
 - **The move costs one large diff.** About 220 Lean files, the Nix build, the
   conformance tools and their mutant anchors, the tests and the documentation change
-  together. Open branches conflict with it, so it waits for a time with no model work in
-  flight. The runtime's model root gets a new path, so Lake caches from before the move
+  together. Open branches conflict with it, so its pull request waits for a time with no
+  model work in flight (see the amendment in "Order"). The runtime's model root gets a new path, so Lake caches from before the move
   are not reused.
 
 ## Alternatives considered

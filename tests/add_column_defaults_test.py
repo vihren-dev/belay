@@ -11,10 +11,10 @@ from conformance.native_connection import Connection, library_path
 from conformance.native_library import library_binary, load_library
 from conformance.native_record import record_sql
 from conformance.native_replay import prepare
-from conformance.record_parser import runtime_library
+from conformance.sql_text import runtime_translator
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kernel,
-              pytest.mark.requires_lean, pytest.mark.requires_native("parser-library", "sqlite3", "sqlite3-3.46.0")]
+              pytest.mark.requires_lean, pytest.mark.requires_native("translation-program", "sqlite3", "sqlite3-3.46.0")]
 
 LITERALS = ["NULL", "7", "1.50", "'7'", "X'00ff'", "TRUE", "[true]",
             "-9223372036854775808", "0x1ffffffffffffffff", "-0x1ffffffffffffffff"]
@@ -53,11 +53,11 @@ def test_added_defaults_match_native(version: str, runtime_root: Path, tmp_path:
     finally:
         connection.close()
     cases = [case for affinity in AFFINITIES for case in added_cases(affinity)]
-    library = runtime_library(runtime_root)
+    translator = runtime_translator(runtime_root)
     prepared = []
     for index, (setup, sql) in enumerate(cases):
         record = record_sql(setup, sql, name=f"add-default-{index}", library=binary, outputs=True, profile=profile)
-        case, error = prepare(record, library)
+        case, error = prepare(record, translator)
         assert case is not None, (sql, error)
         prepared.append(case)
     answers = compiled_many(prepared, runtime_root, emit_lean=True)

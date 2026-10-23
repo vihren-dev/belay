@@ -9,6 +9,9 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 MIN_FREE_BYTES = 10 * 1024 ** 3
 MAX_ENVIRONMENT_BYTES = 1024 ** 2
+ENVIRONMENT_FILES = frozenset({'flake.nix', 'flake.lock', 'sqlite.nix', 'dev-shell.nix'})
+"""The files of `nix/`, the source of the flake dev shell. A small fixed set keeps the snapshot
+that `nix develop path:./nix` copies into the store small, and a change of one of them visible."""
 
 
 def check_environment(root: Path) -> int:
@@ -16,18 +19,18 @@ def check_environment(root: Path) -> int:
     directory = root / 'nix'
     if directory.is_symlink() or not directory.is_dir():
         raise ValueError(f'Environment must be a real directory: {directory}')
-    expected = {'flake.nix', 'flake.lock', 'sqlite.nix'}
+    expected = ENVIRONMENT_FILES
     size = 0
     found: set[str] = set()
     for path in directory.iterdir():
         if path.name not in expected or path.is_symlink() or not path.is_file():
-            raise ValueError(f'Unexpected environment input: {path}; only regular flake.nix/flake.lock/sqlite.nix are allowed')
+            raise ValueError(f'Unexpected environment input: {path}; only regular flake.nix/flake.lock/sqlite.nix/dev-shell.nix are allowed')
         found.add(path.name)
         size += path.stat().st_size
         if size > MAX_ENVIRONMENT_BYTES:
             raise ValueError('Environment inputs exceed 1 MiB; keep generated artifacts outside nix/')
     if found != expected:
-        raise ValueError(f'Environment requires flake.nix, flake.lock and sqlite.nix in {directory}')
+        raise ValueError(f'Environment requires flake.nix, flake.lock, sqlite.nix and dev-shell.nix in {directory}')
     return size
 
 

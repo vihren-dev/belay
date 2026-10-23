@@ -1,11 +1,11 @@
-import Belay.Sqlite.SqlExecution
+import Belay.Sqlite.Model.SqlExecution
 
 /-! ADR 0004 observations follow production transitions, including open transactions.
 An observation holds the database itself, with its catalog, so the schema after each
 statement comes from execution. This module neither executes SQLite nor asserts native
 correspondence. -/
 
-namespace Belay.Sqlite.Conformance
+namespace Belay.Sqlite.Model.Conformance
 
 /-- Insert a row in physical order using structural recursion the kernel reduces. -/
 def insertByRowid (row : Row) : List Row → List Row
@@ -44,4 +44,4 @@ def observeOutcome (outcome : Outcome) : Observation :=
 def observeState (state : SqlState) : Observation :=
   observeOutcome (state.finish (.success state.database))
 
-end Belay.Sqlite.Conformance
+end Belay.Sqlite.Model.Conformance

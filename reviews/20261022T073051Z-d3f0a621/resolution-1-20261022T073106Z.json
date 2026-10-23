@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-22T07:31:06+00:00",
+  "finding": "20261022T073051Z-d3f0a621#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "the partial index whose filter is false for one row is a case that holds, beside two NULLs in a UNIQUE column"
+}

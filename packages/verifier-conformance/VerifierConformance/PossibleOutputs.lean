@@ -1,5 +1,5 @@
 import VerifierConformance.Outputs
-import Belay.Sqlite.PossibleResults
+import Belay.Sqlite.Model.PossibleResults
 
 set_option doc.verso true
 
@@ -7,7 +7,7 @@ set_option doc.verso true
 outputs: the rows that SQLite gave, with the rows of each tie group of the native evidence in
 normal form, must be one of the model's results ({lit}`Query.possibleResults`). -/
 
-namespace Belay.Sqlite.Conformance
+namespace Belay.Sqlite.Model.Conformance
 
 /-- The results that SQLite may give for a statement, for a query that succeeds
 ({name}`Resolved.Query.possibleOn`); none for every other statement and for a query that fails. -/
@@ -38,4 +38,4 @@ def NativeOutput.normalRows (native : NativeOutput) : List ResultRow :=
 def NativeOutput.fits (native : NativeOutput) (possible : Option (List (List ResultRow))) : Bool :=
   possible.all (·.contains native.normalRows)
 
-end Belay.Sqlite.Conformance
+end Belay.Sqlite.Model.Conformance

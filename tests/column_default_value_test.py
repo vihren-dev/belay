@@ -58,10 +58,10 @@ def test_omitted_default_values(version: str, tmp_path: Path,
         connection.close()
     expressions = ", ".join(f"⟨({expression}), {quoted_string(sql)}⟩" for sql, expression in CASES)
     affinities = ", ".join(quoted_string(affinity) for affinity in AFFINITIES)
-    source = f'''import Belay.Sqlite.Codec
-import Belay.Sqlite.Resolution.InsertCells
-import Belay.Sqlite.Resolution.ReadDefaults
-open Belay.Sqlite Lean
+    source = f'''import Belay.Sqlite.Model.Codec
+import Belay.Sqlite.Model.Resolution.InsertCells
+import Belay.Sqlite.Model.Resolution.ReadDefaults
+open Belay.Sqlite.Model Lean
 #eval do
   let inputs : List Syntax.DefaultExpression := [{expressions}]
   let tables ← [{affinities}].mapM fun affinity => inputs.mapM fun expression => do
@@ -100,11 +100,11 @@ def test_oversized_hex_default_prepare_error(version: str, negated: bool, tmp_pa
     expression = f'.numeric "{token}"'
     if negated:
         expression = f".negate ({expression})"
-    source = f'''import Belay.Sqlite.Codec
-import Belay.Sqlite.Resolution.InsertCells
-import Belay.Sqlite.Resolution.ReadDefaults
-import Belay.Sqlite.Resolution.Messages
-open Belay.Sqlite Lean
+    source = f'''import Belay.Sqlite.Model.Codec
+import Belay.Sqlite.Model.Resolution.InsertCells
+import Belay.Sqlite.Model.Resolution.ReadDefaults
+import Belay.Sqlite.Model.Resolution.Messages
+open Belay.Sqlite.Model Lean
 #eval do
   let some resolved := resolveColumnDefault (affinityOf none) ⟨({expression}), {quoted_string(sql)}⟩
     | throw (IO.userError "the model does not describe the default")

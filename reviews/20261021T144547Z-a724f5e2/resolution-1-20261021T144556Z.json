@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-21T14:45:56+00:00",
+  "finding": "20261021T144547Z-a724f5e2#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The experiments scripts are one-time measurement tools for the S1 report; no suite runs them (experiments/ is excluded from builds), so a test would be supporting code without a present problem (CLAUDE.md). The run that produced the report checked them."
+}

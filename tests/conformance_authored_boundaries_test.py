@@ -14,10 +14,10 @@ from conformance.model_check import compiled
 from conformance.native_replay import prepare
 from conformance.native_storage import CASE_BYTE_LIMIT, expanded_record, serialized, shared_record
 from conformance.requirement_coverage import resolved_ids
-from conformance.record_parser import runtime_library
+from conformance.sql_text import runtime_translator
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance,
-              pytest.mark.requires_native("sqlite3", "parser-library")]
+              pytest.mark.requires_native("sqlite3", "translation-program")]
 
 
 @pytest.fixture(scope="module")
@@ -70,7 +70,7 @@ def test_validity_boundaries_without_profile_gate(runtime_root: Path) -> None:
     for case in validity_definitions():
         record = record_sql(case.setup, case.sql, name=case.name, outputs=True,
             parameters=list(case.parameters) if case.parameters is not None else None)
-        model, answer = prepare(record, runtime_library(runtime_root))
+        model, answer = prepare(record, runtime_translator(runtime_root))
         if case.name in agreeing:
             assert model is not None, (case.name, answer)
             assert compiled(model, runtime_root)["verdict"] == "AGREE", case.name

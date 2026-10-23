@@ -64,9 +64,9 @@ task file, and each ends with users able to do more than before.
 | Slice | What a user can do after it | Guide sections |
 | --- | --- | --- |
 | S1. SQL text in Lean | Nothing new yet: the elaborator turns SQL text into the model's syntax, in the Lean process and in the editor | "Writing SQL in Lean files" (first part); open questions 8 and 9 |
-| S2. Concrete databases | Build a database with `db!`, write scripts with `sql`, run them with `db.run`, see results with `#eval` and `#sql`, and prove facts about one database with `decide`; SQL that does not parse is an error at its position, `sql!` and `db!` also report resolution errors there, and `sql` resolves when it runs | "A first example", "Values", "Databases", "Scripts", "Row order" (without `Output.oneOf`) |
-| S3. Parameters and programs | Scripts with `$x` and `:name`; programs in `do` notation with `send`, `query`, `single`; `Run` | "Parameters", "Programs" |
-| S4. Claims over every database | `Holds`, `Empty` and `Fails`; level 2 (`succeeds where`) with the lemma library | "Queries as propositions", "Level 2" |
+| S2. Concrete databases | Build a database with `db!`, write scripts with `sql`, run them with `db.run`, see results with `#eval` and `#sql`, and prove facts about one database with `decide`; SQL that does not parse is an error at its position, `sql!` and `db!` also report resolution errors there, and `sql` resolves when it runs; a `Database` carries its validity, and `Holds`, `Empty` and `Fails` hold or fail for one database by `decide` (amended 2026-10-22, D3) | "A first example", "Values", "Databases", "Scripts", "Row order", and the examples of "Queries as propositions" over one database |
+| S3. Parameters and programs | Scripts with `$x` and `:name`; programs in `do` notation with `send`, `query`, `single`; `Run`; `Env` with a clock (amended 2026-10-22, D3) | "Parameters", "Programs", "The execution environment" |
+| S4. Claims over every database | `Holds`, `Empty` and `Fails` over every database; level 2 (`succeeds where`) with the lemma library | "Queries as propositions", "Level 2" |
 | S5. Counterexamples | `#sql_check` and `sql_refute`: a search over small databases whose witness the kernel checks, shown as a script that `sqlite3` replays | "Check before you prove", "Counterexamples for any statement" |
 | S6. Triples and equivalence | Triples from `Std.Do`, `≈` and its patterns, level 3 | "Level 3"; open questions 2, 11 and 12 |
 | S7. SQL files | `sql_file`, `sql_module`, `against :=`, and the check tool | "SQL in separate files" |
@@ -99,6 +99,15 @@ the Python translation is then replaced, not kept beside it, as the repository's
 for replaced code requires; the conformance harness keeps working because it reads the
 same syntax.
 
+Amended 2026-10-21: the owner chose candidate A, the Lean port. The port and the parser binding
+move from the surface to a package below it (ADR 0016, D2, amended), and a translation program of
+that package translates for the CLI and the harness, so Python no longer loads the parser
+library. Installing the surface for Lean users, with its native library, stays with the first
+release of the surface (ADR 0016, "Deferred"). Task:
+[`plans/20261021-sql-text-package.task.md`](../plans/20261021-sql-text-package.task.md).
+Amended again 2026-10-21 ([ADR 0021](adr-0021-remove-the-verifier-product.md)): the CLI was
+removed with the verifier product, so the translation program translates for the harness only.
+
 ### D3. S2: concrete databases
 
 S2 delivers the guide's first example and its reference rows for `Value`, `Database`,
@@ -113,11 +122,63 @@ every result that SQLite may give is model work (D5). Two choices belong to its 
 `Database.Valid` as a field, as the guide describes, and how `db!` proves it for the
 database that it builds.
 
+Amended 2026-10-22 ([ADR 0022](adr-0022-database-validity.md)): `Database.Valid` becomes the
+strong notion that the guide describes, built from named facts (atoms), and today's invariant
+becomes `Database.Admitted`. In S2 the surface's `Database` is the model's, `db!` also proves
+`Database.Valid` for the database that it builds, and the guide's accessors read the atoms from
+that proof. The `Database` that carries its validity, so that a proof needs no hypothesis, waits
+for ADR 0022's theorems that the statements keep the atoms. The examples of `Output.oneOf` are
+part of S2: ADR 0018's slice 6 gave the model every result that SQLite may give.
+
+Amended again 2026-10-22 (owner decisions 3 to 5, after the measurement for the S2 task file).
+The guide's run needs model work that this decision did not name, and S2 does it:
+
+- **Outputs in the model.** The output of each statement (its rows, its number of changes and
+  its result code) is computed today only in the conformance package
+  (`VerifierConformance/Outputs.lean`, `PossibleOutputs.lean`, `primaryCode` in `Case.lean`).
+  It moves into the model, and the conformance package uses it from there. The rows of a query
+  come from `Resolved.Query.possibleOn`: one result gives `Output.rows`, in the normal form of
+  the guide, and more than one gives `Output.oneOf`.
+- **A run that continues after an error.** The model gets a run that resolves each statement
+  against the state at the time that it runs (`resolveStatement`), runs it, and continues
+  after an error, as the guide's "Scripts" section describes. A theorem states that it agrees
+  with `runSqlFrom` up to and including the first error. The native oracle stops at the first
+  error, so no corpus case shows the statements after one; that evidence is deferred (see
+  "Deferred, with their triggers").
+- **A statement that the model does not describe, found when it runs**, gives
+  `Output.unmodeled` with the model's restriction, and the run stops there: the model cannot
+  say what SQLite does next, and it never approximates (D4). `sql` does not resolve at
+  elaboration, so this is how its unmodeled statements show. The guide documents it.
+- **No clock in S2.** The guide's `Env.default` has no clock, so a statement that reads the
+  clock gives `Output.unmodeled`. `Env`, with a clock, comes with S3.
+
+Amended a third time 2026-10-22 (owner decisions 6 and 7). This replaces the first amendment's
+sentences on the surface's `Database`:
+
+- **The `Database` carries its validity in S2.** It holds a model database and its proof of
+  `Database.Valid`, and `Database.Raw` is the model database without the proof. `db!` and each
+  run decide `Database.Valid` for the database that they give, and the decision is the proof
+  ([ADR 0022](adr-0022-database-validity.md), D5, amended). So `db.notNull`, `db.check`,
+  `db.unique` and `db.rowid_unique` need no hypothesis, as the guide says. A run whose result
+  is not valid ends with `Output.unmodeled`, and its database is the one at its start. For a
+  claim over every database, the check must be proved, which ADR 0022's theorems do before S4.
+- **`Holds`, `Empty` and `Fails` for one database.** Their definitions come in S2, so the
+  examples of the guide's "Queries as propositions" over one database are proved by `decide`.
+  Their lemmas, and the claims over every database, stay in S4.
+
 ### D4. The surface never approximates
 
 SQL that the model does not describe is an elaboration error that gives the model's
 restriction and its message, at the position of the form. No slice adds a meaning that
 the model does not have. A guide example that needs model work waits for it (D5).
+
+Amended 2026-10-22 (owner decision 4): the forms differ in what they find at elaboration.
+Syntax that the translation refuses is an elaboration error for every form. `sql!` and `db!`
+also resolve at elaboration, so a statement that the model does not describe is an
+elaboration error there, at its position. `sql` only parses at elaboration: a statement that
+the model does not describe when it runs gives `Output.unmodeled` with the restriction, and
+the run stops at it (D3). Neither path gives a statement a meaning that the model does not
+have.
 
 ### D5. Model work that the surface waits for
 
@@ -132,6 +193,8 @@ part of this ADR; this ADR only names them and when the surface needs them:
 | `DISTINCT` and `HAVING` | S4 (level 2 of the unique index) | 185 cases; pain point 3 |
 | Enforced foreign keys with their actions | S6 (the rebuild that cascades) | pain point 1, the research's first-ranked failure |
 | Triggers | S8 (expand/contract) | 416 cases; pain point 2 |
+| Parameters, pragmas, compound `SELECT` and the table rebuild ([ADR 0019](adr-0019-guide-sql.md), D7) | S3: parameters (slice 1); S4: `pragma_table_info` and `EXCEPT` (slices 2 and 3); S6: `INSERT ... SELECT`, `RENAME` and `foreign_key_check` (slices 2, 4 and 5) | guide "Parameters", "Queries as propositions" and the lead example |
+| The theorems that statements keep each fact of a valid database ([ADR 0022](adr-0022-database-validity.md)) | S4: "keys unique", and runs of the bundled database over every database, whose check the theorems replace (D3, amended 2026-10-22) | guide "Databases" |
 
 Subqueries block S4, so their ADR should start before S3 ends.
 
@@ -145,6 +208,12 @@ the frozen corpora's texts, and the text of each claim shown next to its stateme
 The surface's native code, notation and automation stay outside the kernel gate and the
 judge, as ADR 0016 requires.
 
+Amended 2026-10-21: when the Python translation is gone, the harness uses the elaborator's
+translation, so the guard is the frozen corpora's predictions themselves, which the judge
+compares with native SQLite. With the kernel gate removed (ADR 0021), the trusted base is
+Lean's kernel over the model's definitions and the surface's terms; the surface's native code,
+notation and automation stay outside it and outside the judge.
+
 ## Consequences
 
 - **The first user-visible result is S2.** It is the guide's first example over today's
@@ -153,8 +222,8 @@ judge, as ADR 0016 requires.
 - **The launch examples depend on the model, not only on the surface.** Until the model
   has subqueries, a claim "over every database" can only use the SQL of the model's
   current subset, and the rebuild example waits for foreign keys.
-- **S1 replaces the Python translation.** The CLI and the harness then use the same
-  translation as the elaborator, so one translation exists, tested on the corpora.
+- **The task after S1 replaces the Python translation.** The harness then uses the
+  same translation as the elaborator (the CLI was removed by ADR 0021), so one translation exists, tested on the corpora.
 - **The guide stays the target.** Each slice's task file takes its rows of the guide and
   records what it changed; the guide's open questions are decided in the slice that
   needs them.
@@ -177,6 +246,19 @@ replaced code forbids the old path.
 Rejected: the guide's first promise is that the model never approximates, and a claim
 proved over an approximation is not a claim about SQLite.
 
+## Deferred, with their triggers
+
+Each part of the guide that a slice does not finish is listed here, with where it is picked up.
+A slice that finishes one removes it from this table, or moves it to the slice that does.
+
+| Deferred part | Why | Picked up |
+| --- | --- | --- |
+| Evidence for the statements after an error: the native oracle runs on after a failed statement, and a new corpus records such scripts | The oracle and the corpora stop at the first error; the change is a judge change (ADR 0011), with its own pull request and the owner's approval | Before S4, whose claims quantify over runs that can contain errors; earlier if a guide example depends on it |
+| `Env` with a clock, so that `CURRENT_TIMESTAMP` and `date('now')` run | S2 gives `Output.unmodeled` for a statement that reads the clock (D3, amended 2026-10-22) | S3 (D1) |
+| `random()`, `randomblob()`, `changes()`, `last_insert_rowid()` and `total_changes()`, which the guide's `Env` lists | The model resolves them as unmodeled functions; they need model work | A model ADR, before the slice whose examples use them |
+| The theorems that replace the check of a run of the bundled database, so that a claim over every database gets the facts of the run's result | S2's run checks `Database.Valid` for each concrete run (D3, amended 2026-10-22) | ADR 0022, slices 2 to 4, before S4 |
+| `pragma_table_info` and the other table-valued pragma functions, with which the guide states facts of a schema | The model resolves them as a restriction | [ADR 0019](adr-0019-guide-sql.md), slice 2 (D2), before S4, whose claims over every database need schema facts |
+
 ## Not decided here
 
 - The details of each slice after S2: its task file decides them, from the guide.
@@ -193,3 +275,16 @@ Decided on 2026-10-20:
 1. **The order of D1**, with counterexamples (S5) before triples (S6).
 2. **D5: the model work.** The next model ADR covers all of D5, starting with
    subqueries, so that no slice of the surface waits for the model.
+
+Decided on 2026-10-22, for the S2 task file:
+
+3. **Statements after an error.** S2's run continues after an error; a theorem relates it to
+   `runSqlFrom` up to the first error, and the native evidence for what follows is deferred.
+4. **Unmodeled statements at run time** give `Output.unmodeled`, which ends the run, and the
+   guide documents it.
+5. **The clock.** S2 has no clock: a statement that reads it gives `Output.unmodeled`, and
+   `Env` with a clock comes with S3.
+6. **The bundled database in S2** (D3, amended 2026-10-22; ADR 0022, owner decision 5): the
+   surface's `Database` carries its proof of `Database.Valid`, and a run checks it.
+7. **`Holds`, `Empty` and `Fails` for one database in S2**; their lemmas and the claims over
+   every database stay in S4.

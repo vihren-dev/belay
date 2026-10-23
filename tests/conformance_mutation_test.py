@@ -14,7 +14,7 @@ from conformance.record_parser import default_parser
 
 ROOT = Path(__file__).resolve().parents[1]
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kernel,
-              pytest.mark.requires_lean, pytest.mark.requires_native("parser-library", "sqlite3")]
+              pytest.mark.requires_lean, pytest.mark.requires_native("translation-program", "sqlite3")]
 
 
 def test_model_mutation(runtime_root: Path, tmp_path: Path) -> None:
@@ -25,27 +25,27 @@ def test_model_mutation(runtime_root: Path, tmp_path: Path) -> None:
     result = compiled(case, runtime_root, emit_lean=True)
     assert result["verdict"] == "AGREE"
     sources = []
-    for filename in ("packages/belay-sqlite/Belay/Sqlite/StatementStep.lean",
-                     "packages/belay-sqlite/Belay/Sqlite/SqlExecution.lean",
+    for filename in ("packages/belay-sqlite-model/Belay/Sqlite/Model/StatementStep.lean",
+                     "packages/belay-sqlite-model/Belay/Sqlite/Model/SqlExecution.lean",
                      *(f"packages/verifier-conformance/VerifierConformance/{name}.lean"
                        for name in ("Trace", "Outputs", "PossibleOutputs", "Pass", "Native", "Case"))):
         source = (ROOT / filename).read_text()
         source = "\n".join(line for line in source.splitlines() if not line.startswith("import "))
-        source = source.replace("namespace Belay.Sqlite", "namespace Belay.Sqlite.Mutant")
-        source = source.replace("end Belay.Sqlite", "end Belay.Sqlite.Mutant")
-        if filename == "packages/belay-sqlite/Belay/Sqlite/StatementStep.lean":
+        source = source.replace("namespace Belay.Sqlite.Model", "namespace Belay.Sqlite.Model.Mutant")
+        source = source.replace("end Belay.Sqlite.Model", "end Belay.Sqlite.Model.Mutant")
+        if filename == "packages/belay-sqlite-model/Belay/Sqlite/Model/StatementStep.lean":
             assert source.count("LiteralData.inserted table values") == 1
             source = source.replace("LiteralData.inserted table values", "table")
         sources.append(source)
     proof = tmp_path / "Mutant.lean"
     proof.write_text("import VerifierConformance.Case\n" + "\n".join(sources) +
-        "\nopen Belay.Sqlite Belay.Sqlite.Mutant.Conformance\n"
+        "\nopen Belay.Sqlite.Model Belay.Sqlite.Model.Mutant.Conformance\n"
         "def mutantCase : Case :=\n" + indent(result["caseLean"], "  ") + "\n"
         "theorem detected : classifyCase mutantCase = .disagree (some 1) := by decide +kernel\n"
         '#eval if decide (classifyCase mutantCase = .disagree (some 1)) then "MUTANT_DISAGREES" else "MUTANT_SURVIVED"\n'
         "#print axioms detected\n")
     checked = subprocess.run([str(runtime_root / "lean/bin/lean"), str(proof)],
-        env={**os.environ, "LEAN_PATH": os.pathsep.join(str(runtime_root / path) for path in (".lake/build/lib/lean", "packages/belay-sqlite/.lake/build/lib/lean"))},
+        env={**os.environ, "LEAN_PATH": os.pathsep.join(str(runtime_root / path) for path in (".lake/build/lib/lean", "packages/belay-sqlite-model/.lake/build/lib/lean"))},
         capture_output=True, text=True, timeout=30)
     assert checked.returncode == 0, checked.stdout + checked.stderr
     assert '"MUTANT_DISAGREES"' in checked.stdout, checked.stdout

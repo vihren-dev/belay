@@ -6,18 +6,24 @@ Sources: [#23](https://github.com/vihren-dev/sqlite-verifier/issues/23),
 [#31](https://github.com/vihren-dev/sqlite-verifier/issues/31).
 Task: [architecture decision](../plans/20261006-model-architecture.task.md).
 
+Amended 2026-10-21 ([ADR 0021](adr-0021-remove-the-verifier-product.md)): the verifier product was removed. Its requirements in this ADR
+no longer apply: the root application, the installed runtime and its runtime discovery, the
+checker and exporter programs, trusted module resolution for the gates, the offline archive and
+the installed acceptance, and the evidence that names them. The model package, its boundary, its
+codec and the semantic levels stay; their users are now the conformance runner and the surface.
+
 ## Context
 
-The [library's Lake package](../packages/sqlite-verifier/lakefile.toml) (at that time the root package) builds the model and verification
-application together. [Its public module](../packages/sqlite-verifier/SqliteVerifier.lean) imports both,
+The [library's Lake package](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/packages/sqlite-verifier/lakefile.toml) (at that time the root package) builds the model and verification
+application together. [Its public module](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/packages/sqlite-verifier/SqliteVerifier.lean) imports both,
 including demonstrations. The model's basic dependency direction is correct,
 but model lemmas in `Library`, `LiteralPreservation`, `SchemaExtension` and
 `SchemaPreservation` pull in the contract. Model validation also reaches it
 through `NullableProjection`. SQL translation and application Lean generation
 share normalized types in `sql_model.py` (replaced by ADR 0008).
 
-[Execution](../packages/belay-sqlite/Belay/Sqlite/Execution.lean) and
-[SqlExecution](../packages/belay-sqlite/Belay/Sqlite/SqlExecution.lean) dispatch through `advance`,
+[Execution](../packages/belay-sqlite-model/Belay/Sqlite/Model/Execution.lean) and
+[SqlExecution](../packages/belay-sqlite-model/Belay/Sqlite/Model/SqlExecution.lean) dispatch through `advance`,
 `literalStep` and `step`. Their catch-all cases let an added constructor escape
 an explicit domain or effect decision. Positions travel through every level,
 and data atomicity and constraints are tied to literal writes.
@@ -41,7 +47,7 @@ application modules. `Std` is excluded because the model does not use it and
 every importer, including the kernel gates, pays its import cost. A separate `Belay.Sqlite.Codec` library in the same
 package may import `Lean` and the core. The core never imports the codec.
 The codec contains the model-value/statement/profile transport currently in
-[packages/belay-sqlite/Belay/Sqlite/Codec.lean](../packages/belay-sqlite/Belay/Sqlite/Codec.lean). Construction of the application's
+[packages/belay-sqlite/Belay/Sqlite/Codec.lean](../packages/belay-sqlite-model/Belay/Sqlite/Model/Codec.lean). Construction of the application's
 `Generated` declarations stays with the application, using those codecs.
 
 | Owner | Contents |
@@ -174,7 +180,7 @@ Application edits leave the model derivation unchanged; model edits invalidate
 its dependent application and model-test outputs. Component-identity tests
 cover additions, edits, deletion and missing package inputs.
 
-[Runtime assembly](../build-support/runtime.nix) installs application artifacts
+[Runtime assembly](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/build-support/runtime.nix) installs application artifacts
 at `.lake/build/lib/lean` and model artifacts at
 `packages/belay-sqlite/.lake/build/lib/lean`. Keep the model package configuration
 and relative dependency layout available in the installed source snapshot.
@@ -200,13 +206,18 @@ comparison and kernel replay; the axiom policy and independently reconstructed
 verification target retain their meaning. The codec remains transport, not a
 proof oracle. Trust-relevant implementation changes need final owner review.
 
-The [offline archive](../packaging/build_runtime.py) exports the entire Nix
+The [offline archive](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/packaging/build_runtime.py) exports the entire Nix
 closure containing both package outputs. Installed acceptance runs from an
 unrelated directory with poisoned ambient Python/Lean paths: import core model,
 codec and application modules from installed roots; compile a neutral consumer;
 and run verification/preparation/bundle checking with the existing positive,
 checked-refutation and wrong-SQL results. The archive must provide those paths
 without source checkout access, downloads or a model-specific installation step.
+
+Amended 2026-10-21 ([ADR 0021](adr-0021-remove-the-verifier-product.md)): the runtime assembly, runtime discovery, trusted module
+resolution and the offline archive of this section were removed with the verifier product. The
+paragraphs above about them are the record of the first implementation. The model package's
+isolated build, its relative path dependency and its component identities still apply.
 
 ## Implementation acceptance and consequences
 

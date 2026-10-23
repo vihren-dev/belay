@@ -65,7 +65,7 @@ agreed. The lost-row negative check now rejects a proof of the shared predicate.
 Imported `alter3` fixtures and their expectations are unchanged.
 
 `conformance/resolve_mutants.py` checks that these cases test each rule of name
-resolution (ADR 0008). Each mutant is a copy of the `belay-sqlite` and
+resolution (ADR 0008). Each mutant is a copy of the `belay-sqlite-model` and
 `verifier-conformance` packages with one change, such as folding non-ASCII
 letters, keeping the catalog after ROLLBACK, a constant column limit of 2,000, or
 one removed prepare-error condition. Lake builds only the import closure of

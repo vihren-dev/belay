@@ -2,16 +2,18 @@
 
 These tests check the library that `build-support/parser-library.nix` builds from
 `parser/library*.c` and `parser/dialects.json`: its metadata, its grammar selection in
-one process, and its memory safety under the sanitizers.
+one process, the status and the byte spans of its documents in each grammar, and its memory
+safety under the sanitizers.
 """
 
+import json
 import os
 from pathlib import Path
 import sys
 
 import pytest
 
-from tests.parser_inputs import RAISE_EXPRESSION
+from tests.parser_inputs import INVALID, OVERSIZED, RAISE_EXPRESSION, UNICODE_SPANS, VALID
 from tests.parser_library_inputs import read_records, write_records
 from tests.parser_library_support import Build, Result, default_dialects, metadata, parse_all, parsed_status
 
@@ -55,6 +57,41 @@ def test_one_process_parses_with_each_grammar(build: Build, tmp_path: Path) -> N
     for version, [result] in zip(versions, results):
         assert parsed_status(result) == ("PARSED" if RAISE_ACCEPTED[version] else "INPUT_ERROR"), (version, result)
     assert results[-1] == [Result(1, b"")]
+
+
+def checked_document(result: Result, grammar: str, sql: bytes) -> dict[str, object]:
+    """The document of one parse; a parsed document names the grammar, its root is the `input`
+    production, and each node's span is inside the text with children that exist."""
+    assert result.code == 0, (grammar, sql[:200], result)
+    document: dict[str, object] = json.loads(result.document)
+    if document["status"] == "PARSED":
+        nodes = document["nodes"]
+        assert document["grammar"] == grammar and isinstance(nodes, list)
+        for node in nodes:
+            assert 0 <= node["start"] <= node["end"] <= len(sql), node
+            assert all(0 <= child < len(nodes) for child in node["children"])
+        assert nodes[document["root"]]["symbol"] == "input"  # type: ignore[index]
+    return document
+
+
+def test_each_grammar_gives_each_input_its_status_and_spans(build: Build, tmp_path: Path) -> None:
+    """In every grammar, each valid script parses with spans inside the text, each invalid one
+    gives `INPUT_ERROR`, an oversized text gives `RESOURCE_LIMIT`, and quoted names with
+    multi-byte characters keep their exact byte spans, the same in a second parse."""
+    dialects = default_dialects(metadata(build, tmp_path))
+    texts = [sql for _, sql in VALID] + [sql for _, sql in INVALID] + [OVERSIZED, UNICODE_SPANS, UNICODE_SPANS]
+    expected = ["PARSED"] * len(VALID) + ["INPUT_ERROR"] * len(INVALID) + ["RESOURCE_LIMIT", "PARSED", "PARSED"]
+    inputs = tmp_path / "inputs"
+    write_records(inputs, texts)
+    grammars = list(dialects.values())
+    for grammar, results in zip(grammars, parse_all(build, inputs, grammars, tmp_path), strict=True):
+        documents = [checked_document(result, grammar, sql) for result, sql in zip(results, texts, strict=True)]
+        assert [document["status"] for document in documents] == expected, grammar
+        unicode, again = documents[-2:]
+        assert unicode == again
+        quoted = [UNICODE_SPANS[node["start"]:node["end"]] for node in unicode["nodes"]  # type: ignore[union-attr]
+                  if node["symbol"] == "ID"]
+        assert '"café"'.encode() in quoted and '"💡"'.encode() in quoted, quoted
 
 
 @pytest.mark.skipif(not sys.platform.startswith("linux"), reason="the sanitizer job runs on Linux amd64 only")

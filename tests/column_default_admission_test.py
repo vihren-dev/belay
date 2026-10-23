@@ -8,10 +8,10 @@ import pytest
 from conformance.authored_queries import QueryCase, records
 from conformance.model_check import compiled_many, prove, prove_all
 from conformance.native_replay import prepare
-from conformance.record_parser import runtime_library
+from conformance.sql_text import runtime_translator
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kernel,
-              pytest.mark.requires_lean, pytest.mark.requires_native("parser-library", "sqlite3")]
+              pytest.mark.requires_lean, pytest.mark.requires_native("translation-program", "sqlite3")]
 
 LITERALS = ["NULL", "7", "1.5", "'7'", "'λ'", "X'00ff'", "-9223372036854775808", "TRUE", '"true"', "x'00FF'", "- 7", "[true]", "`true`"]
 """Default syntax covers each storage class, a signed boundary and quoted boolean spelling."""
@@ -45,10 +45,10 @@ def test_literal_catalog_defaults(runtime_root: Path, tmp_path: Path) -> None:
     """Catalog admission and INSERT agree with native rows, affinity conversions and NOT NULL
     failures, for each affinity."""
     cases = [case for affinity in AFFINITIES for case in default_cases(affinity)]
-    library = runtime_library(runtime_root)
+    translator = runtime_translator(runtime_root)
     prepared = []
     for record in records(cases, part="column-defaults"):
-        case, error = prepare(record, library)
+        case, error = prepare(record, translator)
         assert case is not None, (record["name"], error)
         prepared.append(case)
     answers = compiled_many(prepared, runtime_root, emit_lean=True)
@@ -63,7 +63,7 @@ def test_changed_default_spelling_is_detected(runtime_root: Path, tmp_path: Path
     definition = QueryCase("default-spelling-mutation", "CREATE TABLE t(v BLOB DEFAULT X'00ff');",
                            "SELECT v FROM t;", (), ("default", "mutation"))
     record = next(iter(records([definition], part="column-defaults")))
-    case, error = prepare(record, runtime_library(runtime_root))
+    case, error = prepare(record, runtime_translator(runtime_root))
     assert case is not None, error
     changed = deepcopy(case)
     changed["schema"][0]["createTable"]["columns"][0]["constraints"][0]["default"]["sourceText"] = "x'00FF'"

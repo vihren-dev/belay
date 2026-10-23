@@ -1,4 +1,5 @@
-# Shared entry points. Enter nix develop path:./nix once for a batch of checks.
+# Shared entry points. direnv loads the development shell (.envrc, shell.nix) when you change
+# into the repository; outside direnv, enter `nix develop path:./nix` once for a batch of checks.
 #
 # `timeout --foreground` keeps nix-build in the caller's process group, so a caller that kills
 # the group on its deadline (tests/runtime_support.py) stops nix-build too. Nix builds run in
@@ -17,26 +18,18 @@ default:
 resources:
     python3 tools/check_resources.py
 
-# Prepare the pinned runtime through the same Nix build used by tests and releases.
+# Prepare the pinned conformance runtime through the same Nix build that the tests use.
 setup: build
 
-# Build the complete runtime and expose the existing development paths.
-build: resources
-    mkdir -p build .lake
-    timeout --foreground 900 nix-build build-support/default.nix -A runtime --out-link build/runtime --extra-experimental-features 'nix-command flakes'
-    rm -rf .lake/build packages/belay-sqlite/.lake/build
-    mkdir -p packages/belay-sqlite/.lake
-    ln -sfn ../build/runtime/.lake/build .lake/build
-    ln -sfn ../../../build/runtime/packages/belay-sqlite/.lake/build packages/belay-sqlite/.lake/build
-    ln -sfn build/runtime/lean lean
-    ln -sfn build/runtime/lib lib
+# Build the conformance runtime at build/conformance, the default runtime root of the test recipes.
+build: resources conformance-build
 
 # Run an explicitly selected scenario without rebuilding its prerequisites.
 [positional-arguments]
 test-cases *args:
-    BELAY_TEST_CACHE="${BELAY_TEST_CACHE:-$PWD/build/lake-test-cache}" python3 -m pytest --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD}" "$@"
+    python3 -m pytest --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD/build/conformance}" "$@"
 
-# Build the test-only compiled model without adding commands to the shipped runtime.
+# Build the conformance runtime: the toolchain, the model, the conformance runner and the parser library.
 conformance-build:
     mkdir -p build
     timeout --foreground 900 nix-build build-support/default.nix -A conformance --out-link build/conformance --extra-experimental-features 'nix-command flakes'
@@ -59,13 +52,13 @@ test-list *args:
 
 # Check pinned tools through the same scenario interface.
 smoke:
-    timeout --foreground 15 python3 -m pytest tests/test_toolchain_smoke.py --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD}"
+    timeout --foreground 15 python3 -m pytest tests/test_toolchain_smoke.py --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD/build/conformance}"
 
 # Fresh development replay includes every authored/synthetic case and a stable upstream sample.
 test: build documentation-inventory test-source
     timeout --foreground {{suite_build_limit}} nix-build build-support/default.nix -A developmentTestReports --out-link build/nix-tests --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
-# CI and package checks retain all full model, kernel and historical evidence checks.
+# CI runs all full model and historical evidence checks.
 test-full: build documentation-inventory test-source
     timeout --foreground {{suite_build_limit}} nix-build build-support/default.nix -A testReports --out-link build/nix-tests-full --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
 
@@ -76,7 +69,7 @@ documentation-inventory: resources
 
 # Test ownership is shared with Nix; all source-owned checks run on the host.
 test-source:
-    timeout --foreground 600 python3 -u -m pytest -v tests -m "not requires_nix" --source-checks --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD}" --junitxml build/test-results/source.xml
+    timeout --foreground 600 python3 -u -m pytest -v tests -m "not requires_nix" --source-checks --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD/build/conformance}" --junitxml build/test-results/source.xml
 
 # Review a commit (default: @-) with the other agent tool against docs/review-checklist.md (REVIEWER= overrides).
 [positional-arguments]
@@ -97,6 +90,27 @@ restriction-costs:
     timeout --foreground 1800 nix-build integrity/judge.nix -A predictions --out-link build/predictions --extra-experimental-features 'nix-command flakes' >&2
     python3 -m conformance.restriction_costs --predictions build/predictions
 
+# Build the Lean packages incrementally with Lake in the shell of shell.nix: the targets that model work can break.
+dev-build: _dev-shell-warning
+    cd packages/belay-sqlite-model && lake build Belay.Sqlite.Model Belay.Sqlite.Model.Codec
+    cd packages/belay-sqlite-text && lake build BelaySqliteText BelaySqliteText:shared parserShim:shared belay-sqlite-translate
+    cd packages/verifier-conformance && lake build conformance-runner
+    cd packages/belay && lake build Belay Belay:shared
+
+# Run the judge with locally built programs over all claimed corpora or the named ones; not evidence, `just verdict` decides.
+[positional-arguments]
+dev-verdict *corpora: _dev-shell-warning
+    cd packages/belay-sqlite-text && lake build belay-sqlite-translate
+    cd packages/verifier-conformance && lake build conformance-runner
+    mkdir -p build/dev/runtime/.lake/build/bin
+    cp -f packages/belay-sqlite-text/.lake/build/bin/belay-sqlite-translate packages/verifier-conformance/.lake/build/bin/conformance-runner build/dev/runtime/.lake/build/bin/
+    python3 -c 'import json, sys; c = json.load(open("judge/claims.json")); c["corpora"] = {n: c["corpora"][n] for n in sys.argv[1:] or c["corpora"]}; json.dump(c, open("build/dev/claims.json", "w"))' "$@"
+    python3 -m judge run --root . --claims build/dev/claims.json --report build/dev/report.json -- python3 -m conformance.predict --runtime build/dev/runtime
+
+# Warn when the shell of shell.nix, which has the pinned Lean toolchain, is not loaded.
+_dev-shell-warning:
+    @[ -n "${BELAY_PARSER_LIBRARY:-}" ] || echo "warning: this is not the shell of shell.nix. Change into the repository so that direnv loads it, or ask the owner to run 'direnv allow' there." >&2
+
 # Run the locked judge on this commit's subject, as the verdict job does.
 verdict:
     timeout --foreground 1800 nix-build integrity/judge.nix -A verdict --out-link build/verdict
@@ -106,9 +120,9 @@ verdict:
 review-stats *args:
     python3 -m tools.review_stats "$@"
 
-# Check Nix source identities, test-target commands, environment snapshots and the installer cache.
+# Check Nix source identities, test-target commands and environment snapshots.
 test-nix:
-    timeout --foreground 600 python3 -u -m pytest -v tests -m requires_nix --ignore=tests/runtime_package_test.py --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD}" --junitxml build/test-results/nix.xml
+    timeout --foreground 600 python3 -u -m pytest -v tests -m requires_nix --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD/build/conformance}" --junitxml build/test-results/nix.xml
 
 # Run all scheduled suites (tests/nix_scheduled_suites.json), which pull requests skip, also the
 # mutant suites that CI runs in their own job.
@@ -125,21 +139,6 @@ test-scheduled-checks:
 test-mutants suite:
     mkdir -p build/nix-tests-mutants
     timeout --foreground {{mutant_build_limit}} nix-build build-support/default.nix -A "scheduledTests.{{suite}}" --out-link "build/nix-tests-mutants/{{suite}}" --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
-
-# Select only the cached application-specific suite.
-test-atuin:
-    mkdir -p build
-    timeout --foreground {{suite_build_limit}} nix-build build-support/default.nix -A tests.atuin --out-link build/nix-atuin --option sandbox true --option sandbox-fallback false --extra-experimental-features 'nix-command flakes'
-
-# Build a native offline archive and verify its actual installed entrypoint.
-runtime-package: build
-    timeout 1200 python3 packaging/build_runtime.py --runtime-root "${SQLITE_VERIFIER_RUNTIME_ROOT:-$PWD/build/runtime}"
-    timeout --foreground 1800 python3 -m pytest --junitxml build/test-results/installed.xml --runtime-archive "dist/sqlite-verifier-${SQLITE_VERIFIER_SYSTEM:?Enter nix develop path:./nix}.tar.gz" --runtime-variant installed tests/runtime_package_test.py tests/atuin_cli_test.py
-
-# Keep a source snapshot alongside the checked installable runtime.
-package: test-full test-nix runtime-package test-scheduled-checks
-    mkdir -p dist
-    tar --exclude='./.jj' --exclude='./.git' --exclude='./.lake' --exclude='./.direnv' --exclude='./dist' --exclude='./build' --exclude='__pycache__' --exclude='./result*' -czf dist/sqlite-verifier-source.tar.gz .
 
 # Refresh into build/, then review and assign a new corpus version before freezing.
 conformance-upstream: conformance-build

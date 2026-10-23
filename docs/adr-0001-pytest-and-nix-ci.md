@@ -13,6 +13,10 @@ including the requirement to keep every Atuin case. Pytest's own output and
 JUnit XML are the reports. See the
 [test suite simplification task](../plans/20260929-test-suite-simplification.task.md).
 
+Update (2026-10-21): [ADR 0021](adr-0021-remove-the-verifier-product.md) removed the verifier
+product, with its CLI, installed-runtime, archive, kernel gate and Atuin tests and the
+`package` CI scope. The requirements below that name them no longer apply.
+
 - Status: Accepted; implementation in progress
 - Date: 2026-09-26
 - Updated: 2026-09-28
@@ -64,7 +68,7 @@ the linked status file tracks subsequent work and outstanding acceptance checks.
 | `ProofChecker.lean` | Reuses Lean import state within each verification, retaining comparison, replay, audit and kernel checks | Removes repeated imports within a process; no cross-run build or verdict cache |
 | `migration_check/compile.py` | Rejects protected baseline drift before compilation; matching requests still compile isolated source stages | Cached project binaries do not eliminate per-verification source compilation |
 
-The current [performance measurements](ci-performance.md) and
+The current [performance measurements](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/ci-performance.md) and
 [completed performance task](../plans/20260925-ci-performance.status.md) replace
 the earlier 11m46s Linux experiment as the comparison baseline. The examined head
 contains documentation closeout after runtime revision `7a99c71f`, released as

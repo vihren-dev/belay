@@ -1,6 +1,6 @@
 # The function catalog, text and type functions, and LIKE and GLOB (ADR 0015, slice 1)
 
-Created 2026-10-20. Status: open.
+Created 2026-10-20. Status: DONE (pull requests #196 and #197).
 Status file: [status](20261020-function-catalog.status.md).
 Specification: [ADR 0015](../docs/adr-0015-functions.md), D1, D2 and D3.
 

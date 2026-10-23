@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-20T21:41:21+00:00",
+  "finding": "20261020T214042Z-a388677e#2",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "A one-off measurement script for an ADR, as experiments/model-gaps/measure.py and experiments/functions are; its result is checked against the verdict it reads, and R18 does not ask for tests of supporting experiments without a present problem"
+}

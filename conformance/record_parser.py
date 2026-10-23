@@ -8,15 +8,12 @@ is `MODEL_UNSUPPORTED`, and the parse with another dialect never replaces it.
 """
 
 from pathlib import Path
-import sys
 
-from belay.sqlite.dialects import ProfileIdentity
-from belay.sqlite.parser_library import ParserLibrary, installed_library, load
-from belay.sqlite.sql_tree import SqlParser
 from conformance.case_format import Json
 from conformance.execution_profile import profile_from_wire, recorded_profile
 from conformance.native_library import DEFAULT_ENGINE_VERSION, SOURCE_ID
 from conformance.record_versions import PROFILED
+from conformance.sql_text import ProfileIdentity, TextParser, Translator, runtime_translator
 
 NO_PARSER_REASON = "no parser for this dialect"
 """The reason of a `MODEL_UNSUPPORTED` case whose recorded profile has no built dialect."""
@@ -24,14 +21,9 @@ DEFAULT_NATIVE_PROFILE = ProfileIdentity(DEFAULT_ENGINE_VERSION, SOURCE_ID)
 """The default native library, which records fixtures, generated programs and corpora v1 to v3."""
 
 
-def runtime_library(runtime: Path) -> ParserLibrary:
-    """Load the parser library of a conformance runtime root."""
-    return load(installed_library(runtime.resolve(), sys.platform))
-
-
-def default_parser(runtime: Path) -> SqlParser:
+def default_parser(runtime: Path) -> TextParser:
     """Return the parser of the default native library's dialect."""
-    return SqlParser.for_profile(runtime_library(runtime), DEFAULT_NATIVE_PROFILE)
+    return TextParser.for_profile(runtime_translator(runtime), DEFAULT_NATIVE_PROFILE)
 
 
 def record_profile(record: dict[str, Json]) -> ProfileIdentity:
@@ -46,6 +38,6 @@ def record_profile(record: dict[str, Json]) -> ProfileIdentity:
     return ProfileIdentity(DEFAULT_ENGINE_VERSION, source_id)
 
 
-def record_parser(library: ParserLibrary, record: dict[str, Json]) -> SqlParser:
+def record_parser(translator: Translator, record: dict[str, Json]) -> TextParser:
     """Return the parser of the record's dialect; refuse a record without a built dialect."""
-    return SqlParser.for_profile(library, record_profile(record))
+    return TextParser.for_profile(translator, record_profile(record))

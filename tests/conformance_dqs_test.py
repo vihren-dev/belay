@@ -1,16 +1,14 @@
 """Both engine profiles use default DQS; resolution applies the double-quoted-string fallback.
 
-The frontend keeps whether a name was written in double quotes
-(`belay.sqlite.syntax_expressions.identifier`); Lean resolution applies SQLite's
-fallback under the profile's DQS settings. Native SQLite is the oracle here.
+The translation keeps whether a name was written in double quotes (`identifier` in
+`packages/belay-sqlite-text/Belay/Sqlite/Translation/Expressions.lean`); Lean resolution applies
+SQLite's fallback under the profile's DQS settings. Native SQLite is the oracle here.
 """
 
 from pathlib import Path
 
 import pytest
 
-from belay.sqlite.sql_tree import parse
-from belay.sqlite.syntax import statements
 from conformance.model_check import compiled
 from conformance.native_connection import Connection, library_path, load_library
 from conformance.native_trace import Fixture, record
@@ -18,7 +16,7 @@ from conformance.record_parser import default_parser
 from tests.runtime_fixtures import profile_parser
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance,
-              pytest.mark.requires_native("sqlite3", "sqlite3-3.46.0", "parser-library")]
+              pytest.mark.requires_native("sqlite3", "sqlite3-3.46.0", "translation-program")]
 SCHEMA = 'CREATE TABLE "t"("id" INTEGER NOT NULL,"value" TEXT,UNIQUE("id"));'
 
 
@@ -32,8 +30,8 @@ def test_library_default_and_frontend(version: str, suffix: str, runtime_root: P
         assert connection.configure(1013, -1) == connection.configure(1014, -1) == 1
     finally:
         connection.close()
-    mapped = statements(parse(profile_parser(runtime_root, version), b'INSERT INTO t(id,value) VALUES(2,"fallback");',
-                              "dqs.sql"))
+    mapped = profile_parser(runtime_root, version).translate(b'INSERT INTO t(id,value) VALUES(2,"fallback");',
+                                                             "dqs.sql").statements()
     assert mapped[0].value == {"insert": {"table": "t", "columns": ["id", "value"], "rows": [
         [{"numeric": {"text": "2"}}, {"identifier": {"name": "fallback", "quote": "double"}}]], "conflicts": [], "algorithm": None,
         "returning": []}}

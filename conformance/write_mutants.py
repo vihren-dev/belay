@@ -8,9 +8,9 @@ mutant is one text change in a copy of the model, which
 
 OUTPUTS = "verifier-conformance/VerifierConformance/Outputs.lean"
 """The outputs of statements, with the RETURNING rows."""
-RETURNING = "belay-sqlite/Belay/Sqlite/Resolution/Returning.lean"
+RETURNING = "belay-sqlite-model/Belay/Sqlite/Model/Resolution/Returning.lean"
 """The resolution of RETURNING columns."""
-CELLS = "belay-sqlite/Belay/Sqlite/Resolution/InsertCells.lean"
+CELLS = "belay-sqlite-model/Belay/Sqlite/Model/Resolution/InsertCells.lean"
 """The constant values of INSERT rows."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

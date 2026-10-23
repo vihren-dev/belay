@@ -1,4 +1,4 @@
-"""Prevent CI routing from skipping verifier/runtime changes or weakening release checks."""
+"""Prevent CI routing from skipping model, parser or build changes or weakening the full checks."""
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -13,7 +13,7 @@ from tests.ci_scope import scope
 
 
 class CiScopeTest(unittest.TestCase):
-    """Keep documentation, verification and packaging scopes explicit and conservative."""
+    """Keep the documentation, test, infrastructure and full scopes explicit and conservative."""
 
     def test_change_scopes(self) -> None:
         """Unknown paths run the Nix targets; host checks run only for their own subjects."""
@@ -24,51 +24,42 @@ class CiScopeTest(unittest.TestCase):
                     (["reviews/20261011T085534Z-6bb34bbf/resolution-2-20261011T091200Z.json",
                       "docs/ci.md"], "docs"),
                     (["reviews/20261011T085534Z-6bb34bbf/review.json", "tools/review.py"], "test"),
-                    (["reviews/20261011T085534Z-6bb34bbf/review.json", "parser/library.c"], "package"),
+                    (["reviews/20261011T085534Z-6bb34bbf/review.json", "parser/library.c"], "full"),
                     (["reviews/20261011T085534Z-6bb34bbf/notes.json"], "test"),
                     (["reviews/review.json"], "test"),
-                    (["parser/upstream/README.md"], "package"),
-                    (["packages/belay-sqlite/Belay/Sqlite/PreservationLaws.lean"], "packaging"),
+                    (["parser/upstream/README.md"], "full"),
+                    (["packages/belay-sqlite-model/Belay/Sqlite/Model/PreservationLaws.lean"], "test"),
                     (["tests/coverage_test.py"], "test"), (["unknown/file"], "test"),
-                    (["migration_check/prepare.py"], "test"), (["tools/review.py"], "test"),
-                    (["belay/sqlite/sql_model.py"], "packaging"),
-                    (["packages/belay-sqlite/Belay/Sqlite/Model.lean"], "packaging"),
-                    (["packaging/install.py"], "packaging"), (["nix/flake.lock"], "package"),
+                    (["tools/review.py"], "test"), (["belay/sqlite/sql_model.py"], "test"),
+                    (["nix/flake.lock"], "full"),
                     (["tools/check_resources.py"], "infrastructure"),
-                    (["build-support/default.nix"], "package"),
+                    (["build-support/default.nix"], "full"),
                     (["build-support/tests.nix"], "infrastructure"),
-                    (["tests/test_toolchain_smoke.py"], "packaging"),
+                    (["tests/test_toolchain_smoke.py"], "test"),
                     (["tests/test_source_identity.py"], "infrastructure"),
                     (["tests/test_nix_test_targets.py"], "infrastructure"),
                     (["tests/environment_snapshot_test.py"], "infrastructure"),
-                    (["tests/test_runtime_package.py"], "infrastructure"),
                     (["tests/nix_suites.json"], "infrastructure"),
                     (["pytest.ini"], "infrastructure"), (["tests/conftest.py"], "infrastructure"),
                     (["conftest.py"], "infrastructure"),
                     (["tests/runtime_support.py"], "infrastructure"),
                     (["tests/new_shared_helper.py"], "infrastructure"),
-                    (["tests/runtime_installation.py"], "package"),
                     (["tests/test_translation.py"], "test"),
-                    (["docs/install.md"], "packaging"),
-                    (["README.md", "parser/library.c"], "package"),
-                    (["migration_check/runtime.py"], "packaging"),
-                    (["examples/atuin/Proofs.lean"], "test"),
-                    (["migration_check/runtime.py", "tests/nix_suites.json"], "package"),
-                    ([".github/workflows/ci.yml"], "package"), ([], "package")]
+                    (["README.md", "parser/library.c"], "full"),
+                    ([".github/workflows/ci.yml"], "full"), ([], "full")]
         for paths, expected in examples:
             with self.subTest(paths=paths):
-                self.assertEqual(scope(paths, "pull_request", "refs/pull/2/merge"), expected)
+                self.assertEqual(scope(paths, "pull_request"), expected)
 
     def test_full_runs(self) -> None:
-        """Releases, manual, scheduled and main runs check everything; main skips only docs."""
-        self.assertEqual(scope(["README.md"], "push", "refs/tags/v1-rc.1"), "package")
-        self.assertEqual(scope(["README.md"], "workflow_dispatch", "refs/heads/main"), "package")
-        self.assertEqual(scope([], "schedule", "refs/heads/main"), "package")
-        self.assertEqual(scope(["tests/test_translation.py"], "push", "refs/heads/main"), "package")
-        self.assertEqual(scope(["docs/ci.md"], "push", "refs/heads/main"), "docs")
+        """Manual, scheduled and main runs check everything; main skips only docs."""
+        self.assertEqual(scope(["README.md"], "workflow_dispatch"), "full")
+        self.assertEqual(scope([], "schedule"), "full")
+        self.assertEqual(scope(["tests/test_translation.py"], "push"), "full")
+        self.assertEqual(scope(["docs/ci.md"], "push"), "docs")
 
     def test_real_diff_preserves_removed_runtime_paths(self) -> None:
-        """Renaming runtime source to Markdown still packages, using the actual CI entrypoint."""
+        """Renaming parser source to Markdown still runs every check, using the actual CI entrypoint."""
         with TemporaryDirectory() as directory:
             root = Path(directory)
             git(root, "init", "-q")
@@ -89,12 +80,12 @@ class CiScopeTest(unittest.TestCase):
             commit()
             event, output = root / "event.json", root / "output"
             event.write_text(json.dumps({"pull_request": {"base": {"sha": base}}}))
-            environment = {**os.environ, "GITHUB_EVENT_NAME": "pull_request", "GITHUB_REF": "refs/pull/2/merge",
+            environment = {**os.environ, "GITHUB_EVENT_NAME": "pull_request",
                            "GITHUB_EVENT_PATH": str(event), "GITHUB_OUTPUT": str(output),
                            "PYTHONPATH": str(Path(__file__).resolve().parents[1])}
             subprocess.run([sys.executable, "-m", "tests.ci_scope"], cwd=root,
                            env=environment, check=True, capture_output=True, timeout=10)
-            self.assertEqual(output.read_text(), "scope=package\n")
+            self.assertEqual(output.read_text(), "scope=full\n")
 
 
 if __name__ == "__main__":

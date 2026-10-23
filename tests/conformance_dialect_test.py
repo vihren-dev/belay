@@ -12,7 +12,7 @@ from conformance.execution_profile import measured_profile
 from conformance.native_connection import Connection, library_path, load_library
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance,
-              pytest.mark.requires_native("sqlite3", "parser-library")]
+              pytest.mark.requires_native("sqlite3", "translation-program")]
 
 
 def test_profile_without_a_built_dialect_is_counted_apart(tmp_path: Path, runtime_root: Path) -> None:

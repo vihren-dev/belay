@@ -1,6 +1,7 @@
 # ADR 0018: The SQL that the user surface needs
 
-Date: 2026-10-20. Status: PROPOSED.
+Date: 2026-10-20. Status: IMPLEMENTED in pull requests #204 and #205, merged on 2026-10-21, as
+ADR 0017's owner decision 2 asks.
 Implementation: slice by slice, each with its own task file, as local commits; the pull
 requests come when the ADR is done.
 Audience: designers and reviewers.
@@ -191,8 +192,10 @@ come in their own ADR.
 
 ## Owner decisions
 
-To be decided:
+The two questions below were not recorded as decisions; the merged implementation answers
+them (2026-10-22):
 
-1. **The order of D7**, subqueries first.
-2. **Deferred foreign keys (D4):** implement them, or make them a restriction if the
-   slice's measurement shows a high cost for few cases.
+1. **The order of D7**, subqueries first: the slices ran in this order.
+2. **Deferred foreign keys (D4):** a restriction, because the measurement of slice 4 shows
+   11 of the 307 out-of-scope cases of v5 that turn foreign keys on use them
+   (`plans/20261021-foreign-keys.task.md`, outcome 5).

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-22T07:17:35+00:00",
+  "finding": "20261022T071704Z-31eff035#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "checkedWrite is limited to plain INSERT and UPDATE; upsert and the writes with keys or triggers check each row with checkedRow, and a FAIL failure keeps earlier rows"
+}

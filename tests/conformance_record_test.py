@@ -9,10 +9,10 @@ from conformance.native_connection import Connection, NativeError, library_path,
 from conformance.native_record import execute, record_sql
 from conformance.native_replay import prepare
 from conformance.model_check import compiled
-from conformance.record_parser import runtime_library
+from conformance.sql_text import runtime_translator
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance,
-              pytest.mark.requires_lean, pytest.mark.requires_native("parser-library", "sqlite3")]
+              pytest.mark.requires_lean, pytest.mark.requires_native("translation-program", "sqlite3")]
 
 
 def test_outside_subset_survives(runtime_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -22,7 +22,7 @@ def test_outside_subset_survives(runtime_root: Path, monkeypatch: pytest.MonkeyP
         raise AssertionError("translator invoked by native recording")
 
     with monkeypatch.context() as patch:
-        patch.setattr("belay.sqlite.sql_tree.parse", reject)
+        patch.setattr("conformance.sql_text.Translator.answer", reject)
         record = record_sql("CREATE TABLE t(k TEXT PRIMARY KEY,v INTEGER CHECK(v>0)) WITHOUT ROWID; "
             "CREATE VIEW v AS SELECT * FROM t; CREATE TRIGGER tr AFTER INSERT ON t "
             "BEGIN UPDATE t SET v=v+1 WHERE k=new.k; END;",
@@ -31,7 +31,7 @@ def test_outside_subset_survives(runtime_root: Path, monkeypatch: pytest.MonkeyP
     assert record["trace"][1]["visible"]["tables"][0]["rows"][0]["values"][1] == {"integer": {"value": 2}}
     assert record["trace"][1]["persisted"] == record["initial"]["visible"]
     assert record["trace"][-1]["visible"] == record["initial"]["visible"]
-    case, result = prepare(record, runtime_library(runtime_root))
+    case, result = prepare(record, runtime_translator(runtime_root))
     assert case is None and result["verdict"] == "MODEL_UNSUPPORTED"
     assert record["migrationSql"] and record["trace"]
 
@@ -43,16 +43,16 @@ def test_native_record_replay(runtime_root: Path) -> None:
         "BEGIN; INSERT INTO t(id) VALUES(8); INSERT INTO t(id) VALUES(8); COMMIT;", name="replay")
     assert len(record["trace"]) == 3
     assert record["trace"][-1]["primaryCode"] == 19
-    case, error = prepare(record, runtime_library(runtime_root))
+    case, error = prepare(record, runtime_translator(runtime_root))
     assert case is not None, error
     assert compiled(case, runtime_root)["verdict"] == "AGREE"
     nullable = deepcopy(record)
     nullable["initial"]["visible"]["tables"][0]["columns"][0][3] = {"integer": {"value": 0}}
-    changed, error = prepare(nullable, runtime_library(runtime_root))
+    changed, error = prepare(nullable, runtime_translator(runtime_root))
     assert changed is not None, error
     assert compiled(changed, runtime_root)["verdict"] == "DISAGREE"
     record["initial"]["visible"]["tables"][0]["columns"][0][2] = {"integer": {"value": 0}}
-    assert prepare(record, runtime_library(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
+    assert prepare(record, runtime_translator(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
 
 
 def test_nonmain_state_cannot_disappear() -> None:
@@ -67,13 +67,13 @@ def test_statement_alignment_is_harness_error(runtime_root: Path) -> None:
     for trace in (record["trace"][:1], record["trace"] + record["trace"][-1:]):
         broken = deepcopy(record)
         broken["trace"] = trace
-        assert prepare(broken, runtime_library(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
+        assert prepare(broken, runtime_translator(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
     broken = deepcopy(record)
     broken["trace"] = [broken["trace"][-1]]
     broken["trace"][0]["primaryCode"] = 1
-    assert prepare(broken, runtime_library(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
+    assert prepare(broken, runtime_translator(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
     record["trace"][0]["sql"] = "BEGIN; ROLLBACK;"
-    assert prepare(record, runtime_library(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
+    assert prepare(record, runtime_translator(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
 
 
 def test_native_semantic_errors_are_recorded(tmp_path: Path) -> None:
@@ -117,10 +117,10 @@ def test_native_syntax_errors_remain_frontend_exclusions(runtime_root: Path) -> 
     """Matching native/parser syntax rejection is unsupported input, not failed transport."""
     record = record_sql("CREATE TABLE t(v BLOB);", "SELECT FROM;", name="syntax-error")
     assert record["trace"][-1]["primaryCode"] == 1
-    result = prepare(record, runtime_library(runtime_root))[1]
+    result = prepare(record, runtime_translator(runtime_root))[1]
     assert result["verdict"] == "MODEL_UNSUPPORTED" and result["frontendStatus"] == "INPUT_ERROR"
     record["trace"][-1]["primaryCode"] = 0
-    assert prepare(record, runtime_library(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
+    assert prepare(record, runtime_translator(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
 
 
 def test_native_output_shape_bindings_and_probe_guard(tmp_path: Path) -> None:

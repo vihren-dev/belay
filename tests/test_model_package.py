@@ -1,17 +1,16 @@
-"""The standalone model and codec build independently and refuse application imports."""
+"""The standalone model and codec build independently, and the core imports only Lean's prelude."""
 
 import os
 from pathlib import Path
 import re
-import shutil
 
 import pytest
 
 from tests.runtime_support import run_command
 
 ROOT = Path(__file__).resolve().parents[1]
-PACKAGE = ROOT / "packages/belay-sqlite"
-MODEL_MODULE_PREFIX = "Belay.Sqlite"
+PACKAGE = ROOT / "packages/belay-sqlite-model"
+MODEL_MODULE_PREFIX = "Belay.Sqlite.Model"
 """Only the standalone package namespace supplies project modules to the core."""
 ALLOWED_EXTERNAL_IMPORT_ROOTS = {"Init"}
 """The core uses only Lean's prelude; `Std` and the Lean compiler API add import cost it does not need."""
@@ -22,16 +21,16 @@ their modifiers, triggers, and the results that SQLite may give; its compiled ex
 pytestmark = [pytest.mark.integration, pytest.mark.requires_nix, pytest.mark.requires_lean("compiler")]
 
 
-def test_core_import_closure_excludes_codec_and_application() -> None:
-    """Follow the actual public root; no model import may reach Lean, codec or verifier modules."""
-    pending = ["Belay.Sqlite"]
+def test_core_import_closure_excludes_codec() -> None:
+    """Follow the actual public root; no model import may reach Lean or codec modules."""
+    pending = ["Belay.Sqlite.Model"]
     reached: set[str] = set()
     while pending:
         module = pending.pop()
         if module in reached:
             continue
         reached.add(module)
-        assert module != "Belay.Sqlite.Codec", module
+        assert module != "Belay.Sqlite.Model.Codec", module
         source = PACKAGE / (module.replace(".", "/") + ".lean")
         for line in re.findall(r"(?m)^import (.+)$", source.read_text()):
             for dependency in line.split():
@@ -54,21 +53,17 @@ def model_artifact() -> Path:
 
 def test_installed_core_and_codec_consumer(model_artifact: Path, lean_sysroot: Path,
                                            tmp_path: Path) -> None:
-    """An unrelated consumer imports both libraries and checks transport roundtrip and refusal."""
+    """An unrelated consumer imports both libraries and checks a syntax roundtrip and a refusal."""
     source = tmp_path / "Consumer.lean"
-    source.write_text('''import Belay.Sqlite
-import Belay.Sqlite.Codec.Resolution
-open Belay.Sqlite
+    source.write_text('''import Belay.Sqlite.Model
+import Belay.Sqlite.Model.Codec.Resolution
+open Belay.Sqlite.Model
 #check Conforms.setRows
 #check TableExtends.project
 #check Conformance.statement_atomicity
-def sample : ScriptRecord := ⟨5, "3.51.0", "build", [], []⟩
-#eval match decodeScriptRecord (Lean.toJson sample) with
-  | .ok result => result.version == 5 && result.schema.isEmpty && result.script.isEmpty
+#eval match (Lean.fromJson? (Lean.toJson Syntax.Statement.commit) : Except String Syntax.Statement) with
+  | .ok statement => statement == Syntax.Statement.commit
   | .error _ => false
-#eval match decodeScriptRecord (Lean.toJson { sample with version := 1 }) with
-  | .ok _ => false
-  | .error message => message.contains "1" && message.contains "version 5" && message.contains "Regenerate"
 #eval match (Lean.fromJson? (Lean.toJson (256 : Nat)) : Except String UInt8) with
   | .ok _ => false
   | .error _ => true
@@ -77,18 +72,4 @@ def sample : ScriptRecord := ⟨5, "3.51.0", "build", [], []⟩
     result = run_command([str(lean_sysroot / "bin/lean"), str(source)], cwd=tmp_path,
         environment={**os.environ, "LEAN_PATH": str(library), "LEAN_SRC_PATH": str(model_artifact)}, timeout=30)
     assert result.returncode == 0, result.diagnostic()
-    assert result.stdout.splitlines().count("true") == 3, result.diagnostic()
-
-
-def test_forbidden_application_import_fails_lake_build(
-        lean_sysroot: Path, tmp_path: Path) -> None:
-    """A real application checkout beside the isolated package cannot satisfy a model dependency."""
-    package = tmp_path / "model"
-    shutil.copytree(PACKAGE, package, ignore=shutil.ignore_patterns(".lake", "build"))
-    shutil.copytree(ROOT / "packages/sqlite-verifier/SqliteVerifier", tmp_path / "application/SqliteVerifier")
-    source = package / "Belay/Sqlite/Model.lean"
-    source.write_text("import SqliteVerifier.Contract\n" + source.read_text())
-    result = run_command([str(lean_sysroot / "bin/lake"), "build", "Belay.Sqlite"], cwd=package,
-        environment={**os.environ, "LEAN_PATH": "", "LEAN_SRC_PATH": ""}, timeout=120)
-    assert result.returncode != 0, result.diagnostic()
-    assert "SqliteVerifier" in result.stdout + result.stderr, result.diagnostic()
+    assert result.stdout.splitlines().count("true") == 2, result.diagnostic()

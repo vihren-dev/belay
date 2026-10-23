@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-22T08:12:04+00:00",
+  "finding": "20261022T081153Z-12871a49#1",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "shell.nix is a trial for ADR 0020, which is PROPOSED. D6 plans a requires_nix test that builds the Lean packages in the shell, including the text package, which fails at once without BELAY_PARSER_LIBRARY; it comes with the implementation."
+}

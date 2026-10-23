@@ -1,7 +1,9 @@
 # Independent pytest targets: Nix owns isolation, dependency identity and reuse.
-{ pkgs, leanToolchain, leanRuntime, runtime, seedRuntime, modelPackage, parserLibrary, conformance ? runtime, root ? ../.
+{ pkgs, leanToolchain, modelPackage, parserLibrary, conformance, root ? ../.
 # Lean package outputs by their folder in the repository layout (default.nix); the `packages` suite replays them.
 , leanPackages
+# The surface package and the text package below it; the `surface` suite checks them.
+, surfacePackage, textPackage
 , native ? import ../nix/sqlite.nix { inherit pkgs; }
 , conformanceNative ? import ./conformance-native.nix { inherit pkgs; }
 }:
@@ -9,11 +11,7 @@ let
   fs = pkgs.lib.fileset;
   common = map (name: root + "/${name}") [
     "pytest.ini" "conftest.py" "tests/__init__.py" "tests/runtime_support.py" "tests/runtime_fixtures.py"
-    "tests/runtime_installation.py"
   ];
-  # The belay.toml reader, for targets whose tests take the checked-in cases from belay.toml (ADR 0010).
-  # Only these targets list it, so a change to the reader does not rerun the conformance targets.
-  caseReader = map (name: root + "/${name}") [ "migration_check/__init__.py" "migration_check/project_config.py" ];
   python = name: pkgs.python3.withPackages (ps: [ ps.pytest ps.pytest-timeout ]
     ++ pkgs.lib.optional (name == "model") ps.hypothesis);
   # Each test has its own limit, so a hang fails with the name of the test. Nix runs suites
@@ -24,17 +22,10 @@ let
   # A mutant suite (tests/nix_mutant_suites.json) runs alone on its own CI runner, and its tests
   # take about 4 minutes each there, so it gets a larger limit; each test keeps its own limit.
   mutantSuiteTimeoutSeconds = 2700;
-  # The conformance suites use only the SQL frontend, not the verification application.
+  # The SQL frontend modules that the conformance suites import.
   # tests/test_conformance_frontend.py checks this list against the actual imports.
   frontend = map (name: root + "/${builtins.replaceStrings [ "." ] [ "/" ] name}.py")
     (builtins.fromJSON (builtins.readFile (root + /tests/conformance_frontend.json)));
-  leanRoot = pkgs.runCommand "sqlite-verifier-test-lean" {} ''
-    mkdir -p "$out"
-    ln -s ${leanToolchain} "$out/lean"
-    ln -s ${leanRuntime}/.lake "$out/.lake"
-    mkdir -p "$out/packages"
-    ln -s ${modelPackage} "$out/packages/belay-sqlite"
-  '';
   # The package outputs in the repository layout. Each package folder is a real folder, so the relative
   # paths of its requirements resolve here; its entries link to the store, because Lake must not write.
   packageRoot = pkgs.runCommand "sqlite-verifier-test-packages" {} ''
@@ -51,8 +42,19 @@ let
     ln -s ${leanToolchain} "$out/lean"
     ln -s ${leanPackages."packages/public-doc-tools"} "$out/packages/public-doc-tools"
   '';
-  # `seeds`: Lake cache seeds (case-seeds.nix) copied into one writable cache that the tests use (ADR 0010).
-  suite = name: { inputs, runtime, tools ? [], environment ? {}, seeds ? [], timeout ? suiteTimeoutSeconds }:
+  # The surface (ADR 0016, D1) in the repository layout, with the text package and the model.
+  surfaceRoot = pkgs.runCommand "sqlite-verifier-test-surface" {} ''
+    mkdir -p "$out/packages"
+    ln -s ${leanToolchain} "$out/lean"
+    ln -s ${surfacePackage} "$out/packages/belay"
+    ln -s ${textPackage} "$out/packages/belay-sqlite-text"
+    ln -s ${modelPackage} "$out/packages/belay-sqlite-model"
+  '';
+  # The layer test reads the Lean files and lakefiles of every package and the Nix build.
+  packageSources = map (package: fs.difference (fs.fileFilter (file: file.hasExt "lean" || file.hasExt "toml")
+    (root + "/packages/${package}")) (fs.maybeMissing (root + "/packages/${package}/.lake")))
+    (builtins.attrNames (pkgs.lib.filterAttrs (_: type: type == "directory") (builtins.readDir (root + /packages))));
+  suite = name: { inputs, runtime, tools ? [], environment ? {}, timeout ? suiteTimeoutSeconds }:
     let
       files = (builtins.fromJSON (builtins.readFile (root + /tests/nix_suites.json))).${name};
       file = builtins.head files;
@@ -67,13 +69,6 @@ let
       installPhase = ''
         export HOME="$TMPDIR"
         export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
-        ${pkgs.lib.optionalString (seeds != [ ]) ''
-          export BELAY_TEST_CACHE="$TMPDIR/lake-cache" BELAY_TEST_SEEDED=1
-          mkdir -p "$BELAY_TEST_CACHE"
-          for seed in ${pkgs.lib.concatStringsSep " " (map toString seeds)}; do
-            cp -R --no-preserve=mode "$seed/." "$BELAY_TEST_CACHE/"
-          done
-        ''}
         timeout ${toString timeout} python3 -m pytest ${file} ${pkgs.lib.concatStringsSep " " extraFiles} --runtime-root ${runtime} \
           -p no:cacheprovider -p pytest_timeout --timeout=${toString testTimeoutSeconds} \
           --junitxml "$out/junit.xml" -v --durations=10
@@ -86,16 +81,16 @@ let
   # Mutants rebuild changed copies of the two Lean packages, so their suites read the
   # complete sources, without local build outputs in `.lake`.
   mutantInputs = modelInputs ++ [ (root + /tests/mutant_sets.py) ] ++ map (package: fs.difference (root + "/packages/${package}")
-    (fs.maybeMissing (root + "/packages/${package}/.lake"))) [ "belay-sqlite" "verifier-conformance" ];
+    (fs.maybeMissing (root + "/packages/${package}/.lake"))) [ "belay-sqlite-model" "verifier-conformance" ];
   # Inputs shared by the three suites that the old single model suite contained.
   modelInputs = frontend ++ [
     claims
     (root + /tests/conformance_freeze_capture.py)
     (fs.fileFilter (file: file.hasExt "json") (root + /conformance/cases))
-    (root + /packages/belay-sqlite/Belay/Sqlite/StatementStep.lean)
-    (root + /packages/belay-sqlite/Belay/Sqlite/StatementRun.lean)
-    (root + /packages/belay-sqlite/Belay/Sqlite/SqlExecution.lean)
-    (root + /packages/belay-sqlite/Belay/Sqlite/Execution.lean) (root + /packages/belay-sqlite/Belay/Sqlite/LiteralData.lean)
+    (root + /packages/belay-sqlite-model/Belay/Sqlite/Model/StatementStep.lean)
+    (root + /packages/belay-sqlite-model/Belay/Sqlite/Model/StatementRun.lean)
+    (root + /packages/belay-sqlite-model/Belay/Sqlite/Model/SqlExecution.lean)
+    (root + /packages/belay-sqlite-model/Belay/Sqlite/Model/Execution.lean) (root + /packages/belay-sqlite-model/Belay/Sqlite/Model/LiteralData.lean)
     (root + /packages/verifier-conformance/VerifierConformance/Trace.lean)
     (root + /packages/verifier-conformance/VerifierConformance/Outputs.lean)
     (root + /packages/verifier-conformance/VerifierConformance/PossibleOutputs.lean)
@@ -104,7 +99,7 @@ let
     (root + /packages/verifier-conformance/VerifierConformance/Case.lean)
     (root + /packages/verifier-conformance/VerifierConformance/Predict.lean)
     (fs.fileFilter (file: file.hasExt "py" || file.hasExt "json") (root + /judge))
-    (root + /packages/belay-sqlite/Belay/Sqlite/Laws.lean)
+    (root + /packages/belay-sqlite-model/Belay/Sqlite/Model/Laws.lean)
     (root + /conformance/requirements-3.51.0.json)
     (root + /conformance/regressions)
     (root + /conformance/synthetic-workload)
@@ -132,7 +127,7 @@ let
     "upstream_bindings" "upstream_binding_policy" "upstream_display" "upstream_evidence"
     "upstream_helpers"
     "native_fixture" "import_fixture" "schema" "predict" "predict_render" "replay_support"
-    "case_format" "native_connection" "native_library" "native_clock" "native_probe" "native_ordering" "query_window" "native_metadata" "native_record" "native_statements" "native_replay" "profile_scope" "record_versions" "record_parser" "upstream_pilot" "upstream_fidelity" "corpus" "generated_program" "mutation_check" "state_machine" "regressions" "progress" "measure_coverage" "native_trace" "pipeline"
+    "case_format" "native_connection" "native_library" "native_clock" "native_probe" "native_ordering" "query_window" "native_metadata" "native_record" "native_statements" "native_replay" "profile_scope" "record_versions" "record_parser" "sql_text" "upstream_pilot" "upstream_fidelity" "corpus" "generated_program" "mutation_check" "state_machine" "regressions" "progress" "measure_coverage" "native_trace" "pipeline"
   ];
   # Frozen corpora and retained reports: large, rarely changed, read only by the frozen suite.
   frozenData = [
@@ -168,7 +163,20 @@ let
     (root + /conformance/corpus-v3)
     (root + /conformance/corpus-v2)
   ];
-  caseSeeds = import ./case-seeds.nix { inherit pkgs root; runtime = seedRuntime; };
+  # The conformance modules that `conformance.corpus` imports to read a locked corpus.
+  corpusModules = map (name: root + "/conformance/${name}.py") [
+    "case_format" "corpus" "corpus_acquisition" "corpus_evidence" "corpus_shards" "corpus_workers" "replay_support"
+    "execution_profile" "native_limits" "freeze_profiles" "freeze_validation" "model_assertions" "model_check"
+    "native_acquisition" "native_binding_types" "native_binding_validation" "native_bindings"
+    "native_call_recording" "native_clock" "native_connection" "native_library" "native_metadata"
+    "native_observation" "native_record" "native_replay" "profile_scope" "record_versions" "native_statements" "native_storage"
+    "native_trace" "native_workers" "locked_corpora" "query_window" "record_parser" "sql_text"
+    "upstream_binding_policy" "upstream_bindings" "upstream_catalog" "upstream_helpers"
+    "upstream_profiles" "upstream_result_values" "upstream_sampling"
+  ];
+  # The authored corpora: the locked corpora whose manifest names the evidence that they cover.
+  authoredCorpora = builtins.filter (path: (builtins.fromJSON (builtins.readFile (path + "/manifest.json"))) ? evidenceKind)
+    lockedCorpora;
   modelTools = [ native.sqlite native.sqlite346 native.sqlite3534 ];
 in {
   sample = suite "sample" {
@@ -180,7 +188,7 @@ in {
     ] ++ map (name: root + "/conformance/${name}.py") [
       "replay_tiers" "native_workers" "corpus" "corpus_shards" "corpus_workers" "corpus_evidence" "corpus_acquisition" "locked_corpora" "case_format"
       "replay_support"
-      "workload" "workload_inputs" "execution_profile" "native_limits" "native_replay" "profile_scope" "record_versions" "record_parser" "model_check"
+      "workload" "workload_inputs" "execution_profile" "native_limits" "native_replay" "profile_scope" "record_versions" "record_parser" "sql_text" "model_check"
       "native_record" "native_observation" "native_acquisition" "native_connection" "native_library" "native_clock" "native_storage"
       "native_probe" "native_ordering" "query_window" "native_metadata" "native_statements"
       "native_bindings" "native_call_recording" "upstream_bindings" "upstream_binding_policy"
@@ -196,16 +204,7 @@ in {
   # corpora and the modules that the validation imports, so a change elsewhere reuses the
   # result. A module missing from this list fails the suite with an import error.
   corpora = suite "corpora" {
-    inputs = frontend ++ [ claims ] ++ lockedCorpora ++ map (name: root + "/conformance/${name}.py") [
-      "case_format" "corpus" "corpus_acquisition" "corpus_evidence" "corpus_shards" "corpus_workers" "replay_support"
-      "execution_profile" "native_limits" "freeze_profiles" "freeze_validation" "model_assertions" "model_check"
-      "native_acquisition" "native_binding_types" "native_binding_validation" "native_bindings"
-      "native_call_recording" "native_clock" "native_connection" "native_library" "native_metadata"
-      "native_observation" "native_record" "native_replay" "profile_scope" "record_versions" "native_statements" "native_storage"
-      "native_trace" "native_workers" "locked_corpora" "query_window" "record_parser"
-      "upstream_binding_policy" "upstream_bindings" "upstream_catalog" "upstream_helpers"
-      "upstream_profiles" "upstream_result_values" "upstream_sampling"
-    ];
+    inputs = frontend ++ [ claims ] ++ lockedCorpora ++ corpusModules;
     runtime = pkgs.emptyDirectory;
   };
   upstream = suite "upstream" {
@@ -223,6 +222,7 @@ in {
       (root + /nix/flake.nix)
       (root + /nix/flake.lock)
       (root + /nix/sqlite.nix)
+      (root + /nix/dev-shell.nix)
       (root + /build-support/conformance-native.nix)
       (root + /tests/upstream_profile_calls.test)
       (root + /tests/upstream_helper_calls.test)
@@ -248,29 +248,12 @@ in {
     inputs = map (name: root + "/tests/${name}.py") [ "parser_inputs" "parser_library_inputs" "parser_library_support" ];
     runtime = parserLibrary;
   };
-  atuin = suite "atuin" {
-    inputs = caseReader;
-    inherit runtime;
-  };
-  bundle = suite "bundle" {
-    seeds = builtins.attrValues caseSeeds;
-    inputs = [
-      (fs.fileFilter (file: file.hasExt "py") (root + /migration_check))
-      (fs.fileFilter (file: file.hasExt "py") (root + /belay/sqlite))
-      (fs.fileFilter (file: file.hasExt "json") (root + /conformance/cases))
-      (root + /tests/sql_fixtures.py)
-      (root + /tests/example_cases.py)
-      (root + /experiments/adr-0003-latency/cases.py)
-      # cases.py reads the examples' belay.toml files; the runtime under test contains them too.
-      # Regular files only: no `.belay` links of local proofs-project builds (ADR 0010).
-      (fs.fileFilter (file: file.type == "regular" && file.name != ".DS_Store") (root + /examples))
-      (root + /experiments/adr-0003-latency/stage_timing.py)
-    ];
-    inherit runtime;
-  };
-  cli = suite "cli" {
-    inputs = caseReader;
-    inherit runtime;
+  surface = suite "surface" {
+    inputs = [ (root + /tests/surface) (root + /tests/surface_support.py)
+               (fs.fileFilter (file: file.hasExt "nix") (root + /build-support)) ] ++ packageSources
+             ++ frontend ++ [ claims ] ++ authoredCorpora ++ corpusModules;
+    runtime = surfaceRoot;
+    tools = pkgs.lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.patchelf;
   };
   packages = suite "packages" {
     inputs = [ ];
@@ -280,10 +263,6 @@ in {
     inputs = [ (root + /tools/__init__.py) (root + /tools/public_doc_inventory.py) (root + /tools/public_doc_coverage.py)
                (root + /tests/public_doc_inventory) ];
     runtime = documentationRoot;
-  };
-  kernel = suite "kernel" {
-    inputs = [ (fs.fileFilter (file: file.hasExt "lean") (root + /tests/kernel_gate)) (root + /tests/kernel_gate_support.py) ];
-    runtime = leanRoot;
   };
   model = suite "model" {
     inputs = modelInputs;

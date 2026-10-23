@@ -1,17 +1,16 @@
 """Generated statements: expected statement syntax beside independently rendered SQL.
 
-The round trip checks the frontend's mapping (`belay.sqlite.syntax`) against the
-syntax the generator intended, before native comparison can mask a difference.
+The round trip checks the translation of the text package's program (`conformance.sql_text`)
+against the syntax the generator intended, before native comparison can mask a difference.
 """
 
 from dataclasses import dataclass, field
 from typing import Literal
 
-from belay.sqlite.sql_tree import SqlParser, parse
-from belay.sqlite.syntax import statements
 from conformance.case_format import Json
 from conformance.native_connection import Cell
 from conformance.native_trace import Fixture
+from conformance.sql_text import TextParser
 
 Affinity = Literal["integer", "real", "text", "blob", "numeric"]
 """A declared type name that the generator writes; SQLite derives the affinity from it."""
@@ -83,9 +82,9 @@ class Program:
         return Fixture(self.schema, "\n".join(sql for _, sql in self.commands),
                        self.rows, "hypothesis")
 
-    def roundtrip(self, parser: SqlParser) -> None:
+    def roundtrip(self, parser: TextParser) -> None:
         """Reject parser/renderer disagreement before native comparison can mask it."""
-        parsed = statements(parse(parser, self.fixture().migration_sql.encode(), "generated.sql"))
+        parsed = parser.translate(self.fixture().migration_sql.encode(), "generated.sql").statements()
         assert [item.value for item in parsed] == [syntax for syntax, _ in self.commands]
 
 

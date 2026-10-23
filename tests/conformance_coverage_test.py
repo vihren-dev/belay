@@ -11,11 +11,11 @@ from conformance.measure_coverage import gcov_counts
 from conformance.native_connection import Connection, library_path, load_library
 from conformance.native_replay import schema_sql
 from conformance.progress import loaded_progress, progress
-from conformance.record_parser import runtime_library
+from conformance.sql_text import runtime_translator
 
 ROOT = Path(__file__).resolve().parents[1]
 pytestmark = [pytest.mark.integration, pytest.mark.conformance,
-              pytest.mark.requires_lean, pytest.mark.requires_native("parser-library", "sqlite3")]
+              pytest.mark.requires_lean, pytest.mark.requires_native("translation-program", "sqlite3")]
 
 
 def test_release_requirement_ids() -> None:
@@ -59,13 +59,13 @@ def test_gcov_reached_function_denominator() -> None:
 def test_parser_failure_is_not_subset_exclusion(runtime_root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A broken parser cannot turn a frozen native case into an unsupported verdict."""
     from conformance.native_replay import prepare
-    from belay.sqlite.errors import SqlError
+    from conformance.sql_text import Translator
     record = load(ROOT / "conformance/corpus-v2")[1][-1]
-    def failed(*args: object, **kwargs: object) -> None:
-        """Inject the real parser's failure category for an unusable library result."""
-        raise SqlError("UNVERIFIED", "Parser output is unusable: injected", source="case.sql")
-    monkeypatch.setattr("conformance.native_replay.parse", failed)
-    assert prepare(record, runtime_library(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
+    def failed(*args: object, **kwargs: object) -> dict[str, object]:
+        """Inject the translation program's answer for an unusable parse document of the library."""
+        return {"result": "error", "message": "the parser library's parse document is not usable: injected"}
+    monkeypatch.setattr(Translator, "answer", failed)
+    assert prepare(record, runtime_translator(runtime_root))[1]["verdict"] == "HARNESS_ERROR"
 
 
 def test_review_corpus_extends_and_replays(runtime_root: Path) -> None:
@@ -102,19 +102,21 @@ def test_parser_limit_on_a_natively_refused_migration_is_unsupported(runtime_roo
     """`native_replay.prepare` counts a migration over the parser's size limits as outside the
     model only when native SQLite refused it too; after a native success it is a harness error."""
     import copy
-    from conformance.native_replay import parse, prepare
-    from belay.sqlite.sql_tree import ParserResourceLimit
+    from conformance.native_replay import prepare
+    from conformance.sql_text import TextParser, Translation
     record = load(ROOT / "conformance/corpus-v2")[1][-1]
+    translate = TextParser.translate
 
-    def limited(parser: object, sql: bytes, source: str) -> object:
-        """Stop at the parser's size limit for the migration only."""
+    def limited(parser: TextParser, sql: bytes, source: str) -> Translation:
+        """Stop at the parser's size limit for the migration only, as the program answers."""
         if source == "corpus-migration.sql":
-            raise ParserResourceLimit(source, 0)
-        return parse(parser, sql, source)  # type: ignore[arg-type]
-    monkeypatch.setattr("conformance.native_replay.parse", limited)
-    library = runtime_library(runtime_root)
+            return Translation({"result": "limit", "refusal": {"status": "UNVERIFIED", "message": "limit",
+                                                                "source": source, "start": 0, "end": 0}})
+        return translate(parser, sql, source)
+    monkeypatch.setattr(TextParser, "translate", limited)
+    translator = runtime_translator(runtime_root)
     assert record["trace"][-1]["primaryCode"] == 0
-    assert prepare(record, library)[1]["verdict"] == "HARNESS_ERROR"
+    assert prepare(record, translator)[1]["verdict"] == "HARNESS_ERROR"
     refused = copy.deepcopy(record)
     refused["trace"][-1]["primaryCode"] = 1
-    assert prepare(refused, library)[1]["verdict"] == "MODEL_UNSUPPORTED"
+    assert prepare(refused, translator)[1]["verdict"] == "MODEL_UNSUPPORTED"

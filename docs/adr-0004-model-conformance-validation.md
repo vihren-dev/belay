@@ -1,6 +1,6 @@
 # ADR 0004: Validate the semantic model by differential testing and proven regressions
 
-- Status: Accepted 2026-09-29 — W1–W7 implemented; evidence-review corrections validated; merge awaits owner approval
+- Status: Accepted 2026-09-29 — W1–W7 implemented; evidence-review corrections validated; merged in pull request #12 on 2026-09-30
 - Date: 2026-09-29
 - Implementation examined: dedicated workspace, evidence-review follow-up to `3a5ac3e5`
 - Decision owners: formal methods lead for model fidelity and proof policy;

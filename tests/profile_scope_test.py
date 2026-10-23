@@ -10,17 +10,17 @@ is modeled (ADR 0018, D4).
 import pytest
 
 from belay.sqlite.errors import SqlError
-from belay.sqlite.located import Located, leaf
+from belay.sqlite.located import Located
 from conformance.execution_profile import ExecutionProfile
 from conformance.profile_scope import foreign_key_scope, has_foreign_key, modeled_profile
 
 pytestmark = [pytest.mark.unit]
 
-REFERENCES = leaf({"createTable": {"columns": [{"constraints": [{"references": {"table": "p", "columns": []}}]}]}}, 0, 1)
+REFERENCES = Located({"createTable": {"columns": [{"constraints": [{"references": {"table": "p", "columns": []}}]}]}}, 0, 1)
 """A CREATE TABLE whose column has a `REFERENCES` constraint."""
-FOREIGN_KEY = leaf({"createTable": {"constraints": [{"foreignKey": {"columns": ["a"], "table": "p"}}]}}, 0, 1)
+FOREIGN_KEY = Located({"createTable": {"constraints": [{"foreignKey": {"columns": ["a"], "table": "p"}}]}}, 0, 1)
 """A CREATE TABLE with a `FOREIGN KEY` table constraint."""
-PLAIN = leaf({"createTable": {"columns": [{"constraints": [{"notNull": {"algorithm": None}}]}]}}, 0, 1)
+PLAIN = Located({"createTable": {"columns": [{"constraints": [{"notNull": {"algorithm": None}}]}]}}, 0, 1)
 """A CREATE TABLE without a foreign key."""
 
 

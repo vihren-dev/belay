@@ -17,7 +17,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.kernel,
 
 CHECKS = """
 import VerifierConformance.Predict
-open Belay.Sqlite Belay.Sqlite.Conformance
+open Belay.Sqlite.Model Belay.Sqlite.Model.Conformance
 
 def shape : CatalogTable := { columns := [{ name := name! "id", declaredType := none }] }
 def table : Table := { shape, rows := [{ rowid := 1, values := [.integer 7] }] }

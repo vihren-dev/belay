@@ -1,9 +1,11 @@
 # ADR 0003 trust extension (deferred design)
 
+Superseded by [ADR 0021](adr-0021-remove-the-verifier-product.md) on 2026-10-21: the verifier product, whose acceptance this design extended, was removed.
+
 Status: deferred design, not a current requirement. Moved out of
 [ADR 0003](adr-0003-agent-proof-preparation.md) on 2026-09-29, when the owner
 made latency the immediate goal and postponed adversarial acceptance. The
-verifier currently assumes trusted execution ([trust boundary](trust-boundary.md)).
+verifier currently assumes trusted execution ([trust boundary](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/trust-boundary.md)).
 
 This page keeps the adversarial-acceptance analysis written on 2026-09-28 so the
 later trust milestone starts from it. It is lightly edited: the latency milestone
@@ -35,7 +37,7 @@ It does not make acceptance safe by itself:
 
 ### Authority over the approved contract
 
-The optional [baseline check](../migration_check/baseline.py) binds approved
+The optional [baseline check](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/migration_check/baseline.py) binds approved
 source bytes and dependencies; it does not authenticate a human. A correct source
 hash attached to agent-produced declarations does not show they came from that
 source. Approved interpretations may import generated `SchemaInputs`, so an

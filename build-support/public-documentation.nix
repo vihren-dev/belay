@@ -1,5 +1,5 @@
-# Check authored public documentation without adding tools to the proof runtime.
-{ pkgs, leanToolchain, verifierLibrary, inventoryTools, docTools, modelPackage }:
+# Check authored public documentation without adding tools to the conformance runtime.
+{ pkgs, leanToolchain, inventoryTools, docTools, modelPackage }:
 pkgs.stdenv.mkDerivation {
   pname = "sqlite-verifier-public-documentation";
   version = "1";
@@ -9,9 +9,8 @@ pkgs.stdenv.mkDerivation {
   dontConfigure = true;
   buildPhase = ''
     mkdir -p packages
-    cp -R ${verifierLibrary} packages/sqlite-verifier
-    cp -R ${modelPackage} packages/belay-sqlite
-    export LEAN_PATH=${verifierLibrary}/.lake/build/lib/lean:${modelPackage}/.lake/build/lib/lean
+    cp -R ${modelPackage} packages/belay-sqlite-model
+    export LEAN_PATH=${modelPackage}/.lake/build/lib/lean
     python3 ${inventoryTools}/tools/public_doc_inventory.py --root "$PWD" \
       --lean ${leanToolchain}/bin/lean --tools ${docTools} --output "$PWD/build/public-doc-inventory.json"
   '';

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-22T02:49:42+00:00",
+  "finding": "20261022T024842Z-4a7ec264#2",
+  "kind": "resolution",
+  "outcome": "deferred",
+  "reason": "No production code calls the Python select_grammar after this commit; the program's selectGrammar error gives the advice, and the next commit of the task deletes belay/sqlite/dialects.py with its test"
+}

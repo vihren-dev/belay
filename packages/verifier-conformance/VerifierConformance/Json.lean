@@ -1,13 +1,13 @@
-import Belay.Sqlite.Codec.Resolution
+import Belay.Sqlite.Model.Codec.Resolution
 import VerifierConformance.Case
 
 /-! Conformance-case transport. The structural codecs for model types live in
-`Belay.Sqlite.Codec`, shared with ADR 0003's bundle checker. These codecs are transport,
+`Belay.Sqlite.Model.Codec`, shared with ADR 0003's bundle checker. These codecs are transport,
 not a proof oracle. The pure checker has no JSON dependency. -/
 
-open Belay.Sqlite
+open Belay.Sqlite.Model
 
-namespace Belay.Sqlite
+namespace Belay.Sqlite.Model
 
 deriving instance Lean.FromJson, Lean.ToJson for Limits
 /-- A profile as JSON, with {lit}`foreignKeys` only for a profile that turns foreign keys on, so
@@ -131,4 +131,4 @@ def decodeCase (json : Lean.Json) : Except String Case := do
   return c
 
 end Conformance
-end Belay.Sqlite
+end Belay.Sqlite.Model

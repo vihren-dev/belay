@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-22T12:03:46+00:00",
+  "finding": "20261022T120339Z-3c89c967#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "A test of which files direnv watches tests direnv's watch_dir, a dependency, with no suspected problem; .envrc is the owner's shell entry and has no test today (CLAUDE.md, Testing)"
+}

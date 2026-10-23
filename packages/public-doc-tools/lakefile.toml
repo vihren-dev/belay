@@ -1,6 +1,6 @@
 # The documentation inventory: it reads the compiled public modules and their sources, so the
 # publicDocumentation build can require checked Verso documentation (tools/public_doc_inventory.py).
-# The installed runtime does not contain it.
+# The conformance runtime does not contain it.
 name = "publicDocTools"
 version = "0.1.0"
 defaultTargets = ["PublicDocSyntax", "PublicDocInventory"]

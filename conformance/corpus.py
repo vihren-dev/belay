@@ -17,8 +17,9 @@ from conformance.execution_profile import ExecutionProfile, recorded_profile, va
 from conformance.native_storage import expanded_record
 from conformance.native_call_recording import replay_arguments, validate_recording
 from conformance.locked_corpora import is_locked, locked_records
-from conformance.record_parser import NO_PARSER_REASON, runtime_library
+from conformance.record_parser import NO_PARSER_REASON
 from conformance.record_versions import PROFILED, WITH_OUTPUTS
+from conformance.sql_text import runtime_translator
 
 
 def load(directory: Path, *, executor: Executor | None = None) -> tuple[dict[str, Json], list[dict[str, Json]]]:
@@ -69,9 +70,9 @@ def replay(records: list[dict[str, Json]], runtime: Path) -> dict[str, Json]:
         cases: list[dict[str, Json]] = []
         positions: list[int] = []
         answers: list[dict[str, Json]] = []
-        library = runtime_library(runtime)
+        translator = runtime_translator(runtime)
         for position, record in enumerate(records):
-            case, answer = prepare(record, library)
+            case, answer = prepare(record, translator)
             answers.append(answer)
             if case is not None:
                 positions.append(position)
@@ -86,11 +87,11 @@ def replay(records: list[dict[str, Json]], runtime: Path) -> dict[str, Json]:
         for record, answer in zip(records, answers, strict=True):
             if answer["verdict"] != "MODEL_UNSUPPORTED" or answer.get("reason") == NO_PARSER_REASON:
                 continue
-            projection = without_trailing_queries(record, library)
+            projection = without_trailing_queries(record, translator)
             if projection is None:
                 query_counts["OTHER_UNSUPPORTED"] += 1
                 continue
-            case, prefix_answer = prepare(projection, library)
+            case, prefix_answer = prepare(projection, translator)
             if case is not None:
                 prefix_positions.append(len(projections))
                 prefix_cases.append(case)

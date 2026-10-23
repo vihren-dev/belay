@@ -3,9 +3,14 @@
 Date: 2026-10-07. Revised: 2026-10-08. Status: ACCEPTED on 2026-10-08.
 Audience: designers and reviewers.
 Related: [SQLite syntax boundary](sqlite-parser.md),
-[trust boundary](trust-boundary.md),
+[trust boundary](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/trust-boundary.md),
 [ADR 0005](adr-0005-conformance-corpus-scale.md),
 [ADR 0006](adr-0006-model-boundary-and-execution-levels.md).
+
+Amended 2026-10-21 ([ADR 0021](adr-0021-remove-the-verifier-product.md)): the verifier product was removed. Its requirements in this ADR
+no longer apply: `Runtime.locate`, the trust boundary document, the runtime packaging, the
+release archive and the installer tests. The parser library, its API, its dialect table and its
+tests stay; the conformance harness and the surface load the library from an explicit path.
 
 The 2026-10-08 revision describes the code layout after
 [PR #56](https://github.com/vihren-dev/sqlite-verifier/pull/56), which implements
@@ -27,7 +32,7 @@ names in `belay/sqlite/` are therefore given as text, not as links.
 text. Each call writes the text to a new temporary file, starts a process with
 a 5-second deadline, and reads a JSON syntax tree from its output. The caller
 supplies the executable path: in the verifier,
-[`Runtime.locate`](../migration_check/runtime.py) maps a version to an
+[`Runtime.locate`](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/migration_check/runtime.py) maps a version to an
 executable name; in the conformance harness, the path comes from the
 conformance runtime root.
 
@@ -197,11 +202,14 @@ the model supports it.
   output. The sanitizer job in "How the parser library is tested" checks for
   them.
 - **Trust boundary.** The parser was already trusted code. The
-  [trust boundary](trust-boundary.md) must say that it now runs inside the
+  [trust boundary](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/trust-boundary.md) must say that it now runs inside the
   verifier process, without a deadline.
 - **Packaging.** The runtime and the release archive contain the library
   instead of the executables. The installer tests must still show that no
   ambient tool or library is used.
+- **Amended 2026-10-21 ([ADR 0021](adr-0021-remove-the-verifier-product.md)).** The trust boundary document, the release archive and
+  the installer tests of the two items above were removed with the verifier product. The
+  conformance runtime contains the library at `lib/`.
 - **Documentation.** [SQLite syntax boundary](sqlite-parser.md) describes the
   library, the API, the metadata and the dialect table.
 
@@ -322,7 +330,7 @@ parse each case with the dialect of its recorded profile before it checks that
 the model supports the profile, and removes the executables,
 their callers and their tests. It updates the runtime packaging,
 the installer tests, the [SQLite syntax boundary](sqlite-parser.md) and the
-[trust boundary](trust-boundary.md).
+[trust boundary](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/trust-boundary.md).
 
 ## Cleanup in step 2
 
@@ -379,7 +387,7 @@ digest of the library instead of the digest of the executable.
   API, the metadata and the dialect table.
 - [Conformance fixtures](conformance-fixtures.md): the references to the
   executables.
-- [Trust boundary](trust-boundary.md): the parser runs in the verifier process,
+- [Trust boundary](https://github.com/vihren-dev/sqlite-verifier/blob/d0b1d728e9c668ef6c1a3edb4d9a2997f2087613/docs/trust-boundary.md): the parser runs in the verifier process,
   without a deadline.
 
 **Kept.** Reports and plans that name the executables are historical evidence,

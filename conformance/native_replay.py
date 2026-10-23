@@ -9,11 +9,8 @@ from conformance.native_connection import SOURCE_ID
 from conformance import native_bindings
 from conformance.native_call_recording import validate_recording
 from conformance.native_metadata import integer, native_table, text
-from belay.sqlite.dialects import NoParserForDialect
-from belay.sqlite.errors import SqlError
-from belay.sqlite.parser_library import ParserLibrary, ParserLibraryError
-from belay.sqlite.sql_tree import ParserResourceLimit, parse
-from belay.sqlite.syntax import commands, statements
+from conformance.sql_text import Translator
+from belay.sqlite.errors import NoParserForDialect, ParserResourceLimit, SqlError
 
 
 
@@ -90,7 +87,7 @@ def native_tables(observation: dict[str, Json]) -> list[Json]:
     return result
 
 
-def model_case(record: dict[str, Json], library: ParserLibrary) -> dict[str, Json]:
+def model_case(record: dict[str, Json], translator: Translator) -> dict[str, Json]:
     """Map the SQL to statement syntax again on every replay, preserving frozen native truth.
 
     The case's SQL is parsed with the dialect of its recorded profile before the model
@@ -102,16 +99,16 @@ def model_case(record: dict[str, Json], library: ParserLibrary) -> dict[str, Jso
             or record["nativeVersion"] not in PROFILED and record.get("sourceId") != SOURCE_ID):
         raise ValueError("Unsupported native record version or engine identity")
     outputs = [output_wire(event) for event in record["trace"]] if record["nativeVersion"] in WITH_OUTPUTS else None
-    parser = record_parser(library, record)
+    parser = record_parser(translator, record)
     initial_sql = schema_sql(record["initial"]["visible"])
-    schema_tree = parse(parser, initial_sql.encode(), "corpus-schema.sql")
-    migration_tree = parse(parser, record["migrationSql"].encode(), "corpus-migration.sql")
+    schema_text = parser.translate(initial_sql.encode(), "corpus-schema.sql").parsed()
+    migration_text = parser.translate(record["migrationSql"].encode(), "corpus-migration.sql").parsed()
     for event in record["trace"]:
         if "sql" in event and not event["primaryCode"]:
-            parse(parser, event["sql"].encode(), "native-statement.sql")
+            parser.translate(event["sql"].encode(), "native-statement.sql").parsed()
     profile = modeled_profile(record)
-    schema = statements(schema_tree)
-    script = statements(migration_tree)
+    schema = schema_text.statements()
+    script = migration_text.statements()
     foreign_key_scope(record, [*schema, *script])
     trace = record["trace"]
     if (len(trace) > len(script) or any(event["primaryCode"] for event in trace[:-1])
@@ -141,10 +138,10 @@ def model_case(record: dict[str, Json], library: ParserLibrary) -> dict[str, Jso
             if trace and all("clockUnixMilliseconds" in event for event in trace) else []}
 
 
-def prepare(record: dict[str, Json], library: ParserLibrary) -> tuple[dict[str, Json] | None, dict[str, Json]]:
+def prepare(record: dict[str, Json], translator: Translator) -> tuple[dict[str, Json] | None, dict[str, Json]]:
     """Unsupported native cases survive replay; corrupt evidence remains a harness error."""
     try:
-        return model_case(record, library), {}
+        return model_case(record, translator), {}
     except NoParserForDialect as error:
         return None, {"verdict": "MODEL_UNSUPPORTED", "frontendStatus": error.status,
                       "reason": NO_PARSER_REASON, "error": str(error)}
@@ -158,11 +155,11 @@ def prepare(record: dict[str, Json], library: ParserLibrary) -> tuple[dict[str, 
                       "frontendStatus": error.status, "error": str(error)}
     except HiddenRowid as error:
         return None, {"verdict": "MODEL_UNSUPPORTED", "reason": HIDDEN_ROWID_REASON, "error": str(error)}
-    except (ValueError, KeyError, TypeError, IndexError, OSError, RuntimeError, ParserLibraryError) as error:
+    except (ValueError, KeyError, TypeError, IndexError, OSError, RuntimeError) as error:
         return None, {"verdict": "HARNESS_ERROR", "error": str(error)}
 
 
-def without_trailing_queries(record: dict[str, Json], library: ParserLibrary) -> dict[str, Json] | None:
+def without_trailing_queries(record: dict[str, Json], translator: Translator) -> dict[str, Json] | None:
     """Project only successful trailing SELECT/metadata PRAGMAs with unchanged recorded state.
 
     The original record retains query SQL and exact result rows. This diagnostic does
@@ -170,13 +167,9 @@ def without_trailing_queries(record: dict[str, Json], library: ParserLibrary) ->
     """
     if any(event["primaryCode"] for event in record["trace"]):
         return None
-    tree = parse(record_parser(library, record), record["migrationSql"].encode(), "corpus-queries.sql")
-    try:
-        nodes = commands(tree)
-    except SqlError as error:
-        if error.status == "UNSUPPORTED":
-            return None  # EXPLAIN and other wrappers are outside this diagnostic projection.
-        raise
+    nodes = record_parser(translator, record).translate(record["migrationSql"].encode(), "corpus-queries.sql").commands()
+    if nodes is None:
+        return None  # EXPLAIN and other wrappers are outside this diagnostic projection.
     trace = record["trace"]
     if len(nodes) != len(trace) or any(event["primaryCode"] for event in trace):
         return None
@@ -184,11 +177,10 @@ def without_trailing_queries(record: dict[str, Json], library: ParserLibrary) ->
     safe_pragmas = {"table_info", "table_xinfo", "index_info", "index_xinfo", "index_list", "foreign_key_list"}
     while end:
         node, after = nodes[end - 1], trace[end - 1]
-        children = tree.children(node)
-        symbols = [child.symbol for child in children]
+        symbols = list(node.symbols)
         readonly = symbols == ["select"]
         if symbols and symbols[0] == "PRAGMA" and "EQ" not in symbols:
-            names = [tree.text(child).lower() for child in children if child.symbol == "nm"]
+            names = [name.lower() for name in node.names]
             readonly = bool(names and names[0] in safe_pragmas)
         before = trace[end - 2] if end > 1 else record["initial"]
         if not readonly or any(after[field] != before[field] for field in ("visible", "persisted", "transactionOpen")):

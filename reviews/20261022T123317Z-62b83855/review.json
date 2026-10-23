@@ -1,0 +1,46 @@
+{
+  "caller": "claude",
+  "commit": "62b8385561295f608c940db1c1971e8cc56f6ec7",
+  "date": "2026-10-22T12:33:17+00:00",
+  "exit": 0,
+  "files": [
+    "docs/adr-0020-local-build-loop.md",
+    "plans/20261022-local-build-loop.status.md",
+    "plans/20261022-local-build-loop.task.md",
+    "reviews/20261022T121902Z-4a35c7d0/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261022T123317Z-62b83855#1",
+      "line": 3,
+      "path": "plans/20261022-local-build-loop.task.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The new DONE status assumes outcome 5 is satisfied, but unknown targets pass through `resolved_targets` to Lake, whose error does not list known targets. Fix: update outcome 5 and the test description to state that Lake validates target names."
+    }
+  ],
+  "id": "20261022T123317Z-62b83855",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

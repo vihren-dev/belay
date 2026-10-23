@@ -1,0 +1,50 @@
+{
+  "caller": "claude",
+  "commit": "d359294b3be92789ae1a36e8488376aca8b0d7c4",
+  "date": "2026-10-21T20:53:58+00:00",
+  "exit": 0,
+  "files": [
+    "build-support/api-reference.nix",
+    "build-support/default.nix",
+    "build-support/public-documentation.nix",
+    "plans/20261021-remove-verifier-product.status.md",
+    "reviews/20261021T203808Z-b964f87e/review.json",
+    "tests/test_api_reference.py",
+    "tools/api_reference.py",
+    "tools/public_doc_inventory.py"
+  ],
+  "findings": [
+    {
+      "id": "20261021T205358Z-d359294b#1",
+      "line": 66,
+      "path": "tools/api_reference.py",
+      "rule": "R13",
+      "severity": "should",
+      "text": "The reference now excludes `SqliteVerifier`, but `docs/api-reference.md` still directs readers to the missing `SqliteVerifier.html` entry page. Fix: update the guide in this commit to identify `Belay.Sqlite.Model` and its generated entry page."
+    }
+  ],
+  "id": "20261021T205358Z-d359294b",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "0386162b1d72",
+    "R7": "9700703240a5",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

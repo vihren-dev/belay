@@ -1,6 +1,6 @@
 # Status: enforced foreign keys (ADR 0018, slice 4)
 
-Created 2026-10-21. Status: open.
+Created 2026-10-21. Status: DONE (pull requests #204 and #205).
 Task file: [task](20261021-foreign-keys.task.md).
 Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D4.
 
@@ -40,6 +40,7 @@ Specification: [ADR 0018](../docs/adr-0018-surface-sql.md), D4.
   corpus, with the rowid fix: no case leaves AGREE and none disagrees; 97 cases of v5, 4 of v3
   and 1 each of v1, v2 and v4 newly agree. The four mutants change their verdicts (43.9 s).
 
-## Remaining
+## Done
 
-- `just test-full`, corpus 45 and its claim (PR B).
+- 2026-10-22: corpus 45 (`conformance/corpus-v45`) and its claim in `judge/claims.json` were
+  merged in pull request #205, after the model in #204.

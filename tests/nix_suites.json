@@ -1,31 +1,4 @@
 {
-  "atuin": [
-    "tests/atuin_cli_test.py"
-  ],
-  "bundle": [
-    "tests/bundle_test.py",
-    "tests/proof_exporter_test.py",
-    "tests/generated_inputs_test.py",
-    "tests/test_latency_frontend.py",
-    "tests/model_roots_test.py",
-    "tests/test_import_path.py",
-    "tests/lake_runtime_package_test.py",
-    "tests/bundle_cache_test.py",
-    "tests/prepare_warning_test.py",
-    "tests/project_phases_test.py",
-    "tests/cache_domains_test.py",
-    "tests/case_seeds_test.py",
-    "tests/constant_default_example_test.py"
-  ],
-  "cli": [
-    "tests/cli_test.py",
-    "tests/cli_refusal_test.py"
-  ],
-  "kernel": [
-    "tests/kernel_gate_test.py",
-    "tests/kernel_gate_inputs_test.py",
-    "tests/single_executor_test.py"
-  ],
   "model": [
     "tests/conformance_model_test.py",
     "tests/conformance_generation_test.py",
@@ -80,7 +53,6 @@
     "tests/conformance_readonly_workload_test.py",
     "tests/conformance_context_test.py",
     "tests/conformance_requirement_coverage_test.py",
-    "tests/conformance_frontend_boundary_test.py",
     "tests/conformance_authored_transactions_test.py",
     "tests/conformance_predict_test.py"
   ],
@@ -131,5 +103,10 @@
   ],
   "writers": [
     "tests/conformance_corpus_writers_test.py"
+  ],
+  "surface": [
+    "tests/surface_parser_test.py",
+    "tests/surface_layers_test.py",
+    "tests/surface_translation_checks_test.py"
   ]
 }

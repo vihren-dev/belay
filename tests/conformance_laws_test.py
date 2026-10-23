@@ -11,19 +11,19 @@ from conformance.native_trace import Fixture, record
 from conformance.record_parser import default_parser
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kernel,
-              pytest.mark.requires_lean, pytest.mark.requires_native("parser-library", "sqlite3")]
+              pytest.mark.requires_lean, pytest.mark.requires_native("translation-program", "sqlite3")]
 
 
 def test_laws_kernel(runtime_root: Path) -> None:
     """Compile the actual universal proofs and reject all forbidden proof-oracle axioms."""
-    source = Path(__file__).resolve().parents[1] / "packages/belay-sqlite/Belay/Sqlite/Laws.lean"
+    source = Path(__file__).resolve().parents[1] / "packages/belay-sqlite-model/Belay/Sqlite/Model/Laws.lean"
     checked = subprocess.run([str(runtime_root / "lean/bin/lean"), str(source)],
-        env={**os.environ, "LEAN_PATH": os.pathsep.join(str(runtime_root / path) for path in (".lake/build/lib/lean", "packages/belay-sqlite/.lake/build/lib/lean"))},
+        env={**os.environ, "LEAN_PATH": os.pathsep.join(str(runtime_root / path) for path in (".lake/build/lib/lean", "packages/belay-sqlite-model/.lake/build/lib/lean"))},
         capture_output=True, text=True, timeout=30)
     assert checked.returncode == 0, checked.stdout + checked.stderr
     audit_axioms(checked.stdout)
     for name in ("rollback", "statement_atomicity", "constraint_rollback", "add_column_shape"):
-        assert f"Belay.Sqlite.Conformance.{name}' depends on axioms" in checked.stdout
+        assert f"Belay.Sqlite.Model.Conformance.{name}' depends on axioms" in checked.stdout
 
 
 @pytest.mark.parametrize("size", [0, 1, 5])

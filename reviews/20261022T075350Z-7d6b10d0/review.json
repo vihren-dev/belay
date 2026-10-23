@@ -1,0 +1,87 @@
+{
+  "caller": "claude",
+  "commit": "7d6b10d0286652cbbd6ff4bff324d38fa6f61e23",
+  "date": "2026-10-22T07:53:50+00:00",
+  "exit": 1,
+  "files": [
+    "conformance/check_mutants.py",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Database.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/DatabaseConstraintChecks.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/DatabaseConstraints.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/DatabaseFactChecks.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/DatabaseFacts.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/DatabaseWriteLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeysHold.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/LiteralData.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/LiteralPreservationLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/ModelLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/QueryJoinLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SchemaExtensionLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/ValidityExamples.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model.lean",
+    "packages/belay-sqlite-model/lakefile.toml",
+    "plans/20261022-validity-atoms.status.md",
+    "reviews/20261022T073051Z-d3f0a621/resolution-1-20261022T073106Z.json",
+    "reviews/20261022T073051Z-d3f0a621/resolution-2-20261022T073106Z.json",
+    "reviews/20261022T073156Z-c687c711/review.json",
+    "tests/column_extension_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261022T075350Z-7d6b10d0#1",
+      "line": 16,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/DatabaseConstraintChecks.lean",
+      "rule": "R3",
+      "severity": "must",
+      "text": "`zip_forall_iff` and the four constraint equivalence lemmas used by `Table.constraints_iff` lack proof sketches. Fix: add a short strategy sentence to each docstring."
+    },
+    {
+      "id": "20261022T075350Z-7d6b10d0#2",
+      "line": 79,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/DatabaseFacts.lean",
+      "rule": "R3",
+      "severity": "must",
+      "text": "`Table.Admitted.ofEmpty`, `Database.Admitted.table` and `Database.Admitted.ofTables` are used by other proofs but lack proof sketches. Fix: describe how each proof constructs or extracts the admission fields."
+    },
+    {
+      "id": "20261022T075350Z-7d6b10d0#3",
+      "line": 14,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/DatabaseFactChecks.lean",
+      "rule": "R3",
+      "severity": "must",
+      "text": "`Database.table_lt` is used by `Database.everyTable_iff` but lacks a proof sketch. Fix: explain that a successful catalog lookup supplies the position bound."
+    },
+    {
+      "id": "20261022T075350Z-7d6b10d0#4",
+      "line": 27,
+      "path": "plans/20261022-validity-atoms.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The status says `ValidityExamples.lean` contains the task’s cases, but it lacks the required failing cases for catalog support and row-list shape. Fix: record these cases as outstanding until they are added."
+    }
+  ],
+  "id": "20261022T075350Z-7d6b10d0",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

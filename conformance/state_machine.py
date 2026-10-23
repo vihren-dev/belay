@@ -11,7 +11,8 @@ from conformance.generated_program import Affinity, Program, SqlValue, command, 
 from conformance.model_check import acquire, compiled
 from conformance.native_record import record_sql
 from conformance.native_replay import prepare
-from conformance.record_parser import default_parser, runtime_library
+from conformance.record_parser import default_parser
+from conformance.sql_text import runtime_translator
 
 VALUES = {
     "blob": [None, "", "1", " 1", "1.0", "a'\nb", b"", b"\x00\xff", -(2**63), 2**63-1],
@@ -113,7 +114,7 @@ def generate(runtime: Path, *, error_seeking: bool, examples: int = 20, steps: i
                 assert result["verdict"] in {"AGREE", "MODEL_UNSUPPORTED"}, (program.fixture(), result)
             native = record_sql("CREATE TABLE t(v INTEGER);",
                 "INSERT INTO t(v) VALUES('" + self.boundary + "');", name="generated-affinity-boundary")
-            case, result = prepare(native, runtime_library(runtime))
+            case, result = prepare(native, runtime_translator(runtime))
             if case is not None:
                 # Store-time affinity converts the text; the model must agree with native SQLite.
                 result = compiled(case, runtime)

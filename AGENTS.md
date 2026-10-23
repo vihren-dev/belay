@@ -20,8 +20,8 @@ that users see: CLI output, diagnostics and error messages.
 
 Rules for this repository:
 
-- Write each document for one audience: users (README, installation,
-  examples), designers and reviewers (ADRs, trust boundary), or the team
+- Write each document for one audience: users (README, package READMEs,
+  examples), designers and reviewers (ADRs), or the team
   (status and acceptance records). Do not mix them in one document.
 - A docstring tells what the code does and why. Use a negative statement only
   to warn about a real trap.
@@ -59,10 +59,9 @@ are retained; they are not replaced implementation paths.
 
 Until the project has users, follow each stable Lean release. Upgrade within
 two weeks after a stable release, in its own change, with no other work in it.
-Do not adopt release candidates. If a Lean dependency (lean4export, comparator,
-doc-gen4) has no tag for the new version, try to build its latest tag under the
-new version; if that fails, record it in the upgrade issue and wait for the
-dependency. Do not downgrade the toolchain automatically.
+Do not adopt release candidates. If a Lean dependency (doc-gen4) has no tag
+for the new version, try to build its latest tag under the new version; if
+that fails, record it in the upgrade issue and wait for the dependency. Do not downgrade the toolchain automatically.
 
 This policy covers the Lean toolchain and the Lean dependencies built with it.
 It excludes the SQLite versions in the execution profiles: those versions
@@ -139,6 +138,21 @@ and changed tests and checks, including checks that tools run during a build.
 - **Workarounds are narrow.** A workaround for a dependency bug covers only the
   cases that we need, names the upstream report, and is removed when the fix
   arrives.
+
+## The local build loop
+
+direnv loads the development shell of `shell.nix` when a session changes into
+the repository. Run `just`, `lake` and `python3` directly. Do not start a shell
+with `nix develop` or `nix-shell`. If `just dev-build` says that the shell is
+not loaded, ask the owner to run `direnv allow` in the workspace.
+
+- While you edit the Lean packages under `packages/`, check each edit with
+  `just dev-build`. When the edit can change a prediction, also run
+  `just dev-verdict`, for all corpora or for the ones that the edit touches.
+- Before each commit, run the Nix checks that the other rules require, for
+  example `just test-full` or `just verdict`.
+- A local result is not evidence (ADR 0011, ADR 0020). Commit messages, status
+  files and pull requests cite only results of the Nix checks.
 
 ## Development claims
 

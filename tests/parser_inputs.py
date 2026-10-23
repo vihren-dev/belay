@@ -1,7 +1,7 @@
 """SQL inputs of the parser tests, shared with the checks of the parser library.
 
-`tests/parser_test.py` parses them with the executables. The parser library checks parse
-the same inputs with each grammar of the library, and compare the results.
+The parser library checks (`tests/parser_library_test.py`) parse them with each grammar of the
+library and check the status and the spans of each document.
 """
 
 VALID = (

@@ -10,38 +10,34 @@ from tests.runtime_support import run_command
 
 ROOT = Path(__file__).resolve().parents[1]
 pytestmark = [pytest.mark.integration, pytest.mark.environment, pytest.mark.requires_nix]
-PACKAGES: dict[str, str] = {"sqlite-verifier": "verifierLibrary", "verifier-gate": "verifierGate",
-                            "verifier-conformance": "verifierConformance", "public-doc-tools": "docTools"}
+PACKAGES: dict[str, str] = {"verifier-conformance": "verifierConformance", "public-doc-tools": "docTools"}
 """The Lean package folders under packages/ that `sources.nix` selects one by one, to their attributes."""
-COMPONENTS: set[str] = {"runtime", "runtimeWithoutExamples", "model", *PACKAGES.values()}
+COMPONENTS: set[str] = {"model", "surface", "text", *PACKAGES.values()}
 DYNAMIC: dict[str, set[str]] = {
-    "packages/belay-sqlite/Belay/Sqlite/Model.lean": {"model"},
-    "packages/belay-sqlite/Belay/Sqlite/Codec.lean": {"model"},
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Database.lean": {"model"},
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Codec.lean": {"model"},
+    "packages/belay/Belay.lean": {"surface"}, "packages/belay/lakefile.lean": {"surface"},
+    "packages/belay-sqlite-text/Belay/Sqlite/Parse.lean": {"text"},
+    "packages/belay-sqlite-text/lakefile.lean": {"text"},
     **{f"parser/input.{suffix}": set() for suffix in ("py", "c", "h", "y", "json")},
-    "packages/sqlite-verifier/SqliteVerifier/Contract.lean": {"verifierLibrary"},
-    "packages/sqlite-verifier/SqliteVerifier/ContractProofs.lean": {"verifierLibrary"},
-    "packages/sqlite-verifier/SqliteVerifier/Library.lean": {"verifierLibrary"},
-    "packages/sqlite-verifier/Root.lean": {"verifierLibrary"},
-    "packages/verifier-gate/ProofChecker.lean": {"verifierGate"},
     "packages/verifier-conformance/VerifierConformance/Trace.lean": {"verifierConformance"},
     "packages/verifier-conformance/ConformanceRunner.lean": {"verifierConformance"},
     "packages/public-doc-tools/PublicDocSyntax.lean": {"docTools"},
-    "belay/sqlite/sql_model.py": {"runtime", "runtimeWithoutExamples"},
-    "migration_check/runtime.py": {"runtime", "runtimeWithoutExamples"}, "tests/test_input.py": set(),
-    "packaging/helper.py": set(), "tools/helper.py": set(), "Loose.lean": set(),
-    "conformance/check.py": set(), "examples/example.sql": {"runtime"},
+    "belay/sqlite/sql_model.py": set(), "tests/test_input.py": set(),
+    "tools/helper.py": set(), "Loose.lean": set(), "conformance/check.py": set(),
 }
 FIXED: dict[str, set[str]] = {
-    **{f"packages/belay-sqlite/{name}": {"model"}
+    **{f"packages/belay-sqlite-model/{name}": {"model"}
        for name in ("lakefile.toml", "lake-manifest.json", "lean-toolchain")},
+    **{f"packages/belay/{name}": {"surface"} for name in ("lake-manifest.json", "lean-toolchain")},
+    **{f"packages/belay-sqlite-text/{name}": {"text"} for name in ("lake-manifest.json", "lean-toolchain", "c/parser_shim.c")},
     **{f"packages/{folder}/{name}": {attribute} for folder, attribute in PACKAGES.items()
        for name in ("lakefile.toml", "lake-manifest.json", "lean-toolchain")},
-    **{name: {"runtime", "runtimeWithoutExamples"}
-       for name in ("LICENSE", "docs/install.md", "packaging/install.sh", "packaging/install.py")},
 }
-PARENTS: tuple[str, ...] = (".", "parser", "migration_check", "belay/sqlite", "tests", "packaging", "tools",
-           "conformance", "examples", "packages/belay-sqlite", "packages/belay-sqlite/Belay/Sqlite",
-           *(f"packages/{folder}" for folder in PACKAGES), "packages/sqlite-verifier/SqliteVerifier",
+PARENTS: tuple[str, ...] = (".", "parser", "belay/sqlite", "tests", "tools",
+           "conformance", "packages/belay-sqlite-model", "packages/belay-sqlite-model/Belay/Sqlite/Model",
+           "packages/belay", "packages/belay-sqlite-text", "packages/belay-sqlite-text/Belay/Sqlite",
+           *(f"packages/{folder}" for folder in PACKAGES),
            "packages/verifier-conformance/VerifierConformance")
 IGNORED: tuple[str, ...] = (".git", ".jj", ".lake", "build", "dist", "__pycache__")
 PARSER_LIBRARY_INPUTS: dict[str, str] = {
@@ -52,8 +48,8 @@ PARSER_LIBRARY_INPUTS: dict[str, str] = {
         "runtime.h", "tokenizer.c", "library_prefix.h", "library_tokenizer.c", "library_grammar.c",
         "library.c", "library.h", "upstream/lempar.c", "upstream/sqlite3.c", "upstream/sqlite3.h")},
 }
-"""The files that `build-support/parser-library.nix` reads when Nix evaluates the runtime's
-parser library: a one-release dialect table and placeholders, since nothing is built."""
+"""The files that `build-support/parser-library.nix` reads when Nix evaluates the conformance
+runtime's parser library: a one-release dialect table and placeholders, since nothing is built."""
 
 
 def identities(root: Path) -> dict[str, str]:
@@ -150,39 +146,39 @@ def test_generated_tree_invariance(identity_tree: tuple[Path, dict[str, str]], p
     assert identities(root) == baseline
 
 
-@pytest.mark.parametrize("relative", ["README.md", "docs/notes.md", "build-support/notes.md",
-                                       "examples/.DS_Store", "examples/generated.pyc"])
+@pytest.mark.parametrize("relative", ["README.md", "docs/notes.md", "build-support/notes.md"])
 def test_unselected_file_invariance(identity_tree: tuple[Path, dict[str, str]], relative: str) -> None:
-    """Unrelated documentation and excluded example metadata do not invalidate any build component."""
+    """Unrelated documentation does not invalidate any build component."""
     root, baseline = identity_tree
     (root / relative).parent.mkdir(parents=True, exist_ok=True)
     (root / relative).write_text("unselected input")
     assert identities(root) == baseline
 
 
-def test_model_dependency_invalidates_application_artifacts(
+def test_model_change_reaches_the_conformance_runtime(
         identity_tree: tuple[Path, dict[str, str]]) -> None:
-    """The actual Nix entrypoint binds model inputs into application and runtime derivations."""
+    """The actual Nix entrypoint binds the model into the conformance runtime, and a change to the
+    conformance runner leaves the model alone."""
     root, _ = identity_tree
     def derivations() -> dict[str, str]:
         """Evaluate the production dependency graph with a private source root, without building it."""
         literal = json.dumps(str(root)).replace('${', '\\${')
         expression = ('let builds = import ./build-support/default.nix { root = /. + ' + literal + '; }; '
                       'in builtins.mapAttrs (_: value: value.drvPath) { '
-                      'inherit (builds) modelPackage leanRuntime conformanceRuntime runtime; }')
+                      'inherit (builds) modelPackage conformanceRuntime; }')
         result = run_command(['nix-instantiate','--eval','--strict','--json',
             '--extra-experimental-features','nix-command flakes','--expr',expression],cwd=ROOT,timeout=30)
         assert result.returncode == 0, result.diagnostic()
         return json.loads(result.stdout)
     before = derivations()
-    application = root / 'packages/sqlite-verifier/SqliteVerifier/Contract.lean'
-    original = application.read_bytes()
-    application.write_bytes(original+b'\napplication-only change\n')
+    runner = root / 'packages/verifier-conformance/ConformanceRunner.lean'
+    original = runner.read_bytes()
+    runner.write_bytes(original+b'\nrunner-only change\n')
     changed = derivations()
     assert changed['modelPackage'] == before['modelPackage']
-    assert all(changed[name] != before[name] for name in ('leanRuntime','conformanceRuntime','runtime'))
-    application.write_bytes(original)
-    model = root / 'packages/belay-sqlite/Belay/Sqlite/Model.lean'
+    assert changed['conformanceRuntime'] != before['conformanceRuntime']
+    runner.write_bytes(original)
+    model = root / 'packages/belay-sqlite-model/Belay/Sqlite/Model/Database.lean'
     model.write_bytes(model.read_bytes()+b'\nmodel change\n')
     changed = derivations()
     assert all(changed[name] != before[name] for name in before)

@@ -6,7 +6,7 @@ from {lit}`sqlite_schema`, {lit}`PRAGMA table_xinfo`, {lit}`PRAGMA index_list` a
 {lit}`PRAGMA index_xinfo`; this comparison is how the conformance suite checks the
 catalog that resolution computes. -/
 
-namespace Belay.Sqlite.Conformance
+namespace Belay.Sqlite.Model.Conformance
 
 /-- One column as {lit}`PRAGMA table_xinfo` reports it: the name and declared type
 as written ({lit}`""` for no type), NOT NULL, the default's text or none, and
@@ -137,7 +137,7 @@ def sameIndexes (model native : List NativeIndex) : Bool :=
 a native table: name, columns, keys (the primary key without repeated columns, as
 {lit}`PRAGMA table_xinfo` gives each column once), indexes, {lit}`WITHOUT ROWID`, and rows: by rowid, or
 for a {lit}`WITHOUT ROWID` table by their cells in key order
-({name}`Belay.Sqlite.Table.scanRows`), since the model's rowids of such a table are its
+({name}`Belay.Sqlite.Model.Table.scanRows`), since the model's rowids of such a table are its
 own. -/
 def tableMatches (catalog : Catalog) (position : Nat) (name : Identifier) (table : CatalogTable)
     (rows : List Row) (native : NativeTable) : Bool :=
@@ -168,4 +168,4 @@ def tablesMatch (database : Database) (natives : List NativeTable) : Bool :=
     | .index _ | .trigger _ => (database.rows.getD position []).isEmpty
     | .table _ => true)
 
-end Belay.Sqlite.Conformance
+end Belay.Sqlite.Model.Conformance

@@ -7,7 +7,7 @@ describes it. The theorems relate the pass to {lit}`runSqlFrom`, whose final out
 last observation shows, and to {lit}`supportedSqlFrom`, the support check of the
 verification target. -/
 
-namespace Belay.Sqlite.Conformance
+namespace Belay.Sqlite.Model.Conformance
 
 /-- What one pass over a script gives: the observation before each executed statement and
 of the final outcome, the output of each executed statement and the results that SQLite may
@@ -89,4 +89,4 @@ theorem passFrom_supported (position : Nat) (script : List Resolved.Statement) (
     | next next => simp [passFrom, supportedSqlFrom, h, ih]
     | halt outcome => simp [passFrom, supportedSqlFrom, h]
 
-end Belay.Sqlite.Conformance
+end Belay.Sqlite.Model.Conformance
