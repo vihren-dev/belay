@@ -25,6 +25,7 @@ import Belay.Sqlite.Model.FailingConstraintLaws
 import Belay.Sqlite.Model.ExecutionMessages
 import Belay.Sqlite.Model.ValidityFailure
 import Belay.Sqlite.Model.OutputRepr
+import Belay.Sqlite.Model.QueryOutputs
 import Belay.Sqlite.Model.SchemaClockLaws
 import Belay.Sqlite.Model.SqlLaws
 import Belay.Sqlite.Model.ScriptLaws

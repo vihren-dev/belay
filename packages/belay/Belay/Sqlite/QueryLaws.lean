@@ -9,22 +9,11 @@ not cover every case. -/
 
 namespace Belay.Sqlite
 
-/-- For each output, {name}`Output.hasRows` and {name}`Output.hasNoRows` are not both true. Proof
-sketch: by cases on the output; for {name}`Output.oneOf`, the first result is empty and not
-empty. -/
-theorem Model.Output.hasRows_not_hasNoRows (output : Output) (rows : output.hasRows = true) :
-    output.hasNoRows = false := by
-  cases output with
-  | rows found => simp_all [Model.Output.hasRows, Model.Output.hasNoRows]
-  | oneOf results =>
-    cases results with
-    | nil => simp [Model.Output.hasRows] at rows
-    | cons first rest => simp_all [Model.Output.hasRows, Model.Output.hasNoRows]
-  | done _ | error _ | unmodeled _ => simp [Model.Output.hasRows] at rows
+open Belay.Sqlite.Model
 
 /-- For every query {lit}`q` and database {lit}`db`: if {name}`Holds` of {lit}`q` on {lit}`db`
 holds, then {name}`Empty` of {lit}`q` on {lit}`db` does not. Proof sketch: both read the same output,
-and {name}`Model.Output.hasRows_not_hasNoRows`. -/
+and {name}`Output.hasRows_not_hasNoRows`. -/
 theorem Holds.not_empty {q : Script} {db : Database} {query : q.isQuery = true}
     (holds : Holds q db query) : ¬ Empty q db query := by
   unfold Holds Empty at *
@@ -32,26 +21,30 @@ theorem Holds.not_empty {q : Script} {db : Database} {query : q.isQuery = true}
   | none => simp [output] at holds
   | some value =>
     simp only [output, Option.any_some] at holds ⊢
-    simp [Model.Output.hasRows_not_hasNoRows value holds]
+    simp [Output.hasRows_not_hasNoRows value holds]
 
 /-- For every query {lit}`q` and database {lit}`db`: if {name}`Holds` of {lit}`q` on {lit}`db`
-holds, then {name}`Fails` of {lit}`q` on {lit}`db` does not. Proof sketch: an output with rows is not
-an error. -/
+holds, then {name}`Fails` of {lit}`q` on {lit}`db` does not. Proof sketch: both read the same output,
+and {name}`Output.hasRows_not_isError`. -/
 theorem Holds.not_fails {q : Script} {db : Database} {query : q.isQuery = true}
     (holds : Holds q db query) : ¬ Fails q db query := by
   unfold Holds Fails at *
   cases output : q.outputOn db with
   | none => simp [output] at holds
-  | some value => cases value <;> simp_all [Model.Output.hasRows, Output.isError]
+  | some value =>
+    simp only [output, Option.any_some] at holds ⊢
+    simp [Output.hasRows_not_isError value holds]
 
 /-- For every query {lit}`q` and database {lit}`db`: if {name}`Empty` of {lit}`q` on {lit}`db`
-holds, then {name}`Fails` of {lit}`q` on {lit}`db` does not. Proof sketch: an output without rows is
-not an error. -/
+holds, then {name}`Fails` of {lit}`q` on {lit}`db` does not. Proof sketch: both read the same output,
+and {name}`Output.hasNoRows_not_isError`. -/
 theorem Empty.not_fails {q : Script} {db : Database} {query : q.isQuery = true}
     (empty : Empty q db query) : ¬ Fails q db query := by
   unfold Empty Fails at *
   cases output : q.outputOn db with
   | none => simp [output] at empty
-  | some value => cases value <;> simp_all [Model.Output.hasNoRows, Output.isError]
+  | some value =>
+    simp only [output, Option.any_some] at empty ⊢
+    simp [Output.hasNoRows_not_isError value empty]
 
 end Belay.Sqlite

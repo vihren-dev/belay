@@ -2,7 +2,7 @@ import Belay
 
 /-! A fixture of `tests/surface_guide_test.py`: the examples of the user guide's section
 "Queries as propositions" over one database (`Belay/Sqlite/Queries.lean`,
-`Belay/Sqlite/QueryLaws.lean`). The guide writes `decide`; here each proof is `decide +kernel`.
+`Belay/Sqlite/QueryLaws.lean`, the model's `Model/QueryOutputs.lean`). The guide writes `decide`; here each proof is `decide +kernel`.
 The file fails to elaborate when an example does not hold, or when a message is not the
 expected one. -/
 

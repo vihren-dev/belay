@@ -13,14 +13,6 @@ namespace Belay.Sqlite
 
 open Belay.Sqlite.Model Lean Elab Tactic
 
-/-- Whether the statement only reads: a {lit}`SELECT`, or the query {lit}`PRAGMA foreign_keys`
-without a value. -/
-def Model.Syntax.Statement.readsOnly : Model.Syntax.Statement → Bool
-  | .select .. | .pragmaForeignKeys none => true
-  | .pragmaForeignKeys (some _) | .createTable .. | .createIndex .. | .addColumn .. | .dropTable ..
-  | .dropIndex .. | .begin | .commit | .rollback | .insert .. | .update .. | .delete ..
-  | .createTrigger .. | .dropTrigger .. => false
-
 /-- Whether the script is a query: exactly one statement, which only reads
 ({name}`Model.Syntax.Statement.readsOnly`). -/
 def Script.isQuery (script : Script) : Bool :=
@@ -32,20 +24,6 @@ def Script.isQuery (script : Script) : Bool :=
 on a new connection: {lean}`(none : Option Output)` for a script without statements. -/
 def Script.outputOn (script : Script) (db : Database) : Option Output :=
   (db.raw.run script).outputs.head?
-
-/-- Whether the output says that each result that SQLite may give has a row: rows that are not
-empty, or at least one result, of which none is empty. -/
-def Model.Output.hasRows : Output → Bool
-  | .rows found => !found.isEmpty
-  | .oneOf results => !results.isEmpty && results.all (!·.isEmpty)
-  | .done _ | .error _ | .unmodeled _ => false
-
-/-- Whether the output says that each result that SQLite may give has no row: rows that are
-empty, or at least one result, of which each is empty. -/
-def Model.Output.hasNoRows : Output → Bool
-  | .rows found => found.isEmpty
-  | .oneOf results => !results.isEmpty && results.all (·.isEmpty)
-  | .done _ | .error _ | .unmodeled _ => false
 
 /-- The tactic that proves the argument {lit}`query` of {lit}`Holds`, {lit}`Empty` and
 {lit}`Fails`, or gives an error that says what a query is. -/
