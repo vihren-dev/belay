@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.RowEngineUpdate
 import Belay.Sqlite.Model.RowEngineInsert
 import Belay.Sqlite.Model.ForeignKeyWrites
+import Belay.Sqlite.Model.RowCredit
 
 set_option doc.verso true
 
@@ -13,6 +14,26 @@ namespace Belay.Sqlite.Model
 
 variable {fact : Catalog → Nat → Table → Prop}
 
+/-- For every fact, catalog and nested run: if the nested run keeps the invariant
+({name}`NestedRun.Keeps`), so does {name}`NestedRun.credited` of it. Proof sketch: the counts of a
+state are no rows, so the nested run starts and ends in states with the rows of the states
+around it ({name}`KeyState.holds_of_rows`). -/
+theorem NestedRun.credited_keeps {catalog : Catalog} {nested : NestedRun} (keeps : nested.Keeps fact catalog) :
+    (NestedRun.credited nested).Keeps fact catalog := fun frame work state holds => by
+  have ran := keeps frame work { state with own := 0 } (KeyState.holds_of_rows rfl holds)
+  unfold NestedRun.credited
+  dsimp only
+  cases result : nested frame work { state with own := 0 } with
+  | error stop =>
+    rw [result] at ran
+    cases stop with
+    | error reason reached => trivial
+    | stopped algorithm reached => exact KeyState.holds_of_rows rfl ran
+    | undescribed => trivial
+  | ok reached =>
+    rw [result] at ran
+    exact KeyState.holds_of_rows rfl ran
+
 /-- For every fact with {name}`TableFacts`, catalog, links and fuel: {name}`runRows` keeps the
 invariant of the row engine ({name}`NestedRun.Keeps`). Proof sketch: induction on the fuel;
 without fuel the work is undescribed; with fuel, the rows of the work run in a fold of
@@ -22,7 +43,7 @@ theorem runRows_holds (facts : TableFacts fact) (catalog : Catalog) (links : Lis
     ∀ fuel, NestedRun.Keeps fact catalog (runRows catalog links fuel)
   | 0 => fun _ _ _ _ => trivial
   | fuel + 1 => fun frame work state holds => by
-    have nested := runRows_holds facts catalog links fuel
+    have nested := NestedRun.credited_keeps (runRows_holds facts catalog links fuel)
     cases work with
     | delete position rowids record ignore fire =>
       simp only [runRows]

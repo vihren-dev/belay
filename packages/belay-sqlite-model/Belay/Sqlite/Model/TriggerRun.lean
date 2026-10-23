@@ -88,7 +88,7 @@ def raisedKind (context : Resolved.EvalContext) (cells : List Value) (filter : O
 the statement as a constraint failure, and FAIL and ROLLBACK stop it with their algorithm. -/
 def raiseEffect (state : KeyState) : Syntax.RaiseKind → Except KeyStop (KeyState × Bool)
   | .ignore => pure (state, true)
-  | .abort => throw (.error .constraintViolation)
+  | .abort => throw (.error .constraintViolation state)
   | .fail => throw (.stopped .fail state)
   | .rollback => throw (.stopped .rollback state)
 
@@ -134,9 +134,9 @@ def runStep (catalog : Catalog) (nested : NestedRun) (frame : RowFrame) (cells :
     let some source := query.sourceAfter context cells database | throw .undescribed
     let run := query.run context source.rows
     if source.fault == .may || run.fault == .may || !Resolved.subqueriesPlain subqueries then throw .undescribed
-    if run.mismatch then throw (.error .datatypeMismatch)
-    if run.overflow then throw (.error .integerOverflow)
-    if run.fault == .must then throw (.error .functionError)
+    if run.mismatch then throw (.error .datatypeMismatch state)
+    if run.overflow then throw (.error .integerOverflow state)
+    if run.fault == .must then throw (.error .functionError state)
     return ({ state with subqueried := state.subqueried || !subqueries.isEmpty }, false)
   | .raise filter arms otherwise =>
     match raisedKind (.plain frame.clock) cells filter arms otherwise with

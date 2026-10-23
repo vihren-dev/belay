@@ -22,7 +22,7 @@ algorithm carries a state that satisfies {name}`KeyState.Holds`. A stop with an 
 the statement and an undescribed stop require nothing: they keep no state. -/
 def KeyStop.Holds (fact : Catalog → Nat → Table → Prop) (catalog : Catalog) : KeyStop → Prop
   | .stopped _ state => state.Holds fact catalog
-  | .error _ | .undescribed => True
+  | .error _ _ | .undescribed => True
 
 /-- For the given properties of values and of stops, and a result: a success has a value with
 the first property, and a stop has the second. -/
