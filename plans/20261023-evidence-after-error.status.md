@@ -97,6 +97,7 @@ corpus finds is extra work and is not in this estimate.
 ## Progress log
 
 - 2026-10-23: research, native probes and measurement; task file and this status file.
+- 2026-10-23: `just review` of the task and status files (change `qrlwyxux`): no findings.
 
 ## Tests for each commit
 
