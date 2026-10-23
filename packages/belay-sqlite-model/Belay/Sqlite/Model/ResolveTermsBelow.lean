@@ -76,7 +76,8 @@ theorem resolveCheck_below {width : Nat} {scope : Scope} (bounded : scope.Bounde
 
 /-- For every scope that ends below a width and column definition: if the CHECK constraints of
 the column resolve ({name}`columnChecks`), the condition of each reads below the width. A refused
-constraint requires nothing. -/
+constraint requires nothing. Proof sketch: a check of the list comes from a CHECK constraint of the
+definition, whose condition {name}`resolveCheck_below` bounds; the other constraints give no check. -/
 theorem columnChecks_below {width : Nat} {scope : Scope} (bounded : scope.Bounded width) {dqs : Bool}
     {definition : Syntax.ColumnDefinition} {checks : List CheckConstraint}
     (ok : columnChecks dqs scope definition = .ok checks) :
@@ -88,7 +89,8 @@ theorem columnChecks_below {width : Nat} {scope : Scope} (bounded : scope.Bounde
     simp only [exceptFmap_eq_ok, exceptMapError_eq_ok, Option.some.injEq] at hf
     obtain ⟨found, hc, rfl⟩ := hf
     exact resolveCheck_below bounded hc
-  | _ => cases hf
+  | notNull _ | primaryKey _ _ | unique _ | default _ _ | collate _ | references _ _ _ _ | generated _ _
+  | deferral _ => cases hf
 
 /-- For every scope that ends below a width, table, definitions and constraints: if every column of
 the table beyond the definitions has no CHECK constraint and the CHECK constraints resolve to the
@@ -120,6 +122,6 @@ theorem resolveTableChecks_below {width : Nat} {scope : Scope} (bounded : scope.
       simp only [exceptFmap_eq_ok, exceptMapError_eq_ok, Option.some.injEq] at hf
       obtain ⟨found, hk, rfl⟩ := hf
       exact resolveCheck_below bounded hk
-    | _ => cases hf
+    | primaryKey _ _ | unique _ _ | foreignKey _ _ _ _ _ | deferral _ => cases hf
 
 end Belay.Sqlite.Model

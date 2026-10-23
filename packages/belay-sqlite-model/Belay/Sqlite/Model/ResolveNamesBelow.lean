@@ -95,7 +95,8 @@ theorem Scope.resolveName_below {width : Nat} {scope : Scope} (bounded : scope.B
     obtain ⟨depth, _, same⟩ := member
     simpa [← same] using Scope.resolveAt_below bounded name depth
 
-/-- For every scope that ends below a width, the scope without some sources ends below it. -/
+/-- For every scope that ends below a width, the scope without some sources ends below it. Proof
+sketch: a source of the filtered scope is a source of the original scope. -/
 theorem Scope.bounded_filter {width : Nat} {scope : Scope} (bounded : scope.Bounded width) (keep : ScopeSource → Bool) :
     Scope.Bounded (scope.filter keep) width :=
   fun source member => bounded source (List.mem_filter.mp member).1
