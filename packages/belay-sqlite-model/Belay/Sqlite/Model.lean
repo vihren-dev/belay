@@ -41,6 +41,9 @@ import Belay.Sqlite.Model.RowLocalWriteTheorems
 import Belay.Sqlite.Model.RowLocalWrites
 import Belay.Sqlite.Model.RowLocalFrame
 import Belay.Sqlite.Model.RowLocalAtoms
+import Belay.Sqlite.Model.ScriptRunHolds
+import Belay.Sqlite.Model.RunHolds
+import Belay.Sqlite.Model.RunHoldsStep
 import Belay.Sqlite.Model.RowEngineWrites
 import Belay.Sqlite.Model.RowEngineFacts
 import Belay.Sqlite.Model.ForeignKeysHold

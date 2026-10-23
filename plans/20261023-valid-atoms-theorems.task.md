@@ -142,8 +142,10 @@ The status file proposes two parts, each with its own `just test-full` and `just
   Part 2 reuses from slice 2 part 2: the laws of `ResultHolds` over the `Except` steps
   (`RowEngineKeyState`), `oldSteps_rows` and `newSteps_rows` (`RowEngineKeySteps`), the
   cases of `checkedUpdate`, `deleteRow`, `updateRow`, `insertRow`, the trigger programs and
-  `runRows`, and its run theorems. Its invariant is fixed to `Database.KeysUnique`; owner
-  decision 1 asks whether slice 3 makes it a parameter.
+  `runRows`, and its run theorems. Owner decision 1 a) is done (2026-10-23): the row-engine
+  proofs take the fact of a table as a parameter (`TableFacts`, `RowEngineFacts`), and the run theorems
+  take the property of databases as a parameter (`RunHoldsStep`, `RunHolds`, `ScriptRunHolds`), so the
+  atoms of slice 2 and slice 3 are instances.
 - **ADD COLUMN.** The step checks the new column's CHECK on `row.values ++ [value]`, and
   `Database.addColumn` stores `Value.store column.affinity value`; these are the same cell by
   `readDefaultValue_stored` (`Resolution/ReadDefaultLaws.lean`). A default that reads the clock
