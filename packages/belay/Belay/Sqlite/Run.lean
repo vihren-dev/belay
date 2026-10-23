@@ -20,13 +20,14 @@ export Belay.Sqlite.Model (Output Output.rows Output.done Output.error Output.on
 def runContext : Belay.Sqlite.Model.ResolveContext := { profile := Profile.pinned, mode := .execution }
 
 /-- The model's run of the script on the connection, each statement with its values
-({name}`Belay.Sqlite.Model.runScriptFrom`), from the first statement, without a check of the
-database at its end. -/
+({name}`Belay.Sqlite.Model.runScriptFrom`), from the first statement, without a clock and
+without a check of the database at its end. A statement that reads the clock ends the run. -/
 def Script.runOn (connection : Connection) (script : Script) : ScriptRun :=
-  Belay.Sqlite.Model.runScriptFrom runContext 0 connection script.statements
+  Belay.Sqlite.Model.runScriptFrom runContext none 0 connection script.statements
 
 /-- The idle connection to the plain database: no open transaction, foreign keys off, as a new
-SQLite connection, and the clock of 0 at every position. -/
+SQLite connection, and the clock assignment of 0 at every position, which the run carries
+without a change. -/
 def Database.Raw.connection (raw : Database.Raw) : Connection := { state := { database := raw } }
 
 /-- Run the script on the plain database ({name}`Script.runOn` of
