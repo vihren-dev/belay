@@ -95,7 +95,7 @@ def Expr.evaluate (context : EvalContext) (row : List Value) : Expr → Value ×
     let (values, fault) := arguments.evaluate context row
     (function.value context.clock values, fault)
   | .now keyword => (keyword.value context.clock, .none)
-  | .parameter number => (context.parameters.getD (number - 1) .null, .none)
+  | .parameter number => (boundValue (context.parameters.getD (number - 1) .null), .none)
   | .scalar .iif .nil => (.null, .none)
   | .scalar .iif (.cons condition rest) =>
     let (value, fault) := condition.evaluate context row

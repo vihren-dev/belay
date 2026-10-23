@@ -24,6 +24,15 @@ def fitsInt64Range (value : Int) : Bool := int64Minimum ≤ value && value ≤ i
 /-- A REAL value from a double; a NaN becomes NULL, as SQLite never stores a NaN. -/
 def realValue (value : Float) : Value := if value.isNaN then .null else .real value.toBits
 
+/-- A value bound to a parameter, as a statement reads it: a NaN REAL is NULL, because
+{lit}`sqlite3_bind_double` binds a NaN as NULL; every other value is the same. -/
+def boundValue : Value → Value
+  | .real bits => if (Float.ofBits bits).isNaN then .null else .real bits
+  | .null => .null
+  | .integer value => .integer value
+  | .text bytes => .text bytes
+  | .blob bytes => .blob bytes
+
 /-- The double of a value as {lit}`sqlite3VdbeRealValue` reads it: an integer converted,
 a REAL as it is, TEXT and BLOB by {name}`atof`, NULL as zero. -/
 def Value.toReal : Value → Float

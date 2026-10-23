@@ -51,6 +51,10 @@ def textValue (text : String) : Value := .text text.toUTF8.toList
     [[], [.integer 1, textValue "a"], [.integer 7]] ==
   [.done 0, .done 1, .rows [[.integer 7, .null]], .rows [[textValue "a"]]]
 
+-- A bound NaN REAL is NULL, as SQLite binds it.
+#guard outputs [.select [.expression (.parameter 1) none ""] none [] none [] [] none none]
+    [[.real 0x7FF8000000000000]] == [.rows [[.null]]]
+
 -- An error in a transaction keeps the transaction open: COMMIT succeeds and keeps the first row.
 #guard outputs [createT, .begin, insertT "1" "a", insertT "1" "b", .commit, selectNames] ==
   [.done 0, .done 0, .done 1, .error 19, .done 0, .rows [[textValue "a"]]]

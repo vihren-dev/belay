@@ -92,7 +92,10 @@ theorem runSqlAt_of_readsClock (clock : Clock) (script : List (Resolved.Statemen
 
 /-- For every script with values whose statements do not read the clock and every database: if
 the support check
-{name}`supportedSqlFrom` passes, the script is supported at every clock assignment. -/
+{name}`supportedSqlFrom` passes, the script is supported at every clock assignment. Proof
+sketch: {name}`scriptClock_of_readsClock` turns every clock assignment of the script into 0 at
+every position, so the support check at each assignment is the check at the zero clock, which
+passes. -/
 theorem SupportedSql.of_readsClock {script : List (Resolved.Statement × List Value)} {database : Database}
     (free : scriptReadsClock (script.map (·.1)) = false) (supported : supportedSqlFrom 0 script { database := database } = true) :
     SupportedSql script database := fun clock => by

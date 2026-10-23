@@ -9,8 +9,8 @@ A case whose record has outputs carries them in two fields; a case without them
 has `outputs: null` and `parameters: []`:
 
 - `parameters`: one array of typed values per reached statement, using the shared
-  value codec. Parameterized model execution is not implemented and remains
-  `MODEL_UNSUPPORTED`.
+  value codec. The model runs each statement with the values of its array bound
+  to its parameters; a statement without an array binds no values.
 - `outputs`: one object per reached statement, with `result` and `groups`.
   `result` has `columns` (ordered names), `rows` (arrays of typed values), and
   `changes` (a nonnegative direct DML count or null for other statements).
