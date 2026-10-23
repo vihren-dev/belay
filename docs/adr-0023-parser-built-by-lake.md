@@ -98,8 +98,9 @@ needs only `lake build`.
    use it.
 7. **A second trial compiled with Lean's compiler.** On 2026-10-23, the lakefile of fact 5 was
    changed to compile the units with `buildLeanO`, the two options of fact 6, and one folder of
-   seven headers with 37 lines in total. The headers declare the functions of fact 6 with
-   their standard signatures. `FILE` is an incomplete type. Lake ran with a `PATH` that had
+   seven headers with 37 lines in total. The headers declare the C library functions that the
+   units use, with their standard signatures. `FILE` is an incomplete type, and `struct tm` has a complete
+   definition with the members that `sqlite3.c` uses. Lake ran with a `PATH` that had
    no `cc`, `gcc` or `clang`.
    - The build of fact 5 passed. From clean, the C part took 1.4 s (8 CPUs, load average 6.6).
    - For the 33,354 requests of fact 5, the answers were byte-identical to those of the
@@ -155,13 +156,19 @@ the manifest of D1, so a new grammar changes no Lean code.
 
 `parser/c-headers/` declares only what the five units use (fact 6). Each function has its
 standard C signature, because the linker resolves it in the C library that Lean links (fact
-3), and a wrong declaration compiles and links without an error. A type that the kept code
-does not use, such as `FILE` or `struct tm`, stays incomplete or is not declared.
-`parser/library_tokenizer.c` defines `sqlite3_os_init` and `sqlite3_os_end` as functions that
-return `SQLITE_OK` (fact 6), so that the compile gives no warnings. A new SQLite release that needs more declarations adds them
-here, and the symbol test of D5 shows which functions it calls. The units and the shim go into one static `extern_lib`,
-which Lake also makes as a shared library for the precompiled modules (fact 5). The lakefile
-does not read `BELAY_PARSER_LIBRARY` and adds no linker arguments for the parser.
+3), and a wrong declaration compiles and links without an error. A type that the source uses
+only through pointers, such as `FILE`, stays incomplete. A type whose members the source uses,
+such as `struct tm` in `sqlite3.c`'s date functions, gets a complete definition, because the
+compiler checks the source before it drops unused code. Its layout can differ from the C
+library's, because no kept code calls a C library function with it; the symbol test of D5
+makes sure of that. `parser/library_tokenizer.c` defines `sqlite3_os_init` and
+`sqlite3_os_end` as functions that return `SQLITE_OK` (fact 6), so that the compile gives no
+warnings. A new SQLite release that needs more declarations adds them here, and the symbol
+test of D5 shows which functions it calls.
+
+The units and the shim go into one static `extern_lib`, which Lake also makes as a shared
+library for the precompiled modules (fact 5). The lakefile does not read
+`BELAY_PARSER_LIBRARY` and adds no linker arguments for the parser.
 
 The text package refers to the C sources by their path in the repository: `parser/` for the
 C files and the vendored releases, and `parser/generated/` for D1. Each Nix workspace that
