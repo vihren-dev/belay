@@ -26,7 +26,8 @@ COMMIT or ROLLBACK without one fail when SQLite runs them, not when it prepares
 them, so they resolve and leave the error to the execution semantics: such a BEGIN
 keeps the first saved catalog, and such a ROLLBACK keeps the current catalog.
 A pragma resolves with {name}`resolvePragma`: {lit}`PRAGMA foreign_keys = value` changes the
-state's setting outside a transaction and nothing inside one, as SQLite does. -/
+state's setting outside a transaction and nothing inside one, as SQLite does, and
+{lit}`PRAGMA recursive_triggers = value` changes it also inside one. -/
 def resolveStatement (context : ResolveContext) (state : ResolveState) :
     Syntax.Statement → Except NodeRestriction (Resolved.Statement × ResolveState)
   | .begin => .ok (.begin, { state with saved := state.saved.getD state.catalog })
@@ -76,7 +77,7 @@ statement, and the catalog after all of them succeed; or the first model
 restriction. -/
 def resolve (context : ResolveContext) (catalog : Catalog) (script : List Syntax.Statement) :
     ResolveResult :=
-  match resolveFrom context 0 { catalog := catalog, foreignKeys := context.profile.foreignKeys } script with
+  match resolveFrom context 0 (ResolveState.initial context.profile catalog) script with
   | .ok (statements, state) => .resolved statements state.catalog
   | .error restriction => .restricted restriction
 

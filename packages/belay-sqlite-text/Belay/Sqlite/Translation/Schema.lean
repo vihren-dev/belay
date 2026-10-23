@@ -44,7 +44,7 @@ def booleanWords : List (String × Bool) :=
 
 /-- The refusal of a {lit}`PRAGMA foreign_keys` value that the model does not read. -/
 def pragmaValues : String :=
-  "Only on, off, yes, no, true, false, 0 and 1 are modeled as the value of PRAGMA foreign_keys"
+  "Only on, off, yes, no, true, false, 0 and 1 are modeled as the value of PRAGMA foreign_keys and recursive_triggers"
 
 /-- The boolean of an {lit}`nmnum` value, or its refusal. -/
 def settingValue (tree : SqlTree) (node : ParseNode) : TranslateM Bool := do
@@ -64,7 +64,7 @@ def settingValue (tree : SqlTree) (node : ParseNode) : TranslateM Bool := do
 
 /-- The refusal of a pragma that the model does not describe. -/
 def modeledPragmas : String :=
-  "Only PRAGMA foreign_keys, table_info, foreign_key_list, foreign_key_check, integrity_check and quick_check are modeled, without a schema name"
+  "Only PRAGMA foreign_keys, recursive_triggers, table_info, foreign_key_list, foreign_key_check, integrity_check and quick_check are modeled, without a schema name"
 
 /-- The value node of a pragma: the {lit}`nmnum` or {lit}`minus_num` after {lit}`=` or in
 parentheses, none without a value, or the refusal of another form. -/
@@ -121,7 +121,7 @@ def checkValue (tree : SqlTree) (node : ParseNode) : TranslateM (Nat × Option I
 
 /-- A pragma of the model ({name}`Belay.Sqlite.Model.Syntax.Pragma`), with its name in any ASCII
 case: {lit}`PRAGMA foreign_keys [= value]` and {lit}`PRAGMA foreign_keys(value)`, whose value is
-none for the query form; {lit}`PRAGMA table_info(t)` and {lit}`PRAGMA foreign_key_list(t)`, also
+none for the query form, and the same forms of {lit}`PRAGMA recursive_triggers`; {lit}`PRAGMA table_info(t)` and {lit}`PRAGMA foreign_key_list(t)`, also
 with {lit}`= t`; {lit}`PRAGMA foreign_key_check`, alone or with a table name; and
 {lit}`PRAGMA integrity_check` and {lit}`PRAGMA quick_check`, alone or with a value
 ({name}`checkValue`). -/
@@ -132,6 +132,8 @@ def pragma (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.S
   let value ← pragmaValue tree command
   let form ← if asciiEqual name "foreign_keys" then
       (Syntax.Pragma.setting .foreignKeys ·) <$> value.mapM (settingValue tree)
+    else if asciiEqual name "recursive_triggers" then
+      (Syntax.Pragma.setting .recursiveTriggers ·) <$> value.mapM (settingValue tree)
     else if asciiEqual name "table_info" then Syntax.Pragma.tableInfo <$> pragmaTable tree command value
     else if asciiEqual name "foreign_key_list" then Syntax.Pragma.foreignKeyList <$> pragmaTable tree command value
     else if asciiEqual name "foreign_key_check" then Syntax.Pragma.foreignKeyCheck <$> value.mapM (pragmaTableName tree)

@@ -1,8 +1,9 @@
 """The mapping of the pragmas of the model to Syntax JSON (`pragma` in
 `packages/belay-sqlite-text/Belay/Sqlite/Translation/Schema.lean`, through the text package's program).
 
-ADR 0018, D4 and ADR 0019, D2: the translation maps the query form of `PRAGMA foreign_keys` and
-each value that SQLite's `sqlite3GetBoolean` reads as on or off, the table name of
+ADR 0018, D4 and ADR 0019, D2: the translation maps the query forms of `PRAGMA foreign_keys` and
+`PRAGMA recursive_triggers` and each value that SQLite's `sqlite3GetBoolean` reads as on or off,
+the table name of
 `PRAGMA table_info` and `PRAGMA foreign_key_list`, the optional table name of
 `PRAGMA foreign_key_check`, and the row limit or table name of
 `PRAGMA integrity_check` and `PRAGMA quick_check`. It refuses every other pragma, a schema name
@@ -37,6 +38,14 @@ def test_foreign_keys_pragma_keeps_its_value(parse_sql: Callable[..., Translatio
            "PRAGMA \"foreign_keys\" = false;")
     assert mapped(parse_sql, sql) == [pragma({"setting": {"setting": "foreignKeys", "value": value}})
                                       for value in (None, True, False, True, False, True, False, True, False)]
+
+
+def test_recursive_triggers_pragma_keeps_its_value(parse_sql: Callable[..., Translation]) -> None:
+    """`pragma` maps the query form of `recursive_triggers` to no value and each boolean form to
+    its value, as for `foreign_keys`, with the name in either ASCII case."""
+    sql = "PRAGMA recursive_triggers; PRAGMA RECURSIVE_TRIGGERS = on; PRAGMA recursive_triggers(0); PRAGMA recursive_triggers = 'yes';"
+    assert mapped(parse_sql, sql) == [pragma({"setting": {"setting": "recursiveTriggers", "value": value}})
+                                      for value in (None, True, False, True)]
 
 
 def test_schema_pragmas_keep_the_table_name(parse_sql: Callable[..., Translation]) -> None:
@@ -87,12 +96,15 @@ def test_other_check_values_are_refused(parse_sql: Callable[..., Translation], v
 
 @pytest.mark.parametrize(("sql", "message"), [
     ("PRAGMA journal_mode;",
-     "Only PRAGMA foreign_keys, table_info, foreign_key_list, foreign_key_check, integrity_check and quick_check are modeled"),
+     "Only PRAGMA foreign_keys, recursive_triggers, table_info, foreign_key_list, foreign_key_check, integrity_check and "
+     "quick_check are modeled"),
     ("PRAGMA main.foreign_keys = ON;", "without a schema name"),
     ("PRAGMA main.table_info(t);", "without a schema name"),
     ("PRAGMA foreign_keys = 2;", "Only on, off, yes, no, true, false, 0 and 1"),
     ("PRAGMA foreign_keys = -1;", "Only on, off, yes, no, true, false, 0 and 1"),
     ("PRAGMA foreign_keys = full;", "Only on, off, yes, no, true, false, 0 and 1"),
+    ("PRAGMA recursive_triggers = 2;", "the value of PRAGMA foreign_keys and recursive_triggers"),
+    ("PRAGMA main.recursive_triggers;", "without a schema name"),
     ("PRAGMA table_info;", "Write the table name in parentheses"),
     ("PRAGMA table_info(1);", "Only a table name is modeled"),
     ("PRAGMA foreign_key_list(-1);", "Only a table name is modeled"),

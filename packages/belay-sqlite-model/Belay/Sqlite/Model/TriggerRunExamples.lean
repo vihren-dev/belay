@@ -98,7 +98,7 @@ example : run (tables ++ [trigger "s" .after .insert [.insert (name! "t") none [
     insertT [[.null, .numeric "1"]]]) 0 = ([[.integer 1, .integer 1], [.integer 2, .integer 0]], false) := by
   decide +kernel
 
--- REPLACE fires no DELETE trigger.
+-- With recursive triggers off, REPLACE fires no DELETE trigger.
 example : logOf [insertT [[.numeric "1", .numeric "1"]], trigger "d" .after .delete [logged (text "d")],
     insertT [[.numeric "1", .numeric "2"]] (some .replace)] = ([], false) := by decide +kernel
 
