@@ -92,7 +92,8 @@ theorem runStatement_delete_keysUnique (clock : Int) (parameters : List Value) (
     exact (unique target table found).sublist (List.filter_sublist (l := table.rows))
 
 /-- For every database and query run, the database of {name}`queryEffect` is the database: a
-query writes no row. -/
+query writes no row. Proof sketch: each failure and the success of
+{name}`queryEffect` carry the database. -/
 theorem effectDatabase_queryEffect (database : Database) (run : Option (Resolved.SourceRows × Resolved.QueryRun)) :
     effectDatabase (queryEffect database run) = database := by
   unfold queryEffect
@@ -107,7 +108,8 @@ theorem effectDatabase_queryEffect (database : Database) (run : Option (Resolved
 /-- For every clock value, parameter list, database and statement that writes no row (a query,
 a setting, a prepare error, BEGIN, COMMIT or ROLLBACK): the database of the effect of
 {name}`runStatement` is the database. BEGIN, COMMIT and ROLLBACK change the connection, not the
-effect ({lit}`advanceWith`). -/
+effect ({lit}`advanceWith`). Proof sketch: for each form, {name}`step` gives the database on
+success and on its error ({name}`effectDatabase_queryEffect` for a query). -/
 theorem runStatement_keeps_database (clock : Int) (parameters : List Value) (database : Database)
     (statement : Resolved.Statement)
     (writesNone : (∃ query subqueries, statement = .query query subqueries) ∨ (∃ setting on, statement = .setting setting on) ∨

@@ -14,7 +14,9 @@ namespace Belay.Sqlite.Model
 /-- For every catalog, object, position, table entry and key: if the key is a unique key of the
 position in the catalog with the object appended ({name}`Catalog.uniqueKeys`), it is a unique
 key of the position in the catalog, or the object is a unique index on the position and the key
-is its key ({name}`CatalogIndex.uniqueKey`). -/
+is its key ({name}`CatalogIndex.uniqueKey`). Proof sketch: the keys of the appended catalog are
+the old keys followed by the key of the object, which is present only for a unique index on the
+position. -/
 theorem Catalog.mem_uniqueKeys_append {catalog : Catalog} {object : CatalogObject} {position : Nat}
     {shape : CatalogTable} {key : UniqueKey} (member : key ∈ (catalog ++ [object]).uniqueKeys position shape) :
     key ∈ catalog.uniqueKeys position shape ∨ ∃ index, object.entry = .index index ∧ index.table = position ∧
@@ -38,7 +40,9 @@ theorem Catalog.mem_uniqueKeys_append {catalog : Catalog} {object : CatalogObjec
 
 /-- For every database whose row lists match its catalog, object and position: the table at the
 position after the object and an empty row list are appended is the table at the position
-before, or a table without rows. -/
+before, or a table without rows. Proof sketch: a position below the old catalog length sees the
+old catalog entry and row list; every other position reads the appended empty row list or the
+default. -/
 theorem Database.table_append_cases {database : Database} (aligned : database.rows.length = database.catalog.length)
     (object : CatalogObject) {position : Nat} {table : Table}
     (present : ({ catalog := database.catalog ++ [object], rows := database.rows ++ [[]] } : Database).table position =
@@ -85,7 +89,8 @@ theorem Database.KeysUnique.append {database : Database} (unique : database.Keys
 
 /-- For every clock value, parameter list, CREATE TABLE and database: if the database satisfies
 {name}`Database.KeysUnique`, the effect of {name}`runStatement` satisfies
-{name}`Effect.KeysUnique`. The new table has no rows. -/
+{name}`Effect.KeysUnique`. The new table has no rows. Proof sketch:
+{name}`Database.KeysUnique.append` of a table entry, which is no index. -/
 theorem runStatement_createTable_keysUnique (clock : Int) (parameters : List Value) (target : Nat) (name : Identifier)
     (shape : CatalogTable) {database : Database} (unique : database.KeysUnique) :
     (runStatement clock parameters (.createTable target name shape) database).effect.KeysUnique := by
@@ -98,7 +103,8 @@ theorem runStatement_createTable_keysUnique (clock : Int) (parameters : List Val
 
 /-- For every clock value, parameter list, CREATE TRIGGER and database: if the database
 satisfies {name}`Database.KeysUnique`, the effect of {name}`runStatement` satisfies
-{name}`Effect.KeysUnique`. A trigger has no key. -/
+{name}`Effect.KeysUnique`. A trigger has no key. Proof sketch:
+{name}`Database.KeysUnique.append` of a trigger entry, which is no index. -/
 theorem runStatement_createTrigger_keysUnique (clock : Int) (parameters : List Value) (target : Nat) (name : Identifier)
     (trigger : CatalogTrigger) {database : Database} (unique : database.KeysUnique) :
     (runStatement clock parameters (.createTrigger target name trigger) database).effect.KeysUnique := by

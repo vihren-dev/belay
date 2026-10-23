@@ -12,14 +12,16 @@ namespace Belay.Sqlite.Model
 namespace LiteralData
 
 /-- For every two values and collation: if they conflict as key cells ({name}`keyCellsEqual`),
-they conflict in the other order. -/
+they conflict in the other order. Proof sketch: the comparison of a collation is oriented
+({lit}`Std.OrientedCmp`). -/
 theorem keyCellsEqual_symm {first second : Value} {collation : Collation}
     (equal : keyCellsEqual first second collation = true) : keyCellsEqual second first collation = true := by
   simp only [keyCellsEqual, Bool.and_eq_true, beq_iff_eq] at equal ⊢
   exact ⟨⟨equal.1.2, equal.1.1⟩, Std.OrientedCmp.eq_symm equal.2⟩
 
 /-- For every three values and collation: if the first conflicts with the second and the second
-with the third as key cells ({name}`keyCellsEqual`), the first conflicts with the third. -/
+with the third as key cells ({name}`keyCellsEqual`), the first conflicts with the third. Proof sketch: the comparison of a collation is transitive
+({lit}`Std.TransCmp`). -/
 theorem keyCellsEqual_trans {first second third : Value} {collation : Collation}
     (left : keyCellsEqual first second collation = true) (right : keyCellsEqual second third collation = true) :
     keyCellsEqual first third collation = true := by
@@ -30,7 +32,9 @@ theorem keyCellsEqual_trans {first second third : Value} {collation : Collation}
 * the key applies to the first row ({name}`keyApplies`);
 * the key applies to the second row;
 * for every term of the key, both rows have a value of the term ({name}`termValue`), and the two
-  values conflict under the term's collation ({name}`keyCellsEqual`). -/
+  values conflict under the term's collation ({name}`keyCellsEqual`).
+
+Proof sketch: unfold {name}`keyEqual` and split on whether each term has a value in each row. -/
 theorem keyEqual_iff (key : UniqueKey) (first second : Row) :
     keyEqual key first second = true ↔ keyApplies key first = true ∧ keyApplies key second = true ∧
       ∀ term ∈ key.terms, ∃ a b, termValue first term.term = some a ∧ termValue second term.term = some b ∧
@@ -66,7 +70,8 @@ theorem keyEqual_trans {key : UniqueKey} {first second third : Row} (left : keyE
 end LiteralData
 
 /-- For every list and property: if no two elements of the list, in list order, both have the
-property, at most one element of the list has it. -/
+property, at most one element of the list has it. Proof sketch: induction on the list; when the
+head has the property, no later element has it. -/
 theorem filter_length_le_one_of_pairwise {α} {property : α → Bool} :
     ∀ {list : List α}, list.Pairwise (fun a b => ¬(property a = true ∧ property b = true)) →
       (list.filter property).length ≤ 1

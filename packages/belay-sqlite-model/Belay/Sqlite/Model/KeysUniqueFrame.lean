@@ -31,7 +31,8 @@ theorem Effect.keysUnique_of_effectDatabase {effect : Effect} (unique : (effectD
 
 /-- For every database: if it satisfies {name}`Database.KeysUnique`, an effect that keeps it
 on success or on every error satisfies {name}`Effect.KeysUnique`. This is the case of each
-statement that writes no row. -/
+statement that writes no row. Proof sketch: {name}`Effect.keysUnique_of_effectDatabase` after
+rewriting the database of the effect. -/
 theorem Effect.keysUnique_of_database {effect : Effect} {database : Database} (unique : database.KeysUnique)
     (kept : effectDatabase effect = database) : effect.KeysUnique :=
   Effect.keysUnique_of_effectDatabase (kept ▸ unique)
@@ -40,7 +41,8 @@ theorem Effect.keysUnique_of_database {effect : Effect} {database : Database} (u
 table satisfies {name}`Table.KeysUnique` for the first keys, the second table has the same rows,
 and each key of the second list is in the first list, then the second table satisfies
 {name}`Table.KeysUnique` for the second keys. The catalog entries of the tables can differ:
-the atom reads only the rows and the keys. -/
+the atom reads only the rows and the keys. Proof sketch: each key of the second list is a key of
+the first, and the rows are the same. -/
 theorem Table.KeysUnique.frame {keys kept : List UniqueKey} {table other : Table} (unique : table.KeysUnique keys)
     (rows : other.rows = table.rows) (subset : ∀ key ∈ kept, key ∈ keys) : other.KeysUnique kept :=
   fun key member => rows ▸ unique key (subset key member)
@@ -61,7 +63,8 @@ theorem Database.KeysUnique.frame {before after : Database} (unique : before.Key
 
 /-- For every keys and two tables: if the first table satisfies {name}`Table.KeysUnique` for
 the keys and the rows of the second are a sublist of the rows of the first, the second
-satisfies it too. A DELETE stores such a sublist. -/
+satisfies it too. A DELETE stores such a sublist. Proof sketch: a pairwise property of a list
+holds for each of its sublists. -/
 theorem Table.KeysUnique.sublist {keys : List UniqueKey} {table other : Table} (unique : table.KeysUnique keys)
     (sublist : other.rows.Sublist table.rows) : other.KeysUnique keys :=
   fun key member => (unique key member).sublist sublist
