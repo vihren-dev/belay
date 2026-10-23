@@ -301,3 +301,8 @@ proof relies on it (finding 15).
 
 - 2026-10-23: the task file and this status file, and the dated amendment in ADR 0022, D4. No code
   yet.
+- 2026-10-23: review round 1 of the task file: one R19 must (the alias schema is not in
+  `Catalog.Valid`: finding 14, decision 8) and one R19 should (local probe results cited as
+  evidence: finding 15), fixed. Round 2: one R19 must (a kernel example cannot confirm SQLite
+  behavior; the task now requires conformance cases for decisions 4 and 5), fixed. Round 3: no
+  findings.
