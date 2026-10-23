@@ -70,6 +70,14 @@ def test_default_of_a_parameter_reaches_the_model(parse_sql: Callable[..., Trans
     assert raised.value.status == "UNSUPPORTED"
 
 
+def test_default_without_parentheses_is_a_grammar_error(parse_sql: Callable[..., Translation]) -> None:
+    """`DEFAULT ?` without parentheses is no default of SQLite's grammar (native SQLite 3.51.0:
+    `near "?": syntax error`), so the frontend refuses it as an input error."""
+    with pytest.raises(SqlError) as raised:
+        parse_sql("CREATE TABLE d(x DEFAULT ?);").statements()
+    assert raised.value.status == "INPUT_ERROR"
+
+
 @pytest.mark.parametrize(("sql", "token", "message"), [
     ("SELECT 1, ?0;", "?0", "variable number must be between ?1 and ?32766"),
     ("SELECT ?32767;", "?32767", "variable number must be between ?1 and ?32766"),

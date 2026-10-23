@@ -58,3 +58,15 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D1 (amended 2026-10-23
   subquery a mismatch is a `may` fault. The case `numeric-ties-windows` is expected to agree;
   the Nix verdict is pending. Kernel examples of each value of outcome 5 are in
   `QueryWindowExamples.lean`.
+- 2026-10-23: the authored corpus of parameters (C5), in `conformance/authored_parameters.py`
+  and its two case modules: 44 cases, recorded natively, each in the kernel-proof coverage
+  set, with the writer of corpus version 48 (`parameter_evidence.py`). The coverage needs
+  every case to agree, so the cases leave out `INSERT ... SELECT` (not modeled), `GROUP BY` of
+  an expression (restriction `group-by-term`) and the example of `parameter-error-order`,
+  which `restriction_examples.py` has; `DEFAULT ?` without parentheses is a frontend test.
+  The native recorder sets two limits: a sort key must be a result column, so
+  `parameter-order-by` also selects `?1`, and a subquery's own window is not recorded.
+  Mutants (`parameter_mutants.py`): a parameter with an affinity, `ORDER BY ?` as a column
+  number and a `LIMIT ?` that truncates a fraction, each killed by an authored case. The two
+  numbering mutants change the frontend, which the mutant measurement does not build; one
+  manual run killed both. Open: corpus-v48 and its claims are the judge change (owner).

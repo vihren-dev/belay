@@ -1,6 +1,6 @@
 """Each mutant of the query, number, key, alias, UPSERT, algorithm, query-without-FROM, JSON,
 JSON function, `json_each`, clock, date function, date modifier, subquery, expression form,
-DISTINCT and HAVING, foreign key, trigger and possible result mutant tables changes the verdict
+DISTINCT and HAVING, foreign key, trigger, possible result and parameter mutant tables changes the verdict
 of an authored case.
 
 ADR 0012 requires that the conformance suite tests each rule of query semantics and
@@ -31,7 +31,8 @@ from conformance import (algorithm_mutants, alias_mutants, authored_algorithms, 
                          json_mutants, upsert_mutants, authored_subqueries, subquery_mutants,
                          authored_expression_forms, expression_form_mutants, authored_distinct_having,
                          distinct_having_mutants, authored_foreign_keys, foreign_key_mutants,
-                         authored_triggers, trigger_mutants, authored_possible_results, possible_result_mutants)
+                         authored_triggers, trigger_mutants, authored_possible_results, possible_result_mutants,
+                         authored_parameters, parameter_mutants)
 from conformance import key_mutants, number_mutants, query_mutants
 from tests.mutant_sets import Mutants, Targets, measure_set
 
@@ -159,3 +160,10 @@ def test_every_possible_result_mutant_changes_a_verdict(runtime_root: Path) -> N
     that `DESC` does not reverse."""
     measure_set(runtime_root, [authored_possible_results],
                 [(possible_result_mutants.MUTANTS, possible_result_mutants.TARGETS)])
+
+
+def test_every_parameter_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored cases of parameters (ADR 0019, slice 1) notice every changed rule of the model
+    (`conformance.parameter_mutants`): a parameter with an affinity, `ORDER BY ?` as a column
+    number, and a `LIMIT ?` that accepts a real with a fraction."""
+    measure_set(runtime_root, [authored_parameters], [(parameter_mutants.MUTANTS, parameter_mutants.TARGETS)])
