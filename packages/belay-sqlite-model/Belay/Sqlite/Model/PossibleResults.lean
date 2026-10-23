@@ -132,11 +132,12 @@ end Belay.Sqlite.Model.Resolved
 namespace Belay.Sqlite.Model
 
 /-- Every result that SQLite may give for a statement's query over a database at a clock value
-({name}`Resolved.Query.possibleResults`), in the context of its subqueries, as
+with the values bound to the statement's parameters ({name}`Resolved.Query.possibleResults`),
+in the context of its subqueries, as
 {name}`Resolved.Query.runOn` gives its one result; none when a table is missing. -/
-def Resolved.Query.possibleOn (query : Resolved.Query) (clock : Int) (database : Database)
+def Resolved.Query.possibleOn (query : Resolved.Query) (clock : Int) (parameters : List Value) (database : Database)
     (subqueries : List Resolved.Query) : Option (List (List (List Value))) :=
-  let context := Resolved.statementContext clock database subqueries
+  let context := Resolved.statementContext clock parameters database subqueries
   (query.source context database).map fun source => query.possibleResults context source.rows
 
 end Belay.Sqlite.Model

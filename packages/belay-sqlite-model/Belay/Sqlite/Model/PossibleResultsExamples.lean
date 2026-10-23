@@ -41,8 +41,8 @@ statements before it from the empty catalog. -/
 def possible (script : List Syntax.Statement) : Option (List (List (List Value))) :=
   match (statements (migration [] script)).reverse with
   | (.query query subqueries) :: earlier =>
-    let database := (runSql earlier.reverse {}).database
-    query.possibleOn 0 database subqueries
+    let database := (runSql (bindValues earlier.reverse []) {}).database
+    query.possibleOn 0 [] database subqueries
   | (.createTable ..) :: _ | (.createIndex ..) :: _ | (.createTrigger ..) :: _ | (.addColumn ..) :: _ | (.drop ..) :: _
   | .begin :: _ | .commit :: _ | .rollback :: _ | (.insert ..) :: _ | (.upsert ..) :: _ | (.update ..) :: _
   | (.delete ..) :: _ | (.prepareError _) :: _ | (.setting _) :: _ | [] => none

@@ -31,7 +31,7 @@ def typed (value : String) (declaredType : Option String) (constraints : List Co
 /-- The database that the script builds from the empty database under the profile, or the
 empty database when the script fails. -/
 def built (script : List Syntax.Statement) (profile : Profile := defaults) : Database :=
-  match runSql (statements (migration [] script profile)) {} with
+  match runSql (bindValues (statements (migration [] script profile)) []) {} with
   | .success database => database
   | .failure .. | .pending .. => {}
 

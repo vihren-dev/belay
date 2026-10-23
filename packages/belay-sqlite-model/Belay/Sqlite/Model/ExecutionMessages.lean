@@ -23,14 +23,16 @@ def triggerOrKeyConstraintMessage : String :=
   "constraint failed; the model does not name the constraint that fails in a write that can fire " ++
     "a trigger or that checks foreign keys. Run the statement in the sqlite3 shell to see SQLite's message"
 
-/-- The message for a constraint failure of the statement on the database at the clock value:
+/-- The message for a constraint failure of the statement on the database at the clock value
+with the values bound to its parameters:
 {name}`triggerOrKeyConstraintMessage` for a write that can fire a trigger or that checks foreign
 keys ({name}`Resolved.Statement.writeRules` is some), and otherwise SQLite's message for the
 constraints of {name}`failingConstraints` ({name}`ConstraintReport.message`). -/
-def constraintMessage (clock : Int) (statement : Resolved.Statement) (database : Database) : String :=
+def constraintMessage (clock : Int) (parameters : List Value) (statement : Resolved.Statement) (database : Database) :
+    String :=
   match statement.writeRules with
   | some _ => triggerOrKeyConstraintMessage
-  | none => (failingConstraints clock statement database).message database.catalog
+  | none => (failingConstraints clock parameters statement database).message database.catalog
 
 /-- The message for a function that fails while the statement runs, such as a JSON function
 with malformed JSON. -/
@@ -38,7 +40,8 @@ def functionFailedMessage : String :=
   "a function of the statement failed, for example on malformed JSON; the model does not keep " ++
     "SQLite's message for it. Run the statement in the sqlite3 shell to see that message"
 
-/-- The message of the error of the statement on the database at the clock value, as SQLite
+/-- The message of the error of the statement on the database at the clock value, with the
+values bound to its parameters, as SQLite
 3.51 gives it where the model keeps what the message says:
 
 * {name}`ExecutionError.prepare` gives SQLite's message of the prepare error
@@ -52,8 +55,9 @@ def functionFailedMessage : String :=
 * {name}`ExecutionError.unmodeled` gives {name}`unmodeledHere`; a run ends at such a statement,
   so a failure of a run does not have it.
 
-For example, {assert}`ExecutionError.integerOverflow.message 0 .commit {} = "integer overflow"`. -/
-def ExecutionError.message (clock : Int) (statement : Resolved.Statement) (database : Database) :
+For example, {assert}`ExecutionError.integerOverflow.message 0 [] .commit {} = "integer overflow"`. -/
+def ExecutionError.message (clock : Int) (parameters : List Value) (statement : Resolved.Statement)
+    (database : Database) :
     ExecutionError → String
   | .unmodeled => unmodeledHere
   | .prepare error => error.message
@@ -63,7 +67,7 @@ def ExecutionError.message (clock : Int) (statement : Resolved.Statement) (datab
     | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit
     | .insert .. | .upsert .. | .update .. | .delete .. | .prepareError _ | .query .. | .setting _ =>
       "cannot commit - no transaction is active"
-  | .constraintViolation | .constraintFail | .constraintRollback => constraintMessage clock statement database
+  | .constraintViolation | .constraintFail | .constraintRollback => constraintMessage clock parameters statement database
   | .integerOverflow => "integer overflow"
   | .datatypeMismatch => "datatype mismatch"
   | .functionError => functionFailedMessage

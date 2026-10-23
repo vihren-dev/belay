@@ -22,29 +22,32 @@ structure SqlTrace where
   /-- The state after the last statement, or {lean}`(none : Option SqlState)` after a halt. -/
   final : Option SqlState
 
-/-- The trace of {name}`runSqlFrom`: each statement advances at its position with
-{name}`advance` and gives {name}`Output.ofStep` of its transition; a halt ends the trace. -/
-def sqlTraceFrom (position : Nat) : List Resolved.Statement → SqlState → SqlTrace
+/-- The trace of {name}`runSqlFrom`: each statement advances with its values at its position
+with {name}`advance` and gives {name}`Output.ofStep` of its transition; a halt ends the trace. -/
+def sqlTraceFrom (position : Nat) : List (Resolved.Statement × List Value) → SqlState → SqlTrace
   | [], state => { outputs := [], final := some state }
-  | statement :: rest, state =>
-    let output := Output.ofStep (state.clock position) statement state (advance position statement state)
-    match advance position statement state with
+  | (statement, parameters) :: rest, state =>
+    let output := Output.ofStep (state.clock position) parameters statement state
+      (advance position statement parameters state)
+    match advance position statement parameters state with
     | .halt _ => { outputs := [output], final := none }
     | .next next =>
       let later := sqlTraceFrom (position + 1) rest next
       { later with outputs := output :: later.outputs }
 
-/-- For every position, script, state and final state: if the trace has the final state, then
+/-- For every position, script of statements with values, state and final state: if the trace
+has the final state, then
 {name}`runSqlFrom` gives the success or the pending transaction of {name}`SqlState.finish` of
 that state. Proof sketch: induction on the script; a halt has no final state. -/
-theorem sqlTraceFrom_final : ∀ (position : Nat) (script : List Resolved.Statement) (state final : SqlState),
+theorem sqlTraceFrom_final :
+    ∀ (position : Nat) (script : List (Resolved.Statement × List Value)) (state final : SqlState),
     (sqlTraceFrom position script state).final = some final →
     runSqlFrom position script state = final.finish (.success final.database)
   | _, [], state, final, ended => by
     simp only [sqlTraceFrom, Option.some.injEq] at ended
     subst ended
     rfl
-  | position, statement :: rest, state, final, ended => by
+  | position, (statement, parameters) :: rest, state, final, ended => by
     simp only [sqlTraceFrom] at ended
     simp only [runSqlFrom]
     split at ended
@@ -64,22 +67,22 @@ theorem Connection.resolveState_of_agrees {state : SqlState} {target : ResolveSt
   cases target
   simp_all [Connection.resolveState]
 
-/-- For every context, index, connection, statement, resolved statement and resolution state:
-if the statement resolves against the connection's resolution state, then the step of the run
-either ends, or continues with the output of {name}`Output.ofStep` of the transition of
-{name}`advance`, and the next connection is {name}`Connection.afterStep` of that transition with
+/-- For every context, index, connection, statement, list of values, resolved statement and
+resolution state: if the statement resolves against the connection's resolution state, then the
+step of the run with the values either ends, or continues with the output of
+{name}`Output.ofStep` with the values of the transition of {name}`advance` with the values, and the next connection is {name}`Connection.afterStep` of that transition with
 the resolution state's setting. Proof sketch: unfold the step with the resolution;
 the clock, the support check and an {name}`Output.unmodeled` end it, and otherwise the step's
 transition is {name}`advance` by definition, so its output and its next connection are the
 stated ones. -/
 theorem runScriptStep_resolved {context : ResolveContext} {index : Nat} {connection : Connection}
-    {statement : Syntax.Statement} {resolved : Resolved.Statement} {after : ResolveState}
+    {statement : Syntax.Statement} {parameters : List Value} {resolved : Resolved.Statement} {after : ResolveState}
     (ok : resolveStatement context connection.resolveState statement = .ok (resolved, after)) :
-    (∃ reason, runScriptStep context index connection statement = .ended reason) ∨
-    ∃ next, runScriptStep context index connection statement = .continued
-        (Output.ofStep (connection.state.clock index) resolved connection.state
-          (advance index resolved connection.state)) next ∧
-      next = connection.afterStep after.foreignKeys (advance index resolved connection.state) := by
+    (∃ reason, runScriptStep context index connection statement parameters = .ended reason) ∨
+    ∃ next, runScriptStep context index connection statement parameters = .continued
+        (Output.ofStep (connection.state.clock index) parameters resolved connection.state
+          (advance index resolved parameters connection.state)) next ∧
+      next = connection.afterStep after.foreignKeys (advance index resolved parameters connection.state) := by
   simp only [runScriptStep, ok]
   split
   · exact .inl ⟨_, rfl⟩
@@ -89,31 +92,33 @@ theorem runScriptStep_resolved {context : ResolveContext} {index : Nat} {connect
       · exact .inl ⟨_, rfl⟩
       all_goals
         rename_i stepped
-        have unfolded : advance index resolved connection.state = advanceWith index resolved connection.state
-            (runStatement (connection.state.clock index) resolved connection.state.database).effect := rfl
+        have unfolded : advance index resolved parameters connection.state = advanceWith index resolved connection.state
+            (runStatement (connection.state.clock index) parameters resolved connection.state.database).effect := rfl
         rw [unfolded, stepped]
         exact .inr ⟨_, rfl, rfl⟩
 
-/-- For every context, connection, statement, resolved statement, resolution state and state:
-if the statement resolves against the connection's resolution state to the resolution state
-{lit}`after`, and {name}`advance` continues with the state, then the connection with the state
+/-- For every context, connection, statement, list of values, resolved statement, resolution
+state and state: if the statement resolves against the connection's resolution state to the
+resolution state {lit}`after`, and {name}`advance` with the values continues with the state, then the connection with the state
 and the setting of {lit}`after` has the resolution state {lit}`after`. Proof sketch: the
 transition keeps the state in agreement with the resolution ({name}`advance_agrees`,
 {name}`resolveStatement_after`), and {name}`Connection.resolveState_of_agrees` applies. -/
 theorem Connection.resolveState_after_next {context : ResolveContext} {index : Nat} {connection : Connection}
     {statement : Syntax.Statement} {resolved : Resolved.Statement} {after : ResolveState} {state : SqlState}
     (ok : resolveStatement context connection.resolveState statement = .ok (resolved, after))
-    (advanced : advance index resolved connection.state = .next state) :
+    {parameters : List Value} (advanced : advance index resolved parameters connection.state = .next state) :
     ({ state, foreignKeys := after.foreignKeys } : Connection).resolveState = after := by
   have agrees := advance_agrees (state := connection.resolveState) ⟨rfl, rfl⟩ advanced
   rw [← resolveStatement_after context _ _ statement resolved ok] at agrees
   exact Connection.resolveState_of_agrees agrees
 
-/-- The agreement of the two runs (ADR 0017, D3). For every context, script, index, connection,
-resolved statements and final resolution state: if {name}`resolveFrom` resolves the script from
-the index against the connection's resolution state with the resolved statements, then one of
-the following holds for {name}`runScriptFrom` and the trace of {name}`runSqlFrom` of the
-resolved statements on the connection's state ({name}`sqlTraceFrom`):
+/-- The agreement of the two runs (ADR 0017, D3). For every context, script of statements with
+values, index, connection, resolved statements and final resolution state: if
+{name}`resolveFrom` resolves the statements of the script from the index against the
+connection's resolution state with the resolved statements, then one of the following holds for
+{name}`runScriptFrom` of the script and the trace of {name}`runSqlFrom` of the resolved
+statements, each with the values of its statement in the script ({name}`bindValues`), on the
+connection's state ({name}`sqlTraceFrom`):
 
 * the run ends early: its outputs are some outputs and then one {name}`Output.unmodeled`, and
   those outputs are a prefix of the trace's outputs;
@@ -127,24 +132,24 @@ resolution state; a step that continues keeps the states in agreement ({name}`ad
 so the next statement resolves against the state that {name}`resolveFrom` gives
 ({name}`resolveStatement_after`). -/
 theorem runScriptFrom_agrees (context : ResolveContext) :
-    ∀ (script : List Syntax.Statement) (index : Nat) (connection : Connection) (resolved : List Resolved.Statement)
-      (final : ResolveState),
-      resolveFrom context index connection.resolveState script = .ok (resolved, final) →
+    ∀ (script : List (Syntax.Statement × List Value)) (index : Nat) (connection : Connection)
+      (resolved : List Resolved.Statement) (final : ResolveState),
+      resolveFrom context index connection.resolveState (script.map (·.1)) = .ok (resolved, final) →
       (∃ before reason, (runScriptFrom context index connection script).outputs = before ++ [.unmodeled reason] ∧
-        before <+: (sqlTraceFrom index resolved connection.state).outputs) ∨
+        before <+: (sqlTraceFrom index (bindValues resolved (script.map (·.2))) connection.state).outputs) ∨
       (∃ later, (runScriptFrom context index connection script).outputs =
-          (sqlTraceFrom index resolved connection.state).outputs ++ later ∧
-        ∀ state, (sqlTraceFrom index resolved connection.state).final = some state →
+          (sqlTraceFrom index (bindValues resolved (script.map (·.2))) connection.state).outputs ++ later ∧
+        ∀ state, (sqlTraceFrom index (bindValues resolved (script.map (·.2))) connection.state).final = some state →
           later = [] ∧ (runScriptFrom context index connection script).connection.state = state)
   | [], index, connection, resolved, final, ok => by
-    simp only [resolveFrom, Except.ok.injEq, Prod.mk.injEq] at ok
+    simp only [List.map_nil, resolveFrom, Except.ok.injEq, Prod.mk.injEq] at ok
     obtain ⟨rfl, rfl⟩ := ok
     refine .inr ⟨[], ?_, fun state ended => ?_⟩
     · rfl
-    · simp only [sqlTraceFrom, Option.some.injEq] at ended
+    · simp only [bindValues, sqlTraceFrom, Option.some.injEq] at ended
       exact ⟨rfl, ended⟩
-  | statement :: rest, index, connection, resolved, final, ok => by
-    simp only [resolveFrom, bind, Except.bind] at ok
+  | (statement, parameters) :: rest, index, connection, resolved, final, ok => by
+    simp only [List.map_cons, resolveFrom, bind, Except.bind] at ok
     split at ok
     · cases ok
     · rename_i head headState headOk
@@ -153,10 +158,10 @@ theorem runScriptFrom_agrees (context : ResolveContext) :
       · rename_i later restOk
         simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at ok
         obtain ⟨rfl, rfl⟩ := ok
-        rcases runScriptStep_resolved (index := index) headOk with ⟨reason, ended⟩ | ⟨next, continued, afterStep⟩
+        rcases runScriptStep_resolved (index := index) (parameters := parameters) headOk with ⟨reason, ended⟩ | ⟨next, continued, afterStep⟩
         · refine .inl ⟨[], reason, ?_, List.nil_prefix⟩
           simp [runScriptFrom, ended]
-        · simp only [runScriptFrom, continued, sqlTraceFrom]
+        · simp only [List.map_cons, bindValues_cons_cons, runScriptFrom, continued, sqlTraceFrom]
           split
           · exact .inr ⟨_, rfl, fun _ ended => by cases ended⟩
           · rename_i state advanced

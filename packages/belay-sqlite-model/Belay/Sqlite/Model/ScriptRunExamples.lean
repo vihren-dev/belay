@@ -8,15 +8,18 @@ package builds. They check that the run goes on after an error, as SQLite does: 
 and a later query, an error in a transaction and a later COMMIT, {lit}`OR ROLLBACK`, which ends
 the transaction, a query of a dropped table, which SQLite refuses to prepare, a failed
 {lit}`ADD COLUMN`, which leaves the catalog as it was, the results of {lit}`LIMIT 1` without
-{lit}`ORDER BY`, and a statement that reads the clock or random values, which ends the run. -/
+{lit}`ORDER BY`, a statement that reads the clock or random values, which ends the run, and
+statements that read the values bound to their parameters. -/
 
 namespace Belay.Sqlite.Model.ScriptRunExamples
 
 open Belay.Sqlite.Model Syntax Resolution.Examples
 
-/-- A run of the statements from the empty database, with the default profile. -/
-def outputs (script : List Syntax.Statement) : List Output :=
-  (runScriptFrom { profile := defaults, mode := .execution } 0 { state := { database := {} } } script).outputs
+/-- A run of the statements from the empty database, with the default profile; statement
+{lit}`i` gets item {lit}`i` of {lit}`values` ({name}`bindValues`). -/
+def outputs (script : List Syntax.Statement) (values : List (List Value) := []) : List Output :=
+  (runScriptFrom { profile := defaults, mode := .execution } 0 { state := { database := {} } }
+    (bindValues script values)).outputs
 
 /-- {lit}`CREATE TABLE t(id INTEGER PRIMARY KEY, name TEXT)`. -/
 def createT : Syntax.Statement :=
@@ -39,6 +42,14 @@ def textValue (text : String) : Value := .text text.toUTF8.toList
 -- A failed INSERT gives error 19 (SQLITE_CONSTRAINT); the query after it runs.
 #guard outputs [createT, insertT "1" "a", insertT "1" "b", selectNames] ==
   [.done 0, .done 1, .error 19, .rows [[textValue "a"]]]
+
+-- Each statement reads its own values: the INSERT stores ?2 of its list, and the query's ?1 of
+-- its list; a number without an item is NULL. A trigger body reads none.
+#guard outputs [createT, .insert (name! "t") none [[.parameter 1, .parameter 2]] [],
+    .select [.expression (.parameter 1) none "", .expression (.parameter 2) none ""] none [] none [] [] none none,
+    selectNames]
+    [[], [.integer 1, textValue "a"], [.integer 7]] ==
+  [.done 0, .done 1, .rows [[.integer 7, .null]], .rows [[textValue "a"]]]
 
 -- An error in a transaction keeps the transaction open: COMMIT succeeds and keeps the first row.
 #guard outputs [createT, .begin, insertT "1" "a", insertT "1" "b", .commit, selectNames] ==

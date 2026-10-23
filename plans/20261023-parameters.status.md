@@ -37,3 +37,12 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D1 (amended 2026-10-23
   in a refactor commit: the restriction's message names the forms that SQLite removes before
   it resolves names, and the task file says that the frontend refused parameters before this
   task. `just test-full` passes.
+- 2026-10-23: the bound values reach evaluation (C3). Each statement of a run carries its
+  values as a pair `(statement, values)`: the model's script and SQL runs, the surface's
+  `Script.statements` (new primitive `Script.withValues`; `sql "..."` binds no values), and
+  the conformance pass, which gives statement i the case's recorded values i. Subqueries see
+  the values of their statement; trigger bodies get none. The guards that refused cases with
+  bound values are removed, and six authored cases that bind values now agree. The values
+  are not in the state, so the append laws keep their form; each changed law holds for all
+  values. `TableExtensionLaws.lean` takes two laws from `PreservationLaws.lean` (200 lines).
+  `LIMIT ?` stays refused until C4. `just test-full` passes (463, 146 and 155 tests).

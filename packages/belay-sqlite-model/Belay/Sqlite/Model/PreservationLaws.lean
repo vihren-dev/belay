@@ -80,16 +80,16 @@ theorem DatabaseExtends.add (database : Database) (position : Nat) (table : Tabl
   · exact ⟨old, (Database.table_addColumn_other database column value same).trans oldPresent,
       TableExtends.refl old⟩
 
-/-- For every clock value, database and statement that is not DROP (its
+/-- For every clock value, list of values, database and statement that is not DROP (its
 {name}`Resolved.Statement.kind` is not {name}`Resolved.Statement.Kind.drop`), the database of
 the primitive {name}`step` effect ({name}`effectDatabase`) extends the input database. A DROP
 removes tables, so the theorem says nothing about it. CREATE/ADD extend existing tables or retain
 errors; other constructors return an unchanged error. This is a primitive schema
 fact, not a preservation law for literal SQL writes. The proof follows the
 primitive branches and table-update witnesses. -/
-theorem step_extends (clock : Int) (statement : Resolved.Statement) (database : Database)
+theorem step_extends (clock : Int) (parameters : List Value) (statement : Resolved.Statement) (database : Database)
     (kept : statement.kind ≠ .drop) :
-    DatabaseExtends database (effectDatabase (step clock statement database)) := by
+    DatabaseExtends database (effectDatabase (step clock parameters statement database)) := by
   cases statement with
   | drop _ _ => exact absurd rfl kept
   | createTable target name table =>
@@ -131,7 +131,7 @@ theorem step_extends (clock : Int) (statement : Resolved.Statement) (database : 
     · exact DatabaseExtends.append database _
     · exact DatabaseExtends.refl database
   | query query subqueries =>
-    have same : effectDatabase (step clock (.query query subqueries) database) = database := by
+    have same : effectDatabase (step clock parameters (.query query subqueries) database) = database := by
       simp only [step, queryEffect]
       repeat' split
       all_goals rfl
@@ -147,56 +147,36 @@ theorem step_extends (clock : Int) (statement : Resolved.Statement) (database : 
   | prepareError _ => exact DatabaseExtends.refl database
   | setting _ => exact DatabaseExtends.refl database
 
-/-- For every script containing only CREATE/ADD, idle starting database and
-position, the computed SQL result extends the starting database. Invalid schema
+/-- For every script of statements with any values whose statements are only CREATE/ADD,
+idle starting database and position, the computed SQL result extends the starting database. Invalid schema
 attempts and later errors retain the successful prefix. This makes no claim for
 data writes or transaction control. The proof inducts over the guarded schema
 transitions and composes their table preservation witnesses. -/
-theorem runSqlFrom_extends (guard : SchemaOnly script) :
+theorem runSqlFrom_extends (guard : SchemaOnly (script.map (·.1))) :
     DatabaseExtends database (runSqlFrom position script { database := database }).database := by
   induction script generalizing database position with
   | nil => exact DatabaseExtends.refl database
-  | cons statement rest ih =>
+  | cons entry rest ih =>
+    obtain ⟨statement, parameters⟩ := entry
     have head : SchemaOnly [statement] := fun item member => by
       simp only [List.mem_singleton] at member
       subst item
       exact guard statement (by simp)
-    have tail : SchemaOnly rest := fun item member => guard item (by simp [member])
-    have first := step_extends 0 statement database (by rw [guard statement (by simp)]; decide)
-    cases h : step 0 statement database with
+    have tail : SchemaOnly (rest.map (·.1)) := fun item member => guard item (by simp_all)
+    have first := step_extends 0 parameters statement database (by rw [guard statement (by simp)]; decide)
+    cases h : step 0 parameters statement database with
     | error failure => simpa [runSqlFrom, advance_schemaOnly head, h, Outcome.database] using DatabaseExtends.refl database
     | ok result =>
       simp only [h, effectDatabase] at first
       simpa [runSqlFrom, advance_schemaOnly head, h] using first.trans (ih tail (database := result))
 
-/-- For every schema-only script and starting database, {name}`runSql` preserves
+/-- For every script of statements with any values whose statements are schema-only, and every
+starting database, {name}`runSql` preserves
 all existing tables, rows and old fields, including failure prefixes. The guard
 excludes writes and transaction control. This is the idle, position-zero instance
 of {name}`runSqlFrom_extends`; it does not claim native refinement. -/
-theorem runSql_extends (guard : SchemaOnly script) (database : Database) :
+theorem runSql_extends (guard : SchemaOnly (script.map (·.1))) (database : Database) :
     DatabaseExtends database (runSql script database).database :=
   runSqlFrom_extends guard
-
-/-- For every table extension, the ordered list of after rowids equals the
-before list. The proof unfolds value extension; duplicate rowids are not excluded
-by this statement. -/
-theorem TableExtends.rowids (extension : TableExtends before after) :
-    after.rows.map Row.rowid = before.rows.map Row.rowid := by
-  obtain ⟨columns, rfl⟩ := extension
-  simp [Table.appendColumns, Row.appendValues, List.map_map, Function.comp_def]
-
-/-- For every table extension whose before rows each have the before column
-width, taking that many values from every after row gives the exact ordered
-before value lists. With no rows the claim is vacuous. The proof unfolds value
-extension and uses the width assumption for each row. -/
-theorem TableExtends.oldValues (extension : TableExtends before after)
-    (width : ∀ row ∈ before.rows, row.values.length = before.shape.columns.length) :
-    after.rows.map (fun row => row.values.take before.shape.columns.length) =
-      before.rows.map Row.values := by
-  obtain ⟨columns, rfl⟩ := extension
-  simp only [Table.appendColumns, List.map_map]
-  apply List.map_congr_left
-  intro row member
-  simp [Row.appendValues, ← width row member]
 
 end Belay.Sqlite.Model

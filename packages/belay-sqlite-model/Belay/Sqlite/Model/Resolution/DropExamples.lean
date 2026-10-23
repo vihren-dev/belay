@@ -28,7 +28,7 @@ def insertInto (table : Identifier) (value : String) : Syntax.Statement :=
 /-- The outcome of a script from {name}`tables` without rows, or none for a restriction. -/
 def run (script : List Syntax.Statement) : Option Outcome :=
   match migration tables script with
-  | .resolved resolved _ => some (runSql resolved tables.emptyDatabase)
+  | .resolved resolved _ => some (runSql (bindValues resolved []) tables.emptyDatabase)
   | .restricted _ => none
 
 /-- The object names of the catalog after a script that succeeds, or none. -/

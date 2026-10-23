@@ -59,28 +59,30 @@ inductive RunStep where
   /-- The model does not describe the statement; the run ends. -/
   | ended (reason : String)
 
-/-- Run one statement at its zero-based index on the connection:
+/-- Run one statement with the values bound to its parameters at its zero-based index on the
+connection:
 
 * resolve it against {name}`Connection.resolveState`; a restriction ends the run with its reason
   ({name}`NodeRestriction.reason`);
 * a statement that reads the clock ({name}`Resolved.Statement.readsClock`) ends the run;
-* run it with {name}`runStatement`; a statement that fails the support check ends the run;
-* advance the connection with {name}`advanceWith`, and give {name}`Output.ofStep`; an output
+* run it with the values ({name}`runStatement`); a statement that fails the support check ends the run;
+* advance the connection with {name}`advanceWith`, and give {name}`Output.ofStep` with the
+  values; an output
   {name}`Output.unmodeled` ends the run;
 * the connection after it is {name}`Connection.afterStep` of the transition. -/
-def runScriptStep (context : ResolveContext) (index : Nat) (connection : Connection) (statement : Syntax.Statement) :
-    RunStep :=
+def runScriptStep (context : ResolveContext) (index : Nat) (connection : Connection) (statement : Syntax.Statement)
+    (parameters : List Value) : RunStep :=
   match resolveStatement context connection.resolveState statement with
   | .error restriction => .ended restriction.reason
   | .ok (resolved, after) =>
     if resolved.readsClock then .ended clockUnmodeled
     else
       let clock := connection.state.clock index
-      let run := runStatement clock resolved connection.state.database
+      let run := runStatement clock parameters resolved connection.state.database
       if !run.ready then .ended unmodeledHere
       else
         let transition := advanceWith index resolved connection.state run.effect
-        match Output.ofStep clock resolved connection.state transition with
+        match Output.ofStep clock parameters resolved connection.state transition with
         | .unmodeled reason => .ended reason
         | output@(.rows _) | output@(.done _) | output@(.error _) | output@(.oneOf _) =>
           .continued output (connection.afterStep after.foreignKeys transition)
@@ -95,13 +97,14 @@ structure ScriptRun where
   that ended the run. -/
   connection : Connection
 
-/-- Run statements in order from a zero-based index on the connection ({name}`runScriptStep`): the
+/-- Run statements in order, each with the values bound to its parameters, from a zero-based
+index on the connection ({name}`runScriptStep`): the
 run goes on after an error and ends at a statement that the model does not describe, whose
 output is {name}`Output.unmodeled`. -/
 def runScriptFrom (context : ResolveContext) (index : Nat) (connection : Connection) :
-    List Syntax.Statement → ScriptRun
+    List (Syntax.Statement × List Value) → ScriptRun
   | [] => { outputs := [], connection }
-  | statement :: rest => match runScriptStep context index connection statement with
+  | (statement, parameters) :: rest => match runScriptStep context index connection statement parameters with
     | .ended reason => { outputs := [.unmodeled reason], connection }
     | .continued output next =>
       let later := runScriptFrom context (index + 1) next rest

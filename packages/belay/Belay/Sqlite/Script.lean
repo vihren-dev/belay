@@ -2,17 +2,22 @@ import Belay.Sqlite.Model
 
 set_option doc.verso true
 
-/-! The surface's scripts (ADR 0017, D3): a fixed list of statements, as in a {lit}`.sql` file.
-Scripts form a monoid under {lit}`++`, with {lit}`Script.empty` as its unit. The term
-{lit}`sql r"..."` of {lit}`Belay/Sqlite/SqlTerm.lean` gives a script. -/
+/-! The surface's scripts (ADR 0017, D3): a fixed list of statements, as in a {lit}`.sql` file,
+each with the values bound to its parameters (ADR 0019, D1). Scripts form a monoid under
+{lit}`++`, with {lit}`Script.empty` as its unit, and the append keeps each statement's values.
+The term {lit}`sql r"..."` of {lit}`Belay/Sqlite/SqlTerm.lean` gives a script that binds no
+values; {lit}`Script.withValues` binds them. -/
 
 namespace Belay.Sqlite
 
-/-- SQL text as data: its statements in order, as the translation gives them. For example,
-{lit}`sql r"COMMIT"` is the script of one statement, {name}`Belay.Sqlite.Model.Syntax.Statement.commit`. -/
+/-- SQL text as data: its statements in order, as the translation gives them, each with the
+values bound to its parameters. For example, {lit}`sql r"COMMIT"` is the script of one
+statement, {name}`Belay.Sqlite.Model.Syntax.Statement.commit`, with no values. -/
 structure Script where
-  /-- The statements, in the order of the text. -/
-  statements : List Belay.Sqlite.Model.Syntax.Statement
+  /-- The statements, in the order of the text, each with the values bound to its parameters:
+  item {lit}`n` (from 1) of the list is the value of parameter {lit}`n`, and a parameter without
+  an item is NULL. -/
+  statements : List (Belay.Sqlite.Model.Syntax.Statement × List Belay.Sqlite.Model.Value)
 
 namespace Script
 
@@ -20,7 +25,8 @@ namespace Script
 {assert}`Script.empty.statements = []`. -/
 def empty : Script := ⟨[]⟩
 
-/-- The statements of the first script, then the statements of the second. -/
+/-- The statements of the first script, then the statements of the second, each with its
+values. -/
 instance : Append Script := ⟨fun first second => ⟨first.statements ++ second.statements⟩⟩
 
 /-- For all scripts {lit}`p` and {lit}`q`, the statements ({name}`Script.statements`) of
@@ -47,6 +53,21 @@ theorem append_assoc (p q r : Script) : p ++ q ++ r = p ++ (q ++ r) := by
   cases p; cases q; cases r
   show Script.mk (_ ++ _ ++ _) = Script.mk (_ ++ (_ ++ _))
   rw [List.append_assoc]
+
+/-- The script with the values bound to the parameters of its statements: statement {lit}`i`
+(from 0) gets item {lit}`i` of {lit}`values`, or the empty list when {lit}`values` has no such
+item, in place of the values that it had ({name}`Belay.Sqlite.Model.bindValues`). For example,
+{lean}`(Script.empty.withValues [[.integer 1]]).statements = []`. A script that binds no values
+does not need it: {lit}`sql "..."` gives each statement the empty list. -/
+def withValues (script : Script) (values : List (List Belay.Sqlite.Model.Value)) : Script :=
+  ⟨Belay.Sqlite.Model.bindValues (script.statements.map (·.1)) values⟩
+
+/-- For every script and list of lists of values, {name}`Script.withValues` keeps the statements
+of the script and changes only their values. Proof sketch:
+{name}`Belay.Sqlite.Model.map_fst_bindValues`. -/
+@[simp] theorem withValues_statements (script : Script) (values : List (List Belay.Sqlite.Model.Value)) :
+    (script.withValues values).statements.map (·.1) = script.statements.map (·.1) :=
+  Belay.Sqlite.Model.map_fst_bindValues _ values
 
 end Script
 

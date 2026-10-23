@@ -74,7 +74,7 @@ def errorOf (statement : Syntax.Statement) : Option PrepareError :=
 /-- Run a script from {lit}`tableD` with no rows: its outcome, or none for a restriction. -/
 def run (script : List Syntax.Statement) : Option Outcome :=
   match migration tableD script with
-  | .resolved resolved _ => some (runSql resolved tableD.emptyDatabase)
+  | .resolved resolved _ => some (runSql (bindValues resolved []) tableD.emptyDatabase)
   | .restricted _ => none
 
 /-- The position and reason of a failure, or none. -/

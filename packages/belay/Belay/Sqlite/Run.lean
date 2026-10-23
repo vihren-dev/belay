@@ -19,8 +19,9 @@ export Belay.Sqlite.Model (Output Output.rows Output.done Output.error Output.on
 ({name}`Profile.pinned`), with statements that run. -/
 def runContext : Belay.Sqlite.Model.ResolveContext := { profile := Profile.pinned, mode := .execution }
 
-/-- The model's run of the script on the connection ({name}`Belay.Sqlite.Model.runScriptFrom`),
-from the first statement, without a check of the database at its end. -/
+/-- The model's run of the script on the connection, each statement with its values
+({name}`Belay.Sqlite.Model.runScriptFrom`), from the first statement, without a check of the
+database at its end. -/
 def Script.runOn (connection : Connection) (script : Script) : ScriptRun :=
   Belay.Sqlite.Model.runScriptFrom runContext 0 connection script.statements
 

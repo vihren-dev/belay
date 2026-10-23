@@ -62,26 +62,32 @@ def Query.subqueryRun (context : EvalContext) (database : Database) (outer : Lis
       firstCertain := query.windowCertain context source.rows (some (min 1 (query.limit.getD 1))),
       rowsCertain := query.windowCertain context source.rows query.limit }
 
-/-- The context of a statement's subqueries at a nesting depth: with no depth left, the plain
-context; else subquery {lit}`index` runs ({name}`Query.subqueryRun`) in the context one depth
-below, which serves the subqueries that its own expressions name, all later in the list. -/
-def subqueryContext (clock : Int) (database : Database) (subqueries : List Query) : Nat → EvalContext
-  | 0 => .plain clock
+/-- The context of a statement's subqueries at a nesting depth, with the statement's clock value
+and the values bound to its parameters at every depth: with no depth left, the plain context
+with the values; else subquery {lit}`index` runs ({name}`Query.subqueryRun`) in the context one
+depth below, which serves the subqueries that its own expressions name, all later in the list. -/
+def subqueryContext (clock : Int) (parameters : List Value) (database : Database) (subqueries : List Query) :
+    Nat → EvalContext
+  | 0 => { EvalContext.plain clock with parameters }
   | depth + 1 =>
-    { clock, subqueries := fun index outer => match subqueries[index]? with
-        | some query => query.subqueryRun (subqueryContext clock database subqueries depth) database outer
+    { clock, parameters, subqueries := fun index outer => match subqueries[index]? with
+        | some query => query.subqueryRun (subqueryContext clock parameters database subqueries depth) database outer
         | none => { rows := [], fault := .none } }
 
-/-- The evaluation context of a statement at a clock value over a database: its subqueries at
-the depth of their number ({name}`subqueryContext`), which bounds their nesting because each
-subquery's expressions name only later ones. Without subqueries it is the plain context. -/
-def statementContext (clock : Int) (database : Database) (subqueries : List Query) : EvalContext :=
-  subqueryContext clock database subqueries subqueries.length
+/-- The evaluation context of a statement at a clock value, with the values bound to its
+parameters, over a database: its subqueries at the depth of their number
+({name}`subqueryContext`), which bounds their nesting because each subquery's expressions name
+only later ones. Without subqueries it is the plain context with the values. Use {lean}`([] : List Value)` for
+the values of a statement that binds none, such as a trigger body. -/
+def statementContext (clock : Int) (parameters : List Value) (database : Database) (subqueries : List Query) :
+    EvalContext :=
+  subqueryContext clock parameters database subqueries subqueries.length
 
-/-- For every clock value and database, the context of a statement without subqueries is the
-plain context of the clock value. Proof sketch: an empty list gives depth 0, and
-{name}`subqueryContext` at depth 0 is the plain context by definition. -/
-@[simp] theorem statementContext_nil (clock : Int) (database : Database) :
-    statementContext clock database [] = .plain clock := rfl
+/-- For every clock value, list of values and database, the context of a statement without
+subqueries is the plain context of the clock value with the values as its parameters. Proof
+sketch: an empty list gives depth 0, and {name}`subqueryContext` at depth 0 is that context by
+definition. -/
+@[simp] theorem statementContext_nil (clock : Int) (parameters : List Value) (database : Database) :
+    statementContext clock parameters database [] = { EvalContext.plain clock with parameters } := rfl
 
 end Belay.Sqlite.Model.Resolved

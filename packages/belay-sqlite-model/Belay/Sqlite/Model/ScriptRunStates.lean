@@ -11,21 +11,22 @@ run ends earlier at a statement that the model does not describe. The outputs ag
 
 namespace Belay.Sqlite.Model
 
-/-- The states of {name}`runSqlFrom`: the state before each statement that it reaches and, when
+/-- The states of {name}`runSqlFrom` of statements with values: the state before each statement
+that it reaches and, when
 no statement halts, the state at the end; and the outcome of the statement that halts, when one
 does. For example, a script of one statement that halts with an outcome gives the state before
 it and the outcome. -/
-def sqlStatesFrom (position : Nat) : List Resolved.Statement → SqlState → List SqlState × Option Outcome
+def sqlStatesFrom (position : Nat) : List (Resolved.Statement × List Value) → SqlState → List SqlState × Option Outcome
   | [], state => ([state], none)
-  | statement :: rest, state => match advance position statement state with
+  | (statement, parameters) :: rest, state => match advance position statement parameters state with
     | .halt outcome => ([state], some outcome)
     | .next next =>
       let later := sqlStatesFrom (position + 1) rest next
       (state :: later.1, later.2)
 
-/-- For every position, script and state: the first state of {name}`sqlStatesFrom` is the state.
+/-- For every position, script of statements with values and state: the first state of {name}`sqlStatesFrom` is the state.
 Proof sketch: by cases on the script and on the transition. -/
-theorem sqlStatesFrom_head (position : Nat) (script : List Resolved.Statement) (state : SqlState) :
+theorem sqlStatesFrom_head (position : Nat) (script : List (Resolved.Statement × List Value)) (state : SqlState) :
     (sqlStatesFrom position script state).1[0]? = some state := by
   cases script with
   | nil => rfl
@@ -41,32 +42,34 @@ theorem Connection.afterError_database (connection : Connection) (foreignKeys : 
     (connection.afterError foreignKeys outcome).state.database = outcome.database := by
   cases outcome <;> rfl
 
-/-- For every context, script, index, connection, resolved statements, final resolution state,
-count and state: if {name}`resolveFrom` resolves the script from the index against the
-connection's resolution state with the resolved statements, the run of the first {lit}`count`
-statements gives no {name}`Output.unmodeled`, and the state at position {lit}`count` of
-{name}`sqlStatesFrom` of the resolved statements on the connection's state is the state, then
+/-- For every context, script of statements with values, index, connection, resolved
+statements, final resolution state, count and state: if {name}`resolveFrom` resolves the
+statements of the script from the index against the connection's resolution state with the
+resolved statements, the run of the first {lit}`count` statements gives no
+{name}`Output.unmodeled`, and the state at position {lit}`count` of {name}`sqlStatesFrom` of
+the resolved statements, each with the values of its statement in the script
+({name}`bindValues`), on the connection's state is the state, then
 the connection after that run has the state. So the run and {name}`runSqlFrom` have the same
 state before each statement up to and including the first that halts, and at the end when no
 statement halts. Proof sketch: induction on the script; each step that continues keeps the
 connection's resolution state equal to the next resolution state
 ({name}`Connection.resolveState_after_next`), and a step that halts has no later state. -/
 theorem runScriptFrom_states (context : ResolveContext) :
-    ∀ (script : List Syntax.Statement) (index : Nat) (connection : Connection) (resolved : List Resolved.Statement)
-      (final : ResolveState) (count : Nat) (state : SqlState),
-      resolveFrom context index connection.resolveState script = .ok (resolved, final) →
+    ∀ (script : List (Syntax.Statement × List Value)) (index : Nat) (connection : Connection)
+      (resolved : List Resolved.Statement) (final : ResolveState) (count : Nat) (state : SqlState),
+      resolveFrom context index connection.resolveState (script.map (·.1)) = .ok (resolved, final) →
       (runScriptFrom context index connection (script.take count)).outputs.all (!·.endsRun) = true →
-      (sqlStatesFrom index resolved connection.state).1[count]? = some state →
+      (sqlStatesFrom index (bindValues resolved (script.map (·.2))) connection.state).1[count]? = some state →
       (runScriptFrom context index connection (script.take count)).connection.state = state
   | script, index, connection, resolved, final, 0, state, _, _, found => by
     rw [sqlStatesFrom_head, Option.some.injEq] at found
     simp [runScriptFrom, found]
   | [], index, connection, resolved, final, count + 1, state, ok, _, found => by
-    simp only [resolveFrom, Except.ok.injEq, Prod.mk.injEq] at ok
+    simp only [List.map_nil, resolveFrom, Except.ok.injEq, Prod.mk.injEq] at ok
     obtain ⟨rfl, rfl⟩ := ok
-    simp [sqlStatesFrom] at found
-  | statement :: rest, index, connection, resolved, final, count + 1, state, ok, running, found => by
-    simp only [resolveFrom, bind, Except.bind] at ok
+    simp [sqlStatesFrom, bindValues] at found
+  | (statement, parameters) :: rest, index, connection, resolved, final, count + 1, state, ok, running, found => by
+    simp only [List.map_cons, resolveFrom, bind, Except.bind] at ok
     split at ok
     · cases ok
     · rename_i head headState headOk
@@ -75,10 +78,10 @@ theorem runScriptFrom_states (context : ResolveContext) :
       · rename_i later restOk
         simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at ok
         obtain ⟨rfl, rfl⟩ := ok
-        rcases runScriptStep_resolved (index := index) headOk with ⟨reason, ended⟩ | ⟨next, continued, afterStep⟩
+        rcases runScriptStep_resolved (index := index) (parameters := parameters) headOk with ⟨reason, ended⟩ | ⟨next, continued, afterStep⟩
         · simp [runScriptFrom, ended, Output.endsRun] at running
         · simp only [List.take_succ_cons, runScriptFrom, continued, List.all_cons] at running ⊢
-          simp only [sqlStatesFrom] at found
+          simp only [List.map_cons, bindValues_cons_cons, sqlStatesFrom] at found
           split at found
           · simp at found
           · rename_i nextState advanced
@@ -91,30 +94,32 @@ theorem runScriptFrom_states (context : ResolveContext) :
             exact runScriptFrom_states context rest (index + 1) next later.1 later.2 count state restOk
               running.2 found
 
-/-- For every context, script, index, connection, resolved statements, final resolution state
-and outcome: if {name}`resolveFrom` resolves the script as in {name}`runScriptFrom_states`, a
-statement of {name}`runSqlFrom` halts with the outcome ({name}`sqlStatesFrom`), and the run up
+/-- For every context, script of statements with values, index, connection, resolved
+statements, final resolution state and outcome: if {name}`resolveFrom` resolves the statements
+of the script as in {name}`runScriptFrom_states`, a statement of {name}`runSqlFrom` of the
+resolved statements with the values of the script ({name}`bindValues`) halts with the outcome ({name}`sqlStatesFrom`), and the run up
 to and including that statement gives no {name}`Output.unmodeled`, then the database of the
 connection after that run is the outcome's database. So the two runs have the same database after
 the first error. Proof sketch: induction on the script; at the statement that halts, the
 connection after it is {name}`Connection.afterError` of the outcome
 ({name}`Connection.afterError_database`). -/
 theorem runScriptFrom_halt_database (context : ResolveContext) :
-    ∀ (script : List Syntax.Statement) (index : Nat) (connection : Connection) (resolved : List Resolved.Statement)
-      (final : ResolveState) (outcome : Outcome),
-      resolveFrom context index connection.resolveState script = .ok (resolved, final) →
-      (sqlStatesFrom index resolved connection.state).2 = some outcome →
-      (runScriptFrom context index connection
-        (script.take (sqlStatesFrom index resolved connection.state).1.length)).outputs.all (!·.endsRun) = true →
-      (runScriptFrom context index connection
-        (script.take (sqlStatesFrom index resolved connection.state).1.length)).connection.state.database =
+    ∀ (script : List (Syntax.Statement × List Value)) (index : Nat) (connection : Connection)
+      (resolved : List Resolved.Statement) (final : ResolveState) (outcome : Outcome),
+      resolveFrom context index connection.resolveState (script.map (·.1)) = .ok (resolved, final) →
+      (sqlStatesFrom index (bindValues resolved (script.map (·.2))) connection.state).2 = some outcome →
+      (runScriptFrom context index connection (script.take
+        (sqlStatesFrom index (bindValues resolved (script.map (·.2))) connection.state).1.length)).outputs.all
+          (!·.endsRun) = true →
+      (runScriptFrom context index connection (script.take
+        (sqlStatesFrom index (bindValues resolved (script.map (·.2))) connection.state).1.length)).connection.state.database =
           outcome.database
   | [], index, connection, resolved, final, outcome, ok, halted, _ => by
-    simp only [resolveFrom, Except.ok.injEq, Prod.mk.injEq] at ok
+    simp only [List.map_nil, resolveFrom, Except.ok.injEq, Prod.mk.injEq] at ok
     obtain ⟨rfl, rfl⟩ := ok
-    simp [sqlStatesFrom] at halted
-  | statement :: rest, index, connection, resolved, final, outcome, ok, halted, running => by
-    simp only [resolveFrom, bind, Except.bind] at ok
+    simp [sqlStatesFrom, bindValues] at halted
+  | (statement, parameters) :: rest, index, connection, resolved, final, outcome, ok, halted, running => by
+    simp only [List.map_cons, resolveFrom, bind, Except.bind] at ok
     split at ok
     · cases ok
     · rename_i head headState headOk
@@ -123,10 +128,11 @@ theorem runScriptFrom_halt_database (context : ResolveContext) :
       · rename_i later restOk
         simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at ok
         obtain ⟨rfl, rfl⟩ := ok
-        rcases runScriptStep_resolved (index := index) headOk with ⟨reason, ended⟩ | ⟨next, continued, afterStep⟩
-        · simp only [sqlStatesFrom] at running
+        rcases runScriptStep_resolved (index := index) (parameters := parameters) headOk with ⟨reason, ended⟩ | ⟨next, continued, afterStep⟩
+        · simp only [List.map_cons, bindValues_cons_cons, sqlStatesFrom] at running
           split at running <;> simp [runScriptFrom, ended, Output.endsRun] at running
-        · cases advanced : advance index head connection.state with
+        · simp only [List.map_cons, bindValues_cons_cons] at halted running ⊢
+          cases advanced : advance index head parameters connection.state with
           | halt stopped =>
             simp only [sqlStatesFrom, advanced, Option.some.injEq] at halted ⊢
             subst halted

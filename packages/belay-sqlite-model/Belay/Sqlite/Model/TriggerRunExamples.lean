@@ -49,7 +49,7 @@ def insertT (rows : List (List Expr)) (algorithm : Option ConflictAlgorithm := n
 the script failed. -/
 def run (script : List Syntax.Statement) (position : Nat) (profile : Profile := defaults) :
     List (List Value) × Bool :=
-  let outcome := runSql (statements (migration [] script profile)) {}
+  let outcome := runSql (bindValues (statements (migration [] script profile)) []) {}
   let failed := match outcome with
     | .success _ => false
     | .failure .. => true
@@ -122,7 +122,7 @@ Julian day 2460000 for every statement. -/
 def clockLog : List (List Value) :=
   let script := statements (migration [] (tables ++ [trigger "a" .after .insert [logged (.currentTime "CURRENT_TIMESTAMP")],
     insertT [[.null, .numeric "1"]]]))
-  ((runSqlAt (fun _ => 2460000 * 86400000) script {}).database.rows.getD 1 []).map (·.values)
+  ((runSqlAt (fun _ => 2460000 * 86400000) (bindValues script []) {}).database.rows.getD 1 []).map (·.values)
 
 -- A statement whose trigger reads the clock reads it: the trigger logs the time, not NULL.
 #guard clockLog.all fun row => row.all (· matches .text _)
@@ -132,10 +132,10 @@ def clockLog : List (List Value) :=
 def changes (script : List Syntax.Statement) : Option (List Row) :=
   match (statements (migration [] (tables ++ script))).reverse with
   | last :: earlier =>
-    let state := match runSqlFrom 0 earlier.reverse { database := {} } with
+    let state := match runSqlFrom 0 (bindValues earlier.reverse []) { database := {} } with
       | .success database => database
       | .failure _ _ database | .pending database _ _ => database
-    (runStatement 0 last state).keyRows
+    (runStatement 0 [] last state).keyRows
   | [] => none
 
 -- The change count of a write counts its own rows only, not those of its triggers.

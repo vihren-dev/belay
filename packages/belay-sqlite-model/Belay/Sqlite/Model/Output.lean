@@ -69,7 +69,8 @@ def Resolved.Statement.returnsRows : Resolved.Statement → Bool
   | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit | .rollback
   | .prepareError _ | .query .. | .setting _ => false
 
-/-- The output of a statement from its transition and from what the model computes for it
+/-- The output of a statement from its transition and from what the model computes for it with
+the values bound to its parameters
 ({name}`statementOutput`, {name}`possibleOutput`):
 
 * a statement that stops with an error gives {name}`Output.error` of its primary result code,
@@ -80,8 +81,8 @@ def Resolved.Statement.returnsRows : Resolved.Statement → Bool
 * every other statement that succeeds gives {name}`Output.done` of its number of changes, 0
   when it has none;
 * a statement for which the model gives no output gives {name}`Output.unmodeled`. -/
-def Output.ofStep (clock : Int) (statement : Resolved.Statement) (before : SqlState) (transition : SqlTransition) :
-    Output :=
+def Output.ofStep (clock : Int) (parameters : List Value) (statement : Resolved.Statement) (before : SqlState)
+    (transition : SqlTransition) : Output :=
   match haltError transition with
   | some .unmodeled => .unmodeled unmodeledHere
   | some failure@(.prepare _) | some failure@.transactionAlreadyActive | some failure@.noActiveTransaction
@@ -90,12 +91,12 @@ def Output.ofStep (clock : Int) (statement : Resolved.Statement) (before : SqlSt
   | some failure@.nullColumnDefault | some failure@.nonConstantColumnDefault | some failure@.checkColumnDefault =>
     .error failure.primaryCode
   | none => match statement with
-    | .query .. => match possibleOutput clock statement before transition with
+    | .query .. => match possibleOutput clock parameters statement before transition with
       | some results => .ofResults results
       | none => .unmodeled "the model gives no result for this query"
     | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit
     | .rollback | .insert .. | .upsert .. | .update .. | .delete .. | .prepareError _ | .setting _ =>
-      match statementOutput clock statement before transition with
+      match statementOutput clock parameters statement before transition with
       | some output =>
         if statement.returnsRows then .rows (Resolved.normalForm output.rows) else .done (output.changes.getD 0)
       | none => .unmodeled "the model gives no output for this statement"

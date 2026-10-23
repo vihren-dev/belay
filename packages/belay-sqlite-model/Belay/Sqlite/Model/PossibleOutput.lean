@@ -10,12 +10,13 @@ harness checks that SQLite's rows are one of them, and the user surface shows th
 
 namespace Belay.Sqlite.Model
 
-/-- The results that SQLite may give for a statement, for a query that succeeds
+/-- The results that SQLite may give for a statement with the values bound to its parameters,
+for a query that succeeds
 ({name}`Resolved.Query.possibleOn`); none for every other statement and for a query that fails. -/
-def possibleOutput (clock : Int) (statement : Resolved.Statement) (before : SqlState) (transition : SqlTransition) :
-    Option (List (List ResultRow)) :=
+def possibleOutput (clock : Int) (parameters : List Value) (statement : Resolved.Statement) (before : SqlState)
+    (transition : SqlTransition) : Option (List (List ResultRow)) :=
   match statement, transition with
-  | .query query subqueries, .next _ => query.possibleOn clock before.database subqueries
+  | .query query subqueries, .next _ => query.possibleOn clock parameters before.database subqueries
   | .query .., .halt _ => none
   | .createTable .., _ | .createIndex .., _ | .createTrigger .., _ | .addColumn .., _ | .drop .., _ | .begin, _
   | .commit, _ | .rollback, _ | .insert .., _ | .upsert .., _ | .update .., _ | .delete .., _ | .prepareError _, _

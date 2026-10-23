@@ -56,13 +56,14 @@ theorem SqlTransition.atPosition_of_haltError (position : Nat) {transition : Sql
     | failure _ _ _ => simp [haltError] at none
     | pending _ _ error => cases error <;> simp_all [haltError, SqlTransition.atPosition, Outcome.atPosition]
 
-/-- For every clock value, statement, state, position and transition, the output of the step
-({name}`Output.ofStep`) is the same with the failure positions set to the position. Proof sketch:
+/-- For every clock value, list of values, statement, state, position and transition, the
+output of the step ({name}`Output.ofStep`) is the same with the failure positions set to the position. Proof sketch:
 with a halt error, the output reads only the error ({name}`haltError_atPosition`); without one,
 the transition has no failure position ({name}`SqlTransition.atPosition_of_haltError`). -/
-@[simp] theorem Output.ofStep_atPosition (clock : Int) (statement : Resolved.Statement) (before : SqlState)
-    (position : Nat) (transition : SqlTransition) :
-    Output.ofStep clock statement before (transition.atPosition position) = Output.ofStep clock statement before transition := by
+@[simp] theorem Output.ofStep_atPosition (clock : Int) (parameters : List Value) (statement : Resolved.Statement)
+    (before : SqlState) (position : Nat) (transition : SqlTransition) :
+    Output.ofStep clock parameters statement before (transition.atPosition position) =
+      Output.ofStep clock parameters statement before transition := by
   cases error : haltError transition with
   | none => rw [SqlTransition.atPosition_of_haltError position error]
   | some failure => simp only [Output.ofStep, haltError_atPosition, error]; cases failure <;> rfl
@@ -77,14 +78,16 @@ reads no failure position. -/
   | next _ => rfl
   | halt outcome => cases outcome <;> rfl
 
-/-- For every context, two indexes, connection and statement: if the clock of the connection
-gives the same value at both indexes, the statement's step ({name}`runScriptStep`) is the same
-at both. Proof sketch: resolution takes no index; the step at the first index is the step at the
+/-- For every context, two indexes, connection, statement and list of values: if the clock of
+the connection gives the same value at both indexes, the statement's step with the values
+({name}`runScriptStep`) is the same at both. Proof sketch: resolution takes no index; the step at the first index is the step at the
 second with its failure positions set ({name}`advanceWith_atPosition`), and neither the output
 nor the next connection reads a failure position. -/
 theorem runScriptStep_index (context : ResolveContext) (first second : Nat) (connection : Connection)
-    (statement : Syntax.Statement) (clock : connection.state.clock first = connection.state.clock second) :
-    runScriptStep context first connection statement = runScriptStep context second connection statement := by
+    (statement : Syntax.Statement) (parameters : List Value)
+    (clock : connection.state.clock first = connection.state.clock second) :
+    runScriptStep context first connection statement parameters =
+      runScriptStep context second connection statement parameters := by
   simp only [runScriptStep, clock, advanceWith_atPosition second first, Output.ofStep_atPosition,
     Connection.afterStep_atPosition]
 
@@ -120,14 +123,15 @@ theorem Connection.afterStep_clock (connection : Connection) (foreignKeys : Bool
   | next state => exact advanceWith_clock transition
   | halt outcome => cases outcome <;> rfl
 
-/-- For every context, index, connection and statement: if the step continues with an output and
+/-- For every context, index, connection, statement and list of values: if the step with the
+values continues with an output and
 a next connection, the next connection has the clock of the connection, and the output does not
 end the run ({name}`Output.endsRun`). Proof sketch: unfold the step; a continuing step's output
 is one of the four outputs that do not end the run, and its connection is
 {name}`Connection.afterStep` of a transition ({name}`Connection.afterStep_clock`). -/
 theorem runScriptStep_continued {context : ResolveContext} {index : Nat} {connection next : Connection}
-    {statement : Syntax.Statement} {output : Output}
-    (continued : runScriptStep context index connection statement = .continued output next) :
+    {statement : Syntax.Statement} {parameters : List Value} {output : Output}
+    (continued : runScriptStep context index connection statement parameters = .continued output next) :
     next.state.clock = connection.state.clock ∧ output.endsRun = false := by
   unfold runScriptStep at continued
   split at continued

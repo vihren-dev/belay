@@ -32,8 +32,9 @@ def test_guide_databases_examples_hold(runtime_root: Path, tmp_path: Path) -> No
 
 def test_guide_scripts_examples_hold(runtime_root: Path, tmp_path: Path) -> None:
     """The section "Scripts" (`Belay/Sqlite/Script.lean`, `Belay/Sqlite/SqlTerm.lean`): `sql r"..."`
-    gives the statements of the text in order, in plain and `#` raw strings, and `++` with
-    `Script.empty` is a monoid."""
+    gives the statements of the text in order, in plain and `#` raw strings, with no values;
+    `Script.withValues` binds values, `++` with `Script.empty` is a monoid that keeps each
+    statement's values, and a run reads them."""
     result = run_command(surface_command(runtime_root, FIXTURES / "GuideScripts.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()

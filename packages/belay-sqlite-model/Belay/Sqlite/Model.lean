@@ -32,6 +32,7 @@ import Belay.Sqlite.Model.SchemaClockLaws
 import Belay.Sqlite.Model.SqlLaws
 import Belay.Sqlite.Model.ScriptLaws
 import Belay.Sqlite.Model.PreservationLaws
+import Belay.Sqlite.Model.TableExtensionLaws
 import Belay.Sqlite.Model.ModelLaws
 import Belay.Sqlite.Model.SchemaExtensionLaws
 import Belay.Sqlite.Model.SchemaPreservationLaws

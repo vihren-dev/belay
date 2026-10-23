@@ -17,7 +17,7 @@ open Belay.Sqlite.Model Lean Elab Tactic
 ({name}`Model.Syntax.Statement.readsOnly`). -/
 def Script.isQuery (script : Script) : Bool :=
   match script.statements with
-  | [statement] => statement.readsOnly
+  | [(statement, _)] => statement.readsOnly
   | [] | _ :: _ :: _ => false
 
 /-- The output of the first statement of the script on the database, with foreign keys off, as
