@@ -454,6 +454,11 @@ filter of 3b, its change count and its `RETURNING` rows. Items 4 to 6 do not cha
    `Database.Valid` adds the truth of the declared constraints. It is SQLite's guarantee for
    its own statements, not a property of the model's statements, and it admits no database: a
    claim states it as a hypothesis.
+
+   Amended 2026-10-23: ADR 0022, slice 2 gives the first preservation theorem, for the atom
+   "keys unique" of `Database.Valid`: `runStatement_keysUnique` for the statement step, and
+   `runSqlFrom_keysUnique`, `runSql_keysUnique` and `runScriptFrom_keysUnique` for the runs.
+   No preservation theorem of `Database.Admitted` exists yet (ADR 0022, slice 4).
 6. **`DELETE`.** Decided on 2026-10-14: its own slice, 3c, right after 3b. It
    reuses the filter of 3b, keeps 3b focused, and makes migrations that delete
    rows, where application data is lost, verifiable early.

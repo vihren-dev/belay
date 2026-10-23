@@ -1,6 +1,6 @@
 # Status: the theorem of "keys unique" (ADR 0022, slice 2)
 
-Created 2026-10-23. Status: open; part 1 done, part 2 in progress. The owner decided the three
+Created 2026-10-23. Status: open; part 1 done; part 2 written, its `just test-full` and `just verdict` open. The owner decided the three
 decisions on 2026-10-23 (below), and replaced decision 1 after finding 1.
 Task: [task file](20261023-keys-unique.task.md).
 Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D3 and D4 (slice 2).
@@ -185,3 +185,6 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3).
   `keysCondition_of_runCondition` and `runCondition_of_unconditioned`), one R2 must (the plain
   words of `Connection.afterStep_keysUnique` named a hypothesis that the formula does not have)
   and one R1 should (the standard axioms of the test get a name), fixed.
+- 2026-10-23: review round 12 (the refactor): no findings. The records of slice 2 in ADR 0022, D4
+  and ADR 0012, decision 5. The predictions of `nix-build integrity/judge.nix -A predictions` are
+  byte-identical to the baseline (`diff -r`). Next: `just test-full` and `just verdict` of part 2.
