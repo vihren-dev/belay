@@ -71,3 +71,9 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D1 (amended 2026-10-23
   numbering mutants change the frontend, which the mutant measurement does not build, so no
   check shows yet that a case kills them. Open: a check of the two numbering mutants (owner
   decision); corpus-v48 and its claims are the judge change (owner).
+- 2026-10-23: `just test-full` passes on the C5 commits (465, 207, 156, 153, 117, 28, 23 and
+  3 tests). `just verdict` passes: no claimed case leaves AGREE, and 27 unclaimed cases agree
+  (v3: 2, v4: 8, v5: 17, among them `numeric-ties-windows`, the six authored cases with bound
+  values and the triggerE cases). The judge change is prepared but not committed: corpus-v48
+  (44 cases, native replay passed), its claim, and the 27 cases added to `mustAgree`. The
+  judge lock needs the owner.
