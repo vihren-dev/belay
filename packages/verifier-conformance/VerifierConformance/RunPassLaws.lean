@@ -4,9 +4,9 @@ set_option doc.verso true
 
 /-! The law that makes the evidence of the pass that continues evidence for the model's run
 ({name}`Belay.Sqlite.Model.runScriptFrom`). It is a module apart from
-{name}`Belay.Sqlite.Model.Conformance.runPassFrom`, so that the classifier of the cases imports no
-proof: a mutant copy of the model ({lit}`conformance.resolve_mutants`) then builds also when the
-mutant breaks this proof. -/
+{name}`Belay.Sqlite.Model.Conformance.runPassFrom`, so that the classifier of the cases does not
+import it: a mutant copy of the model ({lit}`conformance.resolve_mutants`) then builds also when
+the mutant breaks this proof. -/
 
 namespace Belay.Sqlite.Model.Conformance
 
