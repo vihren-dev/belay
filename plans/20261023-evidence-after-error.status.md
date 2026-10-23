@@ -99,11 +99,12 @@ corpus finds is extra work and is not in this estimate.
 - 2026-10-23: research, native probes and measurement; task file and this status file.
 - 2026-10-23: `just review` of the task and status files (change `qrlwyxux`): no findings.
 - 2026-10-23 (PR A): the model's step is made of `runScriptStepWith` and `ranScriptStep`, and `resolveSchema` resolves a schema alone, so a conformance pass can take the same step.
+- 2026-10-23 (PR A, refactor): review of `rwlmrrzx`: the docstring of `runScriptStepWith` names no conformance runner (R6), and the status file cites no local result (R19).
 
 ## Tests for each commit
 
 - Task and status files: none (documents only); `just review`.
-- The model's step: `just dev-build` (the laws of `ScriptRun*` and the examples build).
+- The model's step: `just dev-build`.
 
 ## Remaining
 
