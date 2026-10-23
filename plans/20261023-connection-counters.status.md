@@ -217,7 +217,7 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   the field `counters`, when the recorder reads it, the reopen that gives 0, the replay check and
   the start of the model run. The helper of `tests/conformance_counters_record_test.py` has full
   types. Tests: `tests/conformance_counters_record_test.py`. Nix evidence is pending.
-- 2026-10-23 (PR B): the authored cases and corpus-v52, outcomes 1 to 7 and 10. `conformance/counter_sql.py`
+- 2026-10-23 (PR B): the authored cases and corpus-v52 (the "Tests" section of the task file). `conformance/counter_sql.py`
   has the shared SQL, `authored_counter_writes.py`, `authored_counter_reads.py` and
   `authored_counter_failures.py` have 33 cases (writes that set the counters, reads of the counters in
   expressions and queries, failures with trigger rows, `RAISE`, rollback and deferred keys), and
@@ -238,7 +238,7 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   `conformance/authored_counter_failures.py` separates the failures with ABORT or ROLLBACK from
   those with FAIL (R9). Tests: `just dev-verdict` for the corpus and the kernel proofs of
   `tests/conformance_query_coverage_test.py` for the new cases. Nix evidence is pending.
-- 2026-10-23 (PR B): the mutants of the counter rules, outcome 10. `conformance/counter_mutants.py`
+- 2026-10-23 (PR B): the mutants of the counter rules (the "Tests" section of the task file). `conformance/counter_mutants.py`
   has seven mutants of the Lean sources, each with a `rule:` guard and a target case: REPLACE
   deletes counted in `changes()`, trigger program rows counted in `changes()`, trigger program rows
   left out of `total_changes()`, `DROP TABLE` that leaves `changes()`, `changes()` kept after a
@@ -247,6 +247,10 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   `tests/mutant_guards_test.py` lists the table, and `build-support/tests.nix` lists the module.
   Tests: the new mutant test by name (`-k counter`) and `tests/mutant_guards_test.py`. The
   scheduled run of all mutants is for CI. Nix evidence is pending.
+- 2026-10-23 (PR B): the documents, outcome 10. ADR 0024 has a dated note: slice 1 is
+  implemented, with record version 7 and corpus-v52, and the extra hypothesis of
+  `Script.run_append`. ADR 0017 keeps only `random()` and `randomblob()` as deferred, for slice 2.
+  Tests: `tests/test_public_doc_inventory.py` and `tests/test_ci_checks.py`. Nix evidence is pending.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 
