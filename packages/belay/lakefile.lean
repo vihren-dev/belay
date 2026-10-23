@@ -22,5 +22,5 @@ lean_lib Belay where
   globs := #[.one `Belay, .one `Belay.Sqlite, .one `Belay.Sqlite.ParseCommand, .one `Belay.Sqlite.Values, .one `Belay.Sqlite.Database,
     .one `Belay.Sqlite.Script, .one `Belay.Sqlite.SqlLiteral, .one `Belay.Sqlite.SqlTerm, .one `Belay.Sqlite.SqlDiagnostics, .one `Belay.Sqlite.EvalDatabase,
     .one `Belay.Sqlite.SqlBang, .one `Belay.Sqlite.Run, .one `Belay.Sqlite.RunLaws, .one `Belay.Sqlite.DbDiagnostics,
-    .one `Belay.Sqlite.DbBang]
+    .one `Belay.Sqlite.DbBang, .one `Belay.Sqlite.Queries, .one `Belay.Sqlite.QueryLaws]
   precompileModules := true

@@ -11,6 +11,8 @@ import Belay.Sqlite.Run
 import Belay.Sqlite.DbDiagnostics
 import Belay.Sqlite.DbBang
 import Belay.Sqlite.RunLaws
+import Belay.Sqlite.Queries
+import Belay.Sqlite.QueryLaws
 
 /-! The SQLite surface. It reads SQL text while a Lean file elaborates, with the SQLite parser
 library in the Lean process, and translates the parse tree to the model's statement syntax with
