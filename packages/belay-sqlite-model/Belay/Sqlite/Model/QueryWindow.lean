@@ -63,7 +63,10 @@ theorem Query.bindWindow_literal (parameters : List Value) (query : Query) (limi
 
 /-- For every list of values and all queries {lit}`query` and {lit}`bound`, when
 {name}`Query.bindWindow` gives {lit}`bound` for {lit}`query`, then {lit}`bound` is {lit}`query` with
-some {lit}`limit` and {lit}`offset` and without window parameters: every other field is the same. -/
+some {lit}`limit` and {lit}`offset` and without window parameters: every other field is the same.
+Proof sketch: a successful {name}`Query.bindWindow` is a bind of the bound LIMIT and the bound
+OFFSET, so the two values that it found are the witnesses, and the record update that it
+builds is the stated query. -/
 theorem Query.bindWindow_some (parameters : List Value) (query bound : Query)
     (found : query.bindWindow parameters = some bound) :
     ∃ (limit : Option Nat) (offset : Nat),

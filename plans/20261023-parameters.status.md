@@ -55,6 +55,6 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D1 (amended 2026-10-23
   starts (`QueryWindow.lean`): LIMIT first, OFFSET only when the LIMIT is not 0, each through
   `numericStore` to an integer, else `datatype mismatch` (`QueryRun.mismatch`). The bound
   query has literal fields, so the readers of the window and their laws do not change. In a
-  subquery a mismatch is a `may` fault. `numeric-ties-windows` now agrees (`just
-  dev-verdict`: no case leaves AGREE). Kernel examples of each value of outcome 5 are in
+  subquery a mismatch is a `may` fault. The case `numeric-ties-windows` is expected to agree;
+  the Nix verdict is pending. Kernel examples of each value of outcome 5 are in
   `QueryWindowExamples.lean`.

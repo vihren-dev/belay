@@ -444,7 +444,7 @@ should shrink.
 | `bare-column` | A result column outside GROUP BY in an aggregate query is not modeled | ADR 0012 slice 1 |
 | `aggregate-order-by` | An `ORDER BY` term of an aggregate query that reads a column outside `GROUP BY` is not modeled | ADR 0012 slice 1; ADR 0018, slice 3 |
 | `window-value` | Only an integer literal or a lone parameter is modeled as LIMIT or OFFSET | ADR 0012 slice 1; ADR 0019 |
-| `negative-offset` | A negative OFFSET is not modeled | ADR 0012 slice 1 |
+| `negative-offset` | A negative literal OFFSET is not modeled; a negative bound OFFSET skips no rows | ADR 0012 slice 1; ADR 0019 |
 | `table-function` | Only `json_each` with one or two arguments is modeled as a table-valued function in FROM | ADR 0012 slice 6d |
 | `later-table-in-on` | An ON condition that names a source joined after it is not modeled: SQLite moves it to WHERE without outer joins and refuses it otherwise | ADR 0012 amendment 2; ADR 0013 amendment 2 |
 | `function-join` | `json_each` as the right operand of RIGHT or FULL JOIN, with NATURAL or USING, or before a NATURAL JOIN, is not modeled | ADR 0012 slice 6d; ADR 0013 amendment 2 |

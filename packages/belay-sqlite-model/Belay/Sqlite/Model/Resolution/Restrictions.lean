@@ -122,7 +122,7 @@ inductive RestrictionKind where
   | aggregateOrderBy
   /-- Only an integer literal is modeled as LIMIT or OFFSET (ADR 0012 slice 1). -/
   | windowValue
-  /-- A negative OFFSET is not modeled (ADR 0012 slice 1). -/
+  /-- A negative literal OFFSET is not modeled (ADR 0012 slice 1); a negative bound OFFSET is 0. -/
   | negativeOffset
   /-- SUM in a grouped query with LIMIT or OFFSET is not modeled, because SQLite may stop before an overflowing group (ADR 0012 slice 2). -/
   | windowedGroupSum
