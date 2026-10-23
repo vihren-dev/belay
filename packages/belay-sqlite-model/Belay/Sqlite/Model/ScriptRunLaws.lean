@@ -8,7 +8,8 @@ set_option doc.verso true
 (ADR 0017, D3, amended 2026-10-22). For a script that resolution accepts, the two runs give the
 same output for each statement up to and including the first error, and the same state at the
 end of a script without an error, unless the new run ends earlier at a statement that the model
-does not describe. -/
+does not describe. {lit}`ScriptRunStates.lean` adds the state before each statement and the
+database after the first error. -/
 
 namespace Belay.Sqlite.Model
 
@@ -66,8 +67,8 @@ theorem Connection.resolveState_of_agrees {state : SqlState} {target : ResolveSt
 /-- For every context, index, connection, statement, resolved statement and resolution state:
 if the statement resolves against the connection's resolution state, then the step of the run
 either ends, or continues with the output of {name}`Output.ofStep` of the transition of
-{name}`advance`, and when that transition continues with a state, the next connection has that
-state and the resolution state's setting. Proof sketch: unfold the step with the resolution;
+{name}`advance`, and the next connection is {name}`Connection.afterStep` of that transition with
+the resolution state's setting. Proof sketch: unfold the step with the resolution;
 the clock, the support check and an {name}`Output.unmodeled` end it, and otherwise the step's
 transition is {name}`advance` by definition, so its output and its next connection are the
 stated ones. -/
@@ -78,8 +79,7 @@ theorem runScriptStep_resolved {context : ResolveContext} {index : Nat} {connect
     ∃ next, runScriptStep context index connection statement = .continued
         (Output.ofStep (connection.state.clock index) resolved connection.state
           (advance index resolved connection.state)) next ∧
-      ∀ state, advance index resolved connection.state = .next state →
-        next = { state, foreignKeys := after.foreignKeys } := by
+      next = connection.afterStep after.foreignKeys (advance index resolved connection.state) := by
   simp only [runScriptStep, ok]
   split
   · exact .inl ⟨_, rfl⟩
@@ -92,8 +92,22 @@ theorem runScriptStep_resolved {context : ResolveContext} {index : Nat} {connect
         have unfolded : advance index resolved connection.state = advanceWith index resolved connection.state
             (runStatement (connection.state.clock index) resolved connection.state.database).effect := rfl
         rw [unfolded, stepped]
-        refine .inr ⟨_, rfl, fun state continued => ?_⟩
-        simp only [continued, Connection.afterStep]
+        exact .inr ⟨_, rfl, rfl⟩
+
+/-- For every context, connection, statement, resolved statement, resolution state and state:
+if the statement resolves against the connection's resolution state to the resolution state
+{lit}`after`, and {name}`advance` continues with the state, then the connection with the state
+and the setting of {lit}`after` has the resolution state {lit}`after`. Proof sketch: the
+transition keeps the state in agreement with the resolution ({name}`advance_agrees`,
+{name}`resolveStatement_after`), and {name}`Connection.resolveState_of_agrees` applies. -/
+theorem Connection.resolveState_after_next {context : ResolveContext} {index : Nat} {connection : Connection}
+    {statement : Syntax.Statement} {resolved : Resolved.Statement} {after : ResolveState} {state : SqlState}
+    (ok : resolveStatement context connection.resolveState statement = .ok (resolved, after))
+    (advanced : advance index resolved connection.state = .next state) :
+    ({ state, foreignKeys := after.foreignKeys } : Connection).resolveState = after := by
+  have agrees := advance_agrees (state := connection.resolveState) ⟨rfl, rfl⟩ advanced
+  rw [← resolveStatement_after context _ _ statement resolved ok] at agrees
+  exact Connection.resolveState_of_agrees agrees
 
 /-- The agreement of the two runs (ADR 0017, D3). For every context, script, index, connection,
 resolved statements and final resolution state: if {name}`resolveFrom` resolves the script from
@@ -139,20 +153,17 @@ theorem runScriptFrom_agrees (context : ResolveContext) :
       · rename_i later restOk
         simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at ok
         obtain ⟨rfl, rfl⟩ := ok
-        rcases runScriptStep_resolved (index := index) headOk with ⟨reason, ended⟩ | ⟨next, continued, nextState⟩
+        rcases runScriptStep_resolved (index := index) headOk with ⟨reason, ended⟩ | ⟨next, continued, afterStep⟩
         · refine .inl ⟨[], reason, ?_, List.nil_prefix⟩
           simp [runScriptFrom, ended]
         · simp only [runScriptFrom, continued, sqlTraceFrom]
           split
           · exact .inr ⟨_, rfl, fun _ ended => by cases ended⟩
           · rename_i state advanced
-            have agrees := advance_agrees (state := connection.resolveState) ⟨rfl, rfl⟩ advanced
-            rw [← resolveStatement_after context _ _ statement head headOk] at agrees
-            have resolves : next.resolveState = headState := by
-              rw [nextState state advanced]
-              exact Connection.resolveState_of_agrees agrees
-            rw [← resolves] at restOk
-            rw [nextState state advanced] at restOk ⊢
+            have nextState : next = { state, foreignKeys := headState.foreignKeys } := by
+              rw [afterStep, advanced]; rfl
+            rw [← Connection.resolveState_after_next headOk advanced, ← nextState] at restOk
+            rw [nextState] at restOk ⊢
             rcases runScriptFrom_agrees context rest (index + 1) _ later.1 later.2 restOk with
               ⟨before, reason, outputs, isPrefix⟩ | ⟨more, outputs, ending⟩
             · exact .inl ⟨_ :: before, reason, by simp [outputs], List.cons_prefix_cons.mpr ⟨rfl, isPrefix⟩⟩
