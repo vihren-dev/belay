@@ -195,6 +195,12 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   record the case again (R10). The format documents (R13) change with the recorder in the judge
   commits (PR B), where version 7 first exists. Tests: `just dev-build` and
   `tests/conformance_counters_test.py`, `tests/conformance_model_test.py`. Nix evidence is pending.
+- 2026-10-23: the Nix inputs of the readers. `build-support/tests.nix` lists the Python modules
+  of the suites that import `record_versions`, so `record_counters` (imported by `native_replay`
+  and `predict`) is added to the three lists, and `tests/nix_suites.json` puts
+  `tests/conformance_counters_test.py` in the `harness` suite with the test of the continuing
+  case. `tests/test_test_ownership.py` and `tests/test_ci_checks.py` pass. Nix evidence is
+  pending.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 
