@@ -147,3 +147,6 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3). None y
   which databases `Effect.Satisfies` covers (reviews of commits 4, 5 and 6: one R2 must each for 4 and
   6, two R9 should for 5, fixed). `just documentation-inventory` passes; the predictions are
   unchanged (below).
+- 2026-10-23: part 1 review outcomes: commits 1, 3 and 7: no findings; the findings of commits 2, 4,
+  5 and 6 recorded and resolved. Predictions rebuilt at the end of part 1: `diff -r` against the
+  baseline is empty. Part 1 waits for `just test-full` and `just verdict` by the lead.
