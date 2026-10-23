@@ -29,6 +29,9 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   below and the measurement below.
 - 2026-10-23: review round 1 (R19, must): outcome 3 gave the plain INSERT's rule to every
   failed INSERT. Fixed: a write that runs row by row has its own rule, with new probes.
+- 2026-10-23: review round 2 (R19, must): a one-row INSERT fails a foreign key before its
+  insert. Fixed: outcome 3 gives SQLite's rule (`isMultiWrite`), from `fkey.c`, `build.c`
+  and `insert.c` of the pinned sources and new probes.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 
@@ -88,7 +91,11 @@ The ADR's table of facts and its examples are not repeated here. New facts for t
   `INSERT INTO b VALUES (40, 1), (41, -1)` fails, then 0, 1, 40. With foreign keys on, `p(id)`
   holding 1 and `c(id INTEGER PRIMARY KEY, pid REFERENCES p(id))`,
   `INSERT INTO c VALUES (30, 1), (31, 2), (32, 1)` fails with `FOREIGN KEY constraint failed`,
-  then 0, 1, 32.
+  then 0, 1, 32. In a new session with the same tables: `INSERT INTO c VALUES (30, 2)` fails,
+  then 0, 1, 1 (the row before); `INSERT INTO c SELECT 40, 2` fails, then 0, 1, 40; after
+  `INSERT INTO c VALUES (50, 1)`, `INSERT INTO c VALUES (51, 1), (52, 2)` fails, then 0, 2, 52. With
+  `log(x)` and `CREATE TRIGGER ct AFTER INSERT ON c BEGIN INSERT INTO log VALUES (new.id); END`,
+  `INSERT INTO c VALUES (60, 2)` fails, then 0, 2, 60.
 
 ## Measurement
 

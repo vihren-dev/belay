@@ -13,15 +13,12 @@ evidence after an error (`plans/20261023-evidence-after-error.task.md`, record v
 
 `changes()`, `total_changes()` and `last_insert_rowid()` get a meaning in the model, and the
 five functions of ADR 0024 get SQLite's errors in generated columns, index expressions and
-partial index filters. Out of scope: random values (slice 2), so `random()` and `randomblob()`
-stay the restriction `unmodeled-function` in every other position; the reads that ADR 0024
-"Not decided here" keeps out; SQLite's random rowid after the largest rowid.
+partial index filters. Out of scope: random values (slice 2: `random()` and `randomblob()` stay
+`unmodeled-function` elsewhere); the reads of ADR 0024 "Not decided here"; the random rowid.
 
 ## Pull requests
 
-As for the evidence after an error (its owner decision 1, option A), and as owner decision 3
-of ADR 0024 requires:
-
+As for the evidence after an error (its owner decision 1, A) and ADR 0024's owner decision 3:
 - **PR A, the work** (no change to the lock): the model, the surface, the conformance runner,
   `conformance/predict.py`, and the readers of the new record version (`record_versions.py`,
   `native_replay.model_case`), tested with Lean examples and hand-written inputs.
@@ -56,8 +53,12 @@ of ADR 0024 requires:
    - A write that runs row by row knows its last inserted row. Probes: a `RAISE(ABORT)` of an
      AFTER INSERT program comes after the insert of its row (`VALUES (20, 1), (21, -1), (22, 1)`
      gives 21; one row 10 gives 10); of a BEFORE INSERT program, before it (`(40, 1), (41, -1)`
-     gives 40); an immediate foreign-key failure comes at the end of the statement
-     (`VALUES (30, 1), (31, 2), (32, 1)` with no parent 2 gives 32).
+     gives 40). An immediate foreign-key failure of an INSERT comes at the end of the
+     statement when SQLite marks it as a multi-row write (`isMultiWrite`, set for example by a
+     `SELECT`, several `VALUES` rows or a trigger; `sqlite3BeginWriteOperation` in `insert.c`): with no parent 2,
+     `VALUES (30, 1), (31, 2), (32, 1)` gives 32, `SELECT 40, 2` gives 40, and `VALUES (60, 2)`
+     with an AFTER INSERT trigger gives 60. Else it fails before the insert (`fkey.c`): a
+     one-row `VALUES (30, 2)` leaves the value.
 4. **One computation.** The step of a statement (`runStatement`) gives the counts with its
    effect, from the same computation. `Output.done` and `statementOutput` read that count;
    `statementOutput` no longer computes a count, and no longer calls `runStatement` a second
@@ -95,9 +96,9 @@ of ADR 0024 requires:
    reopen of the connection. The judge gives them to the subject with the other inputs, and the
    case run starts from them. Records of older versions keep their meaning: their case run
    starts with unknown counters.
-10. **The specification follows.** ADR 0024 gets a dated note of slice 1, ADR 0017's deferred
-    row keeps only slice 2 (it still says that ADR 0024 is PROPOSED), and
-    `docs/native-corpus-format.md` and `docs/conformance-format-v2.md` describe the new version.
+10. **The specification follows.** ADR 0024 gets a dated note of slice 1; ADR 0017's deferred
+    row (which says that ADR 0024 is PROPOSED) keeps only slice 2; the two format documents
+    (`docs/native-corpus-format.md`, `docs/conformance-format-v2.md`) describe the new version.
 
 ## Measurement
 
@@ -145,9 +146,8 @@ with `WITH RECURSIVE`, which the frontend refuses for a write.
 - **The judge** (PR B): `tests/test_judge_records.py` gives the counters of a new-version
   record to the subject. **The subject** (PR A): `tests/conformance_predict_test.py` and a
   `model_case` test with hand-written new-version inputs.
-- **The verdict**: every case of corpus-v52 agrees; `delete4-3.0.1` agrees; no other verdict
-  changes. The usual checks: `just test-full` and `just verdict` at the end of the slice,
-  `just test-nix` and `just test-scheduled` once before the pull requests.
+- **The verdict**: every case of corpus-v52 and `delete4-3.0.1` agree; no other verdict
+  changes. The checks of `CLAUDE.md`, "Checks and their cadence".
 
 ## Key points
 
@@ -185,8 +185,8 @@ with `WITH RECURSIVE`, which the frontend refuses for a write.
 - **The recorder.** `record_sql` (`native_record.py`) runs the setup and the migration on one
   writer connection, and reopens it for `{"reopen": true}` and for a read-only profile; read the
   counters just before the migration's `execute`. Read them with `sqlite3_changes64`,
-  `sqlite3_total_changes64` and `sqlite3_last_insert_rowid`, not with SQL; `native_library.py`
-  declares only `sqlite3_changes` today. The observations between statements are queries, which
+  `sqlite3_total_changes64` and `sqlite3_last_insert_rowid`, not with SQL;
+  `native_library.py` declares `sqlite3_changes` today, but none of these three. The observations between statements are queries, which
   do not change the counters. `execute` records `changes` only for DML without DDL actions.
 - **Record version and corpus number.** The evidence after an error adds version 6 (the run
   that continues) and corpus-v51; corpus-v50 is the pragmas corpus. This task takes the next
