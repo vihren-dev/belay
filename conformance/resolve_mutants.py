@@ -129,7 +129,7 @@ def run(arguments: list[str], cwd: Path, lean: Path, timeout: float) -> str:
 def verdicts(packages: Path, lean: Path, program: str) -> list[str]:
     """Build the case classification of the copy and print one verdict for each case."""
     conformance = packages / "verifier-conformance"
-    run(["lake", "build", "VerifierConformance.Case"], conformance, lean, BUILD_TIMEOUT_SECONDS)
+    run(["lake", "build", "VerifierConformance.Classify"], conformance, lean, BUILD_TIMEOUT_SECONDS)
     (conformance / "Classify.lean").write_text(program)
     return run(["lake", "env", "lean", "--run", "Classify.lean"], conformance, lean, RUN_TIMEOUT_SECONDS).splitlines()
 
