@@ -1,7 +1,7 @@
 import Belay.Sqlite.Model.RowEngineUpdate
 import Belay.Sqlite.Model.RowEngineInsert
 import Belay.Sqlite.Model.ForeignKeyWrites
-import Belay.Sqlite.Model.RowCredit
+import Belay.Sqlite.Model.RowCreditHolds
 
 set_option doc.verso true
 
@@ -13,26 +13,6 @@ databases have the fact in every table. -/
 namespace Belay.Sqlite.Model
 
 variable {fact : Catalog → Nat → Table → Prop}
-
-/-- For every fact, catalog and nested run: if the nested run keeps the invariant
-({name}`NestedRun.Keeps`), so does {name}`NestedRun.credited` of it. Proof sketch: the counts of a
-state are no rows, so the nested run starts and ends in states with the rows of the states
-around it ({name}`KeyState.holds_of_rows`). -/
-theorem NestedRun.credited_keeps {catalog : Catalog} {nested : NestedRun} (keeps : nested.Keeps fact catalog) :
-    (NestedRun.credited nested).Keeps fact catalog := fun frame work state holds => by
-  have ran := keeps frame work { state with own := 0 } (KeyState.holds_of_rows rfl holds)
-  unfold NestedRun.credited
-  dsimp only
-  cases result : nested frame work { state with own := 0 } with
-  | error stop =>
-    rw [result] at ran
-    cases stop with
-    | error reason reached => trivial
-    | stopped algorithm reached => exact KeyState.holds_of_rows rfl ran
-    | undescribed => trivial
-  | ok reached =>
-    rw [result] at ran
-    exact KeyState.holds_of_rows rfl ran
 
 /-- For every fact with {name}`TableFacts`, catalog, links and fuel: {name}`runRows` keeps the
 invariant of the row engine ({name}`NestedRun.Keeps`). Proof sketch: induction on the fuel;

@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.ForeignKeyRows
 import Belay.Sqlite.Model.UpsertRun
+import Belay.Sqlite.Model.RowCredit
 
 set_option doc.verso true
 
@@ -35,11 +36,12 @@ def beforeInsertCells (table : Table) (values : List Value) : List Value :=
 
 /-- Delete the row that REPLACE replaces, with its foreign keys, actions and programs
 ({name}`deleteRow`, with the algorithm REPLACE for the programs). SQLite does not count a row that
-REPLACE deletes, so the count of rows of the write stays (ADR 0024, D2). -/
+REPLACE deletes, so the count of rows of the write stays (ADR 0024, D2), also when a program of the
+delete stops the statement. -/
 def replaceDelete (catalog : Catalog) (links : List ForeignKeyLink) (nested : NestedRun) (frame : RowFrame)
     (target : Nat) (state : KeyState) (row : Row) : Except KeyStop KeyState :=
-  (fun deleted => { deleted with own := state.own }) <$>
-    deleteRow catalog links nested { frame with algorithm := some .replace } target false false frame.recursive state row.rowid
+  KeyResult.mapState (fun deleted => { deleted with own := state.own })
+    (deleteRow catalog links nested { frame with algorithm := some .replace } target false false frame.recursive state row.rowid)
 
 /-- One row of an INSERT into the table at the position in the frame: a rowid alias that is no
 integer is {lit}`datatype mismatch`; with {lit}`BEFORE INSERT` programs, the types of a
