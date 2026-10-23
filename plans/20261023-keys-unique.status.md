@@ -108,3 +108,5 @@ None yet. A proof that fails is recorded here with a counterexample (ADR 0022, D
 - 2026-10-23: review round 2 (the refactor): no findings. ADD COLUMN: `Database.AddColumnCondition`
   (rows wide, each key of the target reads below the old width), `Resolved.Expr.evaluate_append`
   (`ExprAppendLaws`) and `runStatement_addColumn_keysUnique` (`KeysUniqueAddColumn`).
+- 2026-10-23: review round 3 (ADD COLUMN): two R2 musts (the plain words of `filterMap_set_none`
+  and `Database.KeysUnique.addColumn` omitted the cases without an element or a table), fixed.
