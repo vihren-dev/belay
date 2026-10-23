@@ -107,6 +107,13 @@ its columns, which needs decision 3.
    fact holds for each database that SQLite can reach, as ADR 0012, decision 5 requires for an
    Admitted fact. This slice does not depend on the answer.
 
+## Changes at the rebase onto the pragma and evidence-after-error stacks
+- 2026-10-23: `Resolved.Statement.setting` now has a second field, the value of the setting. The
+  hypothesis `writesNone` of the theorems `runStatement_writesNone_rowLocal`, and of the three
+  theorems of not null, types fit and checks hold for the statements that write no row, therefore
+  reads `∃ setting on, statement = .setting setting on`. It still means "the statement is a
+  setting"; the statements do not change.
+
 ## Findings
 
 A proof that fails is recorded here with a counterexample (ADR 0022, D3). None yet.
@@ -120,3 +127,8 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3). None y
 - 2026-10-23: part 1, commit 1: `RowLocalAtoms` (the frame lemmas of the three atoms and
   `RowLocalAtom`, the three facts that one argument uses for the three atoms) and `RowLocalFrame`
   (`Effect.Satisfies`, `Database.EachTable.setRows` and `.append`). Owner decisions recorded.
+- 2026-10-23: part 1, commit 2: `RowLocalWrites` and `RowLocalUpsert` (the theorems for every
+  `RowLocalAtom` of plain INSERT, UPDATE, DELETE, the forms that write no row, and upsert) and
+  `RowLocalWriteTheorems` (the three instances of each, 15 theorems). Review of commit 1: no findings.
+- 2026-10-23: part 1, commit 3 (`refactor:`): `Database.table_drop_cases` extracted from
+  `Database.KeysUnique.drop` (`KeysUniqueDrop`), for the drop theorem of this slice.
