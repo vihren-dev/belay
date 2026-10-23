@@ -149,11 +149,15 @@ The status file proposes three parts, each with its own `just test-full` and `ju
     statements;
   - the resolver facts on concrete statements: `PRIMARY KEY(a, a)`, a CREATE INDEX with no terms,
     and a CHECK that names a column of the table.
-- **SQLite behavior.** The changes of decisions 4 and 5 rest on SQLite's behavior for a CREATE INDEX
-  with no terms and for a repeated key column. Part 1 confirms each with a case of the conformance
-  evidence or a kernel example before a proof relies on it (status file, finding 15). If a change
-  alters a corpus case, the case and the prediction change need the owner (two pull requests,
-  `CLAUDE.md`, "Development claims").
+- **Conformance evidence against native SQLite.** The changes of decisions 4 and 5 rest on SQLite's
+  behavior for a CREATE INDEX with no terms and for a repeated key column (`PRIMARY KEY(a, a)`,
+  `UNIQUE(a, a)`). A kernel example checks only the model, so it cannot confirm that behavior. Part 1
+  adds an authored case for each to the conformance evidence of `conformance/` (as `authored_drops.py`
+  and the `*_evidence.py` modules do), which runs it on native SQLite and compares the model. A
+  proof does not rely on the behavior before this case agrees. If adding a case changes a claim, a
+  frozen corpus or the judge, the change is a judge change with its own pull request and the
+  owner's approval (`CLAUDE.md`, "Development claims"); the status file records that, and the model
+  change waits for it. The kernel examples check the model and the proofs only.
 - **The predictions are byte-identical** to the baseline (`nix-build integrity/judge.nix -A
   predictions`, then `diff -r`, as slices 1 to 3 did).
 - **The usual suites**: `tests/test_model_package.py` (each new module is in the package globs and

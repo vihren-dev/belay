@@ -212,8 +212,8 @@ proof. Slice 3 is estimated at 1000 to 1600 lines. The task file proposes three 
 
 Observed on 2026-10-23, before the slice began, by reading the source and by hand-run probes of
 the model and of SQLite 3.51.0. A local result is not evidence (`CLAUDE.md`), so each observation is
-a claim to confirm: part 1 makes it a kernel example, or a case of the conformance evidence, before
-a proof relies on it (finding 15).
+a claim to confirm: part 1 makes each SQLite claim a case of the conformance evidence before a
+proof relies on it (finding 15).
 
 1. **CREATE INDEX with no terms is resolved and ready, and not supported** (decision 4). The resolver
    does not check `CatalogIndex.supported` and the statement is not a restriction. The grammar is
@@ -293,8 +293,9 @@ a proof relies on it (finding 15).
     makes such a table. It is the same class as findings 1 and 2: the catalog atom is looser than the
     databases SQLite reaches. Decision 8.
 15. **Confirmation of the observations.** Findings 1, 2 and 9 and the claims of decisions 3 to 5
-    about SQLite are hand-run observations. The task file requires a kernel example or a conformance
-    case for each before a proof relies on it.
+    about SQLite are hand-run observations. The task file requires an authored case of the
+    conformance evidence (native SQLite against the model) for each SQLite claim before a proof relies
+    on it; a kernel example checks only the model.
 
 ## Progress log
 
