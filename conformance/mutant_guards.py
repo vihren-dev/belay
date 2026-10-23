@@ -102,8 +102,9 @@ def obligation_problems(obligations: dict[str, tuple[str, str, str]], covered: d
 def proof_modules_in_closure(sources: list[Path], root: str) -> list[str]:
     """The proof modules (`PROOF_MODULE`, and `MODEL_ROOT`) in the import closure of `root`, sorted.
     `sources` are the source folders of the packages that the mutant build copies; an import
-    from outside them is not followed. The mutant build compiles this closure and no proof, so
-    that a mutant that breaks a proof still builds and runs (`resolve_mutants`)."""
+    from outside them is not followed. The mutant build compiles this closure, so a mutant that
+    breaks a theorem of a proof module would not build (`resolve_mutants`). Theorems in
+    definition modules are not found."""
     found: set[str] = set()
     pending = [root]
     while pending:

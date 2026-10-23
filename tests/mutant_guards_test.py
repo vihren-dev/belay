@@ -55,8 +55,9 @@ def test_every_obligation_conjunct_has_a_mutant_or_a_reason() -> None:
 
 def test_mutant_build_compiles_no_proof_modules() -> None:
     """The import closure of `VerifierConformance.Case`, which `conformance.resolve_mutants` builds
-    for each mutant copy, has no proof modules. If it had one, a mutant that breaks a proof
-    would fail to build, and the mutant test would stop with a build error instead of a verdict."""
+    for each mutant copy, has no `Laws`, `Spec` or `Lemmas` module and not the model's root. If it
+    had one, a mutant that breaks a theorem of it would fail to build, and the mutant test would
+    stop with a build error instead of a verdict."""
     sources = [ROOT / "packages/belay-sqlite-model", ROOT / "packages/verifier-conformance"]
     found = proof_modules_in_closure(sources, "VerifierConformance.Case")
     assert not found, f"VerifierConformance.Case imports the proof modules {found}; import their definition modules instead"
