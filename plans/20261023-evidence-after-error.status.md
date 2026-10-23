@@ -102,7 +102,8 @@ corpus finds is extra work and is not in this estimate.
 - 2026-10-23 (PR A, refactor): review of `rwlmrrzx`: the docstring of `runScriptStepWith` names no conformance runner (R6), and the status file cites no local result (R19).
 - 2026-10-23 (PR A): the conformance pass that continues (`runPassFrom`, with `runPassFrom_results`), the classifier of a case that continues (`Classify.lean`), the prediction of a version 6 input, and the readers of version 6 (`record_versions.CONTINUING`, `native_replay.model_case`, `predict.py`).
 - 2026-10-23 (PR A): a mutant copy builds `VerifierConformance.Classify`, which its classifier program imports (`resolve_mutants.verdicts`); the earlier commit built only `VerifierConformance.Case`. The predictions of the claimed corpora are byte-identical to those before the task (`diff -r`).
-- 2026-10-23 (PR A, refactor): `runPassFrom_results` moves to `RunPassLaws.lean`, so that the import closure of `VerifierConformance.Classify`, which each mutant copy builds, has no proof; the docstring of `resolve_mutants` names that module (review of `yksqxkqo`).
+- 2026-10-23 (PR A, refactor): `runPassFrom_results` moves to `RunPassLaws.lean`, so that the import closure of `VerifierConformance.Classify`, which each mutant copy builds, does not contain this proof; the docstring of `resolve_mutants` names that module (review of `yksqxkqo`).
+- 2026-10-23 (PR A, refactor): the module docstring of `RunPassLaws` and the status line say only that the classifier does not import this proof (review of `llzrutmv`).
 
 ## Tests for each commit
 
