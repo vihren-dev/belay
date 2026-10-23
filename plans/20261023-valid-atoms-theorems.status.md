@@ -134,3 +134,12 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3). None y
   `Database.KeysUnique.drop` (`KeysUniqueDrop`), for the drop theorem of this slice.
 - 2026-10-23: part 1, commit 4: `RowLocalSchema` (CREATE TABLE, CREATE INDEX, CREATE TRIGGER and
   DROP for every atom; DROP needs no `RowLocalAtom`) and `RowLocalSchemaTheorems` (the 12 instances).
+- 2026-10-23: part 1, commit 5 (`refactor:`): the docstrings of the theorems that conclude
+  `Effect.Satisfies` name its error cases (review of commit 2, R2 must, fixed; its R19 must on the
+  progress entry of commit 3 rejected: the entry was one commit ahead). Reviews of commits 3 and 4
+  pending.
+- 2026-10-23: part 1, commit 6: `RowLocalAddColumn` (the conditions `Database.RowsWideAt`,
+  `ChecksReadBelowAt`, `StrictDefaultFitsAt`, `AddedCell`, `step_addColumn_cases`,
+  `Table.appendColumns_cases`, `Database.EachTable.addColumn`) and `RowLocalAddColumnTheorems` (the
+  table laws and the statement theorems of ADD COLUMN for the three atoms), and `RowLocalExamples`
+  (the five counterexamples, each condition necessary).
