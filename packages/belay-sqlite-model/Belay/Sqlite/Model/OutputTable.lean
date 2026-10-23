@@ -3,10 +3,11 @@ import Belay.Sqlite.Model.ScriptRun
 
 set_option doc.verso true
 
-/-! How {lit}`#sql` shows the outputs of a script: each result as a table, with the names of its
+/-! The outputs of a script as text tables: each result as a table, with the names of its
 columns, as the {lit}`sqlite3` shell shows them with {lit}`.mode column`, and each other output
-as {lit}`#eval` shows it ({lit}`OutputRepr.lean`). For example, a query of two columns
-{lit}`id` and {lit}`customer` with one row shows as two lines, {lit}`id | customer` and
+as its {lit}`Repr` writes it ({lit}`OutputRepr.lean`). The names of the columns of each
+statement come from its resolution on the connection before it. For example, a query of two
+columns {lit}`id` and {lit}`customer` with one row is two lines, {lit}`id | customer` and
 {lit}`1  | acme`. -/
 
 namespace Belay.Sqlite.Model
@@ -50,9 +51,9 @@ def textTable (names : List String) (rows : List (List String)) : String :=
     (" | ".intercalate ((line.zip widths).map fun (cell, width) => cell.pushn ' ' (width - cell.length))).trimAsciiEnd.toString
   "\n".intercalate (lines.map render)
 
-/-- The output as {lit}`#sql` shows it, with the names of the result columns: rows as a table
+/-- The output as text, with the names of the result columns: rows as a table
 ({name}`textTable`); for {name}`Output.oneOf`, the number of results and each result as a table;
-another output as {lit}`#eval` shows it. -/
+another output as its {lit}`Repr` writes it. -/
 def Output.table (names : List String) : Output → String
   | .rows found => textTable names (found.map (·.map Value.cellText))
   | .oneOf results => s!"one of {results.length} results:" ++
