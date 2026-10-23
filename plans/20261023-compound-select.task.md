@@ -32,10 +32,8 @@ holds `('1', 'a')` and `u(b INTEGER, m TEXT)` holds `(1, 'A')`.
    apply from left to right: `SELECT 1 UNION SELECT 2 INTERSECT SELECT 2` gives `2`. `UNION ALL`
    gives the left rows, then the right rows. `UNION` gives the distinct rows of both. `INTERSECT`
    gives the distinct left rows that equal a right row. `EXCEPT` gives the distinct left rows that
-   equal no right row. So `SELECT 1 UNION ALL SELECT 1 EXCEPT SELECT 2` gives one row, and `SELECT 1
-   INTERSECT SELECT 1 UNION ALL SELECT 1` gives two. Each term is a `SELECT` that the model resolves
-   today, with its own joins, `WHERE`, `GROUP BY`, `HAVING`, `DISTINCT` and aggregates (`SELECT
-   count(*) FROM t UNION SELECT 7`).
+   equal no right row. Each term is a `SELECT` that the model resolves today, with its own joins,
+   `WHERE`, `GROUP BY`, `HAVING`, `DISTINCT` and aggregates.
 2. **Equal rows.** Two rows are equal when each column compares equal under the compound column's
    collation, without affinity: NULL equals NULL (`SELECT NULL EXCEPT SELECT NULL` gives no row,
    `SELECT 1, NULL INTERSECT SELECT 1, NULL` one row), `1` equals `1.0`, and `1` differs from `'1'`
@@ -57,8 +55,7 @@ holds `('1', 'a')` and `u(b INTEGER, m TEXT)` holds `(1, 'A')`.
 4. **Columns.** The result columns have the names of the left-most term (`SELECT 1 AS one UNION
    SELECT 2 AS two` names its column `one`). All terms have the same number of columns, else
    SQLite's prepare error `SELECTs to the left and right of UNION ALL do not have the same number of
-   result columns`, with the operator between the two terms (`UNION`, `UNION ALL`, `INTERSECT`,
-   `EXCEPT`).
+   result columns`, with the operator between the two terms.
 5. **The order of prepare errors.** SQLite finds the tables of every term, and expands `*`, before
    it resolves a name. It then resolves the terms from right to left; it checks the column count of
    a term and the term on its right after the names of that term; and it resolves the compound's
@@ -73,17 +70,18 @@ holds `('1', 'a')` and `u(b INTEGER, m TEXT)` holds `(1, 'A')`.
    compound SELECT` above 500 terms (the profile's `compoundSelect`; 500 terms are accepted). The
    last message wins (`sqlite3ErrorMsg` replaces it): `SELECT 1 ORDER BY 1` and 500 times `UNION
    SELECT 1` gives the second. The frontend refuses these scripts with `INPUT_ERROR` and SQLite's
-   message, as slice 1 refuses `?0`.
+   message.
 7. **`ORDER BY` of a compound.** Each term names a result column, else a prepare error. An integer
-   literal that fits in 32 bits (`sqlite3ExprIsInteger`: also `+1`, `-1` and `0x1`) is a column
-   number; outside 1 to N it is `1st ORDER BY term out of range - should be between 1 and N`. A
-   larger integer, such as `2147483648`, and any other term are tried on each term from the left:
-   first as an `AS` alias of that term (the case of letters does not matter), then as an expression
-   equal to a result expression of that term. `SELECT 1 AS a UNION SELECT 2 AS b ORDER BY b` and
-   `SELECT a FROM t UNION SELECT lower(a) FROM t ORDER BY lower(a)` are valid. Else `1st ORDER BY
-   term does not match any column in the result set`: `ORDER BY a + 1`, `ORDER BY 1 + 0`, `ORDER BY
-   1.0`, `ORDER BY '1'` and `ORDER BY ?`, which sorts by a value in a single `SELECT` (slice 1). The
-   match ignores a `COLLATE` of the term; the sort uses it. A term without `COLLATE` sorts under the
+   literal from 0 to 2147483647, also in hexadecimal, in parentheses and under unary `+` and `-`
+   (`sqlite3ExprIsInteger`: `0x1`, `(1)`, `-1`, `- -1`), is a column number; outside 1 to N it is
+   `1st ORDER BY term out of range - should be between 1 and N`. Other integers (`2147483648`,
+   `-2147483648`, `0x80000000`) and any other term are tried on each term from the left: first as an
+   `AS` alias of that term (the case of letters does not matter), then as an expression equal to a
+   result expression of that term. `SELECT 1 AS a UNION SELECT 2 AS b ORDER BY b` and `SELECT a FROM
+   t UNION SELECT lower(a) FROM t ORDER BY lower(a)` are valid. Else `1st ORDER BY term does not
+   match any column in the result set`: `ORDER BY a + 1`, `ORDER BY 1 + 0`, `ORDER BY 1.0`, `ORDER
+   BY '1'` and `ORDER BY ?`, which sorts by a value in a single `SELECT` (slice 1). The match
+   ignores a `COLLATE` of the term; the sort uses it. A term without `COLLATE` sorts under the
    compound column's collation (outcome 2), with one exception: when an operator of the compound is
    not `UNION ALL` and a term has a `COLLATE`, SQLite sorts the compound as `SELECT * FROM
    (compound)` (`convertCompoundSelectToSubquery`), and a term without `COLLATE` sorts under the
@@ -111,25 +109,27 @@ holds `('1', 'a')` and `u(b INTEGER, m TEXT)` holds `(1, 'A')`.
    ORDER BY 1 DESC)` is 2, and `(SELECT 2 UNION SELECT 1)` is not described.
 10. **When SQLite runs a term.** Without `ORDER BY` (`multiSelect`), SQLite runs the terms from left
     to right, each to its end, but not the right term of `EXCEPT` or `INTERSECT` when the left
-    result is empty (`SELECT 1 WHERE 0 EXCEPT SELECT abs(-9223372036854775808)` and `SELECT 1
-    INTERSECT SELECT 2 INTERSECT SELECT abs(-9223372036854775808)` give no error), and `UNION ALL`
-    stops when its `LIMIT` is full (`SELECT 1 UNION ALL SELECT abs(-9223372036854775808) LIMIT 1`
-    gives `1`; with `UNION` it fails). SQLite reads `LIMIT` and `OFFSET` (`computeLimitRegisters`)
-    before the first term for `UNION ALL` and with `ORDER BY`, before the right term for
-    `INTERSECT`, and after all terms for `UNION` and `EXCEPT`; the last operator decides. Terms
-    after the read do not run for `LIMIT 0`, and `LIMIT ?` bound to text fails at the read: `SELECT
-    1 INTERSECT SELECT abs(-9223372036854775808) LIMIT 0` gives no error, with `UNION` it fails.
-    With `ORDER BY` (`multiSelectOrderBy`) SQLite merges the sorted terms and can stop before it
-    reads every row of a term: over `p(a INTEGER PRIMARY KEY)` with 1, 2 and 3, `SELECT 1 INTERSECT
-    SELECT a FROM p WHERE CASE WHEN a = 3 THEN abs(-9223372036854775808) ELSE 1 END ORDER BY 1`
-    gives `1`, and the same without `ORDER BY` fails. A failure is certain in the model only where
-    SQLite runs it in each plan; else it is `may`, and the statement is not described.
+    result is empty (`SELECT 1 INTERSECT SELECT 2 INTERSECT SELECT abs(-9223372036854775808)` gives
+    no error), and `UNION ALL` stops when its `LIMIT` is full (`SELECT 1 UNION ALL SELECT
+    abs(-9223372036854775808) LIMIT 1` gives `1`; with `UNION` it fails). SQLite reads `LIMIT` and
+    `OFFSET` (`computeLimitRegisters`) before the first term when the compound has `ORDER BY`. Else
+    the last operator decides, but a `UNION ALL` gives them to its left operand, the compound of the
+    terms on its left: before the first term when each operator is `UNION ALL`, before the right
+    term of `INTERSECT`, and after both operands of `UNION` and `EXCEPT`. Terms after the read do
+    not run for `LIMIT 0`, and a value that is not an integer (`LIMIT ?` bound to `'x'` or `1.5`;
+    `'1'` is 1) fails at the read. So `SELECT 1 INTERSECT SELECT abs(-9223372036854775808) LIMIT 0`
+    gives no error, and with `UNION`, or as `SELECT abs(-9223372036854775808) UNION SELECT 1 UNION
+    ALL SELECT 2 LIMIT 0`, it fails. With `ORDER BY` (`multiSelectOrderBy`) SQLite merges the sorted
+    terms and can stop before it reads every row of a term: over `p(a INTEGER PRIMARY KEY)` with 1,
+    2 and 3, `SELECT 1 INTERSECT SELECT a FROM p WHERE CASE WHEN a = 3 THEN
+    abs(-9223372036854775808) ELSE 1 END ORDER BY 1` gives `1`, and the same without `ORDER BY`
+    fails. A failure is certain in the model only where SQLite runs it in each plan; else it is
+    `may`, and the statement is not described.
 
 ## Measurement
 
-Over the Nix verdict after slice 1 (2026-10-23), `experiments/model-gaps/next_groups.py` marks 274
-of 1,881 out-of-scope cases of v5 and 36 of 624 of v4; with compound `SELECT`, 228 more of v5 and 18
-of v4 have no mark left (461 and 90, against 233 and 72). The lexical marks give upper bounds.
+Over the Nix verdict after slice 1, `experiments/model-gaps/next_groups.py` finds 228 more
+out-of-scope cases of v5 and 18 of v4 with no mark when compound `SELECT` is in scope (upper bound).
 
 ## Tests
 
@@ -194,6 +194,6 @@ of v4 have no mark left (461 and 90, against 233 and 72). The lexical marks give
   sorts by an alias of a later term or by an expression is not recorded, nor is a nested `LIMIT`.
   The authored cases avoid these forms; a change of the recorder is a judge change.
 - **Text that calls a compound unmodeled.** `tests/conformance_pipeline_test.py`,
-  `tests/conformance_model_test.py`, `tests/syntax_queries_test.py` and maybe
-  `tests/conformance_profile_test.py` (the 3.46.0 pin) use it as refused SQL;
-  `docs/semantic-subset.md` and the docstring of `Translation/Select.lean` list it as refused.
+  `tests/conformance_model_test.py`, `tests/syntax_queries_test.py`, maybe
+  `tests/conformance_profile_test.py` (the 3.46.0 pin), `docs/semantic-subset.md` and the docstring
+  of `Translation/Select.lean` use or list it as refused SQL.

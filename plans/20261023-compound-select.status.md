@@ -13,6 +13,9 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D3 and D7.
 - 2026-10-23: review round 1 (three musts) fixed with native probes: the 32-bit rule for an
   `ORDER BY` column number, no collation for a scalar subquery, and the point where SQLite reads
   `LIMIT` and `OFFSET` for each operator (task file, outcomes 7, 9 and 10).
+- 2026-10-23: review round 2 (three musts) fixed with native probes: the exact integers that
+  name a column (not `-2147483648`), the read point of `LIMIT` in mixed chains (a `UNION ALL`
+  gives it to its left operand), and text that converts to an integer (`LIMIT ?` bound to `'1'`).
 
 ## Owner decisions (open)
 
