@@ -63,4 +63,25 @@ theorem ClockFits.scriptClock {clock : Option Clock} {assignment : Clock} (state
     cases same given rfl
     cases reads : statement.readsClock <;> simp_all [Model.scriptClock, statementClock]
 
+/-- For every context, optional clock, index, connection, statement and list of values: if the
+step without a clock does not end the run with the reason {name}`clockUnmodeled`, the step with
+the clock is the step without a clock. So a clock changes only the steps of statements that read
+it. Proof sketch: a statement that reads the clock ends the step without a clock with
+{name}`clockUnmodeled`; every other statement runs with the value 0 in both steps
+({name}`statementClock`). -/
+theorem runScriptStep_of_ne_clockUnmodeled {context : ResolveContext} {clock : Option Clock} {index : Nat}
+    {connection : Connection} {statement : Syntax.Statement} {parameters : List Value}
+    (clockFree : runScriptStep context none index connection statement parameters ≠ .ended clockUnmodeled) :
+    runScriptStep context clock index connection statement parameters =
+      runScriptStep context none index connection statement parameters := by
+  unfold runScriptStep at clockFree ⊢
+  cases resolution : resolveStatement context connection.resolveState statement with
+  | error restriction => rfl
+  | ok pair =>
+    obtain ⟨resolved, after⟩ := pair
+    simp only [resolution] at clockFree ⊢
+    cases reads : resolved.readsClock
+    · simp only [statementClock, reads, Bool.false_eq_true, ite_false]
+    · simp [statementClock, reads] at clockFree
+
 end Belay.Sqlite.Model

@@ -9,6 +9,12 @@ import Belay.Sqlite.SqlDiagnostics
 import Belay.Sqlite.EvalDatabase
 import Belay.Sqlite.SqlBang
 import Belay.Sqlite.Run
+import Belay.Sqlite.Program
+import Belay.Sqlite.Env
+import Belay.Sqlite.ValueDisplay
+import Belay.Sqlite.ProgramRun
+import Belay.Sqlite.ProgramQueries
+import Belay.Sqlite.ProgramLaws
 import Belay.Sqlite.DbDiagnostics
 import Belay.Sqlite.DbBang
 import Belay.Sqlite.RunLaws

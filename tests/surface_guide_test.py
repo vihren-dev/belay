@@ -89,11 +89,13 @@ def test_sql_command_shows_tables(runtime_root: Path, tmp_path: Path) -> None:
 
 
 def test_run_examples_hold(runtime_root: Path, tmp_path: Path) -> None:
-    """The run of `db.run` (`Belay/Sqlite/Run.lean`, over the model's `runScriptFrom`), the facts of
-    `Belay/Sqlite/Database.lean` and the display of outputs: errors that do not stop the run,
+    """The run of `db.run` (`Belay/Sqlite/Run.lean`, `Belay/Sqlite/ProgramRun.lean`, over the model's
+    `runScriptFrom`), the facts of `Belay/Sqlite/Database.lean` and the display of outputs: errors
+    that do not stop the run,
     transactions, `PRAGMA foreign_keys`, a table that an earlier statement drops, statements that
     the model does not describe, row order, the facts of a valid database without a hypothesis,
-    and the check that keeps the start database when the database at the end is not valid."""
+    and the check that keeps the start database and gives no value when the database at the end is
+    not valid."""
     result = run_command(surface_command(runtime_root, FIXTURES / "RunExamples.lean", tmp_path), cwd=tmp_path,
                          timeout=120)
     assert result.returncode == 0, result.diagnostic()
