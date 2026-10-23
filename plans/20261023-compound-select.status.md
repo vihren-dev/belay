@@ -44,6 +44,18 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D3 and D7.
 - 2026-10-23: review of the resolution and frontend (two musts) fixed with native probes: SQLite
   names the derived table's columns before it resolves the names, so `likely(a)` keeps its text
   and `A` its spelling; `docs/semantic-subset.md` states the rule of the derived names.
+- 2026-10-23: the authored corpus of compound SELECT (`conformance/authored_compound.py`,
+  `authored_compound_subqueries.py`, written as corpus version 49 by `compound_evidence.py`): the
+  cases of the task's "Tests" list, each with a kernel proof in
+  `tests/conformance_query_coverage_test.py`; eight mutants (`compound_mutants.py`), each with a
+  target case; and `Empty` of an `EXCEPT` query in `tests/surface/GuideQueries.lean`. Limits of
+  the recorder (`native_ordering.query_groups`): a statement orders by a number or a name of the
+  first term, under the first term's collation; a subquery has no `LIMIT`; and no case has a term
+  failure that a `LIMIT` prevents, because the recorder runs the statement again without its
+  `LIMIT`. `LIMIT 'x'` is out of the model's scope also for one SELECT, so the corpus has no case
+  of it. Tests: `tests/conformance_query_coverage_test.py`, `tests/conformance_corpus_writers_test.py`,
+  `tests/conformance_query_mutants_test.py -k compound`, `tests/mutant_guards_test.py` and
+  `tests/surface_guide_test.py`.
 
 ## Owner decisions
 
@@ -104,6 +116,8 @@ mark left. These are upper bounds. Log: `build/agent-logs/adr19s3-next-groups.js
 - Conformance: `conformance/authored_queries.py` (`QueryCase`), `authored_evidence.py`,
   `parameter_evidence.py` (the model of a writer), `parameter_mutants.py`, `resolve_mutants.py`,
   `native_ordering.py` and `query_window.py` (the limits of the recorder).
+- Corpus: `conformance/authored_compound.py`, `authored_compound_subqueries.py`,
+  `compound_evidence.py`, `compound_mutants.py`; `tests/surface/GuideQueries.lean`.
 
 ## Tests for each commit
 

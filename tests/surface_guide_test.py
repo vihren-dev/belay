@@ -70,7 +70,8 @@ def test_guide_run_examples_hold(runtime_root: Path, tmp_path: Path) -> None:
 def test_guide_query_examples_hold(runtime_root: Path, tmp_path: Path) -> None:
     """The guide's "Queries as propositions" over one database (`Belay/Sqlite/Queries.lean`,
     `Belay/Sqlite/QueryLaws.lean`, the model's `Model/QueryOutputs.lean`): `Holds`, `Empty` and `Fails` hold or fail by `decide`, a query
-    with `LIMIT 1` and no `ORDER BY` holds for each result, a query that reads the clock satisfies
+    with `LIMIT 1` and no `ORDER BY` holds for each result, `Empty` of an `EXCEPT` query (ADR 0019,
+    D3) holds or fails by `decide`, a query that reads the clock satisfies
     none of the three, and a script that is not one read-only statement is an error at the term."""
     result = run_command(surface_command(runtime_root, FIXTURES / "GuideQueries.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
