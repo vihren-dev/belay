@@ -238,6 +238,15 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   `conformance/authored_counter_failures.py` separates the failures with ABORT or ROLLBACK from
   those with FAIL (R9). Tests: `just dev-verdict` for the corpus and the kernel proofs of
   `tests/conformance_query_coverage_test.py` for the new cases. Nix evidence is pending.
+- 2026-10-23 (PR B): the mutants of the counter rules, outcome 10. `conformance/counter_mutants.py`
+  has seven mutants of the Lean sources, each with a `rule:` guard and a target case: REPLACE
+  deletes counted in `changes()`, trigger program rows counted in `changes()`, trigger program rows
+  left out of `total_changes()`, `DROP TABLE` that leaves `changes()`, `changes()` kept after a
+  failure, the rollback that takes back `last_insert_rowid()`, and a failure that loses the rows
+  of programs. `tests/conformance_table_mutants_test.py` has the new measurement,
+  `tests/mutant_guards_test.py` lists the table, and `build-support/tests.nix` lists the module.
+  Tests: the new mutant test by name (`-k counter`) and `tests/mutant_guards_test.py`. The
+  scheduled run of all mutants is for CI. Nix evidence is pending.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 
