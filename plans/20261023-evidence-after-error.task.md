@@ -1,6 +1,6 @@
 # Evidence for the statements after an error (ADR 0017, deferred)
 
-Created 2026-10-23. Status: OPEN (not started). This file says what must be true when the task
+Created 2026-10-23. Status: DONE (2026-10-23). This file says what must be true when the task
 is done. Status file: [status](20261023-evidence-after-error.status.md).
 Specification: [ADR 0017](../docs/adr-0017-user-surface.md), "Deferred, with their triggers",
 first row, and D3 (amended 2026-10-22: the run continues after an error and resolves each

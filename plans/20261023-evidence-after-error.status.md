@@ -1,6 +1,6 @@
 # Status: evidence for the statements after an error
 
-Created 2026-10-23. Status: OPEN (PR A in progress).
+Created 2026-10-23. Status: DONE (2026-10-23).
 Task file: [20261023-evidence-after-error.task.md](20261023-evidence-after-error.task.md).
 Specification: [ADR 0017](../docs/adr-0017-user-surface.md) ("Deferred, with their triggers",
 first row; D3 and its amendment of 2026-10-22);
@@ -159,3 +159,10 @@ version 6).
   corpus-v50. `integrity/judge.lock.json` (`just judge-lock`) is in the commit of corpus-v51.
   Second reviews of `rwlmrrzx` and `kpkxkook` after the move: their findings repeat the ones
   that the next commits of each fix (`qkrvsmst`, `uvlluzyt`).
+- 2026-10-23: the Nix suites of the locked corpora and of the sample get `native_statement_end`
+  (`build-support/tests.nix`), which `native_statements` imports; `just test-full` failed to
+  import `conformance.corpus` without it.
+- 2026-10-23: `just test-full` passes, and `just verdict` passes (corpus-v51 AGREE 21,
+  corpus-v50 AGREE 17, corpus-v4 AGREE 673, corpus-v5 AGREE 2945). `just test-nix` passes (67
+  tests), and `just test-scheduled-checks` passes (46 tests). The mutant test of
+  `after_error_mutants` and the mutant guards pass, by name. The task is DONE.
