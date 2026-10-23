@@ -41,8 +41,8 @@ example : readBoth (sql r"SELECT a FROM missing") = some (.error 1, none) := by 
 example : (two.run (sql r"SELECT a FROM t LIMIT 1")).outputs = [.oneOf [[[1]], [[2]]]] := by decide +kernel
 example : readBoth (sql r"SELECT a FROM t LIMIT 1") = some (.ok [[1]], some 1) := by decide +kernel
 
--- A statement that reads the clock ends a program without a clock: the INSERT after it does not
--- run, and the value is none.
+/-- Read `date('now')`, then insert a row. Without a clock, the first statement ends the
+program: the INSERT after it does not run, and the value is none. -/
 def readsClockFirst : Sql Bool := do
   let stamp ← single (sql r"SELECT date('now')")
   let outputs ← send (sql r"INSERT INTO n VALUES (1)")
@@ -51,7 +51,7 @@ def readsClockFirst : Sql Bool := do
 example : (two.run readsClockFirst).outputs = [.unmodeled clockUnmodeled] ∧
     (two.run readsClockFirst).value = none ∧ (two.run readsClockFirst).db.rows "n" = some [] := by decide +kernel
 
--- The value depends on an earlier output: the program sends the INSERT only when `t` has two rows.
+/-- Send an INSERT only when `t` has two rows: the program depends on an earlier output. -/
 def insertWhenTwo : Sql (List Output) := do
   match ← single (sql r"SELECT count(*) FROM t") with
   | some 2 => send (sql r"INSERT INTO t VALUES (3)")
@@ -60,7 +60,8 @@ def insertWhenTwo : Sql (List Output) := do
 example : (two.run insertWhenTwo).value = some [.done 1] ∧ (two.run insertWhenTwo).db.rows "t" = some [[1], [2], [3]] ∧
     ((two.run insertWhenTwo).db.run insertWhenTwo).value = some [] := by decide +kernel
 
--- The run of `send s` is the model's run of `s`: the same outputs, database and connection.
+/-- Two INSERTs, of which the second fails, then `BEGIN` and a query. The run of `send s` is the
+model's run of `s`: the same outputs, database and connection. -/
 def failsSecond : Script := sql r"INSERT INTO t VALUES (3); INSERT INTO t VALUES (NULL); BEGIN; SELECT a FROM t ORDER BY a"
 
 example : (two.run (send failsSecond)).outputs = (two.raw.run failsSecond).outputs ∧
