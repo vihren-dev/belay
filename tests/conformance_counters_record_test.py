@@ -9,6 +9,7 @@ counters with the stored ones.
 import pytest
 
 from conformance.authored_resolution import profile
+from conformance.case_format import Json
 from conformance.corpus import native_replay
 from conformance.native_record import record_sql
 
@@ -19,7 +20,7 @@ WRITES = "INSERT INTO t VALUES (7, 1), (9, 2); UPDATE t SET b = 3 WHERE a = 7;"
 LATER = " SELECT changes();"
 
 
-def counted(setup: str | list, **options: bool) -> dict:
+def counted(setup: str | list[str | dict[str, Json]], **options: bool) -> dict[str, Json]:
     """Record `LATER` after the setup in the mode that records counters."""
     return record_sql(setup, LATER, name="counted", outputs=True, profile=profile(()), run_on=True, **options)
 
