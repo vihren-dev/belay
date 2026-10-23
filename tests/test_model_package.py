@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 import re
+import tomllib
 
 import pytest
 
@@ -10,36 +11,92 @@ from tests.runtime_support import run_command
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "packages/belay-sqlite-model"
-MODEL_MODULE_PREFIX = "Belay.Sqlite.Model"
-"""Only the standalone package namespace supplies project modules to the core."""
+ROOT_MODULE = "Belay.Sqlite.Model"
+CORE_LIBRARY = "Belay.Sqlite.Model"
+"""The Lake library of `lakefile.toml` whose modules, except the examples, form the core."""
+CODEC_PREFIX = "Belay.Sqlite.Model.Codec"
 ALLOWED_EXTERNAL_IMPORT_ROOTS = {"Init"}
 """The core uses only Lean's prelude; `Std` and the Lean compiler API add import cost it does not need."""
-EXPECTED_CORE_MODULE_COUNT = 238
-"""The public root reaches two hundred and thirty-eight core modules, including identifiers, keys, resolution, index terms, collations, CHECK constraints, foreign keys with their parent keys and enforced checks and actions, generated columns, the source list, query evaluation, joins,
-UPSERT, number conversions, store-time affinity, JSON reading, defaults, the clock, the date and time functions with
-their modifiers, triggers, the results that SQLite may give, statement outputs and their failures, the runs of
-scripts with their laws, and bound parameter values; its compiled examples are not imported."""
-pytestmark = [pytest.mark.integration, pytest.mark.requires_nix, pytest.mark.requires_lean("compiler")]
 
 
-def test_core_import_closure_excludes_codec() -> None:
-    """Follow the actual public root; no model import may reach Lean or codec modules."""
-    pending = ["Belay.Sqlite.Model"]
+def module_path(module: str) -> Path:
+    """The source file of a model module."""
+    return PACKAGE / (module.replace(".", "/") + ".lean")
+
+
+def all_package_modules() -> set[str]:
+    """Every module that has a source file in the model package."""
+    return {".".join(path.relative_to(PACKAGE).with_suffix("").parts)
+            for path in (PACKAGE / "Belay").rglob("*.lean")}
+
+
+def lake_glob_modules(pattern: str, modules: set[str]) -> set[str]:
+    """The modules that a Lake glob selects: `X` is X, `X.*` is X and its submodules, `X.+` its submodules."""
+    if pattern.endswith((".*", ".+")):
+        prefix = pattern[:-2]
+        below = {module for module in modules if module.startswith(prefix + ".")}
+        return below | ({prefix} & modules if pattern.endswith(".*") else set())
+    assert pattern in modules, f"lakefile.toml names {pattern}, which has no source file"
+    return {pattern}
+
+
+def is_example_module(module: str) -> bool:
+    """Compiled examples and their helpers: Lake builds and checks them, and the root does not import them."""
+    name = module.rsplit(".", 1)[-1]
+    return name.endswith("Examples") or name == "ExampleSupport"
+
+
+def core_library_modules() -> set[str]:
+    """The modules of the core library in `lakefile.toml`, without the examples."""
+    configuration = tomllib.loads((PACKAGE / "lakefile.toml").read_text())
+    library = next(entry for entry in configuration["lean_lib"] if entry["name"] == CORE_LIBRARY)
+    modules = all_package_modules()
+    selected: set[str] = set()
+    for pattern in library["roots"] + library["globs"]:
+        selected |= lake_glob_modules(pattern, modules)
+    return {module for module in selected if not is_example_module(module)}
+
+
+def root_import_closure() -> tuple[set[str], list[tuple[str, str]]]:
+    """The model modules that the root reaches through imports, and each import from outside the model."""
+    pending = [ROOT_MODULE]
     reached: set[str] = set()
+    external: list[tuple[str, str]] = []
     while pending:
         module = pending.pop()
         if module in reached:
             continue
         reached.add(module)
-        assert module != "Belay.Sqlite.Model.Codec", module
-        source = PACKAGE / (module.replace(".", "/") + ".lean")
-        for line in re.findall(r"(?m)^import (.+)$", source.read_text()):
+        for line in re.findall(r"(?m)^import (.+)$", module_path(module).read_text()):
             for dependency in line.split():
-                if dependency.startswith(MODEL_MODULE_PREFIX):
+                if dependency == ROOT_MODULE or dependency.startswith(ROOT_MODULE + "."):
                     pending.append(dependency)
                 else:
-                    assert dependency.split(".")[0] in ALLOWED_EXTERNAL_IMPORT_ROOTS, (module, dependency)
-    assert len(reached) == EXPECTED_CORE_MODULE_COUNT
+                    external.append((module, dependency))
+    return reached, external
+
+
+@pytest.mark.unit
+def test_root_imports_the_core_and_only_the_prelude() -> None:
+    """The model's boundary (ADR 0006): `import Belay.Sqlite.Model` gives every core module, and only them.
+
+    Each module of the core library in `lakefile.toml`, except the compiled examples, is reached
+    from the root. The root reaches no example and no codec module, and no module outside the
+    model except Lean's prelude (`Init`). The test reads the sources only, so it runs with the
+    source checks of each pull request.
+    """
+    reached, external = root_import_closure()
+    outside_prelude = [(module, dependency) for module, dependency in external
+                       if dependency.split(".")[0] not in ALLOWED_EXTERNAL_IMPORT_ROOTS]
+    assert not outside_prelude, f"core modules import more than Lean's prelude: {outside_prelude}"
+    examples = sorted(module for module in reached if is_example_module(module))
+    assert not examples, f"the root imports compiled examples: {examples}"
+    codec = sorted(module for module in reached if module.startswith(CODEC_PREFIX))
+    assert not codec, f"the root imports the codec: {codec}"
+    core = core_library_modules()
+    assert not reached - core, f"the root imports modules outside the core library: {sorted(reached - core)}"
+    assert not core - reached, (f"core modules that `import Belay.Sqlite.Model` does not give; "
+                                f"import them in Belay/Sqlite/Model.lean: {sorted(core - reached)}")
 
 
 @pytest.fixture(scope="module")
@@ -52,6 +109,9 @@ def model_artifact() -> Path:
     return Path(result.stdout.strip())
 
 
+@pytest.mark.integration
+@pytest.mark.requires_nix
+@pytest.mark.requires_lean("compiler")
 def test_installed_core_and_codec_consumer(model_artifact: Path, lean_sysroot: Path,
                                            tmp_path: Path) -> None:
     """An unrelated consumer imports both libraries and checks a syntax roundtrip and a refusal."""
