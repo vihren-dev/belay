@@ -64,6 +64,23 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   for DO UPDATE, a skipped row, OR IGNORE, OR FAIL and OR ABORT in `CounterExamples.lean`; R12:
   `StepCatalogLaws.lean` is under 200 lines again; R19: this file). Tests:
   `CounterExamples.lean` and `StepCatalogLaws.lean` (package build).
+- 2026-10-23: commit 2 (the row engine counts). `KeyState` gets `own`, `credited` and `inserted`;
+  `KeyStop.error` carries the state of the failure; `NestedRun.credited` (`RowCredit.lean`) runs each
+  nested write of a program or an action with no row counted and moves its rows to `credited` when
+  it completes, so a nested write counts for `total_changes()` also when the statement fails later,
+  and never for `changes()` or `last_insert_rowid()`; `replaceDelete` keeps the rows that REPLACE
+  deletes out of the count; a single-row write that fails an immediate foreign key fails before it
+  stores the row; `KeyState.keptCounts` and `KeyState.failedCounts` give the counts of `keyRun`,
+  which replace the interim counts of commit 1. The proofs follow: `replaceDelete_holds`,
+  `NestedRun.credited_keeps` (`RowEngineWrites.lean`), and `insertRow_holds`, `updateRow_holds`
+  with the new state fields; no statement of ADR 0022 changed. Examples checked by the kernel
+  (`CounterRowExamples.lean`): the counts of a trigger program, `RAISE(ABORT)` after a completed
+  nested insert, `RAISE(FAIL)`, a cascade, DROP TABLE of a referenced table, REPLACE and the early
+  and late foreign-key failures; the expected values are those of native SQLite 3.51.0. Tests:
+  the package build, `tests/mutant_guards_test.py`, and the mutant tests by name
+  `test_every_foreign_key_mutant_changes_a_verdict`, `test_every_trigger_mutant_changes_a_verdict`
+  and `test_every_pragma_mutant_changes_a_verdict` (the REPLACE mutant now changes `replaceDelete`
+  in `RowInsert.lean`, guard `rule:replaceDelete`). Nix evidence is pending.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 
