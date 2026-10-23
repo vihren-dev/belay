@@ -89,4 +89,6 @@ None yet. A proof that fails is recorded here with a counterexample (ADR 0022, D
 
 ## Progress log
 
-- 2026-10-23: the task file and this status file.
+- 2026-10-23: the task file and this status file. Review round 1: two R19 musts (the filters
+  of partial indexes in the ADD COLUMN condition; the result type of `runScriptFrom`), fixed.
+  Round 2: no findings.
