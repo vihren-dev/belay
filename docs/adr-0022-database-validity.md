@@ -152,9 +152,9 @@ condition as facts of resolved scripts. The CHECK condition is also a fact of th
 which no atom states today (status file, decision 3), so the hypothesis of `runScriptFrom` goes only
 with such an atom; the theorems of `runSqlFrom` keep the hypotheses. By owner decision 1a, the row engine of slice 2 and its run theorems take the atom as a
 parameter (`RowEngineFacts`, `RunHolds`), and slice 2 is the instance for "keys unique". No proof
-failed. The pragma forms of ADR 0019, slice 2 are not in this line of changes; the statement
-theorem of `RowLocalStatement` has a case for each constructor of `Resolved.Statement` and covers
-them when they land.
+failed. Amended 2026-10-23: the pragma forms of ADR 0019, slice 2 are now in this line of changes;
+the statement theorem of `RowLocalStatement` has a case for each constructor of `Resolved.Statement`
+and covers them.
 
 For the constraint atoms, INSERT, UPDATE and upsert are the easier case: each table that they
 store passed the checks, after the whole write or after each row, and a proof follows those
