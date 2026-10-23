@@ -108,4 +108,5 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3). None y
 
 - 2026-10-23: the task file and this status file. Review round 1: one R19 must (the CHECK
   condition cannot go from the `runScriptFrom` theorem with resolver facts alone; now
-  decision 3) and one R19 should (a local probe cited here), fixed.
+  decision 3) and one R19 should (a local probe cited here), fixed. Round 2 (the refactor): no
+  findings.
