@@ -111,6 +111,7 @@ corpus finds is extra work and is not in this estimate.
 - 2026-10-23 (PR B, refactor): review of `mwtqwltl`: SQLite's prepare decides for every complete prefix whether it is empty, without the clause tokenizer, so a byte order mark before `;` is empty (R19).
 - 2026-10-23 (PR B): `native_statement_end` is an input of the Nix suites of the model (`build-support/tests.nix`), as `native_statements` imports it.
 - 2026-10-23 (PR B): the authored cases of outcome 8 (`conformance/authored_after_error.py`, 21 cases, one under the profile with foreign keys on), their corpus writer (`after_error_evidence`, corpus version 51, record version 6, `AuthoredCorpus.native_version`), and three mutants with `rule:` guards (`after_error_mutants`). The model does not describe `UPDATE` with the algorithm ROLLBACK, so no case has it; a column declared `ON CONFLICT ROLLBACK` covers the conflict of the column.
+- 2026-10-23 (PR B, refactor): review of `kpkxkook`: outcome 8 of the task file has a dated amendment that excludes the UPDATE forms of ROLLBACK, which the model does not describe (R19).
 
 ## Tests for each commit
 
