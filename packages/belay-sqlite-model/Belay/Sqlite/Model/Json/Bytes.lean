@@ -51,9 +51,48 @@ def hexValue (byte : UInt8) : UInt32 :=
 def hasHexDigits (text : Array UInt8) (start count : Nat) : Bool :=
   (List.range count).all fun offset => isHexDigit (byteAt text (start + offset))
 
-/-- The bytes of the text from {lit}`start` up to, not including, {lit}`stop`. -/
+/-- Whether the first {lit}`count` bytes of a list are hexadecimal digits, with byte 0 after
+the end as in {name}`byteAt`: the check of {name}`hasHexDigits` for a reader that walks the
+bytes after its position. -/
+def hexDigitsAhead (bytes : List UInt8) (count : Nat) : Bool :=
+  (List.range count).all fun offset => isHexDigit (bytes.getD offset 0)
+
+/-- The bytes of the text from {lit}`start` up to, not including, {lit}`stop`, with byte 0
+for each position past the end, as in {name}`byteAt`. The bytes come from one walk over
+the list: a kernel proof that reads each byte by its index ({name}`byteAt`) does work in
+proportion to the index, so a slice by indices is quadratic in its length. -/
 def slice (text : Array UInt8) (start stop : Nat) : List UInt8 :=
-  (List.range (stop - start)).map fun offset => byteAt text (start + offset)
+  ((text.toList.drop start) ++ List.replicate (stop - start) 0).take (stop - start)
+
+/-- For every text, position and offset, byte {lit}`offset` of the list of the text from
+{lit}`position` on, with byte 0 past its end, is {name}`byteAt` of the text at
+{lit}`position + offset`. Proof sketch: both sides become optional indexing, and indexing
+into {lit}`List.drop` adds the dropped count to the index. -/
+theorem drop_getD_eq_byteAt (text : Array UInt8) (position offset : Nat) :
+    (text.toList.drop position).getD offset 0 = byteAt text (position + offset) := by
+  simp [byteAt, List.getD_eq_getElem?_getD, List.getElem?_drop, Array.getD_eq_getD_getElem?]
+
+/-- For every text and positions {lit}`start` and {lit}`stop`, {name}`slice` gives, for each
+offset below {lit}`stop - start`, the byte {name}`byteAt` at {lit}`start` plus the offset. A
+start at or after the stop gives the empty list. Proof sketch: compare the lists index by
+index; an index inside the text reads it with {name}`drop_getD_eq_byteAt`, and an index past
+its end reads the padding 0, as {name}`byteAt` does. -/
+theorem slice_eq_map_byteAt (text : Array UInt8) (start stop : Nat) :
+    slice text start stop = (List.range (stop - start)).map fun offset => byteAt text (start + offset) := by
+  apply List.ext_getElem?
+  intro index
+  simp only [slice, List.getElem?_take, List.getElem?_map]
+  by_cases inside : index < stop - start
+  · rw [List.getElem?_range inside]
+    simp only [inside, ite_true, Option.map_some]
+    rw [← drop_getD_eq_byteAt text start index, List.getD_eq_getElem?_getD, List.getElem?_append]
+    split
+    · next inText => simp [List.getElem?_eq_getElem inText]
+    · next pastText =>
+      have : (List.drop start text.toList)[index]? = none := List.getElem?_eq_none (by omega)
+      simp only [this, Option.getD_none, List.getElem?_replicate]
+      split <;> first | rfl | omega
+  · simp [inside]
 
 /-- The first position at or after {lit}`position` that is not a hexadecimal digit. -/
 def hexDigitsEnd (text : Array UInt8) : Nat → Nat → Nat
