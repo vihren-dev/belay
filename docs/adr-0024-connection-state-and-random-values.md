@@ -20,13 +20,15 @@ resolves all five functions as the restriction `unmodeled-function`.
 
 This ADR gives the five functions a meaning in the model. As in ADRs 0012 to 0019, the model
 follows SQLite 3.51.0 exactly, and it refuses with a restriction each form that it cannot
-describe exactly. The two groups are different:
+describe exactly. The one proposed exception is random values (D4, owner decision 2). The two
+groups are different:
 
 - **The connection functions are deterministic.** Their values follow from the statements that
   ran on the connection. The model keeps them as state of the connection, and the corpora can
   check them.
 - **Random values are not deterministic.** The model describes them as it describes the clock:
-  the run takes a source of values, and a claim holds for every source. Native SQLite cannot
+  the run takes a source of values, and a claim holds for every source. The sources give more
+  runs than SQLite's generator can, so this description is sound but not exact. Native SQLite cannot
   check them, because the recorder refuses them.
 
 ## Context
@@ -91,7 +93,7 @@ The counters after each statement:
 | INSERT, UPDATE or DELETE that fails with ABORT or ROLLBACK, for a constraint or another error such as `datatype mismatch` | 0 | the value before, plus the changes of the statements of its trigger programs and of its foreign-key actions that ended before the failure, but not the statement's own rows; the rollback does not take them back | the rowid of the last row that the statement inserted before the failure; the rollback does not take it back |
 | INSERT, UPDATE or DELETE that fails with FAIL | the rows that it kept | the value before, plus those rows and the changes of the trigger programs and foreign-key actions that ended before the failure | as for success, over the kept rows |
 | `DROP TABLE` of a table that a foreign key references, with foreign keys on, that succeeds | the rows of the table, which SQLite deletes first | the value before, plus those rows and the rows of the foreign-key actions | unchanged |
-| Such a `DROP TABLE` that fails with `FOREIGN KEY constraint failed` | 0 | unchanged | unchanged |
+| Such a `DROP TABLE` that fails with `FOREIGN KEY constraint failed` | 0 | the value before, plus the rows of the foreign-key actions that ran before the failure, but not the table's own rows; the rollback does not take them back | unchanged |
 | Every other statement: a query (also one that fails), `CREATE`, `ALTER TABLE ... ADD COLUMN`, another `DROP`, `BEGIN`, `COMMIT`, `ROLLBACK`, `PRAGMA`, and a statement that fails to prepare | unchanged | unchanged | unchanged |
 
 For example, `INSERT INTO t(v) VALUES (10), (1)` with a UNIQUE `v` that holds 1 inserts rowid 4,
@@ -102,7 +104,9 @@ update one, gives `changes()` 1 and adds 4 to `total_changes()`. An `UPDATE p SE
 with `ON UPDATE CASCADE` that updates the first row, whose action updates two child rows, and
 then fails with a UNIQUE constraint at the second row adds 2 to `total_changes()`. An
 `INSERT OR FAIL` of two rows whose AFTER INSERT trigger inserts two rows, and whose second row
-fails, gives `changes()` 1 and adds 3 to `total_changes()`.
+fails, gives `changes()` 1 and adds 3 to `total_changes()`. `DROP TABLE p` with foreign keys on,
+where one table references `p` with `ON DELETE CASCADE` from two rows and another table
+references `p` without an action, fails, gives `changes()` 0 and adds 2 to `total_changes()`.
 
 The values that a statement reads while it runs:
 
