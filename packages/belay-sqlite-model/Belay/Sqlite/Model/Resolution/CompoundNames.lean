@@ -35,18 +35,22 @@ def nameStem (name : String) : String :=
   let stop := characters.length - 1 - digits
   if characters[stop]? == some ':' then String.ofList (characters.take stop) else name
 
+/-- The first of the {lit}`attempts` candidates that is not in {lit}`taken`, without ASCII
+letter case: {lit}`candidate` itself, else its stem ({name}`nameStem`) with the suffix
+{lit}`:` and the number of the next attempt, which is {lit}`5 - attempts` with the five
+attempts of {lit}`uniqueColumnName`; none when no attempt is left. -/
+def uniqueColumnNameAttempt (taken : List String) : Nat → String → Option String
+  | 0, _ => none
+  | attempts + 1, candidate =>
+    if !taken.any (normalizeIdentifier · == normalizeIdentifier candidate) then some candidate
+    else uniqueColumnNameAttempt taken attempts s!"{nameStem candidate}:{5 - attempts}"
+
 /-- The name of a column that is unique among the names {lit}`taken`, which SQLite compares
 without ASCII letter case: the name itself, else its stem ({name}`nameStem`) with {lit}`:1`,
-then with {lit}`:2`, {lit}`:3` and {lit}`:4`; none when these names are taken too, as SQLite
-then adds a random number. -/
+then with {lit}`:2`, {lit}`:3` and {lit}`:4` ({name}`uniqueColumnNameAttempt`); none when
+these names are taken too, as SQLite then adds a random number. -/
 def uniqueColumnName (taken : List String) (name : String) : Option String :=
-  let free := fun (candidate : String) => !taken.any (normalizeIdentifier · == normalizeIdentifier candidate)
-  let rec attempt : Nat → String → Option String
-    | 0, _ => none
-    | fuel + 1, candidate =>
-      if free candidate then some candidate
-      else attempt fuel s!"{nameStem candidate}:{5 - fuel}"
-  attempt 5 name
+  uniqueColumnNameAttempt taken 5 name
 
 /-- The names of the derived table's columns from the outputs of the left-most term of a
 compound: {lit}`names` are the names of the term, the {lit}`AS` alias or the column name of
