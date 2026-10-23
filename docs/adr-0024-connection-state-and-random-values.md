@@ -88,16 +88,21 @@ The counters after each statement:
 | Statement | `changes()` after it | `total_changes()` after it | `last_insert_rowid()` after it |
 | --- | --- | --- | --- |
 | INSERT, UPDATE or DELETE that succeeds | the rows that the statement itself inserted, updated or deleted; an UPDATE that sets a value to itself counts the row, and the DO UPDATE of an upsert counts its row; the rows that REPLACE deleted, that IGNORE or DO NOTHING skipped, and that trigger programs or foreign-key actions wrote do not count | the value before, plus the changes of the statement, of each statement of its trigger programs and of its foreign-key actions | the rowid of the last row that the statement inserted into a rowid table, also with REPLACE; DO UPDATE, a `WITHOUT ROWID` table and a row that IGNORE skips do not change it |
-| INSERT, UPDATE or DELETE that fails with ABORT or ROLLBACK, for a constraint or another error such as `datatype mismatch` | 0 | the value before, plus the changes of the statements of its trigger programs that ended before the failure; the rollback does not take them back | the rowid of the last row that the statement inserted before the failure; the rollback does not take it back |
-| INSERT, UPDATE or DELETE that fails with FAIL | the rows that it kept | the value before, plus those rows | as for success, over the kept rows |
-| `DROP TABLE` of a table that a foreign key references, with foreign keys on | the rows of the table, which SQLite deletes first | the value before, plus those rows and the rows of the foreign-key actions | unchanged |
+| INSERT, UPDATE or DELETE that fails with ABORT or ROLLBACK, for a constraint or another error such as `datatype mismatch` | 0 | the value before, plus the changes of the statements of its trigger programs and of its foreign-key actions that ended before the failure, but not the statement's own rows; the rollback does not take them back | the rowid of the last row that the statement inserted before the failure; the rollback does not take it back |
+| INSERT, UPDATE or DELETE that fails with FAIL | the rows that it kept | the value before, plus those rows and the changes of the trigger programs and foreign-key actions that ended before the failure | as for success, over the kept rows |
+| `DROP TABLE` of a table that a foreign key references, with foreign keys on, that succeeds | the rows of the table, which SQLite deletes first | the value before, plus those rows and the rows of the foreign-key actions | unchanged |
+| Such a `DROP TABLE` that fails with `FOREIGN KEY constraint failed` | 0 | unchanged | unchanged |
 | Every other statement: a query (also one that fails), `CREATE`, `ALTER TABLE ... ADD COLUMN`, another `DROP`, `BEGIN`, `COMMIT`, `ROLLBACK`, `PRAGMA`, and a statement that fails to prepare | unchanged | unchanged | unchanged |
 
 For example, `INSERT INTO t(v) VALUES (10), (1)` with a UNIQUE `v` that holds 1 inserts rowid 4,
 fails at the second row, and leaves `changes()` 0 and `last_insert_rowid()` 4. A failed INSERT
 whose BEFORE INSERT trigger wrote two rows adds 2 to `total_changes()`, although the rollback
 removes the rows. `DELETE FROM p WHERE id = 1`, whose foreign-key actions delete two rows and
-update one, gives `changes()` 1 and adds 4 to `total_changes()`.
+update one, gives `changes()` 1 and adds 4 to `total_changes()`. An `UPDATE p SET id = id + 10, ...`
+with `ON UPDATE CASCADE` that updates the first row, whose action updates two child rows, and
+then fails with a UNIQUE constraint at the second row adds 2 to `total_changes()`. An
+`INSERT OR FAIL` of two rows whose AFTER INSERT trigger inserts two rows, and whose second row
+fails, gives `changes()` 1 and adds 3 to `total_changes()`.
 
 The values that a statement reads while it runs:
 
@@ -209,12 +214,18 @@ unknown counter), the run is the same under every environment.
   that calls neither function runs the same under every source, as `runSqlAt_of_readsClock`
   says for the clock. Under one source, equal values in an `ORDER BY` term are a tie, and the
   results that SQLite may give for it are those of ADR 0018 D6.
-- **Why this is exact.** SQLite's generator gives some sequences of bytes, and the source can
-  give any sequence, so a claim for every source holds for each run of SQLite. The other
-  direction needs one condition: the model gives a separate key to each evaluation of SQLite
-  whose value reaches the result, and one key where SQLite uses one evaluation twice. Then each
-  run of the model is a run that SQLite can give. The order in which SQLite draws does not
-  matter, because each key may get any bytes.
+- **Sound, and larger than SQLite.** SQLite's generator gives some sequences of bytes, and the
+  source can give any sequence, so a claim for every source holds for each run of SQLite. The
+  model gives a separate key to each evaluation of SQLite whose value reaches the result, and
+  one key where SQLite uses one evaluation twice, so it never makes two values equal that SQLite
+  draws apart, or the reverse. But the model's runs are more than SQLite's: the generator
+  (ChaCha20 in `random.c`) has a finite state, so it cannot give every long sequence of bytes,
+  and a source can give values that no run of SQLite gives. This is an approximation, against
+  the rule of ADRs 0012 to 0019 that the model is exact. Its cost: a claim that holds only
+  because of the generator's limits cannot be proved, and a counterexample under a source can
+  be one that SQLite cannot give. An exact model needs the generator's states and SQLite's
+  order of draws, which the first alternative rejects. Owner decision 2 accepts or refuses the
+  approximation.
 - **The positions of slice 2.** The model describes a call only where the task file shows from
   SQLite's code how often SQLite evaluates it: the result columns and `ORDER BY` terms of a
   query over one table or no table, also an `ORDER BY` term that SQLite matches with a result
@@ -227,12 +238,19 @@ unknown counter), the run is the same under every environment.
 
 - **The connection functions.** An authored corpus with a case for each row of the table of
   facts and each read of D2, with mutants for the rules that are easy to get wrong: the rows
-  that REPLACE deletes counted, the rows of trigger programs counted in `changes()`, `changes()`
-  kept after a failed statement, `last_insert_rowid()` taken back by a rollback, the changes of
-  trigger statements before a failure left out of `total_changes()`, and `DROP TABLE` of a
-  referenced table that does not set `changes()`. A corpus run starts with unknown counters, so
+  that REPLACE deletes counted, the rows of trigger programs counted in `changes()`, the rows of
+  trigger programs and foreign-key actions left out of `total_changes()`, and `DROP TABLE` of a
+  referenced table that does not set `changes()`. The mutants for failed statements
+  (`changes()` kept, `last_insert_rowid()` taken back by the rollback, the auxiliary changes
+  before the failure left out of `total_changes()`) need the next item. A corpus run starts with unknown counters, so
   a case that reads a counter before its migration sets it is out of scope, without a judge
   change. The judge change that claims the new cases is its own pull request (ADR 0011).
+- **After a failed statement.** The recorder stops at the first error
+  (`conformance/native_statements.py`), so no case can read the counters after a failed
+  statement. The rows of the table for failed statements get native evidence only with the
+  recorder change of ADR 0017's first deferred row (the statements after an error). Until then
+  they have Lean examples, with the probes recorded in the task file, and the mutants for them
+  wait for that change.
 - **The start of a case.** `total_changes()` is never known in a corpus run that starts with
   unknown counters. Owner decision 3 chooses whether the recorder also records the three
   counters at the start of the migration, in a new corpus, so that the case run starts from
@@ -322,15 +340,18 @@ Open, with a recommendation for each:
      new connection.
 2. **Random values (D4).**
    - A (recommended): a source in `Env`, none by default, over which a claim quantifies, in the
-     positions of slice 2.
+     positions of slice 2. The model's runs are more than SQLite's (D4): every claim that the
+     model proves holds for SQLite, but a counterexample can use values that SQLite's generator
+     cannot give.
    - B: they stay a restriction, and the guide says that the model does not describe them.
    - C: SQLite's generator with a controlled seed (see "Alternatives considered").
 3. **The counters at the start of a corpus case (D5).**
    - A (recommended): a judge change in slice 1, with its own pull request: the recorder records
      the three counters of the connection at the start of the migration, in a new corpus, and
-     the case run starts from them. Then `total_changes()` and the reads before a write get
-     native evidence; its rule, with the trigger statements before a failure, is the easiest to
-     get wrong.
+     the case run starts from them. Then `total_changes()` after a successful statement and
+     the reads before the migration sets a counter get native evidence; the rule of
+     `total_changes()` for trigger programs and foreign-key actions is easy to get wrong. Its
+     rule after a failure still needs the recorder change for the statements after an error.
    - B: no recorder change. `total_changes()` has Lean examples only, and the reads before the
      migration sets a counter stay out of scope.
 4. **Native evidence for random values (D5).**
