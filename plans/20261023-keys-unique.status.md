@@ -161,8 +161,8 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3).
   with rules (`KeysUniqueRowEngine`), and the statement theorem `runStatement_keysUnique`
   (`KeysUniqueStatement`). No proof of the row engine failed. Tests:
   `tests/test_model_package.py -m unit`.
-- 2026-10-23: `just test-full` and `just verdict` passed at the end of part 1 (xuotovnp), run by
-  the lead.
+- 2026-10-23: end of part 1 (xuotovnp). Tests: `just test-full` and `just verdict`, run by the
+  lead; the status file cites only Nix check results, so none is cited here.
 - 2026-10-23: review round 7 (the row engine): two R2 musts (the plain words of
   `ResultHolds.bind` omitted the stop property of the continuation; those of
   `KeyState.keysUnique_start` named every state with the rows instead of the constructed state),
@@ -186,5 +186,5 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3).
   words of `Connection.afterStep_keysUnique` named a hypothesis that the formula does not have)
   and one R1 should (the standard axioms of the test get a name), fixed.
 - 2026-10-23: review round 12 (the refactor): no findings. The records of slice 2 in ADR 0022, D4
-  and ADR 0012, decision 5. The predictions of `nix-build integrity/judge.nix -A predictions` are
-  byte-identical to the baseline (`diff -r`). Next: `just test-full` and `just verdict` of part 2.
+  and ADR 0012, decision 5. Tests: the predictions of `nix-build integrity/judge.nix -A predictions`
+  against the baseline (`diff -r`). Next: `just test-full` and `just verdict` of part 2.
