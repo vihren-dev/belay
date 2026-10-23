@@ -31,9 +31,10 @@ inductive RestrictionKind where
   the name up only where it uses the collation, and its query planner decides some of
   those uses, so the model cannot tell whether the statement fails (ADR 0014, slice 3). -/
   | unknownCollation
-  /-- A time keyword, a date and time function or a JSON function in a CHECK constraint: the
-  first two can give another value on each evaluation, and the last can fail while a row is
-  written, which the model's check does not describe (ADR 0014, slice 4). -/
+  /-- A time keyword, a date and time function, a call of {lit}`changes()`, {lit}`total_changes()` or
+  {lit}`last_insert_rowid()`, or a JSON function in a CHECK constraint: the first three can give
+  another value on each evaluation, and the last can fail while a row is
+  written, which the model's check does not describe (ADR 0014, slice 4; ADR 0024, D2). -/
   | checkFunction
   /-- A CHECK of ADD COLUMN that SQLite cannot resolve: SQLite reports it while the statement
   runs, as {lit}`error in table %s after add column: %s`, which the model does not describe
@@ -179,7 +180,9 @@ inductive RestrictionKind where
   body, a write of its body or a {lit}`WHEN` condition with a call that can fail, a {lit}`WHEN`
   condition with a subquery, triggers that fire each
   other past the bound of the resolution, and {lit}`ON CONFLICT DO UPDATE` on a table with a
-  trigger, whose UPDATE triggers the resolution does not follow (ADR 0018, slice 5). -/
+  trigger, whose UPDATE triggers the resolution does not follow, and a call of
+  {lit}`changes()`, {lit}`total_changes()` or {lit}`last_insert_rowid()` in a trigger program, in
+  its body or its {lit}`WHEN` condition (ADR 0018, slice 5; ADR 0024, D2). -/
   | triggerForm
   /-- A {lit}`BEFORE UPDATE` or {lit}`BEFORE DELETE` trigger whose program writes the table of
   its own event, directly or through the triggers and foreign-key actions that it fires, is not
@@ -197,6 +200,11 @@ inductive RestrictionKind where
   /-- {lit}`PRAGMA foreign_key_check` without a table name when two or more tables have a mismatch:
   SQLite reports the first one in the order of its schema hash table (ADR 0019, D2). -/
   | foreignKeyMismatchOrder
+  /-- {lit}`last_insert_rowid()` in an INSERT or an upsert, and {lit}`total_changes()` in a write that
+  runs trigger programs or foreign-key actions: the INSERT changes its value with each row in the
+  order of SQLite's {lit}`insert.c`, and the other write changes it with the rows of the programs
+  and actions (ADR 0024, D2). -/
+  | connectionCounterRead
   deriving Repr, DecidableEq
 
 end Belay.Sqlite.Model

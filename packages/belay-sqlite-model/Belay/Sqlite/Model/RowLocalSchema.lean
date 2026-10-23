@@ -29,9 +29,9 @@ of an error with {name}`ExecutionError.constraintFail` have it, and any other er
 nothing. The new table has no rows. Proof
 sketch: {name}`Database.EachTable.append`; every error keeps the database. -/
 theorem runStatement_createTable_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
-    (parameters : List Value) (target : Nat) (name : Identifier) (shape : CatalogTable) {database : Database}
+    (counters : Counters) (parameters : List Value) (target : Nat) (name : Identifier) (shape : CatalogTable) {database : Database}
     (every : database.EachTable atom) :
-    (runStatement clock parameters (.createTable target name shape) database).effect.Satisfies
+    (runStatement clock counters parameters (.createTable target name shape) database).effect.Satisfies
       fun after => after.EachTable atom := by
   simp only [runStatement, step]
   split
@@ -47,9 +47,9 @@ of an error with {name}`ExecutionError.constraintFail` have it, and any other er
 nothing. A trigger has no rows. Proof sketch:
 {name}`Database.EachTable.append`; every error keeps the database. -/
 theorem runStatement_createTrigger_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
-    (parameters : List Value) (target : Nat) (name : Identifier) (trigger : CatalogTrigger) {database : Database}
+    (counters : Counters) (parameters : List Value) (target : Nat) (name : Identifier) (trigger : CatalogTrigger) {database : Database}
     (every : database.EachTable atom) :
-    (runStatement clock parameters (.createTrigger target name trigger) database).effect.Satisfies
+    (runStatement clock counters parameters (.createTrigger target name trigger) database).effect.Satisfies
       fun after => after.EachTable atom := by
   simp only [runStatement, step]
   split
@@ -65,9 +65,9 @@ of an error with {name}`ExecutionError.constraintFail` have it, and any other er
 nothing. An index has no rows and changes no table. Proof sketch:
 {name}`Database.EachTable.append`; every error keeps the database. -/
 theorem runStatement_createIndex_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
-    (parameters : List Value) (target : Nat) (name : Identifier) (index : CatalogIndex) {database : Database}
+    (counters : Counters) (parameters : List Value) (target : Nat) (name : Identifier) (index : CatalogIndex) {database : Database}
     (every : database.EachTable atom) :
-    (runStatement clock parameters (.createIndex target name index) database).effect.Satisfies
+    (runStatement clock counters parameters (.createIndex target name index) database).effect.Satisfies
       fun after => after.EachTable atom := by
   simp only [runStatement, step]
   split
@@ -87,9 +87,9 @@ has the atom, the effect of {name}`runStatement` satisfies "every table has the 
 {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. The atom
 need not be a {name}`RowLocalAtom`, and DROP has no condition. Proof sketch: the effect is the
 database after {name}`Database.drop` ({name}`Database.EachTable.drop`). -/
-theorem runStatement_drop_rowLocal {atom : Table → Prop} (clock : Int) (parameters : List Value)
+theorem runStatement_drop_rowLocal {atom : Table → Prop} (clock : Int) (counters : Counters) (parameters : List Value)
     (positions : List Nat) {database : Database} (every : database.EachTable atom) :
-    (runStatement clock parameters (.drop positions none) database).effect.Satisfies fun after => after.EachTable atom := by
+    (runStatement clock counters parameters (.drop positions none) database).effect.Satisfies fun after => after.EachTable atom := by
   simp only [runStatement, Option.map_none, StatementRun.withKeys, step]
   exact Effect.satisfies_of_effectDatabase (every.drop positions)
 

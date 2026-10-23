@@ -29,7 +29,7 @@ def sqlTraceFrom (position : Nat) : List (Resolved.Statement × List Value) → 
   | [], state => { outputs := [], final := some state }
   | (statement, parameters) :: rest, state =>
     let output := Output.ofStep (state.clock position) parameters statement state
-      (runStatement (state.clock position) parameters statement state.database) (advance position statement parameters state)
+      (state.statementRun (state.clock position) parameters statement) (advance position statement parameters state)
     match advance position statement parameters state with
     | .halt _ => { outputs := [output], final := none }
     | .next next =>
@@ -87,9 +87,9 @@ theorem runScriptStep_resolved {context : ResolveContext} {clock : Option Clock}
     (∃ reason, runScriptStep context clock index connection statement parameters = .ended reason) ∨
     ∃ next, runScriptStep context clock index connection statement parameters = .continued
         (Output.ofStep (connection.state.clock index) parameters resolved connection.state
-          (runStatement (connection.state.clock index) parameters resolved connection.state.database)
+          (connection.state.statementRun (connection.state.clock index) parameters resolved)
           (advance index resolved parameters connection.state)) next ∧
-      next = connection.afterStep after (runStatement (connection.state.clock index) parameters resolved connection.state.database).counts
+      next = connection.afterStep after (connection.state.statementRun (connection.state.clock index) parameters resolved).counts
         (advance index resolved parameters connection.state) := by
   simp only [runScriptStep, runScriptStepWith, ranScriptStep, ok]
   split
@@ -100,12 +100,14 @@ theorem runScriptStep_resolved {context : ResolveContext} {clock : Option Clock}
     · exact .inl ⟨_, rfl⟩
     · split
       · exact .inl ⟨_, rfl⟩
-      all_goals
-        rename_i stepped
-        have unfolded : advance index resolved parameters connection.state = advanceRun index resolved connection.state
-            (runStatement (connection.state.clock index) parameters resolved connection.state.database) := rfl
-        rw [unfolded, stepped]
-        exact .inr ⟨_, rfl, rfl⟩
+      · split
+        · exact .inl ⟨_, rfl⟩
+        all_goals
+          rename_i stepped
+          have unfolded : advance index resolved parameters connection.state = advanceRun index resolved connection.state
+              (connection.state.statementRun (connection.state.clock index) parameters resolved) := rfl
+          rw [unfolded, stepped]
+          exact .inr ⟨_, rfl, rfl⟩
 
 /-- For every context, connection, statement, list of values, resolved statement, resolution
 state and state: if the statement resolves against the connection's resolution state to the

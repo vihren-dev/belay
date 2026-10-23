@@ -32,7 +32,7 @@ def passFrom (position : Nat) (script : List (Resolved.Statement × List Value))
   | [] => { observations := [observeState state], outputs := [], possible := [], supported := true }
   | (statement, parameters) :: rest =>
     let clock := state.clock position
-    let run := runStatement clock parameters statement state.database
+    let run := SqlState.statementRun state clock parameters statement
     let ready := run.ready
     let transition := advanceRun position statement state run
     let output := statementOutput clock parameters statement state run transition
@@ -63,7 +63,7 @@ theorem passFrom_final (position : Nat) (script : List (Resolved.Statement × Li
   | cons entry rest ih =>
     obtain ⟨statement, parameters⟩ := entry
     cases h : advanceRun position statement state
-        (runStatement (state.clock position) parameters statement state.database) with
+        (SqlState.statementRun state (state.clock position) parameters statement) with
     | next next =>
       have later := ih (position + 1) next
       simp only [passFrom, runSqlFrom, advance, h] at later ⊢
@@ -90,7 +90,7 @@ theorem passFrom_supported (position : Nat) (script : List (Resolved.Statement �
   | cons entry rest ih =>
     obtain ⟨statement, parameters⟩ := entry
     cases h : advanceRun position statement state
-        (runStatement (state.clock position) parameters statement state.database) with
+        (SqlState.statementRun state (state.clock position) parameters statement) with
     | next next => simp [passFrom, supportedSqlFrom, h, ih]
     | halt outcome => simp [passFrom, supportedSqlFrom, h]
 

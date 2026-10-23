@@ -46,7 +46,7 @@ position ({name}`advanceRun` of its run at the clock value of the position,
 {name}`runStatement`). -/
 def advance (position : Nat) (statement : Resolved.Statement) (parameters : List Value) (state : SqlState) :
     SqlTransition :=
-  advanceRun position statement state (runStatement (state.clock position) parameters statement state.database)
+  advanceRun position statement state (SqlState.statementRun state (state.clock position) parameters statement)
 
 /-- For every position, statement, values, state and next state: if {name}`advance` continues
 with the next state, then {name}`advanceWith` of the effect ({name}`literalStep`) continues with a
@@ -55,9 +55,9 @@ sketch: {name}`SqlTransition.counted_eq_next`. -/
 theorem advance_eq_next {position : Nat} {statement : Resolved.Statement} {parameters : List Value} {state next : SqlState}
     (continued : advance position statement parameters state = .next next) :
     ∃ transitioned, advanceWith position statement state
-        (literalStep (state.clock position) parameters statement state.database) = .next transitioned ∧
+        ((SqlState.statementRun state (state.clock position) parameters statement).effect) = .next transitioned ∧
       next = { transitioned with
-        counters := transitioned.counters.apply (runStatement (state.clock position) parameters statement state.database).counts } :=
+        counters := transitioned.counters.apply (SqlState.statementRun state (state.clock position) parameters statement).counts } :=
   SqlTransition.counted_eq_next.mp continued
 
 /-- For every position, statement, values, state and outcome: if {name}`advance` halts with the
@@ -65,7 +65,7 @@ outcome, then {name}`advanceWith` of the effect ({name}`literalStep`) halts with
 {name}`SqlTransition.counted_eq_halt`. -/
 theorem advance_eq_halt {position : Nat} {statement : Resolved.Statement} {parameters : List Value} {state : SqlState}
     {outcome : Outcome} (halted : advance position statement parameters state = .halt outcome) :
-    advanceWith position statement state (literalStep (state.clock position) parameters statement state.database) =
+    advanceWith position statement state ((SqlState.statementRun state (state.clock position) parameters statement).effect) =
       .halt outcome :=
   SqlTransition.counted_eq_halt.mp halted
 
@@ -117,7 +117,7 @@ def supportedSqlFrom (position : Nat) (script : List (Resolved.Statement × List
   match script with
   | [] => true
   | (statement, parameters) :: rest =>
-    let run := runStatement (state.clock position) parameters statement state.database
+    let run := SqlState.statementRun state (state.clock position) parameters statement
     run.ready &&
     match advanceRun position statement state run with
     | .halt _ => true

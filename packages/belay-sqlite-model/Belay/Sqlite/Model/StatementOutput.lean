@@ -108,6 +108,7 @@ when it succeeds, and its {lit}`RETURNING` names, no rows and the rows that a FA
 it fails a constraint. A setting pragma ({lit}`PRAGMA setting = value`) has no output columns. -/
 def statementOutput (clock : Int) (parameters : List Value) (statement : Resolved.Statement) (before : SqlState)
     (run : StatementRun) (transition : SqlTransition) : Option StatementOutput :=
+  let counters := before.counters.view statement.counterReads
   let successful := match transition with | .next _ => true | .halt _ => false
   let constraintFailure := (haltError transition).any ExecutionError.failsWrite
   let overflow := haltError transition == some .integerOverflow
@@ -115,7 +116,7 @@ def statementOutput (clock : Int) (parameters : List Value) (statement : Resolve
   let mismatch := haltError transition == some .datatypeMismatch
   match statement with
   | .insert target rows returning subqueries none =>
-    let context := Resolved.statementContext clock parameters before.database subqueries
+    let context := Resolved.statementContext clock counters parameters before.database subqueries
     let names := returning.map (·.2)
     if successful then do
       let table ← before.database.table target
@@ -124,7 +125,7 @@ def statementOutput (clock : Int) (parameters : List Value) (statement : Resolve
       return ⟨names, returnedRows context returning written, some (run.counts.changes.getD 0)⟩
     else if constraintFailure then some ⟨names, [], some (run.counts.changes.getD 0)⟩ else none
   | .upsert target rows clauses returning algorithm subqueries none =>
-    let context := Resolved.statementContext clock parameters before.database subqueries
+    let context := Resolved.statementContext clock counters parameters before.database subqueries
     let names := returning.map (·.2)
     let rows := (before.database.table target).map fun table =>
       LiteralData.upsertRun context (before.database.keys target table)
@@ -135,7 +136,7 @@ def statementOutput (clock : Int) (parameters : List Value) (statement : Resolve
       return ⟨names, returnedRows context returning (written.map (·.values)), some (run.counts.changes.getD 0)⟩
     else if constraintFailure then some ⟨names, [], some (run.counts.changes.getD 0)⟩ else none
   | .update target assignments filter returning subqueries none =>
-    let context := Resolved.statementContext clock parameters before.database subqueries
+    let context := Resolved.statementContext clock counters parameters before.database subqueries
     let names := returning.map (·.2)
     if successful then do
       let table ← before.database.table target
@@ -144,7 +145,7 @@ def statementOutput (clock : Int) (parameters : List Value) (statement : Resolve
       return ⟨names, returnedRows context returning written, some (run.counts.changes.getD 0)⟩
     else if constraintFailure then some ⟨names, [], some (run.counts.changes.getD 0)⟩ else none
   | .delete target filter returning subqueries none =>
-    let context := Resolved.statementContext clock parameters before.database subqueries
+    let context := Resolved.statementContext clock counters parameters before.database subqueries
     let names := returning.map (·.2)
     if successful then do
       let table ← before.database.table target
@@ -152,14 +153,14 @@ def statementOutput (clock : Int) (parameters : List Value) (statement : Resolve
       return ⟨names, returnedRows context returning (chosen.map (·.values)), some (run.counts.changes.getD 0)⟩
     else none
   | .query query subqueries =>
-    let context := Resolved.statementContext clock parameters before.database subqueries
+    let context := Resolved.statementContext clock counters parameters before.database subqueries
     if successful then
       (query.source context before.database).map fun source => ⟨query.names, (query.run context source.rows).rows, none⟩
     else if (overflow && query.groupBy.isEmpty) || functionFailure || mismatch then some ⟨query.names, [], none⟩
     else none
   | .insert _ _ returning subqueries (some _) | .upsert _ _ _ returning _ subqueries (some _)
   | .update _ _ _ returning subqueries (some _) | .delete _ _ returning subqueries (some _) =>
-    let context := Resolved.statementContext clock parameters before.database subqueries
+    let context := Resolved.statementContext clock counters parameters before.database subqueries
     let written := run.keyRows.getD []
     if successful then
       some ⟨returning.map (·.2), returnedRows context returning (written.map (·.values)), some (run.counts.changes.getD 0)⟩
