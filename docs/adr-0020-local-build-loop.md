@@ -26,8 +26,8 @@ package, then the packages that require it. This ADR adds a second way to check 
 a local Lake build that compiles only what changed, in a development shell with the same
 pinned toolchain and parser library, and a local judge run over the corpora with the
 programs from that build. Nix stays the only source of evidence. The local loop gives
-feedback while an agent edits; the Nix checks run before each commit, and CI runs them as
-today.
+feedback while an agent edits; the Nix checks run at the points that `AGENTS.md` gives
+(D5), and CI runs them as today.
 
 ## Context
 
@@ -205,6 +205,13 @@ result is not evidence: commit messages, status files and pull requests cite Nix
 results only. This follows ADR 0011: a result on a developer machine decides nothing.
 (Owner decision 2.)
 
+Amended 2026-10-23 by the owner: the Nix checks do not run before each commit. A commit
+gets the tests that touch it and `just review`; `just test-full` and `just verdict` run
+at the end of each slice of a task; `just test-nix` and `just test-scheduled` run once
+before the pull requests. The section "Checks and their cadence" of `AGENTS.md` gives
+this cadence. The rule "before each commit" made agents run `just test-full`, about 15
+minutes, after each commit, and wait for it.
+
 The rule also says that direnv loads the shell (fact 8): agents run `just` and `lake`
 directly and do not enter a shell. When a tool of the shell is missing, the agent asks
 the owner to run `direnv allow`. Two texts that tell readers to enter the shell change
@@ -239,7 +246,7 @@ commit: the counts of `just dev-verdict` equal those of `just verdict`.
   change them. The `requires_nix` test of D6 and the first local build after the upgrade
   show it, and the upgrade change updates the wrapper.
 - **Two ways to build can disagree.** Nothing in the local loop is evidence, and the
-  Nix checks before each commit catch a difference. The loop uses the same toolchain,
+  Nix checks at the end of each slice catch a difference. The loop uses the same toolchain,
   parser library and sources, so a difference shows a bug in the loop.
 - **The `.envrc` change needs `direnv allow` in each workspace.** Until the owner runs
   it, direnv loads nothing there, and the session has neither the shell of D1 nor the
@@ -293,7 +300,8 @@ Decided on 2026-10-22:
 1. **The surface package in D2.** The local loop builds it. A model change can break the
    surface, and after the text package it built in 2 s.
 2. **The rule of D5.** As written: the local loop while editing, the Nix checks before
-   each commit.
+   each commit. Amended 2026-10-23: the Nix checks run at the points of the cadence in
+   `AGENTS.md` (see D5).
 3. **The flake dev shell.** Keep it for CI, with the package list shared with
    `shell.nix`. The rejected alternative replaced it with `shell.nix` everywhere, which
    changes the CI workflows and the README.
