@@ -62,13 +62,14 @@ through the row engine with `ready` has no model in slices 2 and 3.
 
 | Work | Lines |
 | --- | --- |
-| `CatalogTable.supported` with the CHECK condition, repair of the proofs and examples that use `Catalog.Valid` | 60–120 |
+| `CatalogTable.supported` with the CHECK condition and the alias schema (decision 8), repair of the proofs and examples that use `Catalog.Valid` | 120–240 |
+| The resolver fact that CREATE TABLE gives the alias schema | 60–120 |
 | The lemma that `resolveOperand` over one table reads below its width (`resolveArguments`, `resolveCase`, calls, names) | 250–400 |
 | Decisions 4 and 5: the index with no terms, the repeated key column | 40–100 |
 | `Catalog.Valid` after CREATE TABLE, CREATE INDEX, CREATE TRIGGER and ADD COLUMN | 250–400 |
 | `Catalog.Valid` after DROP (the closure of the drop), `Catalog.DropCondition` from it | 100–160 |
 | The conditions of ADD COLUMN from the resolver (`strictDefaultFits`, `RowsWideAt`, `AddColumnCondition`) | 100–160 |
-| **Part 1** | **800–1340** |
+| **Part 1** | **920–1580** |
 | Frame lemmas, `setRows`, append and sublist laws for the seven atoms | 100–160 |
 | Schema statements for the seven atoms (CREATE, DROP, ADD COLUMN) | 150–250 |
 | Plain INSERT, UPDATE, DELETE and upsert with `ready` | 200–320 |
@@ -81,7 +82,7 @@ through the row engine with `ready` has no model in slices 2 and 3.
 | Examples (counterexamples, the concrete run) and the test file | 120–200 |
 | **Part 3** | **410–730** |
 
-Total: about 2000–3400 lines in 20 to 30 new modules, each below 200 lines. This is larger than slice 3
+Total: about 2100–3600 lines in 20 to 30 new modules, each below 200 lines. This is larger than slice 3
 because the resolver facts are new work. They need the CHECK lemma, which is the largest single
 proof. Slice 3 is estimated at 1000 to 1600 lines. The task file proposes three parts (decision 7).
 
@@ -128,17 +129,18 @@ proof. Slice 3 is estimated at 1000 to 1600 lines. The task file proposes three 
    - b) The `runScriptFrom` theorem of "checks hold" keeps the hypothesis.
 
    Recommendation: a), as decided. SQLite does not open a database whose CHECK names a missing
-   column (`malformed database schema (t) - no such column: zz`, native 3.51.0), so the fact holds
-   for each database SQLite reaches (ADR 0012, decision 5). A guard in the resolver instead (a
+   column (the message of slice 3 for this case is `malformed database schema (t) - no such column:
+   zz`), so the fact holds for each database SQLite reaches (ADR 0012, decision 5). A guard in the resolver instead (a
    branch that refuses a CHECK that reads past the width) would be dead code that hides an error
    of the model, and is not recommended.
 4. **CREATE INDEX with no terms.** `resolveCreateIndex` accepts a syntax with an empty term list
    (`indexKeys` returns `.ok []`), makes a ready statement, and gives an index that
-   `CatalogIndex.supported` refuses (it needs a nonempty key list). Measured with the probes below:
-   `supported` is false and the statement is not a restriction. SQL text cannot make it: the
+   `CatalogIndex.supported` refuses (it needs a nonempty key list). From the source (finding 15 says how it is
+   confirmed): `supported` is false and the statement is not a restriction. SQL text cannot make it: the
    grammar needs at least one term (`sortlist`, translated at
-   `packages/belay-sqlite-text/Belay/Sqlite/Translation/Schema.lean:26`), and native SQLite 3.51.0
-   gives `Error: in prepare, near ")": syntax error` for `CREATE INDEX i ON t()`. A Lean user can
+   `packages/belay-sqlite-text/Belay/Sqlite/Translation/Schema.lean:26`), and SQLite's parser rejects
+   `CREATE INDEX i ON t()` as a syntax error near the closing parenthesis (to be confirmed by a
+   conformance case or an example of part 1, finding 15). A Lean user can
    build the `Syntax.Statement` directly, so a hypothesis on the syntax cannot be discharged for
    the programs of the surface.
    - a) The resolver refuses a CREATE INDEX with no terms with a prepare error (the error
@@ -149,13 +151,12 @@ proof. Slice 3 is estimated at 1000 to 1600 lines. The task file proposes three 
    - c) The theorem assumes at least one term in the syntax of each CREATE INDEX, and the
      `runScriptFrom` theorem keeps that hypothesis.
 
-   Recommendation: a). It does what native SQLite does, it adds one prepare error and no
+   Recommendation: a). It does what SQLite does, it adds one prepare error and no
    restriction, and it removes the hypothesis. Option b) says "the model does not describe it",
    which is untrue, because SQLite describes it as an error. Option c) leaves a hypothesis that no
    caller can check, because it is a fact about the program text.
-5. **Repeated key columns.** `PRIMARY KEY(a, a)` and `UNIQUE(a, a)` work in native SQLite 3.51.0
-   (the index keeps both columns; `PRAGMA index_info` shows `a, a`, and a conflict reports `UNIQUE
-   constraint failed: t.a, t.a`). The model resolves `CREATE TABLE t(a, b, PRIMARY KEY(a, a))` to a
+5. **Repeated key columns.** `PRIMARY KEY(a, a)` and `UNIQUE(a, a)` are accepted by SQLite 3.51.0, which
+   keeps both columns in the index (to be confirmed by a conformance case, finding 15). The model resolves `CREATE TABLE t(a, b, PRIMARY KEY(a, a))` to a
    table with the key `[0, 0]`, and `supportedKey` refuses it (`Database.lean:64`: no repeated
    column). The statement is not a restriction. So `Catalog.Valid` is stricter than the databases
    that SQLite reaches (ADR 0012, decision 5), and a CREATE TABLE that the resolver accepts gives
@@ -187,20 +188,38 @@ proof. Slice 3 is estimated at 1000 to 1600 lines. The task file proposes three 
      verdict`: resolver facts, statement theorems, run theorems with the corollary.
    - b) Two parts, as slices 2 and 3 (the resolver facts and the statement theorems in part 1).
 
-   Recommendation: a). The estimate of part 1 plus part 2 is about 1600–2600 lines, twice a part of
+   Recommendation: a). The estimate of part 1 plus part 2 is about 1700–2900 lines, twice a part of
    slice 3. Part 1 changes `CatalogTable.supported`, which every later proof uses, so it should land
    and be checked alone.
+8. **The alias schema** (finding 14). A table that a Lean user builds can have a rowid alias that
+   no SQLite table has: a generated column, a column that is not the only primary key column, or a
+   `WITHOUT ROWID` table. Of these, the generated alias breaks "rows aliased" with a ready write.
+   - a) `CatalogTable.supported` states the alias schema: if the table has an alias at a position,
+     the position is below the width, the column is not generated, it has INTEGER affinity, the
+     primary key is exactly that position, and the table is not `WITHOUT ROWID`. The resolver fact
+     of part 1 shows that CREATE TABLE gives it. The check `aliasReady` stays.
+   - b) `aliasReady` also refuses a generated alias column. `Catalog.Valid` states nothing more.
+     `ready` then stops the run at a write to such a table, as unmodeled.
+   - c) Both.
+
+   Recommendation: a). It follows decision 3 (a fact of every database SQLite reaches goes into
+   `Catalog.Valid`, ADR 0012 decision 5) and it also covers the other forms. Option b) fixes only the
+   generated column and leaves the other forms to `ready`. The cost of a) is one more conjunct in
+   `CatalogTable.supported`; the estimate is in the first row of part 1. Part 1 checks each form
+   against the resolver before a proof relies on a).
 
 ## Findings
 
-Measured on 2026-10-23, before the slice began. The probes ran as Lean files against the model
-(`migration`, `catalogOf` and `restricted` of `Resolution/Examples`), and the native results with
-`sqlite3` 3.51.0.
+Observed on 2026-10-23, before the slice began, by reading the source and by hand-run probes of
+the model and of SQLite 3.51.0. A local result is not evidence (`CLAUDE.md`), so each observation is
+a claim to confirm: part 1 makes it a kernel example, or a case of the conformance evidence, before
+a proof relies on it (finding 15).
 
-1. **CREATE INDEX with no terms is resolved and ready, and not supported** (decision 4). Probe:
-   `supported = false`, `restricted = false`. The grammar and the native result are in decision 4.
+1. **CREATE INDEX with no terms is resolved and ready, and not supported** (decision 4). The resolver
+   does not check `CatalogIndex.supported` and the statement is not a restriction. The grammar is
+   in decision 4.
 2. **`PRIMARY KEY(a, a)` and `UNIQUE(a, a)` are resolved, not restricted, and not supported**
-   (decision 5). Probe: `supported = false`, `restricted = false`, one statement. `PRIMARY KEY()` and
+   (decision 5). The resolver emits the key `[0, 0]` and does not restrict it. `PRIMARY KEY()` and
    `UNIQUE()` with an empty list cannot come from SQL text; they resolve to a supported table
    because the empty key merges with an empty primary key. `CREATE TABLE t()` gives the prepare
    error `onlyGeneratedColumns`.
@@ -237,7 +256,7 @@ Measured on 2026-10-23, before the slice began. The probes ran as Lean files aga
    generic layer needs a variant (the size estimate has a row for it).
 8. **`runScriptFrom` gets `ready` for free.** `runScriptStepWith` ends the run with `unmodeledHere`
    when `!run.ready` (`ScriptRun.lean:118`). For `runSqlFrom`, `supportedSqlFrom` is the predicate.
-9. **Other measured statements were fine** (`supported` true, CHECKs below the width): a CHECK on a
+9. **Other statements seemed fine** (supported, CHECKs below the width): a CHECK on a
    column and a table CHECK, ADD COLUMN with a CHECK, a duplicate column in a different case (a prepare
    error), an expression unique index with a filter, a trigger, DROP TABLE with a trigger, and a
    `WITHOUT ROWID` table with a primary key.
@@ -261,6 +280,21 @@ Measured on 2026-10-23, before the slice began. The probes ran as Lean files aga
     at a later ADD COLUMN. Findings 1 and 2 are the two known inputs of that class. The resolver fact
     of part 1 is stated for every CREATE INDEX, so it finds any other input; one that fails is a
     finding.
+
+14. **The alias schema is not in `Catalog.Valid`** (review of the task file, R19). `rowidAlias` is
+    a field of `CatalogTable`, and `CatalogTable.supported` states nothing about it ("A rowid alias is
+    admitted", `Database.lean`). `aliasReady` (`LiteralData.lean:177`) checks only that the alias column
+    has INTEGER affinity. `newCells` (`LiteralData.lean:146`) sets the alias cell to the rowid and then
+    computes the generated columns (`generatedCells`). So a table that a Lean user builds with a
+    generated INTEGER column as its alias passes `Catalog.Valid`, `aliasReady` and `ready`, and an
+    INSERT into it (an empty table, the rowid 1) stores an alias cell that is not the rowid: it breaks
+    "rows aliased" (expected counterexample for the examples). The resolver refuses a generated column
+    in the primary key (`generatedInPrimaryKey`, `Resolution/Definitions.lean:40`), so no statement
+    makes such a table. It is the same class as findings 1 and 2: the catalog atom is looser than the
+    databases SQLite reaches. Decision 8.
+15. **Confirmation of the observations.** Findings 1, 2 and 9 and the claims of decisions 3 to 5
+    about SQLite are hand-run observations. The task file requires a kernel example or a conformance
+    case for each before a proof relies on it.
 
 ## Progress log
 
