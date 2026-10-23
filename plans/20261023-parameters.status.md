@@ -68,5 +68,6 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D1 (amended 2026-10-23
   `parameter-order-by` also selects `?1`, and a subquery's own window is not recorded.
   Mutants (`parameter_mutants.py`): a parameter with an affinity, `ORDER BY ?` as a column
   number and a `LIMIT ?` that truncates a fraction, each killed by an authored case. The two
-  numbering mutants change the frontend, which the mutant measurement does not build; one
-  manual run killed both. Open: corpus-v48 and its claims are the judge change (owner).
+  numbering mutants change the frontend, which the mutant measurement does not build, so no
+  check shows yet that a case kills them. Open: a check of the two numbering mutants (owner
+  decision); corpus-v48 and its claims are the judge change (owner).
