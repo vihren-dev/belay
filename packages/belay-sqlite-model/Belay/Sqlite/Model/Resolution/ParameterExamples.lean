@@ -81,6 +81,31 @@ def errorOf (script : List Syntax.Statement) : Option PrepareError :=
 #guard errorOf [.createTable (name! "g") [column (name! "b"),
     constrained (.generated (.arithmetic .add (col "b") (.parameter 1)) none)] []] ==
   some (.expression .parameterInGenerated)
+/-- The prepare error of {lit}`CREATE TABLE c(a CHECK (condition))`, or none. -/
+def checkError (condition : Expr) : Option PrepareError :=
+  errorOf [.createTable (name! "c") [constrained (.check condition "?")] []]
+
+/-- The error of a missing name {lit}`nosuch`. -/
+def missingName : Option PrepareError := some (.expression (.noSuchColumn (name! "nosuch")))
+
+/-- The error of a parameter in a CHECK constraint. -/
+def checkParameter : Option PrepareError := some (.expression .parameterInCheck)
+
+-- The last error of SQLite's walk wins, and a function's argument list or the operand of
+-- ISNULL does not stop the walk: abs(1, 2) + nosuch + ?1 and (?1 ISNULL) + nosuch give the
+-- name, abs(nosuch) + ?1 the parameter. ?1 IS nosuch resolves the name first; ?1 LIKE nosuch
+-- is like(nosuch, ?1); nosuch IN () has no operand.
+#guard [checkError (.arithmetic .add (.arithmetic .add (.call "abs" [.numeric "1", .numeric "2"]) (col "nosuch")) (.parameter 1)),
+    checkError (.arithmetic .add (.isNull (.parameter 1) false) (col "nosuch")),
+    checkError (.compare .is (.parameter 1) (col "nosuch")),
+    checkError (.call "like" [col "nosuch", .parameter 1])] ==
+  [missingName, missingName, missingName, missingName]
+#guard [checkError (.arithmetic .add (.call "abs" [col "nosuch"]) (.parameter 1)),
+    checkError (.compare .is (.parameter 1) (.arithmetic .add (col "nosuch") (.numeric "1"))),
+    checkError (.call "like" [.parameter 1, col "nosuch"]),
+    checkError (.arithmetic .add (.inList (col "nosuch") [] false) (.parameter 1))] ==
+  [checkParameter, checkParameter, checkParameter, checkParameter]
+
 #guard errorOf [.createIndex (name! "x") false (name! "t") [{ expression := .arithmetic .add (col "i") (.parameter 1), descending := false }] none] ==
   some (.expression (.parameterInIndex false))
 #guard errorOf [.createIndex (name! "x") false (name! "t") [key (name! "i")] (some (.compare .gt (col "i") (.parameter 1)))] ==
