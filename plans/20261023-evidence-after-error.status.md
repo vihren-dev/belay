@@ -105,16 +105,18 @@ corpus finds is extra work and is not in this estimate.
 - 2026-10-23 (PR A, refactor): `runPassFrom_results` moves to `RunPassLaws.lean`, so that the import closure of `VerifierConformance.Classify`, which each mutant copy builds, does not contain this proof; the docstring of `resolve_mutants` names that module (review of `yksqxkqo`).
 - 2026-10-23 (PR A, refactor): the module docstring of `RunPassLaws` and the status line say only that the classifier does not import this proof (review of `llzrutmv`).
 - 2026-10-23 (PR A): `tests/conformance_continuing_case_test.py` runs in the Nix suite `harness`, with `tests/conformance_predict_test.py`, whose helper it imports.
+- 2026-10-23 (PR B): the recorder's mode that runs on (`record_sql` and `execute` with `run_on`, `native_statement_end.complete_statement`, `sqlite3_complete` in `native_library`); a record of it has version 6, and `corpus.native_replay` records it again in that mode. The 55 records of the measurement replay natively unchanged.
 
 ## Tests for each commit
 
 - Task and status files: none (documents only); `just review`.
 - The model's step: `just dev-build`.
 - The pass, the classifier, the prediction and the readers: `just dev-build`, `just dev-verdict`, `just documentation-inventory`; `tests/conformance_continuing_case_test.py`, `tests/conformance_predict_test.py`, `tests/conformance_phase_test.py`, `tests/conformance_mutation_test.py`, `tests/conformance_model_test.py`, `tests/conformance_generation_test.py`, `tests/failed_catalog_observation_test.py`, `tests/test_model_package.py -m unit`, `tests/test_native_replay_storage.py`, `tests/conformance_trace_test.py`.
+- The recorder's mode: `tests/conformance_run_on_test.py`, `tests/conformance_phase_test.py`, `tests/test_native_replay_storage.py`, `tests/test_test_ownership.py`; a native replay of the 55 records of the measurement.
 
 ## Remaining
 
-- PR B: outcomes 1 to 4, 8 and 10, the mutants and corpus-v51.
+- PR B: outcomes 4, 8 and 10, the mutants and corpus-v51.
 
 ## Owner decisions
 
