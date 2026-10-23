@@ -287,7 +287,9 @@ row is `ok` when no check fails. Otherwise each failure gives one row, in SQLite
 `WITHOUT ROWID` row whose primary key equals that of the row before it, a NULL in a NOT NULL
 column, a cell that does not fit its `STRICT` type, a false CHECK constraint, and an index entry
 that has an equal key to the next entry, for each unique index (`sqlite_autoindex_t_N` for a
-constraint). `quick_check` does not check the key order or the indexes. A query without
+constraint). The entries with equal keys are in scan order, except in the index of a UNIQUE
+constraint of a `WITHOUT ROWID` table with `PRIMARY KEY DESC`, where SQLite orders them by the
+primary key in ascending order. `quick_check` does not check the key order or the indexes. A query without
 `ORDER BY` gives the rows in normal form. When two or more tables fail, SQLite's order of the
 tables is that of its schema hash table, and the model gives no result. Over an admitted
 database, the row `ok` means that the NOT NULL, CHECK, `STRICT` and, for `integrity_check`,

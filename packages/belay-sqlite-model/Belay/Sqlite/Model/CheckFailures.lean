@@ -24,7 +24,7 @@ inductive CheckFailure where
   | type (table column : Identifier) (type : StrictType)
   /-- A row for which a CHECK constraint is false: {lit}`CHECK constraint failed in t`. -/
   | check (table : Identifier)
-  /-- A row whose entry in a unique index has an equal key to a later entry:
+  /-- A row whose entry in a unique index has an equal key to the next entry of the index:
   {lit}`non-unique entry in index i`. -/
   | unique (index : Identifier)
   deriving Repr, DecidableEq
@@ -49,7 +49,8 @@ theorem CheckFailure.text_ne_ok (failure : CheckFailure) : failure.text ≠ chec
   cases failure <;> simp [CheckFailure.text, checkOk]
 
 /-- A unique index of a table as {lit}`integrity_check` checks it: its name as declared, its
-key, and whether it is a {lit}`REPLACE` index, which SQLite keeps at the end of its list. -/
+key, whether it is a {lit}`REPLACE` index, which SQLite keeps at the end of its list, and the
+order of its entries with equal keys. -/
 structure CheckedIndex where
   /-- The name of the index; {lit}`sqlite_autoindex_t_N` for the index of a constraint. -/
   name : Identifier
@@ -57,6 +58,11 @@ structure CheckedIndex where
   key : UniqueKey
   /-- Whether the index is the index of a constraint with {lit}`ON CONFLICT REPLACE`. -/
   replace : Bool
+  /-- Whether SQLite orders the entries with equal keys by the primary key in ascending order,
+  against the scan order of the table: the index of a constraint of a {lit}`WITHOUT ROWID`
+  table with {lit}`PRIMARY KEY DESC` ({lit}`bAscKeyBug` in {lit}`build.c`). When it is false,
+  the entries with equal keys are in scan order. -/
+  ascendingTies : Bool
   deriving Repr, DecidableEq
 
 /-- The name that SQLite gives to the index number {lit}`number` of a constraint of table
@@ -85,18 +91,22 @@ def CatalogTable.constraintKeys (table : CatalogTable) : List (List Nat × Bool 
 /-- The indexes of the constraints of the table with the name, in the order of
 {name}`CatalogTable.constraintKeys`, numbered from 1 ({name}`autoindexName`). The primary key of a
 {lit}`WITHOUT ROWID` table is not among them: {lit}`integrity_check` checks the order of its rows
-instead. -/
+instead. In a {lit}`WITHOUT ROWID` table with {lit}`PRIMARY KEY DESC`, SQLite appends the primary
+key to these indexes in ascending order ({name}`CheckedIndex.ascendingTies`). -/
 def CatalogTable.constraintIndexes (name : Identifier) (table : CatalogTable) : List CheckedIndex :=
   table.constraintKeys.zipIdx.filterMap fun ((positions, replace, primary), number) =>
     if primary && table.withoutRowid then none
-    else some { name := autoindexName name (number + 1), key := UniqueKey.ofColumns table.columns positions, replace }
+    else some { name := autoindexName name (number + 1), key := UniqueKey.ofColumns table.columns positions,
+                replace := replace, ascendingTies := table.withoutRowid && table.primaryKeyDescending }
 
 /-- The unique indexes of {lit}`CREATE UNIQUE INDEX` on the table at the catalog position, in
-catalog order, with their names. -/
+catalog order, with their names. SQLite appends the primary key of a {lit}`WITHOUT ROWID` table
+to them in the order of the table, so their entries with equal keys are in scan order. -/
 def Catalog.declaredIndexes (catalog : Catalog) (position : Nat) : List CheckedIndex :=
   catalog.filterMap fun object => match object.entry with
     | .index index =>
-      if index.table == position && index.unique then some { name := object.name, key := index.uniqueKey, replace := false }
+      if index.table == position && index.unique then
+        some { name := object.name, key := index.uniqueKey, replace := false, ascendingTies := false }
       else none
     | .table _ | .trigger _ => none
 

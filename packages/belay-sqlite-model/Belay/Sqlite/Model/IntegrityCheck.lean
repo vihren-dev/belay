@@ -73,29 +73,56 @@ def Table.cellFailures (name : Identifier) (table : Table) (row : Row) : List Ch
   (table.shape.columns.zip row.values).filterMap (fun (column, value) => columnFailure name column value) ++
     if LiteralData.checksHold table.shape row then [] else [.check name]
 
-/-- Whether integrity checking finds the entry of the row in the index followed by an entry
-of the later row {lit}`later` with an equal key: without {lit}`quick`, the entries conflict
+/-- Whether integrity checking finds the entries of the two rows in the index with equal keys:
+without {lit}`quick`, the entry of {lit}`row` conflicts with that of {lit}`other`
 ({name}`entryConflict`). -/
-def Table.indexConflict (quick : Bool) (table : Table) (checked : CheckedIndex) (row later : Row) : Bool :=
-  !quick && entryConflict table.shape.columns checked.key row later
+def Table.indexConflict (quick : Bool) (table : Table) (checked : CheckedIndex) (row other : Row) : Bool :=
+  !quick && entryConflict table.shape.columns checked.key row other
 
-/-- The index failures of a row before the rows {lit}`later`: {name}`CheckFailure.unique` for
-each index in order whose entry of the row conflicts with that of a later row
-({name}`Table.indexConflict`). In index order the entry after it has an equal key. -/
-def Table.uniqueFailures (quick : Bool) (indexes : List CheckedIndex) (table : Table) (row : Row)
-    (later : List Row) : List CheckFailure :=
-  (indexes.filter fun checked => later.any (table.indexConflict quick checked row)).map (.unique ·.name)
+/-- The comparison of the primary keys of two rows in ascending order under the collations of
+the key columns ({name}`Resolved.compareSort` of {name}`Belay.Sqlite.Model.Table.keyCells`). -/
+def Table.ascendingKeyOrder (table : Table) (row other : Row) : Ordering :=
+  let directions := table.shape.primaryKey.map fun position =>
+    (false, (table.shape.columns[position]?.map (·.collation)).getD .binary)
+  Resolved.compareSort directions (table.keyCells row) (table.keyCells other)
+
+/-- Whether, among entries with equal keys in the index, the entry of the row {lit}`other` comes
+after the entry of the row {lit}`row`; {lit}`otherLater` tells whether {lit}`other` comes later
+in the scan. With {name}`CheckedIndex.ascendingTies`, it does when its primary key is greater in
+ascending order ({name}`Table.ascendingKeyOrder`), or equal and later in the scan. Otherwise the
+entries are in scan order. -/
+def Table.entryFollows (table : Table) (checked : CheckedIndex) (row other : Row) (otherLater : Bool) : Bool :=
+  if checked.ascendingTies then
+    match table.ascendingKeyOrder row other with
+    | .lt => true
+    | .eq => otherLater
+    | .gt => false
+  else otherLater
+
+/-- Whether integrity checking finds the entry of the row in the index followed by an entry
+with an equal key, of the row {lit}`other`: the entry of {lit}`other` comes after it
+({name}`Table.entryFollows`) and the entries conflict ({name}`Table.indexConflict`). -/
+def Table.entryDuplicated (quick : Bool) (table : Table) (checked : CheckedIndex) (row other : Row)
+    (otherLater : Bool) : Bool :=
+  table.entryFollows checked row other otherLater && table.indexConflict quick checked row other
+
+/-- The index failures of a row after the rows {lit}`earlier` and before the rows {lit}`later`
+in the scan: {name}`CheckFailure.unique` for each index in order in which the entry of the row
+is followed by an entry with an equal key ({name}`Table.entryDuplicated`). -/
+def Table.uniqueFailures (quick : Bool) (indexes : List CheckedIndex) (table : Table) (earlier : List Row)
+    (row : Row) (later : List Row) : List CheckFailure :=
+  (indexes.filter fun checked => earlier.any (table.entryDuplicated quick checked row · false) ||
+    later.any (table.entryDuplicated quick checked row · true)).map (.unique ·.name)
 
 /-- The failures of the rows {lit}`rows` in scan order after the rows {lit}`earlier`, in
 SQLite's order: for each row, {name}`Table.orderFailures`, {name}`Table.cellFailures` and
-{name}`Table.uniqueFailures`. The model orders the entries with equal keys by the scan order,
-as SQLite orders them by rowid, or by the primary key in a {lit}`WITHOUT ROWID` table. -/
+{name}`Table.uniqueFailures`. -/
 def Table.failuresFrom (quick : Bool) (name : Identifier) (indexes : List CheckedIndex) (table : Table) :
     List Row → List Row → List CheckFailure
   | _, [] => []
   | earlier, row :: later =>
     table.orderFailures quick name earlier row ++ table.cellFailures name row ++
-      table.uniqueFailures quick indexes row later ++ table.failuresFrom quick name indexes (row :: earlier) later
+      table.uniqueFailures quick indexes earlier row later ++ table.failuresFrom quick name indexes (row :: earlier) later
 
 /-- The failures of the table with the name and its checked indexes, row by row in scan order
 ({name}`Table.scanRows`, {name}`Table.failuresFrom`). -/

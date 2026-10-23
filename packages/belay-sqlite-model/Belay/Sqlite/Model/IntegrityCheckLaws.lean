@@ -41,13 +41,14 @@ theorem Table.checkFailures_eq_nil (quick : Bool) (catalog : Catalog) (position 
   let primary := UniqueKey.ofColumns table.shape.columns table.shape.primaryKey
   let indexes := catalog.checkedIndexes position name table.shape
   have scan : ∀ (notNull : table.NotNull), (table.scanRows.Pairwise fun a b => table.orderConflict quick a b = false ∧
-      ∀ checked ∈ indexes, table.indexConflict quick checked a b = false) ↔
+      ∀ checked ∈ indexes, table.entryDuplicated quick checked a b true = false ∧
+        table.entryDuplicated quick checked b a false = false) ↔
       (quick = false → table.shape.withoutRowid = true → table.shape.primaryKey ≠ [] →
           table.rows.Pairwise fun a b => LiteralData.keyEqual primary a b = false) ∧
         (quick = false → ∀ checked ∈ indexes, table.rows.Pairwise fun a b => LiteralData.keyEqual checked.key a b = false) := by
     intro notNull
-    rw [List.Pairwise.iff_of_mem fun first _ => Table.conflicts_iff notNull quick indexes
-      (table.scanRows_perm.mem_iff.mp first)]
+    rw [List.Pairwise.iff_of_mem fun first second => Table.conflicts_iff notNull quick indexes
+      (table.scanRows_perm.mem_iff.mp first) (table.scanRows_perm.mem_iff.mp second)]
     rw [List.Perm.pairwise_iff (fun {a b} related => ⟨fun unquick rowid nonempty =>
         (keyEqual_comm _ _ _).trans (related.1 unquick rowid nonempty),
       fun unquick checked found => (keyEqual_comm _ _ _).trans (related.2 unquick checked found)⟩) table.scanRows_perm]

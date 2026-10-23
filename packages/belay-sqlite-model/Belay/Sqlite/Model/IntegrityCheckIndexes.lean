@@ -108,7 +108,7 @@ theorem Catalog.declared_of_key {catalog : Catalog} {position : Nat} {key : Uniq
   cases entry : object.entry with
   | index index =>
     cases chosen : (index.table == position && index.unique) <;> simp [chosen] <;> intro made <;> subst made
-    exact ⟨{ name := object.name, key := index.uniqueKey, replace := false },
+    exact ⟨{ name := object.name, key := index.uniqueKey, replace := false, ascendingTies := false },
       List.mem_filterMap.mpr ⟨object, inCatalog, by simp [entry, chosen]⟩, rfl⟩
   | table _ | trigger _ => simp
 
@@ -149,7 +149,8 @@ theorem CatalogTable.constraintIndex_of_entry {table : CatalogTable} {name : Ide
   obtain ⟨number, found⟩ := List.mem_iff_getElem?.mp member
   have inZip : (entry, number) ∈ table.constraintKeys.zipIdx := List.mem_zipIdx_iff_getElem?.mpr found
   let made : CheckedIndex :=
-    { name := autoindexName name (number + 1), key := UniqueKey.ofColumns table.columns entry.1, replace := entry.2.1 }
+    { name := autoindexName name (number + 1), key := UniqueKey.ofColumns table.columns entry.1,
+      replace := entry.2.1, ascendingTies := table.withoutRowid && table.primaryKeyDescending }
   refine ⟨made, List.mem_filterMap.mpr ⟨(entry, number), inZip, ?_⟩, rfl⟩
   obtain ⟨positions, replace, primary⟩ := entry
   simp only at kept ⊢

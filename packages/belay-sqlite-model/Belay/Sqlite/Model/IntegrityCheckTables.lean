@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.IntegrityCheckRows
 import Belay.Sqlite.Model.IntegrityCheckIndexes
 import Belay.Sqlite.Model.IntegrityCheckKeys
+import Belay.Sqlite.Model.QueryLaws
 
 set_option doc.verso true
 
@@ -44,24 +45,42 @@ theorem Table.NotNull.clean {table : Table} (notNull : table.NotNull) {row : Row
       LiteralData.read row position ≠ some .null :=
   fun position column found marked cell => notNull row member position column .null found cell marked rfl
 
-/-- For every table, quick flag, two rows and indexes, with the first row a row of a table with
-{name}`Table.NotNull`: the rows are in order for integrity checking ({name}`Table.orderConflict`)
-and their entries do not conflict in an index ({name}`Table.indexConflict`) exactly when both hold:
+/-- For every table, index and two rows: the entry of the second row comes after the entry of
+the first row when the second is later in the scan, or the entry of the first row comes after
+the entry of the second row when the first is earlier in the scan ({name}`Table.entryFollows`).
+Proof sketch: the comparison of the primary keys is oriented ({name}`Resolved.compareSort_transCmp`), so
+when the second key is less than the first, the first is greater than the second. -/
+theorem Table.entryFollows_total (table : Table) (checked : CheckedIndex) (first second : Row) :
+    table.entryFollows checked first second true = true ∨ table.entryFollows checked second first false = true := by
+  have swap : table.ascendingKeyOrder second first = (table.ascendingKeyOrder first second).swap := by
+    unfold Table.ascendingKeyOrder
+    have := Resolved.compareSort_transCmp (table.shape.primaryKey.map fun position =>
+      (false, (table.shape.columns[position]?.map (·.collation)).getD .binary))
+    exact Std.OrientedCmp.eq_swap
+  unfold Table.entryFollows
+  rw [swap]
+  cases checked.ascendingTies <;> cases table.ascendingKeyOrder first second <;> simp [Ordering.swap]
+
+/-- For every table, quick flag, two rows of a table with {name}`Table.NotNull` and indexes: the
+rows are in order for integrity checking ({name}`Table.orderConflict`) and in every index,
+neither entry is followed by an equal entry of the other row ({name}`Table.entryDuplicated`),
+exactly when both hold:
 
 * without {lit}`quick`, in a {lit}`WITHOUT ROWID` table with a primary key, their primary keys
   are not equal ({name}`LiteralData.keyEqual`);
 * without {lit}`quick`, for every index, their keys on it are not equal.
-Proof sketch: the conflicts of the first row are the equal keys of the writes
-({name}`entryConflict_eq_keyEqual`); a skipped order check has a NULL first key cell of the second
-row, so the keys are not equal. -/
+Proof sketch: the conflicts are the equal keys of the writes ({name}`entryConflict_eq_keyEqual`),
+and one of the two entries comes after the other ({name}`Table.entryFollows_total`); a skipped
+order check has a NULL first key cell of the second row, so the keys are not equal. -/
 theorem Table.conflicts_iff {table : Table} (notNull : table.NotNull) (quick : Bool) (indexes : List CheckedIndex)
-    {first second : Row} (member : first ∈ table.rows) :
-    (table.orderConflict quick first second = false ∧
-        ∀ checked ∈ indexes, table.indexConflict quick checked first second = false) ↔
+    {first second : Row} (firstMember : first ∈ table.rows) (secondMember : second ∈ table.rows) :
+    (table.orderConflict quick first second = false ∧ ∀ checked ∈ indexes,
+        table.entryDuplicated quick checked first second true = false ∧
+          table.entryDuplicated quick checked second first false = false) ↔
       ((quick = false → table.shape.withoutRowid = true → table.shape.primaryKey ≠ [] →
           LiteralData.keyEqual (UniqueKey.ofColumns table.shape.columns table.shape.primaryKey) first second = false) ∧
         (quick = false → ∀ checked ∈ indexes, LiteralData.keyEqual checked.key first second = false)) := by
-  have clean := notNull.clean member
+  have clean := notNull.clean firstMember
   have order : table.orderConflict quick first second = false ↔ (quick = false → table.shape.withoutRowid = true →
       table.shape.primaryKey ≠ [] →
       LiteralData.keyEqual (UniqueKey.ofColumns table.shape.columns table.shape.primaryKey) first second = false) := by
@@ -80,12 +99,15 @@ theorem Table.conflicts_iff {table : Table} (notNull : table.NotNull) (quick : B
             skipped]
           cases LiteralData.read first position <;> simp [LiteralData.keyCellsEqual]
         simp [unequal]
-  have index : ∀ checked ∈ indexes, table.indexConflict quick checked first second = false ↔
+  have index : ∀ checked ∈ indexes, (table.entryDuplicated quick checked first second true = false ∧
+      table.entryDuplicated quick checked second first false = false) ↔
       (quick = false → LiteralData.keyEqual checked.key first second = false) := by
     intro checked _
-    unfold Table.indexConflict
-    rw [entryConflict_eq_keyEqual _ _ _ _ clean]
-    cases quick <;> simp
+    unfold Table.entryDuplicated Table.indexConflict
+    rw [entryConflict_eq_keyEqual _ _ _ _ clean, entryConflict_eq_keyEqual _ _ _ _ (notNull.clean secondMember),
+      keyEqual_comm _ second first]
+    cases quick <;> cases LiteralData.keyEqual checked.key first second <;>
+      rcases table.entryFollows_total checked first second with follows | follows <;> simp [follows]
   rw [order]
   exact and_congr_right fun _ => ⟨fun all unquick checked found => (index checked found).mp (all checked found) unquick,
     fun all checked found => (index checked found).mpr fun unquick => all unquick checked found⟩
