@@ -10,25 +10,25 @@ keys off as it found them, and has no {lit}`Output.unmodeled`. -/
 
 namespace Belay.Sqlite
 
-/-- For every connection whose clock gives the same value at every position, and all scripts
-{lit}`p` and {lit}`q`: the run of {lit}`p ++ q` on the connection is the run of {lit}`p`, then
-({name}`ScriptRun.andThen`) the run of {lit}`q` on the connection that {lit}`p` left. When the run
-of {lit}`p` ends with {name}`Output.unmodeled`, it is the run of {lit}`p` alone. Proof sketch: the
-model's {name}`Belay.Sqlite.Model.runScriptFrom_append_constant`. -/
-theorem Script.runOn_append (connection : Connection)
-    (constant : ∀ one other, connection.state.clock one = connection.state.clock other) (p q : Script) :
+/-- For every connection and all scripts {lit}`p` and {lit}`q`: the run of {lit}`p ++ q` on the
+connection is the run of {lit}`p`, then ({name}`ScriptRun.andThen`) the run of {lit}`q` on the
+connection that {lit}`p` left. When the run of {lit}`p` ends with {name}`Output.unmodeled`, it is
+the run of {lit}`p` alone. Proof sketch: the model's
+{name}`Belay.Sqlite.Model.runScriptFrom_append_constant`, for a run without a clock. -/
+theorem Script.runOn_append (connection : Connection) (p q : Script) :
     (p ++ q).runOn connection = (p.runOn connection).andThen (q.runOn ·) :=
-  Belay.Sqlite.Model.runScriptFrom_append_constant runContext 0 connection p.statements q.statements constant
+  Belay.Sqlite.Model.runScriptFrom_append_constant runContext none 0 connection p.statements q.statements
+    (fun _ none => nomatch none)
 
 /-- For every plain database and all scripts {lit}`p` and {lit}`q`: the run of {lit}`p ++ q` is the
 run of {lit}`p`, then ({name}`ScriptRun.andThen`) the run of {lit}`q` on the connection that
 {lit}`p` left: with its database, a transaction that {lit}`p` began and did not end, and its
 setting of {lit}`PRAGMA foreign_keys`. When the run of {lit}`p` ends with
-{name}`Output.unmodeled`, it is the run of {lit}`p` alone. Proof sketch: the idle connection's
-clock is 0 at every position ({name}`Script.runOn_append`). -/
+{name}`Output.unmodeled`, it is the run of {lit}`p` alone. Proof sketch:
+{name}`Script.runOn_append` on the idle connection. -/
 theorem Database.Raw.run_append (raw : Database.Raw) (p q : Script) :
     raw.run (p ++ q) = (raw.run p).andThen (q.runOn ·) :=
-  Script.runOn_append raw.connection (fun _ _ => rfl) p q
+  Script.runOn_append raw.connection p q
 
 /-- For every start database and model result, the outputs of the checked run
 ({name}`Run.checked`) depend only on the result: its outputs when the database at its end is
@@ -95,7 +95,7 @@ theorem Script.run_append (db : Database) (p q : Script) (outside : (db.run p).t
   simp only [Database.run] at outside setting ⊢
   rw [checked] at outside setting ⊢
   have idle := Connection.eq_idle outside setting
-    ((Belay.Sqlite.Model.runScriptFrom_clock runContext 0 db.raw.connection p.statements).trans rfl)
+    ((Belay.Sqlite.Model.runScriptFrom_clock runContext none 0 db.raw.connection p.statements).trans rfl)
   simp only [Database.Raw.run_append, ScriptRun.andThen, quiet, Bool.false_eq_true, ite_false]
   simp only [Database.Raw.run] at idle quiet ⊢
   rw [← idle, Run.checked_outputs, Run.checked_outputs]
