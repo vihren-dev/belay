@@ -271,10 +271,12 @@ whose `REPLACE` deletes more than one row with foreign keys, is not described.
 SQLite's rows for the catalog of their time. `table_info` has one row for each column that is
 not generated, with its declared type, its NOT NULL, the text of its default and its position
 in the primary key; `foreign_key_list` has one row for each column of each foreign key, newest
-key first. A missing table gives no rows, and a table of SQLite's own, such as `sqlite_schema`,
-is the restriction `system-table`. In `FROM`, `pragma_table_info('t')` and
-`pragma_foreign_key_list('t')` give the same rows, with the hidden columns `arg` and `schema`;
-their cells have no affinity.
+key first. A missing table gives no rows. For `table_info`, a table of SQLite's own, such as
+`sqlite_schema`, is the restriction `system-table`; `foreign_key_list` gives no rows for it. In
+`FROM`, `pragma_table_info('t')` and `pragma_foreign_key_list('t')` give the same rows, and
+their cells have no affinity. A name of their hidden columns `arg` and `schema` is the
+restriction `table-function`, because SQLite gives a condition on such a column to the pragma
+as an argument.
 
 A generated column (ADR 0014, slice 5) is `VIRTUAL` or `STORED`, and `PRAGMA table_xinfo`
 reports it with `hidden` 2 or 3. Its expression resolves over the table's columns after the
@@ -469,7 +471,7 @@ should shrink.
 | `aggregate-order-by` | An `ORDER BY` term of an aggregate query that reads a column outside `GROUP BY` is not modeled | ADR 0012 slice 1; ADR 0018, slice 3 |
 | `window-value` | Only an integer literal or a lone parameter is modeled as LIMIT or OFFSET | ADR 0012 slice 1; ADR 0019 |
 | `negative-offset` | A negative literal OFFSET is not modeled; a negative bound OFFSET skips no rows | ADR 0012 slice 1; ADR 0019 |
-| `table-function` | Only `json_each` with one or two arguments, and `pragma_table_info` and `pragma_foreign_key_list` with one text literal, are modeled as table-valued functions in FROM | ADR 0012 slice 6d; ADR 0019, D2 |
+| `table-function` | Only `json_each` with one or two arguments, and `pragma_table_info` and `pragma_foreign_key_list` with one text literal and without a name of their hidden columns `arg` and `schema`, are modeled as table-valued functions in FROM | ADR 0012 slice 6d; ADR 0019, D2 |
 | `later-table-in-on` | An ON condition that names a source joined after it is not modeled: SQLite moves it to WHERE without outer joins and refuses it otherwise | ADR 0012 amendment 2; ADR 0013 amendment 2 |
 | `function-join` | A table-valued function as the right operand of RIGHT or FULL JOIN, with NATURAL or USING, or before a NATURAL JOIN, is not modeled | ADR 0012 slice 6d; ADR 0013 amendment 2 |
 | `later-source-in-arguments` | An argument of `json_each` that reads a later source is not modeled, because the model joins in written order | ADR 0012 slice 6d; ADR 0013 amendment 2 |

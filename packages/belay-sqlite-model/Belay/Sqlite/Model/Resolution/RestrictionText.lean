@@ -109,7 +109,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .negativeOffset => "a negative literal OFFSET is not modeled; write OFFSET 0 or more, or bind the value to a parameter"
   | .windowedGroupSum => "SUM in a grouped query with LIMIT or OFFSET is not modeled, because SQLite may stop before an overflowing group; remove the window or the SUM"
   | .constantFunctionError => "a constant value in VALUES or SET whose function fails, such as malformed JSON or abs of the smallest integer, is not modeled; correct the arguments"
-  | .tableFunction => "only json_each with one or two arguments, and pragma_table_info and pragma_foreign_key_list with one text literal, are modeled as table-valued functions in FROM; use one of them or a table"
+  | .tableFunction => "only json_each with one or two arguments, and pragma_table_info and pragma_foreign_key_list with one text literal and without a name of their hidden columns arg and schema, are modeled as table-valued functions in FROM; use one of them or a table"
   | .functionJoin => "a table-valued function as the right operand of RIGHT or FULL JOIN, with NATURAL or USING, or before a NATURAL JOIN, is not modeled; write JOIN or LEFT JOIN with ON"
   | .laterSourceInArguments => "an argument of json_each that reads a later source is not modeled; write the source before json_each"
   | .jsonSubtype => "a JSON value passed on through coalesce, iif, nullif, min or max is not modeled as a JSON function argument; pass the JSON call directly"
