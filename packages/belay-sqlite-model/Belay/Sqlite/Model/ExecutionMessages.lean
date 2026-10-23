@@ -40,7 +40,7 @@ def functionFailedMessage : String :=
   "a function of the statement failed, for example on malformed JSON; the model does not keep " ++
     "SQLite's message for it. Run the statement in the sqlite3 shell to see that message"
 
-/-- The message of the error of the statement on the database at the clock value, with the
+/-- The message of the error of the statement on the database at the clock value, with the counters and the
 values bound to its parameters, as SQLite
 3.51 gives it where the model keeps what the message says:
 

@@ -41,10 +41,16 @@ example : outputsFrom Counters.newConnection
 example : outputsFrom Counters.newConnection [readOf "changes", readOf "total_changes", readOf "last_insert_rowid"] =
     [.rows [[.integer 0]], .rows [[.integer 0]], .rows [[.integer 0]]] := by decide +kernel
 
-/-- An INSERT reads {lit}`changes()` from before the statement: the new row holds 2, the changes of
-the earlier INSERT, and not 1. -/
-example : outputsFrom Counters.newConnection [createT, insertTwo, insertReadingChanges, readOf "changes"] =
-    [.done 0, .done 2, .done 1, .rows [[.integer 1]]] := by decide +kernel
+/-- {lit}`SELECT id FROM t WHERE name = 'x'`: the rowid of the row of {name}`insertReadingChanges`. -/
+def selectIdOfX : Syntax.Statement :=
+  .select [.expression (.identifier (name! "id") .none) none ""] (some { table := name! "t", alias := none })
+    [] (some (.compare .eq (.identifier (name! "name") .none) (.string "x".toUTF8.toList))) [] [] none none
+
+/-- An INSERT reads {lit}`changes()` from before the statement: the new row has the id 2, the changes
+of the earlier INSERT, and not 1; after it {lit}`changes()` is 1. -/
+example : outputsFrom Counters.newConnection
+    [createT, insertTwo, insertReadingChanges, selectIdOfX, readOf "changes"] =
+    [.done 0, .done 2, .done 1, .rows [[.integer 2]], .rows [[.integer 1]]] := by decide +kernel
 
 /-- A failed INSERT sets {lit}`changes()` to 0, and the next read sees 0. -/
 example : outputsFrom Counters.newConnection [createT, insertTwo, insertFailing, readOf "changes"] =

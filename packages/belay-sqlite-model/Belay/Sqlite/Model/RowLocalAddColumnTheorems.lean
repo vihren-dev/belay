@@ -87,7 +87,7 @@ theorem Table.ChecksHold.appendColumn {table : Table} (holds : table.ChecksHold)
       [Value.store column.affinity value] (Nat.le_of_eq (wide old inOld).symm) (reads check oldCheck)
     simpa [LiteralData.checkHolds, Row.appendValues, same] using holds old inOld check oldCheck
 
-/-- For every atom, clock value, parameter list, ADD COLUMN, column and database: if every table of
+/-- For every atom, clock value, counters, parameter list, ADD COLUMN, column and database: if every table of
 the database has the atom, and the atom holds for the table at the target with the column and
 every added cell appended, the effect of {name}`runStatement` satisfies "every table has the atom"
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
@@ -112,7 +112,7 @@ theorem runStatement_addColumn_rowLocal {atom : Table → Prop} (clock : Int) (c
       subst present
       exact appended table value found added
 
-/-- The theorem of "not null" for ADD COLUMN, for every clock value, parameter list, target,
+/-- The theorem of "not null" for ADD COLUMN, for every clock value, counters, parameter list, target,
 column and database: if the database satisfies {name}`Database.NotNull` and the rows of the table
 at the target are wide ({name}`Database.RowsWideAt`), the effect of {name}`runStatement` satisfies
 {name}`Database.NotNull` ({name}`Effect.Satisfies`): the database of a success and that of an error
@@ -126,7 +126,7 @@ theorem runStatement_addColumn_notNull (clock : Int) (counters : Counters) (para
   runStatement_addColumn_rowLocal clock counters parameters target column notNull fun table _ found added =>
     (notNull _ table found).appendColumn (wide table found) added
 
-/-- The theorem of "types fit" for ADD COLUMN, for every clock value, parameter list, target,
+/-- The theorem of "types fit" for ADD COLUMN, for every clock value, counters, parameter list, target,
 column and database: if the database satisfies {name}`Database.TypesFit`, the rows of the table at
 the target are wide ({name}`Database.RowsWideAt`), and the stored default fits the strict type
 ({name}`Database.StrictDefaultFitsAt`), the effect of {name}`runStatement` satisfies
@@ -142,7 +142,7 @@ theorem runStatement_addColumn_typesFit (clock : Int) (counters : Counters) (par
   runStatement_addColumn_rowLocal clock counters parameters target column fits fun table _ found added =>
     (fits _ table found).appendColumn (wide table found) (strict table found) added
 
-/-- The theorem of "checks hold" for ADD COLUMN, for every clock value, parameter list, target,
+/-- The theorem of "checks hold" for ADD COLUMN, for every clock value, counters, parameter list, target,
 column and database: if the database satisfies {name}`Database.ChecksHold`, the rows of the table
 at the target are wide ({name}`Database.RowsWideAt`), and each of its CHECK constraints reads only
 columns below its width ({name}`Database.ChecksReadBelowAt`), the effect of {name}`runStatement`
