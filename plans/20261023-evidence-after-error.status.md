@@ -114,6 +114,7 @@ corpus finds is extra work and is not in this estimate.
 - 2026-10-23 (PR B, refactor): review of `kpkxkook`: outcome 8 of the task file has a dated amendment that excludes the UPDATE forms of ROLLBACK, which the model does not describe (R19).
 - 2026-10-23 (PR B): the judge counts version 6 among the versions with outputs (`judge/records.py`, `WITH_OUTPUTS`), so the subject gets a parameter list for each statement and the judge compares each output.
 - 2026-10-23 (PR B): corpus-v51 (`python3 -m conformance.after_error_evidence --output conformance/corpus-v51`, 21 cases of record version 6) and its claim in `judge/claims.json`: each case must agree. The lock (`just judge-lock`) is not yet updated.
+- 2026-10-23 (PR B): ADR 0017 names corpus-v51 as the evidence for the statements after an error (D3, dated amendment) and no longer lists that evidence as deferred (outcome 10).
 
 ## Tests for each commit
 
@@ -124,10 +125,11 @@ corpus finds is extra work and is not in this estimate.
 - The authored cases: `tests/conformance_query_coverage_test.py -k after_error`, `tests/conformance_corpus_writers_test.py -k after_error`, `tests/conformance_table_mutants_test.py -k after_error`, `tests/mutant_guards_test.py`.
 - The judge: `tests/test_judge_records.py`, `tests/test_judge.py`.
 - corpus-v51 and its claim: `just dev-verdict corpus-v51`; `tests/test_locked_corpora_inventory.py`, `tests/conformance_coverage_test.py`, `tests/conformance_progress_views_test.py`, `tests/conformance_corpus_writers_test.py`.
+- ADR 0017: none (document only); `just review`.
 
 ## Remaining
 
-- PR B: outcome 10 (ADR 0017) and the lock (`just judge-lock`).
+- PR B: the lock (`just judge-lock`), which the lead runs.
 
 ## Owner decisions
 
