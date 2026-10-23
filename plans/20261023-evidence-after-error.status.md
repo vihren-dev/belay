@@ -110,6 +110,7 @@ corpus finds is extra work and is not in this estimate.
 - 2026-10-23 (PR B, refactor): review of `yvnowzkm`: SQLite's prepare decides whether a prefix is empty, so a character that SQLite refuses is a statement of its own (R19); the boundary is found after the statement is finalized and its error is read, and a test checks the message of a refused boundary (R11).
 - 2026-10-23 (PR B, refactor): review of `mwtqwltl`: SQLite's prepare decides for every complete prefix whether it is empty, without the clause tokenizer, so a byte order mark before `;` is empty (R19).
 - 2026-10-23 (PR B): `native_statement_end` is an input of the Nix suites of the model (`build-support/tests.nix`), as `native_statements` imports it.
+- 2026-10-23 (PR B): the authored cases of outcome 8 (`conformance/authored_after_error.py`, 21 cases, one under the profile with foreign keys on), their corpus writer (`after_error_evidence`, corpus version 51, record version 6, `AuthoredCorpus.native_version`), and three mutants with `rule:` guards (`after_error_mutants`). The model does not describe `UPDATE` with the algorithm ROLLBACK, so no case has it; a column declared `ON CONFLICT ROLLBACK` covers the conflict of the column.
 
 ## Tests for each commit
 
@@ -117,10 +118,11 @@ corpus finds is extra work and is not in this estimate.
 - The model's step: `just dev-build`.
 - The pass, the classifier, the prediction and the readers: `just dev-build`, `just dev-verdict`, `just documentation-inventory`; `tests/conformance_continuing_case_test.py`, `tests/conformance_predict_test.py`, `tests/conformance_phase_test.py`, `tests/conformance_mutation_test.py`, `tests/conformance_model_test.py`, `tests/conformance_generation_test.py`, `tests/failed_catalog_observation_test.py`, `tests/test_model_package.py -m unit`, `tests/test_native_replay_storage.py`, `tests/conformance_trace_test.py`.
 - The recorder's mode: `tests/conformance_run_on_test.py`, `tests/conformance_phase_test.py`, `tests/test_native_replay_storage.py`, `tests/test_test_ownership.py`; a native replay of the 55 records of the measurement.
+- The authored cases: `tests/conformance_query_coverage_test.py -k after_error`, `tests/conformance_corpus_writers_test.py -k after_error`, `tests/conformance_table_mutants_test.py -k after_error`, `tests/mutant_guards_test.py`.
 
 ## Remaining
 
-- PR B: outcomes 4, 8 and 10, the mutants and corpus-v51.
+- PR B: outcome 4 (`judge/records.py`), outcome 10 (ADR 0017), corpus-v51 and its claim.
 
 ## Owner decisions
 
