@@ -1,6 +1,6 @@
 # Status: the theorem of "keys unique" (ADR 0022, slice 2)
 
-Created 2026-10-23. Status: open; part 1 done; part 2 written, its `just test-full` and `just verdict` open. The owner decided the three
+Created 2026-10-23. Status: DONE (2026-10-23). The owner decided the three
 decisions on 2026-10-23 (below), and replaced decision 1 after finding 1.
 Task: [task file](20261023-keys-unique.task.md).
 Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D3 and D4 (slice 2).
@@ -188,3 +188,7 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3).
 - 2026-10-23: review round 12 (the refactor): no findings. The records of slice 2 in ADR 0022, D4
   and ADR 0012, decision 5. Tests: the predictions of `nix-build integrity/judge.nix -A predictions`
   against the baseline (`diff -r`). Next: `just test-full` and `just verdict` of part 2.
+- 2026-10-23: on the tip of slices 2 and 3, on top of the evidence-after-error stack: `just
+  test-full` passes, and `just verdict` passes (corpus-v4 AGREE 673, corpus-v5 AGREE 2945,
+  corpus-v50 AGREE 17, corpus-v51 AGREE 21). `just test-nix` passes (67 tests), and
+  `just test-scheduled-checks` passes (46 tests). The task is DONE.
