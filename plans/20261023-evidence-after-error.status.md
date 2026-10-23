@@ -113,6 +113,7 @@ corpus finds is extra work and is not in this estimate.
 - 2026-10-23 (PR B): the authored cases of outcome 8 (`conformance/authored_after_error.py`, 21 cases, one under the profile with foreign keys on), their corpus writer (`after_error_evidence`, corpus version 51, record version 6, `AuthoredCorpus.native_version`), and three mutants with `rule:` guards (`after_error_mutants`). The model does not describe `UPDATE` with the algorithm ROLLBACK, so no case has it; a column declared `ON CONFLICT ROLLBACK` covers the conflict of the column.
 - 2026-10-23 (PR B, refactor): review of `kpkxkook`: outcome 8 of the task file has a dated amendment that excludes the UPDATE forms of ROLLBACK, which the model does not describe (R19).
 - 2026-10-23 (PR B): the judge counts version 6 among the versions with outputs (`judge/records.py`, `WITH_OUTPUTS`), so the subject gets a parameter list for each statement and the judge compares each output.
+- 2026-10-23 (PR B): corpus-v51 (`python3 -m conformance.after_error_evidence --output conformance/corpus-v51`, 21 cases of record version 6) and its claim in `judge/claims.json`: each case must agree. The lock (`just judge-lock`) is not yet updated.
 
 ## Tests for each commit
 
@@ -122,10 +123,11 @@ corpus finds is extra work and is not in this estimate.
 - The recorder's mode: `tests/conformance_run_on_test.py`, `tests/conformance_phase_test.py`, `tests/test_native_replay_storage.py`, `tests/test_test_ownership.py`; a native replay of the 55 records of the measurement.
 - The authored cases: `tests/conformance_query_coverage_test.py -k after_error`, `tests/conformance_corpus_writers_test.py -k after_error`, `tests/conformance_table_mutants_test.py -k after_error`, `tests/mutant_guards_test.py`.
 - The judge: `tests/test_judge_records.py`, `tests/test_judge.py`.
+- corpus-v51 and its claim: `just dev-verdict corpus-v51`; `tests/test_locked_corpora_inventory.py`, `tests/conformance_coverage_test.py`, `tests/conformance_progress_views_test.py`, `tests/conformance_corpus_writers_test.py`.
 
 ## Remaining
 
-- PR B: outcome 10 (ADR 0017), corpus-v51 and its claim.
+- PR B: outcome 10 (ADR 0017) and the lock (`just judge-lock`).
 
 ## Owner decisions
 
