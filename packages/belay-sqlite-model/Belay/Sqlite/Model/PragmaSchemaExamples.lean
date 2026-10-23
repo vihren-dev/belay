@@ -106,6 +106,8 @@ example : (outputs [createW, selectFrom [named "name"] "pragma_table_info" "w"
   decide +kernel
 example : (outputs [createW, selectFrom [named "arg"] "pragma_table_info" "w"]).map Output.endsRun =
     [false, true] := by decide +kernel
+example : (outputs [createW, .select [.star] (some (pragmaOf "pragma_table_info" "w")) [] none [name "schema"] []
+    none none]).map Output.endsRun = [false, true] := by decide +kernel
 
 /-- {lit}`CREATE TABLE s(schema)`. -/
 def createS : Syntax.Statement := .createTable (name! "s") [typed "schema" none] []
