@@ -125,10 +125,12 @@ inductive RestrictionKind where
   | windowedGroupSum
   /-- A constant value in {lit}`VALUES` or {lit}`SET` whose JSON function fails is not modeled, because the model does not describe when SQLite evaluates it (ADR 0012 slice 6b). -/
   | constantFunctionError
-  /-- Only {lit}`json_each` with one or two arguments is modeled as a table-valued function in {lit}`FROM` (ADR 0012 slice 6d). -/
+  /-- Only {lit}`json_each` with one or two arguments, and {lit}`pragma_table_info` and
+  {lit}`pragma_foreign_key_list` with one text literal, are modeled as table-valued functions in
+  {lit}`FROM` (ADR 0012 slice 6d; ADR 0019, D2). -/
   | tableFunction
-  /-- {lit}`json_each` as the right operand of a right or full join, or with {lit}`NATURAL`
-  or {lit}`USING`, and a {lit}`NATURAL` join after {lit}`json_each`, are not modeled: a
+  /-- A table-valued function as the right operand of a right or full join, or with
+  {lit}`NATURAL` or {lit}`USING`, and a {lit}`NATURAL` join after one, are not modeled: a
   correlated source has no fixed rows to keep unmatched, and {lit}`NATURAL` skips hidden
   columns (ADR 0012 slice 6d; ADR 0013, amendment 2). -/
   | functionJoin

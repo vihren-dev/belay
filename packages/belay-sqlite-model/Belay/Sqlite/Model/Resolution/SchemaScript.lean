@@ -43,7 +43,7 @@ TRIGGER. -/
 def Syntax.Statement.describesCatalog : Syntax.Statement → Bool
   | .createTable .. | .createIndex .. | .createTrigger .. => true
   | .addColumn .. | .dropTable .. | .dropIndex .. | .dropTrigger .. | .begin | .commit | .rollback | .insert .. | .update ..
-  | .delete .. | .select .. | .pragmaForeignKeys _ => false
+  | .delete .. | .select .. | .pragma _ => false
 
 /-- The first schema statement that cannot describe a catalog, as a restriction. -/
 def schemaStatementRestriction (schema : List Syntax.Statement) : Option Restriction :=
@@ -76,7 +76,7 @@ def schemaTriggerRestriction (index : Nat) (earlier : List CatalogTrigger) : Lis
       if earlier.any trigger.overlaps then some { statement := index, path := [], kind := .schemaTriggerOrder }
       else schemaTriggerRestriction (index + 1) (earlier ++ [trigger]) rest
     | .createTable .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropIndex .. | .dropTrigger .. | .begin
-    | .commit | .rollback | .insert .. | .update .. | .delete .. | .select .. | .pragmaForeignKeys _ =>
+    | .commit | .rollback | .insert .. | .update .. | .delete .. | .select .. | .pragma _ =>
       schemaTriggerRestriction (index + 1) earlier rest
 
 /-- The zero-based index and error of the first prepare error in a list of
