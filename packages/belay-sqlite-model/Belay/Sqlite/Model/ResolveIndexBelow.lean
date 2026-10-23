@@ -80,6 +80,9 @@ theorem indexKeys_below {dqs : Bool} {scope : Scope} {columns : List CatalogColu
     (bounded : scope.Bounded columns.length) {terms : List Syntax.OrderTerm} {keys : List IndexKey}
     (ok : indexKeys dqs scope columns terms = .ok keys) : ∀ key ∈ keys, key.term.Below columns.length := by
   intro key member
+  unfold indexKeys at ok
+  split at ok
+  · cases ok
   obtain ⟨⟨term, item⟩, _, hf⟩ := mapM_ok_mem _ ok key member
   simp only [exceptMapError_eq_ok, exceptFmap_eq_ok] at hf
   obtain ⟨found, hk, rfl⟩ := hf
