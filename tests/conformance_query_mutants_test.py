@@ -15,7 +15,9 @@ hosted runner, which slows each test about twice. The number and query-without-F
 were one measurement until it took 176 seconds alone on eight cores (October 2026) and more than
 its limit of 300 seconds beside the other suite, as the base copy and most of these mutant copies
 build almost every module. As three measurements, of the 6 mutants of arithmetic, the other 7
-number mutants and the 4 mutants of queries without FROM, each took at most 124 seconds alone. Every case must agree with the base copy. Each mutant copy then classifies the case
+number mutants and the 4 mutants of queries without FROM, each took at most 124 seconds alone. The
+JSON and JSON function mutants (14) were one measurement until it took 280 of its 300 seconds on
+the aarch64-darwin runner (October 2026); they are now two. Every case must agree with the base copy. Each mutant copy then classifies the case
 that the mutant names as its target, which keeps the elaboration of case terms short.
 """
 
@@ -71,12 +73,17 @@ def test_every_fromless_mutant_changes_a_verdict(runtime_root: Path) -> None:
     measure_set(runtime_root, [authored_fromless], [(fromless_mutants.MUTANTS, fromless_mutants.TARGETS)])
 
 
+def test_every_json_mutant_changes_a_verdict(runtime_root: Path) -> None:
+    """The authored JSON cases notice every changed rule of JSON reading, paths and the arrow
+    operators (`conformance.json_mutants`)."""
+    measure_set(runtime_root, [authored_json], [(json_mutants.MUTANTS, json_mutants.TARGETS)])
+
+
 def test_every_json_function_mutant_changes_a_verdict(runtime_root: Path) -> None:
-    """The authored JSON and JSON function cases notice every changed rule of the JSON functions
-    (`conformance.json_mutants`, `conformance.json_function_mutants`)."""
-    measure_set(runtime_root, [authored_json, authored_json_functions],
-                [(json_mutants.MUTANTS, json_mutants.TARGETS),
-                 (json_function_mutants.MUTANTS, json_function_mutants.TARGETS)])
+    """The authored JSON function cases notice every changed rule of the JSON functions
+    (`conformance.json_function_mutants`)."""
+    measure_set(runtime_root, [authored_json_functions],
+                [(json_function_mutants.MUTANTS, json_function_mutants.TARGETS)])
 
 
 def test_every_json_each_and_clock_mutant_changes_a_verdict(runtime_root: Path) -> None:
