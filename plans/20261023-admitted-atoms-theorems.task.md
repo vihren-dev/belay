@@ -53,6 +53,10 @@ the S4 claims over every database (ADR 0017, S4); an atom for the cells of gener
      `Database.AddColumnCondition` (the keys read below the width), and meets
      `Database.StrictDefaultFitsAt`. With `Database.Admitted.rowsWide` it meets
      `Database.RowsWideAt`.
+   - **The alias schema** (status file, decision 8). If a table has a rowid alias, the alias column
+     is not generated, has INTEGER affinity, and is the only primary key column, and the table is not
+     `WITHOUT ROWID`. `Catalog.Valid` states it, and the CREATE TABLE that the resolver makes gives it.
+     Without it, the generated alias is a counterexample (see "Conditions").
    - **Each CHECK reads only the columns of its table** (status file, decision 3, owner decision
      3 a) of slice 3). `CatalogTable.supported` states it, so `Catalog.Valid` carries it, and the
      resolver facts above include it: the CHECKs that CREATE TABLE and ADD COLUMN resolve read
@@ -105,7 +109,13 @@ a counterexample that cannot be built is a finding):
 - **Rows aliased.** A resolved INSERT into a table with a rowid alias whose alias cell is not the
   rowid (`aliasReady`).
 
-Each is a hypothesis of `ready` for `runStatement` and `runSqlFrom`, and no hypothesis for
+- **Rows aliased, from the schema.** A table that a Lean user builds with a generated INTEGER column
+  as its rowid alias (`rowidAlias := some 0`, the column `generated`): an INSERT into it is ready
+  (`aliasReady` checks only the affinity), and `newCells` computes the generated cell after it sets the
+  alias cell, so the alias cell is not the rowid. No resolved statement makes such a table
+  (`generatedInPrimaryKey`). The condition is a fact of the catalog, not of `ready`.
+
+Each of the first four is a hypothesis of `ready` for `runStatement` and `runSqlFrom`, and no hypothesis for
 `runScriptFrom`. The statements of the schema (CREATE, DROP, ADD COLUMN) have conditions that
 the resolver facts discharge, as in "Outcome".
 
@@ -114,7 +124,7 @@ the resolver facts discharge, as in "Outcome".
 The status file proposes three parts, each with its own `just test-full` and `just verdict`
 (owner decision 7):
 
-- **Part 1:** the model changes and the resolver facts: the CHECK condition in
+- **Part 1:** the model changes and the resolver facts: the CHECK condition and the alias schema in
   `CatalogTable.supported`, the key columns and the index terms (decisions 4 and 5), and the facts
   for CREATE TABLE, CREATE INDEX, CREATE TRIGGER, ADD COLUMN and DROP. It starts on top of slices 2
   and 3.
@@ -139,9 +149,11 @@ The status file proposes three parts, each with its own `just test-full` and `ju
     statements;
   - the resolver facts on concrete statements: `PRIMARY KEY(a, a)`, a CREATE INDEX with no terms,
     and a CHECK that names a column of the table.
-- **Native SQLite.** The refusals of decisions 4 and 5 are checked against native SQLite 3.51.0 in
-  the status file (the probes in "Findings"). If a refusal changes a corpus case, the case
-  and the prediction change need the owner (two pull requests, `CLAUDE.md`, "Development claims").
+- **SQLite behavior.** The changes of decisions 4 and 5 rest on SQLite's behavior for a CREATE INDEX
+  with no terms and for a repeated key column. Part 1 confirms each with a case of the conformance
+  evidence or a kernel example before a proof relies on it (status file, finding 15). If a change
+  alters a corpus case, the case and the prediction change need the owner (two pull requests,
+  `CLAUDE.md`, "Development claims").
 - **The predictions are byte-identical** to the baseline (`nix-build integrity/judge.nix -A
   predictions`, then `diff -r`, as slices 1 to 3 did).
 - **The usual suites**: `tests/test_model_package.py` (each new module is in the package globs and
