@@ -1,14 +1,21 @@
 import Belay.Sqlite.Model.UpsertRun
+import Belay.Sqlite.Model.Resolution.ForeignKeyPlan
 
 set_option doc.verso true
 
-/-! The order in which SQLite checks the NOT NULL columns and the {lit}`STRICT` types of a row
-(SQLite 3.51, measured with the {lit}`sqlite3` shell). In a table without a generated column,
-SQLite checks NOT NULL, then the types. In a table with a generated column, it checks the types
-of the columns that are not generated, then the types of the generated columns, then NOT NULL of
-the columns that are not generated, then NOT NULL of the generated columns. In each group, the
-order is the column order. {lit}`TableFailure.lean` puts the CHECK constraints, the rowid and
-the keys after these failures. -/
+/-! The NOT NULL and {lit}`STRICT` failures of the rows of a table, in the groups in which SQLite
+checks them (SQLite 3.51, measured with the {lit}`sqlite3` shell):
+
+* the early type check, only in a table with a generated column: the types of the ordinary
+  columns, then those of the {lit}`VIRTUAL` columns;
+* NOT NULL: the ordinary columns, then the generated columns;
+* the late type check: the types of the {lit}`STORED` columns in a table with a generated column,
+  and of every column in another table.
+
+In each group the order is the column order. The late type check comes just before CHECK when the
+write runs a CHECK constraint, and after the rowid check, before the unique keys, when it runs
+none ({lit}`TableFailure.lean`). An INSERT runs every CHECK constraint; an UPDATE runs those that
+read a column that it changes ({lit}`CatalogTable.updateRunsChecks`). -/
 
 namespace Belay.Sqlite.Model
 
@@ -48,6 +55,13 @@ def CatalogTable.hasGenerated (shape : CatalogTable) : Bool := shape.columns.any
 
 /-- Whether the table has a CHECK constraint ({name}`CatalogTable.allChecks`). -/
 def CatalogTable.hasChecks (shape : CatalogTable) : Bool := !shape.allChecks.isEmpty
+
+/-- Whether an UPDATE of the assigned positions runs a CHECK constraint of the table. SQLite runs
+only the CHECK constraints that read a changed column ({name}`CatalogTable.changedColumns`), so a
+constant CHECK does not run (SQLite 3.51, measured with the {lit}`sqlite3` shell). -/
+def CatalogTable.updateRunsChecks (shape : CatalogTable) (assigned : List Nat) : Bool :=
+  let changed := shape.changedColumns assigned
+  shape.allChecks.any fun check => changed.any check.condition.readsColumn
 
 namespace LiteralData
 

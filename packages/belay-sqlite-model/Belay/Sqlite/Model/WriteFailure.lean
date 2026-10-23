@@ -49,7 +49,9 @@ theorem insertFailure_isSome {keys : List UniqueKey} {table : Table} {values : L
   them after the rowid in a table without a CHECK constraint, so for a row that fails both the
   message names the type where SQLite names the rowid;
 * with a clause {lit}`DO NOTHING` that handles the row, none;
-* with a clause {lit}`DO UPDATE`, the first failure of the table with the updated row;
+* with a clause {lit}`DO UPDATE`, the first failure of the table with the updated row, for a write
+  that runs the CHECK constraints that read an assigned column
+  ({name}`firstFailureWith` of {name}`CatalogTable.updateRunsChecks`);
 * otherwise the keys that are not REPLACE and on which the row conflicts, when there are some;
 * otherwise the first failure of the table without the rows that REPLACE deletes, with the row. -/
 def upsertRowFailure (context : Resolved.EvalContext) (keys : List UniqueKey) (policy : Resolved.ConflictPolicy)
@@ -62,22 +64,24 @@ def upsertRowFailure (context : Resolved.EvalContext) (keys : List UniqueKey) (p
     | .update assignments _ =>
       let changed := movedRowid table.shape.rowidAlias
         (assignFrom context table.shape.columns assignments (existing.values ++ proposed.values) existing)
-      firstFailure keys (replaceRow table existing changed)
+      firstFailureWith (table.shape.updateRunsChecks (assignments.map (·.1))) keys (replaceRow table existing changed)
   | none => match (List.range keys.length).filter fun index =>
         algorithmAt policy.keys index != .replace && conflictsAt keys table proposed index with
     | [] => let kept := replaced keys policy.keys table proposed
       firstFailure keys { kept with rows := kept.rows ++ [proposed] }
     | failing@(_ :: _) => some (.keys failing)
 
-/-- For every list of keys, table, row and error: if {name}`checkedRow` fails with the error, then
-{name}`firstFailure` of the table gives some failure. Proof sketch: {name}`checkedRow` fails only
-when the table fails its checks, and then {name}`firstFailure_isSome` applies. -/
-theorem checkedRow_failure {keys : List UniqueKey} {next : Table} {written : Row} {reason : ExecutionError}
-    (failed : checkedRow keys next written = .error reason) : (firstFailure keys next).isSome := by
+/-- For every flag, list of keys, table, row and error: if {name}`checkedRow` fails with the error,
+then {name}`firstFailureWith` of the flag and the table gives some failure. Proof sketch:
+{name}`checkedRow` fails only when the table fails its checks, and then
+{name}`firstFailureWith_isSome` applies. -/
+theorem checkedRow_failure {lateFirst : Bool} {keys : List UniqueKey} {next : Table} {written : Row}
+    {reason : ExecutionError} (failed : checkedRow keys next written = .error reason) :
+    (firstFailureWith lateFirst keys next).isSome := by
   simp only [checkedRow] at failed
   split at failed
   · simp at failed
-  · exact firstFailure_isSome (by assumption)
+  · exact firstFailureWith_isSome (by assumption)
 
 /-- For every row of an INSERT with clauses or algorithms and every error other than
 {name}`ExecutionError.datatypeMismatch`: if {name}`upsertRow` fails with the error, then

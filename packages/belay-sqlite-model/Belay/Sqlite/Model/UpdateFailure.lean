@@ -11,7 +11,9 @@ For an UPDATE of one row the two agree: the table at that time is the table afte
 an UPDATE of several rows, the candidates are the failures that can be the first failure of each
 changed row: its NOT NULL, {lit}`STRICT` or CHECK failure, a rowid of another row, or each key on
 which its new values conflict with another row in its old values or in its new values, in SQLite's
-order of checks.
+order of checks. An UPDATE runs only the CHECK constraints that read a column that it changes
+({name}`Belay.Sqlite.Model.CatalogTable.updateRunsChecks`), and this moves the late type check
+after the rowid check when it runs none.
 The argument that this list contains SQLite's choice: SQLite fails at the first changed row
 {lit}`r` that fails, in the order that it visits the rows. The failures of {lit}`r` by itself do
 not depend on the other rows. A rowid or a key on which {lit}`r` conflicts is that of a row
@@ -48,15 +50,16 @@ of the table before the UPDATE ({lit}`before`) or after it has ({name}`rowidConf
 its first failure after the rowid check ({name}`afterRowidFailures`), or else the keys on which it
 conflicts with another row ({name}`rowConflicts`). A conflict depends on the rows that SQLite has
 changed at that time, so the failures after a conflict are in the list too. The list is empty
-when the row has none of these. -/
-def changedRowFailures (keys : List UniqueKey) (before result : Table) (position : Nat) (row : Row) :
-    List TableFailure :=
+when the row has none of these. {lit}`lateFirst` says whether the UPDATE runs a CHECK constraint
+({name}`CatalogTable.updateRunsChecks`). -/
+def changedRowFailures (lateFirst : Bool) (keys : List UniqueKey) (before result : Table) (position : Nat)
+    (row : Row) : List TableFailure :=
   let alone : Table := { shape := result.shape, rows := [row] }
-  match (beforeRowidFailures alone).head? with
+  match (beforeRowidFailures lateFirst alone).head? with
   | some failure => [failure]
   | none =>
     (if rowidConflicts [before.rows, result.rows] position row then [.rowid] else []) ++
-    match (afterRowidFailures alone).head? with
+    match (afterRowidFailures lateFirst alone).head? with
     | some failure => [failure]
     | none => match rowConflicts keys [before.rows, result.rows] position row with
       | [] => []
@@ -91,38 +94,41 @@ theorem Catalog.rowCandidates_ne_nil (catalog : Catalog) (table : Nat) (exact : 
     simp only [Catalog.rowCandidates]; exact Catalog.candidates_ne_nil _ _ _
 
 /-- The report of a plain UPDATE of the table at the position, from the positions of the changed
-rows and the tables before the UPDATE ({lit}`before`) and after it ({lit}`result`): the
+rows, the positions of the assigned columns ({lit}`assigned`), and the tables before the UPDATE
+({lit}`before`) and after it ({lit}`result`): the
 {name}`Catalog.rowCandidates` of the {name}`LiteralData.changedRowFailures` of each changed row,
 exact when at most one row changes. With one changed row, no other row changes, so its conflicts
 do not depend on an order, and the first of its failures is SQLite's. A
 table whose changed rows have no failure (a table that failed before the UPDATE) gives the
-candidates of each of its failures ({name}`LiteralData.tableFailures`). With several changed rows
+candidates of each of its failures ({name}`LiteralData.tableFailuresWith`). With several changed rows
 the reason is {name}`CandidateReason.rowOrder`. -/
-def Catalog.updateReport (catalog : Catalog) (table : Nat) (keys : List UniqueKey) (positions : List Nat)
+def Catalog.updateReport (catalog : Catalog) (table : Nat) (keys : List UniqueKey) (assigned positions : List Nat)
     (before result : Table) : ConstraintReport :=
   let exact := positions.length ≤ 1
+  let lateFirst := result.shape.updateRunsChecks assigned
   let rowFailures := fun position =>
-    ((result.rows[position]?).map (LiteralData.changedRowFailures keys before result position)).getD []
+    ((result.rows[position]?).map (LiteralData.changedRowFailures lateFirst keys before result position)).getD []
   let failures := match positions.flatMap fun position =>
       if exact then (rowFailures position).take 1 else rowFailures position with
-    | [] => LiteralData.tableFailures keys result
+    | [] => LiteralData.tableFailuresWith lateFirst keys result
     | found@(_ :: _) => found
   { candidates := failures.flatMap (catalog.rowCandidates table exact),
     reason := if exact then .primaryKeyPlace else .rowOrder }
 
-/-- For every catalog, table position, keys, positions and tables {lit}`before` and {lit}`result`:
+/-- For every catalog, table position, keys, assigned columns, positions and tables {lit}`before` and {lit}`result`:
 if the result fails {name}`LiteralData.constraints` of the keys or
 {name}`LiteralData.rowidsDistinct`, then the candidates of {name}`Catalog.updateReport` are not empty. Proof sketch: the list of failures is
-not empty ({name}`LiteralData.tableFailures_eq_nil_iff` for the fallback), and each failure has
+not empty ({name}`LiteralData.tableFailuresWith_eq_nil_iff` for the fallback), and each failure has
 candidates ({name}`Catalog.rowCandidates_ne_nil`). -/
-theorem Catalog.updateReport_ne_nil {catalog : Catalog} {table : Nat} {keys : List UniqueKey} {positions : List Nat}
-    {before result : Table} (fails : ¬(LiteralData.constraints keys result && LiteralData.rowidsDistinct result) = true) :
-    (catalog.updateReport table keys positions before result).candidates ≠ [] := by
+theorem Catalog.updateReport_ne_nil {catalog : Catalog} {table : Nat} {keys : List UniqueKey}
+    {assigned positions : List Nat} {before result : Table}
+    (fails : ¬(LiteralData.constraints keys result && LiteralData.rowidsDistinct result) = true) :
+    (catalog.updateReport table keys assigned positions before result).candidates ≠ [] := by
   simp only [Catalog.updateReport]
   split
   · rename_i none
-    have nonempty : LiteralData.tableFailures keys result ≠ [] :=
-      fun empty => fails ((LiteralData.tableFailures_eq_nil_iff _ _).mp empty)
+    have nonempty : LiteralData.tableFailuresWith (result.shape.updateRunsChecks assigned) keys result ≠ [] :=
+      fun empty => fails ((LiteralData.tableFailuresWith_eq_nil_iff _ _ _).mp empty)
     obtain ⟨first, rest, split⟩ := List.exists_cons_of_ne_nil nonempty
     simp only [split, List.flatMap_cons]
     exact List.append_ne_nil_of_left_ne_nil (Catalog.rowCandidates_ne_nil _ _ _ _) _

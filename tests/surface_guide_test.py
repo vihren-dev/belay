@@ -150,7 +150,8 @@ def test_db_bang_names_column_failures_in_sqlite_order(runtime_root: Path, tmp_p
     (`Model/RowCheckOrder.lean`, `tableFailures` of `Model/TableFailure.lean`, `changedRowFailures`
     of `Model/UpdateFailure.lean`): the early types of the ordinary and VIRTUAL columns in a table
     with a generated column, NOT NULL, the late types before CHECK or after the rowid, and the
-    keys; for an UPDATE of several rows, each failure that SQLite's order of the rows can make
+    keys; an UPDATE or a DO UPDATE runs only the CHECK constraints that read a changed column
+    (`CatalogTable.updateRunsChecks`); for an UPDATE of several rows, each failure that SQLite's order of the rows can make
     first. The fixture checks each message and position with `#guard_msgs (positions := true)`;
     each expected text is the native shell's."""
     result = run_command(surface_command(runtime_root, FIXTURES / "DbBangCheckOrder.lean", tmp_path),

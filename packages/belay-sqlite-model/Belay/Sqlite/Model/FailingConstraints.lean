@@ -73,7 +73,7 @@ def failingConstraints (clock : Int) (statement : Resolved.Statement) (database 
     | none => { candidates := [] }
     | some table =>
       let context := Resolved.statementContext clock database subqueries
-      database.catalog.updateReport target (database.keys target table)
+      database.catalog.updateReport target (database.keys target table) (assignments.map (·.1))
         (LiteralData.selectedPositions context filter table) table
         (LiteralData.updated context table assignments filter)
   | .createIndex _ name index => { candidates := [.uniqueIndex name index] }

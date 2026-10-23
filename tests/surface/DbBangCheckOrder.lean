@@ -147,3 +147,42 @@ def updateOrder : Database := db! r#"
   CREATE TABLE n (id INTEGER PRIMARY KEY, w INT) STRICT;
   INSERT INTO n VALUES (1, 0), (2, 0);
   UPDATE n SET id = 5, w = 'x';"#
+
+-- An UPDATE runs only the CHECK constraints that read a changed column. When it runs none, the
+-- late type check comes after the rowid, so the message names the rowid. SQLite 3.51 gives these
+-- messages, measured with the `sqlite3` shell.
+/--
+@ +4:2...43
+error: UNIQUE constraint failed: t.id; correct the row, or the statement that writes it
+---
+@ +5:2...50
+error: cannot store TEXT value in INT column t.w; correct the row, or the statement that writes it
+---
+@ +8:2...44
+error: UNIQUE constraint failed: q3.id; correct the row, or the statement that writes it
+---
+@ +11:2...44
+error: cannot store TEXT value in INT column q2.e; correct the row, or the statement that writes it
+---
+@ +14:2...82
+error: UNIQUE constraint failed: q5.id; correct the row, or the statement that writes it
+---
+@ +15:2...89
+error: cannot store TEXT value in INT column q5.w; correct the row, or the statement that writes it
+-/
+#guard_msgs (positions := true) in
+def updateChecks : Database := db! r#"
+  CREATE TABLE t (id INTEGER PRIMARY KEY, c INT CHECK (c > 0), w INT) STRICT;
+  INSERT INTO t VALUES (1, 1, 0), (2, 1, 0);
+  UPDATE t SET id = 1, w = 'x' WHERE id = 2;
+  UPDATE t SET id = 1, w = 'x', c = c WHERE id = 2;
+  CREATE TABLE q3 (id INTEGER PRIMARY KEY, w INT, CHECK (1)) STRICT;
+  INSERT INTO q3 VALUES (1, 0), (2, 0);
+  UPDATE q3 SET id = 1, w = 'x' WHERE id = 2;
+  CREATE TABLE q2 (id INTEGER PRIMARY KEY, w ANY, e INT AS (w) STORED CHECK (e IS NOT NULL)) STRICT;
+  INSERT INTO q2 (id, w) VALUES (1, 0), (2, 0);
+  UPDATE q2 SET id = 1, w = 'x' WHERE id = 2;
+  CREATE TABLE q5 (id INTEGER PRIMARY KEY, k INT UNIQUE, c INT CHECK (c > 0), w INT) STRICT;
+  INSERT INTO q5 VALUES (1, 1, 1, 0), (2, 2, 1, 0);
+  INSERT INTO q5 VALUES (3, 2, 1, 0) ON CONFLICT (k) DO UPDATE SET id = 1, w = 'x';
+  INSERT INTO q5 VALUES (3, 2, 1, 0) ON CONFLICT (k) DO UPDATE SET id = 1, w = 'x', c = c;"#
