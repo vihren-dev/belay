@@ -153,3 +153,9 @@ version 6).
    record says how it was recorded and the readers stay simple. Option B: a record field
    (for example `continuesAfterError`) on version 5. Cost of B: each reader of version 5 must
    check the field, and `judge/records.py` must read it too.
+- 2026-10-23: the stack moves onto the pragma stack (ADR 0019, slice 2). `ranScriptStep` takes
+  the resolution state after the statement, as `Connection.afterStep` now does, and the mutants
+  of `after_error_mutants` follow the new text. `judge/claims.json` keeps the claim of
+  corpus-v50. `integrity/judge.lock.json` (`just judge-lock`) is in the commit of corpus-v51.
+  Second reviews of `rwlmrrzx` and `kpkxkook` after the move: their findings repeat the ones
+  that the next commits of each fix (`qkrvsmst`, `uvlluzyt`).
