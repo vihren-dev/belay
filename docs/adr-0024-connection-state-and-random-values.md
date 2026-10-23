@@ -275,8 +275,10 @@ unknown counter), the run is the same under every environment.
 Amended 2026-10-23 (slice 1 is implemented, task `plans/20261023-connection-counters.task.md`):
 
 - **The counters.** `SqlState` holds the three counters, and `runStatement` gives the counts with
-  the effect (D1). The model finds the row before the failing row of a plain INSERT, so
-  `last_insert_rowid()` is known after such a failure and is not made unknown.
+  the effect (D1). After a failed plain INSERT, `last_insert_rowid()` is the rowid of the last
+  row that the statement inserted into a rowid table before the failure. When the first row
+  fails, or the table is `WITHOUT ROWID`, the counter keeps its previous value, which can be
+  unknown.
 - **Reads and the unknown counter (D2, D3).** The reads and the restrictions are as D2 says. A
   statement that reads an unknown counter ends the run with `Output.unmodeled`, and its support
   check is false. `Script.run_env` has a second hypothesis for this end, and `Script.run_append`

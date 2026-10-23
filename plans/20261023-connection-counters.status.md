@@ -251,6 +251,10 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   implemented, with record version 7 and corpus-v52, and the extra hypothesis of
   `Script.run_append`. ADR 0017 keeps only `random()` and `randomblob()` as deferred, for slice 2.
   Tests: `tests/test_public_doc_inventory.py` and `tests/test_ci_checks.py`. Nix evidence is pending.
+- 2026-10-23 (PR B): refactor after the review of the documents commit (R19). The note in
+  ADR 0024 says that `last_insert_rowid()` after a failed plain INSERT is the rowid of the last
+  row that the statement inserted into a rowid table, and otherwise keeps its previous value
+  (which can be unknown). Tests: none (documents only). Nix evidence is pending.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 
