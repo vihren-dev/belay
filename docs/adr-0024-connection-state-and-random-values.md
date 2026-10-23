@@ -1,6 +1,6 @@
 # ADR 0024: Connection state and random values
 
-Date: 2026-10-23. Status: PROPOSED.
+Date: 2026-10-23. Status: ACCEPTED (2026-10-23).
 Implementation: two slices (D6), each with its own task file, as local commits, after the owner
 accepts this ADR.
 Audience: designers and reviewers.
@@ -20,7 +20,7 @@ resolves all five functions as the restriction `unmodeled-function`.
 
 This ADR gives the five functions a meaning in the model. As in ADRs 0012 to 0019, the model
 follows SQLite 3.51.0 exactly, and it refuses with a restriction each form that it cannot
-describe exactly. The one proposed exception is random values (D4, owner decision 2). The two
+describe exactly. The one exception is random values (D4, owner decision 2). The two
 groups are different:
 
 - **The connection functions are deterministic.** Their values follow from the statements that
@@ -332,7 +332,8 @@ of owner decision 1.
 
 ## Owner decisions
 
-Open, with a recommendation for each:
+On 2026-10-23, the owner accepted the recommendation (A) of each decision. The text of each
+decision stays as it was proposed:
 
 1. **The counters at the start of a run (D3).**
    - A (recommended): unknown under `Env.default`; an environment can give them, and one for a
