@@ -32,6 +32,8 @@ import Belay.Sqlite.Model.KeysUniqueStatement
 import Belay.Sqlite.Model.KeysUniqueRunStep
 import Belay.Sqlite.Model.KeysUniqueRuns
 import Belay.Sqlite.Model.KeysUniqueScriptRun
+import Belay.Sqlite.Model.RowLocalFrame
+import Belay.Sqlite.Model.RowLocalAtoms
 import Belay.Sqlite.Model.ForeignKeysHold
 import Belay.Sqlite.Model.Execution
 import Belay.Sqlite.Model.LiteralData

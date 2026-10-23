@@ -1,7 +1,7 @@
 # Status: the theorems of the other Valid atoms (ADR 0022, slice 3)
 
-Created 2026-10-23. Status: open; the task file waits for the owner decisions below. No proof
-work has started.
+Created 2026-10-23. Status: open; the owner decided on 2026-10-23 (below). Part 1 is in progress
+in workspace adr22s3.
 Task: [task file](20261023-valid-atoms-theorems.task.md).
 Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D1, D3 and D4 (slice 3).
 Needed by: [ADR 0017](../docs/adr-0017-user-surface.md), S4.
@@ -61,6 +61,13 @@ The size is near that of slice 2, so the task file proposes the same split into 
 
 ## Owner decisions
 
+Decided by the owner on 2026-10-23: the recommendation of each of the three decisions below was
+accepted. 1 a): after slice 2 part 2 lands, slice 3 makes the atom a parameter of the row-engine
+proofs in `refactor:` commits. 2 a): two parts in one task file, each with `just test-full` and
+`just verdict`. 3 a): slice 4 adds "each CHECK reads only the columns of its table" to
+`CatalogTable.supported`, proves that the runs keep it, and removes the hypothesis from the
+`runScriptFrom` theorem. The text of the decisions is kept as asked.
+
 1. **The invariant of the row engine.** Slice 2 part 2 proves the row engine with an invariant
    that is fixed to `Database.KeysUnique` (`KeyState.KeysUnique`, `NestedRun.KeepsKeys`). Its
    proofs rest mainly on two facts of the atom: a table that passes `LiteralData.constraints`
@@ -110,3 +117,6 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3). None y
   condition cannot go from the `runScriptFrom` theorem with resolver facts alone; now
   decision 3) and one R19 should (a local probe cited here), fixed. Round 2 (the refactor): no
   findings.
+- 2026-10-23: part 1, commit 1: `RowLocalAtoms` (the frame lemmas of the three atoms and
+  `RowLocalAtom`, the three facts that one argument uses for the three atoms) and `RowLocalFrame`
+  (`Effect.Satisfies`, `Database.EachTable.setRows` and `.append`). Owner decisions recorded.
