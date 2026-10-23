@@ -72,7 +72,8 @@ theorem Database.foreignKeyCheckRows_nil_iff (database : Database) (table : Opti
 
 /-- For every database and table at a position: {lit}`PRAGMA foreign_key_check` of that table
 ({name}`Resolved.PragmaRows.rowsOn`) gives no rows exactly when the table satisfies
-{name}`Table.ForeignKeysHold`. The other tables do not matter. -/
+{name}`Table.ForeignKeysHold`. The other tables need not satisfy their own foreign keys, but
+the rows of the parent tables of the table decide both sides. -/
 theorem Database.tableKeyCheck_nil_iff (database : Database) {position : Nat} {table : Table}
     (present : database.table position = some table) :
     (Resolved.PragmaRows.foreignKeyCheck (some position)).rowsOn database = some [] ↔

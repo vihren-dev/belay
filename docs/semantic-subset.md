@@ -303,8 +303,10 @@ as a write does, a NULL in the key satisfies it, and a missing parent table find
 foreign key whose parent table has no parent key fails at prepare with
 `foreign key mismatch - "c" referencing "p"`, before any row. A missing table fails with
 `no such table`, and a name of SQLite's own tables is the restriction `system-table`. Without a table name, two or more tables with a mismatch are the restriction
-`foreign-key-mismatch-order`, and two or more tables with rows give no result. The pragma gives
-no rows exactly when the foreign keys hold (`Database.ForeignKeysHold`).
+`foreign-key-mismatch-order`, and two or more tables with rows give no result. When the
+statement does not fail, the form without a table name gives no rows exactly when the foreign
+keys of every table hold (`Database.ForeignKeysHold`), and the form with the name of table t
+exactly when the foreign keys of t hold (`Table.ForeignKeysHold`).
 
 A generated column (ADR 0014, slice 5) is `VIRTUAL` or `STORED`, and `PRAGMA table_xinfo`
 reports it with `hidden` 2 or 3. Its expression resolves over the table's columns after the
