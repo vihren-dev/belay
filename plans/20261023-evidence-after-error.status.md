@@ -1,6 +1,6 @@
 # Status: evidence for the statements after an error
 
-Created 2026-10-23. Status: OPEN (task file written; no implementation).
+Created 2026-10-23. Status: OPEN (PR A in progress).
 Task file: [20261023-evidence-after-error.task.md](20261023-evidence-after-error.task.md).
 Specification: [ADR 0017](../docs/adr-0017-user-surface.md) ("Deferred, with their triggers",
 first row; D3 and its amendment of 2026-10-22);
@@ -98,10 +98,12 @@ corpus finds is extra work and is not in this estimate.
 
 - 2026-10-23: research, native probes and measurement; task file and this status file.
 - 2026-10-23: `just review` of the task and status files (change `qrlwyxux`): no findings.
+- 2026-10-23 (PR A): the model's step is made of `runScriptStepWith` and `ranScriptStep`, and `resolveSchema` resolves a schema alone, so a conformance pass can take the same step.
 
 ## Tests for each commit
 
 - Task and status files: none (documents only); `just review`.
+- The model's step: `just dev-build` (the laws of `ScriptRun*` and the examples build).
 
 ## Remaining
 
