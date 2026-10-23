@@ -13,9 +13,10 @@ Version 6 is version 5 recorded with `run_on`: execution continues after an SQL
 error, so each statement of the migration gives one event. SQLite's prepare tail
 can stop in the middle of a failed statement, so in version 6 a statement ends at
 the end of the shortest prefix of the remaining text that `sqlite3_complete`
-accepts and that has a token other than `;`, or at the end of the text. An empty
-statement, such as a lone `;`, which SQLite's prepare skips, so belongs to the
-statement after it. The event's `sql` is that whole statement. A
+accepts and that is not empty, or at the end of the text. A prefix is empty when
+SQLite's prepare gives no statement and no error for it, as for a lone `;`; such a
+prefix belongs to the statement after it. The event's `sql` is that whole
+statement. A
 statement that prepares must end at the same place as its prepare tail; the
 recorder refuses a case where the two differ. The native replay records a
 version 6 record again with `run_on`.

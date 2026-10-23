@@ -34,7 +34,8 @@ def execute(connection: Connection, sql: str, *, outputs: bool = False,
     `sqlite3_prepare_v2`, `step` for `sqlite3_step`, and `None` otherwise. Without `run_on`,
     the first SQL error ends the statements. With `run_on`, every statement runs, also after an
     error: a statement ends where `complete_statement` says, and a statement that prepares
-    must end there too, so that the boundary after a failed statement is the same rule."""
+    must end there too, so that the boundary after a failed statement is the same rule. The
+    boundary is found after the statement's error is read, as it can prepare again."""
     if parameters is not None and not outputs:
         raise ValueError("Bound parameters require output recording")
     if (record_bindings or parameter_names is not None or tcl_calls is not None) and not outputs:
@@ -92,12 +93,6 @@ def execute(connection: Connection, sql: str, *, outputs: bool = False,
         message = ""
         phase: str | None = None
         try:
-            if run_on:
-                whole = complete_statement(connection.library, remaining)
-                if statement.value and whole != consumed:
-                    raise ValueError(f"SQLite's prepare tail and the complete statement end at different places: "
-                                     f"{consumed.decode()!r}; split the statement or record it without running on")
-                consumed, suffix = whole, remaining[len(whole):]
             if call is not None:
                 check_call_end(sql, remaining, consumed, call_index, tcl_calls)
             if record_bindings and (statement.value or code):
@@ -150,6 +145,12 @@ def execute(connection: Connection, sql: str, *, outputs: bool = False,
                 if actions & {9, 18, 23} and not actions & ddl and not connection.library.sqlite3_stmt_isexplain(statement):
                     changes = connection.library.sqlite3_changes(connection.handle)
             connection.library.sqlite3_finalize(statement)
+        if run_on:  # After the error message is read and the statement is finalized.
+            whole = complete_statement(connection, remaining)
+            if statement.value and whole != consumed:
+                raise ValueError(f"SQLite's prepare tail and the complete statement end at different places: "
+                                 f"{consumed.decode()!r}; split the statement or record it without running on")
+            consumed, suffix = whole, remaining[len(whole):]
         if statement.value or code:
             if clock is not None and current_clock is None:
                 raise ValueError("Expected one clock value per reached statement")

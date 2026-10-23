@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 
+from conformance import native_statements
 from conformance.authored_resolution import profile
 from conformance.corpus import native_replay
 from conformance.native_record import record_sql
@@ -46,6 +47,23 @@ def test_an_empty_statement_belongs_to_the_next_statement() -> None:
     assert [event["sql"] for event in record["trace"]] == ["; " + DUPLICATE, " INSERT INTO t VALUES (1);",
                                                            " SELECT a FROM t;"]
     assert [event["primaryCode"] for event in record["trace"]] == [1, 0, 0]
+
+
+def test_a_character_that_sqlite_refuses_is_not_an_empty_statement() -> None:
+    """A no-break space before `;` is not white space for SQLite, so the prefix up to that `;`
+    is a statement of its own that fails, and the statement after it still runs."""
+    record = record_sql(SETUP, "\u00a0;" + LATER, name="refused", outputs=True, profile=profile(()), run_on=True)
+    assert [event["sql"] for event in record["trace"]] == ["\u00a0;", " INSERT INTO t VALUES (1);", " SELECT a FROM t;"]
+    assert [event["primaryCode"] for event in record["trace"]] == [1, 0, 0]
+
+
+def test_a_boundary_that_differs_from_the_prepare_tail_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    """When the complete statement and the prepare tail of a statement that prepares end at
+    different places, the recording stops with that message, and not with an error of the
+    connection's close, as the statement is finalized first."""
+    monkeypatch.setattr(native_statements, "complete_statement", lambda connection, remaining: remaining[:5])
+    with pytest.raises(ValueError, match="end at different places"):
+        record_sql(SETUP, LATER, name="differs", outputs=True, profile=profile(()), run_on=True)
 
 
 def test_default_mode_stops_at_the_first_error() -> None:
