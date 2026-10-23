@@ -1,7 +1,6 @@
 # Status: the connection counters (ADR 0024, slice 1)
 
-Created 2026-10-23. Status: OPEN (task file written; implementation not started; three owner
-decisions open).
+Created 2026-10-23. Status: IN PROGRESS (the owner accepted the decisions; commit 1 is done, commit 2 is next).
 Task file: [task](20261023-connection-counters.task.md).
 Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md) (ACCEPTED
 2026-10-23), D1 to D3, D5, D6 slice 1.
@@ -52,14 +51,19 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   statement reads them; `Connection.eq_idle` is replaced by `Connection.sameBesidesCounters_idle`.
   Commit 3 replaces the lemma by the form with reads and adds the `endsRun` hypothesis of owner
   decision 2. The row engine does not count yet (commit 2): a write that checks foreign keys or
-  runs programs has the interim counts of its own rows. Checks: `just dev-build`, `just dev-verdict`
-  (all corpora, no DISAGREE), the examples of `CounterExamples.lean` (kernel),
+  runs programs has the interim counts of its own rows. Tests that this commit
+  touches: the examples of `CounterExamples.lean` (kernel, checked by the package build),
   `tests/mutant_guards_test.py`, the mutant tests by name that the moved text touches
   (`test_every_write_mutant_changes_a_verdict`, `test_every_after_error_mutant_changes_a_verdict`,
   `test_every_upsert_and_algorithm_mutant_changes_a_verdict`, `conformance_resolve_mutants_test.py`),
-  and `test_model_mutation`, with a runtime built by `just conformance-build`. The mutants of the
+  and `test_model_mutation`, with a runtime built by `just conformance-build`. Nix evidence for
+  this commit is pending: the status file cites no local result (ADR 0011). The mutants of the
   change counts of UPDATE, DELETE and upserts now change `StatementStep.lean` and `PlainCounts.lean`
   (guards `rule:runStatement` and `rule:upsertCounts`).
+- 2026-10-23: refactor after the review of commit 1 (R11: kernel examples of the upsert counts
+  for DO UPDATE, a skipped row, OR IGNORE, OR FAIL and OR ABORT in `CounterExamples.lean`; R12:
+  `StepCatalogLaws.lean` is under 200 lines again; R19: this file). Tests:
+  `CounterExamples.lean` and `StepCatalogLaws.lean` (package build).
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 

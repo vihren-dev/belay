@@ -62,6 +62,50 @@ example : countersAfter [createT, .begin, insertTwo, .rollback] =
     { changes := some 2, totalChanges := some 2, lastInsertRowid := some 9 } := by
   decide +kernel
 
+/-- {lit}`INSERT INTO t VALUES (5, 'q') ON CONFLICT(id) DO UPDATE SET name = 'q'`: the row
+conflicts with the row 5 that {name}`insertTwo` stored. -/
+def upsertUpdate : Syntax.Statement :=
+  .insert (name! "t") none [[.numeric "5", .string "q".toUTF8.toList]]
+    [{ target := some [name! "id"], action := .update [(name! "name", .string "q".toUTF8.toList)] none }] none
+
+/-- {lit}`INSERT INTO t VALUES (5, 'q'), (11, 'n') ON CONFLICT DO NOTHING`: the first row
+conflicts with the row 5 that {name}`insertTwo` stored. -/
+def upsertSkipping : Syntax.Statement :=
+  .insert (name! "t") none [[.numeric "5", .string "q".toUTF8.toList], [.numeric "11", .string "n".toUTF8.toList]]
+    [{ target := none, action := .nothing }] none
+
+/-- An upsert that takes the {lit}`DO UPDATE` branch changes one row and adds one to the total, and
+leaves the last rowid: the updated row is no inserted row. -/
+example : countersAfter [createT, insertTwo, upsertUpdate] =
+    { changes := some 1, totalChanges := some 3, lastInsertRowid := some 9 } := by
+  decide +kernel
+
+/-- An upsert that skips one row and inserts the other changes one row, adds one to the total, and
+sets the last rowid to the rowid 11 of the inserted row. -/
+example : countersAfter [createT, insertTwo, upsertSkipping] =
+    { changes := some 1, totalChanges := some 3, lastInsertRowid := some 11 } := by
+  decide +kernel
+
+/-- An {lit}`INSERT OR IGNORE` that skips its only row changes none, adds none to the total, and
+leaves the last rowid. -/
+example : countersAfter [createT, insertTwo, insertT "5" "q" (some .ignore)] =
+    { changes := some 0, totalChanges := some 2, lastInsertRowid := some 9 } := by
+  decide +kernel
+
+/-- An {lit}`INSERT OR FAIL` that stops at its second row keeps the first: it changes one row, adds
+one to the total, and sets the last rowid to the rowid 11 of the kept row. -/
+example : countersAfter [createT, insertTwo,
+      .insert (name! "t") none [[.numeric "11", .string "n".toUTF8.toList], [.numeric "5", .string "q".toUTF8.toList]] [] (some .fail)] =
+    { changes := some 1, totalChanges := some 3, lastInsertRowid := some 11 } := by
+  decide +kernel
+
+/-- An {lit}`INSERT OR ABORT` that stops at its second row takes the first back: it changes none and
+adds none to the total, but the last rowid keeps the rowid 11 that the statement stored. -/
+example : countersAfter [createT, insertTwo,
+      .insert (name! "t") none [[.numeric "11", .string "n".toUTF8.toList], [.numeric "5", .string "q".toUTF8.toList]] [] (some .abort)] =
+    { changes := some 0, totalChanges := some 2, lastInsertRowid := some 11 } := by
+  decide +kernel
+
 /-- A connection with unknown counters learns {lit}`changes()` and the last rowid from an INSERT, and
 keeps its total unknown. -/
 example : countersAfter [createT, insertTwo] {} = { changes := some 2, lastInsertRowid := some 9 } := by
