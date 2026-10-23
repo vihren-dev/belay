@@ -82,9 +82,23 @@ The size is near that of slice 2, so the task file proposes the same split into 
    Recommendation: a). Part 1 can start now, on slice 2 part 1; part 2 needs slice 2 part 2.
 
 The conditions of ADD COLUMN in the run theorems follow slice 2's decision 1, option A: a
-hypothesis on each reached ADD COLUMN, and slice 4 proves the resolver facts. This adds two
-resolver facts to slice 4: each CHECK of a resolved table reads only its columns, and each
-resolved ADD COLUMN has `strictDefaultFits`.
+hypothesis on each reached ADD COLUMN, and slice 4 proves the resolver facts. This adds to
+slice 4: each resolved ADD COLUMN has `strictDefaultFits`, and each CHECK of a table reads only
+its columns, which needs decision 3.
+
+3. **The CHECK condition for `runScriptFrom`** (task file, "Conditions"). The start database of
+   `runScriptFrom` is any database. A database that satisfies `Database.Valid` can have a CHECK
+   that reads past the width of its table, and then an ADD COLUMN that the resolver accepts
+   breaks "checks hold". No atom excludes such a CHECK today (`CatalogTable.supported` reads no
+   CHECK).
+   - a) Slice 4 adds to `CatalogTable.supported` (so to `Database.Admitted`) that each CHECK of
+     a table reads only the columns of the table, proves that the runs keep it, and then removes
+     the hypothesis.
+   - b) The `runScriptFrom` theorem of "checks hold" keeps the hypothesis after slice 4.
+
+   Recommendation: a). SQLite does not open such a database (task file, "Conditions"), so the
+   fact holds for each database that SQLite can reach, as ADR 0012, decision 5 requires for an
+   Admitted fact. This slice does not depend on the answer.
 
 ## Findings
 
@@ -92,6 +106,6 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3). None y
 
 ## Progress log
 
-- 2026-10-23: the task file and this status file. Checked natively with SQLite 3.51.0: SET NULL
-  on a NOT NULL child column fails with `NOT NULL constraint failed: c.x` and keeps the parent
-  row (log: `build/agent-logs/adr22s3-setnull-probe.log`).
+- 2026-10-23: the task file and this status file. Review round 1: one R19 must (the CHECK
+  condition cannot go from the `runScriptFrom` theorem with resolver facts alone; now
+  decision 3) and one R19 should (a local probe cited here), fixed.

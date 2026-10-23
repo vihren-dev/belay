@@ -87,9 +87,14 @@ the table at the target:
   TEXT cell in an INTEGER column. The resolver refuses such a column (`add-column-strict-type`),
   so this is also a resolver fact.
 
-Slice 4 proves these resolver facts and removes the hypothesis from the `runScriptFrom`
-theorems, as for slice 2. The `runSqlFrom` theorems keep it, because `runSqlFrom` takes resolved
-statements that the resolver did not make.
+The `runSqlFrom` theorems keep the hypothesis, because `runSqlFrom` takes resolved statements
+that the resolver did not make. For `runScriptFrom`, slice 4 removes it, as for slice 2, but the
+CHECK condition is not only a resolver fact: the start database is any database, and the
+counterexample above with `column1 > 0` satisfies `Database.Valid`. The resolver of ADD COLUMN
+does not look at the old CHECKs. So the hypothesis goes only with a fact of the start database
+and its snapshot that no atom states today (status file, decision 3). SQLite does not open such
+a database (checked natively with 3.51.0: a table whose CHECK names a missing column gives
+`malformed database schema (t) - no such column: zz`).
 
 ## Parts
 
