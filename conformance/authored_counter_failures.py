@@ -1,11 +1,12 @@
 """Authored cases of the connection counters after a statement that fails (ADR 0024, D1 and D2).
 
-A failed write leaves `changes()` 0, keeps the rows of its completed trigger programs and
-foreign-key actions in `total_changes()`, and leaves `last_insert_rowid()` at the rowid of the last
-row that the write inserted before the failure; the rollback does not take these back. The cases
-cover each way a write fails, the algorithms FAIL and ROLLBACK, a failure in a transaction, a
-statement that fails to prepare, and the foreign-key checks that fail at the end of the statement
-or when an action runs. The cases use `conformance.authored_queries.QueryCase`.
+A write that fails with ABORT or ROLLBACK leaves `changes()` 0. A write that fails with FAIL keeps
+the count of the rows that it completed. Every failed write keeps the rows of its completed
+trigger programs and foreign-key actions in `total_changes()`, and leaves `last_insert_rowid()`
+at the rowid of the last row that the write inserted before the failure; the rollback does not
+take these back. The cases cover each way a write fails, the algorithms FAIL and ROLLBACK, a failure
+in a transaction, a statement that fails to prepare, and the foreign-key checks that fail at the
+end of the statement or when an action runs. The cases use `conformance.authored_queries.QueryCase`.
 """
 
 from conformance.authored_queries import QueryCase

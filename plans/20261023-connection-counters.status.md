@@ -231,6 +231,13 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   `just judge-lock`. Tests: `just dev-verdict` for the corpus, the kernel proofs of
   `tests/conformance_query_coverage_test.py` for the new cases and
   `tests/conformance_corpus_writers_test.py`. Nix evidence is pending.
+- 2026-10-23 (PR B): refactor after the review of the cases commit. The parent table of the
+  case `restrict-action-fails-during-replace` has a UNIQUE column, so the first multi-row REPLACE
+  inserts row 7 and then fails when the RESTRICT action of the replaced row runs (R11); the
+  corpus-v52 shard is recorded again and the case names did not change. The module docstring of
+  `conformance/authored_counter_failures.py` separates the failures with ABORT or ROLLBACK from
+  those with FAIL (R9). Tests: `just dev-verdict` for the corpus and the kernel proofs of
+  `tests/conformance_query_coverage_test.py` for the new cases. Nix evidence is pending.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 

@@ -37,6 +37,6 @@ for a value below -5."""
 CHILD = ("CREATE TABLE par(id INTEGER PRIMARY KEY); CREATE TABLE ch(a INTEGER PRIMARY KEY, pid REFERENCES par(id)); "
          "INSERT INTO par VALUES (1);")
 """A parent with the key 1 and a child that references it."""
-RESTRICTED = ("CREATE TABLE p(id INTEGER PRIMARY KEY, v); CREATE TABLE c(x REFERENCES p(id) ON DELETE RESTRICT); "
+RESTRICTED = ("CREATE TABLE p(id INTEGER PRIMARY KEY, v UNIQUE); CREATE TABLE c(x REFERENCES p(id) ON DELETE RESTRICT); "
               "INSERT INTO p VALUES (1, 1); INSERT INTO c VALUES (1);")
-"""A parent with a child whose key forbids the delete of the parent."""
+"""A parent with a UNIQUE column and a child whose key forbids the delete of the parent."""
