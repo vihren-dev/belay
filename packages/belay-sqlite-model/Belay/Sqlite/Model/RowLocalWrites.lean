@@ -26,10 +26,9 @@ theorem LiteralData.inserted_shape (table : Table) (rows : List (List Value)) :
 position, and the result has the catalog entry of the table, the effect of
 {name}`checkedWrite` satisfies "every table has the atom" ({name}`Effect.Satisfies`): the database
 of a success and that of an error with {name}`ExecutionError.constraintFail` have it, and any other
-error requires nothing. Proof
-sketch: a stored result passed {name}`LiteralData.constraints`, so the atom holds for it
-({name}`RowLocalAtom.constraints`), and {name}`Database.EachTable.setRows` stores its rows; a failure
-keeps the database. -/
+error requires nothing. Proof sketch: a stored result passed {name}`LiteralData.constraints`, so
+the atom holds for it ({name}`RowLocalAtom.constraints`), and {name}`Database.EachTable.setRows`
+stores its rows; a failure keeps the database. -/
 theorem checkedWrite_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) {database : Database}
     (every : database.EachTable atom) {target : Nat} {table : Table} (found : database.table target = some table)
     (keys : List UniqueKey) (result : Table) (shape : result.shape = table.shape) :
@@ -47,9 +46,8 @@ theorem checkedWrite_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom a
 position, and the result has the catalog entry of the table, the effect of
 {name}`insertOutcome` satisfies "every table has the atom" ({name}`Effect.Satisfies`): the database
 of a success and that of an error with {name}`ExecutionError.constraintFail` have it, and any other
-error requires nothing. Proof sketch: a
-refused rowid alias
-fails with the input database, and every other case is {name}`checkedWrite_rowLocal`. -/
+error requires nothing. Proof sketch: a refused rowid alias fails with the input database, and
+every other case is {name}`checkedWrite_rowLocal`. -/
 theorem insertOutcome_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) {database : Database}
     (every : database.EachTable atom) {target : Nat} {table : Table} (found : database.table target = some table)
     (keys : List UniqueKey) (rows : List (List Value)) (result : Table) (shape : result.shape = table.shape) :

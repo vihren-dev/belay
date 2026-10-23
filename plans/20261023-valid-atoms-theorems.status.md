@@ -158,11 +158,11 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3). None y
   (the five counterexamples, each condition necessary).
 - 2026-10-23: part 1, commit 7 (`refactor:`): the statement theorems of all three files say once
   which databases `Effect.Satisfies` covers (reviews of commits 4, 5 and 6: one R2 must each for 4 and
-  6, two R9 should for 5, fixed). `just documentation-inventory` passes; the predictions are
-  unchanged (below).
+  6, two R9 should for 5, fixed). Tests: `just documentation-inventory`; the predictions
+  against the baseline (below).
 - 2026-10-23: part 1 review outcomes: commits 1, 3 and 7: no findings; the findings of commits 2, 4,
-  5 and 6 recorded and resolved. Predictions rebuilt at the end of part 1: `diff -r` against the
-  baseline is empty. Part 1 waits for `just test-full` and `just verdict` by the lead.
+  5 and 6 recorded and resolved. Tests: predictions rebuilt at the end of part 1, `diff -r` against the
+  baseline. Part 1 waits for `just test-full` and `just verdict` by the lead.
 - 2026-10-23: part 2, commit 1 (`refactor:`, owner decision 1 a): the row-engine proofs of slice 2
   take the fact of a table as a parameter (`TableFacts`, `Database.Every`, `RowEngineFacts`). The modules
   `KeysUniqueKeyState`, `KeysUniqueKeySteps`, `KeysUniqueTriggers`, `KeysUniqueRowDelete`,
@@ -176,7 +176,7 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3). None y
   and the condition of statements as parameters (`RunHoldsStep`, `RunHolds`, `ScriptRunHolds`:
   `StatementKeeps`, `runSqlFrom_holds`, `runSql_holds`, `runScriptFrom_holds`); `KeysUniqueRunStep`,
   `KeysUniqueRuns` and `KeysUniqueScriptRun` are the instances with the statements of slice 2 unchanged
-  (`tests/keys_unique_theorems_test.py` passes). Review of commit 1: one R19 must (the task file said that
+  (tests: `tests/keys_unique_theorems_test.py`). Review of commit 1: one R19 must (the task file said that
   the invariant is fixed), fixed here.
 - 2026-10-23: part 2, commit 3 (`refactor:`): the docstrings of `StatementKeeps` and
   `keysUnique_statementKeeps` say the error cases (review of commit 2: two R2 musts, fixed).
@@ -200,3 +200,7 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3). None y
 - 2026-10-23: review of commits 5 and 6 (the refactor and the examples): no findings. The records of
   slice 3 in ADR 0022, D4 and ADR 0012, decision 5. Next: `just test-full` and `just verdict` of
   the slice (the lead runs them); the task is not marked DONE.
+- 2026-10-23: `refactor:` after the second reviews of the stack that the rebase changed: the progress
+  lines of both status files name tests and cite no local result; one docstring of `RowLocalWrites`
+  is reflowed. The other findings of those reviews were fixed by later commits of the stacks.
+  Tests: `tests/keys_unique_theorems_test.py`, `tests/valid_atoms_theorems_test.py`.
