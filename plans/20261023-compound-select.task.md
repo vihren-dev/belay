@@ -97,7 +97,8 @@ holds `('1', 'a')` and `u(b INTEGER, m TEXT)` holds `(1, 'A')`.
    COLLATE BINARY, x` gives `'C'`, `'a'`, `'b'`; without `COLLATE BINARY`, and with `UNION ALL`, it
    gives `'a'`, `'b'`, `'C'`. Duplicates stay those of outcome 2.
 8. **`LIMIT` and `OFFSET`** apply to the whole compound, as to a single `SELECT`: literals and lone
-   parameters, `datatype mismatch` for `LIMIT 'x'` when it runs, no limit for a negative `LIMIT`,
+   parameters, `datatype mismatch` for `LIMIT ?` bound to `'x'` when it runs (a literal `LIMIT 'x'`
+   is the restriction `window-value`, as for one `SELECT`), no limit for a negative `LIMIT`,
    and the restriction `negative-offset` for a literal negative `OFFSET`. Without `ORDER BY` the row
    order is SQLite's plan (`UNION ALL`: left, then right; the others: the order of a temporary
    index), which the harness compares as a multiset; with a `LIMIT` and no `ORDER BY` every row
