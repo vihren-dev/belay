@@ -57,6 +57,16 @@ def test_a_character_that_sqlite_refuses_is_not_an_empty_statement() -> None:
     assert [event["primaryCode"] for event in record["trace"]] == [1, 0, 0]
 
 
+def test_a_byte_order_mark_is_an_empty_statement() -> None:
+    """SQLite's prepare skips a byte order mark before `;`, so that prefix belongs to the
+    statement after it, and a failed statement after it gives one event."""
+    record = record_sql(SETUP, "\ufeff; " + DUPLICATE + LATER, name="mark", outputs=True, profile=profile(()),
+                        run_on=True)
+    assert [event["sql"] for event in record["trace"]] == ["\ufeff; " + DUPLICATE, " INSERT INTO t VALUES (1);",
+                                                           " SELECT a FROM t;"]
+    assert [event["primaryCode"] for event in record["trace"]] == [1, 0, 0]
+
+
 def test_a_boundary_that_differs_from_the_prepare_tail_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
     """When the complete statement and the prepare tail of a statement that prepares end at
     different places, the recording stops with that message, and not with an error of the
