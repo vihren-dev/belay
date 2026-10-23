@@ -42,7 +42,7 @@ def emptyT : Database := catalogT.emptyDatabase
 
 /-- The values of the rows of table 0 after a script, or none when it fails. -/
 def rowsAfter (clock : Clock) (script : List Syntax.Statement) : Option (List (List Value)) :=
-  match runSqlAt clock (statements (migration catalogT script)) emptyT with
+  match runSqlAt clock (bindValues (statements (migration catalogT script)) []) emptyT with
   | .success database => (database.table 0).map (·.rows.map (·.values))
   | .failure .. | .pending .. => none
 
@@ -80,18 +80,20 @@ def clockFree : List Resolved.Statement := [.insert 0 [[.value (.text [120]), .v
 -- It is the resolution of the statement.
 #guard statements (migration catalogT [.insert (name! "t") (some [(name! "a"), (name! "b")]) [[.string [120], .numeric "1"]] []]) == clockFree
 
-/-- For every clock assignment, {name}`clockFree` has the outcome of {name}`runSql`. -/
-example (clock : Clock) : runSqlAt clock clockFree emptyT = runSql clockFree emptyT :=
-  runSqlAt_of_readsClock clock clockFree emptyT (by decide)
+/-- For every clock assignment and list of values, {name}`clockFree` with the values has the
+outcome of {name}`runSql`. -/
+example (clock : Clock) (values : List Value) :
+    runSqlAt clock (bindValues clockFree [values]) emptyT = runSql (bindValues clockFree [values]) emptyT :=
+  runSqlAt_of_readsClock clock _ emptyT (by rw [map_fst_bindValues]; decide)
 
 -- ADD COLUMN with a time default fails on a populated table and succeeds on an empty one.
-#guard (match runSqlAt (fun _ => firstClockOf2025) (statements (migration catalogT
+#guard (match runSqlAt (fun _ => firstClockOf2025) (bindValues (statements (migration catalogT
     [.insert (name! "t") (some [(name! "a")]) [[.null]] [],
-     .addColumn (name! "t") (timeDefault (name! "c") none "CURRENT_DATE")])) emptyT with
+     .addColumn (name! "t") (timeDefault (name! "c") none "CURRENT_DATE")])) []) emptyT with
   | .failure 1 .nonConstantColumnDefault _ => true
   | .success _ | .failure .. | .pending .. => false)
-#guard (match runSqlAt (fun _ => firstClockOf2025) (statements (migration catalogT
-    [.addColumn (name! "t") (timeDefault (name! "c") none "CURRENT_DATE")])) emptyT with
+#guard (match runSqlAt (fun _ => firstClockOf2025) (bindValues (statements (migration catalogT
+    [.addColumn (name! "t") (timeDefault (name! "c") none "CURRENT_DATE")])) []) emptyT with
   | .success _ => true
   | .failure .. | .pending .. => false)
 

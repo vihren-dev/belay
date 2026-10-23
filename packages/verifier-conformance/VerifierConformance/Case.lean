@@ -53,14 +53,11 @@ def databaseOf (catalog : Catalog) (natives : List NativeTable) : Database :=
         native.name.sameName object.name).map (·.rows)).getD [])
     | .index _ | .trigger _ => [] }
 
-/-- The primary result-code abstraction matches the granularity of ExecutionError. -/
+/-- The primary result code of an observation's error: 0 without an error, and
+{name}`ExecutionError.primaryCode` of the error. -/
 def primaryCode : Option (Nat × ExecutionError) → Nat
   | none => 0
-  | some (_, .constraintViolation) | some (_, .constraintFail) | some (_, .constraintRollback) => 19
-  | some (_, .datatypeMismatch) => 20
-  | some (_, .unmodeled) | some (_, .prepare _) | some (_, .transactionAlreadyActive)
-  | some (_, .noActiveTransaction) | some (_, .integerOverflow) | some (_, .functionError)
-  | some (_, .nullColumnDefault) | some (_, .nonConstantColumnDefault) | some (_, .checkColumnDefault) => 1
+  | some (_, error) => error.primaryCode
 
 /-- The phase in which SQLite reports a modeled error: a prepare error of resolution
 in {lit}`sqlite3_prepare_v2`, and every other modeled error in {lit}`sqlite3_step`. -/
@@ -114,9 +111,9 @@ def Case.clock (c : Case) : Clock := fun position => c.clocks.getD position 0
 
 /-- Resolve the case under its recorded profile, then check the initial state first,
 admission second, and the complete execution trace and outputs last. Each statement
-runs at its recorded clock value as {name}`runSqlAt` gives it ({name}`scriptClock`); a script
-that reads the clock is
-unsupported for a record without clock values. A model restriction is unsupported; a schema that SQLite prepared but resolution refuses is
+runs at its recorded clock value as {name}`runSqlAt` gives it ({name}`scriptClock`), with the
+values that the record binds to it ({name}`bindValues` of {lit}`Case.parameters`); a script
+that reads the clock is unsupported for a record without clock values. A model restriction is unsupported; a schema that SQLite prepared but resolution refuses is
 a disagreement. -/
 def classifyCase (c : Case) : Verdict :=
   let profile := c.profile
@@ -125,15 +122,15 @@ def classifyCase (c : Case) : Verdict :=
   | .error (.schemaPrepareError ..) => .disagree none
   | .ok resolution =>
     let initial := databaseOf resolution.startCatalog c.initial
-    let pass := passFrom 0 resolution.resolved { database := initial, clock := scriptClock c.clock resolution.resolved }
+    let pass := passFrom 0 (bindValues resolution.resolved c.parameters)
+      { database := initial, clock := scriptClock c.clock resolution.resolved }
     let observed := pass.observations
     let outputs := pass.outputs
     match observed, c.nativeTrace with
     | first :: rest, expected :: expectations =>
       if !matchesObservation first expected then .disagree none
       else if (c.clocks.isEmpty && scriptReadsClock resolution.resolved) ||
-          !pass.supported || observed.any invalidObservation ||
-          c.parameters.any (fun values => !values.isEmpty) || (c.outputs.isSome && outputs.any Option.isNone) then
+          !pass.supported || observed.any invalidObservation || (c.outputs.isSome && outputs.any Option.isNone) then
         .modelUnsupported
       else
         match compareSteps 0 rest expectations with
@@ -143,11 +140,12 @@ def classifyCase (c : Case) : Verdict :=
         | verdict => verdict
     | _, _ => .disagree none
 
-/-- The model's outcome for a case: resolve the syntax, then run the resolved script
-from the native starting tables; {name}`Option.none` when the model refuses the case. -/
+/-- The model's outcome for a case: resolve the syntax, then run the resolved script with the
+values that the record binds to each statement from the native starting tables; {name}`Option.none` when the model refuses the case. -/
 def modelOutcome (c : Case) : Option Outcome :=
   match resolveSchemaAndScript c.profile c.schema c.script with
-  | .ok resolution => some (runSqlAt c.clock resolution.resolved (databaseOf resolution.startCatalog c.initial))
+  | .ok resolution =>
+    some (runSqlAt c.clock (bindValues resolution.resolved c.parameters) (databaseOf resolution.startCatalog c.initial))
   | .error _ => none
 
 /-- Both compiled testing and concrete kernel proofs use the same classification. -/

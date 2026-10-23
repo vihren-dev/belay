@@ -22,14 +22,14 @@ def resolveAll (resolveOne : Nat → α → Except ε β) (items : List α) : Ex
   resolveAllFrom resolveOne 0 items
 
 /-- The resolved value of one {lit}`SET` assignment for the column at
-{lit}`position`: the literal of its stored value ({name}`storeValue`) when the
-expression names no column and reads no clock (so any clock value, 0 here, gives its
-value), otherwise the expression, which the
+{lit}`position`: the literal of its stored value ({name}`Value.store`) when the
+expression names no column and reads no clock and no parameter (so any clock value, 0 here,
+gives its value), otherwise the expression, which the
 execution evaluates on the old row, at the statement's clock value, and stores. -/
 def assignedExpression (scope : Scope) (position : Nat) (expression : Syntax.Expr)
     (resolved : Resolved.Expr) : Resolved.Expr :=
-  if mentionsColumn scope expression || resolved.readsClock then resolved
-  else .literal (storeValue (columnAffinity scope.columns position) (resolved.eval (.plain 0) []))
+  if mentionsColumn scope expression || resolved.readsClock || resolved.readsParameter then resolved
+  else .literal (Value.store (columnAffinity scope.columns position) (resolved.eval (.plain 0) []))
 
 /-- Resolve one {lit}`SET` assignment at item {lit}`item`, in SQLite's order
 ({lit}`sqlite3Update`): the expression first, then the column name. The column name
@@ -56,7 +56,8 @@ def resolveAssignment (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (ke
     if (scope.columns[position]?.bind (·.generated)).isSome then .error (generated name)
     else if mentionsColumn scope value && keyColumns.contains position then
       .error (.restriction [item, 1] .rowDependentKey)
-    else if !mentionsColumn (scope ++ around) value && !operand.1.readsClock && operand.1.mayFailOn (.plain 0) [] then
+    else if !mentionsColumn (scope ++ around) value && !operand.1.readsClock && !operand.1.readsParameter &&
+        operand.1.mayFailOn (.plain 0) [] then
       .error (.restriction [item, 1] .constantFunctionError)
     else .ok (position, assignedExpression (scope ++ around) position value operand.1)
 

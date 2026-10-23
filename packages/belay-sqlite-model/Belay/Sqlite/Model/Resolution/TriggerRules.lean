@@ -64,19 +64,19 @@ def insertNewest (program : Resolved.Program) : List Resolved.Program → List R
   | [] => [program]
   | first :: rest => if program.trigger ≥ first.trigger then program :: first :: rest else first :: insertNewest program rest
 
-/-- The trigger programs of a resolved write at the index over the catalog, with foreign keys
+/-- The trigger programs of a resolved write over the catalog, with foreign keys
 checked when {lit}`keys` is set: the closure of its request, the newest trigger first; a prepare
 error of a program; or a restriction, such as {name}`RestrictionKind.triggerWritesOwnTable`, or
 {name}`RestrictionKind.triggerForm` for {lit}`ON CONFLICT DO UPDATE` on a table with a trigger,
 whose UPDATE triggers the closure does not follow. A statement that writes no row has none. -/
-def triggerPrograms (context : ResolveContext) (catalog : Catalog) (index : Nat) (keys : Bool)
-    (statement : Resolved.Statement) : Except Restriction (Except PrepareError (List Resolved.Program)) := do
+def triggerPrograms (context : ResolveContext) (catalog : Catalog) (keys : Bool)
+    (statement : Resolved.Statement) : Except NodeRestriction (Except PrepareError (List Resolved.Program)) := do
   let some request := statement.fireRequest keys | pure (.ok [])
-  if statement.updatesOnConflict && catalog.triggersOn request.table then throw (triggerRestriction index .triggerForm)
-  match ← triggerClosure context catalog index keys (closureFuel catalog) [request] [request] [] with
+  if statement.updatesOnConflict && catalog.triggersOn request.table then throw (triggerRestriction .triggerForm)
+  match ← triggerClosure context catalog keys (closureFuel catalog) [request] [request] [] with
   | .error error => pure (.error error)
   | .ok programs =>
-    if programs.any (·.writesOwnTable catalog keys programs) then throw (triggerRestriction index .triggerWritesOwnTable)
+    if programs.any (·.writesOwnTable catalog keys programs) then throw (triggerRestriction .triggerWritesOwnTable)
     pure (.ok (programs.foldr insertNewest []))
 
 end Belay.Sqlite.Model

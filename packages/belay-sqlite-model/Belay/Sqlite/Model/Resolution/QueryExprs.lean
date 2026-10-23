@@ -120,6 +120,7 @@ def resolveOperand (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misus
   | .string bytes => .ok (.literal (.text bytes), none)
   | .blob bytes => .ok (.literal (.blob bytes), none)
   | .currentTime keyword => .ok (.now (timeKeywordNamed keyword), none)
+  | .parameter number => .ok (.parameter number, none)
   | .exists index => match shapes.find index with
     | some _ => .ok (.exists index, none)
     | none => .error (.restriction [] .subqueryHere)

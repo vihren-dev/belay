@@ -41,8 +41,8 @@ statements before it from the empty catalog. -/
 def possible (script : List Syntax.Statement) : Option (List (List (List Value))) :=
   match (statements (migration [] script)).reverse with
   | (.query query subqueries) :: earlier =>
-    let database := (runSql earlier.reverse {}).database
-    query.possibleOn 0 database subqueries
+    let database := (runSql (bindValues earlier.reverse []) {}).database
+    query.possibleOn 0 [] database subqueries
   | (.createTable ..) :: _ | (.createIndex ..) :: _ | (.createTrigger ..) :: _ | (.addColumn ..) :: _ | (.drop ..) :: _
   | .begin :: _ | .commit :: _ | .rollback :: _ | (.insert ..) :: _ | (.upsert ..) :: _ | (.update ..) :: _
   | (.delete ..) :: _ | (.prepareError _) :: _ | (.setting _) :: _ | [] => none
@@ -92,7 +92,7 @@ example : possible (jobs ++ [selectT [name "p"] [] (some 1) none [name "p"]]) = 
   decide +kernel
 
 -- The normal form is one list for any input order: NULL comes before a NaN REAL, which
--- compareValues alone would call equal, and the integer 1 before the real 1.0.
+-- Value.compare alone would call equal, and the integer 1 before the real 1.0.
 example : Resolved.normalForm [[.real 0x7FF8000000000000], [.null]] = Resolved.normalForm [[.null], [.real 0x7FF8000000000000]] := by
   decide +kernel
 example : Resolved.normalForm [[.real 0x3FF0000000000000], [.integer 1]] = [[.integer 1], [.real 0x3FF0000000000000]] := by

@@ -118,10 +118,11 @@ def test_original_control_references_survive_minimization() -> None:
 @pytest.mark.parametrize("damage", ["version", "missing", "duplicate", "setup-count", "source-name", "source-value", "expected"])
 def test_malformed_inputs_fail_before_profile_unsupported(profile: ExecutionProfile, damage: str,
                                                           runtime_root: Path) -> None:
-    """A valid explicit profile cannot conceal malformed or inconsistent retained binding inputs."""
+    """A valid explicit profile cannot conceal malformed or inconsistent retained binding inputs:
+    the record prepares to a model case, and each damage makes it a harness error."""
     record = source_record(profile)
     translator = runtime_translator(runtime_root)
-    assert prepare(record, translator)[1]["verdict"] == "MODEL_UNSUPPORTED"
+    assert prepare(record, translator)[1] == {}
     if damage == "version":
         record["bindingRecordingVersion"] = True
     elif damage == "missing":

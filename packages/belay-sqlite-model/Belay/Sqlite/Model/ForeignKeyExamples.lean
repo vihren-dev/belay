@@ -43,7 +43,7 @@ def child (value : Expr) : Syntax.Statement := .insert (name! "c") none [[value]
 table at the position after it. -/
 def run (script : List Syntax.Statement) (position : Nat) (profile : Profile := keysOn) :
     Option (List (List Value)) × Bool :=
-  let outcome := runSql (statements (migration [] script profile)) {}
+  let outcome := runSql (bindValues (statements (migration [] script profile)) []) {}
   let failed := match outcome with
     | .success _ => false
     | .failure .. => true

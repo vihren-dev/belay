@@ -12,12 +12,12 @@ of {lit}`Query.results`. -/
 
 namespace Belay.Sqlite.Model.Resolved
 
-/-- A total order of values: {name}`compareValues`, and among the values that it says are equal
+/-- A total order of values: {name}`Value.compare`, and among the values that it says are equal
 but differ, NULL first, an integer before a real, and reals by their bits, so that a NaN REAL,
 which the model never makes, is not equal to NULL either. For example, the integer 1 comes
 before the real 1.0. -/
 def compareNormal (first second : Value) : Ordering :=
-  (compareValues first second).then (match first, second with
+  (Value.compare first second).then (match first, second with
     | .integer _, .real _ => .lt
     | .real _, .integer _ => .gt
     | .real a, .real b => compare a b
@@ -132,11 +132,15 @@ end Belay.Sqlite.Model.Resolved
 namespace Belay.Sqlite.Model
 
 /-- Every result that SQLite may give for a statement's query over a database at a clock value
-({name}`Resolved.Query.possibleResults`), in the context of its subqueries, as
-{name}`Resolved.Query.runOn` gives its one result; none when a table is missing. -/
-def Resolved.Query.possibleOn (query : Resolved.Query) (clock : Int) (database : Database)
+with the values bound to the statement's parameters ({name}`Resolved.Query.possibleResults`),
+in the context of its subqueries, as
+{name}`Resolved.Query.runOn` gives its one result, with its window bound to the values
+({name}`Resolved.Query.bindWindow`); none when a table is missing or a value of the window is not
+an integer. -/
+def Resolved.Query.possibleOn (query : Resolved.Query) (clock : Int) (parameters : List Value) (database : Database)
     (subqueries : List Resolved.Query) : Option (List (List (List Value))) :=
-  let context := Resolved.statementContext clock database subqueries
-  (query.source context database).map fun source => query.possibleResults context source.rows
+  let context := Resolved.statementContext clock parameters database subqueries
+  (query.source context database).bind fun source =>
+    (query.bindWindow parameters).map fun bound => bound.possibleResults context source.rows
 
 end Belay.Sqlite.Model

@@ -92,6 +92,7 @@ deriving instance Lean.ToExpr for CatalogIndex
 deriving instance Lean.ToExpr for CatalogTrigger
 deriving instance Lean.ToExpr for CatalogEntry
 deriving instance Lean.ToExpr for CatalogObject
+deriving instance Lean.ToExpr for Database
 deriving instance Lean.ToExpr for ExprError
 deriving instance Lean.ToExpr for PrepareError
 deriving instance Lean.ToExpr for Resolved.Aggregate

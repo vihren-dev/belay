@@ -67,7 +67,7 @@ statement runs. A default that does not fit the column's strict type
 ({name}`strictDefaultFits`) is {name}`RestrictionKind.addColumnStrictType`. Its
 {lit}`REFERENCES` constraints are its foreign keys, and a deferral clause sets whether the last
 of them so far is deferred. -/
-def resolveAddColumn (context : ResolveContext) (catalog : Catalog) (index : Nat)
+def resolveAddColumn (context : ResolveContext) (catalog : Catalog)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition) : StatementResolution :=
   match catalog.findTable tableName with
   | none => prepareError catalog (.noSuchTable tableName)
@@ -85,18 +85,18 @@ def resolveAddColumn (context : ResolveContext) (catalog : Catalog) (index : Nat
       prepareError catalog (.expression (.defaultNotConstant definition.name))
     else if definition.constraints.any Syntax.ColumnConstraint.isPrimaryKey then prepareError catalog (.expression .cannotAddPrimaryKey)
     else if definition.constraints.any Syntax.ColumnConstraint.isUnique then prepareError catalog (.expression .cannotAddUnique)
-    else if rowidName definition.name then restrict index [1] .rowidColumnName
+    else if rowidName definition.name then restrict [1] .rowidColumnName
     else match addColumnRestriction table definition with
-    | some kind => restrict index [1] kind
+    | some kind => restrict [1] kind
     | none =>
       match addedColumn table.strict definition with
-      | none => restrict index [1] .addColumnConstraint
+      | none => restrict [1] .addColumnConstraint
       | some column =>
-        if !strictDefaultFits column then restrict index [1] .addColumnStrictType else
+        if !strictDefaultFits column then restrict [1] .addColumnStrictType else
         let scope := Scope.single tableName (table.columns ++ [column]) !table.withoutRowid
         match columnChecks context.profile.dqsDdl scope definition with
-        | .error (.prepare _) => restrict index [1] .addColumnCheckError
-        | .error (.restriction path reason) => restrict index (1 :: path) reason
+        | .error (.prepare _) => restrict [1] .addColumnCheckError
+        | .error (.restriction path reason) => restrict (1 :: path) reason
         | .ok checks =>
           let column := { column with checks, foreignKeys := addedForeignKeys table.columns.length definition.constraints }
           .ok (.addColumn position column, catalog.addColumn position column)

@@ -82,8 +82,11 @@ What the code has today, after slice 1 of ADR 0018:
   is never a result column number in `ORDER BY` or `GROUP BY`, and SQLite reads its value
   only when the statement runs. So resolution keeps it as an expression, and `LIMIT ?` takes
   the bound integer.
-- The script carries the values. ADR 0017's S3 binds them from `$x` and `:name` in Lean
-  source; a corpus case binds none.
+- The script carries the values, one list for each statement. ADR 0017's S3 binds them from
+  `$x` and `:name` in Lean source. A corpus case binds the values that its trace records for
+  each statement. (Amended 2026-10-23: the first text said that a corpus case binds none, but
+  12 authored cases of v5 and 11 of v4 bind a value to each parameter, and the model marks
+  them unsupported today.)
 - Amended 2026-10-22: ADR 0017's S2 adds a run that resolves each statement when it runs and
   continues after an error (ADR 0017, D3, amended). That run carries the bound values too,
   and gives them to each statement that it runs.
@@ -215,3 +218,9 @@ Decided on 2026-10-22:
 1. **The order of D7**, parameters first.
 2. **D1: parameters in the model**, not substituted by the surface.
 3. **A pull request for each slice**, at the slice's end, for this ADR.
+
+Decided on 2026-10-23:
+
+4. **D1: the corpus runs bind the recorded values.** A corpus case gives the model the values
+   that its trace records for each statement, so the authored cases that bind parameters
+   become evidence for D1.

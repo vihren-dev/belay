@@ -49,15 +49,24 @@ def Value.bytes : Value → List UInt8
 /-- SQLite's comparison of two values: by storage class, then numerically, then by
 bytes. Two values compare as equal exactly when they are both NULL, or numbers with
 the same value, or TEXT or BLOB values with the same bytes. -/
-def compareValues : Value → Value → Ordering :=
+def Value.compare : Value → Value → Ordering :=
   compareLex (compareOn Value.rank) (compareLex (compareOn Value.scaled) (compareOn Value.bytes))
 
-/-- For all values, {name}`compareValues` is a transitive, oriented comparison: a total
+/-- For all values, {name}`Value.compare` is a transitive, oriented comparison: a total
 preorder, as a sort and a grouping need. The proof is the core instance for a
 lexicographic combination of keyed comparisons. -/
-instance : Std.TransCmp compareValues := by
-  unfold compareValues; exact inferInstance
+instance : Std.TransCmp Value.compare := by
+  unfold Value.compare; exact inferInstance
 
+
+/-- For every value of nonzero rank ({name}`Value.rank`), NULL comes before it in
+{name}`Value.compare`. Rank 0 holds NULL and also a NaN REAL, which the model never makes and
+which compares equal to NULL. Proof sketch: NULL has rank 0, and a nonzero rank is positive, so
+the first comparison of {name}`Value.compare`, by rank, gives {lean}`Ordering.lt`. -/
+theorem Value.compare_null (value : Value) (ranked : value.rank ≠ 0) : Value.compare .null value = .lt := by
+  have before : Ord.compare (0 : Nat) value.rank = .lt := Nat.compare_eq_lt.mpr (Nat.pos_of_ne_zero ranked)
+  have null : Value.rank .null = 0 := rfl
+  simp only [Value.compare, compareLex, compareOn, null, before, Ordering.then]
 
 /-- A collating sequence of SQLite (ADR 0014, D3): how TEXT values compare. {lit}`BINARY`
 compares bytes, {lit}`NOCASE` compares with ASCII letters folded, and {lit}`RTRIM` compares
@@ -101,16 +110,16 @@ def Collation.key : Collation → Value → Value
   | .nocase, value@.null | .nocase, value@(.integer _) | .nocase, value@(.real _) | .nocase, value@(.blob _)
   | .rtrim, value@.null | .rtrim, value@(.integer _) | .rtrim, value@(.real _) | .rtrim, value@(.blob _) => value
 
-/-- SQLite's comparison of two values under a collation: {name}`compareValues` of their
-collation keys ({name}`Collation.key`). Under {lit}`BINARY` it is {name}`compareValues`. -/
+/-- SQLite's comparison of two values under a collation: {name}`Value.compare` of their
+collation keys ({name}`Collation.key`). Under {lit}`BINARY` it is {name}`Value.compare`. -/
 def Collation.compare (collation : Collation) (left right : Value) : Ordering :=
-  compareValues (collation.key left) (collation.key right)
+  Value.compare (collation.key left) (collation.key right)
 
 /-- For every collation, {name}`Collation.compare` is a transitive, oriented comparison, as
-a sort and a grouping need: it is {name}`compareValues` of the keys. -/
+a sort and a grouping need: it is {name}`Value.compare` of the keys. -/
 instance (collation : Collation) : Std.TransCmp collation.compare where
-  eq_swap := Std.OrientedCmp.eq_swap (cmp := compareValues)
-  isLE_trans := Std.TransCmp.isLE_trans (cmp := compareValues)
+  eq_swap := Std.OrientedCmp.eq_swap (cmp := Value.compare)
+  isLE_trans := Std.TransCmp.isLE_trans (cmp := Value.compare)
 
 /-- Whether an ordering satisfies the operator, for operands that are not NULL. -/
 def Comparison.holds : Comparison → Ordering → Bool

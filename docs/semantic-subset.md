@@ -35,7 +35,11 @@ The frontend maps these statements, and refuses every other statement as
   with an optional alias (ADR 0012, slice 1). Without `FROM`, the source is one row
   with no columns (slice 6a), which `WHERE` keeps or removes; aggregation, grouping,
   `ORDER BY` and `LIMIT` then apply as for any query, so `SELECT count(*) WHERE 0` is one
-  row with 0. `*` is SQLite's `no tables specified`. `FROM` is one table, or tables joined
+  row with 0. `LIMIT ?` and `OFFSET ?` read the bound value when the query starts, LIMIT
+  first and OFFSET only when the LIMIT is not 0, and convert it as SQLite's
+  `OP_MustBeInt` does; a value that is not an integer then fails the statement with
+  `datatype mismatch`. A negative LIMIT has no limit, and a negative bound OFFSET skips
+  no rows (ADR 0019). `*` is SQLite's `no tables specified`. `FROM` is one table, or tables joined
   left to right with `,`, `JOIN`, `INNER JOIN`, `CROSS JOIN` (with an optional `ON`)
   and `LEFT [OUTER] JOIN … ON`, and `RIGHT [OUTER] JOIN` and `FULL [OUTER] JOIN`
   with an optional `ON` (slice 4c), which add each right row that no row of the left
@@ -383,7 +387,7 @@ or inside an `ORDER BY` expression; a query of SQLite's own tables, such as
 the same name; an `ON` condition that names a
 table joined after it; `SUM` in a query with `GROUP BY` and `LIMIT` or `OFFSET`; and
 `LIMIT` or `OFFSET` other than
-an integer literal, or a negative `OFFSET`. Each restriction message says what to
+an integer literal or a lone parameter, or a negative literal `OFFSET`. Each restriction message says what to
 change.
 
 ### Restriction registry
@@ -422,6 +426,7 @@ should shrink.
 | `add-column-check-error` | A CHECK of ADD COLUMN that SQLite cannot resolve is not modeled, because SQLite reports it while the statement runs | ADR 0014, slice 4 |
 | `generated-function` | A date and time function or a JSON function in a generated column is not modeled | ADR 0014, slice 5 |
 | `generated-loop` | Generated columns that read each other in a loop are not modeled, because SQLite reports the loop while CREATE TABLE runs | ADR 0014, slice 5 |
+| `parameter-error-order` | A parameter in a CHECK constraint, a generated column or an index, in an expression where SQLite can also find another error or removes the parameter before it resolves names (`? AND 0`, `? IN ()`), is not modeled | ADR 0019, D1 |
 | `add-column-generated` | ADD COLUMN of a generated column is not modeled | ADR 0014, slice 5 |
 | `drop-constraint-index` | DROP INDEX of a name that begins with `sqlite_autoindex_` and is no catalog index is not modeled, because the catalog does not name the indexes of UNIQUE and PRIMARY KEY constraints, which SQLite does not drop | ADR 0014, slice 7 |
 | `add-column-strict-type` | ADD COLUMN to a `STRICT` table with a type that it does not admit, or with a default that does not fit the type, is not modeled, because SQLite reports it while the statement runs | ADR 0014, slice 6 |
@@ -438,8 +443,8 @@ should shrink.
 | `group-by-term` | Only a column name, also under COLLATE, or a result column number is modeled in GROUP BY | ADR 0012 slice 1; ADR 0014, slice 3 |
 | `bare-column` | A result column outside GROUP BY in an aggregate query is not modeled | ADR 0012 slice 1 |
 | `aggregate-order-by` | An `ORDER BY` term of an aggregate query that reads a column outside `GROUP BY` is not modeled | ADR 0012 slice 1; ADR 0018, slice 3 |
-| `window-value` | Only an integer literal is modeled as LIMIT or OFFSET | ADR 0012 slice 1 |
-| `negative-offset` | A negative OFFSET is not modeled | ADR 0012 slice 1 |
+| `window-value` | Only an integer literal or a lone parameter is modeled as LIMIT or OFFSET | ADR 0012 slice 1; ADR 0019 |
+| `negative-offset` | A negative literal OFFSET is not modeled; a negative bound OFFSET skips no rows | ADR 0012 slice 1; ADR 0019 |
 | `table-function` | Only `json_each` with one or two arguments is modeled as a table-valued function in FROM | ADR 0012 slice 6d |
 | `later-table-in-on` | An ON condition that names a source joined after it is not modeled: SQLite moves it to WHERE without outer joins and refuses it otherwise | ADR 0012 amendment 2; ADR 0013 amendment 2 |
 | `function-join` | `json_each` as the right operand of RIGHT or FULL JOIN, with NATURAL or USING, or before a NATURAL JOIN, is not modeled | ADR 0012 slice 6d; ADR 0013 amendment 2 |

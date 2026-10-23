@@ -33,6 +33,9 @@ def commands (tree : SqlTree) (root : Nat) : TranslateM (Array ParseNode) := do
 
 /-- One command as a statement, or the refusal of a statement that has no syntax constructor. -/
 def statement (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
+  match numberParameters Limits.documentedDefaults.variableNumber tree command with
+  | .ok numbers => modify ({ · with parameters := numbers })
+  | .error refusal => throw refusal
   let symbols := tree.symbols command
   if symbols == ["create_table", "create_table_args"] then return ← createTable tree command
   if symbols.take 3 == ["createkw", "uniqueflag", "INDEX"] then return ← createIndex tree command

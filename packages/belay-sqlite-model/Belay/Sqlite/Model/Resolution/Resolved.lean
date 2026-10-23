@@ -1,5 +1,5 @@
 import Belay.Sqlite.Model.Resolution.TriggerProgram
-import Belay.Sqlite.Model.Resolution.PrepareErrors
+import Belay.Sqlite.Model.Resolution.StatementPrepareError
 import Belay.Sqlite.Model.Resolution.ConflictPolicy
 import Belay.Sqlite.Model.Resolution.RestrictionText
 import Belay.Sqlite.Model.Resolution.QueryForm
@@ -28,6 +28,27 @@ structure Restriction where
 
 /-- The message of a restriction that users read: the message of its kind. -/
 def Restriction.reason (restriction : Restriction) : String := restriction.kind.message
+
+/-- A model restriction inside one statement: the path of the refused node in the
+{name}`Syntax.Statement` and the kind. It has no statement index, so the resolution of one
+statement does not depend on where the statement is in the script; the resolution of the
+script adds the index. For example,
+{lean}`({ path := [1], kind := .rowidName } : NodeRestriction)` refuses child 1 of the statement. -/
+structure NodeRestriction where
+  /-- Child positions from the statement to the refused node; empty for the statement. -/
+  path : List Nat
+  /-- Which restriction of the registry refuses the SQL. -/
+  kind : RestrictionKind
+  deriving Repr, DecidableEq
+
+/-- The message of a restriction inside a statement that users read: the message of its kind. -/
+def NodeRestriction.reason (restriction : NodeRestriction) : String := restriction.kind.message
+
+/-- The restriction inside a statement as a restriction of the script, at the zero-based
+statement index. For example,
+{assert}`(({ path := [1], kind := .rowidName } : NodeRestriction).at 2).statement = 2`. -/
+def NodeRestriction.at (restriction : NodeRestriction) (statement : Nat) : Restriction :=
+  { statement, path := restriction.path, kind := restriction.kind }
 
 namespace Resolved
 

@@ -38,9 +38,10 @@ inductive ExecutionError where
   /-- A query's {lit}`SUM` overflows the 64-bit integers: SQLite's {lit}`integer overflow`,
   reported while the statement runs. -/
   | integerOverflow
-  /-- A value for a rowid alias that is not an integer after INTEGER affinity, or a NULL
-  assigned to it by UPDATE: SQLite's {lit}`datatype mismatch` ({lit}`SQLITE_MISMATCH`),
-  reported while the statement runs. -/
+  /-- A value for a rowid alias that is not an integer after INTEGER affinity, a NULL
+  assigned to it by UPDATE, or a value bound to {lit}`LIMIT ?` or {lit}`OFFSET ?` of a query that
+  is not an integer ({lit}`Query.bindWindow`): SQLite's {lit}`datatype mismatch`
+  ({lit}`SQLITE_MISMATCH`), reported while the statement runs. -/
   | datatypeMismatch
   /-- A JSON function of a query fails: SQLite's {lit}`malformed JSON` or
   {lit}`bad JSON path`, reported while the statement runs. -/
@@ -94,22 +95,25 @@ def Outcome.persistedDatabase : Outcome → Database
   | .pending persisted _ _ => persisted
   | outcome => outcome.database
 
-/-- A query over a database at a clock value with the subqueries of its statement: its
-source rows ({name}`Resolved.Query.source`) and its run over them ({name}`Resolved.Query.run`),
+/-- A query over a database at a clock value, with the values bound to the parameters and the
+subqueries of its statement: its source rows ({name}`Resolved.Query.source`) and its run over them ({name}`Resolved.Query.run`),
 both in the statement's context ({name}`Resolved.statementContext`); none when a table is
 missing. -/
-def Resolved.Query.runOn (query : Resolved.Query) (clock : Int) (database : Database)
+def Resolved.Query.runOn (query : Resolved.Query) (clock : Int) (parameters : List Value) (database : Database)
     (subqueries : List Resolved.Query) : Option (Resolved.SourceRows × Resolved.QueryRun) :=
-  let context := Resolved.statementContext clock database subqueries
+  let context := Resolved.statementContext clock parameters database subqueries
   (query.source context database).map fun source => (source, query.run context source.rows)
 
 /-- The effect of a query with its run ({name}`Resolved.Query.runOn`): it changes nothing; it
-fails with {lean}`ExecutionError.integerOverflow` when it overflows, else with
+fails with {lean}`ExecutionError.datatypeMismatch` when a value of its window is not an integer
+({name}`Resolved.QueryRun.mismatch`), else with {lean}`ExecutionError.integerOverflow` when it
+overflows, else with
 {lean}`ExecutionError.functionError` when its fault is {lean}`Resolved.Fault.must`, and
 otherwise succeeds, also without a run. -/
 def queryEffect (database : Database) : Option (Resolved.SourceRows × Resolved.QueryRun) → Effect
   | some (_, run) =>
-    if run.overflow then .error (.integerOverflow, database)
+    if run.mismatch then .error (.datatypeMismatch, database)
+    else if run.overflow then .error (.integerOverflow, database)
     else if run.fault == .must then .error (.functionError, database)
     else .ok database
   | none => .ok database
@@ -137,12 +141,14 @@ rows that do not match the catalog), CREATE INDEX of a position without a table,
 COLUMN at a position without a table fail with {lean}`ExecutionError.unmodeled`:
 {lit}`resolve` gives no such statement for a conforming database. A query changes nothing: its run over its source rows
 ({name}`Resolved.Query.run`, {name}`Resolved.Query.source`) fails with
+{lean}`ExecutionError.datatypeMismatch` when a value of its window is not an integer, else with
 {lean}`ExecutionError.integerOverflow` when it overflows, else with
 {lean}`ExecutionError.functionError` when its fault is {lean}`Resolved.Fault.must`, and
 otherwise succeeds. Its result rows are not part of the outcome. SQL execution handles transaction control and writes
-separately. {lit}`clock` is the statement's clock value, which a query's expressions may
-read. -/
-def step (clock : Int) (statement : Resolved.Statement) (database : Database) : Effect :=
+separately. {lit}`clock` is the statement's clock value and {lit}`parameters` are the values
+bound to its parameters, which a query's expressions may read; use {lean}`([] : List Value)` for a statement
+that binds none. -/
+def step (clock : Int) (parameters : List Value) (statement : Resolved.Statement) (database : Database) : Effect :=
   match statement with
   | .createTable target name table =>
     if target == database.catalog.length && database.rows.length == database.catalog.length then
@@ -179,7 +185,7 @@ def step (clock : Int) (statement : Resolved.Statement) (database : Database) : 
   | .drop positions _ => .ok (database.drop positions)
   | .setting _ => .ok database
   | .prepareError error => .error (.prepare error, database)
-  | .query query subqueries => queryEffect database (query.runOn clock database subqueries)
+  | .query query subqueries => queryEffect database (query.runOn clock parameters database subqueries)
   | .begin | .commit | .rollback | .insert .. | .upsert .. | .update .. | .delete .. =>
     .error (.unmodeled, database)
 

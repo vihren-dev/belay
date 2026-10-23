@@ -12,7 +12,7 @@ ROW_DELETE = SQLITE + "RowDelete.lean"
 """The execution of DELETE."""
 LITERAL_DATA = SQLITE + "LiteralData.lean"
 """The rowid of an inserted row."""
-OUTPUTS = "verifier-conformance/VerifierConformance/Outputs.lean"
+OUTPUTS = "belay-sqlite-model/Belay/Sqlite/Model/StatementOutput.lean"
 """The outputs of statements, with the RETURNING rows and the change count."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

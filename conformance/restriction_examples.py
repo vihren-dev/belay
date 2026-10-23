@@ -24,6 +24,7 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "engine-table": ("CREATE TABLE t(a INTEGER); CREATE TABLE sqlite_sequence(name, seq);", "SELECT a FROM t;"),
     "rowid-column-name": ("CREATE TABLE t(a INTEGER);", "CREATE TABLE u(rowid TEXT);"),
     "check-function": ("CREATE TABLE t(a TEXT);", "CREATE TABLE u(a TEXT CHECK (date(a) IS NOT NULL));"),
+    "parameter-error-order": ("CREATE TABLE t(a TEXT);", "CREATE TABLE u(a TEXT CHECK (abs(a) > ?));"),
     "add-column-check-error": ("CREATE TABLE t(a TEXT);", "ALTER TABLE t ADD COLUMN b CHECK (zz > 0);"),
     "generated-function": ("CREATE TABLE t(a TEXT);", "CREATE TABLE u(a TEXT, b AS (date(a)));"),
     "generated-loop": ("CREATE TABLE t(a TEXT);", "CREATE TABLE u(a, b AS (c), c AS (b));"),
@@ -100,7 +101,7 @@ def resolve_example(runtime: Path, schema: str, migration: str) -> dict[str, Jso
     restrictions can be reached."""
     parser = record_parser(runtime_translator(runtime), {"sourceId": SOURCE_ID})
     try:
-        model_input = {"profile": modeled_profile({}), "initial": [], "clocks": [],
+        model_input = {"profile": modeled_profile({}), "initial": [], "clocks": [], "parameters": [],
                        "schema": [item.value for item in parser.translate(schema.encode(), "schema.sql").statements()],
                        "script": [item.value for item in parser.translate(migration.encode(), "migration.sql").statements()]}
     except SqlError as error:

@@ -19,7 +19,7 @@ namespace Belay.Sqlite.Model
 generated columns computed and its rowid moved with its alias, as an UPDATE writes it. -/
 def setCells (shape : CatalogTable) (cells : List (Nat × Value)) (row : Row) : Row :=
   let assigned := cells.foldl (fun values (position, value) =>
-    values.set position (storeValue (LiteralData.positionAffinity shape.columns position) value)) row.values
+    values.set position (Value.store (LiteralData.positionAffinity shape.columns position) value)) row.values
   LiteralData.movedRowid shape.rowidAlias { row with values := LiteralData.generatedCells shape.columns assigned }
 
 /-- The value that {lit}`SET DEFAULT` writes into a child column: NULL for a generated column or

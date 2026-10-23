@@ -18,17 +18,17 @@ namespace Belay.Sqlite.Model
 child {lit}`field`, around the scope that {lit}`scopeOf` gives for the table, then the write
 with them ({lit}`resolveWrite`). A subquery that reads the written table directly is
 {name}`RestrictionKind.subqueryReadsTarget`. -/
-def resolveWriteSubqueries (context : ResolveContext) (catalog : Catalog) (index field : Nat) (tableName : Identifier)
+def resolveWriteSubqueries (context : ResolveContext) (catalog : Catalog) (field : Nat) (tableName : Identifier)
     (scopeOf : CatalogTable → Scope) (subqueries : List Syntax.Subquery)
     (resolveWrite : List Resolved.Query → SubqueryShapes → StatementResolution) : StatementResolution :=
   let target := catalog.findTable tableName
   let scope := (target.map fun (_, table) => scopeOf table).getD []
   match resolveSubqueries context.profile.dqsDml catalog field (QueryScope.ofScope scope) subqueries with
   | .error (.noSuchTable name) => prepareError catalog (.noSuchTable name)
-  | .error (.value issue) => issueResolution catalog index [] issue
+  | .error (.value issue) => issueResolution catalog [] issue
   | .ok (resolved, shapes) =>
     if target.any fun (position, _) => resolved.any (·.readsTable position) then
-      restrict index [field] .subqueryReadsTarget
+      restrict [field] .subqueryReadsTarget
     else resolveWrite resolved { later := shapes }
 
 /-- The scope of the written table of {lit}`UPDATE` and {lit}`DELETE`, as their expressions see it. -/

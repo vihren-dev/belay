@@ -61,7 +61,8 @@ def QuerySource.first (position : Nat) : QuerySource := { kind := .inner, source
 
 /-- A resolved {lit}`SELECT`: its sources, the {lit}`WHERE` condition, whether it is an
 aggregate query with its grouping terms, the result columns with their names, the
-{lit}`ORDER BY` terms with a flag for {lit}`DESC`, and the window. Use
+{lit}`ORDER BY` terms with a flag for {lit}`DESC`, and the window: literal values, or the
+numbers of the parameters that give them when the query runs. Use
 {lean}`(none : Option Nat)` for no {lit}`LIMIT`. -/
 structure Query where
   /-- The sources of {lit}`FROM` in written order; empty for a {lit}`SELECT` without
@@ -81,10 +82,20 @@ structure Query where
   names : List String
   /-- The {lit}`ORDER BY` terms. -/
   orderBy : List SortTerm
-  /-- The number of rows that {lit}`OFFSET` skips; zero without {lit}`OFFSET`. -/
+  /-- The number of rows that a literal {lit}`OFFSET` skips; zero without {lit}`OFFSET` and
+  with {lit}`OFFSET ?`. -/
   offset : Nat
-  /-- The {lit}`LIMIT`, or {lean}`(none : Option Nat)` for no limit. -/
+  /-- The literal {lit}`LIMIT`, or {lean}`(none : Option Nat)` for no limit and with
+  {lit}`LIMIT ?`. -/
   limit : Option Nat
+  /-- The number of the parameter of {lit}`LIMIT ?`, or {lean}`(none : Option Nat)` for a literal
+  or no {lit}`LIMIT`. When the query runs, the value bound to the parameter replaces
+  the literal {lit}`limit` ({lit}`Query.bindWindow`). -/
+  limitParameter : Option Nat := none
+  /-- The number of the parameter of {lit}`OFFSET ?`, or {lean}`(none : Option Nat)` for a
+  literal or no {lit}`OFFSET`. When the query runs, the value bound to the parameter replaces
+  the literal {lit}`offset` ({lit}`Query.bindWindow`). -/
+  offsetParameter : Option Nat := none
   /-- The number of cells of the row of the queries around a subquery, which come before its
   own cells (ADR 0018, D1); {lean}`0` for the query of a statement. -/
   outer : Nat := 0

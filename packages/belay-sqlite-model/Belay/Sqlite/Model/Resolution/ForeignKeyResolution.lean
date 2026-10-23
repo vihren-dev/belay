@@ -66,22 +66,22 @@ def Resolved.Statement.updatesOnConflict : Resolved.Statement → Bool
   | .insert .. | .update .. | .delete .. | .drop .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn ..
   | .begin | .commit | .rollback | .prepareError _ | .query .. | .setting _ => false
 
-/-- The foreign keys of a resolved write at the zero-based index, over the catalog before it,
+/-- The foreign keys of a resolved write, over the catalog before it,
 with foreign keys on: the prepare error of its keys ({name}`Catalog.foreignKeyIssues`); a key
 that is deferred is {name}`RestrictionKind.deferredForeignKey`, and a {lit}`DO UPDATE` clause on
 a table with a key to check is {name}`RestrictionKind.foreignKeyUpsert`; otherwise whether the
 write has a key to check. Every other statement has none. -/
-def foreignKeyCheck (catalog : Catalog) (index : Nat) (statement : Resolved.Statement) :
-    Except Restriction (Except PrepareError Bool) :=
+def foreignKeyCheck (catalog : Catalog) (statement : Resolved.Statement) :
+    Except NodeRestriction (Except PrepareError Bool) :=
   match foreignKeyWrite catalog statement with
   | none => .ok (.ok false)
   | some (table, write, ignore, checked) =>
     match catalog.foreignKeyIssues table write ignore with
     | .error error => .ok (.error error)
     | .ok deferred =>
-      if deferred then .error { statement := index, path := [], kind := .deferredForeignKey }
+      if deferred then .error { path := [], kind := .deferredForeignKey }
       else if !checked then .ok (.ok false)
-      else if statement.updatesOnConflict then .error { statement := index, path := [], kind := .foreignKeyUpsert }
+      else if statement.updatesOnConflict then .error { path := [], kind := .foreignKeyUpsert }
       else .ok (.ok true)
 
 end Belay.Sqlite.Model

@@ -48,7 +48,7 @@ def insertInto (table : Identifier) (cells : List Expr) (algorithm : Option Conf
 /-- The outcome of a script from {name}`tables` without rows, or none for a restriction. -/
 def run (script : List Syntax.Statement) : Option Outcome :=
   match migration tables script with
-  | .resolved resolved _ => some (runSql resolved tables.emptyDatabase)
+  | .resolved resolved _ => some (runSql (bindValues resolved []) tables.emptyDatabase)
   | .restricted _ => none
 
 /-- The position and reason of a failure, with the number of rows of the table at a catalog

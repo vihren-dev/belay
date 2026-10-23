@@ -58,53 +58,61 @@ theorem numericStore_numericStore (value : Value) : numericStore (numericStore v
   | text bytes => exact numericStore_numericText bytes
   | null | integer _ | blob _ => rfl
 
-/-- For every value that {name}`numericStore` keeps, {name}`storeValue` with REAL affinity
+/-- For every value that {name}`numericStore` keeps, {name}`Value.store` with REAL affinity
 keeps the result of {name}`realRead`. Proof sketch: a REAL result goes through
 {name}`positiveZero` again, which is idempotent; NULL, TEXT and BLOB stay. -/
-theorem storeValue_real_realRead (value : Value) (kept : numericStore value = value) :
-    storeValue .real (realRead value) = realRead value := by
+theorem Value.store_real_realRead (value : Value) (kept : numericStore value = value) :
+    Value.store .real (realRead value) = realRead value := by
   cases value with
-  | integer _ | real _ => simp only [realRead, storeValue, positiveZero_positiveZero]
+  | integer _ | real _ => simp only [realRead, Value.store, positiveZero_positiveZero]
   | null | blob _ => rfl
-  | text _ => simp only [realRead, storeValue, kept]
+  | text _ => simp only [realRead, Value.store, kept]
 
-/-- For every value that is not a REAL, {name}`storeValue` with REAL affinity is
+/-- For every value that is not a REAL, {name}`Value.store` with REAL affinity is
 {name}`realRead` of {name}`numericStore`. Proof sketch: by cases on the value; each
 non-REAL case is the defining equation, and the REAL case contradicts the premise. -/
-theorem storeValue_real_other (value : Value) (other : ∀ bits, value ≠ .real bits) :
-    storeValue .real value = realRead (numericStore value) := by
-  cases value <;> simp_all [storeValue]
+theorem Value.store_real_other (value : Value) (other : ∀ bits, value ≠ .real bits) :
+    Value.store .real value = realRead (numericStore value) := by
+  cases value <;> simp_all [Value.store]
 
-/-- For every affinity and value, {name}`storeValue` applied twice with the affinity equals
-{name}`storeValue` applied once: a stored value is in its stored form. Proof sketch: BLOB
+/-- For every affinity and value, {name}`Value.store` applied twice with the affinity equals
+{name}`Value.store` applied once: a stored value is in its stored form. Proof sketch: BLOB
 and TEXT by cases; NUMERIC and INTEGER by {name}`numericStore_numericStore`; REAL by
-{name}`positiveZero_positiveZero` for a REAL value and by {name}`storeValue_real_realRead`
+{name}`positiveZero_positiveZero` for a REAL value and by {name}`Value.store_real_realRead`
 for every other value. -/
-theorem storeValue_storeValue (affinity : Affinity) (value : Value) :
-    storeValue affinity (storeValue affinity value) = storeValue affinity value := by
+theorem Value.store_store (affinity : Affinity) (value : Value) :
+    Value.store affinity (Value.store affinity value) = Value.store affinity value := by
   cases affinity with
   | blob => rfl
   | numeric | integer => exact numericStore_numericStore value
   | text => cases value <;> rfl
   | real =>
     cases value with
-    | real bits => simp only [storeValue, positiveZero_positiveZero]
-    | null => rw [storeValue_real_other .null (by simp)]; exact storeValue_real_realRead _ (numericStore_numericStore _)
+    | real bits => simp only [Value.store, positiveZero_positiveZero]
+    | null => rw [Value.store_real_other .null (by simp)]; exact Value.store_real_realRead _ (numericStore_numericStore _)
     | integer whole =>
-      rw [storeValue_real_other (.integer whole) (by simp)]; exact storeValue_real_realRead _ (numericStore_numericStore _)
+      rw [Value.store_real_other (.integer whole) (by simp)]; exact Value.store_real_realRead _ (numericStore_numericStore _)
     | text bytes =>
-      rw [storeValue_real_other (.text bytes) (by simp)]; exact storeValue_real_realRead _ (numericStore_numericStore _)
+      rw [Value.store_real_other (.text bytes) (by simp)]; exact Value.store_real_realRead _ (numericStore_numericStore _)
     | blob bytes =>
-      rw [storeValue_real_other (.blob bytes) (by simp)]; exact storeValue_real_realRead _ (numericStore_numericStore _)
+      rw [Value.store_real_other (.blob bytes) (by simp)]; exact Value.store_real_realRead _ (numericStore_numericStore _)
 
-/-- For every value, {name}`storeValue` with TEXT affinity is not an INTEGER or a REAL. -/
-theorem storeValue_text_not_number (value : Value) :
-    (∀ whole, storeValue .text value ≠ .integer whole) ∧ (∀ bits, storeValue .text value ≠ .real bits) := by
-  cases value <;> simp [storeValue]
+/-- For every value, {name}`Value.store` with TEXT affinity is not an INTEGER or a REAL. -/
+theorem Value.store_text_not_number (value : Value) :
+    (∀ whole, Value.store .text value ≠ .integer whole) ∧ (∀ bits, Value.store .text value ≠ .real bits) := by
+  cases value <;> simp [Value.store]
 
-/-- For every affinity, {name}`storeValue` keeps NULL. Proof sketch: each affinity's case
+/-- For every affinity, {name}`Value.store` keeps NULL. Proof sketch: each affinity's case
 returns NULL unchanged by its definition. -/
-theorem storeValue_null (affinity : Affinity) : storeValue affinity .null = .null := by
+theorem Value.store_null (affinity : Affinity) : Value.store affinity .null = .null := by
   cases affinity <;> rfl
+
+/-- For all bytes, a TEXT value stored under INTEGER affinity is {name}`numericText` of its
+bytes: the number when the text is a number, and the same TEXT otherwise. For example,
+{assert}`Value.store .integer (.text [49, 50]) = .integer 12`. Proof sketch: {name}`Value.store`
+under INTEGER affinity is {name}`numericStore`, which is {name}`numericText` on TEXT, by
+definition. -/
+theorem Value.store_integer_text (bytes : List UInt8) : Value.store .integer (.text bytes) = numericText bytes :=
+  rfl
 
 end Belay.Sqlite.Model

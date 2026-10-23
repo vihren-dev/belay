@@ -12,7 +12,7 @@ UPSERT = SQLITE + "Upsert.lean"
 """The ON CONFLICT clauses of INSERT."""
 RUN = SQLITE + "UpsertRun.lean"
 """The rows of an INSERT with ON CONFLICT clauses."""
-OUTPUTS = "verifier-conformance/VerifierConformance/Outputs.lean"
+OUTPUTS = "belay-sqlite-model/Belay/Sqlite/Model/StatementOutput.lean"
 """The outputs of statements, with the change count."""
 
 MUTANTS: dict[str, tuple[str, str, str]] = {

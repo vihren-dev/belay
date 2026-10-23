@@ -54,7 +54,7 @@ def RowWidth (columns : List CatalogColumn) (positions : List Nat)
       (∀ keyword, columns[index].defaultValue.map (·.form) = some (.clock keyword) →
         full[index]? = some (.expression (.now keyword))) ∧
       ((∀ keyword, columns[index].defaultValue.map (·.form) ≠ some (.clock keyword)) →
-        (defaultValue columns[index]).map (fun value => .value (storeValue columns[index].affinity value)) =
+        (defaultValue columns[index]).map (fun value => .value (Value.store columns[index].affinity value)) =
           .ok (full[index]?.getD (.value .null))))
 
 /-- For all inputs, a successful {name}`fullCells` gives cells that satisfy
@@ -111,13 +111,13 @@ written row such that the resolved row satisfies {name}`RowWidth` for the table'
 columns. So every resolved row has one cell for each table column. Proof sketch:
 split the resolver down to its successful branch; each row is a result of
 {name}`fullCells` by {name}`resolveAllFrom_ok`, and {name}`fullCells_rowWidth` gives the rule. -/
-theorem resolveInsert_rowWidth (context : ResolveContext) (catalog after : Catalog) (index : Nat)
+theorem resolveInsert_rowWidth (context : ResolveContext) (catalog after : Catalog)
     (tableName : Identifier) (names : Option (List Identifier)) (rows : List (List Syntax.Expr))
     (conflicts : List Syntax.ConflictClause) (algorithm : Option ConflictAlgorithm)
     (returning : List Syntax.ResultColumn) (subqueries resolvedSubqueries : List Resolved.Query)
     (shapes : SubqueryShapes) (position : Nat) (full : List (List Resolved.Cell))
     (columns : List (Resolved.Expr × String))
-    (ok : resolveInsert context catalog index tableName names rows conflicts algorithm returning subqueries shapes =
+    (ok : resolveInsert context catalog tableName names rows conflicts algorithm returning subqueries shapes =
       .ok (.insert position full columns resolvedSubqueries, after)) :
     after = catalog ∧ ∃ table, catalog.findTable tableName = some (position, table) ∧
       ∀ row ∈ full, ∃ positions written, RowWidth table.columns positions written row := by

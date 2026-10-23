@@ -120,7 +120,7 @@ unchanged. {lit}`Database.addColumn` does this to a stored table. -/
 def Table.appendColumns (table : Table) (columns : List (CatalogColumn × Value)) : Table :=
   { table with
     shape.columns := table.shape.columns ++ columns.map Prod.fst
-    rows := table.rows.map (·.appendValues (columns.map fun (column, value) => storeValue column.affinity value)) }
+    rows := table.rows.map (·.appendValues (columns.map fun (column, value) => Value.store column.affinity value)) }
 
 /-- ADD COLUMN in the database: append the column to the table at the position
 ({name}`Catalog.addColumn`) and the value, with the column's affinity applied, to each of
@@ -129,7 +129,7 @@ Supply {lean}`Value.null` for a column without a default. -/
 def Database.addColumn (database : Database) (position : Nat) (column : CatalogColumn) (value : Value) :
     Database :=
   { catalog := database.catalog.addColumn position column,
-    rows := database.rows.modify position (·.map (·.appendValues [storeValue column.affinity value])) }
+    rows := database.rows.modify position (·.map (·.appendValues [Value.store column.affinity value])) }
 
 /-- For every row, retain its rowid and select cells in requested-name order. A
 name selects the first column with the same folded name, as SQLite's name lookup

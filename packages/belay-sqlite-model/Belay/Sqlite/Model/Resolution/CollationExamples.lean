@@ -76,8 +76,8 @@ fails, or the last statement is no query. -/
 def outputs (script : List Syntax.Statement) : Option (List (List Value)) :=
   match migration tables script with
   | .resolved resolved _ =>
-    match resolved.getLast?, runSql resolved.dropLast tables.emptyDatabase with
-    | some (.query query subqueries), .success database => (query.runOn 0 database subqueries).map (·.2.rows)
+    match resolved.getLast?, runSql (bindValues resolved.dropLast []) tables.emptyDatabase with
+    | some (.query query subqueries), .success database => (query.runOn 0 [] database subqueries).map (·.2.rows)
     | some (.query ..), .failure .. | some (.query ..), .pending .. => none
     | some (.createTable ..), _ | some (.createIndex ..), _ | some (.createTrigger ..), _ | some (.addColumn ..), _ | some (.drop ..), _ | some (.setting _), _ | some .begin, _
     | some .commit, _ | some .rollback, _ | some (.insert ..), _ | some (.upsert ..), _ | some (.update ..), _
@@ -131,7 +131,7 @@ example : outputs (filledC ++ [selectFrom (name! "c") [shown (.callStar "count")
 none. -/
 def failureOf (script : List Syntax.Statement) : Option (Nat × ExecutionError) :=
   match migration tables script with
-  | .resolved resolved _ => match runSql resolved tables.emptyDatabase with
+  | .resolved resolved _ => match runSql (bindValues resolved []) tables.emptyDatabase with
     | .failure position reason _ => some (position, reason)
     | .success _ | .pending .. => none
   | .restricted _ => none

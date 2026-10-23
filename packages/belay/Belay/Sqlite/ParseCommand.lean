@@ -1,5 +1,6 @@
 import Lean.Elab.Command
 import Belay.Sqlite.Parse
+import Belay.Sqlite.SqlLiteral
 
 set_option doc.verso true
 
@@ -19,17 +20,6 @@ syntax (name := sqlParse) "#sql_parse " str : command
 statement's {lit}`;`, with or without {lit}`EXPLAIN` before them. -/
 def commandCount (nodes : Array ParseNode) : Nat :=
   (nodes.filter fun node => node.symbol == "ecmd" && node.children.size ≥ 2).size
-
-/-- The source range of a byte range of a string literal's text, when the literal has no
-escapes, so that each byte of the text is a byte of the source; else the literal's range. -/
-def textRange (literal : Syntax) (text : String) (start stop : Nat) : Syntax :=
-  match literal.getPos?, literal.isStrLit? with
-  | some position, some _ =>
-    if (literal.getArg 0).getAtomVal == "\"" ++ text ++ "\"" then
-      let first : String.Pos.Raw := ⟨position.byteIdx + 1 + start⟩
-      Syntax.atom (.synthetic first ⟨first.byteIdx + max 1 (stop - start)⟩) ""
-    else literal
-  | some _, none | none, some _ | none, none => literal
 
 /-- Parse the literal's text and show the result at the command or the error's position. -/
 @[command_elab sqlParse]

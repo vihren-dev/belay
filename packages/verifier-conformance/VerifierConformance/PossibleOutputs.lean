@@ -1,5 +1,5 @@
 import VerifierConformance.Outputs
-import Belay.Sqlite.Model.PossibleResults
+import Belay.Sqlite.Model.PossibleOutput
 
 set_option doc.verso true
 
@@ -8,17 +8,6 @@ outputs: the rows that SQLite gave, with the rows of each tie group of the nativ
 normal form, must be one of the model's results ({lit}`Query.possibleResults`). -/
 
 namespace Belay.Sqlite.Model.Conformance
-
-/-- The results that SQLite may give for a statement, for a query that succeeds
-({name}`Resolved.Query.possibleOn`); none for every other statement and for a query that fails. -/
-def possibleOutput (clock : Int) (statement : Resolved.Statement) (before : SqlState) (transition : SqlTransition) :
-    Option (List (List ResultRow)) :=
-  match statement, transition with
-  | .query query subqueries, .next _ => query.possibleOn clock before.database subqueries
-  | .query .., .halt _ => none
-  | .createTable .., _ | .createIndex .., _ | .createTrigger .., _ | .addColumn .., _ | .drop .., _ | .begin, _
-  | .commit, _ | .rollback, _ | .insert .., _ | .upsert .., _ | .update .., _ | .delete .., _ | .prepareError _, _
-  | .setting _, _ => none
 
 /-- The rows of tie groups from the front of a result, each group's rows in normal form
 ({name}`Resolved.normalForm`), and the rows after the groups as they are. -/

@@ -15,7 +15,7 @@ namespace Belay.Sqlite.Model
 /-- The kind of a {lit}`RAISE` expression; none for another expression. -/
 def Syntax.Expr.raiseKind? : Syntax.Expr → Option Syntax.RaiseKind
   | .raise kind _ => some kind
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .qualified .. | .negate _
+  | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .identifier .. | .qualified .. | .negate _
   | .positive _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
   | .cast .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf ..
   | .concatenate .. => none
@@ -24,7 +24,7 @@ def Syntax.Expr.raiseKind? : Syntax.Expr → Option Syntax.RaiseKind
 expression. -/
 def Syntax.Expr.raiseMessage? : Syntax.Expr → Option Syntax.Expr
   | .raise _ message => message
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .qualified .. | .negate _
+  | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .identifier .. | .qualified .. | .negate _
   | .positive _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
   | .cast .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf ..
   | .concatenate .. => none
@@ -47,7 +47,7 @@ def raisingColumn : Syntax.Expr → Option (Syntax.Expr × List (Option Syntax.R
     else some (.caseOf (base ++ rest.zipIdx.map fun (operand, index) =>
         if caseResult rest.length index && operand.raiseKind?.isSome then .null else operand) hasBase,
       kinds, rest.filterMap fun operand => if operand.raiseKind?.isSome then operand.raiseMessage? else none)
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .qualified .. | .negate _
+  | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .identifier .. | .qualified .. | .negate _
   | .positive _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
   | .cast .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .concatenate .. => none
 

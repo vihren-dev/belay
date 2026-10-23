@@ -10,39 +10,41 @@ set_option maxHeartbeats 2000000
 namespace Belay.Sqlite.Model.Conformance
 
 /-- Each statement in the body is non-control and succeeds at its position, at the clock
-value of the clock assignment for that position, as {name}`advance` runs it. The remaining
+value of the clock assignment for that position and with the values bound to its parameters,
+as {name}`advance` runs it. The remaining
 body starts from its resulting database. An empty body requires nothing of the database.
 Use this predicate to state successful-body laws. -/
-inductive SuccessfulBody (clock : Nat → Int) : Nat → List Resolved.Statement → Database → Prop where
+inductive SuccessfulBody (clock : Nat → Int) : Nat → List (Resolved.Statement × List Value) → Database → Prop where
   /-- Every position and database admit an empty successful body; no statement premise is required. -/
   | nil : SuccessfulBody clock position [] database
   /-- A non-control statement that succeeds, followed by a successful tail, forms a successful body. -/
   | cons (ordinary : statement.isControl = false)
-      (success : literalStep (clock position) statement database = .ok next)
+      (success : literalStep (clock position) parameters statement database = .ok next)
       (tail : SuccessfulBody clock (position + 1) rest next) :
-      SuccessfulBody clock position (statement :: rest) database
+      SuccessfulBody clock position ((statement, parameters) :: rest) database
 
-/-- For any clock assignment, position, body, current database and original snapshot, if
-{name}`SuccessfulBody` holds, running the body followed by ROLLBACK with that
+/-- For any clock assignment, position, body, current database, original snapshot and values of
+the ROLLBACK, if {name}`SuccessfulBody` holds, running the body followed by ROLLBACK with that
 snapshot and clock assignment returns success with exactly the original database.
 
 The proof inducts over the successful body. Each non-control step preserves
 the snapshot; the final ROLLBACK restores it. -/
 theorem body_rollback (success : SuccessfulBody clock position body database) :
-    runSqlFrom position (body ++ [.rollback]) { database, snapshot := some original, clock } =
+    runSqlFrom position (body ++ [(.rollback, rollbackValues)]) { database, snapshot := some original, clock } =
       .success original := by
   induction success with
   | nil => simp [runSqlFrom, advance, advanceWith, SqlState.finish]
-  | @cons position statement database next rest ordinary success tail ih =>
+  | @cons position parameters statement database next rest ordinary success tail ih =>
     cases statement <;> simp_all [Resolved.Statement.isControl, runSqlFrom, advance, advanceWith, SqlState.publish]
 
-/-- For any body and database, if {name}`SuccessfulBody` holds at position 1 at the clock
-value 0, BEGIN followed by the body and ROLLBACK returns success with that database.
+/-- For any body, database and values of the BEGIN and the ROLLBACK, if
+{name}`SuccessfulBody` holds at position 1 at the clock value 0, BEGIN followed by the body and
+ROLLBACK returns success with that database.
 
 The proof unfolds BEGIN and applies {name}`body_rollback` with the initial
 database as the transaction snapshot. -/
 theorem rollback (success : SuccessfulBody (fun _ => 0) 1 body database) :
-    runSql (.begin :: body ++ [.rollback]) database = .success database := by
+    runSql ((.begin, beginValues) :: body ++ [(.rollback, rollbackValues)]) database = .success database := by
   simpa [runSql, runSqlFrom, advance, advanceWith] using body_rollback (original := database) success
 
 /-- For every state, position, effect and outcome: if {name}`SqlState.publish` of the
@@ -72,7 +74,7 @@ theorem SqlState.publish_next {state next : SqlState} {position : Nat} {effect :
     exact ⟨database, rfl, continued.symm⟩
   | error failure => simp [SqlState.publish] at continued
 
-/-- For any position, statement, state and outcome, if {name}`advance` halts with that
+/-- For any position, statement, values, state and outcome, if {name}`advance` halts with that
 outcome and its error is neither a FAIL failure ({name}`ExecutionError.constraintFail`)
 nor a ROLLBACK failure ({name}`ExecutionError.constraintRollback`), its visible database
 equals the state's current database. Its persisted database equals the saved snapshot
@@ -81,7 +83,7 @@ says nothing; {lit}`constraint_rollback` states ROLLBACK.
 
 The proof splits on the statement and snapshot; an ordinary statement halts through
 {name}`SqlState.publish_halt`, which keeps the state's database for these errors. -/
-theorem statement_atomicity (halted : advance position statement state = .halt outcome)
+theorem statement_atomicity (halted : advance position statement parameters state = .halt outcome)
     (atomic : outcome.error? ≠ some .constraintFail ∧ outcome.error? ≠ some .constraintRollback) :
     outcome.database = state.database ∧
     outcome.persistedDatabase = state.snapshot.getD state.database := by
@@ -100,14 +102,14 @@ theorem statement_atomicity (halted : advance position statement state = .halt o
        simp_all [SqlState.finish, Outcome.database, Outcome.persistedDatabase, Option.getD] <;>
        subst halted <;> simp)
 
-/-- For any position, statement, state and outcome, if {name}`advance` halts with that
+/-- For any position, statement, values, state and outcome, if {name}`advance` halts with that
 outcome and its error is a ROLLBACK failure ({name}`ExecutionError.constraintRollback`),
 its visible and its persisted database are the saved snapshot when present, and
 otherwise the current database: the transaction of the snapshot is rolled back.
 
 The proof splits on the statement and snapshot; an ordinary statement halts through
 {name}`SqlState.publish_halt`, which gives a ROLLBACK failure the state's database. -/
-theorem constraint_rollback (halted : advance position statement state = .halt outcome)
+theorem constraint_rollback (halted : advance position statement parameters state = .halt outcome)
     (rolled : outcome.error? = some .constraintRollback) :
     outcome.database = state.snapshot.getD state.database ∧
     outcome.persistedDatabase = state.snapshot.getD state.database := by
@@ -124,7 +126,7 @@ theorem constraint_rollback (halted : advance position statement state = .halt o
        subst halted <;> simp_all)
 
 /-- For any position, table position, column without a time default
-({name}`CatalogColumn.clockDefault`) and states, if ADD COLUMN advances to the next state,
+({name}`CatalogColumn.clockDefault`), values and states, if ADD COLUMN with the values advances to the next state,
 some table exists at that table position in the original state.
 The next database contains that table with the column appended. This table has
 the same row count and rowids, and each original row gains the affinity-applied
@@ -133,14 +135,14 @@ value returned by {name}`readDefaultValue`.
 The proof follows the successful ADD branch and unfolds column extension
 and its row mapping. -/
 theorem add_column_shape (constant : column.clockDefault = false)
-    (success : advance position (.addColumn target column) state = .next next) :
+    (success : advance position (.addColumn target column) parameters state = .next next) :
     ∃ table value, state.database.table target = some table ∧
       readDefaultValue column = .ok value ∧
       next.database.table target = some (table.appendColumns [(column, value)]) ∧
       (table.appendColumns [(column, value)]).rows.length = table.rows.length ∧
       (table.appendColumns [(column, value)]).rows.map Row.rowid = table.rows.map Row.rowid ∧
       (table.appendColumns [(column, value)]).rows.map Row.values =
-        table.rows.map (fun row => row.values ++ [storeValue column.affinity value]) := by
+        table.rows.map (fun row => row.values ++ [Value.store column.affinity value]) := by
   simp only [advance, advanceWith, literalStep, runStatement, step, SqlState.publish] at success
   repeat (split at * <;> simp_all)
   all_goals subst_vars

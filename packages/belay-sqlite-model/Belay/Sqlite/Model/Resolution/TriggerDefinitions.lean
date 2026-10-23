@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.Resolution.Context
 import Belay.Sqlite.Model.Resolution.Drops
+import Belay.Sqlite.Model.Resolution.SyntaxParameters
 
 set_option doc.verso true
 
@@ -14,8 +15,9 @@ namespace Belay.Sqlite.Model
 {lit}`object name reserved for internal use`; the name of a trigger of the catalog is
 {lit}`trigger %T already exists`, and with {lit}`IF NOT EXISTS` a statement that does nothing;
 a table whose name begins with {lit}`sqlite_`, SQLite's schema tables too, is
-{lit}`cannot create trigger on system table`. Otherwise the trigger joins the end of the
-catalog. -/
+{lit}`cannot create trigger on system table`; a parameter in the condition or the body is
+{lit}`trigger cannot use variables` ({name}`ExprError.triggerVariables`). Otherwise the trigger
+joins the end of the catalog. -/
 def resolveCreateTrigger (catalog : Catalog) (name : Identifier) (ifNotExists : Bool) (trigger : CatalogTrigger) :
     StatementResolution :=
   match catalog.findTable trigger.table, schemaTableName? trigger.table with
@@ -25,6 +27,8 @@ def resolveCreateTrigger (catalog : Catalog) (name : Identifier) (ifNotExists : 
     else if (catalog.findTrigger name).isSome then
       if ifNotExists then .ok (.drop [], catalog.drop []) else prepareError catalog (.triggerExists name)
     else if reservedName trigger.table then prepareError catalog (.expression .triggerOnSystemTable)
+    else if Syntax.Expr.optionParameter trigger.condition || trigger.body.any Syntax.BodyStatement.hasParameter then
+      prepareError catalog (.expression .triggerVariables)
     else .ok (.createTrigger catalog.length name trigger, catalog.createTrigger name trigger)
 
 /-- Resolve DROP TRIGGER: the trigger with the name leaves the catalog ({name}`Catalog.drop`); a

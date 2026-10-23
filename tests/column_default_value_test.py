@@ -34,7 +34,7 @@ AFFINITIES = ["INTEGER", "NUMERIC", "REAL", "TEXT", "BLOB"]
 @pytest.mark.parametrize("version", ["3.51.0", "3.46.0"])
 def test_omitted_default_values(version: str, tmp_path: Path,
         lean_sysroot: Path, lean_libraries: tuple[Path, Path]) -> None:
-    """fullCells evaluates omitted defaults and applies the delivered storeValue conversion,
+    """fullCells evaluates omitted defaults and applies the delivered Value.store conversion,
     for each affinity of `AFFINITIES`.
 
     SQL catalog admission and ADD COLUMN execution are separate acceptance checks.

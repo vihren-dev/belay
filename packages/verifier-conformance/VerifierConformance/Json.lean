@@ -85,7 +85,7 @@ instance : Lean.FromJson Conformance.NativeTable where
              indexes := ← json.getObjValAs? _ "indexes", rows := ← json.getObjValAs? _ "rows", withoutRowid }
 
 deriving instance Lean.FromJson, Lean.ToJson for Conformance.NativeObservation
-deriving instance Lean.FromJson, Lean.ToJson for Conformance.StatementOutput, Conformance.OutputGroup,
+deriving instance Lean.FromJson, Lean.ToJson for StatementOutput, Conformance.OutputGroup,
   Conformance.NativeOutput
 deriving instance Lean.FromJson, Lean.ToJson for Conformance.Case
 

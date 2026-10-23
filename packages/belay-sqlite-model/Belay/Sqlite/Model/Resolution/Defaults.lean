@@ -23,7 +23,7 @@ def literalDefault : Syntax.Expr → Except ValueIssue Value
     if quote == .none && name.isKeyword (bytes! "true") then .ok (.integer 1)
     else if quote == .none && name.isKeyword (bytes! "false") then .ok (.integer 0)
     else .ok (.text name.bytes)
-  | .currentTime _ => .error (.restriction [] .unmodeledDefault)
+  | .currentTime _ | .parameter _ => .error (.restriction [] .unmodeledDefault)
   | .negate _ | .positive _ | .compare .. | .and .. | .or .. | .not _
   | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast .. | .qualified .. | .collate .. | .exists _
   | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate .. | .raise .. =>

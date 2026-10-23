@@ -23,7 +23,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "      match actionCells child parent link key (new.getD old) action with\n",
         "      match actionCells child parent link key old action with\n"),
     "lookup_without_affinity": (MATCH,
-        "    | some column => LiteralData.keyCellsEqual (row.values.getD position .null) (storeValue (indexAffinity column) value)\n",
+        "    | some column => LiteralData.keyCellsEqual (row.values.getD position .null) (Value.store (indexAffinity column) value)\n",
         "    | some column => LiteralData.keyCellsEqual (row.values.getD position .null) value\n"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the replacement.

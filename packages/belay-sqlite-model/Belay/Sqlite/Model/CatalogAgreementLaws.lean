@@ -10,21 +10,21 @@ error ends with the catalog that resolution predicts. -/
 
 namespace Belay.Sqlite.Model
 
-/-- For every script, position, agreeing connection and resolution states, and outcome of
-{name}`runSqlFrom` without an error (a success, or a pending transaction without an
-error): the catalog of the outcome's visible database is the catalog of the fold of
-{name}`ResolveState.after` over the script. An outcome with an error is not covered. Proof
+/-- For every script of statements with values, position, agreeing connection and resolution
+states, and outcome of {name}`runSqlFrom` without an error (a success, or a pending transaction
+without an error): the catalog of the outcome's visible database is the catalog of the fold of
+{name}`ResolveState.after` over the statements of the script. An outcome with an error is not covered. Proof
 sketch: induction on the script; a halt has an error ({name}`advance_halt_error`), and a
 continuing step keeps the states in agreement ({name}`advance_agrees`). -/
 theorem runSqlFrom_agrees :
-    ∀ (script : List Resolved.Statement) (position : Nat) (sql : SqlState) (state : ResolveState),
+    ∀ (script : List (Resolved.Statement × List Value)) (position : Nat) (sql : SqlState) (state : ResolveState),
       sql.Agrees state → ∀ outcome, runSqlFrom position script sql = outcome → outcome.error? = none →
-      outcome.database.catalog = (script.foldl ResolveState.after state).catalog
+      outcome.database.catalog = ((script.map (·.1)).foldl ResolveState.after state).catalog
   | [], position, sql, state, agrees, outcome, run, clean => by
     simp only [runSqlFrom] at run
     subst run
     cases h : sql.snapshot <;> simp [SqlState.finish, h, Outcome.database, agrees.1]
-  | statement :: rest, position, sql, state, agrees, outcome, run, clean => by
+  | (statement, _) :: rest, position, sql, state, agrees, outcome, run, clean => by
     simp only [runSqlFrom] at run
     split at run
     · rename_i halted _ halt
@@ -37,8 +37,8 @@ theorem runSqlFrom_agrees :
 
 /-- Resolution and execution give the same catalog (ADR 0013, D1). For every context,
 catalog, script, resolved statements and resulting catalog of a successful
-{name}`resolve`, every database whose catalog is the starting catalog, and every clock
-assignment: if {name}`runSqlAt` gives an outcome without an error (a success, or a pending
+{name}`resolve`, every database whose catalog is the starting catalog, every list of values of
+the statements ({name}`bindValues`) and every clock assignment: if {name}`runSqlAt` gives an outcome without an error (a success, or a pending
 transaction without an error), its visible database's catalog is the resulting catalog of
 resolution. An outcome with an error is not covered. Proof sketch: resolution's catalog is
 the fold of {name}`ResolveState.after` ({name}`resolve_after`), and execution follows it
@@ -46,10 +46,11 @@ the fold of {name}`ResolveState.after` ({name}`resolve_after`), and execution fo
 theorem runSqlAt_catalog {context : ResolveContext} {catalog next : Catalog} {script : List Syntax.Statement}
     {resolved : List Resolved.Statement} {database : Database} (clock : Clock)
     (resolution : resolve context catalog script = .resolved resolved next) (start : database.catalog = catalog)
-    (clean : (runSqlAt clock resolved database).error? = none) :
-    (runSqlAt clock resolved database).database.catalog = next := by
+    (values : List (List Value)) (clean : (runSqlAt clock (bindValues resolved values) database).error? = none) :
+    (runSqlAt clock (bindValues resolved values) database).database.catalog = next := by
   rw [resolve_after context catalog next script resolved resolution]
-  exact runSqlFrom_agrees _ 0 { database, clock := scriptClock clock resolved }
+  have statements := runSqlFrom_agrees _ 0 { database, clock := scriptClock clock ((bindValues resolved values).map (·.1)) }
     { catalog, foreignKeys := context.profile.foreignKeys } ⟨start, rfl⟩ _ rfl clean
+  simpa only [runSqlAt, map_fst_bindValues] using statements
 
 end Belay.Sqlite.Model

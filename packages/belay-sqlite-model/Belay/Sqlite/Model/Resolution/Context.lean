@@ -26,14 +26,14 @@ structure ResolveContext where
   mode : Mode
 
 /-- The resolution of one statement: the resolved statement and the catalog after
-it succeeds, or a model restriction. -/
-abbrev StatementResolution := Except Restriction (Resolved.Statement × Catalog)
+it succeeds, or a model restriction inside the statement. -/
+abbrev StatementResolution := Except NodeRestriction (Resolved.Statement × Catalog)
 
 /-- SQLite's constant-default preparation check for the forms classified here:
-literals, time keywords, signs, equality and qualified column references.
+literals, time keywords, parameters, signs, equality and qualified column references.
 Unquoted TRUE and FALSE are constant keywords; other nested identifiers are
 column references. SQLite refuses qualified column references as nonconstant
-defaults. This is a SQLite rule. For example,
+defaults, and a parameter as not constant. This is a SQLite rule. For example,
 {lean}`constantDefaultExpression (.compare .eq (.numeric "1") (.numeric "1"))` is true.
 For the other expression forms, return true to leave their existing model
 restriction in control; true does not establish that SQLite accepts those forms.
@@ -41,6 +41,7 @@ These checks describe SQLite preparation errors. Supported-domain admission and
 default evaluation are separate. -/
 def constantDefaultExpression : Syntax.Expr → Bool
   | .null | .numeric _ | .string _ | .blob _ | .currentTime _ => true
+  | .parameter _ => false
   | .identifier name quote => quote == .none && booleanKeywordName name
   | .negate operand | .positive operand | .collate operand _ => constantDefaultExpression operand
   | .qualified .. => false
@@ -60,7 +61,7 @@ constraint when a column needs no default. -/
 def constantDefault (expression : Syntax.Expr) : Bool :=
   match expression with
   | .identifier .. => true
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .positive _
+  | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call ..
   | .arithmetic .. | .cast .. | .qualified .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate .. | .raise .. =>
     constantDefaultExpression expression
@@ -105,14 +106,14 @@ def Syntax.ColumnConstraint.modeledDefault : Syntax.ColumnConstraint → Bool
 def prepareError (catalog : Catalog) (error : PrepareError) : StatementResolution :=
   .ok (.prepareError error, catalog)
 
-/-- A model restriction at a path of statement {lit}`index`. -/
-def restrict (index : Nat) (path : List Nat) (kind : RestrictionKind) : StatementResolution :=
-  .error { statement := index, path := path, kind := kind }
+/-- A model restriction at a path of the statement. -/
+def restrict (path : List Nat) (kind : RestrictionKind) : StatementResolution :=
+  .error { path := path, kind := kind }
 
 /-- Turn a value issue into the statement's resolution: a prepare error keeps the
 catalog, a restriction refuses the script. -/
-def issueResolution (catalog : Catalog) (index : Nat) (path : List Nat) : ValueIssue → StatementResolution
+def issueResolution (catalog : Catalog) (path : List Nat) : ValueIssue → StatementResolution
   | .prepare error => prepareError catalog (.expression error)
-  | .restriction inner reason => restrict index (path ++ inner) reason
+  | .restriction inner reason => restrict (path ++ inner) reason
 
 end Belay.Sqlite.Model

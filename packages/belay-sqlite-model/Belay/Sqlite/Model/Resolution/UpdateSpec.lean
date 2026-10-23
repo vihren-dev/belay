@@ -12,11 +12,11 @@ the error is {lit}`no such table` for the statement's table, no table has the fo
 name, and the catalog is unchanged. Proof sketch: split every branch of the
 resolver; after the table lookup, the assignments, the filter and the
 {lit}`RETURNING` columns give errors that name no catalog object. -/
-theorem resolveUpdate_named (context : ResolveContext) (catalog after : Catalog) (index : Nat)
+theorem resolveUpdate_named (context : ResolveContext) (catalog after : Catalog)
     (tableName : Identifier) (assignments : List (Identifier × Syntax.Expr)) (filter : Option Syntax.Expr)
     (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query) (shapes : SubqueryShapes)
     (error : PrepareError) (named : ∀ cause, error ≠ .expression cause)
-    (ok : resolveUpdate context catalog index tableName assignments filter returning subqueries shapes =
+    (ok : resolveUpdate context catalog tableName assignments filter returning subqueries shapes =
       .ok (.prepareError error, after)) :
     error = .noSuchTable tableName ∧ catalog.findTable tableName = none ∧ after = catalog := by
   unfold resolveUpdate at ok
@@ -30,11 +30,11 @@ theorem resolveUpdate_named (context : ResolveContext) (catalog after : Catalog)
 
 /-- For every UPDATE, with any subqueries and shapes: when no table has the folded name, the resolution is
 {lit}`no such table`, and the catalog is unchanged. -/
-theorem resolveUpdate_missing (context : ResolveContext) (catalog : Catalog) (index : Nat)
+theorem resolveUpdate_missing (context : ResolveContext) (catalog : Catalog)
     (tableName : Identifier) (assignments : List (Identifier × Syntax.Expr)) (filter : Option Syntax.Expr)
     (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query) (shapes : SubqueryShapes)
     (missing : catalog.findTable tableName = none) :
-    resolveUpdate context catalog index tableName assignments filter returning subqueries shapes =
+    resolveUpdate context catalog tableName assignments filter returning subqueries shapes =
       .ok (.prepareError (.noSuchTable tableName), catalog) := by
   unfold resolveUpdate
   simp [missing, prepareError]

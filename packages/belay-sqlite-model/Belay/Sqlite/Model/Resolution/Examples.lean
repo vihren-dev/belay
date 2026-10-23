@@ -13,8 +13,8 @@ namespace Belay.Sqlite.Model.Resolution.Examples
 
 open Belay.Sqlite.Model Syntax
 
-/-- SQLite 3.51.0 with its documented default limits. -/
-def defaults : Profile := Profile.documented "3.51.0" "2025-11-04 19:38:17 fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b"
+/-- The pinned profile, SQLite 3.51.0 with its documented default limits. -/
+def defaults : Profile := Profile.pinned
 
 /-- The same release with the column limit lowered to 3, so a constant limit fails. -/
 def lowered : Profile := { defaults with limits := { defaults.limits with columns := 3 } }

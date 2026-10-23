@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.QueryResults
+import Belay.Sqlite.Model.QueryWindow
 import Belay.Sqlite.Model.Resolution.ExprAny
 
 set_option doc.verso true
@@ -149,8 +150,8 @@ def Query.fails (context : EvalContext) (query : Query) (rows : List (List Value
       | .aggregate aggregate => aggregate.fails context group
       | .scalar _ => false
 
-/-- A query run over its source rows: the result rows, the fault of its JSON calls, and
-whether an aggregate overflows. -/
+/-- A query run over its source rows: the result rows, the fault of its JSON calls, whether an
+aggregate overflows, and whether a value of its window is not an integer. -/
 structure QueryRun where
   /-- The result rows ({name}`Query.results`). -/
   rows : List (List Value)
@@ -161,13 +162,21 @@ structure QueryRun where
   fault : Fault
   /-- Whether SQLite stops the query with {lit}`integer overflow` ({name}`Query.fails`). -/
   overflow : Bool
+  /-- Whether SQLite stops the query with {lit}`datatype mismatch` before it reads a row, because
+  a value bound to {lit}`LIMIT ?` or {lit}`OFFSET ?` is not an integer ({name}`Query.bindWindow`). -/
+  mismatch : Bool
 
-/-- Run the query over its source rows ({lit}`Query.source`): its result rows, its fault (also
-{lean}`Fault.may` for an uncertain {lit}`SELECT DISTINCT`) and its overflow. -/
-def Query.run (context : EvalContext) (query : Query) (rows : List (List Value)) : QueryRun where
-  rows := query.results context rows
-  fault := if query.mustFail context rows then .must
-    else if query.mayFail context rows || !query.distinctCertain context rows then .may else .none
-  overflow := query.fails context rows
+/-- Run the query over its source rows ({lit}`Query.source`) with its window bound to the values
+of the context ({name}`Query.bindWindow`): the result rows, the fault (also {lean}`Fault.may` for
+an uncertain {lit}`SELECT DISTINCT`) and the overflow of the bound query. When a bound value is
+not an integer, the run has no rows, no fault and no overflow, and it is a mismatch. -/
+def Query.run (context : EvalContext) (query : Query) (rows : List (List Value)) : QueryRun :=
+  match query.bindWindow context.parameters with
+  | none => { rows := [], fault := .none, overflow := false, mismatch := true }
+  | some bound =>
+    { rows := bound.results context rows,
+      fault := if bound.mustFail context rows then .must
+        else if bound.mayFail context rows || !bound.distinctCertain context rows then .may else .none,
+      overflow := bound.fails context rows, mismatch := false }
 
 end Belay.Sqlite.Model.Resolved

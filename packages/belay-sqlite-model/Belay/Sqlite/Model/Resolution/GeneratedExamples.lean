@@ -36,7 +36,7 @@ def tables : Catalog := catalogOf (schema [tableG])
 /-- The cells of the rows of {lit}`g` after a script that succeeds, or none. -/
 def rowsOf (script : List Syntax.Statement) : Option (List (List Value)) :=
   match migration tables script with
-  | .resolved resolved _ => match runSql resolved tables.emptyDatabase with
+  | .resolved resolved _ => match runSql (bindValues resolved []) tables.emptyDatabase with
     | .success database => (database.table 0).map fun table => table.rows.map (·.values)
     | .failure .. | .pending .. => none
   | .restricted _ => none

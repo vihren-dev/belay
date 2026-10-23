@@ -10,7 +10,7 @@ of scope by their cause:
 - `frontend`: syntax that the frontend refuses before resolution, by the first clause
   of its message;
 - `undeclared`: predicted cases that the subject declares out of scope without a
-  refusal, for example cases with bound parameters.
+  refusal.
 
 The counts rank which restriction to lift next. They read only the subject's own
 predictions, so the locked judge does not change.

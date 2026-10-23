@@ -28,6 +28,7 @@
     "tests/conformance_tier_bindings_test.py",
     "tests/conformance_authored_test.py",
     "tests/conformance_authored_queries_test.py",
+    "tests/conformance_authored_parameters_test.py",
     "tests/conformance_upstream_test.py",
     "tests/conformance_freeze_test.py",
     "tests/conformance_shards_test.py",
@@ -105,6 +106,7 @@
     "tests/conformance_corpus_writers_test.py"
   ],
   "surface": [
+    "tests/surface_guide_test.py",
     "tests/surface_parser_test.py",
     "tests/surface_layers_test.py",
     "tests/surface_translation_checks_test.py"

@@ -15,8 +15,8 @@ ROLLBACK algorithm, changes transaction state. Other statement errors stop execu
 without inferring connection closure, framework cleanup, or transaction rollback. -/
 namespace Belay.Sqlite.Model
 
-/-- Run one statement at a clock value, computing each write and query once for its
-effect and its support check (ADR 0013, D8). The effect: INSERT and UPDATE with ABORT
+/-- Run one statement at a clock value with the values bound to its parameters, computing each
+write and query once for its effect and its support check (ADR 0013, D8). The effect: INSERT and UPDATE with ABORT
 constraints over the table's keys ({name}`Database.keys`), INSERT with {lit}`ON CONFLICT`
 clauses or algorithms row by row ({name}`LiteralData.upsertSteps`), each over the rows at
 the clock value ({name}`Resolved.rowsAt`), in the statement's context of its subqueries
@@ -36,12 +36,13 @@ that checks foreign keys (ADR 0018, D4) has the effect of its keys ({name}`inser
 {name}`updateKeys`, {name}`deleteKeys`, {name}`dropKeys`) and passes the support check when the
 plain write and the keys both pass it ({name}`StatementRun.withKeys`). A write with trigger
 programs (ADR 0018, D5) runs row by row in the same way, with foreign keys on or off. -/
-def runStatement (clock : Int) (statement : Resolved.Statement) (database : Database) : StatementRun :=
+def runStatement (clock : Int) (parameters : List Value) (statement : Resolved.Statement) (database : Database) :
+    StatementRun :=
   match statement with
   | .insert target rows returning subqueries rules => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
-      let context := Resolved.statementContext clock database subqueries
+      let context := Resolved.statementContext clock parameters database subqueries
       let keys := database.keys target table
       let values := Resolved.rowsAt context table.shape.columns rows
       let result := LiteralData.inserted table values
@@ -53,7 +54,7 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
   | .upsert target rows clauses returning algorithm subqueries rules => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
-      let context := Resolved.statementContext clock database subqueries
+      let context := Resolved.statementContext clock parameters database subqueries
       let keys := database.keys target table
       let policy := database.catalog.writePolicy target table.shape algorithm
       let values := Resolved.rowsAt context table.shape.columns rows
@@ -67,7 +68,7 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
   | .update target assignments filter returning subqueries rules => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
-      let context := Resolved.statementContext clock database subqueries
+      let context := Resolved.statementContext clock parameters database subqueries
       let keys := database.keys target table
       let result := LiteralData.updated context table assignments filter
       StatementRun.withKeys (if LiteralData.updateMismatch context table assignments filter then .error (.datatypeMismatch, database)
@@ -78,33 +79,37 @@ def runStatement (clock : Int) (statement : Resolved.Statement) (database : Data
   | .delete target filter returning subqueries rules => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
     | some table =>
-      let context := Resolved.statementContext clock database subqueries
+      let context := Resolved.statementContext clock parameters database subqueries
       StatementRun.withKeys (.ok (database.setRows target (LiteralData.deleted context table filter).rows))
         (Resolved.subqueriesPlain subqueries && deleteJsonReady context table filter returning)
         (rules.map fun rules => deleteKeys context rules target table filter database subqueries.isEmpty)
   | .query query subqueries =>
-    let ran := query.runOn clock database subqueries
+    let ran := query.runOn clock parameters database subqueries
     { effect := queryEffect database ran,
       ready := Resolved.subqueriesPlain subqueries && ran.all fun (source, run) => source.fault != .may && run.fault != .may }
-  | .createTable .. => { effect := step clock statement database, ready := true }
+  | .createTable .. => { effect := step clock parameters statement database, ready := true }
   | .addColumn _ column =>
-    { effect := step clock statement database,
+    { effect := step clock parameters statement database,
       ready := column.clockDefault || (readDefaultValue column).toOption.isSome }
   | .drop positions rules =>
-    StatementRun.withKeys (step clock statement database) true
+    StatementRun.withKeys (step clock parameters statement database) true
       (rules.map fun rules => dropKeys rules clock positions database)
-  | .createIndex .. | .createTrigger .. => { effect := step clock statement database, ready := true }
-  | .begin | .commit | .rollback | .prepareError _ | .setting _ => { effect := step clock statement database, ready := true }
+  | .createIndex .. | .createTrigger .. => { effect := step clock parameters statement database, ready := true }
+  | .begin | .commit | .rollback | .prepareError _ | .setting _ =>
+    { effect := step clock parameters statement database, ready := true }
 
-/-- The effect of one statement at a clock value ({name}`runStatement`). This computation
-does not establish the separate stored-value support obligation. -/
-def literalStep (clock : Int) (statement : Resolved.Statement) (database : Database) : Effect :=
-  (runStatement clock statement database).effect
+/-- The effect of one statement at a clock value with the values bound to its parameters
+({name}`runStatement`). This computation does not establish the separate stored-value support
+obligation. -/
+def literalStep (clock : Int) (parameters : List Value) (statement : Resolved.Statement) (database : Database) :
+    Effect :=
+  (runStatement clock parameters statement database).effect
 
-/-- Whether the model describes the statement on the database ({name}`runStatement`). Use
-it through the reached-statement script support check. -/
-def statementReady (clock : Int) (statement : Resolved.Statement) (database : Database) : Bool :=
-  (runStatement clock statement database).ready
+/-- Whether the model describes the statement with the values bound to its parameters on the
+database ({name}`runStatement`). Use it through the reached-statement script support check. -/
+def statementReady (clock : Int) (parameters : List Value) (statement : Resolved.Statement) (database : Database) :
+    Bool :=
+  (runStatement clock parameters statement database).ready
 
 /-- One statement at its supplied zero-based position with its effect. BEGIN records a
 snapshot; COMMIT clears it; ROLLBACK restores it. Repeated BEGIN or transaction
@@ -129,35 +134,62 @@ def advanceWith (position : Nat) (statement : Resolved.Statement) (state : SqlSt
   | .prepareError _ | .query .. | .setting _ =>
     state.publish position effect
 
-/-- Evaluate one statement at its supplied zero-based position ({name}`advanceWith` of its
-effect at the clock value of the position, {name}`literalStep`). -/
-def advance (position : Nat) (statement : Resolved.Statement) (state : SqlState) : SqlTransition :=
-  advanceWith position statement state (literalStep (state.clock position) statement state.database)
+/-- Evaluate one statement with the values bound to its parameters at its supplied zero-based
+position ({name}`advanceWith` of its effect at the clock value of the position,
+{name}`literalStep`). -/
+def advance (position : Nat) (statement : Resolved.Statement) (parameters : List Value) (state : SqlState) :
+    SqlTransition :=
+  advanceWith position statement state (literalStep (state.clock position) parameters statement state.database)
 
-/-- Execute the script from a supplied position and connection state. A halt stops
+/-- The statements of a script with the values bound to each: statement {lit}`i` (from 0) gets
+item {lit}`i` of {lit}`values`, or the empty list when {lit}`values` has no such item. For
+example, {lean}`bindValues [1, 2] [[.integer 5]] = [(1, [.integer 5]), (2, [])]`. Use
+{lean}`([] : List (List Value))` as {lit}`values` for a script that binds no values. -/
+def bindValues {α : Type} : List α → List (List Value) → List (α × List Value)
+  | [], _ => []
+  | statement :: rest, values => (statement, values.headD []) :: bindValues rest values.tail
+
+/-- For every statement, rest of the script, list of values and rest of the lists,
+{name}`bindValues` of the script and the lists is the pair of the first statement and the first
+list, followed by {name}`bindValues` of the rest of the script and the rest of the lists. Proof
+sketch: the definition. -/
+@[simp] theorem bindValues_cons_cons {α : Type} (statement : α) (rest : List α) (values : List Value)
+    (later : List (List Value)) :
+    bindValues (statement :: rest) (values :: later) = (statement, values) :: bindValues rest later := rfl
+
+/-- For every script and list of lists of values, the statements of {name}`bindValues` are the
+script. Proof sketch: induction on the script. -/
+@[simp] theorem map_fst_bindValues {α : Type} (script : List α) (values : List (List Value)) :
+    (bindValues script values).map (·.1) = script := by
+  induction script generalizing values with
+  | nil => rfl
+  | cons statement rest ih => simp [bindValues, ih]
+
+/-- Execute the script from a supplied position and connection state, each statement with the
+values bound to its parameters ({name}`bindValues` binds a list of lists). A halt stops
 the script; a continuing transition advances the position. EOF finishes the
 current state and preserves an open transaction. The idle wrapper starts at position zero. -/
-def runSqlFrom (position : Nat) (script : List Resolved.Statement) (state : SqlState) : Outcome :=
+def runSqlFrom (position : Nat) (script : List (Resolved.Statement × List Value)) (state : SqlState) : Outcome :=
   match script with
   | [] => state.finish (.success state.database)
-  | statement :: rest => match advance position statement state with
+  | (statement, parameters) :: rest => match advance position statement parameters state with
     | .halt outcome => outcome
     | .next next => runSqlFrom (position + 1) rest next
 
 /-- Execute a resolved script from position zero outside a transaction. Use
 {name}`runSqlFrom` for an explicit position/state. A file is not implicitly atomic;
 transaction control must be supplied in its statements. -/
-def runSql (script : List Resolved.Statement) (database : Database) : Outcome :=
+def runSql (script : List (Resolved.Statement × List Value)) (database : Database) : Outcome :=
   runSqlFrom 0 script { database := database }
 
 /-- Check {name}`statementReady` at every reached statement and follow the actual
 transition, both from one run of the statement ({name}`runStatement`). After a halt,
 unreachable statements impose no obligation. An empty script passes. -/
-def supportedSqlFrom (position : Nat) (script : List Resolved.Statement) (state : SqlState) : Bool :=
+def supportedSqlFrom (position : Nat) (script : List (Resolved.Statement × List Value)) (state : SqlState) : Bool :=
   match script with
   | [] => true
-  | statement :: rest =>
-    let run := runStatement (state.clock position) statement state.database
+  | (statement, parameters) :: rest =>
+    let run := runStatement (state.clock position) parameters statement state.database
     run.ready &&
     match advanceWith position statement state run.effect with
     | .halt _ => true

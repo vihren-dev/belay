@@ -16,10 +16,10 @@ namespace Belay.Sqlite.Model
 
 /-- For every CREATE TABLE whose resolution is a prepare error that names a catalog
 object, the catalog has an object with the folded name, and the catalog is unchanged. -/
-theorem resolveCreateTable_named (context : ResolveContext) (catalog after : Catalog) (index : Nat)
+theorem resolveCreateTable_named (context : ResolveContext) (catalog after : Catalog)
     (name : Identifier) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
     (options : Syntax.TableOptions) (error : PrepareError) (named : ∀ cause, error ≠ .expression cause)
-    (ok : resolveCreateTable context catalog index name columns constraints options = .ok (.prepareError error, after)) :
+    (ok : resolveCreateTable context catalog name columns constraints options = .ok (.prepareError error, after)) :
     (catalog.find name).isSome = true ∧ after = catalog := by
   unfold resolveCreateTable at ok
   simp only [issueResolution, prepareError, restrict] at ok
@@ -33,11 +33,11 @@ theorem resolveCreateTable_named (context : ResolveContext) (catalog after : Cat
 /-- For every CREATE TABLE of a name that SQLite does not reserve: when the catalog
 has an object with the folded name, the resolution is a prepare error that names a
 catalog object, and the catalog is unchanged. -/
-theorem resolveCreateTable_used (context : ResolveContext) (catalog : Catalog) (index : Nat)
+theorem resolveCreateTable_used (context : ResolveContext) (catalog : Catalog)
     (name : Identifier) (columns : List Syntax.ColumnDefinition) (constraints : List Syntax.TableConstraint)
     (options : Syntax.TableOptions) (notReserved : reservedName name = false) (used : (catalog.find name).isSome = true) :
     ∃ error, (∀ cause, error ≠ .expression cause) ∧
-      resolveCreateTable context catalog index name columns constraints options = .ok (.prepareError error, catalog) := by
+      resolveCreateTable context catalog name columns constraints options = .ok (.prepareError error, catalog) := by
   unfold resolveCreateTable
   simp only [notReserved, Bool.false_and, Bool.false_eq_true, ite_false, prepareError]
   cases found : catalog.find name with
@@ -53,12 +53,12 @@ the error is {lit}`no such table` for the statement's table, no table has the fo
 name, and the catalog is unchanged. Proof sketch: split every branch of the
 resolver; the branches after the table lookup give errors that name no catalog
 object, by the lemmas on column lists, values and full rows. -/
-theorem resolveInsert_named (context : ResolveContext) (catalog after : Catalog) (index : Nat)
+theorem resolveInsert_named (context : ResolveContext) (catalog after : Catalog)
     (tableName : Identifier) (names : Option (List Identifier)) (rows : List (List Syntax.Expr))
     (conflicts : List Syntax.ConflictClause) (algorithm : Option ConflictAlgorithm)
     (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query) (shapes : SubqueryShapes)
     (error : PrepareError) (named : ∀ cause, error ≠ .expression cause)
-    (ok : resolveInsert context catalog index tableName names rows conflicts algorithm returning subqueries shapes =
+    (ok : resolveInsert context catalog tableName names rows conflicts algorithm returning subqueries shapes =
       .ok (.prepareError error, after)) :
     error = .noSuchTable tableName ∧ catalog.findTable tableName = none ∧ after = catalog := by
   unfold resolveInsert at ok
@@ -74,13 +74,13 @@ theorem resolveInsert_named (context : ResolveContext) (catalog after : Catalog)
 the first row: when no
 table has the folded name, the resolution is {lit}`no such table`, and the catalog
 is unchanged. -/
-theorem resolveInsert_missing (context : ResolveContext) (catalog : Catalog) (index : Nat)
+theorem resolveInsert_missing (context : ResolveContext) (catalog : Catalog)
     (tableName : Identifier) (names : Option (List Identifier)) (rows : List (List Syntax.Expr))
     (conflicts : List Syntax.ConflictClause) (algorithm : Option ConflictAlgorithm)
     (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query) (shapes : SubqueryShapes)
     (same : ∀ row ∈ rows, row.length = (rows.head?.map List.length).getD 0)
     (missing : catalog.findTable tableName = none) :
-    resolveInsert context catalog index tableName names rows conflicts algorithm returning subqueries shapes =
+    resolveInsert context catalog tableName names rows conflicts algorithm returning subqueries shapes =
       .ok (.prepareError (.noSuchTable tableName), catalog) := by
   have consistent : (rows.any fun row => row.length != (rows.head?.map List.length).getD 0) = false := by
     simpa using same

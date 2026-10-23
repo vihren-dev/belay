@@ -34,22 +34,22 @@ def committed : Observation := ⟨after, after, false, none⟩
 def insertNew : Resolved.Statement := .insert 1 [[.value (.integer 9)]] []
 def writeScript : List Resolved.Statement := [.begin, insertNew]
 
-theorem pending_write : trace writeScript initial = [idle, begun, written] := by
+theorem pending_write : trace (bindValues writeScript []) initial = [idle, begun, written] := by
   decide +kernel
-theorem explicit_commit : trace (writeScript ++ [.commit]) initial =
+theorem explicit_commit : trace (bindValues (writeScript ++ [.commit]) []) initial =
     [idle, begun, written, committed] := by decide +kernel
-theorem explicit_rollback : trace (writeScript ++ [.rollback]) initial =
+theorem explicit_rollback : trace (bindValues (writeScript ++ [.rollback]) []) initial =
     [idle, begun, written, idle] := by decide +kernel
-theorem constraint_halts : trace (writeScript ++ [insertNew, .commit]) initial =
+theorem constraint_halts : trace (bindValues (writeScript ++ [insertNew, .commit]) []) initial =
     [idle, begun, written, { written with error := some (2, .constraintViolation) }] := by
   decide +kernel
-theorem nested_begin_halts : trace (writeScript ++ [.begin, .rollback]) initial =
+theorem nested_begin_halts : trace (bindValues (writeScript ++ [.begin, .rollback]) []) initial =
     [idle, begun, written, { written with error := some (2, .transactionAlreadyActive) }] := by
   decide +kernel
-theorem empty_trace : trace [] initial = [idle] := by decide +kernel
-theorem no_transaction : trace [.commit, insertNew] initial =
+theorem empty_trace : trace (bindValues ([] : List Resolved.Statement) []) initial = [idle] := by decide +kernel
+theorem no_transaction : trace (bindValues [.commit, insertNew] []) initial =
     [idle, { idle with error := some (0, .noActiveTransaction) }] := by decide +kernel
-theorem prepare_error_halts : trace [.begin, .prepareError (.noSuchTable (name! "absent"))] initial =
+theorem prepare_error_halts : trace (bindValues [.begin, .prepareError (.noSuchTable (name! "absent"))] []) initial =
     [idle, begun, { begun with error := some (1, .prepare (.noSuchTable (name! "absent"))) }] := by decide +kernel
 #print axioms trace_final
 #print axioms pending_write

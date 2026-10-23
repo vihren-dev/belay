@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Resolution.QueryExprs
+import Belay.Sqlite.Model.Resolution.ParameterOrder
 
 set_option doc.verso true
 
@@ -20,11 +21,13 @@ def indexExpressionIssue (filter : Bool) (resolved : Resolved.Expr) : Option Val
   else if resolved.any Resolved.Expr.isFallibleCall then some (.restriction [] .indexJsonFunction)
   else none
 
-/-- A key term as an expression over the scope of the indexed table: a qualified name is
+/-- A key term as an expression over the scope of the indexed table: a parameter is
+{name}`ExprError.parameterInIndex` in SQLite's order ({name}`prohibitParameter`); a qualified name is
 {name}`ExprError.qualifiedIndexTerm`; else the resolved operand
 ({name}`resolveOperand`, with aggregates as misuse) and its
 {name}`indexExpressionIssue`. -/
 def indexExpressionTerm (dqs : Bool) (scope : Scope) (expression : Syntax.Expr) : Except ValueIssue KeyTerm :=
+  prohibitParameter dqs scope (.parameterInIndex false) expression >>= fun _ =>
   if expression.hasQualifiedName then .error (.prepare .qualifiedIndexTerm) else do
     let (resolved, _) ← resolveOperand dqs scope {} true expression
     match indexExpressionIssue false resolved with
@@ -51,7 +54,8 @@ def indexTerm (dqs : Bool) (scope : Scope) (columns : List CatalogColumn) : Synt
   | .collate operand name => do
     let term ← indexTerm dqs scope columns operand
     if (Collation.named? name).isNone then .error (.prepare (.noSuchCollation name)) else .ok term
-  | expression@.null | expression@(.numeric _) | expression@(.blob _) | expression@(.currentTime _)
+  | expression@.null | expression@(.numeric _) | expression@(.blob _) | expression@(.parameter _)
+  | expression@(.currentTime _)
   | expression@(.qualified ..) | expression@(.negate _) | expression@(.positive _) | expression@(.compare ..)
   | expression@(.and ..) | expression@(.or ..) | expression@(.not _) | expression@(.isNull ..)
   | expression@(.callStar _) | expression@(.call ..) | expression@(.arithmetic ..) | expression@(.cast ..)
@@ -71,11 +75,12 @@ def indexKeys (dqs : Bool) (scope : Scope) (columns : List CatalogColumn) (terms
       indexTerm dqs scope columns term.expression).mapError (·.under [item, 0])
 
 /-- The filter of a partial index as a condition over the scope of the indexed table, or
-none: aggregates are misuse, and the resolved condition has its
-{name}`indexExpressionIssue`. -/
+none: a parameter is {name}`ExprError.parameterInIndex` with {lit}`filter` in SQLite's order, aggregates are
+misuse, and the resolved condition has its {name}`indexExpressionIssue`. -/
 def indexFilter (dqs : Bool) (scope : Scope) : Option Syntax.Expr → Except ValueIssue (Option Resolved.Expr)
   | none => .ok none
   | some term => do
+    prohibitParameter dqs scope (.parameterInIndex true) term
     let resolved ← condition [] (resolveOperand dqs scope {} true term)
     match indexExpressionIssue true resolved with
     | some issue => .error issue

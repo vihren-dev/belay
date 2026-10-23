@@ -16,10 +16,10 @@ theorem SchemaOnly.readsClock (guard : SchemaOnly script) : scriptReadsClock scr
   have first := guard statement member
   cases statement <;> simp_all [Resolved.Statement.readsClock, Resolved.Statement.clockExpressions]
 
-/-- For every {name}`SchemaOnly` script with {name}`ModeledDefinitions` and every database,
-the script is supported at every clock assignment ({name}`SupportedSql`). It follows from
+/-- For every script of statements with values whose statements are {name}`SchemaOnly` with
+{name}`ModeledDefinitions`, and every database, the script is supported at every clock assignment ({name}`SupportedSql`). It follows from
 {name}`supportedSqlFrom_schemaOnly` and {name}`SupportedSql.of_readsClock`. -/
-theorem SupportedSql.schemaOnly (guard : SchemaOnly script) (modeled : ModeledDefinitions script) :
+theorem SupportedSql.schemaOnly (guard : SchemaOnly (script.map (·.1))) (modeled : ModeledDefinitions (script.map (·.1))) :
     SupportedSql script database :=
   SupportedSql.of_readsClock guard.readsClock (supportedSqlFrom_schemaOnly guard modeled)
 

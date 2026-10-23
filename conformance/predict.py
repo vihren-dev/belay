@@ -18,7 +18,7 @@ import sys
 from belay.sqlite.errors import NoParserForDialect, ParserResourceLimit, SqlError
 from belay.sqlite.located import Located
 from conformance import native_bindings
-from conformance.case_format import UNIX_EPOCH_JULIAN_MILLISECONDS, Json, row_wire
+from conformance.case_format import UNIX_EPOCH_JULIAN_MILLISECONDS, Json, cell_wire, row_wire
 from conformance.predict_render import output_record, view_record
 from conformance.profile_scope import foreign_key_scope, modeled_profile
 from conformance.record_parser import NO_PARSER_REASON, record_parser
@@ -53,6 +53,15 @@ def julian_clocks(given: dict[str, Json]) -> list[int]:
     return [clock + UNIX_EPOCH_JULIAN_MILLISECONDS for clock in clocks]
 
 
+def bound_values(given: dict[str, Json]) -> list[Json]:
+    """The values bound to the parameters of each executed statement, as typed cells; empty when
+    the judge supplies none. Statement i of the script gets list i."""
+    parameters = given.get("parameters") or []
+    if not isinstance(parameters, list) or not all(isinstance(values, list) for values in parameters):
+        raise ValueError("parameters must be a list of lists of cells")
+    return [[cell_wire(native_bindings.decode_cell(cell)) for cell in values] for values in parameters]
+
+
 def mapped(given: dict[str, Json], translator: Translator) -> tuple[dict[str, Json], list[Located]]:
     """The model input of one case and its statements; frontend refusals, execution
     settings that the model does not implement, and a foreign key in a record without a
@@ -63,7 +72,8 @@ def mapped(given: dict[str, Json], translator: Translator) -> tuple[dict[str, Js
     script = parser.translate(given["migrationSql"].encode(), "corpus-migration.sql").statements()
     foreign_key_scope(given, [*schema, *script])
     return {"profile": profile, "schema": [item.value for item in schema], "script": [item.value for item in script],
-            "initial": initial_rows(given["initialRows"]), "clocks": julian_clocks(given)}, script
+            "initial": initial_rows(given["initialRows"]), "clocks": julian_clocks(given),
+            "parameters": bound_values(given)}, script
 
 
 def refusal(given: dict[str, Json], error: Exception) -> dict[str, Json]:
@@ -79,7 +89,7 @@ def refusal(given: dict[str, Json], error: Exception) -> dict[str, Json]:
 
 
 def prediction(given: dict[str, Json], script: list[Located], model: dict[str, Json]) -> dict[str, Json]:
-    """One prediction in the recorded form. Bound parameters are outside the model's scope."""
+    """One prediction in the recorded form."""
     if "error" in model:
         return {"name": given["name"], "status": "error", "reason": str(model["error"])}
     if "restricted" in model:
@@ -89,9 +99,7 @@ def prediction(given: dict[str, Json], script: list[Located], model: dict[str, J
               "transactionOpen": step["transactionOpen"], "primaryCode": step["primaryCode"],
               "phase": step["phase"], **({"start": script[index - 1].start} if index else {})}
              for index, step in enumerate(model["steps"])]
-    parameters = given.get("parameters", [])
-    return {"name": given["name"], "status": "predicted",
-            "supported": bool(model["supported"]) and not any(values for values in parameters),
+    return {"name": given["name"], "status": "predicted", "supported": bool(model["supported"]),
             "steps": steps, "outputs": [output_record(output) for output in model["outputs"]]}
 
 

@@ -15,16 +15,16 @@ catalog: both are absent, or both are present with equal catalogs. -/
 def SqlState.Agrees (sql : SqlState) (state : ResolveState) : Prop :=
   sql.database.catalog = state.catalog ∧ sql.snapshot.map (·.catalog) = state.saved
 
-/-- For every clock value, statement that is not {lit}`PRAGMA foreign_keys = value`, database and
-result: if {name}`literalStep` succeeds with the result, then the result's catalog is
+/-- For every clock value, list of values, statement that is not {lit}`PRAGMA foreign_keys =
+value`, database and result: if {name}`literalStep` with the values succeeds with the result, then the result's catalog is
 {name}`Resolved.Statement.applyCatalog` of the statement on the database's catalog, and the
 statement is not transaction control. Proof sketch: CREATE TABLE, CREATE INDEX, CREATE TRIGGER, ADD
 COLUMN and DROP call the catalog functions, writes store rows only ({name}`Database.setRows`, and the rows
 of a write that checks foreign keys over the input catalog, {name}`keyRun_ok_catalog`), a query
 returns the database, and every other statement fails. -/
-theorem literalStep_success_catalog {clock : Int} {statement : Resolved.Statement} {database result : Database}
-    (notSetting : ∀ on, statement ≠ .setting on)
-    (success : literalStep clock statement database = .ok result) :
+theorem literalStep_success_catalog {clock : Int} {parameters : List Value} {statement : Resolved.Statement}
+    {database result : Database} (notSetting : ∀ on, statement ≠ .setting on)
+    (success : literalStep clock parameters statement database = .ok result) :
     result.catalog = statement.applyCatalog database.catalog ∧ statement.isControl = false := by
   cases statement with
   | setting on => exact absurd rfl (notSetting on)
@@ -90,7 +90,7 @@ theorem literalStep_success_catalog {clock : Int} {statement : Resolved.Statemen
         exact ⟨keyRun_ok_catalog success, rfl⟩
   | query query subqueries =>
     simp only [literalStep, runStatement] at success
-    cases ran : query.runOn clock database subqueries with
+    cases ran : query.runOn clock parameters database subqueries with
     | none => simp only [ran, queryEffect] at success; cases success; exact ⟨rfl, rfl⟩
     | some pair =>
       obtain ⟨_, run⟩ := pair
@@ -112,15 +112,16 @@ theorem literalStep_success_catalog {clock : Int} {statement : Resolved.Statemen
   | begin | commit | rollback | prepareError =>
     simp [literalStep, runStatement, step] at success
 
-/-- For every position, statement, connection states and resolution state: if the
-connection state agrees with the resolution state ({name}`SqlState.Agrees`) and
-{name}`advance` continues, then the next connection state agrees with
+/-- For every position, statement, list of values, connection states and resolution state: if
+the connection state agrees with the resolution state ({name}`SqlState.Agrees`) and
+{name}`advance` of the statement with the values continues, then the next connection state agrees with
 {name}`ResolveState.after` of the statement. Proof sketch: BEGIN saves the database whose
 catalog the resolution saves, COMMIT drops both, ROLLBACK restores the snapshot whose
 catalog the resolution restores, {lit}`PRAGMA foreign_keys = value` keeps the database, and
 every other statement follows {name}`literalStep_success_catalog`. -/
-theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {sql next : SqlState} {state : ResolveState}
-    (agrees : sql.Agrees state) (continued : advance position statement sql = .next next) :
+theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {parameters : List Value}
+    {sql next : SqlState} {state : ResolveState}
+    (agrees : sql.Agrees state) (continued : advance position statement parameters sql = .next next) :
     next.Agrees (state.after statement) := by
   obtain ⟨catalog, saved⟩ := agrees
   cases statement with
@@ -162,15 +163,15 @@ theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {sql ne
     rw [state.after_of_isControl control]
     exact ⟨changed.trans (catalog ▸ rfl), saved⟩
 
-/-- For every position, statement, connection state and outcome: if {name}`advance` halts
-with the outcome, the outcome has an error ({name}`Outcome.error?`). A halt is never a
+/-- For every position, statement, list of values, connection state and outcome: if
+{name}`advance` of the statement with the values halts with the outcome, the outcome has an error ({name}`Outcome.error?`). A halt is never a
 success and never a pending transaction without an error. Proof sketch: split on the
 statement: BEGIN in a transaction finishes a failure, which keeps its error with or
 without a snapshot; COMMIT and ROLLBACK without a transaction fail; every other statement
 halts only on an error of {lit}`literalStep` ({lit}`SqlState.publish_halt`), whose error
 {name}`SqlState.failed_error` keeps. -/
-theorem advance_halt_error {position : Nat} {statement : Resolved.Statement} {sql : SqlState} {outcome : Outcome}
-    (halted : advance position statement sql = .halt outcome) : outcome.error?.isSome := by
+theorem advance_halt_error {position : Nat} {statement : Resolved.Statement} {parameters : List Value} {sql : SqlState}
+    {outcome : Outcome} (halted : advance position statement parameters sql = .halt outcome) : outcome.error?.isSome := by
   have finished : ∀ index reason database,
       (sql.finish (.failure index reason database)).error?.isSome := by
     intro index reason database

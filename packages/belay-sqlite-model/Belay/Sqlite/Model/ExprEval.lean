@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.ExprFault
+import Belay.Sqlite.Model.Truth
 import Belay.Sqlite.Model.Date.Functions
 
 set_option doc.verso true
@@ -63,16 +63,14 @@ def Expr.evaluate (context : EvalContext) (row : List Value) : Expr → Value ×
   | .and left right =>
     let (a, first) := left.evaluate context row
     let (b, second) := right.evaluate context row
-    (if falsy a || falsy b then truth false else if a.isNull || b.isNull then .null else truth true,
-      (first.join second).soften)
+    (Value.and a b, (first.join second).soften)
   | .or left right =>
     let (a, first) := left.evaluate context row
     let (b, second) := right.evaluate context row
-    (if truthy a || truthy b then truth true else if a.isNull || b.isNull then .null else truth false,
-      (first.join second).soften)
+    (Value.or a b, (first.join second).soften)
   | .not operand =>
     let (value, fault) := operand.evaluate context row
-    (if value.isNull then .null else truth (!truthy value), fault)
+    (Value.not value, fault)
   | .isNull operand negated =>
     let (value, fault) := operand.evaluate context row
     (truth (value.isNull != negated), fault)
@@ -97,6 +95,7 @@ def Expr.evaluate (context : EvalContext) (row : List Value) : Expr → Value ×
     let (values, fault) := arguments.evaluate context row
     (function.value context.clock values, fault)
   | .now keyword => (keyword.value context.clock, .none)
+  | .parameter number => (parameterValue context.parameters number, .none)
   | .scalar .iif .nil => (.null, .none)
   | .scalar .iif (.cons condition rest) =>
     let (value, fault) := condition.evaluate context row
@@ -147,7 +146,7 @@ def Expr.givesJson (context : EvalContext) (row : List Value) : Expr → Bool
   | .json function _ => function.givesJson
   | .column _ | .literal _ | .compare _ _ _ _ _ | .and _ _ | .or _ _ | .not _ | .isNull _ _
   | .arithmetic _ _ _ | .cast _ _ | .coalesce _ _ | .now _ | .date _ _ | .scalar _ _ | .exists _ | .inList .. | .aggregateValue _
-  | .inQuery _ _ _ _ _ | .subquery _ => false
+  | .inQuery _ _ _ _ _ | .subquery _ | .parameter _ => false
 
 /-- Whether each argument of a call over one row has SQLite's JSON subtype
 ({lit}`Expr.givesJson`), in written order. -/

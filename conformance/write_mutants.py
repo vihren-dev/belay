@@ -6,7 +6,7 @@ mutant is one text change in a copy of the model, which
 `conformance.authored_writes`.
 """
 
-OUTPUTS = "verifier-conformance/VerifierConformance/Outputs.lean"
+OUTPUTS = "belay-sqlite-model/Belay/Sqlite/Model/StatementOutput.lean"
 """The outputs of statements, with the RETURNING rows."""
 RETURNING = "belay-sqlite-model/Belay/Sqlite/Model/Resolution/Returning.lean"
 """The resolution of RETURNING columns."""

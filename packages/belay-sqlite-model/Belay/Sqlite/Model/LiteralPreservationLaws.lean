@@ -122,7 +122,7 @@ exactly when the integers are equal: the integer keys of the model before slice 
 special case of SQLite's key equality. Proof sketch: both cells rank as numbers and have
 no bytes, so the comparison is that of the integers times the same nonzero factor. -/
 theorem LiteralData.keyCellsEqual_integer (a b : Int) : keyCellsEqual (.integer a) (.integer b) = (a == b) := by
-  simp only [keyCellsEqual, Collation.compare, Collation.key, compareValues, compareLex, compareOn, Value.rank,
+  simp only [keyCellsEqual, Collation.compare, Collation.key, Value.compare, compareLex, compareOn, Value.rank,
     Value.scaled, Value.bytes]
   have pos : (2 : Int) ^ 1074 ≠ 0 := Int.pow_ne_zero (by decide)
   generalize (2 : Int) ^ 1074 = factor at *

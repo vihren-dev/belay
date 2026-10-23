@@ -73,4 +73,10 @@ def Profile.documented (release sourceId : String) : Profile where
   dqsDml := true
   dqsDdl := true
 
+/-- The profile of SQLite 3.51.0, with its source id, its documented default limits and both
+double-quoted string settings on ({name}`Profile.documented`), and foreign keys off at the start.
+For example, {assert}`Profile.pinned.release = "3.51.0"`. -/
+def Profile.pinned : Profile :=
+  Profile.documented "3.51.0" "2025-11-04 19:38:17 fb2c931ae597f8d00a37574ff67aeed3eced4e5547f9120744ae4bfa8e74527b"
+
 end Belay.Sqlite.Model

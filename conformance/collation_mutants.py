@@ -17,7 +17,7 @@ LITERAL_DATA = SQLITE + "LiteralData.lean"
 MUTANTS: dict[str, tuple[str, str, str]] = {
     "comparison_ignores_collation": (COMPARISON,
         "    if left.isNull || right.isNull then .null else truth (operator.holds (collation.compare left right))",
-        "    if left.isNull || right.isNull then .null else truth (operator.holds (compareValues left right))"),
+        "    if left.isNull || right.isNull then .null else truth (operator.holds (Value.compare left right))"),
     "right_collation_first": (COLLATIONS,
         "  (left.explicitCollation <|> right.explicitCollation <|> left.columnCollation scope <|>\n"
         "    right.columnCollation scope).getD .binary",

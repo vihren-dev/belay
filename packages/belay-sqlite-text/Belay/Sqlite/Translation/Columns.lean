@@ -14,9 +14,13 @@ def defaultConstraint (tree : SqlTree) (node : ParseNode) (value : Located Synta
   let text := { value.span with parts := #[] }
   composite (.default value.value (tree.slice text.start text.stop)) node.start node.stop #[value.span, text]
 
+/-- The refusal of a column constraint that the translation does not map. -/
+def unsupportedConstraint : String :=
+  "Unsupported column constraint; use NOT NULL, PRIMARY KEY, UNIQUE, COLLATE, CHECK, REFERENCES or DEFAULT with a literal"
+
 /-- A column constraint: NOT NULL, PRIMARY KEY with its sort order, UNIQUE, each with its ON
 CONFLICT algorithm, COLLATE, CHECK with the label of the constraint name in effect, REFERENCES,
-AS for a generated column, and the DEFAULT forms. -/
+AS for a generated column, and the DEFAULT forms, also {lit}`DEFAULT (?)`. -/
 def columnConstraint (tree : SqlTree) (node : ParseNode) (current : Option String) :
     TranslateM (Located Syntax.ColumnConstraint) := do
   let parts := tree.children node
@@ -44,8 +48,13 @@ def columnConstraint (tree : SqlTree) (node : ParseNode) (current : Option Strin
     let value := if parts[1]!.symbol == "MINUS" then Syntax.Expr.negate operand.value else .positive operand.value
     return defaultConstraint tree node (composite value parts[1]!.start parts[3]!.stop #[operand.span])
   | ["DEFAULT", "scantok", "ID"] => return defaultConstraint tree node (identifier tree parts[2]!)
-  | _ => unsupported node ("Unsupported column constraint; use NOT NULL, PRIMARY KEY, UNIQUE, " ++
-      "COLLATE, CHECK, REFERENCES or DEFAULT with a literal")
+  | ["DEFAULT", "LP", "expr", "RP"] =>
+    -- `DEFAULT (?)` reaches the model, which gives SQLite's error for a default that is not
+    -- constant (ADR 0019, D1); other expressions stay refused.
+    if tree.symbols parts[2]! == ["VARIABLE"] then
+      return defaultConstraint tree node (← parameter (tree.children parts[2]!)[0]!)
+    unsupported node unsupportedConstraint
+  | _ => unsupported node unsupportedConstraint
 
 /-- A column's name, its declared type text as SQLite's tokens leave it, and its constraints,
 with the constraint name in effect after them. {lit}`CONSTRAINT name` maps to no constraint, as

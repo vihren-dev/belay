@@ -34,7 +34,7 @@ columns. An INSERT without clauses whose algorithms are all ABORT
 ({name}`insertPolicy`) is {name}`Resolved.Statement.insert`; any other INSERT is
 {name}`Resolved.Statement.upsert`. The values may name the statement's resolved subqueries,
 whose shapes are {lit}`shapes`. -/
-def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (tableName : Identifier)
+def resolveInsert (context : ResolveContext) (catalog : Catalog) (tableName : Identifier)
     (names : Option (List Identifier)) (rows : List (List Syntax.Expr)) (conflicts : List Syntax.ConflictClause)
     (algorithm : Option ConflictAlgorithm) (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query)
     (shapes : SubqueryShapes) (trigger : Option TriggerRow := none) : StatementResolution :=
@@ -52,27 +52,27 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (index : Nat) (
       let around := (trigger.map (·.scope 0)).getD []
       match resolveAll (fun row values => (resolveAll (fun _ item => constantCell context.profile.dqsDml shapes item around)
           values).mapError (·.under [row])) rows with
-      | .error issue => issueResolution catalog index [2] issue
+      | .error issue => issueResolution catalog [2] issue
       | .ok values =>
         if names.isNone && width != positions.length then
           prepareError catalog (.expression (.valueCount tableName positions.length width))
         else if names.isSome && width != positions.length then
           prepareError catalog (.expression (.valuesForColumns width positions.length))
         else if positions.eraseDups.length != positions.length then
-          restrict index [1] .insertColumnTwice
+          restrict [1] .insertColumnTwice
         else match resolveAll (fun _ row => fullCells table.columns positions row) values with
-          | .error issue => issueResolution catalog index [2] issue
+          | .error issue => issueResolution catalog [2] issue
           | .ok full =>
             let keys := catalog.uniqueKeys position table
             match resolveAll (resolveConflict context.profile.dqsDml tableName table keys) conflicts with
-            | .error issue => issueResolution catalog index [3] issue
+            | .error issue => issueResolution catalog [3] issue
             | .ok clauses =>
               match resolveReturning context.profile.dqsDml (Scope.single tableName table.columns !table.withoutRowid) returning with
-              | .error issue => issueResolution catalog index [insertReturningField] issue
+              | .error issue => issueResolution catalog [insertReturningField] issue
               | .ok columns =>
                 let policy := catalog.writePolicy position table algorithm
-                if policy.mixed then restrict index [] .mixedConflictAlgorithms
-                else if replacesDefault table policy then restrict index [] .replaceDefault
+                if policy.mixed then restrict [] .mixedConflictAlgorithms
+                else if replacesDefault table policy then restrict [] .replaceDefault
                 else if clauses.isEmpty && policy.aborts then
                   .ok (.insert position full columns subqueries, catalog)
                 else .ok (.upsert position full clauses columns algorithm subqueries, catalog)

@@ -135,12 +135,12 @@ and path 2 the table constraints. A {lit}`WITHOUT ROWID` table
 {lit}`STRICT` table's types ({name}`strictTypeError`), whose key columns are NOT NULL
 ({name}`CatalogTable.withStrictKeys`); then the CHECK
 constraints resolve ({name}`resolveTableChecks`) under the profile's {lit}`DQS_DDL`. -/
-def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : Nat)
+def resolveCreateTable (context : ResolveContext) (catalog : Catalog)
     (name : Identifier) (columns : List Syntax.ColumnDefinition)
     (constraints : List Syntax.TableConstraint) (options : Syntax.TableOptions := {}) : StatementResolution :=
   let statistics := context.mode == .description && statisticsTable name columns constraints
   if reservedName name && !statistics then
-    if context.mode == .description then restrict index [0] .engineTable
+    if context.mode == .description then restrict [0] .engineTable
     else prepareError catalog (.expression (.reservedName name))
   else match catalog.find name with
   | some (_, { entry := .table _, .. }) => prepareError catalog (.tableExists name)
@@ -159,14 +159,14 @@ def resolveCreateTable (context : ResolveContext) (catalog : Catalog) (index : N
       else if table.columns.all (·.generated.isSome) then prepareError catalog (.expression .onlyGeneratedColumns)
       else match resolveTableChecks context.profile.dqsDdl (Scope.single name table.columns !table.withoutRowid)
           table columns constraints with
-      | .error issue => issueResolution catalog index [] issue
+      | .error issue => issueResolution catalog [] issue
       | .ok table =>
       match resolveGeneratedColumns context.profile.dqsDdl (Scope.single name table.columns false) table columns with
-      | .error issue => issueResolution catalog index [] issue
+      | .error issue => issueResolution catalog [] issue
       | .ok table =>
-        if columns.any (rowidName ·.name) then restrict index [1] .rowidColumnName
+        if columns.any (rowidName ·.name) then restrict [1] .rowidColumnName
         else if columns.any (!·.constraints.all Syntax.ColumnConstraint.modeledDefault) then
-          restrict index [1] .unmodeledDefault
+          restrict [1] .unmodeledDefault
         else .ok (.createTable catalog.length name table, catalog.createTable name table)
 
 /-- Resolve CREATE INDEX, of a catalog description or in a script, in SQLite's order: the
@@ -174,7 +174,7 @@ table, its reserved name, the index name, the name in use, the key terms
 ({name}`indexKeys`, path 3) and the filter ({name}`indexFilter`, path 4), both over the
 table alone and under the profile's {lit}`DQS_DDL`. A CREATE INDEX that runs builds the
 index over the existing rows in execution. -/
-def resolveCreateIndex (context : ResolveContext) (catalog : Catalog) (index : Nat)
+def resolveCreateIndex (context : ResolveContext) (catalog : Catalog)
     (name : Identifier) (unique : Bool) (tableName : Identifier) (terms : List Syntax.OrderTerm)
     (filter : Option Syntax.Expr) : StatementResolution :=
   match catalog.findTable tableName with
@@ -189,9 +189,9 @@ def resolveCreateIndex (context : ResolveContext) (catalog : Catalog) (index : N
       let scope := Scope.single tableName table.columns !table.withoutRowid
       let dqs := context.profile.dqsDdl
       match indexKeys dqs scope table.columns terms with
-      | .error issue => issueResolution catalog index [3] issue
+      | .error issue => issueResolution catalog [3] issue
       | .ok keys => match indexFilter dqs scope filter with
-        | .error issue => issueResolution catalog index [4] issue
+        | .error issue => issueResolution catalog [4] issue
         | .ok resolvedFilter =>
           let created := { table := position, keys, unique, filter := resolvedFilter }
           .ok (.createIndex catalog.length name created, catalog.createIndex name created)

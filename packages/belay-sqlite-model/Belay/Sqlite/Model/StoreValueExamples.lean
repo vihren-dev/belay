@@ -2,7 +2,7 @@ import Belay.Sqlite.Model.StoreValue
 
 set_option doc.verso true
 
-/-! Examples of store-time affinity ({lit}`storeValue`), one per rule of the amendment's
+/-! Examples of store-time affinity ({lit}`Value.store`), one per rule of the amendment's
 table in ADR 0012, with the neighbors of its "Testing" list. The expected values are
 SQLite 3.51.0's stored values for the same writes. -/
 
@@ -16,7 +16,7 @@ def real (double : Float) : Value := .real double.toBits
 
 /-- The stored values of one value under INTEGER, NUMERIC, REAL, TEXT and BLOB affinity. -/
 def stored (value : Value) : List Value :=
-  [.integer, .numeric, .real, .text, .blob].map (storeValue · value)
+  [.integer, .numeric, .real, .text, .blob].map (Value.store · value)
 
 -- Well-formed number text becomes a number, INTEGER first; a REAL column reads it as REAL.
 #guard stored (text "3.0e+5") == [.integer 300000, .integer 300000, real 300000.0, text "3.0e+5", text "3.0e+5"]

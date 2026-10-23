@@ -48,6 +48,9 @@ inductive RestrictionKind where
   /-- Generated columns that read each other in a loop: SQLite reports it while CREATE TABLE
   runs, which the model does not describe. -/
   | generatedLoop
+  /-- A parameter where SQLite prohibits one, in an expression where SQLite's walk of names can
+  also find another error: which error SQLite reports depends on the walk (ADR 0019, D1). -/
+  | parameterErrorOrder
   /-- A {lit}`DO UPDATE` that assigns a generated column: SQLite refuses it only when a row
   conflicts. -/
   | upsertGenerated
@@ -119,7 +122,7 @@ inductive RestrictionKind where
   | aggregateOrderBy
   /-- Only an integer literal is modeled as LIMIT or OFFSET (ADR 0012 slice 1). -/
   | windowValue
-  /-- A negative OFFSET is not modeled (ADR 0012 slice 1). -/
+  /-- A negative literal OFFSET is not modeled (ADR 0012 slice 1); a negative bound OFFSET is 0. -/
   | negativeOffset
   /-- SUM in a grouped query with LIMIT or OFFSET is not modeled, because SQLite may stop before an overflowing group (ADR 0012 slice 2). -/
   | windowedGroupSum
