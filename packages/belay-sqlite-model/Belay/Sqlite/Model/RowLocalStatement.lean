@@ -17,7 +17,9 @@ namespace Belay.Sqlite.Model
 
 /-- For every atom, rules, clock value, target, work, database, flag and algorithm: if the atom is a
 {name}`RowLocalAtom` and every table of the database has it, the effect of {name}`rowsKeys`
-satisfies "every table has the atom" ({name}`Effect.Satisfies`). Proof sketch:
+satisfies "every table has the atom" ({name}`Effect.Satisfies`): the database of a success, and
+the database that an error with {name}`ExecutionError.constraintFail` carries, have the atom in every
+table. An error with any other reason requires nothing. Proof sketch:
 {name}`rowsKeys_holds` for the facts of the atom ({name}`RowLocalAtom.facts`). -/
 theorem rowsKeys_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (rules : Resolved.WriteRules)
     (clock : Int) (target : Nat) (work : RowWork) {database : Database} (every : database.EachTable atom)
