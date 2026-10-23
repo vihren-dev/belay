@@ -1,7 +1,7 @@
 # Status: the theorem of "keys unique" (ADR 0022, slice 2)
 
-Created 2026-10-23. Status: open; part 1 in progress. The owner decided the three decisions on
-2026-10-23 (below). Decision 1 has a finding (below) and waits for the owner.
+Created 2026-10-23. Status: open; part 1 done, part 2 in progress. The owner decided the three
+decisions on 2026-10-23 (below), and replaced decision 1 after finding 1.
 Task: [task file](20261023-keys-unique.task.md).
 Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D3 and D4 (slice 2).
 Needed by: [ADR 0017](../docs/adr-0017-user-surface.md), S4.
@@ -52,7 +52,12 @@ they land, mostly in the row engine for `recursive_triggers`.
 
 ## Owner decisions
 
-On 2026-10-23 the owner chose 1 d), 2 a) and 3 a).
+On 2026-10-23 the owner chose 1 d), 2 a) and 3 a). After finding 1, the owner replaced 1 d)
+on 2026-10-23 with option A: both run theorems (`runSqlFrom` and `runScriptFrom`) assume that each
+CREATE INDEX, ADD COLUMN and DROP that the run reaches meets its condition (CREATE INDEX: the index
+is supported over the catalog; ADD COLUMN: `Database.AddColumnCondition`; DROP:
+`Catalog.DropCondition`). Slice 4 proves the resolver facts and removes the hypothesis from the
+`runScriptFrom` theorem; the `runSqlFrom` theorem keeps it, as finding 1 shows that it is needed.
 
 
 1. **How the run theorems state the conditions of ADD COLUMN and DROP** (task file,
@@ -93,6 +98,11 @@ On 2026-10-23 the owner chose 1 d), 2 a) and 3 a).
   (`setting setting on`). The hypothesis `writesNone` of `runStatement_keeps_database` and
   `runStatement_writesNone_keysUnique` therefore reads `∃ setting on, statement = .setting
   setting on`. It still means "the statement is a setting"; the statements do not change.
+- 2026-10-23: the proofs of the row engine follow the base of ADR 0019, slice 2
+  (`recursive_triggers`): `enterProgram_keysUnique` is new (the entry of the frame of a program
+  runs a nested DELETE of no rows and drops its state), `runProgram_keysUnique` uses it, and the
+  rows that REPLACE deletes are deleted in the frame with the algorithm REPLACE and the setting
+  `recursive` as `fire`. No statement of a theorem changes.
 
 ## Findings
 
@@ -139,3 +149,10 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3).
   module `KeysUniqueExamples` (not in the root import): the lookup lemma for the guide's
   `accounts_live`, the counterexamples of "Conditions", and the counterexample of finding 1.
   Tests: `tests/test_model_package.py -m unit`.
+- 2026-10-23: review round 6 (the examples): no findings. Part 2: the invariant of the row engine
+  (`KeysUniqueKeyState`), the foreign-key steps keep the rows (`KeysUniqueKeySteps`), the trigger
+  programs (`KeysUniqueTriggers`), `deleteRow`, `updateRow` and `insertRow`
+  (`KeysUniqueRowDelete`, `KeysUniqueRowUpdate`, `KeysUniqueRowInsert`), `runRows` and the writes
+  with rules (`KeysUniqueRowEngine`), and the statement theorem `runStatement_keysUnique`
+  (`KeysUniqueStatement`). No proof of the row engine failed. Tests:
+  `tests/test_model_package.py -m unit`.
