@@ -1,6 +1,7 @@
 # Status: the theorem of "keys unique" (ADR 0022, slice 2)
 
-Created 2026-10-23. Status: open; part 1 in progress. Three owner decisions are open (below).
+Created 2026-10-23. Status: open; part 1 in progress. The owner decided the three decisions on
+2026-10-23 (below). Decision 1 has a finding (below) and waits for the owner.
 Task: [task file](20261023-keys-unique.task.md).
 Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D3 and D4 (slice 2).
 Needed by: [ADR 0017](../docs/adr-0017-user-surface.md), S4.
@@ -51,6 +52,9 @@ they land, mostly in the row engine for `recursive_triggers`.
 
 ## Owner decisions
 
+On 2026-10-23 the owner chose 1 d), 2 a) and 3 a).
+
+
 1. **How the run theorems state the conditions of ADD COLUMN and DROP** (task file,
    "Conditions"). A run can reach an ADD COLUMN or a DROP that needs a fact which this slice does
    not prove for the runs.
@@ -92,7 +96,25 @@ they land, mostly in the row engine for `recursive_triggers`.
 
 ## Findings
 
-None yet. A proof that fails is recorded here with a counterexample (ADR 0022, D3).
+A proof that fails is recorded here with a counterexample (ADR 0022, D3).
+
+1. **Decision 1 d) does not hold for `runSqlFrom` over every resolved statement** (2026-10-23).
+   `runSqlFrom` takes resolved statements, and the step does not check that a resolved
+   statement keeps `Catalog.Valid`: `runStatement` runs `.createIndex` as ready
+   (`ready := true`) for an index that `CatalogIndex.supported` rejects. Counterexample, checked
+   by the kernel in `KeysUniqueExamples`: the table `t(a)` with the rows `[1]` and `[1]`; the
+   resolved CREATE INDEX of a unique index on `a` with the filter `column1 = 5` (column 1 is past
+   the width) is ready and keeps the keys unique; ADD COLUMN with the default 5 is ready, and
+   after it the rows conflict on the index. So a run theorem for `runSqlFrom` without an
+   assumption on its statements is false. A short resolved INSERT row is not a second
+   counterexample: `runStatement` marks it not ready.
+   - For `runScriptFrom`, which resolves syntax, the claim is plausible, but its proof needs
+     facts of the resolver (each resolved CREATE INDEX is supported over the catalog, each
+     resolved DROP is closed), which are more than the 300 lines of option d).
+   - Possible ways: the `runSqlFrom` theorem with the hypothesis of option a) and the
+     `runScriptFrom` theorem without it (with the resolver facts); or option a) for both.
+   - Part 1 does not depend on the answer: its theorems state the conditions as hypotheses.
+     The task file is not amended for decision 1 until the owner answers.
 
 ## Progress log
 
@@ -113,3 +135,7 @@ None yet. A proof that fails is recorded here with a counterexample (ADR 0022, D
 - 2026-10-23: review round 4 (the refactor): no findings. DROP: `Catalog.DropCondition` (a kept
   unique index is on a kept table), the laws of the kept positions (`DropPositionLaws`) and
   `runStatement_drop_keysUnique` (`KeysUniqueDrop`).
+- 2026-10-23: review round 5 (DROP): no findings. The owner decisions recorded. The examples
+  module `KeysUniqueExamples` (not in the root import): the lookup lemma for the guide's
+  `accounts_live`, the counterexamples of "Conditions", and the counterexample of finding 1.
+  Tests: `tests/test_model_package.py -m unit`.
