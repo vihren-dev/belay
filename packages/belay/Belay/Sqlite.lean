@@ -3,6 +3,7 @@ import Belay.Sqlite.Translation
 import Belay.Sqlite.Values
 import Belay.Sqlite.Database
 import Belay.Sqlite.Script
+import Belay.Sqlite.SqlParameters
 import Belay.Sqlite.SqlTerm
 import Belay.Sqlite.SqlDiagnostics
 import Belay.Sqlite.EvalDatabase
