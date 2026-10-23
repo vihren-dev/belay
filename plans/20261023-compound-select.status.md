@@ -19,6 +19,9 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D3 and D7.
 - 2026-10-23: owner decisions 1 and 2: the lead proceeds on the recommendation. ADR 0019 D3 is
   amended with the rules of `IN` and scalar subqueries over a compound, the `ORDER BY COLLATE`
   rewrite, and a compound statement in a trigger body outside slice 3.
+- 2026-10-23: review of the ADR amendment (one must) fixed with native probes: after the
+  `ORDER BY COLLATE` rewrite, `IN` and a scalar subquery read the column of the derived table
+  (ADR 0019 D3, task file outcome 9); slice 3 refuses them with a restriction.
 
 ## Owner decisions
 

@@ -136,10 +136,17 @@ What the code has today, after slice 1 of ADR 0018:
   - `x IN (q)` over a compound reads the affinity and the collation of the right-most
     `SELECT`'s column, and a scalar subquery `(q)` reads only its affinity, because SQLite
     gives a subquery no collation. For example, over `t(n TEXT COLLATE NOCASE)` with `'a'` and
-    `u(m TEXT)`, `'A' IN (SELECT n FROM t UNION SELECT m FROM u WHERE 0)` is 0.
+    `u(m TEXT)`, `'A' IN (SELECT n FROM t UNION SELECT m FROM u WHERE 0)` is 0. The next item
+    gives the exception to this rule.
   - When an operator is not `UNION ALL` and an `ORDER BY` term has `COLLATE`, SQLite sorts the
     compound as the subquery of `SELECT * FROM (compound)`. Then a term without `COLLATE` sorts
-    under the collation of the left-most `SELECT`'s expression, `BINARY` when it has none.
+    under the collation of the left-most `SELECT`'s expression, `BINARY` when it has none. Also,
+    `x IN (q)` and a scalar `(q)` then read the column of that subquery: the collation of the
+    left-most `SELECT`'s expression, and the affinity that SQLite gives to a column of a
+    subquery in `FROM` (D5). For example,
+    `'A' IN (SELECT 'a' COLLATE NOCASE UNION SELECT 'b' WHERE 0 ORDER BY 1 COLLATE BINARY)` is
+    1. Slice 3 refuses such an `IN` or scalar subquery with a restriction, and slice 4 adds it
+    with the columns of a subquery in `FROM`.
 - Amended 2026-10-23: slice 3 does not include a compound `SELECT` as a statement of a trigger
   body; the frontend refuses it. A compound subquery in a statement of a trigger body is in
   slice 3. A later slice adds the statement form when a measurement or a guide example needs
