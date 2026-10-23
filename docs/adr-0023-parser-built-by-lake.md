@@ -75,16 +75,20 @@ needs only `lake build`.
    - The translation program links no parser library: `ldd` shows only glibc's libraries.
      Its shared library for the precompiled modules is 219 KB; the Nix-built parser library
      is 221 KB.
-   - For all 11,118 distinct SQL texts of the parser's test inputs and of the retained corpora
+   - For all 11,118 distinct SQL texts of the parser's test inputs and of corpora v1 to v5
      (`parserLibrary.inputs`), under the three profiles 3.51.0, 3.46.0 and 3.53.4 (33,354
      requests), the trial program and the current program gave byte-identical answers.
-     3.53.4 has no grammar, so both refuse those requests with the same message.
+     3.53.4 has no grammar, so both refuse those requests with the same message. The trial
+     did not use the texts of the later corpora; the predictions test of D5 covers them.
    - `lake lean` of a file with `#eval Belay.Sqlite.ParserLibrary.metadata` printed the
      library's metadata. Elaboration called the parser through the precompiled modules.
-6. **The Nix build of a Lean package copies only the package's sources.** `sources.text` has
-   the package folder as its root, and `build-support/lean-package.nix` copies it to its path
-   in a copy of the repository layout. Files outside the package folder, such as `parser/`,
-   are not in the build unless the derivation copies them there.
+6. **A Nix workspace holds only the package folders.** `sources.text` has the package folder
+   as its root, and `build-support/lean-package.nix` copies it to its path in a copy of the
+   repository layout, with the outputs of the required packages at their paths. The output of
+   a package is its folder only. The surface's build replays the text package's output in its
+   own workspace, and Lake checks the inputs of each target that it replays. Files outside
+   the package folders, such as `parser/`, are in no workspace unless a derivation copies
+   them there.
 7. **Other users of the parser library.** The `parserLibrary` suite of `tests.nix` loads the
    Nix-built shared library: the comparison of each grammar with the corpora, the sanitizer
    job on Linux, the load test and the export check. `tests/surface_parser_test.py` checks
@@ -115,9 +119,12 @@ which Lake also makes as a shared library for the precompiled modules (fact 5). 
 does not read `BELAY_PARSER_LIBRARY` and adds no linker arguments for the parser.
 
 The text package refers to the C sources by their path in the repository: `parser/` for the
-C files and the vendored releases, and `parser/generated/` for D1. The Nix derivation of the
-text package copies these files to the same paths in its copy of the repository layout (fact
-6). A git require with `subDir` gets the whole repository, so the paths are there too.
+C files and the vendored releases, and `parser/generated/` for D1. Each Nix workspace that
+builds or replays the text package has these files at the same paths (fact 6): the text
+package's own build, the surface's build, and the build of any later package that requires
+the text package. `lean-package.nix` gets a parameter for such extra source paths, and the
+text package's dependents pass the same set. A git require with `subDir` gets the whole
+repository, so the paths are there too.
 
 The `extern_lib` gets a name for what it now holds, for example `parserLibrary`. The target
 lists of the Nix build and of ADR 0020's D2 change with it.
