@@ -32,7 +32,7 @@ def definedName (scope : Scope) : Syntax.Expr → Option String
   | .qualified source column => match scope.resolveQualified source column with
     | .found _ [position] => scope.columns[position]?.map (·.name.text)
     | .found .. | .missing | .ambiguous => none
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .negate _ | .positive _
+  | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
   | .cast .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate .. | .raise .. => none
 

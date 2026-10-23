@@ -28,7 +28,7 @@ def namesAlias (scope : Scope) (aliases : List Identifier) : Syntax.Expr → Boo
     namesAlias scope aliases operand || namesAlias scope aliases low || namesAlias scope aliases high
   | .caseOf operands _ => namesAliasIn scope aliases operands
   | .concatenate left right => namesAlias scope aliases left || namesAlias scope aliases right
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ | .qualified .. | .exists _
+  | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .callStar _ | .qualified .. | .exists _
   | .subquery _ | .raise .. => false
 
 /-- Whether some argument names a result column alias ({name}`namesAlias`). -/
@@ -55,7 +55,7 @@ def mentionsColumn (scope : Scope) : Syntax.Expr → Bool
   | .between operand low high _ => mentionsColumn scope operand || mentionsColumn scope low || mentionsColumn scope high
   | .caseOf operands _ => mentionsColumnIn scope operands
   | .concatenate left right => mentionsColumn scope left || mentionsColumn scope right
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ | .raise .. => false
+  | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .callStar _ | .raise .. => false
 
 /-- Whether some argument names a column in scope ({name}`mentionsColumn`). -/
 def mentionsColumnIn (scope : Scope) : List Syntax.Expr → Bool
@@ -78,7 +78,7 @@ def Syntax.Expr.hasQualifiedName : Syntax.Expr → Bool
   | .between operand low high _ => operand.hasQualifiedName || low.hasQualifiedName || high.hasQualifiedName
   | .caseOf operands _ => Syntax.Expr.anyQualifiedName operands
   | .concatenate left right => left.hasQualifiedName || right.hasQualifiedName
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .callStar _ | .identifier .. | .exists _
+  | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .callStar _ | .identifier .. | .exists _
   | .subquery _ | .raise .. => false
 
 /-- Whether some argument has a qualified name ({name}`Syntax.Expr.hasQualifiedName`). -/

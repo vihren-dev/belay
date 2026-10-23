@@ -22,8 +22,8 @@ def Syntax.Expr.aggregateCalls (expression : Syntax.Expr) : List Syntax.Expr :=
   | .call _ arguments | .caseOf arguments _ => Syntax.Expr.aggregateCallsIn arguments
   | .inList operand values _ => operand.aggregateCalls ++ Syntax.Expr.aggregateCallsIn values
   | .between operand low high _ => operand.aggregateCalls ++ low.aggregateCalls ++ high.aggregateCalls
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .qualified .. | .callStar _
-  | .exists _ | .subquery _ | .raise .. => []
+  | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .identifier .. | .qualified ..
+  | .callStar _ | .exists _ | .subquery _ | .raise .. => []
 
 /-- The aggregate calls of each expression in order ({name}`Syntax.Expr.aggregateCalls`). -/
 def Syntax.Expr.aggregateCallsIn : List Syntax.Expr → List Syntax.Expr
@@ -55,7 +55,7 @@ def resolveAggregateCall (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) 
       if operand.subtypeUndescribed then throw (.restriction [1, 1] .jsonSubtype)
       .ok (aggregate label operand)
     | none => .error (.restriction [] .aggregateInExpression)
-  | .call _ (_ :: _ :: _ :: _) | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier ..
+  | .call _ (_ :: _ :: _ :: _) | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .identifier ..
   | .qualified .. | .negate _ | .positive _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic ..
   | .cast .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf ..
   | .concatenate .. | .raise .. => .error (.restriction [] .aggregateInExpression)
@@ -63,7 +63,8 @@ def resolveAggregateCall (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) 
 /-- Resolve {lit}`GROUP BY` term {lit}`item` of a query whose result columns are {lit}`outputs`,
 with aliases {lit}`aliases` and collations {lit}`collations`: a column name, also under one
 {lit}`COLLATE`, or a qualified name, with its collation; a result column number or alias, with
-the column's collation; an aggregate, also inside the result column that a number or an alias
+the column's collation; a parameter, as a constant value that names no result column (ADR 0019,
+D1); an aggregate, also inside the result column that a number or an alias
 names, is SQLite's {lit}`aggregate functions are not allowed in the GROUP BY clause`; any other term is {name}`RestrictionKind.groupByTerm`. -/
 def resolveGroupTerm (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (aliases : List (Option Identifier))
     (outputs : List (Resolved.Output × String × Option Affinity)) (collations : List Collation) (item : Nat)
@@ -85,7 +86,7 @@ def resolveGroupTerm (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (ali
       | some (.ok column) => grouped column
       | some (.error ()) => .error (.prepare (.groupByOutOfRange (item + 1) outputs.length))
       | none => .error (.restriction [4, item] .groupByTerm)
-    | .qualified .. =>
+    | .qualified .. | .parameter _ =>
       (resolveOperand dqs scope shapes true term).map (·.1, term.collationIn scope) |>.mapError (·.under [4, item])
     | .collate .. =>
       if term.collatedColumn scope then

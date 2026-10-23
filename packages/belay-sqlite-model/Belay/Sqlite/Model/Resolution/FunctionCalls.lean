@@ -23,7 +23,7 @@ def realToken (text : String) : Bool :=
 ({lit}`exprProbability`): a REAL literal of at most 1.0. A sign, an integer or text is not. -/
 def likelihoodConstant : Syntax.Expr → Bool
   | .numeric text => realToken text && (atof text.toUTF8.toList).1 ≤ 1.0
-  | .null | .string _ | .blob _ | .currentTime _ | .identifier .. | .qualified .. | .negate _ | .positive _
+  | .null | .string _ | .blob _ | .parameter _ | .currentTime _ | .identifier .. | .qualified .. | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast ..
   | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate .. | .raise .. => false
 

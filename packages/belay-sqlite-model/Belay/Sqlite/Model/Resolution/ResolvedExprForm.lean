@@ -47,6 +47,9 @@ inductive Expr where
   /-- {lit}`CURRENT_TIME`, {lit}`CURRENT_DATE` or {lit}`CURRENT_TIMESTAMP`: the statement's clock
   value as text, which evaluation computes from the clock value it is given. -/
   | now (keyword : TimeKeyword)
+  /-- Parameter {lit}`number` of the statement (ADR 0019, D1): item {lit}`number` of the values
+  that evaluation is given, from 1, or NULL when there is no such item. -/
+  | parameter (number : Nat)
   /-- A call of a date and time function with its arguments in written order; {lit}`now`
   and a call without a time value read the clock value that evaluation is given. -/
   | date (function : DateFunction) (arguments : Arguments)

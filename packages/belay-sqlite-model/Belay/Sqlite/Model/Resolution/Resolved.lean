@@ -1,5 +1,5 @@
 import Belay.Sqlite.Model.Resolution.TriggerProgram
-import Belay.Sqlite.Model.Resolution.PrepareErrors
+import Belay.Sqlite.Model.Resolution.StatementPrepareError
 import Belay.Sqlite.Model.Resolution.ConflictPolicy
 import Belay.Sqlite.Model.Resolution.RestrictionText
 import Belay.Sqlite.Model.Resolution.QueryForm

@@ -73,6 +73,11 @@ def ExprError.message : ExprError → String
   | .havingNonAggregate => "HAVING clause on a non-aggregate query"
   | .raiseOutsideTrigger => "RAISE() may only be used within a trigger-program"
   | .triggerOnSystemTable => "cannot create trigger on system table"
+  | .parameterInCheck => "parameters prohibited in CHECK constraints"
+  | .parameterInGenerated => "parameters prohibited in generated columns"
+  | .parameterInIndex filter =>
+    "parameters prohibited in " ++ (if filter then "partial index WHERE clauses" else "index expressions")
+  | .triggerVariables => "trigger cannot use variables"
 
 /-- A name as SQLite's {lit}`%w` writes it inside double quotes: each double quote doubled. -/
 def quotedName (name : Identifier) : String :=

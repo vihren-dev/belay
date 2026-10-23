@@ -26,7 +26,7 @@ def Syntax.Expr.same : Syntax.Expr → Syntax.Expr → Bool
   | .call n xs, .call m ys => n == m && Syntax.Expr.sameList xs ys
   | .cast a t, .cast b u => t == u && a.same b
   | .collate a n, .collate b m => n == m && a.same b
-  | .exists i, .exists j | .subquery i, .subquery j => i == j
+  | .exists i, .exists j | .subquery i, .subquery j | .parameter i, .parameter j => i == j
   | .inQuery a i n, .inQuery b j m => i == j && n == m && a.same b
   | .inList a xs n, .inList b ys m => n == m && a.same b && Syntax.Expr.sameList xs ys
   | .between a l h n, .between b k g m => n == m && a.same b && l.same k && h.same g
@@ -34,7 +34,7 @@ def Syntax.Expr.same : Syntax.Expr → Syntax.Expr → Bool
   | .raise k none, .raise l none => k == l
   | .raise k (some a), .raise l (some b) => k == l && a.same b
   | .raise _ none, .raise _ (some _) | .raise _ (some _), .raise _ none => false
-  | .null, _ | .numeric _, _ | .string _, _ | .blob _, _ | .currentTime _, _ | .identifier .., _ | .qualified .., _
+  | .null, _ | .numeric _, _ | .string _, _ | .blob _, _ | .parameter _, _ | .currentTime _, _ | .identifier .., _ | .qualified .., _
   | .negate _, _ | .positive _, _ | .compare .., _ | .and .., _ | .or .., _ | .not _, _ | .isNull .., _
   | .callStar _, _ | .call .., _ | .arithmetic .., _ | .cast .., _ | .collate .., _ | .exists _, _
   | .inQuery .., _ | .subquery _, _ | .inList .., _ | .between .., _ | .caseOf .., _ | .concatenate .., _

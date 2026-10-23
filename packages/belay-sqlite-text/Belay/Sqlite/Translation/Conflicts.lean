@@ -32,7 +32,7 @@ def targetColumn (tree : SqlTree) (item : Array ParseNode) : TranslateM (Located
     -- The name's range is the first part of an identifier (`identifier`); the whole range
     -- stands in if the shape changes.
     return { value := column, span := located.span.parts[0]?.getD located.span }
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .qualified _ _ | .negate _ | .positive _
+  | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .qualified _ _ | .negate _ | .positive _
   | .compare _ _ _ | .and _ _ | .or _ _ | .not _ | .isNull _ _ | .callStar _ | .call _ _ | .arithmetic _ _ _
   | .cast _ _ | .collate _ _ | .exists _ | .inQuery _ _ _ | .subquery _ | .inList _ _ _ | .between _ _ _ _
   | .caseOf _ _ | .concatenate _ _ | .raise _ _ => unsupported expression refusal

@@ -21,11 +21,11 @@ def integerLiteral : Syntax.Expr → Option Int
   | .numeric text => (numericValue text false).integer?
   | .negate operand => match operand with
     | .numeric text => (numericValue text true).integer?
-    | .null | .string _ | .blob _ | .currentTime _ | .identifier .. | .negate _ | .positive _
+    | .null | .string _ | .blob _ | .parameter _ | .currentTime _ | .identifier .. | .negate _ | .positive _
     | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast ..
     | .qualified .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf ..
     | .concatenate .. | .raise .. => none
-  | .null | .string _ | .blob _ | .currentTime _ | .identifier .. | .positive _ | .compare ..
+  | .null | .string _ | .blob _ | .parameter _ | .currentTime _ | .identifier .. | .positive _ | .compare ..
   | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast ..
   | .qualified .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf ..
     | .concatenate .. | .raise .. => none
@@ -41,7 +41,7 @@ of such parts. A column outside the grouping terms, and a subquery, which can re
 bare: SQLite reads them from a row of the group that it chooses. -/
 def Resolved.Expr.grouped (terms : List Resolved.Expr) (expression : Resolved.Expr) : Bool :=
   terms.contains expression || match expression with
-  | .literal _ | .now _ | .aggregateValue _ => true
+  | .literal _ | .now _ | .aggregateValue _ | .parameter _ => true
   | .column _ | .exists _ | .inQuery .. | .subquery _ => false
   | .compare _ _ left right _ | .and left right | .or left right | .arithmetic _ left right | .coalesce left right =>
     left.grouped terms && right.grouped terms
@@ -69,7 +69,7 @@ names the first column with that alias. {lit}`some (.error ())` is an integer ou
 range; {lean}`(none : Option (Except Unit Nat))` is any other term. -/
 def namedResult (names : List (Option Identifier)) : Syntax.Expr → Option (Except Unit Nat)
   | .identifier name _ => (aliasIndex names name).map .ok
-  | term@.null | term@(.numeric _) | term@(.string _) | term@(.blob _) | term@(.currentTime _)
+  | term@.null | term@(.numeric _) | term@(.string _) | term@(.blob _) | term@(.parameter _) | term@(.currentTime _)
   | term@(.negate _) | term@(.positive _) | term@(.compare ..) | term@(.and ..)
   | term@(.or ..) | term@(.not _) | term@(.isNull ..) | term@(.callStar _) | term@(.call ..)
   | term@(.arithmetic ..) | term@(.cast ..) | term@(.qualified ..) | term@(.collate ..) | term@(.exists _)

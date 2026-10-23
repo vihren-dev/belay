@@ -124,9 +124,10 @@ structure SubqueryRun where
   rowsCertain : Bool := true
 
 /-- What the evaluation of an expression reads besides its row (ADR 0018, D1): the
-statement's clock value in Julian-day milliseconds, and the results of the statement's
-subqueries, by index, for the row of the expression that reads them. Use
-{lit}`EvalContext.plain` for a statement without subqueries. -/
+statement's clock value in Julian-day milliseconds, the results of the statement's
+subqueries, by index, for the row of the expression that reads them, and the values bound to
+the statement's parameters (ADR 0019, D1). Use {lit}`EvalContext.plain` for a statement
+without subqueries and without values. -/
 structure EvalContext where
   /-- The statement's clock value. -/
   clock : Int
@@ -135,6 +136,9 @@ structure EvalContext where
   /-- The values of the query's aggregates over the current group (ADR 0018, D3); empty
   outside the group of an aggregate query. -/
   aggregates : List Value := []
+  /-- The values bound to the statement's parameters: item {lit}`n` from 1 is the value of
+  parameter {lit}`n`. Empty for a statement that binds none, so that each parameter is NULL. -/
+  parameters : List Value := []
 
 /-- The context of a statement without subqueries at a clock value: a subquery that it
 names gives no rows and no fault, which resolution never needs. -/

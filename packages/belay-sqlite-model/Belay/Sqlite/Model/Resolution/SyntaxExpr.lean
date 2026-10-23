@@ -49,6 +49,9 @@ inductive Expr where
   | string (bytes : List UInt8)
   /-- A blob literal's decoded bytes, for example {lit}`X'00FF'` gives two bytes. -/
   | blob (bytes : List UInt8)
+  /-- A parameter ({lit}`?`, {lit}`?2`, {lit}`:name`) with its number in its statement (ADR 0019,
+  D1): the statement reads item {lit}`number` of its bound values, from 1, when it runs. -/
+  | parameter (number : Nat)
   /-- The keywords {lit}`CURRENT_TIME`, {lit}`CURRENT_DATE` or
   {lit}`CURRENT_TIMESTAMP`, as written. -/
   | currentTime (keyword : String)

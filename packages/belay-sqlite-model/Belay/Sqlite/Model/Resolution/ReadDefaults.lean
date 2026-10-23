@@ -41,7 +41,7 @@ def writtenReadBack (affinity : Affinity) (written : Syntax.DefaultExpression) :
   match written.expression with
   | .numeric text | .positive (.numeric text) => .ok (readNumericDefault affinity text false)
   | .negate (.numeric text) => .ok (readNumericDefault affinity text true)
-  | .null | .string _ | .blob _ | .currentTime _ | .identifier ..
+  | .null | .string _ | .blob _ | .parameter _ | .currentTime _ | .identifier ..
   | .negate _ | .positive _ | .compare .. | .and .. | .or .. | .not _
   | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast .. | .qualified .. | .collate .. | .exists _
   | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate .. | .raise .. =>
@@ -56,7 +56,7 @@ model restriction ({lit}`modeledDefault`). -/
 def resolveColumnDefault (affinity : Affinity) (written : Syntax.DefaultExpression) : Option ColumnDefault :=
   let form : Option DefaultForm := match written.expression with
     | .currentTime keyword => some (.clock (timeKeywordNamed keyword))
-    | .null | .numeric _ | .string _ | .blob _ | .identifier .. | .negate _ | .positive _
+    | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .identifier .. | .negate _ | .positive _
     | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call ..
     | .arithmetic .. | .cast .. | .qualified .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate .. | .raise .. =>
       match literalDefault written.expression, writtenReadBack affinity written with

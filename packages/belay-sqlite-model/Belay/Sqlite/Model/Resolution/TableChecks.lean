@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Resolution.QueryExprs
+import Belay.Sqlite.Model.Resolution.SyntaxParameters
 
 set_option doc.verso true
 
@@ -17,9 +18,11 @@ def checkIssue (resolved : Resolved.Expr) : Option ValueIssue :=
       resolved.any Resolved.Expr.isFallibleCall then some (.restriction [] .checkFunction)
   else none
 
-/-- One CHECK constraint over the scope of its table: the condition and its label. -/
+/-- One CHECK constraint over the scope of its table: the condition and its label. A condition
+with a parameter is {name}`ExprError.parameterInCheck`, before its names resolve. -/
 def resolveCheck (dqs : Bool) (scope : Scope) (condition : Syntax.Expr) (label : String) :
     Except ValueIssue CheckConstraint := do
+  if condition.hasParameter then throw (.prepare .parameterInCheck)
   let resolved ← Belay.Sqlite.Model.condition [] (resolveOperand dqs scope {} true condition)
   match checkIssue resolved with
   | some issue => .error issue

@@ -1,5 +1,5 @@
 import Belay.Sqlite.Model.Resolution.ParentKeys
-import Belay.Sqlite.Model.Resolution.PrepareErrors
+import Belay.Sqlite.Model.Resolution.StatementPrepareError
 
 set_option doc.verso true
 

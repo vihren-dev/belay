@@ -56,7 +56,7 @@ def aggregateCall : Syntax.Expr → Bool
   | .call name [_] => (aggregateNamed name).isSome
   | .call name [_, _] => (pairAggregateNamed name).isSome
   | .call _ (_ :: _ :: _ :: _) => false
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .negate _ | .positive _
+  | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .identifier .. | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic .. | .cast ..
   | .qualified .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate .. | .raise .. => false
 
@@ -73,7 +73,7 @@ def callIssue (name : String) : ValueIssue :=
 /-- Whether an expression as written is an unquoted {lit}`TRUE` or {lit}`FALSE`. -/
 def Syntax.Expr.unquotedBoolean : Syntax.Expr → Bool
   | .identifier name quote => quote == .none && booleanKeywordName name
-  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .qualified .. | .negate _ | .positive _
+  | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .qualified .. | .negate _ | .positive _
   | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast ..
   | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf .. | .concatenate .. | .raise .. => false
 

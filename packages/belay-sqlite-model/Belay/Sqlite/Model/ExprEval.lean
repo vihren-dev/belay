@@ -95,6 +95,7 @@ def Expr.evaluate (context : EvalContext) (row : List Value) : Expr → Value ×
     let (values, fault) := arguments.evaluate context row
     (function.value context.clock values, fault)
   | .now keyword => (keyword.value context.clock, .none)
+  | .parameter number => (context.parameters.getD (number - 1) .null, .none)
   | .scalar .iif .nil => (.null, .none)
   | .scalar .iif (.cons condition rest) =>
     let (value, fault) := condition.evaluate context row
@@ -145,7 +146,7 @@ def Expr.givesJson (context : EvalContext) (row : List Value) : Expr → Bool
   | .json function _ => function.givesJson
   | .column _ | .literal _ | .compare _ _ _ _ _ | .and _ _ | .or _ _ | .not _ | .isNull _ _
   | .arithmetic _ _ _ | .cast _ _ | .coalesce _ _ | .now _ | .date _ _ | .scalar _ _ | .exists _ | .inList .. | .aggregateValue _
-  | .inQuery _ _ _ _ _ | .subquery _ => false
+  | .inQuery _ _ _ _ _ | .subquery _ | .parameter _ => false
 
 /-- Whether each argument of a call over one row has SQLite's JSON subtype
 ({lit}`Expr.givesJson`), in written order. -/
