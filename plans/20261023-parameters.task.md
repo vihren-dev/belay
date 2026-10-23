@@ -1,6 +1,6 @@
 # Parameters (ADR 0019, slice 1)
 
-Created 2026-10-23. Status: open.
+Created 2026-10-23. Status: DONE (2026-10-23).
 Status file: [status](20261023-parameters.status.md).
 Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D1 (amended 2026-10-23, owner
 decision 4), and the order of D7 (amended 2026-10-22): after ADR 0017's S2, before S3.

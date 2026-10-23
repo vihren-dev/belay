@@ -1,6 +1,6 @@
 # Status: parameters (ADR 0019, slice 1)
 
-Created 2026-10-23. Status: open.
+Created 2026-10-23. Status: DONE (2026-10-23).
 Task file: [task](20261023-parameters.task.md).
 Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D1 (amended 2026-10-23).
 
@@ -77,3 +77,8 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D1 (amended 2026-10-23
   values and the triggerE cases). The judge change is prepared but not committed: corpus-v48
   (44 cases, native replay passed), its claim, and the 27 cases added to `mustAgree`. The
   judge lock needs the owner.
+- 2026-10-23: the owner authorized the judge lock; the judge commit holds corpus-v48, its
+  claim, the 27 newly agreeing cases and the new `integrity/judge.lock.json`. `just test-nix`
+  found that the core import closure test still expected 203 modules; the stack adds 35, and a
+  fix commit sets 238. After it, `just test-nix` passes (68 tests) and `just test-scheduled`
+  passes (17 tests). The owner deferred a check of the two frontend numbering mutants. DONE.
