@@ -1,4 +1,4 @@
-import Belay.Sqlite.Run
+import Belay.Sqlite.ProgramLaws
 
 set_option doc.verso true
 
@@ -30,28 +30,28 @@ theorem Database.Raw.run_append (raw : Database.Raw) (p q : Script) :
     raw.run (p ++ q) = (raw.run p).andThen (q.runOn ·) :=
   Script.runOn_append raw.connection p q
 
-/-- For every start database and model result, the outputs of the checked run
-({name}`Run.checked`) depend only on the result: its outputs when the database at its end is
-valid or when the model's run ended, and otherwise its outputs and the output
-{name}`Output.unmodeled` with {name}`invalidReason`. Proof sketch: a case split on the
+/-- For every start database and model result of a program, the outputs of the checked run
+({name}`Run.checked`) depend only on the result's outputs and connection: its outputs when the
+database at its end is valid or when the model's run ended, and otherwise its outputs and the
+output {name}`Output.unmodeled` with {name}`invalidReason`. Proof sketch: a case split on the
 validity of the database at the end; each case unfolds {name}`Run.checked`. -/
-theorem Run.checked_outputs (start : Database) (result : ScriptRun) :
+theorem Run.checked_outputs {α : Type} (start : Database) (result : SqlRun α) :
     (Run.checked start result).outputs =
       if result.connection.state.database.Valid Profile.pinned ∨ result.ended then result.outputs
       else result.outputs ++ [.unmodeled invalidReason] := by
   unfold Run.checked
   by_cases valid : result.connection.state.database.Valid Profile.pinned <;> simp [valid]
 
-/-- For every start database and model result: if no output of the checked run ends a run
-({name}`Output.endsRun`), the database at the end of the result is valid, the model's run did not
-end ({name}`ScriptRun.ended`), and the checked run gives that database, the result's outputs,
-its open transaction and its setting. Proof sketch: an invalid result gives an output
-{name}`Output.unmodeled`, from the result or from the check. -/
-theorem Run.checked_modeled {start : Database} {result : ScriptRun}
+/-- For every start database and model result of a program: if no output of the checked run ends
+a run ({name}`Output.endsRun`), the database at the end of the result is valid, the model's run
+did not end ({name}`ScriptRun.ended`), and the checked run gives the result's value, that
+database, the result's outputs, its open transaction and its setting. Proof sketch: an invalid
+result gives an output {name}`Output.unmodeled`, from the result or from the check. -/
+theorem Run.checked_modeled {α : Type} {start : Database} {result : SqlRun α}
     (modeled : ∀ output ∈ (Run.checked start result).outputs, output.endsRun = false) :
     ∃ valid : result.connection.state.database.Valid Profile.pinned, result.ended = false ∧
       Run.checked start result =
-        { outputs := result.outputs, db := ⟨_, valid⟩, start := start,
+        { value := result.value, outputs := result.outputs, db := ⟨_, valid⟩, start := start,
           transaction := result.connection.state.snapshot, foreignKeys := result.connection.foreignKeys } := by
   unfold Run.checked at modeled ⊢
   by_cases valid : result.connection.state.database.Valid Profile.pinned
@@ -82,7 +82,8 @@ theorem Connection.eq_idle {connection : Connection} (outside : connection.state
 {lit}`q`: if the run of {lit}`p` ends with no open transaction, with foreign keys off as at the
 start of a run, and with no output {name}`Output.unmodeled` ({name}`Output.endsRun`), then the
 outputs of the run of {lit}`p ++ q` are the outputs of the run of {lit}`p`, then the outputs of
-the run of {lit}`q` on the database that the run of {lit}`p` gives. Proof sketch: the run of
+the run of {lit}`q` on the database that the run of {lit}`p` gives. Proof sketch: each run of a
+script is the checked run of S2's run ({name}`Database.run_script_default`); the run of
 {lit}`p` is valid and did not end ({name}`Run.checked_modeled`), so it leaves the idle
 connection to its database ({name}`Connection.eq_idle`); the plain runs compose
 ({name}`Database.Raw.run_append`), and the check at the end reads the same result on both
@@ -91,14 +92,16 @@ theorem Script.run_append (db : Database) (p q : Script) (outside : (db.run p).t
     (setting : (db.run p).foreignKeys = false)
     (modeled : ∀ output ∈ (db.run p).outputs, output.endsRun = false) :
     (db.run (p ++ q)).outputs = (db.run p).outputs ++ ((db.run p).db.run q).outputs := by
+  simp only [Database.run_script_default] at outside setting modeled ⊢
   obtain ⟨valid, quiet, checked⟩ := Run.checked_modeled modeled
-  simp only [Database.run] at outside setting ⊢
   rw [checked] at outside setting ⊢
+  rw [Run.checked_outputs, Run.checked_outputs]
+  simp only [SqlRun.ofScript_toScriptRun] at outside setting quiet ⊢
   have idle := Connection.eq_idle outside setting
     ((Belay.Sqlite.Model.runScriptFrom_clock runContext none 0 db.raw.connection p.statements).trans rfl)
   simp only [Database.Raw.run_append, ScriptRun.andThen, quiet, Bool.false_eq_true, ite_false]
   simp only [Database.Raw.run] at idle quiet ⊢
-  rw [← idle, Run.checked_outputs, Run.checked_outputs]
+  simp only [← idle]
   simp only [ScriptRun.ended] at quiet
   simp only [ScriptRun.ended, List.any_append, quiet, Bool.false_or]
   generalize Script.runOn (Script.runOn db.raw.connection p).connection q = later
