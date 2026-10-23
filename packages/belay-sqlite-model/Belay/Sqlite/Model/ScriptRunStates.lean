@@ -34,7 +34,9 @@ theorem sqlStatesFrom_head (position : Nat) (script : List Resolved.Statement) (
     split <;> rfl
 
 /-- For every connection, setting and outcome: the database of the connection after the
-outcome ({name}`Connection.afterError`) is the outcome's database ({name}`Outcome.database`). -/
+outcome ({name}`Connection.afterError`) is the outcome's database ({name}`Outcome.database`).
+Proof sketch: for each constructor of the outcome, both sides are the same database by
+definition. -/
 theorem Connection.afterError_database (connection : Connection) (foreignKeys : Bool) (outcome : Outcome) :
     (connection.afterError foreignKeys outcome).state.database = outcome.database := by
   cases outcome <;> rfl
