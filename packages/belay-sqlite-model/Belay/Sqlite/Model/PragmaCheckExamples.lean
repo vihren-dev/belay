@@ -102,6 +102,31 @@ example : brokenW.checkRows false 0 none = some (textRows ["row not in PRIMARY K
     "row not in PRIMARY KEY order for w"]) := by decide +kernel
 example : brokenW.checkRows true 0 none = some (textRows ["ok"]) := by decide +kernel
 
+/-- {lit}`CREATE TABLE d(k INTEGER PRIMARY KEY DESC, v UNIQUE COLLATE NOCASE, c CHECK (c > 0))
+WITHOUT ROWID`, with three rows that no statement writes, in the scan order {lit}`k` = 3, 2, 1. -/
+def brokenD : Database :=
+  (built [.createTable (name! "d") [typed "k" (some "INTEGER") [.primaryKey true],
+      typed "v" none [.unique, .collate (name! "NOCASE")], typed "c" none [.check (.compare .gt (name "c") (.numeric "0")) "c > 0"]]
+    [] { withoutRowid := true }]).setRows 0
+    [stored 0 [.integer 3, textValue "a", .integer 1], stored 0 [.integer 2, textValue "A", .integer (-1)],
+     stored 0 [.integer 1, textValue "b", .integer 1]]
+
+-- The index of the UNIQUE constraint orders the equal entries by k in ascending order, so the
+-- entry of the row with k = 2, the second row in the scan, has an equal entry after it.
+example : brokenD.checkRows false 0 none = some (textRows ["CHECK constraint failed in d",
+    "non-unique entry in index sqlite_autoindex_d_2"]) := by decide +kernel
+/-- {lit}`CREATE TABLE d(k INTEGER PRIMARY KEY DESC, v COLLATE NOCASE, c CHECK (c > 0)) WITHOUT
+ROWID` and {lit}`CREATE UNIQUE INDEX dv ON d(v)`, with two rows that no statement writes. -/
+def declaredD : Database :=
+  (built [.createTable (name! "d") [typed "k" (some "INTEGER") [.primaryKey true],
+      typed "v" none [.collate (name! "NOCASE")], typed "c" none [.check (.compare .gt (name "c") (.numeric "0")) "c > 0"]]
+    [] { withoutRowid := true }, .createIndex (name! "dv") true (name! "d") [term "v"] none]).setRows 0
+    [stored 0 [.integer 3, textValue "A", .integer 1], stored 0 [.integer 2, textValue "a", .integer (-1)]]
+
+-- A declared unique index orders the equal entries in scan order, so the first row fails.
+example : declaredD.checkRows false 0 none = some (textRows ["non-unique entry in index dv",
+    "CHECK constraint failed in d"]) := by decide +kernel
+
 /-- {lit}`CREATE TABLE n(a NOT NULL UNIQUE)`, with two NULL rows that no statement writes. -/
 def brokenN : Database :=
   (built [.createTable (name! "n") [typed "a" none [.notNull, .unique]] []]).setRows 0 [stored 1 [.null], stored 2 [.null]]

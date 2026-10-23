@@ -16,39 +16,48 @@ namespace Belay.Sqlite.Model
 failure exactly when all of these hold:
 
 * no row of {lit}`rows` has a failure of its cells ({name}`Table.cellFailures`);
-* no row of {lit}`earlier` and row of {lit}`rows` are out of order ({name}`Table.orderConflict`);
-* for every two rows of {lit}`rows`, the first before the second: they are not out of order,
-  and for every index of {lit}`indexes`, their entries do not conflict
-  ({name}`Table.indexConflict`).
+* for every row {lit}`a` of {lit}`earlier` and row {lit}`b` of {lit}`rows`: they are not out of
+  order ({name}`Table.orderConflict`), and for every index of {lit}`indexes`, the entry of
+  {lit}`b` is not followed by an equal entry of {lit}`a` ({name}`Table.entryDuplicated`);
+* for every two rows {lit}`a` and {lit}`b` of {lit}`rows`, {lit}`a` before {lit}`b`: they are
+  not out of order, and for every index of {lit}`indexes`, the entry of {lit}`a` is not followed
+  by an equal entry of {lit}`b`, and the entry of {lit}`b` not by an equal entry of {lit}`a`.
 
-Proof sketch: induction over {lit}`rows`; a row's order failure is its pairs with the earlier
-rows, and its index failures are its pairs with the later rows. -/
+Proof sketch: induction over {lit}`rows`; a row's failures are its pairs with the earlier rows
+and with the later rows. -/
 theorem Table.failuresFrom_eq_nil (quick : Bool) (name : Identifier) (indexes : List CheckedIndex) (table : Table) :
     ∀ earlier rows : List Row, table.failuresFrom quick name indexes earlier rows = [] ↔
       (∀ row ∈ rows, table.cellFailures name row = []) ∧
-      (∀ a ∈ earlier, ∀ b ∈ rows, table.orderConflict quick a b = false) ∧
-      rows.Pairwise fun a b =>
-        table.orderConflict quick a b = false ∧ ∀ checked ∈ indexes, table.indexConflict quick checked a b = false
+      (∀ a ∈ earlier, ∀ b ∈ rows, table.orderConflict quick a b = false ∧
+        ∀ checked ∈ indexes, table.entryDuplicated quick checked b a false = false) ∧
+      rows.Pairwise fun a b => table.orderConflict quick a b = false ∧ ∀ checked ∈ indexes,
+        table.entryDuplicated quick checked a b true = false ∧ table.entryDuplicated quick checked b a false = false
   | earlier, [] => by simp [Table.failuresFrom]
   | earlier, row :: later => by
     have orderNil : table.orderFailures quick name earlier row = [] ↔
         ∀ a ∈ earlier, table.orderConflict quick a row = false := by
       unfold Table.orderFailures
       split <;> simp_all
-    have uniqueNil : table.uniqueFailures quick indexes row later = [] ↔
-        ∀ checked ∈ indexes, ∀ b ∈ later, table.indexConflict quick checked row b = false := by
+    have uniqueNil : table.uniqueFailures quick indexes earlier row later = [] ↔
+        ∀ checked ∈ indexes, (∀ a ∈ earlier, table.entryDuplicated quick checked row a false = false) ∧
+          ∀ b ∈ later, table.entryDuplicated quick checked row b true = false := by
       simp [Table.uniqueFailures, List.filter_eq_nil_iff]
     rw [Table.failuresFrom, List.append_eq_nil_iff, List.append_eq_nil_iff, List.append_eq_nil_iff, orderNil,
       uniqueNil, Table.failuresFrom_eq_nil quick name indexes table (row :: earlier) later]
     simp only [List.mem_cons, List.pairwise_cons, forall_eq_or_imp]
     constructor
-    · rintro ⟨⟨⟨order, cells⟩, unique⟩, laterCells, ⟨rowOrder, earlierOrder⟩, pairs⟩
-      exact ⟨⟨cells, laterCells⟩, fun a member => ⟨order a member, earlierOrder a member⟩,
-        fun b member => ⟨rowOrder b member, fun checked found => unique checked found b member⟩, pairs⟩
+    · rintro ⟨⟨⟨order, cells⟩, unique⟩, laterCells, ⟨rowAll, earlierAll⟩, pairs⟩
+      exact ⟨⟨cells, laterCells⟩,
+        fun a member => ⟨⟨order a member, fun checked found => (unique checked found).1 a member⟩,
+          earlierAll a member⟩,
+        fun b member => ⟨(rowAll b member).1, fun checked found =>
+          ⟨(unique checked found).2 b member, (rowAll b member).2 checked found⟩⟩, pairs⟩
     · rintro ⟨⟨cells, laterCells⟩, earlierAll, rowAll, pairs⟩
-      exact ⟨⟨⟨fun a member => (earlierAll a member).1, cells⟩,
-          fun checked found b member => (rowAll b member).2 checked found⟩, laterCells,
-        ⟨fun b member => (rowAll b member).1, fun a member => (earlierAll a member).2⟩, pairs⟩
+      exact ⟨⟨⟨fun a member => (earlierAll a member).1.1, cells⟩,
+          fun checked found => ⟨fun a member => (earlierAll a member).1.2 checked found,
+            fun b member => ((rowAll b member).2 checked found).1⟩⟩, laterCells,
+        ⟨fun b member => ⟨(rowAll b member).1, fun checked found => ((rowAll b member).2 checked found).2⟩,
+          fun a member => (earlierAll a member).2⟩, pairs⟩
 
 /-- For every table name, column and cell: the cell has no failure ({name}`columnFailure`)
 exactly when the cell is not NULL or the column has no NOT NULL, and the cell fits the column's
