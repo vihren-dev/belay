@@ -1,3 +1,4 @@
+import Belay.Sqlite.Model.Counters
 import Belay.Sqlite.Model.RowEngine
 
 set_option doc.verso true
@@ -11,12 +12,15 @@ later row after a row without a parent is {lit}`FOREIGN KEY constraint failed`. 
 namespace Belay.Sqlite.Model
 
 /-- What a write that runs row by row gives: its effect, the rows that it wrote
-({name}`KeyState.written`), and whether the model describes it on the database. -/
+({name}`KeyState.written`), what it does to the counters of the connection, and whether the model
+describes it on the database. -/
 structure KeyRun where
   /-- The effect of the write. -/
   effect : Effect
-  /-- The rows that the statement wrote, for its {lit}`RETURNING` rows and its change count. -/
+  /-- The rows that the statement wrote, for its {lit}`RETURNING` rows. -/
   written : List Row
+  /-- What the write does to the counters of the connection ({name}`Counts`). -/
+  counts : Counts := {}
   /-- Whether the model describes the write: its rows are described ({name}`KeyStop.undescribed`
   does not occur), no subquery reads a table while an action or a trigger changes the tables,
   every table that an action or a trigger changed satisfies its constraints before the write,
@@ -38,17 +42,24 @@ failure; a FAIL failure keeps the rows that it reached, a ROLLBACK failure rolls
 the transaction, and every other error keeps the input database. -/
 def keyRun (input : Database) (target : Nat) (plain : Bool) : Except KeyStop KeyState → KeyRun
   | .error .undescribed => { effect := .error (.unmodeled, input), written := [], ready := false }
-  | .error (.error reason) => { effect := .error (reason, input), written := [], ready := true }
+  | .error (.error reason) => { effect := .error (reason, input), written := [], counts := { changes := some 0 }, ready := true }
   | .error (.stopped .rollback state) =>
-    { effect := .error (.constraintRollback, state.database input.catalog), written := [], ready := keyReady input target plain state }
+    { effect := .error (.constraintRollback, state.database input.catalog), written := [],
+      counts := { changes := some 0 }, ready := keyReady input target plain state }
   | .error (.stopped .fail state) =>
-    if state.counter != 0 then { effect := .error (.constraintViolation, input), written := [], ready := keyReady input target plain state }
+    if state.counter != 0 then
+      { effect := .error (.constraintViolation, input), written := [], counts := { changes := some 0 },
+        ready := keyReady input target plain state }
     else { effect := .error (.constraintFail, state.database input.catalog), written := state.written,
+           counts := { changes := some state.written.length, total := state.written.length },
            ready := keyReady input target plain state }
   | .ok state =>
-    if state.counter != 0 then { effect := .error (.constraintViolation, input), written := [], ready := keyReady input target plain state }
-    else { effect := .ok (state.database input.catalog), written := state.written, ready := keyReady input target plain state }
-
+    if state.counter != 0 then
+      { effect := .error (.constraintViolation, input), written := [], counts := { changes := some 0 },
+        ready := keyReady input target plain state }
+    else { effect := .ok (state.database input.catalog), written := state.written,
+           counts := { changes := some state.written.length, total := state.written.length },
+           ready := keyReady input target plain state }
 
 /-- The foreign-key links that a write with the rules checks: those of the catalog when the rules
 check keys, none otherwise. -/

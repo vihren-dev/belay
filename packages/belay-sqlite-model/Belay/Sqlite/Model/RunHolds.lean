@@ -63,11 +63,11 @@ variable {property : Database → Prop} {condition : Resolved.Statement → Data
 theorem holds ({name}`StatementKeeps`), the state satisfies {name}`SqlState.Holds` and the
 statement meets the condition on the database of the state, the transition of {name}`advance`
 satisfies {name}`SqlTransition.Holds`. Proof sketch: {name}`advanceWith_holds` of the effect of
-the statement theorem. -/
+the statement theorem, and {name}`SqlTransition.counted_holds`. -/
 theorem advance_holds (keeps : StatementKeeps property condition) (position : Nat) (statement : Resolved.Statement)
     (parameters : List Value) {state : SqlState} (holds : state.Holds property)
     (met : condition statement state.database) : (advance position statement parameters state).Holds property :=
-  advanceWith_holds position statement holds (keeps _ parameters statement _ holds.1 met)
+  SqlTransition.counted_holds _ (advanceWith_holds position statement holds (keeps _ parameters statement _ holds.1 met))
 
 /-- The run theorem of {name}`runSqlFrom`, for every property and condition. For every position,
 script and state: if the statement theorem holds ({name}`StatementKeeps`), the state satisfies

@@ -126,7 +126,11 @@ theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {parame
   obtain ⟨catalog, saved⟩ := agrees
   cases statement with
   | begin =>
-    simp only [advance, advanceWith] at continued
+    obtain ⟨transitioned, reached, rfl⟩ := advance_eq_next continued
+    clear continued
+    have continued := reached
+    clear reached
+    simp only [advanceWith] at continued
     split at continued
     · cases continued
     · rename_i none_
@@ -135,13 +139,21 @@ theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {parame
       simp only [Option.map_none] at saved
       simp [SqlState.Agrees, ResolveState.after, ← saved, catalog]
   | commit =>
-    simp only [advance, advanceWith] at continued
+    obtain ⟨transitioned, reached, rfl⟩ := advance_eq_next continued
+    clear continued
+    have continued := reached
+    clear reached
+    simp only [advanceWith] at continued
     split at continued
     · cases continued
     · cases continued
       exact ⟨catalog, rfl⟩
   | rollback =>
-    simp only [advance, advanceWith] at continued
+    obtain ⟨transitioned, reached, rfl⟩ := advance_eq_next continued
+    clear continued
+    have continued := reached
+    clear reached
+    simp only [advanceWith] at continued
     split at continued
     · cases continued
     · rename_i original some_
@@ -150,14 +162,22 @@ theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {parame
       simp only [Option.map_some] at saved
       simp [SqlState.Agrees, ResolveState.after, ← saved]
   | setting setting on =>
-    simp only [advance, advanceWith] at continued
+    obtain ⟨transitioned, reached, rfl⟩ := advance_eq_next continued
+    clear continued
+    have continued := reached
+    clear reached
+    simp only [advanceWith] at continued
     obtain ⟨result, stepped, rfl⟩ := Conformance.SqlState.publish_next continued
     simp only [literalStep, runStatement, step] at stepped
     cases stepped
     cases setting <;> exact ⟨catalog, saved⟩
   | createTable | createIndex | createTrigger | addColumn | drop | insert | update | upsert | delete | prepareError
   | query =>
-    simp only [advance, advanceWith] at continued
+    obtain ⟨transitioned, reached, rfl⟩ := advance_eq_next continued
+    clear continued
+    have continued := reached
+    clear reached
+    simp only [advanceWith] at continued
     obtain ⟨result, stepped, rfl⟩ := Conformance.SqlState.publish_next continued
     obtain ⟨changed, control⟩ := literalStep_success_catalog (fun _ _ => by simp) stepped
     rw [state.after_of_isControl control]
@@ -178,18 +198,18 @@ theorem advance_halt_error {position : Nat} {statement : Resolved.Statement} {pa
     cases h : sql.snapshot <;> simp [SqlState.finish, Outcome.error?, h]
   cases statement with
   | begin =>
-    simp only [advance, advanceWith] at halted
+    simp only [advance, advanceRun, SqlTransition.counted_eq_halt, advanceWith] at halted
     split at halted
     · cases halted; exact finished _ _ _
     · cases halted
   | commit | rollback =>
-    simp only [advance, advanceWith] at halted
+    simp only [advance, advanceRun, SqlTransition.counted_eq_halt, advanceWith] at halted
     split at halted
     · cases halted; simp [Outcome.error?]
     · cases halted
   | createTable | createIndex | createTrigger | addColumn | drop | insert | update | upsert | delete | prepareError
   | query | setting =>
-    simp only [advance, advanceWith] at halted
+    simp only [advance, advanceRun, SqlTransition.counted_eq_halt, advanceWith] at halted
     obtain ⟨_, _, _, rfl⟩ := Conformance.SqlState.publish_halt halted
     simp [SqlState.failed_error]
 
