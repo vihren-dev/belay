@@ -150,11 +150,9 @@ def bindValues {α : Type} : List α → List (List Value) → List (α × List 
   | statement :: rest, values => (statement, values.headD []) :: bindValues rest values.tail
 
 /-- For every statement, rest of the script, list of values and rest of the lists,
-{name}`bindValues` of the script and the lists is:
-- first, the pair of the first statement and the first list;
-- then, {name}`bindValues` of the rest of the script and the rest of the lists.
-
-Proof sketch: the definition. -/
+{name}`bindValues` of the script and the lists is the pair of the first statement and the first
+list, followed by {name}`bindValues` of the rest of the script and the rest of the lists. Proof
+sketch: the definition. -/
 @[simp] theorem bindValues_cons_cons {α : Type} (statement : α) (rest : List α) (values : List Value)
     (later : List (List Value)) :
     bindValues (statement :: rest) (values :: later) = (statement, values) :: bindValues rest later := rfl
