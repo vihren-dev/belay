@@ -75,6 +75,17 @@ def test_guide_query_examples_hold(runtime_root: Path, tmp_path: Path) -> None:
     assert result.returncode == 0, result.diagnostic()
 
 
+def test_sql_command_shows_tables(runtime_root: Path, tmp_path: Path) -> None:
+    """`#sql db r"..."` (`Belay/Sqlite/SqlCommand.lean`, the model's `Model/OutputTable.lean`):
+    the guide's table of "A first example", and for each other output its text: the count of
+    changed rows, the names of RETURNING columns, an error, a query without rows, NULL, REAL and
+    BLOB cells, each result of a query that depends on the row order, the end of a run, and a
+    syntax error at its position."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "GuideTables.lean", tmp_path), cwd=tmp_path,
+                         timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+
+
 def test_run_examples_hold(runtime_root: Path, tmp_path: Path) -> None:
     """The run of `db.run` (`Belay/Sqlite/Run.lean`, over the model's `runScriptFrom`), the facts of
     `Belay/Sqlite/Database.lean` and the display of outputs: errors that do not stop the run,
