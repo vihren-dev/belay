@@ -132,3 +132,5 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3). None y
   `RowLocalWriteTheorems` (the three instances of each, 15 theorems). Review of commit 1: no findings.
 - 2026-10-23: part 1, commit 3 (`refactor:`): `Database.table_drop_cases` extracted from
   `Database.KeysUnique.drop` (`KeysUniqueDrop`), for the drop theorem of this slice.
+- 2026-10-23: part 1, commit 4: `RowLocalSchema` (CREATE TABLE, CREATE INDEX, CREATE TRIGGER and
+  DROP for every atom; DROP needs no `RowLocalAtom`) and `RowLocalSchemaTheorems` (the 12 instances).
