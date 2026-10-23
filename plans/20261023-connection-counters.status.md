@@ -135,7 +135,12 @@ was read from `judge/claims.json`.
 - Order (decision 3): pragmas (v50); errev PR A and PR B (v51); keys-unique; this task's PR A;
   this task's PR B (v52).
 
-## Owner decisions requested
+## Owner decisions
+
+On 2026-10-23, the owner accepted the recommendation of each decision below: record version 7
+(version 6 and the counters) for corpus-v52; the hypothesis that the run of `q` does not end
+early in `Script.run_append`; and the pull request order of "Coordination with the work in
+flight". A fifth review, of the last fix of the status file, had no findings.
 
 1. **The record of corpus-v52.**
    - A (recommended): version 7 is version 6 with the three counters at the start of the
