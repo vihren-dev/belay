@@ -140,7 +140,7 @@ The status file proposes two parts, each with its own `just test-full` and `just
   and reuses `DropPositionLaws` (the kept positions of DROP) and `ExprAppendLaws`
   (`Resolved.Expr.eval_append`: an expression that reads below a width ignores appended cells).
   Part 2 reuses from slice 2 part 2: the laws of `ResultHolds` over the `Except` steps
-  (`KeysUniqueKeyState`), `oldSteps_rows` and `newSteps_rows` (`KeysUniqueKeySteps`), the
+  (`RowEngineKeyState`), `oldSteps_rows` and `newSteps_rows` (`RowEngineKeySteps`), the
   cases of `checkedUpdate`, `deleteRow`, `updateRow`, `insertRow`, the trigger programs and
   `runRows`, and its run theorems. Its invariant is fixed to `Database.KeysUnique`; owner
   decision 1 asks whether slice 3 makes it a parameter.

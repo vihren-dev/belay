@@ -1,24 +1,27 @@
-import Belay.Sqlite.Model.KeysUniqueFrame
+import Belay.Sqlite.Model.RowEngineFacts
 import Belay.Sqlite.Model.ForeignKeyPhases
 
 set_option doc.verso true
 
-/-! The invariant of the row engine for the atom "keys unique" (ADR 0022, D3, slice 2, part 2):
-the database of each state that the engine reaches satisfies {lit}`Database.KeysUnique`, for a
-running state and for the state that a FAIL or ROLLBACK stop carries. This module gives the
-invariant, its laws over the steps of the {lit}`Except` monad, and the frame facts of a state. -/
+/-! The invariant of the row engine for an atom with the facts of {lit}`TableFacts` (ADR 0022, D3,
+slices 2 and 3): the database of each state that the engine reaches has the fact in every table,
+for a running state and for the state that a FAIL or ROLLBACK stop carries. This module gives the
+invariant, its laws over the steps of the {lit}`Except` monad, and the frame facts of a state.
+The theorems of the engine take the fact as a parameter; "keys unique" and the atoms "not null",
+"types fit" and "checks hold" are instances. -/
 
 namespace Belay.Sqlite.Model
 
-/-- For the given catalog and state: the database of the state over the catalog
-({name}`KeyState.database`) satisfies {name}`Database.KeysUnique`. -/
-def KeyState.KeysUnique (catalog : Catalog) (state : KeyState) : Prop := (state.database catalog).KeysUnique
+/-- For the given fact of a table, catalog and state: the database of the state over the catalog
+({name}`KeyState.database`) has the fact in every table ({name}`Database.Every`). -/
+def KeyState.Holds (fact : Catalog → Nat → Table → Prop) (catalog : Catalog) (state : KeyState) : Prop :=
+  (state.database catalog).Every fact
 
-/-- For the given catalog and stop of the row engine: a stop with the FAIL or ROLLBACK
-algorithm carries a state that satisfies {name}`KeyState.KeysUnique`. A stop with an error of
+/-- For the given fact, catalog and stop of the row engine: a stop with the FAIL or ROLLBACK
+algorithm carries a state that satisfies {name}`KeyState.Holds`. A stop with an error of
 the statement and an undescribed stop require nothing: they keep no state. -/
-def KeyStop.KeysUnique (catalog : Catalog) : KeyStop → Prop
-  | .stopped _ state => state.KeysUnique catalog
+def KeyStop.Holds (fact : Catalog → Nat → Table → Prop) (catalog : Catalog) : KeyStop → Prop
+  | .stopped _ state => state.Holds fact catalog
   | .error _ | .undescribed => True
 
 /-- For the given properties of values and of stops, and a result: a success has a value with
@@ -83,49 +86,46 @@ theorem ResultHolds.imp {α} {good better : α → Prop} {stopGood stopBetter : 
   | error stop => exact stops stop holds
   | ok value => exact implies value holds
 
-/-- For every catalog and two states with the same rows: if the second satisfies
-{name}`KeyState.KeysUnique`, the first does. Proof sketch: the database of a state reads only
+/-- For every fact, catalog and two states with the same rows: if the second satisfies
+{name}`KeyState.Holds`, the first does. Proof sketch: the database of a state reads only
 its rows. -/
-theorem KeyState.keysUnique_of_rows {catalog : Catalog} {state other : KeyState} (rows : state.rows = other.rows)
-    (unique : other.KeysUnique catalog) : state.KeysUnique catalog := by
-  unfold KeyState.KeysUnique KeyState.database at *
+theorem KeyState.holds_of_rows {fact : Catalog → Nat → Table → Prop} {catalog : Catalog} {state other : KeyState}
+    (rows : state.rows = other.rows) (holds : other.Holds fact catalog) : state.Holds fact catalog := by
+  unfold KeyState.Holds KeyState.database at *
   rw [rows]
-  exact unique
+  exact holds
 
-/-- For every catalog, start state and result: if the start state satisfies
-{name}`KeyState.KeysUnique`, and the result is a state with the rows of the start state or an
+/-- For every fact, catalog, start state and result: if the start state satisfies
+{name}`KeyState.Holds`, and the result is a state with the rows of the start state or an
 undescribed stop, the result satisfies the invariant: each success satisfies
-{name}`KeyState.KeysUnique` and each stop {name}`KeyStop.KeysUnique`. The foreign-key steps of a
+{name}`KeyState.Holds` and each stop {name}`KeyStop.Holds`. The foreign-key steps of a
 row have such results. Proof sketch: the database of a state reads only its rows. -/
-theorem ResultHolds.keysUnique_of_rows {catalog : Catalog} {start : KeyState} (unique : start.KeysUnique catalog)
-    {result : Except KeyStop KeyState}
-    (holds : ResultHolds (fun state => state.rows = start.rows) (· = .undescribed) result) :
-    ResultHolds (KeyState.KeysUnique catalog) (KeyStop.KeysUnique catalog) result := by
+theorem ResultHolds.holds_of_rows {fact : Catalog → Nat → Table → Prop} {catalog : Catalog} {start : KeyState}
+    (holds : start.Holds fact catalog) {result : Except KeyStop KeyState}
+    (kept : ResultHolds (fun state => state.rows = start.rows) (· = .undescribed) result) :
+    ResultHolds (KeyState.Holds fact catalog) (KeyStop.Holds fact catalog) result := by
   cases result with
-  | error stop => cases holds; trivial
-  | ok state =>
-    have same : state.database catalog = start.database catalog := by
-      simp only [KeyState.database, show state.rows = start.rows from holds]
-    exact (show (state.database catalog).KeysUnique from same ▸ unique)
+  | error stop => cases kept; trivial
+  | ok state => exact KeyState.holds_of_rows kept holds
 
-/-- For every catalog, state, position and change of rows: if the state satisfies
-{name}`KeyState.KeysUnique`, and the table at the position (when there is one) with the changed
-rows satisfies {name}`Table.KeysUnique` for the unique keys of the position, the state after
-{name}`KeyState.changeRows` satisfies {name}`KeyState.KeysUnique`. A position without a table
-requires nothing. Proof sketch: the database of the changed state is the database after
-{name}`Database.setRows` ({name}`Database.KeysUnique.setRows`); without a table, every table of
-the database is the same ({name}`Database.table_setRows_other`). -/
-theorem KeyState.keysUnique_changeRows {catalog : Catalog} {state : KeyState} (unique : state.KeysUnique catalog)
-    {position : Nat} {change : List Row → List Row}
+/-- For every fact, catalog, state, position and change of rows: if the state satisfies
+{name}`KeyState.Holds`, and the table at the position (when there is one) with the changed
+rows has the fact for the position, the state after {name}`KeyState.changeRows` satisfies
+{name}`KeyState.Holds`. A position without a table requires nothing. Proof sketch: the database
+of the changed state is the database after {name}`Database.setRows`
+({name}`Database.Every.setRows`); without a table, every table of the database is the same
+({name}`Database.table_setRows_other`). -/
+theorem KeyState.holds_changeRows {fact : Catalog → Nat → Table → Prop} {catalog : Catalog} {state : KeyState}
+    (holds : state.Holds fact catalog) {position : Nat} {change : List Row → List Row}
     (stored : ∀ table, (state.database catalog).table position = some table →
-      ({ table with rows := change (state.rows.getD position []) } : Table).KeysUnique (catalog.uniqueKeys position table.shape)) :
-    (state.changeRows position change).KeysUnique catalog := by
+      fact catalog position { table with rows := change (state.rows.getD position []) }) :
+    (state.changeRows position change).Holds fact catalog := by
   have setRows : (state.changeRows position change).database catalog =
       (state.database catalog).setRows position (change (state.rows.getD position [])) := rfl
-  unfold KeyState.KeysUnique
+  unfold KeyState.Holds
   rw [setRows]
   cases found : (state.database catalog).table position with
-  | some table => exact Database.KeysUnique.setRows unique found (stored table found)
+  | some table => exact Database.Every.setRows holds found (stored table found)
   | none =>
     intro other table present
     by_cases same : other = position
@@ -133,7 +133,7 @@ theorem KeyState.keysUnique_changeRows {catalog : Catalog} {state : KeyState} (u
       simp [Database.table, Database.setRows, KeyState.database] at found present
       simp_all
     · rw [Database.table_setRows_other _ _ same] at present
-      exact unique other table present
+      exact holds other table present
 
 /-- For every catalog, state, position and table: if the database of the state has the table at
 the position, the rows of the table are the rows of the state at the position. Proof sketch: the
@@ -144,22 +144,33 @@ theorem KeyState.table_rows {catalog : Catalog} {state : KeyState} {position : N
   rw [← same]
   rfl
 
-/-- For every catalog, state, position and change of rows that gives a sublist of each list of
-rows: if the state satisfies {name}`KeyState.KeysUnique`, the state after
-{name}`KeyState.changeRows` satisfies it. A DELETE of a row makes such a change. Proof sketch:
-{name}`KeyState.keysUnique_changeRows` with {name}`Table.KeysUnique.sublist`. -/
-theorem KeyState.keysUnique_changeRows_sublist {catalog : Catalog} {state : KeyState} (unique : state.KeysUnique catalog)
-    {position : Nat} {change : List Row → List Row} (sublist : ∀ rows, (change rows).Sublist rows) :
-    (state.changeRows position change).KeysUnique catalog :=
-  KeyState.keysUnique_changeRows unique fun table found =>
-    (unique position table found).sublist (by rw [KeyState.table_rows found]; exact sublist _)
+/-- For every catalog, state, position and table: if the database of the state has the table at
+the position, the catalog has the table's entry there. Proof sketch: the definition of
+{name}`Database.table`. -/
+theorem KeyState.table_shape {catalog : Catalog} {state : KeyState} {position : Nat} {table : Table}
+    (found : (state.database catalog).table position = some table) : catalog.tableAt position = some table.shape := by
+  obtain ⟨_, atShape, same⟩ := Option.map_eq_some_iff.mp found
+  rw [← same]
+  exact atShape
 
-/-- For every database: if the database satisfies {name}`Database.KeysUnique`, the state
-{lit}`{ rows := database.rows }` (the rows of the database, and the default value
-of each other field) satisfies {name}`KeyState.KeysUnique` over the catalog of the database.
-The row engine starts from this state. Proof sketch: the database of the state is the
-database. -/
-theorem KeyState.keysUnique_start {database : Database} (unique : database.KeysUnique) :
-    ({ rows := database.rows } : KeyState).KeysUnique database.catalog := unique
+/-- For every fact with the facts of {name}`TableFacts`, catalog, state, position and change of
+rows that gives a sublist of each list of rows: if the state satisfies {name}`KeyState.Holds`, the
+state after {name}`KeyState.changeRows` satisfies it. A DELETE of a row makes such a change. Proof
+sketch: {name}`KeyState.holds_changeRows` with {name}`TableFacts.sublist`; the table keeps its
+entry. -/
+theorem KeyState.holds_changeRows_sublist {fact : Catalog → Nat → Table → Prop} (facts : TableFacts fact)
+    {catalog : Catalog} {state : KeyState} (holds : state.Holds fact catalog) {position : Nat}
+    {change : List Row → List Row} (sublist : ∀ rows, (change rows).Sublist rows) :
+    (state.changeRows position change).Holds fact catalog :=
+  KeyState.holds_changeRows holds fun table found =>
+    facts.sublist catalog position table _ (holds position table found) rfl
+      (by rw [KeyState.table_rows found]; exact sublist _)
+
+/-- For every fact and database: if every table of the database has the fact, the state
+{lit}`{ rows := database.rows }` (the rows of the database, and the default value of each other
+field) satisfies {name}`KeyState.Holds` over the catalog of the database. The row engine starts
+from this state. Proof sketch: the database of the state is the database. -/
+theorem KeyState.holds_start {fact : Catalog → Nat → Table → Prop} {database : Database}
+    (holds : database.Every fact) : ({ rows := database.rows } : KeyState).Holds fact database.catalog := holds
 
 end Belay.Sqlite.Model

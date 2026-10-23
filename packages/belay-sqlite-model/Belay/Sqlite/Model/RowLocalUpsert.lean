@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.KeysUniqueUpsert
 import Belay.Sqlite.Model.RowLocalFrame
+import Belay.Sqlite.Model.RowEngineFacts
 
 set_option doc.verso true
 
@@ -12,18 +13,6 @@ follows {lit}`KeysUniqueUpsert`. -/
 
 namespace Belay.Sqlite.Model
 namespace LiteralData
-
-/-- For every keys, two tables and rows: if {name}`checkedRow` of the next table succeeds with a
-table, that table is the next table and passed {name}`constraints` for the keys. Proof sketch:
-{name}`checkedRow` stores its input table after the check. -/
-theorem checkedRow_constraints {keys : List UniqueKey} {next stored : Table} {written : Row} {row : Option Row}
-    (ok : checkedRow keys next written = .ok (stored, row)) : stored = next ∧ constraints keys next = true := by
-  unfold checkedRow at ok
-  split at ok
-  · rename_i passed
-    simp only [Except.ok.injEq, Prod.mk.injEq] at ok
-    exact ⟨ok.1.symm, (Bool.and_eq_true _ _ ▸ passed).1⟩
-  · simp at ok
 
 /-- For every keys, algorithms, two tables, proposed row and row: if {name}`insertChecked`
 succeeds with a table, that table is the input table, or it has the catalog entry of the input
