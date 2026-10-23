@@ -33,8 +33,13 @@ theorem RunConditions.of_unconditioned (position : Nat) (script : List (Resolved
   RunConditionsWith.of_unconditioned (fun _ _ => Resolved.Statement.runCondition_of_unconditioned) position script
     state all
 
-/-- The statement theorem of "keys unique" ({name}`StatementKeeps`) for the run condition of a
-statement. Proof sketch: {name}`runStatement_keysUnique` with
+/-- The statement theorem of "keys unique" in the form of {name}`StatementKeeps`, for the run
+condition of a statement. For every clock value, parameter list, resolved statement and database:
+if the database satisfies {name}`Database.KeysUnique` and the statement meets its run condition
+({name}`Resolved.Statement.RunCondition`) on the database, the effect of {name}`runStatement`
+satisfies {name}`Database.KeysUnique` ({name}`Effect.Satisfies`): the database of a success, and
+the database that an error with {name}`ExecutionError.constraintFail` carries, satisfy it. An error
+with any other reason requires nothing. Proof sketch: {name}`runStatement_keysUnique` with
 {name}`Resolved.Statement.keysCondition_of_runCondition`. -/
 theorem keysUnique_statementKeeps :
     StatementKeeps Database.KeysUnique fun statement database => statement.RunCondition database :=
