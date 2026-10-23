@@ -37,6 +37,10 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   Finding 2 (R19, must) is rejected: it says that the trigger probe gives 0, 3, 60; a new run
   of the probe gives 1, 1, 1 after `INSERT INTO p VALUES (1)` and 0, 2, 60 after the failed
   INSERT (the trigger's row counts, the statement's own row does not).
+- 2026-10-23: review round 4 (R19, must): the probe list did not say which probes ran in a new
+  session, so the rejection of round 3 compared two histories. Fixed: each item of the probes
+  of failed writes that run row by row is a new session, with the counters before it. This is
+  the fourth round in a row with a must finding, so the fix has no review; the owner decides.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 
@@ -89,18 +93,21 @@ The ADR's table of facts and its examples are not repeated here. New facts for t
   (31, NULL)` fails, then 0, 1, 2; `INSERT INTO t(v, c) VALUES (40, 1), (41, 1), (42, -1)` fails,
   then 0, 1, 3; `INSERT INTO t(id, v) VALUES (50, 50), ('x', 51)` fails with `datatype mismatch`,
   then 0, 1, 50; `INSERT INTO t(id, v) VALUES (1, 60)` fails, then 0, 1, 50.
-- Failed writes that run row by row: on `t(id INTEGER PRIMARY KEY, v)` with row (1, 1) and
-  `CREATE TRIGGER tr AFTER INSERT ON t WHEN new.v < 0 BEGIN SELECT RAISE(ABORT, 'fail'); END`,
-  `INSERT INTO t VALUES (10, -1)` fails, then 0, 1, 10; `INSERT INTO t VALUES (20, 1), (21, -1),
-  (22, 1)` fails, then 0, 1, 21. With a BEFORE INSERT trigger of the same form on `b`,
-  `INSERT INTO b VALUES (40, 1), (41, -1)` fails, then 0, 1, 40. With foreign keys on, `p(id)`
-  holding 1 and `c(id INTEGER PRIMARY KEY, pid REFERENCES p(id))`,
-  `INSERT INTO c VALUES (30, 1), (31, 2), (32, 1)` fails with `FOREIGN KEY constraint failed`,
-  then 0, 1, 32. In a new session with the same tables: `INSERT INTO c VALUES (30, 2)` fails,
-  then 0, 1, 1 (the row before); `INSERT INTO c SELECT 40, 2` fails, then 0, 1, 40; after
-  `INSERT INTO c VALUES (50, 1)`, `INSERT INTO c VALUES (51, 1), (52, 2)` fails, then 0, 2, 52. With
-  `log(x)` and `CREATE TRIGGER ct AFTER INSERT ON c BEGIN INSERT INTO log VALUES (new.id); END`,
-  `INSERT INTO c VALUES (60, 2)` fails, then 0, 2, 60.
+- Failed writes that run row by row. Each item is a new session; the counters before the first
+  failed statement are 1, 1, 1.
+  - `t(id INTEGER PRIMARY KEY, v)` with row (1, 1) and `CREATE TRIGGER tr AFTER INSERT ON t WHEN
+    new.v < 0 BEGIN SELECT RAISE(ABORT, 'fail'); END`: `INSERT INTO t VALUES (10, -1)` fails,
+    then 0, 1, 10; `INSERT INTO t VALUES (20, 1), (21, -1), (22, 1)` fails, then 0, 1, 21. With a
+    BEFORE INSERT trigger of the same form on `b`, `INSERT INTO b VALUES (40, 1), (41, -1)`
+    fails, then 0, 1, 40.
+  - Foreign keys on, `p(id INTEGER PRIMARY KEY)` with row 1, `c(id INTEGER PRIMARY KEY, pid
+    REFERENCES p(id))`: `INSERT INTO c VALUES (30, 1), (31, 2), (32, 1)` fails with `FOREIGN KEY
+    constraint failed`, then 0, 1, 32.
+  - The same tables: `INSERT INTO c VALUES (30, 2)` fails, then 0, 1, 1 (the value before);
+    `INSERT INTO c SELECT 40, 2` fails, then 0, 1, 40; `INSERT INTO c VALUES (50, 1)` succeeds,
+    and `INSERT INTO c VALUES (51, 1), (52, 2)` fails, then 0, 2, 52.
+  - The same tables, `log(x)` and `CREATE TRIGGER ct AFTER INSERT ON c BEGIN INSERT INTO log
+    VALUES (new.id); END`: `INSERT INTO c VALUES (60, 2)` fails, then 0, 2, 60.
 - `p(id INTEGER PRIMARY KEY, u UNIQUE)` with rows (1, 1) and (2, 2), foreign keys on, and
   `c(id INTEGER PRIMARY KEY, pid REFERENCES p(id) ON DELETE RESTRICT)` with row (5, 1)
   (counters 1, 3, 5): `INSERT OR REPLACE INTO p VALUES (7, 7), (8, 1)` fails with `FOREIGN KEY
