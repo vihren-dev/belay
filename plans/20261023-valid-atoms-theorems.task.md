@@ -1,6 +1,6 @@
 # The theorems of the other Valid atoms (ADR 0022, slice 3)
 
-Created 2026-10-23. Status: open. The owner decisions in the status file are open.
+Created 2026-10-23. Status: DONE (2026-10-23). The owner decided the decisions of the status file on 2026-10-23.
 Status file: [status](20261023-valid-atoms-theorems.status.md).
 Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D1, D3 and D4 (slice 3).
 Needed by: S4 of the user surface ([ADR 0017](../docs/adr-0017-user-surface.md)): a run of the

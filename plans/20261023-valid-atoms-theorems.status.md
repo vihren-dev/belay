@@ -1,7 +1,6 @@
 # Status: the theorems of the other Valid atoms (ADR 0022, slice 3)
 
-Created 2026-10-23. Status: open; the owner decided on 2026-10-23 (below). Parts 1 and 2 are
-written in workspace adr22s3; `just test-full` and `just verdict` of the slice are open.
+Created 2026-10-23. Status: DONE (2026-10-23); the owner decided on 2026-10-23 (below).
 Task: [task file](20261023-valid-atoms-theorems.task.md).
 Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D1, D3 and D4 (slice 3).
 Needed by: [ADR 0017](../docs/adr-0017-user-surface.md), S4.
@@ -204,3 +203,7 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3). None y
   lines of both status files name tests and cite no local result; one docstring of `RowLocalWrites`
   is reflowed. The other findings of those reviews were fixed by later commits of the stacks.
   Tests: `tests/keys_unique_theorems_test.py`, `tests/valid_atoms_theorems_test.py`.
+- 2026-10-23: on the tip of slices 2 and 3, on top of the evidence-after-error stack: `just
+  test-full` passes, and `just verdict` passes (corpus-v4 AGREE 673, corpus-v5 AGREE 2945,
+  corpus-v50 AGREE 17, corpus-v51 AGREE 21). `just test-nix` passes (67 tests), and
+  `just test-scheduled-checks` passes (46 tests). The task is DONE.

@@ -1,6 +1,6 @@
 # The theorem of "keys unique" (ADR 0022, slice 2)
 
-Created 2026-10-23. Status: open. The owner decisions are in the status file; decision 1 d) was
+Created 2026-10-23. Status: DONE (2026-10-23). The owner decisions are in the status file; decision 1 d) was
 replaced on 2026-10-23 after finding 1.
 Status file: [status](20261023-keys-unique.status.md).
 Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D3 and D4 (slice 2).
