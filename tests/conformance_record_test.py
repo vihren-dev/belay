@@ -89,10 +89,14 @@ def test_native_semantic_errors_are_recorded(tmp_path: Path) -> None:
 
 
 def test_trailing_queries_do_not_hide_migration_progress(runtime_root: Path) -> None:
-    """Report only an agreeing migration prefix as query-blocked; keep queries and settings honest."""
+    """Report only an agreeing migration prefix as query-blocked; keep queries and settings honest.
+
+    The first script ends with `PRAGMA index_list`, which the model does not describe, so that
+    the queries alone block an agreeing migration (the model describes `PRAGMA table_info`).
+    """
     records = [record_sql("CREATE TABLE t(v BLOB); INSERT INTO t VALUES(1);", sql, name=str(index))
                for index, sql in enumerate([
-                   "ALTER TABLE t ADD x TEXT; SELECT * FROM t; PRAGMA table_info(t);",
+                   "ALTER TABLE t ADD x TEXT; SELECT * FROM t; PRAGMA index_list(t);",
                    "ALTER TABLE t RENAME TO renamed; SELECT * FROM renamed;",
                    "PRAGMA user_version=4;",
                    "SELECT * FROM t; ALTER TABLE t ADD x TEXT;", "EXPLAIN SELECT * FROM t;"])]
