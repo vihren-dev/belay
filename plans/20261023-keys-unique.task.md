@@ -47,12 +47,18 @@ replace before S4 (ADR 0022, D5).
    table row, and `PRAGMA recursive_triggers` changes the paths of the row engine (when it is
    on, a trigger fires again while it runs, and the rows that REPLACE deletes fire the DELETE
    triggers). The theorem covers each of them.
-3. **The run theorems.** For `runSqlFrom` (and so `runSql`, the run that ADR 0022, D3 names) and
-   for `runScriptFrom` (`ScriptRun.lean`, the run of the surface): if the state's database, and
-   its snapshot when a transaction is open, satisfy `Database.KeysUnique`, and each reached ADD
-   COLUMN and DROP meets its condition, then each database of the outcome (`success`,
-   `failure`, `pending` with its persisted and visible database) satisfies it. ROLLBACK and a
-   constraint rollback restore the snapshot, so the snapshot is part of the invariant.
+3. **The run theorems.** Both assume that the start state's database, and its snapshot when a
+   transaction is open, satisfy `Database.KeysUnique`, and that each reached ADD COLUMN and DROP
+   meets its condition.
+   - `runSqlFrom` (and so `runSql`, the run that ADR 0022, D3 names) gives an `Outcome`: each
+     database of it (`success`, `failure`, `pending` with its persisted and visible database)
+     satisfies the atom.
+   - `runScriptFrom` (`ScriptRun.lean`, the run of the surface) gives a `ScriptRun`: the database
+     of its connection (`connection.state.database`), and the snapshot of that state when there
+     is one, satisfy the atom.
+
+   ROLLBACK and a constraint rollback restore the snapshot, so the snapshot is part of the
+   invariant.
 4. **The frame lemma.** A statement keeps `Table.KeysUnique` of the table at a position when the
    effect leaves the table's rows, its catalog entry and the unique indexes on it unchanged.
 5. **The lookup lemma.** For a table that satisfies `Table.KeysUnique` for a list of keys, a key
@@ -70,11 +76,15 @@ Two statement forms do not keep the atom for every database. The condition of AD
 fact of `Database.Admitted`, which slice 4 proves the runs keep. The condition of DROP is a fact
 of the resolver over a valid catalog.
 
-- **ADD COLUMN** needs the rows of the target to be wide (`Table.RowsWide`), and each key term of
-  the target to read only columns below the old width. Without the first: a table `(a, b)` with
+- **ADD COLUMN** needs the rows of the target to be wide (`Table.RowsWide`), and each key term and
+  each filter of a partial unique index on the target to read only columns below the old
+  width. Without the first: a table `(a, b)` with
   `UNIQUE(b)` and two rows `[1]` and `[1]` has no conflict (a missing cell never conflicts);
   ADD COLUMN with the default 5 appends the cell at the position of `b` in both rows, and the
-  rows then conflict on `b`. The second follows from `Catalog.Valid`
+  rows then conflict on `b`. Without the second: a table `(a)` with two rows `[1]` and `[1]` and a
+  unique index on `a` whose filter reads column 1 has no conflict, because the filter reads a
+  missing cell as NULL, which is not true; after ADD COLUMN with the default 5 the filter is true
+  for both rows, and they conflict on `a`. The second follows from `Catalog.Valid`
   (`CatalogIndex.supported`, `Resolution/Keys.lean`), and needs a lemma that an expression that
   reads below a width (`Expr.readsBelow`, `Resolution/ExprAny.lean`) has the same value on a row
   with cells appended.
