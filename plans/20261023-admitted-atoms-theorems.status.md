@@ -320,3 +320,11 @@ proof relies on it (finding 15).
 - 2026-10-23: the owner decisions: the recommendations of decisions 1 to 4 and 6 to 8, and b) for
   decision 5. The task file follows: a repeated key column is a restriction, and the slice needs
   no new conformance case.
+- 2026-10-23: part 1, commit "the CHECK lemma": five new modules in `Belay/Sqlite/Model/`
+  (`ResolveNamesBelow`, `ResolveCallsBelow`, `ResolveReadsBelow`, `ResolveTermsBelow`,
+  `ResolveIndexBelow`). `resolveOperand_below` (with `resolveArguments_below` and
+  `resolveCase_below`) says that an operand resolved over a scope whose sources end below a width
+  reads only columns below the width, for any subquery shapes and any `misuse`. Corollaries:
+  `resolveCheck_below`, `columnChecks_below`, `resolveTableChecks_below` (needs that the columns
+  beyond the definitions have no CHECK), `indexKeys_below` and `indexFilter_below`. No behavior
+  change; no prediction can change. Tests: `tests/test_model_package.py`.

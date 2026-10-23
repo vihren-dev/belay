@@ -79,6 +79,11 @@ import Belay.Sqlite.Model.ScriptLaws
 import Belay.Sqlite.Model.PreservationLaws
 import Belay.Sqlite.Model.TableExtensionLaws
 import Belay.Sqlite.Model.ModelLaws
+import Belay.Sqlite.Model.ResolveNamesBelow
+import Belay.Sqlite.Model.ResolveCallsBelow
+import Belay.Sqlite.Model.ResolveReadsBelow
+import Belay.Sqlite.Model.ResolveTermsBelow
+import Belay.Sqlite.Model.ResolveIndexBelow
 import Belay.Sqlite.Model.SchemaExtensionLaws
 import Belay.Sqlite.Model.SchemaPreservationLaws
 import Belay.Sqlite.Model.LiteralPreservationLaws
