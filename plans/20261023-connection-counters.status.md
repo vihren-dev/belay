@@ -27,6 +27,8 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
 
 - 2026-10-23: the task file, from the code of this tree, the ADR's facts, the native probes
   below and the measurement below.
+- 2026-10-23: review round 1 (R19, must): outcome 3 gave the plain INSERT's rule to every
+  failed INSERT. Fixed: a write that runs row by row has its own rule, with new probes.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 
@@ -79,6 +81,14 @@ The ADR's table of facts and its examples are not repeated here. New facts for t
   (31, NULL)` fails, then 0, 1, 2; `INSERT INTO t(v, c) VALUES (40, 1), (41, 1), (42, -1)` fails,
   then 0, 1, 3; `INSERT INTO t(id, v) VALUES (50, 50), ('x', 51)` fails with `datatype mismatch`,
   then 0, 1, 50; `INSERT INTO t(id, v) VALUES (1, 60)` fails, then 0, 1, 50.
+- Failed writes that run row by row: on `t(id INTEGER PRIMARY KEY, v)` with row (1, 1) and
+  `CREATE TRIGGER tr AFTER INSERT ON t WHEN new.v < 0 BEGIN SELECT RAISE(ABORT, 'fail'); END`,
+  `INSERT INTO t VALUES (10, -1)` fails, then 0, 1, 10; `INSERT INTO t VALUES (20, 1), (21, -1),
+  (22, 1)` fails, then 0, 1, 21. With a BEFORE INSERT trigger of the same form on `b`,
+  `INSERT INTO b VALUES (40, 1), (41, -1)` fails, then 0, 1, 40. With foreign keys on, `p(id)`
+  holding 1 and `c(id INTEGER PRIMARY KEY, pid REFERENCES p(id))`,
+  `INSERT INTO c VALUES (30, 1), (31, 2), (32, 1)` fails with `FOREIGN KEY constraint failed`,
+  then 0, 1, 32.
 
 ## Measurement
 
