@@ -32,6 +32,8 @@ import Belay.Sqlite.Model.KeysUniqueStatement
 import Belay.Sqlite.Model.KeysUniqueRunStep
 import Belay.Sqlite.Model.KeysUniqueRuns
 import Belay.Sqlite.Model.KeysUniqueScriptRun
+import Belay.Sqlite.Model.RowLocalSchemaTheorems
+import Belay.Sqlite.Model.RowLocalSchema
 import Belay.Sqlite.Model.RowLocalUpsert
 import Belay.Sqlite.Model.RowLocalWriteTheorems
 import Belay.Sqlite.Model.RowLocalWrites
