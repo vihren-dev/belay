@@ -78,7 +78,10 @@ The frontend maps these statements, and refuses every other statement as
   `IN` and a scalar subquery. Two rows are equal when each column compares equal under the
   compound column's collation, without affinity, and NULL equals NULL; the collation of a
   column is that of the left-most term whose expression has one, else `BINARY`. The columns
-  have the names of the left-most term. `ORDER BY`, `LIMIT` and `OFFSET` apply to the whole
+  have the names of the left-most term; when SQLite sorts the compound as
+  `SELECT * FROM (compound)` (an operator other than `UNION ALL` and an `ORDER BY` term with
+  `COLLATE`), they have the names of that subquery's columns, such as `a` for `a COLLATE NOCASE`
+  and `a:1` for a second column `a`. `ORDER BY`, `LIMIT` and `OFFSET` apply to the whole
   compound; an `ORDER BY` term is a column number, an `AS` alias of a term or an expression
   equal to a result expression of a term, else SQLite's prepare error. `x IN (q)` reads the
   affinity and the collation of the right-most term's column, and a scalar `(q)` its affinity.

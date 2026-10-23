@@ -147,9 +147,10 @@ What the code has today, after slice 1 of ADR 0018:
     `'A' IN (SELECT 'a' COLLATE NOCASE UNION SELECT 'b' WHERE 0 ORDER BY 1 COLLATE BINARY)` is
     1. Slice 3 refuses such an `IN` or scalar subquery with a restriction, and slice 4 adds it
     with the columns of a subquery in `FROM`. The result columns of such a statement have the
-    names of that subquery's columns (`sqlite3ColumnsFromExprList`), not the names of the first
-    `SELECT`: an expression without `AS` that reads a column under `COLLATE` has the column's
-    name, and a second column of the same name gets the suffix `:1`. For example,
+    names of that subquery's columns (`sqlite3ColumnsFromExprList`), which SQLite gives before it
+    resolves the names, not the names of the first `SELECT`: a name or `x.c` without `AS` under
+    `COLLATE` has that name as written, and a second column of the same name gets the suffix
+    `:1`. For example,
     `SELECT a COLLATE NOCASE FROM t EXCEPT SELECT a FROM u ORDER BY 1 COLLATE BINARY` names its
     column `a`, and the same statement without `COLLATE BINARY` names it `a COLLATE NOCASE`.
     (Amended 2026-10-23, from a native check.)

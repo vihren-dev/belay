@@ -155,6 +155,9 @@ example : namesOf (renamed [] [ascending (.collate (num "1") (name! "BINARY"))])
 example : namesOf (renamed [] [ascending (num "1")]) = some ["a COLLATE NOCASE"] := by decide +kernel
 example : namesOf (renamed [.expression (.qualified (name! "t") (name! "a")) none "t.a", named (num "2") "TRUE"]
     [ascending (.collate (num "1") (name! "BINARY"))]) = some ["a", "a:1", "column3"] := by decide +kernel
+-- SQLite names them before it resolves them: likely(a) keeps its text, and A its spelling.
+example : namesOf (renamed [.expression (.call "likely" [ref (name! "a")]) none "likely(a)", .expression (ref (name! "A")) none "A"]
+    [ascending (.collate (num "1") (name! "BINARY"))]) = some ["a", "likely(a)", "A:1"] := by decide +kernel
 -- Five columns of one name end with a:4; with six, SQLite names the sixth at random, which is a restriction.
 example : namesOf (renamed (List.replicate 4 (shown (ref (name! "a")))) [ascending (.collate (num "1") (name! "BINARY"))]) =
     some ["a", "a:1", "a:2", "a:3", "a:4"] := by decide +kernel

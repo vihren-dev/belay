@@ -41,6 +41,9 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D3 and D7.
   frontend (`Translation/CompoundSelect.lean`) with the errors of outcome 6. Examples:
   `CompoundResolutionExamples.lean`; tests: `tests/syntax_compound_test.py` and the compound paths
   of `tests/surface/TranslationChecks.lean`.
+- 2026-10-23: review of the resolution and frontend (two musts) fixed with native probes: SQLite
+  names the derived table's columns before it resolves the names, so `likely(a)` keeps its text
+  and `A` its spelling; `docs/semantic-subset.md` states the rule of the derived names.
 
 ## Owner decisions
 
