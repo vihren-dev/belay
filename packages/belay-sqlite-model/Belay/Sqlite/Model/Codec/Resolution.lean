@@ -46,6 +46,7 @@ deriving instance Lean.ToJson for ScriptIssue
 -- One command per type: a combined `deriving instance` treats its types as one group.
 deriving instance Lean.ToExpr for Comparison
 deriving instance Lean.ToExpr for ArithmeticOperator
+deriving instance Lean.ToExpr for CompoundOperator
 deriving instance Lean.ToExpr for Affinity
 deriving instance Lean.ToExpr for ConflictAlgorithm
 deriving instance Lean.ToExpr for Syntax.QuoteKind
@@ -102,6 +103,7 @@ deriving instance Lean.ToExpr for Resolved.SortTerm
 deriving instance Lean.ToExpr for Resolved.JoinKind
 deriving instance Lean.ToExpr for Resolved.Source
 deriving instance Lean.ToExpr for Resolved.QuerySource
+deriving instance Lean.ToExpr for Resolved.Compound
 deriving instance Lean.ToExpr for Resolved.Query
 deriving instance Lean.ToExpr for Resolved.ConflictAction
 deriving instance Lean.ToExpr for Resolved.ConflictClause

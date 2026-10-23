@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.QueryResults
 import Belay.Sqlite.Model.QueryWindow
+import Belay.Sqlite.Model.CompoundRun
 import Belay.Sqlite.Model.Resolution.ExprAny
 
 set_option doc.verso true
@@ -166,17 +167,40 @@ structure QueryRun where
   a value bound to {lit}`LIMIT ?` or {lit}`OFFSET ?` is not an integer ({name}`Query.bindWindow`). -/
   mismatch : Bool
 
+/-- The run of a compound query for an outer row: the rows of the bound query
+({name}`Query.results`), none for a window value that is not an integer, and the end of the
+compound ({name}`Compound.ending`) as the fault, the overflow and the mismatch of the run. A run
+that ends without a failure has the fault {lean}`Fault.may` when an operator keeps rows that
+SQLite's plan chooses ({name}`Compound.combined`). -/
+def Query.compoundRun (context : EvalContext) (query : Query) (compound : Compound) (rows : List (List Value)) :
+    QueryRun :=
+  let outer := rows.headD []
+  let ending := compound.ending context query outer
+  { rows := ((query.bindWindow context.parameters).map (·.results context rows)).getD [],
+    fault := match ending with
+      | .done => if (compound.combined context outer).2 then .none else .may
+      | .may => .may
+      | .function => .must
+      | .overflow _ | .mismatch => .none,
+    overflow := match ending with
+      | .overflow _ => true
+      | .done | .may | .function | .mismatch => false,
+    mismatch := ending == .mismatch }
+
 /-- Run the query over its source rows ({lit}`Query.source`) with its window bound to the values
 of the context ({name}`Query.bindWindow`): the result rows, the fault (also {lean}`Fault.may` for
 an uncertain {lit}`SELECT DISTINCT`) and the overflow of the bound query. When a bound value is
-not an integer, the run has no rows, no fault and no overflow, and it is a mismatch. -/
+not an integer, the run has no rows, no fault and no overflow, and it is a mismatch. A compound
+query runs as {name}`Query.compoundRun`. -/
 def Query.run (context : EvalContext) (query : Query) (rows : List (List Value)) : QueryRun :=
-  match query.bindWindow context.parameters with
-  | none => { rows := [], fault := .none, overflow := false, mismatch := true }
-  | some bound =>
-    { rows := bound.results context rows,
-      fault := if bound.mustFail context rows then .must
-        else if bound.mayFail context rows || !bound.distinctCertain context rows then .may else .none,
-      overflow := bound.fails context rows, mismatch := false }
+  match query.compound with
+  | some compound => query.compoundRun context compound rows
+  | none => match query.bindWindow context.parameters with
+    | none => { rows := [], fault := .none, overflow := false, mismatch := true }
+    | some bound =>
+      { rows := bound.results context rows,
+        fault := if bound.mustFail context rows then .must
+          else if bound.mayFail context rows || !bound.distinctCertain context rows then .may else .none,
+        overflow := bound.fails context rows, mismatch := false }
 
 end Belay.Sqlite.Model.Resolved
