@@ -1,10 +1,10 @@
-import Belay.Sqlite.Model.KeysUniqueKeyState
+import Belay.Sqlite.Model.RowEngineKeyState
 
 set_option doc.verso true
 
 /-! The foreign-key steps of one row keep the rows of the state ({lit}`oldSteps`,
 {lit}`newSteps`): they change only the counter of violations, or stop as undescribed. So they
-keep the invariant of the row engine for the atom "keys unique" (ADR 0022, D3, slice 2). -/
+keep the invariant of the row engine for an atom (ADR 0022, D3, slices 2 and 3). -/
 
 namespace Belay.Sqlite.Model
 

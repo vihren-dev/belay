@@ -26,9 +26,9 @@ is in progress in another workspace.
 - The runs: `StatementStep.lean` (`runSqlFrom`, `runSql`), `ScriptRun.lean` (`runScriptFrom`).
 - Slice 2 to reuse: `KeysUniqueFrame`, `KeysUniqueWrites`, `KeysUniqueUpsert`,
   `KeysUniqueCreate`, `KeysUniqueAddColumn`, `KeysUniqueDrop`, `DropPositionLaws`,
-  `ExprAppendLaws`, `KeysUniqueExamples`; from part 2 (other workspace): `KeysUniqueKeyState`,
-  `KeysUniqueKeySteps`, `KeysUniqueTriggers`, `KeysUniqueRowDelete`, `KeysUniqueRowUpdate`,
-  `KeysUniqueRowInsert`, `KeysUniqueRowEngine`, `KeysUniqueStatement`.
+  `ExprAppendLaws`, `KeysUniqueExamples`; from part 2 (other workspace): `RowEngineKeyState`,
+  `RowEngineKeySteps`, `RowEngineTriggers`, `RowEngineDelete`, `RowEngineUpdate`,
+  `RowEngineInsert`, `KeysUniqueRowEngine`, `KeysUniqueStatement`.
 - Tests: `tests/shared_table_shape_test.py` (`compile_checks`), `tests/test_model_package.py`.
 
 ## Size estimate
@@ -113,6 +113,12 @@ its columns, which needs decision 3.
   theorems of not null, types fit and checks hold for the statements that write no row, therefore
   reads `∃ setting on, statement = .setting setting on`. It still means "the statement is a
   setting"; the statements do not change.
+- 2026-10-23: the generalized row engine proofs follow the base of ADR 0019, slice 2
+  (`recursive_triggers`): `enterProgram_holds` is new (the entry of the frame of a program runs a
+  nested DELETE of no rows and drops its state; it was `enterProgram_keysUnique` in the commit of
+  the keys-unique slice), `runProgram_holds` uses it, and the rows that REPLACE deletes are
+  deleted in the frame with the algorithm REPLACE and the setting `recursive` as `fire`. No
+  statement of a theorem changes.
 
 ## Findings
 
@@ -150,3 +156,12 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3). None y
 - 2026-10-23: part 1 review outcomes: commits 1, 3 and 7: no findings; the findings of commits 2, 4,
   5 and 6 recorded and resolved. Predictions rebuilt at the end of part 1: `diff -r` against the
   baseline is empty. Part 1 waits for `just test-full` and `just verdict` by the lead.
+- 2026-10-23: part 2, commit 1 (`refactor:`, owner decision 1 a): the row-engine proofs of slice 2
+  take the fact of a table as a parameter (`TableFacts`, `Database.Every`, `RowEngineFacts`). The modules
+  `KeysUniqueKeyState`, `KeysUniqueKeySteps`, `KeysUniqueTriggers`, `KeysUniqueRowDelete`,
+  `KeysUniqueRowUpdate` and `KeysUniqueRowInsert` are now `RowEngineKeyState`, `RowEngineKeySteps`,
+  `RowEngineTriggers`, `RowEngineDelete`, `RowEngineUpdate` and `RowEngineInsert`; `RowEngineWrites` has
+  `runRows_holds`, `keyRun_holds`, `rowsKeys_holds` and `dropKeys_holds`; `KeysUniqueRowEngine` is the
+  instance (`keysUniqueFacts`, `rowsKeys_keysUnique`, `dropKeys_keysUnique`, same statements as before),
+  and `RowLocalAtom.facts` is the instance of the three atoms. The slice-2 status file keeps the old names
+  in its log.

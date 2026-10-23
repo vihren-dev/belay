@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.DatabaseConstraintChecks
+import Belay.Sqlite.Model.RowEngineFacts
 
 set_option doc.verso true
 
@@ -59,6 +60,14 @@ structure RowLocalAtom (atom : Table → Prop) : Prop where
   sublist : ∀ table other, atom table → other.shape = table.shape → other.rows.Sublist table.rows → atom other
   /-- A table that passes the checks of a write for some keys has the property. -/
   constraints : ∀ keys table, LiteralData.constraints keys table = true → atom table
+
+/-- A {name}`RowLocalAtom` gives the facts of {name}`TableFacts` for the fact that ignores the catalog
+and the position: the row engine keeps it. Proof sketch: the sublist and constraints facts of the
+atom. -/
+theorem RowLocalAtom.facts {atom : Table → Prop} (rowLocal : RowLocalAtom atom) :
+    TableFacts fun _ _ table => atom table where
+  sublist _ _ table other holds same sub := rowLocal.sublist table other holds same sub
+  constraints _ _ table passed := rowLocal.constraints _ table passed
 
 /-- "Not null" is a {name}`RowLocalAtom`. Proof sketch: no rows leave nothing to check; the frame
 lemma gives the sublist; {name}`Table.constraints_iff` gives the writes. -/
