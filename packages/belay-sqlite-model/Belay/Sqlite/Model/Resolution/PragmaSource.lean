@@ -15,10 +15,16 @@ inductive PragmaRows where
   of {lit}`PRAGMA table_info`, of {lit}`PRAGMA foreign_key_list` and of the query of a
   setting. -/
   | fixed (width : Nat) (rows : List (List Value))
+  /-- The rows of {lit}`PRAGMA integrity_check` or, with {lit}`quick`, of
+  {lit}`PRAGMA quick_check`, which the run computes from the stored rows: at most {lit}`limit`
+  rows (100 for 0), for the table at the catalog position {lit}`table`, or for every table with
+  {lean}`(none : Option Nat)`. Each row has one cell. -/
+  | check (quick : Bool) (limit : Nat) (table : Option Nat)
   deriving Repr, DecidableEq
 
 /-- The number of cells of each row of the pragma. -/
 def PragmaRows.width : PragmaRows → Nat
   | .fixed width _ => width
+  | .check .. => 1
 
 end Belay.Sqlite.Model.Resolved

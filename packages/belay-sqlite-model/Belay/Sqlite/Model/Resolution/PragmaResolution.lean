@@ -26,6 +26,11 @@ def ResolveState.setting (state : ResolveState) : Syntax.PragmaSetting → Bool
 def settingQuery (setting : Syntax.PragmaSetting) (on : Bool) : Resolved.Statement :=
   .query (pragmaQuery (.fixed 1 [[.integer (if on then 1 else 0)]]) [setting.sqlName]) []
 
+/-- The query of a check pragma with the limit, for the table at the catalog position or for
+every table: one column with the name of the pragma ({name}`Syntax.checkName`). -/
+def checkQuery (quick : Bool) (limit : Nat) (table : Option Nat) : Resolved.Statement :=
+  .query (pragmaQuery (.check quick limit table) [Syntax.checkName quick]) []
+
 /-- Resolve a pragma against the state:
 
 * {lit}`PRAGMA foreign_keys = value` sets the setting outside a transaction and changes nothing
@@ -34,7 +39,10 @@ def settingQuery (setting : Syntax.PragmaSetting) (on : Bool) : Resolved.Stateme
 * {lit}`PRAGMA table_info(t)` is the query of {name}`Catalog.tableInfoRows`, and a name of SQLite's
   own tables that the catalog does not have is the restriction
   {name}`RestrictionKind.systemTable`;
-* {lit}`PRAGMA foreign_key_list(t)` is the query of {name}`Catalog.foreignKeyListRows`.
+* {lit}`PRAGMA foreign_key_list(t)` is the query of {name}`Catalog.foreignKeyListRows`;
+* a check pragma is {name}`checkQuery` for every table, or for the named table; a name that
+  the catalog does not have is SQLite's prepare error {lit}`no such table`, and a name of
+  SQLite's own tables is the restriction {name}`RestrictionKind.systemTable`.
 
 Every form except a setting with a value keeps the state. -/
 def resolvePragma (state : ResolveState) : Syntax.Pragma → Except NodeRestriction (Resolved.Statement × ResolveState)
@@ -48,6 +56,11 @@ def resolvePragma (state : ResolveState) : Syntax.Pragma → Except NodeRestrict
   | .foreignKeyList table =>
     .ok (.query (pragmaQuery (.fixed foreignKeyListNames.length (state.catalog.foreignKeyListRows table))
       foreignKeyListNames) [], state)
+  | .check quick limit none => .ok (checkQuery quick limit none, state)
+  | .check quick limit (some table) => match state.catalog.findTable table with
+    | some (position, _) => .ok (checkQuery quick limit (some position), state)
+    | none => if reservedName table then .error { path := [], kind := .systemTable }
+      else .ok (.prepareError (.noSuchTable table), state)
 
 /-- For every state and pragma that resolves, one of these holds:
 

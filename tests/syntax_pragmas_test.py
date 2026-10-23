@@ -2,8 +2,9 @@
 `packages/belay-sqlite-text/Belay/Sqlite/Translation/Schema.lean`, through the text package's program).
 
 ADR 0018, D4 and ADR 0019, D2: the translation maps the query form of `PRAGMA foreign_keys` and
-each value that SQLite's `sqlite3GetBoolean` reads as on or off, and the table name of
-`PRAGMA table_info` and `PRAGMA foreign_key_list`. It refuses every other pragma, a schema name
+each value that SQLite's `sqlite3GetBoolean` reads as on or off, the table name of
+`PRAGMA table_info` and `PRAGMA foreign_key_list`, and the row limit or table name of
+`PRAGMA integrity_check` and `PRAGMA quick_check`. It refuses every other pragma, a schema name
 and any other value, which the model does not describe.
 """
 
@@ -48,8 +49,37 @@ def test_schema_pragmas_keep_the_table_name(parse_sql: Callable[..., Translation
         pragma({"foreignKeyList": {"table": "c"}})]
 
 
+def check(quick: bool, limit: int, table: str | None) -> dict[str, object]:
+    """Return the syntax JSON of a check pragma."""
+    return pragma({"check": {"quick": quick, "limit": limit, "table": table}})
+
+
+def test_check_pragmas_keep_the_limit_or_the_table(parse_sql: Callable[..., Translation]) -> None:
+    """`pragma` maps `integrity_check` and `quick_check` alone to the limit 0, an unsigned or signed
+    decimal integer to its value without the sign, as `sqlite3GetInt32` reads it, and a name or a
+    string, also of digits, to a table name."""
+    sql = ("PRAGMA integrity_check; PRAGMA QUICK_CHECK; PRAGMA integrity_check(2); PRAGMA integrity_check(-2); "
+           "PRAGMA quick_check(+1); PRAGMA integrity_check = 1; PRAGMA integrity_check(0); "
+           "PRAGMA integrity_check(2147483647); PRAGMA integrity_check('1'); PRAGMA quick_check(\"My T\");")
+    assert mapped(parse_sql, sql) == [
+        check(False, 0, None), check(True, 0, None), check(False, 2, None), check(False, 2, None),
+        check(True, 1, None), check(False, 1, None), check(False, 0, None), check(False, 2147483647, None),
+        check(False, 0, "1"), check(True, 0, "My T")]
+
+
+@pytest.mark.parametrize("value", ["1.5", "0x2", "2147483648", "-2147483648", "ON", "DELETE", "DEFAULT"])
+def test_other_check_values_are_refused(parse_sql: Callable[..., Translation], value: str) -> None:
+    """`pragma` refuses a real, a hex integer, an integer above 2147483647 and the words `ON`,
+    `DELETE` and `DEFAULT` as the value of a check pragma, which SQLite reads in other ways."""
+    with pytest.raises(SqlError) as raised:
+        parse_sql(f"PRAGMA integrity_check({value});").statements()
+    assert raised.value.status == "UNSUPPORTED"
+    assert "Only a decimal row limit up to 2147483647 or a table name" in str(raised.value)
+
+
 @pytest.mark.parametrize(("sql", "message"), [
-    ("PRAGMA journal_mode;", "Only PRAGMA foreign_keys, table_info and foreign_key_list are modeled"),
+    ("PRAGMA journal_mode;",
+     "Only PRAGMA foreign_keys, table_info, foreign_key_list, integrity_check and quick_check are modeled"),
     ("PRAGMA main.foreign_keys = ON;", "without a schema name"),
     ("PRAGMA main.table_info(t);", "without a schema name"),
     ("PRAGMA foreign_keys = 2;", "Only on, off, yes, no, true, false, 0 and 1"),

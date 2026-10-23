@@ -64,7 +64,7 @@ def settingValue (tree : SqlTree) (node : ParseNode) : TranslateM Bool := do
 
 /-- The refusal of a pragma that the model does not describe. -/
 def modeledPragmas : String :=
-  "Only PRAGMA foreign_keys, table_info and foreign_key_list are modeled, without a schema name"
+  "Only PRAGMA foreign_keys, table_info, foreign_key_list, integrity_check and quick_check are modeled, without a schema name"
 
 /-- The value node of a pragma: the {lit}`nmnum` or {lit}`minus_num` after {lit}`=` or in
 parentheses, none without a value, or the refusal of another form. -/
@@ -84,10 +84,43 @@ def pragmaTable (tree : SqlTree) (command : ParseNode) (value : Option ParseNode
     unsupported node "Only a table name is modeled as the value of this pragma"
   | none => unsupported command "Write the table name in parentheses, for example PRAGMA table_info(t)"
 
+/-- The refusal of a value of a check pragma that the model does not read. -/
+def checkValues : String :=
+  "Only a decimal row limit up to 2147483647 or a table name is modeled as the value of PRAGMA integrity_check and quick_check"
+
+/-- The decimal integer of the text, if it has only digits and is at most 2147483647, the
+values that SQLite's {lit}`sqlite3GetInt32` reads. -/
+def checkLimitOf (text : String) : Option Nat :=
+  if !text.isEmpty && text.all Char.isDigit then
+    let value := text.foldl (fun value digit => value * 10 + (digit.toNat - '0'.toNat)) 0
+    if value ≤ 2147483647 then some value else none
+  else none
+
+/-- The row limit and the table name of the value of a check pragma, as SQLite reads it: an
+integer without quotes, also after {lit}`+` or {lit}`-`, whose sign SQLite ignores, is the limit;
+a name or a string is the table name. Every other value is refused ({name}`checkValues`). -/
+def checkValue (tree : SqlTree) (node : ParseNode) : TranslateM (Nat × Option Identifier) := do
+  let parts := tree.children node
+  let integer : Option ParseNode := match tree.symbols node with
+    | ["plus_num"] => match tree.symbols parts[0]! with
+      | ["INTEGER"] => some parts[0]!
+      | ["PLUS", "INTEGER"] => (tree.children parts[0]!)[1]?
+      | _ => none
+    | ["MINUS", "INTEGER"] => parts[1]?
+    | _ => none
+  match integer with
+  | some digits => match checkLimitOf (tree.text digits) with
+    | some limit => return (limit, none)
+    | none => unsupported node checkValues
+  | none =>
+    if tree.symbols node == ["nm"] then return (0, some (← identifierName tree parts[0]!).value)
+    unsupported node checkValues
+
 /-- A pragma of the model ({name}`Belay.Sqlite.Model.Syntax.Pragma`), with its name in any ASCII
 case: {lit}`PRAGMA foreign_keys [= value]` and {lit}`PRAGMA foreign_keys(value)`, whose value is
-none for the query form; and {lit}`PRAGMA table_info(t)` and {lit}`PRAGMA foreign_key_list(t)`, also
-with {lit}`= t`. -/
+none for the query form; {lit}`PRAGMA table_info(t)` and {lit}`PRAGMA foreign_key_list(t)`, also
+with {lit}`= t`; and {lit}`PRAGMA integrity_check` and {lit}`PRAGMA quick_check`, alone or with a
+value ({name}`checkValue`). -/
 def pragma (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
   let parts := tree.children command
   unless parts.size ≥ 3 && parts[2]!.children.isEmpty do unsupported command modeledPragmas
@@ -97,6 +130,11 @@ def pragma (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.S
       (Syntax.Pragma.setting .foreignKeys ·) <$> value.mapM (settingValue tree)
     else if asciiEqual name "table_info" then Syntax.Pragma.tableInfo <$> pragmaTable tree command value
     else if asciiEqual name "foreign_key_list" then Syntax.Pragma.foreignKeyList <$> pragmaTable tree command value
+    else if asciiEqual name "integrity_check" || asciiEqual name "quick_check" then do
+      let (limit, table) ← match value with
+        | some node => checkValue tree node
+        | none => pure (0, none)
+      pure (Syntax.Pragma.check (asciiEqual name "quick_check") limit table)
     else unsupported command modeledPragmas
   return composite (.pragma form) command.start command.stop #[spanOf command]
 
