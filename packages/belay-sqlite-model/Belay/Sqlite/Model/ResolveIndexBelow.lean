@@ -21,7 +21,8 @@ def KeyTerm.Below (width : Nat) : KeyTerm → Prop
 
 /-- For every scope that ends below a width and expression: if the expression resolves to the key
 term ({name}`indexExpressionTerm`), the term reads below the width. A refused term requires
-nothing. -/
+nothing. Proof sketch: an accepted term wraps the resolved operand, which
+{name}`resolveOperand_below` bounds. -/
 theorem indexExpressionTerm_below {width : Nat} {scope : Scope} (bounded : scope.Bounded width) {dqs : Bool}
     {expression : Syntax.Expr} {term : KeyTerm}
     (ok : indexExpressionTerm dqs scope expression = .ok term) : term.Below width := by

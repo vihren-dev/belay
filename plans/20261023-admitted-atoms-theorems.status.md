@@ -328,3 +328,6 @@ proof relies on it (finding 15).
   `resolveCheck_below`, `columnChecks_below`, `resolveTableChecks_below` (needs that the columns
   beyond the definitions have no CHECK), `indexKeys_below` and `indexFilter_below`. No behavior
   change; no prediction can change. Tests: `tests/test_model_package.py`.
+- 2026-10-23: review round 1 of the CHECK lemma commit: five R3 and R5 musts (proof sketches
+  for the helper lemmas, named constructor splits), fixed in a `refactor:` commit. Tests:
+  `tests/test_model_package.py`.
