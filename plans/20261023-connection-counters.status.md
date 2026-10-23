@@ -199,8 +199,19 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   of the suites that import `record_versions`, so `record_counters` (imported by `native_replay`
   and `predict`) is added to the three lists, and `tests/nix_suites.json` puts
   `tests/conformance_counters_test.py` in the `harness` suite with the test of the continuing
-  case. `tests/test_test_ownership.py` and `tests/test_ci_checks.py` pass. Nix evidence is
+  case. Tests: `tests/test_test_ownership.py` and `tests/test_ci_checks.py`. Nix evidence is
   pending.
+- 2026-10-23 (PR B, judge change): the recorder and the subject input, outcome 9.
+  `record_sql(..., counters=True)` (needs `run_on`) reads the three counters of the writer
+  connection just before the migration with `sqlite3_changes64`, `sqlite3_total_changes64` and
+  `sqlite3_last_insert_rowid` (`native_library.py`, `native_counters.py`), keeps them in the
+  field `counters` and gives the record version 7; a reopened connection gives 0 for each.
+  `corpus.native_replay` records a version 7 record again with the counters and compares them.
+  `judge/records.py` knows version 7 (`WITH_OUTPUTS`) and passes `counters` to the subject.
+  Tests: `tests/conformance_counters_record_test.py`, `tests/conformance_run_on_test.py`,
+  `tests/test_judge_records.py`, `tests/test_judge.py`. These files are in the lock
+  (`judge/`), so `integrity/judge.lock.json` must change (the lead runs `just judge-lock`). Nix
+  evidence is pending.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 
