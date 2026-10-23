@@ -20,6 +20,10 @@ pytestmark = [pytest.mark.integration, pytest.mark.kernel,
 THEOREMS = ["runStatement_keysUnique", "runSqlFrom_keysUnique", "runSql_keysUnique",
             "runScriptFrom_keysUnique", "Database.KeysUnique.lookup"]
 
+STANDARD_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
+"""The axioms of Lean's logic that a proof of the model may use; any other axiom, such as
+`sorryAx` or one that a proof adds, is refused."""
+
 CHECKS = """
 import Belay.Sqlite.Model
 open Belay.Sqlite.Model
@@ -54,4 +58,4 @@ def test_keys_unique_theorems(tmp_path: Path, lean_sysroot: Path, lean_libraries
     assert len(reports) == len(THEOREMS), output
     for report in reports:
         axioms = report.split("[", 1)[1].rstrip("]").split(", ")
-        assert set(axioms) <= {"propext", "Classical.choice", "Quot.sound"}, report
+        assert set(axioms) <= STANDARD_AXIOMS, report

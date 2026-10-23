@@ -32,10 +32,9 @@ def ScriptConditions (context : ResolveContext) (clock : Option Clock) (index : 
       | .ended _ => True
       | .continued _ next => ScriptConditions context clock (index + 1) next rest
 
-/-- For every connection, resolution state and transition: if the state of the connection satisfies
-{name}`SqlState.KeysUnique` and the transition satisfies {name}`SqlTransition.KeysUnique`, the
-state of the connection after the transition ({name}`Connection.afterStep`) satisfies
-{name}`SqlState.KeysUnique`. Proof sketch: a transition that continues gives its state; a
+/-- For every connection, resolution state and transition: if the transition satisfies
+{name}`SqlTransition.KeysUnique`, the state of the connection after the transition
+({name}`Connection.afterStep`) satisfies {name}`SqlState.KeysUnique`. Proof sketch: a transition that continues gives its state; a
 success or a failure leaves the connection without a snapshot; a pending outcome keeps its
 persisted database as the snapshot. -/
 theorem Connection.afterStep_keysUnique (connection : Connection) (after : ResolveState) :

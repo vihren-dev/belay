@@ -181,3 +181,7 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3).
   DELETE and a ROLLBACK and of finding 1 as a run (`KeysUniqueRunExamples`, globs only), and the
   test of the formulas and the axioms `tests/keys_unique_theorems_test.py`. Tests:
   `tests/test_model_package.py -m unit`, `tests/keys_unique_theorems_test.py`.
+- 2026-10-23: review round 11 (the run theorems): two R3 musts (no proof sketches for
+  `keysCondition_of_runCondition` and `runCondition_of_unconditioned`), one R2 must (the plain
+  words of `Connection.afterStep_keysUnique` named a hypothesis that the formula does not have)
+  and one R1 should (the standard axioms of the test get a name), fixed.
