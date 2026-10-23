@@ -1,6 +1,6 @@
 # Status: the connection counters (ADR 0024, slice 1)
 
-Created 2026-10-23. Status: IN PROGRESS (the owner accepted the decisions; commits 1 to 3 are done, commit 4 is next).
+Created 2026-10-23. Status: IN PROGRESS (the owner accepted the decisions; commits 1 to 4 are done, commit 5 is next).
 Task file: [task](20261023-connection-counters.task.md).
 Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md) (ACCEPTED
 2026-10-23), D1 to D3, D5, D6 slice 1.
@@ -141,18 +141,26 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   `Resolution/NondeterministicCalls.lean` finds a call of `changes()`, `total_changes()`,
   `last_insert_rowid()`, `random()` or `randomblob(n)` in a syntactic walk and resolves the
   expression without the calls (`prohibitNondeterministic`): no other error gives the error of
-  the position, a missing column wins in either order, and another prepare error gives the new
+  the position, and any other prepare error, also a missing column, gives the new
   restriction `nondeterministic-error-order` (registry `.unsupported`, because SQLite keeps the
-  last error of its walk, so `count(a) + changes()` gives the non-deterministic error and
-  `changes() + count(a)` the misuse, and the model does not follow the order). Three entry
+  last error of its walk and some errors stop it: `count(a) + changes()` gives the
+  non-deterministic error, `changes() + count(a)` the misuse, `nosuch + changes()` the missing
+  column and `abs(nosuch) + changes()` the call; the model does not follow the order; review round
+  1 found the last of these). Three entry
   points use it: `resolveGeneratedExpression`, `indexExpressionTerm` and `indexFilter`. CHECK and
   DEFAULT keep their restrictions. `Resolution/NondeterministicExamples.lean` holds the kernel
   examples (five functions in three positions, nested calls, the missing column, a wrong number of
   arguments, the restriction), `conformance/restriction_examples.py` and
-  `docs/semantic-subset.md` have the new restriction. Tests: the package build (`just dev-build`,
-  951 jobs), `just dev-verdict` (no DISAGREE; the counts of commit 3), `tests/restriction_registry_test.py`,
-  `tests/mutant_guards_test.py` (52 passed with the registry test) and the 59 restriction examples
-  run through the dev runtime. Nix evidence is pending.
+  `docs/semantic-subset.md` have the new restriction. Tests: the package build (`just dev-build`),
+  `just dev-verdict`, `tests/restriction_registry_test.py`, `tests/mutant_guards_test.py` and the
+  restriction examples run through the dev runtime. Nix evidence is pending.
+- 2026-10-23: refactor after the review of commit 4 (R19: a missing column does not decide the
+  error alone, so every expression with a call and another prepare error gives
+  `nondeterministic-error-order`, with the new probes in "Native probes"; R12: `Restrictions.lean`
+  is now below 200 lines, by wrapping and shortening comments; R19: the top status and the
+  entry of commit 4 cite no local results). Tests: the package build, `just dev-verdict`,
+  `tests/restriction_registry_test.py`, `tests/mutant_guards_test.py` and the restriction
+  examples. Nix evidence is pending.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 
@@ -167,6 +175,13 @@ The ADR's table of facts and its examples are not repeated here. New facts for t
   gives the non-deterministic error; `changes(1)` gives `wrong number of arguments to function
   changes()`; `changes() + ?` gives `parameters prohibited in generated columns`.
   `count(a) + CURRENT_TIME` gives the non-deterministic error.
+  Added in review round 1 of commit 4 (index expression, `CREATE INDEX i ON d(E)`):
+  `abs(nosuch) + changes()`, `coalesce(nosuch, 1) + changes()`, `nosuchfn(a) + changes()` and
+  `nosuch IS NULL AND changes()` give the non-deterministic error, while `nosuch + changes()`,
+  `-nosuch + changes()`, `(nosuch) + changes()`, `CASE WHEN nosuch THEN 1 END + changes()`,
+  `changes() + abs(nosuch)`, `nosuch + abs(changes())` and `a + changes() + nosuch` give `no such
+  column: nosuch`. So a missing column does not decide the error alone: the model has the
+  restriction `nondeterministic-error-order` for every expression with a call and another error.
 - Index, table `t(a, b)` with one row, and an empty table `e(a)`: `CREATE INDEX i ON t(changes())`,
   `t(a + total_changes())`, `t(random())` and `e(changes())` give `non-deterministic functions
   prohibited in index expressions`; `WHERE last_insert_rowid() > 0` and

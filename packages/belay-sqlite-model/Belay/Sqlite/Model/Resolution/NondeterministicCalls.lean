@@ -7,12 +7,12 @@ set_option doc.verso true
 column, an index expression or the filter of a partial index, for {lit}`changes()`,
 {lit}`total_changes()`, {lit}`last_insert_rowid()`, {lit}`random()` and {lit}`randomblob(n)`,
 as for the time keywords. Which error of the walk SQLite reports depends on the order of the walk:
-an error replaces an earlier message, and a missing column stops the walk (checked natively,
-3.51.0). So {lit}`nosuch + changes()` and {lit}`changes() + nosuch` both give {lit}`no such column`,
-{lit}`count(a) + changes()` gives the non-deterministic error and {lit}`changes() + count(a)` the
-misuse. The model gives the error of the call where it is the only error of the walk, the missing
-column where one exists, and the restriction {lit}`nondeterministicErrorOrder` for every other
-expression with such a call. -/
+an error replaces an earlier message, and some errors stop the walk (checked natively, 3.51.0).
+So {lit}`count(a) + changes()` gives the non-deterministic error and {lit}`changes() + count(a)` the
+misuse, {lit}`nosuch + changes()` gives {lit}`no such column`, and {lit}`abs(nosuch) + changes()`
+gives the non-deterministic error. The model gives the error of the call where it is the only
+error of the walk, and the restriction {lit}`nondeterministicErrorOrder` for an expression with
+such a call and another error. -/
 
 namespace Belay.Sqlite.Model
 
@@ -104,17 +104,16 @@ end Syntax
 /-- SQLite's error where a function that is not deterministic is prohibited: nothing for an
 expression without such a call, whose resolution reports its own errors. Else resolve the
 expression without the calls ({name}`Syntax.Expr.withoutNondeterministicCalls`): when that finds no
-error, the error of the call; when it finds a missing column, that error, because the walk stops
-there and replaces an earlier message; when it finds a restriction, that restriction; and when it
-finds another prepare error, the restriction {name}`RestrictionKind.nondeterministicErrorOrder`,
-because which message SQLite keeps depends on the order of the walk. For example,
-{lit}`changes()` alone gives the error, and {lit}`count(a) + changes()` the restriction. -/
+error, the error of the call; when it finds a restriction, that restriction; and when it finds
+a prepare error, the restriction {name}`RestrictionKind.nondeterministicErrorOrder`, because
+which message SQLite keeps depends on the order of the walk, also for a missing column. For example,
+{lit}`changes()` alone gives the error, and {lit}`nosuch + changes()` the restriction. -/
 def prohibitNondeterministic (dqs : Bool) (scope : Scope) (error : ExprError) (expression : Syntax.Expr) :
     Except ValueIssue Unit :=
   if !expression.hasNondeterministicCall then pure ()
   else match resolveOperand dqs scope {} true expression.withoutNondeterministicCalls with
     | .ok _ => throw (.prepare error)
-    | .error issue@(.prepare (.noSuchColumn _)) | .error issue@(.restriction ..) => throw issue
+    | .error issue@(.restriction ..) => throw issue
     | .error (.prepare _) => throw (.restriction [] .nondeterministicErrorOrder)
 
 end Belay.Sqlite.Model

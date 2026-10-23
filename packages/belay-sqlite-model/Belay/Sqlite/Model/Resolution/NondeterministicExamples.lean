@@ -8,7 +8,8 @@ checked by {lit}`#guard` when the package builds. The five functions {lit}`chang
 {lit}`total_changes()`, {lit}`last_insert_rowid()`, {lit}`random()` and {lit}`randomblob(n)` give
 SQLite's prepare error in a generated column, an index expression and the filter of a partial
 index, alone and inside an expression. The order of SQLite's walk of names (checked natively with
-SQLite 3.51.0) gives a missing column, or a restriction when another error is also present. A
+SQLite 3.51.0) decides which error it reports when the expression has another error, and the model
+has a restriction for that. A
 {lit}`CHECK` and a {lit}`DEFAULT` accept the functions in SQLite, and the model has a restriction
 there. -/
 
@@ -71,11 +72,18 @@ def missing : Expr := .identifier (name! "nosuch") .none
 #guard generatedError (.call "randomblob" [a]) == some (.expression .nondeterministicGenerated)
 #guard generatedError (.call "Changes" []) == some (.expression .nondeterministicGenerated)
 
--- A missing column stops the walk, in either order.
-#guard generatedError (.arithmetic .add changes missing) == some (.expression (.noSuchColumn (name! "nosuch")))
-#guard generatedError (.arithmetic .add missing changes) == some (.expression (.noSuchColumn (name! "nosuch")))
-#guard indexError (.arithmetic .add missing random) == some (.expression (.noSuchColumn (name! "nosuch")))
-#guard filterError (.compare .gt randomblob missing) == some (.expression (.noSuchColumn (name! "nosuch")))
+-- A missing column in the same expression is a restriction in every position and order: SQLite
+-- reports the missing column for {lit}`nosuch + changes()` and the call for {lit}`abs(nosuch) + changes()`.
+#guard generatedReason (.arithmetic .add changes missing) == RestrictionKind.nondeterministicErrorOrder.message
+#guard generatedReason (.arithmetic .add missing changes) == RestrictionKind.nondeterministicErrorOrder.message
+#guard generatedReason (.arithmetic .add (.call "abs" [missing]) changes) ==
+  RestrictionKind.nondeterministicErrorOrder.message
+#guard reason (migration IndexExamples.tableD [indexD [term (.arithmetic .add missing random)]]) ==
+  RestrictionKind.nondeterministicErrorOrder.message
+#guard reason (migration IndexExamples.tableD [indexD [key (name! "a")] (some (.compare .gt randomblob missing))]) ==
+  RestrictionKind.nondeterministicErrorOrder.message
+-- Without a call, a missing column is still SQLite's error.
+#guard indexError missing == some (.expression (.noSuchColumn (name! "nosuch")))
 
 -- A call with the wrong number of arguments is not one of these calls.
 #guard generatedError (.call "changes" [a]) != some (.expression .nondeterministicGenerated)

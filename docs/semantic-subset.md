@@ -220,9 +220,9 @@ errors apply: a qualified name in a term, `CURRENT_TIME`, `CURRENT_DATE` and
 `CURRENT_TIMESTAMP` in a term or the filter, and an aggregate. The same error applies
 to a call of `changes()`, `total_changes()`, `last_insert_rowid()`, `random()` or
 `randomblob(n)` in a term or the filter, and in a generated column: SQLite gives
-`non-deterministic functions prohibited in ...`, unless a missing column is also in the
-expression, which SQLite reports instead. When the expression has another error that
-SQLite reports in an order the model does not follow, the restriction
+`non-deterministic functions prohibited in ...`. When the expression has another error,
+for example a missing column or an aggregate, SQLite reports one of the two errors by the
+order of its walk of names, which the model does not follow, so the restriction
 `nondeterministic-error-order` applies. A string literal as a
 term, a date and time function, a JSON function and a rowid name in the filter are
 model restrictions.
