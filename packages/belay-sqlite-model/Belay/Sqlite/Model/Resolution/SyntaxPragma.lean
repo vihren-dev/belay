@@ -36,6 +36,9 @@ inductive Pragma where
   {lit}`ok`, or one row for each failure of a constraint, at most {lit}`limit` rows, 100 for a
   {lit}`limit` of 0, for every table or the named one. -/
   | check (quick : Bool) (limit : Nat) (table : Option Identifier)
+  /-- {lit}`PRAGMA foreign_key_check`, alone or with a table name: one row for each child row
+  whose foreign key finds no parent row, for every table or the named one. -/
+  | foreignKeyCheck (table : Option Identifier)
   deriving Repr, BEq, DecidableEq
 
 /-- The name of the column of a check pragma, which is also the name of the pragma:
@@ -46,6 +49,6 @@ def checkName (quick : Bool) : String := if quick then "quick_check" else "integ
 {lean}`(Pragma.setting .foreignKeys (some true)).readsOnly = false`. -/
 def Pragma.readsOnly : Pragma → Bool
   | .setting _ value => value.isNone
-  | .tableInfo _ | .foreignKeyList _ | .check .. => true
+  | .tableInfo _ | .foreignKeyList _ | .check .. | .foreignKeyCheck _ => true
 
 end Belay.Sqlite.Model.Syntax

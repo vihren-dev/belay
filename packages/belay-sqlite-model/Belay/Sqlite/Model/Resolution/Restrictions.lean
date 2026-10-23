@@ -1,10 +1,9 @@
 set_option doc.verso true
 
-/-! The registry of model restrictions. A model restriction is SQL that SQLite accepts
-but the model does not describe; resolution refuses it, and the user reads its
-message. Each restriction is one constructor of {lit}`RestrictionKind`, which names the
-decision that introduced it. Its stable id and its message are in
-{lit}`Belay.Sqlite.Model.RestrictionText`, and {lit}`docs/semantic-subset.md` lists every id. -/
+/-! The registry of model restrictions. A model restriction is SQL that SQLite accepts but the model does
+not describe; resolution refuses it, and the user reads its message. Each restriction is one constructor
+of {lit}`RestrictionKind`, which names the decision that introduced it. Its stable id and its message
+are in {lit}`Belay.Sqlite.Model.RestrictionText`, and {lit}`docs/semantic-subset.md` lists every id. -/
 
 namespace Belay.Sqlite.Model
 
@@ -44,7 +43,7 @@ inductive RestrictionKind where
   {lit}`'now'` only when it writes a row, and a JSON function can fail while a row is written
   (ADR 0014, slice 5). -/
   | generatedFunction
-  /-- Generated columns that read each other in a loop: SQLite reports it while CREATE TABLE runs, which the model does not describe. -/
+  /-- Generated columns that read each other in a loop: SQLite reports it while CREATE TABLE runs. -/
   | generatedLoop
   /-- A parameter where SQLite prohibits one, in an expression where SQLite's walk of names can
   also find another error: which error SQLite reports depends on the walk (ADR 0019, D1). -/
@@ -195,6 +194,9 @@ inductive RestrictionKind where
   | compoundSubqueryColumn
   /-- An {lit}`ORDER BY` term of a compound {lit}`SELECT` that the model cannot match with a result column as SQLite does is not modeled: an aggregate, an expression that is a result expression of a term after resolution but not as written, or a {lit}`COLLATE` term after which SQLite gives a result column a random name (ADR 0019, D3). -/
   | compoundOrderByTerm
+  /-- {lit}`PRAGMA foreign_key_check` without a table name when two or more tables have a mismatch:
+  SQLite reports the first one in the order of its schema hash table (ADR 0019, D2). -/
+  | foreignKeyMismatchOrder
   deriving Repr, DecidableEq
 
 end Belay.Sqlite.Model

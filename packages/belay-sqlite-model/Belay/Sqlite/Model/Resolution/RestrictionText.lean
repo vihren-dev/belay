@@ -66,6 +66,7 @@ def RestrictionKind.id : RestrictionKind → String
   | .schemaTriggerOrder => "schema-trigger-order"
   | .compoundSubqueryColumn => "compound-subquery-column"
   | .compoundOrderByTerm => "compound-order-by-term"
+  | .foreignKeyMismatchOrder => "foreign-key-mismatch-order"
 
 /-- The message of a restriction that users read: what the model does not describe,
 and what to write instead. -/
@@ -126,11 +127,12 @@ def RestrictionKind.message : RestrictionKind → String
   | .schemaTriggerOrder => "two triggers of one table, time and event in the starting schema are not modeled, because the schema does not say which one SQLite runs first; create them in the script"
   | .compoundSubqueryColumn => "x IN (q) and a scalar subquery (q) are not modeled when q is a compound SELECT with an operator other than UNION ALL and an ORDER BY term with COLLATE, because SQLite then reads the column of a derived table; remove the COLLATE from the ORDER BY of q"
   | .compoundOrderByTerm => "this ORDER BY term of a compound SELECT is not modeled, because the model cannot match it with a result column as SQLite does, or SQLite then names a result column at random; order by a result column number or an AS alias, and give the columns different names"
+  | .foreignKeyMismatchOrder => "PRAGMA foreign_key_check without a table name is not modeled when two or more tables have a foreign key mismatch, because SQLite checks the tables in an internal order; name the table, for example PRAGMA foreign_key_check(t)"
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
   [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .parameterErrorOrder, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .dropConstraintIndex, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments, .jsonSubtype, .subqueryHere, .outerAggregate, .subqueryFallibleCall, .subqueryReadsTarget, .distinctOrderBy, .deferredForeignKey, .foreignKeyUpsert, .raiseForm, .triggerForm, .triggerWritesOwnTable, .schemaTriggerOrder,
-    .compoundSubqueryColumn, .compoundOrderByTerm]
+    .compoundSubqueryColumn, .compoundOrderByTerm, .foreignKeyMismatchOrder]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

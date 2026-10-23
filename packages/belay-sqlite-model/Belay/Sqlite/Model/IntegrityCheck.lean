@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.CheckFailures
 import Belay.Sqlite.Model.QueryEval
+import Belay.Sqlite.Model.TableBlocks
 
 set_option doc.verso true
 
@@ -139,22 +140,9 @@ def Database.tableFailures (database : Database) (quick : Bool) (position : Nat)
 /-- The row limit of a check pragma: 100 for 0, as SQLite reads a limit of 0 or none. -/
 def checkLimit (limit : Nat) : Nat := if limit == 0 then 100 else limit
 
-/-- The catalog positions that a check pragma checks: the position {lit}`table`, or every
-position with {lean}`(none : Option Nat)`. -/
-def Database.checkPositions (database : Database) : Option Nat → List Nat
-  | some position => [position]
-  | none => List.range database.catalog.length
-
-/-- The failures of each table at the positions that has failures
-({name}`Database.tableFailures`), in the order of the positions. -/
-def Database.failingTables (database : Database) (quick : Bool) (positions : List Nat) : List (List CheckFailure) :=
-  positions.filterMap fun position => (database.table position).bind fun table =>
-    match database.tableFailures quick position table with
-    | [] => none
-    | failures => some failures
-
 /-- The rows of a check pragma over the database for the tables of
-{name}`Database.checkPositions` ({name}`Database.failingTables`):
+{name}`Database.checkPositions`, with the failures of each failing table ({name}`Database.blocks`
+of {name}`Database.tableFailures`):
 
 * the one row {lit}`ok` ({name}`checkOk`) when no table fails;
 * the text of each failure of the one table that fails, at most {name}`checkLimit` of them;
@@ -163,7 +151,7 @@ def Database.failingTables (database : Database) (quick : Bool) (positions : Lis
   describe. -/
 def Database.checkRows (database : Database) (quick : Bool) (limit : Nat) (table : Option Nat) :
     Option (List (List Value)) :=
-  match database.failingTables quick (database.checkPositions table) with
+  match database.blocks (database.checkPositions table) (database.tableFailures quick) with
   | [] => some [[.text checkOk]]
   | [failures] => some ((failures.take (checkLimit limit)).map fun failure => [.text failure.text])
   | _ :: _ :: _ => none

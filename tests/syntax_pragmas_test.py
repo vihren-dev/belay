@@ -3,7 +3,8 @@
 
 ADR 0018, D4 and ADR 0019, D2: the translation maps the query form of `PRAGMA foreign_keys` and
 each value that SQLite's `sqlite3GetBoolean` reads as on or off, the table name of
-`PRAGMA table_info` and `PRAGMA foreign_key_list`, and the row limit or table name of
+`PRAGMA table_info` and `PRAGMA foreign_key_list`, the optional table name of
+`PRAGMA foreign_key_check`, and the row limit or table name of
 `PRAGMA integrity_check` and `PRAGMA quick_check`. It refuses every other pragma, a schema name
 and any other value, which the model does not describe.
 """
@@ -49,6 +50,13 @@ def test_schema_pragmas_keep_the_table_name(parse_sql: Callable[..., Translation
         pragma({"foreignKeyList": {"table": "c"}})]
 
 
+def test_foreign_key_check_keeps_the_optional_table_name(parse_sql: Callable[..., Translation]) -> None:
+    """`pragma` maps `foreign_key_check` alone to no table, and with a name or a string in
+    parentheses or after `=` to the table name without its quotes, with the pragma name in any case."""
+    sql = "PRAGMA foreign_key_check; PRAGMA FOREIGN_KEY_CHECK(c); PRAGMA foreign_key_check = 'My C'; PRAGMA foreign_key_check(\"1\");"
+    assert mapped(parse_sql, sql) == [pragma({"foreignKeyCheck": {"table": table}}) for table in (None, "c", "My C", "1")]
+
+
 def check(quick: bool, limit: int, table: str | None) -> dict[str, object]:
     """Return the syntax JSON of a check pragma."""
     return pragma({"check": {"quick": quick, "limit": limit, "table": table}})
@@ -79,7 +87,7 @@ def test_other_check_values_are_refused(parse_sql: Callable[..., Translation], v
 
 @pytest.mark.parametrize(("sql", "message"), [
     ("PRAGMA journal_mode;",
-     "Only PRAGMA foreign_keys, table_info, foreign_key_list, integrity_check and quick_check are modeled"),
+     "Only PRAGMA foreign_keys, table_info, foreign_key_list, foreign_key_check, integrity_check and quick_check are modeled"),
     ("PRAGMA main.foreign_keys = ON;", "without a schema name"),
     ("PRAGMA main.table_info(t);", "without a schema name"),
     ("PRAGMA foreign_keys = 2;", "Only on, off, yes, no, true, false, 0 and 1"),
@@ -89,6 +97,8 @@ def test_other_check_values_are_refused(parse_sql: Callable[..., Translation], v
     ("PRAGMA table_info(1);", "Only a table name is modeled"),
     ("PRAGMA foreign_key_list(-1);", "Only a table name is modeled"),
     ("PRAGMA table_info(ON);", "Only a table name is modeled"),
+    ("PRAGMA foreign_key_check(1);", "Only a table name is modeled"),
+    ("PRAGMA main.foreign_key_check;", "without a schema name"),
 ])
 def test_other_pragmas_and_values_are_refused(parse_sql: Callable[..., Translation], sql: str, message: str) -> None:
     """`pragma` refuses another pragma, a schema name and a value that is not one of the modeled

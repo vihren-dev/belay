@@ -64,7 +64,7 @@ def settingValue (tree : SqlTree) (node : ParseNode) : TranslateM Bool := do
 
 /-- The refusal of a pragma that the model does not describe. -/
 def modeledPragmas : String :=
-  "Only PRAGMA foreign_keys, table_info, foreign_key_list, integrity_check and quick_check are modeled, without a schema name"
+  "Only PRAGMA foreign_keys, table_info, foreign_key_list, foreign_key_check, integrity_check and quick_check are modeled, without a schema name"
 
 /-- The value node of a pragma: the {lit}`nmnum` or {lit}`minus_num` after {lit}`=` or in
 parentheses, none without a value, or the refusal of another form. -/
@@ -75,13 +75,16 @@ def pragmaValue (tree : SqlTree) (command : ParseNode) : TranslateM (Option Pars
   | ["PRAGMA", "nm", "dbnm", "EQ", _] | ["PRAGMA", "nm", "dbnm", "LP", _, "RP"] => return some parts[4]!
   | _ => unsupported command modeledPragmas
 
+/-- The table name of the value node of a pragma: a name or a string, without its quotes. -/
+def pragmaTableName (tree : SqlTree) (node : ParseNode) : TranslateM Identifier := do
+  if tree.symbols node == ["nm"] then return (← identifierName tree (tree.children node)[0]!).value
+  unsupported node "Only a table name is modeled as the value of this pragma"
+
 /-- The table name of {lit}`PRAGMA table_info` or {lit}`PRAGMA foreign_key_list`: a name or a
-string after {lit}`=` or in parentheses, without its quotes. -/
+string after {lit}`=` or in parentheses ({name}`pragmaTableName`). -/
 def pragmaTable (tree : SqlTree) (command : ParseNode) (value : Option ParseNode) : TranslateM Identifier := do
   match value with
-  | some node =>
-    if tree.symbols node == ["nm"] then return (← identifierName tree (tree.children node)[0]!).value
-    unsupported node "Only a table name is modeled as the value of this pragma"
+  | some node => pragmaTableName tree node
   | none => unsupported command "Write the table name in parentheses, for example PRAGMA table_info(t)"
 
 /-- The refusal of a value of a check pragma that the model does not read. -/
@@ -119,8 +122,9 @@ def checkValue (tree : SqlTree) (node : ParseNode) : TranslateM (Nat × Option I
 /-- A pragma of the model ({name}`Belay.Sqlite.Model.Syntax.Pragma`), with its name in any ASCII
 case: {lit}`PRAGMA foreign_keys [= value]` and {lit}`PRAGMA foreign_keys(value)`, whose value is
 none for the query form; {lit}`PRAGMA table_info(t)` and {lit}`PRAGMA foreign_key_list(t)`, also
-with {lit}`= t`; and {lit}`PRAGMA integrity_check` and {lit}`PRAGMA quick_check`, alone or with a
-value ({name}`checkValue`). -/
+with {lit}`= t`; {lit}`PRAGMA foreign_key_check`, alone or with a table name; and
+{lit}`PRAGMA integrity_check` and {lit}`PRAGMA quick_check`, alone or with a value
+({name}`checkValue`). -/
 def pragma (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
   let parts := tree.children command
   unless parts.size ≥ 3 && parts[2]!.children.isEmpty do unsupported command modeledPragmas
@@ -130,6 +134,7 @@ def pragma (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.S
       (Syntax.Pragma.setting .foreignKeys ·) <$> value.mapM (settingValue tree)
     else if asciiEqual name "table_info" then Syntax.Pragma.tableInfo <$> pragmaTable tree command value
     else if asciiEqual name "foreign_key_list" then Syntax.Pragma.foreignKeyList <$> pragmaTable tree command value
+    else if asciiEqual name "foreign_key_check" then Syntax.Pragma.foreignKeyCheck <$> value.mapM (pragmaTableName tree)
     else if asciiEqual name "integrity_check" || asciiEqual name "quick_check" then do
       let (limit, table) ← match value with
         | some node => checkValue tree node

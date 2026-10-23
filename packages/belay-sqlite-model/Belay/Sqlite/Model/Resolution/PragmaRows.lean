@@ -15,6 +15,9 @@ def pragmaText (text : String) : Value := .text text.toUTF8.toList
 /-- The names of the columns of {lit}`PRAGMA table_info`. -/
 def tableInfoNames : List String := ["cid", "name", "type", "notnull", "dflt_value", "pk"]
 
+/-- The names of the columns of {lit}`PRAGMA foreign_key_check`. -/
+def foreignKeyCheckNames : List String := ["table", "rowid", "parent", "fkid"]
+
 /-- The names of the columns of {lit}`PRAGMA foreign_key_list`. -/
 def foreignKeyListNames : List String := ["id", "seq", "table", "from", "to", "on_update", "on_delete", "match"]
 
