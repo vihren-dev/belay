@@ -49,7 +49,7 @@ def statementSyntax (tree : SqlTree) (command : ParseNode) : TranslateM (Located
     let subqueries := subqueryList items command
     return composite (.select clauses.columns.value clauses.source.value clauses.joins.value clauses.filter.value
         clauses.groupBy.value clauses.orderBy.value clauses.limit.value clauses.offset.value subqueries.value
-        clauses.having.value clauses.distinct.value)
+        clauses.having.value clauses.distinct.value clauses.compound.value)
       command.start command.stop (clauses.selectSpans subqueries)
   if symbols.take 1 == ["PRAGMA"] then return ← pragma tree command
   unsupported command ("This statement is not modeled; the model runs CREATE TABLE, CREATE INDEX, " ++

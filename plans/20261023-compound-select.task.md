@@ -53,7 +53,13 @@ holds `('1', 'a')` and `u(b INTEGER, m TEXT)` holds `(1, 'A')`.
    their left result only, so for them only equal left rows that differ matter; which left rows they
    keep does not depend on the plan.
 4. **Columns.** The result columns have the names of the left-most term (`SELECT 1 AS one UNION
-   SELECT 2 AS two` names its column `one`). All terms have the same number of columns, else
+   SELECT 2 AS two` names its column `one`), except after the rewrite of outcome 7: then they
+   have the names of the derived table's columns (`sqlite3ColumnsFromExprList`): the `AS` alias,
+   else the column's name for an expression that reads a column under `COLLATE`, `likely`,
+   `unlikely` or `likelihood`, else the text; `true` and `false` become `columnN`; and a name
+   that is taken gets the suffix `:1` to `:4`, after which SQLite adds a random number (a
+   restriction). `SELECT a COLLATE NOCASE FROM t EXCEPT SELECT a FROM u ORDER BY 1 COLLATE
+   BINARY` names its column `a`; without `COLLATE BINARY`, `a COLLATE NOCASE`. All terms have the same number of columns, else
    SQLite's prepare error `SELECTs to the left and right of UNION ALL do not have the same number of
    result columns`, with the operator between the two terms.
 5. **The order of prepare errors.** SQLite finds the tables of every term, and expands `*`, before
