@@ -80,24 +80,44 @@ example : outputs [createC, .pragma (.foreignKeyList (name! "c"))] = [.done 0, .
     keyRow 1 0 "p" "x" .null "NO ACTION"]] := by
   decide +kernel
 
+/-- The source {lit}`function('argument')`. -/
+def pragmaOf (function argument : String) : TableReference :=
+  { table := .ofString function, alias := none, arguments := some [.string argument.toUTF8.toList] }
+
 /-- {lit}`SELECT columns FROM function('argument') [WHERE filter]`. -/
 def selectFrom (columns : List ResultColumn) (function argument : String) (filter : Option Expr := none) :
     Syntax.Statement :=
-  .select columns (some { table := .ofString function, alias := none, arguments := some [.string argument.toUTF8.toList] })
-    [] filter [] [] none none
+  .select columns (some (pragmaOf function argument)) [] filter [] [] none none
 
 /-- The result column of a name. -/
 def named (text : String) : ResultColumn := .expression (name text) none text
 
 -- The table-valued form gives the same rows; * does not show the hidden arg and schema, and
--- names see them.
+-- a name of one ends the run, because SQLite gives a condition on it to the pragma.
 example : outputs [createW, selectFrom [.star] "pragma_table_info" "w"] = [.done 0, .rows [
     [.integer 0, textValue "a", textValue "", .integer 1, .null, .integer 2],
     [.integer 1, textValue "b", textValue "", .integer 1, .null, .integer 1]]] := by
   decide +kernel
-example : outputs [createW, selectFrom [named "name", named "arg", named "schema"] "pragma_table_info" "w"
-    (some (.compare .eq (name "pk") (.numeric "1")))] = [.done 0, .rows [[textValue "b", textValue "w", .null]]] := by
+example : outputs [createW, selectFrom [named "name"] "pragma_table_info" "w"
+    (some (.compare .eq (name "pk") (.numeric "1")))] = [.done 0, .rows [[textValue "b"]]] := by
   decide +kernel
+example : (outputs [createW, selectFrom [named "name"] "pragma_table_info" "w"
+    (some (.compare .eq (name "schema") (.string "main".toUTF8.toList)))]).map Output.endsRun = [false, true] := by
+  decide +kernel
+example : (outputs [createW, selectFrom [named "arg"] "pragma_table_info" "w"]).map Output.endsRun =
+    [false, true] := by decide +kernel
+
+/-- {lit}`CREATE TABLE s(schema)`. -/
+def createS : Syntax.Statement := .createTable (name! "s") [typed "schema" none] []
+
+/-- {lit}`JOIN s USING (schema)`. -/
+def usingSchema : Join :=
+  { operator := [], source := { table := name! "s", alias := none, arguments := none }, condition := none,
+    usingColumns := some [name! "schema"] }
+
+-- USING with a hidden column of the pragma on the left ends the run too.
+example : (outputs [createS, .select [.star] (some (pragmaOf "pragma_table_info" "s")) [usingSchema] none [] [] none
+    none]).map Output.endsRun = [false, true] := by decide +kernel
 
 -- A cell has no affinity: the text '5' of dflt_value is not the integer 5.
 example : outputs [createT, selectFrom [named "name"] "pragma_table_info" "t"

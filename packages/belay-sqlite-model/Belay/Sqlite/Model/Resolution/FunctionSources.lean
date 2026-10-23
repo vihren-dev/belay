@@ -54,14 +54,15 @@ def resolveEachArguments (dqs : Bool) (scope : Scope) (index : Nat) (path : List
   | [] => .error (.restriction path .tableFunction)
 
 /-- The source of a table-valued pragma with the column names and rows of its pragma: each row
-with the hidden cells {lit}`arg`, the argument, and {lit}`schema`, NULL. The cells have no
-declared type, so they have no affinity and the binary collation. -/
+with the hidden cells {lit}`arg`, the argument, and {lit}`schema`, NULL, whose names are the
+restriction {lit}`table-function` ({name}`ScopeSource.arguments`). The cells have no declared
+type, so they have no affinity and the binary collation. -/
 def pragmaSource (reference : Syntax.TableReference) (argument : List UInt8) (names : List String)
     (rows : List (List Value)) : Resolved.PragmaRows × ScopeSource :=
   (.fixed (names.length + 2) (rows.map (· ++ [.text argument, .null])),
     { name := reference.alias.getD reference.table,
       columns := (names ++ ["arg", "schema"]).map fun name => { name := .ofString name, declaredType := none },
-      hidden := [names.length, names.length + 1] })
+      hidden := [names.length, names.length + 1], arguments := [names.length, names.length + 1] })
 
 /-- The source of a table-valued pragma at {lit}`path` with its arguments as written:
 {lit}`pragma_table_info('t')` with the rows of {name}`Catalog.tableInfoRows` and
