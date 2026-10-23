@@ -16,14 +16,15 @@ the owner's approval, and the work. The push and the pull requests wait for the 
 ## Outcome
 
 1. **Syntax.** An expression may be a parameter: `?`, `?NNN`, `:name`, `@name` and `$name`, in
-   SQLite's token forms (`:1`, `@1`, `:1a`, `$a::b` and `$a(x)` are names). `#name` is a
-   syntax error (`near "#1": syntax error`), and `:`, `@` and `$` alone are
-   `unrecognized token: ":"` (and the others). Each other form that the frontend cannot
+   SQLite's token forms (`:1`, `@1`, `:1a`, `$a::b` and `$a(x)` are names). SQLite also takes
+   `#name` when the name starts with a letter (`#a`, `#a1`; checked natively), a name apart
+   from `:a`; `#` and a digit is a syntax error (`near "#1": syntax error`). `:`, `@` and `$`
+   alone are `unrecognized token: ":"` (and the others). Each form that the frontend cannot
    translate stays a frontend refusal.
 2. **Numbering.** Each statement numbers its own parameters, as SQLite does. `?NNN` has the
    number NNN (`?01` is 1). `?` has one more than the largest number so far in the statement.
    A name has the number of its first use; its first use gets one more than the largest number
-   so far. `:a`, `@a` and `$a` are different names. Over `SELECT ?, ?5, ?, :a, @a, $a, :a` the
+   so far. `:a`, `@a`, `$a` and `#a` are different names. Over `SELECT ?, ?5, ?, :a, @a, $a, :a` the
    numbers are 1, 5, 6, 7, 8, 9, 7. `?0` and a number above the profile's limit (32766) fail
    at prepare with `variable number must be between ?1 and ?32766`; a statement that needs a
    number above the limit for `?` or a name fails with `too many SQL variables`.
@@ -36,7 +37,8 @@ the owner's approval, and the work. The push and the pull requests wait for the 
    ON` and the others that resolution accepts today.
 4. **Not a column number.** `ORDER BY ?` and `GROUP BY ?` order and group by the value, a
    constant, also when the value is an integer that names a result column. So `ORDER BY ?1`
-   keeps the order of the rows for every value, and `GROUP BY ?1` gives one group.
+   keeps the order of the rows for every value, and `GROUP BY ?1` gives one group when rows
+   remain after `WHERE`, and no group when none remain.
 5. **LIMIT and OFFSET.** `LIMIT ?` and `OFFSET ?` (alone, not inside a larger expression) take
    the bound value when the statement runs, as SQLite's `OP_MustBeInt` reads it: an integer;
    a real with an integer value (`2.0`); text that numeric affinity makes such a number
@@ -44,7 +46,11 @@ the owner's approval, and the work. The push and the pull requests wait for the 
    `datatype mismatch` (code 20) when it runs: NULL, a blob, `''`, `'abc'`, `'0x10'`, `2.5`,
    `'2.5'`, `1e20` and `'9223372036854775808'`. A negative bound LIMIT has no limit, and a
    negative bound OFFSET skips no rows (checked natively). A literal negative OFFSET keeps
-   its restriction.
+   its restriction. SQLite reads the values when the query starts: LIMIT first, and OFFSET
+   only when the LIMIT is not 0. So `LIMIT ? OFFSET ?` bound to 0 and NULL gives no rows and
+   no error, while bound to -1 and NULL it fails; a query without rows still reads them
+   (`WHERE 0 LIMIT 2 OFFSET ?` bound to NULL fails). A subquery reads its own values only when
+   it runs.
 6. **Where SQLite refuses a parameter.** At prepare, with SQLite's messages:
    `CREATE TRIGGER` with a parameter anywhere in it (`trigger cannot use variables`);
    `DEFAULT (?)` (`default value of column [x] is not constant`); a `CHECK` constraint
@@ -80,12 +86,13 @@ other forms that stay out of scope.
   outcome 2, NULL for a number without an item, the affinity examples of outcome 3,
   `ORDER BY ?1` and `GROUP BY ?1` against `ORDER BY 2`, each kind of value of outcome 5, and a
   prepare error of each place of outcome 6.
-- Frontend tests of each token form of outcome 1, with the syntax errors.
+- Frontend tests of each token form of outcome 1, `#a` included, with the syntax errors.
 - An authored corpus (`conformance/authored_parameters.py`), each case with a kernel proof,
   recorded as the next corpus version: the numbering of outcome 2 with distinct values; a
   parameter in each place of outcome 3, also in a write that runs a trigger and in an upsert;
   the affinity and collation examples; `ORDER BY ?` and `GROUP BY ?`; `LIMIT ?` and `OFFSET ?`
-  with each kind of value of outcome 5, the errors included; the prepare errors of outcomes 2
+  with each kind of value of outcome 5, the errors included, `LIMIT 0` with an OFFSET that
+  would fail, and `GROUP BY ?` over no rows; the prepare errors of outcomes 2
   and 6; a script of several statements with their own numbers.
 - The verdict of every corpus: cases that newly agree and none that leave AGREE.
 - Mutants: `?` numbered from the count of earlier parameters, not from the largest number; one
