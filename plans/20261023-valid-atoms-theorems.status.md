@@ -143,3 +143,7 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3). None y
   `Table.appendColumns_cases`, `Database.EachTable.addColumn`) and `RowLocalAddColumnTheorems` (the
   table laws and the statement theorems of ADD COLUMN for the three atoms), and `RowLocalExamples`
   (the five counterexamples, each condition necessary).
+- 2026-10-23: part 1, commit 7 (`refactor:`): the statement theorems of all three files say once
+  which databases `Effect.Satisfies` covers (reviews of commits 4, 5 and 6: one R2 must each for 4 and
+  6, two R9 should for 5, fixed). `just documentation-inventory` passes; the predictions are
+  unchanged (below).

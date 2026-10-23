@@ -11,10 +11,8 @@ namespace Belay.Sqlite.Model
 
 /-- For every clock value, parameter list and plain INSERT (no foreign key rules and no trigger
 programs) and database: if the database satisfies {name}`Database.NotNull`,
-the effect of {name}`runStatement` satisfies it on the databases that a run keeps
-({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`; any other error
-requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_insert_rowLocal` with {name}`Table.notNullAtom`. -/
+the effect of {name}`runStatement` satisfies it ({name}`Effect.Satisfies`): the database of a success and that of an
+error with {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_insert_rowLocal` with {name}`Table.notNullAtom`. -/
 theorem runStatement_insert_notNull (clock : Int) (parameters : List Value) (target : Nat) (rows : List (List Resolved.Cell))
     (returning : List (Resolved.Expr × String)) (subqueries : List Resolved.Query) {database : Database}
     (notNull : database.NotNull) :
@@ -23,10 +21,8 @@ theorem runStatement_insert_notNull (clock : Int) (parameters : List Value) (tar
 
 /-- For every clock value, parameter list and plain INSERT (no foreign key rules and no trigger
 programs) and database: if the database satisfies {name}`Database.TypesFit`,
-the effect of {name}`runStatement` satisfies it on the databases that a run keeps
-({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`; any other error
-requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_insert_rowLocal` with {name}`Table.typesFitAtom`. -/
+the effect of {name}`runStatement` satisfies it ({name}`Effect.Satisfies`): the database of a success and that of an
+error with {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_insert_rowLocal` with {name}`Table.typesFitAtom`. -/
 theorem runStatement_insert_typesFit (clock : Int) (parameters : List Value) (target : Nat) (rows : List (List Resolved.Cell))
     (returning : List (Resolved.Expr × String)) (subqueries : List Resolved.Query) {database : Database}
     (fits : database.TypesFit) :
@@ -35,10 +31,8 @@ theorem runStatement_insert_typesFit (clock : Int) (parameters : List Value) (ta
 
 /-- For every clock value, parameter list and plain INSERT (no foreign key rules and no trigger
 programs) and database: if the database satisfies {name}`Database.ChecksHold`,
-the effect of {name}`runStatement` satisfies it on the databases that a run keeps
-({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`; any other error
-requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_insert_rowLocal` with {name}`Table.checksHoldAtom`. -/
+the effect of {name}`runStatement` satisfies it ({name}`Effect.Satisfies`): the database of a success and that of an
+error with {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_insert_rowLocal` with {name}`Table.checksHoldAtom`. -/
 theorem runStatement_insert_checksHold (clock : Int) (parameters : List Value) (target : Nat) (rows : List (List Resolved.Cell))
     (returning : List (Resolved.Expr × String)) (subqueries : List Resolved.Query) {database : Database}
     (holds : database.ChecksHold) :
@@ -47,10 +41,8 @@ theorem runStatement_insert_checksHold (clock : Int) (parameters : List Value) (
 
 /-- For every clock value, parameter list and plain UPDATE (no foreign key rules and no trigger
 programs) and database: if the database satisfies {name}`Database.NotNull`,
-the effect of {name}`runStatement` satisfies it on the databases that a run keeps
-({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`; any other error
-requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_update_rowLocal` with {name}`Table.notNullAtom`. -/
+the effect of {name}`runStatement` satisfies it ({name}`Effect.Satisfies`): the database of a success and that of an
+error with {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_update_rowLocal` with {name}`Table.notNullAtom`. -/
 theorem runStatement_update_notNull (clock : Int) (parameters : List Value) (target : Nat) (assignments : List (Nat × Resolved.Expr))
     (filter : Option Resolved.Expr) (returning : List (Resolved.Expr × String)) (subqueries : List Resolved.Query)
     {database : Database}
@@ -60,10 +52,8 @@ theorem runStatement_update_notNull (clock : Int) (parameters : List Value) (tar
 
 /-- For every clock value, parameter list and plain UPDATE (no foreign key rules and no trigger
 programs) and database: if the database satisfies {name}`Database.TypesFit`,
-the effect of {name}`runStatement` satisfies it on the databases that a run keeps
-({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`; any other error
-requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_update_rowLocal` with {name}`Table.typesFitAtom`. -/
+the effect of {name}`runStatement` satisfies it ({name}`Effect.Satisfies`): the database of a success and that of an
+error with {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_update_rowLocal` with {name}`Table.typesFitAtom`. -/
 theorem runStatement_update_typesFit (clock : Int) (parameters : List Value) (target : Nat) (assignments : List (Nat × Resolved.Expr))
     (filter : Option Resolved.Expr) (returning : List (Resolved.Expr × String)) (subqueries : List Resolved.Query)
     {database : Database}
@@ -73,10 +63,8 @@ theorem runStatement_update_typesFit (clock : Int) (parameters : List Value) (ta
 
 /-- For every clock value, parameter list and plain UPDATE (no foreign key rules and no trigger
 programs) and database: if the database satisfies {name}`Database.ChecksHold`,
-the effect of {name}`runStatement` satisfies it on the databases that a run keeps
-({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`; any other error
-requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_update_rowLocal` with {name}`Table.checksHoldAtom`. -/
+the effect of {name}`runStatement` satisfies it ({name}`Effect.Satisfies`): the database of a success and that of an
+error with {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_update_rowLocal` with {name}`Table.checksHoldAtom`. -/
 theorem runStatement_update_checksHold (clock : Int) (parameters : List Value) (target : Nat) (assignments : List (Nat × Resolved.Expr))
     (filter : Option Resolved.Expr) (returning : List (Resolved.Expr × String)) (subqueries : List Resolved.Query)
     {database : Database}
@@ -86,10 +74,8 @@ theorem runStatement_update_checksHold (clock : Int) (parameters : List Value) (
 
 /-- For every clock value, parameter list and plain DELETE (no foreign key rules and no trigger
 programs) and database: if the database satisfies {name}`Database.NotNull`,
-the effect of {name}`runStatement` satisfies it on the databases that a run keeps
-({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`; any other error
-requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_delete_rowLocal` with {name}`Table.notNullAtom`. -/
+the effect of {name}`runStatement` satisfies it ({name}`Effect.Satisfies`): the database of a success and that of an
+error with {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_delete_rowLocal` with {name}`Table.notNullAtom`. -/
 theorem runStatement_delete_notNull (clock : Int) (parameters : List Value) (target : Nat) (filter : Option Resolved.Expr)
     (returning : List (Resolved.Expr × String)) (subqueries : List Resolved.Query) {database : Database}
     (notNull : database.NotNull) :
@@ -98,10 +84,8 @@ theorem runStatement_delete_notNull (clock : Int) (parameters : List Value) (tar
 
 /-- For every clock value, parameter list and plain DELETE (no foreign key rules and no trigger
 programs) and database: if the database satisfies {name}`Database.TypesFit`,
-the effect of {name}`runStatement` satisfies it on the databases that a run keeps
-({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`; any other error
-requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_delete_rowLocal` with {name}`Table.typesFitAtom`. -/
+the effect of {name}`runStatement` satisfies it ({name}`Effect.Satisfies`): the database of a success and that of an
+error with {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_delete_rowLocal` with {name}`Table.typesFitAtom`. -/
 theorem runStatement_delete_typesFit (clock : Int) (parameters : List Value) (target : Nat) (filter : Option Resolved.Expr)
     (returning : List (Resolved.Expr × String)) (subqueries : List Resolved.Query) {database : Database}
     (fits : database.TypesFit) :
@@ -110,10 +94,8 @@ theorem runStatement_delete_typesFit (clock : Int) (parameters : List Value) (ta
 
 /-- For every clock value, parameter list and plain DELETE (no foreign key rules and no trigger
 programs) and database: if the database satisfies {name}`Database.ChecksHold`,
-the effect of {name}`runStatement` satisfies it on the databases that a run keeps
-({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`; any other error
-requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_delete_rowLocal` with {name}`Table.checksHoldAtom`. -/
+the effect of {name}`runStatement` satisfies it ({name}`Effect.Satisfies`): the database of a success and that of an
+error with {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_delete_rowLocal` with {name}`Table.checksHoldAtom`. -/
 theorem runStatement_delete_checksHold (clock : Int) (parameters : List Value) (target : Nat) (filter : Option Resolved.Expr)
     (returning : List (Resolved.Expr × String)) (subqueries : List Resolved.Query) {database : Database}
     (holds : database.ChecksHold) :
@@ -122,10 +104,8 @@ theorem runStatement_delete_checksHold (clock : Int) (parameters : List Value) (
 
 /-- For every clock value, parameter list, database and statement that writes no row (a query, a
 setting, a prepare error, BEGIN, COMMIT or ROLLBACK) and database: if the database satisfies {name}`Database.NotNull`,
-the effect of {name}`runStatement` satisfies it on the databases that a run keeps
-({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`; any other error
-requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_writesNone_rowLocal`. -/
+the effect of {name}`runStatement` satisfies it ({name}`Effect.Satisfies`): the database of a success and that of an
+error with {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_writesNone_rowLocal`. -/
 theorem runStatement_writesNone_notNull (clock : Int) (parameters : List Value) {database : Database} (statement : Resolved.Statement)
     (writesNone : (∃ query subqueries, statement = .query query subqueries) ∨ (∃ setting on, statement = .setting setting on) ∨
       (∃ error, statement = .prepareError error) ∨ statement = .begin ∨ statement = .commit ∨ statement = .rollback)
@@ -135,10 +115,8 @@ theorem runStatement_writesNone_notNull (clock : Int) (parameters : List Value) 
 
 /-- For every clock value, parameter list, database and statement that writes no row (a query, a
 setting, a prepare error, BEGIN, COMMIT or ROLLBACK) and database: if the database satisfies {name}`Database.TypesFit`,
-the effect of {name}`runStatement` satisfies it on the databases that a run keeps
-({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`; any other error
-requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_writesNone_rowLocal`. -/
+the effect of {name}`runStatement` satisfies it ({name}`Effect.Satisfies`): the database of a success and that of an
+error with {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_writesNone_rowLocal`. -/
 theorem runStatement_writesNone_typesFit (clock : Int) (parameters : List Value) {database : Database} (statement : Resolved.Statement)
     (writesNone : (∃ query subqueries, statement = .query query subqueries) ∨ (∃ setting on, statement = .setting setting on) ∨
       (∃ error, statement = .prepareError error) ∨ statement = .begin ∨ statement = .commit ∨ statement = .rollback)
@@ -148,10 +126,8 @@ theorem runStatement_writesNone_typesFit (clock : Int) (parameters : List Value)
 
 /-- For every clock value, parameter list, database and statement that writes no row (a query, a
 setting, a prepare error, BEGIN, COMMIT or ROLLBACK) and database: if the database satisfies {name}`Database.ChecksHold`,
-the effect of {name}`runStatement` satisfies it on the databases that a run keeps
-({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`; any other error
-requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_writesNone_rowLocal`. -/
+the effect of {name}`runStatement` satisfies it ({name}`Effect.Satisfies`): the database of a success and that of an
+error with {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. It assumes nothing about the other atoms or the support check. Proof sketch: {name}`runStatement_writesNone_rowLocal`. -/
 theorem runStatement_writesNone_checksHold (clock : Int) (parameters : List Value) {database : Database} (statement : Resolved.Statement)
     (writesNone : (∃ query subqueries, statement = .query query subqueries) ∨ (∃ setting on, statement = .setting setting on) ∨
       (∃ error, statement = .prepareError error) ∨ statement = .begin ∨ statement = .commit ∨ statement = .rollback)
