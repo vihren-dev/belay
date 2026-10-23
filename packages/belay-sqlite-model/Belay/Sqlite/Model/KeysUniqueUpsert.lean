@@ -14,13 +14,14 @@ namespace Belay.Sqlite.Model
 namespace LiteralData
 
 /-- For every table, algorithm, result table and row: if {name}`failedConstraint` succeeds, its
-table is the table: IGNORE skips the row. -/
+table is the table: IGNORE skips the row. Proof sketch: case analysis on the algorithm. -/
 theorem failedConstraint_ok {table next : Table} {algorithm : ConflictAlgorithm} {written : Option Row}
     (ok : failedConstraint table algorithm = .ok (next, written)) : next = table := by
   cases algorithm <;> simp_all [failedConstraint]
 
 /-- For every keys, two tables and rows: if {name}`checkedRow` of the next table succeeds with a
-table, that table satisfies {name}`Table.KeysUnique` for the keys. -/
+table, that table satisfies {name}`Table.KeysUnique` for the keys. Proof sketch: the stored table
+passed {name}`constraints`, and {name}`Table.constraints_iff` gives the atom. -/
 theorem checkedRow_keysUnique {keys : List UniqueKey} {next stored : Table} {written : Row} {row : Option Row}
     (ok : checkedRow keys next written = .ok (stored, row)) : stored.KeysUnique keys := by
   unfold checkedRow at ok
@@ -33,7 +34,8 @@ theorem checkedRow_keysUnique {keys : List UniqueKey} {next stored : Table} {wri
 
 /-- For every keys, algorithms, two tables, proposed row and row: if {name}`insertChecked`
 succeeds with a table, that table is the input table or satisfies {name}`Table.KeysUnique` for
-the keys. -/
+the keys. Proof sketch: a blocking key fails or keeps the table ({name}`failedConstraint_ok`),
+and otherwise {name}`checkedRow_keysUnique`. -/
 theorem insertChecked_ok {keys : List UniqueKey} {algorithms : List ConflictAlgorithm} {table next : Table}
     {proposed : Row} {written : Option Row} (ok : insertChecked keys algorithms table proposed = .ok (next, written)) :
     next = table ∨ next.KeysUnique keys := by
@@ -44,7 +46,8 @@ theorem insertChecked_ok {keys : List UniqueKey} {algorithms : List ConflictAlgo
 
 /-- For every context, keys, table, assignments, filter, two rows, result table and row: if
 {name}`updateExisting` succeeds with a table, that table is the input table or satisfies
-{name}`Table.KeysUnique` for the keys. -/
+{name}`Table.KeysUnique` for the keys. Proof sketch: a filter that is not true keeps the
+table, a refused rowid alias fails, and otherwise {name}`checkedRow_keysUnique`. -/
 theorem updateExisting_ok {context : Resolved.EvalContext} {keys : List UniqueKey} {table next : Table}
     {assignments : List (Nat × Resolved.Expr)} {filter : Option Resolved.Expr} {existing proposed : Row}
     {written : Option Row} (ok : updateExisting context keys table assignments filter existing proposed = .ok (next, written)) :

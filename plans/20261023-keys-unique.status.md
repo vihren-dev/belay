@@ -102,5 +102,6 @@ None yet. A proof that fails is recorded here with a counterexample (ADR 0022, D
 - 2026-10-23: part 1, first commit: `Effect.KeysUnique`, the frame lemma, the lookup lemma, and
   the theorems for plain INSERT, UPDATE, DELETE, upsert, CREATE TABLE, CREATE INDEX, CREATE
   TRIGGER and the statements that write no row (`KeysUniqueFrame`, `KeysUniqueLookup`,
-  `KeysUniqueWrites`, `KeysUniqueUpsert`, `KeysUniqueCreate`). Checks: `just dev-build`,
-  `tests/test_model_package.py -m unit`; `#print axioms` gives only the three standard axioms.
+  `KeysUniqueWrites`, `KeysUniqueUpsert`, `KeysUniqueCreate`).
+- 2026-10-23: refactor after review round 1 (five R3 musts: proof sketches of the helper
+  theorems; one R19 should: no local check results in this file), fixed.
