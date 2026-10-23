@@ -22,6 +22,8 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D3 and D7.
 - 2026-10-23: review of the ADR amendment (one must) fixed with native probes: after the
   `ORDER BY COLLATE` rewrite, `IN` and a scalar subquery read the column of the derived table
   (ADR 0019 D3, task file outcome 9); slice 3 refuses them with a restriction.
+- 2026-10-23: review round 2 of the amendment (one must) fixed: after the rewrite, a scalar
+  subquery reads only the affinity of the derived table's column, and no collation.
 
 ## Owner decisions
 

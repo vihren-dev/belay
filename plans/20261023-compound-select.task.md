@@ -104,9 +104,11 @@ holds `('1', 'a')` and `u(b INTEGER, m TEXT)` holds `(1, 'A')`.
    u)` is 1, `'A' IN (SELECT n FROM t UNION SELECT m FROM u WHERE 0)` is 0, `'A' IN (SELECT m FROM u
    WHERE 0 UNION SELECT n FROM t)` is 1, `(SELECT b FROM u UNION SELECT 5) = '1'` is 0, and `(SELECT
    m FROM u WHERE 0 UNION SELECT n FROM t) = 'A'` is 0. When outcome 7 sorts the compound as
-   `SELECT * FROM (compound)`, `x IN (q)` and `(q)` read the column of that subquery instead: the
-   collation of the left-most term's expression and the affinity of `sqlite3SubqueryColumnTypes`
-   (`'A' IN (SELECT 'a' COLLATE NOCASE UNION SELECT 'b' WHERE 0 ORDER BY 1 COLLATE BINARY)` is 1).
+   `SELECT * FROM (compound)`, `x IN (q)` reads the column of that subquery instead: the collation
+   of the left-most term's expression and the affinity of `sqlite3SubqueryColumnTypes`
+   (`'A' IN (SELECT 'a' COLLATE NOCASE UNION SELECT 'b' WHERE 0 ORDER BY 1 COLLATE BINARY)` is 1);
+   a scalar `(q)` reads only that affinity and has no collation (`(SELECT 'a' COLLATE NOCASE
+   UNION SELECT 'b' WHERE 0 ORDER BY 1 COLLATE BINARY) = 'A'` is 0).
    The model refuses such an `IN` or scalar subquery with a new restriction, which has an example in
    `conformance/restriction_examples.py`; slice 4 adds it with the columns of a derived table.
    `EXISTS (q)` reads no column and takes it. Two columns where one is needed give
