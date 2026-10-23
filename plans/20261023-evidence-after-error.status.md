@@ -106,6 +106,7 @@ corpus finds is extra work and is not in this estimate.
 - 2026-10-23 (PR A, refactor): the module docstring of `RunPassLaws` and the status line say only that the classifier does not import this proof (review of `llzrutmv`).
 - 2026-10-23 (PR A): `tests/conformance_continuing_case_test.py` runs in the Nix suite `harness`, with `tests/conformance_predict_test.py`, whose helper it imports.
 - 2026-10-23 (PR B): the recorder's mode that runs on (`record_sql` and `execute` with `run_on`, `native_statement_end.complete_statement`, `sqlite3_complete` in `native_library`); a record of it has version 6, and `corpus.native_replay` records it again in that mode. The 55 records of the measurement replay natively unchanged.
+- 2026-10-23 (PR B, refactor): review of `qwxnpryk`: an empty statement before a statement belongs to it, so a lone `;` gives no event of its own (R19), and the boundary check runs where the statement is finalized, so its message reaches the user (R10).
 
 ## Tests for each commit
 

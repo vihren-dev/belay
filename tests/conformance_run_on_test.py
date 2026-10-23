@@ -39,6 +39,15 @@ def test_run_on_records_each_statement_after_a_mid_text_prepare_error() -> None:
     native_replay([record])
 
 
+def test_an_empty_statement_belongs_to_the_next_statement() -> None:
+    """A lone `;` before a statement that fails in the middle of its text is part of that
+    statement's event, as SQLite's prepare skips it, so the error is recorded once."""
+    record = record_sql(SETUP, "; " + DUPLICATE + LATER, name="empty", outputs=True, profile=profile(()), run_on=True)
+    assert [event["sql"] for event in record["trace"]] == ["; " + DUPLICATE, " INSERT INTO t VALUES (1);",
+                                                           " SELECT a FROM t;"]
+    assert [event["primaryCode"] for event in record["trace"]] == [1, 0, 0]
+
+
 def test_default_mode_stops_at_the_first_error() -> None:
     """Without the mode, the trace ends at the failed statement, and the record has version 5."""
     record = record_sql(SETUP, DUPLICATE + LATER, name="stops", outputs=True, profile=profile(()))
