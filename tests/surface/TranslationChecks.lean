@@ -19,7 +19,7 @@ def textAt (text : String) (item : Located Syntax.Statement) (path : List Nat) :
 def translated (text : String) : IO (Array (Located Syntax.Statement)) := do
   let grammar ← IO.ofExcept ((selectGrammar (← loadedMetadata) Release.default).mapError IO.userError)
   match ← translate grammar text.toUTF8 with
-  | .ok items => return items
+  | .ok items => return items.map (·.statement)
   | .error refusal => throw <| IO.userError s!"the translation refuses {text}: {refusal.message}"
 
 /-- Fail with the check's name when the text at the path is not the expected text. -/
