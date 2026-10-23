@@ -90,7 +90,11 @@ decides where the recorder goes. With its recommendation:
    - `OR ROLLBACK` (INSERT and UPDATE) and a column declared `ON CONFLICT ROLLBACK`, inside a
      transaction: the transaction rolls back and closes, a table created in it is gone (the next
      INSERT into it fails at prepare), the next statement runs in autocommit, and `COMMIT`
-     fails with `cannot commit - no transaction is active`; outside a transaction it is ABORT;
+     fails with `cannot commit - no transaction is active`; outside a transaction it is ABORT.
+     Amended 2026-10-23: the frontend does not translate `UPDATE OR ROLLBACK`, and the model
+     does not describe an UPDATE that conflicts on a column declared `ON CONFLICT ROLLBACK`
+     (`MODEL_UNSUPPORTED`). Both are new SQL in the model, which is out of scope, so the corpus
+     has the INSERT forms only;
    - errors in a trigger: `RAISE(ABORT)` (statement rollback, the trigger's writes too),
      `RAISE(FAIL)` (the earlier rows and their trigger writes stay), `RAISE(ROLLBACK)` (the
      transaction closes); a constraint failure of a write in the body; `OR ROLLBACK` in the
