@@ -35,70 +35,81 @@ theorem runSqlFrom_cons (position : Nat) (statement : Resolved.Statement) (param
 
 /-- For every position, list of values, state and statement that is not transaction control
 ({name}`Resolved.Statement.isControl`), {name}`advance` publishes the statement's effect
-({name}`literalStep`) at the clock value of the position ({name}`SqlState.publish`). Proof
+({name}`literalStep`) at the clock value of the position ({name}`SqlState.publish`), and
+then applies the counts of the statement's run ({name}`SqlTransition.counted`). Proof
 sketch: case analysis on the statement; transaction control contradicts the premise, and
 every other arm of {name}`advance` is this publication. -/
 theorem advance_effect (position : Nat) (statement : Resolved.Statement) (parameters : List Value) (state : SqlState)
     (ordinary : statement.isControl = false) :
     advance position statement parameters state =
-      state.publish position (literalStep (state.clock position) parameters statement state.database) := by
-  cases statement <;> simp_all [advance, advanceWith, Resolved.Statement.isControl]
+      (state.publish position (literalStep (state.clock position) parameters statement state.database)).counted
+        (runStatement (state.clock position) parameters statement state.database).counts := by
+  cases statement <;> simp_all [advance, advanceRun, advanceWith, Resolved.Statement.isControl, literalStep]
 
 /-- For every position, list of values, state and CREATE TABLE, {name}`advance` publishes its effect
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
 @[simp] theorem advance_createTable (step : Nat) (parameters : List Value) (state : SqlState) (target : Nat) (name : Identifier) (table : CatalogTable) :
-    advance step (.createTable target name table) parameters state = state.publish step (literalStep (state.clock step) parameters (.createTable target name table) state.database) := rfl
+    advance step (.createTable target name table) parameters state = state.publish step (literalStep (state.clock step) parameters (.createTable target name table) state.database) := by
+  simp [advance, advanceRun, advanceWith, runStatement, literalStep]
 
 /-- For every position, list of values, state and CREATE INDEX, {name}`advance` publishes its effect
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
 @[simp] theorem advance_createIndex (step : Nat) (parameters : List Value) (state : SqlState) (target : Nat) (name : Identifier) (index : CatalogIndex) :
-    advance step (.createIndex target name index) parameters state = state.publish step (literalStep (state.clock step) parameters (.createIndex target name index) state.database) := rfl
+    advance step (.createIndex target name index) parameters state = state.publish step (literalStep (state.clock step) parameters (.createIndex target name index) state.database) := by
+  simp [advance, advanceRun, advanceWith, runStatement, literalStep]
 
 /-- For every position, list of values, state and ADD COLUMN, {name}`advance` publishes its effect
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
 @[simp] theorem advance_addColumn (step : Nat) (parameters : List Value) (state : SqlState) (target : Nat) (column : CatalogColumn) :
-    advance step (.addColumn target column) parameters state = state.publish step (literalStep (state.clock step) parameters (.addColumn target column) state.database) := rfl
+    advance step (.addColumn target column) parameters state = state.publish step (literalStep (state.clock step) parameters (.addColumn target column) state.database) := by
+  simp [advance, advanceRun, advanceWith, runStatement, literalStep]
 
-/-- For every position, list of values, state and INSERT with any subqueries, {name}`advance` publishes its effect
+/-- For every position, list of values, state and INSERT with any subqueries, {name}`advance` publishes its effect and applies its counts
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
 @[simp] theorem advance_insert (step : Nat) (parameters : List Value) (state : SqlState) (target : Nat) (rows : List (List Resolved.Cell)) (returning : List (Resolved.Expr × String))
     (subqueries : List Resolved.Query) :
     advance step (.insert target rows returning subqueries) parameters state =
-      state.publish step (literalStep (state.clock step) parameters (.insert target rows returning subqueries) state.database) := rfl
+      (state.publish step (literalStep (state.clock step) parameters (.insert target rows returning subqueries) state.database)).counted
+        (runStatement (state.clock step) parameters (.insert target rows returning subqueries) state.database).counts := rfl
 
-/-- For every position, list of values, state and INSERT with clauses or an algorithm and any subqueries, {name}`advance` publishes its effect
+/-- For every position, list of values, state and INSERT with clauses or an algorithm and any subqueries, {name}`advance` publishes its effect and applies its counts
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
 @[simp] theorem advance_upsert (step : Nat) (parameters : List Value) (state : SqlState) (target : Nat) (rows : List (List Resolved.Cell)) (clauses : List Resolved.ConflictClause)
     (returning : List (Resolved.Expr × String)) (algorithm : Option ConflictAlgorithm) (subqueries : List Resolved.Query) :
     advance step (.upsert target rows clauses returning algorithm subqueries) parameters state =
-      state.publish step (literalStep (state.clock step) parameters (.upsert target rows clauses returning algorithm subqueries) state.database) :=
+      (state.publish step (literalStep (state.clock step) parameters (.upsert target rows clauses returning algorithm subqueries) state.database)).counted
+        (runStatement (state.clock step) parameters (.upsert target rows clauses returning algorithm subqueries) state.database).counts :=
   rfl
 
-/-- For every position, list of values, state and UPDATE with any subqueries, {name}`advance` publishes its effect
+/-- For every position, list of values, state and UPDATE with any subqueries, {name}`advance` publishes its effect and applies its counts
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
 @[simp] theorem advance_update (step : Nat) (parameters : List Value) (state : SqlState) (target : Nat) (assignments : List (Nat × Resolved.Expr)) (filter : Option Resolved.Expr)
     (returning : List (Resolved.Expr × String)) (subqueries : List Resolved.Query) :
     advance step (.update target assignments filter returning subqueries) parameters state =
-      state.publish step (literalStep (state.clock step) parameters (.update target assignments filter returning subqueries) state.database) := rfl
+      (state.publish step (literalStep (state.clock step) parameters (.update target assignments filter returning subqueries) state.database)).counted
+        (runStatement (state.clock step) parameters (.update target assignments filter returning subqueries) state.database).counts := rfl
 
-/-- For every position, list of values, state and DELETE with any subqueries, {name}`advance` publishes its effect
+/-- For every position, list of values, state and DELETE with any subqueries, {name}`advance` publishes its effect and applies its counts
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
 @[simp] theorem advance_delete (step : Nat) (parameters : List Value) (state : SqlState) (target : Nat) (filter : Option Resolved.Expr) (returning : List (Resolved.Expr × String))
     (subqueries : List Resolved.Query) :
     advance step (.delete target filter returning subqueries) parameters state =
-      state.publish step (literalStep (state.clock step) parameters (.delete target filter returning subqueries) state.database) := rfl
+      (state.publish step (literalStep (state.clock step) parameters (.delete target filter returning subqueries) state.database)).counted
+        (runStatement (state.clock step) parameters (.delete target filter returning subqueries) state.database).counts := rfl
 
 /-- For every position, list of values, state, query and list of subqueries, {name}`advance` publishes its effect
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
 @[simp] theorem advance_query (step : Nat) (parameters : List Value) (state : SqlState) (query : Resolved.Query)
     (subqueries : List Resolved.Query) :
     advance step (.query query subqueries) parameters state =
-      state.publish step (literalStep (state.clock step) parameters (.query query subqueries) state.database) := rfl
+      state.publish step (literalStep (state.clock step) parameters (.query query subqueries) state.database) := by
+  simp [advance, advanceRun, advanceWith, runStatement, literalStep]
 
 /-- For every position, list of values, state and a statement that SQLite refuses, {name}`advance` publishes its effect
 ({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
 @[simp] theorem advance_prepareError (step : Nat) (parameters : List Value) (state : SqlState) (error : PrepareError) :
-    advance step (.prepareError error) parameters state = state.publish step (literalStep (state.clock step) parameters (.prepareError error) state.database) := rfl
+    advance step (.prepareError error) parameters state = state.publish step (literalStep (state.clock step) parameters (.prepareError error) state.database) := by
+  simp [advance, advanceRun, advanceWith, runStatement, literalStep]
 
 /-- For every state, position and database, publishing an effect that succeeds with the
 database continues with the state that has that database. Proof sketch: the definition. -/

@@ -29,7 +29,7 @@ theorem runPassFrom_results (context : ResolveContext) (clock : Option Clock) :
       · rfl
       · split
         · rfl
-        · cases ranScriptStep parameters connection _ _ _ _ with
+        · cases ranScriptStep parameters connection _ _ _ _ _ with
           | ended reason => rfl
           | continued output next => simp [runPassFrom_results context clock (index + 1) next rest]
 

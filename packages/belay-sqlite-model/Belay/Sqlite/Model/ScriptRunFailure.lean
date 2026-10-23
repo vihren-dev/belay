@@ -13,7 +13,7 @@ namespace Belay.Sqlite.Model
 connection, with an optional clock, with the statement as it resolves. It takes the same steps
 as {name}`runScriptStep`: it resolves the statement, takes its clock value
 ({name}`statementClock`), runs the statement with the values at that value
-({name}`runStatement`) and advances with {name}`advanceWith`, and gives the error with which
+({name}`runStatement`) and advances with {name}`advanceRun`, and gives the error with which
 the transition stops ({name}`haltError`). It is
 {lean}`(none : Option (Resolved.Statement × ExecutionError))` for a statement that has a
 restriction, reads the clock in a run without a clock, fails the support check or does not
@@ -29,7 +29,7 @@ def runScriptStepFailure (context : ResolveContext) (clock : Option Clock) (inde
     | some value =>
       let run := runStatement value parameters resolved connection.state.database
       if !run.ready then none
-      else (haltError (advanceWith index resolved connection.state run.effect)).map ((resolved, ·))
+      else (haltError (advanceRun index resolved connection.state run)).map ((resolved, ·))
 
 /-- For every list of results and code, {name}`Output.ofResults` of the results is not
 {name}`Output.error` of the code. Proof sketch: each case of the sort gives
@@ -39,7 +39,7 @@ theorem Output.ofResults_ne_error (results : List (List (List Value))) (code : N
   unfold Output.ofResults
   split <;> simp
 
-/-- For every clock, list of values, statement, state and transition: if {name}`Output.ofStep`
+/-- For every clock, list of values, statement, state, run and transition: if {name}`Output.ofStep`
 gives
 {name}`Output.error` with a code, then the transition stops with an error
 ({name}`haltError`) whose {name}`ExecutionError.primaryCode` is that code. Proof sketch: split
@@ -47,8 +47,8 @@ each match of {name}`Output.ofStep`; only the case of an error that is not
 {name}`ExecutionError.unmodeled` gives {name}`Output.error`, and a query's output is not one
 ({name}`Output.ofResults_ne_error`). -/
 theorem Output.ofStep_error {clock : Int} {parameters : List Value} {statement : Resolved.Statement}
-    {before : SqlState} {transition : SqlTransition} {code : Nat}
-    (output : Output.ofStep clock parameters statement before transition = .error code) :
+    {before : SqlState} {run : StatementRun} {transition : SqlTransition} {code : Nat}
+    (output : Output.ofStep clock parameters statement before run transition = .error code) :
     ∃ failure, haltError transition = some failure ∧ failure.primaryCode = code := by
   unfold Output.ofStep at output
   split at output <;> (repeat' split at output) <;> simp_all [Output.ofResults_ne_error]
@@ -78,21 +78,21 @@ theorem runScriptStep_error_failure {context : ResolveContext} {clock : Option C
     | some value =>
       by_cases ready : (runStatement value parameters resolved connection.state.database).ready
       · simp only [valued, ready, Bool.not_true, Bool.false_eq_true, ite_false] at step ⊢
-        generalize ofStep : Output.ofStep _ parameters resolved connection.state _ = output at step
+        generalize ofStep : Output.ofStep _ parameters resolved connection.state _ _ = output at step
         cases output <;> simp at step
         obtain ⟨failure, halted, primary⟩ := Output.ofStep_error (step.1 ▸ ofStep)
         exact ⟨resolved, failure, by simp [halted], primary⟩
       · simp [valued, ready] at step
 
-/-- For every clock, list of values, statement, state, transition and error: if the transition
+/-- For every clock, list of values, statement, state, run, transition and error: if the transition
 stops with the error ({name}`haltError`) and the error is not {name}`ExecutionError.unmodeled`,
 then {name}`Output.ofStep` with the values gives {name}`Output.error` with the error's
 {name}`ExecutionError.primaryCode`. Proof sketch: rewrite the halt error into
 {name}`Output.ofStep`, then split on the constructors of the error. -/
 theorem Output.ofStep_halted {clock : Int} {parameters : List Value} {statement : Resolved.Statement}
-    {before : SqlState} {transition : SqlTransition} {failure : ExecutionError} (halted : haltError transition = some failure)
-    (modeled : failure ≠ .unmodeled) :
-    Output.ofStep clock parameters statement before transition = .error failure.primaryCode := by
+    {before : SqlState} {run : StatementRun} {transition : SqlTransition} {failure : ExecutionError}
+    (halted : haltError transition = some failure) (modeled : failure ≠ .unmodeled) :
+    Output.ofStep clock parameters statement before run transition = .error failure.primaryCode := by
   unfold Output.ofStep
   rw [halted]
   cases failure <;> simp_all

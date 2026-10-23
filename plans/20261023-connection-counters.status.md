@@ -41,6 +41,25 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   session, so the rejection of round 3 compared two histories. Fixed: each item of the probes
   of failed writes that run row by row is a new session, with the counters before it. This is
   the fourth round in a row with a must finding, so the fix has no review; the owner decides.
+- 2026-10-23: commit 1 (the counters of a connection, plain counts). `Counters`, `Counts`,
+  `SqlState.counters` (unknown by default), `StatementRun.counts`, `advanceRun` (the transition of
+  a run, with its counts for the counters), `PlainCounts` (the counts of a plain INSERT, upsert,
+  UPDATE and DELETE), `Output` reads the change count from the counts of the run (one
+  computation). The move of `advanceWith` to `SqlAdvance.lean` keeps `StatementStep.lean` under
+  200 lines; the mutants and the coverage scope that named `StatementStep.lean` follow it.
+  `Script.run_append` keeps its statement: its proof uses `runScriptFrom_counters`
+  (`ScriptRunCounters.lean`), which says that a run does not depend on the counters while no
+  statement reads them; `Connection.eq_idle` is replaced by `Connection.sameBesidesCounters_idle`.
+  Commit 3 replaces the lemma by the form with reads and adds the `endsRun` hypothesis of owner
+  decision 2. The row engine does not count yet (commit 2): a write that checks foreign keys or
+  runs programs has the interim counts of its own rows. Checks: `just dev-build`, `just dev-verdict`
+  (all corpora, no DISAGREE), the examples of `CounterExamples.lean` (kernel),
+  `tests/mutant_guards_test.py`, the mutant tests by name that the moved text touches
+  (`test_every_write_mutant_changes_a_verdict`, `test_every_after_error_mutant_changes_a_verdict`,
+  `test_every_upsert_and_algorithm_mutant_changes_a_verdict`, `conformance_resolve_mutants_test.py`),
+  and `test_model_mutation`, with a runtime built by `just conformance-build`. The mutants of the
+  change counts of UPDATE, DELETE and upserts now change `StatementStep.lean` and `PlainCounts.lean`
+  (guards `rule:runStatement` and `rule:upsertCounts`).
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 

@@ -97,7 +97,7 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites (script.map (·.1)))
       | prepareError | setting => simp_all [statementReady, runStatement]
     have run : (runStatement (state.clock position) parameters statement state.database).ready = true := ready
     simp only [supportedSqlFrom, run, Bool.true_and]
-    cases advanceWith position statement state (runStatement (state.clock position) parameters statement state.database).effect with
+    cases advanceRun position statement state (runStatement (state.clock position) parameters statement state.database) with
     | halt outcome => rfl
     | next next => exact ih tail tailModeled
 
@@ -139,7 +139,7 @@ theorem advance_schemaOnly
   have control : statement.isControl = false := by cases statement <;> simp_all [Resolved.Statement.isControl]
   have ordinary : advance position statement parameters { database := database } =
       ({ database := database } : SqlState).publish position (step 0 parameters statement database) := by
-    cases statement <;> simp_all [advance, advanceWith, Resolved.Statement.isControl]
+    cases statement <;> simp_all [advance, advanceRun, runStatement, advanceWith, Resolved.Statement.isControl]
   rw [ordinary]
   cases stepped : step 0 parameters statement database with
   | ok result => rfl
