@@ -105,7 +105,8 @@ other forms that stay out of scope.
 - The verdict of every corpus: cases that newly agree and none that leave AGREE.
 - Mutants: `?` numbered from the count of earlier parameters, not from the largest number; one
   number for `:a` and `@a`; a parameter with an affinity; `ORDER BY ?` as a column number;
-  `LIMIT ?` that accepts a real with a fraction; each killed by an authored case.
+  `LIMIT ?` that accepts a real with a fraction; each killed by an authored case. The owner
+  deferred (2026-10-23) a standing check of the first two, the frontend numbering mutants.
 - Surface fixtures: a script that binds values runs with them, `sql "..."` binds none, and the
   append keeps the lists (`tests/surface/`).
 

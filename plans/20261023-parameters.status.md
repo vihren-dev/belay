@@ -80,5 +80,7 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D1 (amended 2026-10-23
 - 2026-10-23: the owner authorized the judge lock; the judge commit holds corpus-v48, its
   claim, the 27 newly agreeing cases and the new `integrity/judge.lock.json`. `just test-nix`
   found that the core import closure test still expected 203 modules; the stack adds 35, and a
-  fix commit sets 238. After it, `just test-nix` passes (68 tests) and `just test-scheduled`
-  passes (17 tests). The owner deferred a check of the two frontend numbering mutants. DONE.
+  fix commit sets 238. After it, `just test-nix` passes (68 tests). `just test-scheduled`
+  passes (74 tests: writers 43, mutants 17, table mutants 8, function mutants 6) on the commits
+  before the fix, which changes only a test that it does not run. The owner deferred a check
+  of the two frontend numbering mutants. DONE.
