@@ -1,6 +1,6 @@
 # Status: the connection counters (ADR 0024, slice 1)
 
-Created 2026-10-23. Status: IN PROGRESS (the owner accepted the decisions; commits 1 to 5 are done, commit 6 is next).
+Created 2026-10-23. Status: IN PROGRESS (the owner accepted the decisions; commits 1 to 6 are done; the judge-change commits (PR B) are next).
 Task file: [task](20261023-connection-counters.task.md).
 Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md) (ACCEPTED
 2026-10-23), D1 to D3, D5, D6 slice 1.
@@ -174,6 +174,20 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   `belay` (`just dev-build`), the surface fixtures with `lean --setup` (`ProgramExamples.lean`
   with the new counter examples and the laws, `GuidePrograms.lean` and all others),
   `tests/mutant_guards_test.py`, `tests/restriction_registry_test.py` and `test_model_mutation`.
+  Nix evidence is pending.
+- 2026-10-23: commit 6 (the readers of record version 7, outcome 9, work part). The tools read
+  a native record of version 7, which is a version 6 record with the field `counters`
+  (`changes`, `totalChanges`, `lastInsertRowid`): `conformance/record_counters.py` checks the
+  field (version 7 must hold exactly these three integers in the 64-bit ranges, an older version
+  must not hold it), `record_versions.py` has the new group `COUNTED`, and `native_replay.py` and
+  `predict.py` pass the counters to the model input. In Lean, `Case.counters` and
+  `PredictInput.counters` are optional (none: the run starts with unknown counters) and
+  `startConnection` uses them. A case without counters is written without the field, so older
+  cases keep their form. No recorder and no judge file changes in this commit.
+  `tests/conformance_counters_test.py` checks a version 6 and a version 7 prediction, the
+  model case with the compiled check and the kernel proof (one counter shifted gives DISAGREE),
+  and the field check. Tests: `just dev-build`, `just dev-verdict`, the new test file and the
+  test files for predict, continuing cases, the model, generation, records, shards and storage.
   Nix evidence is pending.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
