@@ -95,8 +95,8 @@ def ranScriptStep (parameters : List Value) (connection : Connection) (resolved 
 run ends at the statement ({lit}`ended`, with the reason) and when the statement runs
 ({lit}`ran`, with the resolved statement, the resolution state after it,
 its clock value and its transition). {lit}`runScriptStep` is this function with
-{name}`RunStep.ended` and {name}`ranScriptStep`; the conformance runner uses it with its own
-values, so that its evidence is evidence for the same steps:
+{name}`RunStep.ended` and {name}`ranScriptStep`. A caller that needs more of a step than its
+output, such as its transition, gives its own values and takes the same steps:
 
 * resolve the statement against {name}`Connection.resolveState`; a restriction ends the run with
   its reason ({name}`NodeRestriction.reason`);
