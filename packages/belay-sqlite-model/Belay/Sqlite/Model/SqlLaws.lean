@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.SqlExecution
 import Belay.Sqlite.Model.SqlStateLaws
+import Belay.Sqlite.Model.QueryPlainLaws
 import Belay.Sqlite.Model.Resolution.StatementCatalog
 
 set_option doc.verso true

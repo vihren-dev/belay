@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.CompoundExamples
+import Belay.Sqlite.Model.StatementStep
 
 set_option doc.verso true
 
@@ -76,5 +77,14 @@ example : (runOf scalarStatement [subqueryCompound [.union], literals [int 2], l
 -- SELECT 1 IN (SELECT 2 UNION SELECT 1) is 1.
 example : runOf (literals [.inQuery (int 1) 0 none .binary false]) [subqueryCompound [.union], literals [int 2], literals [int 1]] =
     some ([[.integer 1]], .none, false, false) := by decide +kernel
+
+-- The model describes a compound statement whose term certainly fails
+-- ({name}`statementReady`): the compound describes the failures of its terms.
+example : statementReady 0 [] (.query (compound [.union] [.binary]) [literals [int 1], failingTerm]) (.ofTables []) =
+    true := by decide +kernel
+-- It does not describe a compound whose term names a subquery with a call that can fail.
+example : statementReady 0 [] (.query (compound [.union] [.binary])
+    [literals [.subquery 2], literals [int 1], literals [failing]]) (.ofTables []) =
+    false := by decide +kernel
 
 end Belay.Sqlite.Model.Resolved.CompoundExamples

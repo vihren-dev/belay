@@ -1,6 +1,7 @@
 # Status: compound SELECT (ADR 0019, slice 3)
 
-Created 2026-10-23. Status: OPEN (the task file is written; the implementation has not started).
+Created 2026-10-23. Status: IN PROGRESS (the run of a resolved compound is in; resolution and the
+frontend are next).
 Task file: [task](20261023-compound-select.task.md).
 Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D3 and D7.
 
@@ -28,7 +29,9 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D3 and D7.
   `CompoundRun.lean`): the four operators, the duplicate rule, the kept row, and the points where
   SQLite runs a term and reads the window, with the examples of outcomes 1 to 3, 8 and 10
   (`CompoundExamples.lean`, `CompoundFailureExamples.lean`). Resolution and the frontend do not
-  give a compound yet; the local verdict is unchanged.
+  give a compound yet.
+- 2026-10-23: review of the run (two musts) fixed: examples of `statementReady` for a compound,
+  and the laws of a query without a fallible call move to `QueryPlainLaws.lean`.
 
 ## Owner decisions
 
