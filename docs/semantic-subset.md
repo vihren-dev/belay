@@ -278,6 +278,21 @@ their cells have no affinity. A name of their hidden columns `arg` and `schema` 
 restriction `table-function`, because SQLite gives a condition on such a column to the pragma
 as an argument.
 
+`PRAGMA integrity_check` and `PRAGMA quick_check` (ADR 0019, D2), alone or with a value in
+parentheses or after `=`, check the rows of every table, or of the named table. A decimal
+integer is a row limit, without its sign, and 0 is the default limit 100; a name or a string
+is a table name, and a missing table fails with `no such table`. The model refuses a real, a
+hex integer, an integer above 2147483647 and the words `ON`, `DELETE` and `DEFAULT`. The one
+row is `ok` when no check fails. Otherwise each failure gives one row, in SQLite's text: a
+`WITHOUT ROWID` row whose primary key equals that of the row before it, a NULL in a NOT NULL
+column, a cell that does not fit its `STRICT` type, a false CHECK constraint, and an index entry
+that has an equal key to the next entry, for each unique index (`sqlite_autoindex_t_N` for a
+constraint). `quick_check` does not check the key order or the indexes. A query without
+`ORDER BY` gives the rows in normal form. When two or more tables fail, SQLite's order of the
+tables is that of its schema hash table, and the model gives no result. Over an admitted
+database, the row `ok` means that the NOT NULL, CHECK, `STRICT` and, for `integrity_check`,
+unique constraints of each checked table hold.
+
 A generated column (ADR 0014, slice 5) is `VIRTUAL` or `STORED`, and `PRAGMA table_xinfo`
 reports it with `hidden` 2 or 3. Its expression resolves over the table's columns after the
 CHECK constraints, without the rowid; every write computes the generated values of the

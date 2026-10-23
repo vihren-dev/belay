@@ -3,7 +3,7 @@ import Belay.Sqlite.Model.Identifier
 set_option doc.verso true
 
 /-! The {lit}`PRAGMA` statements as written (ADR 0018, D4; ADR 0019, D2): the setting pragmas,
-and the pragmas that report facts of the schema. The frontend refuses every other pragma and a
+the pragmas that report facts of the schema, and the checks of the constraints. The frontend refuses every other pragma and a
 schema name such as {lit}`main.`. -/
 
 namespace Belay.Sqlite.Model.Syntax
@@ -32,12 +32,20 @@ inductive Pragma where
   /-- {lit}`PRAGMA foreign_key_list(table)`: one row for each column of each foreign key of the
   table. -/
   | foreignKeyList (table : Identifier)
+  /-- {lit}`PRAGMA integrity_check` or, with {lit}`quick`, {lit}`PRAGMA quick_check`: the row
+  {lit}`ok`, or one row for each failure of a constraint, at most {lit}`limit` rows, 100 for a
+  {lit}`limit` of 0, for every table or the named one. -/
+  | check (quick : Bool) (limit : Nat) (table : Option Identifier)
   deriving Repr, BEq, DecidableEq
+
+/-- The name of the column of a check pragma, which is also the name of the pragma:
+{lit}`quick_check` with {lit}`quick`, else {lit}`integrity_check`. -/
+def checkName (quick : Bool) : String := if quick then "quick_check" else "integrity_check"
 
 /-- Whether the pragma only reads: every form except a setting with a value. For example,
 {lean}`(Pragma.setting .foreignKeys (some true)).readsOnly = false`. -/
 def Pragma.readsOnly : Pragma → Bool
   | .setting _ value => value.isNone
-  | .tableInfo _ | .foreignKeyList _ => true
+  | .tableInfo _ | .foreignKeyList _ | .check .. => true
 
 end Belay.Sqlite.Model.Syntax
