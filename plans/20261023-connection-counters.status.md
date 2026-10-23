@@ -126,6 +126,17 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   `test_model_mutation` (a runtime assembled from the local builds) and the mutant tests by name
   `test_every_after_error_mutant_changes_a_verdict` and `test_every_write_mutant_changes_a_verdict`.
   Nix evidence is pending.
+- 2026-10-23: refactor after the review of commit 3 (R4: the two surface fixtures
+  `tests/surface/GuideRuns.lean` and `ProgramExamples.lean` give `Script.run_append` its new
+  hypothesis, and `DbBangChecks.lean` gives `ExecutionError.message` the counters; R2: the words of
+  the row-local theorems and `ExecutionMessages.lean` name the counters, the example of
+  `insertReadingChanges` checks the stored value; R5: `RunStep.LessKnown` names its constructors).
+  R11 is deferred to commit 4 (schema positions). Tests: the package build (`lake build` of the
+  model, all examples), the surface fixtures compiled with `lean --setup` from `lake setup-file`
+  (the three changed files and all others), `pytest -m unit`, and the mutant tests by name
+  `test_every_trigger_mutant_changes_a_verdict`, `test_every_foreign_key_mutant_changes_a_verdict`,
+  `test_every_subquery_mutant_changes_a_verdict` and `test_every_date_function_and_modifier_mutant_changes_a_verdict`
+  (a runtime assembled from the local builds). Nix evidence is pending.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 

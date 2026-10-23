@@ -15,10 +15,15 @@ namespace Belay.Sqlite.Model
 run ends, or both runs continue with the same output and with connections where the first knows
 fewer counters. -/
 def RunStep.LessKnown : RunStep → RunStep → Prop
-  | .ended _, _ => True
+  | .ended _, .ended _ | .ended _, .continued .. => True
   | .continued firstOutput first, .continued secondOutput second =>
     firstOutput = secondOutput ∧ first.LessKnown second
   | .continued .., .ended _ => False
+
+/-- For every reason and step, a first step that ends the run is in the relation
+{name}`RunStep.LessKnown` with the step. Proof sketch: case analysis on the step. -/
+theorem RunStep.ended_lessKnown (reason : String) (step : RunStep) : (RunStep.ended reason).LessKnown step := by
+  cases step <;> trivial
 
 /-- For every connection pair in the relation {name}`Connection.LessKnown`, every after-state,
 counts and transition pair in the relation {name}`SqlTransition.LessKnown`: the connections after
@@ -68,7 +73,9 @@ theorem runScriptStep_counters (context : ResolveContext) (clock : Option Clock)
     | none => simp [RunStep.LessKnown]
     | some value =>
       cases known : first.state.counters.firstUnknown resolved.counterReads with
-      | some kind => simp [RunStep.LessKnown]
+      | some kind =>
+        simp only [known]
+        exact RunStep.ended_lessKnown _ _
       | none =>
         have run := SqlState.statementRun_counters same.1 value parameters resolved known
         have secondKnown := (same.1.2.2.2.view_eq known).2

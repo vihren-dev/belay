@@ -28,7 +28,7 @@ theorem rowsKeys_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom)
   Effect.satisfies_of_effectDatabase
     (rowsKeys_holds rowLocal.facts rules clock target work (fact := fun _ _ table => atom table) every plain algorithm)
 
-/-- The statement theorem for every atom. For every atom, clock value, parameter list, resolved
+/-- The statement theorem for every atom. For every atom, clock value, counters, parameter list, resolved
 statement and database: if the atom is a {name}`RowLocalAtom`, every table of the database has it,
 and, when the statement is ADD COLUMN at a target with a column, the table at the target with the
 column and every added cell ({name}`AddedCell`) appended has the atom, the effect of

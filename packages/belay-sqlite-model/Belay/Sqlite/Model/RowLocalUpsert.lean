@@ -105,7 +105,7 @@ theorem upsertSummary_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom 
 
 end LiteralData
 
-/-- For every atom, clock value, parameter list, INSERT with {lit}`ON CONFLICT` clauses or a
+/-- For every atom, clock value, counters, parameter list, INSERT with {lit}`ON CONFLICT` clauses or a
 conflict algorithm without foreign key rules and trigger programs
 ({lean}`(none : Option Resolved.WriteRules)`), and database: if the atom is a
 {name}`RowLocalAtom` and every table of the database has it, every table of the database of the

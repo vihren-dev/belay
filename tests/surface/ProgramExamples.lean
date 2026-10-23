@@ -90,8 +90,10 @@ example (env : Env) : two.run (sql r"SELECT a FROM t ORDER BY a") env = two.run 
   Script.run_env _ two env (by decide +kernel)
 example (env : Env) : insertWhenTwo.run two env = insertWhenTwo.run two := Sql.run_env _ two env (by decide +kernel)
 example (p q : Script) : two.raw.run (p ++ q) = (two.raw.run p).andThen (q.runOn ·) := Database.Raw.run_append two.raw p q
-example (q : Script) : (two.run (sql r"DELETE FROM n" ++ q)).outputs =
+example (q : Script)
+    (modeledLater : ∀ output ∈ ((two.run (sql r"DELETE FROM n")).db.run q).outputs, output.endsRun = false) :
+    (two.run (sql r"DELETE FROM n" ++ q)).outputs =
     (two.run (sql r"DELETE FROM n")).outputs ++ ((two.run (sql r"DELETE FROM n")).db.run q).outputs :=
   Script.run_append two _ q (by decide +kernel) (by decide +kernel)
-    (by decide +kernel) (by decide +kernel)
+    (by decide +kernel) (by decide +kernel) modeledLater
 example : (failsSecond.runUntilError two).outputs = [.done 1, .error 19] := by decide +kernel

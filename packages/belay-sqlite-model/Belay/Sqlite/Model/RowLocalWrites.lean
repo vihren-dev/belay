@@ -58,7 +58,7 @@ theorem insertOutcome_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom 
     split <;> exact Effect.satisfies_of_database every rfl
   · exact checkedWrite_rowLocal rowLocal every found keys result shape
 
-/-- For every atom, clock value, parameter list, plain INSERT (no foreign key rules and no trigger
+/-- For every atom, clock value, counters, parameter list, plain INSERT (no foreign key rules and no trigger
 programs: {lean}`(none : Option Resolved.WriteRules)`) and database: if the atom is a
 {name}`RowLocalAtom` and every table of the database has it, the effect of {name}`runStatement`
 satisfies "every table has the atom" ({name}`Effect.Satisfies`): the database of a success and that
@@ -78,7 +78,7 @@ theorem runStatement_insert_rowLocal {atom : Table → Prop} (rowLocal : RowLoca
   · rename_i table found
     exact insertOutcome_rowLocal rowLocal every found _ _ _ (LiteralData.inserted_shape _ _)
 
-/-- For every atom, clock value, parameter list, plain UPDATE (no foreign key rules and no trigger
+/-- For every atom, clock value, counters, parameter list, plain UPDATE (no foreign key rules and no trigger
 programs) and database: if the atom is a {name}`RowLocalAtom` and every table of the database has
 it, the effect of {name}`runStatement` satisfies "every table has the atom"
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
@@ -101,7 +101,7 @@ theorem runStatement_update_rowLocal {atom : Table → Prop} (rowLocal : RowLoca
     · exact Effect.satisfies_of_database every rfl
     · exact checkedWrite_rowLocal rowLocal every found _ _ rfl
 
-/-- For every atom, clock value, parameter list, plain DELETE (no foreign key rules and no trigger
+/-- For every atom, clock value, counters, parameter list, plain DELETE (no foreign key rules and no trigger
 programs) and database: if the atom is a {name}`RowLocalAtom` and every table of the database has
 it, the effect of {name}`runStatement` satisfies "every table has the atom"
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
@@ -122,7 +122,7 @@ theorem runStatement_delete_rowLocal {atom : Table → Prop} (rowLocal : RowLoca
     refine Effect.satisfies_of_effectDatabase (every.setRows found ?_)
     exact rowLocal.sublist table _ (every _ table found) rfl (List.filter_sublist (l := table.rows))
 
-/-- For every atom, clock value, parameter list, database and statement that writes no row (a
+/-- For every atom, clock value, counters, parameter list, database and statement that writes no row (a
 query, a setting, a prepare error, BEGIN, COMMIT or ROLLBACK): if every table of the database has
 the atom, the effect of {name}`runStatement` satisfies "every table has the atom"
 ({name}`Effect.Satisfies`): the database of a success and that of an error with

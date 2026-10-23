@@ -22,7 +22,7 @@ theorem Database.EachTable.drop {atom : Table → Prop} {database : Database} (e
   obtain ⟨old, _, _, found⟩ := Database.table_drop_cases present
   exact every old table found
 
-/-- For every atom, clock value, parameter list, CREATE TABLE and database: if the atom is a
+/-- For every atom, clock value, counters, parameter list, CREATE TABLE and database: if the atom is a
 {name}`RowLocalAtom` and every table of the database has it, the effect of {name}`runStatement`
 satisfies "every table has the atom" ({name}`Effect.Satisfies`): the database of a success and that
 of an error with {name}`ExecutionError.constraintFail` have it, and any other error requires
@@ -40,7 +40,7 @@ theorem runStatement_createTable_rowLocal {atom : Table → Prop} (rowLocal : Ro
     exact Effect.satisfies_of_effectDatabase (every.append rowLocal fits.2 _)
   · exact Effect.satisfies_of_database every rfl
 
-/-- For every atom, clock value, parameter list, CREATE TRIGGER and database: if the atom is a
+/-- For every atom, clock value, counters, parameter list, CREATE TRIGGER and database: if the atom is a
 {name}`RowLocalAtom` and every table of the database has it, the effect of {name}`runStatement`
 satisfies "every table has the atom" ({name}`Effect.Satisfies`): the database of a success and that
 of an error with {name}`ExecutionError.constraintFail` have it, and any other error requires
@@ -58,7 +58,7 @@ theorem runStatement_createTrigger_rowLocal {atom : Table → Prop} (rowLocal : 
     exact Effect.satisfies_of_effectDatabase (every.append rowLocal fits.2 _)
   · exact Effect.satisfies_of_database every rfl
 
-/-- For every atom, clock value, parameter list, CREATE INDEX and database: if the atom is a
+/-- For every atom, clock value, counters, parameter list, CREATE INDEX and database: if the atom is a
 {name}`RowLocalAtom` and every table of the database has it, the effect of {name}`runStatement`
 satisfies "every table has the atom" ({name}`Effect.Satisfies`): the database of a success and that
 of an error with {name}`ExecutionError.constraintFail` have it, and any other error requires
@@ -80,7 +80,7 @@ theorem runStatement_createIndex_rowLocal {atom : Table → Prop} (rowLocal : Ro
       · exact Effect.satisfies_of_effectDatabase (every.append rowLocal fits.2 _)
   · exact Effect.satisfies_of_database every rfl
 
-/-- For every atom, clock value, parameter list, DROP without foreign key rules and trigger
+/-- For every atom, clock value, counters, parameter list, DROP without foreign key rules and trigger
 programs ({lean}`(none : Option Resolved.WriteRules)`) and database: if every table of the database
 has the atom, the effect of {name}`runStatement` satisfies "every table has the atom"
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
