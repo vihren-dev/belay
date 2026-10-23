@@ -2,7 +2,7 @@ import Belay.Sqlite.Translation.Constraints
 
 set_option doc.verso true
 
-/-! DROP TABLE, DROP INDEX, DROP TRIGGER, CREATE INDEX and {lit}`PRAGMA foreign_keys`. The port of
+/-! DROP TABLE, DROP INDEX, DROP TRIGGER, CREATE INDEX and the pragmas of the model. The port of
 {lit}`belay/sqlite/syntax_drops.py`, {lit}`syntax_indexes.py` and {lit}`syntax_pragmas.py`. -/
 
 namespace Belay.Sqlite.Translation
@@ -62,17 +62,42 @@ def settingValue (tree : SqlTree) (node : ParseNode) : TranslateM Bool := do
   | _ => pure ()
   unsupported node pragmaValues
 
-/-- {lit}`PRAGMA foreign_keys [= value]` and {lit}`PRAGMA foreign_keys(value)`, whose value is
-none for the query form. -/
+/-- The refusal of a pragma that the model does not describe. -/
+def modeledPragmas : String :=
+  "Only PRAGMA foreign_keys, table_info and foreign_key_list are modeled, without a schema name"
+
+/-- The value node of a pragma: the {lit}`nmnum` or {lit}`minus_num` after {lit}`=` or in
+parentheses, none without a value, or the refusal of another form. -/
+def pragmaValue (tree : SqlTree) (command : ParseNode) : TranslateM (Option ParseNode) := do
+  let parts := tree.children command
+  match tree.symbols command with
+  | ["PRAGMA", "nm", "dbnm"] => return none
+  | ["PRAGMA", "nm", "dbnm", "EQ", _] | ["PRAGMA", "nm", "dbnm", "LP", _, "RP"] => return some parts[4]!
+  | _ => unsupported command modeledPragmas
+
+/-- The table name of {lit}`PRAGMA table_info` or {lit}`PRAGMA foreign_key_list`: a name or a
+string after {lit}`=` or in parentheses, without its quotes. -/
+def pragmaTable (tree : SqlTree) (command : ParseNode) (value : Option ParseNode) : TranslateM Identifier := do
+  match value with
+  | some node =>
+    if tree.symbols node == ["nm"] then return (← identifierName tree (tree.children node)[0]!).value
+    unsupported node "Only a table name is modeled as the value of this pragma"
+  | none => unsupported command "Write the table name in parentheses, for example PRAGMA table_info(t)"
+
+/-- A pragma of the model ({name}`Belay.Sqlite.Model.Syntax.Pragma`), with its name in any ASCII
+case: {lit}`PRAGMA foreign_keys [= value]` and {lit}`PRAGMA foreign_keys(value)`, whose value is
+none for the query form; and {lit}`PRAGMA table_info(t)` and {lit}`PRAGMA foreign_key_list(t)`, also
+with {lit}`= t`. -/
 def pragma (tree : SqlTree) (command : ParseNode) : TranslateM (Located Syntax.Statement) := do
   let parts := tree.children command
-  unless parts.size ≥ 3 && asciiEqual (dequote (tree.text parts[1]!)) "foreign_keys" && parts[2]!.children.isEmpty do
-    unsupported command "Only PRAGMA foreign_keys is modeled, without a schema name"
-  let value ← match tree.symbols command with
-    | ["PRAGMA", "nm", "dbnm"] => pure none
-    | ["PRAGMA", "nm", "dbnm", "EQ", "nmnum"] | ["PRAGMA", "nm", "dbnm", "LP", "nmnum", "RP"] =>
-      some <$> settingValue tree parts[4]!
-    | _ => unsupported command pragmaValues
-  return composite (.pragmaForeignKeys value) command.start command.stop #[spanOf command]
+  unless parts.size ≥ 3 && parts[2]!.children.isEmpty do unsupported command modeledPragmas
+  let name := dequote (tree.text parts[1]!)
+  let value ← pragmaValue tree command
+  let form ← if asciiEqual name "foreign_keys" then
+      (Syntax.Pragma.setting .foreignKeys ·) <$> value.mapM (settingValue tree)
+    else if asciiEqual name "table_info" then Syntax.Pragma.tableInfo <$> pragmaTable tree command value
+    else if asciiEqual name "foreign_key_list" then Syntax.Pragma.foreignKeyList <$> pragmaTable tree command value
+    else unsupported command modeledPragmas
+  return composite (.pragma form) command.start command.stop #[spanOf command]
 
 end Belay.Sqlite.Translation
