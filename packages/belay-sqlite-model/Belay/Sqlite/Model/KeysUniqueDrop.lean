@@ -34,17 +34,15 @@ lists ({name}`keptAfterDrop`). Proof sketch: the definition. -/
 theorem Database.drop_rows (database : Database) (positions : List Nat) :
     (database.drop positions).rows = keptAfterDrop positions database.rows := rfl
 
-/-- For every database and positions: if the database satisfies {name}`Database.KeysUnique` and
-its catalog meets the condition of DROP ({name}`Catalog.DropCondition`), the database after
-{name}`Database.drop` satisfies {name}`Database.KeysUnique`. Proof sketch: a table after the drop
-is a kept table at a lower position ({name}`exists_keptBelow`), with its entry and its rows
-({name}`getElem?_keptAfterDrop`); each of its keys is a key of its old position: a unique index
-on it is a kept index whose table is kept by the condition, and two kept positions with the same
-new position are equal ({name}`keptBelow_injective`). The frame lemma
-({name}`Database.KeysUnique.frame`) gives the atom. -/
-theorem Database.KeysUnique.drop {database : Database} (unique : database.KeysUnique) {positions : List Nat}
-    (condition : database.catalog.DropCondition positions) : (database.drop positions).KeysUnique := by
-  intro position table present
+/-- For every database, positions, position and table: if the database after
+{name}`Database.drop` has the table at the position, the database has the same table, with its
+entry and rows, at an old position that the drop keeps and that {name}`keptBelow` moves to the
+position. A drop keeps its tables whole: {name}`CatalogEntry.afterDrop` changes only an index.
+Proof sketch: a table after the drop is a kept table at a lower position
+({name}`exists_keptBelow`), with its entry and its rows ({name}`getElem?_keptAfterDrop`). -/
+theorem Database.table_drop_cases {database : Database} {positions : List Nat} {position : Nat} {table : Table}
+    (present : (database.drop positions).table position = some table) :
+    ∃ old, !positions.contains old ∧ keptBelow positions old = position ∧ database.table old = some table := by
   unfold Database.table at present
   obtain ⟨shape, atShape, same⟩ := Option.map_eq_some_iff.mp present
   have inside : position < (keptAfterDrop positions database.catalog).length := by
@@ -71,9 +69,22 @@ theorem Database.KeysUnique.drop {database : Database} (unique : database.KeysUn
   have found : database.table old = some table := by
     rw [← same, oldRows]
     simp [Database.table, oldShape]
+  exact ⟨old, kept, rfl, found⟩
+
+/-- For every database and positions: if the database satisfies {name}`Database.KeysUnique` and
+its catalog meets the condition of DROP ({name}`Catalog.DropCondition`), the database after
+{name}`Database.drop` satisfies {name}`Database.KeysUnique`. Proof sketch: a table after the drop
+is a kept table at a lower position ({name}`exists_keptBelow`), with its entry and its rows
+({name}`getElem?_keptAfterDrop`); each of its keys is a key of its old position: a unique index
+on it is a kept index whose table is kept by the condition, and two kept positions with the same
+new position are equal ({name}`keptBelow_injective`). The frame lemma
+({name}`Database.KeysUnique.frame`) gives the atom. -/
+theorem Database.KeysUnique.drop {database : Database} (unique : database.KeysUnique) {positions : List Nat}
+    (condition : database.catalog.DropCondition positions) : (database.drop positions).KeysUnique := by
+  intro position table present
+  obtain ⟨old, kept, moved, found⟩ := Database.table_drop_cases present
+  subst moved
   refine unique.frame found rfl fun key member => ?_
-  have shapeSame : table.shape = shape := by rw [← same]
-  rw [shapeSame] at member ⊢
   unfold Catalog.uniqueKeys at member ⊢
   rcases List.mem_append.mp member with own | indexed
   · exact List.mem_append_left _ own
