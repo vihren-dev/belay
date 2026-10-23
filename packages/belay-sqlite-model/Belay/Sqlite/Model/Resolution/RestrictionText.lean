@@ -22,6 +22,7 @@ def RestrictionKind.id : RestrictionKind → String
   | .addColumnCheckError => "add-column-check-error"
   | .generatedFunction => "generated-function"
   | .generatedLoop => "generated-loop"
+  | .parameterErrorOrder => "parameter-error-order"
   | .upsertGenerated => "upsert-generated"
   | .addColumnGenerated => "add-column-generated"
   | .addColumnStrictType => "add-column-strict-type"
@@ -79,6 +80,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .addColumnCheckError => "a CHECK of ADD COLUMN that names no column of the table, or uses an aggregate, is not modeled; correct the CHECK"
   | .generatedFunction => "a date and time function, a JSON function or another function that can fail, such as abs, like or unistr, in a generated column is not modeled; compute the value in the write"
   | .generatedLoop => "generated columns that read each other in a loop are not modeled; SQLite refuses the table"
+  | .parameterErrorOrder => "a parameter in a CHECK constraint, a generated column or an index, in an expression with a function call, a subquery, a qualified name or a name that does not resolve, is not modeled; SQLite refuses the parameter there, so remove it"
   | .upsertGenerated => "DO UPDATE of a generated column is not modeled; assign the columns that it reads"
   | .addColumnGenerated => "ADD COLUMN of a generated column is not modeled; create the table with it"
   | .addColumnStrictType => "ADD COLUMN to a STRICT table without one of its types, or with a default that does not fit the type, is not modeled; use INT, INTEGER, REAL, TEXT, BLOB or ANY and a default of that type"
@@ -123,7 +125,7 @@ def RestrictionKind.message : RestrictionKind → String
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .dropConstraintIndex, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments, .jsonSubtype, .subqueryHere, .outerAggregate, .subqueryFallibleCall, .subqueryReadsTarget, .distinctOrderBy, .deferredForeignKey, .foreignKeyUpsert, .raiseForm, .triggerForm, .triggerWritesOwnTable, .schemaTriggerOrder]
+  [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .parameterErrorOrder, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .dropConstraintIndex, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments, .jsonSubtype, .subqueryHere, .outerAggregate, .subqueryFallibleCall, .subqueryReadsTarget, .distinctOrderBy, .deferredForeignKey, .foreignKeyUpsert, .raiseForm, .triggerForm, .triggerWritesOwnTable, .schemaTriggerOrder]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case
 analysis on the restriction. -/

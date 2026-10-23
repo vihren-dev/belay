@@ -1,0 +1,56 @@
+{
+  "caller": "claude",
+  "commit": "572105b260edd4a0564b3ed411d8f575dc8df1d6",
+  "date": "2026-10-23T06:18:20+00:00",
+  "exit": 1,
+  "files": [
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ParameterExamples.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ParameterOrder.lean",
+    "reviews/20261023T055459Z-a78a1092/resolution-1-20261023T055901Z.json",
+    "reviews/20261023T055459Z-a78a1092/resolution-2-20261023T055901Z.json",
+    "reviews/20261023T055459Z-a78a1092/resolution-3-20261023T055902Z.json",
+    "reviews/20261023T055459Z-a78a1092/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261023T061820Z-572105b2#1",
+      "line": 82,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ParameterOrder.lean",
+      "rule": "R7",
+      "severity": "must",
+      "text": "The changed walk predicts a prohibited parameter for `CHECK(abs(nosuch) + CASE WHEN ? THEN 1 END)`, but SQLite 3.51.0 retains `no such column: nosuch`, with equivalent failures for later IN lists and BETWEEN bounds. Fix: preserve SQLite’s error-dependent traversal of these operands and add regression tests."
+    },
+    {
+      "id": "20261023T061820Z-572105b2#2",
+      "line": 76,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/Resolution/ParameterOrder.lean",
+      "rule": "R7",
+      "severity": "must",
+      "text": "The changed walk predicts a missing column for `CHECK(abs(1,2) + (nosuch AND 0))`, but SQLite eliminates the AND expression and reports the argument-count error. Fix: account for SQLite’s constant-zero AND simplification before walking names and add a regression test."
+    }
+  ],
+  "id": "20261023T061820Z-572105b2",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

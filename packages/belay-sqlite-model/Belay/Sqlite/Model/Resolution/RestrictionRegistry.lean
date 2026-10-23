@@ -33,7 +33,8 @@ def RestrictionKind.registry : RestrictionKind → RestrictionRegistry
   | .rowidName => .unrepresented
   | .schemaStatement | .engineTable | .rowidColumnName
   | .unmodeledDefault | .indexStringTerm | .indexDateFunction | .indexJsonFunction | .checkFunction
-  | .addColumnCheckError | .generatedFunction | .generatedLoop | .addColumnGenerated | .addColumnStrictType
+  | .addColumnCheckError | .generatedFunction | .generatedLoop | .parameterErrorOrder | .addColumnGenerated
+  | .addColumnStrictType
   | .dropConstraintIndex | .addColumnConstraint | .constraintAlgorithmUpdate
   | .replaceDefault | .insertColumnTwice | .updateColumnTwice | .joinOperator | .systemTable
   | .unmodeledFunction | .aggregateInExpression | .aliasInExpression | .groupByTerm | .bareColumn

@@ -79,6 +79,9 @@ structure Scope where
   active : Option SubqueryList := none
   /-- The refusal of a subquery where no list is open. -/
   refusal : String := outsideStatement
+  /-- The number of each parameter token of the statement, by the token's first byte
+  ({lit}`numberParameters`). -/
+  parameters : List (Nat × Nat) := []
 
 /-- The translation's monad: the scope, and a refusal that ends the translation. -/
 abbrev TranslateM := StateT Scope (Except Refusal)

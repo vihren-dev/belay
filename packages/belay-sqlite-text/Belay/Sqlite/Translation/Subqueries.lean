@@ -88,7 +88,7 @@ def statementSubqueries (action : TranslateM α) : TranslateM (α × Array (Loca
 the model does not place, such as RETURNING. -/
 def noSubqueries (refusal : String) (action : TranslateM α) : TranslateM α := do
   let around ← get
-  set ({ active := none, refusal } : Scope)
+  set { around with active := none, refusal }
   let result ← action
   set around
   return result

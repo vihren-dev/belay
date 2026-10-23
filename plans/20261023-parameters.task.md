@@ -27,7 +27,10 @@ the owner's approval, and the work. The push and the pull requests wait for the 
    so far. `:a`, `@a`, `$a` and `#a` are different names. Over `SELECT ?, ?5, ?, :a, @a, $a, :a` the
    numbers are 1, 5, 6, 7, 8, 9, 7. `?0` and a number above the profile's limit (32766) fail
    at prepare with `variable number must be between ?1 and ?32766`; a statement that needs a
-   number above the limit for `?` or a name fails with `too many SQL variables`.
+   number above the limit for `?` or a name fails with `too many SQL variables`. SQLite gives
+   these errors, and the syntax error of `#1`, while it parses, at the first such token, so the
+   frontend refuses the script with them (`INPUT_ERROR`, SQLite's message and the token's
+   range), as it refuses other text that SQLite's parser rejects.
 3. **Values.** A statement runs with one list of values; the value of number N is item N of
    the list (from 1). A number without an item is NULL. A parameter has no affinity and no
    collation, as a literal value: `?1 = '2'` is 0 for the integer 2, and a TEXT column
@@ -58,6 +61,11 @@ the owner's approval, and the work. The push and the pull requests wait for the 
    in generated columns`); an index expression (`parameters prohibited in index expressions`)
    and the `WHERE` of a partial index (`parameters prohibited in partial index WHERE
    clauses`). `DEFAULT ?` without parentheses is a syntax error (`near "?": syntax error`).
+   In the last four places SQLite gives the error while it walks the names of the expression,
+   and an earlier error of the walk, such as a name that does not resolve or a misused
+   function, can come first or replace it (checked natively). The model gives the parameter's
+   error where it is the only error that the walk can find, and the restriction
+   `parameter-error-order` for every other expression with a parameter there.
 7. **The script and the runs carry the values.** The surface's `Script` carries one list of
    values for each statement; `sql "..."` gives each statement the empty list, and the
    append of two scripts keeps each statement's list. A primitive of the surface gives a
@@ -92,8 +100,8 @@ other forms that stay out of scope.
   parameter in each place of outcome 3, also in a write that runs a trigger and in an upsert;
   the affinity and collation examples; `ORDER BY ?` and `GROUP BY ?`; `LIMIT ?` and `OFFSET ?`
   with each kind of value of outcome 5, the errors included, `LIMIT 0` with an OFFSET that
-  would fail, and `GROUP BY ?` over no rows; the prepare errors of outcomes 2
-  and 6; a script of several statements with their own numbers.
+  would fail, and `GROUP BY ?` over no rows; the prepare errors of outcome 6; a script of
+  several statements with their own numbers. The refusals of outcome 2 are frontend tests.
 - The verdict of every corpus: cases that newly agree and none that leave AGREE.
 - Mutants: `?` numbered from the count of earlier parameters, not from the largest number; one
   number for `:a` and `@a`; a parameter with an affinity; `ORDER BY ?` as a column number;

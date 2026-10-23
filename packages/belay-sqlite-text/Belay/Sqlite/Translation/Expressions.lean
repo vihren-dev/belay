@@ -1,4 +1,5 @@
 import Belay.Sqlite.Translation.Shapes
+import Belay.Sqlite.Translation.Parameters
 
 set_option doc.verso true
 
@@ -107,12 +108,19 @@ def identifierTokens : List String :=
   SAVEPOINT TEMP TRIGGER VACUUM VIEW VIRTUAL WITH WITHOUT NULLS FIRST LAST CURRENT FOLLOWING PARTITION \
   PRECEDING RANGE UNBOUNDED EXCLUDE GROUPS OTHERS TIES GENERATED ALWAYS MATERIALIZED REINDEX RENAME IF".splitOn " "
 
-/-- An {lit}`expr` production outside a query: a literal, a column name or a sign, or its
-refusal. -/
+/-- A parameter token with the number that {name}`numberParameters` gave it. -/
+def parameter (node : ParseNode) : TranslateM (Located Syntax.Expr) := do
+  match (← get).parameters.lookup node.start with
+  | some number => return leaf (.parameter number) node.start node.stop
+  | none => unsupported node "A parameter outside a statement is not modeled; write a literal"
+
+/-- An {lit}`expr` production outside a query: a literal, a column name, a parameter or a
+sign, or its refusal. -/
 partial def expression (tree : SqlTree) (node : ParseNode) : TranslateM (Located Syntax.Expr) := do
   let parts := tree.children node
   match tree.symbols node with
   | ["term"] => term tree parts[0]!
+  | ["VARIABLE"] => parameter parts[0]!
   | [symbol] =>
     if identifierTokens.contains symbol then return identifier tree parts[0]!
     unsupported node "Unsupported expression; write a literal, a column name or a sign"

@@ -70,50 +70,37 @@ def errorOf (script : List Syntax.Statement) : Option PrepareError :=
   some (.insert _ [[.expression (.parameter 1), .value (.text [50])]] ..)
 #guard last [.update (name! "t") [(name! "s", .parameter 1)] none] matches some (.update _ [(1, .parameter 1)] ..)
 
--- SQLite's prepare errors of a parameter in a definition. SQLite gives them in the order of
--- its name walk: a name that does not resolve before the parameter comes first, and a name
--- after it or a non-deterministic function before it comes later.
-#guard errorOf [.createTable (name! "c") [constrained (.check (.compare .gt (col "nosuch") (.parameter 1)) "?")] []] ==
-  some (.expression (.noSuchColumn (name! "nosuch")))
-#guard [errorOf [.createTable (name! "c") [constrained (.check (.compare .gt (.parameter 1) (col "nosuch")) "?")] []],
-    errorOf [.createTable (name! "c") [constrained (.check (.compare .gt (.call "random" []) (.parameter 1)) "?")] []]] ==
-  [some (.expression .parameterInCheck), some (.expression .parameterInCheck)]
-#guard errorOf [.createTable (name! "g") [column (name! "b"),
-    constrained (.generated (.arithmetic .add (col "b") (.parameter 1)) none)] []] ==
-  some (.expression .parameterInGenerated)
 /-- The prepare error of {lit}`CREATE TABLE c(a CHECK (condition))`, or none. -/
 def checkError (condition : Expr) : Option PrepareError :=
   errorOf [.createTable (name! "c") [constrained (.check condition "?")] []]
 
-/-- The error of a missing name {lit}`nosuch`. -/
-def missingName : Option PrepareError := some (.expression (.noSuchColumn (name! "nosuch")))
+/-- The restriction of the last statement of the script over {name}`catalog`, or none. -/
+def restrictionOf (script : List Syntax.Statement) : Option RestrictionKind :=
+  match migration catalog script with
+  | .restricted restriction => some restriction.kind
+  | .resolved .. => none
 
-/-- The error of a parameter in a CHECK constraint. -/
-def checkParameter : Option PrepareError := some (.expression .parameterInCheck)
-
--- The last error of SQLite's walk wins, and a function's argument list or the operand of
--- ISNULL does not stop the walk: abs(1, 2) + nosuch + ?1 and (?1 ISNULL) + nosuch give the
--- name, abs(nosuch) + ?1 the parameter. ?1 IS nosuch resolves the name first; ?1 LIKE nosuch
--- is like(nosuch, ?1); nosuch IN () has no operand.
-#guard [checkError (.arithmetic .add (.arithmetic .add (.call "abs" [.numeric "1", .numeric "2"]) (col "nosuch")) (.parameter 1)),
-    checkError (.arithmetic .add (.isNull (.parameter 1) false) (col "nosuch")),
-    checkError (.compare .is (.parameter 1) (col "nosuch")),
-    checkError (.call "like" [col "nosuch", .parameter 1])] ==
-  [missingName, missingName, missingName, missingName]
-#guard [checkError (.arithmetic .add (.call "abs" [col "nosuch"]) (.parameter 1)),
-    checkError (.compare .is (.parameter 1) (.arithmetic .add (col "nosuch") (.numeric "1"))),
-    checkError (.call "like" [.parameter 1, col "nosuch"]),
-    checkError (.arithmetic .add (.inList (col "nosuch") [] false) (.parameter 1))] ==
-  [checkParameter, checkParameter, checkParameter, checkParameter]
-
+-- SQLite's prepare errors of a parameter in a definition, where the parameter is the only
+-- error that SQLite's walk of names can find: also before a name that resolves.
+#guard [checkError (.compare .gt (.parameter 1) (col "a")), checkError (.compare .gt (col "a") (.parameter 1)),
+    checkError (.isNull (.collate (.parameter 1) (name! "nocase")) false)] ==
+  [some (.expression .parameterInCheck), some (.expression .parameterInCheck), some (.expression .parameterInCheck)]
+#guard errorOf [.createTable (name! "g") [column (name! "b"),
+    constrained (.generated (.arithmetic .add (col "b") (.parameter 1)) none)] []] ==
+  some (.expression .parameterInGenerated)
 #guard errorOf [.createIndex (name! "x") false (name! "t") [{ expression := .arithmetic .add (col "i") (.parameter 1), descending := false }] none] ==
   some (.expression (.parameterInIndex false))
 #guard errorOf [.createIndex (name! "x") false (name! "t") [key (name! "i")] (some (.compare .gt (col "i") (.parameter 1)))] ==
   some (.expression (.parameterInIndex true))
-#guard [errorOf [.createIndex (name! "x") false (name! "t") [key (name! "i")] (some (.compare .gt (col "nosuch") (.parameter 1)))],
-    errorOf [.createTable (name! "g") [column (name! "b"),
-      constrained (.generated (.arithmetic .add (col "nosuch") (.parameter 1)) none)] []]] ==
-  [some (.expression (.noSuchColumn (name! "nosuch"))), some (.expression (.noSuchColumn (name! "nosuch")))]
+-- Where the walk can find another error, SQLite's choice depends on the walk: CHECK
+-- (nosuch > ?1) gives the name and (?1 > nosuch) the parameter, abs(nosuch) + ?1 the parameter
+-- and abs(nosuch) + (?1 + 1) the name, and ?1 AND 0 no error. The model refuses these.
+#guard [col "nosuch", .call "abs" [col "a"], .and (.parameter 1) (.numeric "0"), .inList (.parameter 1) [] false,
+    .qualified (name! "c") (name! "a")].map (fun other => restrictionOf
+      [.createTable (name! "c") [constrained (.check (.compare .gt other (.parameter 1)) "?")] []]) ==
+  List.replicate 5 (some .parameterErrorOrder)
+-- Without a parameter, resolution reports its own errors.
+#guard checkError (.compare .gt (col "nosuch") (.numeric "1")) == some (.expression (.noSuchColumn (name! "nosuch")))
 #guard errorOf [.createTable (name! "d") [{ name := (name! "a"), declaredType := none, constraints := [.default (.parameter 1) "?"] }] []] ==
   some (.expression (.defaultNotConstant (name! "a")))
 #guard errorOf [.createTrigger (name! "r") false .after .insert (name! "t") none [.select [.expression (.parameter 1) none "?"]

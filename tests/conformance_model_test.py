@@ -90,10 +90,15 @@ def test_version_two_outputs(runtime_root: Path, tmp_path: Path) -> None:
     assert compiled(wrong, runtime_root)["verdict"] == "DISAGREE"
     wrong["outputs"].pop()
     assert compiled(wrong, runtime_root)["verdict"] == "HARNESS_ERROR"
-    for sql, parameters in (("SELECT 1 UNION SELECT 2;", None), ("INSERT INTO t(id,v) VALUES(?,?);", [((1, 3), (1, 4))])):
-        unsupported = record_sql("CREATE TABLE t(id INTEGER,v BLOB);", sql,
-                                 name="unsupported-output", outputs=True, parameters=parameters)
-        assert prepare(unsupported, runtime_translator(runtime_root))[1]["verdict"] == "MODEL_UNSUPPORTED"
+    unsupported = record_sql("CREATE TABLE t(id INTEGER,v BLOB);", "SELECT 1 UNION SELECT 2;",
+                             name="unsupported-output", outputs=True)
+    assert prepare(unsupported, runtime_translator(runtime_root))[1]["verdict"] == "MODEL_UNSUPPORTED"
+    # The translation numbers the parameters, and the case's values are not yet in the model's run.
+    bound = record_sql("CREATE TABLE t(id INTEGER,v BLOB);", "INSERT INTO t(id,v) VALUES(?,?);",
+                       name="unsupported-output", outputs=True, parameters=[((1, 3), (1, 4))])
+    bound_case, error = prepare(bound, runtime_translator(runtime_root))
+    assert bound_case is not None, error
+    assert compiled(bound_case, runtime_root)["verdict"] == "MODEL_UNSUPPORTED"
     ordered = record_sql("CREATE TABLE t(k); INSERT INTO t VALUES(1),(1),(2);",
                          "SELECT k FROM t ORDER BY k LIMIT 1;", name="ordered", outputs=True)
     # The LIMIT cuts the tie group of k = 1; the model's row is a submultiset of it (ADR 0005).
