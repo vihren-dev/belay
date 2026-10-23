@@ -217,6 +217,20 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   the field `counters`, when the recorder reads it, the reopen that gives 0, the replay check and
   the start of the model run. The helper of `tests/conformance_counters_record_test.py` has full
   types. Tests: `tests/conformance_counters_record_test.py`. Nix evidence is pending.
+- 2026-10-23 (PR B): the authored cases and corpus-v52, outcomes 1 to 7 and 10. `conformance/counter_sql.py`
+  has the shared SQL, `authored_counter_writes.py`, `authored_counter_reads.py` and
+  `authored_counter_failures.py` have 33 cases (writes that set the counters, reads of the counters in
+  expressions and queries, failures with trigger rows, `RAISE`, rollback and deferred keys), and
+  `authored_counters.py` records them natively with `run_on` and the counters (record version 7).
+  `counter_evidence.py` writes `conformance/corpus-v52`. `judge/claims.json` has the new claim
+  `corpus-v52` (no DISAGREE or HARNESS_ERROR, every case in `mustAgree`), and `mustAgree` of
+  corpus-v5 has the case `delete4:delete4-3.0.1:6`, which the counters now predict. The case
+  `insert-or-replace-with-foreign-keys` replaces a row through its UNIQUE column, so that the
+  key row engine deletes the replaced row. The query-coverage test and the writer test list the
+  new corpus. The claimed corpus and `judge/claims.json` are in the lock, so the lead must run
+  `just judge-lock`. Tests: `just dev-verdict` for the corpus, the kernel proofs of
+  `tests/conformance_query_coverage_test.py` for the new cases and
+  `tests/conformance_corpus_writers_test.py`. Nix evidence is pending.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 
