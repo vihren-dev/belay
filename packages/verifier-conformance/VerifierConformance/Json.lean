@@ -97,7 +97,8 @@ case of a record of a version without counters has the form that it had before t
 def Conformance.Case.toJsonOmittingUnknownCounters (c : Conformance.Case) : Lean.Json :=
   match Lean.toJson c, c.counters with
   | .obj fields, none => .obj (fields.erase "counters")
-  | json, _ => json
+  | .obj fields, some _ => .obj fields
+  | json@(.null ..), _ | json@(.bool ..), _ | json@(.num ..), _ | json@(.str ..), _ | json@(.arr ..), _ => json
 
 /-- Write a case with {name}`Conformance.Case.toJsonOmittingUnknownCounters`; it replaces the
 derived writer above for later uses. -/

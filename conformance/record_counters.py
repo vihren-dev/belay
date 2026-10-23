@@ -25,14 +25,20 @@ def counters_wire(record: dict[str, Json]) -> dict[str, Json] | None:
     counters = record.get("counters")
     if record.get("nativeVersion") not in COUNTED:
         if counters is not None:
-            raise ValueError("Counters in a native record version without them")
+            raise ValueError(
+                f"The native record has nativeVersion {record.get('nativeVersion')} and the field counters, "
+                "but only version 7 holds counters; record the case again with the current recorder")
         return None
     if not isinstance(counters, dict) or set(counters) != set(COUNTER_KEYS):
-        raise ValueError(f"A native record of version 7 holds the counters {', '.join(COUNTER_KEYS)}")
+        raise ValueError(
+            f"The counters of a native record of version 7 must be an object with exactly the keys "
+            f"{', '.join(COUNTER_KEYS)}; record the case again with the current recorder")
     for key, value in counters.items():
         least = -INT64_MAX - 1 if key == "lastInsertRowid" else 0
         if type(value) is not int or not least <= value <= INT64_MAX:
-            raise ValueError(f"Invalid native counter {key}")
+            raise ValueError(
+                f"The counter {key} of the native record must be an integer from {least} to {INT64_MAX}; "
+                "record the case again with the current recorder")
     return {key: counters[key] for key in COUNTER_KEYS}
 
 
