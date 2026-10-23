@@ -124,61 +124,43 @@ theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {parame
     (agrees : sql.Agrees state) (continued : advance position statement parameters sql = .next next) :
     next.Agrees (state.after statement) := by
   obtain ⟨catalog, saved⟩ := agrees
+  obtain ⟨transitioned, reached, rfl⟩ := advance_eq_next continued
+  clear continued
   cases statement with
   | begin =>
-    obtain ⟨transitioned, reached, rfl⟩ := advance_eq_next continued
-    clear continued
-    have continued := reached
-    clear reached
-    simp only [advanceWith] at continued
-    split at continued
-    · cases continued
+    simp only [advanceWith] at reached
+    split at reached
+    · cases reached
     · rename_i none_
-      cases continued
+      cases reached
       rw [none_] at saved
       simp only [Option.map_none] at saved
       simp [SqlState.Agrees, ResolveState.after, ← saved, catalog]
   | commit =>
-    obtain ⟨transitioned, reached, rfl⟩ := advance_eq_next continued
-    clear continued
-    have continued := reached
-    clear reached
-    simp only [advanceWith] at continued
-    split at continued
-    · cases continued
-    · cases continued
+    simp only [advanceWith] at reached
+    split at reached
+    · cases reached
+    · cases reached
       exact ⟨catalog, rfl⟩
   | rollback =>
-    obtain ⟨transitioned, reached, rfl⟩ := advance_eq_next continued
-    clear continued
-    have continued := reached
-    clear reached
-    simp only [advanceWith] at continued
-    split at continued
-    · cases continued
+    simp only [advanceWith] at reached
+    split at reached
+    · cases reached
     · rename_i original some_
-      cases continued
+      cases reached
       rw [some_] at saved
       simp only [Option.map_some] at saved
       simp [SqlState.Agrees, ResolveState.after, ← saved]
   | setting setting on =>
-    obtain ⟨transitioned, reached, rfl⟩ := advance_eq_next continued
-    clear continued
-    have continued := reached
-    clear reached
-    simp only [advanceWith] at continued
-    obtain ⟨result, stepped, rfl⟩ := Conformance.SqlState.publish_next continued
+    simp only [advanceWith] at reached
+    obtain ⟨result, stepped, rfl⟩ := Conformance.SqlState.publish_next reached
     simp only [literalStep, runStatement, step] at stepped
     cases stepped
     cases setting <;> exact ⟨catalog, saved⟩
   | createTable | createIndex | createTrigger | addColumn | drop | insert | update | upsert | delete | prepareError
   | query =>
-    obtain ⟨transitioned, reached, rfl⟩ := advance_eq_next continued
-    clear continued
-    have continued := reached
-    clear reached
-    simp only [advanceWith] at continued
-    obtain ⟨result, stepped, rfl⟩ := Conformance.SqlState.publish_next continued
+    simp only [advanceWith] at reached
+    obtain ⟨result, stepped, rfl⟩ := Conformance.SqlState.publish_next reached
     obtain ⟨changed, control⟩ := literalStep_success_catalog (fun _ _ => by simp) stepped
     rw [state.after_of_isControl control]
     exact ⟨changed.trans (catalog ▸ rfl), saved⟩
