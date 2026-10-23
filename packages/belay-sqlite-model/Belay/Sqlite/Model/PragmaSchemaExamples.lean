@@ -92,8 +92,7 @@ def selectFrom (columns : List ResultColumn) (function argument : String) (filte
 /-- The result column of a name. -/
 def named (text : String) : ResultColumn := .expression (name text) none text
 
--- The table-valued form gives the same rows; * does not show the hidden arg and schema, and
--- a name of one ends the run, because SQLite gives a condition on it to the pragma.
+-- The table-valued form gives the same rows; * does not show the hidden arg and schema.
 example : outputs [createW, selectFrom [.star] "pragma_table_info" "w"] = [.done 0, .rows [
     [.integer 0, textValue "a", textValue "", .integer 1, .null, .integer 2],
     [.integer 1, textValue "b", textValue "", .integer 1, .null, .integer 1]]] := by
@@ -101,13 +100,6 @@ example : outputs [createW, selectFrom [.star] "pragma_table_info" "w"] = [.done
 example : outputs [createW, selectFrom [named "name"] "pragma_table_info" "w"
     (some (.compare .eq (name "pk") (.numeric "1")))] = [.done 0, .rows [[textValue "b"]]] := by
   decide +kernel
-example : (outputs [createW, selectFrom [named "name"] "pragma_table_info" "w"
-    (some (.compare .eq (name "schema") (.string "main".toUTF8.toList)))]).map Output.endsRun = [false, true] := by
-  decide +kernel
-example : (outputs [createW, selectFrom [named "arg"] "pragma_table_info" "w"]).map Output.endsRun =
-    [false, true] := by decide +kernel
-example : (outputs [createW, .select [.star] (some (pragmaOf "pragma_table_info" "w")) [] none [name "schema"] []
-    none none]).map Output.endsRun = [false, true] := by decide +kernel
 
 /-- {lit}`CREATE TABLE s(schema)`. -/
 def createS : Syntax.Statement := .createTable (name! "s") [typed "schema" none] []
@@ -117,9 +109,24 @@ def usingSchema : Join :=
   { operator := [], source := { table := name! "s", alias := none, arguments := none }, condition := none,
     usingColumns := some [name! "schema"] }
 
--- USING with a hidden column of the pragma on the left ends the run too.
-example : (outputs [createS, .select [.star] (some (pragmaOf "pragma_table_info" "s")) [usingSchema] none [] [] none
-    none]).map Output.endsRun = [false, true] := by decide +kernel
+/-- The kind of the restriction of the statement after {lit}`w` and {lit}`s` are created, or none
+when it resolves. -/
+def restrictionOf (statement : Syntax.Statement) : Option RestrictionKind :=
+  match migration (catalogOf (migration [] [createW, createS])) [statement] with
+  | .restricted restriction => some restriction.kind
+  | .resolved .. => none
+
+-- A name of arg or schema, in a condition, a result column, GROUP BY or USING, is the
+-- restriction table-function, because SQLite gives a condition on it to the pragma.
+example : restrictionOf (selectFrom [named "name"] "pragma_table_info" "w"
+    (some (.compare .eq (name "schema") (.string "main".toUTF8.toList)))) = some .tableFunction := by decide +kernel
+example : restrictionOf (selectFrom [named "arg"] "pragma_table_info" "w") = some .tableFunction := by decide +kernel
+example : restrictionOf (.select [.expression (.callStar "count") none "count(*)"]
+    (some (pragmaOf "pragma_table_info" "w")) [] none [name "schema"] [] none none) = some .tableFunction := by
+  decide +kernel
+example : restrictionOf (.select [.star] (some (pragmaOf "pragma_table_info" "s")) [usingSchema] none [] [] none
+    none) = some .tableFunction := by decide +kernel
+example : restrictionOf (selectFrom [named "name"] "pragma_table_info" "w") = none := by decide +kernel
 
 -- A cell has no affinity: the text '5' of dflt_value is not the integer 5.
 example : outputs [createT, selectFrom [named "name"] "pragma_table_info" "t"
