@@ -100,15 +100,18 @@ corpus finds is extra work and is not in this estimate.
 - 2026-10-23: `just review` of the task and status files (change `qrlwyxux`): no findings.
 - 2026-10-23 (PR A): the model's step is made of `runScriptStepWith` and `ranScriptStep`, and `resolveSchema` resolves a schema alone, so a conformance pass can take the same step.
 - 2026-10-23 (PR A, refactor): review of `rwlmrrzx`: the docstring of `runScriptStepWith` names no conformance runner (R6), and the status file cites no local result (R19).
+- 2026-10-23 (PR A): the conformance pass that continues (`runPassFrom`, with `runPassFrom_results`), the classifier of a case that continues (`Classify.lean`), the prediction of a version 6 input, and the readers of version 6 (`record_versions.CONTINUING`, `native_replay.model_case`, `predict.py`).
 
 ## Tests for each commit
 
 - Task and status files: none (documents only); `just review`.
 - The model's step: `just dev-build`.
+- The pass, the classifier, the prediction and the readers: `just dev-build`, `just dev-verdict`, `just documentation-inventory`; `tests/conformance_continuing_case_test.py`, `tests/conformance_predict_test.py`, `tests/conformance_phase_test.py`, `tests/conformance_mutation_test.py`, `tests/conformance_model_test.py`, `tests/conformance_generation_test.py`, `tests/conformance_failed_catalog_observation_test.py`, `tests/test_model_package.py -m unit`, `tests/test_native_replay_storage.py`, `tests/conformance_trace_test.py`.
 
 ## Remaining
 
-- All outcomes of the task file.
+- PR A: the predictions of the claimed corpora against those before the task.
+- PR B: outcomes 1 to 4, 8 and 10, the mutants and corpus-v51.
 
 ## Owner decisions
 
