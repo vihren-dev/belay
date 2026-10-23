@@ -1,6 +1,7 @@
 # The theorem of "keys unique" (ADR 0022, slice 2)
 
-Created 2026-10-23. Status: open. The owner decisions in the status file are open.
+Created 2026-10-23. Status: open. The owner decisions are in the status file; decision 1 d) was
+replaced on 2026-10-23 after finding 1.
 Status file: [status](20261023-keys-unique.status.md).
 Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D3 and D4 (slice 2).
 Needed by: S4 of the user surface ([ADR 0017](../docs/adr-0017-user-surface.md)): a lookup by a
@@ -48,8 +49,10 @@ replace before S4 (ADR 0022, D5).
    on, a trigger fires again while it runs, and the rows that REPLACE deletes fire the DELETE
    triggers). The theorem covers each of them.
 3. **The run theorems.** Both assume that the start state's database, and its snapshot when a
-   transaction is open, satisfy `Database.KeysUnique`, and that each reached ADD COLUMN and DROP
-   meets its condition.
+   transaction is open, satisfy `Database.KeysUnique`, and that each CREATE INDEX, ADD COLUMN
+   and DROP that the run reaches meets its condition on the database at that point (owner
+   decision of 2026-10-23, see "Conditions"). The `runScriptFrom` theorem states the hypothesis
+   for the statement as the run resolves it.
    - `runSqlFrom` (and so `runSql`, the run that ADR 0022, D3 names) gives an `Outcome`: each
      database of it (`success`, `failure`, `pending` with its persisted and visible database)
      satisfies the atom.
@@ -58,7 +61,10 @@ replace before S4 (ADR 0022, D5).
      is one, satisfy the atom.
 
    ROLLBACK and a constraint rollback restore the snapshot, so the snapshot is part of the
-   invariant.
+   invariant. The `runSqlFrom` theorem keeps the hypothesis: finding 1 (status file) shows that a
+   resolved script can reach a CREATE INDEX of an unsupported index and an ADD COLUMN that breaks
+   the atom. Slice 4 proves the resolver facts (see "Direction for slice 4") and removes the
+   hypothesis from the `runScriptFrom` theorem.
 4. **The frame lemma.** A statement keeps `Table.KeysUnique` of the table at a position when the
    effect leaves the table's rows, its catalog entry and the unique indexes on it unchanged.
 5. **The lookup lemma.** For a table that satisfies `Table.KeysUnique` for a list of keys, a key
@@ -94,12 +100,32 @@ of the resolver over a valid catalog.
   resolver drops the indexes of a dropped table (`tableObjects`), so the condition holds for each
   resolved DROP over a valid catalog; that resolver fact is out of scope.
 
-The status file asks the owner how the run theorems state these conditions.
+- **CREATE INDEX** keeps the atom for every database: a unique index is checked against the
+  rows. Its condition is that the index is supported over the catalog: the table of the index
+  exists and `CatalogIndex.supported` holds for its width, as `Catalog.supported`
+  (`Database.lean`) checks it for each index. The run theorems assume it because it gives the
+  second condition of a later ADD COLUMN in slice 4.
+
+Finding 1: a resolved statement is not always valid over the catalog. The resolver gives a ready
+CREATE INDEX whose filter reads past the width of its table; a later ADD COLUMN with a default
+then makes two rows conflict (`KeysUniqueExamples.lean`). So the run theorems cannot derive the
+conditions from the resolved script, and they take them as a hypothesis.
+
+## Direction for slice 4
+
+Slice 4 removes the hypothesis from the `runScriptFrom` theorem. It must prove these resolver
+facts for the statements that `runScriptFrom` resolves over a connection whose catalog is valid
+(`Catalog.Valid`):
+
+- each resolved CREATE INDEX is supported over the catalog, so the runs keep `Catalog.Valid`;
+- the runs keep `Table.RowsWide` (`Database.Admitted`);
+- with these two facts, each resolved ADD COLUMN meets `Database.AddColumnCondition`;
+- each resolved DROP over a valid catalog meets `Catalog.DropCondition` (the resolver drops the
+  indexes of a dropped table, `tableObjects`).
 
 ## Parts
 
-The status file proposes two parts, each with its own `just test-full` and `just verdict`
-(owner decision 2):
+The task has two parts (owner decision 2), each with its own `just test-full` and `just verdict`.
 
 - **Part 1:** the frame lemma, the lookup lemma, and the theorem for each form outside the row
   engine (plain writes, upsert, the schema statements, the forms that keep the database).
@@ -119,7 +145,10 @@ The status file proposes two parts, each with its own `just test-full` and `just
   - the two counterexamples of "Conditions": the atom holds before and fails after, so each
     condition is necessary;
   - a run theorem applied to a concrete script with an INSERT, an upsert, a write that cascades
-    and a ROLLBACK.
+    and a ROLLBACK;
+  - finding 1: a resolved script that reaches a CREATE INDEX of an unsupported index and then an
+    ADD COLUMN, whose outcome breaks the atom, so the hypothesis of the `runSqlFrom` theorem is
+    necessary.
 - **The predictions are byte-identical** to the baseline (`nix-build integrity/judge.nix -A
   predictions`, then `diff -r`, as slice 1 did).
 - **The usual suites**: `tests/test_model_package.py` (each new theorem module is in the package
@@ -150,9 +179,20 @@ The status file proposes two parts, each with its own `just test-full` and `just
   `Catalog.uniqueKeys` of a kept table then gains only the new unique index. DROP renumbers the
   kept objects and their `index.table`. `Database.table_setRows`, `table_setRows_other`,
   `table_addColumn` and `table_addColumn_other` (`DatabaseLaws.lean`) are the frame facts.
+- **The run hypothesis** is a recursive proposition that follows the run: the condition of the
+  first statement on the database of the state, and, when the statement continues, the
+  hypothesis of the rest on the next state. A halt requires nothing more. For `runScriptFrom`,
+  the condition is on the statement that `resolveStatement` gives over the connection; a
+  statement that the run ends at requires nothing. The statement theorem needs only the
+  conditions of ADD COLUMN and DROP (`Resolved.Statement.KeysCondition`).
+- **The run step.** `advanceWith` publishes the effect (`SqlState.publish`), and BEGIN, COMMIT
+  and ROLLBACK move the database to and from the snapshot. `SqlState.finish` and
+  `SqlState.failed` put the snapshot into `pending` and `failure`, and `Connection.afterError`
+  keeps the persisted database of `pending` as the snapshot.
 - **The lookup lemma** needs symmetry and transitivity of `keyEqual`. They follow from the
   `Std.TransCmp` instances of `Value.compare` and `Collation.compare` (`Comparison.lean`).
-- **Size.** Each new file stays below 200 lines. The status file gives the estimate and the
-  proposed split into two parts.
+- **Size.** Each new file stays below 200 lines. Part 1 has about 1,280 lines in ten modules
+  (with the examples); part 2 so far has about 830 lines in eight modules. The run theorems add
+  about 250 lines in two or three modules.
 - **Documents.** ADR 0012 (amended 2026-10-22) says that no preservation theorem exists yet; it
   gets a dated note that names this theorem. ADR 0022, D4 gets the record of slice 2.
