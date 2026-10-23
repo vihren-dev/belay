@@ -15,16 +15,16 @@ catalog: both are absent, or both are present with equal catalogs. -/
 def SqlState.Agrees (sql : SqlState) (state : ResolveState) : Prop :=
   sql.database.catalog = state.catalog ∧ sql.snapshot.map (·.catalog) = state.saved
 
-/-- For every clock value, list of values, statement that is not a setting pragma
+/-- For every clock value, counters, list of values, statement that is not a setting pragma
 ({lit}`PRAGMA setting = value`), database and result: if {name}`literalStep` with the values succeeds with the result, then the result's catalog is
 {name}`Resolved.Statement.applyCatalog` of the statement on the database's catalog, and the
 statement is not transaction control. Proof sketch: CREATE TABLE, CREATE INDEX, CREATE TRIGGER, ADD
 COLUMN and DROP call the catalog functions, writes store rows only ({name}`Database.setRows`, and the rows
 of a write that checks foreign keys over the input catalog, {name}`keyRun_ok_catalog`), a query
 returns the database, and every other statement fails. -/
-theorem literalStep_success_catalog {clock : Int} {parameters : List Value} {statement : Resolved.Statement}
+theorem literalStep_success_catalog {clock : Int} {counters : Counters} {parameters : List Value} {statement : Resolved.Statement}
     {database result : Database} (notSetting : ∀ setting on, statement ≠ .setting setting on)
-    (success : literalStep clock parameters statement database = .ok result) :
+    (success : literalStep clock counters parameters statement database = .ok result) :
     result.catalog = statement.applyCatalog database.catalog ∧ statement.isControl = false := by
   cases statement with
   | setting setting on => exact absurd rfl (notSetting setting on)
@@ -90,7 +90,7 @@ theorem literalStep_success_catalog {clock : Int} {parameters : List Value} {sta
         exact ⟨keyRun_ok_catalog success, rfl⟩
   | query query subqueries =>
     simp only [literalStep, runStatement] at success
-    cases ran : query.runOn clock parameters database subqueries with
+    cases ran : query.runOn clock counters parameters database subqueries with
     | none => simp only [ran, queryEffect] at success; cases success; exact ⟨rfl, rfl⟩
     | some pair =>
       obtain ⟨_, run⟩ := pair
@@ -154,7 +154,7 @@ theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {parame
   | setting setting on =>
     simp only [advanceWith] at reached
     obtain ⟨result, stepped, rfl⟩ := Conformance.SqlState.publish_next reached
-    simp only [literalStep, runStatement, step] at stepped
+    simp only [SqlState.statementRun, runStatement, step] at stepped
     cases stepped
     cases setting <;> exact ⟨catalog, saved⟩
   | createTable | createIndex | createTrigger | addColumn | drop | insert | update | upsert | delete | prepareError

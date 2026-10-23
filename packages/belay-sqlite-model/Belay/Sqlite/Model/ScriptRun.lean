@@ -66,6 +66,15 @@ def Connection.afterStep (connection : Connection) (after : ResolveState) (count
 def clockUnmodeled : String :=
   "the statement reads the clock, which this run does not describe; write the time as a literal value"
 
+/-- The reason of a statement that calls a counter function that the connection does not know
+(ADR 0024, D2): it names the function and says how to make the value known. -/
+def counterUnknownReason (kind : CounterKind) : String :=
+  let function := match kind with
+    | .changes => "changes()"
+    | .totalChanges => "total_changes()"
+    | .lastInsertRowid => "last_insert_rowid()"
+  s!"the statement calls {function}, whose value on this connection the run does not know; start the run on a new connection"
+
 /-- The clock value with which a resolved statement at a zero-based index runs: the value of
 the clock at the index for a statement that reads the clock
 ({name}`Resolved.Statement.readsClock`), and 0 for every other statement, as
@@ -106,8 +115,10 @@ output, such as its transition, gives its own values and takes the same steps:
   its reason ({name}`NodeRestriction.reason`);
 * take its clock value ({name}`statementClock`); a statement that reads the clock in a run
   without a clock ends the run with {name}`clockUnmodeled`;
-* run it with the values at the clock value ({name}`runStatement`); a statement that fails the
-  support check ends the run with {name}`unmodeledHere`;
+* take the first counter that the statement reads and the connection does not know
+  ({name}`Counters.firstUnknown`); the run ends with {name}`counterUnknownReason`;
+* run it with the values at the clock value ({name}`SqlState.statementRun`); a statement that fails
+  the support check ends the run with {name}`unmodeledHere`;
 * otherwise give {lit}`ran` of the transition of {name}`advanceRun` at the index. -/
 def runScriptStepWith {α : Type} (ended : String → α) (ran : Resolved.Statement → ResolveState → Int → StatementRun → SqlTransition → α)
     (context : ResolveContext) (clock : Option Clock) (index : Nat) (connection : Connection)
@@ -117,10 +128,12 @@ def runScriptStepWith {α : Type} (ended : String → α) (ran : Resolved.Statem
   | .ok (resolved, after) =>
     match statementClock clock index resolved with
     | none => ended clockUnmodeled
-    | some value =>
-      let run := runStatement value parameters resolved connection.state.database
-      if !run.ready then ended unmodeledHere
-      else ran resolved after value run (advanceRun index resolved connection.state run)
+    | some value => match connection.state.counters.firstUnknown resolved.counterReads with
+      | some kind => ended (counterUnknownReason kind)
+      | none =>
+        let run := connection.state.statementRun value parameters resolved
+        if !run.ready then ended unmodeledHere
+        else ran resolved after value run (advanceRun index resolved connection.state run)
 
 /-- Run one statement with the values bound to its parameters at its zero-based index on the
 connection, with an optional clock: the steps of {name}`runScriptStepWith`, then

@@ -177,9 +177,11 @@ theorem runScriptStep_continued {context : ResolveContext} {clock : Option Clock
   · cases continued
   · split at continued
     · cases continued
-    · dsimp only at continued
-      split at continued
+    · split at continued
       · cases continued
-      · split at continued <;> cases continued <;> exact ⟨Connection.afterStep_clock .., rfl⟩
+      · dsimp only at continued
+        split at continued
+        · cases continued
+        · split at continued <;> cases continued <;> exact ⟨Connection.afterStep_clock .., rfl⟩
 
 end Belay.Sqlite.Model

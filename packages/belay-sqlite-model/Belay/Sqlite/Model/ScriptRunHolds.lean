@@ -69,16 +69,18 @@ theorem runScriptStep_holds (keeps : StatementKeeps property condition) (context
     split at continued
     · nomatch continued
     · rename_i value _
-      dsimp only at continued
       split at continued
       · nomatch continued
-      · split at continued
+      · dsimp only at continued
+        split at continued
         · nomatch continued
-        all_goals
-          injection continued with _ same
-          subst same
-          exact Connection.afterStep_holds connection _ _ (SqlTransition.counted_holds _ (advanceWith_holds index resolved holds
-            (keeps value parameters resolved _ holds.1 (met resolved after resolvedEq))))
+        · split at continued
+          · nomatch continued
+          all_goals
+            injection continued with _ same
+            subst same
+            exact Connection.afterStep_holds connection _ _ (SqlTransition.counted_holds _ (advanceWith_holds index resolved holds
+              (keeps value _ parameters resolved _ holds.1 (met resolved after resolvedEq))))
 
 /-- The run theorem of {name}`runScriptFrom`, for every property and condition. For every context,
 clock, index, connection and statements with their values: if the statement theorem holds

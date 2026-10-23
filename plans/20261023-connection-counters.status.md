@@ -1,6 +1,6 @@
 # Status: the connection counters (ADR 0024, slice 1)
 
-Created 2026-10-23. Status: IN PROGRESS (the owner accepted the decisions; commits 1 and 2 are done, commit 3 is next).
+Created 2026-10-23. Status: IN PROGRESS (the owner accepted the decisions; commits 1 to 3 are done, commit 4 is next).
 Task file: [task](20261023-connection-counters.task.md).
 Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md) (ACCEPTED
 2026-10-23), D1 to D3, D5, D6 slice 1.
@@ -88,6 +88,44 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   constrain; R19: the opening status). The proofs `KeyResult.mapState_holds` and
   `NestedRun.credited_keeps` are in `RowCreditHolds.lean`. Tests: the package build and the pragma
   mutant test by name, `test_every_pragma_mutant_changes_a_verdict`.
+- 2026-10-23: commit 3 (the reads). `CounterKind`, `Counters.read`, `.firstUnknown`, `.view` and
+  `Counters.LessKnown` (`Counters.lean`); `Resolved.Expr.counter kind` (resolved from `changes()`,
+  `total_changes()` and `last_insert_rowid()` in `FunctionCalls.lean`), `EvalContext.counters`,
+  `Statement.counterReads` (`StatementCounterReads.lean`). The counters reach every function that
+  takes the clock through a new binder `(counters : Counters)` after `clock`: `runStatement`,
+  `step`, `Resolved.Query.runOn`, `statementContext`, the theorems of ADR 0022 and their
+  helpers. `SqlState.statementRun state clock parameters statement` is the one call of
+  `runStatement` for a state: it gives the statement the counters that it reads (`Counters.view`)
+  and sets `ready` false when one of them is unknown. `runScriptStep` ends the run with
+  `counterUnknownReason` at such a statement. The independence law is now the relation
+  `LessKnown` (`StatementCountersLaws.lean`, `ScriptRunCounters.lean`): a connection that knows
+  fewer counters gives the same outputs and databases while the run does not end.
+  `Script.run_append` (`RunLaws.lean`) takes the hypothesis `modeledLater` (owner decision 2, A);
+  `Connection.lessKnown_idle` replaces `sameBesidesCounters_idle`. Restrictions: a counter in a
+  CHECK is `check-function`, in a trigger body or `WHEN` is `triggerForm`, in a DEFAULT stays
+  `unmodeled-default`; the new kind `connection-counter-read` is `last_insert_rowid()` in an
+  INSERT or upsert and `total_changes()` in a write with trigger programs or foreign-key actions
+  (`Resolved.Statement.readsCounterInWrite`, `ResolveState.withWrite`). Examples checked by the
+  kernel: `CounterReadExamples.lean`. Statements of ADR 0022 and other theorems that changed:
+  every theorem that takes a clock now also takes `counters` (binder order `(clock : Int)
+  (counters : Counters) (parameters : List Value)`, calls `clock counters parameters`, literal-0
+  calls `0 {} []`; their plain words say "clock value, counters, parameter list"); `NoWrites`
+  gets the conjunct that the query reads no counter, because a query that reads one is not a
+  statement that leaves the state alone in the proofs; `SuccessfulBody` is indexed by `Counters`.
+  Recipe for the concurrent sessions (adr22s3, adr22s4): add the binder after every `(clock : Int)`
+  of a theorem about `runStatement`, `step`, `runOn`, `statementContext` or `subqueryContext`
+  (`sed -E 's/\(clock : Int\) \(parameters/(clock : Int) (counters : Counters) (parameters/'`), and
+  `clock parameters` becomes `clock counters parameters` at their calls; `Expr.isParameter` is
+  now `Expr.isRunValue` (a counter is a run value). `SqlState.statementRun` is called with its
+  name in `SqlAdvance.lean` and `Pass.lean`, not with dot notation, so that the model mutation
+  test replaces it. `Resolution/Restrictions.lean` is over 200 lines since before this task (the
+  registry is one inductive type). Tests: the package build, `just dev-verdict` (corpus-v4 673
+  AGREE and 591 MODEL_UNSUPPORTED, corpus-v5 2946 AGREE and 1430 MODEL_UNSUPPORTED: `delete4-3.0.1`
+  agrees now; corpus-v50 17 and corpus-v51 21 AGREE; no DISAGREE), `tests/mutant_guards_test.py`,
+  `tests/restriction_registry_test.py`, the 58 restriction examples run through the dev runtime,
+  `test_model_mutation` (a runtime assembled from the local builds) and the mutant tests by name
+  `test_every_after_error_mutant_changes_a_verdict` and `test_every_write_mutant_changes_a_verdict`.
+  Nix evidence is pending.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 

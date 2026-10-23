@@ -67,10 +67,10 @@ nothing. It assumes nothing about the support check. Proof sketch: a
 missing table fails with the input database, and otherwise the effect is
 {name}`insertOutcome_rowLocal` with {name}`LiteralData.inserted_shape`. -/
 theorem runStatement_insert_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
-    (parameters : List Value) (target : Nat) (rows : List (List Resolved.Cell))
+    (counters : Counters) (parameters : List Value) (target : Nat) (rows : List (List Resolved.Cell))
     (returning : List (Resolved.Expr × String)) (subqueries : List Resolved.Query) {database : Database}
     (every : database.EachTable atom) :
-    (runStatement clock parameters (.insert target rows returning subqueries none) database).effect.Satisfies
+    (runStatement clock counters parameters (.insert target rows returning subqueries none) database).effect.Satisfies
       fun after => after.EachTable atom := by
   simp only [runStatement, Option.map_none, StatementRun.withKeys]
   split
@@ -88,10 +88,10 @@ about the support check. Proof sketch: a missing table and a refused rowid alias
 input database, and otherwise the effect is {name}`checkedWrite_rowLocal`; UPDATE keeps the
 catalog entry. -/
 theorem runStatement_update_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
-    (parameters : List Value) (target : Nat) (assignments : List (Nat × Resolved.Expr))
+    (counters : Counters) (parameters : List Value) (target : Nat) (assignments : List (Nat × Resolved.Expr))
     (filter : Option Resolved.Expr) (returning : List (Resolved.Expr × String)) (subqueries : List Resolved.Query)
     {database : Database} (every : database.EachTable atom) :
-    (runStatement clock parameters (.update target assignments filter returning subqueries none) database).effect.Satisfies
+    (runStatement clock counters parameters (.update target assignments filter returning subqueries none) database).effect.Satisfies
       fun after => after.EachTable atom := by
   simp only [runStatement, Option.map_none, StatementRun.withKeys]
   split
@@ -110,10 +110,10 @@ nothing
 about the support check. Proof sketch: DELETE stores a filter of the rows
 ({name}`LiteralData.deleted`), a sublist of the rows with the same entry ({name}`RowLocalAtom.sublist`). -/
 theorem runStatement_delete_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
-    (parameters : List Value) (target : Nat) (filter : Option Resolved.Expr)
+    (counters : Counters) (parameters : List Value) (target : Nat) (filter : Option Resolved.Expr)
     (returning : List (Resolved.Expr × String)) (subqueries : List Resolved.Query) {database : Database}
     (every : database.EachTable atom) :
-    (runStatement clock parameters (.delete target filter returning subqueries none) database).effect.Satisfies
+    (runStatement clock counters parameters (.delete target filter returning subqueries none) database).effect.Satisfies
       fun after => after.EachTable atom := by
   simp only [runStatement, Option.map_none, StatementRun.withKeys]
   split
@@ -128,11 +128,11 @@ the atom, the effect of {name}`runStatement` satisfies "every table has the atom
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
 {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. Proof sketch:
 {name}`runStatement_keeps_database`. -/
-theorem runStatement_writesNone_rowLocal {atom : Table → Prop} (clock : Int) (parameters : List Value)
+theorem runStatement_writesNone_rowLocal {atom : Table → Prop} (clock : Int) (counters : Counters) (parameters : List Value)
     {database : Database} (every : database.EachTable atom) (statement : Resolved.Statement)
     (writesNone : (∃ query subqueries, statement = .query query subqueries) ∨ (∃ setting on, statement = .setting setting on) ∨
       (∃ error, statement = .prepareError error) ∨ statement = .begin ∨ statement = .commit ∨ statement = .rollback) :
-    (runStatement clock parameters statement database).effect.Satisfies fun after => after.EachTable atom :=
-  Effect.satisfies_of_database every (runStatement_keeps_database clock parameters database statement writesNone)
+    (runStatement clock counters parameters statement database).effect.Satisfies fun after => after.EachTable atom :=
+  Effect.satisfies_of_database every (runStatement_keeps_database clock counters parameters database statement writesNone)
 
 end Belay.Sqlite.Model

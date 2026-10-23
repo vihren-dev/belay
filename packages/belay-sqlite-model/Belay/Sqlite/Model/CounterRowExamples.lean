@@ -30,7 +30,7 @@ def stateAfter (position : Nat) : List (Resolved.Statement × List Value) → Sq
   | [], state => state
   | (statement, parameters) :: rest, state => match advance position statement parameters state with
     | .next next => stateAfter (position + 1) rest next
-    | .halt _ => { state with counters := state.counters.apply (runStatement (state.clock position) parameters statement state.database).counts }
+    | .halt _ => { state with counters := state.counters.apply (state.statementRun (state.clock position) parameters statement).counts }
 
 /-- The counters after the statements, from the empty database on a new connection, under the
 profile, without the support check of {name}`stateAfter`. -/

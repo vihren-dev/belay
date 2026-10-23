@@ -13,10 +13,11 @@ namespace Belay.Sqlite.Model
 connection, with an optional clock, with the statement as it resolves. It takes the same steps
 as {name}`runScriptStep`: it resolves the statement, takes its clock value
 ({name}`statementClock`), runs the statement with the values at that value
-({name}`runStatement`) and advances with {name}`advanceRun`, and gives the error with which
+({name}`SqlState.statementRun`) and advances with {name}`advanceRun`, and gives the error with which
 the transition stops ({name}`haltError`). It is
 {lean}`(none : Option (Resolved.Statement × ExecutionError))` for a statement that has a
-restriction, reads the clock in a run without a clock, fails the support check or does not
+restriction, reads the clock in a run without a clock, reads a counter that the connection does
+not know, fails the support check or does not
 stop with an error. A diagnostic uses it to tell which error the output {name}`Output.error`
 of the run has. -/
 def runScriptStepFailure (context : ResolveContext) (clock : Option Clock) (index : Nat) (connection : Connection)
@@ -26,10 +27,12 @@ def runScriptStepFailure (context : ResolveContext) (clock : Option Clock) (inde
   | .ok (resolved, _) =>
     match statementClock clock index resolved with
     | none => none
-    | some value =>
-      let run := runStatement value parameters resolved connection.state.database
-      if !run.ready then none
-      else (haltError (advanceRun index resolved connection.state run)).map ((resolved, ·))
+    | some value => match connection.state.counters.firstUnknown resolved.counterReads with
+      | some _ => none
+      | none =>
+        let run := connection.state.statementRun value parameters resolved
+        if !run.ready then none
+        else (haltError (advanceRun index resolved connection.state run)).map ((resolved, ·))
 
 /-- For every list of results and code, {name}`Output.ofResults` of the results is not
 {name}`Output.error` of the code. Proof sketch: each case of the sort gives
@@ -76,13 +79,16 @@ theorem runScriptStep_error_failure {context : ResolveContext} {clock : Option C
     cases valued : statementClock clock index resolved with
     | none => simp [valued] at step
     | some value =>
-      by_cases ready : (runStatement value parameters resolved connection.state.database).ready
-      · simp only [valued, ready, Bool.not_true, Bool.false_eq_true, ite_false] at step ⊢
-        generalize ofStep : Output.ofStep _ parameters resolved connection.state _ _ = output at step
-        cases output <;> simp at step
-        obtain ⟨failure, halted, primary⟩ := Output.ofStep_error (step.1 ▸ ofStep)
-        exact ⟨resolved, failure, by simp [halted], primary⟩
-      · simp [valued, ready] at step
+      cases unknown : connection.state.counters.firstUnknown resolved.counterReads with
+      | some kind => simp [valued, unknown] at step
+      | none =>
+        by_cases ready : (connection.state.statementRun value parameters resolved).ready
+        · simp only [valued, unknown, ready, Bool.not_true, Bool.false_eq_true, ite_false] at step ⊢
+          generalize ofStep : Output.ofStep _ parameters resolved connection.state _ _ = output at step
+          cases output <;> simp at step
+          obtain ⟨failure, halted, primary⟩ := Output.ofStep_error (step.1 ▸ ofStep)
+          exact ⟨resolved, failure, by simp [halted], primary⟩
+        · simp [valued, unknown, ready] at step
 
 /-- For every clock, list of values, statement, state, run, transition and error: if the transition
 stops with the error ({name}`haltError`) and the error is not {name}`ExecutionError.unmodeled`,
@@ -121,12 +127,15 @@ theorem runScriptStepFailure_continued {context : ResolveContext} {clock : Optio
     cases valued : statementClock clock index first with
     | none => simp [valued] at found
     | some value =>
-      by_cases ready : (runStatement value parameters first connection.state.database).ready
-      · simp only [valued, ready, Bool.not_true, Bool.false_eq_true, ite_false] at found ⊢
-        obtain ⟨error, halted, same⟩ := Option.map_eq_some_iff.mp found
-        cases same
-        rw [Output.ofStep_halted halted modeled]
-        exact ⟨_, rfl⟩
-      · simp [valued, ready] at found
+      cases unknown : connection.state.counters.firstUnknown first.counterReads with
+      | some kind => simp [valued, unknown] at found
+      | none =>
+        by_cases ready : (connection.state.statementRun value parameters first).ready
+        · simp only [valued, unknown, ready, Bool.not_true, Bool.false_eq_true, ite_false] at found ⊢
+          obtain ⟨error, halted, same⟩ := Option.map_eq_some_iff.mp found
+          cases same
+          rw [Output.ofStep_halted halted modeled]
+          exact ⟨_, rfl⟩
+        · simp [valued, unknown, ready] at found
 
 end Belay.Sqlite.Model
