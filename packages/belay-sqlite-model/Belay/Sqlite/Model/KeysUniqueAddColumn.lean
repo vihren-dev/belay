@@ -78,9 +78,10 @@ theorem LiteralData.keyEqual_append {width : Nat} {first second : Row} (firstWid
   exact forall_congr' fun term => imp_congr_right fun member => by
     rw [termValue_append firstWide extra (below.1 term member), termValue_append secondWide extra (below.1 term member)]
 
-/-- For every list, position, element and function: if the function gives none for the element
-and for the element at the position, {lit}`List.filterMap` of the list with the element set at
-the position is that of the list. Proof sketch: induction on the list; only the element at the
+/-- For every list, position, element and function: if the function gives none for the element,
+and gives none for the element of the list at the position or the list has no element there,
+{lit}`List.filterMap` of the list with the element set at the position is that of the list. A
+position past the end leaves the list as it is. Proof sketch: induction on the list; only the element at the
 position changes, and both give none. -/
 theorem filterMap_set_none {α β} (function : α → Option β) (element : α) (none : function element = .none) :
     ∀ (list : List α) (position : Nat), (list[position]?).bind function = .none →
@@ -126,13 +127,15 @@ theorem Catalog.uniqueKeys_appendColumn (catalog : Catalog) (position : Nat) (sh
   intro place inside
   rw [List.getElem?_append_left (reads place inside)]
 
-/-- For every database, position and table at the position, column and value: if the database
-satisfies {name}`Database.KeysUnique` and meets the condition of ADD COLUMN at the position
-({name}`Database.AddColumnCondition`), the database after {name}`Database.addColumn` satisfies
+/-- For every database, position, column and value: if the database satisfies
+{name}`Database.KeysUnique` and meets the condition of ADD COLUMN at the position
+({name}`Database.AddColumnCondition`, which requires nothing when the position holds no table),
+the database after {name}`Database.addColumn` satisfies
 {name}`Database.KeysUnique`. Proof sketch: the keys of every position stay the same
 ({name}`Catalog.uniqueKeys_addColumn`, {name}`Catalog.uniqueKeys_appendColumn`); the table of
 the position gets one cell in each row, which changes no conflict on its keys
-({name}`LiteralData.keyEqual_append`), and every other table stays. -/
+({name}`LiteralData.keyEqual_append`), and every other table stays. A position without a table
+has no table after ADD COLUMN. -/
 theorem Database.KeysUnique.addColumn {database : Database} (unique : database.KeysUnique) {target : Nat}
     (condition : database.AddColumnCondition target) (column : CatalogColumn) (value : Value) :
     (database.addColumn target column value).KeysUnique := by
