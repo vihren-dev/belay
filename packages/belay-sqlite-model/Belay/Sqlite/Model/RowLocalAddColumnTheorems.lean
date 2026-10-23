@@ -90,8 +90,8 @@ theorem Table.ChecksHold.appendColumn {table : Table} (holds : table.ChecksHold)
 /-- For every atom, clock value, parameter list, ADD COLUMN, column and database: if every table of
 the database has the atom, and the atom holds for the table at the target with the column and
 every added cell appended, the effect of {name}`runStatement` satisfies "every table has the atom"
-on the databases that a run keeps ({name}`Effect.Satisfies`): the database of a success and that of
-an error with {name}`ExecutionError.constraintFail`, while any other error requires nothing. Proof
+({name}`Effect.Satisfies`): the database of a success and that of an error with
+{name}`ExecutionError.constraintFail` have it, and any other error requires nothing. Proof
 sketch: every error keeps the database, and a success is
 {lit}`Database.addColumn` of an added cell ({name}`step_addColumn_cases`), which
 {name}`Database.EachTable.addColumn` handles. -/
@@ -115,7 +115,8 @@ theorem runStatement_addColumn_rowLocal {atom : Table → Prop} (clock : Int) (p
 /-- The theorem of "not null" for ADD COLUMN, for every clock value, parameter list, target,
 column and database: if the database satisfies {name}`Database.NotNull` and the rows of the table
 at the target are wide ({name}`Database.RowsWideAt`), the effect of {name}`runStatement` satisfies
-{name}`Database.NotNull` on the databases that a run keeps ({name}`Effect.Satisfies`). It assumes
+{name}`Database.NotNull` ({name}`Effect.Satisfies`): the database of a success and that of an error
+with {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. It assumes
 nothing about the other atoms or the support check. Proof sketch:
 {name}`runStatement_addColumn_rowLocal` with {name}`Table.NotNull.appendColumn`. -/
 theorem runStatement_addColumn_notNull (clock : Int) (parameters : List Value) (target : Nat)
@@ -129,7 +130,9 @@ theorem runStatement_addColumn_notNull (clock : Int) (parameters : List Value) (
 column and database: if the database satisfies {name}`Database.TypesFit`, the rows of the table at
 the target are wide ({name}`Database.RowsWideAt`), and the stored default fits the strict type
 ({name}`Database.StrictDefaultFitsAt`), the effect of {name}`runStatement` satisfies
-{name}`Database.TypesFit` on the databases that a run keeps. It assumes nothing about the other
+{name}`Database.TypesFit` ({name}`Effect.Satisfies`): the database of a success and that of an error
+with {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. It assumes
+nothing about the other
 atoms or the support check. Proof sketch: {name}`runStatement_addColumn_rowLocal` with
 {name}`Table.TypesFit.appendColumn`. -/
 theorem runStatement_addColumn_typesFit (clock : Int) (parameters : List Value) (target : Nat)
@@ -143,7 +146,9 @@ theorem runStatement_addColumn_typesFit (clock : Int) (parameters : List Value) 
 column and database: if the database satisfies {name}`Database.ChecksHold`, the rows of the table
 at the target are wide ({name}`Database.RowsWideAt`), and each of its CHECK constraints reads only
 columns below its width ({name}`Database.ChecksReadBelowAt`), the effect of {name}`runStatement`
-satisfies {name}`Database.ChecksHold` on the databases that a run keeps. It assumes nothing about
+satisfies {name}`Database.ChecksHold` ({name}`Effect.Satisfies`): the database of a success and that
+of an error with {name}`ExecutionError.constraintFail` have it, and any other error requires
+nothing. It assumes nothing about
 the other atoms or the support check. Proof sketch: {name}`runStatement_addColumn_rowLocal` with
 {name}`Table.ChecksHold.appendColumn`. -/
 theorem runStatement_addColumn_checksHold (clock : Int) (parameters : List Value) (target : Nat)

@@ -24,11 +24,9 @@ theorem Database.EachTable.drop {atom : Table → Prop} {database : Database} (e
 
 /-- For every atom, clock value, parameter list, CREATE TABLE and database: if the atom is a
 {name}`RowLocalAtom` and every table of the database has it, the effect of {name}`runStatement`
-satisfies "every table has the atom" on the databases that a run keeps ({name}`Effect.Satisfies`):
-the database of a success and that of an error with {name}`ExecutionError.constraintFail`, while any
-other error requires nothing on the databases that a run keeps ({name}`Effect.Satisfies`): the
-database of a success and that of an error with {name}`ExecutionError.constraintFail`, while any
-other error requires nothing. The new table has no rows. Proof
+satisfies "every table has the atom" ({name}`Effect.Satisfies`): the database of a success and that
+of an error with {name}`ExecutionError.constraintFail` have it, and any other error requires
+nothing. The new table has no rows. Proof
 sketch: {name}`Database.EachTable.append`; every error keeps the database. -/
 theorem runStatement_createTable_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
     (parameters : List Value) (target : Nat) (name : Identifier) (shape : CatalogTable) {database : Database}
@@ -44,11 +42,9 @@ theorem runStatement_createTable_rowLocal {atom : Table → Prop} (rowLocal : Ro
 
 /-- For every atom, clock value, parameter list, CREATE TRIGGER and database: if the atom is a
 {name}`RowLocalAtom` and every table of the database has it, the effect of {name}`runStatement`
-satisfies "every table has the atom" on the databases that a run keeps ({name}`Effect.Satisfies`):
-the database of a success and that of an error with {name}`ExecutionError.constraintFail`, while any
-other error requires nothing on the databases that a run keeps ({name}`Effect.Satisfies`): the
-database of a success and that of an error with {name}`ExecutionError.constraintFail`, while any
-other error requires nothing. A trigger has no rows. Proof sketch:
+satisfies "every table has the atom" ({name}`Effect.Satisfies`): the database of a success and that
+of an error with {name}`ExecutionError.constraintFail` have it, and any other error requires
+nothing. A trigger has no rows. Proof sketch:
 {name}`Database.EachTable.append`; every error keeps the database. -/
 theorem runStatement_createTrigger_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
     (parameters : List Value) (target : Nat) (name : Identifier) (trigger : CatalogTrigger) {database : Database}
@@ -64,11 +60,9 @@ theorem runStatement_createTrigger_rowLocal {atom : Table → Prop} (rowLocal : 
 
 /-- For every atom, clock value, parameter list, CREATE INDEX and database: if the atom is a
 {name}`RowLocalAtom` and every table of the database has it, the effect of {name}`runStatement`
-satisfies "every table has the atom" on the databases that a run keeps ({name}`Effect.Satisfies`):
-the database of a success and that of an error with {name}`ExecutionError.constraintFail`, while any
-other error requires nothing on the databases that a run keeps ({name}`Effect.Satisfies`): the
-database of a success and that of an error with {name}`ExecutionError.constraintFail`, while any
-other error requires nothing. An index has no rows and changes no table. Proof sketch:
+satisfies "every table has the atom" ({name}`Effect.Satisfies`): the database of a success and that
+of an error with {name}`ExecutionError.constraintFail` have it, and any other error requires
+nothing. An index has no rows and changes no table. Proof sketch:
 {name}`Database.EachTable.append`; every error keeps the database. -/
 theorem runStatement_createIndex_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
     (parameters : List Value) (target : Nat) (name : Identifier) (index : CatalogIndex) {database : Database}
@@ -88,11 +82,9 @@ theorem runStatement_createIndex_rowLocal {atom : Table → Prop} (rowLocal : Ro
 
 /-- For every atom, clock value, parameter list, DROP without foreign key rules and trigger
 programs ({lean}`(none : Option Resolved.WriteRules)`) and database: if every table of the database
-has the atom, the effect of {name}`runStatement` satisfies "every table has the atom" on the
-databases that a run keeps ({name}`Effect.Satisfies`): the database of a success and that of an
-error with {name}`ExecutionError.constraintFail`, while any other error requires nothing on the
-databases that a run keeps ({name}`Effect.Satisfies`): the database of a success and that of an
-error with {name}`ExecutionError.constraintFail`, while any other error requires nothing. The atom
+has the atom, the effect of {name}`runStatement` satisfies "every table has the atom"
+({name}`Effect.Satisfies`): the database of a success and that of an error with
+{name}`ExecutionError.constraintFail` have it, and any other error requires nothing. The atom
 need not be a {name}`RowLocalAtom`, and DROP has no condition. Proof sketch: the effect is the
 database after {name}`Database.drop` ({name}`Database.EachTable.drop`). -/
 theorem runStatement_drop_rowLocal {atom : Table → Prop} (clock : Int) (parameters : List Value)

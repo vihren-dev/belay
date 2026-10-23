@@ -24,11 +24,9 @@ theorem LiteralData.inserted_shape (table : Table) (rows : List (List Value)) :
 /-- For every atom, database, position, table, keys and result table: if the atom is a
 {name}`RowLocalAtom`, every table of the database has it, the database has the table at the
 position, and the result has the catalog entry of the table, the effect of
-{name}`checkedWrite` satisfies "every table has the atom" on the databases that a run keeps
-({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`, while any other error requires nothing on the databases that
-a run keeps ({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`, while any other error requires nothing. Proof
+{name}`checkedWrite` satisfies "every table has the atom" ({name}`Effect.Satisfies`): the database
+of a success and that of an error with {name}`ExecutionError.constraintFail` have it, and any other
+error requires nothing. Proof
 sketch: a stored result passed {name}`LiteralData.constraints`, so the atom holds for it
 ({name}`RowLocalAtom.constraints`), and {name}`Database.EachTable.setRows` stores its rows; a failure
 keeps the database. -/
@@ -47,11 +45,9 @@ theorem checkedWrite_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom a
 /-- For every atom, database, position, table, keys, rows and result table: if the atom is a
 {name}`RowLocalAtom`, every table of the database has it, the database has the table at the
 position, and the result has the catalog entry of the table, the effect of
-{name}`insertOutcome` satisfies "every table has the atom" on the databases that a run keeps
-({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`, while any other error requires nothing on the databases that
-a run keeps ({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`, while any other error requires nothing. Proof sketch: a
+{name}`insertOutcome` satisfies "every table has the atom" ({name}`Effect.Satisfies`): the database
+of a success and that of an error with {name}`ExecutionError.constraintFail` have it, and any other
+error requires nothing. Proof sketch: a
 refused rowid alias
 fails with the input database, and every other case is {name}`checkedWrite_rowLocal`. -/
 theorem insertOutcome_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) {database : Database}
@@ -67,11 +63,9 @@ theorem insertOutcome_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom 
 /-- For every atom, clock value, parameter list, plain INSERT (no foreign key rules and no trigger
 programs: {lean}`(none : Option Resolved.WriteRules)`) and database: if the atom is a
 {name}`RowLocalAtom` and every table of the database has it, the effect of {name}`runStatement`
-satisfies "every table has the atom" on the databases that a run keeps ({name}`Effect.Satisfies`):
-the database of a success and that of an error with {name}`ExecutionError.constraintFail`, while any
-other error requires nothing on the databases that a run keeps ({name}`Effect.Satisfies`): the
-database of a success and that of an error with {name}`ExecutionError.constraintFail`, while any
-other error requires nothing. It assumes nothing about the support check. Proof sketch: a
+satisfies "every table has the atom" ({name}`Effect.Satisfies`): the database of a success and that
+of an error with {name}`ExecutionError.constraintFail` have it, and any other error requires
+nothing. It assumes nothing about the support check. Proof sketch: a
 missing table fails with the input database, and otherwise the effect is
 {name}`insertOutcome_rowLocal` with {name}`LiteralData.inserted_shape`. -/
 theorem runStatement_insert_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
@@ -88,11 +82,10 @@ theorem runStatement_insert_rowLocal {atom : Table → Prop} (rowLocal : RowLoca
 
 /-- For every atom, clock value, parameter list, plain UPDATE (no foreign key rules and no trigger
 programs) and database: if the atom is a {name}`RowLocalAtom` and every table of the database has
-it, the effect of {name}`runStatement` satisfies "every table has the atom" on the databases that a
-run keeps ({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`, while any other error requires nothing on the databases that
-a run keeps ({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`, while any other error requires nothing. It assumes nothing
+it, the effect of {name}`runStatement` satisfies "every table has the atom"
+({name}`Effect.Satisfies`): the database of a success and that of an error with
+{name}`ExecutionError.constraintFail` have it, and any other error requires nothing. It assumes
+nothing
 about the support check. Proof sketch: a missing table and a refused rowid alias fail with the
 input database, and otherwise the effect is {name}`checkedWrite_rowLocal`; UPDATE keeps the
 catalog entry. -/
@@ -112,11 +105,10 @@ theorem runStatement_update_rowLocal {atom : Table → Prop} (rowLocal : RowLoca
 
 /-- For every atom, clock value, parameter list, plain DELETE (no foreign key rules and no trigger
 programs) and database: if the atom is a {name}`RowLocalAtom` and every table of the database has
-it, the effect of {name}`runStatement` satisfies "every table has the atom" on the databases that a
-run keeps ({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`, while any other error requires nothing on the databases that
-a run keeps ({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`, while any other error requires nothing. It assumes nothing
+it, the effect of {name}`runStatement` satisfies "every table has the atom"
+({name}`Effect.Satisfies`): the database of a success and that of an error with
+{name}`ExecutionError.constraintFail` have it, and any other error requires nothing. It assumes
+nothing
 about the support check. Proof sketch: DELETE stores a filter of the rows
 ({name}`LiteralData.deleted`), a sublist of the rows with the same entry ({name}`RowLocalAtom.sublist`). -/
 theorem runStatement_delete_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
@@ -134,11 +126,9 @@ theorem runStatement_delete_rowLocal {atom : Table → Prop} (rowLocal : RowLoca
 
 /-- For every atom, clock value, parameter list, database and statement that writes no row (a
 query, a setting, a prepare error, BEGIN, COMMIT or ROLLBACK): if every table of the database has
-the atom, the effect of {name}`runStatement` satisfies "every table has the atom" on the databases
-that a run keeps ({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`, while any other error requires nothing on the databases that
-a run keeps ({name}`Effect.Satisfies`): the database of a success and that of an error with
-{name}`ExecutionError.constraintFail`, while any other error requires nothing. Proof sketch:
+the atom, the effect of {name}`runStatement` satisfies "every table has the atom"
+({name}`Effect.Satisfies`): the database of a success and that of an error with
+{name}`ExecutionError.constraintFail` have it, and any other error requires nothing. Proof sketch:
 {name}`runStatement_keeps_database`. -/
 theorem runStatement_writesNone_rowLocal {atom : Table → Prop} (clock : Int) (parameters : List Value)
     {database : Database} (every : database.EachTable atom) (statement : Resolved.Statement)
