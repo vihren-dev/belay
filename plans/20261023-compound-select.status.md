@@ -10,6 +10,9 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D3 and D7.
   shell's `sqlite3` 3.51.0 (one statement for each line), SQLite's `select.c`, `resolve.c`,
   `expr.c` and `parse.y` of 3.51.0 (`sqlite-conformance-upstream-3.51.0` in the Nix store), and
   `experiments/model-gaps/next_groups.py` over the Nix verdict after slice 1.
+- 2026-10-23: review round 1 (three musts) fixed with native probes: the 32-bit rule for an
+  `ORDER BY` column number, no collation for a scalar subquery, and the point where SQLite reads
+  `LIMIT` and `OFFSET` for each operator (task file, outcomes 7, 9 and 10).
 
 ## Owner decisions (open)
 
@@ -17,10 +20,10 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D3 and D7.
    a compound column (the left-most `SELECT` whose column has one). This is true for the
    duplicate rule and for an `ORDER BY` term without `COLLATE`. Two rules of SQLite differ, and an
    implementer acts on them:
-   - `x IN (q)` and a scalar `(q)` over a compound read the affinity and the collation of the
-     right-most term's column, not the compound collation (task file, outcome 9; `'A' IN (SELECT n
-     FROM t UNION SELECT m FROM u WHERE 0)` is 0 for a `NOCASE` column `n` and a `BINARY` column
-     `m` with `'a'`).
+   - `x IN (q)` over a compound reads the affinity and the collation of the right-most term's
+     column, and a scalar `(q)` only its affinity (a subquery has no collation), not the compound
+     collation (task file, outcome 9; `'A' IN (SELECT n FROM t UNION SELECT m FROM u WHERE 0)` is
+     0 for a `NOCASE` column `n` with `'a'` and a `BINARY` column `m`).
    - When an operator is not `UNION ALL` and an `ORDER BY` term has `COLLATE`, a term without
      `COLLATE` sorts under the collation of the left-most term's expression, not the compound
      collation (outcome 7, `convertCompoundSelectToSubquery`).
