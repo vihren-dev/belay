@@ -58,7 +58,8 @@ def Resolved.Statement.RunCondition (database : Database) : Resolved.Statement �
 /-- For every database and statement: if the statement meets its run condition
 ({name}`Resolved.Statement.RunCondition`), it meets the condition of the statement theorem
 ({name}`Resolved.Statement.KeysCondition`). The statement theorem does not use the condition of
-CREATE INDEX. -/
+CREATE INDEX. Proof sketch: ADD COLUMN and DROP have the same condition in both, and every other
+statement has the condition {lean}`True` in the statement theorem. -/
 theorem Resolved.Statement.keysCondition_of_runCondition {database : Database} :
     ∀ {statement : Resolved.Statement}, statement.RunCondition database → statement.KeysCondition database
   | .addColumn .., condition | .drop .., condition => condition
@@ -75,7 +76,9 @@ def Resolved.Statement.unconditioned : Resolved.Statement → Bool
   | .upsert .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => true
 
 /-- For every database and statement: if the statement has no run condition
-({name}`Resolved.Statement.unconditioned`), it meets its run condition on the database. -/
+({name}`Resolved.Statement.unconditioned`), it meets its run condition on the database. Proof
+sketch: a case for each statement; CREATE INDEX, ADD COLUMN and DROP contradict the hypothesis,
+and every other statement has the condition {lean}`True`. -/
 theorem Resolved.Statement.runCondition_of_unconditioned {database : Database} :
     ∀ {statement : Resolved.Statement}, statement.unconditioned = true → statement.RunCondition database := by
   intro statement unconditioned
