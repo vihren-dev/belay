@@ -126,7 +126,14 @@ theorem Script.run_append (db : Database) (p q : Script) (outside : (db.run p).t
   have idle := Connection.lessKnown_idle outside setting recursive
     ((Belay.Sqlite.Model.runScriptFrom_clock runContext none 0 db.raw.connection p.statements).trans rfl)
   have quietLater := Run.checked_outputs_modeled modeledLater
-  have same := Belay.Sqlite.Model.runScriptFrom_counters runContext none q.statements 0 idle quietLater
+  have noUnknown : ∀ output ∈ (Script.runOn (Database.Raw.connection (Script.runOn db.raw.connection p).connection.state.database) q).outputs,
+      output.endsAtUnknownCounter = false := fun output member => by
+    cases ends : output.endsAtUnknownCounter
+    · rfl
+    · have endsRun := Belay.Sqlite.Model.Output.endsRun_of_endsAtUnknownCounter ends
+      rw [quietLater output member] at endsRun
+      exact absurd endsRun (by decide)
+  have same := Belay.Sqlite.Model.runScriptFrom_counters runContext none q.statements 0 idle noUnknown
   simp only [Database.Raw.run_append, ScriptRun.andThen, quiet, Bool.false_eq_true, ite_false]
   simp only [Database.Raw.run] at quiet ⊢
   have outputs : (Script.runOn (Script.runOn db.raw.connection p).connection q).outputs =

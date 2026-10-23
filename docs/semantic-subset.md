@@ -600,7 +600,9 @@ the rowid of the last inserted row (`last_insert_rowid()`). A statement reads th
 before the statement. The model follows SQLite's rules for each write, including the rows of
 trigger programs and foreign-key actions, which count for the total only, and the rows that
 `REPLACE` deletes, which count for none. A counter that the run does not know ends the run at a
-statement that reads it. The reads
+statement that reads it. The environment of the surface gives the counters at the start of a run:
+`Env.default` knows none, so a statement reads a counter only after a write of the run has set it,
+and `Env.newConnection` gives 0 to each counter. The reads
 that the model does not describe are the restrictions `connection-counter-read`,
 `check-function`, `unmodeled-default` and `trigger-form`. Literal writes
 have checked data-domain obligations: existing key cells and filter cells must

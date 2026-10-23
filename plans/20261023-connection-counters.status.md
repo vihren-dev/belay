@@ -1,6 +1,6 @@
 # Status: the connection counters (ADR 0024, slice 1)
 
-Created 2026-10-23. Status: IN PROGRESS (the owner accepted the decisions; commits 1 to 4 are done, commit 5 is next).
+Created 2026-10-23. Status: IN PROGRESS (the owner accepted the decisions; commits 1 to 5 are done, commit 6 is next).
 Task file: [task](20261023-connection-counters.task.md).
 Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md) (ACCEPTED
 2026-10-23), D1 to D3, D5, D6 slice 1.
@@ -161,6 +161,20 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   entry of commit 4 cite no local results). Tests: the package build, `just dev-verdict`,
   `tests/restriction_registry_test.py`, `tests/mutant_guards_test.py` and the restriction
   examples. Nix evidence is pending.
+- 2026-10-23: commit 5 (the environment, outcome 8). `Env.counters` (unknown by default),
+  `Env.newConnection` (0 for each counter), `Database.Raw.connection` with the counters as an
+  optional argument, `Sql.run` from the counters of the environment, and the exports
+  `Counters`, `CounterKind` and `counterUnknownReason`. `RunStep.LessKnown` is now the stronger
+  relation (the first step reads an unknown counter, or both steps are the same, with the same
+  end reason), so `runScriptFrom_counters` has the weaker hypothesis "no output ends at an unknown
+  counter" (`Output.endsAtUnknownCounter`); `Script.run_append` derives it from `endsRun`.
+  `ProgramEnvLaws.lean` (split from `ProgramLaws.lean`) has `Sql.runFrom_counters`,
+  `Run.checked_congr`, `Sql.run_env` and `Script.run_env`, whose hypotheses are the clock
+  condition and the counter condition. Tests: the package builds of `belay-sqlite-model` and
+  `belay` (`just dev-build`), the surface fixtures with `lean --setup` (`ProgramExamples.lean`
+  with the new counter examples and the laws, `GuidePrograms.lean` and all others),
+  `tests/mutant_guards_test.py`, `tests/restriction_registry_test.py` and `test_model_mutation`.
+  Nix evidence is pending.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 
