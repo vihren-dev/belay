@@ -110,7 +110,7 @@ def classifier(terms: list[str]) -> str:
     definitions = "".join(f"def case{index} : Case :=\n  " + term.replace("\n", "\n  ") + "\n"
                           for index, term in enumerate(terms))
     names = ", ".join(f"case{index}" for index in range(len(terms)))
-    return ("import VerifierConformance.Case\nopen Belay.Sqlite.Model Belay.Sqlite.Model.Conformance\n"
+    return ("import VerifierConformance.Classify\nopen Belay.Sqlite.Model Belay.Sqlite.Model.Conformance\n"
             f"set_option maxRecDepth {MAX_REC_DEPTH}\n"
             f"{definitions}def cases : List Case := [{names}]\n"
             "def main : IO Unit := for c in cases do IO.println (reprStr (classifyCase c))\n")
