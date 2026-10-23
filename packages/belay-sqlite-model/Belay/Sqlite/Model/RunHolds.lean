@@ -14,7 +14,9 @@ namespace Belay.Sqlite.Model
 holds. For every clock value, parameter list, resolved statement and database, if the database has
 the property and the statement meets its condition on the database, the effect of
 {name}`runStatement` satisfies the property ({name}`Effect.Satisfies`): the database of a success,
-and the database that an error with {name}`ExecutionError.constraintFail` carries, have it. -/
+and the database that an error with {name}`ExecutionError.constraintFail` carries, have it. An error
+with any other reason requires nothing of its database: the run keeps the input database, or the
+snapshot of a ROLLBACK, for it. -/
 def StatementKeeps (property : Database → Prop) (condition : Resolved.Statement → Database → Prop) : Prop :=
   ∀ (clock : Int) (parameters : List Value) (statement : Resolved.Statement) (database : Database),
     property database → condition statement database →
