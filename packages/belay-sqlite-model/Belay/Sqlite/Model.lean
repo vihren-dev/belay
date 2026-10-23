@@ -19,6 +19,8 @@ import Belay.Sqlite.Model.KeysUniqueUpsert
 import Belay.Sqlite.Model.KeysUniqueCreate
 import Belay.Sqlite.Model.ExprAppendLaws
 import Belay.Sqlite.Model.KeysUniqueAddColumn
+import Belay.Sqlite.Model.DropPositionLaws
+import Belay.Sqlite.Model.KeysUniqueDrop
 import Belay.Sqlite.Model.ForeignKeysHold
 import Belay.Sqlite.Model.Execution
 import Belay.Sqlite.Model.LiteralData

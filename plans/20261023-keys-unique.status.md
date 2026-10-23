@@ -110,3 +110,6 @@ None yet. A proof that fails is recorded here with a counterexample (ADR 0022, D
   (`ExprAppendLaws`) and `runStatement_addColumn_keysUnique` (`KeysUniqueAddColumn`).
 - 2026-10-23: review round 3 (ADD COLUMN): two R2 musts (the plain words of `filterMap_set_none`
   and `Database.KeysUnique.addColumn` omitted the cases without an element or a table), fixed.
+- 2026-10-23: review round 4 (the refactor): no findings. DROP: `Catalog.DropCondition` (a kept
+  unique index is on a kept table), the laws of the kept positions (`DropPositionLaws`) and
+  `runStatement_drop_keysUnique` (`KeysUniqueDrop`).
