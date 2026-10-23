@@ -7,7 +7,7 @@ notation (`catalog.find`), so a copy of single definitions in a private namespac
 would still call the originals. Each mutant is therefore a real copy of the
 `belay-sqlite-model` and `verifier-conformance` packages with one text change, which Lake
 rebuilds from one shared base build. The build covers only the import closure of
-`VerifierConformance.Case`, which has no proof modules, so a mutant that breaks a
+`VerifierConformance.Classify`, which has no proof modules, so a mutant that breaks a
 proof still builds. The Lean interpreter then classifies the cases, given as the
 Lean terms that the conformance runner emits, with the mutant's `classifyCase`.
 

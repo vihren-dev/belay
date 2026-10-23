@@ -8,7 +8,8 @@ set_option doc.verso true
 2026-10-22), for the records of a recorder that runs on after an SQL error. Each statement takes
 the model's step ({name}`Belay.Sqlite.Model.runScriptStepWith` and
 {name}`Belay.Sqlite.Model.ranScriptStep`, of which {name}`Belay.Sqlite.Model.runScriptStep` is
-made), so the pass and {name}`Belay.Sqlite.Model.runScriptFrom` are one run. The pass keeps what
+made), so the pass and {name}`Belay.Sqlite.Model.runScriptFrom` are one run
+({lit}`VerifierConformance.RunPassLaws` proves it). The pass keeps what
 the comparison needs and the run's output does not hold: the observation after each statement,
 with the error and its phase, and the columns, rows and changes of each statement. -/
 
@@ -61,28 +62,5 @@ def runPassFrom (context : ResolveContext) (clock : Option Clock) (index : Nat) 
           possible := possibleOutput value parameters resolved connection.state transition :: later.possible,
           results := output :: later.results, supported := later.supported })
       context clock index connection statement parameters
-
-/-- For every context, optional clock, index, connection and list of statements with values:
-the results of the pass ({name}`runPassFrom`) are the outputs of the model's run
-({name}`runScriptFrom`) with the same arguments. So a verdict that compares the pass with
-SQLite compares the run of the model. Proof sketch: induction on the statements; both take
-{name}`runScriptStepWith` with {name}`ranScriptStep`, end with
-the same {name}`Output.unmodeled`, or give the same output and go on from the same connection. -/
-theorem runPassFrom_results (context : ResolveContext) (clock : Option Clock) :
-    ∀ (index : Nat) (connection : Connection) (script : List (Syntax.Statement × List Value)),
-      (runPassFrom context clock index connection script).results =
-        (runScriptFrom context clock index connection script).outputs
-  | _, _, [] => rfl
-  | index, connection, (statement, parameters) :: rest => by
-    simp only [runPassFrom, runScriptFrom, runScriptStep, runScriptStepWith]
-    split
-    · rfl
-    · split
-      · rfl
-      · split
-        · rfl
-        · cases ranScriptStep parameters connection _ _ _ _ with
-          | ended reason => rfl
-          | continued output next => simp [runPassFrom_results context clock (index + 1) next rest]
 
 end Belay.Sqlite.Model.Conformance
