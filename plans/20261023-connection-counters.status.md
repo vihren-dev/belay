@@ -212,6 +212,11 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   `tests/test_judge_records.py`, `tests/test_judge.py`. These files are in the lock
   (`judge/`), so `integrity/judge.lock.json` must change (the lead runs `just judge-lock`). Nix
   evidence is pending.
+- 2026-10-23 (PR B): refactor after the review of the recorder commit. The two format
+  documents (`docs/native-corpus-format.md`, `docs/conformance-format-v2.md`) describe version 7:
+  the field `counters`, when the recorder reads it, the reopen that gives 0, the replay check and
+  the start of the model run. The helper of `tests/conformance_counters_record_test.py` has full
+  types. Tests: `tests/conformance_counters_record_test.py`. Nix evidence is pending.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 
