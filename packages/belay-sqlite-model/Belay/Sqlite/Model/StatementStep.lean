@@ -128,7 +128,7 @@ the statement does not call cannot change its run. The run is ready only when {n
 is, and the state knows every counter that the statement reads ({name}`Counters.firstUnknown`),
 because a statement with an unknown read is not described (ADR 0024, D2). Write the call as
 {lit}`SqlState.statementRun state …`, not with dot notation, so that the copy of this file in the model
-mutation test (`tests/conformance_mutation_test.py`) is the code that runs. -/
+mutation test ({lit}`tests/conformance_mutation_test.py`) is the code that runs. -/
 def SqlState.statementRun (state : SqlState) (clock : Int) (parameters : List Value) (statement : Resolved.Statement) :
     StatementRun :=
   let run := runStatement clock (state.counters.view statement.counterReads) parameters statement state.database
