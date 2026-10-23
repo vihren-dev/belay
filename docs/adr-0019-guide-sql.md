@@ -130,6 +130,20 @@ What the code has today, after slice 1 of ADR 0018:
   `INSERT` (D4). Its row order without `ORDER BY` is SQLite's plan, which the harness
   compares as a multiset and which a scalar subquery reads only when every order gives the
   same first value, as in ADR 0018 slice 1.
+- Amended 2026-10-23: the collation of a compound column applies to the duplicate rule and to
+  an `ORDER BY` term without `COLLATE`. Two rules of SQLite differ from it, and the model
+  follows SQLite:
+  - `x IN (q)` over a compound reads the affinity and the collation of the right-most
+    `SELECT`'s column, and a scalar subquery `(q)` reads only its affinity, because SQLite
+    gives a subquery no collation. For example, over `t(n TEXT COLLATE NOCASE)` with `'a'` and
+    `u(m TEXT)`, `'A' IN (SELECT n FROM t UNION SELECT m FROM u WHERE 0)` is 0.
+  - When an operator is not `UNION ALL` and an `ORDER BY` term has `COLLATE`, SQLite sorts the
+    compound as the subquery of `SELECT * FROM (compound)`. Then a term without `COLLATE` sorts
+    under the collation of the left-most `SELECT`'s expression, `BINARY` when it has none.
+- Amended 2026-10-23: slice 3 does not include a compound `SELECT` as a statement of a trigger
+  body; the frontend refuses it. A compound subquery in a statement of a trigger body is in
+  slice 3. A later slice adds the statement form when a measurement or a guide example needs
+  it.
 
 ### D4. The table rebuild
 
