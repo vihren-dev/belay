@@ -44,12 +44,11 @@ structure ScalarRead where
 
 /-- Scan a string body from {lit}`position` to the closing {lit}`delimiter`: the position
 of the delimiter and the escape class, or {lit}`none` for a syntax error. {lit}`rest` is the
-text from {lit}`position` on; past its end the scan reads byte 0, as {name}`byteAt` does. The
-scan walks {lit}`rest` and does not read the text by index, so a kernel proof that reads a
-long string does work in proportion to its length. The escapes are those of the reader:
-canonical {lit}`\"`, {lit}`\\`, {lit}`\/`, {lit}`\b`, {lit}`\f`, {lit}`\n`, {lit}`\r`,
-{lit}`\t` and {lit}`\uXXXX`; JSON5 {lit}`\'`, {lit}`\v`, {lit}`\0` not before a digit,
-{lit}`\xXX` and line continuations. A NUL byte is an error. -/
+text from {lit}`position` on, with byte 0 past its end as in {name}`byteAt`; walking it keeps a
+kernel proof linear in the length of the string. The escapes are those of the reader:
+canonical {lit}`\"`, {lit}`\\`, {lit}`\/`, {lit}`\b`, {lit}`\f`, {lit}`\n`, {lit}`\r`, {lit}`\t` and
+{lit}`\uXXXX`; JSON5 {lit}`\'`, {lit}`\v`, {lit}`\0` not before a digit, {lit}`\xXX` and line
+continuations. A NUL byte is an error. -/
 def scanString (delimiter : UInt8) : Nat → Nat → List UInt8 → StringKind → Option (Nat × StringKind)
   | 0, _, _, _ => none
   | fuel + 1, position, rest, kind =>

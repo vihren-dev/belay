@@ -66,7 +66,8 @@ def slice (text : Array UInt8) (start stop : Nat) : List UInt8 :=
 
 /-- For every text, position and offset, byte {lit}`offset` of the list of the text from
 {lit}`position` on, with byte 0 past its end, is {name}`byteAt` of the text at
-{lit}`position + offset`. -/
+{lit}`position + offset`. Proof sketch: both sides become optional indexing, and indexing
+into {lit}`List.drop` adds the dropped count to the index. -/
 theorem drop_getD_eq_byteAt (text : Array UInt8) (position offset : Nat) :
     (text.toList.drop position).getD offset 0 = byteAt text (position + offset) := by
   simp [byteAt, List.getD_eq_getElem?_getD, List.getElem?_drop, Array.getD_eq_getD_getElem?]
