@@ -109,6 +109,10 @@ corpus finds is extra work and is not in this estimate.
 
 ## Owner decisions
 
+On 2026-10-23, the owner accepted the recommendation of both decisions: option A of decision 1
+(the recorder's mode goes in the judge pull request) and option A of decision 2 (native record
+version 6).
+
 1. **Where the recorder change goes.**
    - Option A (recommended): PR A (the work, first) has the model, the conformance runner, the
      prediction and the readers of version 6, tested with Lean examples and hand-written
