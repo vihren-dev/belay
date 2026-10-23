@@ -104,6 +104,7 @@ corpus finds is extra work and is not in this estimate.
 - 2026-10-23 (PR A): a mutant copy builds `VerifierConformance.Classify`, which its classifier program imports (`resolve_mutants.verdicts`); the earlier commit built only `VerifierConformance.Case`. The predictions of the claimed corpora are byte-identical to those before the task (`diff -r`).
 - 2026-10-23 (PR A, refactor): `runPassFrom_results` moves to `RunPassLaws.lean`, so that the import closure of `VerifierConformance.Classify`, which each mutant copy builds, does not contain this proof; the docstring of `resolve_mutants` names that module (review of `yksqxkqo`).
 - 2026-10-23 (PR A, refactor): the module docstring of `RunPassLaws` and the status line say only that the classifier does not import this proof (review of `llzrutmv`).
+- 2026-10-23 (PR A): `tests/conformance_continuing_case_test.py` runs in the Nix suite `harness`, with `tests/conformance_predict_test.py`, whose helper it imports.
 
 ## Tests for each commit
 
