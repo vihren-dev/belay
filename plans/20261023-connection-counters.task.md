@@ -50,15 +50,17 @@ As for the evidence after an error (its owner decision 1, A) and ADR 0024's owne
      that holds 1 gives 3; `(20), (20)` gives 2; a NOT NULL, CHECK or `datatype mismatch`
      failure at the second or third row gives the rowid of the row before it; a first row that
      fails leaves the value. So the model knows this counter, and does not make it unknown (D1).
-   - A write that runs row by row knows its last inserted row. Probes: a `RAISE(ABORT)` of an
-     AFTER INSERT program comes after the insert of its row (`VALUES (20, 1), (21, -1), (22, 1)`
-     gives 21; one row 10 gives 10); of a BEFORE INSERT program, before it (`(40, 1), (41, -1)`
-     gives 40). An immediate foreign-key failure of an INSERT comes at the end of the
-     statement when SQLite marks it as a multi-row write (`isMultiWrite`, set for example by a
-     `SELECT`, several `VALUES` rows or a trigger; `sqlite3BeginWriteOperation` in `insert.c`): with no parent 2,
-     `VALUES (30, 1), (31, 2), (32, 1)` gives 32, `SELECT 40, 2` gives 40, and `VALUES (60, 2)`
-     with an AFTER INSERT trigger gives 60. Else it fails before the insert (`fkey.c`): a
-     one-row `VALUES (30, 2)` leaves the value.
+   - A write that runs row by row knows its last inserted row, in SQLite's order of the
+     checks, programs and actions of each row. Probes: a `RAISE(ABORT)` of an AFTER INSERT
+     program comes after the insert of its row (`VALUES (20, 1), (21, -1), (22, 1)` gives 21);
+     of a BEFORE INSERT program, before it (`(40, 1), (41, -1)` gives 40). An `ON DELETE
+     RESTRICT` action fails when it runs: `INSERT OR REPLACE INTO p VALUES (7, 7), (8, 1)`, whose
+     second row deletes a referenced parent, gives 7. A missing parent of an INSERT fails at the
+     end of the statement when SQLite marks it as a multi-row write (`isMultiWrite`, set for
+     example by a `SELECT`, several `VALUES` rows or a trigger; `sqlite3BeginWriteOperation`):
+     `VALUES (30, 1), (31, 2), (32, 1)` with no parent 2 gives 32, `SELECT 40, 2` gives 40,
+     `VALUES (60, 2)` with an AFTER INSERT trigger gives 60. Else it fails before the insert
+     (`fkey.c`): a one-row `VALUES (30, 2)` leaves the value.
 4. **One computation.** The step of a statement (`runStatement`) gives the counts with its
    effect, from the same computation. `Output.done` and `statementOutput` read that count;
    `statementOutput` no longer computes a count, and no longer calls `runStatement` a second
@@ -184,16 +186,14 @@ with `WITH RECURSIVE`, which the frontend refuses for a write.
   (workspace `adr19s2`) add statement forms; each leaves the counters (outcome 2).
 - **The recorder.** `record_sql` (`native_record.py`) runs the setup and the migration on one
   writer connection, and reopens it for `{"reopen": true}` and for a read-only profile; read the
-  counters just before the migration's `execute`. Read them with `sqlite3_changes64`,
-  `sqlite3_total_changes64` and `sqlite3_last_insert_rowid`, not with SQL;
-  `native_library.py` declares `sqlite3_changes` today, but none of these three. The observations between statements are queries, which
-  do not change the counters. `execute` records `changes` only for DML without DDL actions.
+  counters just before the migration's `execute`, with `sqlite3_changes64`,
+  `sqlite3_total_changes64` and `sqlite3_last_insert_rowid` (`native_library.py` declares none of
+  them today). The observations between statements are queries, which do not change the
+  counters. `execute` records `changes` only for DML without DDL actions.
 - **Record version and corpus number.** The evidence after an error adds version 6 (the run
   that continues) and corpus-v51; corpus-v50 is the pragmas corpus. This task takes the next
   version, 7 (version 6 with the counters), and corpus-v52 (owner decision 1 of the status file).
-  Check `judge/claims.json`, `record_versions.py` and the open stacks again when the corpus is
-  recorded.
+  Check `judge/claims.json`, `record_versions.py` and the open stacks again before recording.
 - **Judge-locked files** (ADR 0011): `judge/*.py`, `judge/*.json`, each claimed corpus,
   `nix/sqlite.nix`, `nix/flake.lock`; not `conformance/native_*.py` (the owner reviews PR B).
-- **Files below 200 lines**, docstrings that give the reason, and plain words for each new
-  proposition (`AGENTS.md`); `StatementStep.lean` has 199 lines today.
+- **Files below 200 lines** (`StatementStep.lean` has 199), docstrings, plain words (`AGENTS.md`).

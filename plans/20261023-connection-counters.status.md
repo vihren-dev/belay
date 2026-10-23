@@ -32,6 +32,11 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
 - 2026-10-23: review round 2 (R19, must): a one-row INSERT fails a foreign key before its
   insert. Fixed: outcome 3 gives SQLite's rule (`isMultiWrite`), from `fkey.c`, `build.c`
   and `insert.c` of the pinned sources and new probes.
+- 2026-10-23: review round 3: finding 1 (R19, must): a `RESTRICT` action of a REPLACE fails
+  when it runs, not at the end of the statement. Fixed in outcome 3, with a new probe.
+  Finding 2 (R19, must) is rejected: it says that the trigger probe gives 0, 3, 60; a new run
+  of the probe gives 1, 1, 1 after `INSERT INTO p VALUES (1)` and 0, 2, 60 after the failed
+  INSERT (the trigger's row counts, the statement's own row does not).
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 
@@ -96,6 +101,10 @@ The ADR's table of facts and its examples are not repeated here. New facts for t
   `INSERT INTO c VALUES (50, 1)`, `INSERT INTO c VALUES (51, 1), (52, 2)` fails, then 0, 2, 52. With
   `log(x)` and `CREATE TRIGGER ct AFTER INSERT ON c BEGIN INSERT INTO log VALUES (new.id); END`,
   `INSERT INTO c VALUES (60, 2)` fails, then 0, 2, 60.
+- `p(id INTEGER PRIMARY KEY, u UNIQUE)` with rows (1, 1) and (2, 2), foreign keys on, and
+  `c(id INTEGER PRIMARY KEY, pid REFERENCES p(id) ON DELETE RESTRICT)` with row (5, 1)
+  (counters 1, 3, 5): `INSERT OR REPLACE INTO p VALUES (7, 7), (8, 1)` fails with `FOREIGN KEY
+  constraint failed`, then 0, 3, 7; `INSERT OR REPLACE INTO p VALUES (9, 1)` fails, then 0, 3, 7.
 
 ## Measurement
 
