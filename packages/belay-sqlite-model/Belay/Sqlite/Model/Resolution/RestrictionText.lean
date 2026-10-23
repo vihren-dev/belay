@@ -80,7 +80,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .addColumnCheckError => "a CHECK of ADD COLUMN that names no column of the table, or uses an aggregate, is not modeled; correct the CHECK"
   | .generatedFunction => "a date and time function, a JSON function or another function that can fail, such as abs, like or unistr, in a generated column is not modeled; compute the value in the write"
   | .generatedLoop => "generated columns that read each other in a loop are not modeled; SQLite refuses the table"
-  | .parameterErrorOrder => "a parameter in a CHECK constraint, a generated column or an index, in an expression with a function call, a subquery, a qualified name or a name that does not resolve, is not modeled; SQLite refuses the parameter there, so remove it"
+  | .parameterErrorOrder => "a parameter in a CHECK constraint, a generated column or an index, in an expression with a function call, a subquery, a qualified name, a name that does not resolve, an unknown collation, IN () or AND with a number, is not modeled; remove the parameter, which SQLite refuses there unless it removes the expression first"
   | .upsertGenerated => "DO UPDATE of a generated column is not modeled; assign the columns that it reads"
   | .addColumnGenerated => "ADD COLUMN of a generated column is not modeled; create the table with it"
   | .addColumnStrictType => "ADD COLUMN to a STRICT table without one of its types, or with a default that does not fit the type, is not modeled; use INT, INTEGER, REAL, TEXT, BLOB or ANY and a default of that type"

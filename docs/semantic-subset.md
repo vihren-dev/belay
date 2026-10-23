@@ -422,7 +422,7 @@ should shrink.
 | `add-column-check-error` | A CHECK of ADD COLUMN that SQLite cannot resolve is not modeled, because SQLite reports it while the statement runs | ADR 0014, slice 4 |
 | `generated-function` | A date and time function or a JSON function in a generated column is not modeled | ADR 0014, slice 5 |
 | `generated-loop` | Generated columns that read each other in a loop are not modeled, because SQLite reports the loop while CREATE TABLE runs | ADR 0014, slice 5 |
-| `parameter-error-order` | A parameter in a CHECK constraint, a generated column or an index, in an expression where SQLite can also find another error, is not modeled | ADR 0019, D1 |
+| `parameter-error-order` | A parameter in a CHECK constraint, a generated column or an index, in an expression where SQLite can also find another error or removes the parameter before it resolves names (`? AND 0`, `? IN ()`), is not modeled | ADR 0019, D1 |
 | `add-column-generated` | ADD COLUMN of a generated column is not modeled | ADR 0014, slice 5 |
 | `drop-constraint-index` | DROP INDEX of a name that begins with `sqlite_autoindex_` and is no catalog index is not modeled, because the catalog does not name the indexes of UNIQUE and PRIMARY KEY constraints, which SQLite does not drop | ADR 0014, slice 7 |
 | `add-column-strict-type` | ADD COLUMN to a `STRICT` table with a type that it does not admit, or with a default that does not fit the type, is not modeled, because SQLite reports it while the statement runs | ADR 0014, slice 6 |

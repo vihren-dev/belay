@@ -132,8 +132,8 @@ other forms that stay out of scope.
   `ReadDefaults` and `FunctionCalls`. No wildcard arms. The codecs are derived.
   `conformance/expression_form_mutants.py` anchors on source text that these edits can move.
 - **The frontend.** A parameter is an `expr` node with one `VARIABLE` token
-  (`parser/upstream/parse.y`). `Translation/Expressions.lean` refuses it today. The
-  action-free grammar accepts `#N` and checks no numbers, so the frontend or resolution must
+  (`parser/upstream/parse.y`). Before this task, `Translation/Expressions.lean` refused it.
+  The action-free grammar accepts `#N` and checks no numbers, so the frontend or resolution must
   give SQLite's errors. The profile has the limit (`Resolution/Profile.lean`,
   `SQLITE_LIMIT_VARIABLE_NUMBER`).
 - **The recorder binds every slot.** `conformance/native_bindings.py` requires one value for

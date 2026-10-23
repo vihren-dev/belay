@@ -33,3 +33,7 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D1 (amended 2026-10-23
   `tests/syntax_parameters_test.py`. Corpus cases that bind values stay out of scope until C3.
   `just test-full` passes (463 and 155 tests); `tests/conformance_model_test.py` now checks
   that a case with bound values prepares and that the model's run gives MODEL_UNSUPPORTED.
+- 2026-10-23: review round 4 of the fix: no must findings. Its two should findings are fixed
+  in a refactor commit: the restriction's message names the forms that SQLite removes before
+  it resolves names, and the task file says that the frontend refused parameters before this
+  task. `just test-full` passes.
