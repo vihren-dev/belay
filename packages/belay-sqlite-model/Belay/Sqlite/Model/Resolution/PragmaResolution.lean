@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.Resolution.ResolveState
 import Belay.Sqlite.Model.Resolution.PragmaRows
+import Belay.Sqlite.Model.Resolution.ForeignKeyPlan
 
 set_option doc.verso true
 
@@ -31,6 +32,20 @@ every table: one column with the name of the pragma ({name}`Syntax.checkName`). 
 def checkQuery (quick : Bool) (limit : Nat) (table : Option Nat) : Resolved.Statement :=
   .query (pragmaQuery (.check quick limit table) [Syntax.checkName quick]) []
 
+/-- The query of {lit}`PRAGMA foreign_key_check` for the table at the catalog position or for
+every table, with the columns of {name}`foreignKeyCheckNames`. -/
+def keyCheckQuery (table : Option Nat) : Resolved.Statement :=
+  .query (pragmaQuery (.foreignKeyCheck table) foreignKeyCheckNames) []
+
+/-- The prepare error {lit}`foreign key mismatch` of the table at the catalog position, as
+{lit}`PRAGMA foreign_key_check` reports it: the error of the first foreign key in the order of
+its {lit}`fkid` ({name}`childLinks`) whose parent table has no parent key
+({name}`ParentLink.mismatch`, {name}`linkError`). A missing parent table is no error. -/
+def Catalog.keyMismatch (catalog : Catalog) (position : Nat) : Option PrepareError :=
+  (childLinks catalog.foreignKeyLinks position).findSome? fun link => match link.parent with
+    | .mismatch _ => linkError catalog link
+    | .located .. | .missing => none
+
 /-- Resolve a pragma against the state:
 
 * {lit}`PRAGMA foreign_keys = value` sets the setting outside a transaction and changes nothing
@@ -42,7 +57,13 @@ def checkQuery (quick : Bool) (limit : Nat) (table : Option Nat) : Resolved.Stat
 * {lit}`PRAGMA foreign_key_list(t)` is the query of {name}`Catalog.foreignKeyListRows`;
 * a check pragma is {name}`checkQuery` for every table, or for the named table; a name that
   the catalog does not have is SQLite's prepare error {lit}`no such table`, and a name of
-  SQLite's own tables is the restriction {name}`RestrictionKind.systemTable`.
+  SQLite's own tables is the restriction {name}`RestrictionKind.systemTable`;
+* {lit}`PRAGMA foreign_key_check` is {name}`keyCheckQuery`, for every table or for the named
+  table, which is found as for a check pragma. A {lit}`foreign key mismatch`
+  ({name}`Catalog.keyMismatch`) fails at prepare, before SQLite reads a row. Without a table
+  name, SQLite reports the mismatch of the first table in the order of its schema hash table,
+  so the mismatches of two or more tables are the restriction
+  {name}`RestrictionKind.foreignKeyMismatchOrder`.
 
 Every form except a setting with a value keeps the state. -/
 def resolvePragma (state : ResolveState) : Syntax.Pragma → Except NodeRestriction (Resolved.Statement × ResolveState)
@@ -59,6 +80,16 @@ def resolvePragma (state : ResolveState) : Syntax.Pragma → Except NodeRestrict
   | .check quick limit none => .ok (checkQuery quick limit none, state)
   | .check quick limit (some table) => match state.catalog.findTable table with
     | some (position, _) => .ok (checkQuery quick limit (some position), state)
+    | none => if reservedName table then .error { path := [], kind := .systemTable }
+      else .ok (.prepareError (.noSuchTable table), state)
+  | .foreignKeyCheck none => match (List.range state.catalog.length).filterMap state.catalog.keyMismatch with
+    | [] => .ok (keyCheckQuery none, state)
+    | [error] => .ok (.prepareError error, state)
+    | _ :: _ :: _ => .error { path := [], kind := .foreignKeyMismatchOrder }
+  | .foreignKeyCheck (some table) => match state.catalog.findTable table with
+    | some (position, _) => match state.catalog.keyMismatch position with
+      | some error => .ok (.prepareError error, state)
+      | none => .ok (keyCheckQuery (some position), state)
     | none => if reservedName table then .error { path := [], kind := .systemTable }
       else .ok (.prepareError (.noSuchTable table), state)
 

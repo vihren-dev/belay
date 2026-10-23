@@ -75,23 +75,6 @@ theorem Table.checkFailures_eq_nil (quick : Bool) (catalog : Catalog) (position 
     · exact keys unquick _ (Catalog.primary_mem_uniqueKeys catalog position nonempty)
     · exact keys unquick _ (Catalog.key_mem_uniqueKeys found)
 
-/-- For every database, quick flag and positions: no table at the positions fails
-({name}`Database.failingTables` is empty) exactly when every table at the positions gives no
-failures ({name}`Database.tableFailures`).
-Proof sketch: a {lit}`filterMap` is empty when each position gives none, and a table gives none
-exactly when it has no failures. -/
-theorem Database.failingTables_eq_nil (database : Database) (quick : Bool) (positions : List Nat) :
-    database.failingTables quick positions = [] ↔
-      ∀ position ∈ positions, ∀ table, database.table position = some table → database.tableFailures quick position table = [] := by
-  unfold Database.failingTables
-  rw [List.filterMap_eq_nil_iff]
-  refine forall_congr' fun position => imp_congr_right fun _ => ?_
-  cases database.table position with
-  | none => simp
-  | some table =>
-    simp only [Option.bind_some, forall_eq', Option.some.injEq]
-    split <;> simp_all
-
 /-- For every database, quick flag, limit and table choice: the check pragma gives the one row
 {lit}`ok` ({name}`Database.checkRows`) exactly when no table at the positions of the choice
 fails ({name}`Database.checkPositions`). Proof sketch: with one failing table, the rows are
@@ -100,9 +83,9 @@ theorem Database.checkRows_ok_iff (database : Database) (quick : Bool) (limit : 
     database.checkRows quick limit table = some [[.text checkOk]] ↔
       ∀ position ∈ database.checkPositions table, ∀ found, database.table position = some found →
         database.tableFailures quick position found = [] := by
-  rw [← Database.failingTables_eq_nil]
+  rw [← Database.blocks_eq_nil]
   unfold Database.checkRows
-  cases database.failingTables quick (database.checkPositions table) with
+  cases database.blocks (database.checkPositions table) (database.tableFailures quick) with
   | nil => simp
   | cons failures rest =>
     cases rest with

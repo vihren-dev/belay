@@ -20,11 +20,16 @@ inductive PragmaRows where
   rows (100 for 0), for the table at the catalog position {lit}`table`, or for every table with
   {lean}`(none : Option Nat)`. Each row has one cell. -/
   | check (quick : Bool) (limit : Nat) (table : Option Nat)
+  /-- The rows of {lit}`PRAGMA foreign_key_check`, which the run computes from the stored rows:
+  for the table at the catalog position {lit}`table`, or for every table with
+  {lean}`(none : Option Nat)`. Each row has four cells. -/
+  | foreignKeyCheck (table : Option Nat)
   deriving Repr, DecidableEq
 
 /-- The number of cells of each row of the pragma. -/
 def PragmaRows.width : PragmaRows → Nat
   | .fixed width _ => width
   | .check .. => 1
+  | .foreignKeyCheck _ => 4
 
 end Belay.Sqlite.Model.Resolved

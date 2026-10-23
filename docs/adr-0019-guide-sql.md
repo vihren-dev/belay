@@ -116,7 +116,11 @@ What the code has today, after slice 1 of ADR 0018:
     the history of the connection. The model gives exact rows when at most one table gives
     rows or has a `foreign key mismatch`. When two or more tables give rows or have a
     mismatch, the output is `Output.unmodeled`. Thus the order of the tables never shows in
-    the output.
+    the output. (Amended 2026-10-23 during the slice: a `foreign key mismatch` fails the
+    statement at prepare, before SQLite reads a row. Thus one table with a mismatch gives its
+    error, also when other tables give rows; checked natively. The mismatches of two or more
+    tables are the restriction `foreign-key-mismatch-order`, whose output is
+    `Output.unmodeled`.)
   - **The checks that the laws do not name.** `integrity_check` also checks the stored form of
     each cell of a table that is not `STRICT` (`NUMERIC value in t.a`, `TEXT value in t.a`),
     and the key order of a `WITHOUT ROWID` table (`row not in PRIMARY KEY order for t`). Under

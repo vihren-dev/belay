@@ -295,6 +295,17 @@ tables is that of its schema hash table, and the model gives no result. Over an 
 database, the row `ok` means that the NOT NULL, CHECK, `STRICT` and, for `integrity_check`,
 unique constraints of each checked table hold.
 
+`PRAGMA foreign_key_check` (ADR 0019, D2), alone or with a table name, gives one row for each
+child row and foreign key that the row does not satisfy, also when foreign keys are off: the
+table name, the rowid (NULL for a `WITHOUT ROWID` table), the parent table as the key writes it,
+and the `fkid` of the key, in scan order and then in `fkid` order. The child row finds its parent
+as a write does, a NULL in the key satisfies it, and a missing parent table finds no row. A
+foreign key whose parent table has no parent key fails at prepare with
+`foreign key mismatch - "c" referencing "p"`, before any row. A missing table fails with
+`no such table`, and a name of SQLite's own tables is the restriction `system-table`. Without a table name, two or more tables with a mismatch are the restriction
+`foreign-key-mismatch-order`, and two or more tables with rows give no result. The pragma gives
+no rows exactly when the foreign keys hold (`Database.ForeignKeysHold`).
+
 A generated column (ADR 0014, slice 5) is `VIRTUAL` or `STORED`, and `PRAGMA table_xinfo`
 reports it with `hidden` 2 or 3. Its expression resolves over the table's columns after the
 CHECK constraints, without the rowid; every write computes the generated values of the
@@ -518,6 +529,7 @@ should shrink.
 | `distinct-order-by` | An `ORDER BY` expression of `SELECT DISTINCT` that is no result column is not modeled, because SQLite sorts each kept row by the value of a row that its plan chooses | ADR 0018, slice 3 |
 | `trigger-writes-own-table` | A `BEFORE UPDATE` or `BEFORE DELETE` trigger that writes its own table, also through the triggers and actions that it fires, is not modeled, because SQLite documents the result as undefined | ADR 0018, slice 5 |
 | `schema-trigger-order` | Two triggers of one table, time and event in the starting schema are not modeled, because the schema does not say which one runs first | ADR 0018, slice 5 |
+| `foreign-key-mismatch-order` | `PRAGMA foreign_key_check` without a table name is not modeled when two or more tables have a foreign key mismatch, because SQLite reports the first one in the order of its schema hash table | ADR 0019, D2 |
 
 #### Unrepresented
 
