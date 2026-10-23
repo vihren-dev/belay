@@ -82,12 +82,6 @@ def execute(connection: Connection, sql: str, *, outputs: bool = False,
                 connection.check(code, "prepare")
         suffix = tail.value or b""
         consumed = remaining[:len(remaining) - len(suffix)]
-        if run_on:
-            whole = complete_statement(connection.library, remaining)
-            if statement.value and whole != consumed:
-                raise ValueError(f"SQLite's prepare tail and the complete statement end at different places: "
-                                 f"{consumed.decode()!r}; split the statement or record it without running on")
-            consumed, suffix = whole, remaining[len(whole):]
         rows: list[Row] = []
         columns: list[str] = []
         supplied = next(bindings, None) if outputs and (statement.value or code) else ()
@@ -98,6 +92,12 @@ def execute(connection: Connection, sql: str, *, outputs: bool = False,
         message = ""
         phase: str | None = None
         try:
+            if run_on:
+                whole = complete_statement(connection.library, remaining)
+                if statement.value and whole != consumed:
+                    raise ValueError(f"SQLite's prepare tail and the complete statement end at different places: "
+                                     f"{consumed.decode()!r}; split the statement or record it without running on")
+                consumed, suffix = whole, remaining[len(whole):]
             if call is not None:
                 check_call_end(sql, remaining, consumed, call_index, tcl_calls)
             if record_bindings and (statement.value or code):
