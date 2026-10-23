@@ -156,3 +156,9 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3).
   with rules (`KeysUniqueRowEngine`), and the statement theorem `runStatement_keysUnique`
   (`KeysUniqueStatement`). No proof of the row engine failed. Tests:
   `tests/test_model_package.py -m unit`.
+- 2026-10-23: `just test-full` and `just verdict` passed at the end of part 1 (xuotovnp), run by
+  the lead.
+- 2026-10-23: review round 7 (the row engine): two R2 musts (the plain words of
+  `ResultHolds.bind` omitted the stop property of the continuation; those of
+  `KeyState.keysUnique_start` named every state with the rows instead of the constructed state),
+  fixed.

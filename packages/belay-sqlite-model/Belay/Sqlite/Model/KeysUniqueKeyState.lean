@@ -28,9 +28,10 @@ def ResultHolds {α} (good : α → Prop) (stopGood : KeyStop → Prop) : Except
   | .error stop => stopGood stop
 
 /-- For every two properties of values, property of stops, result and continuation: if the
-result holds the first properties, and the continuation holds the second property of values for
-each value with the first, then their bind holds the second property and the stop property.
-Proof sketch: a stop passes through the bind. -/
+result holds the first property of values and the property of stops, and for each value with
+the first property the result of the continuation holds the second property of values and the
+property of stops, then their bind holds the second property of values and the property of
+stops. Proof sketch: a stop passes through the bind. -/
 theorem ResultHolds.bind {α β} {good : α → Prop} {next : β → Prop} {stopGood : KeyStop → Prop}
     {result : Except KeyStop α} {continuation : α → Except KeyStop β} (holds : ResultHolds good stopGood result)
     (step : ∀ value, good value → ResultHolds next stopGood (continuation value)) :
@@ -153,10 +154,11 @@ theorem KeyState.keysUnique_changeRows_sublist {catalog : Catalog} {state : KeyS
   KeyState.keysUnique_changeRows unique fun table found =>
     (unique position table found).sublist (by rw [KeyState.table_rows found]; exact sublist _)
 
-/-- For every catalog, database, and state with the rows of the database: the state satisfies
-{name}`KeyState.KeysUnique` when the database over the catalog satisfies
-{name}`Database.KeysUnique`. The row engine starts from such a state. Proof sketch: the
-database of the state is the database. -/
+/-- For every database: if the database satisfies {name}`Database.KeysUnique`, the state
+{lit}`{ rows := database.rows }` (the rows of the database, and the default value
+of each other field) satisfies {name}`KeyState.KeysUnique` over the catalog of the database.
+The row engine starts from this state. Proof sketch: the database of the state is the
+database. -/
 theorem KeyState.keysUnique_start {database : Database} (unique : database.KeysUnique) :
     ({ rows := database.rows } : KeyState).KeysUnique database.catalog := unique
 
