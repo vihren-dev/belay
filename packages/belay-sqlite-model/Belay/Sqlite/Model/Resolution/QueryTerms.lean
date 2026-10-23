@@ -5,7 +5,7 @@ set_option doc.verso true
 
 /-! The terms of a {lit}`SELECT` that name a result column or a number (ADR 0012, slice 1):
 integer literals, the result column that an {lit}`ORDER BY` or {lit}`GROUP BY` term names,
-the {lit}`LIMIT` and {lit}`OFFSET` values, and the checks of grouped result columns that
+the {lit}`LIMIT` and {lit}`OFFSET` values and parameters, and the checks of grouped result columns that
 {lit}`Queries.lean` makes. -/
 
 namespace Belay.Sqlite.Model
@@ -78,12 +78,25 @@ def namedResult (names : List (Option Identifier)) : Syntax.Expr → Option (Exc
     (integerLiteral term).map fun (number : Int) =>
       if 1 ≤ number ∧ number ≤ (names.length : Int) then .ok (number.toNat - 1) else .error ()
 
-/-- Resolve a {lit}`LIMIT` or {lit}`OFFSET` expression: an integer literal, or none. -/
-def windowValue (path : List Nat) : Option Syntax.Expr → Except ValueIssue (Option Int)
-  | none => .ok none
-  | some term => match integerLiteral term with
-    | some value => .ok (some value)
-    | none => .error (.restriction path .windowValue)
+/-- The number of a lone parameter; {lean}`(none : Option Nat)` for any other expression, also
+for an expression that holds a parameter. -/
+def Syntax.Expr.parameterNumber? : Syntax.Expr → Option Nat
+  | .parameter number => some number
+  | .null | .numeric _ | .string _ | .blob _ | .currentTime _ | .identifier .. | .negate _ | .positive _
+  | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic .. | .cast ..
+  | .qualified .. | .collate .. | .exists _ | .inQuery .. | .subquery _ | .inList .. | .between .. | .caseOf ..
+  | .concatenate .. | .raise .. => none
+
+/-- Resolve a {lit}`LIMIT` or {lit}`OFFSET` expression to its integer literal and the number of
+its parameter: {lit}`(some value, none)` for an integer literal, {lit}`(none, some number)` for
+a lone parameter, whose value is read when the query runs, and {lit}`(none, none)` without the
+clause. Every other expression is the {lit}`windowValue` restriction. -/
+def windowValue (path : List Nat) : Option Syntax.Expr → Except ValueIssue (Option Int × Option Nat)
+  | none => .ok (none, none)
+  | some term => match integerLiteral term, term.parameterNumber? with
+    | some value, _ => .ok (some value, none)
+    | none, some number => .ok (none, some number)
+    | none, none => .error (.restriction path .windowValue)
 
 /-- Whether a query is a model restriction because SQLite may skip a failing group: it
 has {lit}`GROUP BY`, a {lit}`LIMIT` or {lit}`OFFSET`, and a result column that can fail

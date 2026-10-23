@@ -128,6 +128,7 @@ def runStep (catalog : Catalog) (nested : NestedRun) (frame : RowFrame) (cells :
     let some source := query.sourceAfter context cells database | throw .undescribed
     let run := query.run context source.rows
     if source.fault == .may || run.fault == .may || !Resolved.subqueriesPlain subqueries then throw .undescribed
+    if run.mismatch then throw (.error .datatypeMismatch)
     if run.overflow then throw (.error .integerOverflow)
     if run.fault == .must then throw (.error .functionError)
     return ({ state with subqueried := state.subqueried || !subqueries.isEmpty }, false)

@@ -49,7 +49,8 @@ def haltError : SqlTransition → Option ExecutionError
   | .halt (.pending _ _ error) => error.map (·.2)
 
 /-- Whether an execution error is a failed write, whose outputs are the {lit}`RETURNING`
-names, no rows and no change: a constraint failure or a rowid alias mismatch. -/
+names, no rows and no change: a constraint failure or a datatype mismatch, which for a write is
+a rowid alias mismatch. -/
 def ExecutionError.failsWrite : ExecutionError → Bool
   | .constraintViolation | .constraintFail | .constraintRollback | .datatypeMismatch => true
   | .unmodeled | .prepare _ | .transactionAlreadyActive | .noActiveTransaction | .integerOverflow
@@ -104,16 +105,19 @@ change count; a query whose table is missing has no output. A query that fails w
 {lit}`GROUP BY`; with {lit}`GROUP BY`, SQLite may return the rows of other groups
 before the failing one, in an order the model does not describe, so it has no output. A
 query whose JSON function fails, which has no {lit}`FROM` and so at most one row, has its
-column names and no rows. A write that checks foreign keys (ADR 0018, D4) has the rows that
-its keys' run wrote ({name}`StatementRun.keyRows`): its {lit}`RETURNING` rows and change count
-when it succeeds, and its {lit}`RETURNING` names, no rows and the rows that a FAIL failure kept
-when it fails a constraint. {lit}`PRAGMA foreign_keys = value` has no output columns. -/
+column names and no rows, and so has a query that fails with {lit}`datatype mismatch` because a
+value of its window is not an integer, which SQLite reads before the first row. A write that
+checks foreign keys (ADR 0018, D4) has the rows that its keys' run wrote
+({name}`StatementRun.keyRows`): its {lit}`RETURNING` rows and change count when it succeeds, and
+its {lit}`RETURNING` names, no rows and the rows that a FAIL failure kept when it fails a
+constraint. {lit}`PRAGMA foreign_keys = value` has no output columns. -/
 def statementOutput (clock : Int) (parameters : List Value) (statement : Resolved.Statement) (before : SqlState)
     (transition : SqlTransition) : Option StatementOutput :=
   let successful := match transition with | .next _ => true | .halt _ => false
   let constraintFailure := (haltError transition).any ExecutionError.failsWrite
   let overflow := haltError transition == some .integerOverflow
   let functionFailure := haltError transition == some .functionError
+  let mismatch := haltError transition == some .datatypeMismatch
   match statement with
   | .insert target rows returning subqueries none =>
     let context := Resolved.statementContext clock parameters before.database subqueries
@@ -157,7 +161,7 @@ def statementOutput (clock : Int) (parameters : List Value) (statement : Resolve
     let context := Resolved.statementContext clock parameters before.database subqueries
     if successful then
       (query.source context before.database).map fun source => ⟨query.names, (query.run context source.rows).rows, none⟩
-    else if (overflow && query.groupBy.isEmpty) || functionFailure then some ⟨query.names, [], none⟩
+    else if (overflow && query.groupBy.isEmpty) || functionFailure || mismatch then some ⟨query.names, [], none⟩
     else none
   | .insert _ _ returning subqueries (some _) | .upsert _ _ _ returning _ subqueries (some _)
   | .update _ _ _ returning subqueries (some _) | .delete _ _ returning subqueries (some _) =>

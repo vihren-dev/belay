@@ -35,7 +35,11 @@ The frontend maps these statements, and refuses every other statement as
   with an optional alias (ADR 0012, slice 1). Without `FROM`, the source is one row
   with no columns (slice 6a), which `WHERE` keeps or removes; aggregation, grouping,
   `ORDER BY` and `LIMIT` then apply as for any query, so `SELECT count(*) WHERE 0` is one
-  row with 0. `*` is SQLite's `no tables specified`. `FROM` is one table, or tables joined
+  row with 0. `LIMIT ?` and `OFFSET ?` read the bound value when the query starts, LIMIT
+  first and OFFSET only when the LIMIT is not 0, and convert it as SQLite's
+  `OP_MustBeInt` does; a value that is not an integer then fails the statement with
+  `datatype mismatch`. A negative LIMIT has no limit, and a negative bound OFFSET skips
+  no rows (ADR 0019). `*` is SQLite's `no tables specified`. `FROM` is one table, or tables joined
   left to right with `,`, `JOIN`, `INNER JOIN`, `CROSS JOIN` (with an optional `ON`)
   and `LEFT [OUTER] JOIN … ON`, and `RIGHT [OUTER] JOIN` and `FULL [OUTER] JOIN`
   with an optional `ON` (slice 4c), which add each right row that no row of the left
@@ -383,7 +387,7 @@ or inside an `ORDER BY` expression; a query of SQLite's own tables, such as
 the same name; an `ON` condition that names a
 table joined after it; `SUM` in a query with `GROUP BY` and `LIMIT` or `OFFSET`; and
 `LIMIT` or `OFFSET` other than
-an integer literal, or a negative `OFFSET`. Each restriction message says what to
+an integer literal or a lone parameter, or a negative literal `OFFSET`. Each restriction message says what to
 change.
 
 ### Restriction registry
@@ -439,7 +443,7 @@ should shrink.
 | `group-by-term` | Only a column name, also under COLLATE, or a result column number is modeled in GROUP BY | ADR 0012 slice 1; ADR 0014, slice 3 |
 | `bare-column` | A result column outside GROUP BY in an aggregate query is not modeled | ADR 0012 slice 1 |
 | `aggregate-order-by` | An `ORDER BY` term of an aggregate query that reads a column outside `GROUP BY` is not modeled | ADR 0012 slice 1; ADR 0018, slice 3 |
-| `window-value` | Only an integer literal is modeled as LIMIT or OFFSET | ADR 0012 slice 1 |
+| `window-value` | Only an integer literal or a lone parameter is modeled as LIMIT or OFFSET | ADR 0012 slice 1; ADR 0019 |
 | `negative-offset` | A negative OFFSET is not modeled | ADR 0012 slice 1 |
 | `table-function` | Only `json_each` with one or two arguments is modeled as a table-valued function in FROM | ADR 0012 slice 6d |
 | `later-table-in-on` | An ON condition that names a source joined after it is not modeled: SQLite moves it to WHERE without outer joins and refuses it otherwise | ADR 0012 amendment 2; ADR 0013 amendment 2 |

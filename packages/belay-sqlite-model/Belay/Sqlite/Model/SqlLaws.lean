@@ -76,11 +76,18 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites (script.map (·.1)))
         | none => rfl
         | some source =>
           have clean := Resolved.source_fault_of_plain _ state.database query.sources _ source noEach rfl found
-          by_cases must : query.mustFail { Resolved.EvalContext.plain (state.clock position) with parameters }
-              source.rows = true <;>
-            simp [Resolved.Query.run, Resolved.Query.mayFail_of_plain { Resolved.EvalContext.plain (state.clock position) with parameters }
-                (fun _ _ => ⟨rfl, rfl, rfl⟩) query _ plain, clean, must,
-              Resolved.Query.distinctCertain, single]
+          cases window : query.bindWindow parameters with
+          | none => simp [Resolved.Query.run, window, clean]
+          | some bound =>
+            obtain ⟨_, _, shape⟩ := Resolved.Query.bindWindow_some parameters query bound window
+            have boundSingle : bound.distinct = none := by rw [shape]; exact single
+            have boundPlain : (bound.expressions.all fun x => !x.any Resolved.Expr.isFallibleCall) = true := by
+              rw [shape]; exact plain
+            by_cases must : bound.mustFail { Resolved.EvalContext.plain (state.clock position) with parameters }
+                source.rows = true <;>
+              simp [Resolved.Query.run, window, Resolved.Query.mayFail_of_plain
+                  { Resolved.EvalContext.plain (state.clock position) with parameters } (fun _ _ => ⟨rfl, rfl, rfl⟩)
+                  bound _ boundPlain, clean, must, Resolved.Query.distinctCertain, boundSingle]
       | drop positions keys =>
         have none := first.2.1 positions keys rfl
         subst none

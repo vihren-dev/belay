@@ -103,7 +103,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .groupByTerm => "only a column name or a result column number is modeled in GROUP BY"
   | .bareColumn => "a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it"
   | .aggregateOrderBy => "an ORDER BY term of an aggregate query that reads a column outside GROUP BY is not modeled; order by a grouping term, an aggregate or a result column"
-  | .windowValue => "only an integer literal is modeled as LIMIT or OFFSET; write an integer"
+  | .windowValue => "only an integer literal or a lone parameter is modeled as LIMIT or OFFSET; write an integer or ?"
   | .negativeOffset => "a negative OFFSET is not modeled; write OFFSET 0 or more"
   | .windowedGroupSum => "SUM in a grouped query with LIMIT or OFFSET is not modeled, because SQLite may stop before an overflowing group; remove the window or the SUM"
   | .constantFunctionError => "a constant value in VALUES or SET whose function fails, such as malformed JSON or abs of the smallest integer, is not modeled; correct the arguments"

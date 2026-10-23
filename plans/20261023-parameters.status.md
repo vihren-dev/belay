@@ -46,3 +46,15 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D1 (amended 2026-10-23
   are not in the state, so the append laws keep their form; each changed law holds for all
   values. `TableExtensionLaws.lean` takes two laws from `PreservationLaws.lean` (200 lines).
   `LIMIT ?` stays refused until C4. `just test-full` passes (463, 146 and 155 tests).
+- 2026-10-23: review of C3: a bound NaN REAL is NULL, as SQLite binds it (`boundValue`); the
+  plain words of the changed laws are complete. The next review had no findings.
+- 2026-10-23: owner decision: `just review` runs before `just test-full`; the full test runs
+  once after the review rounds.
+- 2026-10-23: `LIMIT ?` and `OFFSET ?` (C4). A lone parameter resolves to the query's new
+  fields `limitParameter` and `offsetParameter`; `Query.run` binds the window when the query
+  starts (`QueryWindow.lean`): LIMIT first, OFFSET only when the LIMIT is not 0, each through
+  `numericStore` to an integer, else `datatype mismatch` (`QueryRun.mismatch`). The bound
+  query has literal fields, so the readers of the window and their laws do not change. In a
+  subquery a mismatch is a `may` fault. `numeric-ties-windows` now agrees (`just
+  dev-verdict`: no case leaves AGREE). Kernel examples of each value of outcome 5 are in
+  `QueryWindowExamples.lean`.

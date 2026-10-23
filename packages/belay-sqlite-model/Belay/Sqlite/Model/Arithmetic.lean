@@ -33,6 +33,12 @@ def boundValue : Value → Value
   | .text bytes => .text bytes
   | .blob bytes => .blob bytes
 
+/-- The value of parameter {lit}`number` of a statement, from the values bound to its parameters
+in order, as the statement reads it ({name}`boundValue`): NULL when no value is bound to it, as
+for a statement that binds no values. Parameter numbers start at 1. -/
+def parameterValue (parameters : List Value) (number : Nat) : Value :=
+  boundValue (parameters.getD (number - 1) .null)
+
 /-- The double of a value as {lit}`sqlite3VdbeRealValue` reads it: an integer converted,
 a REAL as it is, TEXT and BLOB by {name}`atof`, NULL as zero. -/
 def Value.toReal : Value → Float

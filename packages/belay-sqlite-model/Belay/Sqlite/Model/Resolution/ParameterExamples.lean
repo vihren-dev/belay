@@ -4,8 +4,8 @@ set_option doc.verso true
 
 /-! Examples of parameters (ADR 0019, D1), checked by {lit}`#guard` when the package builds:
 each parameter is evaluated over the values of its statement; it has no affinity and no
-collation; it is never a result column number; resolution does not compute it; and SQLite's
-prepare errors where a parameter is prohibited. The values are those of native SQLite 3.51.0
+collation; it is never a result column number; resolution does not compute it, also as
+{lit}`LIMIT` or {lit}`OFFSET`; and SQLite's prepare errors where a parameter is prohibited. The values are those of native SQLite 3.51.0
 over the table {lit}`t(i INTEGER, s TEXT)` with the row {lit}`(1, '1')`. -/
 
 namespace Belay.Sqlite.Model.Resolution.ParameterExamples
@@ -109,5 +109,18 @@ def restrictionOf (script : List Syntax.Statement) : Option RestrictionKind :=
 #guard (last [.createTrigger (name! "r") false .after .insert (name! "t") none [.delete (name! "t") none],
     .createTrigger (name! "r") true .after .insert (name! "t") (some (.parameter 1)) [.delete (name! "t") none]]).map
   (· matches .drop []) == some true
+
+/-- {lit}`SELECT i FROM t LIMIT limit OFFSET offset`. -/
+def windowed (limit offset : Option Expr) : Syntax.Statement :=
+  .select [.expression (col "i") none "i"] fromT [] none [] [] limit offset
+
+-- A lone parameter as LIMIT or OFFSET is read when the query runs; a parameter inside a larger
+-- expression is the window-value restriction, and a negative literal OFFSET keeps its restriction.
+#guard last [windowed (some (.parameter 1)) (some (.parameter 2))] matches
+  some (.query { limit := none, offset := 0, limitParameter := some 1, offsetParameter := some 2, .. } _)
+#guard [restrictionOf [windowed (some (.arithmetic .add (.parameter 1) (.numeric "1"))) none],
+    restrictionOf [windowed (some (.numeric "1")) (some (.negate (.parameter 1)))],
+    restrictionOf [windowed (some (.parameter 1)) (some (.negate (.numeric "1")))]] ==
+  [some .windowValue, some .windowValue, some .negativeOffset]
 
 end Belay.Sqlite.Model.Resolution.ParameterExamples

@@ -160,8 +160,8 @@ def resolveQueryBody (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (out
     | .output _ => none
   if (scalars ++ having.toList ++ sorted).any feedsCall then
     throw (.restriction [] .aggregateInExpression)
-  let limitValue ← windowValue [6] query.limit
-  let offsetValue ← windowValue [7] query.offset
+  let (limitValue, limitParameter) ← windowValue [6] query.limit
+  let (offsetValue, offsetParameter) ← windowValue [7] query.offset
   if offsetValue.any (· < 0) then throw (.restriction [7] .negativeOffset)
   if windowSkipsFailure query.groupBy query.limit query.offset (outputs.map (·.1) ++ aggregates.map .aggregate) then
     throw (.restriction [6] .windowedGroupSum)
@@ -169,6 +169,7 @@ def resolveQueryBody (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (out
             columns := outputs.map (·.1), names := outputs.map (·.2.1), orderBy := order,
             offset := (offsetValue.getD 0).toNat,
             limit := limitValue.bind fun value => if value < 0 then none else some value.toNat,
+            limitParameter, offsetParameter,
             outer := shapes.outer, aggregates, having,
             distinct := if query.distinct then some collations else none }, (outputs.head?.bind (·.2.2)))
 
