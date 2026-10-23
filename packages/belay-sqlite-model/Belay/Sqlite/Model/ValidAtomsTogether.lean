@@ -40,8 +40,13 @@ theorem Effect.satisfies_and {first second third fourth : Database → Prop} {ef
       third database ∧ fourth database :=
   fun database kept => ⟨one database kept, two database kept, three database kept, four database kept⟩
 
-/-- The statement theorem of the four atoms together, in the form of {name}`StatementKeeps`: for the
-condition {name}`Resolved.Statement.AtomsCondition`. Proof sketch: {name}`Effect.satisfies_and` of
+/-- The statement theorem of the four atoms together, in the form of {name}`StatementKeeps`, for the
+condition {name}`Resolved.Statement.AtomsCondition`. For every clock value, parameter list,
+resolved statement and database: if the database satisfies {name}`Database.ConstraintAtoms` and the
+statement meets its condition on the database, the effect of {name}`runStatement` satisfies
+{name}`Database.ConstraintAtoms` ({name}`Effect.Satisfies`): the database of a success, and the
+database that an error with {name}`ExecutionError.constraintFail` carries, satisfy it. An error with
+any other reason requires nothing. Proof sketch: {name}`Effect.satisfies_and` of
 {name}`runStatement_notNull`, {name}`runStatement_typesFit`, {name}`runStatement_checksHold` and
 {name}`runStatement_keysUnique`. -/
 theorem constraintAtoms_statementKeeps :
@@ -55,14 +60,17 @@ theorem constraintAtoms_statementKeeps :
 
 /-- For the given position, script and state, each statement that {name}`runSqlFrom` reaches meets
 the conditions of the four atoms ({name}`Resolved.Statement.AtomsCondition`) on the database of the
-state before it ({name}`RunConditionsWith`). -/
+state before it ({name}`RunConditionsWith`). The empty script requires nothing, and a halt requires
+nothing of the rest of the script. -/
 abbrev AtomsRunConditions (position : Nat) (script : List (Resolved.Statement × List Value)) (state : SqlState) : Prop :=
   RunConditionsWith (fun statement database => statement.AtomsCondition database) position script state
 
 /-- For the given context, clock, index, connection and statements with their values, each statement
 that {name}`runScriptFrom` resolves meets the conditions of the four atoms
 ({name}`Resolved.Statement.AtomsCondition`) on the database of the connection before it
-({name}`ScriptConditionsWith`). -/
+({name}`ScriptConditionsWith`). The empty list requires nothing. A statement that does not resolve
+requires no condition. A statement at which the run ends requires nothing of the rest of the
+statements; the conditions of the rest apply only when the run continues. -/
 abbrev AtomsScriptConditions (context : ResolveContext) (clock : Option Clock) (index : Nat) (connection : Connection)
     (script : List (Syntax.Statement × List Value)) : Prop :=
   ScriptConditionsWith (fun statement database => statement.AtomsCondition database) context clock index connection script

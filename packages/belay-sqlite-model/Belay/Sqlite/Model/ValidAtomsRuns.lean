@@ -14,21 +14,28 @@ the hypothesis from the theorems of {lit}`runScriptFrom`. -/
 namespace Belay.Sqlite.Model
 
 /-- The statement theorem of "not null" in the form of {name}`StatementKeeps`, for the condition of
-{name}`Resolved.Statement.NotNullCondition`. Proof sketch: {name}`runStatement_notNull`. -/
+{name}`Resolved.Statement.NotNullCondition`. For every clock value, parameter list, resolved statement
+and database: if the database satisfies {name}`Database.NotNull` and the statement meets its condition
+on the database, the effect of {name}`runStatement` satisfies {name}`Database.NotNull`
+({name}`Effect.Satisfies`): the database of a success, and the database that an error with
+{name}`ExecutionError.constraintFail` carries, satisfy it. An error with any other reason requires
+nothing. Proof sketch: {name}`runStatement_notNull`. -/
 theorem notNull_statementKeeps : StatementKeeps Database.NotNull fun statement database => statement.NotNullCondition database :=
   fun clock parameters statement _ holds condition => runStatement_notNull clock parameters statement holds condition
 
 /-- For the given position, script and state, each statement that {name}`runSqlFrom` reaches meets
 its condition for "not null" ({name}`Resolved.Statement.NotNullCondition`) on the database of the state
-before it. The only statement with a condition is ADD COLUMN whose table has wide rows ({name}`Database.RowsWideAt`). A halt requires nothing of the rest of
-the script ({name}`RunConditionsWith`). -/
+before it ({name}`RunConditionsWith`). The only statement with a condition is ADD COLUMN: the rows of the table at its target are wide ({name}`Database.RowsWideAt`; a target without a table requires nothing).
+The empty script requires nothing, and a halt requires nothing of the rest of the script. -/
 abbrev NotNullRunConditions (position : Nat) (script : List (Resolved.Statement × List Value)) (state : SqlState) : Prop :=
   RunConditionsWith (fun statement database => statement.NotNullCondition database) position script state
 
 /-- For the given context, clock, index, connection and statements with their values, each statement
 that {name}`runScriptFrom` resolves meets its condition for "not null"
 ({name}`Resolved.Statement.NotNullCondition`) on the database of the connection before it
-({name}`ScriptConditionsWith`). -/
+({name}`ScriptConditionsWith`). The empty list requires nothing. A statement that does not resolve
+requires no condition. A statement at which the run ends requires nothing of the rest of the
+statements; the conditions of the rest apply only when the run continues. -/
 abbrev NotNullScriptConditions (context : ResolveContext) (clock : Option Clock) (index : Nat) (connection : Connection)
     (script : List (Syntax.Statement × List Value)) : Prop :=
   ScriptConditionsWith (fun statement database => statement.NotNullCondition database) context clock index connection script
@@ -68,21 +75,28 @@ theorem runScriptFrom_notNull (context : ResolveContext) (clock : Option Clock) 
   runScriptFrom_holds notNull_statementKeeps context clock index script holds conditions
 
 /-- The statement theorem of "types fit" in the form of {name}`StatementKeeps`, for the condition of
-{name}`Resolved.Statement.TypesFitCondition`. Proof sketch: {name}`runStatement_typesFit`. -/
+{name}`Resolved.Statement.TypesFitCondition`. For every clock value, parameter list, resolved statement
+and database: if the database satisfies {name}`Database.TypesFit` and the statement meets its condition
+on the database, the effect of {name}`runStatement` satisfies {name}`Database.TypesFit`
+({name}`Effect.Satisfies`): the database of a success, and the database that an error with
+{name}`ExecutionError.constraintFail` carries, satisfy it. An error with any other reason requires
+nothing. Proof sketch: {name}`runStatement_typesFit`. -/
 theorem typesFit_statementKeeps : StatementKeeps Database.TypesFit fun statement database => statement.TypesFitCondition database :=
   fun clock parameters statement _ holds condition => runStatement_typesFit clock parameters statement holds condition
 
 /-- For the given position, script and state, each statement that {name}`runSqlFrom` reaches meets
 its condition for "types fit" ({name}`Resolved.Statement.TypesFitCondition`) on the database of the state
-before it. The only statement with a condition is ADD COLUMN whose table has wide rows ({name}`Database.RowsWideAt`) and whose stored default fits the strict type ({name}`Database.StrictDefaultFitsAt`). A halt requires nothing of the rest of
-the script ({name}`RunConditionsWith`). -/
+before it ({name}`RunConditionsWith`). The only statement with a condition is ADD COLUMN: the rows of the table at its target are wide ({name}`Database.RowsWideAt`; a target without a table requires nothing), and, when the target holds a table with rows, the stored default of the new column fits its strict type ({name}`Database.StrictDefaultFitsAt`; a target without a table, or a table without rows, requires nothing of the default).
+The empty script requires nothing, and a halt requires nothing of the rest of the script. -/
 abbrev TypesFitRunConditions (position : Nat) (script : List (Resolved.Statement × List Value)) (state : SqlState) : Prop :=
   RunConditionsWith (fun statement database => statement.TypesFitCondition database) position script state
 
 /-- For the given context, clock, index, connection and statements with their values, each statement
 that {name}`runScriptFrom` resolves meets its condition for "types fit"
 ({name}`Resolved.Statement.TypesFitCondition`) on the database of the connection before it
-({name}`ScriptConditionsWith`). -/
+({name}`ScriptConditionsWith`). The empty list requires nothing. A statement that does not resolve
+requires no condition. A statement at which the run ends requires nothing of the rest of the
+statements; the conditions of the rest apply only when the run continues. -/
 abbrev TypesFitScriptConditions (context : ResolveContext) (clock : Option Clock) (index : Nat) (connection : Connection)
     (script : List (Syntax.Statement × List Value)) : Prop :=
   ScriptConditionsWith (fun statement database => statement.TypesFitCondition database) context clock index connection script
@@ -122,21 +136,28 @@ theorem runScriptFrom_typesFit (context : ResolveContext) (clock : Option Clock)
   runScriptFrom_holds typesFit_statementKeeps context clock index script holds conditions
 
 /-- The statement theorem of "checks hold" in the form of {name}`StatementKeeps`, for the condition of
-{name}`Resolved.Statement.ChecksHoldCondition`. Proof sketch: {name}`runStatement_checksHold`. -/
+{name}`Resolved.Statement.ChecksHoldCondition`. For every clock value, parameter list, resolved statement
+and database: if the database satisfies {name}`Database.ChecksHold` and the statement meets its condition
+on the database, the effect of {name}`runStatement` satisfies {name}`Database.ChecksHold`
+({name}`Effect.Satisfies`): the database of a success, and the database that an error with
+{name}`ExecutionError.constraintFail` carries, satisfy it. An error with any other reason requires
+nothing. Proof sketch: {name}`runStatement_checksHold`. -/
 theorem checksHold_statementKeeps : StatementKeeps Database.ChecksHold fun statement database => statement.ChecksHoldCondition database :=
   fun clock parameters statement _ holds condition => runStatement_checksHold clock parameters statement holds condition
 
 /-- For the given position, script and state, each statement that {name}`runSqlFrom` reaches meets
 its condition for "checks hold" ({name}`Resolved.Statement.ChecksHoldCondition`) on the database of the state
-before it. The only statement with a condition is ADD COLUMN whose table has wide rows ({name}`Database.RowsWideAt`) and CHECK constraints that read below its width ({name}`Database.ChecksReadBelowAt`). A halt requires nothing of the rest of
-the script ({name}`RunConditionsWith`). -/
+before it ({name}`RunConditionsWith`). The only statement with a condition is ADD COLUMN: the rows of the table at its target are wide ({name}`Database.RowsWideAt`; a target without a table requires nothing), and, when the target holds a table, each CHECK constraint of the table reads only columns below its width ({name}`Database.ChecksReadBelowAt`).
+The empty script requires nothing, and a halt requires nothing of the rest of the script. -/
 abbrev ChecksHoldRunConditions (position : Nat) (script : List (Resolved.Statement × List Value)) (state : SqlState) : Prop :=
   RunConditionsWith (fun statement database => statement.ChecksHoldCondition database) position script state
 
 /-- For the given context, clock, index, connection and statements with their values, each statement
 that {name}`runScriptFrom` resolves meets its condition for "checks hold"
 ({name}`Resolved.Statement.ChecksHoldCondition`) on the database of the connection before it
-({name}`ScriptConditionsWith`). -/
+({name}`ScriptConditionsWith`). The empty list requires nothing. A statement that does not resolve
+requires no condition. A statement at which the run ends requires nothing of the rest of the
+statements; the conditions of the rest apply only when the run continues. -/
 abbrev ChecksHoldScriptConditions (context : ResolveContext) (clock : Option Clock) (index : Nat) (connection : Connection)
     (script : List (Syntax.Statement × List Value)) : Prop :=
   ScriptConditionsWith (fun statement database => statement.ChecksHoldCondition database) context clock index connection script
