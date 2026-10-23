@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.RowEngineDelete
 import Belay.Sqlite.Model.RowInsert
+import Belay.Sqlite.Model.RowCreditHolds
 
 set_option doc.verso true
 
@@ -55,14 +56,15 @@ theorem insertWrite_holds (facts : TableFacts fact) {catalog : Catalog} {state e
 row: if the nested run keeps the invariant ({name}`NestedRun.Keeps`) and the state satisfies
 {name}`KeyState.Holds`, the result of {name}`replaceDelete` keeps the invariant. Proof sketch:
 {name}`deleteRow_holds`, and the count of own rows that {name}`replaceDelete` restores is no row
-({name}`KeyState.holds_of_rows`). -/
+({name}`KeyResult.mapState_holds`). -/
 theorem replaceDelete_holds (facts : TableFacts fact) {catalog : Catalog} {links : List ForeignKeyLink}
     {nested : NestedRun} (keeps : nested.Keeps fact catalog) (frame : RowFrame) (target : Nat) {state : KeyState}
     (holds : state.Holds fact catalog) (row : Row) :
     ResultHolds (KeyState.Holds fact catalog) (KeyStop.Holds fact catalog)
       (replaceDelete catalog links nested frame target state row) :=
-  ResultHolds.map (deleteRow_holds facts keeps { frame with algorithm := some .replace } target false false
-    frame.recursive holds row.rowid) fun _ deleted => KeyState.holds_of_rows rfl deleted
+  KeyResult.mapState_holds (change := fun deleted : KeyState => { deleted with own := state.own }) (fun _ => rfl)
+    (deleteRow_holds facts keeps { frame with algorithm := some .replace } target
+      false false frame.recursive holds row.rowid)
 
 /-- For every fact with {name}`TableFacts`, catalog, links, nested run, frame, target, policy, clauses, flags, state and
 values: if the nested run keeps the invariant ({name}`NestedRun.Keeps`) and the state

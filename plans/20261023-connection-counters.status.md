@@ -1,6 +1,6 @@
 # Status: the connection counters (ADR 0024, slice 1)
 
-Created 2026-10-23. Status: IN PROGRESS (the owner accepted the decisions; commit 1 is done, commit 2 is next).
+Created 2026-10-23. Status: IN PROGRESS (the owner accepted the decisions; commits 1 and 2 are done, commit 3 is next).
 Task file: [task](20261023-connection-counters.task.md).
 Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md) (ACCEPTED
 2026-10-23), D1 to D3, D5, D6 slice 1.
@@ -81,6 +81,13 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   `test_every_foreign_key_mutant_changes_a_verdict`, `test_every_trigger_mutant_changes_a_verdict`
   and `test_every_pragma_mutant_changes_a_verdict` (the REPLACE mutant now changes `replaceDelete`
   in `RowInsert.lean`, guard `rule:replaceDelete`). Nix evidence is pending.
+- 2026-10-23: refactor after the review of commit 2 (R11: `replaceDelete` gives back the rows
+  counted also when a program of the delete stops the statement, `KeyResult.mapState`, with the
+  examples of `RAISE(FAIL)` in the trigger of a REPLACE delete in `CounterRowExamples.lean`; R2: the
+  words of `KeyStop.Holds` say that the error stop carries a state that the invariant does not
+  constrain; R19: the opening status). The proofs `KeyResult.mapState_holds` and
+  `NestedRun.credited_keeps` are in `RowCreditHolds.lean`. Tests: the package build and the pragma
+  mutant test by name, `test_every_pragma_mutant_changes_a_verdict`.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 

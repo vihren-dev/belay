@@ -102,4 +102,25 @@ is the rowid 3 of the second row also when the first row has no parent. -/
 example : countersOfRun ForeignKeyExamples.keysOn (plainSchema ++ [insertChildren ["9", "2"]]) =
     { changes := some 0, totalChanges := some 3, lastInsertRowid := some 3 } := by decide +kernel
 
+/-- {lit}`PRAGMA recursive_triggers = ON`: the DELETE of a REPLACE fires its triggers. -/
+def recursiveOn : Profile := { defaults with recursiveTriggers := true }
+
+/-- {lit}`INSERT OR REPLACE INTO t VALUES (1, 'b')` after the row {lit}`(1, 'a')`, and the trigger
+{lit}`AFTER DELETE ON t` with the body. -/
+def replaceWithDeleteTrigger (body : List BodyStatement) : List Syntax.Statement :=
+  tables ++ [insertT [[.numeric "1", text "a"]], trigger "d" .after .delete body,
+    insertT [[.numeric "1", text "b"]] (some .replace)]
+
+/-- A trigger of the DELETE of a REPLACE that fails with {lit}`RAISE(FAIL)`: the statement keeps the
+delete and not the new row. It changes none, because the row that REPLACE deletes is no changed row,
+and the total keeps the one row of the earlier INSERT. -/
+example : countersOfRun recursiveOn (replaceWithDeleteTrigger [selected (.raise .fail (some (text "no")))]) =
+    { changes := some 0, totalChanges := some 1, lastInsertRowid := some 1 } := by decide +kernel
+
+/-- The same trigger with a nested insert before the failure: the nested insert counts for the
+total. -/
+example : countersOfRun recursiveOn
+    (replaceWithDeleteTrigger [logged (.numeric "1"), selected (.raise .fail (some (text "no")))]) =
+    { changes := some 0, totalChanges := some 2, lastInsertRowid := some 1 } := by decide +kernel
+
 end Belay.Sqlite.Model.CounterRowExamples
