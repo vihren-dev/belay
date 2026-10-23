@@ -123,6 +123,9 @@ its columns, which needs decision 3.
   the setting `foreignKeys`, and `runScriptStep` is `runScriptStepWith` and `ranScriptStep`.
   `Connection.afterStep_holds` takes the resolution state as its second argument; its statement
   and the statements of the run theorems do not change otherwise.
+- 2026-10-23: the conditions of the statement theorems of not null, types fit and checks hold match
+  `.setting _ _` (a setting has two fields). The conditions and the statements do not change: a
+  setting requires nothing and changes no database.
 
 ## Findings
 
@@ -175,3 +178,16 @@ A proof that fails is recorded here with a counterexample (ADR 0022, D3). None y
   `KeysUniqueRuns` and `KeysUniqueScriptRun` are the instances with the statements of slice 2 unchanged
   (`tests/keys_unique_theorems_test.py` passes). Review of commit 1: one R19 must (the task file said that
   the invariant is fixed), fixed here.
+- 2026-10-23: part 2, commit 3 (`refactor:`): the docstrings of `StatementKeeps` and
+  `keysUnique_statementKeeps` say the error cases (review of commit 2: two R2 musts, fixed).
+- 2026-10-23: part 2, commit 4: the statement theorems of the three atoms over all of `runStatement`
+  (`RowLocalStatement`: `runStatement_rowLocal` for every `RowLocalAtom`; `ValidAtomsStatement`:
+  `Resolved.Statement.NotNullCondition`, `TypesFitCondition`, `ChecksHoldCondition`, `runStatement_notNull`,
+  `runStatement_typesFit`, `runStatement_checksHold`), the run theorems (`ValidAtomsRuns`:
+  `runSqlFrom_*`, `runSql_*`, `runScriptFrom_*` for each atom), the corollary of the four constraint
+  atoms (`ValidAtomsTogether`: `Database.ConstraintAtoms`, `runSqlFrom_constraintAtoms`,
+  `runSql_constraintAtoms`, `runScriptFrom_constraintAtoms`) and `tests/valid_atoms_theorems_test.py`. No
+  proof failed. The pragma forms of ADR 0019 slice 2 are not in this line of changes; the statement
+  theorems cover them when they land (`runStatement_rowLocal` has a case for each constructor).
+  Tests: `tests/test_model_package.py -m unit`, `tests/keys_unique_theorems_test.py`,
+  `tests/valid_atoms_theorems_test.py`.
