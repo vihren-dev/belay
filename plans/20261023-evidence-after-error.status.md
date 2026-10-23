@@ -115,6 +115,7 @@ corpus finds is extra work and is not in this estimate.
 - 2026-10-23 (PR B): the judge counts version 6 among the versions with outputs (`judge/records.py`, `WITH_OUTPUTS`), so the subject gets a parameter list for each statement and the judge compares each output.
 - 2026-10-23 (PR B): corpus-v51 (`python3 -m conformance.after_error_evidence --output conformance/corpus-v51`, 21 cases of record version 6) and its claim in `judge/claims.json`: each case must agree. The lock (`just judge-lock`) is not yet updated.
 - 2026-10-23 (PR B): ADR 0017 names corpus-v51 as the evidence for the statements after an error (D3, dated amendment) and no longer lists that evidence as deferred (outcome 10).
+- 2026-10-23 (PR B): review of the ADR 0017 commit (R19: it named a corpus that no earlier commit had): the corpus-v51 commit now comes before it, and the review of each has no findings.
 
 ## Tests for each commit
 
