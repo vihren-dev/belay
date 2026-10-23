@@ -1,7 +1,7 @@
 # Status: compound SELECT (ADR 0019, slice 3)
 
-Created 2026-10-23. Status: IN PROGRESS (the run of a resolved compound is in; resolution and the
-frontend are next).
+Created 2026-10-23. Status: IN PROGRESS (the run, the resolution and the frontend of a compound are
+in; the authored corpus, the mutants and the surface fixture are next).
 Task file: [task](20261023-compound-select.task.md).
 Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D3 and D7.
 
@@ -17,7 +17,8 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D3 and D7.
 - 2026-10-23: review round 2 (three musts) fixed with native probes: the exact integers that
   name a column (not `-2147483648`), the read point of `LIMIT` in mixed chains (a `UNION ALL`
   gives it to its left operand), and text that converts to an integer (`LIMIT ?` bound to `'1'`).
-- 2026-10-23: owner decisions 1 and 2: the lead proceeds on the recommendation. ADR 0019 D3 is
+- 2026-10-23: owner decisions 1 and 2: the lead proceeds on the recommendation (the owner accepted
+  both later the same day, see "Owner decisions"). ADR 0019 D3 is
   amended with the rules of `IN` and scalar subqueries over a compound, the `ORDER BY COLLATE`
   rewrite, and a compound statement in a trigger body outside slice 3.
 - 2026-10-23: review of the ADR amendment (one must) fixed with native probes: after the
@@ -32,11 +33,21 @@ Specification: [ADR 0019](../docs/adr-0019-guide-sql.md), D3 and D7.
   give a compound yet.
 - 2026-10-23: review of the run (two musts) fixed: examples of `statementReady` for a compound,
   and the laws of a query without a fallible call move to `QueryPlainLaws.lean`.
+- 2026-10-23: resolution and frontend of a compound: `Syntax.Compound` (`SyntaxSubquery.lean`), the
+  terms as subqueries whose parent is the compound's query, the order of table lookups and name
+  errors (`CompoundTerms.lean`), the compound `ORDER BY` (`CompoundOrderBy.lean`), the columns and
+  the shape (`CompoundResolution.lean`), the names of the derived table after the `ORDER BY
+  COLLATE` rewrite (`CompoundNames.lean`), the restrictions `compound-subquery-column` and `compound-order-by-term`, and the
+  frontend (`Translation/CompoundSelect.lean`) with the errors of outcome 6. Examples:
+  `CompoundResolutionExamples.lean`; tests: `tests/syntax_compound_test.py` and the compound paths
+  of `tests/surface/TranslationChecks.lean`.
 
 ## Owner decisions
 
-On 2026-10-23, the lead proceeds on the recommendation of decisions 1 and 2; the owner may still
-change them. ADR 0019 D3 has the amendments of both (2026-10-23).
+On 2026-10-23, the owner accepted the recommendation of decisions 1 and 2: amend D3 with SQLite's
+rules of `IN` and a scalar subquery over a compound and of the `ORDER BY COLLATE` rewrite, and keep
+a compound statement in a trigger body out of slice 3. ADR 0019 D3 has the amendments of both
+(2026-10-23).
 
 1. **D3 and the columns of a compound.** D3 says that each column compares under the collation of
    a compound column (the left-most `SELECT` whose column has one). This is true for the
@@ -77,13 +88,16 @@ mark left. These are upper bounds. Log: `build/agent-logs/adr19s3-next-groups.js
 
 ## Files
 
-- Model: `Resolution/Syntax.lean`, `Resolution/SyntaxExpr.lean`, `Codec/SyntaxJson.lean`,
+- Model: `Resolution/Syntax.lean`, `Resolution/SyntaxSubquery.lean`, `Resolution/CompoundTerms.lean`,
+  `Resolution/CompoundOrderBy.lean`, `Resolution/CompoundNames.lean`,
+  `Resolution/CompoundResolution.lean`, `Resolution/SyntaxExpr.lean`, `Codec/SyntaxJson.lean`,
   `Resolution/QueryForm.lean`, `Resolution/Queries.lean`, `Resolution/QueryTerms.lean`,
   `Resolution/Collations.lean`, `Resolution/SubqueryShapes.lean`,
   `Resolution/SubqueryResolution.lean`, `Resolution/SelectResolution.lean`, `QueryResults.lean`,
   `QueryRun.lean`, `QueryWindow.lean`, `Subqueries.lean`, `PossibleResults.lean`,
   `StatementOutput.lean`, `StatementStep.lean`, `StatementClock.lean`, `SqlLaws.lean`.
-- Frontend: `Translation/Select.lean`, `Translation/Subqueries.lean`, `Translation/Statements.lean`.
+- Frontend: `Translation/Select.lean`, `Translation/CompoundSelect.lean`, `Translation/Subqueries.lean`,
+  `Translation/Statements.lean`, `Translation/Triggers.lean`.
 - Conformance: `conformance/authored_queries.py` (`QueryCase`), `authored_evidence.py`,
   `parameter_evidence.py` (the model of a writer), `parameter_mutants.py`, `resolve_mutants.py`,
   `native_ordering.py` and `query_window.py` (the limits of the recorder).

@@ -61,6 +61,7 @@ deriving instance Lean.ToExpr for Syntax.ColumnDefinition
 deriving instance Lean.ToExpr for Syntax.TableConstraint
 deriving instance Lean.ToExpr for Syntax.TableReference
 deriving instance Lean.ToExpr for Syntax.Join
+deriving instance Lean.ToExpr for Syntax.Compound
 deriving instance Lean.ToExpr for Syntax.Subquery
 deriving instance Lean.ToExpr for Syntax.ConflictAction
 deriving instance Lean.ToExpr for Syntax.ConflictClause
