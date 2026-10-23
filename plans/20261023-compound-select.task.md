@@ -103,7 +103,13 @@ holds `('1', 'a')` and `u(b INTEGER, m TEXT)` holds `(1, 'A')`.
    collation: `'1' IN (SELECT b FROM u UNION SELECT 5)` is 0, `'1' IN (SELECT 5 UNION SELECT b FROM
    u)` is 1, `'A' IN (SELECT n FROM t UNION SELECT m FROM u WHERE 0)` is 0, `'A' IN (SELECT m FROM u
    WHERE 0 UNION SELECT n FROM t)` is 1, `(SELECT b FROM u UNION SELECT 5) = '1'` is 0, and `(SELECT
-   m FROM u WHERE 0 UNION SELECT n FROM t) = 'A'` is 0. Two columns where one is needed give
+   m FROM u WHERE 0 UNION SELECT n FROM t) = 'A'` is 0. When outcome 7 sorts the compound as
+   `SELECT * FROM (compound)`, `x IN (q)` and `(q)` read the column of that subquery instead: the
+   collation of the left-most term's expression and the affinity of `sqlite3SubqueryColumnTypes`
+   (`'A' IN (SELECT 'a' COLLATE NOCASE UNION SELECT 'b' WHERE 0 ORDER BY 1 COLLATE BINARY)` is 1).
+   The model refuses such an `IN` or scalar subquery with a new restriction, which has an example in
+   `conformance/restriction_examples.py`; slice 4 adds it with the columns of a derived table.
+   `EXISTS (q)` reads no column and takes it. Two columns where one is needed give
    `sub-select returns 2 columns - expected 1`. A scalar subquery reads its first row only when
    every permitted order gives the same first value (ADR 0018 slice 1): `(SELECT 2 UNION SELECT 1
    ORDER BY 1 DESC)` is 2, and `(SELECT 2 UNION SELECT 1)` is not described.
