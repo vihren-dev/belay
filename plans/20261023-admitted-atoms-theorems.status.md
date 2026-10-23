@@ -1,7 +1,7 @@
 # Status: the theorems of the Admitted atoms (ADR 0022, slice 4)
 
-Created 2026-10-23. Status: OPEN. The owner has not decided yet; decision 3 repeats the decision
-of 2026-10-23 for slice 3.
+Created 2026-10-23. Status: OPEN. The owner decided on 2026-10-23 (below); decision 3 repeats the
+decision of 2026-10-23 for slice 3.
 Task: [task file](20261023-admitted-atoms-theorems.task.md).
 Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D1, D3 and D4 (slice 4).
 Needed by: [ADR 0017](../docs/adr-0017-user-surface.md), S4.
@@ -87,6 +87,13 @@ because the resolver facts are new work. They need the CHECK lemma, which is the
 proof. Slice 3 is estimated at 1000 to 1600 lines. The task file proposes three parts (decision 7).
 
 ## Owner decisions
+
+Decided on 2026-10-23: the owner accepted the recommendation of decisions 1 to 4 and 6 to 8, and
+chose b) for decision 5: a repeated key column is a restriction. With b), slice 4 adds no SQLite
+behavior to the model, so it needs no new conformance case (task file, "Tests"). Checked natively
+(3.51.0, the dev shell's `sqlite3`): `CREATE INDEX i ON t()` is a syntax error;
+`CREATE TABLE t(a, b, PRIMARY KEY(a,a))` succeeds, `PRAGMA index_info` of its index gives the
+column twice, and a duplicate key fails with `UNIQUE constraint failed: t.a, t.a`.
 
 1. **How the statement theorems of the table atoms handle `ready`.** `runStatement` returns a
    `StatementRun` with `effect`, `ready` and `keyRows`. A write that is not ready is a write that
@@ -295,7 +302,11 @@ proof relies on it (finding 15).
 15. **Confirmation of the observations.** Findings 1, 2 and 9 and the claims of decisions 3 to 5
     about SQLite are hand-run observations. The task file requires an authored case of the
     conformance evidence (native SQLite against the model) for each SQLite claim before a proof relies
-    on it; a kernel example checks only the model.
+    on it; a kernel example checks only the model. Amended 2026-10-23, after the owner decisions: no
+    proof of the slice relies on these claims. Decision 4 refuses a syntax that SQL text cannot
+    give, and decision 5 b) refuses a repeated key column, so neither describes SQLite behavior;
+    the facts of decisions 3 and 8 are facts of the model's resolver. So the task file requires no
+    new conformance case.
 
 ## Progress log
 
@@ -306,3 +317,6 @@ proof relies on it (finding 15).
   evidence: finding 15), fixed. Round 2: one R19 must (a kernel example cannot confirm SQLite
   behavior; the task now requires conformance cases for decisions 4 and 5), fixed. Round 3: no
   findings.
+- 2026-10-23: the owner decisions: the recommendations of decisions 1 to 4 and 6 to 8, and b) for
+  decision 5. The task file follows: a repeated key column is a restriction, and the slice needs
+  no new conformance case.

@@ -1,6 +1,7 @@
 # The theorems of the Admitted atoms (ADR 0022, slice 4)
 
-Created 2026-10-23. Status: OPEN. The owner has not yet decided the decisions of the status file;
+Created 2026-10-23. Status: OPEN. On 2026-10-23 the owner accepted the recommendation of each
+decision of the status file, except decision 5, where the owner chose b) (a restriction);
 decision 3 repeats a decision of 2026-10-23 (slice 3, decision 3 a)).
 Status file: [status](20261023-admitted-atoms-theorems.status.md).
 Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D1, D3 and D4 (slice 4).
@@ -18,10 +19,11 @@ of `Database.Admitted` (`DatabaseFacts.lean`): the catalog is supported (`Catalo
 shaped, rowids distinct, rowids in range, rows wide, rows stored and rows aliased. It also gets the
 resolver facts that discharge the run conditions of slices 2 and 3 for `runScriptFrom`, and
 the corollary that a run keeps `Database.Valid`. The statement step does not change. The resolver
-changes in two small ways, which the recommendations of the status file propose: it refuses a
-CREATE INDEX with no terms (decision 4, a prepare error as in SQLite) and the catalog accepts a
-repeated key column (decision 5, as in SQLite). No corpus case runs either, which the tests
-check, so the predictions, the claims and the judge lock do not change.
+changes in two small ways (owner decisions 4 and 5): it refuses a CREATE INDEX with no terms
+with a prepare error (decision 4; SQLite gives a syntax error for `CREATE INDEX i ON t()`), and a
+repeated key column, such as `PRIMARY KEY(a, a)`, is a restriction (decision 5 b)). No corpus case
+runs either, which the tests check, so the predictions, the claims and the judge lock do not
+change.
 
 Out of scope: "foreign keys hold" (slice 5); the removal of the check `Run.checked`, and
 the S4 claims over every database (ADR 0017, S4); an atom for the cells of generated columns
@@ -44,7 +46,8 @@ the S4 claims over every database (ADR 0017, S4); an atom for the cells of gener
      For CREATE INDEX this includes `CatalogIndex.supported`, which the resolver does not check
      today (`resolveCreateIndex`, `Resolution/Definitions.lean`). A CREATE INDEX with no terms
      is the case that fails; the status file, decision 4, decides how it is handled. A CREATE
-     TABLE with a repeated key column, such as `PRIMARY KEY(a, a)`, is the other case; decision 5.
+     TABLE with a repeated key column, such as `PRIMARY KEY(a, a)`, is the other case: it is a
+     restriction (decision 5 b)), so it does not resolve.
    - **DROP** gives a catalog that satisfies `Catalog.Valid`. This is stronger than
      `Catalog.DropCondition` (`KeysUniqueDrop.lean`), which covers only unique indexes: every
      index that the drop keeps keeps its table, and every trigger that it keeps keeps its table.
@@ -125,7 +128,8 @@ The status file proposes three parts, each with its own `just test-full` and `ju
 (owner decision 7):
 
 - **Part 1:** the model changes and the resolver facts: the CHECK condition and the alias schema in
-  `CatalogTable.supported`, the key columns and the index terms (decisions 4 and 5), and the facts
+  `CatalogTable.supported`, the restriction of a repeated key column and the refusal of an index
+  with no terms (decisions 4 and 5), and the facts
   for CREATE TABLE, CREATE INDEX, CREATE TRIGGER, ADD COLUMN and DROP. It starts on top of slices 2
   and 3.
 - **Part 2:** the statement theorems for the seven atoms: the frame lemmas, the schema statements,
@@ -147,17 +151,17 @@ The status file proposes three parts, each with its own `just test-full` and `ju
   - a `runScriptFrom` theorem applied to a script that CREATE INDEX, ADD COLUMN, DROP TABLE (with
     an index and a trigger), a write that cascades, and a ROLLBACK, with no hypothesis on the
     statements;
-  - the resolver facts on concrete statements: `PRIMARY KEY(a, a)`, a CREATE INDEX with no terms,
-    and a CHECK that names a column of the table.
-- **Conformance evidence against native SQLite.** The changes of decisions 4 and 5 rest on SQLite's
-  behavior for a CREATE INDEX with no terms and for a repeated key column (`PRIMARY KEY(a, a)`,
-  `UNIQUE(a, a)`). A kernel example checks only the model, so it cannot confirm that behavior. Part 1
-  adds an authored case for each to the conformance evidence of `conformance/` (as `authored_drops.py`
-  and the `*_evidence.py` modules do), which runs it on native SQLite and compares the model. A
-  proof does not rely on the behavior before this case agrees. If adding a case changes a claim, a
-  frozen corpus or the judge, the change is a judge change with its own pull request and the
-  owner's approval (`CLAUDE.md`, "Development claims"); the status file records that, and the model
-  change waits for it. The kernel examples check the model and the proofs only.
+  - the resolver facts on concrete statements: the restriction of `PRIMARY KEY(a, a)` and
+    `UNIQUE(a, a)`, the prepare error of a CREATE INDEX with no terms, and a CHECK that names a
+    column of the table.
+- **No new conformance evidence.** Neither change of decisions 4 and 5 describes SQLite behavior
+  that the model did not describe before. SQL text cannot give a CREATE INDEX with no terms (SQLite
+  and the frontend give a syntax error), so only a syntax built in Lean reaches the new prepare
+  error. A restriction makes the model refuse a statement, which the judge counts as
+  `MODEL_UNSUPPORTED`. The restriction of decision 5 is in the restriction registry with an
+  example, as the other restrictions are (`tests/restriction_registry_test.py`,
+  `tests/conformance_restriction_examples_test.py`). The kernel examples check the model and the
+  proofs only.
 - **The predictions are byte-identical** to the baseline (`nix-build integrity/judge.nix -A
   predictions`, then `diff -r`, as slices 1 to 3 did).
 - **The usual suites**: `tests/test_model_package.py` (each new module is in the package globs and
@@ -196,7 +200,8 @@ The status file proposes three parts, each with its own `just test-full` and `ju
   `Conforms.createTable`, `Conforms.addColumn` (`SchemaExtensionLaws.lean`) and the examples of
   slices 1 to 3. Part 1 repairs them.
 - **`supportedKey`** (`Database.lean:64`) refuses a key with a repeated column, which SQLite
-  accepts (decision 5). It is used in `CatalogTable.supported` only.
+  accepts. It stays as it is; the restriction of decision 5 b) keeps such keys out of resolved
+  catalogs. It is used in `CatalogTable.supported` only.
 - **`runScriptFrom` and the profile.** `Database.Admitted` takes a profile and `Catalog.Valid`
   takes its limits. The theorem needs `context.profile.limits = profile.limits`; the surface uses
   `Profile.pinned` (`runContext`, `Run.lean`).
