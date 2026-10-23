@@ -331,3 +331,17 @@ proof relies on it (finding 15).
 - 2026-10-23: review round 1 of the CHECK lemma commit: five R3 and R5 musts (proof sketches
   for the helper lemmas, named constructor splits), fixed in a `refactor:` commit. Tests:
   `tests/test_model_package.py`.
+- 2026-10-23: review of the `refactor:` commit: no findings. Then a stop: the restriction of a
+  repeated key column (decision 5 b) made `validity-repeated-primary-key` and
+  `validity-repeated-unique-key` of corpus-v4 and corpus-v5 leave AGREE, and the judge claims
+  require AGREE for them.
+- 2026-10-24: the owner changed decision 5 to a): a repeated key column is modeled. The
+  restriction `repeatedKeyColumn` is removed again, with its registry entry, documentation row,
+  example and the guard of `WithoutRowidExamples`.
+- 2026-10-24: the prepare error `ExprError.emptyKeyList` stays. Probes with the native
+  `sqlite3` 3.51.0, one statement each: `CREATE INDEX i ON t();`, `CREATE TABLE t(a, PRIMARY KEY());`
+  and `CREATE TABLE t(a, UNIQUE());` each give `near ")": syntax error`; `PRIMARY KEY(a, a)` and
+  `UNIQUE(a, a)` are accepted. SQL text cannot give an empty list to the model (the parser refuses
+  it), so the check serves syntax built in Lean, where an empty `UNIQUE` list gave
+  `uniqueKeys = [[]]` on alias tables. Tests: three `#guard` lines in `Resolution/IndexExamples.lean`
+  and `tests/test_model_package.py`.
