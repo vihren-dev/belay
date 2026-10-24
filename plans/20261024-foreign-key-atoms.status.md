@@ -564,3 +564,40 @@ one R19 status-wording should: two preparation paragraphs still described the
 now-completed gate as pending. Both now use past tense. The reviewer found no
 source issue, confirmed the 27 theorem plus six fixture audit inventory, and
 checked the conflict resolutions and retained derived-source registration.
+
+## Prerequisite publication on S4
+
+The coordinator integrated immutable reviewed checkpoint `9350aa31` above
+published S6 prototype `334d9645`, S7 prototype `0569149b` and S4 `70705018`.
+The CTE checkpoint consumes this FK boundary. This publication leaves the
+complete statement/run preservation task open and does not include the later
+engine induction checkpoint. No production definition changed in the merge.
+
+The model manifest retains both parents' entries and removes the replaced
+`ForeignKeysHold` entry; the test inventory retains both sets of suites.
+Obsolete early S5 task/status files from FK ancestry are excluded from this
+publication; current reviewed S5 implementation has its own workspace.
+The bounded final integration gate checks nine FK fixtures, both S4 guide
+proofs and the S6/proof-cost prototypes, then the frozen verdict/predictions.
+The focused Nix gate passed all 19 selected cases (60 deselected), with no
+failures, errors or skips, in 101.90 seconds. Output:
+`/nix/store/zrrq0cmp7nl21kc898417ikqhkg0r28l-sqlite-verifier-test-fk-publication-1`.
+It retains all 164 FK axiom reports and 28 S6 audits; the S4 examples and all
+seven cost-prototype cases also pass. Log:
+`build/agent-logs/fk-publication-focused.log`.
+
+The frozen verdict passed: 4,867 AGREE and 2,505 MODEL_UNSUPPORTED, output
+`/nix/store/9xsjgvnfn1jgriqr0khchgynkb96qy4b-sqlite-verifier-verdict`.
+All 53 prediction files at
+`/nix/store/kp0cyv528r5sigsp5yp4pkz10qmq0a8g-sqlite-verifier-predictions`
+are byte-identical to published S4 output
+`/nix/store/ifmznfzpqyd12dxjhr3yp404ljb0dgxy-sqlite-verifier-predictions`.
+The comparison record is
+`build/agent-logs/fk-publication-prediction-comparison.json`.
+The sequential gate completed with exit 0. The combined full suite was not
+rerun for this publication; earlier unit acceptance remains scoped above.
+
+Independent review `20261024T195955Z-a390edf3` found zero musts and one R19
+status-wording should. This record replaces the pending-results wording with
+the completed results. The reviewer checked both inventories and found no
+production-source issue. The complete FK preservation task remains OPEN.

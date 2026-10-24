@@ -78,6 +78,15 @@ under `build/agent-logs/view-column-types/`. Independent review
 `20261024T210304Z-858e0a2b` found zero musts and zero shoulds. The checked source
 is `858e0a2b14c0457c378edd7b2bd9e85af26ed5c0`.
 
+## Catalog integration base
+
+The catalog workspace merges the reviewed metadata head `c0e288b5` with published
+PR #248, `e3d6aa38`. Its production packages are byte-identical to `c0e288b5`;
+the published parent supplies the S6 and proof-cost prototype test registrations.
+The two query-source status conflicts retain the newer acceptance records and
+the retained S4 archive paths. The Nix foundation evidence above is unchanged.
+No catalog or evaluator behavior changes in this integration commit.
+
 ## Remaining view scope
 
 CREATE/DROP VIEW, unresolved catalog definitions, late and closed source lookup,
