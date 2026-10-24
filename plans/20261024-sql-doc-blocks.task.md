@@ -2,9 +2,9 @@
 
 Created 2026-10-24. Status: OPEN. Implementation follows task review.
 Status: [progress](20261024-sql-doc-blocks.status.md).
-Specs: [ADR 0017](../docs/adr-0017-user-surface.md), checked SQL docstrings
-under "Not decided here"; ADR 0016's surface boundary. The owner's request
-is to complete ADR17, including the target guide's remaining surface behavior.
+Specs: [ADR 0017](../docs/adr-0017-user-surface.md), checked SQL docstrings,
+allocated alongside S7 on 2026-10-24; ADR 0016's surface boundary. The owner's
+request is to complete ADR17, including the guide's remaining surface behavior.
 
 ## Scope and accepted decision
 
@@ -17,7 +17,9 @@ On 2026-10-24 the owner accepted double-quoted header strings, such as
 `(e := "Ann@Z")`, and named closed Lean values for other value types. Native
 Verso parses header arguments before dispatching a block handler. Do not extend
 or fork its parser to accept SQL single quotes in headers. The private guide
-correction is already published separately; this task implements the behavior.
+correction is published at product revision `17666ac9`; the accepted decision
+and publication are in [coordination](20261024-adr17-coordination.status.md).
+This task implements the behavior.
 
 ## Required outcomes
 
@@ -45,6 +47,10 @@ correction is already published separately; this task implements the behavior.
   NULLs; unreferenced sparse slots remain NULL. Do not rewrite SQL parameter
   signs to implement either mode. A closed `Env` input may supply the existing
   clock/counter primitives; omitted environment means `Env.default`.
+  The explicit list is needed for the concrete `:db` and `:x`/`@x` collisions
+  above. The environment lets existing clock queries, such as
+  `SELECT CURRENT_TIMESTAMP`, have a deterministic checked example; the default
+  has no clock and must retain its restriction.
 - **Expected text has a precise meaning.** In convenience mode, collect result
   rows in statement order. Render cells with the existing `Value.cellText`,
   joined by ` | `, and rows by newlines, without column headers or padding.
@@ -60,6 +66,9 @@ correction is already published separately; this task implements the behavior.
   checking primitive takes explicit inputs and observations so the convenience
   renderer is not the only way to state an expectation. A successful block
   requires no error and no unmodeled outcome in either normal mode.
+  This is needed to document the existing `Value` and `Output` APIs accurately:
+  `SELECT NULL` and `SELECT 'NULL'` render alike, and empty results or multiple
+  SELECTs can erase result-set boundaries in text mode.
 - **All alternatives are respected.** Text mode passes only when every permitted
   result produces the same expected text, in every statement that has alternatives.
   It must not pick the first member of `Output.oneOf`. Typed mode compares the

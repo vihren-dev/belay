@@ -274,6 +274,11 @@ A slice that finishes one removes it from this table, or moves it to the slice t
 - The candidate of D2 item 2, until its measurement.
 - The editor features that the guide lists (hovers, code actions, warnings for traps)
   and SQL in docstrings: each comes with the slice whose users need it.
+  Task allocation on 2026-10-24, under the owner's request to finish this ADR:
+  [editor information](../plans/20261024-surface-editor.task.md) completes the
+  existing S2/S3 forms; [checked SQL doc blocks](../plans/20261024-sql-doc-blocks.task.md)
+  accompany S7. The [coordination record](../plans/20261024-adr17-coordination.status.md)
+  records the accepted Verso header correction and its published guide revision.
 - A benchmark of SQL tasks for agents (verification systems review, lesson 5).
 - The engine interface for PostgreSQL and MariaDB (ADR 0016, deferred).
 

@@ -18,5 +18,8 @@ design choices over the accepted surface; no SQLite meaning is changed.
 ## Progress
 
 - 2026-10-24: specified outcomes, compiler/rendering checks and source ownership.
-  Review is required before assignment. Existing S4/query/S6 agents currently
-  occupy the available slots. Editor and S7 helper ownership must be coordinated.
+  Review `20261024T135930Z-efc1f0b6` had no musts and two shoulds. Recorded the
+  S7 task allocation and guide correction, and named the current parameter,
+  clock and observation examples that need explicit inputs. Follow-up review
+  is required before assignment. Existing S4/query/S6 agents occupy the slots.
+  Editor and S7 helper ownership must be coordinated.
