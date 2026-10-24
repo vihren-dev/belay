@@ -117,3 +117,17 @@ actual verdict results and inspect each changed prediction.
   The separate `query-sources-evidence` workspace starts from carry `8a89208f`.
   Its authored native inputs are under preparation. No corpus, claim or judge lock
   changes are included in this implementation unit.
+- Pipeline review `20261024T144622Z-c64d8b50` passed with no findings.
+- The native recorder now accepts a derived LIMIT when the outer query has no
+  ordering or window. It records the returned rows without inferred tie groups;
+  the model separately decides whether source membership is certain. Existing
+  restrictions on nested windows in ranking probes and write sources remain.
+  This changes acquisition scope, not SQLite's returned outcomes or the pinned
+  oracle. The oracle lock covers `nix/sqlite.nix` and `nix/flake.lock`; this helper
+  and its regression belong to the implementation. Corpus/claim/lock changes
+  remain in the separate evidence workspace.
+- The focused Nix harness check selected all seven ordering tests, including
+  native replay of the three newly recorded nested-window forms, and passed at
+  `/nix/store/z1vg76nq9n7by0lzb8gbmjm3rvl89c6j-sqlite-verifier-test-query-source-ordering-1`.
+  This confirms the existing ranking/write guards and the new raw-observation
+  path. Part-1 full/verdict acceptance remains pending.
