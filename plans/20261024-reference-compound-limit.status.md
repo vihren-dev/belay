@@ -9,8 +9,8 @@ Spec: ADR 0009 and the owner's PR #242 CI failure report.
 - The coordinator merged reviewed fix `407f883a` into published derived-source
   head `1f5eea9e` in `reference-stack-publication`. The merge has no conflicts.
   Its four shell configuration files match the approved S4 workspace; authorized
-  `direnv allow` succeeded. The full reference build on this descendant remains
-  pending. No model, corpus or judge input changes are part of this merge.
+  `direnv allow` succeeded. The full reference build was pending at this boundary.
+  No model, corpus or judge input changes were part of this merge.
 - Merge review `20261024T175912Z-d2ffeadb` has no findings. The actual Nix
   reference passed at
   `/nix/store/iz8kjnq67dn05smyh3liv85rf2wwdzn5-sqlite-verifier-api-reference-d2ffeadbd472`:
@@ -18,11 +18,11 @@ Spec: ADR 0009 and the owner's PR #242 CI failure report.
   source `d2ffeadbd4720527e12c1e3615bed559e32f7fb0`. Every selected module has
   its HTML page and exact source URI. Base reference:
   `/nix/store/4b0gdarzs5w23vvx7sj4wclhj5wgvd32-sqlite-verifier-api-reference-base-2`.
-  The inventory registration follow-up and final combined checks remain pending.
+  The inventory follow-up and combined checks were pending at this boundary.
 - Inventory follow-up `58fc6ba8` is merged in `d5e2d837`; its independent merge
   review `20261024T180856Z-d5e2d837` has no findings. The targeted inventory
-  check covers the combined source tree. Final combined gates now run with the
-  corrected fixture registration; the reference output remains complete.
+  check covers the combined source tree. Final combined gates started with the
+  corrected fixture registration; their passing results follow below.
 - Final combined checks passed at `e87c904f`: 853 tests across ten Nix suites,
   with zero failures, errors or skips, at
   `/nix/store/paws3cy56siqnixbsg18qh43aiw220pk-sqlite-verifier-test-reports`.
@@ -34,7 +34,8 @@ Spec: ADR 0009 and the owner's PR #242 CI failure report.
   Final source linking passed at
   `/nix/store/g8bv3izw8djid4wz0bmm59gk9xnrmblx-sqlite-verifier-api-reference-e87c904f1454`:
   538 modules, 41 corrections and 5013 source links to the checked source.
-  Gate 61952 is terminal. Published repair completion `b6864447` is merged;
+  Stacked-source validation process 61952 exited 0; all checks passed.
+  Published repair completion `b6864447` is merged;
   it adds only task/status/review records to this tested source boundary.
 
 ## Current state
@@ -45,7 +46,8 @@ build at 532 selected public modules. The recorded exception is in doc-gen4's
 The patch preserves the root set and closure at the query boundary. The
 compiled-reader regression, full 532-module reference, and 538-module descendant
 stack reference pass. Post-review full/verdict, Nix integration and scheduled
-checks pass. The coordinator handles publication of the accepted descendants.
+checks pass. PR #242 is published at `b6864447`. The PR #243 descendant is
+accepted and contains that repair; its publication remains with the coordinator.
 
 ## Progress
 
