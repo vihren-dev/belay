@@ -1,7 +1,7 @@
 # Status: translation dependencies and complete local law checks
 
-Created 2026-10-24. Status: DONE. Implementation and the required checks are
-complete. The completion record is awaiting its independent review.
+Created 2026-10-24. Status: DONE. Implementation, required checks, and independent
+reviews are complete.
 
 Task: [task file](20261024-text-build-boundaries.task.md).
 Specifications: [ADR 0016](../docs/adr-0016-model-and-surface.md), D2, and
@@ -77,6 +77,9 @@ No time or percentage improvement is claimed.
   `20261024T121422Z-7d9d7d06`: no must or should findings. All acceptance gates
   above passed after the code review. The task and status are DONE; the
   completion-record review and branch push follow this record.
+- 2026-10-24: completion record `f223bd4b` received independent review
+  `20261024T124107Z-f223bd4b`: no must or should findings. The branch for review is
+  `tasks/text-build-boundaries`, based on `tasks/adr22-admitted-atoms` (PR #239).
 
 ## Local diagnostic procedure
 
