@@ -110,7 +110,7 @@ No production measurement or baseline guarantee is claimed.
   (about 9.05%) with collection enabled. The report retains both wall-time samples
   per mode and identifies what each measurement includes. This is an observation,
   not a general overhead bound.
-- [Findings](../docs/s7-proof-cost-findings.md) recommend named theorem-body
+- [Findings](../docs/s7-proof-cost-findings.md) recommend named proof-body
   coverage and record the production coverage, identity and budget choices.
   The prototype does not implement those choices or a baseline comparator.
 - Implementation commit `3a09972f59e3313f40306713d350a8e59125029a` passed
@@ -127,3 +127,8 @@ No production measurement or baseline guarantee is claimed.
   probe before that implementation proceeds. Third-party handlers can remain
   explicit unsupported entries. Collection remains a proposed opt-in facility
   with the guide's user-set additive budget; no numeric default is selected.
+- Final findings commit `00a133be7d6a9abec7d96d1d170abb6d85c3695d` has no
+  musts in review `20261024T185109Z-00a133be`. Its one should aligns the
+  status summary with the proposed named proof-body coverage, including separately
+  labeled proof-valued definitions. That wording is fixed in this status record.
+  All review findings are resolved; post-review task acceptance is queued.
