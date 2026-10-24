@@ -184,3 +184,6 @@ actual verdict results and inspect each changed prediction.
   targets after the enclosing-cell preservation change. A subject-only correction
   is being checked with the two affected mutants; no evaluator change is needed.
   The evidence report now links here for the current acceptance state.
+- Report review `20261024T153132Z-753e0f3c` requested clearer pending-status
+  wording. Its link now explicitly refers to the current part-1 acceptance state,
+  without implying that the final gates have passed.

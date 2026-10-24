@@ -1,8 +1,9 @@
 # Derived-source prediction and evidence record
 
 Date: 2026-10-24. Task: `plans/20261024-query-sources.task.md`, part 1.
-The [task status](../../plans/20261024-query-sources.status.md) records final
-full/verdict acceptance. Ordinary CTEs and views remain separate acceptance parts.
+For the current part-1 acceptance state, see the
+[task status](../../plans/20261024-query-sources.status.md).
+Ordinary CTEs and views remain separate acceptance parts.
 
 ## Frozen comparison
 
