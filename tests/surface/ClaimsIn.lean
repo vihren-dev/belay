@@ -25,7 +25,12 @@ example : shop.raw.catalog.findTable (name! "invoices") = some invoices := by de
 
 /-- The guide's "`x` is the id of an invoice", over every database that has a table `invoices` with a column `id`
 at position `col`: the query holds exactly when some stored row has a value in that column that is equal to
-`x` under the comparison that `IN` uses (the affinity of the column, and its collation). -/
+`x` under the comparison that `IN` uses (the affinity of the column, and its collation). Proof sketch: the
+script resolves with the lemmas and `sql_simp` (the column `id` resolves to the cell `col` of the table, the main
+condition to an `IN` of a parameter with the affinity and the collation of that column); `Holds.iff_selectOne_column`
+turns the claim into the truth of `IN` over the values of the column, `Resolved.truthy_inValue_eq_true` turns that into
+a statement about one candidate, and the membership of a row in the scan order is the membership in the stored rows
+(`Table.scanRows_perm`). -/
 theorem x_is_an_invoice_id (db : Database) (x : Int64) (position col : Nat) (table : CatalogTable)
     (found : db.raw.catalog.findTable (name! "invoices") = some (position, table))
     (column : columnPosition table.columns (name! "id") = some col) :

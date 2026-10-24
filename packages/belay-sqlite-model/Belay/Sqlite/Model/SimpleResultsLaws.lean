@@ -29,7 +29,9 @@ theorem stableSort_of_total {α : Type} (le : α → α → Bool) (always : ∀ 
   simpa [stableSort] using step [] items
 
 /-- For every simple query, over any rows, the result rows are the output rows of the source rows that
-{lit}`WHERE` keeps, in their order: a scalar column gives its value on the row. Proof sketch: a query without
+{lit}`WHERE` keeps, in their order: a scalar column gives its value on the row, and an aggregate column gives the aggregate
+over the list of that one source row (the simple query has no {lit}`GROUP BY`, but the formula does not exclude an
+aggregate column). Proof sketch: a query without
 {lit}`ORDER BY` has no sort term, so every two records are in order and the sort keeps their order
 ({name}`stableSort_of_total`); the window takes all records. -/
 theorem Query.Simple.results_eq {query : Query} (simple : query.Simple) (context : EvalContext)
