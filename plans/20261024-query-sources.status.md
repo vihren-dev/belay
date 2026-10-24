@@ -25,14 +25,9 @@ actual verdict results and inspect each changed prediction.
 
 ## Progress
 
-- 2026-10-24: specified all of D5 in three acceptance parts, including D3's
-  compound metadata exception and the accepted semantic recursion exclusion.
-  No Nix acceptance check has run. Review `20261024T122324Z-cf7aa9a6` completed
-  with no must or should findings.
-- A separate implementation workspace will start at a clean S4 boundary, with
-  ownership reserved for shared model and text files. ALTER/rebuild work waits
-  for the final view representation. FK laws must cover new schema statements
-  when the two task branches are integrated.
+- 2026-10-24: specified D5 in three acceptance parts. Task review
+  `20261024T122324Z-cf7aa9a6` passed with no findings. ALTER/rebuild work waits
+  for views; FK laws must cover their catalog statements at integration.
 - 2026-10-24: carried the reviewed task and accepted ADR amendment into the
   `query-sources` workspace at S4 part-1 commit `372e6c8f`, rebased onto PR #240.
   Part 1 is delegated separately from S4 part 2. Its agent owns source/query
@@ -160,8 +155,7 @@ actual verdict results and inspect each changed prediction.
 - Doc correction review `20261024T151400Z-83f0c532` passed with no findings.
   Subject boundary `83f0c532` contains the derived-source implementation, the
   acquisition fix and its tests, without any corpus, claim or lock change.
-  The separate evidence descendant will validate the proposed claims before
-  its review. Final part-1 full/verdict acceptance is still pending.
+  Final part-1 full/verdict acceptance is still pending.
 - The separate draft evidence is based on subject/status boundary `8b1b26ef`.
   It contains corpus v53, its writer and registration, 38 new mustAgree cases,
   29 measured additions to the v4/v5 claims, and their lock. The report under
@@ -191,3 +185,14 @@ actual verdict results and inspect each changed prediction.
   for a status line in the report. Rejected: the report gives verified Nix results
   and explicitly links to this file for current task acceptance. Duplicating the
   changing acceptance state there would become stale; it does not assert a pass.
+- The first combined full gate found stale text in two existing RIGHT JOIN
+  mutants after `joinRows` began retaining enclosing cells. Their targets now
+  match the changed definition and preserve their original faults: dropping an
+  unmatched right row or padding with the right source's width.
+- The two affected mutants ran sequentially and were both detected in Nix at
+  `/nix/store/k2a4zs0px4yywv760jyjlmzaxj29fs1s-sqlite-verifier-test-query-source-right-mutants-1`.
+  The new focused test is in the existing scheduled mutant suite. This correction
+  changes no evaluator or prediction; the final full/verdict gates will rerun.
+- Correction review `20261024T153312Z-5291750b` passed with no findings. The
+  acceptance descendant combines evidence `dc77491d` with subject `5291750b`;
+  only the status log conflicted, and both checked histories are retained.
