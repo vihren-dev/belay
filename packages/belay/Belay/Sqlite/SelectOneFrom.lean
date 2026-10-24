@@ -36,7 +36,7 @@ theorem Script.outputOn_selectOne {script : Script} {db : Database} {reference :
 /-- For every query script whose first statement is {lit}`SELECT 1 FROM t WHERE p`, where the catalog
 of the database has the table {lit}`t` and {lit}`p` resolves to a calm condition (it has no
 fallible call, no clock and no counter read): {lit}`Holds` of the script on the database means that
-the condition is true for some row of the table in rowid order, evaluated in the context of the
+the condition is true for some row of the table in scan order (rowid order, or primary-key order for a {lit}`WITHOUT ROWID` table), evaluated in the context of the
 values. Without {lit}`WHERE`, it means that the table has a row. Proof sketch:
 {name}`Script.outputOn_selectOne` and {name}`resolvedStepOutput_simpleTable_hasRows`. -/
 theorem Holds.iff_selectOne

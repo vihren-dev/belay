@@ -64,8 +64,8 @@ theorem resolveSelect_no_subqueries (context : ResolveContext) (catalog : Catalo
     Except.bind, Except.mapError, Pure.pure, Except.pure]
 
 /-- For every simple query ({name}`Syntax.Subquery.Simple`) whose pending sources, result columns and
-{lit}`WHERE` condition resolve, and whose scalar result columns call no aggregate value, the body
-resolves to the simple resolved query of its sources, columns and condition, with the names of the
+{lit}`WHERE` condition resolve, and in which no fallible call in a scalar result column has an aggregate value
+below it (the hypothesis {lit}`noFeed`), the body resolves to the simple resolved query of its sources, columns and condition, with the names of the
 columns and the affinity of the first one. Proof sketch: unfold the resolver and rewrite its
 aggregate flag and its aggregate calls, which are none for a simple query, then follow its steps
 with the hypotheses; the clauses that a simple query lacks resolve to their empty forms. -/
@@ -129,9 +129,12 @@ theorem resolveQueryBody_simple (dqs : Bool) (scope : Scope) (current : Option N
   case flagColumn => intro value alias text member; simp [columnFree value alias text member]
   case callColumn => intro value alias text member; simp [columnFree value alias text member]
 
-/-- For every simple statement ({name}`Syntax.Subquery.Simple`) without subqueries, whose sources,
-result columns and {lit}`WHERE` condition resolve, resolution gives the simple resolved query of
-those parts, with no subquery, and leaves the catalog as it is. Proof sketch:
+/-- For every simple statement ({name}`Syntax.Subquery.Simple`) without subqueries, whose sources resolve,
+whose result columns have no star issue ({name}`starIssue`) and resolve, whose {lit}`WHERE` condition resolves
+as {name}`FilterResolves` says (the condition is absent, or it names no alias of a result column and its operand
+resolves), whose pending sources resolve, and in which no fallible call in a scalar result column has an
+aggregate value below it, resolution gives the simple resolved query of those parts, with no subquery, and
+leaves the catalog as it is. Proof sketch:
 {name}`resolveSelect_no_subqueries` with {name}`resolveQueryBody_simple`. -/
 theorem resolveSelect_simple (context : ResolveContext) (catalog : Catalog) (query : Syntax.Subquery)
     (simple : query.Simple) (pending : List PendingSource) (scope : Scope)

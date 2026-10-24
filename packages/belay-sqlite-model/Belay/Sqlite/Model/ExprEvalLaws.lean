@@ -5,7 +5,7 @@ set_option doc.verso true
 
 /-! The evaluation laws of the resolved expressions that a query condition uses (ADR 0017, S4):
 a column, a literal, a parameter, a comparison with its affinity and collation, {lit}`AND`,
-{lit}`OR`, {lit}`NOT` and {lit}`IS NULL`. The surface puts each law in its simp set {lit}`sql_simp`. The value laws
+{lit}`OR`, {lit}`NOT` and {lit}`IS NULL`, and the subquery expressions. The value laws
 give the value of the expression on a row ({name}`Belay.Sqlite.Model.Resolved.Expr.eval`); the truth
 laws give the Boolean that a {lit}`WHERE` takes ({name}`Belay.Sqlite.Model.Resolved.truthy`) in
 the Booleans of the parts. -/

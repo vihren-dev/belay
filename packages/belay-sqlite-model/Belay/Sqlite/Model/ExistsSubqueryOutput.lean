@@ -33,7 +33,7 @@ theorem Connection.queryContext_subquery_zero (connection : Connection) (paramet
 
 /-- For every connection, values, query and calm statement of the query with one subquery that is the
 simple query of the table at a position of the database, subquery 0 of the context for the outer row with no cells has the
-one result of the simple query over the rows of the table in rowid order as its rows, no fault and certain rows. Proof sketch:
+one result of the simple query over the rows of the table in scan order (rowid order, or primary-key order for a {lit}`WITHOUT ROWID` table) as its rows, no fault and certain rows. Proof sketch:
 {name}`Connection.queryContext_subquery_zero` and {name}`Resolved.Query.subqueryRun_simple` with the source rows of
 {name}`Resolved.Query.source_first`; the context is quiet, so no expression has a fault. -/
 theorem Connection.queryContext_tableSubquery_zero (connection : Connection) (parameters : List Value)

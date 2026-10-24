@@ -2,12 +2,12 @@ import Belay.Sqlite.Model.SimpleSourceResolution
 
 set_option doc.verso true
 
-/-! The resolution of the expressions of a condition (ADR 0017, S4): for each form that a
-query of the guide uses, the equation of the resolver for it, written so that {lit}`simp` rewrites
-the parts in place: a comparison is the comparison of its two resolved operands, the name of a
-column of a table is the column at its position, and a written number is its value. A proof for
-a written condition rewrites it from the leaves up, with the facts about the catalog as simp
-arguments. The surface puts the laws in its simp set {lit}`sql_simp`. -/
+/-! The resolution of the expressions of a condition (ADR 0017, S4): for the forms of a condition that
+compares columns, parameters and numbers, the equation of the resolver ({lit}`resolveOperand`) for the form,
+written so that {lit}`simp` rewrites the parts in place: a comparison is the comparison of its two
+resolved operands, the name of a column of a table is the column at its position, and a written number is its
+value. Each law says which issue the resolver gives when a part has an issue, or says that the law covers
+the success case only. -/
 
 namespace Belay.Sqlite.Model
 
@@ -27,15 +27,16 @@ definition computes. -/
 theorem resolveOperand_parameter (number : Nat) :
     resolveOperand dqs scope shapes misuse (.parameter number) = .ok (.parameter number, none) := rfl
 
-/-- A numeric literal resolves to its value ({name}`queryNumeric`), without affinity, or to the
-issue of a literal out of range. Unfolding {name}`queryNumeric` computes the value of a written literal.
+/-- A numeric literal resolves to its value ({name}`queryNumeric`), without affinity. A hexadecimal literal
+outside 64 bits resolves to the issue that {name}`queryNumeric` gives ({lit}`hex literal too big`). Unfolding {name}`queryNumeric` computes the value of a written literal.
 Proof sketch: the definition of the resolver. -/
 theorem resolveOperand_numeric (text : String) :
     resolveOperand dqs scope shapes misuse (.numeric text) =
       (queryNumeric text false).map fun value => (.literal value, none) := rfl
 
 /-- A negated numeric literal resolves to its negated value ({name}`queryNumeric`), without
-affinity. Proof sketch: the definition of the resolver. -/
+affinity; a hexadecimal literal outside 64 bits, also after negation, resolves to the issue that
+{name}`queryNumeric` gives. Proof sketch: the definition of the resolver. -/
 theorem resolveOperand_negate_numeric (text : String) :
     resolveOperand dqs scope shapes misuse (.negate (.numeric text)) =
       (queryNumeric text true).map fun value => (.literal value, none) := rfl
@@ -56,7 +57,8 @@ theorem resolveName_one_source {name : Identifier} {source : Identifier} {column
   simp [Scope.resolveName, Scope.depths, Scope.single, Scope.resolveAt, Scope.resolveStep, found]
 
 /-- In the scope of one source, an unqualified name that names the column at position {lit}`index`
-resolves to that column, with the affinity of the column. Proof sketch: the name resolves to the
+resolves to that column, with the affinity of the column. The law covers a name that the scope finds; the
+resolver gives an issue for a name that it does not find. Proof sketch: the name resolves to the
 column alone ({name}`resolveName_one_source`), and no cell of the source is an argument cell or a
 trigger cell. -/
 theorem resolveOperand_identifier_single {name : Identifier} {quote : Syntax.QuoteKind} {source : Identifier}
@@ -67,7 +69,8 @@ theorem resolveOperand_identifier_single {name : Identifier} {quote : Syntax.Quo
   simp [Scope.nameRead, Scope.nameOperand, Scope.single, Scope.argumentCell, Scope.triggerCell, Scope.columns]
 
 /-- A name of a column of the table at a catalog position resolves to the column at its position,
-with its affinity. Proof sketch: {name}`tableScope` is the scope of one source, so this is
+with its affinity. The law covers a name that the table has; the resolver gives an issue for a name that it
+does not find. Proof sketch: {name}`tableScope` is the scope of one source, so this is
 {name}`resolveOperand_identifier_single`. -/
 theorem resolveOperand_identifier_table {catalog : Catalog} {reference : Syntax.TableReference}
     {position : Nat} {table : CatalogTable} {name : Identifier} {quote : Syntax.QuoteKind} {index : Nat}
@@ -78,8 +81,9 @@ theorem resolveOperand_identifier_table {catalog : Catalog} {reference : Syntax.
 
 /-- A comparison other than {lit}`IS` and {lit}`IS NOT` resolves its two operands, left first, and
 compares them with the affinity {name}`comparisonAffinity` of the two and the collation
-{name}`comparisonCollation` of the written operands; it has no affinity. The issue of an operand
-is under its position. The law is an equation of the resolver, so {lit}`simp` rewrites the
+{name}`comparisonCollation` of the written operands; it has no affinity. If the left operand has an issue, the
+result is that issue under position 1 and the right operand is not resolved; otherwise, if the right operand has
+an issue, the result is that issue under position 2. The law is an equation of the resolver, so {lit}`simp` rewrites the
 operands in place. Proof sketch: unfold the resolver; the operator is no truth test
 ({name}`truthTest`) because it is neither {lit}`IS` nor {lit}`IS NOT`. -/
 theorem resolveOperand_compare {operator : Comparison} (left right : Syntax.Expr)
@@ -93,7 +97,8 @@ theorem resolveOperand_compare {operator : Comparison} (left right : Syntax.Expr
     cases operator <;> simp_all [truthTest]
   simp [resolveOperand, plain]
 
-/-- {lit}`x COLLATE c` with a collation name that the model knows resolves as {lit}`x` does. Proof
+/-- {lit}`x COLLATE c` with a collation name that the model knows resolves as {lit}`x` does, and an
+issue of {lit}`x` is under position 0. A collation name that the model does not know is not covered. Proof
 sketch: unfold the resolver; the name gives a collation. -/
 theorem resolveOperand_collate (operand : Syntax.Expr) {name : Identifier}
     (known : (Collation.named? name).isNone = false) :
@@ -103,7 +108,8 @@ theorem resolveOperand_collate (operand : Syntax.Expr) {name : Identifier}
   cases resolveOperand dqs scope shapes misuse operand <;> rfl
 
 /-- {lit}`x AND y` resolves both operands as conditions and is the {lit}`AND` of the two
-expressions, without affinity. Proof sketch: the definition of the resolver. -/
+expressions, without affinity. An issue of the left operand is under position 0 and an issue of the right
+operand under position 1; the left operand is resolved first. Proof sketch: the definition of the resolver. -/
 theorem resolveOperand_and (left right : Syntax.Expr) :
     resolveOperand dqs scope shapes misuse (.and left right) = (do
       let a ← condition [0] (resolveOperand dqs scope shapes misuse left)
@@ -112,7 +118,8 @@ theorem resolveOperand_and (left right : Syntax.Expr) :
   simp [resolveOperand]
 
 /-- {lit}`x OR y` resolves both operands as conditions and is the {lit}`OR` of the two
-expressions, without affinity. Proof sketch: the definition of the resolver. -/
+expressions, without affinity. An issue of the left operand is under position 0 and an issue of the right
+operand under position 1; the left operand is resolved first. Proof sketch: the definition of the resolver. -/
 theorem resolveOperand_or (left right : Syntax.Expr) :
     resolveOperand dqs scope shapes misuse (.or left right) = (do
       let a ← condition [0] (resolveOperand dqs scope shapes misuse left)
@@ -121,7 +128,7 @@ theorem resolveOperand_or (left right : Syntax.Expr) :
   simp [resolveOperand]
 
 /-- {lit}`NOT x` resolves its operand as a condition and is the {lit}`NOT` of the expression,
-without affinity. Proof sketch: the definition of the resolver. -/
+without affinity. An issue of the operand is under position 0. Proof sketch: the definition of the resolver. -/
 theorem resolveOperand_not (operand : Syntax.Expr) :
     resolveOperand dqs scope shapes misuse (.not operand) = (do
       let a ← condition [0] (resolveOperand dqs scope shapes misuse operand)
@@ -129,7 +136,7 @@ theorem resolveOperand_not (operand : Syntax.Expr) :
   simp [resolveOperand]
 
 /-- {lit}`x IS NULL` and {lit}`x IS NOT NULL` resolve the operand and test the expression, without
-affinity. Proof sketch: the definition of the resolver. -/
+affinity. An issue of the operand is under position 0. Proof sketch: the definition of the resolver. -/
 theorem resolveOperand_isNull (operand : Syntax.Expr) (negated : Bool) :
     resolveOperand dqs scope shapes misuse (.isNull operand negated) = (do
       let a ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0])
@@ -137,7 +144,8 @@ theorem resolveOperand_isNull (operand : Syntax.Expr) (negated : Bool) :
   simp [resolveOperand]
 
 /-- {lit}`x BETWEEN low AND high` resolves the three operands and is {lit}`x >= low AND x <= high`,
-each comparison with its own affinity and collation. Proof sketch: the definition of the
+each comparison with its own affinity and collation. The operands are resolved in the order {lit}`x`,
+low, high, and the first issue is under position 0, 1 or 2 respectively. Proof sketch: the definition of the
 resolver. -/
 theorem resolveOperand_between (operand low high : Syntax.Expr) :
     resolveOperand dqs scope shapes misuse (.between operand low high false) = (do
@@ -149,7 +157,7 @@ theorem resolveOperand_between (operand low high : Syntax.Expr) :
   simp [resolveOperand]
 
 /-- {lit}`x NOT BETWEEN low AND high` is the {lit}`NOT` of {lit}`x BETWEEN low AND high`
-({name}`resolveOperand_between`). Proof sketch: the definition of the resolver. -/
+({name}`resolveOperand_between`), with the same issues. Proof sketch: the definition of the resolver. -/
 theorem resolveOperand_not_between (operand low high : Syntax.Expr) :
     resolveOperand dqs scope shapes misuse (.between operand low high true) = (do
       let a ← (resolveOperand dqs scope shapes misuse operand).mapError (·.under [0])

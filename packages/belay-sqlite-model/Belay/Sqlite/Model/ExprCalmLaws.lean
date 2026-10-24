@@ -4,8 +4,8 @@ set_option doc.verso true
 
 /-! The calm expressions that a query condition uses (ADR 0017, S4): a column, a literal and a
 parameter are calm, and so is a comparison, {lit}`AND`, {lit}`OR`, {lit}`NOT` or {lit}`IS NULL` of
-calm expressions. The surface puts the laws in its simp set {lit}`sql_simp`, so that a proof of a
-claim over every database shows that a written condition is calm. -/
+calm expressions, and so is a subquery expression. A calm expression has no fallible call, no clock read
+and no counter read. -/
 
 namespace Belay.Sqlite.Model.Resolved
 

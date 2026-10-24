@@ -70,7 +70,8 @@ theorem Query.Simple.bindWindow {query : Query} (simple : query.Simple) (paramet
   Query.bindWindow_literal parameters query simple.limitParameter simple.offsetParameter
 
 /-- For every simple query, the one result has a row exactly when {lit}`WHERE` is true for some
-source row. Proof sketch: {name}`Query.Simple.results_length` and {name}`mem_filtered`. -/
+source row. A query without {lit}`WHERE` has no condition to fail, so every source row passes and the result has
+a row exactly when the source has a row. Proof sketch: {name}`Query.Simple.results_length` and {name}`mem_filtered`. -/
 theorem Query.Simple.results_ne_nil_iff {query : Query} (simple : query.Simple) (context : EvalContext)
     (rows : List (List Value)) :
     query.results context rows ≠ [] ↔
@@ -85,7 +86,9 @@ theorem Query.Simple.results_ne_nil_iff {query : Query} (simple : query.Simple) 
     simp_all
 
 /-- For every simple query, the one result has no row exactly when {lit}`WHERE` is not true for any
-source row. Proof sketch: the negation of {name}`Query.Simple.results_ne_nil_iff`. -/
+source row. A query without {lit}`WHERE` has every source row pass, so the result has no row exactly when the
+source has no row. An empty source satisfies the condition on the right without further requirements. Proof
+sketch: the negation of {name}`Query.Simple.results_ne_nil_iff`. -/
 theorem Query.Simple.results_eq_nil_iff {query : Query} (simple : query.Simple) (context : EvalContext)
     (rows : List (List Value)) :
     query.results context rows = [] ↔

@@ -12,8 +12,8 @@ namespace Belay.Sqlite.Model
 
 /-- For every connection, values, table at a catalog position of the database of the connection, and
 calm statement of the simple query of that table with the given condition, columns and names, the
-output of the step has rows exactly when the condition is true for some row of the table in rowid
-order ({name}`Resolved.sourceRows`), evaluated in the context of the values
+output of the step has rows exactly when the condition is true for some row of the table in scan order
+(rowid order, or primary-key order for a {lit}`WITHOUT ROWID` table; {name}`Resolved.sourceRows`), evaluated in the context of the values
 ({name}`Resolved.EvalContext.bound`). A query without a condition has rows exactly when the table
 has a row. Proof sketch: {name}`resolvedStepOutput_simple_hasRows` with the source rows of
 {name}`Resolved.Query.source_first`. -/

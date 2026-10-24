@@ -2,6 +2,11 @@ import Belay.Sqlite.Model.SimpleSelectResolution
 
 set_option doc.verso true
 
+/-! The resolution of the {lit}`FROM` clause of a query of one table and of the literal result column
+{lit}`1` (ADR 0017, S4), as lemmas about {lit}`resolveSources`, {lit}`resolvePendingSources` and
+{lit}`resolveColumns_one` for a catalog that has the table: the scope of the table, the one source on its
+catalog position, and the resolved column. The catalog may be any catalog. -/
+
 namespace Belay.Sqlite.Model
 
 /-- The scope of a query of one table that the catalog has at a position: one source with the alias
