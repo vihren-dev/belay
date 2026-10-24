@@ -91,8 +91,8 @@ remove the prior planning blocks; they are not implementation-completion claims.
   Separate evidence head `5d69e3fa` retains draft v53's 38 agreements and
   four restrictions. Combined acceptance is recorded in its task status.
   S4 carry `b52fdec6` passed focused Nix `9zkv499mbvg2cwcs5jnn351rv253zfsd`.
-  CTE dev-build passed; focused Nix rerun `21738` owns heavy slot 1,
-  followed by two named mutants. Integration must compile balance.
+  CTE dev-build and Nix model 32/surface 17/restrictions 60 passed; two named
+  mutants `10563` own slot 1, then S7 takes it. Integration must compile balance.
 - `text_build_boundaries` completed the S6 foundation prototype at `eb0a16a9`,
   based on S4 `00c8707f`. Its 28 audited declarations use ordinary logical axioms;
   design `a3cffcb5` and decision record `c838d5cc` have clean reviews.
@@ -119,8 +119,8 @@ Reviewed private head `5dbc6f15` adds physical-table premises to both email copi
 and balance; all pass installed runtime `b6n8f8xys0ax45ldilp9rqw2030q8pwa` with standard axioms.
 Final acceptance must selectively reconcile unpublished S2/S3 product-default changes.
 
-FK UPDATE gate `68995` owns heavy slot 2; CTE focused Nix `21738` owns slot 1.
-Root final S4 acceptance is next, then S7's focused prototype gate. FK insertion
+Root final S4 gate `32730` owns slot 2. FK UPDATE `78a6dbc2`/`62aebf43`
+passed eight Nix fixtures/131 axiom audits and clean review; next coverage waits. FK insertion
 `45a65a92`/`754545ce` passed six Nix fixtures/95 axioms at `afgmspdjm1andpc3pd1wlfqdv9gl4bib`.
 Derived #243 passed local full 853/Nix 70/scheduled 47 and verdict 4,867/2,505,
 with all 53 predictions matching accepted evidence. Linux CI #242/#243 failed
@@ -134,7 +134,7 @@ Both repair workspaces are removed; their logs/report XML are archived under S4 
 `s4_part1` resumed the preserved S7 prototype with light work only.
 The owner accepted physical-table premises for BOTH unique-email and balance.
 Task corrections `2e761ca0` and source `c72ed523` have clean reviews and Nix checks.
-Combined S4 `6a3e36ed` carries both repaired PRs and the reviewed premise correction.
+Combined S4 `24ca8b4c` carries repaired PRs, premises and two passing Nix native regressions.
 Native counterexamples remain in `views_native_20261024.py/.out`; no question is pending.
 ## Published work and cleanup
 
