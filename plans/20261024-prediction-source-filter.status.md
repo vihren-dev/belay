@@ -45,7 +45,10 @@ input. These are the motivating observations, not acceptance of a fix.
   tamper checks remain in the same suite. No package or lock file changed.
 - 2026-10-24: implementation commit `accfbf78` received independent review
   `20261024T125027Z-accfbf78`, with no must or should findings. All task-end
-  checks passed. The final task-file review and protected-file PR handoff follow.
+  checks passed.
+- 2026-10-24: completion record review `20261024T125905Z-3d69f3e5` found no
+  musts and one should about forward-looking progress text under the DONE
+  header. Removed that sentence. No code or acceptance result changed.
 
 ## Acceptance evidence
 
