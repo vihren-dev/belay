@@ -83,8 +83,9 @@ remove the prior planning blocks; they are not implementation-completion claims.
 - `s4_part1` implements S5 in isolated `s5-counterexamples` on published
   `0569149b`, with reviewed handoff `e50e1f9e`. Plausible compatibility passed
   in Nix. Explicit certification and policy follow-up `76504977` passed 11 Nix
-  checks and clean review. Slot 2 runs sampler Nix checks (`67150`) after passing
-  local diagnostics; schema inference, replay and background checking remain open.
+  checks and clean review. Sampler `593caf88` passed 12 Nix checks, including
+  the row-bound regression. Slot 1 runs inference checks (`52260`); replay and
+  background checking remain open.
 - `s6_prerequisite_audit` completed derived-source part 1, published in #243.
   Separate evidence head `5d69e3fa` retains draft v53's 38 agreements and
   four restrictions. Combined acceptance is recorded in its task status.
@@ -92,7 +93,8 @@ remove the prior planning blocks; they are not implementation-completion claims.
   final focused 36 and verdict 4,869/2,503 passed. All prior predictions are
   unchanged; two become agreeing and 69 retain unsupported with changed reasons.
   All changes are classified; publication reviews are resolved. Views remain
-  OPEN. Slot 1 runs the origin-metadata foundation gate (`30578`).
+  OPEN. Origin-metadata source `86e15af9` passed 17 Nix fixtures and unchanged
+  53-file predictions (`30578`, exit 0); independent review is running.
 - The S6 foundation prototype is DONE in PR #246 at `334d9645`, above #245.
   Original full 813/Nix 67/scheduled 47 and verdict passed. The final focused
   integration checks all five modules and 28 audits against S4; review is clean.
@@ -114,20 +116,18 @@ Final acceptance must selectively reconcile unpublished S2/S3 product-default ch
 FK engine checkpoint `b1a163df` passed 11 Nix fixtures/203 axiom audits at
 `grsxi5rjsqz0w3311nf5xv3l2yiilv6m`; review is clean. Statement/run checkpoint
 `a8bf73ae` passed 14 Nix fixtures/236 audits at `04dmvlj39cmypsa26ia21rhnskqxsjp1`
-and resolved review. DDL proof work continues separately.
+and resolved review. CREATE/plain-DROP gate `19966` is running. Enforced DROP
+and NULL-default ADD proofs continue independently. A nonempty child table
+with enforcement on exposes an ADD REFERENCES/non-NULL-default discrepancy;
+the owner is asked to extend the explicitly limited execution-change scope.
 The prerequisite through `9350aa31` is published in PR #247 at `b1130903`,
 above #246. Final integration passed 19 focused Nix cases, the frozen verdict
 4,867/2,505, and all 53 predictions match published S4 output `ifmznfzp`.
 The combined full suite was not rerun for this prerequisite publication.
-Derived #243 passed local full 853/Nix 70/scheduled 47 and verdict 4,867/2,505,
-with all 53 predictions matching accepted evidence. Linux CI #242/#243 failed
-API reference generation above 500 roots. The repair is DONE and pushed to #242
-at `b6864447`: 808 full tests, 70 Nix checks, 47 scheduled checks and verdict pass.
-The reader passed 12 Nix cases, including 532/640 roots. Complete references
-passed for #242's 532 modules and #243's 538 modules (`iz8kjnq67dn05smyh3liv85rf2wwdzn5`).
-#242 CI and Verdict are green. Published #243 `2cb4c5e3` passed 853/70/47 locally;
-its CI `40120692159` and Verdict `40120692161` are also green.
-#244, #245 and #246 CI/Verdict are green. #247 Verdict is green; CI is running.
+The API-reference repair is DONE in #242 `b6864447` and #243 `2cb4c5e3`:
+12 Nix reader cases cover 0 through 640 roots; complete 532/538-module builds
+passed. Their task statuses retain full/Nix/scheduled evidence. CI and Verdict
+are green for #242 through #247. #248 Verdict is green; CI is running.
 Both repair workspaces are removed; their logs/report XML are archived under S4 build/.
 S7 prototype PR #245 `0569149b` is DONE: full 872/Nix 70/scheduled 47; accepted scope reviewed.
 ## Published work and cleanup
@@ -165,6 +165,8 @@ removed after remapping diagnostic artifacts. Original fk-atoms was removed
 after comparing its five late copied commits with published #248: all code and
 review records are retained, with later documentation corrections. Its exact
 late patch and acceptance logs remain under S4's archived FK publication logs.
+The clean, remotely retained fk-publication workspace was also archived and
+removed after #247 CI passed; no active process depended on it.
 Completed CTE/CTE-implementation/integration workspaces were archived and removed
 after #248. Their six accepted Nix out-links have independent roots under
 `cte-publication/build/accepted-cte-artifacts`. Evidence and views remain active.
@@ -173,7 +175,7 @@ after #248. Their six accepted Nix out-links have independent roots under
 
 - [S5](20261024-surface-s5.task.md) is assigned to `s4_part1` in
   `s5-counterexamples` on published S4/S7. Plausible compatibility passed;
-  explicit certification and dependency integration are in progress.
+  certification and sampling are checked; inference is in progress.
 - [Query sources](20261024-query-sources.task.md) is active as above; the
   [table rebuild task](20261024-table-rebuild.task.md) now has clean follow-up
   review `20261024T142117Z-79fd6a8b` and waits for its final view/CTE design.
