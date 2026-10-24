@@ -131,11 +131,11 @@ passed for #242's 532 modules and #243's 538 modules (`iz8kjnq67dn05smyh3liv85rf
 #242 CI and Verdict are green. Published #243 `2cb4c5e3` passed 853/70/47 locally;
 its CI `40120692159` and Verdict `40120692161` are also green.
 Both repair workspaces are removed; their logs/report XML are archived under S4 build/.
-S7 prototype `3b9e4189` passed full/verdict/53 unchanged predictions; slot 1 finishes gates.
+S7 prototype `489b22f6` is DONE: full 872/Nix 70/scheduled 47 and unchanged predictions pass.
 The owner accepted physical-table premises for BOTH unique-email and balance.
 Task corrections `2e761ca0` and source `c72ed523` have clean reviews and Nix checks.
 Combined S4 `24ca8b4c` carries repaired PRs, premises and two passing Nix native regressions.
-One owner question is pending: named proof-body cost coverage versus every embedded/generated proof.
+The owner accepted optional named proof-body costs, including mutual declarations; no question remains.
 ## Published work and cleanup
 
 - Public [PR #240](https://github.com/vihren-dev/sqlite-verifier/pull/240),
@@ -186,7 +186,7 @@ workspaces were removed after #243; gate logs are retained under S4 build/. Prot
   review `20261024T140930Z-09c30b41`, unassigned.
 - [S7 proof-cost prototype](20261024-s7-proof-cost-prototype.task.md) is assigned
   to `s4_part1` in `s7-proof-cost`, reviewed carry/citation head `79ef4d07`.
-  Prototype work resumed after the CI fix; production awaits findings.
+  Prototype DONE at `489b22f6`; production will use the accepted named-body contract.
 - [Guide rebuild wording](20261024-guide-sql-rebuilds.task.md) is DONE, published
   with reviewed S4 explanatory prose in private product PR #8, head `1ae76380`.
 - [S8 simulation](20261024-surface-s8.task.md) is reviewed clean at `03ac78a0`:

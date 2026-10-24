@@ -69,7 +69,7 @@ task file, and each ends with users able to do more than before.
 | S4. Claims over every database | `Holds`, `Empty` and `Fails` over every database; level 2 (`succeeds where`) with the lemma library | "Queries as propositions", "Level 2" |
 | S5. Counterexamples | `#sql_check` and `sql_refute`: a search over small databases whose witness the kernel checks, shown as a script that `sqlite3` replays | "Check before you prove", "Counterexamples for any statement" |
 | S6. Triples and equivalence | Triples from `Std.Do`, `≈` and its patterns, level 3 | "Level 3"; open questions 2, 11 and 12 |
-| S7. SQL files | `sql_file`, `sql_module`, `against :=`, and the check tool | "SQL in separate files" |
+| S7. SQL files | `sql_file`, `sql_module`, `against :=`, the check tool, and optional named proof-body cost reports | "SQL in separate files", "Stable proofs" |
 | S8. The whole application | `simulates`, level 4 | "Level 4" |
 
 The order follows three rules. Risk first: S1 is the step that nobody has tried, and
@@ -78,6 +78,20 @@ it needs no new model semantics apart from `Output.oneOf`, whose examples wait (
 names the learning curve as the main risk of the design, and the verification systems
 review shows that a cheap first answer is what makes people adopt a verifier, so S5
 comes before S6.
+
+S7 cost clarification, accepted by the owner on 2026-10-24 after the checked
+collector prototype: collection is optional. It measures completed body
+elaboration for named theorems and definitions whose values are proofs, including
+ordinary and native mutual declarations. Reports identify other coverage as
+missing or unsupported; embedded proofs and generated helpers have no promised
+separate cost. Counts include instrumentation in the body region, exclude
+header elaboration and later kernel checking, and require a successful compile.
+They retain exact internal heartbeat units, with 1000 internal units per Lean
+budget unit. CI compares compatible measurements and fails when growth exceeds
+an additive allowance chosen by the user; missing data never means zero. The guide must disclose
+measurement overhead and count variation. The prototype measured about 9%
+heartbeat overhead in its sample; this is not a general bound. Production
+collection and native mutual coverage remain implementation work.
 
 S6 clarification, accepted by the owner on 2026-10-24 after the checked
 foundations prototype:
