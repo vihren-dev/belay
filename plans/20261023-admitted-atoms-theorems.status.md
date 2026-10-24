@@ -391,3 +391,5 @@ proof relies on it (finding 15).
 - 2026-10-24: review round of the commit "CREATE TABLE gives a valid catalog": seven musts (R2 six
   docstrings said more or less than their formulas; R3 missing proof sketches). Fixed in a `refactor:`
   commit. Tests: `tests/test_model_package.py`.
+- 2026-10-24: second review round of the CREATE TABLE commit: one must (R3 sketches of the example
+  theorems) and one should (R9 a long sentence). Fixed in a `refactor:` commit.

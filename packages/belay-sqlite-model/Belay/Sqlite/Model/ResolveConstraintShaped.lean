@@ -56,7 +56,15 @@ theorem CatalogTable.BuildStep.of_updateLast_unaliased {definition : Syntax.Colu
     names, rfl⟩
   exact fun position found alias => alias.updateLast change (unaliased position found)
 
-/-- For every table that is building a column and every second table with the same columns, the same strictness and the same rowid kind: if each position of the primary key of the second table is below the number of columns, each UNIQUE key of the second table is not empty and has only positions below the number of columns, and each rowid alias position of the second table has the primary key that is that position alone and is an alias column of the columns, then the second table is a step of the building: it is building the column, it has the names of the columns, and it has the strictness of the first table. Proof sketch: {name}`CatalogTable.Draft.of_keys`; the last column is unchanged.  -/
+/-- For every table that is building a column and every second table with the same columns, the same
+strictness and the same rowid kind: assume three facts about the second table.
+* Each position of its primary key is below the number of columns.
+* Each of its UNIQUE keys is not empty and has only positions below the number of columns.
+* Each of its rowid alias positions is its whole primary key and is an alias column of the columns.
+
+Then the second table is a step of the building. It is building the column, it has the names of the
+columns, and it has the strictness of the first table. Proof sketch: {name}`CatalogTable.Draft.of_keys`;
+the last column is unchanged. -/
 theorem CatalogTable.BuildStep.of_keys {definition : Syntax.ColumnDefinition} {old new : CatalogTable}
     (building : old.Building definition) (columns : new.columns = old.columns) (strict : new.strict = old.strict)
     (ordinary : new.withoutRowid = old.withoutRowid)

@@ -74,7 +74,8 @@ def keyed : CatalogTable := { columns := twoColumns, primaryKey := [0], rowidAli
 -- The shape of a table: keys inside the columns, unique folded names, and an alias that is the key.
 /-- The table {name}`keyed` has the shape of {name}`CatalogTable.Shaped`: its primary key is inside the
 columns, it has no UNIQUE key, its folded names are unique, and its alias is the whole primary key on an
-alias column. -/
+alias column. Proof sketch: the clauses are about the one-position primary key, which is inside the two
+columns, and the alias column, which the kernel checks. -/
 theorem keyedShaped : keyed.Shaped :=
   ⟨by intro position member; simp only [keyed, List.mem_singleton] at member; subst member; decide,
    by intro key member; simp [keyed] at member,
@@ -85,7 +86,8 @@ example : ¬ ({ keyed with primaryKey := [2], rowidAlias := none } : CatalogTabl
   absurd (shaped.primaryKey 2 (by simp)) (by simp [keyed, twoColumns])
 
 -- A draft is shaped and not WITHOUT ROWID, and a strict ANY column of it is declared ANY.
-/-- The table {name}`keyed` is a {name}`CatalogTable.Draft`. -/
+/-- The table {name}`keyed` is a {name}`CatalogTable.Draft`. Proof sketch: it is shaped
+({name}`keyedShaped`), it has a rowid, and none of its columns has the strict type ANY. -/
 theorem keyedDraft : keyed.Draft :=
   ⟨keyedShaped, rfl, by intro column member strict; simp [keyed, twoColumns] at member; rcases member with rfl | rfl <;> simp at strict⟩
 example : ¬ ({ keyed with withoutRowid := true } : CatalogTable).Draft := fun draft => by
