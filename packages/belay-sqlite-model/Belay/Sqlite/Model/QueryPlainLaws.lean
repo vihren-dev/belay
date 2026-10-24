@@ -85,7 +85,8 @@ theorem Query.mayFail_of_faultless (context : EvalContext) (query : Query) (rows
   · simp [Expr.mayFailOn, faultless row (inRows row member) expression (by simp_all [Query.expressions])]
 
 /-- For every context, rows and query whose expressions have no fault over the empty row and over each of the rows,
-SQLite certainly reports no failure of the query ({name}`Query.mustFail`). Proof sketch: each expression that
+{name}`Query.mustFail` is false for the query: it detects no failure. It does not say that the query cannot overflow
+an aggregate or fail in a window. Proof sketch: each expression that
 {name}`Query.mustFail` tests is one of {name}`Query.expressions`, over a row of the rows, and an expression without
 fault does not fail ({name}`Expr.mustFailOn`). -/
 theorem Query.mustFail_of_faultless (context : EvalContext) (query : Query) (rows : List (List Value))

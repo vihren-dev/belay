@@ -7,7 +7,9 @@ set_option doc.verso true
 a condition on the number of rows of {lit}`t` for which {lit}`p` is true, such as a bound
 {lit}`(SELECT count(*) FROM t) < 100`. When the catalog of the database has the table and {lit}`p` resolves in the
 scope of the table, the claims {lit}`Holds` and {lit}`Empty` of the query are statements about the condition
-{lit}`c` with the number of rows as the value of the subquery, and {lit}`Fails` does not hold. -/
+{lit}`c` with the number of rows as the value of the subquery, when the expressions of {lit}`c` and {lit}`p` are calm
+(no fallible call, no clock read and no counter read) and {lit}`c` resolves for every shape of a count query. Then
+{lit}`Fails` does not hold. -/
 
 namespace Belay.Sqlite
 open Belay.Sqlite.Model

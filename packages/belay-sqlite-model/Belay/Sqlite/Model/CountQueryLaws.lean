@@ -47,7 +47,9 @@ def Query.countOf (sources : List QuerySource) (filter : Option Expr) (name : St
     orderBy := [], offset := 0, limit := none, limitParameter := none, offsetParameter := none, outer := 0,
     aggregates := [], having := none, distinct := none }
 
-/-- For all sources, condition and name, {name}`Query.countOf` of them is a count query ({name}`Query.Count`). -/
+/-- For all sources, condition and name, {name}`Query.countOf` of them is a count query ({name}`Query.Count`).
+Proof sketch: each field of {name}`Query.Count` is the value that the definition of {name}`Query.countOf` gives, so
+each holds by definitional equality. -/
 theorem Query.countOf_isCount (sources : List QuerySource) (filter : Option Expr) (name : String) :
     (Query.countOf sources filter name).Count :=
   ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
