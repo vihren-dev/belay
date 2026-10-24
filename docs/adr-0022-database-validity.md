@@ -81,14 +81,21 @@ whole database. Its database form says the fact for every table.
 
 Amended 2026-10-24 by owner decision: slice 5 replaces the single
 `ForeignKeysHold` API with these two atoms. This split is planned, not implemented
-by this amendment. The row atom takes an explicit mapping, including the original
+by this amendment. The row atom takes an explicit mapping that determines the
 child columns tested for NULL and the resolved parent comparison. It does not
 require the supporting unique index to exist. A convenience operation selects
-the mappings as the current engine does; its row check agrees with the engine.
+the mappings as SQLite does; its row check agrees with the corrected engine.
 The schema atom requires that the current catalog selects and supports exactly
 those mappings for every declaration, even for an empty child table.
 Mapping transport preserves table identity when catalog positions change.
 See [the slice-5 task](../plans/20261024-foreign-key-atoms.task.md).
+
+Further amended 2026-10-24 by owner decision after a native counterexample:
+the shared engine NULL test must use the child projection of a selected parent
+comparison, including repeated columns. When no comparison is selected, it
+retains the declaration-column fallback. The original rule inspected unused
+child columns and could wrongly exempt a nonmatching row. Slice 5 includes this
+engine correction, native regressions and the corresponding atom/proof update.
 
 Each atom has two forms: a proposition that a proof reads easily, and a check that computes,
 with a lemma that the two are equivalent. The atom is decidable through its check, so `decide`

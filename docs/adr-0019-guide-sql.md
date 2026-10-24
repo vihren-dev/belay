@@ -187,12 +187,24 @@ What the code has today, after slice 1 of ADR 0018:
 ### D4. The table rebuild
 
 - `INSERT ... SELECT`, with the conflict algorithms and `ON CONFLICT` clauses of the model.
-  The model computes the rows of the `SELECT` before it writes, as SQLite does when the
-  `SELECT` reads the written table, and in the order of the `SELECT`.
+  The model follows SQLite's source-evaluation and insertion order, including
+  streaming rows and materializing them when required by the actual statement.
+  It preserves expression-error precedence, conflict behavior and partial writes.
 - `ALTER TABLE t RENAME TO u`, `ALTER TABLE t RENAME COLUMN a TO b` and
   `ALTER TABLE t DROP COLUMN a`, with SQLite's rewrite of the references in indexes, foreign
   keys, triggers and views, and its prepare errors (for example, a column of a key or an
   index cannot be dropped). Only SQLite's default, `legacy_alter_table` off, is modeled.
+
+Amended 2026-10-24 by owner decision: the earlier rule that always computed all
+source rows before writing was too strong. Pinned SQLite 3.51.0 can stream an
+independent source; a read of the destination or a row trigger can require
+materialization. With source values `2, 1, -9223372036854775808`, destination
+`x UNIQUE` already containing `1`, and `INSERT OR FAIL INTO dest SELECT abs(x)
+FROM src`, the streaming case stops at the unique conflict after inserting `2`.
+An AFTER INSERT trigger whose body is `SELECT 1` makes this example materialize
+the source first: integer overflow occurs and `2` is not inserted. Both outcomes
+were checked against the pinned native binary. Slice 5 must model the exact
+behavior; it must not use an unsupported restriction in place of this work.
 
 ### D5. Queries as sources
 

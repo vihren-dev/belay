@@ -16,16 +16,24 @@ unconditional preservation claim was false.
 
 On 2026-10-24 the owner selected two separate atoms: parent-schema compatibility
 and row-reference validity, with a revised public API and proofs. Both remain
-outside `Database.Valid`. SQLite execution semantics and predictions stay the
-same. This task delivers the current statement forms; later query-source and
+outside `Database.Valid`. This task delivers the current statement forms; later query-source and
 ALTER work must extend the laws when it adds statement forms.
+
+Amended by owner decision on 2026-10-24: first correct the shared engine NULL
+check to use the selected parent mapping. For a located parent, test the child
+columns of that comparison, including repeated columns. With no selected
+comparison, retain SQLite's declaration-column fallback. The old original-column
+rule incorrectly accepts `(99,NULL)` in the repeated-key example below. Revise
+the default atom mapping and proofs to match the corrected engine. This is the
+one planned execution change; add native regressions before relying on it.
 
 ## Required outcomes
 
 1. **Explicit row meaning.** A public primitive describes row-reference validity
-   for a supplied mapping of each declared foreign key. A mapping preserves the
-   original child columns used to test for NULL, the parent identity and the
-   resolved rowid or column-pair comparison. It retains parent affinity,
+   for a supplied mapping of each declared foreign key. The mapping determines
+   the NULL-test columns, parent identity and resolved rowid or column-pair
+   comparison. Located targets use the selected child projection; absent or
+   mismatched targets use the declaration-column fallback. It retains parent affinity,
    collation and INTEGER PRIMARY KEY rules. The row atom says: each child row
    has a NULL key cell, or a parent row satisfies that comparison. Supporting
    index existence is not part of this atom. A missing target is explicit: a
@@ -39,7 +47,7 @@ ALTER work must extend the laws when it adds statement forms.
    existing `Catalog.parentKey` selection rules rather than a parallel algorithm.
 3. **Usable defaults and precise checks.** A convenience operation derives the
    mappings selected by the current catalog. With those mappings, the row check
-   agrees with the current engine's `ForeignKeyLink.satisfied` for every row.
+   agrees with the corrected engine's `ForeignKeyLink.satisfied` for every row.
    Both atoms have table and database forms, executable checks, decidability
    and kernel-checked equivalence lemmas. The surface exposes both atoms and
    the explicit-mapping primitive. It replaces the old `ForeignKeysHold` API
@@ -105,6 +113,11 @@ The test suite must distinguish the atoms, not just exercise their definitions:
   after inserting parent `(1,2)`, child `(1,99)` succeeds with enforcement on
   and the pragma returns no violations. SQLite selects child `x` twice; do not
   silently reinterpret it as the written `(x,y)` to `(a,b)` pairing.
+- In the same schema, child `(99,NULL)` fails under enforcement. Stored with
+  enforcement off, it produces a `foreign_key_check` violation. NULL in unused
+  `y` does not exempt it; NULL in selected `x` does. Check the shared helper's
+  callers in write phases and pragma checks, including UPDATE and parent-row
+  changes. Missing-target checks retain the declaration-column fallback.
 - The statement/run matrix covers foreign keys on/off, immediate constraints,
   NO ACTION/RESTRICT/CASCADE/SET NULL/SET DEFAULT, triggers, conflict outcomes,
   explicit transactions and rollback. Unsupported deferred constraints retain
@@ -113,10 +126,14 @@ The test suite must distinguish the atoms, not just exercise their definitions:
 - Kernel examples and surface fixtures exercise both primitive and convenient
   APIs and the pragma laws. Audit exported proofs for forbidden axioms such as
   `sorryAx` and `ofReduceBool`; no native computation certifies a theorem.
-- Capture a frozen-prediction baseline before model edits and require byte-for-
-  byte equality at completion. Native probes use the pinned 3.51.0 build. Use
+- Capture a frozen-prediction baseline before model edits. Classify every changed
+  prediction against pinned native SQLite; only changes explained by the accepted
+  mapped-NULL correction are planned. Preserve all existing mustAgree claims;
+  do not weaken a claim to hide a regression. Native probes use the pinned 3.51.0 build. Use
   existing test infrastructure, finite subprocess timeouts and real Nix suite
-  registration. This proof/API task changes no judge claims, corpora or lock.
+  registration. Add authored native regression evidence through the existing
+  corpus workflow. Corpus/claim/lock changes belong in a separate judge PR with
+  owner approval required before merge; the implementation PR leaves them alone.
 - Each coherent commit has targeted checks, `just dev-build` for package edits,
   and independent review. At each acceptance-part boundary run `just test-full`
   and `just verdict`; at task end run `just test-nix` and
@@ -124,7 +141,7 @@ The test suite must distinguish the atoms, not just exercise their definitions:
   [the build-boundary status](20261024-text-build-boundaries.status.md).
   Status and PR acceptance claims cite only Nix results.
 
-Two acceptance parts: the split API, checks, pragma correspondence and frames;
+Two acceptance parts: the engine correction, split API, checks, pragma correspondence and frames;
 the statement/run preservation laws and downstream proof examples. Both parts
 are required for slice 5 to be complete. The implementer chooses the work units.
 
@@ -140,12 +157,13 @@ Native selection: `sqlite3FkLocateIndex` in `parser/upstream/sqlite3.c`.
 
 `Catalog.drop` renumbers positions. Parent selection can depend on index order.
 `matchIndex` permits repeated parent columns, as the accepted slice-4 decision
-requires. The original child NULL test can read columns unused by that mapping.
+requires. The old child NULL test reads columns unused by that mapping; this
+task corrects it in the shared helper rather than separately patching each caller.
 The old atom is not the conjunction of the new atoms, because empty child rows
-can satisfy it even when the parent schema is incompatible. Keep engine checks
-unchanged and prove their exact correspondence rather than strengthening them.
+can satisfy it even when the parent schema is incompatible. Prove correspondence
+to the corrected native behavior rather than strengthening the row fact silently.
 
 Stop and report a specification finding if an execution-semantic change is
-needed, if the selected split cannot express the existing SQLite rules, or if a
+needed beyond the accepted mapped-NULL correction, if the selected split cannot express the existing SQLite rules, or if a
 preservation claim has a native counterexample not handled by its stated
 conditions. Continue independent work while the owner decides.

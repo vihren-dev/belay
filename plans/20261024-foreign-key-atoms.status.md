@@ -1,6 +1,6 @@
 # Status: foreign-key facts and preservation
 
-Created 2026-10-24. Status: OPEN. Implementation has not started.
+Created 2026-10-24. Status: OPEN. Part 1 is in progress in the FK workspace.
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
 Inspected base: PR #239, `98a07bfe`, in `vihren-dev/sqlite-verifier`.
@@ -44,3 +44,11 @@ implementer, with these observable requirements fixed.
   `cf7aa9a6`. S4 confirmed the FK files and surface database export are disjoint
   from its remaining part 1. Model barrels remain reserved to S4 until a clean
   boundary. Heavy builds are coordinated with S4 and the build-boundary task.
+- 2026-10-24: the owner accepted the mapped-NULL engine correction after native
+  evidence showed the old helper accepted `(99,NULL)` for the repeated `(a,a)`
+  parent key and omitted its pragma violation. The revised task corrects the
+  shared helper first, updates default mappings/proofs, and requires native
+  regressions. Selected child columns determine NULL exemption; missing or
+  mismatched targets retain the declaration-column fallback. The working API
+  split is preserved in `sqlite-verifier-fk-atoms`; the accepted correction has
+  not yet been implemented. A slot is needed to resume that agent.

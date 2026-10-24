@@ -201,6 +201,13 @@ Subqueries block S4, so their ADR should start before S3 ends.
 
 ### D6. Elaboration is outside the trusted base
 
+S7 clarification, accepted by the owner on 2026-10-24: omitting source positions
+from semantic terms does not guarantee that whitespace or comment edits leave
+importers unchanged. SQLite can retain expression spelling as a result-column
+name. Keep that exact metadata and use ordinary Lake input dependency tracking
+and the freshness checker. Correct the guide's blanket rebuild promise; S7 is
+not deferred for a custom semantic cache.
+
 The elaborated term holds the model's syntax of the SQL, and the kernel checks the
 model's semantics over that term; the kernel never runs the parser (guide "What is
 stored"). A wrong parser or translation therefore gives a true theorem about other SQL,

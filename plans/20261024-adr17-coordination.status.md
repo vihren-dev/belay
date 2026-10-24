@@ -37,49 +37,34 @@ workspace filesystem. Reserve at most two heavy build/check processes here.
 - S4's exact query-success iff describes the default run. Keep sufficient
   bridges to universal `Succeeds`; no universal-to-default converse is claimed.
 
-S5/FK/query-source decisions are in their tasks here. Guide corrections have
-separate tasks in the private product repository; the S4 owner is recording
-the default-run decision in its active task. The SQL doc-handler task remains
-to be specified. The pending NULL finding does not revoke the accepted FK split.
+- Correct the shared FK NULL helper to use the selected child projection,
+  including repeated columns; keep declaration fallback when no mapping exists.
+  Add native regressions and revise the default split API/proofs.
+- ADR 0019 slice 5 models exact INSERT SELECT streaming/materialization,
+  including its error ordering and partial writes.
+- S7 keeps exact SQLite metadata and native Lake input tracking. Correct the
+  blanket promise that whitespace/comment edits never rebuild importers.
 
-## Pending owner judgment
+The owner accepted all three remaining recommendations on 2026-10-24 and
+resumed the goal. No owner decision remains pending at this point. S5/FK/source
+requirements are in their tasks here; guide corrections have private product
+repo tasks. S4 recorded its default-run decision in reviewed `73b9f65b`.
+The checked SQL doc-handler task and the full S7 task remain to be specified.
 
-The FK tests found that the current engine's original-column NULL check is
-wrong for repeated parent keys. With `p(a,b,PRIMARY KEY(a,a))`, child
-`FOREIGN KEY(x,y) REFERENCES p(a,b)` and parent `(1,2)`, native SQLite rejects
-child `(99,NULL)` under enforcement. When it is stored with enforcement off,
-`foreign_key_check` reports a violation. The model accepts it and reports none.
-The coordinator independently reproduced both native outcomes. Pinned source
-`fkLookupParent` and pragma generation test selected `aiCol`/`aiCols` child
-columns; here that is `x` twice. Missing targets use the original declarations.
+## Resolved findings
 
-The task explicitly required the original NULL columns and unchanged execution
-semantics, so its affected branch is stopped for owner judgment. The recommended
-choice is to correct the shared engine helper, add native regressions and revise
-the split API's default mapping; the alternative is to leave this work blocked
-and continue independent ADR 0017 work. The asynchronous question is pending.
-No engine fix has been applied. The overall goal remains active.
+The FK regression uses `p(a,b,PRIMARY KEY(a,a))` and child `(x,y)` referencing
+`p(a,b)`. Native rejects `(99,NULL)` against parent `(1,2)` under enforcement;
+it reports a pragma violation if the row was stored with enforcement off.
+The old model exempts the row because it reads unused `y`. The revised FK task
+and ADR22 require selected `x` twice, as pinned native `fkLookupParent` does.
+The FK workspace retains its split-API work; the engine correction is queued
+for an agent slot, not yet implemented.
 
-Two further questions are pending from prerequisite audits:
-
-- ADR 0019 D4 says INSERT SELECT computes all source rows before writing.
-  Pinned SQLite 3.51.0 streams when neither a target read nor a row trigger
-  requires staging (`sqlite3Insert`, `parser/upstream/sqlite3.c:137839`). With
-  source values `2, 1, -9223372036854775808` and destination `x UNIQUE` already
-  containing `1`, `INSERT OR FAIL INTO dest SELECT abs(x) FROM src` reports a
-  unique conflict and leaves `1, 2`. Adding an AFTER INSERT trigger whose body
-  is `SELECT 1` makes SQLite stage the source: it reports integer overflow and
-  leaves only `1`. Both outcomes were checked with the pinned binary. The owner
-  is choosing exact streaming/staging semantics (recommended) or an explicit
-  restriction for the affected cases. The slice-5 specification waits for this
-  decision; no execution change has been made.
-- The S7 guide says whitespace/comment edits never rebuild importing modules
-  because positions are absent from terms. SQLite can include that text in
-  result-column names: `SELECT 1+2`, `SELECT 1 + 2`, and
-  `SELECT 1/*note*/+2` give different column names. The recommendation is to
-  retain SQLite metadata and ordinary Lake dependency tracking, and correct
-  the blanket guarantee. The alternative is to defer S7 for a narrower cache
-  design. The source/API audit continues; no implementation has started.
+The INSERT SELECT streaming/materialization counterexample and accepted scope
+are now in ADR19 D4. The formatting counterexample is reflected in ADR17 D6:
+SQLite can preserve expression spelling in column names. These accepted changes
+remove the prior planning blocks; they are not implementation-completion claims.
 
 ## Active implementation
 
@@ -139,22 +124,22 @@ Task carry `8a89208f` has clean review. Baseline predictions are
 `/nix/store/qwfgz46d1pyd10xiypmka4kixvx38k2b-sqlite-verifier-predictions`;
 baseline verdict `srv5lc3gnn1s9wzfjy1ilrzsb2ws0881` passes existing claims.
 Source execution `93767a4d` and its refusal-fixture fix `15a252a8` passed
-Nix model checks; the fix's review is pending. Metadata/translation remain.
+Nix model checks and clean reviews. Metadata/translation remain.
 CTEs and views follow as later parts. Do not rebase shared S4 ancestors.
 
 The private guide defaults and accepted doc-header corrections are pushed as
 product PR #7, `docs/guide-profile-defaults`, at `17666ac9`, based on published
 `c1471940` (PR #6). Nine pinned native checks passed; both header corrections
 preserve the SQL bodies. The isolated `profile-publication` workspace contains
-no unrelated unpublished ancestors. Root owns its review handoff. S4's separate
+no unrelated unpublished ancestors. Review tab 8 (`w1:t3W`) is open with wait session `56689`. S4's separate
 guide claims/proof paragraphs remain with the S4 agent.
 The original completed `profile-guide` workspace was removed after verifying
 the isolated published correction and its unchanged native SQL inputs.
 
 The read-only S7 audit is complete at
 `/home/codex/work/research_notes/Lean model modularity investigation/adr17_s7_audit.md`.
-Its file elaborators and freshness checker can proceed without S4–S6 once the
-guide correction is decided. A task must also cover the guide's `--costs`
+Its file elaborators and freshness checker can proceed without S4–S6; the
+guide correction is now accepted. A task must also cover the guide's `--costs`
 heartbeat reporting; the checked SQL docstring-block feature needs explicit
 ownership in the remaining guide audit.
 The editor/doc-block audit is also complete in the same research-notes directory.
