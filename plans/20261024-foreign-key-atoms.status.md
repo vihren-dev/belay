@@ -15,7 +15,7 @@ coverage; no Nix acceptance of this new correction is claimed yet.
 
 Review `20261024T151438Z-4c59fcc3` found no musts and two wording shoulds:
 name both execution corrections in the acceptance boundary and state explicitly
-that action-source work has not started. Both are corrected.
+that the action-target correction has not started. Both are corrected.
 
 ## Owner decision and evidence
 

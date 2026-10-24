@@ -59,7 +59,7 @@ observation views for quiet migration segments and full contextual commutation
 for every S8 call pair, including queries. Weak query-output translation stays
 available but cannot alone establish the whole-program theorem.
 All three later recommendations are accepted: an explicit fresh-run helper,
-selected FK action targets, and explicit interface-scoped simulation beside the
+selected [FK action targets](20261024-foreign-key-atoms.task.md), and explicit interface-scoped simulation beside the
 full-state relation. Expansion/write orders have equal rows but total_changes
 3 versus 4; retain that full-state refutation. No owner question is pending.
 
