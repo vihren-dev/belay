@@ -189,3 +189,8 @@ growth allowance. Production implementation and the mutual probe remain pending.
   review `20261024T192504Z-f1ba8cb3` with no findings. The reviewer read the current
   findings; the coordinator's requested source is also verified in the tree of
   `489b22f6`, which records 585,850 extra units and about 9.05% overhead.
+- Publication integrates S4 completion `70705018` from PR #244 without
+  conflicts. Only its reviewed task/status completion and review record are
+  added; the accepted prototype inputs are unchanged. The branch is ready to
+  publish above `tasks/surface-s4-success-run`. Production cost collection
+  remains a separate task under the owner's accepted contract.
