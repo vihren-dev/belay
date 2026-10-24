@@ -265,6 +265,12 @@ Read-only S7/editor audits remain in the modularity research notes. Reserve shar
 surface helpers before editor/doc/file tasks run concurrently. Production proof
 costs need the prototype contract. ADR17 needs all required behavior and acceptance.
 
+The completed `s5-counterexamples` workspace was retired after PR #249's push,
+clean-state/remote checks and the search owner's independent-cache audit. Its
+complete build evidence is archived in `s4/build/agent-logs/s5-part1-implementation`;
+12 outputs are rooted under `s4/build/accepted-s5-artifacts`. The active search
+and old sampling-draft workspaces remain available.
+
 The modularity report's retired-workspace citations now use published source
 files or exact archived source copies. Historical research claims are unchanged.
 Keep its cited S4 build logs available when eventually retiring that workspace.
