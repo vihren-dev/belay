@@ -178,3 +178,6 @@ growth allowance. Production implementation and the mutual probe remain pending.
   native mutual probe remain pending; no production task or source is added.
   Targeted check: `tests/docs_test.py`. This prose-only follow-up claims no new
   Nix acceptance result.
+- Accepted-scope commit `71268d20332da3dde4b78760ee94496a4f18c136` passed
+  independent review `20261024T192358Z-71268d20` with no findings. This status-only
+  record retains that review. The prototype remains DONE.
