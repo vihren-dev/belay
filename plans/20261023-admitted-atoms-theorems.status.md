@@ -540,15 +540,17 @@ proof relies on it (finding 15).
   are deleted: `runStatement_tableAtom` takes the laws and covers the writes with rules through
   `rowsKeys_satisfies` and `dropKeys_holds`, so the four statement theorems cover every constructor.
   The example of finding 16 (`AdmittedAtomsNestedExamples`) is now a statement that is not ready and
-  ends as `unmodeled` with the input database. `just dev-verdict` for all claimed corpora (no argument)
-  has the same counts as before the change (v4 AGREE 673 + MODEL_UNSUPPORTED 591, v5 2946 + 1430, v50 17,
-  v51 21, v52 33, and the 50 others unchanged), and `diff -r` of the predictions of the 53 given files
-  (`build/predictions-s4p2-new` against `build/predictions-m-new`) is empty. Mutants: the files
-  `RowInsert.lean` and `ForeignKeyRows.lean` changed, and the texts of all their mutants still match
-  (`tests/mutant_guards_test.py` passes, 49 tests); the tests `test_every_counter_mutant_changes_a_verdict`,
-  `test_every_foreign_key_mutant_changes_a_verdict` and `test_every_pragma_mutant_changes_a_verdict` pass
-  (the first failed at first only because the runner binaries of `build/agent-logs/test-runtime` were from
-  before the counters; they are refreshed from `just dev-build`). Tests: `tests/test_model_package.py`,
+  ends as `unmodeled` with the input database. The change touches `RowInsert.lean` and `ForeignKeyRows.lean`,
+  which mutants copy: the texts of all their mutants still match (`tests/mutant_guards_test.py`), and
+  the tests `test_every_counter_mutant_changes_a_verdict`, `test_every_foreign_key_mutant_changes_a_verdict`
+  and `test_every_pragma_mutant_changes_a_verdict` ran by name. The check that the change keeps every
+  prediction (`just dev-verdict` for all claimed corpora and `diff -r` of the predictions of the given
+  files) is a local check of this change; the Nix results are recorded when they are available. Tests:
+  `tests/test_model_package.py`,
   `tests/valid_atoms_theorems_test.py`, `tests/admitted_atoms_resolver_facts_test.py`,
   `tests/admitted_atoms_statement_theorems_test.py` (new formulas without the hypothesis
   `withoutRules`, and the laws of the four atoms).
+- 2026-10-24: part 2 is done. The review of "The row engine tests every row that it writes" had one
+  should (R19, the status entry cited local results), fixed here. Open for part 3: the resolver link of a
+  resolved `.createIndex` and `.addColumn`, and the resolve state that matches the snapshot of the
+  connection; the lemma that the resolver makes only described programs is not needed under decision M.
