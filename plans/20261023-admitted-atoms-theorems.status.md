@@ -1,7 +1,6 @@
 # Status: the theorems of the Admitted atoms (ADR 0022, slice 4)
 
-Created 2026-10-23. Status: READY for the Nix checks (parts 1 to 3 are committed, 2026-10-24); it is DONE
-only after `just test-full` and `just verdict` of the whole task pass. The owner decided on 2026-10-23 (below); decision 3 repeats the
+Created 2026-10-23. Status: DONE (2026-10-24). The owner decided on 2026-10-23 (below); decision 3 repeats the
 decision of 2026-10-23 for slice 3.
 Task: [task file](20261023-admitted-atoms-theorems.task.md).
 Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D1, D3 and D4 (slice 4).
@@ -600,3 +599,7 @@ proof relies on it (finding 15).
   profile.limits`, start state `Database.valid_empty`) and `Sql.runFrom_valid` /
   `Sql.runFrom_database_valid` (`ProgramRun.lean`) give outcomes 7, 8 and 10; the check `Run.checked` is
   still there.
+- 2026-10-24: the Nix checks of the whole task pass at the end of part 3. `just test-full` passes,
+  and `just verdict` passes (corpus-v4 AGREE 673, corpus-v5 AGREE 2946, corpus-v50 AGREE 17,
+  corpus-v51 AGREE 21, corpus-v52 AGREE 33). `just test-nix` passes (67 tests), and
+  `just test-scheduled-checks` passes (47 tests). The task is DONE.
