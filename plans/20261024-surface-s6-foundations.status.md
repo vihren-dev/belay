@@ -40,3 +40,8 @@ until the prototype has evidence.
   its allOk/script/send laws, `LawfulMonad Sql` and `Sql.runFrom_bind`.
   S4 retains ownership of these production files; this task consumes them.
   Prototype implementation remains pending this carried task's review.
+- 2026-10-24: carry review `20261024T133240Z-516f71f6` had no musts and
+  three shoulds. The task now names the S6 migration-postcondition and
+  commutation-automation contracts blocked by guide questions 4 and 13.
+  S4's clean review record `20261024T133008Z-00c8707f` is carried with the
+  prototype task so its stated prerequisite can be checked in this workspace.

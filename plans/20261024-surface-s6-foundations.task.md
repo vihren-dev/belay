@@ -22,6 +22,15 @@ The prototype starts after S4 part 2's interfaces are available. It can proceed
 while S5 and model prerequisites are implemented, in a separate workspace with
 disjoint files. Its findings inform the full S6 task and the owner's decisions.
 
+Questions 4 and 13 are included because two S6 contracts depend on them now:
+the migration postcondition compares start and final tables through `before`,
+and the promised commutation automation needs sound read/write footprints.
+The current model has no second-database query context or program-wide
+footprint contract. The full S6 task cannot specify those core proofs without
+establishing the missing semantic work and the all-continuation premises.
+These are bounded prerequisite audits, not implementations of a general
+attachment or effect framework. S8's later program lifting reuses their findings.
+
 ## Required outcomes
 
 - A small compiling prototype demonstrates `Std.Do.WP` and `WPMonad` for the
