@@ -133,3 +133,22 @@ example : Empty (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY e
 example : ¬ Holds (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY email HAVING count(*) > 1)") caseUsers :=
   fun holds => absurd ((every_email_is_unique caseUsers caseTable.1 1 caseTable.2 (by decide +kernel)
     (by decide +kernel)).1 holds) (by decide +kernel)
+
+-- The group-based Empty equivalence also has a false instance, with distinct keys on both sides.
+example : ¬ Empty (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY email HAVING count(*) > 1)") distinctUsers := by
+  rw [some_email_is_repeated distinctUsers distinctTable.1 1 distinctTable.2 (by decide +kernel) (by decide +kernel)]
+  decide +kernel
+
+-- The pairwise Empty equivalence has the same false instance without relying on the group equivalence.
+example : ¬ Empty (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY email HAVING count(*) > 1)") distinctUsers := by
+  rw [two_users_share_an_email distinctUsers distinctTable.1 1 distinctTable.2 (by decide +kernel) (by decide +kernel)]
+  decide +kernel
+example : ¬ Holds (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY email HAVING count(*) > 1)") caseUsers := by
+  rw [no_two_users_share_an_email caseUsers caseTable.1 1 caseTable.2 (by decide +kernel) (by decide +kernel)]
+  decide +kernel
+
+-- Duplicate keys change row existence, while both catalog-valid queries remain free of errors.
+example : ¬ Fails (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY email HAVING count(*) > 1)") distinctUsers :=
+  email_check_does_not_fail distinctUsers distinctTable.1 1 distinctTable.2 (by decide +kernel) (by decide +kernel)
+example : ¬ Fails (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY email HAVING count(*) > 1)") caseUsers :=
+  email_check_does_not_fail caseUsers caseTable.1 1 caseTable.2 (by decide +kernel) (by decide +kernel)

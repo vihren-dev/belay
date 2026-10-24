@@ -49,3 +49,70 @@ theorem no_invoice_is_negative (db : Database) (position index : Nat) (table : C
 example : Holds (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM invoices WHERE amount < 0)") shop :=
   (no_invoice_is_negative shop invoices.1 2 invoices.2 (by decide +kernel) (by decide +kernel)).2
     (by decide +kernel)
+
+set_option doc.verso true
+
+/-- Over every database with a table of invoices, EXISTS holds exactly when the table has a source row, is empty
+exactly when it has none, and never fails. Proof sketch: apply all three EXISTS laws to the absent filter. -/
+theorem exists_invoice_observations (db : Database) (position : Nat) (table : CatalogTable)
+    (found : db.raw.catalog.findTable (name! "invoices") = some (position, table)) :
+    (Holds (sql r"SELECT 1 WHERE EXISTS (SELECT 1 FROM invoices)") db ↔
+      ∃ row ∈ Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }, True) ∧
+    (Empty (sql r"SELECT 1 WHERE EXISTS (SELECT 1 FROM invoices)") db ↔
+      ∀ row ∈ Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }, False) ∧
+    ¬ Fails (sql r"SELECT 1 WHERE EXISTS (SELECT 1 FROM invoices)") db := by
+  have resolves : FilterResolves runContext.profile.dqsDml
+      (tableScope db.raw.catalog ⟨name! "invoices", none, none⟩ position table) [] none none { current := some 0 } :=
+    .inl ⟨rfl, rfl⟩
+  refine ⟨?_, ?_, ?_⟩
+  · simpa using Holds.iff_selectOne_exists (head := rfl) (arguments := rfl) found resolves (by simp)
+  · simpa using Empty.iff_selectOne_exists (head := rfl) (arguments := rfl) found resolves (by simp)
+  · exact Fails.not_selectOne_exists (head := rfl) (arguments := rfl) found resolves (by simp)
+
+/-- Over every database with a table of invoices, NOT EXISTS reverses the row and empty observations of EXISTS,
+and never fails. Proof sketch: apply all three NOT EXISTS laws to the absent filter. -/
+theorem not_exists_invoice_observations (db : Database) (position : Nat) (table : CatalogTable)
+    (found : db.raw.catalog.findTable (name! "invoices") = some (position, table)) :
+    (Holds (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM invoices)") db ↔
+      ∀ row ∈ Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }, False) ∧
+    (Empty (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM invoices)") db ↔
+      ∃ row ∈ Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }, True) ∧
+    ¬ Fails (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM invoices)") db := by
+  have resolves : FilterResolves runContext.profile.dqsDml
+      (tableScope db.raw.catalog ⟨name! "invoices", none, none⟩ position table) [] none none { current := some 0 } :=
+    .inl ⟨rfl, rfl⟩
+  refine ⟨?_, ?_, ?_⟩
+  · simpa using Holds.iff_selectOne_notExists (head := rfl) (arguments := rfl) found resolves (by simp)
+  · simpa using Empty.iff_selectOne_notExists (head := rfl) (arguments := rfl) found resolves (by simp)
+  · exact Fails.not_selectOne_notExists (head := rfl) (arguments := rfl) found resolves (by simp)
+
+/-- An existing table without invoices distinguishes an empty result from a missing-table error. -/
+def noInvoices : Database := db! r"CREATE TABLE invoices (amount INTEGER);"
+
+/-- The existing empty table of invoices. -/
+def emptyInvoices : CatalogTable := (noInvoices.raw.catalog.findTable (name! "invoices")).get (by decide +kernel) |>.2
+
+example : Holds (sql r"SELECT 1 WHERE EXISTS (SELECT 1 FROM invoices)") shop :=
+  (exists_invoice_observations shop invoices.1 invoices.2 (by decide +kernel)).1.2 (by decide +kernel)
+example : ¬ Holds (sql r"SELECT 1 WHERE EXISTS (SELECT 1 FROM invoices)") noInvoices := by
+  rw [(exists_invoice_observations noInvoices 0 emptyInvoices (by decide +kernel)).1]
+  decide +kernel
+example : Empty (sql r"SELECT 1 WHERE EXISTS (SELECT 1 FROM invoices)") noInvoices :=
+  (exists_invoice_observations noInvoices 0 emptyInvoices (by decide +kernel)).2.1.2 (by decide +kernel)
+example : ¬ Empty (sql r"SELECT 1 WHERE EXISTS (SELECT 1 FROM invoices)") shop := by
+  rw [(exists_invoice_observations shop invoices.1 invoices.2 (by decide +kernel)).2.1]
+  decide +kernel
+example : ¬ Fails (sql r"SELECT 1 WHERE EXISTS (SELECT 1 FROM invoices)") shop :=
+  (exists_invoice_observations shop invoices.1 invoices.2 (by decide +kernel)).2.2
+example : Holds (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM invoices)") noInvoices :=
+  (not_exists_invoice_observations noInvoices 0 emptyInvoices (by decide +kernel)).1.2 (by decide +kernel)
+example : ¬ Holds (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM invoices)") shop := by
+  rw [(not_exists_invoice_observations shop invoices.1 invoices.2 (by decide +kernel)).1]
+  decide +kernel
+example : Empty (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM invoices)") shop :=
+  (not_exists_invoice_observations shop invoices.1 invoices.2 (by decide +kernel)).2.1.2 (by decide +kernel)
+example : ¬ Empty (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM invoices)") noInvoices := by
+  rw [(not_exists_invoice_observations noInvoices 0 emptyInvoices (by decide +kernel)).2.1]
+  decide +kernel
+example : ¬ Fails (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM invoices)") noInvoices :=
+  (not_exists_invoice_observations noInvoices 0 emptyInvoices (by decide +kernel)).2.2

@@ -96,3 +96,29 @@ example : Holds (sql r"SELECT sum(cents) FROM ledger") emptyLedger :=
 example : Fails (sql r"SELECT sum(cents) FROM ledger") textLedger :=
   (sum_of_cents_overflows textLedger textLedgerTable.1 1 textLedgerTable.2 (by decide +kernel) (by decide +kernel)).2
     (by decide +kernel)
+
+set_option doc.verso true
+
+/-- Over every database with the ledger and cents column, SUM is never empty: a safe sum returns one row and an
+overflow fails. Proof sketch: resolve the column and apply {name}`Empty.not_selectAggregate`. -/
+theorem sum_of_cents_is_never_empty (db : Database) (position index : Nat) (table : CatalogTable)
+    (found : db.raw.catalog.findTable (name! "ledger") = some (position, table))
+    (column : columnPosition table.columns (name! "cents") = some index) :
+    ¬ Empty (sql r"SELECT sum(cents) FROM ledger") db :=
+  Empty.not_selectAggregate (head := rfl) (reference := ⟨name! "ledger", none, none⟩) (build := .sum) (name := "sum")
+    (resolved := .column index) (condition := none) (aggregate := .sum (.column index)) rfl rfl found
+    (resolveOperand_identifier_table column) rfl (.inl ⟨rfl, rfl⟩) rfl (by simp)
+    (by simp [Resolved.Output.operands, Resolved.Expr.calm_column])
+
+example : ¬ Holds (sql r"SELECT sum(cents) FROM ledger") bigLedger := by
+  rw [sum_of_cents_returns_a_row bigLedger bigTable.1 1 bigTable.2 (by decide +kernel) (by decide +kernel)]
+  decide +kernel
+example : ¬ Fails (sql r"SELECT sum(cents) FROM ledger") smallLedger := by
+  rw [sum_of_cents_overflows smallLedger smallTable.1 1 smallTable.2 (by decide +kernel) (by decide +kernel)]
+  decide +kernel
+example : ¬ Empty (sql r"SELECT sum(cents) FROM ledger") smallLedger :=
+  sum_of_cents_is_never_empty smallLedger smallTable.1 1 smallTable.2 (by decide +kernel) (by decide +kernel)
+example : ¬ Empty (sql r"SELECT sum(cents) FROM ledger") bigLedger :=
+  sum_of_cents_is_never_empty bigLedger bigTable.1 1 bigTable.2 (by decide +kernel) (by decide +kernel)
+example : ¬ Empty (sql r"SELECT sum(cents) FROM ledger") emptyLedger :=
+  sum_of_cents_is_never_empty emptyLedger emptyTable.1 1 emptyTable.2 (by decide +kernel) (by decide +kernel)

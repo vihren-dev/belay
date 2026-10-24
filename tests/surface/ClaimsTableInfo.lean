@@ -100,3 +100,45 @@ theorem shop_has_no_column_named_with_a_capital :
     have := (the_name_test_is_case_sensitive shop invoices.1 invoices.2 (by decide +kernel) (by decide +kernel)).1 holds
     revert this
     decide +kernel
+
+set_option doc.verso true
+
+/-- Over every database with an invoices table and no table that shadows the pragma function, the status-name query
+is empty exactly when its name comparison is false on every pragma row, and it never fails. Proof sketch: resolve the
+name cell once, then apply {name}`Empty.iff_selectOne_tableInfo` and {name}`Fails.not_selectOne_tableInfo`. -/
+theorem status_column_empty_and_safe (db : Database) (position : Nat) (table : CatalogTable)
+    (found : db.raw.catalog.findTable (name! "invoices") = some (position, table))
+    (notFunction : db.raw.catalog.findTable (name! "pragma_table_info") = none) :
+    (Empty (sql r"SELECT 1 FROM pragma_table_info('invoices') WHERE name = 'status'") db ↔
+      ∀ row ∈ table.infoRows.map (· ++ [Value.text (bytes! "invoices"), Value.null]),
+        Resolved.truthy ((Resolved.Expr.compare .eq (comparisonAffinity (some .blob) none) (.column 1)
+          (.literal (.text (bytes! "status"))) .binary).eval (Resolved.EvalContext.bound []) row) = false) ∧
+    ¬ Fails (sql r"SELECT 1 FROM pragma_table_info('invoices') WHERE name = 'status'") db := by
+  have info := Catalog.tableInfoRows_of_findTable _ _ _ _ found
+  have resolves : FilterResolves runContext.profile.dqsDml
+      (tableInfoScope ⟨name! "pragma_table_info", none, some [.string (bytes! "invoices")]⟩ (bytes! "invoices") table.infoRows) []
+      (some (.compare .eq (.identifier (name! "name") .none) (.string (bytes! "status"))))
+      (some (.compare .eq (comparisonAffinity (some .blob) none) (.column 1) (.literal (.text (bytes! "status"))))) :=
+    FilterResolves.of_term (result := (.compare .eq (comparisonAffinity (some .blob) none) (.column 1)
+      (.literal (.text (bytes! "status"))) .binary, none)) (by simp [namesAlias]) (by simp [sql_simp])
+  constructor
+  · simpa using Empty.iff_selectOne_tableInfo (head := rfl) rfl
+      (by simp [Identifier.isKeyword, equalsKeyword]; decide +kernel) notFunction info resolves (by simp [sql_simp])
+  · exact Fails.not_selectOne_tableInfo (head := rfl) rfl
+      (by simp [Identifier.isKeyword, equalsKeyword]; decide +kernel) notFunction info resolves (by simp [sql_simp])
+
+/-- An existing table whose schema has no status column. The pragma query succeeds with no matching row. -/
+def noStatus : Database := db! r"CREATE TABLE invoices (id INTEGER PRIMARY KEY);"
+
+/-- The schema without a status column, for the positive Empty observation. -/
+def noStatusTable : CatalogTable := (noStatus.raw.catalog.findTable (name! "invoices")).get (by decide +kernel) |>.2
+
+example : Empty (sql r"SELECT 1 FROM pragma_table_info('invoices') WHERE name = 'status'") noStatus :=
+  (status_column_empty_and_safe noStatus 0 noStatusTable (by decide +kernel) (by decide +kernel)).1.2 (by decide +kernel)
+example : ¬ Empty (sql r"SELECT 1 FROM pragma_table_info('invoices') WHERE name = 'status'") shop := by
+  rw [(status_column_empty_and_safe shop invoices.1 invoices.2 (by decide +kernel) (by decide +kernel)).1]
+  decide +kernel
+example : ¬ Fails (sql r"SELECT 1 FROM pragma_table_info('invoices') WHERE name = 'status'") noStatus :=
+  (status_column_empty_and_safe noStatus 0 noStatusTable (by decide +kernel) (by decide +kernel)).2
+example : ¬ Fails (sql r"SELECT 1 FROM pragma_table_info('invoices') WHERE name = 'status'") shop :=
+  (status_column_empty_and_safe shop invoices.1 invoices.2 (by decide +kernel) (by decide +kernel)).2

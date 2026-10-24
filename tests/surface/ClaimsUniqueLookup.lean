@@ -94,6 +94,31 @@ theorem a_text_matches_the_integer_after_the_affinity (v : String) (isText : v =
     Holds (sql r"SELECT 1 WHERE (SELECT count(*) FROM numbers WHERE n = $v) = 1") numbers := by
   subst isText; decide +kernel
 
+set_option doc.verso true
+
+/-- A composite unique key permits two equal emails when the other key column differs. The lookup observes only
+email, so this database shows why the bound requires exactly one key term. -/
+def compositeEmails : Database := db! r"
+  CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT NOT NULL, tenant INTEGER NOT NULL, UNIQUE (email, tenant));
+  INSERT INTO users VALUES (1, 'a@x.org', 1), (2, 'a@x.org', 2);"
+
+example : Holds (sql r"SELECT 1 WHERE (SELECT count(*) FROM users WHERE email = 'a@x.org') = 2") compositeEmails := by
+  decide +kernel
+example : ¬ Holds (sql r"SELECT 1 WHERE (SELECT count(*) FROM users WHERE email = 'a@x.org') <= 1") compositeEmails := by
+  decide +kernel
+
+/-- A partial unique key protects only active users. Equal emails outside its filter remain valid, so the lookup
+bound needs an unfiltered key when its own condition does not imply the key filter. -/
+def partialEmails : Database := db! r"
+  CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT NOT NULL, active INTEGER NOT NULL);
+  CREATE UNIQUE INDEX active_email ON users (email) WHERE active = 1;
+  INSERT INTO users VALUES (1, 'a@x.org', 0), (2, 'a@x.org', 0), (3, 'b@x.org', 1);"
+
+example : Holds (sql r"SELECT 1 WHERE (SELECT count(*) FROM users WHERE email = 'a@x.org') = 2") partialEmails := by
+  decide +kernel
+example : ¬ Holds (sql r"SELECT 1 WHERE (SELECT count(*) FROM users WHERE email = 'a@x.org') <= 1") partialEmails := by
+  decide +kernel
+
 /-- The collation of the key matters: a `NOCASE` column with a `BINARY` unique index holds `'a@x.org'` and `'A@X.ORG'`,
 and `email = 'a@x.org'` (the collation of the column) matches both rows, so the bound fails. -/
 def twoCases : Database := db! r"

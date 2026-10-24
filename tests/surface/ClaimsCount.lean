@@ -96,3 +96,38 @@ theorem shop_has_no_negative_invoice (n : Int64) (isZero : n = 0) :
     Holds (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices WHERE amount < 0) = $n") shop :=
   (invoices_with_negative_amount_are_n shop invoices.1 2 invoices.2 n (by decide +kernel) (by decide +kernel)).2
     (by subst isZero; decide +kernel)
+
+set_option doc.verso true
+
+/-- Over every database with the table of invoices and every bound integer, the count comparison is empty exactly
+when the count differs from that integer, and never fails. Proof sketch: share the subquery resolutions between
+{name}`Empty.iff_selectOne_count` and {name}`Fails.not_selectOne_count`, then simplify the integer comparison. -/
+theorem invoice_count_empty_and_safe (db : Database) (position : Nat) (table : CatalogTable) (n : Int64)
+    (found : db.raw.catalog.findTable (name! "invoices") = some (position, table)) :
+    (Empty (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n") db ↔
+      (db.raw.rows.getD position []).length ≠ n.toInt) ∧
+    ¬ Fails (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n") db := by
+  have mainResolves : ∀ lowest, FilterResolves runContext.profile.dqsDml [] []
+      (some (.compare .eq (.subquery 0) (.parameter 1)))
+      (some (.compare .eq none (.subquery 0) (.parameter 1) .binary)) { later := [countShape lowest] } :=
+    fun lowest => FilterResolves.of_term (term := .compare .eq (.subquery 0) (.parameter 1))
+      (result := (.compare .eq none (.subquery 0) (.parameter 1) .binary, none)) (by simp [namesAlias]) (by
+      simp [sql_simp, countShape]; rfl)
+  have subResolves : FilterResolves runContext.profile.dqsDml
+      (tableScope db.raw.catalog ⟨name! "invoices", none, none⟩ position table) [] none none { current := some 0 } :=
+    .inl ⟨rfl, rfl⟩
+  constructor
+  · refine Iff.trans (Empty.iff_selectOne_count (head := rfl) (count := by decide) (arguments := rfl) found subResolves
+      mainResolves (by simp [sql_simp]) (by simp)) ?_
+    simp [sql_simp, Resolved.comparisonOperands, boundValue, Resolved.SubqueryRun.count, Value.isNull, Comparison.holds]
+  · exact Fails.not_selectOne_count (head := rfl) (count := by decide) (arguments := rfl) found subResolves
+      mainResolves (by simp [sql_simp]) (by simp)
+
+example (n : Int64) (isThree : n = 3) : Empty (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n") shop :=
+  (invoice_count_empty_and_safe shop invoices.1 invoices.2 n (by decide +kernel)).1.2 (by subst isThree; decide +kernel)
+example (n : Int64) (isTwo : n = 2) : ¬ Empty (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n") shop := by
+  rw [(invoice_count_empty_and_safe shop invoices.1 invoices.2 n (by decide +kernel)).1]
+  subst isTwo
+  decide +kernel
+example (n : Int64) : ¬ Fails (sql r"SELECT 1 WHERE (SELECT count(*) FROM invoices) = $n") shop :=
+  (invoice_count_empty_and_safe shop invoices.1 invoices.2 n (by decide +kernel)).2

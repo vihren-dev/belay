@@ -92,3 +92,58 @@ theorem shop_has_no_invoice_five (x : Int64) (isFive : x = 5) :
     subst isFive
     revert this
     decide +kernel
+
+set_option doc.verso true
+
+/-- Over every database with the invoices table and id column, IN is empty exactly when its resolved membership
+test is not true, and it never fails. Proof sketch: resolve the parameter and column with their comparison affinity
+and collation, then apply {name}`Empty.iff_selectOne_column` and {name}`Fails.not_selectOne_column`. -/
+theorem invoice_membership_empty_and_safe (db : Database) (x : Int64) (position col : Nat) (table : CatalogTable)
+    (found : db.raw.catalog.findTable (name! "invoices") = some (position, table))
+    (column : columnPosition table.columns (name! "id") = some col) :
+    (Empty (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)") db ↔
+      Resolved.truthy ((Resolved.Expr.inQuery (.parameter 1) 0
+        (comparisonAffinity none (table.columns[col]?.map CatalogColumn.affinity))
+        ((table.columns[col]?.map (·.collation)).getD .binary) false).eval
+        ((Resolved.EvalContext.bound [.integer x.toInt]).withRuns [Resolved.SubqueryRun.certain
+          (Resolved.scalarRows (Resolved.EvalContext.bound [.integer x.toInt]) none (.column col)
+            { shape := table, rows := db.raw.rows.getD position [] })]) []) = false) ∧
+    ¬ Fails (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)") db := by
+  have operand : resolveOperand runContext.profile.dqsDml
+      (tableScope db.raw.catalog ⟨name! "invoices", none, none⟩ position table) { current := some 0 } false
+      (.identifier (name! "id") .none) = .ok (.column col, table.columns[col]?.map CatalogColumn.affinity) :=
+    resolveOperand_identifier_table column
+  have subResolves : FilterResolves runContext.profile.dqsDml
+      (tableScope db.raw.catalog ⟨name! "invoices", none, none⟩ position table) [] none none { current := some 0 } :=
+    .inl ⟨rfl, rfl⟩
+  have mainResolves : ∀ lowest, FilterResolves runContext.profile.dqsDml [] []
+      (some (.inQuery (.parameter 1) 0 false))
+      (some (.inQuery (.parameter 1) 0 (comparisonAffinity none (table.columns[col]?.map CatalogColumn.affinity))
+        ((table.columns[col]?.map (·.collation)).getD .binary) false))
+      { later := [scalarShape (table.columns[col]?.map CatalogColumn.affinity) none
+        (table.columns[col]?.map (·.collation)) lowest] } :=
+    fun lowest => FilterResolves.of_term (term := .inQuery (.parameter 1) 0 false)
+      (result := (.inQuery (.parameter 1) 0 (comparisonAffinity none (table.columns[col]?.map CatalogColumn.affinity))
+        ((table.columns[col]?.map (·.collation)).getD .binary) false, none))
+      (by simp [namesAlias]) (by simp [sql_simp, scalarShape, inCollation])
+  rw [← Syntax.Expr.columnCollation_identifier_table (catalog := db.raw.catalog) (reference := ⟨name! "invoices", none, none⟩)
+    (position := position) column] at mainResolves
+  constructor
+  · refine Iff.trans (Empty.iff_selectOne_column (head := rfl) (reference := ⟨name! "invoices", none, none⟩)
+      (by decide) (by decide) rfl found operand (by simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]) subResolves
+      mainResolves (by simp [Resolved.Expr.any]) (by simp [sql_simp]) (by simp) (by simp [sql_simp])) ?_
+    rw [Syntax.Expr.columnCollation_identifier_table column]
+    rfl
+  · exact Fails.not_selectOne_column (head := rfl) (reference := ⟨name! "invoices", none, none⟩)
+      (by decide) (by decide) rfl found operand (by simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]) subResolves
+      mainResolves (by simp [Resolved.Expr.any]) (by simp [sql_simp]) (by simp) (by simp [sql_simp])
+
+example (x : Int64) (isFive : x = 5) : Empty (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)") shop :=
+  (invoice_membership_empty_and_safe shop x invoices.1 0 invoices.2 (by decide +kernel)
+    (by decide +kernel)).1.2 (by subst isFive; decide +kernel)
+example (x : Int64) (isTwo : x = 2) : ¬ Empty (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)") shop := by
+  rw [(invoice_membership_empty_and_safe shop x invoices.1 0 invoices.2 (by decide +kernel) (by decide +kernel)).1]
+  subst isTwo
+  decide +kernel
+example (x : Int64) : ¬ Fails (sql r"SELECT 1 WHERE $x IN (SELECT id FROM invoices)") shop :=
+  (invoice_membership_empty_and_safe shop x invoices.1 0 invoices.2 (by decide +kernel) (by decide +kernel)).2
