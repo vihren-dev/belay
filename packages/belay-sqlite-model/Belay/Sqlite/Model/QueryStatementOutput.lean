@@ -55,7 +55,8 @@ abbrev Connection.queryContext (connection : Connection) (parameters : List Valu
     parameters connection.state.database subqueries
 
 /-- For every query statement whose query has source rows {lit}`source`, the run of the query on the
-connection is the run over these rows. -/
+connection is the run over these rows. Proof sketch: unfold {name}`Resolved.Query.runOn` and rewrite
+with the hypothesis {lit}`found`. -/
 theorem Connection.runOn_of_found (connection : Connection) (parameters : List Value) (query : Resolved.Query)
     (subqueries : List Resolved.Query) (source : Resolved.SourceRows)
     (found : query.source (connection.queryContext parameters query subqueries) connection.state.database = some source) :
@@ -65,16 +66,20 @@ theorem Connection.runOn_of_found (connection : Connection) (parameters : List V
   simp [Resolved.Query.runOn, found]
 
 /-- A fault that is not {lit}`may` is not {lit}`must` exactly when it is {lit}`none`: the model
-describes a query only when its faults are none or {lit}`must`. -/
+describes a query only when its faults are none or {lit}`must`. Proof sketch: case analysis on the
+three faults; the case {lit}`may` is excluded by the hypothesis. -/
 theorem Resolved.Fault.ne_must_iff_none (fault : Resolved.Fault) (notMay : fault ≠ .may) :
     fault ≠ .must ↔ fault = .none := by
   cases fault <;> simp_all
 
 /-- For every query statement that reads no clock and no unknown counter, whose source rows
-{lit}`source` and bound window {lit}`bound` exist, the output of its step has rows exactly when the
-model describes the statement (its subqueries are plain, and the source rows have no fault {lit}`may`), the run has no window mismatch and no overflow, and the one result of the bound query has a
-row. Proof sketch: {name}`resolvedStepOutput_query` and {name}`Resolved.Query.outputOn_hasRows`; a
-run whose fault is neither {lit}`may` nor {lit}`must` has no fault. -/
+{lit}`source` and bound window {lit}`bound` exist, the output of its step has rows exactly when
+all of these hold: the subqueries of the query are plain, the source rows have no fault
+{lit}`may`, the run of the query has no window mismatch, no overflow and no fault, and the one
+result of the bound query has a row. Proof sketch: {name}`resolvedStepOutput_query` and
+{name}`Resolved.Query.outputOn_hasRows`; the model describes a run only when its fault is not
+{lit}`may`, and a fault that is neither {lit}`may` nor {lit}`must` is none
+({name}`Resolved.Fault.ne_must_iff_none`). -/
 theorem resolvedStepOutput_query_hasRows (index : Nat) (connection : Connection) (parameters : List Value)
     (query bound : Resolved.Query) (subqueries : List Resolved.Query) (source : Resolved.SourceRows)
     (noClock : (Resolved.Statement.query query subqueries).readsClock = false)
@@ -100,10 +105,13 @@ theorem resolvedStepOutput_query_hasRows (index : Nat) (connection : Connection)
   · simp [plain, Output.hasRows]
 
 /-- For every query statement that reads no clock and no unknown counter, whose source rows
-{lit}`source` and bound window {lit}`bound` exist, the output of its step has no rows exactly when the
-model describes the statement (its subqueries are plain, and the source rows have no fault {lit}`may`), the run has no window mismatch and no overflow, and the one result of the bound query has no
-row. Proof sketch: {name}`resolvedStepOutput_query` and {name}`Resolved.Query.outputOn_hasNoRows`; a
-run whose fault is neither {lit}`may` nor {lit}`must` has no fault. -/
+{lit}`source` and bound window {lit}`bound` exist, the output of its step has no rows exactly when
+all of these hold: the subqueries of the query are plain, the source rows have no fault
+{lit}`may`, the run of the query has no window mismatch, no overflow and no fault, and the one
+result of the bound query has no row. Proof sketch: {name}`resolvedStepOutput_query` and
+{name}`Resolved.Query.outputOn_hasNoRows`; the model describes a run only when its fault is not
+{lit}`may`, and a fault that is neither {lit}`may` nor {lit}`must` is none
+({name}`Resolved.Fault.ne_must_iff_none`). -/
 theorem resolvedStepOutput_query_hasNoRows (index : Nat) (connection : Connection) (parameters : List Value)
     (query bound : Resolved.Query) (subqueries : List Resolved.Query) (source : Resolved.SourceRows)
     (noClock : (Resolved.Statement.query query subqueries).readsClock = false)
