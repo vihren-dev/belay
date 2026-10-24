@@ -210,9 +210,14 @@ logs are in `s4/build/agent-logs/cte-publication`. Evidence and views remain act
 ## Specified work and remaining scope
 
 - [S5](20261024-surface-s5.task.md) is assigned to `s4_part1` in
-  `s5-counterexamples` on published S4/S7. Plausible compatibility passed;
-  certification, sampling, inference and replay have focused Nix acceptance;
-  part-1 review/full/verdict and shared checking remain open.
+  `s5-counterexamples` on published S4/S7. Part 1 is accepted at
+  `77dc166d`: final Nix report `lwi3qm7nqb4j4n3r03q0172prbm3mx7g` contains
+  877 tests with zero failures, errors or skips, verdict passes at
+  `1w3s86b8201bc72c1r51rc66rnb1iknr`, and all 53 frozen prediction files are
+  unchanged. The root independently counted the report totals.
+  The reviewed publication integration with #248 is at `9d8fdfaa`; its full,
+  verdict and exact-prediction sequence is running. Shared checking and automatic
+  theorem diagnostics remain open in the separate search workspace.
 - [Query sources](20261024-query-sources.task.md) is active as above; the
   [table rebuild task](20261024-table-rebuild.task.md) now has clean follow-up
   review `20261024T142117Z-79fd6a8b` and waits for its final view/CTE design.
