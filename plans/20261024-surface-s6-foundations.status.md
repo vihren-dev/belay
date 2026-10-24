@@ -170,3 +170,6 @@ published branch. This final update changes only status and review records.
 - The owner has since accepted the explicit fresh-run triple helper for the
   production assertion API. Ordinary `Std.Do` triples retain arbitrary-context
   composition. This is a later task; the prototype adds no production S6 API.
+- Publication integration review `20261024T194012Z-3d78de16` had no musts
+  or shoulds. The checked prototype is ready above PR #245; this final carry
+  contains the review and status only.
