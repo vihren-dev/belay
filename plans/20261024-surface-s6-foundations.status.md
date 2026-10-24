@@ -1,26 +1,26 @@
 # Status: S6 foundations prototype
 
-Created 2026-10-24. Status: OPEN. The checked prototype is implemented; independent review and
-task-end acceptance remain.
+Created 2026-10-24. Status: DONE. The bounded prototype, design findings and task-end
+acceptance are complete. Production S6 remains separate work.
 Task: [task file](20261024-surface-s6-foundations.task.md).
 Specs: ADR 0017 S6; product guide questions 2/4/11/12/13, with source revision
 and required behavior recorded in the task.
 
 ## Current evidence
 
-The coordinator inspected the pinned Lean 4.34.1 `Std.Do` sources:
-`WP` interprets programs as predicate transformers; `WPMonad` requires a lawful
-monad and preservation of pure/bind. Those class declarations do not establish
-that an instance agrees with SQLite execution. `WPSound` supplies another
-library-level soundness interface whose applicability must be checked.
+Five Nix-checked fixtures prove pure/bind, conjunction, actual-run soundness,
+the exact S4 success bridge, both congruence directions, and the same SQL-write
+triple with mvcgen and explicit lemmas. Kernel examples distinguish actual/raw
+and concrete branches, error policies, hidden state, changing clocks and frames.
+The 28 audited theorems use only ordinary Lean logical axioms. The design record
+states the before-context gap and the extra applicability proof that a production
+WPSound instance would need. No production interpreter or semantics changed.
 
-Current `Sql.runFrom` carries a complete connection and a statement index.
-The public run includes final pragma settings and an open-transaction snapshot;
-the underlying connection also carries counters. This motivates the equivalence
-audit; no congruence counterexample or prototype theorem has been checked yet.
-The guide explicitly identifies hidden state, `before` without ATTACH and
-experimental `mvcgen` as open questions. This task preserves them as decisions
-until the prototype has evidence.
+The owner accepted full-context/all-branch-outcome equivalence for production,
+including failed and unmodeled alternative traces, with separate weaker visible
+relations. The prototype's CheckedEq remains explicitly narrower than that
+future observation contract. The remaining model and API work is identified in
+the design record; it is not claimed by this completed bounded task.
 
 ## Progress
 
@@ -110,3 +110,41 @@ until the prototype has evidence.
   effect premises for those universal claims; that guide correction is outside
   this bounded prototype. The full task gate is running, with later verdict,
   Nix identity and scheduled checks queued. No task completion is claimed yet.
+
+## Completed acceptance
+
+- Final design review `20261024T143247Z-c838d5cc` had no findings. Earlier
+  findings are resolved in their review records. No prototype source changed
+  after the accepted surface fixture at `1rzb9hwr5s7yccpwjx2xiwbzja3bcd99`.
+- `direnv exec . timeout 2700 just test-full` passed all 813 Nix-suite tests,
+  with no failures, errors or skips. Output:
+  `/nix/store/vg3sz4iz4q58vrci7ddrxn9bmv6p7pbi-sqlite-verifier-test-reports`.
+  Log: `build/agent-logs/s6-test-full.log`.
+- `direnv exec . timeout 2100 just verdict` passed all frozen claims.
+  Output: `/nix/store/vrnj6jg65zkc9h17lmpiyp7k3r8rlzk7-sqlite-verifier-verdict`.
+  Log: `build/agent-logs/s6-verdict.log`.
+- `direnv exec . timeout 900 just test-nix` passed all 67 checks.
+  Log: `build/agent-logs/s6-test-nix.log`; report: `build/test-results/nix.xml`.
+- `direnv exec . timeout 1800 just test-scheduled-checks` passed all 47 Nix
+  scheduled checks, with no failures, errors or skips. Output:
+  `/nix/store/y595z61g5jqwxx0339lzr1mhv3iv1wfs-sqlite-verifier-scheduled-check-reports`.
+  Log: `build/agent-logs/s6-scheduled.log`. This uses the owner's documented
+  scheduled-checks override; broad mutant suites were not run locally.
+- All 53 prediction files and 7,372 cases byte-match the unchanged S4 baseline
+  `/nix/store/ii8a9gn8x56qdkwanhgr9blnwhj0wnh7-sqlite-verifier-predictions`.
+  Current output: `/nix/store/szcqkda38bfkimdsy85ri3yj49cfmba5-sqlite-verifier-predictions`;
+  derivation: `/nix/store/51in8gvsi3lk38pk64pa100wylfrm1ks-sqlite-verifier-predictions.drv`.
+  Comparison: `build/agent-logs/s6-prediction-comparison.json`.
+- `direnv exec . timeout 30 just judge-lock` computes the same 55 locked parts
+  as `integrity/judge.lock.json`; recorded in `build/agent-logs/judge-lock-final.json`.
+  No package edit required dev-build, and no execution change required a mutant
+  check. The full gate and focused Nix fixture supplied acceptance evidence.
+
+The coordinator's later read-only design audit identified two separate production
+corrections, accepted by the owner on 2026-10-24: quiet uses an explicit migration
+observation view, retaining ordinary strong equivalence; S8 simulation requires
+a full contextual commuting square for every paired call, including queries,
+while weaker translates remains available. These decisions do not change this
+prototype or complete the future pattern/simulation tasks. The suggested fresh-run
+triple frontend remains a recommendation for the later assertion task, not part
+of those accepted meanings. No review tab or push was made by this agent.
