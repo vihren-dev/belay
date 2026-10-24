@@ -140,6 +140,12 @@ schema and connection facts that each statement needs; enforcement alone is not
 a condition sufficient for all statements. Deferred keys require further laws
 when the model describes them.
 
+The conditional comparison premises also matter for parent writes. In pinned
+SQLite, differing affinities in a child scan and a parent lookup can let a parent
+replacement trigger leave an orphan after a successful enforced statement.
+Slice 5 names the required comparison-consistency conditions and retains the
+native necessity example; it does not change engine behavior to make a law hold.
+
 A proof that fails is a finding: an error of the model, or a path through which SQLite breaks
 the fact. It is reported to the owner, and no proof assumes it away.
 

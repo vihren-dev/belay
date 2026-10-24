@@ -51,5 +51,12 @@ implementer, with these observable requirements fixed.
   shared helper first, updates default mappings/proofs, and requires native
   regressions. Selected child columns determine NULL exemption; missing or
   mismatched targets retain the declaration-column fallback. The working API
-  split is preserved in `sqlite-verifier-fk-atoms`; the accepted correction has
-  not yet been implemented. A slot is needed to resume that agent.
+  split is preserved in `sqlite-verifier-fk-atoms`. Agent `text_build_boundaries`
+  has resumed it and adapted the helper, mapping proofs and native cases;
+  model/Nix checks remain. Native-only replay is diagnostic, not acceptance.
+- 2026-10-24: pinned native replay found an enforced parent replacement that
+  leaves an orphan because child-scan and parent-lookup affinities differ.
+  Added the necessity example and explicit comparison-consistency premise to
+  the existing conditional preservation contract. This is within the accepted
+  schema/mapping/effect conditions, not another engine change or an assumed
+  final atom. The owner was informed; part 1 and independent work continue.

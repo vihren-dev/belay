@@ -12,7 +12,7 @@ initial-database observations. A bounded read-only context supplies that behavio
 through the existing model; a general connection attachment feature is unnecessary.
 
 Implementation waits for the completed query-source/CTE/view representation and
-reserved ownership of its resolver/evaluator files. The pending S6 equivalence
+reserved ownership of its resolver/evaluator files. The accepted S6 equivalence
 and universal guide-effect decisions do not change this primitive's meaning.
 
 ## Progress

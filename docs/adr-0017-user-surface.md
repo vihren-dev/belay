@@ -105,7 +105,8 @@ foundations prototype:
 
 The [initial/current query task](../plans/20261024-s6-before-context.task.md)
 specifies the fixed `before` observation needed by these postconditions through
-the existing model. The complete S6 task supplies its notation and proof rules.
+the existing model. A later full S6 task, not yet written, will supply its
+notation and proof rules; the foundations task covers only the checked prototype.
 
 ### D2. S1: SQL text in Lean, measured before it is built
 
