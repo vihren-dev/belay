@@ -12,34 +12,24 @@ namespace Belay.Sqlite
 
 open Belay.Sqlite.Model
 
-/-- For every start database and two model results of programs with the same outputs, value,
-database, open transaction and settings: the checked runs ({name}`Run.checked`) are equal. The
-counters and the clock assignment of the connections do not appear in a checked run. Proof sketch:
-split both results into their fields, replace the equal fields, and unfold {name}`Run.checked`. -/
-theorem Run.checked_congr {α : Type} (start : Database) {first second : SqlRun α}
+/-- For every start database and two model results with valid final databases, equal
+outputs, value, database, snapshot and settings give equal bundled runs. Connection counters
+and clock functions do not occur in the bundle. Proof sketch: replace the equal fields;
+proof irrelevance identifies the validity certificates. -/
+theorem Run.ofValid_congr {α : Type} (start : Database) {first second : SqlRun α}
+    (firstValid : first.connection.state.database.Valid Profile.pinned)
+    (secondValid : second.connection.state.database.Valid Profile.pinned)
     (outputs : first.outputs = second.outputs) (value : first.value = second.value)
     (database : first.connection.state.database = second.connection.state.database)
     (snapshot : first.connection.state.snapshot = second.connection.state.snapshot)
     (foreignKeys : first.connection.foreignKeys = second.connection.foreignKeys)
     (recursiveTriggers : first.connection.recursiveTriggers = second.connection.recursiveTriggers) :
-    Run.checked start first = Run.checked start second := by
+    Run.ofValid start first firstValid = Run.ofValid start second secondValid := by
   rcases first with ⟨⟨firstOutputs, ⟨⟨firstDatabase, firstSnapshot, firstClock, firstCounters⟩, firstForeign, firstRecursive⟩⟩, firstValue⟩
   rcases second with ⟨⟨secondOutputs, ⟨⟨secondDatabase, secondSnapshot, secondClock, secondCounters⟩, secondForeign, secondRecursive⟩⟩, secondValue⟩
   simp only at outputs value database snapshot foreignKeys recursiveTriggers
   subst outputs value database snapshot foreignKeys recursiveTriggers
   rfl
-
-/-- For every start database and model result of a program, each output of the result is an output
-of the checked run ({name}`Run.checked`). Proof sketch: the checked run keeps the outputs of the
-result, and adds an output at the end when the database is not valid. -/
-theorem Run.mem_checked_outputs {α : Type} {start : Database} {result : SqlRun α} {output : Output}
-    (member : output ∈ result.outputs) : output ∈ (Run.checked start result).outputs := by
-  unfold Run.checked
-  split
-  · exact member
-  · split
-    · exact member
-    · exact List.mem_append_left _ member
 
 /-- For every program, optional clock, index and two connections where the first knows fewer
 counters ({name}`Belay.Sqlite.Model.Connection.LessKnown`): if no output of the run on the first
@@ -99,7 +89,7 @@ run does not know the counter, the run in the environment is the run under {name
 same value, outputs, databases, transaction and settings. Proof sketch: the runs from the counters
 of the environment and from unknown counters have the same outputs ({name}`Sql.runFrom_counters`), so
 the clock does not change the run from the counters of the environment ({name}`Sql.runFrom_env`);
-the checked runs follow ({name}`Run.checked_congr`). -/
+the bundled runs follow ({name}`Run.ofValid_congr`). -/
 theorem Sql.run_env {α : Type} (program : Sql α) (db : Database) (env : Env)
     (clockFree : Output.unmodeled clockUnmodeled ∉ (program.run db).outputs)
     (countersKnown : ∀ output ∈ (program.run db).outputs, output.endsAtUnknownCounter = false) :
@@ -107,15 +97,19 @@ theorem Sql.run_env {α : Type} (program : Sql α) (db : Database) (env : Env)
   have lessKnown : (db.raw.connection {}).LessKnown (db.raw.connection env.counters) :=
     ⟨⟨rfl, rfl, rfl, Or.inl rfl, Or.inl rfl, Or.inl rfl⟩, rfl, rfl⟩
   have counters := Sql.runFrom_counters program none 0 lessKnown
-    (fun output member => countersKnown output (Run.mem_checked_outputs member))
+    (fun output member => countersKnown output member)
   have clock := Sql.runFrom_env program env.clock 0 (db.raw.connection env.counters) (by
     rw [← counters.1]
-    exact fun member => clockFree (Run.mem_checked_outputs member))
+    exact clockFree)
   obtain ⟨sameOutputs, sameValue, ⟨sameDatabase, sameSnapshot, _, _⟩, sameForeign, sameRecursive⟩ := counters
   unfold Sql.run
-  rw [clock]
-  exact Run.checked_congr db sameOutputs.symm sameValue.symm sameDatabase.symm sameSnapshot.symm
-    sameForeign.symm sameRecursive.symm
+  exact Run.ofValid_congr db _ _
+    (by simpa only [clock, Env.default] using sameOutputs.symm)
+    (by simpa only [clock, Env.default] using sameValue.symm)
+    (by simpa only [clock, Env.default] using sameDatabase.symm)
+    (by simpa only [clock, Env.default] using sameSnapshot.symm)
+    (by simpa only [clock, Env.default] using sameForeign.symm)
+    (by simpa only [clock, Env.default] using sameRecursive.symm)
 
 /-- {lit}`Script.run_env`: for every script, database and environment, if no output of the run of
 the script under {name}`Env.default` is {name}`Output.unmodeled` with the reason

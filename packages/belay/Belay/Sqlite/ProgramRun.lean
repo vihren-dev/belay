@@ -8,15 +8,15 @@ set_option doc.verso true
 {lit}`Sql.run p db` sends each statement of program {lit}`p` as one statement of the model's
 run, at the next index, on the connection that the earlier statements left, and gives the
 statement's output to the rest of the program. A statement whose output is
-{lit}`Output.unmodeled` ends the program. The run decides {lit}`Database.Valid` for the database
-at its end, and the decision is the proof of the {lit}`Database` that it gives. {lit}`db.run`
+{lit}`Output.unmodeled` ends the program. The validity theorem
+for the run supplies the proof of the {lit}`Database` that it gives. {lit}`db.run`
 takes a program or a script; a script is the program {lit}`send s`. -/
 
 namespace Belay.Sqlite
 
 open Belay.Sqlite.Model
 
-/-- What the model's run of a program reached, without the check of the database at its end:
+/-- What the model's run of a program reached:
 the outputs and the connection, as for a script, and the program's value, which is none when the
 run ended with {name}`Output.unmodeled`. -/
 structure SqlRun (α : Type) extends ScriptRun where
@@ -41,7 +41,7 @@ def Sql.runFrom {α : Type} (clock : Option Clock) (index : Nat) (connection : C
 {name}`Belay.Sqlite.Model.SqlState.Holds` for {name}`Database.Valid` under the pinned profile (its database, and
 its snapshot when a transaction is open), the state of the connection at the end of
 {name}`Sql.runFrom` satisfies it. It holds for every program of the surface, whatever its statements: the
-check of {lit}`Run.checked` never fails on the connection of a run from a valid start. Proof sketch: induction
+validity proof of the final database follows from a valid start. Proof sketch: induction
 over the program; a statement that ends the run keeps the connection, and a statement that continues is
 one step of the model's run, which keeps the database valid
 ({name}`Belay.Sqlite.Model.runScriptStep_valid`, for the context {name}`runContext`, in execution mode with the
@@ -61,8 +61,8 @@ theorem Sql.runFrom_valid {α : Type} (clock : Option Clock) (program : Sql α) 
     | continued output next => exact hypothesis output (index + 1) (step output next found)
 
 /-- For every program, database and environment: the database of the connection at the end of the run of
-{lit}`Sql.run`, before the check, is valid under the pinned profile. So the decision of {lit}`Run.checked` is
-always {lit}`true` here, and the run never ends with {lit}`invalidReason`. Proof sketch:
+{lit}`Sql.run` is valid under the pinned profile. This proof supplies the final bundled database.
+Proof sketch:
 {name}`Sql.runFrom_valid` from the idle connection, whose database is the valid database. -/
 theorem Sql.runFrom_database_valid {α : Type} (program : Sql α) (db : Database) (env : Env) :
     (program.runFrom env.clock 0 (db.raw.connection env.counters)).connection.state.database.Valid Profile.pinned :=
@@ -70,14 +70,12 @@ theorem Sql.runFrom_database_valid {α : Type} (program : Sql α) (db : Database
 
 /-- The result of a run of a program. -/
 structure Run (α : Type) where
-  /-- The program's value: none when a statement ended the run with {name}`Output.unmodeled`,
-  or when the database at the end is not valid. -/
+  /-- The program's value: none when a statement ended the run with {name}`Output.unmodeled`. -/
   value : Option α
   /-- One output for each statement that ran, in order; the last is {name}`Output.unmodeled`
-  when the run ended early, or when the database at its end is not valid. -/
+  when the run ended early. -/
   outputs : List Output
-  /-- The database that the connection sees at the end, or {name}`Run.start` when the
-  database at the end is not valid. -/
+  /-- The valid database that the connection sees at the end. -/
   db : Database
   /-- The database at the start of the run. -/
   start : Database
@@ -89,33 +87,23 @@ structure Run (α : Type) where
   /-- Whether {lit}`PRAGMA recursive_triggers` is on at the end. -/
   recursiveTriggers : Bool
 
-/-- The reason of the output that ends a run whose database at its end is not valid. -/
-def invalidReason : String :=
-  "the database at the end of the run is not valid: a NOT NULL, CHECK, type, key or rowid " ++
-    "constraint fails; the run keeps the database at its start. To see the database that the " ++
-    "run reached, run the script with Database.Raw.run on db.raw"
-
-/-- The run that the model's result gives from the start database, with the check: when the
-database at the end is valid ({name}`Database.Valid`), the decision is the proof of the
-{name}`Database` that the run gives, with the result's value; otherwise the value is none, the
-outputs end with {name}`Output.unmodeled`, with {name}`invalidReason` unless the model's run
-ended already, and the run keeps the start database, idle with both settings off. -/
-def Run.checked {α : Type} (start : Database) (result : SqlRun α) : Run α :=
-  if valid : result.connection.state.database.Valid Profile.pinned then
-    { value := result.value, outputs := result.outputs, db := ⟨_, valid⟩, start,
-      transaction := result.connection.state.snapshot, foreignKeys := result.connection.foreignKeys,
-      recursiveTriggers := result.connection.recursiveTriggers }
-  else
-    { value := none, outputs := if result.ended then result.outputs else result.outputs ++ [.unmodeled invalidReason],
-      db := start, start, transaction := none, foreignKeys := false, recursiveTriggers := false }
+/-- Bundle a model result whose final database is valid. The supplied proof certifies the
+result's database; its value, outputs, transaction and settings are preserved. Use the
+valid-run theorem when constructing this result from a program. -/
+def Run.ofValid {α : Type} (start : Database) (result : SqlRun α)
+    (valid : result.connection.state.database.Valid Profile.pinned) : Run α :=
+  { value := result.value, outputs := result.outputs, db := ⟨_, valid⟩, start,
+    transaction := result.connection.state.snapshot, foreignKeys := result.connection.foreignKeys,
+    recursiveTriggers := result.connection.recursiveTriggers }
 
 /-- Run the program on the database in the environment, from the idle connection to the
-database, with the check of the database at the end ({name}`Run.checked` of
-{name}`Sql.runFrom`), from the counters of the environment. Use {name}`Env.default`, the value when
+database, from the counters of the environment. The final database carries the proof from
+{name}`Sql.runFrom_database_valid`; the result uses {name}`Run.ofValid`. Use {name}`Env.default`, the value when
 {lit}`env` is not given, when no statement reads the clock or a counter that the program does not
 set first. -/
 def Sql.run {α : Type} (program : Sql α) (db : Database) (env : Env := Env.default) : Run α :=
-  Run.checked db (program.runFrom env.clock 0 (db.raw.connection env.counters))
+  Run.ofValid db (program.runFrom env.clock 0 (db.raw.connection env.counters))
+    (Sql.runFrom_database_valid program db env)
 
 /-- The things that {lit}`db.run` runs: a program of type {lit}`Sql α` itself (the default
 instance, so that a {lit}`do` block is a program), and a script, which is the program

@@ -1,0 +1,58 @@
+{
+  "caller": "codex",
+  "commit": "81c2f47cde59d245619587d28a307b5bc5e69a63",
+  "date": "2026-10-24T16:57:07+00:00",
+  "exit": 0,
+  "files": [
+    "docs/adr-0017-user-surface.md",
+    "docs/adr-0022-database-validity.md",
+    "packages/belay/Belay/Sqlite/ProgramEnvLaws.lean",
+    "packages/belay/Belay/Sqlite/ProgramLaws.lean",
+    "packages/belay/Belay/Sqlite/ProgramRun.lean",
+    "packages/belay/Belay/Sqlite/ProgramSuccess.lean",
+    "packages/belay/Belay/Sqlite/Run.lean",
+    "packages/belay/Belay/Sqlite/RunLaws.lean",
+    "packages/belay/README.md",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/ScriptRunValid.lean",
+    "plans/20261024-surface-s4.status.md",
+    "tests/success_theorems_test.py",
+    "tests/surface/ProgramExamples.lean",
+    "tests/surface/RunExamples.lean",
+    "tests/surface_guide_test.py",
+    "tests/surface_programs_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261024T165707Z-81c2f47c#1",
+      "line": 208,
+      "path": "docs/adr-0022-database-validity.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "D5 still says the surface's `Database` is \"the model's\" until slices 2 to 4, and its amendment (lines 216-232) still describes a run that checks and an else branch that is a finding. The text after line 232 says this was completed, so the document contradicts itself. Fix: mark the amendment paragraphs (lines 208-232) as historical with their 2026-10-22 date, or reword them in the past tense, so that only the 2026-10-24 note reads as the current state."
+    }
+  ],
+  "id": "20261024T165707Z-81c2f47c",
+  "kind": "review",
+  "reviewer": "claude",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
