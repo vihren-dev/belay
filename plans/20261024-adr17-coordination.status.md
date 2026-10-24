@@ -91,8 +91,8 @@ remove the prior planning blocks; they are not implementation-completion claims.
   Separate evidence head `5d69e3fa` retains draft v53's 38 agreements and
   four restrictions. Combined acceptance is recorded in its task status.
   S4 carry `b52fdec6` passed focused Nix `9zkv499mbvg2cwcs5jnn351rv253zfsd`.
-  CTE dev-build and Nix model 32/surface 17/restrictions 60 passed; two named
-  mutants `10563` own slot 1, then S7 takes it. Integration must compile balance.
+  CTE `80b4cb5e` passed Nix model 32/surface 17/restrictions 60 and two mutants.
+  Combined CTE/S4/FK workspace waits for the next slot; integration checks balance.
 - `text_build_boundaries` completed the S6 foundation prototype at `eb0a16a9`,
   based on S4 `00c8707f`. Its 28 audited declarations use ordinary logical axioms;
   design `a3cffcb5` and decision record `c838d5cc` have clean reviews.
@@ -119,8 +119,8 @@ Reviewed private head `5dbc6f15` adds physical-table premises to both email copi
 and balance; all pass installed runtime `b6n8f8xys0ax45ldilp9rqw2030q8pwa` with standard axioms.
 Final acceptance must selectively reconcile unpublished S2/S3 product-default changes.
 
-Root final S4 gate `32730` owns slot 2. FK UPDATE `78a6dbc2`/`62aebf43`
-passed eight Nix fixtures/131 axiom audits and clean review; next coverage waits. FK insertion
+Root final S4 gate `32730` owns slot 2; full 865/verdict/53 unchanged predictions pass.
+FK coverage `9350aa31` passed nine Nix fixtures/164 axiom audits and review. FK insertion
 `45a65a92`/`754545ce` passed six Nix fixtures/95 axioms at `afgmspdjm1andpc3pd1wlfqdv9gl4bib`.
 Derived #243 passed local full 853/Nix 70/scheduled 47 and verdict 4,867/2,505,
 with all 53 predictions matching accepted evidence. Linux CI #242/#243 failed
@@ -129,9 +129,9 @@ at `b6864447`: 808 full tests, 70 Nix checks, 47 scheduled checks and verdict pa
 The reader passed 12 Nix cases, including 532/640 roots. Complete references
 passed for #242's 532 modules and #243's 538 modules (`iz8kjnq67dn05smyh3liv85rf2wwdzn5`).
 #242 CI and Verdict are green. Published #243 `2cb4c5e3` passed 853/70/47 locally;
-its CI reference and Verdict pass; CI `40120692159` continues the remaining checks.
+its CI `40120692159` and Verdict `40120692161` are also green.
 Both repair workspaces are removed; their logs/report XML are archived under S4 build/.
-S7 prototype `3b9e4189` passed seven focused Nix cases and reviews; broad gates queue.
+S7 prototype `3b9e4189` passed full/verdict/53 unchanged predictions; slot 1 finishes gates.
 The owner accepted physical-table premises for BOTH unique-email and balance.
 Task corrections `2e761ca0` and source `c72ed523` have clean reviews and Nix checks.
 Combined S4 `24ca8b4c` carries repaired PRs, premises and two passing Nix native regressions.
@@ -151,8 +151,8 @@ One owner question is pending: named proof-body cost coverage versus every embed
   published `c1471940` (PR #6): DONE. Nine pinned native checks passed; two
   Verso-header corrections preserve the SQL bodies. No unrelated unpublished
   ancestor was included in publication.
-- Private product PR #8, `docs/guide-success-and-inputs`, head `d3aeb407`, base
-  #7: reviewed email/balance proofs, success prose and DONE rebuild wording.
+- Private product PR #8, `docs/guide-success-and-inputs`, head `5dbc6f15`, base
+  #7: reviewed email/balance table premises and proofs, success and rebuild prose.
   Native metadata and installed-consumer checks are recorded in its private status.
 
 Herdr waits `w1:t3T`/78895, `w1:t3V`/78368 and `w1:t3W`/56689 returned
