@@ -49,6 +49,11 @@ example : { twoColumns with primaryKey := [5], rowidAlias := some 5 }.supported 
 example : ({ columns := [], primaryKey := [0], rowidAlias := some 0 } : CatalogTable).supported defaults.limits = false := by
   decide +kernel
 
+-- The alias condition alone refuses an alias whose column is missing.
+example : ({ columns := [], primaryKey := [0], rowidAlias := some 0 } : CatalogTable).aliasSupported = false := by
+  decide +kernel
+example : { twoColumns with primaryKey := [5], rowidAlias := some 5 }.aliasSupported = false := by decide +kernel
+
 -- A CHECK of the table or of a column reads only columns of the table.
 example : { twoColumns with checks := [readsColumn 1] }.supported defaults.limits = true := by decide +kernel
 example : { twoColumns with checks := [readsColumn 2] }.supported defaults.limits = false := by decide +kernel
