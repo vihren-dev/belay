@@ -48,3 +48,11 @@ def test_a_where_that_may_fail_has_no_modeled_output(runtime_root: Path, tmp_pat
     result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsMayFail.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
+
+
+def test_a_query_without_from_holds_or_is_empty_by_its_condition(runtime_root: Path, tmp_path: Path) -> None:
+    """`SELECT e [WHERE c]` over every database: `Holds` for a query without `WHERE` and `Empty` for a false
+    condition, proved with the lemmas and `sql_simp`, with instances where `decide +kernel` checks the claim."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsNoFrom.lean", tmp_path), cwd=tmp_path,
+                         timeout=60)
+    assert result.returncode == 0, result.diagnostic()

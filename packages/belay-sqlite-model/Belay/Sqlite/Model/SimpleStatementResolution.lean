@@ -68,6 +68,6 @@ theorem resolveStatement_select_missing_table (context : ResolveContext) (state 
   rw [unfolded]
   unfold resolveSelect
   simp [source, noJoins, resolveSources, resolveReference, arguments, resolveTableReference, missing, notReserved,
-    notFunction, maximumJoinTables, prepareError, ResolveState.withCatalog, Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map]
+    notFunction, maximumJoinTables, prepareError, ResolveState.withCatalog, Bind.bind, Except.bind, Functor.map, Except.map]
 
 end Belay.Sqlite.Model
