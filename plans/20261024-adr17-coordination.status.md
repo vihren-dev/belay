@@ -83,8 +83,8 @@ remove the prior planning blocks; they are not implementation-completion claims.
 - `s4_part1` implements S5 in isolated `s5-counterexamples` on published
   `0569149b`, with reviewed handoff `e50e1f9e`. Plausible compatibility passed
   in Nix. Explicit certification and policy follow-up `76504977` passed 11 Nix
-  checks and clean review. Slot 2 runs sampler diagnostics (`36560`); sampler
-  acceptance and background checking remain open.
+  checks and clean review. Slot 2 runs sampler Nix checks (`67150`) after passing
+  local diagnostics; schema inference, replay and background checking remain open.
 - `s6_prerequisite_audit` completed derived-source part 1, published in #243.
   Separate evidence head `5d69e3fa` retains draft v53's 38 agreements and
   four restrictions. Combined acceptance is recorded in its task status.
@@ -92,7 +92,7 @@ remove the prior planning blocks; they are not implementation-completion claims.
   final focused 36 and verdict 4,869/2,503 passed. All prior predictions are
   unchanged; two become agreeing and 69 retain unsupported with changed reasons.
   All changes are classified; publication reviews are resolved. Views remain
-  OPEN. Slot 1 runs the origin-metadata foundation (retry `56667`).
+  OPEN. Slot 1 runs the origin-metadata foundation gate (`30578`).
 - The S6 foundation prototype is DONE in PR #246 at `334d9645`, above #245.
   Original full 813/Nix 67/scheduled 47 and verdict passed. The final focused
   integration checks all five modules and 28 audits against S4; review is clean.
@@ -127,7 +127,7 @@ The reader passed 12 Nix cases, including 532/640 roots. Complete references
 passed for #242's 532 modules and #243's 538 modules (`iz8kjnq67dn05smyh3liv85rf2wwdzn5`).
 #242 CI and Verdict are green. Published #243 `2cb4c5e3` passed 853/70/47 locally;
 its CI `40120692159` and Verdict `40120692161` are also green.
-#244 and #246 CI/Verdict are green. #245 Verdict is green; CI remains running.
+#244, #245 and #246 CI/Verdict are green. #247 Verdict is green; CI is running.
 Both repair workspaces are removed; their logs/report XML are archived under S4 build/.
 S7 prototype PR #245 `0569149b` is DONE: full 872/Nix 70/scheduled 47; accepted scope reviewed.
 ## Published work and cleanup
@@ -161,8 +161,10 @@ workspaces were removed after #243; gate logs are retained under S4 build/.
 Completed s4-run/table-premises, s7-proof-cost and both S6 prototype workspaces
 were archived and removed after their pushes. Protected s4chk remains.
 Published fk-preservation/update-preservation/update-coverage were archived and
-removed after remapping diagnostic artifacts. The original fk-atoms workspace
-is retained until its five late copied documentation commits are reconciled.
+removed after remapping diagnostic artifacts. Original fk-atoms was removed
+after comparing its five late copied commits with published #248: all code and
+review records are retained, with later documentation corrections. Its exact
+late patch and acceptance logs remain under S4's archived FK publication logs.
 Completed CTE/CTE-implementation/integration workspaces were archived and removed
 after #248. Their six accepted Nix out-links have independent roots under
 `cte-publication/build/accepted-cte-artifacts`. Evidence and views remain active.
