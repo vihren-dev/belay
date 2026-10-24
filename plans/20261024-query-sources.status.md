@@ -101,7 +101,10 @@ PR. Task-end Nix and scheduled checks remain required after all three parts.
   `/nix/store/zdn3s51b8gyns4r7z3bdqq77v7gyfdnf-sqlite-verifier-test-common-tables-mutants-1`.
   The following source edits only clarified the WITH behavior in the public
   write and trigger entrypoint docstrings; executable definitions are unchanged.
-- Independent review, frozen prediction classification
-  and post-review full/verdict gates remain pending for this part. The full S4
-  success fixture closure is reserved for the combined integration boundary;
-  its physical-table premise correction is a separate reviewed change.
+- Implementation commit `1a1848b12f9af98a6db77dce8dd5e72acb68d868` passed
+  independent Claude review `20261024T190005Z-1a1848b1` with no findings.
+- Frozen prediction classification and post-review full/verdict gates remain
+  pending for this part. The coordinator selected a combined CTE, reviewed S4
+  and FK boundary for these gates, before any view behavior is added. It also
+  checks the maintained full S4 success fixtures with the resolver adjustments.
+  S4's physical-table premise correction remains a separate reviewed change.
