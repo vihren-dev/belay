@@ -50,13 +50,11 @@ workspace filesystem. Reserve at most two heavy build/check processes here.
 
 The owner accepted all three remaining recommendations on 2026-10-24 and
 resumed the goal. S4 recorded its default-run decision in reviewed `73b9f65b`.
-Two new S6 decisions are pending: make `≈` compare full connection state and all
-branch outcomes (recommended), or retain visible `≈` and name a stronger
-compositional relation separately. Checked counterexamples distinguish counters,
-pragmas and transaction snapshots. Also, correct universal insert/lookup and
-purge-frame guide claims with schema/trigger/FK effect conditions (recommended)
-or limit them to concrete schemas. Native 3.51.0 triggers refute their current
-unconditional effect assumptions; probes are in the research-notes directory.
+The owner accepted both S6 recommendations on 2026-10-24: `≈` compares full
+connection state and every branch outcome, with weaker visible comparisons
+named separately. Universal insert/lookup and purge-frame guide claims gain
+explicit schema/trigger/FK effect premises and retain the native counterexamples.
+ADR17 records the exact strong relation. No owner decision is pending.
 
 ## Resolved findings
 
@@ -97,8 +95,8 @@ remove the prior planning blocks; they are not implementation-completion claims.
   `/nix/store/1rzb9hwr5s7yccpwjx2xiwbzja3bcd99-sqlite-verifier-test-surface-1`.
   Its 28 audited declarations use only ordinary logical axioms. Design
   refinement `21b80e17` is under review; full task gates remain. The prototype
-  does not implement production S6. Its equivalence decision and the separate
-  guide-effect counterexamples above need owner judgment.
+  does not implement production S6. Its exact equivalence recommendation and
+  the separate guide-effect correction are now accepted by the owner.
 - The FK workspace is `sqlite-verifier-fk-atoms`. Root carried the revised task
   and ADR22 in reviewed `8526ed1f`, with status-only findings fixed in `0ca148ce`.
   The existing split-API source work remains uncommitted. FK owns atom/check/frame
@@ -106,6 +104,8 @@ remove the prior planning blocks; they are not implementation-completion claims.
   S4 is identifying the reviewed query-output dependency closure for the exact
   pragma law. The old #239 prediction baseline is `4k77z378vnagzwx5448yqz0686d58cld`.
   No shared ancestor may be rebased while descendants are active.
+  Corpus v53 is reserved for query-sources, v54 for FK; each uses a separate
+  judge/evidence workspace and protected PR after measured model comparisons.
 
 S4 owns `sqlite-verifier-product-s4-guide`, based on published `17666ac9`:
 uniqueEmail/balance/holds_where, Level2 semantics and the separately reviewed
@@ -153,7 +153,9 @@ completed schema/observation workspaces await publication before removal.
   [table rebuild task](20261024-table-rebuild.task.md) now has clean follow-up
   review `20261024T142117Z-79fd6a8b` and waits for its final view/CTE design.
 - [S6 prototype](20261024-surface-s6-foundations.task.md) is implemented and
-  validating. Full S6 requires the equivalence decision and model prerequisites.
+  validating. The accepted full S6 semantics still need their production task.
+  [Initial/current query context](20261024-s6-before-context.task.md) has clean
+  review `20261024T143052Z-5feffb18` and waits for query-source/view integration.
 - [Editor](20261024-surface-editor.task.md) is reviewed, unassigned.
 - [SQL doc blocks](20261024-sql-doc-blocks.task.md) has clean follow-up review
   `20261024T140400Z-04f1c91e`, unassigned; it accompanies S7.

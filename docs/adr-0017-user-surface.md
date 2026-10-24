@@ -79,6 +79,34 @@ names the learning curve as the main risk of the design, and the verification sy
 review shows that a cheap first answer is what makes people adopt a verifier, so S5
 comes before S6.
 
+S6 clarification, accepted by the owner on 2026-10-24 after the checked
+foundations prototype:
+
+- `≈` compares the full execution context and every permitted branch outcome,
+  so that bind and append can preserve it. Equal final tables and output rows
+  alone are insufficient: a continuation can observe counters, pragmas and
+  transaction snapshots. Compare actual full runs and the set of complete
+  branch outcomes at the same clock, statement index and full connection. Each
+  outcome retains its optional return value, full output trace and final
+  connection, including errors and unmodeled reasons/partial traces. Branches
+  follow the existing statement step: the raw continuation is included and
+  `oneOf` also permits each concrete rows continuation. Ordinary SQL errors
+  continue; unmodeled outcomes stop. Branch enumeration duplicates/order are
+  not extra observations beyond the raw outputs already retained.
+- Separately named weaker visible comparisons remain available. Their use does
+  not imply the stronger bind/append congruence without the required premises.
+- Universal guide examples must state the schema and trigger/foreign-key effect
+  conditions they need. A successful INSERT can be followed by a trigger that
+  deletes the new row; a DELETE trigger can remove rows outside its direct
+  filter. Retain these counterexamples and correct the lookup/frame claims
+  with explicit premises, rather than replacing the universal examples with
+  fixed-schema proofs. Convenient premises must not remove the more general
+  semantic effect/frame primitives.
+
+The [initial/current query task](../plans/20261024-s6-before-context.task.md)
+specifies the fixed `before` observation needed by these postconditions through
+the existing model. The complete S6 task supplies its notation and proof rules.
+
 ### D2. S1: SQL text in Lean, measured before it is built
 
 S1 starts with two prototypes, each with a measurement that decides it:
