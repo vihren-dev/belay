@@ -169,16 +169,16 @@ matching output order; commuting only final rows is a separate weaker claim.
 Add a computed footprint only when a specific automation rule needs it and has
 a soundness theorem. This experiment does not justify a general effect framework.
 
-## Owner judgment before the full S6 specification
+## Accepted equivalence meaning
 
 The guide's visible equivalence and unrestricted composition claim conflict.
-The owner can keep the visible meaning of `≈` and restrict its composition laws,
-or use the full branch-outcome contract above for `≈` and give visible database
-observations a separate name. Recommend the latter: composition uses a named
-context-sensitive relation with all failed and unmodeled alternative traces,
-while a named weaker relation serves final-database comparisons. The checked
-counterexamples require this semantic correction; the proposed branch relation
-is not yet implemented or proved by this prototype.
+The owner considered keeping the visible meaning of `≈` with restricted
+composition laws, or using the full branch-outcome contract above for `≈` with
+separately named visible observations. On 2026-10-24 the owner accepted the latter:
+`≈` compares full context and all branch outcomes, including failed and unmodeled
+alternative traces. Named weaker relations serve final-database comparisons.
+The checked counterexamples require this semantic correction; the production
+branch relation remains to be implemented and proved.
 
 The remaining findings specify required work or routine implementation choices.
 The bounded read-only context preserves the guide's meaning of `before.t`: table

@@ -100,3 +100,13 @@ until the prototype has evidence.
   and one should: qualify the ifOk disjunction with modeled execution. The design
   record now repeats the task's all-branch modeled-execution premise and states
   that an unmodeled outcome never discharges ifOk.
+- 2026-10-24: follow-up review `20261024T142127Z-a3cffcb5` found no musts
+  or shoulds. The owner accepted the recommended production meaning: `≈` uses
+  full context and all branch outcomes, including failed/unmodeled alternative
+  traces, with separately named weaker visible observations. The design record
+  marks this decision accepted; the prototype implementation is unchanged.
+  Separately, the coordinator's native audit of INSERT and purge guide examples
+  found trigger counterexamples. The owner accepted explicit schema and trigger/FK
+  effect premises for those universal claims; that guide correction is outside
+  this bounded prototype. The full task gate is running, with later verdict,
+  Nix identity and scheduled checks queued. No task completion is claimed yet.
