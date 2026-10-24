@@ -9,8 +9,9 @@ Specs: ADR17 and its accepted decisions; explicit ADR deferrals remain in force.
 All required feature tasks and their Nix acceptance precede this final gate.
 S4, query sources and FK work are active. S5, S7 files, editor and doc-block
 tasks are specified. S6 production execution contracts are reviewed; remaining
-S6 assertions/patterns/automation and S8 await their tasks and pending owner
-decisions. Proof-cost production needs the specified collector experiment.
+S6 assertions/patterns/automation and S8 await their tasks. The owner accepted
+observation views and contextual S8 pairing; the fresh-run helper is pending.
+Proof-cost production needs the specified collector experiment.
 
 The product default workspace contains earlier unpublished S2/S3 guide edits.
 Published profile/header corrections and current S4 guide edits use separate
@@ -22,3 +23,4 @@ including unrelated private history or copying private contents publicly.
 - 2026-10-24: specified a final capability and guide audit, installed-consumer
   integration, proof checks and publication boundary. Review is pending.
   ADR17 remains OPEN; this task file claims no completed feature or test result.
+- 2026-10-24: review `20261024T145218Z-e244461b` has no findings.

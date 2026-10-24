@@ -54,15 +54,14 @@ The owner accepted both S6 recommendations on 2026-10-24: `≈` compares full
 connection state and every branch outcome, with weaker visible comparisons
 named separately. Universal insert/lookup and purge-frame guide claims gain
 explicit schema/trigger/FK effect premises and retain the native counterexamples.
-ADR17 records the exact strong relation. Two later decisions are pending:
-`quiet` cannot erase ordinary execution traces while ordinary `≈` retains them.
-The recommended correction uses explicit observation views for migration
-patterns and corrects the guide's displays. Dependent pattern work is paused;
-the complete-execution primitives and other tasks continue. S8's whole-program
-lifting also needs full contextual commutation for every paired call, including
-queries: moving a query across a clock-sensitive migration changes its index.
-Weak query-output translation remains useful but cannot alone prove that rule.
-The recommendation adds the contextual premise and retains the weaker relation.
+ADR17 records the exact strong relation. The owner also accepted explicit
+observation views for quiet migration segments and full contextual commutation
+for every S8 call pair, including queries. Weak query-output translation stays
+available but cannot alone establish the whole-program theorem.
+One later decision is pending: use an explicit fresh-run helper for the guide's
+fresh database/complete-environment claims, proved equivalent to standard
+Std.Do triples with precise entry assumptions. Ordinary triples still quantify
+over arbitrary contexts. Only dependent public-assertion work is paused.
 
 ## Resolved findings
 
@@ -181,8 +180,8 @@ completed schema/observation workspaces await publication before removal.
   need its measured collector contract. This facet is required, not deferred.
 - [Guide rebuild wording](20261024-guide-sql-rebuilds.task.md) has clean review
   `20261024T142048Z-e614f5b6` and is assigned to S4's guide owner.
-- [Integrated guide acceptance](20261024-adr17-guide-acceptance.task.md) is
-  specified and awaiting review; it consumes every required implementation.
+- [Integrated guide acceptance](20261024-adr17-guide-acceptance.task.md) has
+  clean review `20261024T145218Z-e244461b`; it awaits every required implementation.
 
 Read-only S7/editor audits remain in the research-notes directory of the Lean
 model modularity investigation. Shared surface helper ownership must be reserved

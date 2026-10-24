@@ -13,7 +13,7 @@ Production must support conditional triples and retain those traces explicitly.
 
 Implementation waits for task review, final S4 interfaces and an available
 agent/build slot. Its modules can remain separate from query-context work.
-The pending quiet observation-view decision affects later migration patterns,
+The accepted quiet observation view affects later migration patterns,
 not these complete-execution semantics. No production or acceptance result
 is claimed by this task file.
 

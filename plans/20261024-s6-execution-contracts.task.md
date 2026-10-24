@@ -16,7 +16,7 @@ patterns use a named weaker observation without changing ordinary execution.
 
 This task does not complete S6. Public query assertions and their fixed initial
 database, migration observation views, named patterns, automation and corrected
-guide proofs have separate acceptance work. The pending quiet-view decision
+guide proofs have separate acceptance work. The accepted quiet observation view
 does not change the complete execution contract specified here. No second SQL
 resolver or evaluator, new model feature or general effect framework is needed.
 

@@ -102,6 +102,23 @@ foundations prototype:
   with explicit premises, rather than replacing the universal examples with
   fixed-schema proofs. Convenient premises must not remove the more general
   semantic effect/frame primitives.
+- Migration output suppression is an explicit observation view, accepted on
+  2026-10-24. It describes which segment's outputs a named pattern compares;
+  it does not change SQL execution, return values, errors, unmodeled termination,
+  counters or clock advancement. Ordinary `≈` retains the complete-execution
+  contract above. Query preservation/translation may use a separately named
+  output comparison; migration commutation compares the projected observation
+  and complete final context. Correct guide formulas that treated quiet as an
+  ordinary action able to erase the trace from every comparison.
+- S8's whole-program theorem requires a contextual commuting condition for
+  every paired interface call, including queries, accepted on 2026-10-24.
+  Moving the old call before a migration must agree with moving its partner
+  after it under the explicit migration view, including return values, complete
+  final context and all actual/concrete outcomes. A query advances the statement
+  clock too. Weak output translation alone cannot establish this condition.
+  Keep the weak relation available, with sufficient context/frame premises for
+  a bridge to the stronger call condition. Restricted simulations preserve their
+  invariant at every reached call, including result-dependent continuations.
 
 The [initial/current query task](../plans/20261024-s6-before-context.task.md)
 specifies the fixed `before` observation needed by these postconditions through
