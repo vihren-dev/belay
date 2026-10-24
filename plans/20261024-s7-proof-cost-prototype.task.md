@@ -72,11 +72,10 @@ its attribution. Check completed imported records in a second process and
 negative cases for unavailable/failed measurements. Do not encode exact counts
 that depend on a different compiler or unrelated imported implementation.
 
-Test the proposed pure comparison on unchanged/within-bound and over-bound
-measurements, absent entries and mismatched compiler/scheme identity. A real
-changed-proof fixture must supply at least one measured growth case. These
-checks demonstrate the eventual CI behavior without publishing a baseline
-manager, dashboard or general profiling framework.
+A real changed-proof fixture must supply at least one measured growth case.
+Keep baseline comparison as a written design sketch until its production
+contract is fixed; this prototype adds no comparison implementation or tests.
+No baseline manager, dashboard or general profiling framework is required.
 
 Each coherent commit has focused checks and independent review. The one task
 boundary runs post-review `just test-full` and `just verdict`, then task-end

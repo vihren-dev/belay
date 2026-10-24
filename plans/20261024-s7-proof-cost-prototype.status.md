@@ -14,6 +14,9 @@ be demonstrated. No production measurement or baseline guarantee is claimed.
 ## Progress
 
 - 2026-10-24: specified the bounded attribution/coverage experiment and its
-  imported-data and growth checks. Await independent review and assignment.
+  imported-data and growth checks. Review `20261024T141219Z-2ae528dd` had no
+  musts and one should: comparison implementation precedes its settled contract.
+  Kept only the written baseline sketch and actual measured-growth fixture.
+  Await follow-up review and assignment.
   The production cost task follows the measured findings; files/freshness and
   checked doc blocks remain separate tasks toward the same ADR17 completion.
