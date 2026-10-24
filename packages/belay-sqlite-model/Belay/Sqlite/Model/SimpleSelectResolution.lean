@@ -39,13 +39,13 @@ structure Syntax.Subquery.Simple (query : Syntax.Subquery) : Prop where
 
 /-- The {lit}`WHERE` condition of a query resolves to the resolved condition: there is none and no
 resolved condition, or there is a term that names no alias of the result columns and resolves, as
-a condition, to an expression. -/
+a condition, to an expression, with the shapes of the subqueries that it names (by default, none). -/
 def FilterResolves (dqs : Bool) (scope : Scope) (aliases : List Identifier) (filter : Option Syntax.Expr)
-    (condition : Option Resolved.Expr) : Prop :=
+    (condition : Option Resolved.Expr) (shapes : SubqueryShapes := { later := [] }) : Prop :=
   (filter = none ∧ condition = none) ∨
     ∃ (term : Syntax.Expr) (expression : Resolved.Expr) (affinity : Option Affinity),
       filter = some term ∧ condition = some expression ∧ namesAlias scope aliases term = false ∧
-        resolveOperand dqs scope { later := [] } true term = .ok (expression, affinity)
+        resolveOperand dqs scope shapes true term = .ok (expression, affinity)
 
 /-- For every statement with a single query, without joins, subqueries and compound, whose sources
 resolve, whose result columns hold no {lit}`*` that SQLite refuses, and whose body resolves to a
@@ -69,17 +69,18 @@ resolves to the simple resolved query of its sources, columns and condition, wit
 columns and the affinity of the first one. Proof sketch: unfold the resolver and rewrite its
 aggregate flag and its aggregate calls, which are none for a simple query, then follow its steps
 with the hypotheses; the clauses that a simple query lacks resolve to their empty forms. -/
-theorem resolveQueryBody_simple (dqs : Bool) (scope : Scope) (pending : List PendingSource) (query : Syntax.Subquery)
+theorem resolveQueryBody_simple (dqs : Bool) (scope : Scope) (current : Option Nat) (later : List SubqueryShape)
+    (outerAliases : List Identifier) (pending : List PendingSource) (query : Syntax.Subquery)
     (simple : query.Simple) (resolved : List (List (Resolved.Output × String × Option Affinity)))
     (condition : Option Resolved.Expr) (sources : List Resolved.QuerySource)
-    (columns : resolveAll (resolveResultColumn dqs scope { later := [] }) query.columns = .ok resolved)
-    (filter : FilterResolves dqs scope ((resultAliases scope query.columns).filterMap id) query.filter condition)
+    (columns : resolveAll (resolveResultColumn dqs scope { current, later }) query.columns = .ok resolved)
+    (filter : FilterResolves dqs scope ((resultAliases scope query.columns).filterMap id ++ outerAliases) query.filter condition { current, later })
     (pendingOk : resolvePendingSources dqs scope pending = .ok sources)
     (noFeed : (resolved.flatten.filterMap fun (output, _) => match output with
       | .scalar expression => some expression
       | .aggregate _ => none).any (fun expression =>
         expression.any fun node => node.isFallibleCall && node.any (· matches .aggregateValue _)) = false) :
-    resolveQueryBody dqs scope { later := [] } [] pending query =
+    resolveQueryBody dqs scope { current, later } outerAliases pending query =
       .ok (Resolved.Query.simple sources condition (resolved.flatten.map (·.1)) (resolved.flatten.map (·.2.1)),
            resolved.flatten.head?.bind (·.2.2)) := by
   unfold Resolved.Query.simple
@@ -150,7 +151,7 @@ theorem resolveSelect_simple (context : ResolveContext) (catalog : Catalog) (que
       .ok (.query (Resolved.Query.simple sources condition (resolved.flatten.map (·.1)) (resolved.flatten.map (·.2.1))) [],
         catalog) :=
   resolveSelect_no_subqueries context catalog query _ _ pending scope simple.compound simple.joins sourcesOk noStar
-    (resolveQueryBody_simple context.profile.dqsDml scope pending query simple resolved condition sources columns filter pendingOk
-      noFeed)
+    (resolveQueryBody_simple context.profile.dqsDml scope none [] [] pending query simple resolved condition sources
+      columns (by simpa using filter) pendingOk noFeed)
 
 end Belay.Sqlite.Model

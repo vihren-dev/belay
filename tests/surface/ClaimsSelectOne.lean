@@ -41,6 +41,7 @@ theorem some_invoice_has_amount_zero (db : Database) (position index : Nat) (tab
           ((table.columns[index]?.map (·.collation)).getD .binary)) = true := by
   have resolves := FilterResolves.of_term (dqs := runContext.profile.dqsDml)
     (scope := tableScope db.raw.catalog ⟨name! "invoices", none, none⟩ position table) (aliases := [])
+    (shapes := { later := [] })
     (term := .compare .eq (.identifier (name! "amount") .none) (.numeric "0")) (by simp [namesAlias])
     (by simp [sql_simp, column]; rfl)
   refine Iff.trans (Holds.iff_selectOne (head := rfl) (arguments := rfl) found resolves ?_) ?_

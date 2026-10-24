@@ -22,6 +22,11 @@ theorem resolveSources_table (catalog : Catalog) (reference : Syntax.TableRefere
       tableScope catalog reference position table) := by
   simp [resolveSources, resolveReference, arguments, resolveTableReference, found, maximumJoinTables, Scope.place, mergeJoins, resolveAll, resolveAllFrom, Bind.bind, Except.bind, liftM, monadLift, MonadLift.monadLift, Except.mapError, joinOperator, Scope.single, tableScope, Functor.map, Except.map]
 
+/-- No pending source resolves to no source, for any scope and quote setting. Proof sketch: there is no
+condition and no argument to resolve. -/
+theorem resolvePendingSources_nil (dqs : Bool) (scope : Scope) : resolvePendingSources dqs scope [] = .ok [] := by
+  simp [resolvePendingSources, resolveAll, resolveAllFrom, resolveEachArguments, Bind.bind, Except.bind, Pure.pure, Except.pure]
+
 /-- The one inner source without a condition, which {name}`resolveSources_table` gives, resolves to the
 first source of the table, {name}`Resolved.QuerySource.first`, for any scope and quote setting.
 
@@ -32,12 +37,12 @@ theorem resolvePendingSources_table (dqs : Bool) (scope : Scope) (position : Nat
   simp [resolvePendingSources, resolveJoinCondition, resolveAll, resolveAllFrom, Bind.bind, Except.bind, Pure.pure, Except.pure,
     Resolved.QuerySource.first]
 
-/-- The result column {lit}`1` resolves, in any scope, to the integer literal one with the name
-{lit}`"1"` and no affinity.
+/-- The result column {lit}`1` resolves, in any scope and with any shapes of subqueries, to the integer
+literal one with the name {lit}`"1"` and no affinity.
 
 Proof sketch: unfold the resolver; a numeric literal needs no scope. -/
-theorem resolveColumns_one (dqs : Bool) (scope : Scope) :
-    resolveAll (resolveResultColumn dqs scope { later := [] }) [.expression (.numeric "1") none "1"] =
+theorem resolveColumns_one (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) :
+    resolveAll (resolveResultColumn dqs scope shapes) [.expression (.numeric "1") none "1"] =
       .ok [[(.scalar (.literal (.integer 1)), "1", none)]] := by
   simp [resolveAll, resolveAllFrom, resolveResultColumn, resolveOperand, Bind.bind, Except.bind, Pure.pure, Except.pure]
   rfl

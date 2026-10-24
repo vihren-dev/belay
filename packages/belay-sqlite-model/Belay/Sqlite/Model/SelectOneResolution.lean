@@ -28,7 +28,7 @@ theorem resolveStatement_select_one_from (context : ResolveContext) (state : Res
         none [] none false none) =
       .ok (.query (Resolved.Query.simple [Resolved.QuerySource.first position] condition
         [.scalar (.literal (.integer 1))] ["1"]) [], state) := by
-  have columns := resolveColumns_one context.profile.dqsDml (tableScope state.catalog reference position table)
+  have columns := resolveColumns_one context.profile.dqsDml (tableScope state.catalog reference position table) { later := [] }
   have simple : (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] filter [] [] none none none
       none false none).Simple :=
     ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩

@@ -163,14 +163,14 @@ theorem resolveOperand_not_between (operand low high : Syntax.Expr) :
 the operand, as {name}`FilterResolves` says. Proof sketch: the second disjunct of the definition. -/
 theorem FilterResolves.of_term {aliases : List Identifier} {term : Syntax.Expr} {result : Operand}
     (noAlias : namesAlias scope aliases term = false)
-    (resolved : resolveOperand dqs scope { later := [] } true term = .ok result) :
-    FilterResolves dqs scope aliases (some term) (some result.1) :=
+    (resolved : resolveOperand dqs scope shapes true term = .ok result) :
+    FilterResolves dqs scope aliases (some term) (some result.1) shapes :=
   Or.inr ⟨term, result.1, result.2, rfl, rfl, noAlias, by simpa using resolved⟩
 
 /-- A query without {lit}`WHERE` has no condition, as {name}`FilterResolves` says. Proof sketch:
 the first disjunct of the definition. -/
-theorem FilterResolves.of_none (dqs : Bool) (scope : Scope) (aliases : List Identifier) :
-    FilterResolves dqs scope aliases none none :=
+theorem FilterResolves.of_none (dqs : Bool) (scope : Scope) (aliases : List Identifier) (shapes : SubqueryShapes) :
+    FilterResolves dqs scope aliases none none shapes :=
   Or.inl ⟨rfl, rfl⟩
 
 end Belay.Sqlite.Model

@@ -100,22 +100,23 @@ theorem Query.Simple.results_eq_nil_iff {query : Query} (simple : query.Simple) 
       simp [every row member] at kept
 
 /-- For every simple query whose expressions have no fallible call ({name}`Expr.isFallibleCall`),
-in a quiet context ({name}`EvalContext.Quiet`), over any rows, the run gives the one result, no
+in a context in which its expressions have no fault over the empty row and over each of the rows
+({name}`Expr.evaluate`), the run over those rows gives the one result, no
 fault, no overflow and no window mismatch. Proof sketch: the window binds to the query
 ({name}`Query.Simple.bindWindow`); no aggregate means no overflow; no {lit}`DISTINCT` means that the
-rows are certain; and no expression has a fault in a quiet context ({name}`Expr.fault_of_plain`), so
-the query neither certainly nor possibly fails ({name}`Query.mayFail_of_plain`). -/
-theorem Query.Simple.run_plain {query : Query} (simple : query.Simple) (context : EvalContext) (quiet : context.Quiet)
-    (plain : query.expressions.all (!·.any Expr.isFallibleCall) = true) (rows : List (List Value)) :
+rows are certain; and no expression has a fault, so the query neither certainly nor possibly fails
+({name}`Query.mayFail_of_faultless`). -/
+theorem Query.Simple.run_of_faultless {query : Query} (simple : query.Simple) (context : EvalContext)
+    (plain : query.expressions.all (!·.any Expr.isFallibleCall) = true) (rows : List (List Value))
+    (faultless : ∀ row ∈ [] :: rows, ∀ expression ∈ query.expressions, (expression.evaluate context row).2 = .none) :
     query.run context rows =
       { rows := query.results context rows, fault := .none, overflow := false, mismatch := false } := by
   have noMustFail : query.mustFail context rows = false := by
-    simp only [List.all_eq_true, Bool.not_eq_true'] at plain
     unfold Query.mustFail
     simp only [Bool.and_eq_false_iff, List.any_eq_false, Bool.not_eq_true, Bool.or_eq_false_iff]
-    refine .inr fun row _ => ?_
-    have quietly : ∀ expression ∈ query.expressions, expression.mustFailOn context row = false := fun expression member => by
-      simp [Expr.mustFailOn, Expr.fault_of_plain context quiet row expression (plain expression member)]
+    refine .inr fun row member => ?_
+    have quietly : ∀ expression ∈ query.expressions, expression.mustFailOn context row = false := fun expression member' => by
+      simp [Expr.mustFailOn, faultless row (List.mem_cons_of_mem _ member) expression member']
     refine ⟨?_, .inr ⟨fun expression member => quietly expression ?_, .inr fun expression member => quietly expression ?_⟩⟩
     · cases found : query.filter with
       | none => rfl
@@ -125,7 +126,19 @@ theorem Query.Simple.run_plain {query : Query} (simple : query.Simple) (context 
     · simp only [List.mem_flatMap] at member
       simp [Query.expressions, Query.keptExpressions, List.mem_flatMap, member]
   unfold Query.run
-  simp [simple.compound, simple.bindWindow, noMustFail, Query.mayFail_of_plain context quiet query rows plain,
+  simp [simple.compound, simple.bindWindow, noMustFail, Query.mayFail_of_faultless context query rows plain faultless,
     Query.distinctCertain, simple.distinct, Query.fails, simple.aggregate]
+
+/-- For every simple query whose expressions have no fallible call ({name}`Expr.isFallibleCall`),
+in a quiet context ({name}`EvalContext.Quiet`), over any rows, the run gives the one result, no
+fault, no overflow and no window mismatch. Proof sketch: {name}`Query.Simple.run_of_faultless`;
+no expression has a fault in a quiet context ({name}`Expr.fault_of_plain`). -/
+theorem Query.Simple.run_plain {query : Query} (simple : query.Simple) (context : EvalContext) (quiet : context.Quiet)
+    (plain : query.expressions.all (!·.any Expr.isFallibleCall) = true) (rows : List (List Value)) :
+    query.run context rows =
+      { rows := query.results context rows, fault := .none, overflow := false, mismatch := false } := by
+  refine simple.run_of_faultless context plain rows fun row _ expression member => ?_
+  simp only [List.all_eq_true, Bool.not_eq_true'] at plain
+  exact Expr.fault_of_plain context quiet row expression (plain expression member)
 
 end Belay.Sqlite.Model.Resolved
