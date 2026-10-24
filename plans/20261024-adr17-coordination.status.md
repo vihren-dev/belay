@@ -215,9 +215,12 @@ logs are in `s4/build/agent-logs/cte-publication`. Evidence and views remain act
   877 tests with zero failures, errors or skips, verdict passes at
   `1w3s86b8201bc72c1r51rc66rnb1iknr`, and all 53 frozen prediction files are
   unchanged. The root independently counted the report totals.
-  The reviewed publication integration with #248 is at `9d8fdfaa`; its full,
-  verdict and exact-prediction sequence is running. Shared checking and automatic
-  theorem diagnostics remain open in the separate search workspace.
+  [PR #249](https://github.com/vihren-dev/sqlite-verifier/pull/249) publishes
+  part 1 at `f808a41a` on #248, in stack 231. The integrated Nix report
+  `khn3naiwa85vk1iaf4yk73f6d57f2j28` passes 936 tests; source checks pass 521.
+  Verdict `afn513ampmbdfjr467cm90dydkyirkd1` passes, and all 53 files/7,372
+  predictions reuse the exact #248 output. Source reviews are clean. Shared
+  checking and automatic diagnostics remain open in the separate search workspace.
 - [Query sources](20261024-query-sources.task.md) is active as above; the
   [table rebuild task](20261024-table-rebuild.task.md) now has clean follow-up
   review `20261024T142117Z-79fd6a8b` and waits for its final view/CTE design.
