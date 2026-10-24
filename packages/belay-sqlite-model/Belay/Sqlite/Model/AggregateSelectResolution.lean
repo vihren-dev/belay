@@ -12,11 +12,11 @@ take the resolved sources, operand and condition as hypotheses, because the cata
 
 namespace Belay.Sqlite.Model
 
-/-- The result column {lit}`agg(x)`, where the name {lit}`agg` names an aggregate of one operand
-({name}`aggregateNamed`) that does not write JSON and the operand {lit}`x` resolves to an expression that reads no cell
-of a query around the query, resolves to that aggregate of the resolved operand, with the collation of the operand
-(only {lit}`min` and {lit}`max` use it), named by its alias or else its text, with no affinity. Proof sketch: unfold
-the resolver; the name gives the aggregate, and the operand resolves by the hypothesis. -/
+/-- For every subquery shapes that have zero outer cells ({lit}`shapes.outer = 0`): the result column {lit}`agg(x)`,
+where the name {lit}`agg` names an aggregate of one operand ({name}`aggregateNamed`) that does not write JSON and the
+operand {lit}`x` resolves ({name}`resolveOperand`) to an expression, resolves to that aggregate of the resolved operand,
+with the collation of the operand (only {lit}`min` and {lit}`max` use it), named by its alias or else its text, with no
+affinity. Proof sketch: unfold the resolver; the name gives the aggregate, and the operand resolves by the hypothesis. -/
 theorem resolveColumns_aggregate (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (name : String)
     (operand : Syntax.Expr) (alias : Option Identifier) (text : String)
     (build : Resolved.Expr → Resolved.Aggregate) (named : aggregateNamed name = some build) (resolved : Resolved.Expr)
