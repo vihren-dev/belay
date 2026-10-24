@@ -44,10 +44,15 @@ rows of one position in two ways. Two facts:
 {lit}`TableFacts.laws` gives the instance for a fact of each table, and the properties
 "rows shaped" and "catalog supported" have their own. -/
 structure WriteLaws (invariant : Database → Prop) : Prop where
-  /-- Replacing the rows at a position by a sublist of them keeps the property. -/
+  /-- For every database with the property, position and function of row lists that returns a
+  sublist of every row list: the database after {name}`Database.setRows` at the position with the
+  function applied to the rows there has the property. -/
   sublist : ∀ (database : Database) (position : Nat) (change : List Row → List Row), invariant database →
     (∀ rows, (change rows).Sublist rows) → invariant (database.setRows position (change (database.rows.getD position [])))
-  /-- Replacing the rows of a table by rows that pass the checks of a write keeps the property. -/
+  /-- For every database with the property, position, table of the database at the position and rows:
+  if the table with the rows passes the checks of a write, the database after
+  {name}`Database.setRows` with the rows at the position has the property. Without a table at the
+  position, and for rows that fail the checks, the law requires nothing. -/
   write : ∀ (database : Database) (position : Nat) (table : Table) (rows : List Row), invariant database →
     database.table position = some table →
     (LiteralData.constraints (database.catalog.uniqueKeys position table.shape) { table with rows } &&
