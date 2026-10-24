@@ -93,3 +93,13 @@ checks. Both findings are fixed; implementation scope is unchanged.
   and their expected source URIs. The existing cached-core split is intact.
   Exact-commit source linking, post-review full/verdict, Nix/scheduled checks
   and descendant stack reference acceptance remain pending.
+
+- The exact-commit `apiReference` passed at
+  `/nix/store/jqn6h8cij0xva91lb5sl3aqidndbjc3z-sqlite-verifier-api-reference-caf53b680617`.
+  The report records 4,967 source links to the reviewed implementation commit.
+  All 532 selected module pages contain their exact-commit source URI.
+- The first final full invocation found the new `tests/docgen/` fixture absent
+  from the repository's Lean file inventory. Registered it as a direct fixture;
+  `tests/test_lean_categories.py` is the focused check. The compiled-reader and
+  reference derivation inputs are unchanged. Final cadence will rerun after
+  the registration correction's independent review.
