@@ -137,5 +137,7 @@ The integration workspace joins CTE review carry
   `/nix/store/ifmznfzpqyd12dxjhr3yp404ljb0dgxy-sqlite-verifier-predictions` are
   byte-identical: 53 files and 7,372 cases. The combined CTE gate will compare
   every prediction against that accepted baseline.
-- Independent merge review, frozen prediction classification and post-review
-  full/verdict gates remain pending. No view behavior is part of this boundary.
+- Combined source `4e8d9b296d63c7acbe302ebd1c54385d203b2b3d` passed independent
+  Claude review `20261024T192443Z-4e8d9b29` with no findings. Frozen prediction
+  classification and post-review full/verdict gates remain pending. No view
+  behavior is part of this boundary.
