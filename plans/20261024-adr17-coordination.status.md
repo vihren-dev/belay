@@ -236,12 +236,21 @@ logs are in `s4/build/agent-logs/cte-publication`. Evidence and views remain act
   The success/fresh-run unit is accepted at `e804ddde`, source `1c09bf9f`,
   with clean review `20261024T212855Z-1c09bf9f`. Its two Nix surface groups pass
   at `gm2y6fiagq0jcngxjxq089kbfcfrvhi7`: 54 production and 28 prototype axiom
-  reports use only standard logical axioms. Full part acceptance and strong
-  equivalence remain open. Combined full acceptance with S5 and the native
+  reports use only standard logical axioms. Combined acceptance with S5 and the native
   artifact fix is running in `s6-native-publication` from source `8a6ed72a`,
   clean review `20261024T215807Z-8a6ed72a`, review record `0efc3042`.
-  The sequential gate includes full tests, verdict, exact prediction comparison,
-  task-end Nix checks and scheduled checks. This is not yet a passing result.
+  Full Nix report `vkv6a2w0acxkfy3bagcw89aqk5rkhgbz` passes 937 tests with no
+  failures, errors or skips; source checks pass 521. Verdict
+  `fdyxvw89hvk8i7sa232c6is81sczb24d` passes with 4,869 AGREE and 2,503
+  UNSUPPORTED results. All 53 prediction files and 7,372 cases are byte-equal
+  to the published baseline. Task-end Nix checks pass 71; scheduled checks remain pending.
+  Strong equivalence and composition source `51387d8e` is accepted at
+  `52cd08bf`, with clean review `20261024T222747Z-51387d8e`. Its two focused
+  Nix groups pass at `f0yg6digr0wiv60gjvihv6jb5x93a05s`; 101 production and
+  28 retained prototype axiom reports use only standard logical axioms.
+  Complete execution-contract integration `5bc323f0` joins these accepted
+  sources in `s6-complete-publication`. Its independent review and final
+  acceptance remain pending. Publish one complete execution-contract PR.
   The same worker now owns the reviewed [native artifact reuse task](20261024-model-native-artifacts.task.md)
   in an isolated workspace. The existing surface gate rebuilt 589 unchanged
   model C objects despite a cached model derivation. Task `e2a49629` has clean
@@ -250,8 +259,8 @@ logs are in `s4/build/agent-logs/cte-publication`. Evidence and views remain act
   `2g962nijmc1fl3s99hl6d9j2yp7l1058`; installed surface checks pass 81 at
   `ypfqx5qns8bl8c16yjw36syqb5d80gwh`. A real surface-only source edit
   rebuilt zero model C objects, while the old output fails the new replay
-  check as expected. Combined acceptance remains pending. S6 strong-equivalence
-  work continues in `s6-equivalence`; FK proof work remains at rest.
+  check as expected. Combined task-end acceptance remains pending. S6 source
+  work is frozen for final integration; FK proof work continues in isolated probes.
   [Assertions](20261024-s6-assertions.task.md) and [migration patterns](20261024-s6-migration-patterns.task.md) have clean reviews
   at `33693f10`/`56b9f410`; [automation](20261024-s6-automation.task.md) is clean at `8b118fbc`.
   [Initial/current query context](20261024-s6-before-context.task.md) has clean
@@ -298,3 +307,10 @@ rooted under `s4/build/accepted-s6-native-artifacts`. Both implementation
 workspaces remain until combined acceptance and publication. The equivalence
 workspace dependency audit found only direct store symlinks and no references
 to either implementation workspace.
+
+The complete integration review failed twice because the Claude CLI OAuth
+token expired, not because of source findings. Both failure records are retained
+in `c19670b0`. The owner has been asked to refresh the VM login. Retry the
+explicit source revision `5bc323f0` after that refresh; publication waits for
+the required independent review. Existing checks and independent diagnostics
+can continue.
