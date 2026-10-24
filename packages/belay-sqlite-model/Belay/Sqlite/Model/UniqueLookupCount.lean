@@ -50,7 +50,8 @@ theorem keyCellsEqual_of_accepted {affinity : Option Affinity} {collation : Coll
   exact ⟨⟨firstPresent, secondPresent⟩, Std.TransCmp.eq_trans firstEqual (Std.OrientedCmp.eq_symm secondEqual)⟩
 
 /-- For every parameters and number of rows: the condition {lit}`n <= 1`, with the subquery value {lit}`n`
-({name}`Resolved.SubqueryRun.count`) in the context of the parameters, is true ({name}`truthy`) exactly when the number
+({name}`Resolved.SubqueryRun.count`) in the context of the parameters, with no affinity, under the binary collation,
+against the integer literal 1, is true ({name}`truthy`) exactly when the number
 is at most one. Proof sketch: the comparison of two integers under any collation is the order of the integers
 ({name}`Collation.compare_integer`). -/
 theorem truthy_count_le_one (parameters : List Value) (n : Nat) :
@@ -74,8 +75,8 @@ position {lit}`index`, under a collation, and a comparison {lit}`cell = value` h
   ({name}`Resolved.Expr.eval`), so it depends on no row;
 
 then at most one stored row makes the comparison true ({name}`Resolved.truthy`), so
-{name}`Resolved.countMatching` of the comparison is at most one. The lemma does not cover another collation, which the statement needs: a column with {lit}`COLLATE NOCASE` and a unique index with
-{lit}`COLLATE BINARY` can store {lit}`'a'` and {lit}`'A'`, and both match {lit}`c = 'a'`; nor does it cover a value with an affinity of its own. Proof sketch: two rows that make the comparison
+{name}`Resolved.countMatching` of the comparison is at most one. The lemma holds only for the collation of the key term: a column with {lit}`COLLATE NOCASE` and a unique index with
+{lit}`COLLATE BINARY` can store {lit}`'a'` and {lit}`'A'`, and both match {lit}`c = 'a'`. The lemma does not cover a value with an affinity of its own. Proof sketch: two rows that make the comparison
 true conflict on the key ({name}`Resolved.keyCellsEqual_of_accepted`), which the table forbids for rows in the list
 ({name}`filter_length_le_one_of_pairwise`). -/
 theorem Table.KeysUnique.countMatching_le_one {keys : List UniqueKey} {table : Table}

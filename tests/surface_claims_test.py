@@ -114,3 +114,11 @@ def test_a_unique_lookup_matches_at_most_one_row(runtime_root: Path, tmp_path: P
     result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsUniqueLookup.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
+
+
+def test_aggregate_laws_describe_values_and_prefix_overflow(runtime_root: Path, tmp_path: Path) -> None:
+    """The SUM and COUNT laws in `sql_simp` and `grind` reduce free inputs to integer prefix sums,
+    with kernel examples for NULL, a fitting sum, and overflow that later cancellation cannot clear."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsAggregateLaws.lean", tmp_path), cwd=tmp_path,
+                         timeout=60)
+    assert result.returncode == 0, result.diagnostic()

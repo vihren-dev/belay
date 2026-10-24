@@ -217,6 +217,8 @@ import Belay.Sqlite.Model.AggregateSelectResolution
 import Belay.Sqlite.Model.UniqueLookupCells
 import Belay.Sqlite.Model.UniqueLookupCompare
 import Belay.Sqlite.Model.UniqueLookupCount
+import Belay.Sqlite.Model.SumIntegerLaws
+import Belay.Sqlite.Model.SumValueLaws
 
 /-! SQLite states, the facts of an admitted and of a valid database, the theorems of the statements
 that keep the unique keys, supported execution, the output of each statement and the results that

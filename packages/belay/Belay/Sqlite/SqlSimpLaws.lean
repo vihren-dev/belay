@@ -69,9 +69,21 @@ attribute [sql_simp]
   Belay.Sqlite.Model.resolveOperand_tableInfo_name
   Belay.Sqlite.Model.tableInfoScope_resolveName_name
   Belay.Sqlite.Model.tableInfoScope_collation_name
+  Belay.Sqlite.Model.Resolved.countRows_eval
+  Belay.Sqlite.Model.Resolved.Aggregate.eval_sum
+  Belay.Sqlite.Model.Resolved.Aggregate.fails_sum
+  Belay.Sqlite.Model.Resolved.Aggregate.fails_countRows
+  Belay.Sqlite.Model.sumOf_fails_iff
+  Belay.Sqlite.Model.sumOf_value_of_fits
   Belay.Sqlite.Model.Resolved.countMatching_none
   Except.map Except.mapError Except.bind Bind.bind Belay.Sqlite.Model.condition
   Belay.Sqlite.Model.queryNumeric Belay.Sqlite.Model.numericValue Belay.Sqlite.Model.decimalNumericValue
   Belay.Sqlite.Model.digitsValue Belay.Sqlite.Model.hexDigit Belay.Sqlite.Model.fitsInt64
   Belay.Sqlite.Model.tableScope Belay.Sqlite.Model.comparisonCollation
   Belay.Sqlite.Model.Syntax.Expr.explicitCollation Belay.Sqlite.Model.Syntax.Expr.columnCollation
+
+attribute [grind =]
+  Belay.Sqlite.Model.Resolved.countRows_eval
+  Belay.Sqlite.Model.Resolved.Aggregate.eval_sum
+  Belay.Sqlite.Model.Resolved.Aggregate.fails_sum
+  Belay.Sqlite.Model.Resolved.Aggregate.fails_countRows
