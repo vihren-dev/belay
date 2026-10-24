@@ -265,6 +265,9 @@ logs are in `s4/build/agent-logs/cte-publication`. Evidence and views remain act
   work is frozen for final integration; FK proof work continues in isolated probes.
   [Assertions](20261024-s6-assertions.task.md) and [migration patterns](20261024-s6-migration-patterns.task.md) have clean reviews
   at `33693f10`/`56b9f410`; [automation](20261024-s6-automation.task.md) is clean at `8b118fbc`.
+  Migration-pattern public primitives are now assigned to `s6_prerequisite_audit`
+  in isolated `s6-migration-patterns` on `5bc323f0`. The first unit reserves
+  new execution-view/pattern modules; rebuild/FK examples remain later work.
   [Initial/current query context](20261024-s6-before-context.task.md) has clean
   review `20261024T143052Z-5feffb18` and waits for query-source/view integration.
 - [Editor](20261024-surface-editor.task.md) is reviewed, unassigned.
