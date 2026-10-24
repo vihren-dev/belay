@@ -194,6 +194,6 @@ uses the measured before/after predictions and verdicts recorded below.
   are byte-identical across all 54 files to the earlier `qjij3iya9bpd9mfl0mmln91wnyqcb80q` artifact.
   Subject checkpoint `d87fbaa0` excludes frozen corpora, claims and the judge lock.
   Ordinary CTEs and views remain OPEN; v53 retains its separate owner-merge gate.
-  The subject publication merge combines `16bd87a3` with the S4 query-law
-  checkpoint `77621ead`, including PR 241's source filter and no v53 evidence.
-  Its merge review and publication full/verdict/Nix/scheduled checks are pending.
+  The subject publication merge combines `16bd87a3` with accepted S4 query-law
+  checkpoint `975f31eb`, including PR 241's source filter and no v53 evidence.
+  Initial review `20261024T161528Z-63299f66` passed; final review and gates are pending.
