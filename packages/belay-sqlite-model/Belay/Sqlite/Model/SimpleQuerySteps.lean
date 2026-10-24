@@ -5,9 +5,11 @@ import Belay.Sqlite.Model.StatementCalm
 set_option doc.verso true
 
 /-! The output of a simple query statement (ADR 0017, S4): a statement whose query is simple
-({name}`Belay.Sqlite.Model.Resolved.Query.Simple`), has no subquery and is calm
-({name}`Belay.Sqlite.Model.Resolved.Statement.Calm`), has rows exactly when {lit}`WHERE` is true for a row of its source, has no
-rows exactly when it is not true for any row, and is never an error. -/
+({name}`Belay.Sqlite.Model.Resolved.Query.Simple`), under the context hypotheses of each theorem,
+has rows exactly when {lit}`WHERE` is true for a source row, has no rows exactly when it is true
+for none, and is never an error. All variants require
+{name}`Belay.Sqlite.Model.Resolved.Statement.Calm`. Faultless variants allow subqueries and
+require a fault-free source; plain variants require no subqueries. -/
 
 namespace Belay.Sqlite.Model
 

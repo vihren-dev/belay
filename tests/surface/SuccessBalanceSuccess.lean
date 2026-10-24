@@ -1,4 +1,5 @@
 import SuccessBalanceMissing
+import SuccessBalanceSchema
 
 /-! Success part of the corrected balance example, compiled by the surface success test. -/
 

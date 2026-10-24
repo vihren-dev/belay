@@ -1,4 +1,4 @@
-import SuccessBalanceSchema
+import SuccessBalanceResolveGuard
 
 /-! Missing part of the corrected balance example, compiled by the surface success test. -/
 
