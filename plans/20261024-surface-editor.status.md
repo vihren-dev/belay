@@ -22,3 +22,6 @@ their own pending decisions; this task changes neither contract.
   requirements, missing-origin behavior, bounded typo corrections, and warning
   evidence. Task review and an isolated implementation workspace are next.
   Schema integration must coordinate with the active query-source owner.
+- 2026-10-24: independent review `20261024T132607Z-11cc3da1` found no musts
+  and one scope-attribution should. The task now connects its required behavior
+  to the owner's ADR17 completion request and the existing S2/S3 SQL forms.

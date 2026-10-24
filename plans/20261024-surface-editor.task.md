@@ -10,6 +10,14 @@ Base inspected: PR #240 and the current surface at `26f8ce71`.
 
 ## Purpose and boundaries
 
+The owner's current request is to continue until ADR 0017 is done, recorded in
+[the coordination status](20261024-adr17-coordination.status.md). ADR 0017 leaves
+these editor requirements to the slices whose users need them, rather than
+deferring them beyond that completion. They serve the existing S2/S3 SQL forms:
+users can execute parameterized SQL now, but cannot inspect its resolved names
+or apply the promised typo fixes. This task closes that missing surface behavior
+alongside S4/S5; it is not tooling for a hypothetical later user base.
+
 SQL errors already have source ranges. Users also need information about the
 resolved names and parameters, navigation to table definitions, and corrections
 for misspelled names. These features belong to the surface elaborator. They
