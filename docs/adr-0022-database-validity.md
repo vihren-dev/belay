@@ -290,7 +290,8 @@ Decided on 2026-10-22, in the design discussion of S2:
 
 1. **The atoms are the primitives**, public, and the two bundles are built from them.
 2. **Strong is `Database.Valid`, weak is `Database.Admitted`.**
-3. **Foreign keys are an atom outside `Database.Valid`.**
+3. **The foreign-key atoms are outside `Database.Valid`** (amended 2026-10-24:
+   two atoms).
 4. **A theorem for each atom**, with conditions on the connection, delivered slice by slice; the
    postponed work is documented, and the guide keeps its scope.
 5. **The bundled database in S2, with a checked run** (D5, amended 2026-10-22): the

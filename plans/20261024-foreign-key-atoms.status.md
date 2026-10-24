@@ -30,7 +30,10 @@ implementer, with these observable requirements fixed.
 
 - 2026-10-24: inspected the existing FK atoms/checks and `Resolution/ParentKeys`;
   recorded accepted semantics, two acceptance parts and Nix coverage requirements.
-  The task lists the implementation files. Task review is pending.
+  The task lists the implementation files.
+- 2026-10-24: review `20261024T122036Z-c64a44ba` found no musts and one should:
+  the historical owner-decision list still named one atom. That entry now names
+  the two atoms and the amendment date. Implementation remains pending.
 - Implementation must be assigned to a separate jj workspace after task review.
   Coordinate model barrels, statement laws and the surface database export with
   S4 and the query-source task. No concurrent edits to those surfaces are allowed.
