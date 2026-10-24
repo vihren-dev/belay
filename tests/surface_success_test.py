@@ -43,12 +43,13 @@ def test_success_notation_checks_its_query_at_the_query(runtime_root: Path, tmp_
 
 def test_query_success_keeps_errors_and_ending_outputs(runtime_root: Path, tmp_path: Path) -> None:
     """QuerySuccess proves arbitrary-database success through the query/environment bridge
-    and checks true, empty, prepare-error, overflow and unmodeled instances of its equivalence."""
+    checks true, empty, prepare-error, overflow and unmodeled instances of its equivalence,
+    and rejects random for every database and environment."""
     result = run_command(surface_command(runtime_root, FIXTURES / "SuccessQueries.lean", tmp_path),
                          cwd=tmp_path, timeout=60)
     assert result.returncode == 0, result.diagnostic()
     reports = [line for line in result.stdout.splitlines() if "depends on axioms" in line]
-    assert len(reports) == 2, result.stdout
+    assert len(reports) == 4, result.stdout
     assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout
 
 

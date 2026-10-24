@@ -51,3 +51,28 @@ example : (sample.run (sql r"SELECT CURRENT_TIMESTAMP")).outputs.allOk = false �
 
 #print axioms select_one_success
 #print axioms query_success_cases
+
+/-- The unsupported random query used to check universal rejection. -/
+def randomQuery : Script := sql r"SELECT random()"
+
+/-- For every database and environment, random ends the run. Proof sketch: the shared
+output bridge exposes the same preparation restriction for every input. -/
+theorem random_never (db : Database) (env : Env) :
+    (db.run randomQuery env).outputs.allOk = false := by
+  rw [Script.run_outputs]
+  rfl
+
+/-- For every database predicate with a witness, random does not succeed under it.
+An impossible predicate would make universal success vacuous. Proof sketch: choose the
+witness and one complete environment; random_never contradicts the output guarantee. -/
+theorem random_no_success (predicate : Database → Prop) (witness : ∃ db, predicate db) :
+    ¬ Succeeds randomQuery predicate := by
+  intro success
+  obtain ⟨db, inside⟩ := witness
+  have all := success.allOk inside (env := { Env.atTime 0 with counters := Counters.newConnection })
+    ⟨rfl, rfl, rfl, rfl⟩
+  rw [random_never] at all
+  contradiction
+
+#print axioms random_never
+#print axioms random_no_success
