@@ -374,3 +374,17 @@ proof relies on it (finding 15).
 - 2026-10-24: review round of the commit "the laws of Catalog.Valid": two musts (R2, the plain words of
   `Catalog.DropClosed` and `Catalog.findTable_isSome_drop` said more than the formulas). Fixed in
   a `refactor:` commit. Tests: `tests/test_model_package.py`.
+- 2026-10-24: part 1, commit "CREATE TABLE gives a valid catalog": `resolveCreateTable_valid` (execution
+  mode, valid catalog in, valid catalog out). The invariant of the table that CREATE TABLE builds is
+  `CatalogTable.Shaped` (keys inside the columns, unique folded names, rowid alias is the whole key and
+  an INTEGER column), `CatalogTable.Draft` (not WITHOUT ROWID, strict ANY columns are declared ANY) and
+  `CatalogTable.Building` (the last column has the reported type of the definition). Nine new modules,
+  each below 200 lines: `ResolveTableShaped`, `ResolveKeyCases`, `ResolveDraft`,
+  `ResolveConstraintShaped` (`applyConstraint_step`), `ResolveDefinitionsShaped`
+  (`addDefinitions_draft`), `ResolveTableConstraintsShaped` (`addTableConstraints_draft`),
+  `ResolveFinishShaped` (the CHECK and generated-column stages keep layouts), `ResolveCreateTableValid`
+  (`CatalogTable.supported_of_finished`) and `ResolveCreateTableCatalog` (`resolveCreateTable_valid`).
+  Examples in the new module `AdmittedAtomsResolverExamples.lean`: `PRIMARY KEY(a, a)`, `UNIQUE(b, b)` and
+  a CHECK that names a column give a valid catalog, and each invariant has a table that has it and one
+  that has not. A statistics table of a catalog description is out of scope: the theorem needs
+  `context.mode = .execution`. Tests: `tests/test_model_package.py`.
