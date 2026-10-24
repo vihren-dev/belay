@@ -24,7 +24,8 @@
     "tests/column_default_read_test.py",
     "tests/column_extension_test.py",
     "tests/failed_catalog_observation_test.py",
-    "tests/add_column_defaults_test.py"
+    "tests/add_column_defaults_test.py",
+    "tests/conformance_query_sources_test.py"
   ],
   "frozen": [
     "tests/conformance_progress_views_test.py",
@@ -102,7 +103,8 @@
   ],
   "mutants": [
     "tests/conformance_resolve_mutants_test.py",
-    "tests/conformance_query_mutants_test.py"
+    "tests/conformance_query_mutants_test.py",
+    "tests/conformance_query_source_mutants_test.py"
   ],
   "tableMutants": [
     "tests/conformance_table_mutants_test.py"

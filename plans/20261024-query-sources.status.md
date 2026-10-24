@@ -131,3 +131,24 @@ actual verdict results and inspect each changed prediction.
   `/nix/store/z1vg76nq9n7by0lzb8gbmjm3rvl89c6j-sqlite-verifier-test-query-source-ordering-1`.
   This confirms the existing ranking/write guards and the new raw-observation
   path. Part-1 full/verdict acceptance remains pending.
+- Recording-fix review `20261024T150653Z-dda5b767` passed with no findings.
+- The authored source inputs now cover 42 cases through the native recorder,
+  translator, resolver and evaluator. Nix `query-source-coverage` passed at
+  `/nix/store/804jb5hkkrpn3ahxd21x556aajwz13m2-sqlite-verifier-test-query-source-coverage-1`.
+  It kernel-checks 38 agreements and four explicit `classifyCase = modelUnsupported`
+  boundaries: uncertain compound representatives, uncertain LIMIT membership,
+  uncertainty visible only in the second column, and fallible evaluation.
+- The four focused mutants all changed their target verdicts in Nix at
+  `/nix/store/qrcwvlzhklhii66vmw9g3yi6pigv8d8m-sqlite-verifier-test-query-source-mutants-1`.
+  They check forbidden sibling binding, all-column affinity, collation and whole-row
+  certainty. Each parameterized test builds one mutant at a time. The new coverage
+  and mutant tests are registered in the model and scheduled mutant Nix suites;
+  `mutant_guards_test.py` also checks their rule locations.
+- Frozen Nix predictions after the pipeline unit are at
+  `/nix/store/xar2y93h71ffx1ccrjvy906936hk4ahj-sqlite-verifier-predictions`.
+  Compared with the pre-edit baseline, 76 records change: 32 become predictions
+  (29 fully supported, three still unmodeled at execution), and 44 retain a
+  restriction with a changed reason. No previously predicted record changes.
+  Final Nix verdicts must establish any claimed gains. Corpus v53 stays private
+  and mutable until the CTE and view parts add their evidence; the implementation
+  contains native input definitions and tests, with no frozen outcomes or claims.
