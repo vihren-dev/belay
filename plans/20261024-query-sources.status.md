@@ -170,3 +170,13 @@ actual verdict results and inspect each changed prediction.
   `/nix/store/k2a4zs0px4yywv760jyjlmzaxj29fs1s-sqlite-verifier-test-query-source-right-mutants-1`.
   The new focused test is in the existing scheduled mutant suite. This correction
   changes no evaluator or prediction; the final full/verdict gates will rerun.
+- Correction review `20261024T153312Z-5291750b` passed with no findings.
+- The next combined full gate passed the frozen suites and found a stale profile
+  fixture that expected derived SELECT to be refused. The model-output and pipeline
+  transport fixtures had the same stale expectation. All three now use EXPLAIN,
+  which retains the intended frontend-refusal check as derived sources gain support.
+- The focused Nix checks passed: the older-engine profile test at
+  `/nix/store/9sv6jj19n33hr76wjry090k78ah88m17-sqlite-verifier-test-query-source-boundary-harness-1`,
+  and both model-output/transport tests at
+  `/nix/store/kj1l7gpva3ysjdlzlkvbw1bwnzcx5wgv-sqlite-verifier-test-query-source-boundary-model-1`.
+  This changes test inputs only; the reviewed combined full/verdict gates will rerun.
