@@ -79,8 +79,8 @@ two-state observation without introducing general connection attachments.
   by an observation of both databases. Changing the current database changes
   only current-origin reads; repeated observations keep the same initial rows.
   The full S6 task will carry that fixed value across bind and quantify over
-  every permitted continuation. This task does not assume the guide's currently
-  disputed universal effect claims or finalize the pending equivalence choice.
+  every permitted continuation. The accepted strong equivalence and the guide's
+  explicit schema/effect premises do not change this observation primitive.
 
 ## Tests and acceptance
 

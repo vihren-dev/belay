@@ -54,7 +54,11 @@ The owner accepted both S6 recommendations on 2026-10-24: `≈` compares full
 connection state and every branch outcome, with weaker visible comparisons
 named separately. Universal insert/lookup and purge-frame guide claims gain
 explicit schema/trigger/FK effect premises and retain the native counterexamples.
-ADR17 records the exact strong relation. No owner decision is pending.
+ADR17 records the exact strong relation. One later decision is pending:
+`quiet` cannot erase ordinary execution traces while ordinary `≈` retains them.
+The recommended correction uses explicit observation views for migration
+patterns and corrects the guide's displays. Dependent pattern work is paused;
+the complete-execution primitives and other tasks continue.
 
 ## Resolved findings
 
@@ -78,8 +82,9 @@ remove the prior planning blocks; they are not implementation-completion claims.
   rebased cleanly onto #240 at `372e6c8f`. Its pre-rebase full report is
   `/nix/store/japwh8n1f0chh7fz6ig44qn9dxhkm8y5-sqlite-verifier-test-reports`.
   Part 2's reviewed success contract is `00c8707f`; exact default-query bridge
-  `fd0f0c1e` is also reviewed. GROUP/index unit `743ad7a9` has Nix model result
-  `7wvhz52244gnbjxby1q61q9h33cn5drz` and is under independent review. S4 still
+  `fd0f0c1e` is also reviewed. GROUP/index follow-up `82f70442`, mixed-value SUM
+  bound `3811b3f4` and uniqueEmail fixture `a003ddcf` have clean reviews. SUM's
+  Nix model result is `4060h7wh955i0wrrh291i5l9b0fsncm2`. S4 still
   needs guide proofs/part-2 acceptance and part 3's removal of Run.checked.
 - `s6_prerequisite_audit` owns `sqlite-verifier-query-sources`, based on S4 part 1.
   Source execution `93767a4d`/`15a252a8` and metadata `649a3021`/`bc79e3e7`
@@ -94,15 +99,18 @@ remove the prior planning blocks; they are not implementation-completion claims.
   56 focused Nix surface tests pass at
   `/nix/store/1rzb9hwr5s7yccpwjx2xiwbzja3bcd99-sqlite-verifier-test-surface-1`.
   Its 28 audited declarations use only ordinary logical axioms. Design
-  refinement `21b80e17` is under review; full task gates remain. The prototype
+  refinement `a3cffcb5` and decision record `c838d5cc` have clean reviews.
+  Full suite passed at `vg3sz4iz4q58vrci7ddrxn9bmv6p7pbi`; final gates continue.
+  The prototype
   does not implement production S6. Its exact equivalence recommendation and
   the separate guide-effect correction are now accepted by the owner.
 - The FK workspace is `sqlite-verifier-fk-atoms`. Root carried the revised task
   and ADR22 in reviewed `8526ed1f`, with status-only findings fixed in `0ca148ce`.
   The existing split-API source work remains uncommitted. FK owns atom/check/frame
   modules, surface Database exports and reserved barrel/lake/test entries.
-  S4 is identifying the reviewed query-output dependency closure for the exact
-  pragma law. The old #239 prediction baseline is `4k77z378vnagzwx5448yqz0686d58cld`.
+  S4 identified the reviewed query-output dependency closure for the exact
+  pragma law. Root's lookup/scan consistency clarification `98e1e8f1` has a
+  clean review. The #239 prediction baseline is `4k77z378vnagzwx5448yqz0686d58cld`.
   No shared ancestor may be rebased while descendants are active.
   Corpus v53 is reserved for query-sources, v54 for FK; each uses a separate
   judge/evidence workspace and protected PR after measured model comparisons.
@@ -153,7 +161,9 @@ completed schema/observation workspaces await publication before removal.
   [table rebuild task](20261024-table-rebuild.task.md) now has clean follow-up
   review `20261024T142117Z-79fd6a8b` and waits for its final view/CTE design.
 - [S6 prototype](20261024-surface-s6-foundations.task.md) is implemented and
-  validating. The accepted full S6 semantics still need their production task.
+  validating. [Execution contracts](20261024-s6-execution-contracts.task.md)
+  specify the independent production primitives; review is pending. Public
+  assertions, patterns and automation still need their production task.
   [Initial/current query context](20261024-s6-before-context.task.md) has clean
   review `20261024T143052Z-5feffb18` and waits for query-source/view integration.
 - [Editor](20261024-surface-editor.task.md) is reviewed, unassigned.
