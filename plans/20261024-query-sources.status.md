@@ -10,24 +10,16 @@ On 2026-10-24 the owner selected: "Support nonrecursive CTEs only; reject actual
 recursion and retain the exclusion of the RECURSIVE keyword." The ADR and task
 record this scope. There is no outstanding CTE-scope decision.
 
-The prerequisite audit used pinned SQLite 3.51.0. Its observations informed the
-specification; acceptance uses the native and kernel checks below.
-
-The audit's lexical counts do not establish conformance gains. Final acceptance
-uses the measured before/after predictions and verdicts recorded below.
+The audit used pinned SQLite 3.51.0; acceptance uses the native/kernel checks
+and measured predictions below, not lexical SQL counts.
 
 ## Progress
-
 - 2026-10-24: specified D5 in three acceptance parts. Task review
   `20261024T122324Z-cf7aa9a6` passed with no findings. ALTER/rebuild work waits
   for views; FK laws must cover their catalog statements at integration.
-- 2026-10-24: carried the reviewed task and accepted ADR amendment into the
-  `query-sources` workspace at S4 part-1 commit `372e6c8f`, rebased onto PR #240.
-  Part 1 is delegated separately from S4 part 2. Its agent owns source/query
-  syntax, resolution, evaluation, codecs, text translation and required query
-  proof adjustments. S4 owns success/program law modules and its registration
-  entries. Carry review and the frozen prediction baseline precede model edits.
-  INSERT SELECT staging belongs to slice 5.
+- Carried the reviewed task and ADR amendment onto S4 part 1 `372e6c8f`/PR #240.
+  Query-source syntax/resolution/evaluation/codecs belong to this task; S4 owns
+  success/program laws. INSERT SELECT staging belongs to slice 5.
 - 2026-10-24: carry commit `8a89208f` passed independent Claude review
   `20261024T130558Z-8a89208f`, with no findings. Before any model edit, the Nix
   prediction baseline was built at
@@ -46,12 +38,10 @@ uses the measured before/after predictions and verdicts recorded below.
   `/nix/store/d8gfbj5myc9v0lpsqm0c5lmmpj6534bl-belay-sqlite-model-0.1.0`.
   The build checks the new `DerivedSourceExamples` kernel examples and existing
   query/S4 proof modules.
-
 - Execution-unit review `20261024T132633Z-93767a4d` had no must finding and one
   should finding: test a source with a non-success ending and no expression fault.
   The added kernel example checks that this source is refused. Nix `modelPackage`
   passed at `/nix/store/pp68ghibam1vkp4y5cw5nlsfjb171d86-belay-sqlite-model-0.1.0`.
-
 - Review `20261024T133405Z-15a252a8` passed with no findings.
 - The metadata unit adds expression affinities for every source column and SQLite's
   compound affinity combination. D3's ORDER BY COLLATE rewrite now supplies IN with
@@ -67,13 +57,11 @@ uses the measured before/after predictions and verdicts recorded below.
   are `restriction_registry_test.py` and `mutant_guards_test.py -k compound`.
 - Nix `modelPackage` for this metadata unit passed at
   `/nix/store/zs2dfp63la9ib1cx7qskny4l9pvdq4b0-belay-sqlite-model-0.1.0`.
-
 - Review `20261024T140053Z-649a3021` had no must finding and two should
   findings. Both metadata functions now list all expression constructors instead
   of using catch-all branches, so new syntax must explicitly choose its metadata.
   Nix `modelPackage` passed at
   `/nix/store/24qvzhb6dpmsh27pzgqyjwr921dkkqbp-belay-sqlite-model-0.1.0`.
-
 - Review `20261024T140753Z-bc79e3e7` passed with no findings.
 - The derived-source pipeline now connects SQL translation, the indexed syntax,
   name expansion, source/outer scopes and all-column metadata to the existing
@@ -196,4 +184,14 @@ uses the measured before/after predictions and verdicts recorded below.
   The subject publication merge combines `16bd87a3` with accepted S4 query-law
   checkpoint `975f31eb`, including PR 241's source filter and no v53 evidence.
   Merge reviews `20261024T161528Z-63299f66`/`20261024T163932Z-359eb0c7` passed.
-  The ADR now records part-1 completion; its review and publication gates are pending.
+  The ADR records part-1 completion; review `20261024T164409Z-17f929bd` is clean.
+- Subject publication source `17f929bd`: full 853 passed in ten suites, no
+  failures/errors/skips, at `/nix/store/nfqd2rh03b7avhd5ifzk08rwbf9p38ab-sqlite-verifier-test-reports`.
+  Verdict 4867 AGREE/2505 MODEL_UNSUPPORTED, no disagreements/harness errors:
+  `/nix/store/sjs0cw7jyy2k5adr3rgw2jh6d1iybnii-sqlite-verifier-verdict`.
+  All 53 files at `/nix/store/2kpi159rivfybjqkv2cw7vxh31qpdlbq-sqlite-verifier-predictions`
+  match accepted `q4qrigjpa82cg89ggzkvinbnvmgi7pq6`, excluding its draft v53.
+  The judge lock is unchanged. Nix integration passed 70 checks in 364.39s.
+  Scheduled checks passed all 47 cases, no failures/errors/skips, at
+  `/nix/store/s5vl7g5lx4ikp3ypmcjrig1jc5y26swz-sqlite-verifier-scheduled-check-reports`.
+  All publication gates are terminal and passing; CTEs and views remain OPEN.
