@@ -1,6 +1,6 @@
 # S4 claim observation fixtures
 
-Created 2026-10-24. Status: OPEN; fixtures are complete and independent review is pending.
+Created 2026-10-24. Status: DONE for the observation fixtures and independent review; part 1 Nix evidence is pending.
 This record tracks the nonvacuity checks of [the S4 task](20261024-surface-s4.task.md), outcomes 3, 5 and 6.
 
 The work adds positive and negative observations to the existing claim fixtures
@@ -23,7 +23,9 @@ local runs. The parent task owns the combined Nix gates and verdict for part 1.
 - 2026-10-24: diagnostic commands cover `just dev-build`, the separate
   `lake build VerifierConformance conformance-runner` target, and the selected
   non-Nix tests above. Two initial fixture elaboration failures were corrected:
-  existential list membership now stays explicit, and IN uses the script's
-  parameter values before the evaluation context applies binding conversion.
+  existential list membership now stays explicit, and IN names the script's
+  integer parameter list explicitly.
   The affected tests were repeated. Authoritative Nix evidence is pending the
   combined parent checks; these local runs are not evidence.
+- 2026-10-24: independent review `20261024T122210Z-9791c4ab` has no findings.
+  The observation fixtures and their review are complete.
