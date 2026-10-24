@@ -90,6 +90,10 @@ The frontend maps these statements, and refuses every other statement as
   compound; an `ORDER BY` term is a column number, an `AS` alias of a term or an expression
   equal to a result expression of a term, else SQLite's prepare error. `x IN (q)` reads the
   affinity and the collation of the right-most term's column, and a scalar `(q)` its affinity.
+  After the `ORDER BY COLLATE` rewrite, IN reads derived-column metadata: the left-most
+  expression's collation and the compound's source-column affinity. This affinity comes from
+  the first term with an affinity, weakened to BLOB when another term can have a conflicting
+  type. A scalar subquery still supplies no collation.
   When rows that are equal differ, such as `'a'` and `'A'` under `NOCASE`, SQLite's plan
   chooses the row that `UNION` keeps, and the statement is not described. A `VALUES` term, a
   compound in `FROM`, as an `INSERT` source and as a statement of a trigger body are refused.
@@ -531,7 +535,6 @@ should shrink.
 | `foreign-key-upsert` | With foreign keys on, `INSERT` with `ON CONFLICT DO UPDATE` on a table with a foreign key to check is not modeled | ADR 0018, slice 4 |
 | `raise-form` | `RAISE` in a trigger outside the one result column of a `SELECT` without `FROM`, alone or as a result of its `CASE`, or with a message that can fail, is not modeled | ADR 0018, slice 5 |
 | `trigger-form` | A trigger with `ON CONFLICT DO UPDATE` in its body, with a function that can fail in a write of its body that no other restriction covers, with `changes()`, `total_changes()` or `last_insert_rowid()` in its body or `WHEN` condition, with a `WHEN` condition that has a function that can fail or a subquery, or with too many triggers that fire each other, and `ON CONFLICT DO UPDATE` on a table with a trigger, are not modeled | ADR 0018, slice 5 |
-| `compound-subquery-column` | `x IN (q)` and a scalar subquery `(q)` over a compound `SELECT` with an operator other than `UNION ALL` and an `ORDER BY` term with `COLLATE` are not modeled, because SQLite then reads the column of a derived table | ADR 0019, D3 |
 | `compound-order-by-term` | An `ORDER BY` term of a compound `SELECT` that the model cannot match with a result column as SQLite does, such as an aggregate, or a `COLLATE` term after which SQLite names a result column at random, is not modeled | ADR 0019, D3 |
 | `connection-counter-read` | `last_insert_rowid()` in an `INSERT` or an upsert, and `total_changes()` in a write that runs trigger programs or foreign-key actions, are not modeled, because the counter changes while the statement runs | ADR 0024, D2 |
 | `nondeterministic-error-order` | A call of `changes()`, `total_changes()`, `last_insert_rowid()`, `random()` or `randomblob(n)` in a generated column, an index expression or an index filter, in an expression with another error of its walk of names, is not modeled, because the error that SQLite reports depends on the order of the walk | ADR 0024, D5 |

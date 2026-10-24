@@ -68,3 +68,21 @@ actual verdict results and inspect each changed prediction.
   should finding: test a source with a non-success ending and no expression fault.
   The added kernel example checks that this source is refused. Nix `modelPackage`
   passed at `/nix/store/pp68ghibam1vkp4y5cw5nlsfjb171d86-belay-sqlite-model-0.1.0`.
+
+- Review `20261024T133405Z-15a252a8` passed with no findings.
+- The metadata unit adds expression affinities for every source column and SQLite's
+  compound affinity combination. D3's ORDER BY COLLATE rewrite now supplies IN with
+  derived-column affinity/collation; scalar subqueries still supply no collation.
+  The removed restriction is also removed from its registry, documentation and
+  example, and the existing compound-collation mutant follows the new branch.
+- Source metadata exposed an existing output-collation bug: a FULL JOIN USING
+  output is a coalesce without collation, and a RIGHT JOIN output reads the right
+  column's collation. The shared expression/star metadata now follows those
+  operands. Generated USING equalities retain their existing left-column rule.
+  `DerivedColumnExamples.lean` checks both joins, three-column metadata, absent
+  affinity, compound type conflicts and D3 comparisons. The targeted Python checks
+  are `restriction_registry_test.py` and `mutant_guards_test.py -k compound`.
+- Nix `modelPackage` for this metadata unit passed at
+  `/nix/store/zs2dfp63la9ib1cx7qskny4l9pvdq4b0-belay-sqlite-model-0.1.0`.
+  SQL FROM translation, source scope resolution, the authored judge cases and
+  final part-1 Nix full/verdict acceptance remain pending.

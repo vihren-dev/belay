@@ -273,6 +273,15 @@ mode, the page size, the cache). They stay out until a measurement shows a gain.
 - Pragmas other than those of D2, and `ATTACH`.
 - The details of each slice: its task file decides them from SQLite's code.
 
+## Implementation record
+
+2026-10-24, slice 4 part 1 in progress: resolved sources can read an indexed query
+through the statement's evaluation context. Complete-row certainty is separate from
+first-column certainty. Column metadata now distinguishes absent expression affinity
+from BLOB affinity and combines every column of compound terms. D3's ORDER BY COLLATE
+exception is implemented for IN and scalar subqueries. SQL FROM translation and source
+scope resolution remain pending; this does not complete D5 or slice 4.
+
 ## Owner decisions
 
 Decided on 2026-10-22:

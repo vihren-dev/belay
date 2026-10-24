@@ -69,16 +69,13 @@ def SubqueryShapes.find (shapes : SubqueryShapes) (index : Nat) : Option Subquer
   else (shapes.later[index - shapes.base]?).filter (·.parent == shapes.current)
 
 /-- The shape of the subquery whose one result column {lit}`IN` or a scalar subquery reads
-({name}`SubqueryShapes.find`): {name}`RestrictionKind.subqueryHere` when resolution has none,
-{name}`RestrictionKind.compoundSubqueryColumn` for the column of a derived table
-({name}`SubqueryShape.derived`), and SQLite's {lit}`sub-select returns %d columns - expected 1`
+({name}`SubqueryShapes.find`): {name}`RestrictionKind.subqueryHere` when resolution has none, and SQLite's {lit}`sub-select returns %d columns - expected 1`
 for another number of columns. -/
 def SubqueryShapes.column (shapes : SubqueryShapes) (index : Nat) : Except ValueIssue SubqueryShape :=
   match shapes.find index with
   | none => .error (.restriction [] .subqueryHere)
   | some shape =>
-    if shape.derived then .error (.restriction [] .compoundSubqueryColumn)
-    else if shape.columns == 1 then .ok shape else .error (.prepare (.subqueryColumns shape.columns))
+    if shape.columns == 1 then .ok shape else .error (.prepare (.subqueryColumns shape.columns))
 
 /-- The smaller of two optional positions. -/
 def minPosition : Option Nat → Option Nat → Option Nat
