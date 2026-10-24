@@ -128,14 +128,14 @@ API reference generation above 500 roots. The repair is DONE and pushed to #242
 at `b6864447`: 808 full tests, 70 Nix checks, 47 scheduled checks and verdict pass.
 The reader passed 12 Nix cases, including 532/640 roots. Complete references
 passed for #242's 532 modules and #243's 538 modules (`iz8kjnq67dn05smyh3liv85rf2wwdzn5`).
-#242 CI run `40119562570` passed its reference step; #243 head `2cb4c5e3` is pushed,
-with 853/70/47 local checks and 538-module reference passing. CI `40120692159` runs.
+#242 CI and Verdict are green. Published #243 `2cb4c5e3` passed 853/70/47 locally;
+its CI reference and Verdict pass; CI `40120692159` continues the remaining checks.
 Both repair workspaces are removed; their logs/report XML are archived under S4 build/.
-`s4_part1` resumed the preserved S7 prototype with light work only.
+S7 prototype `3b9e4189` passed seven focused Nix cases and reviews; broad gates queue.
 The owner accepted physical-table premises for BOTH unique-email and balance.
 Task corrections `2e761ca0` and source `c72ed523` have clean reviews and Nix checks.
 Combined S4 `24ca8b4c` carries repaired PRs, premises and two passing Nix native regressions.
-Native counterexamples remain in `views_native_20261024.py/.out`; no question is pending.
+One owner question is pending: named proof-body cost coverage versus every embedded/generated proof.
 ## Published work and cleanup
 
 - Public [PR #240](https://github.com/vihren-dev/sqlite-verifier/pull/240),
