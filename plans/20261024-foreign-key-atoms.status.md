@@ -613,3 +613,15 @@ This is an intermediate part-2 boundary. The actual statement/run bridges,
 enforcement-off frames, DDL/mapping-transport conditions, combined atom laws and
 atom-by-statement matrix remain open. Ignored local probes continue in the separate
 `fk-statement-preservation` workspace; no task-end acceptance is claimed here.
+
+Independent review `20261024T194322Z-a4521575` covered the 14 new modules, model
+barrel/lake registration, status, fixtures and their parametrized audit counts. It
+found zero musts and zero shoulds. Source commit:
+`a4521575ed4d1693680dd6fa527bfbbe8b62f2d3`. No correction was needed. The reviewer
+did not rerun the checks or independently sum the 203 reports; the passing Nix
+fixture assertions enforce the exact per-case counts
+`14+6+13+8+20+34+30+6+33+6+33 = 203`. This accepted source is at rest while the
+statement/run and enforcement-off frame probes continue separately. The later
+statement matrix will distinguish successful enforced UPSERT DO NOTHING from the
+current undescribed DO UPDATE path; the wrapper theorem does not promise a
+successful result in that excluded branch.
