@@ -51,4 +51,53 @@ theorem Expr.evaluate_withSubqueries (context : EvalContext) (row : List Value)
     | nil => simp [Expr.evaluate]
     | cons head tail => simp_all [Expr.evaluate]
 
+/-- The result of a subquery with its first row marked certain. A scalar subquery reads that mark; {lit}`EXISTS` and
+{lit}`IN` do not. -/
+def SubqueryRun.certainFirst (run : SubqueryRun) : SubqueryRun := { run with firstCertain := true }
+
+/-- For every result, marking its first row certain keeps its rows. Proof sketch: the definition computes. -/
+@[simp] theorem SubqueryRun.certainFirst_rows (run : SubqueryRun) : run.certainFirst.rows = run.rows := rfl
+
+/-- For every result, marking its first row certain keeps its fault. Proof sketch: the definition computes. -/
+@[simp] theorem SubqueryRun.certainFirst_fault (run : SubqueryRun) : run.certainFirst.fault = run.fault := rfl
+
+/-- For every result, marking its first row certain keeps the certainty of its rows. Proof sketch: the definition
+computes. -/
+@[simp] theorem SubqueryRun.certainFirst_rowsCertain (run : SubqueryRun) : run.certainFirst.rowsCertain = run.rowsCertain := rfl
+
+/-- For every result, marking its first row certain makes the first row certain. Proof sketch: the definition
+computes. -/
+@[simp] theorem SubqueryRun.certainFirst_firstCertain (run : SubqueryRun) : run.certainFirst.firstCertain = true := rfl
+
+/-- For every context, row and expression without a scalar subquery ({lit}`(SELECT ...)`) at any depth, with no
+fallible call, the value and fault of the expression over the row are the same in the context and in the
+context in which every subquery has its first row marked certain ({name}`SubqueryRun.certainFirst`). Proof sketch:
+induction over the mutual expression and argument types; only a scalar subquery reads the mark, and a call that
+cannot fail does not read the context. -/
+theorem Expr.evaluate_certainFirst (context : EvalContext) (row : List Value) (expression : Expr)
+    (noScalar : expression.any (· matches .subquery _) = false)
+    (plain : expression.any Expr.isFallibleCall = false) :
+    expression.evaluate { context with subqueries := fun index outer => (context.subqueries index outer).certainFirst } row =
+      expression.evaluate context row := by
+  induction expression using Expr.rec
+    (motive_2 := fun arguments => arguments.any (· matches .subquery _) = false →
+      arguments.any Expr.isFallibleCall = false →
+      arguments.evaluate { context with subqueries := fun index outer => (context.subqueries index outer).certainFirst } row =
+        arguments.evaluate context row ∧
+      match arguments with
+      | .nil => True
+      | .cons head tail =>
+        head.evaluate { context with subqueries := fun index outer => (context.subqueries index outer).certainFirst } row =
+          head.evaluate context row ∧
+        tail.evaluate { context with subqueries := fun index outer => (context.subqueries index outer).certainFirst } row =
+          tail.evaluate context row) <;>
+    simp_all [Expr.any, Arguments.any, Expr.isFallibleCall, Expr.evaluate, Arguments.evaluate]
+  case inQuery => rfl
+  case scalar =>
+    rename_i function arguments ih
+    cases function <;> try simp_all [Expr.evaluate]
+    cases arguments with
+    | nil => simp [Expr.evaluate]
+    | cons head tail => simp_all [Expr.evaluate]
+
 end Belay.Sqlite.Model.Resolved

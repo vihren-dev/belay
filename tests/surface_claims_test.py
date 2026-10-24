@@ -65,3 +65,12 @@ def test_the_number_of_rows_of_a_table_is_compared_with_a_parameter(runtime_root
     result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsCount.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
+
+
+def test_a_parameter_is_in_a_column_of_a_table(runtime_root: Path, tmp_path: Path) -> None:
+    """`SELECT 1 WHERE $x IN (SELECT e FROM t [WHERE p])` over every database: `Holds` means that some stored
+    row has a value of `e` that equals `x` under the comparison of `IN`, proved with the lemmas and `sql_simp`,
+    with instances on one database where `decide +kernel` checks the claim for a true and for a false `x`."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsIn.lean", tmp_path), cwd=tmp_path,
+                         timeout=60)
+    assert result.returncode == 0, result.diagnostic()
