@@ -165,6 +165,9 @@ import Belay.Sqlite.Model.QueryOutputOn
 import Belay.Sqlite.Model.QueryOutputRows
 import Belay.Sqlite.Model.QueryStatementOutput
 import Belay.Sqlite.Model.QueryOutputCases
+import Belay.Sqlite.Model.SimpleQueryLaws
+import Belay.Sqlite.Model.SimpleSelectResolution
+import Belay.Sqlite.Model.SimpleSourceResolution
 
 /-! SQLite states, the facts of an admitted and of a valid database, the theorems of the statements
 that keep the unique keys, supported execution, the output of each statement and the results that
