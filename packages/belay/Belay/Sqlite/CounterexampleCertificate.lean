@@ -11,11 +11,19 @@ namespace Belay.Sqlite.Check
 
 open Lean Meta
 
+/-- The logical axioms accepted by SQL certificates. User axioms and compiler-trust axioms
+are excluded; {name}`propext`, {name}`Classical.choice` and {name}`Quot.sound` are permitted. -/
+def allowedAxioms : List Name := [``propext, ``Classical.choice, ``Quot.sound]
+
+/-- Lean's generated native-decision declaration prefix. A matching name component is
+excluded from checked SQL evidence even when it appears through another declaration. -/
+def nativeDecisionPrefix : String := "_native"
+
 /-- Names that cannot justify a checked result: admitted proofs, native decision axioms and
 declarations the caller excludes, such as the theorem currently being checked. -/
 def forbiddenDependency (excluded : Array Name) (name : Name) : Bool :=
   excluded.contains name || name == ``sorryAx || name == ``Lean.ofReduceBool ||
-    (name.toString.splitOn ".").any (·.startsWith "_native")
+    (name.toString.splitOn ".").any (·.startsWith nativeDecisionPrefix)
 
 /-- Audit types and bodies transitively, including the types and values of used local
 variables. The caller can exclude a theorem and local assumptions. User axioms are rejected;
@@ -38,7 +46,7 @@ def auditDependencies (expressions : Array Expr) (excluded : Array Name := #[])
       if !seen.contains name then
         seen := seen.insert name
         let info ← getConstInfo name
-        if info.isAxiom && !([``propext, ``Classical.choice, ``Quot.sound].contains name) then
+        if info.isAxiom && !allowedAxioms.contains name then
           throwError "SQL certificate depends on axiom {name}"
         pending := pending.push info.type
         if let some value := info.value? (allowOpaque := true) then
