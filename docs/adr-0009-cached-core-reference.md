@@ -1,4 +1,4 @@
-# ADR 0009: Build the core API reference once per toolchain, without checks of doc-gen4
+# ADR 0009: Cache the core API reference and check known generator failures
 
 Date: 2026-10-09. Status: ACCEPTED on 2026-10-09.
 Audience: designers and reviewers.
@@ -6,7 +6,7 @@ Related: [API reference](api-reference.md), [CI](ci.md),
 [task for PR #63](../plans/20261008-ci-time-docs-scope-and-cached-reference.task.md),
 "Testing" in [AGENTS.md](../AGENTS.md).
 
-## Context
+## Context at acceptance (2026-10-09)
 
 The checked API reference is built by `build-support/api-reference.nix`
 (`apiReferenceBase`) and completed with the commit hash by
@@ -82,14 +82,14 @@ reuse it until the toolchain or doc-gen4 changes.
 module and `fromDb`, and then applies the correction of decision 2.
 `tools/ci_store_gc.py` keeps `apiReferenceCore` in the saved cache.
 
-### 2. No checks of doc-gen4's output, except one known bug
+### 2. No general checks of doc-gen4's output
 
 - **`validate_reference` is removed.** The build no longer checks module
   pages, source-link prefixes, local links or anchors in the generated pages.
 - **The correction of Lean's `Init/Tactic.html` typo is removed.** The typo is
   in Lean's documentation, not in ours.
-- **The recursor-link correction stays, for our pages only.** It is the one
-  known doc-gen4 problem on our pages. It names an upstream report to doc-gen4:
+- **The recursor-link correction stays, for our pages only.** At acceptance,
+  this was the known doc-gen4 problem on our pages. It names an upstream report:
   [doc-gen4 issue 423](https://github.com/leanprover/doc-gen4/issues/423),
   filed on 2026-10-09. The links come from internal names such as `Eq.ndrec`,
   which doc-gen4 maps to their type but links with their own name as the
@@ -126,7 +126,22 @@ The completeness of our documentation is not a test of the reference build. It
 is the content gate `just documentation-inventory`, with the Lean compiler,
 which checks the names, terms and assertions in our Verso docstrings.
 
-## Evidence
+## Amendment: large import closures (2026-10-24)
+
+PR #242's Linux reference build failed with 532 module roots in the pinned
+doc-gen4 reader: `read:transitive_imports: too many terms in compound SELECT`.
+Its multirow VALUES seed participates in a recursive UNION. The pinned build
+now wraps that seed in one SELECT, preserving bound module names, duplicate
+elimination and the complete transitive closure. The caller still makes one
+`fromDb` call with every selected root.
+
+A bounded compiled-reader regression checks the observed failure, including
+500/501 roots, larger sets, shared imports, cycles and empty roots. This is an
+additional known dependency defect, not a general output validator. Remove
+the patch and regression when the pinned upstream query has the fix. The
+dependency revisions and the separate core/reference derivations stay fixed.
+
+## Evidence at acceptance (2026-10-09)
 
 Each question was answered on macOS arm64 on 2026-10-09:
 
@@ -140,7 +155,7 @@ Each question was answered on macOS arm64 on 2026-10-09:
 | Do our pages need the recursor-link correction?                   | Yes. Of the 178 corrections, 3 files are ours and 46 are Lean's.                                                                                                    |
 | What does the correction of our pages cost?                       | The correction must read our 24 pages and the 27 Lean pages they link to, for their anchors. Parsing them took 1.0 s, against 158 s for both passes over all pages. |
 
-## Expected effect
+## Expected effect at acceptance (2026-10-09)
 
 A pull request that changes a Lean source runs the Lean build, `single`,
 `fromDb` and the correction of our pages: about 7 + 17 + 9 + 1 s, about 34 s
@@ -171,8 +186,8 @@ Lean sources are the main development work, and each one would keep paying
 for the core documentation and the checks of Lean's pages.
 
 **Check our pages on each build.** Rejected. The checks of our pages also test
-doc-gen4. No problem is suspected besides the recursor links, which the
-correction handles.
+doc-gen4. At acceptance, only the recursor-link problem was suspected; the
+correction handles it. The amendment above records the later reader defect.
 
 **Check doc-gen4's output at each doc-gen4 or Lean upgrade.** Rejected. An
 upgrade alone gives no reason to suspect a problem, and we do not run a

@@ -1,0 +1,56 @@
+{
+  "caller": "codex",
+  "commit": "caf53b680617e97487fe28c415a8f8200c4e9eb2",
+  "date": "2026-10-24T17:57:10+00:00",
+  "exit": 0,
+  "files": [
+    "build-support/doc-gen4.nix",
+    "build-support/patches/doc-gen4-transitive-imports.patch",
+    "docs/adr-0009-cached-core-reference.md",
+    "docs/api-reference.md",
+    "plans/20261024-reference-compound-limit.status.md",
+    "tests/docgen/TransitiveImports.lean"
+  ],
+  "findings": [
+    {
+      "id": "20261024T175710Z-caf53b68#1",
+      "line": 1,
+      "path": "build-support/patches/doc-gen4-transitive-imports.patch",
+      "rule": "R15",
+      "severity": "should",
+      "text": "The workaround for a doc-gen4 bug names the PR #242 failure but no upstream report, and the commit says the report is unpublished. Fix: publish the upstream doc-gen4 issue and name its URL in the patch header, the regression docstring and ADR 0009."
+    },
+    {
+      "id": "20261024T175710Z-caf53b68#2",
+      "line": 60,
+      "path": "plans/20261024-reference-compound-limit.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The status file lists `tests/test_api_reference.py` and `tests/test_docgen_dependencies.py` as focused checks of this fix, but the commit changes neither. Fix: name the real check of this fix (the `doCheck` fixture in `build-support/doc-gen4.nix`), or say these two tests only guard unrelated behavior."
+    }
+  ],
+  "id": "20261024T175710Z-caf53b68",
+  "kind": "review",
+  "reviewer": "claude",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
