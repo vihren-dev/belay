@@ -82,8 +82,10 @@ theorem resolvedStepOutput_simple_hasNoRows_of_faultless (index : Nat) (connecti
     simple.run_of_faultless _ calm.query_plain source.rows faultless]
   simp [calm.subqueries_plain, clean, simple.results_eq_nil_iff]
 
-/-- For every simple query statement as in {name}`resolvedStepOutput_simple_hasRows_of_faultless`, the output of
-its step is no error: the run has no window mismatch, no overflow and no fault. Proof sketch:
+/-- For every simple query statement that is calm ({name}`Resolved.Statement.Calm`), whose source is found, and
+whose expressions have no fault over the empty row and over each source row in the context of the statement,
+the output of its step is no error: the run has no window mismatch, no overflow and no fault. The source
+rows may have a fault: the output is then no error, and it may be unmodeled. Proof sketch:
 {name}`resolvedStepOutput_query_isError` and {name}`Resolved.Query.Simple.run_of_faultless`. -/
 theorem resolvedStepOutput_simple_not_isError_of_faultless (index : Nat) (connection : Connection)
     (parameters : List Value) (query : Resolved.Query) (subqueries : List Resolved.Query) (simple : query.Simple)
