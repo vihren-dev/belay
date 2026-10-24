@@ -80,3 +80,13 @@ def test_numeric_sum_bound_includes_real_and_null_cells(runtime_root: Path, tmp_
     assert result.returncode == 0, result.diagnostic()
     assert result.stdout.count("depends on axioms") == 2, result.stdout
     assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout
+
+
+def test_guide_email_success_uses_exact_corrected_precondition(runtime_root: Path, tmp_path: Path) -> None:
+    """The guide's uniqueEmail claim derives its schema from Holds and adds only the free
+    index name; kernel cases retain the original name collision and ASCII-only NOCASE trap."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "SuccessUniqueEmail.lean", tmp_path),
+                         cwd=tmp_path, timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+    assert result.stdout.count("depends on axioms") == 1, result.stdout
+    assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout
