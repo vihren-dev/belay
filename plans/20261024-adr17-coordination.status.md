@@ -85,7 +85,8 @@ remove the prior planning blocks; they are not implementation-completion claims.
   is reviewed; all 62 surface tests passed at `vjvlvym2mp4lqjighnsc7q1qijbq1c2w`.
   Main `f3e03264` and part 3 `2e51a0ae` are reviewed; their broad gates remain.
   Merge `dbd774b1` is reviewed; `c0097b21` carries accepted derived publication
-  `1f5eea9e`. Part 2 full/verdict gate `37743` is running in slot 2.
+  `1f5eea9e`. Part 2 passed 863 Nix tests/verdict; acceptance is `7672185d`.
+  Part 3 merge `66a13ec0` has a clean review, recorded at `bd25c39f`.
   Named-source extension `656ab790`/`1dee994a` is reviewed and checked in Nix.
 - `s6_prerequisite_audit` completed derived-source part 1, published in #243.
   Separate evidence head `5d69e3fa` retains draft v53's 38 agreements and
@@ -119,24 +120,23 @@ Both email copies and the full balance proof compile against Nix surface
 `qz96vr9hh9vghmw4hihvvl2lwh4dmdxf`, with only ordinary logical axioms; PR #8 is updated.
 Final acceptance must selectively reconcile unpublished S2/S3 product-default changes.
 
-Root S4 part-2 full/verdict `37743` owns heavy slot 2. CTE released slot 1;
-its next heavy phase waits for the urgent API reference fix. FK insertion unit
+Root stacked reference `56479` owns heavy slot 2; urgent fix cadence `17338`
+owns slot 1. CTE and FK UPDATE gates wait. FK insertion unit
 `45a65a92`/`754545ce` passed six Nix fixtures/95 axioms at `afgmspdjm1andpc3pd1wlfqdv9gl4bib`.
 Derived #243 passed local full 853/Nix 70/scheduled 47 and verdict 4,867/2,505,
 with all 53 predictions matching accepted evidence. Linux CI #242/#243 failed
 API reference generation: 532 roots exceed doc-gen4's compound-query limit.
 `s4_part1` owns reviewed task `c58f8e31` in `reference-compound-limit` on #242;
-S7 work is safely frozen. The patched compiled reader passed 12 Nix cases,
-including 532/640 roots, at `x66x56cw6qxvd72k056gldkvy7r0qv9i`; the real
-532-module reference build is running. Root prepared `reference-stack-publication`
-on #243, with matching shell configuration and successful authorized direnv allow.
+S7 work is frozen. The reader passed 12 Nix cases, including 532/640 roots,
+at `x66x56cw6qxvd72k056gldkvy7r0qv9i`. The full 532-module reference passed
+at `jqn6h8cij0xva91lb5sl3aqidndbjc3z`. Fix `caf53b68` and inventory follow-up
+`58fc6ba8` are reviewed; #243's 538-module reference is running on `d2ffeadb`.
 Both PRs will receive descendants without rewriting shared ancestors.
-
-One owner decision is pending: native views invalidate the guide's unique-email
-and balance preconditions. Add explicit physical-table premises (recommended),
-or add SQL catalog-kind guards. Only affected view contracts are paused;
-CI repair and CTE work continue. Native cases are retained in the workspace
-research notes, `views_native_20261024.py` and `.out`.
+The owner accepted physical-table premises for BOTH unique-email and balance.
+Task corrections are batched at S4 `2e761ca0`, under review; the query-source
+agent will implement them in isolated `s4-table-premises`, then update the guide.
+Native counterexamples remain in research notes `views_native_20261024.py/.out`.
+No owner question is pending. CTE's incremental dev-build passed at session13213.
 ## Published work and cleanup
 
 - Public [PR #240](https://github.com/vihren-dev/sqlite-verifier/pull/240),
