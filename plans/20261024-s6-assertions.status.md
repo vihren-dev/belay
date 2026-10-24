@@ -26,3 +26,4 @@ native trigger counterexamples remain required negative fixtures.
   specifies conditional/total policies but does not prescribe helper names.
   This task now explicitly supplies ifOk/andOk over those policies. No
   implementation or Nix acceptance is claimed.
+- Follow-up review 20261024T152713Z-33693f10 has no musts or shoulds.
