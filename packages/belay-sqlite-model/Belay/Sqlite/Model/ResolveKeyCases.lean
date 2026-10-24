@@ -113,8 +113,7 @@ theorem map_modify (items : List α) (position : Nat) (change : α → α) (valu
   · subst same; cases items[position]? <;> simp [keeps]
   · simp [same]
 
-/-- For every list and function that keeps the value of a function, {lit}`List.mapIdx` with the
-function that keeps the value gives the same values. -/
+/-- For every list, function of a position and an element, and function on the elements whose value the first function keeps for each position, the values on {lit}`List.mapIdx` of the list are the values on the list. Proof sketch: compare the elements at each position.  -/
 theorem map_mapIdx (items : List α) (change : Nat → α → α) (value : α → β)
     (keeps : ∀ place item, value (change place item) = value item) : (items.mapIdx change).map value = items.map value := by
   apply List.ext_getElem?

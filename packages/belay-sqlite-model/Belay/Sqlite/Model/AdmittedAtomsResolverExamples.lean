@@ -72,6 +72,9 @@ example : ¬ AnyDeclared [{ name := name! "a", declaredType := some "TEXT", stri
 def keyed : CatalogTable := { columns := twoColumns, primaryKey := [0], rowidAlias := some 0 }
 
 -- The shape of a table: keys inside the columns, unique folded names, and an alias that is the key.
+/-- The table {name}`keyed` has the shape of {name}`CatalogTable.Shaped`: its primary key is inside the
+columns, it has no UNIQUE key, its folded names are unique, and its alias is the whole primary key on an
+alias column. -/
 theorem keyedShaped : keyed.Shaped :=
   ⟨by intro position member; simp only [keyed, List.mem_singleton] at member; subst member; decide,
    by intro key member; simp [keyed] at member,
@@ -82,6 +85,7 @@ example : ¬ ({ keyed with primaryKey := [2], rowidAlias := none } : CatalogTabl
   absurd (shaped.primaryKey 2 (by simp)) (by simp [keyed, twoColumns])
 
 -- A draft is shaped and not WITHOUT ROWID, and a strict ANY column of it is declared ANY.
+/-- The table {name}`keyed` is a {name}`CatalogTable.Draft`. -/
 theorem keyedDraft : keyed.Draft :=
   ⟨keyedShaped, rfl, by intro column member strict; simp [keyed, twoColumns] at member; rcases member with rfl | rfl <;> simp at strict⟩
 example : ¬ ({ keyed with withoutRowid := true } : CatalogTable).Draft := fun draft => by
@@ -89,6 +93,7 @@ example : ¬ ({ keyed with withoutRowid := true } : CatalogTable).Draft := fun d
 
 -- The draft is building the column `b TEXT` when its last column is declared TEXT, and not the column
 -- `a INTEGER`. A change that keeps the layout of the last column keeps the building.
+/-- The table {name}`keyed` is building the column {lit}`b TEXT`, because its last column is declared TEXT. -/
 theorem keyedBuilding : keyed.Building (column (name! "b") (some "TEXT")) := ⟨keyedDraft, by decide +kernel⟩
 example : ¬ keyed.Building (column (name! "a") (some "INTEGER")) := fun building => by
   have := building.2; revert this; decide +kernel

@@ -388,3 +388,6 @@ proof relies on it (finding 15).
   a CHECK that names a column give a valid catalog, and each invariant has a table that has it and one
   that has not. A statistics table of a catalog description is out of scope: the theorem needs
   `context.mode = .execution`. Tests: `tests/test_model_package.py`.
+- 2026-10-24: review round of the commit "CREATE TABLE gives a valid catalog": seven musts (R2 six
+  docstrings said more or less than their formulas; R3 missing proof sketches). Fixed in a `refactor:`
+  commit. Tests: `tests/test_model_package.py`.

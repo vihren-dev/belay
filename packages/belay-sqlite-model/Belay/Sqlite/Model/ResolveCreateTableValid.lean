@@ -49,8 +49,7 @@ theorem CatalogTable.withStrictKeys_shaped {table : CatalogTable} (draft : table
   refine ⟨draft.shaped.of_layout table.withStrictKeys_layouts ?_ ?_ ?_, ?_, ?_⟩ <;>
     (unfold CatalogTable.withStrictKeys; split <;> rfl)
 
-/-- For every name, columns and rowid flag, the scope of one table ends below the number of its columns.
--/
+/-- For every name, columns and rowid flag, the scope of one table ends below the number of its columns ({name}`Scope.Bounded`). Proof sketch: the only source has offset zero.  -/
 theorem Scope.single_bounded (name : Identifier) (columns : List CatalogColumn) (hasRowid : Bool) :
     (Scope.single name columns hasRowid).Bounded columns.length := by
   intro source member

@@ -39,8 +39,10 @@ def CatalogColumn.typing (column : CatalogColumn) : Option StrictType × Option 
 def AnyDeclared (columns : List CatalogColumn) : Prop :=
   ∀ column ∈ columns, column.strictType = some .any → column.declaredType = some "ANY"
 
-/-- For every two lists of columns with the same strict types and declared types, if every strict ANY
-column of the first has the declared type ANY, so has the second. -/
+/-- For every two lists of columns with the same list of strict types and declared types: if every column of
+the first list with the strict type ANY has the declared type {lit}`ANY`, so has every column of the second
+list. Proof sketch: a column of the second list has the strict type and the declared type of a column of
+the first list. -/
 theorem AnyDeclared.of_typing {old new : List CatalogColumn} (declared : AnyDeclared old)
     (same : new.map CatalogColumn.typing = old.map CatalogColumn.typing) : AnyDeclared new := by
   intro column member strict
@@ -50,8 +52,7 @@ theorem AnyDeclared.of_typing {old new : List CatalogColumn} (declared : AnyDecl
   rw [← equal.2]
   exact declared other inOld (equal.1.trans strict)
 
-/-- For every two lists of columns with the same layouts, the lists have the same strict types and
-declared types. -/
+/-- For every two lists of columns with the same layouts, the lists have the same strict types and declared types. Proof sketch: the strict type and the declared type are parts of the layout.  -/
 theorem typing_eq_of_layout {old new : List CatalogColumn}
     (same : new.map CatalogColumn.layout = old.map CatalogColumn.layout) :
     new.map CatalogColumn.typing = old.map CatalogColumn.typing := by
@@ -124,8 +125,7 @@ theorem CatalogTable.Building.of_columns {definition : Syntax.ColumnDefinition} 
   have := congrArg (fun items => items.getLast?.map Prod.snd) typing
   simpa [List.getLast?_map, Option.map_map, Function.comp_def, CatalogColumn.typing] using this
 
-/-- For every table that is building a column and every table with the same layouts of the columns,
-keys, alias and rowid kind, the second table is building the column. -/
+/-- For every table that is building a column and every table with the same layouts of the columns, the same primary key, UNIQUE keys, rowid alias and rowid kind, the second table is building the column. Proof sketch: {name}`CatalogTable.Building.of_columns`, with the strict types, the declared types and the names taken from the layouts, and the alias column kept by {name}`AliasColumn.of_layout`.  -/
 theorem CatalogTable.Building.of_layout {definition : Syntax.ColumnDefinition} {old new : CatalogTable}
     (building : old.Building definition)
     (columns : new.columns.map CatalogColumn.layout = old.columns.map CatalogColumn.layout)
@@ -138,22 +138,20 @@ theorem CatalogTable.Building.of_layout {definition : Syntax.ColumnDefinition} {
     layout.1.folded) columns
   simpa [List.map_map, Function.comp_def, CatalogColumn.layout] using this
 
-/-- For every two lists of columns with the same layouts, the lists have the same names. -/
+/-- For every two lists of columns with the same layouts, the lists have the same names. Proof sketch: the name is a part of the layout.  -/
 theorem names_eq_of_layout {old new : List CatalogColumn}
     (same : new.map CatalogColumn.layout = old.map CatalogColumn.layout) :
     new.map (·.name) = old.map (·.name) := by
   have := congrArg (List.map fun (layout : Identifier × Option String × Option StrictType × Bool) => layout.1) same
   simpa [List.map_map, Function.comp_def, CatalogColumn.layout] using this
 
-/-- For every two lists of columns with the same names, the lists have the same folded names. -/
+/-- For every two lists of columns with the same names, the lists have the same folded names. Proof sketch: map the folding over the equal lists of names.  -/
 theorem folded_eq_of_names {old new : List CatalogColumn} (same : new.map (·.name) = old.map (·.name)) :
     new.map (·.name.folded) = old.map (·.name.folded) := by
   have := congrArg (List.map Identifier.folded) same
   simpa [List.map_map, Function.comp_def] using this
 
-/-- For every table that is a draft, every table with the same columns and rowid kind, and keys that
-name only columns of the table, with a rowid alias as {name}`CatalogTable.Shaped` says, the second
-table is a draft. -/
+/-- For every draft table and every second table with the same columns and the same rowid kind: if each position of the primary key of the second table is below the number of columns, each UNIQUE key of the second table is not empty and has only positions below the number of columns, and each rowid alias position of the second table has the primary key that is that position alone and is an alias column ({name}`AliasColumn`) of the columns, the second table is a draft. Proof sketch: the columns, and so the names and the strict ANY columns, are those of the first table.  -/
 theorem CatalogTable.Draft.of_keys {old new : CatalogTable} (draft : old.Draft) (columns : new.columns = old.columns)
     (ordinary : new.withoutRowid = old.withoutRowid)
     (primaryKey : ∀ position ∈ new.primaryKey, position < old.columns.length)

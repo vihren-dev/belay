@@ -11,7 +11,7 @@ its shape, and the CHECK constraints and the generated columns end it ({lit}`Res
 
 namespace Belay.Sqlite.Model
 
-/-- For every strictness, the table without columns is a draft. -/
+/-- For every strictness, the table without columns, keys and rowid alias is a draft. Proof sketch: every clause of {name}`CatalogTable.Draft` is about the members of an empty list, or about the rowid alias, which is none.  -/
 theorem CatalogTable.draft_empty (strict : Bool) : ({ columns := [], strict } : CatalogTable).Draft :=
   ⟨⟨by simp, by simp, by simp, fun _ found => by cases found⟩, rfl, by simp [AnyDeclared]⟩
 
@@ -59,9 +59,17 @@ theorem Catalog.Valid.createTable {context : ResolveContext} {catalog : Catalog}
   simp only [CatalogObject.supported, ordinary, Bool.not_false, Bool.true_or, Bool.and_true]
   exact CatalogTable.supported_of_finished shaped aliasKind named within notGenerated ordinaryNames checked generated
 
-/-- For every valid catalog and every WITHOUT ROWID table that CREATE TABLE builds from definitions and
-table constraints: if the stages of the resolution succeed and the name is free and not reserved, the
-catalog with the table is valid. -/
+/-- For every context in execution mode, valid catalog, name, definitions and table constraints: if
+* the name is not found in the catalog and is not reserved;
+* the definitions and then the table constraints give a table ({lit}`table`);
+* not every column of {name}`CatalogTable.asWithoutRowid` of the table is generated;
+* the CHECK constraints resolve for that table to {lit}`second`, and the generated columns of
+  {lit}`second` resolve to {lit}`third`;
+* no definition has the name of the rowid;
+
+then the catalog with {lit}`third` appended ({name}`Catalog.createTable`) is valid. Proof sketch: the
+table is a draft ({name}`CatalogTable.draft_of_built`), its WITHOUT ROWID form is shaped
+({name}`CatalogTable.asWithoutRowid_shaped`), and {name}`Catalog.Valid.createTable` ends the proof. -/
 theorem Catalog.Valid.createTable_withoutRowid {context : ResolveContext} {catalog : Catalog} {name : Identifier}
     {strict : Bool} {definitions : List Syntax.ColumnDefinition} {constraints : List Syntax.TableConstraint}
     {table second third : CatalogTable} (valid : catalog.Valid context.profile.limits)
@@ -86,9 +94,17 @@ theorem Catalog.Valid.createTable_withoutRowid {context : ResolveContext} {catal
     (by simpa using ordinaryNames)
     checked generated
 
-/-- For every valid catalog and every table that is not WITHOUT ROWID that CREATE TABLE builds from
-definitions and table constraints: if the stages of the resolution succeed and the name is free and not
-reserved, the catalog with the table is valid. -/
+/-- For every context in execution mode, valid catalog, name, definitions and table constraints: if
+* the name is not found in the catalog and is not reserved;
+* the definitions and then the table constraints give a table ({lit}`table`);
+* not every column of {name}`CatalogTable.withStrictKeys` of the table is generated;
+* the CHECK constraints resolve for that table to {lit}`second`, and the generated columns of
+  {lit}`second` resolve to {lit}`third`;
+* no definition has the name of the rowid;
+
+then the catalog with {lit}`third` appended ({name}`Catalog.createTable`) is valid. Proof sketch: the
+table is a draft ({name}`CatalogTable.draft_of_built`), its form with strict keys is shaped
+({name}`CatalogTable.withStrictKeys_shaped`), and {name}`Catalog.Valid.createTable` ends the proof. -/
 theorem Catalog.Valid.createTable_ordinary {context : ResolveContext} {catalog : Catalog} {name : Identifier}
     {strict : Bool} {definitions : List Syntax.ColumnDefinition} {constraints : List Syntax.TableConstraint}
     {table second third : CatalogTable} (valid : catalog.Valid context.profile.limits)
