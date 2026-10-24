@@ -1,6 +1,7 @@
 # Status: the theorems of the Admitted atoms (ADR 0022, slice 4)
 
-Created 2026-10-23. Status: OPEN. The owner decided on 2026-10-23 (below); decision 3 repeats the
+Created 2026-10-23. Status: READY for the Nix checks (parts 1 to 3 are committed, 2026-10-24); it is DONE
+only after `just test-full` and `just verdict` of the whole task pass. The owner decided on 2026-10-23 (below); decision 3 repeats the
 decision of 2026-10-23 for slice 3.
 Task: [task file](20261023-admitted-atoms-theorems.task.md).
 Specification: [ADR 0022](../docs/adr-0022-database-validity.md), D1, D3 and D4 (slice 4).
@@ -42,9 +43,16 @@ All paths below are in `packages/belay-sqlite-model/Belay/Sqlite/Model/` unless 
   `RunHoldsStep.lean`, `ScriptRunHolds.lean`, `RowLocalAtoms.lean`, `RowLocalFrame.lean`,
   `RowLocalStatement.lean`, `RowLocalAddColumn.lean` (`RowsWideAt`, `ChecksReadBelowAt`,
   `StrictDefaultFitsAt`), `KeysUniqueRunStep.lean` (`Resolved.Statement.RunCondition`),
-  `KeysUniqueScriptRun.lean`, `KeysUniqueDrop.lean` (`Catalog.DropCondition` at line 19),
+  `KeysUniqueDrop.lean` (`Catalog.DropCondition` at line 19),
   `KeysUniqueAddColumn.lean` (`AddColumnCondition`), `ValidAtomsTogether.lean`
   (`Database.ConstraintAtoms`), `ValidAtomsExamples.lean`.
+- The run theorems of slice 4 (part 3): `RunHoldsReady.lean`, `ScriptRunDerived.lean`,
+  `ResolveStatementForms.lean`, `ResolveStatementLink.lean`, `ResolveStatementFacts.lean`,
+  `ResolveStatementApplied.lean`, `AdmittedStatementKeeps.lean`, `AdmittedSqlRunsCatalog.lean`,
+  `AdmittedSqlRunsRows.lean`, `ScriptRunApplied.lean`, `ScriptRunAdmittedCatalog.lean`,
+  `ScriptRunAdmittedRows.lean`, `AtomsConditionsOfLink.lean`, `ScriptRunConstraints.lean`,
+  `ScriptRunValid.lean`, `AdmittedRunsExamples.lean`, `AdmittedRunsConditionExamples.lean`;
+  `tests/admitted_atoms_run_theorems_test.py`.
 - The run: `ScriptRun.lean` (`runScriptStepWith` at line 108, `runScriptFrom`).
 - The surface: `packages/belay/Belay/Sqlite/ProgramRun.lean` (`Sql.runFrom`, `Run.checked`),
   `packages/belay/Belay/Sqlite/Run.lean` (`runContext`, line 20), `RunLaws.lean`, `ProgramLaws.lean`.
@@ -579,3 +587,8 @@ proof relies on it (finding 15).
   facts, the invariants, the conditions that stay, with runs that break the atom). Tests:
   `tests/admitted_atoms_run_theorems_test.py`, and the restated formulas of `valid_atoms_theorems_test.py` and
   `keys_unique_theorems_test.py` follow the new signatures.
+- 2026-10-24: part 3, review of the first commit: three musts (R2 the plain words of `StatementKeepsReady` and
+  of `mixedRun_rowsAliased`; R9 the module description and proof sketch of `resolveCreateTrigger_schemaLink`
+  for `.drop []`) and two shoulds (R9 a docstring for `pastLargest`; R13 the dated amendments in ADR 0012
+  and the record of slice 4 in ADR 0022), fixed in the `refactor:` commit that adds the records. The plans of
+  the slice are marked READY (not DONE) in the first lines of both files.

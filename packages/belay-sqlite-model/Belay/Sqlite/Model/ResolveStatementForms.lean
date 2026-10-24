@@ -6,10 +6,11 @@ import Belay.Sqlite.Model.Resolution.NamesSpec
 
 set_option doc.verso true
 
-/-! Which resolvers make ADD COLUMN and DROP (ADR 0022, D3, slice 4). The facts that the resolver gives
-about an ADD COLUMN or a DROP (the strict default of the column, the positions of the drop) need that no
-other statement resolves to one. Each resolver of a statement other than ALTER TABLE ADD COLUMN and DROP
-gives a prepare error or a statement of its own form. -/
+/-! The link of a resolved statement to its catalog (ADR 0022, D3, slice 4). The facts that the resolver
+gives about an ADD COLUMN or a DROP (the strict default of the column, the positions of the drop) are
+stated as {lit}`Resolved.Statement.SchemaLink`, a property of every resolved statement. The resolver of
+another statement gives a prepare error, a statement of its own form, or, for CREATE TRIGGER IF NOT EXISTS
+of an existing trigger, a DROP of no object, which meets the link by {lit}`Catalog.DropClosed.nil`. -/
 
 namespace Belay.Sqlite.Model
 
@@ -53,7 +54,8 @@ theorem resolveCreateIndex_schemaLink (context : ResolveContext) (catalog after 
 
 /-- For every successful resolution of CREATE TRIGGER, the resolved statement meets
 {name}`Resolved.Statement.SchemaLink` on the catalog. Proof sketch: every branch of the resolver gives a
-prepare error or a CREATE TRIGGER. -/
+prepare error, a CREATE TRIGGER, or (CREATE TRIGGER IF NOT EXISTS of an existing trigger) a DROP of no object,
+which meets the link by {name}`Catalog.DropClosed.nil`. -/
 theorem resolveCreateTrigger_schemaLink (catalog after : Catalog) (name : Identifier)
     (ifNotExists : Bool) (trigger : CatalogTrigger) (statement : Resolved.Statement)
     (ok : resolveCreateTrigger catalog name ifNotExists trigger = .ok (statement, after)) :

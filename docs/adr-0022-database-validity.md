@@ -169,6 +169,32 @@ database meets `Database.AddColumnCondition`, `Database.RowsWideAt` and `Databas
 and the resolved ADD COLUMN meets `strictDefaultFits`. A CREATE INDEX with no key terms is a prepare
 error that SQL text cannot reach. The statement theorems and the run theorems are parts 2 and 3.
 
+Record of slice 4 (2026-10-24, `plans/20261023-admitted-atoms-theorems.task.md`): each atom of
+`Database.Admitted` has a statement theorem (`runStatement_rowidsDistinct`, `runStatement_rowsShaped`,
+`runStatement_catalogSupported`, `runStatement_rowidsInRange`, `runStatement_rowsWide`,
+`runStatement_rowsStored`, `runStatement_rowsAliased`), and a run theorem for `runSqlFrom`, `runSql` and
+`runScriptFrom` (`runSqlFrom_rowsShaped` and so on, and `runSqlFrom_admitted` for the bundle). By owner
+decision M, the row engine tests each row that it writes (`LiteralData.rowAdmitted`), so the statement
+theorems of "rowids in range", "rows wide", "rows stored" and "rows aliased" assume that the run is ready
+(the support check of the model passes); the run theorems of `runSqlFrom` and `runSql` assume
+`supportedSqlFrom`, and `runScriptFrom` gets it from the run, which ends at a statement that fails it.
+"Catalog supported" and "rows aliased" also assume that the catalog after each statement is valid
+(`Resolved.Statement.AppliedValid`). A theorem lists the atoms that it needs: "rows stored" lists "rows wide",
+and "rows aliased" lists "catalog supported". The theorems of `runScriptFrom` have no hypothesis on the
+statements of the script. The resolver facts of part 1 give the conditions: `Resolved.Statement.SchemaLink`
+(ADD COLUMN: the default fits the strict type; DROP: `Catalog.DropClosed`) is a fact of every successful
+resolution (`resolveStatement_schemaLink`), stated positively because CREATE TRIGGER IF NOT EXISTS of an
+existing trigger resolves to a DROP of no object. The `runScriptFrom` theorems of the constraint atoms assume
+`Database.AdmittedWith profile atom` (admitted, with the atom), a context in execution mode, and the limits
+of the context equal to those of the profile; `Database.ConstraintAtoms` together give the corollary
+`runScriptFrom_valid`: a run of `runScriptFrom` from a connection with a valid database and snapshot ends in
+one, with `Database.valid_empty` for a new connection. The surface form is `Sql.runFrom_valid`, by induction
+over the program, and `Sql.runFrom_database_valid`. The conditions stay in the theorems of `runSqlFrom` and
+`runSql`, and `AdmittedRunsConditionExamples` shows a run that breaks the atom for each: a rowid past the
+largest, and a DROP of a table that leaves its index. The check `Run.checked` is not removed yet; ADR 0017,
+S4 removes it with these theorems. No proof failed. The predictions, the claims and the judge lock do not
+change.
+
 For the constraint atoms, INSERT, UPDATE and upsert are the easier case: each table that they
 store passed the checks, after the whole write or after each row, and a proof follows those
 steps, also for the rows that a FAIL failure keeps. DELETE removes rows, and each constraint

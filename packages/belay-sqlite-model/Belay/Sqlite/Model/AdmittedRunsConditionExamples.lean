@@ -67,6 +67,9 @@ example : (runSql [(.insert 0 [[.value (.integer 1), .value (.text [97])]] [], [
 
 -- A condition that stays: "rowids in range". The script of one INSERT after the largest rowid does not pass the
 -- support check (the run is not ready), and the database after it has the rowid 2 ^ 63, out of range.
+
+/-- The counterexample script of "rowids in range": the INSERT of a row into the table whose largest rowid is
+{lit}`2 ^ 63 - 1`. -/
 def pastLargest : List (Resolved.Statement × List Value) := [(insertCells [.value (.integer 2)], [])]
 example : supportedSqlFrom 0 pastLargest { database := oneTable largestRowidTable } = false := by decide +kernel
 example : ((runSql pastLargest (oneTable largestRowidTable)).database.rows.getD 0 []).map (·.rowid) =
