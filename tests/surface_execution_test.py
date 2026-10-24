@@ -20,10 +20,13 @@ def test_execution_branches_and_wp(runtime_root: Path, tmp_path: Path) -> None:
     stopped prefixes and raw LIMIT wrappers. Their WPMonad proves a real write with two
     proof routes, rejects alternate stops, and preserves clocks, counters and snapshots.
     Success policies distinguish modeled errors from stops; fresh triples have exact
-    ordinary-triple and universal S4 bridges without changing arbitrary-context triples."""
+    ordinary-triple and universal S4 bridges without changing arbitrary-context triples.
+    Strong equivalence retains failed alternative traces and composes with explicit domains;
+    weaker observations do not compose. Helper triples check explicit transactions by both routes."""
     setup = module_setup(runtime_root, tmp_path)
     configuration = json.loads(setup.read_text())
-    for module, count in (("ExecutionBranches", 14), ("ExecutionProofs", 18), ("ExecutionSuccess", 22)):
+    for module, count in (("ExecutionBranches", 14), ("ExecutionProofs", 18), ("ExecutionSuccess", 22),
+                          ("ExecutionEquivalence", 15), ("ExecutionComposition", 18), ("ExecutionHelpers", 14)):
         configuration["name"] = module
         setup.write_text(json.dumps(configuration))
         artifact = tmp_path / f"{module}.olean"

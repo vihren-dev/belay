@@ -149,3 +149,53 @@ Independent review `20261024T212855Z-1c09bf9f` of the success/fresh source
 `1c09bf9f` found zero musts and zero shoulds. It covered all seven changed files.
 The first acceptance part is ready for its required full/verdict gate; that gate
 has not yet run. Strong equivalence and the rest of the task remain OPEN.
+
+## Complete equivalence and helper specifications
+
+The second source unit adds five surface-only modules: ExecutionEquivalence,
+ExecutionEquivalenceLaws, ExecutionEquivalenceBind, ExecutionObservations and
+ExecutionSpecifications. Each is below 115 lines. Ordinary `≈` compares the actual
+complete run and the set of every complete branch outcome at every shared context.
+Fixed-context and restricted-domain primitives remain public. The restricted bind
+rule requires every returning prefix branch to reach its continuation's domain;
+stopped prefixes impose no continuation premise. The laws cover both bind
+congruence directions, result-dependent continuations, map and script append.
+They transport arbitrary transformers, conditional/total properties, fresh triples
+and universal S4 success.
+
+The separately named observation comparison omits final connections while keeping
+actual and branch return values and traces. Its fixture refutes unrestricted bind
+congruence using a later pragma read. Another fixture has identical actual runs
+and equally false checks for every postcondition, but distinct alternative stopped
+traces, which the strong relation distinguishes. A concrete write supplies the
+restricted-domain premise, and a false universal rule without that premise is
+refuted. Existing counter, pragma and snapshot prototype counterexamples remain
+in the focused gate.
+
+Helper specifications use the existing send/query/single programs and exact step
+relation. A transaction with BEGIN, INSERT RETURNING, a count query and COMMIT is
+proved by both mvcgen and explicit step rules. Separate cases cover rollback,
+query/single error conversion, COMMIT without a transaction and empty scripts.
+No interpreter, model execution definition or package boundary changed.
+
+The sequential command `direnv exec . bash build/agent-logs/s6-equivalence-gates.sh`
+completed with exit 0 on 2026-10-24. It ran bounded `just dev-build`, then the
+sandboxed Nix surface suite selecting the production execution fixture and S6
+prototype, with max-jobs=1 and cores=2. Nix acceptance:
+`/nix/store/f0yg6digr0wiv60gjvihv6jb5x93a05s-sqlite-verifier-test-surface-1`:
+2 tests passed, 79 deselected, in 19.35 seconds. The production driver compiles six
+fixtures with 101 axiom reports; the retained prototype compiles five with 28.
+All reports use only propext, Classical.choice and Quot.sound. Logs are
+`build/agent-logs/s6-equivalence-{dev-build,nix-surface}-1.log`.
+The development build and nine static layer checks are local diagnostics only.
+
+Independent review follows this coherent commit. The first part's combined
+publication acceptance remains coordinated separately with the native-artifact
+and S5 sources. The second part's full/verdict and task-end Nix/scheduled checks
+remain due. This task and S6 as a whole remain OPEN.
+
+Independent review `20261024T222747Z-51387d8e` checked source
+`51387d8eb53bcda04b8911a378f77453dabec01e`, covering all twelve changed files.
+It found zero musts and zero shoulds. The checked source is at rest for integration
+and the required part-2 full/verdict and task-end checks; no overall completion
+or publication is claimed here.
