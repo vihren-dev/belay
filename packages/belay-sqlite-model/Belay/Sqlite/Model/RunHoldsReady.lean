@@ -15,8 +15,9 @@ namespace Belay.Sqlite.Model
 /-- For the given property of databases and condition of statements: the statement theorem with the
 support check holds. For every clock value, counters, parameter list, resolved statement and database, if
 the database has the property, the statement meets its condition on the database, and the run passes
-the support check ({lit}`StatementRun.ready`), the effect of {name}`runStatement` satisfies the
-property ({name}`Effect.Satisfies`). A theorem of {name}`StatementKeeps` is one of this form that does
+the support check ({name}`StatementRun.ready`), the effect of {name}`runStatement` satisfies the
+property ({name}`Effect.Satisfies`): a success and a failure by a constraint (which keeps the database
+that the failure leaves) have the property, and every other failure requires nothing. A theorem of {name}`StatementKeeps` is one of this form that does
 not use the support check ({lit}`StatementKeeps.toReady`). -/
 def StatementKeepsReady (property : Database → Prop) (condition : Resolved.Statement → Database → Prop) : Prop :=
   ∀ (clock : Int) (counters : Counters) (parameters : List Value) (statement : Resolved.Statement) (database : Database),

@@ -64,8 +64,9 @@ theorem mixedRun_valid : mixedRun.connection.state.Holds (Database.Valid keysOn)
   runScriptFrom_valid mixedContext none 0 (bindValues mixedSyntax []) rfl rfl
     ⟨Database.valid_empty keysOn, fun _ same => nomatch same⟩
 
-/-- The same run keeps each atom of the family: the theorem of one atom has no hypothesis on the statements
-either. -/
+/-- The theorem of "rows aliased" applied to {name}`mixedSyntax`: the database of the run satisfies
+{name}`Database.RowsAliased` and has a valid catalog under the limits of the profile, and so does the snapshot
+when a transaction is open. The theorem has no hypothesis on the statements either. -/
 theorem mixedRun_rowsAliased : mixedRun.connection.state.Holds (Database.RowsAliasedSupported keysOn.limits) :=
   runScriptFrom_rowsAliased mixedContext none 0 (bindValues mixedSyntax []) rfl rfl
     ⟨⟨(Database.valid_empty keysOn).admitted.rowsAliased, (Database.valid_empty keysOn).admitted.catalogSupported⟩, fun _ same => nomatch same⟩

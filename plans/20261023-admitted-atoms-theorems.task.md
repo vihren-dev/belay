@@ -1,6 +1,7 @@
 # The theorems of the Admitted atoms (ADR 0022, slice 4)
 
-Created 2026-10-23. Status: OPEN. On 2026-10-23 the owner accepted the recommendation of each
+Created 2026-10-23. Status: READY for the Nix checks (parts 1 to 3 are committed, 2026-10-24); DONE only
+after `just test-full` and `just verdict` of the whole task pass. On 2026-10-23 the owner accepted the recommendation of each
 decision of the status file, except decision 5, where the owner first chose b) (a restriction) and
 on 2026-10-24 chose a) (the model keeps a repeated key column, see the amendment below);
 decision 3 repeats a decision of 2026-10-23 (slice 3, decision 3 a)).
