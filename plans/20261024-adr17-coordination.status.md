@@ -91,9 +91,15 @@ remove the prior planning blocks; they are not implementation-completion claims.
   the row-bound regression. Inference `69cd41be` passed 13 Nix checks and clean
   review, including typed unused witness fields. Replay passed 14 Nix checks
   at `qh5lxq6ycrswh0bfzaym8cjc3yc16fk4` (`27180`, exit 0), including the
-  supported DROP/helper interference regression. Source review precedes
-  part-1 full/verdict acceptance in slot 1; shared commands and automatic
-  checking remain open.
+  supported DROP/helper interference regression. Replay `e4942452` has clean
+  review. The first full surface run passed 73 checks and failed one S7 fixture:
+  its shorter control import moved SQL provenance by two bytes. Test correction
+  `1beefd00` pads that import and retains exact expression comparison; all seven
+  Nix proof-cost checks passed at `h5vfmwanvqk60aablk7jj6pv8cc07ym3`, with clean
+  review. Post-review full/verdict/prediction acceptance is running in slot 1
+  (`21734`); the first failure log is retained. Shared commands and automatic
+  checking remain open. Their draft now isolates speculative elaboration state;
+  cancellation and failed-candidate cleanup still need installed acceptance.
 - `s6_prerequisite_audit` completed derived-source part 1, published in #243.
   Separate evidence head `5d69e3fa` retains draft v53's 38 agreements and
   four restrictions. Combined acceptance is recorded in its task status.
@@ -108,7 +114,13 @@ remove the prior planning blocks; they are not implementation-completion claims.
   all 53 prediction files/7,372 cases remain identical. The next isolated
   catalog/source workspace joins this head with published #248 and carries
   only the checked exact `CatalogValidDrop` lookup law/caller from `135b8338`.
-  It has no heavy process; S6 has slot 2 for its first production unit.
+  The merge `63bcea9d` has clean review. Catalog/source implementation now owns
+  slot 2 for build/proof closure. An admitted view must expand correctly or
+  return an explicit interim model restriction, never fabricated missing-table
+  or empty-pragma outcomes. The FK owner has reserved the mechanical view cases
+  in parent lookup, planning and row updates to this unit; mapping/action formulas
+  are unchanged. Exact parent-link framing also tracks view positions when no
+  physical parent exists, without constraining view bodies.
 - The S6 foundation prototype is DONE in PR #246 at `334d9645`, above #245.
   Original full 813/Nix 67/scheduled 47 and verdict passed. The final focused
   integration checks all five modules and 28 audits against S4; review is clean.
@@ -206,8 +218,8 @@ logs are in `s4/build/agent-logs/cte-publication`. Evidence and views remain act
   Nix test groups passed at `9mh19n9lvn425dfn9s9hdbbjcwcdf732`, with 32 new
   and 28 retained prototype axiom reports using only standard logical axioms.
   Conditional/total policies, the fresh-run helper and exact S4 bridge are next;
-  full part acceptance and equivalence remain open. Slot 2 is free until the
-  next ready S6/FK or view unit requests its bounded gate.
+  full part acceptance and equivalence remain open. Further S6/FK source work
+  proceeds while the view unit uses slot 2.
   [Assertions](20261024-s6-assertions.task.md) and [migration patterns](20261024-s6-migration-patterns.task.md) have clean reviews
   at `33693f10`/`56b9f410`; [automation](20261024-s6-automation.task.md) is clean at `8b118fbc`.
   [Initial/current query context](20261024-s6-before-context.task.md) has clean
