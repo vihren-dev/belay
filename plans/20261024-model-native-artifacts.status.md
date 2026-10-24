@@ -23,11 +23,81 @@ only surface/test derivations; the model derivation was already present.
 These are observations from an existing Nix gate, not acceptance of a fix.
 Task commit `e2a49629` has independent review `20261024T213358Z-e2a49629`: zero must and zero should findings. Root separately verified the cited log count and artifact inventory.
 
-No implementation or new heavy build has started. Required regression, native
-reuse demonstration, source review and task acceptance remain open.
-
 Isolated workspace `model-native-artifacts` starts at accepted S6 `e804ddde`.
 Only this task, its status and the named clean review were copied from planning
 `fe82c004`. The shell configuration is byte-identical to the accepted S6
 workspace and is allowed under the owner's standing authorization. S6 and FK
-workspaces remain at rest. Implementation starts after the carry review.
+workspaces remain at rest. Carry commit `02ea4fbb` received independent review
+`20261024T213517Z-02ea4fbb`: zero must and zero should findings.
+
+## Producer and replay change
+
+`build-support/default.nix` adds the `shared` facet for each existing model
+library. Pinned Lake 4.34.1 builds the complete library's native objects and
+their traces through that facet. The copy/install mechanism and platform
+library handling are unchanged. `tests/lean_packages_test.py` now requests
+those actual facets and requires no compiled targets during replay.
+
+The first Nix producer output is
+`/nix/store/mxdz0srr5c8rp8h4k8l5r1b8559fs30f-belay-sqlite-model-0.1.0`.
+It contains 589 `.olean` files, 589 `.c.o.export` files and both model shared
+libraries under `.lake/build/lib`. Its initial build compiled 589 model C
+objects. It took 261 seconds on this host with Nix settings `max-jobs = 1`
+and `cores = 2`.
+The sum of installed regular-file sizes changed from 279553010 to 333878087
+bytes. These observations do not promise a timing ratio on another machine.
+
+Nix package replay passed all three checks in
+`/nix/store/2g962nijmc1fl3s99hl6d9j2yp7l1058-sqlite-verifier-test-packages-1`.
+The model's native facets replayed with no compiled targets. Exact commands
+and logs are in `build/agent-logs/native-focused-gates.sh` and
+`native-{producer,packages}.log`.
+
+## Focused acceptance and real source edits
+
+The full installed surface suite passed all 81 checks in
+`/nix/store/ypfqx5qns8bl8c16yjw36syqb5d80gwh-sqlite-verifier-test-surface-1`.
+This includes translation, layer boundaries, S6 production execution and its
+foundations prototype. The text/surface build log contains zero compiled model
+C-object targets; the observed baseline had 589. Linux imports and execution
+passed. Darwin's existing library handling is unchanged but was not executed.
+
+The same replay regression against the exact old model output fails in Nix:
+Lake tries to create its missing `ByteText.c.o.export` in the read-only store.
+The expected failing derivation is
+`/nix/store/wywbh555d4jr3smb2wix6ikvmyi0aw70-sqlite-verifier-test-packages-1.drv`.
+The bounded command is `nix-build build/agent-logs/native-old-regression.nix
+--no-out-link --option sandbox true --option sandbox-fallback false
+--extra-experimental-features 'nix-command flakes'`; the exact-path failure is
+retained in `native-old-exact.log`. The verifier requires this failure rather
+than accepting an unrelated evaluation error.
+
+`build/agent-logs/native-reuse-probe.py` copies package and parser sources into
+`build/native-reuse-source-2`, where Nix applies the existing filters.
+The unmodified copy has identical model, text
+and surface derivations. It appends one comment to
+`packages/belay/Belay/Sqlite/ExecutionSuccess.lean`, then builds the real surface
+derivation. That build compiled the edited module and zero model C objects.
+It took 18.55 seconds and produced
+`/nix/store/jvi65f5cgr09f5y5i7c7q74da7fxncgg-belay-0.1.0`.
+The model and text derivations stayed unchanged. Building the unchanged model
+again reused its output. A subsequent comment appended to
+`packages/belay-sqlite-model/Belay/Sqlite/Model.lean` changed the model, text
+and surface derivations; this deliberately changed model was not built.
+
+`native-reuse-probe.json` retains every command, exact edited input, derivation
+identity, output and elapsed time. The model derivation changes from
+`zz0vyz8agkrh9h5dw89lfy43s5vcnwqp-belay-sqlite-model-0.1.0.drv` to
+`x2ghcz70qzya0blgk1vyl6qc7pwpn900-belay-sqlite-model-0.1.0.drv` only after the
+model edit. The surface-only edit changes its derivation from
+`sdjxm2dnjhwcsnk1f9vx7dbzzak31v0d-belay-0.1.0.drv` to
+`b0paz2vrd5flklwfl31zb2x0k4x6fxdx-belay-0.1.0.drv`.
+The private-source probe's initial path-coercion failure is retained in
+`build/agent-logs/initial-native-original-identities.log`. Correcting that probe
+required no production change.
+
+Source review and full acceptance remain pending. Root approved one combined
+S5/S6/native full/verdict gate for this task and S6 part 1, provided the S6
+sources and fixtures remain byte-identical to `e804ddde`. Task-end Nix and
+scheduled checks also remain due. This is an acceptance plan, not a passing
+result. No SQL, Lean declaration, package manifest or judge file changed.

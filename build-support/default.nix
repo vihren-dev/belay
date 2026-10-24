@@ -21,7 +21,9 @@ in rec {
     pname = "belay-sqlite-model";
     directory = "packages/belay-sqlite-model";
     source = sources.model;
-    targets = [ "Belay.Sqlite.Model" "Belay.Sqlite.Model.Codec" ];
+    # Downstream precompiled modules replay these objects and shared libraries.
+    targets = [ "Belay.Sqlite.Model" "Belay.Sqlite.Model.Codec"
+                "Belay.Sqlite.Model:shared" "Belay.Sqlite.Model.Codec:shared" ];
   };
   sqlite3534 = native.sqlite3534;
   docGen4 = import ./doc-gen4.nix { inherit pkgs leanToolchain; };

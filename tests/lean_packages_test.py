@@ -33,19 +33,21 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
 
 def replay_targets(lakefile: dict[str, object]) -> list[str]:
-    """Each library of the package, and the root module of each executable (`+Module`).
+    """Libraries, executable root modules, and the model's native library facets.
 
-    An executable links the C objects of all the modules it imports, and only the
-    package's own build makes those of its dependencies. Consumers take the binary,
-    not a link, so the check builds the executables' root modules, not the binaries.
+    Text and surface builds need the model's native objects and shared libraries.
+    Replaying those facets detects the producer omission that made each consumer
+    compile the model again. Other executable packages supply finished binaries;
+    their root-module replay does not request another executable link.
     """
     libraries = [f"{lakefile['name']}/{library['name']}" for library in lakefile.get("lean_lib", [])]
+    native = [f"{library}:shared" for library in libraries] if lakefile["name"] == "belaySqliteModel" else []
     executables = [f"+{executable.get('root', executable['name'])}" for executable in lakefile.get("lean_exe", [])]
-    return [*libraries, *executables]
+    return [*libraries, *native, *executables]
 
 
 def test_package_output_compiles_nothing(package: str, runtime_root: Path, tmp_path: Path) -> None:
-    """A workspace that requires the package by path builds all its libraries and modules without compiling."""
+    """The installed package replays its modules and required model native facets without compiling."""
     folder = runtime_root / "packages" / package
     lakefile = tomllib.loads((folder / "lakefile.toml").read_text())
     workspace = tmp_path / "workspace"
