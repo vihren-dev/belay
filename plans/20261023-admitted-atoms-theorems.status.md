@@ -486,3 +486,17 @@ proof relies on it (finding 15).
   `RowEngineFacts`. New module `AdmittedEngineLaws` has the laws of "rowids distinct", "rows shaped"
   and "catalog supported"; examples `AdmittedAtomsEngineExamples`. Tests: `tests/test_model_package.py`,
   `tests/valid_atoms_theorems_test.py`, `tests/admitted_atoms_resolver_facts_test.py`.
+- 2026-10-24: part 2, the review of "The row engine keeps a property of databases" had one must (R2: the
+  docstrings of the fields of `WriteLaws`), fixed in a refactor commit with no further findings. Commit
+  "Statement theorems of the Admitted atoms": `runStatement_rowidsDistinct` (`AdmittedDistinctStatement`),
+  `runStatement_rowsShaped` (`AdmittedShapedStatement`) and `runStatement_catalogSupported`
+  (`AdmittedCatalogStatement`) cover every constructor of `Resolved.Statement`, with rules, through the
+  laws of the row engine; the first two need no `ready`, the third needs the catalog after the statement
+  (`applyCatalog`) to be valid. `AdmittedRowsOnly` (`Database.RowsOnlyAt`) says that a plain write only
+  replaces the rows of its target. `runStatement_rowidsInRange`, `runStatement_rowsWide`,
+  `runStatement_rowsStored` (lists `Database.RowsWide`) and `runStatement_rowsAliased` (lists a valid
+  catalog) are in `AdmittedRangeWideStatements`, `AdmittedStoredAliasedStatements` over the skeleton
+  `runStatement_tableAtom` (`AdmittedTableAtomStatement`). They take `Resolved.Statement.WithoutRules`
+  as a hypothesis: the statements with foreign key rules or trigger programs are not covered (finding
+  16). Examples: `AdmittedAtomsTheoremExamples`. Tests: `tests/test_model_package.py`,
+  `tests/valid_atoms_theorems_test.py`, `tests/admitted_atoms_resolver_facts_test.py`.
