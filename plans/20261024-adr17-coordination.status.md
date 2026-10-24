@@ -225,10 +225,15 @@ logs are in `s4/build/agent-logs/cte-publication`. Evidence and views remain act
   standard-triple soundness. Independent review has no findings. Its two
   Nix test groups passed at `9mh19n9lvn425dfn9s9hdbbjcwcdf732`, with 32 new
   and 28 retained prototype axiom reports using only standard logical axioms.
-  Conditional/total policies, the fresh-run helper and exact S4 bridge are next;
-  full part acceptance and equivalence remain open. The conditional/total and
-  fresh-run unit is ready and has slot 1 after S5's terminal gate. FK proof work
-  proceeds independently while the view unit uses slot 2.
+  The success/fresh-run unit is accepted at `e804ddde`, source `1c09bf9f`,
+  with clean review `20261024T212855Z-1c09bf9f`. Its two Nix surface groups pass
+  at `gm2y6fiagq0jcngxjxq089kbfcfrvhi7`: 54 production and 28 prototype axiom
+  reports use only standard logical axioms. Full part acceptance and strong
+  equivalence remain open; the bounded full/verdict script is prepared.
+  The same worker now owns the reviewed [native artifact reuse task](20261024-model-native-artifacts.task.md)
+  in an isolated workspace. The existing surface gate rebuilt 589 unchanged
+  model C objects despite a cached model derivation. Task `e2a49629` has clean
+  independent review. S6 and FK proof workspaces remain at rest during this fix.
   [Assertions](20261024-s6-assertions.task.md) and [migration patterns](20261024-s6-migration-patterns.task.md) have clean reviews
   at `33693f10`/`56b9f410`; [automation](20261024-s6-automation.task.md) is clean at `8b118fbc`.
   [Initial/current query context](20261024-s6-before-context.task.md) has clean
