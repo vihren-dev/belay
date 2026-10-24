@@ -8,8 +8,9 @@ set_option doc.verso true
 ({name}`Belay.Sqlite.Model.Resolved.Query.Simple`), under the context hypotheses of each theorem,
 has rows exactly when {lit}`WHERE` is true for a source row, has no rows exactly when it is true
 for none, and is never an error. All variants require
-{name}`Belay.Sqlite.Model.Resolved.Statement.Calm`. Faultless variants allow subqueries and
-require a fault-free source; plain variants require no subqueries. -/
+{name}`Belay.Sqlite.Model.Resolved.Statement.Calm`. Faultless variants allow subqueries. Their
+has-rows and has-no-rows equivalences require a fault-free source; their no-error law permits
+source faults. Plain variants require no subqueries. -/
 
 namespace Belay.Sqlite.Model
 
