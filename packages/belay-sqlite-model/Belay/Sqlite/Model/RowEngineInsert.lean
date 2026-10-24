@@ -21,33 +21,41 @@ theorem failedRow_holds {catalog : Catalog} {state : KeyState} (holds : state.Ho
     ResultHolds (KeyState.Holds invariant catalog) (KeyStop.Holds invariant catalog) (failedRow state algorithm) := by
   cases algorithm <;> first | exact holds | trivial
 
-/-- For every invariant with {name}`WriteLaws`, catalog, state, earlier state, target, entry, two
-tables, row and written row: if the state satisfies {name}`KeyState.Holds`, the catalog has the
-entry at the target, the earlier state has the first table at the target, and
-{name}`LiteralData.checkedRow` with the keys of the entry passes the table with the
-row appended and gives the second table, then the state with the second table's rows at the target
-satisfies {name}`KeyState.Holds`. This is the write of {name}`insertRow`. Proof sketch: the first
-table has the entry of the catalog there ({name}`KeyState.table_shape`), and so has the table of the
-state at the target, and the checked table passed {name}`LiteralData.constraints` and
-{name}`LiteralData.rowidsDistinct` for the keys of the entry ({name}`LiteralData.checkedRow_passed`);
-that is the write of {name}`WriteLaws`. -/
-theorem insertWrite_holds (laws : WriteLaws invariant) {catalog : Catalog} {state earlier : KeyState} {target : Nat}
+/-- For every invariant with {name}`WriteLaws`, catalog, state, target, entry, two tables, row and written
+row: if the state satisfies {name}`KeyState.Holds`, the catalog has the entry at the target, the database
+of the state has the first table at the target, the row is admitted for the shape of the first table
+({name}`LiteralData.rowAdmitted`), and {name}`LiteralData.checkedRow` with the keys of the entry passes the
+table with the row appended and gives the second table, then the state with the second table's rows at
+the target satisfies {name}`KeyState.Holds`. This is the write of {name}`insertRow`. Proof sketch: the first
+table is the entry of the catalog with the rows of the state at the target ({name}`KeyState.table_shape`,
+{name}`KeyState.table_rows`), the checked table passed {name}`LiteralData.constraints` and
+{name}`LiteralData.rowidsDistinct` for the keys of the entry ({name}`LiteralData.checkedRow_passed`), and
+each of its rows is a row of the state or the admitted row; that is the write of {name}`WriteLaws`. -/
+theorem insertWrite_holds (laws : WriteLaws invariant) {catalog : Catalog} {state : KeyState} {target : Nat}
     {entry : CatalogTable} (entryFound : catalog.tableAt target = some entry) {current next : Table}
     {proposed : Row} {written : Option Row} (holds : state.Holds invariant catalog)
-    (earlierFound : (earlier.database catalog).table target = some current)
+    (found : (state.database catalog).table target = some current)
+    (admitted : LiteralData.rowAdmitted current.shape proposed = true)
     (passed : LiteralData.checkedRow (catalog.uniqueKeys target entry)
       { shape := current.shape, rows := current.rows ++ [proposed] } proposed = .ok (next, written)) :
     (state.changeRows target fun _ => next.rows).Holds invariant catalog := by
   have currentEntry : current.shape = entry := by
-    have first := KeyState.table_shape earlierFound
+    have first := KeyState.table_shape found
     rw [entryFound, Option.some.injEq] at first
     exact first.symm
-  have found : (state.database catalog).table target = some { shape := entry, rows := state.rows.getD target [] } := by
-    simp [Database.table, KeyState.database, entryFound]
+  have currentRows := KeyState.table_rows found
   obtain ⟨stored, checked⟩ := LiteralData.checkedRow_passed passed
   subst stored
   rw [currentEntry] at checked
-  exact KeyState.holds_write laws holds found checked
+  refine KeyState.holds_write laws holds found ?_ ?_
+  · rw [currentEntry]
+    exact checked
+  · intro row member
+    rw [← currentRows]
+    simp only [List.mem_append, List.mem_singleton] at member ⊢
+    rcases member with old | same
+    · exact .inl old
+    · exact .inr (same ▸ admitted)
 
 /-- For every invariant with {name}`WriteLaws`, catalog, links, nested run, frame, target, state and
 row: if the nested run keeps the invariant ({name}`NestedRun.Keeps`) and the state satisfies
@@ -109,9 +117,13 @@ theorem insertRow_holds (laws : WriteLaws invariant) {catalog : Catalog} {links 
                 split
                 · trivial
                 · rename_i next written passed
-                  exact ResultHolds.bind (runPrograms_holds keeps _ _ _ _ _
-                    (KeyState.holds_of_rows rfl (insertWrite_holds laws (KeyState.table_shape currentFound) checkedGood innerFound passed)))
-                    fun _ reached => reached
+                  split
+                  · trivial
+                  · rename_i admitted
+                    exact ResultHolds.bind (runPrograms_holds keeps _ _ _ _ _
+                      (KeyState.holds_of_rows rfl (insertWrite_holds laws (KeyState.table_shape currentFound)
+                        checkedGood innerFound (by simpa using admitted) passed)))
+                      fun _ reached => reached
               · trivial
           have afterClauseOk : ∀ resumed : Unit, ResultHolds (KeyState.Holds invariant catalog) (KeyStop.Holds invariant catalog)
               (afterClause resumed) := by

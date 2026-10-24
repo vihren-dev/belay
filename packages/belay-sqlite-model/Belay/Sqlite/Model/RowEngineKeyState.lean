@@ -111,21 +111,6 @@ theorem ResultHolds.holds_of_rows {invariant : Database → Prop} {catalog : Cat
   | error stop => cases kept; trivial
   | ok state => exact KeyState.holds_of_rows kept holds
 
-/-- For every invariant with {name}`WriteLaws`, catalog, state, position, change of rows and table: if
-the state satisfies {name}`KeyState.Holds`, the database of the state has the table at the position, and
-the table with the changed rows passes the checks of a write ({name}`LiteralData.constraints` with the
-unique keys of the position, and {name}`LiteralData.rowidsDistinct`), the state after
-{name}`KeyState.changeRows` satisfies {name}`KeyState.Holds`. Proof sketch: the database of the changed
-state is the database after {name}`Database.setRows`, which is the write of {name}`WriteLaws`. -/
-theorem KeyState.holds_write {invariant : Database → Prop} (laws : WriteLaws invariant) {catalog : Catalog}
-    {state : KeyState} (holds : state.Holds invariant catalog) {position : Nat} {change : List Row → List Row}
-    {table : Table} (found : (state.database catalog).table position = some table)
-    (passed : (LiteralData.constraints (catalog.uniqueKeys position table.shape)
-        { table with rows := change (state.rows.getD position []) } &&
-      LiteralData.rowidsDistinct { table with rows := change (state.rows.getD position []) }) = true) :
-    (state.changeRows position change).Holds invariant catalog :=
-  laws.write (state.database catalog) position table _ holds found passed
-
 /-- For every catalog, state, position and table: if the database of the state has the table at
 the position, the rows of the table are the rows of the state at the position. Proof sketch: the
 definition of {name}`Database.table`. -/
@@ -134,6 +119,25 @@ theorem KeyState.table_rows {catalog : Catalog} {state : KeyState} {position : N
   obtain ⟨_, _, same⟩ := Option.map_eq_some_iff.mp found
   rw [← same]
   rfl
+
+/-- For every invariant with {name}`WriteLaws`, catalog, state, position, change of rows and table: if
+the state satisfies {name}`KeyState.Holds`, the database of the state has the table at the position, and
+the table with the changed rows passes the checks of a write ({name}`LiteralData.constraints` with the
+unique keys of the position, and {name}`LiteralData.rowidsDistinct`), and each changed row is a row at the
+position or is admitted ({name}`LiteralData.rowAdmitted`), the state after
+{name}`KeyState.changeRows` satisfies {name}`KeyState.Holds`. Proof sketch: the database of the changed
+state is the database after {name}`Database.setRows`, which is the write of {name}`WriteLaws`. -/
+theorem KeyState.holds_write {invariant : Database → Prop} (laws : WriteLaws invariant) {catalog : Catalog}
+    {state : KeyState} (holds : state.Holds invariant catalog) {position : Nat} {change : List Row → List Row}
+    {table : Table} (found : (state.database catalog).table position = some table)
+    (passed : (LiteralData.constraints (catalog.uniqueKeys position table.shape)
+        { table with rows := change (state.rows.getD position []) } &&
+      LiteralData.rowidsDistinct { table with rows := change (state.rows.getD position []) }) = true)
+    (fresh : ∀ row ∈ change (state.rows.getD position []),
+      row ∈ state.rows.getD position [] ∨ LiteralData.rowAdmitted table.shape row = true) :
+    (state.changeRows position change).Holds invariant catalog :=
+  laws.write (state.database catalog) position table _ holds found passed
+    fun row member => (fresh row member).imp_left fun held => by rwa [KeyState.table_rows found]
 
 /-- For every catalog, state, position and table: if the database of the state has the table at
 the position, the catalog has the table's entry there. Proof sketch: the definition of

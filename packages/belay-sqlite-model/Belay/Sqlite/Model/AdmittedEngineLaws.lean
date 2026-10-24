@@ -9,8 +9,8 @@ distinct", "rows shaped" and "catalog supported". Each has the laws of {lit}`Wri
 {lit}`rowsKeys_holds` and {lit}`dropKeys_holds` apply. The row engine passes the checks of a write
 ({lit}`LiteralData.constraints` and {lit}`LiteralData.rowidsDistinct`) before it stores a table, and
 it writes only to positions that have a table, except for a DELETE, which stores a sublist. "Rowids
-in range", "rows wide", "rows stored" and "rows aliased" have no such laws: a write through a trigger
-program can store a row that no check of the table has read. -/
+in range", "rows wide", "rows stored" and "rows aliased" have their laws in {lit}`AdmittedRowLaws`: the
+engine writes only rows that {lit}`LiteralData.rowAdmitted` accepts, or rows that were there. -/
 
 namespace Belay.Sqlite.Model
 
@@ -49,13 +49,13 @@ theorem rowsShapedLaws : WriteLaws Database.RowsShaped where
         exact List.sublist_nil.mp (sub [])
       rw [changed, Database.setRows_nil_of_getD empty]
       exact shaped
-  write database position table rows shaped found _ := shaped.setRows found rows
+  write database position table rows shaped found _ _ := shaped.setRows found rows
 
 /-- For every limits, "the catalog is valid under the limits" has the laws of {name}`WriteLaws`. Proof
 sketch: {name}`Database.setRows` keeps the catalog. -/
 theorem catalogSupportedLaws (limits : Limits) : WriteLaws fun database => database.catalog.Valid limits where
   sublist _ _ _ valid _ := valid
-  write _ _ _ _ valid _ _ := valid
+  write _ _ _ _ valid _ _ _ := valid
 
 /-- For every property of databases with the laws of {name}`WriteLaws`, rules, clock value, target, work,
 database, flag and algorithm: if the database has the property, the effect of {name}`rowsKeys` satisfies it

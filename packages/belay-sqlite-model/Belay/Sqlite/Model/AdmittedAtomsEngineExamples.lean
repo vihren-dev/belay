@@ -31,12 +31,12 @@ example : (emptyDatabase.setRows 5 ((emptyDatabase.rows.getD 5 []).filter (·.ro
 -- A write at the table keeps it shaped: the write law, with a table that passed the check.
 example : (emptyDatabase.setRows 0 []).RowsShaped :=
   rowsShapedLaws.write emptyDatabase 0 { shape := twoColumns, rows := [] } [] emptyDatabase_shaped (by decide +kernel)
-    (by decide +kernel)
+    (by decide +kernel) nofun
 
 -- The catalog stays valid after any write, because a write keeps the catalog.
 example : (emptyDatabase.setRows 0 []).catalog.Valid defaults.limits :=
   (catalogSupportedLaws defaults.limits).write emptyDatabase 0 { shape := twoColumns, rows := [] } [] (by decide +kernel)
-    (by decide +kernel) (by decide +kernel)
+    (by decide +kernel) (by decide +kernel) nofun
 
 -- "Rowids distinct": a table that passed the check of a write has distinct rowids.
 example : ({ shape := twoColumns, rows := [{ rowid := 1, values := [.null, .null] }] } : Table).RowidsDistinct :=

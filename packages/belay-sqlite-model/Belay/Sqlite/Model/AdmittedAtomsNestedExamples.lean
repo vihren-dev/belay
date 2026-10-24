@@ -2,12 +2,13 @@ import Belay.Sqlite.Model.AdmittedAtomsCounterExamples
 
 set_option doc.verso true
 
-/-! A counterexample to "rowids in range" for a statement with trigger programs (ADR 0022, slice 4,
-part 2; finding 16 of the status file), checked by the kernel. An INSERT runs an AFTER INSERT trigger
-whose UPDATE writes a rowid out of range into a second table, and an AFTER UPDATE trigger of that
-table stops the write with {lit}`RAISE(FAIL)`. The run is ready, and the database that the error
-{lit}`constraintFail` keeps has the rowid out of range. So the theorems of the four atoms that need the
-support check ask for a statement without rules. -/
+/-! A statement with trigger programs whose nested write is not described (ADR 0022, slice 4, part 2;
+finding 16 of the status file and the owner decision M), checked by the kernel. An INSERT runs an AFTER
+INSERT trigger whose UPDATE would write the rowid {lit}`2 ^ 70`, which is out of range, into a second
+table, and an AFTER UPDATE trigger of that table would stop the write with {lit}`RAISE(FAIL)`. Before the
+decision the run was ready and the database that the error {lit}`constraintFail` keeps had the rowid out of
+range. Now the row engine tests every row that it writes ({lit}`LiteralData.rowAdmitted`), so the run is not
+ready and ends as {lit}`unmodeled` with the input database. -/
 
 namespace Belay.Sqlite.Model.AdmittedAtomsNestedExamples
 
@@ -38,15 +39,7 @@ def raiseProgram : Resolved.Program :=
 def nestedInsert : Resolved.Statement :=
   .insert 0 [[.value (.integer 1)]] [] [] (some { depth := 3, keys := false, programs := [updateProgram, raiseProgram] })
 
-/-- The database after {name}`nestedInsert`: the row of the INSERT is kept, and the row of the UPDATE has
-the rowid {lit}`2 ^ 70`. -/
-def nestedAfter : Database :=
-  { twoTables with rows := [[{ rowid := 1, values := [.integer 1] }], [{ rowid := 2 ^ 70, values := [.integer (2 ^ 70)] }]] }
-
--- Finding 16: the nested UPDATE writes the rowid 2 ^ 70, and the FAIL of the nested trigger stops the
--- write with the error `constraintFail`, which keeps the database. The run is ready, so the rowid
--- is out of range in a database that the theorem would keep. The theorems of "rowids in range" ask for
--- a statement without rules ({name}`Resolved.Statement.WithoutRules`).
+-- The database {name}`twoTables` has its rowids in range.
 example : twoTables.RowidsInRange := by
   intro position table found row member
   rcases position with _ | _ | position
@@ -62,14 +55,18 @@ example : twoTables.RowidsInRange := by
       simp [twoTables, Database.ofTables, Database.table, Catalog.tableAt]
     rw [none] at found
     cases found
-example : ¬ nestedInsert.WithoutRules := nofun
-example : (runStatement 0 {} [] nestedInsert twoTables).ready = true := by decide +kernel
-example : (runStatement 0 {} [] nestedInsert twoTables).effect = .error (.constraintFail, nestedAfter) := by rfl
-example : ¬ (runStatement 0 {} [] nestedInsert twoTables).effect.Satisfies Database.RowidsInRange := by
-  intro satisfies
-  have inRange := satisfies nestedAfter (.inr (by rfl))
-  have row := inRange 1 { keyedTable with rows := [{ rowid := 2 ^ 70, values := [.integer (2 ^ 70)] }] } rfl
-    { rowid := 2 ^ 70, values := [.integer (2 ^ 70)] } (by decide +kernel)
-  exact absurd row.2 (by decide)
+-- The nested UPDATE would write the rowid 2 ^ 70. The row fails the test, so the run is not ready and
+-- the error is `unmodeled`, which keeps the input database.
+example : (runStatement 0 {} [] nestedInsert twoTables).ready = false := by decide +kernel
+example : (runStatement 0 {} [] nestedInsert twoTables).effect = .error (.unmodeled, twoTables) := by rfl
+-- The effect satisfies every property of databases, because it is neither a success nor a `constraintFail`.
+example (property : Database → Prop) : (runStatement 0 {} [] nestedInsert twoTables).effect.Satisfies property := by
+  intro database kept
+  have effect : (runStatement 0 {} [] nestedInsert twoTables).effect = .error (.unmodeled, twoTables) := by rfl
+  rw [effect] at kept
+  rcases kept with same | same <;> cases same
+-- The row of the nested UPDATE is not admitted: its rowid is out of range.
+example : LiteralData.rowAdmitted keyedTable.shape { rowid := 2 ^ 70, values := [.integer (2 ^ 70)] } = false := by
+  decide +kernel
 
 end Belay.Sqlite.Model.AdmittedAtomsNestedExamples

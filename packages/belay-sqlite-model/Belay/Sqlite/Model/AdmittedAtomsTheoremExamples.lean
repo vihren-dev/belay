@@ -7,8 +7,8 @@ import Belay.Sqlite.Model.AdmittedStoredAliasedStatements
 set_option doc.verso true
 
 /-! Examples of the statement theorems of the Admitted atoms (ADR 0022, slice 4, part 2), each checked
-by the kernel: {lit}`Resolved.Statement.WithoutRules` and {lit}`Database.RowsOnlyAt`, and the
-theorems of "rows shaped" and "catalog supported" applied to a statement, with a DROP whose
+by the kernel: {lit}`Database.RowsOnlyAt`, and the theorems of "rows shaped", "catalog supported" and
+the four atoms that need the support check, applied to a statement, with a DROP whose
 condition on the catalog fails. -/
 
 namespace Belay.Sqlite.Model.AdmittedAtomsTheoremExamples
@@ -17,14 +17,6 @@ open Belay.Sqlite.Model AdmittedAtomsExamples AdmittedAtomsEngineExamples Resolu
 
 /-- Write rules with the foreign key check on. -/
 def someRules : Resolved.WriteRules := { depth := 1, keys := true }
-
--- A write without rules is a statement without rules, and the same write with rules is not.
-example : (Resolved.Statement.drop [1] none).WithoutRules := rfl
-example : ¬ (Resolved.Statement.drop [1] (some someRules)).WithoutRules := nofun
-example : ¬ (Resolved.Statement.delete 0 none [] [] (some someRules)).WithoutRules := nofun
--- A statement that has no rules to ask for is never restricted.
-example : Resolved.Statement.begin.WithoutRules := trivial
-example : (Resolved.Statement.addColumn 0 { name := name! "c", declaredType := none }).WithoutRules := trivial
 
 -- A write that stores the rows of the table at its target is {name}`Database.RowsOnlyAt` the database.
 example : emptyDatabase.RowsOnlyAt 0 (emptyDatabase.setRows 0 []) := .setRows (table := { shape := twoColumns, rows := [] }) rfl []
@@ -38,6 +30,12 @@ example : ¬ emptyDatabase.RowsOnlyAt 1 (emptyDatabase.setRows 1 [{ rowid := 1, 
     rw [none] at found
     cases found
 
+-- The theorems of the four atoms that need the support check cover a statement with rules: a DROP of
+-- the index with the rules {name}`someRules` is a write of the row engine.
+example : (runStatement 0 {} [] (.drop [1] (some someRules)) emptyDatabase).effect.Satisfies Database.RowsWide :=
+  runStatement_rowsWide 0 {} [] _ (by decide +kernel) (by decide +kernel)
+example : (runStatement 0 {} [] (.drop [1] (some someRules)) emptyDatabase).effect.Satisfies Database.RowidsInRange :=
+  runStatement_rowidsInRange 0 {} [] _ (by decide +kernel) (by decide +kernel)
 -- BEGIN keeps the database shaped, with no condition on the connection or on the support check.
 example : (runStatement 0 {} [] .begin emptyDatabase).effect.Satisfies Database.RowsShaped :=
   runStatement_rowsShaped 0 {} [] .begin emptyDatabase_shaped
