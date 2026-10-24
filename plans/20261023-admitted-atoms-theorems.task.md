@@ -226,3 +226,32 @@ The status file proposes three parts, each with its own `just test-full` and `ju
   dated note (slices 2 and 3 added one) names these theorems too. ADR 0022, D4 gets the record of
   slice 4. The one-line amendment of the record of slice 3 about the pragma forms is made by the
   commit that adds these plan files.
+
+## Amendment of 2026-10-24 (finding 16, owner decision M)
+
+Finding 16 of the status file shows that `keyReady` does not bound the rowid of a table that a nested
+write changes and leaves out of `acted`, and that the engine checks no written row of a nested
+INSERT or UPDATE for width, stored form or alias. The owner decided option M. This amendment
+replaces the text above where it differs:
+
+- **The row engine checks every row that it writes.** `insertRow` and `updateRow` test the written
+  row with one Boolean test: the row has one cell for each column, each cell is in stored form, the
+  rowid alias cell is the rowid (when the table has an alias), and the rowid is in range. A row that
+  fails the test ends the statement as not described (`KeyStop.undescribed`, as for the rowid today),
+  so the run is not ready.
+- **Outcome 1 holds for every constructor, also with rules.** The theorems of "rowids in range",
+  "rows wide", "rows stored" and "rows aliased" need the same hypotheses as before (the atom, the
+  listed atoms and `ready`) and no restriction on the rules. The hypothesis
+  `Resolved.Statement.WithoutRules` of the first commits of part 2 is deleted with its uses.
+- **The key point "Trigger programs" is replaced.** The proofs do not rely on `fullCells` and need no
+  resolver lemma about the programs; a nested write is checked where it writes. Bounded rowids of the
+  tables that triggers write stay in `keyReady`, and the check of the written row adds to it.
+- **The model change must not change a prediction.** No SQL text reaches a written row that fails the
+  test, and the model must agree with the native results as before. The predictions are taken before
+  the change, `just dev-verdict` for every claimed corpus keeps every count, and `diff -r` of the
+  predictions is empty. If a prediction changes, stop and report.
+- **Mutants.** The change touches files that mutants copy. Run `tests/mutant_guards_test.py` and the
+  mutant tests of the touched targets by name; fix a mutant definition whose target text no longer
+  matches in the same commit.
+- **The counterexample of finding 16** becomes an example of a statement that is not ready (and ends as
+  `unmodeled`), and the counterexamples of "Conditions" stay as they are.

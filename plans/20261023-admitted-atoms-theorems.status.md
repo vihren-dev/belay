@@ -334,6 +334,16 @@ proof relies on it (finding 15).
     with one Boolean test (wide, stored, aliased, bounded), so the hypotheses on the programs and the
     resolver lemma of finding 6 are not needed; (R) the spec path: the theorems assume that the
     programs of the rules are described (`fullCells`), and "rows in range" stays open until M-lite.
+    **Decided on 2026-10-24: M** (owner, through the coordinator). The row engine checks each row
+    that `insertRow` and `updateRow` write with one Boolean test (wide, stored, aliased, rowid in
+    range). A row that fails it ends the statement as not described (`undescribed`, as `insertRow` does
+    today for the rowid). So the four atoms hold for every constructor, also with rules, and
+    `Resolved.Statement.WithoutRules` and its uses are deleted (replaced code). The resolver lemma
+    about described programs is not needed. The change touches files that mutants copy
+    (`RowInsert.lean`, `TriggerRun.lean` and others): the mutant tests of the touched targets run by
+    name, and `tests/mutant_guards_test.py`. No SQL text reaches such a row, so no prediction
+    changes: the baseline is taken before the model change, and `just dev-verdict` for all claimed
+    corpora must keep every count.
 
 ## Progress log
 
@@ -517,3 +527,6 @@ proof relies on it (finding 15).
   part 3: the resolver link of a resolved `.createIndex` and `.addColumn`, the resolve state that matches
   the snapshot of the connection, and, if design R is chosen, the lemma that the resolver makes only
   described programs.
+- 2026-10-24: the owner decided finding 16: option M (see finding 16). This commit records the decision
+  and amends the task file ("Amendment of 2026-10-24"). The model change, the proofs for every
+  constructor and the updated examples follow in later commits.
