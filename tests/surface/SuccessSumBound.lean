@@ -74,3 +74,7 @@ example : ({name := name! "cents", declaredType := some "INTEGER"} : CatalogColu
 
 #print axioms ledger_type_affinity
 #print axioms column_lookup_of_member
+
+-- The named-source bridges also cover callbacks used by preceding sibling subqueries.
+#print axioms resolveSources_table
+#print axioms resolveSources_tableInfo

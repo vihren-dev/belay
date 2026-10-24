@@ -29,6 +29,8 @@ def tableInfoScope (reference : Syntax.TableReference) (argument : List UInt8) (
 /-- For every catalog, reference to the function {lit}`pragma_table_info` with one text argument, when the catalog has no
 table with the name of the function and has rows for the table of the argument, a {lit}`FROM` clause of that reference alone
 resolves to the one inner pragma source with those rows, and the scope of {name}`tableInfoScope`. The source reference has no indexed query.
+The result holds for every derived-source callback and diagnostic prefix; neither is read on this
+successful pragma path. Leave both at their defaults for a query without derived sources.
 Proof sketch: unfold
 {name}`resolveSources` and {name}`pragmaReference`; the reference has arguments and the prefix {lit}`pragma_`, so
 {name}`resolveReference` takes the pragma branch, and the scope of one source is placed at offset 0. -/
@@ -36,8 +38,10 @@ theorem resolveSources_tableInfo (catalog : Catalog) (reference : Syntax.TableRe
     (rows : List (List Value)) (namedSource : reference.query = none) (arguments : reference.arguments = some [.string argument])
     (isFunction : reference.table.isKeyword (bytes! "pragma_table_info") = true)
     (notTable : catalog.findTable reference.table = none)
-    (info : catalog.tableInfoRows ⟨argument⟩ = some rows) :
-    resolveSources catalog (some reference) [] = .ok ([{
+    (info : catalog.tableInfoRows ⟨argument⟩ = some rows)
+    (queries : Nat → Except SourceIssue ScopeSource := fun _ => .error (.value (.restriction [] .subqueryHere)))
+    (prefix_ : List Nat := []) :
+    resolveSources catalog (some reference) [] 0 queries prefix_ = .ok ([{
         item := .pragma (pragmaSource reference argument tableInfoNames rows).1, kind := .inner, condition := .none }],
       tableInfoScope reference argument rows) := by
   have prefixed := Identifier.pragma_prefix_of_isKeyword _ isFunction
