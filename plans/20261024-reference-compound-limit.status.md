@@ -33,3 +33,7 @@ also failed at [run 40115952880](https://github.com/vihren-dev/sqlite-verifier/a
 Review `20261024T173525Z-e5ac4243` has no musts and two should findings. The
 record now uses durable CI evidence and names the shell comparison/authorization
 checks. Both findings are fixed; implementation scope is unchanged.
+
+- Review `20261024T173642Z-9725e388` has no findings. The task is handed to
+  `s4_part1` for the narrow dependency fix and compiled-reader regression.
+  Root coordinates heavy reference builds and descendant stack integration.
