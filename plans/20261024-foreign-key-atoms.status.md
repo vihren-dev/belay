@@ -452,3 +452,46 @@ continues with an explicit restriction for level-1 stale self scans and structur
 sufficient conditions; execution remains unrestricted and unchanged. The native
 and kernel counterexample will be retained in that unit. Next work is isolated
 in `fk-update-preservation`; this insertion checkpoint is at rest.
+
+## UPDATE phase proof unit: preparation
+
+The next coherent unit composes actual selected oldSteps/newSteps counter deltas
+with the physical replacement count. It does not assume the bound while the old
+row is temporarily removed. Omitted child/parent checks cancel through explicit
+cell-equality facts; a separate frame gives exact violation-count equality when
+all FK-read cells stay unchanged. Stale self lookup has a key-agreement premise.
+Parent scans require either no stale row or no processed self-child link, because
+the native stale-self diagnostic can cancel an unrelated pending violation.
+
+Seven proof modules and two fixtures have been promoted in the isolated
+`fk-update-preservation` workspace. Every new file is below 200 lines. Direct Lean
+diagnostics checked their Verso documentation and the successful changed-child
+bound, unchanged payload frame, resolved UPDATE runs, stale-self failure and its
+two level-2 neighbors, and a raw stale-generated-cell counterexample. These local
+checks are not acceptance evidence. The fixtures audit 26 exported theorems and
+10 concrete laws; the focused Nix suite will audit 131 reports in eight fixtures.
+The mandatory dev-build and Nix gate are queued for a coordinated resource slot.
+The script is `build/agent-logs/fk-update-gates.sh`, with finite timeouts and
+command-local max-jobs=1. No execution, judge or task-specification change is made.
+
+This remains an intermediate phase-law boundary. General resolved changed-column
+coverage, the actual row/action/trigger induction, DDL and mapping-transport
+conditions, combined statement/run laws and the atom-by-statement matrix remain
+open. The raw generated-cell witness demonstrates an input-condition necessity;
+it is not a native-reachable database claim. The pinned stale-self native record
+is at `/home/codex/work/research_notes/Lean model modularity investigation/fk_stale_self_scan_native_20261024.json`;
+its three cases are diagnostic evidence for the eventual separate authored corpus.
+
+The UPDATE phase gate completed on 2026-10-24 with exit 0 (owned process 68995).
+The focused Nix surface suite passed eight fixtures, 33 deselected, in 11.21 seconds:
+`/nix/store/5hwflhzkfbfz7607j3i2q8i2mmq9w873-sqlite-verifier-test-surface-1`.
+The suite checks 131 axiom reports, including all 26 new exported theorems and
+10 UPDATE fixture laws; only the three standard logical axioms occur. Command:
+`direnv exec . bash build/agent-logs/fk-update-gates.sh`, which ran
+`timeout 1200 just dev-build`, then the sandboxed focused Nix surface expression
+with timeout 1800 and command-local max-jobs=1. Logs are
+`build/agent-logs/fk-update-{dev-build,nix-surface}-1.log`. The local build is
+diagnostic evidence; the Nix result is the acceptance evidence. Slot 2 returned
+to the coordinator at terminal completion. Independent review follows this commit.
+The next coverage proofs are isolated in `fk-update-coverage`; the full
+statement/run preservation task remains OPEN.
