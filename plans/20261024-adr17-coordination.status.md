@@ -12,6 +12,9 @@ improvements. Push completed task PRs without another permission request.
 Clean completed workspaces after the code is pushed, retaining any workspace
 needed for an active review. `direnv allow` is authorized. Ask for owner judgment
 when a specification is wrong or incomplete, with options and a recommendation.
+Owner override on 2026-10-24: close all herdr review tabs and open no new ones
+before Monday, 2026-10-26 UTC. Automated independent reviews continue normally.
+All three tabs were closed; waits returned `closed_without_review`, not approval.
 
 The 2026-10-24 handoff's check override remains: relevant mutants only by `-k`,
 no broad local `test-scheduled` or `test-mutants`; task-end scheduled checking
@@ -49,7 +52,8 @@ The owner accepted all three remaining recommendations on 2026-10-24 and
 resumed the goal. No owner decision remains pending at this point. S5/FK/source
 requirements are in their tasks here; guide corrections have private product
 repo tasks. S4 recorded its default-run decision in reviewed `73b9f65b`.
-The checked SQL doc-handler task and the full S7 task remain to be specified.
+The doc-handler task is reviewed; S7 files/freshness is specified under review.
+The S7 proof-cost collector prototype and its implementation contract remain.
 
 ## Resolved findings
 
@@ -86,8 +90,8 @@ remove the prior planning blocks; they are not implementation-completion claims.
   `tasks/text-build-boundaries` is pushed at `2f86e45a`. PR
   [#240](https://github.com/vihren-dev/sqlite-verifier/pull/240) is open in stack
   231, based on #239. Its exact review range is `98a07bfe` to `2f86e45a`.
-  Review tab 6 (`w1:t3T`) is open, with live wait session `78895`. Keep this
-  workspace at rest while that review is open. Do not open a duplicate tab.
+  Review tab 6 (`w1:t3T`) and wait `78895` are closed at the owner's request.
+  Its completed, pushed workspace was removed after clean/reachability checks.
 - `foreign_key_atoms`, workspace `sqlite-verifier-fk-atoms`: part 1 of
   [the FK task](20261024-foreign-key-atoms.task.md), based on `cf7aa9a6`.
   The agent owns FK atom/check/frame modules, the surface database export and
@@ -97,7 +101,7 @@ remove the prior planning blocks; they are not implementation-completion claims.
   will reuse S4's query-output bridge after clean integration; part 1 stays
   open until that law and its acceptance checks pass.
 - The prediction filter task in `sqlite-verifier-prediction-source-filter`
-  is DONE, based on #240. Both completed code workspaces remain at rest.
+  is DONE, based on #240.
   Implementation `accfbf78` has clean independent review. The production Nix
   identity regression passes, all 55 locked parts are unchanged, and all 53
   prediction files / 7,372 cases are byte-identical. Full validation passed:
@@ -106,8 +110,8 @@ remove the prior planning blocks; they are not implementation-completion claims.
   DONE, final review findings resolved, and `529ff779` is pushed as
   `tasks/prediction-source-filter`. PR
   [#241](https://github.com/vihren-dev/sqlite-verifier/pull/241) is in stack 231,
-  based on #240. Review tab 7 (`w1:t3V`) is open for `2f86e45a` to `529ff779`,
-  with live wait session `78368`. Do not open a duplicate review.
+  based on #240. Review tab 7 (`w1:t3V`) and wait `78368` are closed at the
+  owner's request. Its clean, pushed workspace was then removed.
 
 The S4 provisional full gate passed: report
 `/nix/store/japwh8n1f0chh7fz6ig44qn9dxhkm8y5-sqlite-verifier-test-reports`,
@@ -131,8 +135,10 @@ The private guide defaults and accepted doc-header corrections are pushed as
 product PR #7, `docs/guide-profile-defaults`, at `17666ac9`, based on published
 `c1471940` (PR #6). Nine pinned native checks passed; both header corrections
 preserve the SQL bodies. The isolated `profile-publication` workspace contains
-no unrelated unpublished ancestors. Review tab 8 (`w1:t3W`) is open with wait session `56689`. S4's separate
-guide claims/proof paragraphs remain with the S4 agent.
+no unrelated unpublished ancestors. Tab 8 (`w1:t3W`) and wait `56689` are closed
+at the owner's request; the clean, pushed publication workspace was removed.
+S4 owns its guide examples, holds_where and Level2 semantics in isolated
+`sqlite-verifier-product-s4-guide`, based on published `17666ac9`.
 The original completed `profile-guide` workspace was removed after verifying
 the isolated published correction and its unchanged native SQL inputs.
 
@@ -146,7 +152,8 @@ The editor/doc-block audit is also complete in the same research-notes directory
 It informs [the editor task](20261024-surface-editor.task.md), reviewed with no
 musts and recorded scope disposition; final source-record review was clean.
 Implementation is unassigned. Its unused empty workspace was removed so the
-free slot can run the S6 prototype. Checked doc blocks still need their task.
+free slot can run the S6 prototype. The doc-block task has clean follow-up review
+`20261024T140400Z-04f1c91e`; S7 files/freshness awaits follow-up review.
 
 Completed workspaces `adr19s2`, `adr19s3`, `adr22s2`, `adr22s3`, `adr22s4`,
 `errev` and `envfns` were checked clean, with all nonempty commits reachable

@@ -19,6 +19,8 @@ their own reviewed task. Neither is silently excluded by this task boundary.
 ## Progress
 
 - 2026-10-24: specified file semantics, lexical marker behavior, source records,
-  installed checker and incremental consumer acceptance. Await independent
-  review and an available implementation slot. Shared-helper ownership must be
-  reserved with editor/doc-block tasks before concurrent implementation.
+  installed checker and incremental consumer acceptance. Review
+  `20261024T140732Z-6d8ca3d2` had no musts and two shoulds. Added the explicit
+  layer check and named the current multi-library and package-path requirements
+  behind selection/relocation tests. Await follow-up review and an agent slot.
+  Reserve shared helpers with editor/doc-block tasks before concurrent work.

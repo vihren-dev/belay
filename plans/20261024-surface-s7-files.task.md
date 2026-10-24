@@ -12,6 +12,11 @@ and checked doc blocks have separate tasks; this task alone does not finish S7.
 Users can elaborate inline SQL, but cannot use their existing SQL files or
 detect a compiled declaration that still contains an older file. S7 supplies
 these guide requirements through the existing translator, Script and resolver.
+The owner's ADR17 completion request includes the guide's separate SQL and
+application libraries, with Belay as a dependency. The library selector serves
+that current multi-library example. Dependency and relocated-copy fixtures
+verify the promised package-relative paths when the same package is consumed
+elsewhere; a compiler-working-directory path would break that public contract.
 
 On 2026-10-24 the owner accepted exact SQLite metadata and native Lake tracking.
 Expression spelling can be a result-column name; whitespace and comments can
@@ -127,6 +132,9 @@ parts are file elaboration/named statements, then installed freshness/Lake
 integration. Each ends with post-review `just test-full` and `just verdict`.
 Task end also runs `just test-nix` and `just test-scheduled-checks`. Only Nix
 results are acceptance evidence. Frozen predictions and judge lock stay fixed.
+Extend the existing layer test to reject ordinary Belay imports of Lake or the
+checker, and any surface/checker dependency in the conformance runtime; allow
+Lake only in the separate tool root. Check its installed executable as above.
 
 ## Existing interfaces and ownership
 
