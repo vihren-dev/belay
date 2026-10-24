@@ -17,6 +17,8 @@ in pkgs.stdenv.mkDerivation {
   pname = "sqlite-verifier-doc-gen4";
   version = "4.34.1";
   src = sources.doc-gen4;
+  # PR #242 exceeds SQLite's compound SELECT limit in the pinned import reader.
+  patches = [ ./patches/doc-gen4-transitive-imports.patch ];
   nativeBuildInputs = [ leanToolchain pkgs.python3 pkgs.makeWrapper ]
     ++ pkgs.lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.autoPatchelfHook;
   buildInputs = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux
@@ -31,6 +33,21 @@ in pkgs.stdenv.mkDerivation {
   buildPhase = ''
     export HOME="$TMPDIR"
     lake build doc-gen4
+  '';
+  doCheck = true;
+  checkPhase = ''
+    cp ${../tests/docgen/TransitiveImports.lean} TransitiveImportsRegression.lean
+    cat >> lakefile.lean <<'EOF'
+
+    lean_exe «transitive-imports-regression» where
+      root := `TransitiveImportsRegression
+    EOF
+    ${pkgs.coreutils}/bin/timeout 120 lake build transitive-imports-regression
+    ${pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
+      addAutoPatchelfSearchPath ${leanToolchain}/lib
+      autoPatchelf .lake/build/bin/transitive-imports-regression
+    ''}
+    ${pkgs.coreutils}/bin/timeout 60 .lake/build/bin/transitive-imports-regression
   '';
   installPhase = ''
     mkdir -p "$out/bin"

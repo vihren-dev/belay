@@ -1,0 +1,17 @@
+Fix the observed PR #242 read:transitive_imports failure with 532 module roots.
+Pinned source: leanprover/doc-gen4 953c8992d174b4e56955e01e101d46668c68f2bb.
+SQLite counts a multirow VALUES seed in a compound SELECT against its term limit.
+Make the seed one SELECT while retaining bound values and recursive UNION semantics.
+Remove this patch and its reader regression when the pinned upstream query is fixed.
+
+--- a/DocGen4/DB/Read.lean
++++ b/DocGen4/DB/Read.lean
+@@ -692,7 +692,7 @@
+       let placeholders := ", ".intercalate (modules.toList.map fun _ => "(?)")
+       let sql := s!"
+         WITH RECURSIVE transitive_imports(name) AS (
+-          VALUES {placeholders}
++          SELECT column1 FROM (VALUES {placeholders})
+           UNION
+           SELECT mi.imported FROM module_imports mi
+           JOIN transitive_imports ti ON mi.importer = ti.name
