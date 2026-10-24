@@ -108,3 +108,39 @@ Independent review `20261024T210916Z-e5d737bd` of source
 `e5d737bd4a9e50b8d58582bd3b1b2c016d99527b` found zero musts and zero shoulds.
 This coherent branch/WP unit is at rest. The task and both broader acceptance
 parts remain open until their remaining contracts and final gates are complete.
+
+## Success policies and explicit fresh entry
+
+The second coherent unit adds ExecutionSuccess and ExecutionFresh. `andOk`
+requires an error-free whole trace and the final property; `ifOk` requires the
+property only when that trace is error-free. Both retain modeled execution of
+every branch. An existing error or unmodeled output in the prefix removes the
+conditional property's obligation but cannot excuse a new unmodeled step.
+At an empty prefix, total success with a true postcondition is exactly
+`Sql.SucceedsFrom` at the same clock, index and full connection.
+
+`FreshTriple` quantifies valid bundled databases satisfying its predicate and
+complete environments, then fixes the empty trace, index zero and new connection.
+Its postcondition can retain the initial database and environment. It is exactly
+a family of ordinary `Std.Do` triples with those explicit entry assumptions;
+ordinary triples still quantify arbitrary contexts. Separate actual and branch
+soundness laws and an exact universal S4 `Succeeds` bridge are checked.
+No default-environment observation is substituted for that quantifier.
+
+Nix acceptance: `direnv exec . bash build/agent-logs/s6-success-unit-gates.sh`
+ran the mandatory bounded development build, then the same sandboxed surface
+selection as the first unit. Command-local settings preserve Nix configuration
+and set max-jobs=1 and cores=2. The Nix result is
+`/nix/store/gm2y6fiagq0jcngxjxq089kbfcfrvhi7-sqlite-verifier-test-surface-1`:
+2 tests passed, 79 deselected, in 14.21 seconds. The three production fixtures
+audit 54 declarations, and the five retained prototype fixtures audit 28;
+all reports use only propext, Classical.choice and Quot.sound. The new fixture
+covers conditional versus total errors, error then unmodeled, both non-OK prefix
+kinds, raw/concrete branch obligations, nonzero-index bridging, fresh entry and
+a refuted arbitrary-context freshness claim. Both production modules are under
+100 lines. The development build passed as a diagnostic; it is not acceptance
+evidence. Logs are `build/agent-logs/s6-success-unit-{dev-build,nix-surface}-1.log`.
+
+This closes the source work for the first acceptance part's operational bridges.
+Independent review and its full/verdict gate remain due. The equivalence and
+compositional helper part, task-end gates and overall task remain OPEN.

@@ -24,6 +24,8 @@ import Belay.Sqlite.ExecutionBind
 import Belay.Sqlite.ExecutionWP
 import Belay.Sqlite.ExecutionStep
 import Belay.Sqlite.ExecutionWPLaws
+import Belay.Sqlite.ExecutionSuccess
+import Belay.Sqlite.ExecutionFresh
 import Belay.Sqlite.Success
 import Belay.Sqlite.ProgramSuccess
 import Belay.Sqlite.ScriptSuccess
