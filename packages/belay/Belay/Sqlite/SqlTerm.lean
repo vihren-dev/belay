@@ -4,6 +4,7 @@ import Belay.Sqlite.Translation
 import Belay.Sqlite.Script
 import Belay.Sqlite.SqlLiteral
 import Belay.Sqlite.SqlParameters
+import Belay.Sqlite.SqlSource
 
 set_option doc.verso true
 
@@ -78,14 +79,16 @@ otherwise the function of the arguments ({name}`planParameters`) whose value is
 {lit}`Script.withValues` of {name}`scriptExpr` with one list for each statement, with the value of
 each number from 1 to the statement's largest one: an argument, the value of a variable
 ({name}`variableValue`), or NULL for a number without a parameter. An error of the plan is at its
-parameter in the SQL text. -/
+parameter in the SQL text. The resulting script carries source metadata for replay; consumers
+check that text against the actual statements and bindings before using it. -/
 def scriptTerm (literal : Syntax) (text : String) (items : Array Translation.ParameterizedStatement) :
     TermElabM Expr := do
   let plan ← match planParameters (items.toList.map (·.parameters)) with
     | .ok plan => pure plan
     | .error diagnostic => throwErrorAt (textRange literal text diagnostic.start diagnostic.stop) diagnostic.message
   let script := scriptExpr items
-  if plan.slots.all (·.isEmpty) then return script
+  let fileName ← getFileName
+  if plan.slots.all (·.isEmpty) then return withSource scriptSourceKey literal text fileName script
   let variables ← plan.variables.mapM fun (name, parameter) => do
     return (ParameterSource.variable name, ← variableValue literal text name parameter)
   withLocalDeclsDND (plan.arguments.map fun name => (Name.mkSimple name, valueType)).toArray fun arguments => do
@@ -97,7 +100,8 @@ def scriptTerm (literal : Syntax) (text : String) (items : Array Translation.Par
       | .source source => (sources.lookup source).getD null
     let lists ← mkListLit (mkApp (Lean.mkConst ``List [Level.zero]) valueType)
       (← plan.slots.mapM fun slots => mkListLit valueType (slots.map slotValue))
-    mkLambdaFVars arguments (mkApp2 (Lean.mkConst ``Script.withValues) script lists)
+    mkLambdaFVars arguments (withSource scriptSourceKey literal text fileName
+      (mkApp2 (Lean.mkConst ``Script.withValues) script lists))
 
 /-- Elaborate {lit}`sql "SQL"` to the script of its statements ({name}`scriptTerm`). -/
 @[term_elab sqlTerm]

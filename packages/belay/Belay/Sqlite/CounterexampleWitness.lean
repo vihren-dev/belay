@@ -20,7 +20,8 @@ selector directly to {lit}`refuteWith`, including witnesses of other Lean types.
 structure Witness where
   /-- The database term, for example the elaboration of {lit}`db! "CREATE TABLE t(a)"`. -/
   database : Expr
-  /-- A complete environment candidate. Use the default for a fixed clock and zero counters. -/
+  /-- An environment candidate. Use the default for a fixed clock and zero counters.
+  Refutation checks the claim's domain premises, including completeness when required. -/
   environment : Expr := mkConst ``candidateEnvironment
   /-- Explicit inputs by quantified binder name, for example the value of {lit}`:amount`. -/
   named : Array (Name × Expr) := #[]
