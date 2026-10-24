@@ -91,3 +91,8 @@ until the prototype has evidence.
   frame lemmas are routine implementation choices. No prototype source changed;
   the latest Nix surface acceptance still applies. Task-boundary gates remain
   queued behind the other agents' builds.
+- 2026-10-24: design review `20261024T141906Z-21b80e17` found no musts
+  and one should: state which guide meanings the before/ifOk recommendations
+  retain. The record now identifies the fixed-start read-only lookup and
+  whole-program failure disjunction explicitly, and reserves changed meanings
+  for owner judgment. This is documentation only; Nix fixture inputs are unchanged.

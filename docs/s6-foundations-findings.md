@@ -181,10 +181,14 @@ counterexamples require this semantic correction; the proposed branch relation
 is not yet implemented or proved by this prototype.
 
 The remaining findings specify required work or routine implementation choices.
-The guide already promises `before`; the bounded read-only context above is its
-minimal model prerequisite. Fresh-run whole-trace `ifOk` and direct semantic
-frame lemmas fit the stated contracts. Neither needs a new owner decision on the
-evidence found here.
+The bounded read-only context preserves the guide's meaning of `before.t`: table
+`t` from the fixed starting database in a postcondition, as if attached under
+`before`. It does not narrow that read-only lookup or promise writable ATTACH.
+Fresh-run whole-trace `ifOk` preserves the guide's disjunction: the postcondition
+holds or some statement of the program failed. A suffix-scoped helper would be
+an additional API, not required here. Neither recommendation changes a guide
+meaning on the evidence found. Direct semantic frame lemmas are an implementation
+choice; changes to any of these meanings still require the owner's decision.
 
 Using `mvcgen` is optional once checked specifications and pure/bind rules are
 available. No owner decision is needed to retain the explicit-lemma route.
