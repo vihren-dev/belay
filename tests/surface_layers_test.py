@@ -132,7 +132,7 @@ surface package; any line of it may name the surface."""
 SURFACE_BUILD_LINES = frozenset({
     "sources.nix: surface = let folder = root + /packages/belay; in fs.toSource {",
     "default.nix: surfacePackage = let",
-    'default.nix: manifest = builtins.fromJSON (builtins.readFile (sources.surface + "/lake-manifest.json"));',
+    'default.nix: manifest = builtins.fromJSON (builtins.readFile (root + /packages/belay/lake-manifest.json));',
     'default.nix: directory = "packages/belay";',
     "default.nix: source = sources.surface;",
     'default.nix: requires."packages/belay/.lake/packages/plausible" = plausiblePackage;',
