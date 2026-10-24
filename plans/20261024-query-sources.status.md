@@ -104,8 +104,7 @@ actual verdict results and inspect each changed prediction.
   It checks the new `DerivedResolutionExamples` and the existing model proof APIs.
 - Corpus v53 is reserved for query-source evidence (v54 belongs to the FK task).
   The separate `query-sources-evidence` workspace starts from carry `8a89208f`.
-  Its authored native inputs are under preparation. No corpus, claim or judge lock
-  changes are included in this implementation unit.
+  Corpus, claim and judge-lock changes remain separate from implementation.
 - Pipeline review `20261024T144622Z-c64d8b50` passed with no findings.
 - The native recorder now accepts a derived LIMIT when the outer query has no
   ordering or window. It records the returned rows without inferred tie groups;
@@ -190,6 +189,14 @@ actual verdict results and inspect each changed prediction.
   acceptance descendant combines evidence `dc77491d` with subject `5291750b`;
   only the status log conflicted, and both checked histories are retained.
 - Combined-boundary review `20261024T153541Z-08c47c2b` passed with no findings.
-  Its full gate passed all 153 frozen tests and 55 corpus validations, then found
-  a stale older-pin profile test expecting derived SELECT to be unsupported.
-  The subject correction also updates two related transport refusal fixtures.
+  Its full gate passed all 153 frozen tests and 55 corpus validations.
+- The next combined full gate passed the frozen suites and found a stale profile
+  fixture that expected derived SELECT to be refused. The model-output and pipeline
+  transport fixtures had the same stale expectation. All three now use EXPLAIN,
+  which retains the intended frontend-refusal check as derived sources gain support.
+- The focused Nix checks passed: the older-engine profile test at
+  `/nix/store/9sv6jj19n33hr76wjry090k78ah88m17-sqlite-verifier-test-query-source-boundary-harness-1`,
+  and both model-output/transport tests at
+  `/nix/store/kj1l7gpva3ysjdlzlkvbw1bwnzcx5wgv-sqlite-verifier-test-query-source-boundary-model-1`.
+  This changes test inputs only; the reviewed combined full/verdict gates will rerun.
+- Refusal-fixture review `20261024T154723Z-42812ff3` passed with no findings.
