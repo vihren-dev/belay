@@ -58,10 +58,11 @@ ADR17 records the exact strong relation. The owner also accepted explicit
 observation views for quiet migration segments and full contextual commutation
 for every S8 call pair, including queries. Weak query-output translation stays
 available but cannot alone establish the whole-program theorem.
-One later decision is pending: use an explicit fresh-run helper for the guide's
-fresh database/complete-environment claims, proved equivalent to standard
-Std.Do triples with precise entry assumptions. Ordinary triples still quantify
-over arbitrary contexts. Only dependent public-assertion work is paused.
+Three later decisions are pending: an explicit fresh-run helper; extending FK
+action targets to the selected mapping; and adding interface-scoped simulation
+beside full-state simulation. Native expansion/write orders have equal rows but
+different total_changes (3 versus 4), so the full-state expansion claim fails.
+Only affected assertion, action-semantics and expansion work is paused.
 
 ## Resolved findings
 
@@ -119,10 +120,10 @@ remove the prior planning blocks; they are not implementation-completion claims.
   Corpus v53 is reserved for query-sources, v54 for FK; each uses a separate
   judge/evidence workspace and protected PR after measured model comparisons.
 
-S4 owns `sqlite-verifier-product-s4-guide`, based on published `17666ac9`:
-uniqueEmail/balance/holds_where, Level2 semantics and the separately reviewed
-[rebuild wording correction](20261024-guide-sql-rebuilds.task.md). Preserve the
-published defaults/header corrections. The product default workspace still
+S4 owns `sqlite-verifier-product-s4-guide`, originally based on `17666ac9`.
+Its reviewed explanatory prose and rebuild wording are published in PR #8;
+uniqueEmail/balance proofs remain open. Preserve the published corrections.
+The product default workspace still
 contains earlier unpublished S2/S3 guide changes; the final guide audit must
 account for them without publishing unrelated ancestors.
 
@@ -146,6 +147,9 @@ No agent opens a herdr tab before the owner's Monday deadline.
   published `c1471940` (PR #6): DONE. Nine pinned native checks passed; two
   Verso-header corrections preserve the SQL bodies. No unrelated unpublished
   ancestor was included in publication.
+- Private product PR #8, `docs/guide-success-and-inputs`, head `1ae76380`, base
+  #7: reviewed S4 explanatory prose and DONE rebuild wording. Native 3.51.0
+  confirms the metadata counterexample; all fenced SQL bodies are unchanged.
 
 All three herdr review tabs and waits are closed by owner request:
 `w1:t3T`/78895, `w1:t3V`/78368 and `w1:t3W`/56689. Each returned
