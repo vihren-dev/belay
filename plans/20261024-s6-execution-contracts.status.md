@@ -1,8 +1,9 @@
 # Status: S6 execution and proof contracts
 
-Created 2026-10-24. Status: OPEN. Assigned; no production code yet.
+Created 2026-10-24. Status: OPEN. First production unit is checked; independent review follows.
 Task: [task file](20261024-s6-execution-contracts.task.md).
-Specs: ADR17's accepted strong equivalence and the checked S6 foundations.
+Specs: ADR17's S6 row, the owner decision of 2026-10-24 recorded below,
+and the checked S6 foundations.
 
 ## Prerequisites and scope
 
@@ -58,3 +59,47 @@ is claimed by this task file.
   The task now cites this dated owner-decision record instead of implying that
   ADR17 already contains the later S6 clarification. The header now distinguishes
   the completed handoff from production implementation. Both findings are fixed.
+
+- The first production unit adds an exact relation over existing `SqlRun` results,
+  retaining stopped outcomes and every actual/concrete continuation. Its pure,
+  step, bind, actual-membership and validity laws use `runScriptStep`. The
+  transformer quantifies over those branches; its standard `WPMonad` instance
+  has separate actual and all-branch soundness theorems. Local Lean probes compile
+  these contracts. The installed Nix acceptance below checks this unit. Conditional/total policies,
+  S4 bridges, fresh triples and strong equivalence remain open.
+- Review `20261024T205000Z-d265f0c7` had no musts and one should: the status's
+  specification line still implied ADR17 contained the later owner decision.
+  Corrected that citation and recorded the finding as fixed. This unit selectively
+  carries the accepted complete-outcome and fresh-entry paragraphs from planning
+  `297c125c` into ADR17, preserving the published S4 validity-removal wording and
+  omitting links to future task files absent from this branch.
+
+## Exact branches and modeled-execution transformer
+
+The first coherent source unit contains ExecutionContext, ExecutionBranches,
+ExecutionBranchLaws, ExecutionBind, ExecutionWP, ExecutionStep and ExecutionWPLaws.
+Each module is below 100 lines. The branch relation reuses complete `SqlRun`
+results and `runScriptStep`. Its actual-run membership prevents an empty branch
+set from proving a transformer vacuously. The finite check instance is derived
+from the exact relation; it does not execute a second model interpreter.
+
+Nix acceptance: `direnv exec . bash build/agent-logs/s6-first-unit-gates.sh`
+ran `timeout 1500 just dev-build`, then sandboxed `nix-build` of
+`project.tests.surface.overrideAttrs` with `PYTEST_ADDOPTS` selecting
+`execution_branches_and_wp or s6_transformer_agrees_with_execution` and a finite
+1800-second command timeout. Command-local Nix settings retain the configured
+values and set max-jobs=1 and cores=2. The development build passed as a diagnostic.
+The Nix result is:
+`/nix/store/9mh19n9lvn425dfn9s9hdbbjcwcdf732-sqlite-verifier-test-surface-1`.
+Both tests passed, 79 were deselected, in 12.58 seconds. The two new installed
+fixtures audit 32 declarations; the retained prototype audits 28. Every report
+uses only propext, Classical.choice and Quot.sound. Logs are
+`build/agent-logs/s6-first-unit-{dev-build,nix-surface}-1.log`.
+
+The new fixtures cover both proof routes for a real write, raw and concrete LIMIT
+choices, repeated and empty choices, stopped bind, errors followed by a write or
+an unmodeled stop, and clock/counter/snapshot retention. Duplicate alternatives
+add no concrete rows choices; their actual raw wrapper remains observable.
+This is a coherent-unit gate, not either acceptance part's full/verdict gate.
+Conditional/total policies, exact S4 bridges, fresh helpers, strong equivalence
+and the remaining compositional fixtures remain OPEN.
