@@ -75,6 +75,45 @@ theorem email_check_does_not_fail (db : Database) (position index : Nat) (table 
   Fails.not_selectOne_noDuplicateKeys (head := rfl) (reference := ⟨name! "users", none, none⟩) (by decide) rfl found
     (GroupTermResolves.identifier_table column) (Resolved.Expr.calm_column index)
 
+/-- The guide's claim, over every database that has a table `users` with a column `email` at position `index`: the query
+holds exactly when no user has an email that compares as equal, under the collation of the column, to the email of a
+user before it in scan order. Two users with NULL emails compare as equal here, unlike under a `UNIQUE` index. Proof
+sketch: `Holds.iff_selectOne_noDuplicateKeys_pairwise`, and the key `.column index` reads the cell `index`. -/
+theorem no_two_users_share_an_email (db : Database) (position index : Nat) (table : CatalogTable)
+    (found : db.raw.catalog.findTable (name! "users") = some (position, table))
+    (column : columnPosition table.columns (name! "email") = some index) :
+    Holds (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY email HAVING count(*) > 1)") db ↔
+      (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }).Pairwise
+        fun (earlier later : List Value) => ((table.columns[index]?.map CatalogColumn.collation).getD .binary).compare
+          (later.getD index .null) (earlier.getD index .null) ≠ Ordering.eq := by
+  refine Iff.trans (Holds.iff_selectOne_noDuplicateKeys_pairwise (head := rfl) (reference := ⟨name! "users", none, none⟩)
+    (by decide) rfl found (GroupTermResolves.identifier_table column) (Resolved.Expr.calm_column index)) ?_
+  simp [Resolved.Expr.eval_column]
+
+/-- Over every database as in `no_two_users_share_an_email`, the query is empty exactly when some user has an email that
+compares as equal to the email of a user before it. Proof sketch: as for `no_two_users_share_an_email`, with
+`Empty.iff_selectOne_noDuplicateKeys_repeated`. -/
+theorem two_users_share_an_email (db : Database) (position index : Nat) (table : CatalogTable)
+    (found : db.raw.catalog.findTable (name! "users") = some (position, table))
+    (column : columnPosition table.columns (name! "email") = some index) :
+    Empty (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY email HAVING count(*) > 1)") db ↔
+      ¬ (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }).Pairwise
+        fun (earlier later : List Value) => ((table.columns[index]?.map CatalogColumn.collation).getD .binary).compare
+          (later.getD index .null) (earlier.getD index .null) ≠ Ordering.eq := by
+  refine Iff.trans (Empty.iff_selectOne_noDuplicateKeys_repeated (head := rfl) (reference := ⟨name! "users", none, none⟩)
+    (by decide) rfl found (GroupTermResolves.identifier_table column) (Resolved.Expr.calm_column index)) ?_
+  simp [Resolved.Expr.eval_column]
+
+-- The instance with addresses that differ only in case, in the pairwise form: both sides agree.
+example : Empty (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY email HAVING count(*) > 1)") caseUsers :=
+  (two_users_share_an_email caseUsers caseTable.1 1 caseTable.2 (by decide +kernel)
+    (by decide +kernel)).2 (by decide +kernel)
+
+-- The instance with three different addresses, in the pairwise form: both sides agree.
+example : Holds (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY email HAVING count(*) > 1)") distinctUsers :=
+  (no_two_users_share_an_email distinctUsers distinctTable.1 1 distinctTable.2 (by decide +kernel)
+    (by decide +kernel)).2 (by decide +kernel)
+
 -- The instance with three different addresses: the query holds, and no group has two rows.
 example : Holds (sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM users GROUP BY email HAVING count(*) > 1)") distinctUsers :=
   (every_email_is_unique distinctUsers distinctTable.1 1 distinctTable.2 (by decide +kernel)

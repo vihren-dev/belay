@@ -113,4 +113,54 @@ theorem Fails.not_selectOne_noDuplicateKeys
     (Resolved.Statement.Calm.selectOne_duplicateKeys position _ key collation ((Resolved.Expr.calm_not _).2 (Resolved.Expr.calm_exists 0)) keyCalm)]
   simp
 
+/-- For every script as in {name}`Holds.iff_selectOne_noDuplicateKeys`: {name}`Holds` of the script on the database
+means that no row of the table in scan order has a key that compares as equal, under the collation, to the key of a
+row before it. In words: no two rows of the table have keys that compare as equal under the collation, and two NULL
+keys compare as equal. Rows are compared with the rows before them; the test is symmetric because the comparison of
+a collation is. Proof sketch: {name}`Holds.iff_selectOne_noDuplicateKeys` and {name}`Resolved.groups_short_iff_pairwise`
+with {name}`Resolved.sameGroup_single`. -/
+theorem Holds.iff_selectOne_noDuplicateKeys_pairwise
+    {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
+    {term : Syntax.Expr} {parameters : List Value} {rest : List (Syntax.Statement × List Value)} {position : Nat}
+    {table : CatalogTable} {key : Resolved.Expr} {collation : Collation} {name : String}
+    (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] [] none
+      none [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] none [term] [] none none none
+        (some (.compare .gt (.callStar name) (.numeric "1"))) false none] none false none, parameters) :: rest)
+    (count : normalizeIdentifier name = "count")
+    (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
+    (groupResolves : GroupTermResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table)
+      { current := some 0, aggregates := [.callStar name] } term key collation)
+    (keyCalm : key.Calm) :
+    Holds script db isQuery ↔
+      (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }).Pairwise
+        fun earlier later => collation.compare (key.eval (Resolved.EvalContext.bound parameters) later)
+          (key.eval (Resolved.EvalContext.bound parameters) earlier) ≠ Ordering.eq := by
+  rw [Holds.iff_selectOne_noDuplicateKeys head count arguments found groupResolves keyCalm,
+    Resolved.groups_short_iff_pairwise]
+  simp only [Resolved.sameGroup_single, beq_eq_false_iff_ne]
+
+/-- For every script as in {name}`Holds.iff_selectOne_noDuplicateKeys`: {name}`Empty` of the script on the database
+means that some row of the table has a key that compares as equal, under the collation, to the key of a row before
+it. Proof sketch: {name}`Empty.iff_selectOne_noDuplicateKeys` and {name}`Resolved.groups_long_iff_repeated` with
+{name}`Resolved.sameGroup_single`. -/
+theorem Empty.iff_selectOne_noDuplicateKeys_repeated
+    {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
+    {term : Syntax.Expr} {parameters : List Value} {rest : List (Syntax.Statement × List Value)} {position : Nat}
+    {table : CatalogTable} {key : Resolved.Expr} {collation : Collation} {name : String}
+    (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] [] none
+      none [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] none [term] [] none none none
+        (some (.compare .gt (.callStar name) (.numeric "1"))) false none] none false none, parameters) :: rest)
+    (count : normalizeIdentifier name = "count")
+    (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
+    (groupResolves : GroupTermResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table)
+      { current := some 0, aggregates := [.callStar name] } term key collation)
+    (keyCalm : key.Calm) :
+    Empty script db isQuery ↔
+      ¬ (Resolved.sourceRows { shape := table, rows := db.raw.rows.getD position [] }).Pairwise
+        fun earlier later => collation.compare (key.eval (Resolved.EvalContext.bound parameters) later)
+          (key.eval (Resolved.EvalContext.bound parameters) earlier) ≠ Ordering.eq := by
+  rw [Empty.iff_selectOne_noDuplicateKeys head count arguments found groupResolves keyCalm,
+    Resolved.groups_long_iff_repeated]
+  simp only [Resolved.sameGroup_single, beq_eq_false_iff_ne]
+
 end Belay.Sqlite
