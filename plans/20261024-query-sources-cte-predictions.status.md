@@ -26,7 +26,8 @@ Reviewed source: `4e8d9b296d63c7acbe302ebd1c54385d203b2b3d`.
   ordinary WITH clauses. It does not fire the trigger. These gains establish
   preparation support; the authored focused tests cover CTE execution.
 - No frozen corpus, claim or judge-lock file changed. The raw comparison is
-  `/tmp/query-source-cte-integration-prediction-changes.json`.
+  retained in the publication workspace at
+  `build/agent-logs/cte-integration-acceptance/query-source-cte-integration-prediction-changes.json`.
 
 ## Remaining boundaries
 

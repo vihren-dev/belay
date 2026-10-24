@@ -182,5 +182,11 @@ deselected, in 194.19 seconds:
 `/nix/store/2zlr1pgsarrvmq8b0apzx8pbh0mhvffj-sqlite-verifier-test-cte-publication-1`.
 This checks the CTE/query consumers, both S4 guide proofs, all nine FK fixtures,
 and the S6/proof-cost prototypes. Independent integration review
-`20261024T200939Z-57bf72e2` found no findings. The full CTE verdict and prediction
-classification are recorded separately; this publication adds no view behavior.
+`20261024T200939Z-57bf72e2` found no findings. The completed full gate and verdict
+are recorded under "Combined part-2 acceptance preparation" above; the
+[classification record](20261024-query-sources-cte-predictions.status.md) lists
+every prediction change. This publication adds no view behavior.
+
+Acceptance-documentation review `20261024T201724Z-ed535519` found zero musts
+and two status-wording shoulds. The raw comparison is retained under the
+publication's build logs, and this section now points to the completed evidence.
