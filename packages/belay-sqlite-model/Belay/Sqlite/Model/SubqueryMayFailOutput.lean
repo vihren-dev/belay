@@ -5,13 +5,13 @@ set_option doc.verso true
 
 /-! A subquery that calls a function that can fail has no modeled output (ADR 0017, S4): SQLite may
 evaluate a subquery for rows that the model does not reach, so the model does not describe a failure
-inside one, and the statement with such a subquery has the output {lit}`Output.unmodeled`. -/
+inside one. The output of the statement with such a subquery has no rows, has not no rows, and is no error. -/
 
 namespace Belay.Sqlite.Model
 
 /-- For every query statement that reads no clock and no unknown counter, whose subqueries (those that are
 no term of a compound) have a fallible call in some expression, the output of its step has no rows, has not
-no rows, and is no error: it is {lit}`Output.unmodeled`. Proof sketch: {name}`resolvedStepOutput_query`; the
+no rows, and is no error. The lemma does not say which output it is. Proof sketch: {name}`resolvedStepOutput_query`; the
 model describes the statement only when the subqueries are plain ({name}`Resolved.Query.described`), so
 the output is {name}`unmodeledHere`. -/
 theorem resolvedStepOutput_query_unmodeled_of_subquery (index : Nat) (connection : Connection) (parameters : List Value)

@@ -34,9 +34,9 @@ theorem Script.outputOn_selectNoFrom
     (resolveStatement_selectNoFrom runContext db.raw.connection.resolveState value text filter expression affinity condition
       notCall noAggregate operand plain resolves)
 
-/-- For every script as in {name}`Script.outputOn_selectNoFrom` where the expression and the condition are calm (they
-have no fallible call, no clock and no counter read): {lit}`Holds` of the script on the database means that the
-condition is true for the row with no cells, in the context of the values. Without {lit}`WHERE`, {lit}`Holds` holds.
+/-- For every script that is one read-only statement and is as in {name}`Script.outputOn_selectNoFrom`, where the expression and the condition are calm (they
+have no fallible call, no clock and no counter read): {name}`Holds` of the script on the database means that the
+condition is true for the row with no cells, in the context of the values. Without {lit}`WHERE`, {name}`Holds` holds.
 Proof sketch: {name}`Script.outputOn_selectNoFrom` and {name}`resolvedStepOutput_selectNoFrom_hasRows`. -/
 theorem Holds.iff_selectNoFrom
     {script : Script} {db : Database} {isQuery : script.isQuery = true} {value : Syntax.Expr} {text : String}
@@ -54,8 +54,8 @@ theorem Holds.iff_selectNoFrom
   rw [Script.outputOn_selectNoFrom head notCall noAggregate operand resolves calm.1, Option.any_some]
   exact resolvedStepOutput_selectNoFrom_hasRows 0 db.raw.connection parameters condition expression _ (Resolved.Statement.Calm.selectNoFrom condition expression _ conditionCalm calm)
 
-/-- For every script as in {name}`Holds.iff_selectNoFrom`: {lit}`Empty` of the script on the database means that the
-condition is not true for the row with no cells. Without {lit}`WHERE`, {lit}`Empty` does not hold. Proof sketch:
+/-- For every script as in {name}`Holds.iff_selectNoFrom` (one read-only statement): {name}`Empty` of the script on the database means that the
+condition is not true for the row with no cells. Without {lit}`WHERE`, {name}`Empty` does not hold. Proof sketch:
 {name}`Script.outputOn_selectNoFrom` and {name}`resolvedStepOutput_selectNoFrom_hasNoRows`. -/
 theorem Empty.iff_selectNoFrom
     {script : Script} {db : Database} {isQuery : script.isQuery = true} {value : Syntax.Expr} {text : String}
@@ -73,7 +73,7 @@ theorem Empty.iff_selectNoFrom
   rw [Script.outputOn_selectNoFrom head notCall noAggregate operand resolves calm.1, Option.any_some]
   exact resolvedStepOutput_selectNoFrom_hasNoRows 0 db.raw.connection parameters condition expression _ (Resolved.Statement.Calm.selectNoFrom condition expression _ conditionCalm calm)
 
-/-- For every script as in {name}`Holds.iff_selectNoFrom`, {lit}`Fails` of the script on the database does not hold.
+/-- For every script as in {name}`Holds.iff_selectNoFrom` (one read-only statement), {name}`Fails` of the script on the database does not hold.
 Proof sketch: {name}`Script.outputOn_selectNoFrom` and {name}`resolvedStepOutput_selectNoFrom_not_isError`. -/
 theorem Fails.not_selectNoFrom
     {script : Script} {db : Database} {isQuery : script.isQuery = true} {value : Syntax.Expr} {text : String}

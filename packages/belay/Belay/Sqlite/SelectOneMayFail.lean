@@ -15,7 +15,7 @@ open Belay.Sqlite.Model
 database has the table {lit}`t` and {lit}`p` resolves to a condition that reads no clock and no counter, and
 some part of the condition may fail ({name}`Resolved.Expr.mayFailOn`) on the empty row or on a row of the table
 in the context of the values, none of {lit}`Holds`, {lit}`Empty` and {lit}`Fails` holds of the script on the
-database: the output of the script is {lit}`Output.unmodeled`. The condition may be true for a row or for no
+database. The condition may be true for a row or for no
 row. Proof sketch: {name}`Script.outputOn_selectOne` and {name}`resolvedStepOutput_simpleTable_unmodeled`. -/
 theorem Script.not_claims_selectOne_of_mayFail
     {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}

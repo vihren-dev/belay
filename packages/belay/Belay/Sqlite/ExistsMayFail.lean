@@ -15,8 +15,7 @@ open Belay.Sqlite.Model
 /-- For every query script whose first statement is {lit}`SELECT 1 WHERE EXISTS (SELECT 1 FROM t WHERE p)`, where
 the catalog of the database has the table {lit}`t`, {lit}`p` resolves to a condition that reads no clock and no
 counter, and some part of the condition is a call of a function that can fail ({name}`Resolved.Expr.isFallibleCall`),
-none of {lit}`Holds`, {lit}`Empty` and {lit}`Fails` holds of the script on the database: the output of the script is
-{lit}`Output.unmodeled`. The rows of the table do not matter. Proof sketch:
+none of {lit}`Holds`, {lit}`Empty` and {lit}`Fails` holds of the script on the database. The rows of the table do not matter. Proof sketch:
 {name}`Script.outputOn_selectOne_exists` and {name}`resolvedStepOutput_selectOne_subquery_unmodeled`. -/
 theorem Script.not_claims_selectOne_exists_of_fallible
     {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
@@ -42,8 +41,7 @@ theorem Script.not_claims_selectOne_exists_of_fallible
 /-- For every query script whose first statement is {lit}`SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM t WHERE p)`, where
 the catalog of the database has the table {lit}`t`, {lit}`p` resolves to a condition that reads no clock and no
 counter, and some part of the condition is a call of a function that can fail ({name}`Resolved.Expr.isFallibleCall`),
-none of {lit}`Holds`, {lit}`Empty` and {lit}`Fails` holds of the script on the database: the output of the script is
-{lit}`Output.unmodeled`. The rows of the table do not matter. Proof sketch:
+none of {lit}`Holds`, {lit}`Empty` and {lit}`Fails` holds of the script on the database. The rows of the table do not matter. Proof sketch:
 {name}`Script.outputOn_selectOne_notExists` and {name}`resolvedStepOutput_selectOne_subquery_unmodeled`. -/
 theorem Script.not_claims_selectOne_notExists_of_fallible
     {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}

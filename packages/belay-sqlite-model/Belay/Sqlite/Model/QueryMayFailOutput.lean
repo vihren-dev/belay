@@ -6,8 +6,8 @@ set_option doc.verso true
 
 /-! A query that may fail has no modeled output (ADR 0017, S4): when a call of the {lit}`WHERE`
 condition may fail on a row of a table, the run of the query has the fault
-{lit}`Fault.may`, the model does not describe the statement, and its output is {lit}`Output.unmodeled`. Then
-the output has rows no more than it has none, and it is no error. -/
+{lit}`Fault.may`, and the model does not describe the statement. Then the output has no rows, has not no
+rows, and is no error. These three facts do not say which output it is. -/
 
 namespace Belay.Sqlite.Model
 
@@ -33,11 +33,11 @@ theorem Resolved.Query.Simple.run_fault_may {query : Resolved.Query} (simple : q
   simp [Resolved.Query.run, simple.compound, simple.bindWindow, noMust, mayFail]
 
 /-- For every query statement that reads no clock and no unknown counter, whose source rows
-{lit}`source` and bound window {lit}`bound` exist, when the source rows or the run of the query have the fault
-{lit}`may`, the output of its step has no rows, has not no rows, and is no error. It is
-{lit}`Output.unmodeled`. Proof sketch: the three cases of {name}`resolvedStepOutput_query_hasRows`,
+{lit}`source` and bound window {lit}`bound` exist, when the run of the query has the fault {lit}`may`, the output
+of its step has no rows, has not no rows, and is no error. The lemma does not say which output it is.
+Proof sketch: the three cases of {name}`resolvedStepOutput_query_hasRows`,
 {name}`resolvedStepOutput_query_hasNoRows` and {name}`resolvedStepOutput_query_isError` each require that
-neither fault be {lit}`may`. -/
+the fault of the run be not {lit}`may`. -/
 theorem resolvedStepOutput_query_unmodeled (index : Nat) (connection : Connection) (parameters : List Value)
     (query bound : Resolved.Query) (subqueries : List Resolved.Query) (source : Resolved.SourceRows)
     (noClock : (Resolved.Statement.query query subqueries).readsClock = false)
@@ -75,7 +75,7 @@ theorem Connection.queryContext_of_quiet (connection : Connection) (parameters :
 /-- For every connection, values, table at a position of the database of the connection and quiet statement of
 the simple query of that table with a {lit}`WHERE` condition, where some expression of the condition may fail
 ({name}`Resolved.Expr.mayFailOn`) on the empty row or on a row of the table, the output of the step has no
-rows, has not no rows, and is no error: it is {lit}`Output.unmodeled`. Proof sketch:
+rows, has not no rows, and is no error. The lemma does not say which output it is. Proof sketch:
 {name}`Resolved.Query.Simple.run_fault_may` gives the fault {lit}`may`, and
 {name}`resolvedStepOutput_query_unmodeled` the three facts, with the source of
 {name}`Resolved.Query.source_first`. -/
