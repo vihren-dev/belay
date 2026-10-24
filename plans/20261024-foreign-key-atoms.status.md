@@ -39,3 +39,8 @@ implementer, with these observable requirements fixed.
   S4 and the query-source task. No concurrent edits to those surfaces are allowed.
   Later ALTER and view statements extend the preservation matrix; their absence
   from the current language does not satisfy those future obligations.
+- 2026-10-24: follow-up review `20261024T122324Z-cf7aa9a6` had no findings.
+  Assigned part 1 to agent `foreign_key_atoms` in workspace `fk-atoms`, based on
+  `cf7aa9a6`. S4 confirmed the FK files and surface database export are disjoint
+  from its remaining part 1. Model barrels remain reserved to S4 until a clean
+  boundary. Heavy builds are coordinated with S4 and the build-boundary task.

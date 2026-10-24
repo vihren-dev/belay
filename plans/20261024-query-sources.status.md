@@ -27,7 +27,8 @@ actual verdict results and inspect each changed prediction.
 
 - 2026-10-24: specified all of D5 in three acceptance parts, including D3's
   compound metadata exception and the accepted semantic recursion exclusion.
-  No Nix acceptance check has run. Task review is pending.
+  No Nix acceptance check has run. Review `20261024T122324Z-cf7aa9a6` completed
+  with no must or should findings.
 - A separate implementation workspace will start at a clean S4 boundary, with
   ownership reserved for shared model and text files. ALTER/rebuild work waits
   for the final view representation. FK laws must cover new schema statements
