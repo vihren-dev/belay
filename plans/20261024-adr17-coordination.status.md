@@ -84,7 +84,7 @@ remove the prior planning blocks; they are not implementation-completion claims.
   `0569149b`, with reviewed handoff `e50e1f9e`. Plausible compatibility passed
   in Nix. Explicit certification and policy follow-up `76504977` passed 11 Nix
   checks and clean review. Sampler `593caf88` passed 12 Nix checks, including
-  the row-bound regression. Slot 1 runs inference checks (`52260`); replay and
+  the row-bound regression. Slot 1 runs repaired inference checks (`59927`); replay and
   background checking remain open.
 - `s6_prerequisite_audit` completed derived-source part 1, published in #243.
   Separate evidence head `5d69e3fa` retains draft v53's 38 agreements and
@@ -94,7 +94,8 @@ remove the prior planning blocks; they are not implementation-completion claims.
   unchanged; two become agreeing and 69 retain unsupported with changed reasons.
   All changes are classified; publication reviews are resolved. Views remain
   OPEN. Origin-metadata source `86e15af9` passed 17 Nix fixtures and unchanged
-  53-file predictions (`30578`, exit 0); independent review is running.
+  53-file predictions (`30578`, exit 0). Review has no musts; two small fixes
+  accompany the next normalization unit, for which slot 2 is reserved.
 - The S6 foundation prototype is DONE in PR #246 at `334d9645`, above #245.
   Original full 813/Nix 67/scheduled 47 and verdict passed. The final focused
   integration checks all five modules and 28 audits against S4; review is clean.
@@ -116,7 +117,8 @@ Final acceptance must selectively reconcile unpublished S2/S3 product-default ch
 FK engine checkpoint `b1a163df` passed 11 Nix fixtures/203 axiom audits at
 `grsxi5rjsqz0w3311nf5xv3l2yiilv6m`; review is clean. Statement/run checkpoint
 `a8bf73ae` passed 14 Nix fixtures/236 audits at `04dmvlj39cmypsa26ia21rhnskqxsjp1`
-and resolved review. CREATE/plain-DROP gate `19966` is running. Enforced DROP
+and resolved review. CREATE/plain-DROP `135b8338` passed 13 Nix fixtures/238
+axiom audits (`19966`, exit 0); independent review is running. Enforced DROP
 and NULL-default ADD proofs continue independently. A nonempty child table
 with enforcement on exposes an ADD REFERENCES/non-NULL-default discrepancy;
 the owner is asked to extend the explicitly limited execution-change scope.
@@ -181,7 +183,8 @@ after #248. Their six accepted Nix out-links have independent roots under
   review `20261024T142117Z-79fd6a8b` and waits for its final view/CTE design.
 - [S6 prototype](20261024-surface-s6-foundations.task.md) is DONE, published in PR #246.
   [Execution contracts](20261024-s6-execution-contracts.task.md)
-  have clean review `20261024T144839Z-5684010b`.
+  were refreshed at `7e855ae9` with clean review and assigned to
+  `text_build_boundaries` on published #248 in a separate S6 workspace.
   [Assertions](20261024-s6-assertions.task.md) and [migration patterns](20261024-s6-migration-patterns.task.md) have clean reviews
   at `33693f10`/`56b9f410`; [automation](20261024-s6-automation.task.md) is clean at `8b118fbc`.
   [Initial/current query context](20261024-s6-before-context.task.md) has clean
@@ -204,3 +207,7 @@ after #248. Their six accepted Nix out-links have independent roots under
 Read-only S7/editor audits remain in the modularity research notes. Reserve shared
 surface helpers before editor/doc/file tasks run concurrently. Production proof
 costs need the prototype contract. ADR17 needs all required behavior and acceptance.
+
+The modularity report's retired-workspace citations now use published source
+files or exact archived source copies. Historical research claims are unchanged.
+Keep its cited S4 build logs available when eventually retiring that workspace.
