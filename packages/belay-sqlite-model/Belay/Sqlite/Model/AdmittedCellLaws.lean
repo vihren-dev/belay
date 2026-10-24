@@ -4,11 +4,13 @@ import Belay.Sqlite.Model.StoreValueLaws
 set_option doc.verso true
 
 /-! The cells of a written row (ADR 0022, D3, slice 4): what {lit}`LiteralData.generatedCells` and
-{lit}`LiteralData.newCells` keep of a list of cells. A new row sets its rowid alias cell and then
-computes its generated columns. Each step sets one cell with a value that is stored for its own
-column, so the width of the cells, the stored form of every cell and the cell of a column that is
-not generated are the same after the steps as before. The statement theorems of "rows wide", "rows
-stored" and "rows aliased" use these laws for INSERT and UPDATE. -/
+{lit}`LiteralData.newCells` keep of a list of cells. {lit}`generatedCells` sets the cell of each
+generated column to a value that is stored for its own column. So it keeps the width of the cells,
+the stored form of every cell, and the cell of every column that is not generated. {lit}`newCells`
+first sets the cell of the rowid alias to the integer rowid, and then it is {lit}`generatedCells`.
+So it also keeps the width, gives the alias cell when the alias column is not generated, and keeps
+the stored form when the alias column has INTEGER affinity. The statement theorems of "rows wide",
+"rows stored" and "rows aliased" use these laws for INSERT and UPDATE. -/
 
 namespace Belay.Sqlite.Model
 namespace LiteralData
