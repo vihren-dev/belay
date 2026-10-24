@@ -7,7 +7,7 @@ both sides of its exact conditions and the distinct error paths. -/
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
 
-/-- The column index used for the exact condition checks. -/
+/-- The script that creates the unique index i on column x of table t. -/
 def uniqueIndex : Script := sql r"CREATE UNIQUE INDEX i ON t (x)"
 
 /-- A table whose new unique index has no conflicts. -/
