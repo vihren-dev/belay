@@ -592,3 +592,5 @@ proof relies on it (finding 15).
   for `.drop []`) and two shoulds (R9 a docstring for `pastLargest`; R13 the dated amendments in ADR 0012
   and the record of slice 4 in ADR 0022), fixed in the `refactor:` commit that adds the records. The plans of
   the slice are marked READY (not DONE) in the first lines of both files.
+- 2026-10-24: part 3, review of the `refactor:` commit: one must (R19, the record in ADR 0022 said that every
+  successful resolution meets `SchemaLink`; the theorem needs a valid input catalog), fixed in the next commit.
