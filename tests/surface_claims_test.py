@@ -38,3 +38,13 @@ def test_no_row_or_some_row_satisfies_a_condition_in_a_subquery(runtime_root: Pa
     result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsExists.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
+
+
+def test_a_where_that_may_fail_has_no_modeled_output(runtime_root: Path, tmp_path: Path) -> None:
+    """`SELECT 1 FROM t WHERE abs(x) = 1` (and the same call in a subquery of `EXISTS`) on a table with the
+    smallest 64-bit integer and the integer 1 returns a row and then fails in SQLite. The model gives
+    `Output.unmodeled`: none of `Holds`, `Empty` and `Fails` holds, by `decide +kernel` and by the lemmas over
+    every database."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsMayFail.lean", tmp_path), cwd=tmp_path,
+                         timeout=60)
+    assert result.returncode == 0, result.diagnostic()
