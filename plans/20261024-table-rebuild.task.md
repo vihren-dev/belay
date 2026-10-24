@@ -140,6 +140,9 @@ and integrated rebuild/proof coverage. Each coherent commit gets focused checks,
 dev-build, relevant dev-verdict and independent review. Each part ends with
 post-review `just test-full` and `just verdict`. Task end runs `just test-nix`
 and `just test-scheduled-checks`. Only Nix results are acceptance evidence.
+The scheduled-checks recipe follows the owner's handoff override, recorded in
+[coordination](20261024-adr17-coordination.status.md): no broad local mutant
+suite; use relevant mutants by `-k` and leave the full mutant suite to CI.
 
 ## Existing interfaces and ownership
 
