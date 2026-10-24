@@ -475,3 +475,14 @@ proof relies on it (finding 15).
   INSERT, UPDATE and upsert without rules). Examples: `AdmittedAtomsUpsertExamples`. Tests:
   `tests/test_model_package.py`, `tests/valid_atoms_theorems_test.py`,
   `tests/admitted_atoms_resolver_facts_test.py`.
+- 2026-10-24: part 2, the review of "Plain writes and upserts of the table atoms" had two musts (R2: the
+  docstrings of `runStatement_update_ready` and `assign_aliased` said more than the formulas), fixed in a
+  refactor commit with no further findings. Commit "The row engine keeps a property of databases": the
+  invariant of the row engine is now a property of databases with the laws of `WriteLaws` (a sublist of
+  the rows at a position keeps it, and the write of a table that passed `constraints` and
+  `rowidsDistinct` keeps it) in place of a fact of each table. `TableFacts.laws` gives the laws for
+  "every table has the fact", so `keysUniqueFacts` and `RowLocalAtom.facts` are used with `.laws`.
+  `TableFacts.constraints` now also reads `rowidsDistinct`; `checkedRow_passed` moved to
+  `RowEngineFacts`. New module `AdmittedEngineLaws` has the laws of "rowids distinct", "rows shaped"
+  and "catalog supported"; examples `AdmittedAtomsEngineExamples`. Tests: `tests/test_model_package.py`,
+  `tests/valid_atoms_theorems_test.py`, `tests/admitted_atoms_resolver_facts_test.py`.
