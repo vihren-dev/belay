@@ -441,3 +441,14 @@ additional condition. This does not affect the checked insertion law, which has
 no stale row. Native scripts and records are diagnostic findings, not Nix
 acceptance for this unit; no execution or judge file changes are included here.
 The full preservation task remains OPEN.
+
+Independent review `20261024T173427Z-45a65a92` completed with zero musts and
+zero shoulds for insertion source commit
+`45a65a92de030a76f152240840f703d09a025cc1`. No source correction was needed.
+The coordinator confirmed that outcome 6 already permits the necessary input
+and allowed-effect conditions, so the stale-self-scan finding contradicts no
+promised unconditional API. No owner question is pending. The UPDATE branch
+continues with an explicit restriction for level-1 stale self scans and structural
+sufficient conditions; execution remains unrestricted and unchanged. The native
+and kernel counterexample will be retained in that unit. Next work is isolated
+in `fk-update-preservation`; this insertion checkpoint is at rest.
