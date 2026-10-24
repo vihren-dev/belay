@@ -121,6 +121,7 @@
   "surface": [
     "tests/surface_guide_test.py",
     "tests/surface_claims_test.py",
+    "tests/surface_views_test.py",
     "tests/surface_schema_claims_test.py",
     "tests/surface_success_test.py",
     "tests/surface_s6_foundations_test.py",

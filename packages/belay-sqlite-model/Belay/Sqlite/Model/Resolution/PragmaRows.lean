@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.Resolution.CatalogObjects
+import Belay.Sqlite.Model.Resolution.Catalog
 import Belay.Sqlite.Model.Resolution.ForeignKeyAction
 
 set_option doc.verso true
@@ -64,13 +64,13 @@ def CatalogTable.foreignKeyListRows (table : CatalogTable) : List (List Value) :
   table.allForeignKeys.reverse.zipIdx.flatMap fun (key, id) => foreignKeyRows table id key
 
 /-- The rows of {lit}`PRAGMA table_info` of the table with the name ({name}`CatalogTable.infoRows`):
-no rows when the catalog has no table with the name, as SQLite gives for a missing table, and
-{lean}`(none : Option (List (List Value)))` for a name of SQLite's own tables that the catalog
-does not have, such as {lit}`sqlite_schema`, whose columns the model does not describe. -/
+no rows for a missing name. A view gives {lean}`(none : Option (List (List Value)))`
+until its query is expanded; it never masquerades as a missing table. A name of SQLite's
+own tables, such as {lit}`sqlite_schema`, also gives none when absent from the catalog. -/
 def Catalog.tableInfoRows (catalog : Catalog) (table : Identifier) : Option (List (List Value)) :=
   match catalog.findTable table with
   | some (_, found) => some found.infoRows
-  | none => if reservedName table then none else some []
+  | none => if reservedName table || (catalog.findView table).isSome then none else some []
 
 /-- The rows of {lit}`PRAGMA foreign_key_list` of the table with the name
 ({name}`CatalogTable.foreignKeyListRows`), or no rows when the catalog has no table with the

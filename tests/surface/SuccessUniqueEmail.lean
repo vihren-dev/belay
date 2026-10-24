@@ -48,9 +48,10 @@ theorem missing_email (db : Database) (position : Nat) (table : CatalogTable)
   have noMain : ∀ queries prefix_, resolveSources db.raw.catalog none [] 0 queries prefix_ = .ok ([], []) := by
     intros
     rfl
+  have notView := Catalog.findView_none_of_table found
   have resolved : ∃ restriction, resolveStatement runContext db.raw.connection.resolveState
       noDuplicateEmails.statements[0].1 = .error restriction := by
-    simp [noDuplicateEmails, resolveStatement, resolveSelect, prepareCommonTables,
+    simp [noDuplicateEmails, resolveStatement, resolveSelect, prepareQuerySources, querySourceCopiesNeeded, notView,
       CommonTableCopies.recursionIssue, CommonTableCopies.originalIssue, CommonTableCopies.originalPath, Connection.resolveState, Database.Raw.connection,
       subqueryScopes, scopeOrder, compoundOf, subqueryScope, Scope.columns,
       noMain, sources, Scope.enclose, resolveSubqueryBodies, subqueryBodyOrder, unique, QueryScope.sourceIndexes, QueryScope.refresh, Scope.refreshSources, compoundColumnsIssue,

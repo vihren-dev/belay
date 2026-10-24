@@ -9,23 +9,31 @@ namespace Belay.Sqlite.Model
 
 /-- The catalog inputs used to select one declaration's parent: the named parent has the
 same position and definition, or is absent in both catalogs; when present, its eligible
-indexes, including their order, agree. Stored rows impose no requirement. -/
+indexes, including their order, agree. When no physical parent exists, the named view
+has the same position or is absent in both catalogs. View bodies and stored rows are unrestricted. -/
 structure ForeignKey.ParentSchemaFrame (key : ForeignKey) (before after : Catalog) : Prop where
   /-- The named parent has the same position and definition, or is absent in both catalogs. -/
   parent : after.findTable key.table = before.findTable key.table
   /-- Every parent found by the old catalog has the same ordered eligible indexes afterward. -/
   indexes : ∀ position shape, before.findTable key.table = some (position, shape) →
     after.parentIndexes position shape = before.parentIndexes position shape
+  /-- Without a physical parent, both catalogs find the same view position or no view.
+  Its definition can change. A present physical parent imposes no condition here. -/
+  viewPosition : before.findTable key.table = none →
+    (after.findView key.table).map Prod.fst = (before.findView key.table).map Prod.fst
 
 /-- For every declaration and parent-schema frame, the catalogs select the same parent link.
 Proof sketch: the parent definition gives rowid and named columns, and equal eligible indexes
-make the existing parent-key selector return the same key. -/
+make the existing parent-key selector return the same key. Without a physical parent,
+the view-position equality preserves the missing or mismatched link. -/
 theorem ForeignKey.ParentSchemaFrame.parentLink {key : ForeignKey} {before after : Catalog}
     (frame : key.ParentSchemaFrame before after) : after.parentLink key = before.parentLink key := by
   unfold Catalog.parentLink
   rw [frame.parent]
   cases found : before.findTable key.table with
-  | none => rfl
+  | none =>
+    have views := frame.viewPosition found
+    cases old : before.findView key.table <;> cases new : after.findView key.table <;> simp_all
   | some pair =>
     rcases pair with ⟨position, shape⟩
     have indexes := frame.indexes position shape found
@@ -34,8 +42,8 @@ theorem ForeignKey.ParentSchemaFrame.parentLink {key : ForeignKey} {before after
     simp only [selected]
 
 /-- A table schema fact transfers when every new declaration is an old declaration, the
-supplied parent mapping agrees for each one, and its named-parent definition and eligible
-indexes are unchanged. Stored child and parent rows are unrestricted. -/
+supplied parent mapping agrees for each one, and its named-parent definition, eligible indexes and absent-parent view position
+are unchanged. Stored child and parent rows are unrestricted. -/
 structure Table.ParentSchemaFrame (before after : Catalog) (oldMapping newMapping : ForeignKeyMapping)
     (oldPosition position : Nat) (oldTable table : Table) : Prop where
   /-- Each new declaration already occurs in the old table. -/
@@ -43,7 +51,7 @@ structure Table.ParentSchemaFrame (before after : Catalog) (oldMapping newMappin
   /-- Each new declared mapping agrees with the corresponding old mapping. -/
   mapping : ∀ key ∈ table.shape.allForeignKeys,
     newMapping.parent position key = oldMapping.parent oldPosition key
-  /-- Each new declaration has the same parent-definition and eligible-index inputs. -/
+  /-- Each new declaration has the same parent-definition, eligible-index and absent-parent view-position inputs. -/
   parents : ∀ key ∈ table.shape.allForeignKeys, key.ParentSchemaFrame before after
 
 /-- For every table parent-schema fact and frame, the new table has that fact. Its stored

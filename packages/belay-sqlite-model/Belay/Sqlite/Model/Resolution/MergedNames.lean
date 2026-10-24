@@ -50,7 +50,7 @@ name, and then SQLite's {lit}`ambiguous column name: main.x.c` for a column that
 merged. -/
 def Scope.starOperand (scope : Scope) (position : Nat) (column : CatalogColumn) : Except ValueIssue Operand :=
   let index := scope.sourceOf position
-  let later := scope.drop (index + 1)
+  let later := (scope.drop (index + 1)).filter (·.namesVisible)
   let rightAfter := later.any fun source => source.mergeRule != .keepLeft
   let mergedLater := later.any fun source => (columnPosition source.columns column.name).any (source.merged.contains ·)
   if rightAfter && mergedLater then match scope.resolveName column.name with

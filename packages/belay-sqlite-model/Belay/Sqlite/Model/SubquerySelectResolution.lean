@@ -44,9 +44,12 @@ theorem resolveSelect_noFrom_one_subquery (context : ResolveContext) (catalog : 
   have noMain : resolveSources catalog none [] 0 (sourceExpansion catalog 8 [sub] none) = .ok ([], []) := rfl
   have unique : ([0] : List Nat).eraseDups = [0] := rfl
   have noSource : (subqueryShape inner { current := some 0 } sub subQuery affinity).source = none := rfl
+  have subNoView := resolveSources_noView catalog sub.source sub.joins 0 _ [] pending inner subSources
+  have noCopies : querySourceCopiesNeeded catalog main [sub] = false := by
+    simpa [querySourceCopiesNeeded, ordinary, mainNoFrom] using subNoView
   subst shapeIs
   unfold resolveSelect
-  simp [prepareCommonTables, ordinary, CommonTableCopies.recursionIssue, CommonTableCopies.originalIssue, compoundColumnsIssue, noMain, mainNoFrom, mainNoJoins, mainNoCompound, mainNoStar, subqueryScopes, order, subqueryScope,
+  simp [prepareQuerySources, noCopies, ordinary, CommonTableCopies.recursionIssue, CommonTableCopies.originalIssue, compoundColumnsIssue, noMain, mainNoFrom, mainNoJoins, mainNoCompound, mainNoStar, subqueryScopes, order, subqueryScope,
     parentless, Scope.columns, Scope.enclose, subSources, subNoStar, resolveSubqueryBodies, subqueryBodyOrder, QueryScope.sourceIndexes, QueryScope.refresh, Scope.refreshSources,
     unique, noSource, subNoCompound, subBody,
     mainBody, noFallible, Bind.bind, Except.bind, Except.mapError, Pure.pure, Except.pure, compoundOf]

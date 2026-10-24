@@ -22,7 +22,7 @@ theorem Catalog.mem_childLinks_iff (catalog : Catalog) (position : Nat) (link : 
     have entry := List.mem_zipIdx_iff_getElem?.mp atPlace
     rcases object with ⟨name, objectEntry⟩
     cases kind : objectEntry with
-    | index _ => simp [kind] at member
+    | index _ | view _ => simp [kind] at member
     | trigger _ => simp [kind] at member
     | table shape =>
       simp only [kind, List.mem_map] at member
@@ -39,7 +39,7 @@ theorem Catalog.mem_childLinks_iff (catalog : Catalog) (position : Nat) (link : 
     | some object =>
       rcases object with ⟨name, objectEntry⟩
       cases kind : objectEntry with
-      | index _ => simp [entry, kind] at atShape
+      | index _ | view _ => simp [entry, kind] at atShape
       | trigger _ => simp [entry, kind] at atShape
       | table found =>
         have same : found = shape := by simpa [entry, kind] using atShape

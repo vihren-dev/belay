@@ -41,7 +41,7 @@ theorem resolveName_single (scope : Scope) (keep : ∀ source ∈ scope, source.
     have step : ∀ (sources : Scope) (state : NameResolution), state.single →
         (∀ source ∈ sources, source.mergeRule = .keepLeft) →
         (sources.foldl (fun result source =>
-          if source.depth == depth && !source.trigger then Scope.resolveStep name result source else result) state).single := by
+          if source.namesVisible && source.depth == depth && !source.trigger then Scope.resolveStep name result source else result) state).single := by
       intro sources
       induction sources with
       | nil => intro state holds _; exact holds

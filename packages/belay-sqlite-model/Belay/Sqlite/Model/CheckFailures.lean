@@ -108,7 +108,7 @@ def Catalog.declaredIndexes (catalog : Catalog) (position : Nat) : List CheckedI
       if index.table == position && index.unique then
         some { name := object.name, key := index.uniqueKey, replace := false, ascendingTies := false }
       else none
-    | .table _ | .trigger _ => none
+    | .table _ | .view _ | .trigger _ => none
 
 /-- The unique indexes that {lit}`integrity_check` checks for the table at the catalog position
 with the name, in SQLite's order ({lit}`pTab->pIndex`): newest first, so the indexes of
