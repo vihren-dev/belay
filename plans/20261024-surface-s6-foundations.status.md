@@ -1,6 +1,7 @@
 # Status: S6 foundations prototype
 
-Created 2026-10-24. Status: OPEN. Implementation has not started.
+Created 2026-10-24. Status: OPEN. The checked prototype is implemented; independent review and
+task-end acceptance remain.
 Task: [task file](20261024-surface-s6-foundations.task.md).
 Specs: ADR 0017 S6; product guide questions 2/4/11/12/13, with source revision
 and required behavior recorded in the task.
@@ -49,3 +50,26 @@ until the prototype has evidence.
   and two shoulds. Explicitly marked the audit scope as extending the question
   numbers named in ADR17's S6 row. Removed the future-S8 justification; the
   current S6 contracts remain the reasons for both audits.
+
+- 2026-10-24: implemented five isolated fixtures, their one Nix surface-suite
+  test, and `docs/s6-foundations-findings.md`. The transformer delegates all SQL
+  steps to existing execution. Its bind law, S4 top-postcondition equivalence,
+  complete-environment quantification and actual-run soundness are proved.
+  The same SQL-write triple uses mvcgen and explicit pure/bind lemmas. Fixtures
+  cover all required contexts, both kinds of oneOf continuation, error policies,
+  hidden-state counterexamples, both bind-congruence directions, and footprint
+  counterexamples. AUTOINCREMENT and the before qualifier remain checked
+  frontend rejections. No production package, semantics or judge claim changed.
+- 2026-10-24: the first Nix surface attempt found the inherited S4 helper-input
+  omission. Carried only the one-line source registration from reviewed
+  `b90086830a4eeb23b69ef943728f5c8f2648029a`, plus its clean review record,
+  without rebasing or copying S4's later work. The corrected Nix surface suite
+  passed all 56 tests in 106.10 seconds, including the prototype's 28 axiom
+  reports (only propext, Classical.choice and Quot.sound permitted).
+  Command: `direnv exec . timeout 1500 nix-build build-support/default.nix -A
+  tests.surface --out-link build/s6-surface-tests --option sandbox true --option
+  sandbox-fallback false --extra-experimental-features 'nix-command flakes'`.
+  Output: `/nix/store/2dlm2j0i3wxs2cccdipzr2qidqiyig1n-sqlite-verifier-test-surface-1`.
+  Log: `build/agent-logs/s6-surface-tests-2.log`. No package file changed, so
+  the per-package dev-build gate does not apply. Local probes were diagnostic
+  only; this Nix-selected fixture is the acceptance evidence.

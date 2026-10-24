@@ -254,6 +254,7 @@ in {
   };
   surface = suite "surface" {
     inputs = [ (root + /tests/surface) (root + /tests/surface_support.py)
+               (root + /tests/shared_table_shape_test.py)
                (fs.fileFilter (file: file.hasExt "nix") (root + /build-support)) ] ++ packageSources
              ++ frontend ++ [ claims ] ++ authoredCorpora ++ corpusModules;
     runtime = surfaceRoot;
