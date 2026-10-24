@@ -21,6 +21,7 @@ import Belay.Sqlite.DbBang
 import Belay.Sqlite.RunLaws
 import Belay.Sqlite.Queries
 import Belay.Sqlite.QueryLaws
+import Belay.Sqlite.QueryBridge
 import Belay.Sqlite.SqlCommand
 
 /-! The SQLite surface. It reads SQL text while a Lean file elaborates, with the SQLite parser

@@ -159,6 +159,12 @@ import Belay.Sqlite.Model.ForeignKeyCheckLaws
 import Belay.Sqlite.Model.Resolution
 import Belay.Sqlite.Model.Resolution.QuerySpec
 import Belay.Sqlite.Model.Resolution.ScopeLaws
+import Belay.Sqlite.Model.OutputResultsLaws
+import Belay.Sqlite.Model.QueryStepOutput
+import Belay.Sqlite.Model.QueryOutputOn
+import Belay.Sqlite.Model.QueryOutputRows
+import Belay.Sqlite.Model.QueryStatementOutput
+import Belay.Sqlite.Model.QueryOutputCases
 
 /-! SQLite states, the facts of an admitted and of a valid database, the theorems of the statements
 that keep the unique keys, supported execution, the output of each statement and the results that
