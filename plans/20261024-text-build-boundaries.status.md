@@ -21,3 +21,8 @@ No new build timing or Nix validation result is claimed here.
 - 2026-10-24: specified the import boundary and the missing local law-library
   check in response to the owner's modularity request. This workspace is
   separate from S4. Task review and implementation are pending.
+- 2026-10-24: task review `20261024T115938Z-5fc56924` found no musts and two
+  shoulds. The task now states the owner's scheduled-check override and the
+  observed law-build failures from the handoff, and removes the proposed
+  failure-injection harness. The existing local-loop test remains the check of
+  the recipe. Implementation is pending.

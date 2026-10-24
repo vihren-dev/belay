@@ -18,6 +18,9 @@ The local `dev-build` recipe builds only `conformance-runner` in the conformance
 package. Its library also contains laws outside the runner's import closure, such
 as `RunPassLaws`. Nix builds both `VerifierConformance` and `conformance-runner`.
 The local recipe can therefore pass while a model change breaks these laws.
+The owner's 2026-10-24 handoff records two full-check failures after omitted law
+builds. Correct the existing target list; no separate failure-injection harness
+is needed for that recipe change.
 
 ## Required outcomes
 
@@ -44,17 +47,17 @@ The local recipe can therefore pass while a model change breaks these laws.
 - Extend the existing layer tests to detect reintroduction of the model umbrella
   into the translator's transitive import closure, including an indirect import.
   Keep the existing checks of dependency direction and public roots.
-- Extend the existing local-loop checks to establish that the conformance law
-  library is built. A targeted temporary failure in a law outside the executable
-  closure must be detected; isolate the probe from active workspaces and restore
-  its input. Every subprocess has a timeout.
+- Run the existing local-loop check and inspect the complete conformance library
+  build result. Keep subprocess timeouts. This recipe correction needs no new
+  temporary-source failure test.
 - Run the existing SQL translation, source-position, codec and surface fixtures
   through their Nix suites. Compare the frozen-corpus predictions before and after
   the change; their contents must be byte-identical.
 - One slice: after the last code review, `just test-full` and `just verdict`.
   At task completion, `just test-nix` and `just test-scheduled-checks`.
-  Do not run the broad mutant suites locally. No new mutant is required for an
-  unchanged semantic function.
+  The owner's 2026-10-24 handoff replaces the older `AGENTS.md` task-end cadence
+  with this narrower scheduled recipe and forbids broad local mutant runs.
+  No new mutant is required for an unchanged semantic function.
 - Commit checks use the existing relevant layer and local-loop tests. Run
   `just dev-build` for package edits. Each commit has an independent review and
   its findings are resolved under the repository process.
