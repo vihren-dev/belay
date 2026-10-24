@@ -526,7 +526,7 @@ will audit 164 reports. Direct Lean diagnostics checked the five modules, checke
 Verso references and fixture; all 33 new reports use only the standard logical
 axioms. The source import/glob boundary diagnostic also passed. These are local
 diagnostics against the prior runtime and do not establish integration acceptance.
-The merged source still requires dev-build and the focused Nix gate.
+Before the gate below, the merged source still required dev-build and the focused Nix gate.
 
 This workspace merges reviewed FK checkpoint `62aebf43` and published repaired
 query-source head `2cb4c5e3af6f59b8a6fae5a584ac4e536450c87d`. Four documentation
@@ -538,9 +538,9 @@ the replaced ForeignKeysHold entry. The query-source status uses the published
 record. These resolutions are included in the next independent review. There
 were no runtime-definition conflicts. No unfinished S4 ancestors are included.
 
-The prepared sequential gate is `build/agent-logs/fk-coverage-gates.sh`, with
-finite timeouts and command-local max-jobs=1. It remains queued for an explicit
-resource-slot grant. The actual row/action/trigger induction and the remaining
+The prepared sequential gate was `build/agent-logs/fk-coverage-gates.sh`, with
+finite timeouts and command-local max-jobs=1. It was queued for an explicit
+resource-slot grant before the completion recorded below. The actual row/action/trigger induction and the remaining
 statement/run/DDL matrix remain open; this is another intermediate proof boundary.
 
 The coverage gate completed on 2026-10-24 with exit 0 (owned process 19614).
@@ -557,3 +557,10 @@ acceptance. Slot 1 returned to the queued CTE build on terminal completion.
 Independent review follows and includes the four documentation conflict
 resolutions, both inventories, all five coverage modules and the fixture. The
 row/action/trigger induction continues separately in `fk-engine-counter`.
+
+Independent review `20261024T185616Z-0b3f6334` checked the merge and coverage
+source commit `0b3f633498c32c254262997b474e1c18f9d9c127`. It found zero musts and
+one R19 status-wording should: two preparation paragraphs still described the
+now-completed gate as pending. Both now use past tense. The reviewer found no
+source issue, confirmed the 27 theorem plus six fixture audit inventory, and
+checked the conflict resolutions and retained derived-source registration.
