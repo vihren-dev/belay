@@ -2,13 +2,14 @@
 
 Created 2026-10-24. Status: OPEN. Implementation follows task review.
 Status: [progress](20261024-s7-proof-cost-prototype.status.md).
-Spec: [ADR 0017](../docs/adr-0017-user-surface.md), S7's check tool and the
-target guide's stable-proof requirement. The owner's ADR17 completion request
+Spec: [ADR 0017](../docs/adr-0017-user-surface.md), S7's check tool, and
+`model-user-guide.md`, Stable proofs (private product repository). The owner's ADR17 completion request
 includes per-proof heartbeat reports and a configurable CI growth bound.
 
 ## Present question
 
-The guide promises `belay-sql-check --costs`, but the current surface has no
+The target `model-user-guide.md` promises `belay-sql-check --costs`; this
+requirement is not specified in the public ADR. The current surface has no
 collector or persisted measurements. Pinned Lean supplies `withHeartbeats`,
 which counts the current computation, not a ready-made per-proof registry.
 Declaration elaboration can schedule asynchronous proof work. Timing the return

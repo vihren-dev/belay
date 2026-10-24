@@ -44,4 +44,10 @@ be demonstrated. No production measurement or baseline guarantee is claimed.
   their counts cannot be described as total proof costs. Missing data is not zero.
 - Automatic approval rejected shell authorization for the new workspace even
   though its shell files match authorized `s4-run`. Explicit owner approval is
-  pending. Source inspection can continue; no build has run in this workspace.
+  pending at that checkpoint. Source inspection continued without builds.
+
+- The owner explicitly authorized this and future isolated ADR17 workspaces
+  with unchanged approved shell configuration. `direnv allow` succeeded.
+  Carry review `20261024T170935Z-905a7bc6` found one citation clarification;
+  the task now identifies the private target guide as the cost requirement
+  source. The public ADR specifies the check tool. Scope is unchanged.
