@@ -1,6 +1,6 @@
 # Translation dependencies and complete local law checks
 
-Created 2026-10-24. Status: OPEN.
+Created 2026-10-24. Status: DONE (2026-10-24).
 Status file: [status](20261024-text-build-boundaries.status.md).
 Audience: implementers and reviewers.
 Specifications: [ADR 0016](../docs/adr-0016-model-and-surface.md), D2;
