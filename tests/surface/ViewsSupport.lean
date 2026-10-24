@@ -2,8 +2,8 @@ import Belay
 
 set_option doc.verso true
 
-/-! Fixture constructors for unresolved view definitions. SQL view DDL is tested
-separately; these helpers exercise the catalog primitive through public queries. -/
+/-! Fixture constructors for unresolved view definitions. SQL view DDL remains a
+later task unit; these helpers exercise the catalog primitive through public queries. -/
 
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database

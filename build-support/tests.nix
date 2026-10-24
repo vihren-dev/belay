@@ -259,7 +259,7 @@ in {
                (fs.fileFilter (file: file.hasExt "nix") (root + /build-support)) ] ++ packageSources
              ++ frontend ++ [ claims ] ++ authoredCorpora ++ corpusModules;
     runtime = surfaceRoot;
-    tools = pkgs.lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.patchelf;
+    tools = [ native.sqlite ] ++ pkgs.lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.patchelf;
   };
   packages = suite "packages" {
     inputs = [ ];

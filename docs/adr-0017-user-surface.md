@@ -94,6 +94,35 @@ heartbeat overhead in its sample (prototype commit `489b22f6`,
 `docs/s7-proof-cost-findings.md`); this is not a general bound. Production
 collection and native mutual coverage remain implementation work.
 
+S6 clarification, accepted by the owner on 2026-10-24 after the checked
+foundations prototype:
+
+- `≈` compares the full execution context and every permitted branch outcome,
+  so that bind and append can preserve it. Equal final tables and output rows
+  alone are insufficient: a continuation can observe counters, pragmas and
+  transaction snapshots. Compare actual full runs and the set of complete
+  branch outcomes at the same clock, statement index and full connection. Each
+  outcome retains its optional return value, full output trace and final
+  connection, including errors and unmodeled reasons/partial traces. Branches
+  follow the existing statement step: the raw continuation is included and
+  `oneOf` also permits each concrete rows continuation. Ordinary SQL errors
+  continue; unmodeled outcomes stop. Branch enumeration duplicates/order are
+  not extra observations beyond the raw outputs already retained.
+- Separately named weaker visible comparisons remain available. Their use does
+  not imply the stronger bind/append congruence without the required premises.
+- A fresh-run helper is accepted on 2026-10-24. It fixes a valid starting
+  database, complete environment, empty trace and initial connection, and
+  captures that start for postconditions. Prove its equivalence to ordinary
+  Std.Do triples with those exact entry assumptions. Ordinary triples retain
+  arbitrary contexts for composition; query assertions alone do not imply a
+  fresh entry. The guide uses the explicit helper for fresh-run claims and
+  the exact success bridge. Existing `Holds` keeps its default observation;
+  an assertion that observes the execution clock/counters is named separately.
+
+The [execution task](../plans/20261024-s6-execution-contracts.task.md)
+supplies these production execution contracts. Its work does not complete
+the later public assertion, migration-pattern or automation interfaces.
+
 ### D2. S1: SQL text in Lean, measured before it is built
 
 S1 starts with two prototypes, each with a measurement that decides it:

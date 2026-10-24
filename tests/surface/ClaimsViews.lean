@@ -10,6 +10,7 @@ These kernel claims check the same indexed resolver used by derived tables. -/
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
 open ViewExamples
+open Lean Elab Meta
 
 namespace ViewSourceExamples
 
@@ -21,6 +22,23 @@ def database : Database := ⟨withViews base [
   (name! "own_cte", definition (sql r"WITH t AS (SELECT 5 AS x) SELECT * FROM t")),
   (name! "clock_counter", definition (sql r"SELECT CURRENT_DATE AS day,changes() AS count")),
   (name! "late", definition (sql r"SELECT x FROM future"))], by decide +kernel⟩
+
+/-- Uniform sampling retains the six unresolved definitions with empty view storage. -/
+example : (Sampling.uniform database [.integer 9]).map
+    (fun sample => (sample.raw.catalog, sample.raw.rows.drop 2)) =
+    some (database.raw.catalog, List.replicate 6 []) := by decide +kernel
+
+/- Run the seeded generator as code, then independently check the resulting
+database's validity with the kernel. Random generation is not a kernel decision. -/
+run_meta do
+  let .ok sample := Sampling.seeded (Sampling.database database (maxRows := 0))
+    | throwError "zero-row sampling rejected the view catalog"
+  unless sample.raw.catalog == database.raw.catalog && sample.raw.rows.all List.isEmpty do
+    throwError "sampling changed the view catalog or stored rows for a view"
+  checkWithKernel (databaseExpr sample.raw)
+
+/-- The ordinary-table replay formatter refuses a view instead of omitting its definition. -/
+example : Replay.databaseSql database = none := by decide +kernel
 
 /-- Renaming two columns keeps integer affinity and NOCASE collation. -/
 example : Holds (sql r"SELECT 1 FROM renamed WHERE number='7' AND label='A'") database := by decide +kernel

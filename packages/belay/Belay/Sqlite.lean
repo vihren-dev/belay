@@ -17,6 +17,20 @@ import Belay.Sqlite.ProgramQueries
 import Belay.Sqlite.ProgramLaws
 import Belay.Sqlite.ProgramMonadLaws
 import Belay.Sqlite.ProgramBindLaws
+import Belay.Sqlite.ExecutionContext
+import Belay.Sqlite.ExecutionBranches
+import Belay.Sqlite.ExecutionBranchLaws
+import Belay.Sqlite.ExecutionBind
+import Belay.Sqlite.ExecutionWP
+import Belay.Sqlite.ExecutionStep
+import Belay.Sqlite.ExecutionWPLaws
+import Belay.Sqlite.ExecutionSuccess
+import Belay.Sqlite.ExecutionFresh
+import Belay.Sqlite.ExecutionEquivalence
+import Belay.Sqlite.ExecutionEquivalenceLaws
+import Belay.Sqlite.ExecutionEquivalenceBind
+import Belay.Sqlite.ExecutionObservations
+import Belay.Sqlite.ExecutionSpecifications
 import Belay.Sqlite.Success
 import Belay.Sqlite.ProgramSuccess
 import Belay.Sqlite.ScriptSuccess
@@ -47,6 +61,11 @@ import Belay.Sqlite.TableInfoQuery
 import Belay.Sqlite.DuplicateKeyQuery
 import Belay.Sqlite.AggregateQuery
 import Belay.Sqlite.UniqueLookupQuery
+import Belay.Sqlite.SqlRefute
+import Belay.Sqlite.SampleShrink
+import Belay.Sqlite.CounterexampleShrink
+import Belay.Sqlite.SampleScriptHints
+import Belay.Sqlite.ReplayScript
 
 /-! The SQLite surface. It reads SQL text while a Lean file elaborates, with the SQLite parser
 library in the Lean process, and translates the parse tree to the model's statement syntax with

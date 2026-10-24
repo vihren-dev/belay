@@ -14,7 +14,8 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
 @pytest.mark.parametrize("fixture", ["ClaimsViews", "ClaimsViewScope", "ClaimsViewTriggers"])
 def test_stored_views_use_the_indexed_query_resolver(runtime_root: Path, tmp_path: Path, fixture: str) -> None:
     """QuerySourceExpansion preserves late lookup, metadata, closed names and trigger-cell
-    offsets; every concrete validity and query assertion is checked by Lean's kernel."""
+    offsets through kernel claims. A seeded sampler observation also checks view storage
+    and sends its resulting database validity term through the kernel."""
     setup_path = module_setup(runtime_root, tmp_path)
     setup = json.loads(setup_path.read_text())
     for name in ("ViewsSupport", fixture):

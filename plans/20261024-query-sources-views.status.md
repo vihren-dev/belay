@@ -161,11 +161,53 @@ Repair source `a890097fe76f92529517393bd5ba904f1a8853d9` passed independent
 review `20261024T215844Z-a890097f` with zero must and zero should findings.
 The catalog foundation and its five mutation repairs are now checked and reviewed.
 
+## Stored source expansion: focused check, review pending
+
+The source workspace preserves checked expansion snapshot `700bd0d2` and merges
+complete S6/native source `5bc323f0` without rewriting either ancestor. Stored
+views enter the existing indexed query resolver. Ordinary caller names and CTEs
+are hidden while trigger NEW/OLD names retain their actual cell offsets. The
+same stored definition is checked in ordinary, scalar, derived and trigger
+contexts. Cycles, missing references, explicit column counts and invalid function
+calls retain their preparation errors. The source evaluator honors the existing
+outer-cell width while preserving the shared clock and counters.
+
+The merge adds only mechanical S5 view cases: views have empty sampled storage,
+and automatic replay refuses a catalog whose view DDL it cannot reconstruct.
+The explicit replay primitive remains available. S5 owns its subsequent sampler
+refactor; these cases remain frozen for that later coordinated integration.
+
+The initial focused Nix attempt, session `24597`, passed seven fixtures and
+failed the new seeded-sampling assertion. The pinned random generator uses a
+private partial function that does not reduce in the kernel; the assertion did
+not establish a false catalog result. The fixture-only correction uses the
+existing executable generator observation, then separately kernel-checks the
+reified database validity. Pure empty-storage and replay facts still have kernel
+proofs. No sampler, RNG or model definition changed to accommodate the fixture.
+
+Frozen corrected source `e383c4f4d29153a040580c90f1d5f15be2c173a9` passed all
+eight selected Nix cases, with 82 deselected, in 45.15 seconds:
+`/nix/store/cj5vhkv8xxk9iqz7q4yal2yi7hk1c0ry-sqlite-verifier-test-view-expansion-integration-1`.
+The cases include three stored-view fixtures, the catalog boundary, both complete
+S4 guide success fixtures, and derived-source/CTE consumers. Nix predictions at
+`/nix/store/lnz7y254m8cvgkz2fv9zw4cqcq3898i5-sqlite-verifier-predictions`
+match the accepted integrated baseline
+`/nix/store/v8f8kr8g9i0labdhf6021rpwnp47z939-sqlite-verifier-predictions`
+byte-for-byte: 53 files, 7,372 cases and no changed file. Logs and the exact
+comparison remain in this workspace's `build/agent-logs/` as
+`view-integration-focused.log`, `view-integration-focused-retry.log`,
+`view-integration-predictions.log` and `view-integration-prediction-comparison.json`.
+
+Independent review is pending the owner's reviewer-login refresh. These focused
+checks do not complete part 3 or replace its post-review full/verdict and
+task-end acceptance. The existing result-alias limitation is recorded separately;
+this unit makes no unrelated resolver or mutant-harness correction.
+
 ## Remaining view scope
 
-CREATE/DROP VIEW, late and closed source lookup,
-cycles, view metadata before compound rewrites, pragma metadata, write errors and catalog/
-statement preservation remain OPEN under the existing task. FK proof leaves are
+CREATE/DROP VIEW, complete pragma metadata, write errors and catalog/statement
+preservation remain OPEN under the existing task. Stored-source expansion has
+the focused evidence above and awaits independent review. FK proof leaves are
 coordinated with their owner before mechanical view-case extensions. Frozen v53
 remains unpublished and mutable in the separate evidence workspace. No corpus,
 claim or judge-lock file changes in the foundation.

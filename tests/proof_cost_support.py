@@ -58,7 +58,8 @@ class Compiler:
         self.directory.mkdir(parents=True, exist_ok=True)
         path = self.directory / f"{name}.lean"
         if not enabled:
-            source = source.replace("import ProofCostCollector", "import ProofCostRecords")
+            # Keep downstream SQL provenance positions identical in the control and measured source.
+            source = source.replace("import ProofCostCollector", "import ProofCostRecords  ")
         path.write_text(source)
         artifact = self.directory / f"{name}.olean"
         artifact.unlink(missing_ok=True)
