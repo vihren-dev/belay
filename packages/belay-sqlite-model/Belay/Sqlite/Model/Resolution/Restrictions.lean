@@ -178,6 +178,9 @@ inductive RestrictionKind where
   does is not modeled: an aggregate, an expression that is a result expression of a term after resolution but not as
   written, or a {lit}`COLLATE` term after which SQLite gives a result column a random name (ADR 0019, D3). -/
   | compoundOrderByTerm
+  /-- A derived source whose duplicate output names need SQLite's random suffix is not modeled.
+  Give these columns distinct aliases (ADR 0019, D5). -/
+  | sourceColumnName
   /-- {lit}`PRAGMA foreign_key_check` without a table name when two or more tables have a mismatch: SQLite reports the
   first one in the order of its schema hash table (ADR 0019, D2). -/
   | foreignKeyMismatchOrder

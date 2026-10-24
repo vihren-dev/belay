@@ -92,3 +92,28 @@ actual verdict results and inspect each changed prediction.
   of using catch-all branches, so new syntax must explicitly choose its metadata.
   Nix `modelPackage` passed at
   `/nix/store/24qvzhb6dpmsh27pzgqyjwr921dkkqbp-belay-sqlite-model-0.1.0`.
+
+- Review `20261024T140753Z-bc79e3e7` passed with no findings.
+- The derived-source pipeline now connects SQL translation, the indexed syntax,
+  name expansion, source/outer scopes and all-column metadata to the existing
+  evaluator. Source bodies resolve in FROM order; scalar siblings retain written
+  order. A derived source can read its enclosing query but not its sibling sources.
+  Nested USING/NATURAL conditions refresh after derived-column metadata resolves.
+  The kernel examples cover these rules, duplicate names, the lack of implicit
+  rowid, aggregate sources and certain/uncertain LIMIT membership.
+- Existing named-table proof APIs now require `reference.query = none` as well as
+  their existing function-argument premise. Public callers and fixtures supply
+  this premise. The new public `ClaimsDerived.lean` fixture and the changed syntax
+  and source-span tests are selected by the existing Nix model/surface suites.
+  Relevant checks: `syntax_queries_test.py`, `syntax_subqueries_test.py`,
+  `syntax_compound_test.py`, `surface_claims_test.py`,
+  `surface_translation_checks_test.py` and `restriction_registry_test.py`.
+- Nix `modelPackage` for this pipeline unit passed at
+  `/nix/store/wnxni6bvnfd3cisq5nndg95qspgbyh94-belay-sqlite-model-0.1.0`.
+  It checks the new `DerivedResolutionExamples` and the existing model proof APIs.
+  The part-1 full/verdict gates and final frozen prediction classification remain
+  pending; this unit does not complete the first acceptance part.
+- Corpus v53 is reserved for query-source evidence (v54 belongs to the FK task).
+  The separate `query-sources-evidence` workspace starts from carry `8a89208f`.
+  Its authored native inputs are under preparation. No corpus, claim or judge lock
+  changes are included in this implementation unit.

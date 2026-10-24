@@ -279,8 +279,11 @@ mode, the page size, the cache). They stay out until a measurement shows a gain.
 through the statement's evaluation context. Complete-row certainty is separate from
 first-column certainty. Column metadata now distinguishes absent expression affinity
 from BLOB affinity and combines every column of compound terms. D3's ORDER BY COLLATE
-exception is implemented for IN and scalar subqueries. SQL FROM translation and source
-scope resolution remain pending; this does not complete D5 or slice 4.
+exception is implemented for IN and scalar subqueries. Derived SELECT sources now pass
+through SQL translation, indexed source resolution and the same evaluator. Source expansion
+precedes expression resolution; derived bodies follow FROM order and preserve enclosing
+versus sibling binding. Part-1 native corpus and full/verdict acceptance remain pending;
+ordinary CTEs and views remain for parts 2 and 3. This does not complete D5 or slice 4.
 
 ## Owner decisions
 

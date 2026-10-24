@@ -31,7 +31,8 @@ def compoundTerms (base : Nat) (parent : Option Nat) (compound : Syntax.Compound
   compound.terms.mapM fun index =>
     let term : Option CompoundTerm := do
       let written ← subqueries[index]?
-      if base ≤ index && written.parent == parent then
+      if base ≤ index && written.parent == parent &&
+          (shapes[index - base]?.map (·.parent)) == some parent then
         let query ← queries[index - base]?
         pure {
           scope := ← scopes[index]?
