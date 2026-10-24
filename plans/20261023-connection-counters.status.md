@@ -1,6 +1,6 @@
 # Status: the connection counters (ADR 0024, slice 1)
 
-Created 2026-10-23. Status: IN PROGRESS (the owner accepted the decisions; commits 1 to 6 are done; the judge-change commits (PR B) are next).
+Created 2026-10-23. Status: DONE (2026-10-24).
 Task file: [task](20261023-connection-counters.task.md).
 Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md) (ACCEPTED
 2026-10-23), D1 to D3, D5, D6 slice 1.
@@ -255,6 +255,18 @@ Specification: [ADR 0024](../docs/adr-0024-connection-state-and-random-values.md
   ADR 0024 says that `last_insert_rowid()` after a failed plain INSERT is the rowid of the last
   row that the statement inserted into a rowid table, and otherwise keeps its previous value
   (which can be unknown). Tests: none (documents only). Nix evidence is pending.
+- 2026-10-24 (PR B): the judge lock (`integrity/judge.lock.json`) adds corpus-v52 and the new
+  judge source. Its review had no findings.
+- 2026-10-24 (PR A): `just test-full` failed to build `VerifierConformance.RunPassLaws`, and the
+  formula tests `tests/keys_unique_theorems_test.py` and `tests/valid_atoms_theorems_test.py`
+  failed: `runScriptStepWith` has a new case (a read of an unknown counter), and
+  `runStatement` takes the counters. `just dev-build` builds only the conformance runner, so the
+  law module did not build before. The fix commit at the end of PR A adds the case split and
+  the counters argument; its review had no findings.
+- 2026-10-24: `just test-full` passes, and `just verdict` passes (corpus-v52 AGREE 33,
+  corpus-v51 AGREE 21, corpus-v50 AGREE 17, corpus-v4 AGREE 673, corpus-v5 AGREE 2946). `just
+  test-nix` passes (67 tests), and `just test-scheduled-checks` passes (47 tests). The task is
+  DONE.
 
 ## Native probes (3.51.0, dev shell `sqlite3`, one statement per line)
 
@@ -385,4 +397,4 @@ flight". A fifth review, of the last fix of the status file, had no findings.
 
 ## Review records
 
-None yet.
+The records of each review and of each resolution of a finding are under `reviews/`.
