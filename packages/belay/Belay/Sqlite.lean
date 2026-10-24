@@ -17,6 +17,15 @@ import Belay.Sqlite.ProgramQueries
 import Belay.Sqlite.ProgramLaws
 import Belay.Sqlite.ProgramMonadLaws
 import Belay.Sqlite.ProgramBindLaws
+import Belay.Sqlite.ExecutionContext
+import Belay.Sqlite.ExecutionBranches
+import Belay.Sqlite.ExecutionBranchLaws
+import Belay.Sqlite.ExecutionBind
+import Belay.Sqlite.ExecutionWP
+import Belay.Sqlite.ExecutionStep
+import Belay.Sqlite.ExecutionWPLaws
+import Belay.Sqlite.ExecutionSuccess
+import Belay.Sqlite.ExecutionFresh
 import Belay.Sqlite.Success
 import Belay.Sqlite.ProgramSuccess
 import Belay.Sqlite.ScriptSuccess
