@@ -454,3 +454,13 @@ proof relies on it (finding 15).
   `AdmittedAtomFrames` (the frame lemmas of the five table atoms, `TableAtom`, `Database.EachTable.appendEmpty`)
   and `AdmittedCellLaws` (what `generatedCells` and `newCells` keep: width, stored form and the alias
   cell), and the examples module `AdmittedAtomsStatementExamples`. Tests: `tests/test_model_package.py`.
+- 2026-10-24: part 2, commit "ADD COLUMN laws and CREATE statements of the table atoms". New modules
+  `AdmittedAddColumnLaws` (one `appendColumns` law for each table atom; `Table.Admitted.appendColumns` is
+  now the tuple of them), `AdmittedSchemaStatements` (`runStatement_create_tableAtom` for CREATE TABLE,
+  CREATE INDEX and CREATE TRIGGER, for every `TableAtom`) and `DatabaseShapedLaws` (what `setRows`,
+  appending an object, `Database.drop` and `Database.addColumn` keep of `Database.RowsShaped`;
+  `Conforms.createTable` and `Conforms.addColumn` use them). `Catalog.drop_eq_keptAfterDrop` and
+  `Database.drop_rows` moved to `DropPositionLaws`. The review of the first commit of part 2 had one
+  should (R9: the module docstring of `AdmittedCellLaws` said that non-generated cells stay, but
+  `newCells` replaces the alias cell), fixed. Tests: `tests/test_model_package.py`,
+  `tests/valid_atoms_theorems_test.py`, `tests/admitted_atoms_resolver_facts_test.py`.
