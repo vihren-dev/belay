@@ -37,8 +37,10 @@ workspace filesystem. Reserve at most two heavy build/check processes here.
 - S4's exact query-success iff describes the default run. Keep sufficient
   bridges to universal `Succeeds`; no universal-to-default converse is claimed.
 
-These decisions are in the corresponding tasks. A later NULL-check finding is
-pending below; it does not revoke the accepted split.
+S5/FK/query-source decisions are in their tasks here. Guide corrections have
+separate tasks in the private product repository; the S4 owner is recording
+the default-run decision in its active task. The SQL doc-handler task remains
+to be specified. The pending NULL finding does not revoke the accepted FK split.
 
 ## Pending owner judgment
 
@@ -146,6 +148,8 @@ product PR #7, `docs/guide-profile-defaults`, at `17666ac9`, based on published
 preserve the SQL bodies. The isolated `profile-publication` workspace contains
 no unrelated unpublished ancestors. Root owns its review handoff. S4's separate
 guide claims/proof paragraphs remain with the S4 agent.
+The original completed `profile-guide` workspace was removed after verifying
+the isolated published correction and its unchanged native SQL inputs.
 
 The read-only S7 audit is complete at
 `/home/codex/work/research_notes/Lean model modularity investigation/adr17_s7_audit.md`.
