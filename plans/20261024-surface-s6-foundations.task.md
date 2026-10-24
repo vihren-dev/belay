@@ -38,6 +38,9 @@ disjoint files. Its findings inform the full S6 task and the owner's decisions.
   execution may stand in for that quantification. Errors and unmodeled outcomes
   have explicit meanings, consistent with S4 `Succeeds`; the guide's `ifOk` and
   `andOk` must not turn a model restriction into a successful proof.
+  S4 also checks the actual raw continuation receiving `oneOf`, in addition
+  to each concrete `rows` continuation; the prototype must preserve that part
+  of its contract. A raw continuation can inspect the output constructor.
 - An equivalence audit tests the guide's current definition: equal return values
   and outputs, plus equal observations of the final databases by read-only
   queries. Identify precisely which hidden-state or execution-context facts a

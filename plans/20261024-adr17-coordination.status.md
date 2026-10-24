@@ -30,6 +30,8 @@ workspace filesystem. Reserve at most two heavy build/check processes here.
   preserve the existing SQLite meaning, including repeated key columns.
 - ADR 0019 slice 4 supports nonrecursive CTEs. Actual recursion is excluded
   regardless of spelling, and the RECURSIVE keyword remains excluded.
+- Keep current DQS-on and initial-FK-off defaults. Correct the guide and enable
+  enforcement explicitly before transactions in the affected examples.
 
 These decisions are in the corresponding tasks. A later NULL-check finding is
 pending below; it does not revoke the accepted split.
@@ -72,17 +74,20 @@ Two further questions are pending from prerequisite audits:
   retain SQLite metadata and ordinary Lake dependency tracking, and correct
   the blanket guarantee. The alternative is to defer S7 for a narrower cache
   design. The source/API audit continues; no implementation has started.
+- Native Verso rejects the guide's single-quoted doc-block header argument
+  before a SQL handler runs. The recommended correction is a double-quoted
+  string, with named closed Lean values for other types. The alternative is to
+  defer checked SQL blocks for an appropriate parser extension. The question
+  is pending; no header-syntax implementation or guide correction was made.
 
 ## Active implementation
 
-- `s4_part1`, workspace `sqlite-verifier-s4`: S4 part 1's implementation and
-  independent reviews are complete; Nix validation is in progress. The first
-  full run caught a duplicate `Connection.queryContext_of_quiet` declaration.
-  The agent removed it in `ad831c8d`, with clean review; Nix rechecking is in
-  progress and the actual surface suite passed all new S4 fixtures. Parts 2
-  and 3 remain required: success/program laws, then removal of `Run.checked`.
-  Rebase onto PR #239 or its completed build-boundary successor at a clean
-  boundary before part 2. Do not treat part 1 as completion of S4.
+- `s4_part1`, workspace `sqlite-verifier-s4`: part 1 passed its full/verdict
+  boundary, then rebased cleanly onto #240 at `372e6c8f`. Part 2 is active.
+  Task clarification `9f6cba9b` and monad/bind laws `51a56f7e` each have clean
+  independent review. Success must cover the actual raw `oneOf` continuation
+  and every concrete `rows` continuation. Part-2 success laws/fixtures are in
+  progress; part 3 still removes `Run.checked`. Do not treat part 1 as S4 done.
 - `text_build_boundaries`, workspace `sqlite-verifier-text-build-boundaries`:
   implementation `7d9d7d06` has clean independent review. `just test-full`
   passed with report
@@ -103,12 +108,8 @@ Two further questions are pending from prerequisite audits:
   baseline `4k77z378vnagzwx5448yqz0686d58cld`. The full pragma statement law
   will reuse S4's query-output bridge after clean integration; part 1 stays
   open until that law and its acceptance checks pass.
-- `text_build_boundaries` now continues with the reviewed prediction input
-  filter task in `sqlite-verifier-prediction-source-filter`, based on PR #240.
-  The exact task/status and review records were carried in `3808f139`; the
-  agent will review that commit before implementation. It owns the subject
-  filter in `integrity/judge.nix` and focused identity tests. The old workspace
-  remains at rest for the PR #240 review.
+- The prediction filter task in `sqlite-verifier-prediction-source-filter`
+  is DONE, based on #240. Both completed code workspaces remain at rest.
   Implementation `accfbf78` has clean independent review. The production Nix
   identity regression passes, all 55 locked parts are unchanged, and all 53
   prediction files / 7,372 cases are byte-identical. Full validation passed:
@@ -117,26 +118,31 @@ Two further questions are pending from prerequisite audits:
   DONE, final review findings resolved, and `529ff779` is pushed as
   `tasks/prediction-source-filter`. PR
   [#241](https://github.com/vihren-dev/sqlite-verifier/pull/241) is in stack 231,
-  based on #240. Its review range is `2f86e45a` to `529ff779`; root owns the
-  review handoff. The workspace remains at rest.
+  based on #240. Review tab 7 (`w1:t3V`) is open for `2f86e45a` to `529ff779`,
+  with live wait session `78368`. Do not open a duplicate review.
 
 The S4 provisional full gate passed: report
 `/nix/store/japwh8n1f0chh7fz6ig44qn9dxhkm8y5-sqlite-verifier-test-reports`,
 805 cases with no failures, errors or skips. Its final post-review invocation
 also passed, with verdict 4,838 AGREE and 2,534 MODEL_UNSUPPORTED and all 53
 predictions files byte-identical. The part-1 boundary was committed as
-`a86470b8` before the authorized rebase onto #240. That rebase needs only model
-lakefile registration conflicts resolved; the S4 agent owns that resolution.
-It is authorized to continue part 2 after reporting the clean rebased boundary
-and reserving its files.
+`a86470b8` before the authorized rebase onto #240. Registration conflicts were
+resolved without restoring removed files. Part 2's full gate will cover the
+integrated base; the earlier evidence remains part-1 evidence before rebase.
 
-The new `query-sources` workspace exists at
-`/home/codex/work/sqlite-verifier-query-sources`; its dev shell is allowed.
-It is an empty child of the rebasing S4 part-1 boundary, currently stale or
-conflicted until that rebase finishes. No implementation agent or source edit
-has started there. Update it to the clean final part-1 commit before carrying
-the reviewed query-sources task and assigning the independent model/text work.
-Do not rebase S4 ancestors after either implementation begins.
+`s6_prerequisite_audit` now implements query-sources part 1 in
+`sqlite-verifier-query-sources`, based on clean S4 part 1 `372e6c8f`.
+Task carry `8a89208f` has clean review. Baseline predictions are
+`/nix/store/qwfgz46d1pyd10xiypmka4kixvx38k2b-sqlite-verifier-predictions`;
+baseline verdict `srv5lc3gnn1s9wzfjy1ilrzsb2ws0881` passes existing claims.
+The source-execution unit is being checked; metadata/translation remain.
+CTEs and views follow as later parts. Do not rebase shared S4 ancestors.
+
+`text_build_boundaries` completed the private guide correction at `565f1974`
+in `sqlite-verifier-product-profile-guide`. Nine pinned native checks passed.
+The agent is isolating the task and correction onto product PR #6's published
+base, excluding unrelated unpublished ancestors, before root publication.
+S4's separate guide claims/proof paragraphs remain with the S4 agent.
 
 The read-only S7 audit is complete at
 `/home/codex/work/research_notes/Lean model modularity investigation/adr17_s7_audit.md`.
@@ -144,6 +150,9 @@ Its file elaborators and freshness checker can proceed without S4–S6 once the
 guide correction is decided. A task must also cover the guide's `--costs`
 heartbeat reporting; the checked SQL docstring-block feature needs explicit
 ownership in the remaining guide audit.
+The editor/doc-block audit is also complete in the same research-notes directory.
+It informs [the editor task](20261024-surface-editor.task.md), now awaiting review.
+Checked doc blocks still need their task after the syntax decision.
 
 Completed workspaces `adr19s2`, `adr19s3`, `adr22s2`, `adr22s3`, `adr22s4`,
 `errev` and `envfns` were checked clean, with all nonempty commits reachable
@@ -162,11 +171,8 @@ No agent may rebase a shared ancestor while another agent is editing a descendan
   Lean 4.34.1. No dependency is installed yet.
 - [Query sources](20261024-query-sources.task.md): review `cf7aa9a6` had no
   findings. Covers derived tables, ordinary CTEs and views, including the
-  existing compound-subquery metadata restriction. Reserve model/text files
-  before delegation. ALTER/rebuild follows the final view representation.
-- [Prediction input filter](20261024-prediction-source-filter.task.md): final
-  review `7eb6003e` had no findings. Fixes an observed rerun caused solely by
-  Python bytecode; delegated separately as recorded above.
+  existing compound-subquery metadata restriction; part 1 is active above.
+  ALTER/rebuild follows the final view representation.
 - [S6 foundations prototype](20261024-surface-s6-foundations.task.md): final
   review `1cd45bae` had no findings. Uses S4's completed monad/universal execution
   interfaces to investigate WP, congruence, the before schema and footprints.

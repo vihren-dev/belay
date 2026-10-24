@@ -31,3 +31,6 @@ until the prototype has evidence.
   the ADR identifies questions needing a prototype, rather than specifying its
   exact scheduling. Corrected that attribution; this task's prerequisite on
   final S4 interfaces remains a planning choice.
+- 2026-10-24: made the S4 dependency explicit for both actual raw `oneOf`
+  continuations and every concrete `rows` continuation, following the reviewed
+  S4 task clarification `9f6cba9b`. The prototype still waits for reviewed code.
