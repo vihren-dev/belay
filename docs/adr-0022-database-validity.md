@@ -97,6 +97,13 @@ retains the declaration-column fallback. The original rule inspected unused
 child columns and could wrongly exempt a nonmatching row. Slice 5 includes this
 engine correction, native regressions and the corresponding atom/proof update.
 
+The owner further accepted mapped action targets on 2026-10-24. CASCADE,
+SET NULL and SET DEFAULT write the child columns selected by the parent mapping,
+including repeated targets. Unused declared child columns remain unchanged.
+Assigned/changed-column effects, including UPDATE OF triggers, use those actual
+targets. Slice 5 includes this correction and native regressions alongside the
+NULL check; it does not reinterpret a repeated mapping as positional declaration pairs.
+
 Each atom has two forms: a proposition that a proof reads easily, and a check that computes,
 with a lemma that the two are equivalent. The atom is decidable through its check, so `decide`
 proves it for a concrete database. The checks of the constraint atoms are the functions that

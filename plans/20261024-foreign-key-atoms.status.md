@@ -1,10 +1,17 @@
 # Status: foreign-key facts and preservation
 
-Created 2026-10-24. Status: OPEN. Split-API work is preserved in the FK workspace;
-the accepted engine correction is queued and has not started.
+Created 2026-10-24. Status: OPEN. Split-API and mapped-NULL work is active in
+the FK workspace. The accepted action-target correction follows task review.
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
 Inspected base: PR #239, `98a07bfe`, in `vihren-dev/sqlite-verifier`.
+
+Latest scope decision, 2026-10-24: the owner accepted selected action targets
+for CASCADE/SET NULL/SET DEFAULT and their assigned/changed-column effects.
+Native diagnostics show repeated-key actions leave an unused child column
+unchanged and do not fire its UPDATE OF trigger. The earlier model wrote that
+column too. The revised task requires regression evidence and ordinary-mapping
+coverage; no Nix acceptance of this new correction is claimed yet.
 
 ## Owner decision and evidence
 

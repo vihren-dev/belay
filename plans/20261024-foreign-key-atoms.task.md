@@ -24,8 +24,14 @@ check to use the selected parent mapping. For a located parent, test the child
 columns of that comparison, including repeated columns. With no selected
 comparison, retain SQLite's declaration-column fallback. The old original-column
 rule incorrectly accepts `(99,NULL)` in the repeated-key example below. Revise
-the default atom mapping and proofs to match the corrected engine. This is the
-one planned execution change; add native regressions before relying on it.
+the default atom mapping and proofs to match the corrected engine.
+
+Further accepted on 2026-10-24: foreign-key actions use the selected mapping
+for their child targets too. Correct CASCADE, SET NULL and SET DEFAULT, together
+with assigned/changed columns used by constraints, generated columns and
+UPDATE OF triggers. Preserve repeated selected targets and leave unused declared
+columns unchanged, as pinned SQLite does. These mapped-NULL and mapped-action
+corrections are the planned execution changes; add native regressions for both.
 
 ## Required outcomes
 
@@ -121,6 +127,13 @@ The test suite must distinguish the atoms, not just exercise their definitions:
   `y` does not exempt it; NULL in selected `x` does. Check the shared helper's
   callers in write phases and pragma checks, including UPDATE and parent-row
   changes. Missing-target checks retain the declaration-column fallback.
+- For the repeated-key schema with ON UPDATE CASCADE, updating parent `a` from
+  1 to 99 changes child `(1,NULL)` to `(99,NULL)`, not `(99,99)`. With an unused
+  non-NULL `y`, CASCADE leaves it unchanged too. SET NULL and SET DEFAULT also
+  update only the selected projection. Compare an UPDATE OF unused-column
+  trigger with one watching the selected column; generated dependencies and
+  constraint checks receive the actual assigned/changed targets. Cover parent
+  UPDATE and DELETE actions, ordinary composite keys and rowid parents.
 - Include the native scan/lookup necessity example: parent `p(k TEXT UNIQUE)`
   stores `'1'`, child `c(x INTEGER REFERENCES p(k))` stores `1`, and an AFTER
   DELETE trigger on the parent inserts `'01'` when deleting `'1'`. The DELETE
@@ -137,7 +150,7 @@ The test suite must distinguish the atoms, not just exercise their definitions:
   `sorryAx` and `ofReduceBool`; no native computation certifies a theorem.
 - Capture a frozen-prediction baseline before model edits. Classify every changed
   prediction against pinned native SQLite; only changes explained by the accepted
-  mapped-NULL correction are planned. Preserve all existing mustAgree claims;
+  mapped-NULL and mapped-action corrections are planned. Preserve all mustAgree claims;
   do not weaken a claim to hide a regression. Native probes use the pinned 3.51.0 build. Use
   existing test infrastructure, finite subprocess timeouts and real Nix suite
   registration. Add authored native regression evidence through the existing
@@ -159,10 +172,10 @@ are required for slice 5 to be complete. The implementer chooses the work units.
 All paths below are below `packages/belay-sqlite-model/Belay/Sqlite/Model/`:
 `ForeignKeysHold.lean`, `ForeignKeySatisfied.lean`, `ForeignKeyCheckLaws.lean`,
 `ForeignKeyCheck.lean`, `ForeignKeyMatch.lean`, `ForeignKeyPhases.lean`,
-`ForeignKeyWrites.lean`, `Resolution/ParentKeys.lean`, `Resolution/Drops.lean`,
+`ForeignKeyWrites.lean`, `ForeignKeyRows.lean`, `Resolution/ParentKeys.lean`, `Resolution/Drops.lean`,
 `DatabaseWriteLaws.lean`, `RowEngineFacts.lean`, `RunHolds.lean` and
 `ScriptRunHolds.lean`. Surface export: `packages/belay/Belay/Sqlite/Database.lean`.
-Native selection: `sqlite3FkLocateIndex` in `parser/upstream/sqlite3.c`.
+Native selection/actions: `sqlite3FkLocateIndex` and `fkActionTrigger` in `parser/upstream/sqlite3.c`.
 
 `Catalog.drop` renumbers positions. Parent selection can depend on index order.
 `matchIndex` permits repeated parent columns, as the accepted slice-4 decision
@@ -173,6 +186,6 @@ can satisfy it even when the parent schema is incompatible. Prove correspondence
 to the corrected native behavior rather than strengthening the row fact silently.
 
 Stop and report a specification finding if an execution-semantic change is
-needed beyond the accepted mapped-NULL correction, if the selected split cannot express the existing SQLite rules, or if a
+needed beyond the accepted mapped-NULL/action corrections, if the split cannot express SQLite's rules, or if a
 preservation claim has a native counterexample not handled by its stated
 conditions. Continue independent work while the owner decides.
