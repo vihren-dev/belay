@@ -12,6 +12,10 @@ user-facing unit. The experiment now retains native completed body traces and
 exports records through a persistent environment extension. All required checks
 pass, and the final measurement findings have a clean independent review.
 No production measurement or baseline guarantee is claimed.
+The owner accepted optional named proof-body collection on 2026-10-24, including
+ordinary and native mutual declarations and separately labeled proof-valued
+definitions. Other coverage is explicit, and the user chooses the additive CI
+growth allowance. Production implementation and the mutual probe remain pending.
 
 ## Progress
 
@@ -157,8 +161,8 @@ No production measurement or baseline guarantee is claimed.
 - The prototype has no package, conformance, judge or lock changes from final
   S4 source `24ca8b4c`. The coordinator will combine final S4 publication metadata
   when publishing the completed prototype, without changing the accepted source
-  inputs. The separate production coverage choice remains with the owner;
-  this task implements no production cost API.
+  inputs. At that checkpoint, the separate production coverage choice remained
+  with the owner; this task implements no production cost API.
 - Final evidence commit `efca77ffe75378c5d018f9ea3dbcc844bda657ac` passed
   independent review `20261024T191340Z-efca77ff` with no musts or shoulds.
   The bounded experiment is DONE. All implementation checks are terminal;
@@ -167,3 +171,10 @@ No production measurement or baseline guarantee is claimed.
 - Completion commit `8619bc984f2fa4faa30f90fd59b8dc539117e374` passed
   independent review `20261024T191612Z-8619bc98` with no findings. This final
   status-only record preserves that review; it changes no accepted test input.
+- The owner subsequently accepted the named proof-body contract. Carried only
+  the S7 row and accepted cost paragraph from planning commit `2048b9fb` into
+  ADR 0017, preserving the final S4 changes. The findings now identify coverage
+  and the user-set budget as accepted. Production implementation and the focused
+  native mutual probe remain pending; no production task or source is added.
+  Targeted check: `tests/docs_test.py`. This prose-only follow-up claims no new
+  Nix acceptance result.

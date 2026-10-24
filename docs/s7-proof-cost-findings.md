@@ -120,22 +120,22 @@ in the focused run: exact cross-run count invariance is unsupported even with
 unchanged proof source. The second control wall samples are 1.451s and 1.457s;
 instrumented samples are 1.606s and 1.501s. These remain bounded observations.
 
-## Proposed production contract and decisions
+## Accepted production contract
 
-The recommended contract reports **completed explicit named proof-body
-elaboration**: theorems and separately labeled proof-valued definitions, with
-compiler success required before a record is usable. It covers ordinary and
+On 2026-10-24 the owner accepted the contract in [ADR 0017](adr-0017-user-surface.md):
+report **completed explicit named proof-body elaboration** for theorems and
+separately labeled proof-valued definitions, with compiler success required
+before a record is usable. It covers ordinary and
 native mutual declarations. Name the instrumented boundary, preserve native
 async, retain exact internal units, and report missing/unsupported data.
 Ordinary definitions must not be mislabeled as proofs. Anonymous and generated
 identities should not silently enter a stable baseline.
 
-The owner must choose whether this explicit declaration coverage meets the
-product promise. Literal coverage of every embedded/generated proof requires a
-different instrumentation boundary; this prototype does not establish one.
-Collection should be optional/configurable, with the guide's additive growth
-budget set by the user. The interface must disclose the measured overhead and
-count variation. Instrumentation can make a proof near its limit exceed that
+Embedded proofs and generated helpers have no promised separate cost. Reports
+identify other coverage as missing or unsupported. Collection is optional and
+configurable, with the additive growth budget set by the user.
+The interface must disclose the measured overhead and count variation.
+Instrumentation can make a proof near its limit exceed that
 limit. Source order and async mode can affect counts; a deterministic comparator
 does not make measurements invariant.
 Production integration must coordinate the declaration hook with other custom
@@ -143,7 +143,7 @@ elaborators, including the S5 checker. This experiment hooks ordinary native
 declarations. Native mutual blocks are **untested**: it does not install a hook
 for Lean's separate `mutual`-block handler (`Lean/Elab/Declaration.lean`). Start
 production work with a focused mutual probe; report an inability to cover this
-normal syntax for owner judgment before narrowing the proposed contract.
+normal syntax for owner judgment before narrowing the accepted contract.
 Arbitrary third-party handlers are also untested and may remain explicit
 unsupported/missing entries. The present evidence does not establish every
 named declaration form.
@@ -162,6 +162,6 @@ Proposed baseline comparison, with no implementation in this prototype:
    private/anonymous identities separately unless the owner accepts their
    edit-sensitive identity policy.
 
-The production task must settle coverage, identity and budget policy from the
-Nix evidence before promising `--costs` behavior. No production implementation
-is implied by a successful prototype.
+Production implementation, the focused mutual-declaration probe and baseline
+comparison remain pending. The accepted contract is a requirement for that work;
+this completed prototype supplies evidence, not a production cost API.
