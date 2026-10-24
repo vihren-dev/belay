@@ -141,3 +141,52 @@ Carried the reviewed comparison-consistency clarification from coordinator
 commit `98e1e8f13ecd8406cfabc48f1d5fe2870e9ca928` into only this task and ADR22.
 Review `20261024T143702Z-98e1e8f1` had no findings. The source work above remains
 uncommitted and separate from this planning carry. No acceptance check is claimed.
+
+## Current checks and action-target finding
+
+The planning carry review `20261024T144605Z-befd2074` has no findings.
+The atoms, transported row frames and full database/table pragma statement laws
+compile in the local development build. The statement laws accept arbitrary
+clock/index/counters/transaction state and state preparation separately from row
+truth. Local build and test runs remain diagnostic until Nix acceptance.
+
+Local focused checks passed 23 of 24 cases, including the surface theorem/axiom
+fixture and all mapped-NULL cases except one action regression. The existing
+`composite_null_checked` mutant was updated, with coordinator approval, to change
+any to all on the selected child projection. All 49 local guard checks pass;
+the focused mutant execution still remains.
+
+The failing case exposes a second engine mismatch: with parent
+`p(a,b,PRIMARY KEY(a,a))`, child `(x,y)` referencing `(a,b)` ON UPDATE CASCADE,
+parent `(1,2)` and child `(1,NULL)`, updating parent a to 99 leaves native child
+`(99,NULL)` but modeled child `(99,99)`. Both executions succeed. The shared
+`actionCells` helper iterates declaration columns, but pinned sqlite3.c:136450
+uses the selected aiCol[i] for action targets. Its assigned/changed-column inputs
+also need assessment for triggers. The exact native/model observations are in
+`build/agent-logs/fk-cascade-case.json`, `fk-cascade-prediction.json` and
+`fk-cascade-summary.log`.
+
+The task currently authorizes only the hasNull execution correction. The
+coordinator has this additional finding and a recommendation to specify selected
+targets for CASCADE/SET NULL/SET DEFAULT, including duplicate-column and trigger
+effects. That dependent correction is paused; no action semantics changed.
+Independent frozen-prediction and atom-proof checks continue. No implementation
+commit or task acceptance is claimed while a required regression fails.
+
+## Accepted action correction and comparison premise
+
+The owner accepted the selected-action-target correction on 2026-10-24. Carried
+only the task and ADR22 from coordinator boundary `6d267b1e1d2aa4001b9711d63b3ac6516bb7b633`.
+Review `20261024T151438Z-4c59fcc3` had no musts; its two wording findings were
+fixed at that boundary. Follow-up `20261024T151547Z-6d267b1e` had no musts and
+one status-only naming finding, whose resolution is carried with the reviews.
+The action source has not changed yet; the earlier pause is now resolved.
+
+The new comparison premise quantifies over all stored parent/child row pairs,
+including future rows, and requires scan/lookup equality for non-NULL keys.
+Structural sufficient conditions for a single BLOB parent with a nonnumeric
+child and for a single TEXT/TEXT pair are proved. Kernel fixtures exercise both
+and reject the TEXT/INTEGER example. Local builds and both surface fixtures
+passed with 20 audited declarations; these are development diagnostics, not
+Nix acceptance. Row preservation still needs the global immediate-counter
+invariant through nested writes and FAIL. No part-2 completion is claimed.
