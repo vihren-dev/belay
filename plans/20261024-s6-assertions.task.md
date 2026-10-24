@@ -59,8 +59,9 @@ none of these primitives depends on a particular automation tactic.
   prerequisite task. Expose explicit-initial-database constructors as well as
   fresh-run convenience syntax. Preserve SQL source positions and arbitrary
   supported read-only queries; no string replacement implements before.
-- **Conditional and total postconditions are usable.** Reuse the execution
-  task's ifOk and andOk policies. A fresh conditional postcondition requires its
+- **Conditional and total postconditions are usable.** Expose ifOk and andOk
+  over the execution task's conditional and total success policies. A fresh
+  conditional postcondition requires its
   property when the whole trace has no modeled SQL error; a total one also
   requires that error-free trace. Ordinary triples document how an earlier
   prefix error affects these policies. Both policies require every continuation

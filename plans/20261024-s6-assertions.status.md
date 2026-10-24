@@ -21,5 +21,8 @@ native trigger counterexamples remain required negative fixtures.
 ## Progress
 
 - 2026-10-24: specified fresh/ordinary equivalence, observation distinctions,
-  compositional rules and universal guide acceptance. Task review is pending.
-  No implementation or Nix acceptance is claimed.
+  compositional rules and universal guide acceptance. Review
+  20261024T152453Z-8687f111 found no musts and one naming should: the predecessor
+  specifies conditional/total policies but does not prescribe helper names.
+  This task now explicitly supplies ifOk/andOk over those policies. No
+  implementation or Nix acceptance is claimed.
