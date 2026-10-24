@@ -51,3 +51,9 @@ be demonstrated. No production measurement or baseline guarantee is claimed.
   Carry review `20261024T170935Z-905a7bc6` found one citation clarification;
   the task now identifies the private target guide as the cost requirement
   source. The public ADR specifies the check tool. Scope is unchanged.
+- Citation follow-up review `20261024T171354Z-d2aa6067` has no musts. Its
+  should finding requests access to the private source; the resolution records
+  the verified repository, path and published revision. The task already names
+  that guide and the owner request, so no further scope edit is needed.
+  The reviewed prototype is handed to `s4_part1`; bounded implementation may
+  proceed. Root must grant a heavy build slot before broad checks.

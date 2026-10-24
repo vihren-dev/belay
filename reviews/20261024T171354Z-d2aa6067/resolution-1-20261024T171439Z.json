@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-24T17:14:39+00:00",
+  "finding": "20261024T171354Z-d2aa6067#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The requirement was checked in vihren-dev/sqlite-verifier-product, model-user-guide.md, Stable proofs, published revision d3aeb407ca6859c3a925961248791300efb293ae, lines 2380-2382. The task explicitly attributes this requirement to the private target guide and also records the owner request. A reader without private repository access cannot verify a URL either; public ADR17 is not presented as the source of the cost promise."
+}
