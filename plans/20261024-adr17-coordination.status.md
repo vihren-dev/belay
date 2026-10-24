@@ -120,23 +120,22 @@ Both email copies and the full balance proof compile against Nix surface
 `qz96vr9hh9vghmw4hihvvl2lwh4dmdxf`, with only ordinary logical axioms; PR #8 is updated.
 Final acceptance must selectively reconcile unpublished S2/S3 product-default changes.
 
-Root stacked reference `56479` owns heavy slot 2; urgent fix cadence `17338`
-owns slot 1. CTE and FK UPDATE gates wait. FK insertion unit
+Root stacked final gates `61952` own heavy slot 2; CTE focused Nix `81855`
+owns slot 1. FK UPDATE waits. FK insertion unit
 `45a65a92`/`754545ce` passed six Nix fixtures/95 axioms at `afgmspdjm1andpc3pd1wlfqdv9gl4bib`.
 Derived #243 passed local full 853/Nix 70/scheduled 47 and verdict 4,867/2,505,
 with all 53 predictions matching accepted evidence. Linux CI #242/#243 failed
-API reference generation: 532 roots exceed doc-gen4's compound-query limit.
-`s4_part1` owns reviewed task `c58f8e31` in `reference-compound-limit` on #242;
-S7 work is frozen. The reader passed 12 Nix cases, including 532/640 roots,
-at `x66x56cw6qxvd72k056gldkvy7r0qv9i`. The full 532-module reference passed
-at `jqn6h8cij0xva91lb5sl3aqidndbjc3z`. Fix `caf53b68` and inventory follow-up
-`58fc6ba8` are reviewed; #243's 538-module reference is running on `d2ffeadb`.
-Both PRs will receive descendants without rewriting shared ancestors.
+API reference generation above 500 roots. The repair is DONE and pushed to #242
+at `b6864447`: 808 full tests, 70 Nix checks, 47 scheduled checks and verdict pass.
+The reader passed 12 Nix cases, including 532/640 roots. Complete references
+passed for #242's 532 modules and #243's 538 modules (`iz8kjnq67dn05smyh3liv85rf2wwdzn5`).
+#242 CI run `40119562570` is running; #243 publication awaits its combined gates.
+The clean repair workspace was removed; its logs are archived in stack-publication.
+`s4_part1` resumed the preserved S7 prototype with light work only.
 The owner accepted physical-table premises for BOTH unique-email and balance.
-Task corrections are batched at S4 `2e761ca0`, under review; the query-source
-agent will implement them in isolated `s4-table-premises`, then update the guide.
-Native counterexamples remain in research notes `views_native_20261024.py/.out`.
-No owner question is pending. CTE's incremental dev-build passed at session13213.
+Task corrections `2e761ca0` have a clean review and handoff `03a9595a`;
+the query-source agent owns `s4-table-premises` and the private guide update.
+Native counterexamples remain in `views_native_20261024.py/.out`; no question is pending.
 ## Published work and cleanup
 
 - Public [PR #240](https://github.com/vihren-dev/sqlite-verifier/pull/240),
@@ -187,7 +186,7 @@ workspaces were removed after #243; gate logs are retained under S4 build/. Prot
   review `20261024T140930Z-09c30b41`, unassigned.
 - [S7 proof-cost prototype](20261024-s7-proof-cost-prototype.task.md) is assigned
   to `s4_part1` in `s7-proof-cost`, reviewed carry/citation head `79ef4d07`.
-  Prototype work is preserved while its agent fixes CI; production awaits findings.
+  Prototype work resumed after the CI fix; production awaits findings.
 - [Guide rebuild wording](20261024-guide-sql-rebuilds.task.md) is DONE, published
   with reviewed S4 explanatory prose in private product PR #8, head `1ae76380`.
 - [S8 simulation](20261024-surface-s8.task.md) is reviewed clean at `03ac78a0`:
