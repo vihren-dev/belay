@@ -90,7 +90,8 @@ They retain exact internal heartbeat units, with 1000 internal units per Lean
 budget unit. CI compares compatible measurements and fails when growth exceeds
 an additive allowance chosen by the user; missing data never means zero. The guide must disclose
 measurement overhead and count variation. The prototype measured about 9%
-heartbeat overhead in its sample; this is not a general bound. Production
+heartbeat overhead in its sample (prototype commit `489b22f6`,
+`docs/s7-proof-cost-findings.md`); this is not a general bound. Production
 collection and native mutual coverage remain implementation work.
 
 ### D2. S1: SQL text in Lean, measured before it is built

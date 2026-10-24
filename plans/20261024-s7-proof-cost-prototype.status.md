@@ -181,3 +181,7 @@ growth allowance. Production implementation and the mutual probe remain pending.
 - Accepted-scope commit `71268d20332da3dde4b78760ee94496a4f18c136` passed
   independent review `20261024T192358Z-71268d20` with no findings. This status-only
   record retains that review. The prototype remains DONE.
+- The coordinator's review of planning commit `2048b9fb` requested an explicit
+  source for the ADR's overhead measurement. Added the completed prototype
+  commit and findings path; scope and measurements are unchanged. Targeted
+  check: `tests/docs_test.py`. No new Nix result is claimed for this citation.
