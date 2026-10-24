@@ -222,6 +222,7 @@ import Belay.Sqlite.Model.UniqueLookupCompare
 import Belay.Sqlite.Model.UniqueLookupCount
 import Belay.Sqlite.Model.SumIntegerLaws
 import Belay.Sqlite.Model.SumBoundLaws
+import Belay.Sqlite.Model.SumRangeLaws
 import Belay.Sqlite.Model.SumValueLaws
 
 /-! SQLite states, the facts of an admitted and of a valid database, the theorems of the statements

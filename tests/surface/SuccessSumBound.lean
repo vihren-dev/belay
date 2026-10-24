@@ -35,3 +35,26 @@ example : (sumOf [.integer 9223372036854775807]).sumValue.isNone = false := by
 
 #print axioms ledger_sum_bound
 #print axioms sumOf_no_overflow_of_bound
+
+/-- Stored INTEGER-affinity inputs satisfying the SQL NOT BETWEEN precondition have a
+safe SUM. Proof sketch: the stored range law supplies the same trillion-times-count bound. -/
+theorem ledger_sum_from_sql_bounds (values : List Value)
+    (stored : ∀ value ∈ values, LiteralData.storedForm .integer value = true)
+    (within : ∀ value ∈ values, Resolved.truthy
+      ((Comparison.ge.apply (Resolved.numericOperand value) (.integer (-1000000000000))).and
+        (Comparison.le.apply (Resolved.numericOperand value) (.integer 1000000000000))).not = false)
+    (small : values.length < 1000000) : (sumOf values).sumValue.isNone = false := by
+  apply sumOf_no_overflow_of_between values 1000000000000 .binary (by decide)
+  · intro value member
+    simpa [Resolved.numericOperand_of_stored
+      (by decide : Affinity.integer ≠ .text ∧ Affinity.integer ≠ .blob) (stored value member)] using within value member
+  · omega
+
+-- A stored nonnumeric TEXT and a BLOB each fail the numeric range, rather than silently
+-- acquiring the integer-only premise used in the original guide argument.
+example : Resolved.truthy ((Comparison.ge.apply (.text (bytes! "word")) (.integer (-1000000000000))).and
+    (Comparison.le.apply (.text (bytes! "word")) (.integer 1000000000000))).not = true := by decide +kernel
+example : Resolved.truthy ((Comparison.ge.apply (.blob []) (.integer (-1000000000000))).and
+    (Comparison.le.apply (.blob []) (.integer 1000000000000))).not = true := by decide +kernel
+
+#print axioms ledger_sum_from_sql_bounds
