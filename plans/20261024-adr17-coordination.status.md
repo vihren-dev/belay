@@ -335,7 +335,9 @@ byte/symlink verification, into `s4/build/agent-logs/s6-execution-part1` and
 `s4/build/agent-logs/model-native-artifacts`. Seven existing Nix outputs are
 rooted under `s4/build/accepted-s6-native-artifacts`. Five additional outputs
 preserve focused equivalence, combined full tests, verdict, predictions and API
-reference evidence. Both implementation
+reference evidence. A thirteenth root retains the successful scheduled report;
+five combined acceptance logs and summaries are hash-verified under
+`s4/build/agent-logs/s6-native-integration-acceptance`. Both implementation
 workspaces remain until combined acceptance and publication. The equivalence
 workspace dependency audit found only direct store symlinks and no references
 to either implementation workspace.
