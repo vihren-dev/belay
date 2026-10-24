@@ -59,8 +59,8 @@ def Database.KeysUnique (database : Database) : Prop :=
   database.EveryTable fun position table => table.KeysUnique (database.catalog.uniqueKeys position table.shape)
 
 /-- The facts of a valid database under a profile: the facts of an admitted database, and the
-declared constraints of every table hold. Foreign keys are not part of it
-({lit}`Database.ForeignKeysHold`). A claim about every database that SQLite writes with its
+declared constraints of every table hold. Foreign-key row references and parent-schema compatibility are separate facts
+({lit}`Database.RowReferencesHold` and {lit}`Database.ParentSchemasCompatible`). A claim about every database that SQLite writes with its
 statements states it as a hypothesis; it admits no database. -/
 structure Database.Valid (profile : Profile) (database : Database) : Prop where
   /-- The database satisfies {name}`Database.Admitted` under the profile. -/

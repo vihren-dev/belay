@@ -72,11 +72,11 @@ def FireRequest.write (catalog : Catalog) (request : FireRequest) : ForeignKeyWr
   | .update set => .update ((shape.map (·.changedColumns (set.getD []))).getD [])
 
 /-- The writes of the actions of the foreign keys of a request, which a request runs with foreign
-keys on, besides its programs; their programs inherit ABORT. -/
+keys on, besides its programs; their programs inherit ABORT. UPDATE OF matching reads selected
+assigned columns from {name}`actionEvents`, before generated dependencies are added. -/
 def FireRequest.keyRequests (catalog : Catalog) (links : List ForeignKeyLink) (request : FireRequest) : List FireRequest :=
-  (actionWrites catalog links request.table (request.write catalog)).map fun (child, action) => match action with
-    | .update changed => { table := child, event := .update (some changed), algorithm := some .abort }
-    | .delete | .insert .. => { table := child, event := .delete, algorithm := some .abort }
+  (actionEvents catalog links request.table (request.write catalog)).map fun (child, event) =>
+    { table := child, event, algorithm := some .abort }
 
 /-- Whether the request is an INSERT or an UPDATE that may delete rows by REPLACE: a key of its
 policy ({name}`Catalog.writePolicy`) has the algorithm REPLACE. -/

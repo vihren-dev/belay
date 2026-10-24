@@ -1,12 +1,12 @@
-import Belay.Sqlite.Model.ForeignKeysHold
+import Belay.Sqlite.Model.ForeignKeyMappingLaws
 import Belay.Sqlite.Model.PragmaRun
 import Belay.Sqlite.Model.QueryLaws
 
 set_option doc.verso true
 
 /-! The laws of {lit}`PRAGMA foreign_key_check` (ADR 0019, D2): the pragma gives no rows exactly
-when the foreign keys hold ({lit}`Database.ForeignKeysHold`), or for the named table
-{lit}`Table.ForeignKeysHold` of that table. The laws are about the rows of the pragma: a
+when the row-reference fact holds with catalog-selected mappings, or for the named table
+when that table has the row-reference fact. This does not establish parent-schema compatibility. The laws are about the rows of the pragma: a
 {lit}`foreign key mismatch` fails the statement at prepare before the rows
 ({lit}`Catalog.keyMismatch`). -/
 
@@ -24,14 +24,17 @@ theorem forall_zipIdx_iff {α : Type} {items : List α} {property : α → Prop}
   · intro all pair member
     exact all pair.1 (List.fst_mem_of_mem_zipIdx member)
 
-/-- For every database, position and table: the table gives no rows of
+/-- For every database and table present at a position, the table gives no rows of
 {lit}`PRAGMA foreign_key_check` ({name}`Database.keyCheckRows`) exactly when it satisfies
-{name}`Table.ForeignKeysHold`. Proof sketch: no row and key gives a row exactly when each row
+{name}`Table.RowReferencesHold` with catalog-selected mappings. Proof sketch: no row and key gives a row exactly when each row
 satisfies each key, and the scan is a permutation of the rows
 ({name}`Table.scanRows_perm`). -/
-theorem Database.keyCheckRows_eq_nil (database : Database) (position : Nat) (table : Table) :
-    database.keyCheckRows position table = [] ↔ Table.ForeignKeysHold database position table := by
-  unfold Database.keyCheckRows Table.ForeignKeysHold
+theorem Database.keyCheckRows_eq_nil (database : Database) (position : Nat) (table : Table)
+    (present : database.table position = some table) :
+    database.keyCheckRows position table = [] ↔
+      table.RowReferencesHold database.catalog.foreignKeyMapping database position := by
+  rw [Table.rowReferencesHold_selected_iff database position table present]
+  unfold Database.keyCheckRows
   simp only [List.flatMap_eq_nil_iff, List.filterMap_eq_nil_iff, table.scanRows_perm.mem_iff]
   have each : ∀ row, (∀ pair ∈ (childLinks database.catalog.foreignKeyLinks position).zipIdx,
       (if pair.1.satisfied database row then none else
@@ -48,13 +51,13 @@ theorem Database.keyCheckRows_eq_nil (database : Database) (position : Nat) (tab
 
 /-- For every database and table choice: {lit}`PRAGMA foreign_key_check` gives no rows
 ({name}`Database.foreignKeyCheckRows`) exactly when every table at the positions of the choice
-({name}`Database.checkPositions`) satisfies {name}`Table.ForeignKeysHold`.
+({name}`Database.checkPositions`) satisfies {name}`Table.RowReferencesHold` with catalog-selected mappings.
 Proof sketch: one table with rows gives its rows, which are not empty
 ({name}`Database.blocks_ne_nil`), and two or more give no result. -/
 theorem Database.foreignKeyCheckRows_nil_iff (database : Database) (table : Option Nat) :
     database.foreignKeyCheckRows table = some [] ↔
       ∀ position ∈ database.checkPositions table, ∀ found, database.table position = some found →
-        Table.ForeignKeysHold database position found := by
+        found.RowReferencesHold database.catalog.foreignKeyMapping database position := by
   have empty : database.foreignKeyCheckRows table = some [] ↔
       database.blocks (database.checkPositions table) database.keyCheckRows = [] := by
     unfold Database.foreignKeyCheckRows
@@ -68,29 +71,31 @@ theorem Database.foreignKeyCheckRows_nil_iff (database : Database) (table : Opti
         simpa using Database.blocks_ne_nil member
       | cons _ _ => simp
   rw [empty, Database.blocks_eq_nil]
-  simp only [Database.keyCheckRows_eq_nil]
+  exact forall_congr' fun position => imp_congr_right fun _ => forall_congr' fun found =>
+    imp_congr_right fun present => database.keyCheckRows_eq_nil position found present
 
 /-- For every database and table at a position: {lit}`PRAGMA foreign_key_check` of that table
 ({name}`Resolved.PragmaRows.rowsOn`) gives no rows exactly when the table satisfies
-{name}`Table.ForeignKeysHold`. The other tables need not satisfy their own foreign keys, but
+{name}`Table.RowReferencesHold` with catalog-selected mappings. The other tables need not satisfy their own foreign keys, but
 the rows of the parent tables of the table decide both sides. -/
 theorem Database.tableKeyCheck_nil_iff (database : Database) {position : Nat} {table : Table}
     (present : database.table position = some table) :
     (Resolved.PragmaRows.foreignKeyCheck (some position)).rowsOn database = some [] ↔
-      Table.ForeignKeysHold database position table := by
+      table.RowReferencesHold database.catalog.foreignKeyMapping database position := by
   show database.foreignKeyCheckRows (some position) = _ ↔ _
   rw [Database.foreignKeyCheckRows_nil_iff]
   simp [Database.checkPositions, present]
 
 /-- For every database: {lit}`PRAGMA foreign_key_check` of every table
 ({name}`Resolved.PragmaRows.rowsOn`) gives no rows exactly when the database satisfies
-{name}`Database.ForeignKeysHold`. Proof sketch: every table is at a position below the catalog
+{name}`Database.RowReferencesHold` with catalog-selected mappings. Proof sketch: every table is at a position below the catalog
 length ({name}`Database.table_lt`). -/
 theorem Database.keyCheck_nil_iff (database : Database) :
-    (Resolved.PragmaRows.foreignKeyCheck none).rowsOn database = some [] ↔ database.ForeignKeysHold := by
+    (Resolved.PragmaRows.foreignKeyCheck none).rowsOn database = some [] ↔
+      database.RowReferencesHold database.catalog.foreignKeyMapping := by
   show database.foreignKeyCheckRows none = _ ↔ _
   rw [Database.foreignKeyCheckRows_nil_iff]
-  unfold Database.ForeignKeysHold Database.EveryTable
+  unfold Database.RowReferencesHold Database.EveryTable
   simp only [Database.checkPositions, List.mem_range]
   exact ⟨fun all position found present => all position (Database.table_lt present) found present,
     fun all position _ found present => all position found present⟩

@@ -41,7 +41,7 @@ implementer, with these observable requirements fixed.
   Later ALTER and view statements extend the preservation matrix; their absence
   from the current language does not satisfy those future obligations.
 
-## Part 1 implementation in progress
+## Initial part-1 implementation work
 
 Workspace: `sqlite-verifier-fk-atoms`, based on `cf7aa9a6`. The coordinator reserved
 FK entries in the model barrel and Lake module list, the surface database export,
@@ -142,7 +142,7 @@ commit `98e1e8f13ecd8406cfabc48f1d5fe2870e9ca928` into only this task and ADR22.
 Review `20261024T143702Z-98e1e8f1` had no findings. The source work above remains
 uncommitted and separate from this planning carry. No acceptance check is claimed.
 
-## Current checks and action-target finding
+## Historical checks and action-target finding
 
 The planning carry review `20261024T144605Z-befd2074` has no findings.
 The atoms, transported row frames and full database/table pragma statement laws
@@ -166,10 +166,10 @@ also need assessment for triggers. The exact native/model observations are in
 `build/agent-logs/fk-cascade-case.json`, `fk-cascade-prediction.json` and
 `fk-cascade-summary.log`.
 
-The task currently authorizes only the hasNull execution correction. The
+At this diagnostic boundary, the task authorized only the hasNull correction. The
 coordinator has this additional finding and a recommendation to specify selected
 targets for CASCADE/SET NULL/SET DEFAULT, including duplicate-column and trigger
-effects. That dependent correction is paused; no action semantics changed.
+effects. That dependent correction was paused; no action semantics had changed.
 Independent frozen-prediction and atom-proof checks continue. No implementation
 commit or task acceptance is claimed while a required regression fails.
 
@@ -196,3 +196,61 @@ The status header now names both execution corrections, and the unrelated task
 line-wrap change is reverted. Action implementation is now in the uncommitted
 working copy, using one selected projection for values, scans and action writes.
 Its local build is in progress; it has no Nix acceptance evidence yet.
+
+## Part-1 implementation checks before Nix acceptance
+
+Follow-up scope review `20261024T152329Z-01a02bef` has no findings. The selected
+projection now lives in Resolution/ParentKeys and is shared by NULL checks,
+lookups, scans and action writes. Resolution/actionEvents gives assigned columns
+to trigger preparation; actionWrites adds generated dependencies for FK checks.
+Execution gives the same assigned/changed columns to RowWork.update. The
+obsolete inverse pairIndex helper is deleted. The coordinator reserved the
+three resolver files after confirming no conflict with the query-source agent.
+
+Local dev-build and 37 focused checks passed: 35 native differential/kernel
+probes and two surface fixtures with 20 axiom reports. New cases distinguish
+unused declaration columns, UPDATE/DELETE SET NULL and SET DEFAULT, repeated
+and reversed composite projections, rowid actions, assigned-column triggers,
+generated constraint dependencies, and unused/generated-only trigger preparation.
+The trigger fixture creates its two same-event triggers in the migration,
+preserving the existing restriction on unknown trigger order in a starting schema.
+Local dev-verdict also preserved all frozen claims. Logs are
+`build/agent-logs/fk-dev-build-7.log`, `fk-focused-local-3.log` and
+`fk-dev-verdict-2.log`. These results are diagnostic, not acceptance evidence.
+Nix focused gates, the four FK mutants and part-1 full/verdict gates remain.
+The build slot was handed to S4 after local checks completed.
+
+## Part-1 focused Nix acceptance
+
+The focused Nix gates passed on 2026-10-24, using sandbox=true,
+sandbox-fallback=false and command-local max-jobs=1:
+
+- `tests.model`, `PYTEST_ADDOPTS="-k foreign_key_atom_execution"`: 35 passed,
+  160 deselected, 43.14 seconds. Output
+  `/nix/store/mhvsqdz6wnx66s0rr80a12yp5xam6hif-sqlite-verifier-test-model-1`.
+- `tests.surface`, `PYTEST_ADDOPTS="-k independent_foreign_key_atoms"`: two
+  passed, 33 deselected, 3.61 seconds; 20 axiom reports admit only the three
+  standard logical axioms. Output
+  `/nix/store/k7vil77z5prkyc3a0i45h7vzv62nvhr4-sqlite-verifier-test-surface-1`.
+- `scheduledTests.mutants`,
+  `PYTEST_ADDOPTS="-k every_foreign_key_mutant_changes_a_verdict"`: one passed,
+  18 deselected, 66.81 seconds; all four existing FK mutants were killed.
+  Output `/nix/store/3773m5g75vhdvv3i94aa8y94ianw3d01-sqlite-verifier-test-mutants-1`.
+
+Each command used `nix-build --expr` to override only PYTEST_ADDOPTS on the
+named suite from `build-support/default.nix`. Logs are
+`build/agent-logs/fk-nix-{model,surface,mutants}-1.log`. Self-review added five
+module overview comments after the first two gates; the mutant runtime compiled
+those final comments. No formula or execution behavior changed after the focused
+model/surface gates. The required local dev-build was repeated for these comments.
+Part-1 full/verdict gates and independent implementation review remain.
+
+Part 2 remains open. Ignored Lean probes establish a total violation count from
+existing pragma blocks, zero-count equivalence, and the end-of-statement bridge
+from a counter bound. Another probe establishes parent-schema preservation for
+current DML and statements that leave the catalog unchanged. These are development
+diagnostics, not production laws or acceptance. The global counter bound still
+must be derived through old/new row phases, actions and triggers. Its comparison
+premise covers all future stored rows; intermediate storedness, unique parent
+keys, update-key coverage and target stability must justify use at each phase.
+The script bridge must carry the atom on saved snapshots as well as current rows.

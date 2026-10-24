@@ -166,6 +166,18 @@ the fact. It is reported to the owner, and no proof assumes it away.
 | 4 | the theorems of the Admitted atoms | ADR 0017 S4, as slice 3 |
 | 5 | the two foreign-key atoms, their checks, correspondence and conditional preservation laws | ADR 0017 S6: the rebuild that cascades |
 
+Slice 5, part 1 implementation (2026-10-24, `plans/20261024-foreign-key-atoms.task.md`):
+`ForeignKeyMapping` supplies explicit parent comparisons. `RowReferencesHold` and
+`ParentSchemasCompatible` replace `ForeignKeysHold`; each has table/database forms and
+executable equivalence laws. Row frames transport positions and do not read supporting indexes;
+schema frames read parent definitions and ordered eligible indexes. Full `foreign_key_check`
+statement laws state preparation separately from row truth. NULL tests and action targets
+share the selected child projection, including repeated columns. Action preparation and
+execution distinguish assigned columns from generated-column dependencies. The named
+`ForeignKeyLink.LookupScanConsistent` premise has structural BLOB and TEXT sufficient
+conditions and a checked mixed-affinity counterexample. Statement/run preservation remains
+part 2, including the global immediate-counter invariant; part 1 does not claim those laws.
+
 Record of slice 2 (2026-10-23, `plans/20261023-keys-unique.task.md`): the statement theorem
 `runStatement_keysUnique` holds for every statement form, foreign keys and triggers included,
 with a condition only for ADD COLUMN (`Database.AddColumnCondition`) and DROP

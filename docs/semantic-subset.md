@@ -267,7 +267,7 @@ that foreign keys reference count violations as SQLite's `sqlite3FkCheck` does, 
 rowid order (primary-key order for a `WITHOUT ROWID` table), and a statement that ends with a
 count other than zero is `FOREIGN KEY constraint failed` and changes nothing. A child key
 looks up its parent under the parent index's affinity and collation, a parent row finds its
-child rows as `parent = child` compares them, and a child key with a NULL column needs no
+child rows as `parent = child` compares them, and a child key with a selected NULL column needs no
 parent. The actions `CASCADE`, `SET NULL`, `SET DEFAULT`, `RESTRICT` and `NO ACTION` run after
 each deleted row and after each updated row whose parent key changes, also in chains and for a
 table that references itself, with every constraint of their rows ABORT. A write that
@@ -277,6 +277,13 @@ the implicit `DELETE` of `DROP TABLE`. A deferred foreign key is the restriction
 `deferred-foreign-key`, `ON CONFLICT DO UPDATE` on a table with a key to check is
 `foreign-key-upsert`, and a write whose actions nest deeper than the trigger depth limit, or
 whose `REPLACE` deletes more than one row with foreign keys, is not described.
+
+Action assignments use the selected child columns in parent-key order, including repeated
+targets. For a mapping that selects child `x` twice, CASCADE, SET NULL and SET DEFAULT leave
+unused child `y` unchanged. UPDATE OF triggers use these assigned columns; constraint checks
+also include generated columns that depend on them. A generated dependent column is not an
+assigned column for UPDATE OF matching. Parent scans and child lookups can use different
+affinities, so enforcement alone does not imply the row-reference atom described below.
 
 `PRAGMA table_info(t)` and `PRAGMA foreign_key_list(t)` (ADR 0019, D2), also with `= t`, give
 SQLite's rows for the catalog of their time. `table_info` has one row for each column that is
@@ -310,14 +317,27 @@ unique constraints of each checked table hold.
 child row and foreign key that the row does not satisfy, also when foreign keys are off: the
 table name, the rowid (NULL for a `WITHOUT ROWID` table), the parent table as the key writes it,
 and the `fkid` of the key, in scan order and then in `fkid` order. The child row finds its parent
-as a write does, a NULL in the key satisfies it, and a missing parent table finds no row. A
+as a write does. NULL in a selected child-key column satisfies it. The selected mapping can
+repeat a column, so NULL in an unused declaration column does not exempt the row. Without a
+selected comparison, the NULL test uses the declaration columns. A missing parent table finds no row. A
 foreign key whose parent table has no parent key fails at prepare with
 `foreign key mismatch - "c" referencing "p"`, before any row. A missing table fails with
 `no such table`, and a name of SQLite's own tables is the restriction `system-table`. Without a table name, two or more tables with a mismatch are the restriction
 `foreign-key-mismatch-order`, and two or more tables with rows give no result. When the
-statement does not fail, the form without a table name gives no rows exactly when the foreign
-keys of every table hold (`Database.ForeignKeysHold`), and the form with the name of table t
-exactly when the foreign keys of t hold (`Table.ForeignKeysHold`).
+statement prepares, the form without a table name gives no rows exactly when the database has
+`Database.RowReferencesHold` with `database.catalog.foreignKeyMapping`; the named-table form
+uses `Table.RowReferencesHold` with that same mapping. These facts describe row comparisons,
+not whether the parent schema supports them. `Database.ParentSchemasCompatible` separately
+requires a located, catalog-selected mapping for every declaration, including empty child
+tables. A missing parent and NULL child keys can give an empty pragma result while that
+schema fact fails. An existing nonunique parent instead causes a prepare error.
+
+A supplied `ForeignKeyMapping` is total over child positions and declarations; it cannot omit
+a key from either atom. It can retain a parent comparison after a supporting index is dropped.
+The row fact then reads child rows, parent rows and parent-column definitions. Its frame laws
+transport catalog positions explicitly through DROP. The schema fact also reads eligible
+indexes and their selection order, so the same index drop can preserve row truth and break
+schema compatibility. Neither foreign-key atom is part of `Database.Valid`.
 
 A generated column (ADR 0014, slice 5) is `VIRTUAL` or `STORED`, and `PRAGMA table_xinfo`
 reports it with `hidden` 2 or 3. Its expression resolves over the table's columns after the
