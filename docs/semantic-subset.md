@@ -73,6 +73,11 @@ The frontend maps these statements, and refuses every other statement as
   subquery that reads the written table is a restriction. A subquery in an `ON` condition, a
   `json_each` argument, `RETURNING`, `ON CONFLICT` or a schema statement, and in `FROM`, is
   refused or a restriction.
+- The resolved library primitive `Resolved.Source.subquery index width` reads the complete
+  result rows of an indexed query in the statement's context. It supports the existing joins,
+  keeps enclosing-query cells through NULL extension, and refuses a source whose complete
+  row multiset depends on a window's tie order or whose evaluation fails. SQL text in `FROM`
+  still waits for source resolution and translation (ADR 0019 slice 4).
 - Compound `SELECT` (ADR 0019, D3): `UNION ALL`, `UNION`, `INTERSECT` and `EXCEPT` of
   `SELECT` terms as above, from left to right, as a statement and as the `q` of `EXISTS`,
   `IN` and a scalar subquery. Two rows are equal when each column compares equal under the

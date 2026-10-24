@@ -1,6 +1,6 @@
 # Status: queries as sources
 
-Created 2026-10-24. Status: OPEN. Implementation has not started.
+Created 2026-10-24. Status: OPEN. Part 1 implementation is in progress.
 Task: [task file](20261024-query-sources.task.md).
 Specs: ADR 0019 D5/slice 4 and D3 metadata exception; ADR 0017 S6.
 Inspected base: `vihren-dev/sqlite-verifier`, PR #239, commit `98a07bfe`.
@@ -41,3 +41,25 @@ actual verdict results and inspect each changed prediction.
   entries. Carry review and the frozen prediction baseline precede model edits.
   The INSERT SELECT streaming question belongs to slice 5 and is not permission
   to change execution semantics outside this slice-4 task.
+- 2026-10-24: carry commit `8a89208f` passed independent Claude review
+  `20261024T130558Z-8a89208f`, with no findings. Before any model edit, the Nix
+  prediction baseline was built at
+  `/nix/store/qwfgz46d1pyd10xiypmka4kixvx38k2b-sqlite-verifier-predictions`.
+  Its Nix verdict is
+  `/nix/store/srv5lc3gnn1s9wzfjy1ilrzsb2ws0881-sqlite-verifier-verdict`:
+  all existing claims pass; corpus v4 has 673 AGREE cases and corpus v5 has 2,946.
+  The workspace retains links `build/query-sources-baseline-predictions` and
+  `build/query-sources-baseline-verdict` for final prediction classification.
+- The first implementation unit gives resolved sources an indexed-query payload,
+  reuses `EvalContext.subqueries`, and distinguishes complete-row certainty from
+  the first-column certainty of IN. Source rows retain the enclosing cells so
+  an unmatched right/full row cannot erase them. `DerivedSourceExamples.lean`
+  contains kernel checks for joins, uncertain membership, outer cells, parameters,
+  counters and the clock. Source translation, metadata and name resolution remain
+  unfinished. The task and its first acceptance part are not complete.
+- Nix check for this execution unit: `nix-build build-support/default.nix -A
+  modelPackage` passed at
+  `/nix/store/d8gfbj5myc9v0lpsqm0c5lmmpj6534bl-belay-sqlite-model-0.1.0`.
+  The build checks the new `DerivedSourceExamples` kernel examples and existing
+  query/S4 proof modules. Full-part acceptance and the final frozen-prediction
+  comparison remain pending.
