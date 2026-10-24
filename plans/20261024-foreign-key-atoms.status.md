@@ -495,3 +495,13 @@ diagnostic evidence; the Nix result is the acceptance evidence. Slot 2 returned
 to the coordinator at terminal completion. Independent review follows this commit.
 The next coverage proofs are isolated in `fk-update-coverage`; the full
 statement/run preservation task remains OPEN.
+
+Independent review `20261024T183647Z-78a6dbc2` checked all seven proof modules,
+the exports and package registration, both fixtures, their test parametrization
+and this status update. It found zero musts and zero shoulds. Source commit:
+`78a6dbc24d1f1bc1f1713245140a316c5482407a`. No correction was needed. The accepted
+UPDATE checkpoint is at rest while assignment/mapping coverage proceeds separately.
+The coordinator selected published repaired PR #243 head
+`2cb4c5e3af6f59b8a6fae5a584ac4e536450c87d` for the next integration boundary;
+it includes repaired #242 and the derived-source publication without unfinished
+S4 work. No task-end or part-2-wide acceptance is claimed here.
