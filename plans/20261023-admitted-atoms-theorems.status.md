@@ -510,3 +510,10 @@ proof relies on it (finding 15).
   `AdmittedAtomsNestedExamples` (finding 16 as a kernel example). Tests:
   `tests/test_model_package.py`, `tests/valid_atoms_theorems_test.py`,
   `tests/admitted_atoms_resolver_facts_test.py`, and the new `tests/admitted_atoms_statement_theorems_test.py`.
+- 2026-10-24: part 2, the review of "Counterexamples of the statement theorems" had no findings. Part 2 is
+  done except for the row engine part of four atoms (finding 16, waiting for the owner's choice of M-lite,
+  M or R). Local `just dev-verdict` for corpus-v4, v5, v50, v51 and v52 gives AGREE 673, 2946, 17, 21 and 33,
+  as in part 1; the predictions of the 53 given files are identical to those before part 2. Open for
+  part 3: the resolver link of a resolved `.createIndex` and `.addColumn`, the resolve state that matches
+  the snapshot of the connection, and, if design R is chosen, the lemma that the resolver makes only
+  described programs.
