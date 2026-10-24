@@ -74,23 +74,13 @@ def variableValue (literal : Syntax) (text : String) (name : String) (parameter 
   catch _ =>
     throwErrorAt ref m!"the parameter {parameter.text} is the Lean variable {name} of type {type}, which has no coercion to Value; give {name} the type Value, String or Int64, or convert it to a Value"
 
-/-- The term of the script of the statements: {name}`scriptExpr` for a text without parameters;
-otherwise the function of the arguments ({name}`planParameters`) whose value is
-{lit}`Script.withValues` of {name}`scriptExpr` with one list for each statement, with the value of
-each number from 1 to the statement's largest one: an argument, the value of a variable
-({name}`variableValue`), or NULL for a number without a parameter. An error of the plan is at its
-parameter in the SQL text. The resulting script carries source metadata for replay; consumers
-check that text against the actual statements and bindings before using it. -/
-def scriptTerm (literal : Syntax) (text : String) (items : Array Translation.ParameterizedStatement) :
-    TermElabM Expr := do
-  let plan ← match planParameters (items.toList.map (·.parameters)) with
-    | .ok plan => pure plan
-    | .error diagnostic => throwErrorAt (textRange literal text diagnostic.start diagnostic.stop) diagnostic.message
+/-- Construct the script function from a checked parameter plan and its captured variable
+values. Inline and file SQL use the same numbering, sparse NULL slots and lambda construction.
+The caller supplies source metadata through {lit}`annotate`; it does not change the value. -/
+def scriptTermFromPlan (items : Array Translation.ParameterizedStatement) (plan : ParameterPlan)
+    (variables : List (ParameterSource × Expr)) (annotate : Expr → Expr) : TermElabM Expr := do
   let script := scriptExpr items
-  let fileName ← getFileName
-  if plan.slots.all (·.isEmpty) then return withSource scriptSourceKey literal text fileName script
-  let variables ← plan.variables.mapM fun (name, parameter) => do
-    return (ParameterSource.variable name, ← variableValue literal text name parameter)
+  if plan.slots.all (·.isEmpty) then return annotate script
   withLocalDeclsDND (plan.arguments.map fun name => (Name.mkSimple name, valueType)).toArray fun arguments => do
     let sources := variables ++ (plan.arguments.map ParameterSource.argument).zip arguments.toList
     let null := Lean.mkConst ``Belay.Sqlite.Model.Value.null
@@ -100,8 +90,21 @@ def scriptTerm (literal : Syntax) (text : String) (items : Array Translation.Par
       | .source source => (sources.lookup source).getD null
     let lists ← mkListLit (mkApp (Lean.mkConst ``List [Level.zero]) valueType)
       (← plan.slots.mapM fun slots => mkListLit valueType (slots.map slotValue))
-    mkLambdaFVars arguments (withSource scriptSourceKey literal text fileName
-      (mkApp2 (Lean.mkConst ``Script.withValues) script lists))
+    mkLambdaFVars arguments (annotate (mkApp2 (Lean.mkConst ``Script.withValues) script lists))
+
+/-- The inline script term, with dollar variables captured from Lean and all other parameters
+as arguments in first-appearance order. Numbered gaps bind NULL. Plan and variable errors point
+into the SQL literal. The term retains source metadata; replay checks it against the actual
+statements and bindings. File elaboration uses the same {name}`scriptTermFromPlan` constructor. -/
+def scriptTerm (literal : Syntax) (text : String) (items : Array Translation.ParameterizedStatement) :
+    TermElabM Expr := do
+  let plan ← match planParameters (items.toList.map (·.parameters)) with
+    | .ok plan => pure plan
+    | .error diagnostic => throwErrorAt (textRange literal text diagnostic.start diagnostic.stop) diagnostic.message
+  let variables ← plan.variables.mapM fun (name, parameter) => do
+    return (ParameterSource.variable name, ← variableValue literal text name parameter)
+  let fileName ← getFileName
+  scriptTermFromPlan items plan variables (withSource scriptSourceKey literal text fileName)
 
 /-- Elaborate {lit}`sql "SQL"` to the script of its statements ({name}`scriptTerm`). -/
 @[term_elab sqlTerm]

@@ -254,11 +254,12 @@ in {
   };
   surface = suite "surface" {
     inputs = [ (root + /tests/surface) (root + /tests/surface_support.py)
-               (root + /tests/proof_cost_support.py)
+               (root + /tests/proof_cost_support.py) (root + /tests/sql_file_support.py)
                (root + /tests/shared_table_shape_test.py)
                (fs.fileFilter (file: file.hasExt "nix") (root + /build-support)) ] ++ packageSources
              ++ frontend ++ [ claims ] ++ authoredCorpora ++ corpusModules;
     runtime = surfaceRoot;
+    environment.BELAY_PARSER_LIBRARY = surfacePackage.BELAY_PARSER_LIBRARY;
     tools = [ native.sqlite ] ++ pkgs.lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.patchelf;
   };
   packages = suite "packages" {
