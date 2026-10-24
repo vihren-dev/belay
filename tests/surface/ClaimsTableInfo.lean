@@ -81,15 +81,19 @@ theorem the_name_test_is_case_sensitive (db : Database) (position : Nat) (table 
   table_has_a_stored_column_named db (bytes! "invoices") (bytes! "Status") position table rfl found notFunction
 
 -- The instances on `shop`, whose table `invoices` has the columns `id`, `customer`, `amount` and `status`.
+
+/-- On `shop`, the table `invoices` has a stored column `status`. -/
 theorem shop_has_a_status_column :
     Holds (sql r"SELECT 1 FROM pragma_table_info('invoices') WHERE name = 'status'") shop :=
   (invoices_has_a_status_column shop invoices.1 invoices.2 (by decide +kernel) (by decide +kernel)).2 (by decide +kernel)
 
+/-- On `shop`, the table name `'INVOICES'` reads the table `invoices`, which has a stored column `status`. -/
 theorem shop_has_a_status_column_under_upper_case_table_name :
     Holds (sql r"SELECT 1 FROM pragma_table_info('INVOICES') WHERE name = 'status'") shop :=
   (upper_case_table_name_reads_the_same_table shop invoices.1 invoices.2 (by decide +kernel) (by decide +kernel)).2
     (by decide +kernel)
 
+/-- On `shop`, no stored column of `invoices` is named `Status` with a capital: the name test is case-sensitive. -/
 theorem shop_has_no_column_named_with_a_capital :
     ¬ Holds (sql r"SELECT 1 FROM pragma_table_info('invoices') WHERE name = 'Status'") shop :=
   fun holds => by
