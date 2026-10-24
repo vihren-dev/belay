@@ -26,5 +26,6 @@ lean_lib Belay where
     .one `Belay.Sqlite.ProgramRun, .one `Belay.Sqlite.ProgramQueries, .one `Belay.Sqlite.ProgramLaws, .one `Belay.Sqlite.ProgramMonadLaws, .one `Belay.Sqlite.ProgramBindLaws, .one `Belay.Sqlite.Success, .one `Belay.Sqlite.ProgramSuccess, .one `Belay.Sqlite.ScriptSuccess, .one `Belay.Sqlite.SuccessSyntax, .one `Belay.Sqlite.QuerySuccess, .one `Belay.Sqlite.CreateIndexSuccess, .one `Belay.Sqlite.ProgramEnvLaws, .one `Belay.Sqlite.RunLaws, .one `Belay.Sqlite.DbDiagnostics,
     .one `Belay.Sqlite.DbBang, .one `Belay.Sqlite.Queries, .one `Belay.Sqlite.QueryLaws, .one `Belay.Sqlite.QueryBridge, .one `Belay.Sqlite.QueryCases, .one `Belay.Sqlite.SelectOneFrom, .one `Belay.Sqlite.SqlSimp, .one `Belay.Sqlite.SqlSimpLaws, .one `Belay.Sqlite.ExistsQuery, .one `Belay.Sqlite.NotExistsQuery, .one `Belay.Sqlite.SelectOneMayFail, .one `Belay.Sqlite.ExistsMayFail, .one `Belay.Sqlite.ScalarNoFrom, .one `Belay.Sqlite.SelectNoFrom, .one `Belay.Sqlite.CountQuery, .one `Belay.Sqlite.ColumnQuery, .one `Belay.Sqlite.TableInfoQuery, .one `Belay.Sqlite.DuplicateKeyQuery, .one `Belay.Sqlite.AggregateQuery, .one `Belay.Sqlite.UniqueLookupQuery, .one `Belay.Sqlite.SqlCommand]
     ++ #[.one `Belay.Sqlite.CounterexampleCertificate, .one `Belay.Sqlite.CounterexampleWitness,
-      .one `Belay.Sqlite.SqlRefute]
+      .one `Belay.Sqlite.SqlRefute, .one `Belay.Sqlite.SampleValues, .one `Belay.Sqlite.SampleDatabases,
+      .one `Belay.Sqlite.SampleShrink, .one `Belay.Sqlite.CounterexampleShrink]
   precompileModules := true

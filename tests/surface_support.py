@@ -20,14 +20,20 @@ SUFFIX = ".dylib" if sys.platform == "darwin" else ".so"
 
 def module_setup(runtime_root: Path, directory: Path, library: Path | None = None) -> Path:
     """Write the module setup of `lake setup-file` for a file that imports `Belay` to `directory`, and
-    give its path: the `.olean` file of each surface, Plausible, text and model module,
+    give its path: each module's `.olean` and, for Lean module-mode files, its
+    server/private data and IR signature/body,
     and the shared libraries to load, in Lake's order: the model's, the model codec's, the shim's, the text package's
     Plausible's and the surface's, or `library` in place of the text package's."""
     modules: dict[str, list[list[str]]] = {}
     for package in ("belay-sqlite-model", "belay-sqlite-text", "belay/.lake/packages/plausible", "belay"):
         folder = runtime_root / f"packages/{package}/.lake/build/lib/lean"
         for olean in sorted(folder.rglob("*.olean")):
-            modules[".".join(olean.relative_to(folder).with_suffix("").parts)] = [[str(olean)]]
+            data = [olean] + [Path(str(olean) + suffix) for suffix in (".server", ".private")]
+            ir = [olean.with_suffix(suffix) for suffix in (".ir.sig", ".ir")]
+            artifacts = [[str(path) for path in data if path.is_file()]]
+            if ir[0].is_file():
+                artifacts.append([str(path) for path in ir if path.is_file()])
+            modules[".".join(olean.relative_to(folder).with_suffix("").parts)] = artifacts
     libraries = runtime_root / "packages/belay/.lake/build/lib"
     dynlibs = [libraries / f"libbelaySqliteModel_Belay_Sqlite_Model{SUFFIX}",
                libraries / f"libbelaySqliteModel_Belay_Sqlite_Model_Codec{SUFFIX}", libraries / f"libbelayParserShim{SUFFIX}",
