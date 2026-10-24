@@ -114,27 +114,31 @@ samples do not establish a general wall-time or heartbeat overhead bound.
 
 ## Proposed production contract and decisions
 
-The smallest candidate is a report of **completed explicit named theorem-body
-elaboration**, with compiler success required before a record is usable. Name
-the instrumented boundary, preserve native async, retain exact internal units,
-and report missing/unsupported data. Proof-valued definitions could be included
-as a separately identified declaration category. Ordinary definitions must not
-be mislabeled as proofs. Anonymous and generated identities should not silently
-enter a stable baseline.
+The recommended contract reports **completed explicit named proof-body
+elaboration**: theorems and separately labeled proof-valued definitions, with
+compiler success required before a record is usable. It covers ordinary and
+native mutual declarations. Name the instrumented boundary, preserve native
+async, retain exact internal units, and report missing/unsupported data.
+Ordinary definitions must not be mislabeled as proofs. Anonymous and generated
+identities should not silently enter a stable baseline.
 
 The owner must choose whether this explicit declaration coverage meets the
 product promise. Literal coverage of every embedded/generated proof requires a
 different instrumentation boundary; this prototype does not establish one.
-The owner must also accept the measured instrumentation overhead and select an
-additive growth budget that accounts for measured count variation. Instrumentation
-can make a proof near its limit exceed that limit. Source order and async mode
-can affect counts; a deterministic comparator does not make measurements invariant.
+Collection should be optional/configurable, with the guide's additive growth
+budget set by the user. The interface must disclose the measured overhead and
+count variation. Instrumentation can make a proof near its limit exceed that
+limit. Source order and async mode can affect counts; a deterministic comparator
+does not make measurements invariant.
 Production integration must coordinate the declaration hook with other custom
 elaborators, including the S5 checker. This experiment hooks ordinary native
-declarations. It does not install a hook for Lean's separate `mutual`-block
-handler (`Lean/Elab/Declaration.lean`), or test arbitrary third-party handlers.
-Production must cover those paths or report their measurements unavailable;
-the present evidence does not establish every named declaration form.
+declarations. Native mutual blocks are **untested**: it does not install a hook
+for Lean's separate `mutual`-block handler (`Lean/Elab/Declaration.lean`). Start
+production work with a focused mutual probe; report an inability to cover this
+normal syntax for owner judgment before narrowing the proposed contract.
+Arbitrary third-party handlers are also untested and may remain explicit
+unsupported/missing entries. The present evidence does not establish every
+named declaration form.
 
 Proposed baseline comparison, with no implementation in this prototype:
 

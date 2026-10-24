@@ -10,7 +10,7 @@ The S7 source audit found no surface collector or compiled proof-cost registry.
 Pinned Lean's withHeartbeats counts a computation in internal units, 1000 per
 user-facing unit. The experiment now retains native completed body traces and
 exports records through a persistent environment extension. The focused Nix
-measurement passes; independent review and final acceptance are pending.
+measurement passes; final task acceptance is pending.
 No production measurement or baseline guarantee is claimed.
 
 ## Progress
@@ -80,8 +80,8 @@ No production measurement or baseline guarantee is claimed.
 - Work paused for the urgent API reference repair and resumed with all prototype
   files and probes preserved. The reference repair is complete. Heavy checks
   were queued at that checkpoint. The focused Nix gate has since passed and
-  final S4 source is integrated below. Independent review, post-review full
-  tests/verdict, task-end checks and publication ancestry remain to be recorded.
+  final S4 source is integrated below. Post-review full tests/verdict, task-end
+  checks and publication ancestry remain to be recorded.
 - Integrated the immutable final S4 source `24ca8b4c9635ee14f3235001dc86d7315ac514ac`
   as a second parent of the prototype working change. The task handoff ancestry
   and all prototype files are retained. No shared ancestor was rewritten.
@@ -119,3 +119,11 @@ No production measurement or baseline guarantee is claimed.
   now names the completed focused check and the remaining final acceptance.
   The first review response had invalid formatting; its required retry produced
   the valid review above. No implementation finding remains.
+- Documentation follow-up `e6acbb3ca188c0943b6df603c1e06dc13f371b90` has no
+  musts in review `20261024T184926Z-e6acbb3c`. Its should removes independent
+  review from the remaining-items list because that review is now recorded.
+  The findings also make native mutual blocks explicitly untested, and recommend
+  that production cover ordinary and mutual named proofs, with a focused mutual
+  probe before that implementation proceeds. Third-party handlers can remain
+  explicit unsupported entries. Collection remains a proposed opt-in facility
+  with the guide's user-set additive budget; no numeric default is selected.
