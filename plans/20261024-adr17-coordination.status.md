@@ -209,8 +209,8 @@ logs are in `s4/build/agent-logs/cte-publication`. Evidence and views remain act
 
 ## Specified work and remaining scope
 
-- [S5](20261024-surface-s5.task.md) is assigned to `s4_part1` in
-  `s5-counterexamples` on published S4/S7. Part 1 is accepted at
+- [S5](20261024-surface-s5.task.md) is assigned to `s4_part1`; part 1 used
+  `s5-counterexamples` on published S4/S7 and shared search now uses `s5-search`. Part 1 is accepted at
   `77dc166d`: final Nix report `lwi3qm7nqb4j4n3r03q0172prbm3mx7g` contains
   877 tests with zero failures, errors or skips, verdict passes at
   `1w3s86b8201bc72c1r51rc66rnb1iknr`, and all 53 frozen prediction files are
@@ -237,11 +237,21 @@ logs are in `s4/build/agent-logs/cte-publication`. Evidence and views remain act
   with clean review `20261024T212855Z-1c09bf9f`. Its two Nix surface groups pass
   at `gm2y6fiagq0jcngxjxq089kbfcfrvhi7`: 54 production and 28 prototype axiom
   reports use only standard logical axioms. Full part acceptance and strong
-  equivalence remain open; the bounded full/verdict script is prepared.
+  equivalence remain open. Combined full acceptance with S5 and the native
+  artifact fix is running in `s6-native-publication` from source `8a6ed72a`,
+  clean review `20261024T215807Z-8a6ed72a`, review record `0efc3042`.
+  The sequential gate includes full tests, verdict, exact prediction comparison,
+  task-end Nix checks and scheduled checks. This is not yet a passing result.
   The same worker now owns the reviewed [native artifact reuse task](20261024-model-native-artifacts.task.md)
   in an isolated workspace. The existing surface gate rebuilt 589 unchanged
   model C objects despite a cached model derivation. Task `e2a49629` has clean
-  independent review. S6 and FK proof workspaces remain at rest during this fix.
+  independent review. Native source `ebe1c3e9`, frozen head `a4c91d52`, has
+  clean follow-up review. Nix package replay passes three checks at
+  `2g962nijmc1fl3s99hl6d9j2yp7l1058`; installed surface checks pass 81 at
+  `ypfqx5qns8bl8c16yjw36syqb5d80gwh`. A real surface-only source edit
+  rebuilt zero model C objects, while the old output fails the new replay
+  check as expected. Combined acceptance remains pending. S6 strong-equivalence
+  work continues in `s6-equivalence`; FK proof work remains at rest.
   [Assertions](20261024-s6-assertions.task.md) and [migration patterns](20261024-s6-migration-patterns.task.md) have clean reviews
   at `33693f10`/`56b9f410`; [automation](20261024-s6-automation.task.md) is clean at `8b118fbc`.
   [Initial/current query context](20261024-s6-before-context.task.md) has clean
@@ -274,3 +284,9 @@ and old sampling-draft workspaces remain available.
 The modularity report's retired-workspace citations now use published source
 files or exact archived source copies. Historical research claims are unchanged.
 Keep its cited S4 build logs available when eventually retiring that workspace.
+
+View catalog foundation `59dc5215` and anchor repair `a890097f` are accepted
+at `d1b28daf`, with clean final review `20261024T215844Z-a890097f`.
+All five affected targeted Nix mutation checks pass. Stored-view expansion is
+being implemented in its separate descendant workspace. PR #249 Verdict CI
+passed; its main CI was still running at this record.
