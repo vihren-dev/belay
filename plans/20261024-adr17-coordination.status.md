@@ -135,7 +135,7 @@ S7 prototype `489b22f6` is DONE: full 872/Nix 70/scheduled 47 and unchanged pred
 The owner accepted physical-table premises for BOTH unique-email and balance.
 Task corrections `2e761ca0` and source `c72ed523` have clean reviews and Nix checks.
 Combined S4 `24ca8b4c` carries repaired PRs, premises and two passing Nix native regressions.
-The owner accepted optional named proof-body costs, including mutual declarations; no question remains.
+The named-body cost decision is accepted; ADR review `2048b9fb`'s source citation is corrected.
 ## Published work and cleanup
 
 - Public [PR #240](https://github.com/vihren-dev/sqlite-verifier/pull/240),
