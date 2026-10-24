@@ -130,8 +130,11 @@ additive growth budget that accounts for measured count variation. Instrumentati
 can make a proof near its limit exceed that limit. Source order and async mode
 can affect counts; a deterministic comparator does not make measurements invariant.
 Production integration must coordinate the declaration hook with other custom
-elaborators, including the S5 checker. This experiment tests ordinary native
-declarations, not arbitrary third-party declaration hooks.
+elaborators, including the S5 checker. This experiment hooks ordinary native
+declarations. It does not install a hook for Lean's separate `mutual`-block
+handler (`Lean/Elab/Declaration.lean`), or test arbitrary third-party handlers.
+Production must cover those paths or report their measurements unavailable;
+the present evidence does not establish every named declaration form.
 
 Proposed baseline comparison, with no implementation in this prototype:
 

@@ -79,8 +79,9 @@ No production measurement or baseline guarantee is claimed.
   no production package source, prediction or judge lock changes are planned.
 - Work paused for the urgent API reference repair and resumed with all prototype
   files and probes preserved. The reference repair is complete. Heavy checks
-  for this prototype are queued with the coordinator; final acceptance also
-  requires the final published S4 boundary.
+  were queued at that checkpoint. The focused Nix gate has since passed and
+  final S4 source is integrated below. Independent review, post-review full
+  tests/verdict, task-end checks and publication ancestry remain to be recorded.
 - Integrated the immutable final S4 source `24ca8b4c9635ee14f3235001dc86d7315ac514ac`
   as a second parent of the prototype working change. The task handoff ancestry
   and all prototype files are retained. No shared ancestor was rewritten.
@@ -112,3 +113,9 @@ No production measurement or baseline guarantee is claimed.
 - [Findings](../docs/s7-proof-cost-findings.md) recommend named theorem-body
   coverage and record the production coverage, identity and budget choices.
   The prototype does not implement those choices or a baseline comparator.
+- Implementation commit `3a09972f59e3313f40306713d350a8e59125029a` passed
+  independent review `20261024T184847Z-3a09972f` with no musts and one should.
+  The should identifies stale queued-check wording; the historical checkpoint
+  now names the completed focused check and the remaining final acceptance.
+  The first review response had invalid formatting; its required retry produced
+  the valid review above. No implementation finding remains.
