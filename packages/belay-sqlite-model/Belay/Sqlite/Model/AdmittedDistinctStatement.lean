@@ -20,7 +20,7 @@ namespace Belay.Sqlite.Model
 satisfies "rowids distinct" ({name}`Database.RowidsDistinct`), the effect of {name}`runStatement`
 satisfies it ({name}`Effect.Satisfies`): the database of a success and that of an error with
 {name}`ExecutionError.constraintFail` have distinct rowids in every table, and any other error requires
-nothing. The theorem has no condition on the connection, on the support check ({lit}`StatementRun.ready`)
+nothing. The theorem has no condition on the connection, on the support check ({name}`StatementRun.ready`)
 or on other atoms, and it covers every form of {name}`Resolved.Statement`. Proof sketch: a case for each
 form; CREATE and DROP keep tables whole or empty ({name}`runStatement_create_tableAtom`), ADD COLUMN
 keeps the rowids ({name}`Table.RowidsDistinct.appendColumns`), a write without rules is the theorem of

@@ -21,7 +21,7 @@ of {name}`runStatement` satisfies "the catalog is valid under the limits" ({name
 the database of a success and that of an error with {name}`ExecutionError.constraintFail` have a valid
 catalog, and any other error requires nothing. For a statement that is not CREATE, ADD COLUMN or DROP,
 the second condition is the first. The theorem has no condition on the support check
-({lit}`StatementRun.ready`) or on other atoms, and it covers every form of {name}`Resolved.Statement`.
+({name}`StatementRun.ready`) or on other atoms, and it covers every form of {name}`Resolved.Statement`.
 Proof sketch: a run keeps the catalog, or CREATE, ADD COLUMN and DROP give the catalog of
 {lit}`applyCatalog`; the plain writes keep the catalog ({name}`Database.RowsOnlyAt.catalog`), and the
 row engine keeps it ({name}`rowsKeys_satisfies`, {name}`dropKeys_holds` with {name}`catalogSupportedLaws`). -/

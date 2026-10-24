@@ -17,7 +17,7 @@ namespace Belay.Sqlite.Model
 /-- For every clock value, counters, parameter list, resolved statement and database: if the database
 satisfies "rows stored" ({name}`Database.RowsStored`) and "rows wide" ({name}`Database.RowsWide`), the
 statement has no rules ({name}`Resolved.Statement.WithoutRules`) and the run of the statement is ready
-({lit}`StatementRun.ready`), the effect of {name}`runStatement` satisfies "rows stored"
+({name}`StatementRun.ready`), the effect of {name}`runStatement` satisfies "rows stored"
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
 {name}`ExecutionError.constraintFail` have every cell stored for its column, and any other error
 requires nothing. For a statement with rules the third hypothesis is false, so the theorem says nothing
@@ -41,7 +41,7 @@ theorem runStatement_rowsStored (clock : Int) (counters : Counters) (parameters 
 /-- For every limits, clock value, counters, parameter list, resolved statement and database: if the
 database satisfies "rows aliased" ({name}`Database.RowsAliased`), its catalog is valid under the limits
 ({name}`Catalog.Valid`), the statement has no rules ({name}`Resolved.Statement.WithoutRules`) and the run of
-the statement is ready ({lit}`StatementRun.ready`), the effect of {name}`runStatement` satisfies "rows
+the statement is ready ({name}`StatementRun.ready`), the effect of {name}`runStatement` satisfies "rows
 aliased" ({name}`Effect.Satisfies`): the database of a success and that of an error with
 {name}`ExecutionError.constraintFail` have the rowid in the alias cell of every row of a table with a
 rowid alias, and any other error requires nothing. For a statement with rules the third hypothesis is
