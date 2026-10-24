@@ -66,7 +66,6 @@ orders have equal rows but total_changes
 3 versus 4; retain that full-state refutation.
 
 ## Resolved findings
-
 The repeated-column FK correction is recorded in its task; preservation remains open.
 
 The INSERT SELECT streaming/materialization counterexample and accepted scope
@@ -92,8 +91,8 @@ remove the prior planning blocks; they are not implementation-completion claims.
   Separate evidence head `5d69e3fa` retains draft v53's 38 agreements and
   four restrictions. Combined acceptance is recorded in its task status.
   S4 carry `b52fdec6` passed focused Nix `9zkv499mbvg2cwcs5jnn351rv253zfsd`.
-  CTE development reached its checked source boundary; heavy slot 1 was released
-  for FK. Source/native review continues. Integration must compile balance.
+  CTE dev-build passed; focused Nix rerun `21738` owns heavy slot 1,
+  followed by two named mutants. Integration must compile balance.
 - `text_build_boundaries` completed the S6 foundation prototype at `eb0a16a9`,
   based on S4 `00c8707f`. Its 28 audited declarations use ordinary logical axioms;
   design `a3cffcb5` and decision record `c838d5cc` have clean reviews.
@@ -116,12 +115,12 @@ remove the prior planning blocks; they are not implementation-completion claims.
   judge/evidence workspace and protected PR after measured model comparisons.
 
 S4 retains `sqlite-verifier-product-s4-guide` for its final installed-artifact check.
-Both email copies and the full balance proof compile against Nix surface
-`qz96vr9hh9vghmw4hihvvl2lwh4dmdxf`, with only ordinary logical axioms; PR #8 is updated.
+Reviewed private head `5dbc6f15` adds physical-table premises to both email copies
+and balance; all pass installed runtime `b6n8f8xys0ax45ldilp9rqw2030q8pwa` with standard axioms.
 Final acceptance must selectively reconcile unpublished S2/S3 product-default changes.
 
-Root stacked final gates `61952` own heavy slot 2; CTE focused Nix `81855`
-owns slot 1. FK UPDATE waits. FK insertion unit
+FK UPDATE gate `68995` owns heavy slot 2; CTE focused Nix `21738` owns slot 1.
+Root final S4 acceptance is next, then S7's focused prototype gate. FK insertion
 `45a65a92`/`754545ce` passed six Nix fixtures/95 axioms at `afgmspdjm1andpc3pd1wlfqdv9gl4bib`.
 Derived #243 passed local full 853/Nix 70/scheduled 47 and verdict 4,867/2,505,
 with all 53 predictions matching accepted evidence. Linux CI #242/#243 failed
@@ -129,12 +128,13 @@ API reference generation above 500 roots. The repair is DONE and pushed to #242
 at `b6864447`: 808 full tests, 70 Nix checks, 47 scheduled checks and verdict pass.
 The reader passed 12 Nix cases, including 532/640 roots. Complete references
 passed for #242's 532 modules and #243's 538 modules (`iz8kjnq67dn05smyh3liv85rf2wwdzn5`).
-#242 CI run `40119562570` is running; #243 publication awaits its combined gates.
-The clean repair workspace was removed; its logs are archived in stack-publication.
+#242 CI run `40119562570` passed its reference step; #243 head `2cb4c5e3` is pushed,
+with 853/70/47 local checks and 538-module reference passing. CI `40120692159` runs.
+Both repair workspaces are removed; their logs/report XML are archived under S4 build/.
 `s4_part1` resumed the preserved S7 prototype with light work only.
 The owner accepted physical-table premises for BOTH unique-email and balance.
-Task corrections `2e761ca0` have a clean review and handoff `03a9595a`;
-the query-source agent owns `s4-table-premises` and the private guide update.
+Task corrections `2e761ca0` and source `c72ed523` have clean reviews and Nix checks.
+Combined S4 `6a3e36ed` carries both repaired PRs and the reviewed premise correction.
 Native counterexamples remain in `views_native_20261024.py/.out`; no question is pending.
 ## Published work and cleanup
 
