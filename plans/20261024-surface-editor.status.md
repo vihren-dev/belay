@@ -1,6 +1,6 @@
 # Status: SQL editor information and corrections
 
-Created 2026-10-24. Status: OPEN. Implementation has not started.
+Created 2026-10-24. Status: OPEN. Implementation is assigned.
 Task: [task file](20261024-surface-editor.task.md).
 Specs: ADR 0017 editor features and ADR 0016 layer boundaries.
 
@@ -39,3 +39,16 @@ their own pending decisions; this task changes neither contract.
   it does not defer them beyond completion. These are public SQL surface
   behaviors for existing forms, not speculative support infrastructure. The
   owner's completion request therefore remains the authority for this scope.
+- 2026-10-24: final task review `20261024T132927Z-4be46bc9` has no findings.
+  The task still matches that reviewed revision byte for byte. Assigned its
+  first acceptance part to `text_build_boundaries` in isolated
+  `sqlite-verifier-surface-editor`, based on checked search/execution integration
+  `3a632d10`. The same worker owns the frozen S7 parameter/source helpers and
+  the checked doc-block unit, so shared interfaces can be coordinated without
+  concurrent edits. Existing SQL terms, parameter semantics and source metadata
+  must remain unchanged. The actual Lean server, including hover ranges and
+  semantic-token responses, supplies required first-part evidence.
+  Schema/origin/correction/warning behavior remains in the second part and needs
+  the completed query-source interfaces. The first coherent checked commit
+  will await independent review after the reviewer login refresh. No editor
+  implementation or acceptance result is claimed here.
