@@ -136,6 +136,27 @@ zero changed records. The logs and comparison are retained under
 `build/agent-logs/view-catalog/`. Full view-part acceptance remains pending;
 this checked foundation does not complete part 3.
 
+Review `20261024T214402Z-59dc5215` found no findings but disclosed incomplete
+file coverage. Supplementary review `20261024T214759Z-59dc5215` inspected all
+77 changed files and found three stale mutation anchors. The follow-up preserves
+the new view branches while restoring the existing CREATE TABLE, missing-table
+ADD COLUMN and DROP TABLE IF EXISTS mutations. A static audit also found two
+stale derived-column affinity/collation anchors from the metadata foundation;
+the same follow-up restores those mutations without changing their targets.
+All five named Nix mutant checks passed, one selected mutant per invocation.
+Each retained the existing unchanged-model agreement and mutant-kill assertions.
+The disposable selection changes the existing dictionary in place, including the
+resolver runner's captured default; it adds no permanent runner or test.
+
+- `no_table_exists`: `/nix/store/ly18lnjdlqqbzwgwf2av057hyhlab084-sqlite-verifier-test-view-catalog-mutant-no_table_exists-1`.
+- `no_such_table`: `/nix/store/2sqxk6736i6v4lc8g0ahwq6zsmji8n4p-sqlite-verifier-test-view-catalog-mutant-no_such_table-1`.
+- `if_exists_reports_missing`: `/nix/store/p922y6qblmf5pwdsflvy2fvyx43ap74x-sqlite-verifier-test-view-catalog-mutant-if_exists_reports_missing-1`.
+- `source_affinity_lost`: `/nix/store/ww4csy3i19viqg04nj0jbvv6z505crb6-sqlite-verifier-test-view-catalog-mutant-source_affinity_lost-1`.
+- `source_collation_lost`: `/nix/store/5wslqf8vgvzrkbhrfkrkb0h3b4dzjma9-sqlite-verifier-test-view-catalog-mutant-source_collation_lost-1`.
+
+Logs and the exact disposable selection are retained under
+`build/agent-logs/view-catalog/`. No model or proof definition changes in this repair.
+
 ## Remaining view scope
 
 CREATE/DROP VIEW, late and closed source lookup,

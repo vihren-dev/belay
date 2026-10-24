@@ -50,8 +50,10 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "table.columns.length + 1 > context.profile.limits.columns", "table.columns.length + 1 > 2000"),
     "no_table_exists": (SQLITE + "Resolution/Definitions.lean",
         "  | some (_, { entry := .table _, .. }) => prepareError catalog (.tableExists name)\n"
+        "  | some (_, { entry := .view _, .. }) => prepareError catalog (.viewExists name)\n"
         "  | some (_, { entry := .index _, .. }) => prepareError catalog (.indexNameUsed name)\n"
         "  | some (_, { entry := .trigger _, .. }) | none =>",
+        "  | some (_, { entry := .view _, .. }) => prepareError catalog (.viewExists name)\n"
         "  | some (_, { entry := .index _, .. }) => prepareError catalog (.indexNameUsed name)\n"
         "  | some (_, { entry := .table _, .. }) | some (_, { entry := .trigger _, .. }) | none =>"),
     "no_too_many_columns": (SQLITE + "Resolution/AddColumn.lean",
@@ -61,9 +63,9 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "    else if (columnPosition table.columns definition.name).isSome then\n"
         "      prepareError catalog (.expression (.duplicateColumn definition.name))\n", ""),
     "no_such_table": (SQLITE + "Resolution/AddColumn.lean",
-        "  | none => prepareError catalog (.noSuchTable tableName)\n  | some (position, table) =>\n"
+        "    else prepareError catalog (.noSuchTable tableName)\n  | some (position, table) =>\n"
         "    if reservedName tableName then prepareError catalog (.expression (.tableMayNotBeAltered tableName))",
-        "  | none => restrict [] .engineTable\n  | some (position, table) =>\n"
+        "    else restrict [] .engineTable\n  | some (position, table) =>\n"
         "    if reservedName tableName then prepareError catalog (.expression (.tableMayNotBeAltered tableName))"),
     "commit_without_transaction": (SQLITE + "SqlAdvance.lean",
         "    | none => .halt (.failure position .noActiveTransaction state.database)\n"
