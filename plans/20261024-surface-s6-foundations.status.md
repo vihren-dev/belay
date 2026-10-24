@@ -45,3 +45,7 @@ until the prototype has evidence.
   commutation-automation contracts blocked by guide questions 4 and 13.
   S4's clean review record `20261024T133008Z-00c8707f` is carried with the
   prototype task so its stated prerequisite can be checked in this workspace.
+- 2026-10-24: follow-up review `20261024T133349Z-62320bf0` had no musts
+  and two shoulds. Explicitly marked the audit scope as extending the question
+  numbers named in ADR17's S6 row. Removed the future-S8 justification; the
+  current S6 contracts remain the reasons for both audits.
