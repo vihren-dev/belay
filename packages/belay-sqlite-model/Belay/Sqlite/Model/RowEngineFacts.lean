@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.DatabaseConstraintChecks
 import Belay.Sqlite.Model.DatabaseLaws
 import Belay.Sqlite.Model.Upsert
+import Belay.Sqlite.Model.LiteralAdmittedRow
 
 set_option doc.verso true
 
@@ -38,8 +39,9 @@ structure TableFacts (fact : Catalog → Nat → Table → Prop) : Prop where
 rows of one position in two ways. Two facts:
 * a DELETE, which keeps a sublist of the rows at a position, keeps the property;
 * the write of a table that passes the checks of a write ({name}`LiteralData.constraints` with the unique
-  keys of its position, and {name}`LiteralData.rowidsDistinct`) keeps the property, when the database
-  has a table at the position.
+  keys of its position, and {name}`LiteralData.rowidsDistinct`), and whose rows are rows of the old table or
+  admitted rows ({name}`LiteralData.rowAdmitted`), keeps the property, when the database has a table at
+  the position.
 
 {lit}`TableFacts.laws` gives the instance for a fact of each table, and the properties
 "rows shaped" and "catalog supported" have their own. -/
@@ -50,13 +52,16 @@ structure WriteLaws (invariant : Database → Prop) : Prop where
   sublist : ∀ (database : Database) (position : Nat) (change : List Row → List Row), invariant database →
     (∀ rows, (change rows).Sublist rows) → invariant (database.setRows position (change (database.rows.getD position [])))
   /-- For every database with the property, position, table of the database at the position and rows:
-  if the table with the rows passes the checks of a write, the database after
+  if the table with the rows passes the checks of a write, and each of the rows is a row of the table or
+  is admitted ({name}`LiteralData.rowAdmitted` for the entry of the table), the database after
   {name}`Database.setRows` with the rows at the position has the property. Without a table at the
-  position, and for rows that fail the checks, the law requires nothing. -/
+  position, for rows that fail the checks, and for a row that is neither, the law requires nothing. -/
   write : ∀ (database : Database) (position : Nat) (table : Table) (rows : List Row), invariant database →
     database.table position = some table →
     (LiteralData.constraints (database.catalog.uniqueKeys position table.shape) { table with rows } &&
-      LiteralData.rowidsDistinct { table with rows }) = true → invariant (database.setRows position rows)
+      LiteralData.rowidsDistinct { table with rows }) = true →
+    (∀ row ∈ rows, row ∈ table.rows ∨ LiteralData.rowAdmitted table.shape row = true) →
+    invariant (database.setRows position rows)
 
 /-- For the given fact of a table and database: every table of the database has the fact, with
 the catalog of the database. -/
@@ -125,7 +130,7 @@ theorem TableFacts.laws {fact : Catalog → Nat → Table → Prop} (facts : Tab
   sublist database position change every sub :=
     every.change fun table found => facts.sublist database.catalog position table _ (every position table found) rfl
       (by rw [Database.table_rows_eq found]; exact sub _)
-  write database position table rows every found passed :=
+  write database position table rows every found passed _ :=
     every.setRows found (facts.constraints database.catalog position { table with rows } passed)
 
 namespace LiteralData

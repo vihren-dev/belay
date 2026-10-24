@@ -14,12 +14,15 @@ variable {invariant : Database → Prop}
 /-- For every catalog, state, position, two rows and table: if {name}`checkedUpdate` passes and the
 database of the state has the table at the position, the table with the old row replaced by the new
 row ({name}`LiteralData.replaceRow`) passes the checks of a write ({name}`LiteralData.constraints` with the
-unique keys of the position, and {name}`LiteralData.rowidsDistinct`). Proof sketch: the check is
-{name}`LiteralData.checkedRow` of that table, which passed ({name}`LiteralData.checkedRow_passed`). -/
+unique keys of the position, and {name}`LiteralData.rowidsDistinct`), and the new row is admitted for
+the entry of the table ({name}`LiteralData.rowAdmitted`). Proof sketch: the check is
+{name}`LiteralData.checkedRow` of that table, which passed ({name}`LiteralData.checkedRow_passed`), followed
+by the test of the new row. -/
 theorem checkedUpdate_ok {catalog : Catalog} {state : KeyState} {position : Nat} {old new : Row} {table : Table}
     (ok : checkedUpdate catalog state position old new = .ok ()) (found : (state.database catalog).table position = some table) :
     (LiteralData.constraints (catalog.uniqueKeys position table.shape) (LiteralData.replaceRow table old new) &&
-      LiteralData.rowidsDistinct (LiteralData.replaceRow table old new)) = true := by
+      LiteralData.rowidsDistinct (LiteralData.replaceRow table old new)) = true ∧
+      LiteralData.rowAdmitted table.shape new = true := by
   unfold checkedUpdate at ok
   rw [found] at ok
   dsimp only at ok
@@ -28,7 +31,10 @@ theorem checkedUpdate_ok {catalog : Catalog} {state : KeyState} {position : Nat}
   · split at ok
     · rename_i reached passed
       obtain ⟨stored, written⟩ := reached
-      exact (LiteralData.checkedRow_passed passed).2
+      split at ok
+      · rename_i admitted
+        exact ⟨(LiteralData.checkedRow_passed passed).2, admitted⟩
+      · cases ok
     · cases ok
 
 /-- For every catalog, state, position and two rows: if {name}`checkedUpdate` passes, the database of the
@@ -55,7 +61,8 @@ have its rows, and the old row has the rowid, then the third state with the row 
 replaced by the new row ({name}`KeyState.changeRows`) satisfies {name}`KeyState.Holds`.
 This is the write of {name}`updateRow`. Proof sketch: the database of the state has a table at the position
 ({name}`checkedUpdate_found`), and the written table is the table that
-{name}`checkedUpdate_ok` checked; that is the write of {name}`WriteLaws`. -/
+{name}`checkedUpdate_ok` checked, and each of its rows is a row of the state or the new row, which is
+admitted; that is the write of {name}`WriteLaws`. -/
 theorem updateWrite_holds (laws : WriteLaws invariant) {catalog : Catalog} {state before other : KeyState} {position : Nat} {old new : Row}
     {rowid : Int} (holds : state.Holds invariant catalog) (passed : checkedUpdate catalog state position old new = .ok ())
     (rows : before.rows = state.rows) (oldRowid : old.rowid = rowid) (otherRows : other.rows = before.rows) :
@@ -63,11 +70,14 @@ theorem updateWrite_holds (laws : WriteLaws invariant) {catalog : Catalog} {stat
   refine KeyState.holds_of_rows (other := state.changeRows position fun rows =>
     rows.map fun row => if row.rowid == rowid then new else row) (by simp only [KeyState.changeRows, otherRows, rows]) ?_
   obtain ⟨table, found⟩ := checkedUpdate_found passed
-  refine KeyState.holds_write laws holds found ?_
-  have checked := checkedUpdate_ok passed found
+  obtain ⟨checked, admitted⟩ := checkedUpdate_ok passed found
   unfold LiteralData.replaceRow at checked
   rw [KeyState.table_rows found, oldRowid] at checked
-  exact checked
+  refine KeyState.holds_write laws holds found checked fun row member => ?_
+  obtain ⟨original, originalMember, replaced⟩ := List.mem_map.mp member
+  split at replaced
+  · exact .inr (replaced ▸ admitted)
+  · exact .inl (replaced ▸ originalMember)
 
 /-- For every invariant with {name}`WriteLaws`, catalog, links, nested run, frame, position, change, positions, flag, state and
 rowid: if the nested run keeps the invariant ({name}`NestedRun.Keeps`) and the state

@@ -4,7 +4,9 @@ their stated formulas and rest only on the standard axioms.
 There is one theorem for each atom: `runStatement_rowidsDistinct`, `runStatement_rowsShaped` and
 `runStatement_catalogSupported` cover every form of `Resolved.Statement`, and
 `runStatement_rowidsInRange`, `runStatement_rowsWide`, `runStatement_rowsStored` and
-`runStatement_rowsAliased` cover the statements without foreign key rules and trigger programs.
+`runStatement_rowsAliased` cover every form too, with the support check as a hypothesis, also with
+foreign key rules and trigger programs (owner decision M: the row engine tests every row that it
+writes, `LiteralData.rowAdmitted`).
 The check file restates each formula, so a change that weakens a formula (for example a hypothesis
 that is dropped, or an atom that changes) fails here, and it refuses `sorryAx`, `ofReduceBool` and
 `_native` in the `#print axioms` output (`compile_checks`).
@@ -23,6 +25,7 @@ THEOREMS = [
     "runStatement_rowidsDistinct", "runStatement_rowsShaped", "runStatement_catalogSupported",
     "runStatement_rowidsInRange", "runStatement_rowsWide", "runStatement_rowsStored",
     "runStatement_rowsAliased", "runStatement_tableAtom", "runStatement_plain_rowsOnly",
+    "LiteralData.rowAdmitted_iff", "rowidsInRangeLaws", "rowsWideLaws", "rowsStoredLaws", "rowsAliasedLaws",
 ]
 
 STANDARD_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
@@ -47,27 +50,35 @@ example (limits : Limits) (clock : Int) (counters : Counters) (parameters : List
       fun after => after.catalog.Valid limits :=
   runStatement_catalogSupported limits clock counters parameters statement valid next
 example (clock : Int) (counters : Counters) (parameters : List Value) (statement : Resolved.Statement)
-    (database : Database) (inRange : database.RowidsInRange) (withoutRules : statement.WithoutRules)
+    (database : Database) (inRange : database.RowidsInRange)
     (ready : (runStatement clock counters parameters statement database).ready = true) :
     (runStatement clock counters parameters statement database).effect.Satisfies Database.RowidsInRange :=
-  runStatement_rowidsInRange clock counters parameters statement inRange withoutRules ready
+  runStatement_rowidsInRange clock counters parameters statement inRange ready
 example (clock : Int) (counters : Counters) (parameters : List Value) (statement : Resolved.Statement)
-    (database : Database) (wide : database.RowsWide) (withoutRules : statement.WithoutRules)
+    (database : Database) (wide : database.RowsWide)
     (ready : (runStatement clock counters parameters statement database).ready = true) :
     (runStatement clock counters parameters statement database).effect.Satisfies Database.RowsWide :=
-  runStatement_rowsWide clock counters parameters statement wide withoutRules ready
+  runStatement_rowsWide clock counters parameters statement wide ready
 example (clock : Int) (counters : Counters) (parameters : List Value) (statement : Resolved.Statement)
     (database : Database) (stored : database.RowsStored) (wide : database.RowsWide)
-    (withoutRules : statement.WithoutRules)
+    
     (ready : (runStatement clock counters parameters statement database).ready = true) :
     (runStatement clock counters parameters statement database).effect.Satisfies Database.RowsStored :=
-  runStatement_rowsStored clock counters parameters statement stored wide withoutRules ready
+  runStatement_rowsStored clock counters parameters statement stored wide ready
 example (limits : Limits) (clock : Int) (counters : Counters) (parameters : List Value)
     (statement : Resolved.Statement) (database : Database) (aliased : database.RowsAliased)
-    (valid : database.catalog.Valid limits) (withoutRules : statement.WithoutRules)
+    (valid : database.catalog.Valid limits) 
     (ready : (runStatement clock counters parameters statement database).ready = true) :
     (runStatement clock counters parameters statement database).effect.Satisfies Database.RowsAliased :=
-  runStatement_rowsAliased limits clock counters parameters statement aliased valid withoutRules ready
+  runStatement_rowsAliased limits clock counters parameters statement aliased valid ready
+example (shape : CatalogTable) (row : Row) :
+    LiteralData.rowAdmitted shape row = true ↔ validRowid row.rowid ∧
+      row.values.length = shape.columns.length ∧ row.Stored shape.columns ∧ row.Aliased shape.rowidAlias :=
+  LiteralData.rowAdmitted_iff shape row
+example : WriteLaws Database.RowidsInRange := rowidsInRangeLaws
+example : WriteLaws Database.RowsWide := rowsWideLaws
+example : WriteLaws Database.RowsStored := rowsStoredLaws
+example : WriteLaws Database.RowsAliased := rowsAliasedLaws
 """ + "".join(f"#print axioms {name}\n" for name in THEOREMS)
 
 

@@ -530,3 +530,25 @@ proof relies on it (finding 15).
 - 2026-10-24: the owner decided finding 16: option M (see finding 16). This commit records the decision
   and amends the task file ("Amendment of 2026-10-24"). The model change, the proofs for every
   constructor and the updated examples follow in later commits.
+- 2026-10-24: part 2, decision M implemented. `LiteralData.rowAdmitted` (`LiteralAdmittedRow`, with
+  `rowAdmitted_iff`) tests a row (rowid in range, one cell for each column, cells stored, alias cell is
+  the rowid). `insertRow` tests the row before it writes it, and `checkedUpdate` tests the new row of an
+  UPDATE; a row that fails ends the statement as `undescribed`. `WriteLaws.write` gained the hypothesis
+  that each written row is a row of the old table or admitted (`insertWrite_holds`, `updateWrite_holds`
+  and `KeyState.holds_write` carry it). `AdmittedRowLaws` gives `rowAtomLaws`, `rowidsInRangeLaws`,
+  `rowsWideLaws`, `rowsStoredLaws` and `rowsAliasedLaws`. `Resolved.Statement.WithoutRules` and its uses
+  are deleted: `runStatement_tableAtom` takes the laws and covers the writes with rules through
+  `rowsKeys_satisfies` and `dropKeys_holds`, so the four statement theorems cover every constructor.
+  The example of finding 16 (`AdmittedAtomsNestedExamples`) is now a statement that is not ready and
+  ends as `unmodeled` with the input database. `just dev-verdict` for all claimed corpora (no argument)
+  has the same counts as before the change (v4 AGREE 673 + MODEL_UNSUPPORTED 591, v5 2946 + 1430, v50 17,
+  v51 21, v52 33, and the 50 others unchanged), and `diff -r` of the predictions of the 53 given files
+  (`build/predictions-s4p2-new` against `build/predictions-m-new`) is empty. Mutants: the files
+  `RowInsert.lean` and `ForeignKeyRows.lean` changed, and the texts of all their mutants still match
+  (`tests/mutant_guards_test.py` passes, 49 tests); the tests `test_every_counter_mutant_changes_a_verdict`,
+  `test_every_foreign_key_mutant_changes_a_verdict` and `test_every_pragma_mutant_changes_a_verdict` pass
+  (the first failed at first only because the runner binaries of `build/agent-logs/test-runtime` were from
+  before the counters; they are refreshed from `just dev-build`). Tests: `tests/test_model_package.py`,
+  `tests/valid_atoms_theorems_test.py`, `tests/admitted_atoms_resolver_facts_test.py`,
+  `tests/admitted_atoms_statement_theorems_test.py` (new formulas without the hypothesis
+  `withoutRules`, and the laws of the four atoms).
