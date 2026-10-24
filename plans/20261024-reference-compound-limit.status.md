@@ -11,6 +11,14 @@ Spec: ADR 0009 and the owner's PR #242 CI failure report.
   Its four shell configuration files match the approved S4 workspace; authorized
   `direnv allow` succeeded. The full reference build on this descendant remains
   pending. No model, corpus or judge input changes are part of this merge.
+- Merge review `20261024T175912Z-d2ffeadb` has no findings. The actual Nix
+  reference passed at
+  `/nix/store/iz8kjnq67dn05smyh3liv85rf2wwdzn5-sqlite-verifier-api-reference-d2ffeadbd472`:
+  538 public modules, 41 recursor corrections, and 5013 source links to exact
+  source `d2ffeadbd4720527e12c1e3615bed559e32f7fb0`. Every selected module has
+  its HTML page and exact source URI. Base reference:
+  `/nix/store/4b0gdarzs5w23vvx7sj4wclhj5wgvd32-sqlite-verifier-api-reference-base-2`.
+  The inventory registration follow-up and final combined checks remain pending.
 
 ## Current state
 
