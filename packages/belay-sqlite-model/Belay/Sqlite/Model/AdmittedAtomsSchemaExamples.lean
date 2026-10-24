@@ -66,15 +66,17 @@ example : sizeAfter [createT, .addColumn (name! "t") (column (name! "a"))] = 1 :
 example : sizeAfter [createT, .createIndex (name! "ia") false (name! "u") [term (name! "a")] none] = 1 := by
   decide +kernel
 
-/-- The statement that ADD COLUMN resolves to: its column, or the default column if it is restricted. -/
-def addedColumnOfC : CatalogColumn :=
-  match resolveAddColumn execution [{ name := name! "t", entry := .table { columns :=
-      [{ name := name! "a", declaredType := some "INTEGER" }] } }] (name! "t") (column (name! "c")) with
-  | .ok (.addColumn _ added, _) => added
-  | _ => { name := name! "none", declaredType := none }
+/-- The catalog with the table {lit}`t(a INTEGER)`. -/
+def oneTable : Catalog :=
+  [{ name := name! "t", entry := .table { columns := [{ name := name! "a", declaredType := some "INTEGER" }] } }]
 
--- The resolved column has the name of the definition, and its default fits.
-example : addedColumnOfC.name = name! "c" ∧ strictDefaultFits addedColumnOfC = true := by decide +kernel
+/-- The column that ADD COLUMN {lit}`c TEXT` appends: it has the name of the definition. -/
+def columnC : CatalogColumn := { name := name! "c", declaredType := some "TEXT" }
+
+-- The statement that ADD COLUMN resolves to adds the column at position 0. Its default fits.
+example : (match resolveAddColumn execution oneTable (name! "t") (column (name! "c")) with
+    | .ok (statement, _) => decide (statement = .addColumn 0 columnC) | .error _ => false) = true := by decide +kernel
+example : strictDefaultFits columnC = true := by decide +kernel
 
 /-- The catalog after {name}`schema`: the table {lit}`t`, the index {lit}`ia` and the trigger {lit}`tr`. -/
 def schemaCatalog : Catalog := (catalogAfter schema).getD []
