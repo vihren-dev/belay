@@ -49,11 +49,11 @@ workspace filesystem. Reserve at most two heavy build/check processes here.
   blanket promise that whitespace/comment edits never rebuild importers.
 
 The owner accepted all three remaining recommendations on 2026-10-24 and
-resumed the goal. No owner decision remains pending at this point. S5/FK/source
-requirements are in their tasks here; guide corrections have private product
-repo tasks. S4 recorded its default-run decision in reviewed `73b9f65b`.
-The doc-handler task is reviewed; S7 files/freshness is specified under review.
-The S7 proof-cost collector prototype and its implementation contract remain.
+resumed the goal. S4 recorded its default-run decision in reviewed `73b9f65b`.
+One new S6 decision is pending: make `≈` compare full connection state and all
+branch outcomes (recommended), or retain visible `≈` and name a stronger
+compositional relation separately. Checked counterexamples distinguish counters,
+pragmas and transaction snapshots. No other semantic decision is pending.
 
 ## Resolved findings
 
@@ -62,126 +62,107 @@ The FK regression uses `p(a,b,PRIMARY KEY(a,a))` and child `(x,y)` referencing
 it reports a pragma violation if the row was stored with enforcement off.
 The old model exempts the row because it reads unused `y`. The revised FK task
 and ADR22 require selected `x` twice, as pinned native `fkLookupParent` does.
-The FK workspace retains its split-API work; the engine correction is queued
-for an agent slot, not yet implemented.
+The FK workspace retains its split-API work. The accepted correction is now
+assigned to `text_build_boundaries`; no FK acceptance result is claimed yet.
 
 The INSERT SELECT streaming/materialization counterexample and accepted scope
 are now in ADR19 D4. The formatting counterexample is reflected in ADR17 D6:
 SQLite can preserve expression spelling in column names. These accepted changes
 remove the prior planning blocks; they are not implementation-completion claims.
 
-## Active implementation
+## Active implementation and ownership
 
-- `s4_part1`, workspace `sqlite-verifier-s4`: part 1 passed its full/verdict
-  boundary, then rebased cleanly onto #240 at `372e6c8f`. Part 2 is active.
-  Task clarification `9f6cba9b` and monad/bind laws `51a56f7e` each have clean
-  independent review. Success must cover the actual raw `oneOf` continuation
-  and every concrete `rows` continuation. Part-2 success laws/fixtures are in
-  progress; their reviewed generic contract is `00c8707f` (clean review
-  `20261024T133008Z-00c8707f`). Statement/index/guide laws remain; part 3 still
-  removes `Run.checked`. Do not treat the generic success API as S4 done.
-- `text_build_boundaries`, workspace `sqlite-verifier-text-build-boundaries`:
-  implementation `7d9d7d06` has clean independent review. `just test-full`
-  passed with report
-  `/nix/store/ykfdsmryx18cplw9zrf1dy3xakqlbydj-sqlite-verifier-test-reports`;
-  `just verdict` passed, and all 53 prediction files / 7,372 cases are
-  byte-identical to the baseline. `just test-nix` passed 67 tests. The final
-  scheduled gate passed 47 tests. Completion review is clean and branch
-  `tasks/text-build-boundaries` is pushed at `2f86e45a`. PR
-  [#240](https://github.com/vihren-dev/sqlite-verifier/pull/240) is open in stack
-  231, based on #239. Its exact review range is `98a07bfe` to `2f86e45a`.
-  Review tab 6 (`w1:t3T`) and wait `78895` are closed at the owner's request.
-  Its completed, pushed workspace was removed after clean/reachability checks.
-- `foreign_key_atoms`, workspace `sqlite-verifier-fk-atoms`: part 1 of
-  [the FK task](20261024-foreign-key-atoms.task.md), based on `cf7aa9a6`.
-  The agent owns FK atom/check/frame modules, the surface database export and
-  their registration entries in the model barrel/lakefile. S4 confirmed these
-  entries do not overlap its current work. It has the cached #239 prediction
-  baseline `4k77z378vnagzwx5448yqz0686d58cld`. The full pragma statement law
-  will reuse S4's query-output bridge after clean integration; part 1 stays
-  open until that law and its acceptance checks pass.
-- The prediction filter task in `sqlite-verifier-prediction-source-filter`
-  is DONE, based on #240.
-  Implementation `accfbf78` has clean independent review. The production Nix
-  identity regression passes, all 55 locked parts are unchanged, and all 53
-  prediction files / 7,372 cases are byte-identical. Full validation passed:
-  792 full-suite tests, 70 Nix checks and 47 scheduled checks; verdict totals
-  remain 4,838 AGREE and 2,534 MODEL_UNSUPPORTED, with no errors. The task is
-  DONE, final review findings resolved, and `529ff779` is pushed as
-  `tasks/prediction-source-filter`. PR
-  [#241](https://github.com/vihren-dev/sqlite-verifier/pull/241) is in stack 231,
-  based on #240. Review tab 7 (`w1:t3V`) and wait `78368` are closed at the
-  owner's request. Its clean, pushed workspace was then removed.
+- `s4_part1` owns `sqlite-verifier-s4`. Part 1 passed full/verdict (805 tests,
+  4,838 AGREE / 2,534 MODEL_UNSUPPORTED, all 53 predictions unchanged), then
+  rebased cleanly onto #240 at `372e6c8f`. Its pre-rebase full report is
+  `/nix/store/japwh8n1f0chh7fz6ig44qn9dxhkm8y5-sqlite-verifier-test-reports`.
+  Part 2's reviewed success contract is `00c8707f`; exact default-query bridge
+  `fd0f0c1e` is also reviewed. GROUP/index unit `743ad7a9` has Nix model result
+  `7wvhz52244gnbjxby1q61q9h33cn5drz` and is under independent review. S4 still
+  needs guide proofs/part-2 acceptance and part 3's removal of Run.checked.
+- `s6_prerequisite_audit` owns `sqlite-verifier-query-sources`, based on S4 part 1.
+  Source execution `93767a4d`/`15a252a8` and metadata `649a3021`/`bc79e3e7`
+  have clean reviews and Nix model checks; latest model result is
+  `24qvzhb6dpmsh27pzgqyjwr921dkkqbp`. Derived-source translation/resolution
+  remains active. CTEs and views follow. Baseline predictions are
+  `/nix/store/qwfgz46d1pyd10xiypmka4kixvx38k2b-sqlite-verifier-predictions`;
+  baseline verdict `srv5lc3gnn1s9wzfjy1ilrzsb2ws0881` passes existing claims.
+- `text_build_boundaries` owns `sqlite-verifier-s6-foundations` and resumed FK
+  work. The S6 prototype consumes reviewed S4 `00c8707f` without rebasing.
+  Implementation `e9a0354d` and refactor `6c26ac21` have resolved/clean reviews;
+  56 focused Nix surface tests pass at
+  `/nix/store/1rzb9hwr5s7yccpwjx2xiwbzja3bcd99-sqlite-verifier-test-surface-1`.
+  Its 28 audited declarations use only ordinary logical axioms. Design
+  refinement `21b80e17` is under review; full task gates remain. The prototype
+  does not implement production S6. Only equivalence needs owner judgment.
+- The FK workspace is `sqlite-verifier-fk-atoms`. Root carried the revised task
+  and ADR22 in reviewed `8526ed1f`, with status-only findings fixed in `0ca148ce`.
+  The existing split-API source work remains uncommitted. FK owns atom/check/frame
+  modules, surface Database exports and reserved barrel/lake/test entries.
+  S4 is identifying the reviewed query-output dependency closure for the exact
+  pragma law. The old #239 prediction baseline is `4k77z378vnagzwx5448yqz0686d58cld`.
+  No shared ancestor may be rebased while descendants are active.
 
-The S4 provisional full gate passed: report
-`/nix/store/japwh8n1f0chh7fz6ig44qn9dxhkm8y5-sqlite-verifier-test-reports`,
-805 cases with no failures, errors or skips. Its final post-review invocation
-also passed, with verdict 4,838 AGREE and 2,534 MODEL_UNSUPPORTED and all 53
-predictions files byte-identical. The part-1 boundary was committed as
-`a86470b8` before the authorized rebase onto #240. Registration conflicts were
-resolved without restoring removed files. Part 2's full gate will cover the
-integrated base; the earlier evidence remains part-1 evidence before rebase.
+S4 owns `sqlite-verifier-product-s4-guide`, based on published `17666ac9`:
+uniqueEmail/balance/holds_where, Level2 semantics and the separately reviewed
+[rebuild wording correction](20261024-guide-sql-rebuilds.task.md). Preserve the
+published defaults/header corrections. The product default workspace still
+contains earlier unpublished S2/S3 guide changes; the final guide audit must
+account for them without publishing unrelated ancestors.
 
-`s6_prerequisite_audit` now implements query-sources part 1 in
-`sqlite-verifier-query-sources`, based on clean S4 part 1 `372e6c8f`.
-Task carry `8a89208f` has clean review. Baseline predictions are
-`/nix/store/qwfgz46d1pyd10xiypmka4kixvx38k2b-sqlite-verifier-predictions`;
-baseline verdict `srv5lc3gnn1s9wzfjy1ilrzsb2ws0881` passes existing claims.
-Source execution `93767a4d` and its refusal-fixture fix `15a252a8` passed
-Nix model checks and clean reviews. Metadata/translation remain.
-CTEs and views follow as later parts. Do not rebase shared S4 ancestors.
+The reviewed one-line surface helper fileset fix `b9008683` was carried into
+S6. Its initial missing-helper Nix failure is resolved. At most two heavy checks
+run: query-source slot 1 and S4/S6/FK sharing slot 2 by explicit handoff.
+No agent opens a herdr tab before the owner's Monday deadline.
 
-The private guide defaults and accepted doc-header corrections are pushed as
-product PR #7, `docs/guide-profile-defaults`, at `17666ac9`, based on published
-`c1471940` (PR #6). Nine pinned native checks passed; both header corrections
-preserve the SQL bodies. The isolated `profile-publication` workspace contains
-no unrelated unpublished ancestors. Tab 8 (`w1:t3W`) and wait `56689` are closed
-at the owner's request; the clean, pushed publication workspace was removed.
-S4 owns its guide examples, holds_where and Level2 semantics in isolated
-`sqlite-verifier-product-s4-guide`, based on published `17666ac9`.
-The original completed `profile-guide` workspace was removed after verifying
-the isolated published correction and its unchanged native SQL inputs.
+## Published work and cleanup
 
-The read-only S7 audit is complete at
-`/home/codex/work/research_notes/Lean model modularity investigation/adr17_s7_audit.md`.
-Its file elaborators and freshness checker can proceed without S4–S6; the
-guide correction is now accepted. A task must also cover the guide's `--costs`
-heartbeat reporting; the checked SQL docstring-block feature needs explicit
-ownership in the remaining guide audit.
-The editor/doc-block audit is also complete in the same research-notes directory.
-It informs [the editor task](20261024-surface-editor.task.md), reviewed with no
-musts and recorded scope disposition; final source-record review was clean.
-Implementation is unassigned. Its unused empty workspace was removed so the
-free slot can run the S6 prototype. The doc-block task has clean follow-up review
-`20261024T140400Z-04f1c91e`; S7 files/freshness awaits follow-up review.
+- Public [PR #240](https://github.com/vihren-dev/sqlite-verifier/pull/240),
+  `tasks/text-build-boundaries`, head `2f86e45a`, base #239, stack 231: DONE.
+  Full 792, Nix 67 and scheduled 47 passed; verdict 4,838/2,534, all 53
+  predictions/7,372 cases byte-identical. Full report is
+  `/nix/store/ykfdsmryx18cplw9zrf1dy3xakqlbydj-sqlite-verifier-test-reports`.
+- Public [PR #241](https://github.com/vihren-dev/sqlite-verifier/pull/241),
+  `tasks/prediction-source-filter`, head `529ff779`, base #240, stack 231: DONE.
+  Full 792, Nix 70 and scheduled 47 passed; same verdict/predictions, all 55
+  locked parts unchanged. Protected judge source change still needs owner merge.
+- Private product PR #7, `docs/guide-profile-defaults`, head `17666ac9`, base
+  published `c1471940` (PR #6): DONE. Nine pinned native checks passed; two
+  Verso-header corrections preserve the SQL bodies. No unrelated unpublished
+  ancestor was included in publication.
 
-Completed workspaces `adr19s2`, `adr19s3`, `adr22s2`, `adr22s3`, `adr22s4`,
-`errev` and `envfns` were checked clean, with all nonempty commits reachable
-from origin bookmarks and no running process or open review in their paths.
-They were forgotten and removed under the owner's pushed-workspace cleanup
-instruction. The protected `s4chk` workspace and all unrelated workspaces remain.
+All three herdr review tabs and waits are closed by owner request:
+`w1:t3T`/78895, `w1:t3V`/78368 and `w1:t3W`/56689. Each returned
+`closed_without_review`; no approval is inferred. Their clean, pushed workspaces
+text-build-boundaries, prediction-source-filter and profile-publication were
+forgotten/removed after confirming no active process and remote reachability.
+The earlier completed profile-guide and unused empty editor workspace were
+also removed. Prior pushed cleanup removed adr19s2/adr19s3/adr22s2/adr22s3/
+adr22s4/errev/envfns. Protected s4chk and unrelated workspaces remain. S4's
+completed schema/observation workspaces await publication before removal.
 
-The schema and observation helper agents of S4 have completed their reviewed
-commits and returned them to S4. Their workspaces remain until pushed cleanup.
-No agent may rebase a shared ancestor while another agent is editing a descendant.
+## Specified work and remaining scope
 
-## Specified work waiting for its prerequisites
+- [S5](20261024-surface-s5.task.md) is reviewed and waits for final S4 run/success
+  interfaces. Plausible v4.34.0 needs a compatibility build under Lean 4.34.1.
+- [Query sources](20261024-query-sources.task.md) is active as above; the
+  [table rebuild task](20261024-table-rebuild.task.md) now has clean follow-up
+  review `20261024T142117Z-79fd6a8b` and waits for its final view/CTE design.
+- [S6 prototype](20261024-surface-s6-foundations.task.md) is implemented and
+  validating. Full S6 requires the equivalence decision and model prerequisites.
+- [Editor](20261024-surface-editor.task.md) is reviewed, unassigned.
+- [SQL doc blocks](20261024-sql-doc-blocks.task.md) has clean follow-up review
+  `20261024T140400Z-04f1c91e`, unassigned; it accompanies S7.
+- [S7 files/freshness](20261024-surface-s7-files.task.md) has clean follow-up
+  review `20261024T140930Z-09c30b41`, unassigned.
+- [S7 proof-cost prototype](20261024-s7-proof-cost-prototype.task.md) has clean
+  follow-up review `20261024T141307Z-82085ddd`, unassigned. Production costs still
+  need its measured collector contract. This facet is required, not deferred.
+- [Guide rebuild wording](20261024-guide-sql-rebuilds.task.md) has clean review
+  `20261024T142048Z-e614f5b6` and is assigned to S4's guide owner.
 
-- [S5](20261024-surface-s5.task.md): reviewed; waits for S4's final success and
-  run semantics. Plausible v4.34.0 still needs a compatibility build under
-  Lean 4.34.1. No dependency is installed yet.
-- [Query sources](20261024-query-sources.task.md): review `cf7aa9a6` had no
-  findings. Covers derived tables, ordinary CTEs and views, including the
-  existing compound-subquery metadata restriction; part 1 is active above.
-  ALTER/rebuild follows the final view representation.
-- [S6 foundations prototype](20261024-surface-s6-foundations.task.md): final
-  review `1cd45bae` had no findings. Uses S4's completed monad/universal execution
-  interfaces to investigate WP, congruence, the before schema and footprints.
-  Isolated `sqlite-verifier-s6-foundations` now consumes reviewed `00c8707f`.
-  Carry/scope findings are resolved; final review `29d73988` has no findings.
-  `text_build_boundaries` now owns the bounded prototype in that workspace.
-  Full S6 still needs a task after its findings and model prerequisites.
-
-ADR 0019 slice 5, full S6, S7 and S8 remain to be specified and implemented.
-S8's application simulation and the full guide acceptance audit are required
-before the ADR 0017 goal can be marked complete.
+Read-only S7/editor audits remain in the research-notes directory of the Lean
+model modularity investigation. Shared surface helper ownership must be reserved
+before editor/doc/file tasks run concurrently. Full S6, production proof costs,
+S8 simulation and the full guide acceptance audit still need tasks. ADR17 is
+not complete until their required behavior and acceptance pass.
