@@ -16,6 +16,11 @@ value 0, no counter, and the values bound to its parameters. -/
 abbrev Resolved.EvalContext.bound (parameters : List Value) : Resolved.EvalContext :=
   { Resolved.EvalContext.plain 0 with parameters }
 
+/-- For every list of values, the values bound to the parameters of the context of the values are the values. Proof
+sketch: the definition computes. -/
+theorem Resolved.EvalContext.bound_parameters (parameters : List Value) :
+    (Resolved.EvalContext.bound parameters).parameters = parameters := rfl
+
 /-- For every connection, values and calm statement of a query without subqueries, the context of
 the query on the connection is the context of the values ({name}`Resolved.EvalContext.bound`): the
 statement reads no counter, so the context knows none. Proof sketch: the statement reads no counters

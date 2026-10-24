@@ -60,6 +60,12 @@ attribute [sql_simp]
   Belay.Sqlite.Model.resolveOperand_inQuery
   Belay.Sqlite.Model.SubqueryShapes.find_only
   Belay.Sqlite.Model.SubqueryShapes.column_only
+  Belay.Sqlite.Model.Resolved.EvalContext.withRuns_subqueries
+  Belay.Sqlite.Model.Resolved.EvalContext.withRuns_parameters
+  Belay.Sqlite.Model.Resolved.EvalContext.bound_parameters
+  Belay.Sqlite.Model.parameterValue
+  Belay.Sqlite.Model.Collation.compare_integer
+  Belay.Sqlite.Model.Resolved.countMatching_none
   Except.map Except.mapError Except.bind Bind.bind Belay.Sqlite.Model.condition
   Belay.Sqlite.Model.queryNumeric Belay.Sqlite.Model.numericValue Belay.Sqlite.Model.decimalNumericValue
   Belay.Sqlite.Model.digitsValue Belay.Sqlite.Model.hexDigit Belay.Sqlite.Model.fitsInt64

@@ -114,20 +114,7 @@ theorem Query.Simple.run_of_faultless {query : Query} (simple : query.Simple) (c
     (faultless : ∀ row ∈ [] :: rows, ∀ expression ∈ query.expressions, (expression.evaluate context row).2 = .none) :
     query.run context rows =
       { rows := query.results context rows, fault := .none, overflow := false, mismatch := false } := by
-  have noMustFail : query.mustFail context rows = false := by
-    unfold Query.mustFail
-    simp only [Bool.and_eq_false_iff, List.any_eq_false, Bool.not_eq_true, Bool.or_eq_false_iff]
-    refine .inr fun row member => ?_
-    have quietly : ∀ expression ∈ query.expressions, expression.mustFailOn context row = false := fun expression member' => by
-      simp [Expr.mustFailOn, faultless row (List.mem_cons_of_mem _ member) expression member']
-    refine ⟨?_, .inr ⟨fun expression member => quietly expression ?_, .inr fun expression member => quietly expression ?_⟩⟩
-    · cases found : query.filter with
-      | none => rfl
-      | some condition => simpa using quietly condition (by simp [Query.expressions, found])
-    · simp only [List.mem_flatMap] at member
-      simp [Query.expressions, Query.keptExpressions, List.mem_flatMap, member]
-    · simp only [List.mem_flatMap] at member
-      simp [Query.expressions, Query.keptExpressions, List.mem_flatMap, member]
+  have noMustFail := Query.mustFail_of_faultless context query rows faultless
   unfold Query.run
   simp [simple.compound, simple.bindWindow, noMustFail, Query.mayFail_of_faultless context query rows plain faultless,
     Query.distinctCertain, simple.distinct, Query.fails, simple.aggregate]

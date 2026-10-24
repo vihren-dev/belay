@@ -42,9 +42,9 @@ def test_no_row_or_some_row_satisfies_a_condition_in_a_subquery(runtime_root: Pa
 
 def test_a_where_that_may_fail_has_no_modeled_output(runtime_root: Path, tmp_path: Path) -> None:
     """`SELECT 1 FROM t WHERE abs(x) = 1` (and the same call in a subquery of `EXISTS`) on a table with the
-    smallest 64-bit integer and the integer 1 returns a row and then fails in SQLite. The model gives
-    `Output.unmodeled`: none of `Holds`, `Empty` and `Fails` holds, by `decide +kernel` and by the lemmas over
-    every database."""
+    smallest 64-bit integer and the integer 1: SQLite can fail at the call of `abs` on the smallest integer, so
+    the model does not describe the statement. None of `Holds`, `Empty` and `Fails` holds, by `decide +kernel`
+    and by the lemmas over every database."""
     result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsMayFail.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
@@ -54,5 +54,14 @@ def test_a_query_without_from_holds_or_is_empty_by_its_condition(runtime_root: P
     """`SELECT e [WHERE c]` over every database: `Holds` for a query without `WHERE` and `Empty` for a false
     condition, proved with the lemmas and `sql_simp`, with instances where `decide +kernel` checks the claim."""
     result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsNoFrom.lean", tmp_path), cwd=tmp_path,
+                         timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+
+
+def test_the_number_of_rows_of_a_table_is_compared_with_a_parameter(runtime_root: Path, tmp_path: Path) -> None:
+    """`SELECT 1 WHERE (SELECT count(*) FROM t [WHERE p]) = $n` over every database: `Holds` means that the
+    table has `n` rows (or `n` rows for which `p` is true), proved with the lemmas and `sql_simp`, with instances
+    on one database where `decide +kernel` checks the claim for a true and for a false `n`."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsCount.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()

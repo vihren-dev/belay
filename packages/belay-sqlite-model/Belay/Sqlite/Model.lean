@@ -191,6 +191,14 @@ import Belay.Sqlite.Model.SubqueryMayFailOutput
 import Belay.Sqlite.Model.SelectNoFromResolution
 import Belay.Sqlite.Model.ExprAnyLaws
 import Belay.Sqlite.Model.SelectNoFromOutput
+import Belay.Sqlite.Model.CountQueryLaws
+import Belay.Sqlite.Model.ExprContextLaws
+import Belay.Sqlite.Model.SelectOneSubqueryOutput
+import Belay.Sqlite.Model.CountSubqueryOutput
+import Belay.Sqlite.Model.CountSelectResolution
+import Belay.Sqlite.Model.CountStatementResolution
+import Belay.Sqlite.Model.CountMatchingLaws
+import Belay.Sqlite.Model.IntegerCompareLaws
 
 /-! SQLite states, the facts of an admitted and of a valid database, the theorems of the statements
 that keep the unique keys, supported execution, the output of each statement and the results that
