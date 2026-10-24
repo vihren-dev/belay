@@ -90,6 +90,14 @@ metadata. Inspect those APIs rather than assuming profiler wall-clock traces
 are proof heartbeat measurements. The native declaration path and background
 checker hooks are relevant; reserve shared hooks with S5 before production work.
 
+Additional inspected input: `Lean/Util/Trace.lean` has
+`trace.profiler.useHeartbeats`; with profiler mode enabled, its trace nodes store
+internal heartbeat start/stop counts as Float values. `Lean/CoreM.lean` wraps
+async work in an Elab.async trace, and `Lean/Elab/MutualDef.lean` gives theorem
+proof tasks a declaration-specific description. These are candidate attribution
+inputs, not an established collector: verify completed coverage, precision,
+threshold behavior, sync cases and imported persistence in the experiment.
+
 Own test-only collector/reader fixtures, a bounded Python test driver, one
 reserved surface-suite registration and `docs/s7-proof-cost-findings.md`.
 Use the installed surface and existing test support. No production surface,

@@ -107,9 +107,11 @@ the separate judge workflow. Record the final Nix outputs and exact revisions.
 
 This task consumes the completed S4/S5/S6/S7/S8 contracts, required model work,
 editor task, doc-block task and measured proof-cost implementation. At task
-creation, most of these are still active or specified without implementation;
-production proof-cost and the remaining public S6/S8 tasks are not yet written.
-The task is a final acceptance gate, not evidence that those inputs exist now.
+creation, most of these were active or specified without implementation.
+Production S6 now has execution, assertion, migration-pattern and automation
+tasks; S8 has a full-state/scoped simulation task. Production proof costs still
+await the collector prototype. This final gate does not claim those inputs are
+implemented.
 
 Reserve the final integration workspace and the private guide edit surface
 before work. The current guide owner must finish or explicitly hand off first.

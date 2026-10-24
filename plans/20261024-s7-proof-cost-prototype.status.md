@@ -17,6 +17,11 @@ be demonstrated. No production measurement or baseline guarantee is claimed.
   imported-data and growth checks. Review `20261024T141219Z-2ae528dd` had no
   musts and one should: comparison implementation precedes its settled contract.
   Kept only the written baseline sketch and actual measured-growth fixture.
-  Await follow-up review and assignment.
+  Follow-up review 20261024T141307Z-82085ddd had no findings; assignment remains
+  pending.
   The production cost task follows the measured findings; files/freshness and
   checked doc blocks remain separate tasks toward the same ADR17 completion.
+- Read-only follow-up inspected the pinned Trace/CoreM/MutualDef APIs. Native
+  profiler heartbeat mode and named async proof traces are candidate inputs.
+  No compiling collector, attribution measurement or imported registry was
+  tested. The task now names this evidence without choosing an implementation.
