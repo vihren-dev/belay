@@ -2,7 +2,7 @@
 
 Created 2026-10-24. Status: OPEN.
 Task: [required outcomes](20261024-model-native-artifacts.task.md).
-Owner: `text_build_boundaries`, assignment after task review.
+Owner: `text_build_boundaries`, assigned after clean task review.
 
 ## Observed baseline
 
@@ -21,5 +21,7 @@ only surface/test derivations; the model derivation was already present.
   53 files, 7372 cases. Rooted in S4's `build/accepted-cte-artifacts`.
 
 These are observations from an existing Nix gate, not acceptance of a fix.
+Task commit `e2a49629` has independent review `20261024T213358Z-e2a49629`: zero must and zero should findings. Root separately verified the cited log count and artifact inventory.
+
 No implementation or new heavy build has started. Required regression, native
 reuse demonstration, source review and task acceptance remain open.
