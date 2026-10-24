@@ -111,12 +111,39 @@ Two further questions are pending from prerequisite audits:
   remains at rest for the PR #240 review.
   Implementation `accfbf78` has clean independent review. The production Nix
   identity regression passes, all 55 locked parts are unchanged, and all 53
-  prediction files / 7,372 cases are byte-identical. Full validation is running.
+  prediction files / 7,372 cases are byte-identical. Full validation passed:
+  792 full-suite tests, 70 Nix checks and 47 scheduled checks; verdict totals
+  remain 4,838 AGREE and 2,534 MODEL_UNSUPPORTED, with no errors. The task is
+  DONE, final review findings resolved, and `529ff779` is pushed as
+  `tasks/prediction-source-filter`. PR
+  [#241](https://github.com/vihren-dev/sqlite-verifier/pull/241) is in stack 231,
+  based on #240. Its review range is `2f86e45a` to `529ff779`; root owns the
+  review handoff. The workspace remains at rest.
 
 The S4 provisional full gate passed: report
 `/nix/store/japwh8n1f0chh7fz6ig44qn9dxhkm8y5-sqlite-verifier-test-reports`,
-805 cases with no failures, errors or skips. Its final post-review invocation,
-verdict and prediction comparison are required before the clean part-1 handoff.
+805 cases with no failures, errors or skips. Its final post-review invocation
+also passed, with verdict 4,838 AGREE and 2,534 MODEL_UNSUPPORTED and all 53
+predictions files byte-identical. The part-1 boundary was committed as
+`a86470b8` before the authorized rebase onto #240. That rebase needs only model
+lakefile registration conflicts resolved; the S4 agent owns that resolution.
+It is authorized to continue part 2 after reporting the clean rebased boundary
+and reserving its files.
+
+The new `query-sources` workspace exists at
+`/home/codex/work/sqlite-verifier-query-sources`; its dev shell is allowed.
+It is an empty child of the rebasing S4 part-1 boundary, currently stale or
+conflicted until that rebase finishes. No implementation agent or source edit
+has started there. Update it to the clean final part-1 commit before carrying
+the reviewed query-sources task and assigning the independent model/text work.
+Do not rebase S4 ancestors after either implementation begins.
+
+The read-only S7 audit is complete at
+`/home/codex/work/research_notes/Lean model modularity investigation/adr17_s7_audit.md`.
+Its file elaborators and freshness checker can proceed without S4–S6 once the
+guide correction is decided. A task must also cover the guide's `--costs`
+heartbeat reporting; the checked SQL docstring-block feature needs explicit
+ownership in the remaining guide audit.
 
 Completed workspaces `adr19s2`, `adr19s3`, `adr22s2`, `adr22s3`, `adr22s4`,
 `errev` and `envfns` were checked clean, with all nonempty commits reachable
