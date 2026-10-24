@@ -134,7 +134,7 @@ theorem Catalog.parentLink_child_mem {catalog : Catalog} {link : ForeignKeyLink}
   rw [choice] at located
   unfold Catalog.parentLink at located
   split at located
-  · cases located
+  · split at located <;> cases located
   · rename_i parentPosition parent found
     split at located
     · rename_i key chosen

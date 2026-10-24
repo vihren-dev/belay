@@ -77,11 +77,12 @@ Proof sketch: compose source scopes, subquery bodies and the outer body. -/
 theorem guard_select (catalog : Catalog) (position index : Nat) (table : CatalogTable) (cell : CatalogColumn)
     (found : catalog.findTable ledgerRef.table = some (position, table))
     (notTable : catalog.findTable pragmaRef.table = none)
+    (notView : catalog.findView pragmaRef.table = none)
     (column : columnPosition table.columns (name! "cents") = some index)
     (atIndex : table.columns[index]? = some cell) :
     resolveSelect runContext catalog mainSyntax balanceQueries =
       .ok (.query (Resolved.Query.selectOneWhere guardCondition) (guardQueries position index table cell), catalog) := by
-  have scopes := guard_scopes catalog position table found notTable
+  have scopes := guard_scopes catalog position table found notTable notView
   have bodies := guard_bodies catalog position index table cell column atIndex
   have main := main_body index
   have dqs : runContext.profile.dqsDml = true := rfl

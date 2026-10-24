@@ -81,7 +81,7 @@ theorem Database.KeysUnique.drop {database : Database} (unique : database.KeysUn
     obtain ⟨place, placeKept, atPlace⟩ := mem_keptAfterDrop inKept
     rcases object with ⟨name, objectEntry⟩
     cases objectEntry with
-    | table _ => simp [CatalogEntry.afterDrop] at gives
+    | table _ | view _ => simp [CatalogEntry.afterDrop] at gives
     | trigger _ => simp [CatalogEntry.afterDrop] at gives
     | index index =>
       simp only [CatalogEntry.afterDrop, Bool.and_eq_true, beq_iff_eq] at gives

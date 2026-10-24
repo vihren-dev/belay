@@ -86,10 +86,59 @@ the published parent supplies the S6 and proof-cost prototype test registrations
 The two query-source status conflicts retain the newer acceptance records and
 the retained S4 archive paths. The Nix foundation evidence above is unchanged.
 No catalog or evaluator behavior changes in this integration commit.
+Independent review `20261024T210803Z-63bcea9d` found no findings.
+
+## Foundation: unresolved view catalog
+
+The catalog now stores a view's written query, optional column names and indexed
+expression subqueries. It retains names through catalog drops. A view occupies
+the shared table/index namespace and has no stored rows. Catalog validity permits
+missing references and cycles in the unresolved definition. The generic append
+and drop laws cover the new catalog entry.
+
+This is an interim catalog unit. CREATE/DROP VIEW syntax and query expansion are
+not implemented yet. A manually supplied view is explicitly unmodeled at source,
+write, trigger, index, ADD COLUMN, DROP TABLE and table-info boundaries that need
+the later view handling. These paths do not invent a missing-table error or an
+empty metadata result. Foreign-key listing and check pragmas use the catalog
+object without expanding its SELECT. An existing view produces the native
+view-name collision for CREATE TABLE and shared-name collision for CREATE INDEX.
+
+The FK parent lookup distinguishes an absent name from an existing view: the
+latter is a position-bearing mismatch, even when the view body cannot resolve.
+The parent-schema frame therefore preserves the optional view position when no
+physical parent exists; view bodies remain unrestricted. The selected mapping,
+NULL, affinity, collation and action formulas are unchanged. The coordinated FK
+proof closure adds only the new non-table cases. The exact retained-table lookup
+law in `CatalogValidDrop` and its caller are carried from checked FK source
+`135b8338948d9b3737c236f765e6fb2c841a6131`.
+
+Missing-source laws now require view absence. Pragma-function laws require that
+neither a table nor a view shadows the function. The maintained balance fixture
+handles both shadowing cases while retaining the physical-ledger premise and all
+SQL/data guards. The private guide mirror is deferred to the final installed
+integration artifact; no private content is carried here.
+
+`ClaimsViewCatalog.lean` checks manually supplied definitions, catalog positions,
+row shape, name collisions, FK mismatch, conservative expansion boundaries and
+pragma behavior through the public predicates. The selected surface suite also
+checks the complete balance proof, arbitrary callback consumers and all nine FK
+fixtures. The conformance loader and table comparator keep view storage empty;
+their existing observations still describe physical tables, not view definitions.
+
+The focused Nix check passed all 28 selected cases, with 53 deselected, in 57.17
+seconds:
+`/nix/store/lvbs6wdb1ck7bpxy746plv8a5h1q7xxl-sqlite-verifier-test-view-catalog-1`.
+Nix predictions at
+`/nix/store/d0szrxzshhfncprggija4qdjhps7xczq-sqlite-verifier-predictions`
+are byte-identical to the accepted CTE baseline: all 53 files and 7,372 cases,
+zero changed records. The logs and comparison are retained under
+`build/agent-logs/view-catalog/`. Full view-part acceptance remains pending;
+this checked foundation does not complete part 3.
 
 ## Remaining view scope
 
-CREATE/DROP VIEW, unresolved catalog definitions, late and closed source lookup,
+CREATE/DROP VIEW, late and closed source lookup,
 cycles, view metadata before compound rewrites, pragma metadata, write errors and catalog/
 statement preservation remain OPEN under the existing task. FK proof leaves are
 coordinated with their owner before mechanical view-case extensions. Frozen v53

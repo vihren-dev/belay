@@ -20,6 +20,7 @@ does not show the split of the two types. For example, {lit}`no such table: t` i
 instance : Lean.ToJson PrepareError where
   toJson
     | .tableExists name => Lean.Json.mkObj [("tableExists", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .viewExists name => Lean.Json.mkObj [("viewExists", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .indexNameUsed name => Lean.Json.mkObj [("indexNameUsed", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .tableNameUsed name => Lean.Json.mkObj [("tableNameUsed", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .indexExists name => Lean.Json.mkObj [("indexExists", Lean.Json.mkObj [("name", Lean.toJson name)])]
@@ -97,6 +98,7 @@ deriving instance Lean.ToExpr for KeyTerm
 deriving instance Lean.ToExpr for IndexKey
 deriving instance Lean.ToExpr for CatalogIndex
 deriving instance Lean.ToExpr for CatalogTrigger
+deriving instance Lean.ToExpr for CatalogView
 deriving instance Lean.ToExpr for CatalogEntry
 deriving instance Lean.ToExpr for CatalogObject
 deriving instance Lean.ToExpr for Database

@@ -33,7 +33,7 @@ def writablePositions (columns : List CatalogColumn) : List Nat :=
 columns. An INSERT without clauses whose algorithms are all ABORT
 ({name}`insertPolicy`) is {name}`Resolved.Statement.insert`; any other INSERT is
 {name}`Resolved.Statement.upsert`. The values may name the statement's resolved subqueries,
-whose shapes are {lit}`shapes`. -/
+whose shapes are {lit}`shapes`. An unexpanded view target is a model restriction. -/
 def resolveInsert (context : ResolveContext) (catalog : Catalog) (tableName : Identifier)
     (names : Option (List Identifier)) (rows : List (List Syntax.Expr)) (conflicts : List Syntax.ConflictClause)
     (algorithm : Option ConflictAlgorithm) (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query)
@@ -41,7 +41,8 @@ def resolveInsert (context : ResolveContext) (catalog : Catalog) (tableName : Id
   let width := (rows.head?.map List.length).getD 0
   if rows.any (·.length != width) then prepareError catalog (.expression .valuesDiffer) else
   match catalog.findTable tableName with
-  | none => prepareError catalog (.noSuchTable tableName)
+  | none => if (catalog.findView tableName).isSome then restrict [0] .subqueryHere
+      else prepareError catalog (.noSuchTable tableName)
   | some (position, table) =>
     let positions := match names with
       | some written => insertPositions tableName table.columns written

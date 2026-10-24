@@ -40,7 +40,8 @@ structure PendingSource where
 ({name}`resolveTableReference`), a table-valued pragma, whose name starts with
 {lit}`pragma_` ({name}`pragmaReference`), {lit}`json_each` ({name}`eachReference`), or an indexed
 query from {lit}`queries`. Use the default callback when no indexed queries are available.
-The {lit}`prefix_` locates local restrictions; query callback failures already have their paths. -/
+The {lit}`prefix_` locates local restrictions; query callback failures already have their paths.
+A view used with function arguments is {name}`RestrictionKind.tableFunction`. -/
 def resolveReference (catalog : Catalog) (path : List Nat) (reference : Syntax.TableReference)
     (queries : Nat → Except SourceIssue ScopeSource := fun _ => .error (.value (.restriction [] .subqueryHere)))
     (prefix_ : List Nat := []) : Except SourceIssue (SourceItem × ScopeSource) :=
@@ -58,7 +59,8 @@ def resolveReference (catalog : Catalog) (path : List Nat) (reference : Syntax.T
     let resolved : Except SourceIssue (SourceItem × ScopeSource) := match reference.arguments with
     | none => (fun (position, source) => (SourceItem.table position, source)) <$> resolveTableReference catalog path reference
     | some arguments =>
-      if (bytes! "pragma_").isPrefixOf reference.table.folded then
+      if (catalog.findView reference.table).isSome then .error (.value (.restriction path .tableFunction))
+      else if (bytes! "pragma_").isPrefixOf reference.table.folded then
         (fun (rows, source) => (SourceItem.pragma rows, source)) <$> (pragmaReference catalog path reference arguments).mapError .value
       else (fun source => (SourceItem.each path arguments, source)) <$> (eachReference path reference arguments).mapError .value
     resolved.mapError (SourceIssue.under prefix_)

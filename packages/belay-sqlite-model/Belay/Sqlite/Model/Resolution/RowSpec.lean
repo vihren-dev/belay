@@ -126,7 +126,7 @@ theorem resolveInsert_rowWidth (context : ResolveContext) (catalog after : Catal
   split at ok
   · cases ok
   split at ok
-  · cases ok
+  · split at ok <;> cases ok
   rename_i found_position table found
   split at ok
   · cases ok

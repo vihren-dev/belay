@@ -10,12 +10,13 @@ open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
 namespace BalanceExample
 
-/-- For every catalog with both the ledger and a table named pragma_table_info, the
+/-- For every catalog with both the ledger and a table or view named pragma_table_info, the
 metadata source is a restricted table-function call.
-Proof sketch: the ledger sources resolve, then the first metadata source finds the shadowing table. -/
-theorem guard_scopes_shadow (catalog : Catalog) (position shadow : Nat) (table other : CatalogTable)
+Proof sketch: the ledger sources resolve, then the first metadata source finds the shadowing object. -/
+theorem guard_scopes_shadow (catalog : Catalog) (position : Nat) (table : CatalogTable)
     (found : catalog.findTable ledgerRef.table = some (position, table))
-    (shadows : catalog.findTable pragmaRef.table = some (shadow, other)) :
+    (shadows : ((catalog.findTable pragmaRef.table).isSome ||
+      (catalog.findView pragmaRef.table).isSome) = true) :
     subqueryScopes catalog 8 (around [] []) none balanceQueries =
       .error (.value (.restriction [8, 2, 1] .tableFunction)) := by
   have sources := fun queries prefix_ => resolveSources_table catalog ledgerRef position table rfl rfl found queries prefix_
@@ -24,24 +25,34 @@ theorem guard_scopes_shadow (catalog : Catalog) (position shadow : Nat) (table o
       .error (.value (.restriction (prefix_ ++ [1]) .tableFunction)) := by
     intro queries prefix_
     have prefixed : (bytes! "pragma_").isPrefixOf pragmaRef.table.folded = true := by decide
-    simp only [pragmaRef] at shadows prefixed
-    simp [resolveSources, resolveReference, pragmaRef, pragmaReference, shadows, prefixed,
-      maximumJoinTables, SourceIssue.under, ValueIssue.under,
-      Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
+    cases present : catalog.findTable pragmaRef.table with
+    | some pair =>
+      have notView := Catalog.findView_none_of_table present
+      dsimp only [pragmaRef] at present notView prefixed
+      simp [resolveSources, resolveReference, pragmaReference, present, notView, prefixed,
+        pragmaRef, maximumJoinTables, SourceIssue.under, ValueIssue.under,
+        Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
+    | none =>
+      have view : (catalog.findView pragmaRef.table).isSome = true := by simpa [present] using shadows
+      dsimp only [pragmaRef] at view prefixed
+      simp [resolveSources, resolveReference, pragmaReference, view, prefixed,
+        pragmaRef, maximumJoinTables, SourceIssue.under, ValueIssue.under,
+        Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
   unfold subqueryScopes
   rw [show balanceQueries.length + 1 = 5 from rfl, order]
   simp [balanceQueries, oneQuery, countSyntax, compoundOf, subqueryScope, QueryScope.sourceIndexes,
     around, Scope.columns, sources, Scope.enclose, starIssue, resultAliases, refused,
     Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
 
-/-- For every catalog with the ledger and a table shadowing pragma_table_info, the
+/-- For every catalog with the ledger and a table or view shadowing pragma_table_info, the
 complete guard reports the table-function restriction at the first metadata source.
 Proof sketch: Lift the first metadata source restriction through complete query resolution. -/
-theorem guard_select_shadow (catalog : Catalog) (position shadow : Nat) (table other : CatalogTable)
+theorem guard_select_shadow (catalog : Catalog) (position : Nat) (table : CatalogTable)
     (found : catalog.findTable ledgerRef.table = some (position, table))
-    (shadows : catalog.findTable pragmaRef.table = some (shadow, other)) :
+    (shadows : ((catalog.findTable pragmaRef.table).isSome ||
+      (catalog.findView pragmaRef.table).isSome) = true) :
     resolveSelect runContext catalog mainSyntax balanceQueries = .error ⟨[8, 2, 1], .tableFunction⟩ := by
-  have scopes := guard_scopes_shadow catalog position shadow table other found shadows
+  have scopes := guard_scopes_shadow catalog position table found shadows
   dsimp only [around] at scopes
   have noMain : ∀ queries prefix_, resolveSources catalog none [] 0 queries prefix_ = .ok ([], []) := by intros; rfl
   have ordinary : balanceQueries.any (·.commonTable.isSome) = false := rfl
@@ -98,10 +109,11 @@ Proof sketch: Resolve the existing sources, then propagate the first body error.
 theorem guard_select_missing_cents (catalog : Catalog) (position : Nat) (table : CatalogTable)
     (found : catalog.findTable ledgerRef.table = some (position, table))
     (notTable : catalog.findTable pragmaRef.table = none)
+    (notView : catalog.findView pragmaRef.table = none)
     (missing : columnPosition table.columns (name! "cents") = none) :
     resolveSelect runContext catalog mainSyntax balanceQueries =
       .ok (.prepareError (.expression (.noSuchColumn (name! "cents"))), catalog) := by
-  have scopes := guard_scopes catalog position table found notTable
+  have scopes := guard_scopes catalog position table found notTable notView
   have bodies := guard_bodies_missing catalog position table missing
   dsimp only [around] at scopes bodies
   have dqs : runContext.profile.dqsDml = true := rfl

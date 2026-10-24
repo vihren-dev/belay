@@ -24,7 +24,8 @@ def schemaTableName? (name : Identifier) : Option Identifier :=
 def Catalog.findIndex (catalog : Catalog) (name : Identifier) : Option Nat :=
   match catalog.find name with
   | some (position, { entry := .index _, .. }) => some position
-  | some (_, { entry := .table _, .. }) | some (_, { entry := .trigger _, .. }) | none => none
+  | some (_, { entry := .table _, .. }) | some (_, { entry := .view _, .. })
+  | some (_, { entry := .trigger _, .. }) | none => none
 
 /-- Whether the name begins with {lit}`sqlite_autoindex_`, with ASCII case ignored: the
 prefix of the names that SQLite gives the indexes of UNIQUE and PRIMARY KEY constraints,
@@ -34,7 +35,7 @@ def constraintIndexName (name : Identifier) : Bool := (bytes! "sqlite_autoindex_
 /-- Resolve DROP TABLE: a schema table is {name}`PrepareError.tableMayNotBeDropped`; a
 table drops with its indexes ({name}`Catalog.tableObjects`); a name that is no table, also
 the name of an index, is {name}`PrepareError.noSuchTable`, and with {lit}`IF EXISTS` a DROP
-of nothing. For example, {lit}`DROP TABLE IF EXISTS x` of a catalog without {lit}`x` is
+of nothing. An unexpanded view is restricted, including with IF EXISTS. For example, {lit}`DROP TABLE IF EXISTS x` of a catalog without {lit}`x` is
 {lean}`Resolved.Statement.drop []`. -/
 def resolveDropTable (catalog : Catalog) (name : Identifier) (ifExists : Bool) : StatementResolution :=
   match schemaTableName? name with
@@ -43,7 +44,8 @@ def resolveDropTable (catalog : Catalog) (name : Identifier) (ifExists : Bool) :
     | some (position, _) =>
       let positions := catalog.tableObjects position
       .ok (.drop positions, catalog.drop positions)
-    | none => if ifExists then .ok (.drop [], catalog.drop []) else prepareError catalog (.noSuchTable name)
+    | none => if (catalog.findView name).isSome then restrict [0] .subqueryHere
+      else if ifExists then .ok (.drop [], catalog.drop []) else prepareError catalog (.noSuchTable name)
 
 /-- Resolve DROP INDEX: an index drops alone; a name that is no index, also the name of a
 table, is {name}`PrepareError.noSuchIndex`, and with {lit}`IF EXISTS` a DROP of nothing. The

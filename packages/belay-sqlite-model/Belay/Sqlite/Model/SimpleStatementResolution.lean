@@ -50,7 +50,7 @@ theorem resolveStatement_select_simple (context : ResolveContext) (state : Resol
   rfl
 
 /-- For every {lit}`SELECT` of one table (no joins, no table-function arguments), whose table the
-catalog does not have and whose name is neither a table of SQLite itself ({name}`reservedName`) nor a
+catalog has neither as a table nor as a view and whose name is neither a table of SQLite itself ({name}`reservedName`) nor a
 table-valued function ({name}`eponymousName`), the statement resolves to the prepare error
 {lit}`no such table`, for any clauses after {lit}`FROM`, and leaves the state as it is. The source reference has no indexed query.
 Proof sketch:
@@ -59,6 +59,7 @@ into the prepare error. -/
 theorem resolveStatement_select_missing_table (context : ResolveContext) (state : ResolveState) (query : Syntax.Subquery)
     (reference : Syntax.TableReference) (source : query.source = some reference) (noJoins : query.joins = [])
     (namedSource : reference.query = none) (arguments : reference.arguments = none) (missing : state.catalog.findTable reference.table = none)
+    (notView : state.catalog.findView reference.table = none)
     (notReserved : reservedName reference.table = false) (notFunction : eponymousName reference.table = false) :
     resolveStatement context state (.select query.columns query.source query.joins query.filter query.groupBy
         query.orderBy query.limit query.offset [] query.having query.distinct query.compound) =
@@ -68,7 +69,7 @@ theorem resolveStatement_select_missing_table (context : ResolveContext) (state 
       state.withCatalog (resolveSelect context state.catalog { query with parent := none } []) := rfl
   rw [unfolded]
   unfold resolveSelect
-  simp [prepareCommonTables, CommonTableCopies.originalIssue, source, noJoins, resolveSources, resolveReference, namedSource, arguments, resolveTableReference, missing, notReserved,
+  simp [prepareCommonTables, CommonTableCopies.originalIssue, source, noJoins, resolveSources, resolveReference, namedSource, arguments, resolveTableReference, missing, notView, notReserved,
     notFunction, Except.mapError, SourceIssue.under, maximumJoinTables, prepareError, ResolveState.withCatalog, Bind.bind, Except.bind, Functor.map, Except.map]
 
 /-- For every SELECT without subqueries, joins, compound or a parent, whose sources resolve,

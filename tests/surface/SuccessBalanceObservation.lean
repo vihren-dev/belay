@@ -94,13 +94,14 @@ Proof sketch: Lift complete query resolution through the statement wrapper. -/
 theorem guard_statement (db : Database) (position index : Nat) (table : CatalogTable) (cell : CatalogColumn)
     (found : db.raw.catalog.findTable ledgerRef.table = some (position, table))
     (notTable : db.raw.catalog.findTable pragmaRef.table = none)
+    (notView : db.raw.catalog.findView pragmaRef.table = none)
     (column : columnPosition table.columns (name! "cents") = some index)
     (atIndex : table.columns[index]? = some cell) :
     resolveStatement runContext db.raw.connection.resolveState balanceGuard.statements[0].1 =
       .ok (.query (Resolved.Query.selectOneWhere guardCondition) (guardQueries position index table cell),
         db.raw.connection.resolveState) := by
   exact resolveStatement_select_of_resolveSelect runContext db.raw.connection.resolveState mainSyntax balanceQueries rfl rfl _
-    (guard_select db.raw.catalog position index table cell found notTable column atIndex)
+    (guard_select db.raw.catalog position index table cell found notTable notView column atIndex)
 
 /-- For every database with the ledger, cents column and unshadowed pragma, there is an
 inner evaluation context in which Holds of the guard means: no bad-range result, fewer than
@@ -110,6 +111,7 @@ to the truth of the outer conjunction. -/
 theorem guard_holds (db : Database) (position index : Nat) (table : CatalogTable) (cell : CatalogColumn)
     (found : db.raw.catalog.findTable ledgerRef.table = some (position, table))
     (notTable : db.raw.catalog.findTable pragmaRef.table = none)
+    (notView : db.raw.catalog.findView pragmaRef.table = none)
     (column : columnPosition table.columns (name! "cents") = some index)
     (atIndex : table.columns[index]? = some cell) :
     ∃ inner : Resolved.EvalContext, Holds balanceGuard db ↔
@@ -126,7 +128,7 @@ theorem guard_holds (db : Database) (position index : Nat) (table : CatalogTable
   have faultless := Resolved.Query.selectOneWhere_faultless
     (db.raw.connection.queryContext [] query queries) guardCondition ran.1
   have output := Script.outputOn_query balanceGuard db _ [] [] query queries _ rfl
-    (guard_statement db position index table cell found notTable column atIndex)
+    (guard_statement db position index table cell found notTable notView column atIndex)
   refine ⟨inner, ?_⟩
   unfold Holds
   rw [output, Option.any_some, resolvedStepOutput_noFrom_hasRows 0 db.raw.connection []

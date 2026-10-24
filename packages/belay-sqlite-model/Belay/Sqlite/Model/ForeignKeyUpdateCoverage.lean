@@ -17,7 +17,7 @@ theorem Catalog.parentLink_selfReferences {catalog : Catalog} {link : ForeignKey
   rw [choice] at located
   unfold Catalog.parentLink at located
   split at located
-  · cases located
+  · split at located <;> cases located
   · rename_i parentPosition parent found
     split at located
     · cases located
@@ -55,7 +55,7 @@ theorem Catalog.parentLink_located {catalog : Catalog} {foreign : ForeignKey} {p
     ∃ parent, catalog.findTable foreign.table = some (position, parent) ∧ catalog.parentKey position parent foreign = some key := by
   unfold Catalog.parentLink at selected
   split at selected
-  · cases selected
+  · split at selected <;> cases selected
   · rename_i target parent found
     split at selected
     · rename_i comparison chosen

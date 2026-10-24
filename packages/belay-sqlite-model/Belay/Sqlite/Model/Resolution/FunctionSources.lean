@@ -68,17 +68,19 @@ def pragmaSource (reference : Syntax.TableReference) (argument : List UInt8) (na
 {lit}`pragma_table_info('t')` with the rows of {name}`Catalog.tableInfoRows` and
 {lit}`pragma_foreign_key_list('t')` with those of {name}`Catalog.foreignKeyListRows`, each with
 one text literal as its argument ({name}`pragmaSource`). Every other pragma function, another
-form of argument, and a name of a table of the catalog are the restriction
+form of argument, and a name of a table or view of the catalog are the restriction
 {name}`RestrictionKind.tableFunction`; a name of SQLite's own tables that the catalog does not
-have is {name}`RestrictionKind.systemTable`. -/
+have is {name}`RestrictionKind.systemTable`. A view argument to {lit}`table_info` requires
+query expansion and gives {name}`RestrictionKind.subqueryHere`. -/
 def pragmaReference (catalog : Catalog) (path : List Nat) (reference : Syntax.TableReference)
     (arguments : List Syntax.Expr) : Except ValueIssue (Resolved.PragmaRows × ScopeSource) :=
+  if (catalog.findView reference.table).isSome then .error (.restriction path .tableFunction) else
   match arguments, catalog.findTable reference.table with
   | [.string argument], none =>
     if reference.table.isKeyword (bytes! "pragma_table_info") then
       match catalog.tableInfoRows ⟨argument⟩ with
       | some rows => .ok (pragmaSource reference argument tableInfoNames rows)
-      | none => .error (.restriction path .systemTable)
+      | none => .error (.restriction path (if (catalog.findView ⟨argument⟩).isSome then .subqueryHere else .systemTable))
     else if reference.table.isKeyword (bytes! "pragma_foreign_key_list") then
       .ok (pragmaSource reference argument foreignKeyListNames (catalog.foreignKeyListRows ⟨argument⟩))
     else .error (.restriction path .tableFunction)

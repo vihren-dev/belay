@@ -65,7 +65,7 @@ def tableT : Catalog := catalogOf (migration [] [.createTable (name! "t") [colum
 -- alias, and the schema runs; DESC and BIGINT are not aliases, and DESC makes the key
 -- descending.
 #guard (catalogOf (schema [.createTable (name! "t") [{ name := (name! "x"), declaredType := some "integer", constraints := [.primaryKey false] }] []])).map
-  (fun object => match object.entry with | .table table => table.rowidAlias | .index _ | .trigger _ => none) == [some 0]
+  (fun object => match object.entry with | .table table => table.rowidAlias | .index _ | .view _ | .trigger _ => none) == [some 0]
 #guard (catalogOf (schema [.createTable (name! "t") [column (name! "x") (some "INTEGER")] [.primaryKey [(name! "x")]]])).map (·.entry)
   == [.table { columns := [{ name := (name! "x"), declaredType := some "INTEGER" }], primaryKey := [0], rowidAlias := some 0 }]
 #guard (catalogOf (schema [.createTable (name! "t") [{ name := (name! "x"), declaredType := some "INTEGER", constraints := [.primaryKey true] }] []])).map (·.entry)

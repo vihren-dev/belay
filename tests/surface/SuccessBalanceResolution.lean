@@ -52,13 +52,14 @@ subquery scopes are the two ledger scopes and two metadata scopes.
 Proof sketch: apply the named-source laws at each sibling diagnostic prefix. -/
 theorem guard_scopes (catalog : Catalog) (position : Nat) (table : CatalogTable)
     (found : catalog.findTable ledgerRef.table = some (position, table))
-    (notTable : catalog.findTable pragmaRef.table = none) :
+    (notTable : catalog.findTable pragmaRef.table = none)
+    (notView : catalog.findView pragmaRef.table = none) :
     subqueryScopes catalog 8 (around [] []) none balanceQueries = .ok
       [ledgerScope catalog position table, ledgerScope catalog position table,
         pragmaScope table.infoRows, pragmaScope table.infoRows] := by
   have sources := fun queries prefix_ => resolveSources_table catalog ledgerRef position table rfl rfl found queries prefix_
   have info := Catalog.tableInfoRows_of_findTable catalog ledgerRef.table position table found
-  have metadata := fun queries prefix_ => resolveSources_tableInfo catalog pragmaRef (bytes! "ledger") table.infoRows rfl rfl (by decide) notTable info queries prefix_
+  have metadata := fun queries prefix_ => resolveSources_tableInfo catalog pragmaRef (bytes! "ledger") table.infoRows rfl rfl (by decide) notTable notView info queries prefix_
   have order : scopeOrder none balanceQueries 5 none = [0, 1, 2, 3] := rfl
   unfold subqueryScopes
   rw [show balanceQueries.length + 1 = 5 from rfl, order]
