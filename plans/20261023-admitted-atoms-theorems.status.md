@@ -464,3 +464,14 @@ proof relies on it (finding 15).
   should (R9: the module docstring of `AdmittedCellLaws` said that non-generated cells stay, but
   `newCells` replaces the alias cell), fixed. Tests: `tests/test_model_package.py`,
   `tests/valid_atoms_theorems_test.py`, `tests/admitted_atoms_resolver_facts_test.py`.
+- 2026-10-24: part 2, commit "Plain writes and upserts of the table atoms". New modules for the rows of a
+  write: `AdmittedInsertRows`, `AdmittedUpdateRows`, `AdmittedUpdatedTable` (what INSERT and UPDATE keep of
+  "rows wide", "rows stored" and "rows aliased"), `AdmittedUpsertRows` (`UpsertOrigin`: where a row of an
+  upsert comes from), `AdmittedUpsertOrigins`, `AdmittedUpsertSummary` (`upsertSummary_atom`, an induction
+  over the reached rows with a queue test), `AdmittedPlainWrites` (`runStatement_insert_atom`,
+  `runStatement_update_atom`, `runStatement_delete_tableAtom`), `AdmittedWriteReady` (what a ready plain
+  write gives), and the statement theorems `AdmittedInsertAtoms`, `AdmittedUpdateAtoms`,
+  `AdmittedUpsertStatement`, `AdmittedUpsertAtoms` (distinct, in range, wide, stored and aliased, for
+  INSERT, UPDATE and upsert without rules). Examples: `AdmittedAtomsUpsertExamples`. Tests:
+  `tests/test_model_package.py`, `tests/valid_atoms_theorems_test.py`,
+  `tests/admitted_atoms_resolver_facts_test.py`.
