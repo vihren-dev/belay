@@ -594,3 +594,9 @@ proof relies on it (finding 15).
   the slice are marked READY (not DONE) in the first lines of both files.
 - 2026-10-24: part 3, review of the `refactor:` commit: one must (R19, the record in ADR 0022 said that every
   successful resolution meets `SchemaLink`; the theorem needs a valid input catalog), fixed in the next commit.
+- 2026-10-24: part 3 is done. The review of the second `refactor:` commit had no findings. Next: `just
+  test-full` and `just verdict` of the whole task (the coordinator runs them); the task is not marked DONE.
+  For ADR 0017, S4: `runScriptFrom_valid` (context in execution mode, `context.profile.limits =
+  profile.limits`, start state `Database.valid_empty`) and `Sql.runFrom_valid` /
+  `Sql.runFrom_database_valid` (`ProgramRun.lean`) give outcomes 7, 8 and 10; the check `Run.checked` is
+  still there.
