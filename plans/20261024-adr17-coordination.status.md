@@ -91,7 +91,7 @@ remove the prior planning blocks; they are not implementation-completion claims.
   `3583de8a` have clean reviews/Nix checks. Metadata law `e3f48d3b` is reviewed
   clean, with Nix model `81v66kv633za3q994jjiiml6lvsaz7q4`. Balance `2175f989`
   is reviewed; all 62 surface tests passed at `vjvlvym2mp4lqjighnsc7q1qijbq1c2w`.
-  Part-2 full/verdict remains. Part 3 starts in `sqlite-verifier-s4-run`.
+  Part-2 full/verdict remains. Main `aa63c50d` is under review; part-3 build `76765` runs.
   Named-source extension `656ab790`/`1dee994a` is reviewed and checked in Nix.
 - `s6_prerequisite_audit` completed derived-source part 1 at subject `16bd87a3`;
   separate evidence head is `5d69e3fa`. Combined `c8db1a54` passed full 854 at
@@ -99,8 +99,8 @@ remove the prior planning blocks; they are not implementation-completion claims.
   Predictions `q4qrigjpa82cg89ggzkvinbnvmgi7pq6` match the earlier measured
   54 files. Existing corpora gain 29 agreements; draft v53 has 38 agreements
   and 4 restrictions. No disagreement/harness error. Subject excludes judge changes.
-  CTE/view work resumes in `sqlite-verifier-query-sources-cte`, with use-site
-  outer bindings preserved. Its combined integration must compile the balance fixtures.
+  S4 carry `b52fdec6` passed focused Nix `9zkv499mbvg2cwcs5jnn351rv253zfsd`.
+  CTE implementation preserves use-site bindings; integration must compile balance.
 - `text_build_boundaries` owns `sqlite-verifier-s6-foundations` and resumed FK
   work. The S6 prototype consumes reviewed S4 `00c8707f` without rebasing.
   Implementation `e9a0354d`/`6c26ac21` is reviewed; 56 focused Nix tests pass at
@@ -116,8 +116,8 @@ remove the prior planning blocks; they are not implementation-completion claims.
   action implementation `89267008` passed 35 Nix native cases and four mutants.
   Complete review coverage found documentation corrections; the first full gate
   found a duplicate catalog lemma. Reviewed `3df8e641` reuses the existing law;
-  its full/verdict rerun remains pending. FK owns atom/check/frame modules and exports,
-  ForeignKeyPlan, TriggerClosure and ParentKeys (query-source confirmed).
+  acceptance `02a6498c` passed full 826/verdict with all 53 predictions unchanged.
+  FK owns atom/check/frame exports, ForeignKeyPlan, TriggerClosure and ParentKeys.
   S4 supplied exact pragma laws. Baseline predictions: `4k77z378vnagzwx5448yqz0686d58cld`.
   Part-2 schema/run and global row-counter laws use `sqlite-verifier-fk-preservation`.
   No shared ancestor may be rebased while descendants are active.
@@ -131,10 +131,10 @@ Final acceptance must selectively reconcile unpublished S2/S3 product-default ch
 
 The reviewed one-line surface helper fileset fix `b9008683` was carried into
 S6. Its initial missing-helper Nix failure is resolved. At most two heavy checks
-run: query carry `79230` owns slot 1; FK rerun `36195` owns slot 2, then S4.
+run: S4 part-3 build `76765` owns slot 1; root derived gate `54968` owns slot 2.
 Root S4 query publication `975f31eb` passed full 808, Nix 70, scheduled 47,
 verdict 4,838/2,534 and 53 unchanged predictions; its branch is pushed.
-Derived publication merge `359eb0c7` has a clean review; gates remain pending.
+Derived publication `17f929bd` has a clean review; its final gates are running.
 Automatic approval rejected S4 PR creation and direnv allow in
 `query-sources-cte-implementation`; explicit owner approval is requested for both.
 
