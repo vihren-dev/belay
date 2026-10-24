@@ -48,8 +48,8 @@ example : (outputs (orphans ++ [.pragma (.foreignKeyCheck none)])).getLast?.map 
   decide +kernel
 example : (outputs [.pragma (.foreignKeyCheck (some (name! "nosuch")))]) = [.error 1] := by decide +kernel
 -- The rows are no rows exactly when the foreign keys hold.
-example : (built orphans).foreignKeyCheckRows none = none ∧ ¬(built orphans).ForeignKeysHold := by decide +kernel
-example : (built (orphans.take 2)).foreignKeyCheckRows none = some [] ∧ (built (orphans.take 2)).ForeignKeysHold := by
+example : (built orphans).foreignKeyCheckRows none = none ∧ ¬(built orphans).RowReferencesHold (built orphans).catalog.foreignKeyMapping := by decide +kernel
+example : (built (orphans.take 2)).foreignKeyCheckRows none = some [] ∧ (built (orphans.take 2)).RowReferencesHold (built (orphans.take 2)).catalog.foreignKeyMapping := by
   decide +kernel
 
 /-- {lit}`CREATE TABLE c1(a REFERENCES p(x))`, whose parent column has no unique index. -/

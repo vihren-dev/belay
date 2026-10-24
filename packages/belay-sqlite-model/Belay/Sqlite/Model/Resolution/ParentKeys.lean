@@ -120,6 +120,15 @@ structure ForeignKeyLink where
   parent : ParentLink
   deriving Repr, DecidableEq
 
+/-- The child columns selected by the parent comparison, in parent-key order, including
+repeated columns. A rowid comparison selects the first declared child column. For example,
+a parent mapping that selects {lit}`x` twice has projection {lit}`[x,x]`, not {lit}`[x,y]`.
+Lookups, scans and action targets share this projection. -/
+def childPositions (link : ForeignKeyLink) (key : ParentKey) : List Nat :=
+  match key with
+  | .rowid => link.key.columns.take 1
+  | .columns pairs => pairs.map (·.1)
+
 /-- The parent link of a foreign key in the catalog. -/
 def Catalog.parentLink (catalog : Catalog) (key : ForeignKey) : ParentLink :=
   match catalog.findTable key.table with
