@@ -93,8 +93,14 @@ remove the prior planning blocks; they are not implementation-completion claims.
   Seventeen focused Nix checks pass at `dwk93ll3d8jxi6vhfd3gck1qxp892h3a`;
   two changed budget/search fixtures pass at `vmfzzp6s6mz5z42rhv9rbzwsz5c9mk8j`.
   Native SQLite replays all nine reported cases. Independent review awaits the
-  reviewer login refresh. Root stages the unchanged source with complete S6
-  contracts and native artifacts in `s5-search-integration`.
+  reviewer login refresh. Integration `3a632d10` combines unchanged search
+  source with complete S6 contracts and native artifacts. Its 18 focused Nix
+  checks pass at `wvqkfh98cjbga852p7jgm0axwr1rf0gw`.
+  `s4_part1` now owns the mechanical merge with stored-view source `694d0790`
+  in `s5-view-integration`. The incremental shared sampler and formatter must
+  retain the accepted empty-storage and replay-refusal cases for views.
+  Search, execution and view checks plus unchanged predictions are required;
+  this assignment adds no frontend feature scope before independent review.
   Commands, searched tactics, automatic defaults and editor actions remain open.
   The read-only frontend audit identified saved environments for anonymous
   examples and preservation of the native cancellation context as requirements
