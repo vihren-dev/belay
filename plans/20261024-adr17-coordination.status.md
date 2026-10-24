@@ -50,10 +50,13 @@ workspace filesystem. Reserve at most two heavy build/check processes here.
 
 The owner accepted all three remaining recommendations on 2026-10-24 and
 resumed the goal. S4 recorded its default-run decision in reviewed `73b9f65b`.
-One new S6 decision is pending: make `≈` compare full connection state and all
+Two new S6 decisions are pending: make `≈` compare full connection state and all
 branch outcomes (recommended), or retain visible `≈` and name a stronger
 compositional relation separately. Checked counterexamples distinguish counters,
-pragmas and transaction snapshots. No other semantic decision is pending.
+pragmas and transaction snapshots. Also, correct universal insert/lookup and
+purge-frame guide claims with schema/trigger/FK effect conditions (recommended)
+or limit them to concrete schemas. Native 3.51.0 triggers refute their current
+unconditional effect assumptions; probes are in the research-notes directory.
 
 ## Resolved findings
 
@@ -94,7 +97,8 @@ remove the prior planning blocks; they are not implementation-completion claims.
   `/nix/store/1rzb9hwr5s7yccpwjx2xiwbzja3bcd99-sqlite-verifier-test-surface-1`.
   Its 28 audited declarations use only ordinary logical axioms. Design
   refinement `21b80e17` is under review; full task gates remain. The prototype
-  does not implement production S6. Only equivalence needs owner judgment.
+  does not implement production S6. Its equivalence decision and the separate
+  guide-effect counterexamples above need owner judgment.
 - The FK workspace is `sqlite-verifier-fk-atoms`. Root carried the revised task
   and ADR22 in reviewed `8526ed1f`, with status-only findings fixed in `0ca148ce`.
   The existing split-API source work remains uncommitted. FK owns atom/check/frame
