@@ -554,3 +554,28 @@ proof relies on it (finding 15).
   should (R19, the status entry cited local results), fixed here. Open for part 3: the resolver link of a
   resolved `.createIndex` and `.addColumn`, and the resolve state that matches the snapshot of the
   connection; the lemma that the resolver makes only described programs is not needed under decision M.
+- 2026-10-24: the Nix checks of part 2 passed at sruvpzpy (reported by the coordinator): `just test-full`
+  and `just verdict` pass; corpus-v4 AGREE 673, corpus-v5 AGREE 2946, corpus-v50 AGREE 17, corpus-v51
+  AGREE 21, corpus-v52 AGREE 33.
+- 2026-10-24: part 3, commit "Run theorems of the Admitted atoms without hypotheses on the statements". The
+  generic layer now sees `ready` (`RunHoldsReady.lean`: `StatementKeepsReady`, `runSqlFrom_holds_ready`,
+  `runSql_holds_ready`; `ScriptRunDerived.lean`: `runScriptFrom_holds_derived`, whose condition comes from the
+  invariant and the resolver instead of `ScriptConditionsWith`). The resolver facts that part 1 left open are
+  `Resolved.Statement.SchemaLink` (ADD COLUMN: `strictDefaultFits`; DROP: `Catalog.DropClosed`), stated
+  positively because CREATE TRIGGER IF NOT EXISTS of an existing trigger resolves to `.drop []`
+  (`ResolveStatementForms/Link/Facts/Applied.lean`). The resolve state of a connection is defined from the
+  connection state, so no link between them is needed. One theorem per atom for `runSqlFrom`, `runSql`
+  (`AdmittedSqlRunsCatalog/Rows.lean`) and `runScriptFrom` (`ScriptRunAdmittedCatalog/Rows.lean`), and the
+  bundle `Database.Admitted`; decision 2 a): "rows stored" lists "rows wide" (`Database.RowsStoredWide`), "rows
+  aliased" lists "catalog supported" (`Database.RowsAliasedSupported`). The `runScriptFrom` theorems of the
+  four constraint atoms (`ScriptRunConstraints.lean`) now assume `Database.AdmittedWith profile atom`, a
+  context in execution mode with the limits of the profile, and no hypothesis on the statements;
+  `KeysUniqueScriptRun.lean` and the `*ScriptConditions` definitions are removed. The corollary
+  `runScriptFrom_valid` and `runScriptStep_valid` (`ScriptRunValid.lean`) with `Database.valid_empty`. The
+  surface has `Sql.runFrom_valid` (induction over `Sql α`) and `Sql.runFrom_database_valid` in
+  `ProgramRun.lean`; the removal of `Run.checked` stays in ADR 0017, S4. Examples:
+  `AdmittedRunsExamples.lean` (the corollary applied to a script with CREATE INDEX, ADD COLUMN, DROP TABLE of a
+  table with an index and a trigger, a cascade and ROLLBACK), `AdmittedRunsConditionExamples.lean` (resolver
+  facts, the invariants, the conditions that stay, with runs that break the atom). Tests:
+  `tests/admitted_atoms_run_theorems_test.py`, and the restated formulas of `valid_atoms_theorems_test.py` and
+  `keys_unique_theorems_test.py` follow the new signatures.
