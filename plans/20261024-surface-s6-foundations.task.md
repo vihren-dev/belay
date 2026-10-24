@@ -9,7 +9,8 @@ The guide's S6 semantics and outstanding decisions are restated below.
 
 ## Why this task is needed
 
-ADR 0017 explicitly requires a prototype of `Std.Do` integration before S6.
+ADR 0017's Alternatives section identifies guide questions 11 and 12 as needing
+a prototype. Question 12 concerns the `Std.Do` instance for `Sql`.
 The guide wants triples over every complete environment and every permitted
 query result, with program continuations allowed to depend on those results.
 It also wants equivalence to compose under script append and monadic bind.

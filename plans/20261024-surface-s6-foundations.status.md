@@ -23,7 +23,11 @@ until the prototype has evidence.
 
 ## Progress
 
-- 2026-10-24: specified the bounded experiment required before S6. It will use
+- 2026-10-24: specified a bounded experiment to inform S6. It will use
   S4's final monad and universal execution interfaces, so implementation waits
   for those interfaces. The full S6 task is still to be specified afterward.
-  No Nix acceptance result is claimed. Task review is pending.
+  No Nix acceptance result is claimed.
+- 2026-10-24: review `20261024T123255Z-22140c04` found no musts and one should:
+  the ADR identifies questions needing a prototype, rather than specifying its
+  exact scheduling. Corrected that attribution; this task's prerequisite on
+  final S4 interfaces remains a planning choice.
