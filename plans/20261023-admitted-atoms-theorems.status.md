@@ -351,3 +351,9 @@ proof relies on it (finding 15).
   and `tests/test_model_package.py`.
 - 2026-10-24: amendment of the task file and this file: decision 5 is a) (reason above).
   The next commits change `supportedKey` and prove the facts of slice 2 for repeated keys.
+- 2026-10-24: part 1, commit "CatalogTable.supported": `supportedKey` allows a repeated column
+  (decision 5 a)); `CatalogTable.supported` also requires `CatalogTable.aliasSupported` (decision 8)
+  and `CatalogTable.checksReadBelow` (decision 3). `CatalogTable.supported_mono` is repaired; every
+  other `Catalog.Valid` proof and example of the model, the conformance runner and the surface still
+  builds, so no slice 2 or slice 3 proof used the refusal of a repeated key. Tests:
+  `tests/test_model_package.py`.
