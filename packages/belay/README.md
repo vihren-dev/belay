@@ -97,3 +97,10 @@ prefix sum outside the 64-bit range. Later integer cancellation does not clear t
 When every prefix fits, `sumOf_value_of_fits` gives NULL for no integer inputs and the exact
 integer sum otherwise. These laws require integer or NULL inputs; text and REAL inputs use
 the general aggregate equations and SQLite's conversion rules.
+
+`Holds.iff_step`, `Empty.iff_step` and `Fails.iff_step` expose every resolution branch for
+any query. `Fails.of_prepareError` covers a missing table or column, and
+`Fails.select_body_prepareError` lifts an expression-resolution error without repeating the
+statement interpreter. `Script.not_claims_query_of_undescribed` covers a query that may fail
+or has an unsupported subquery. Keep those cases in proofs: a row satisfying a filter does
+not imply `Holds` if another row can make evaluation fail.

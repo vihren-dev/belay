@@ -70,4 +70,23 @@ theorem resolveStatement_select_missing_table (context : ResolveContext) (state 
   simp [source, noJoins, resolveSources, resolveReference, arguments, resolveTableReference, missing, notReserved,
     notFunction, maximumJoinTables, prepareError, ResolveState.withCatalog, Bind.bind, Except.bind, Functor.map, Except.map]
 
+/-- For every SELECT without subqueries, joins, compound or a parent, whose sources resolve,
+whose result columns pass the star check, and whose body reports a prepare error, the statement
+resolves to that error and leaves the whole resolution state unchanged.
+Proof sketch: lift {name}`resolveSelect_no_subqueries_prepareError` through the state wrapper. -/
+theorem resolveStatement_select_body_prepareError (context : ResolveContext) (state : ResolveState)
+    (query : Syntax.Subquery) (pending : List PendingSource) (scope : Scope) (error : ExprError)
+    (parent : query.parent = none) (noCompound : query.compound = none) (noJoins : query.joins = [])
+    (sourcesOk : resolveSources state.catalog query.source [] = .ok (pending, scope))
+    (noStar : starIssue scope query.columns = none)
+    (body : resolveQueryBody context.profile.dqsDml scope { later := [] } [] pending query = .error (.prepare error)) :
+    resolveStatement context state (.select query.columns query.source query.joins query.filter query.groupBy
+      query.orderBy query.limit query.offset [] query.having query.distinct query.compound) =
+      .ok (.prepareError (.expression error), state) := by
+  have rebuilt : ({ query with parent := none } : Syntax.Subquery) = query := by cases query; simp_all
+  change state.withCatalog (resolveSelect context state.catalog { query with parent := none } []) = _
+  rw [rebuilt, resolveSelect_no_subqueries_prepareError context state.catalog query pending scope error
+    noCompound noJoins sourcesOk noStar body]
+  rfl
+
 end Belay.Sqlite.Model

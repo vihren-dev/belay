@@ -2,7 +2,7 @@ import Belay.Sqlite.Model.Summation
 
 set_option doc.verso true
 
-/-! The integer overflow of {lit}`SUM` (ADR 0017, S4, outcome 4): over integers and NULLs, {lit}`SUM` fails exactly when
+/-! The integer overflow of {lit}`SUM`: over integers and NULLs, {lit}`SUM` fails exactly when
 the exact sum of some first part of the inputs leaves the 64-bit range. -/
 
 namespace Belay.Sqlite.Model

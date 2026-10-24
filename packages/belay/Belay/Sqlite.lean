@@ -22,6 +22,7 @@ import Belay.Sqlite.RunLaws
 import Belay.Sqlite.Queries
 import Belay.Sqlite.QueryLaws
 import Belay.Sqlite.QueryBridge
+import Belay.Sqlite.QueryCases
 import Belay.Sqlite.SqlCommand
 import Belay.Sqlite.SelectOneFrom
 import Belay.Sqlite.SqlSimp

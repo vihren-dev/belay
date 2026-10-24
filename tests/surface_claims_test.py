@@ -122,3 +122,14 @@ def test_aggregate_laws_describe_values_and_prefix_overflow(runtime_root: Path, 
     result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsAggregateLaws.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
+
+
+def test_query_cases_keep_errors_and_unmodeled_outputs(runtime_root: Path, tmp_path: Path) -> None:
+    """`QueryCases` preserves prepare errors for each advertised form and refuses all three claims
+    for unmodeled output; the bridge and unique-lookup theorem use no unchecked evaluation axiom."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsQueryCases.lean", tmp_path), cwd=tmp_path,
+                         timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+    reports = [line for line in result.stdout.splitlines() if "depends on axioms" in line]
+    assert len(reports) == 7, result.stdout
+    assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout

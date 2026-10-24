@@ -157,4 +157,19 @@ theorem resolveSelect_simple (context : ResolveContext) (catalog : Catalog) (que
     (resolveQueryBody_simple context.profile.dqsDml scope none [] [] pending query simple resolved condition sources
       columns (by simpa using filter) pendingOk noFeed)
 
+/-- For every SELECT without subqueries, joins or compound, if its sources resolve, its result
+columns have no star issue, and its body reports a prepare error, the SELECT reports that error
+and leaves the catalog unchanged. This includes a missing column in any body clause.
+Proof sketch: the source and star checks pass; the body error passes through the common resolver. -/
+theorem resolveSelect_no_subqueries_prepareError (context : ResolveContext) (catalog : Catalog)
+    (query : Syntax.Subquery) (pending : List PendingSource) (scope : Scope) (error : ExprError)
+    (noCompound : query.compound = none) (noJoins : query.joins = [])
+    (sourcesOk : resolveSources catalog query.source [] = .ok (pending, scope))
+    (noStar : starIssue scope query.columns = none)
+    (body : resolveQueryBody context.profile.dqsDml scope { later := [] } [] pending query = .error (.prepare error)) :
+    resolveSelect context catalog query [] = .ok (.prepareError (.expression error), catalog) := by
+  unfold resolveSelect
+  simp [noJoins, sourcesOk, subqueryScopes, scopeOrder, resolveSubqueryBodies, noStar, noCompound, body,
+    issueResolution, prepareError, Bind.bind, Except.bind, Except.mapError, Pure.pure, Except.pure]
+
 end Belay.Sqlite.Model
