@@ -311,6 +311,28 @@ proof relies on it (finding 15).
     new conformance case. Amended 2026-10-24: decision 5 is a) and the repeated key column stays
     modeled; its native evidence is the two authored cases of the frozen corpora v4 and v5, so the
     task file still requires no new case.
+16. **Part 2: `keyReady` does not bound the table of a nested write that stops with FAIL**
+    (found 2026-10-24 while the proof of "rows in range" through the row engine was planned; the
+    kernel example is a task of part 2). `keyReady` bounds the rowids of the target and of
+    `state.acted`. The engine adds a table to `acted` only after its nested write returns
+    (`KeyState.afterStep` in `runStep`, and `acted <$>` in `runAction`). Take an AFTER INSERT program
+    whose step is an UPDATE of a table `u` with an alias, and a program on the UPDATE of `u` whose step is
+    `RAISE(FAIL)`. The nested UPDATE writes its row (`updateRow` does not check the rowid of the new
+    row, unlike `insertRow`, which throws `undescribed` when `!boundedInteger proposed.rowid`), the
+    program of `u` stops with `.stopped .fail`, and `u` is not in `acted`. `keyRun` then gives
+    `constraintFail` with the database of that state, and `ready` is true when the target is bounded and
+    the programs are otherwise fine. A resolved statement whose UPDATE step assigns the integer
+    2^70 (`Resolved.Expr` can hold it, although SQL text gives a real) gives a database with a rowid
+    outside the range. So "rows in range" is false for a resolved statement with rules, with the
+    hypotheses of the task file. SQL text may not reach it (an integer literal beyond 2^63 is a real,
+    and arithmetic overflow gives a real in SQLite), but the model does not prove that.
+    The same class: the model checks the written row of an INSERT row (`boundedInteger`), but not
+    the new row of `updateRow`. Possible repairs, all changes of the model that the owner decides:
+    (M-lite) `updateRow` throws `undescribed` when the rowid of the new row is not bounded, as
+    `insertRow` does; (M) the engine checks the written row of `insertRow` and `updateRow`
+    with one Boolean test (wide, stored, aliased, bounded), so the hypotheses on the programs and the
+    resolver lemma of finding 6 are not needed; (R) the spec path: the theorems assume that the
+    programs of the rules are described (`fullCells`), and "rows in range" stays open until M-lite.
 
 ## Progress log
 
@@ -423,3 +445,12 @@ proof relies on it (finding 15).
   after the rebase (`diff -r`). The review of the ADR record had no findings. Open for part 2: the
   statement theorems of the seven atoms (they use `resolveStatement_valid`, the `_closed` forms of DROP,
   `Database.addColumnCondition_of_admitted` and `resolveAddColumn_strictDefaultFits`).
+- 2026-10-24: the Nix checks of part 1 passed at wtppxrwo (reported by the coordinator): `just test-full`
+  and `just verdict` pass; corpus-v4 AGREE 673, corpus-v5 AGREE 2946, corpus-v50 AGREE 17, corpus-v51
+  AGREE 21, corpus-v52 AGREE 33.
+- 2026-10-24: part 2 starts. The fresh baseline of the predictions is `build/predictions-s4p2-base` (53
+  files, before any edit of part 2). Finding 16 is new.
+- 2026-10-24: part 2, commit "frame lemmas and cell laws of the table atoms". New modules
+  `AdmittedAtomFrames` (the frame lemmas of the five table atoms, `TableAtom`, `Database.EachTable.appendEmpty`)
+  and `AdmittedCellLaws` (what `generatedCells` and `newCells` keep: width, stored form and the alias
+  cell), and the examples module `AdmittedAtomsStatementExamples`. Tests: `tests/test_model_package.py`.
