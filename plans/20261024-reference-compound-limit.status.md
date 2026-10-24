@@ -9,8 +9,9 @@ Spec: ADR 0009 and the owner's PR #242 CI failure report.
 The owner reported that PR #241 passes and #242 fails the Linux API reference
 build at 532 selected public modules. The recorded exception is in doc-gen4's
 `read:transitive_imports`; its VALUES seed participates in a recursive UNION.
-The intended fix preserves the root set and closure at the query boundary.
-No implementation or Nix acceptance is claimed yet.
+The patch preserves the root set and closure at the query boundary. The
+compiled-reader Nix regression passes; the real reference build and final
+task acceptance remain in progress.
 
 ## Progress
 
@@ -37,3 +38,28 @@ checks. Both findings are fixed; implementation scope is unchanged.
 - Review `20261024T173642Z-9725e388` has no findings. The task is handed to
   `s4_part1` for the narrow dependency fix and compiled-reader regression.
   Root coordinates heavy reference builds and descendant stack integration.
+
+## Implementation and validation
+
+- The pinned reader now uses `SELECT column1 FROM (VALUES ...)` as its
+  recursive-query seed. Bound parameters and the recursive UNION are unchanged.
+  The dependency revisions, caller, selected roots and core cache split stay
+  fixed. ADR 0009 and the reference guide describe the additional observed
+  failure and the patch's removal condition.
+- Nix `docGen4` passed at
+  `/nix/store/x66x56cw6qxvd72k056gldkvy7r0qv9i-sqlite-verifier-doc-gen4-4.34.1`.
+  Its temporary native fixture calls `ReadDB.getTransitiveImports` in the
+  compiled dependency. All 12 exact-closure cases pass: empty and unrelated
+  inputs; 499, 500, 501, 532 and 640 roots; and duplicate-root variants with
+  shared imports and a cycle. Equal lengths and both membership directions
+  exclude missing, extra and duplicate returned modules.
+- The original pinned reader's greater-than-500 failure is recorded in the
+  PR #242 and #243 CI runs above. The patch is restricted to that query seed.
+  Focused supporting checks are `tests/test_api_reference.py` and
+  `tests/test_docgen_dependencies.py`. Full reference, post-review task gates
+  and descendant stack integration are still pending.
+- The coordinator confirmed the reviewed task's observed-failure contract for
+  this urgent CI repair. The regression names that failure; the workaround
+  keeps its durable CI URL, pinned source and removal condition. An upstream
+  report is prepared but unpublished. This is a narrow interpretation of the
+  workaround-report guidance, not a claim that an upstream issue exists.
