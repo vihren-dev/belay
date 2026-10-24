@@ -1,7 +1,7 @@
 # Status: foreign-key facts and preservation
 
 Created 2026-10-24. Status: OPEN. Split-API and mapped-NULL work is active in
-the FK workspace. The accepted action-target correction follows task review.
+the FK workspace. The action-target correction has not started; it awaits task review.
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
 Inspected base: PR #239, `98a07bfe`, in `vihren-dev/sqlite-verifier`.
@@ -12,6 +12,10 @@ Native diagnostics show repeated-key actions leave an unused child column
 unchanged and do not fire its UPDATE OF trigger. The earlier model wrote that
 column too. The revised task requires regression evidence and ordinary-mapping
 coverage; no Nix acceptance of this new correction is claimed yet.
+
+Review `20261024T151438Z-4c59fcc3` found no musts and two wording shoulds:
+name both execution corrections in the acceptance boundary and state explicitly
+that action-source work has not started. Both are corrected.
 
 ## Owner decision and evidence
 

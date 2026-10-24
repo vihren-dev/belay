@@ -163,7 +163,7 @@ The test suite must distinguish the atoms, not just exercise their definitions:
   [the build-boundary status](20261024-text-build-boundaries.status.md).
   Status and PR acceptance claims cite only Nix results.
 
-Two acceptance parts: the engine correction, split API, checks, pragma correspondence and frames;
+Two acceptance parts: mapped-NULL/action corrections, split API, checks, pragma correspondence and frames;
 the statement/run preservation laws and downstream proof examples. Both parts
 are required for slice 5 to be complete. The implementer chooses the work units.
 
