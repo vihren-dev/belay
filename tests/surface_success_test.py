@@ -1,11 +1,12 @@
 """S4 program composition and success contracts in the public Lean surface."""
 
+import json
 from pathlib import Path
 
 import pytest
 
 from tests.runtime_support import run_command
-from tests.surface_support import FIXTURES, surface_command
+from tests.surface_support import FIXTURES, module_setup, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -93,3 +94,25 @@ def test_guide_email_success_uses_exact_corrected_precondition(runtime_root: Pat
     assert result.returncode == 0, result.diagnostic()
     assert result.stdout.count("depends on axioms") == 1, result.stdout
     assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout
+
+
+def test_guide_balance_success_derives_schema_and_numeric_bounds(runtime_root: Path, tmp_path: Path) -> None:
+    """The exact corrected SQL guard implies universal balance success, with written proofs
+    for schema, metadata, storage affinity and SUM bounds. Kernel cases retain the missing
+    account and TEXT-overflow counterexamples and admit mixed REAL/NULL cells. Compile the
+    proof modules as a fresh consumer, then audit the final theorem's transitive axioms."""
+    setup_path = module_setup(runtime_root, tmp_path)
+    setup = json.loads(setup_path.read_text())
+    for suffix in ("Syntax", "Resolution", "ResolveGuard", "Subqueries", "Observation", "Schema",
+                   "Missing", "Success", ""):
+        name = "SuccessBalance" + suffix
+        setup["name"] = name
+        setup_path.write_text(json.dumps(setup))
+        artifact = tmp_path / f"{name}.olean"
+        result = run_command([str(runtime_root / "lean/bin/lean"), f"--setup={setup_path}",
+                              "-o", str(artifact), str(FIXTURES / f"{name}.lean")],
+                             cwd=tmp_path, timeout=60)
+        assert result.returncode == 0, result.diagnostic()
+        assert all(term not in result.stdout for term in ("sorryAx", "ofReduceBool", "_native")), result.stdout
+        setup["importArts"][name] = [[str(artifact)]]
+    assert result.stdout.count("depends on axioms") == 1, result.stdout
