@@ -1,5 +1,4 @@
 # ADR 0017 coordination status
-
 Created 2026-10-24. Status: OPEN. ADR 0017 is not complete.
 This record coordinates the task/status files; it adds no implementation scope.
 
@@ -63,7 +62,7 @@ All three later recommendations are accepted: an explicit fresh-run helper,
 selected [FK action targets](20261024-foreign-key-atoms.task.md), and explicit
 interface-scoped simulation beside the full-state relation. Expansion/write
 orders have equal rows but total_changes
-3 versus 4; retain that full-state refutation. No owner question is pending.
+3 versus 4; retain that full-state refutation. No specification question is pending.
 
 ## Resolved findings
 
@@ -132,11 +131,12 @@ Final acceptance must selectively reconcile unpublished S2/S3 product-default ch
 
 The reviewed one-line surface helper fileset fix `b9008683` was carried into
 S6. Its initial missing-helper Nix failure is resolved. At most two heavy checks
-run: root publication gate `43594` owns slot 1; FK rerun `36195` owns slot 2,
-then S4. No agent opens a herdr tab before the Monday deadline.
-Root publication workspaces are `sqlite-verifier-s4-query-publication` (reviewed
-`77621ead`, full/verdict/Nix/scheduled pending) and `sqlite-verifier-query-source-publication`
-(reviewed `63299f66`, gates pending). They preserve shared ancestors and exclude v53.
+run: query carry `79230` owns slot 1; FK rerun `36195` owns slot 2, then S4.
+Root S4 query publication `975f31eb` passed full 808, Nix 70, scheduled 47,
+verdict 4,838/2,534 and 53 unchanged predictions; its branch is pushed.
+Derived publication merge `359eb0c7` has a clean review; gates remain pending.
+Automatic approval rejected S4 PR creation and direnv allow in
+`query-sources-cte-implementation`; explicit owner approval is requested for both.
 
 ## Published work and cleanup
 
@@ -162,8 +162,8 @@ Herdr waits `w1:t3T`/78895, `w1:t3V`/78368 and `w1:t3W`/56689 returned
 text-build-boundaries, prediction-source-filter and profile-publication were removed
 after confirming no active process and remote reachability. Earlier cleanup removed
 profile-guide, the unused editor workspace, adr19s2/adr19s3/adr22s2/adr22s3/
-adr22s4/errev/envfns. Protected s4chk and unrelated workspaces remain. S4's
-completed schema/observation workspaces await publication before removal.
+adr22s4/errev/envfns. Completed s4-schema and s4-observations were removed
+following remote reachability/process checks. Protected s4chk remains.
 
 ## Specified work and remaining scope
 
