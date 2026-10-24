@@ -24,3 +24,17 @@ view/pattern modules are claimed in this planning tree.
   comparison laws and universal example acceptance. Review
   20261024T152701Z-56b9f410 found no musts or shoulds. Implementation remains
   unassigned pending the listed prerequisites.
+- 2026-10-24: readiness audit against complete execution source `5bc323f0`
+  found the first acceptance part can start independently of the later FK,
+  rebuild and assertion-notation work. Reuse `Sql.runFrom`, `Sql.Branch`, its
+  actual-run and bind laws, `ExecutionContext.finish`, `SucceedsFrom`,
+  `EquivAt` and `ObservationEquivAt`. The compared trace can be projected;
+  execution continuations must still receive their selected raw or concrete
+  output. The reached index uses the original trace length, not the projected
+  length. Preserve values, errors and stopped outcomes.
+  Use `SucceedsFrom` for migration success at the original context; `andOk`
+  also constrains the prior trace and would narrow that domain. Query admission
+  uses `Script.isQuery` and `Syntax.Statement.readsOnly`; the program `query`
+  helper checks statement count and is not a read-only premise. New view and
+  pattern modules can own separate fixtures and narrow manifest additions.
+  No implementation is assigned yet, and the whole task remains open.
