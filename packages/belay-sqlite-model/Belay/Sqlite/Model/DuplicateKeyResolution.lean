@@ -76,7 +76,7 @@ theorem resolveQueryBody_duplicateKeys (dqs : Bool) (scope : Scope) (current : O
     (pendingOk : resolvePendingSources dqs scope pending = .ok sources) :
     resolveQueryBody dqs scope { current, later } outerAliases pending
         (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] source [] none [term] [] none none none
-          (some (.compare .gt (.callStar name) (.numeric "1"))) false none) =
+          (some (.compare .gt (.callStar name) (.numeric "1"))) false none none) =
       .ok (Resolved.Query.duplicateKeys sources key collation, none) := by
   have called : aggregateCall (.callStar name) = true := by simp [aggregateCall, count]
   have columns := resolveColumns_one dqs scope { current, later, aggregates := [.callStar name] }
@@ -128,11 +128,11 @@ theorem resolveStatement_selectOne_notExists_duplicateKeys (context : ResolveCon
     resolveStatement context state (.select [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] []
         none none
         [Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] none [term] [] none none none
-          (some (.compare .gt (.callStar name) (.numeric "1"))) false none] none false none) =
+          (some (.compare .gt (.callStar name) (.numeric "1"))) false none none] none false none) =
       .ok (.query (Resolved.Query.selectOneWhere (.not (.exists 0)))
         [Resolved.Query.duplicateKeys [Resolved.QuerySource.first position] key collation], state) := by
   have simple : ∀ source filter, (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] source [] filter [] [] none none
-      none none false none).Simple := fun _ _ => ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+      none none false none none).Simple := fun _ _ => ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
   have noFeed : (([[(Resolved.Output.scalar (.literal (.integer 1)), "1", (none : Option Affinity))]] :
       List (List (Resolved.Output × String × Option Affinity))).flatten.filterMap fun (output, _) => match output with
       | .scalar expression => some expression
@@ -149,13 +149,13 @@ theorem resolveStatement_selectOne_notExists_duplicateKeys (context : ResolveCon
         Except.bind])
   have mainBody := fun shape (parentless : shape.parent = none) =>
     resolveQueryBody_simple context.profile.dqsDml [] none [shape] [] [] (Syntax.Subquery.mk [.expression (.numeric "1") none "1"]
-      none [] (some (.not (.exists 0))) [] [] none none none none false none) (simple _ _) _ (some (.not (.exists 0))) _
+      none [] (some (.not (.exists 0))) [] [] none none none none false none none) (simple _ _) _ (some (.not (.exists 0))) _
     (resolveColumns_one _ _ _) (by simpa [resultAliases] using mainResolves shape parentless)
     (resolvePendingSources_nil _ _) noFeed
   refine resolveStatement_select_of_resolveSelect context state
-    (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] [] none none none none false none)
-    _ rfl _ ?_
-  refine resolveSelect_noFrom_one_subquery context state.catalog _ _ rfl rfl rfl (by simp [starIssue]) rfl rfl _ _
+    (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] none [] (some (.not (.exists 0))) [] [] none none none none false none none)
+    _ rfl rfl _ ?_
+  refine resolveSelect_noFrom_one_subquery context state.catalog _ _ rfl rfl rfl (by simp [starIssue]) rfl rfl rfl _ _
     (resolveSources_table state.catalog reference position table namedSource arguments found) (by simp [starIssue]) _ _
     (by simpa [resultAliases] using subBody) _ rfl _ _ (by simpa using mainBody _ rfl) ?_
   simp [Resolved.Query.expressions, Resolved.Query.keptExpressions, Resolved.Query.simple, Resolved.Output.scalars,

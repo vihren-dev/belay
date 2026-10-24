@@ -50,7 +50,8 @@ theorem missing_email (db : Database) (position : Nat) (table : CatalogTable)
     rfl
   have resolved : ∃ restriction, resolveStatement runContext db.raw.connection.resolveState
       noDuplicateEmails.statements[0].1 = .error restriction := by
-    simp [noDuplicateEmails, resolveStatement, resolveSelect, Connection.resolveState, Database.Raw.connection,
+    simp [noDuplicateEmails, resolveStatement, resolveSelect, prepareCommonTables,
+      CommonTableCopies.recursionIssue, CommonTableCopies.originalIssue, CommonTableCopies.originalPath, Connection.resolveState, Database.Raw.connection,
       subqueryScopes, scopeOrder, compoundOf, subqueryScope, Scope.columns,
       noMain, sources, Scope.enclose, resolveSubqueryBodies, subqueryBodyOrder, unique, QueryScope.sourceIndexes, QueryScope.refresh, Scope.refreshSources, compoundColumnsIssue,
       prepareError, ResolveState.withCatalog, Bind.bind, Except.bind, Except.mapError,

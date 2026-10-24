@@ -80,8 +80,18 @@ The frontend maps these statements, and refuses every other statement as
   The library primitive `Resolved.Source.subquery index width` reads the complete
   result rows of an indexed query in the statement's context. It supports the existing joins,
   keeps enclosing-query cells through NULL extension, and refuses a source whose complete
-  row multiset depends on a window's tie order or whose evaluation fails. CTEs and views
-  remain outside the implemented part of ADR 0019 slice 4.
+  row multiset depends on a window's tie order or whose evaluation fails.
+- Ordinary nonrecursive `WITH` definitions use the same query sources. Explicit column
+  lists, forward references, repeated uses and nested name shadowing are supported.
+  Each use can read its permitted enclosing-query bindings. Unused definitions are not
+  prepared. WITH also prefixes the supported INSERT VALUES, UPDATE and DELETE forms;
+  nested definitions can occur in their scalar subqueries. Actual recursion, the
+  `RECURSIVE` keyword and both materialization hints remain model restrictions.
+  Invalid circular references and column counts retain SQLite's preparation errors.
+  Nested WITH also resolves in supported trigger expressions. Execution remains
+  unmodeled when a trigger body both writes and uses a subquery; successful
+  preparation does not remove that existing runtime restriction.
+  Views remain outside the implemented part of ADR 0019 slice 4.
 - Compound `SELECT` (ADR 0019, D3): `UNION ALL`, `UNION`, `INTERSECT` and `EXCEPT` of
   `SELECT` terms as above, from left to right, as a statement and as the `q` of `EXISTS`,
   `IN` and a scalar subquery. Two rows are equal when each column compares equal under the
@@ -192,7 +202,7 @@ row of `DO UPDATE` are always ABORT. In the schema, a `PRIMARY KEY`, `UNIQUE` or
 `OR` clause; keys with different algorithms other than REPLACE are the restriction
 `mixed-conflict-algorithms`, UPDATE of such a table is `constraint-algorithm-update`, and
 REPLACE of a NOT NULL column with a default is `replace-default`. `UPDATE OR`, a target with a direction, collation,
-`NULLS` order, qualified name or `WHERE`, `WITH`, `FROM` in writes, sort modifiers in keys,
+`NULLS` order, qualified name or `WHERE`, `FROM` in writes, sort modifiers in keys,
 partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
 options, `AS SELECT`, views, `TEMP` and `INSTEAD OF` triggers, virtual tables, `EXPLAIN`, the pragmas that the next paragraphs do not name,
 `DISTINCT` inside an aggregate call, unsupported table-valued functions in
@@ -560,6 +570,7 @@ should shrink.
 | `raise-form` | `RAISE` in a trigger outside the one result column of a `SELECT` without `FROM`, alone or as a result of its `CASE`, or with a message that can fail, is not modeled | ADR 0018, slice 5 |
 | `trigger-form` | A trigger with `ON CONFLICT DO UPDATE` in its body, with a function that can fail in a write of its body that no other restriction covers, with `changes()`, `total_changes()` or `last_insert_rowid()` in its body or `WHEN` condition, with a `WHEN` condition that has a function that can fail or a subquery, or with too many triggers that fire each other, and `ON CONFLICT DO UPDATE` on a table with a trigger, are not modeled | ADR 0018, slice 5 |
 | `source-column-name` | A derived source whose duplicate output names need SQLite's random suffix is not modeled; give the columns distinct aliases | ADR 0019, D5 |
+| `recursive-common-table` | A recursive CTE is not modeled, including when the WITH clause omits RECURSIVE; use nonrecursive definitions | ADR 0019, D5 |
 | `compound-order-by-term` | An `ORDER BY` term of a compound `SELECT` that the model cannot match with a result column as SQLite does, such as an aggregate, or a `COLLATE` term after which SQLite names a result column at random, is not modeled | ADR 0019, D3 |
 | `connection-counter-read` | `last_insert_rowid()` in an `INSERT` or an upsert, and `total_changes()` in a write that runs trigger programs or foreign-key actions, are not modeled, because the counter changes while the statement runs | ADR 0024, D2 |
 | `nondeterministic-error-order` | A call of `changes()`, `total_changes()`, `last_insert_rowid()`, `random()` or `randomblob(n)` in a generated column, an index expression or an index filter, in an expression with another error of its walk of names, is not modeled, because the error that SQLite reports depends on the order of the walk | ADR 0024, D5 |

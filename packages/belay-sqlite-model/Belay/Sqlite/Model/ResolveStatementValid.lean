@@ -86,16 +86,16 @@ theorem resolveStatement_valid (context : ResolveContext) (state next : ResolveS
     exact keep _ (resolveDropTrigger_valid _ _ _ _ _ _ current (by assumption))
   | insert table columns rows conflicts algorithm returning subqueries =>
     simp only [resolveStatement] at ok
-    exact written _ ok fun _ _ found => (resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _
-      (fun _ _ _ _ h => resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ _ h) found).1 ▸ current
+    exact written _ ok fun _ _ found => (resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
+      (fun _ _ _ _ _ h => resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ _ h) found).1 ▸ current
   | update table assignments filter returning subqueries =>
     simp only [resolveStatement] at ok
-    exact written _ ok fun _ _ found => (resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _
-      (fun _ _ _ _ h => resolveUpdate_same _ _ _ _ _ _ _ _ _ _ h) found).1 ▸ current
+    exact written _ ok fun _ _ found => (resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
+      (fun _ _ _ _ _ h => resolveUpdate_same _ _ _ _ _ _ _ _ _ _ h) found).1 ▸ current
   | delete table filter returning subqueries =>
     simp only [resolveStatement] at ok
-    exact written _ ok fun _ _ found => (resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _
-      (fun _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ h) found).1 ▸ current
+    exact written _ ok fun _ _ found => (resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
+      (fun _ _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ h) found).1 ▸ current
   | pragma pragma =>
     rcases resolvePragma_cases ok with ⟨setting, _, _, rfl⟩ | ⟨rfl, _, _⟩
     · cases setting <;> exact ⟨current, saved⟩

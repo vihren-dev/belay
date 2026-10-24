@@ -29,7 +29,7 @@ theorem subqueryShape_count (scope : Scope) (shapes : SubqueryShapes) (source : 
     (filter : Option Syntax.Expr) (name : String) (alias : Option Identifier) (text : String) (query : Resolved.Query)
     (columns : query.columns = [.aggregate .countRows]) :
     ∃ lowest, subqueryShape scope shapes (Syntax.Subquery.mk [.expression (.callStar name) alias text] source []
-      filter [] [] none none none none false none) query none = countShape lowest := by
+      filter [] [] none none none none false none none) query none = countShape lowest := by
   simp [subqueryShape, firstCollations, Syntax.Expr.explicitCollation, Syntax.Expr.columnCollation, columns, countShape]
 
 /-- For every statement {lit}`SELECT 1 WHERE c` with one subquery {lit}`SELECT count(*) FROM t WHERE p` of a table that
@@ -55,11 +55,11 @@ theorem resolveStatement_selectOne_count (context : ResolveContext) (state : Res
     (plain : mainCondition.any Resolved.Expr.isFallibleCall = false) :
     resolveStatement context state (.select [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none
         [Syntax.Subquery.mk [.expression (.callStar name) none text] (some reference) [] subFilter [] [] none none none none
-          false none] none false none) =
+          false none none] none false none) =
       .ok (.query (Resolved.Query.selectOneWhere mainCondition)
         [Resolved.Query.countOf [Resolved.QuerySource.first position] subCondition text], state) := by
   have simple : ∀ source filter, (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] source [] filter [] [] none none
-      none none false none).Simple := fun _ _ => ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+      none none false none none).Simple := fun _ _ => ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
   have noFeed : (([[(Resolved.Output.scalar (.literal (.integer 1)), "1", (none : Option Affinity))]] :
       List (List (Resolved.Output × String × Option Affinity))).flatten.filterMap fun (output, _) => match output with
       | .scalar expression => some expression
@@ -73,13 +73,13 @@ theorem resolveStatement_selectOne_count (context : ResolveContext) (state : Res
     (some reference) subFilter name none text
     (Resolved.Query.countOf [Resolved.QuerySource.first position] subCondition text) rfl
   have mainBody := resolveQueryBody_simple context.profile.dqsDml [] none [countShape lowest] [] []
-    (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none none none false none)
+    (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none none none false none none)
     (simple _ _) _ (some mainCondition) _ (resolveColumns_one _ _ _)
     (by simpa [resultAliases] using mainResolves lowest) (resolvePendingSources_nil _ _) noFeed
   refine resolveStatement_select_of_resolveSelect context state
-    (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none none none false none)
-    _ rfl _ ?_
-  refine resolveSelect_noFrom_one_subquery context state.catalog _ _ rfl rfl rfl (by simp [starIssue]) rfl rfl _ _
+    (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none none none false none none)
+    _ rfl rfl _ ?_
+  refine resolveSelect_noFrom_one_subquery context state.catalog _ _ rfl rfl rfl (by simp [starIssue]) rfl rfl rfl _ _
     (resolveSources_table state.catalog reference position table namedSource arguments found) (by simp [starIssue]) _ _
     (by simpa [resultAliases] using subBody) _ shapeIs.symm _ _ (by simpa using mainBody) ?_
   simp [Resolved.Query.expressions, Resolved.Query.keptExpressions, Resolved.Query.simple, Resolved.Output.scalars,

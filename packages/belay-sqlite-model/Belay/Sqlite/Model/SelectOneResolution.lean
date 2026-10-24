@@ -31,10 +31,10 @@ theorem resolveStatement_select_one_from (context : ResolveContext) (state : Res
         [.scalar (.literal (.integer 1))] ["1"]) [], state) := by
   have columns := resolveColumns_one context.profile.dqsDml (tableScope state.catalog reference position table) { later := [] }
   have simple : (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] filter [] [] none none none
-      none false none).Simple :=
+      none false none none).Simple :=
     ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
   have result := resolveStatement_select_simple context state
-    (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] filter [] [] none none none none false none)
+    (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] filter [] [] none none none none false none none)
     simple rfl _ _ _ condition _ (resolveSources_table state.catalog reference position table namedSource arguments found)
     (by simp [starIssue]) columns (by simpa [resultAliases] using resolves)
     (resolvePendingSources_table context.profile.dqsDml _ position)

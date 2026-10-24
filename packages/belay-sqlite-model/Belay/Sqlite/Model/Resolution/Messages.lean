@@ -18,6 +18,7 @@ def ordinal (number : Nat) : String :=
 /-- SQLite's message for an error that names no catalog object, for example
 {lit}`no such column: a`. -/
 def ExprError.message : ExprError → String
+  | .commonTable error => error.message
   | .reservedName name => s!"object name reserved for internal use: {name}"
   | .tooManyColumns table => s!"too many columns on {table}"
   | .duplicateColumn column => s!"duplicate column name: {column}"

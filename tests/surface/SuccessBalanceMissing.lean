@@ -44,9 +44,12 @@ theorem guard_select_shadow (catalog : Catalog) (position shadow : Nat) (table o
   have scopes := guard_scopes_shadow catalog position shadow table other found shadows
   dsimp only [around] at scopes
   have noMain : ∀ queries prefix_, resolveSources catalog none [] 0 queries prefix_ = .ok ([], []) := by intros; rfl
+  have ordinary : balanceQueries.any (·.commonTable.isSome) = false := rfl
   unfold resolveSelect
-  simp [mainSyntax, noMain, starIssue, resultAliases, scopes, issueResolution, restrict,
+  simp only [prepareCommonTables, ordinary, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
+  simp [CommonTableCopies.originalIssue, mainSyntax, noMain, starIssue, resultAliases, scopes, issueResolution, restrict,
     Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
+  rfl
 
 /-- For every table without cents and every subquery shape, the range body reports a
 missing-column prepare error. The unquoted identifier is neither a rowid nor a Boolean keyword.
@@ -103,8 +106,10 @@ theorem guard_select_missing_cents (catalog : Catalog) (position : Nat) (table :
   dsimp only [around] at scopes bodies
   have dqs : runContext.profile.dqsDml = true := rfl
   have noMain : ∀ queries prefix_, resolveSources catalog none [] 0 queries prefix_ = .ok ([], []) := by intros; rfl
+  have ordinary : balanceQueries.any (·.commonTable.isSome) = false := rfl
   unfold resolveSelect
-  simp [mainSyntax, noMain, starIssue, resultAliases, scopes, bodies, dqs, issueResolution, prepareError,
+  simp only [prepareCommonTables, ordinary, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
+  simp [CommonTableCopies.originalIssue, mainSyntax, noMain, starIssue, resultAliases, scopes, bodies, dqs, issueResolution, prepareError,
     Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
 
 end BalanceExample

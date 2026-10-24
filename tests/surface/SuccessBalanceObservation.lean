@@ -99,7 +99,7 @@ theorem guard_statement (db : Database) (position index : Nat) (table : CatalogT
     resolveStatement runContext db.raw.connection.resolveState balanceGuard.statements[0].1 =
       .ok (.query (Resolved.Query.selectOneWhere guardCondition) (guardQueries position index table cell),
         db.raw.connection.resolveState) := by
-  exact resolveStatement_select_of_resolveSelect runContext db.raw.connection.resolveState mainSyntax balanceQueries rfl _
+  exact resolveStatement_select_of_resolveSelect runContext db.raw.connection.resolveState mainSyntax balanceQueries rfl rfl _
     (guard_select db.raw.catalog position index table cell found notTable column atIndex)
 
 /-- For every database with the ledger, cents column and unshadowed pragma, there is an

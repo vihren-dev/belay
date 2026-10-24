@@ -151,20 +151,20 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
   | insert table columns rows conflicts algorithm returning subqueries =>
     simp only [resolveStatement] at ok
     exact written _ ok fun _ _ found =>
-      let ⟨same, unchanged, control⟩ := resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _
-        (fun _ _ _ _ h => resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ _ h) found
+      let ⟨same, unchanged, control⟩ := resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
+        (fun _ _ _ _ _ h => resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ _ h) found
       ⟨same.trans unchanged.symm, control⟩
   | update table assignments filter returning subqueries =>
     simp only [resolveStatement] at ok
     exact written _ ok fun _ _ found =>
-      let ⟨same, unchanged, control⟩ := resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _
-        (fun _ _ _ _ h => resolveUpdate_same _ _ _ _ _ _ _ _ _ _ h) found
+      let ⟨same, unchanged, control⟩ := resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
+        (fun _ _ _ _ _ h => resolveUpdate_same _ _ _ _ _ _ _ _ _ _ h) found
       ⟨same.trans unchanged.symm, control⟩
   | delete table filter returning subqueries =>
     simp only [resolveStatement] at ok
     exact written _ ok fun _ _ found =>
-      let ⟨same, unchanged, control⟩ := resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _
-        (fun _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ h) found
+      let ⟨same, unchanged, control⟩ := resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
+        (fun _ _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ h) found
       ⟨same.trans unchanged.symm, control⟩
   | pragma pragma =>
     rcases resolvePragma_cases ok with ⟨_, _, rfl, rfl⟩ | ⟨rfl, unchanged, control⟩

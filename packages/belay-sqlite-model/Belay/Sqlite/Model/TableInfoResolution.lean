@@ -83,10 +83,10 @@ theorem resolveStatement_select_one_tableInfo (context : ResolveContext) (state 
         condition [.scalar (.literal (.integer 1))] ["1"]) [], state) := by
   have columns := resolveColumns_one context.profile.dqsDml (tableInfoScope reference argument rows) { later := [] }
   have simple : (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] filter [] [] none none none
-      none false none).Simple :=
+      none false none none).Simple :=
     ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
   have result := resolveStatement_select_simple context state
-    (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] filter [] [] none none none none false none)
+    (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] (some reference) [] filter [] [] none none none none false none none)
     simple rfl _ _ _ condition _ (resolveSources_tableInfo state.catalog reference argument rows namedSource arguments isFunction notTable info)
     (by simp [starIssue]) columns (by simpa [resultAliases] using resolves)
     (resolvePendingSources_pragma context.profile.dqsDml _ _)

@@ -100,8 +100,10 @@ def noSubqueries (refusal : String) (action : TranslateM α) : TranslateM α := 
 
 /-- Add a query of the node to the statement's list, with the clauses that the action maps, and
 give its index and the other result of the action; its own subqueries and terms come after it.
-Refuse it where no list is open. -/
-def liftWith (select : ParseNode) (mapClauses : TranslateM (Clauses × β)) : TranslateM (Nat × β) := do
+Refuse it where no list is open. An optional WITH declaration records a template in the
+same list; use the default absent declaration for ordinary subqueries. -/
+def liftWith (select : ParseNode) (mapClauses : TranslateM (Clauses × β))
+    (definition : Option (Located Syntax.CommonTable) := none) : TranslateM (Nat × β) := do
   let scope ← get
   let some listed := scope.active | unsupported select scope.refusal
   let index := listed.items.size
@@ -111,6 +113,10 @@ def liftWith (select : ParseNode) (mapClauses : TranslateM (Clauses × β)) : Tr
   let scope ← get
   let items := (scope.active.map (·.items)).getD #[]
   let item := clauses.subquery (leaf around select.start select.stop) select.start select.stop
+  let item := { item with
+    value := { item.value with commonTable := definition.map (·.value) }
+    span := { item.span with
+      parts := item.span.parts.push ((definition.map (·.span)).getD { start := select.start, stop := select.start }) } }
   set { scope with active := some { items := items.set! index (some item), current := around } }
   return (index, other)
 

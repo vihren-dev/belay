@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Resolution.SubqueryResolution
+import Belay.Sqlite.Model.Resolution.CommonTableExpansion
 
 set_option doc.verso true
 
@@ -11,7 +12,8 @@ namespace Belay.Sqlite.Model
 
 /-- Resolve a {lit}`SELECT` with its subqueries: the statement's
 query and its subqueries, or SQLite's {lit}`no such table: %s`, a prepare error or a
-restriction. SQLite expands the {lit}`*` of the statement's query ({name}`starIssue`) before
+restriction. WITH definitions are copied for each use before ordinary resolution;
+unused definitions do not enter the executable query list. SQLite expands the {lit}`*` of the statement's query ({name}`starIssue`) before
 its subqueries. A compound query resolves from its terms ({name}`resolveCompoundBody`). A query
 without {lit}`FROM`, or a term of the compound without {lit}`FROM`, that has a call that can
 fail, in a statement with a subquery that is no term, is
@@ -20,30 +22,37 @@ def resolveSelect (context : ResolveContext) (catalog : Catalog) (query : Syntax
     (subqueries : List Syntax.Subquery) : StatementResolution :=
   let dqs := context.profile.dqsDml
   let resolved : Except SourceIssue (Resolved.Query × List Resolved.Query) := do
-    let (pending, scope) ← resolveSources catalog query.source query.joins 0
-      (sourceExpansion catalog 8 subqueries none)
-    if let some issue := starIssue scope query.columns then throw (.value issue)
-    let main : QueryScope := { scope, pending, outer := 0, outerAliases := [],
-                               aliases := (resultAliases scope query.columns).filterMap id }
-    let scopes ← subqueryScopes catalog 8 main query.compound subqueries
-    let (resolvedSubqueries, shapes) ← (resolveSubqueryBodies dqs catalog 8 main query.compound scopes subqueries).mapError .value
-    let main ← (main.refresh catalog shapes query).mapError .value
-    let scope := main.scope
-    let pending := main.pending
-    let scopes := scopes.map fun scope => { scope with scope := scope.scope.refreshSources shapes }
-    let body : Except ValueIssue (Resolved.Query × List Resolved.Query) := match query.compound with
-      | some compound => do
-        let terms ← compoundTerms 0 none compound (scopes.map QueryScope.scope) subqueries resolvedSubqueries shapes
-        pure ((← resolveCompoundBody dqs 0 query compound terms).1, terms.map CompoundTerm.query)
-      | none => do
-        let (resolved, _) ← resolveQueryBody dqs scope { later := shapes } [] pending query
-        pure (resolved, [resolved])
-    let (resolvedQuery, ran) ← body.mapError SourceIssue.value
-    let terms := (query.compound.map Syntax.Compound.terms).getD []
-    if (List.range subqueries.length).any (!terms.contains ·) &&
-        ran.any fun (ran : Resolved.Query) => ran.sources.isEmpty && ran.expressions.any (·.any Resolved.Expr.isFallibleCall) then
-      throw (SourceIssue.value (ValueIssue.restriction [] .subqueryFallibleCall))
-    pure (resolvedQuery, resolvedSubqueries)
+    let expanded ← prepareCommonTables catalog 8 query subqueries
+    let query := expanded.query
+    let subqueries := expanded.copies.queries.toList
+    let columnNames := expanded.copies.columnNames
+    let result : Except SourceIssue (Resolved.Query × List Resolved.Query) := do
+      let (pending, scope) ← resolveSources catalog query.source query.joins 0
+        (fun index => sourceExpansion catalog 8 subqueries none index columnNames)
+      if let some issue := starIssue scope query.columns then throw (.value issue)
+      let main : QueryScope := { scope, pending, outer := 0, outerAliases := [],
+                                 aliases := (resultAliases scope query.columns).filterMap id }
+      let scopes ← subqueryScopes catalog 8 main query.compound subqueries columnNames
+      let (resolvedSubqueries, shapes) ← (resolveSubqueryBodies dqs catalog 8 main query.compound scopes subqueries columnNames).mapError .value
+      let main ← (main.refresh catalog shapes query).mapError .value
+      let scope := main.scope
+      let pending := main.pending
+      let scopes := scopes.map fun scope => { scope with scope := scope.scope.refreshSources shapes }
+      let body : Except ValueIssue (Resolved.Query × List Resolved.Query) := match query.compound with
+        | some compound => do
+          let terms ← compoundTerms 0 none compound (scopes.map QueryScope.scope) subqueries resolvedSubqueries shapes
+          pure ((← resolveCompoundBody dqs 0 query compound terms).1, terms.map CompoundTerm.query)
+        | none => do
+          let (resolved, _) ← resolveQueryBody dqs scope { later := shapes } [] pending query
+          pure (resolved, [resolved])
+      let (resolvedQuery, ran) ← body.mapError SourceIssue.value
+      if let some issue := expanded.copies.recursionIssue 8 resolvedSubqueries then throw (.value issue)
+      let terms := (query.compound.map Syntax.Compound.terms).getD []
+      if (List.range subqueries.length).any (!terms.contains ·) &&
+          ran.any fun (ran : Resolved.Query) => ran.sources.isEmpty && ran.expressions.any (·.any Resolved.Expr.isFallibleCall) then
+        throw (SourceIssue.value (ValueIssue.restriction [] .subqueryFallibleCall))
+      pure (resolvedQuery, resolvedSubqueries)
+    result.mapError (expanded.copies.originalIssue 8)
   match resolved with
   | .ok (resolvedQuery, resolvedSubqueries) => .ok (.query resolvedQuery resolvedSubqueries, catalog)
   | .error (.noSuchTable name) => prepareError catalog (.noSuchTable name)

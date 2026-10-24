@@ -13,6 +13,7 @@
     "tests/conformance_queries_test.py",
     "tests/syntax_queries_test.py",
     "tests/syntax_subqueries_test.py",
+    "tests/syntax_common_tables_test.py",
     "tests/syntax_compound_test.py",
     "tests/conformance_authored_resolution_test.py",
     "tests/conformance_query_coverage_test.py",

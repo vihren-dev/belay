@@ -51,6 +51,11 @@ def expectText (text : String) (item : Located Syntax.Statement) (path : List Na
   let #[selected] ← translated source | throw <| IO.userError "expected one statement"
   expectText source selected [1, 3] "SELECT 1 AS x"
   expectText source selected [8, 0, 0, 0, 0] "1"
+  let withClause := "WITH c(x) AS (SELECT 1) SELECT * FROM c;"
+  let #[selected] ← translated withClause | throw <| IO.userError "expected one statement"
+  expectText withClause selected [8, 0] "SELECT 1"
+  expectText withClause selected [8, 0, 12, 0] "c"
+  expectText withClause selected [8, 0, 12, 1, 0] "x"
 
 #guard ["\"a\"\"b\"", "[a]]", "`x`", "'it''s'", "\"Some\" Type", "plain"].map dequote ==
   ["a\"b", "a]", "x", "it's", "Some", "plain"]

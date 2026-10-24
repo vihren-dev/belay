@@ -35,9 +35,10 @@ def QueryScope.sourceIndexes (query : QueryScope) : List Nat :=
 /-- The scope of subquery {lit}`index` in the scope of the query around it: the sources of its
 {lit}`FROM` placed after the cells of that query, then the error of its {lit}`*` and {lit}`x.*`
 ({name}`starIssue`). A derived source can read enclosing queries, but not sources or aliases
-of the query that uses it as a source. Paths start at {lit}`[field, index]`. -/
+of the query that uses it as a source. Paths start at {lit}`[field, index]`. Optional {lit}`columnNames` carry explicit output
+names of expanded CTE uses; use the empty default for ordinary derived sources. -/
 def subqueryScope (catalog : Catalog) (field : Nat) (around : QueryScope) (index : Nat) (subquery : Syntax.Subquery)
-    (subqueries : List Syntax.Subquery := []) :
+    (subqueries : List Syntax.Subquery := []) (columnNames : List (Nat × List Identifier) := []) :
     Except SourceIssue QueryScope := do
   let derived := around.sourceIndexes.contains index
   let outer := if derived then (around.scope.filter (·.depth > 0)).map
@@ -49,7 +50,7 @@ def subqueryScope (catalog : Catalog) (field : Nat) (around : QueryScope) (index
       (resolveSources catalog subquery.source subquery.joins width).mapError (·.under [field, index])
     else
       resolveSources catalog subquery.source subquery.joins width
-        (sourceExpansion catalog field subqueries (some index)) [field, index]
+        (fun child => sourceExpansion catalog field subqueries (some index) child columnNames) [field, index]
   let scope := Scope.enclose outer inner
   if let some issue := starIssue scope subquery.columns then throw (.value (issue.under [field, index]))
   pure { scope, pending, outer := width, outerAliases := aliases,
@@ -60,9 +61,11 @@ write {lit}`main`, whose compound is {lit}`compound`: each in the order of {name
 ({name}`subqueryScope`), around the statement's query or an earlier subquery. A subquery whose
 parent is a later one or is not visited, and a subquery under a compound that is not one of its
 terms, such as a subquery in the compound's {lit}`ORDER BY`, are
-{name}`RestrictionKind.subqueryHere`. -/
+{name}`RestrictionKind.subqueryHere`. The optional {lit}`columnNames` preserve explicit
+CTE output names while each body keeps its own aliases. -/
 def subqueryScopes (catalog : Catalog) (field : Nat) (main : QueryScope) (compound : Option Syntax.Compound)
-    (subqueries : List Syntax.Subquery) : Except SourceIssue (List QueryScope) := do
+    (subqueries : List Syntax.Subquery) (columnNames : List (Nat × List Identifier) := []) :
+    Except SourceIssue (List QueryScope) := do
   let found ← (scopeOrder compound subqueries (subqueries.length + 1) none).foldlM (fun found index => do
     let refused := SourceIssue.value (.restriction [field, index] .subqueryHere)
     let some subquery := subqueries[index]? | throw refused
@@ -70,7 +73,7 @@ def subqueryScopes (catalog : Catalog) (field : Nat) (main : QueryScope) (compou
       | none => some main
       | some parent => if parent < index then List.lookup parent found else none
     match around?, (compoundOf compound subqueries subquery.parent).all (·.terms.contains index) with
-    | some around, true => pure (found ++ [(index, ← subqueryScope catalog field around index subquery subqueries)])
+    | some around, true => pure (found ++ [(index, ← subqueryScope catalog field around index subquery subqueries columnNames)])
     | some _, false | none, true | none, false => throw refused) []
   (List.range subqueries.length).mapM fun index => match List.lookup index found with
     | some scope => pure scope

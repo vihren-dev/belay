@@ -30,7 +30,7 @@ theorem Script.outputOn_selectOne_column
     {expression : Resolved.Expr} {affinity : Option Affinity} {text : String}
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none
       [Syntax.Subquery.mk [.expression value none text] (some reference) [] subFilter [] [] none none none none
-        false none] none false none, parameters) :: rest)
+        false none none] none false none, parameters) :: rest)
     (notCall : value.isCall = false) (noAggregate : value.aggregateCalls.isEmpty = true)
     (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
     (operand : resolveOperand runContext.profile.dqsDml (tableScope db.raw.catalog reference position table)
@@ -67,7 +67,7 @@ theorem Holds.iff_selectOne_column
     {expression : Resolved.Expr} {affinity : Option Affinity} {text : String}
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none
       [Syntax.Subquery.mk [.expression value none text] (some reference) [] subFilter [] [] none none none none
-        false none] none false none, parameters) :: rest)
+        false none none] none false none, parameters) :: rest)
     (notCall : value.isCall = false) (noAggregate : value.aggregateCalls.isEmpty = true)
     (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
     (operand : resolveOperand runContext.profile.dqsDml (tableScope db.raw.catalog reference position table)
@@ -104,7 +104,7 @@ theorem Empty.iff_selectOne_column
     {expression : Resolved.Expr} {affinity : Option Affinity} {text : String}
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none
       [Syntax.Subquery.mk [.expression value none text] (some reference) [] subFilter [] [] none none none none
-        false none] none false none, parameters) :: rest)
+        false none none] none false none, parameters) :: rest)
     (notCall : value.isCall = false) (noAggregate : value.aggregateCalls.isEmpty = true)
     (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
     (operand : resolveOperand runContext.profile.dqsDml (tableScope db.raw.catalog reference position table)
@@ -141,7 +141,7 @@ theorem Fails.not_selectOne_column
     {expression : Resolved.Expr} {affinity : Option Affinity} {text : String}
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none
       [Syntax.Subquery.mk [.expression value none text] (some reference) [] subFilter [] [] none none none none
-        false none] none false none, parameters) :: rest)
+        false none none] none false none, parameters) :: rest)
     (notCall : value.isCall = false) (noAggregate : value.aggregateCalls.isEmpty = true)
     (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
     (operand : resolveOperand runContext.profile.dqsDml (tableScope db.raw.catalog reference position table)
