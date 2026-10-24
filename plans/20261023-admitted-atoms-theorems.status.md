@@ -89,8 +89,10 @@ proof. Slice 3 is estimated at 1000 to 1600 lines. The task file proposes three 
 ## Owner decisions
 
 Decided on 2026-10-23: the owner accepted the recommendation of decisions 1 to 4 and 6 to 8, and
-chose b) for decision 5: a repeated key column is a restriction. With b), slice 4 adds no SQLite
-behavior to the model, so it needs no new conformance case (task file, "Tests"). Checked natively
+chose b) for decision 5: a repeated key column is a restriction. Superseded on 2026-10-24: the
+owner chose a) (the model keeps a repeated key column, `supportedKey` allows it). Reason: the
+frozen corpora corpus-v4 and corpus-v5 contain the cases `validity-repeated-primary-key` and
+`validity-repeated-unique-key` in `mustAgree`, and a restriction breaks those claims. Checked natively
 (3.51.0, the dev shell's `sqlite3`): `CREATE INDEX i ON t()` is a syntax error;
 `CREATE TABLE t(a, b, PRIMARY KEY(a,a))` succeeds, `PRAGMA index_info` of its index gives the
 column twice, and a duplicate key fails with `UNIQUE constraint failed: t.a, t.a`.
@@ -226,7 +228,7 @@ proof relies on it (finding 15).
    does not check `CatalogIndex.supported` and the statement is not a restriction. The grammar is
    in decision 4.
 2. **`PRIMARY KEY(a, a)` and `UNIQUE(a, a)` are resolved, not restricted, and not supported**
-   (decision 5). The resolver emits the key `[0, 0]` and does not restrict it. `PRIMARY KEY()` and
+   (decision 5, now a): `supportedKey` will allow them). The resolver emits the key `[0, 0]`. `PRIMARY KEY()` and
    `UNIQUE()` with an empty list cannot come from SQL text; they resolve to a supported table
    because the empty key merges with an empty primary key. `CREATE TABLE t()` gives the prepare
    error `onlyGeneratedColumns`.
@@ -304,9 +306,11 @@ proof relies on it (finding 15).
     conformance evidence (native SQLite against the model) for each SQLite claim before a proof relies
     on it; a kernel example checks only the model. Amended 2026-10-23, after the owner decisions: no
     proof of the slice relies on these claims. Decision 4 refuses a syntax that SQL text cannot
-    give, and decision 5 b) refuses a repeated key column, so neither describes SQLite behavior;
-    the facts of decisions 3 and 8 are facts of the model's resolver. So the task file requires no
-    new conformance case.
+    give, and decision 5 b) refused a repeated key column, so neither described SQLite behavior;
+    the facts of decisions 3 and 8 are facts of the model's resolver. So the task file required no
+    new conformance case. Amended 2026-10-24: decision 5 is a) and the repeated key column stays
+    modeled; its native evidence is the two authored cases of the frozen corpora v4 and v5, so the
+    task file still requires no new case.
 
 ## Progress log
 
@@ -345,3 +349,5 @@ proof relies on it (finding 15).
   it), so the check serves syntax built in Lean, where an empty `UNIQUE` list gave
   `uniqueKeys = [[]]` on alias tables. Tests: three `#guard` lines in `Resolution/IndexExamples.lean`
   and `tests/test_model_package.py`.
+- 2026-10-24: amendment of the task file and this file: decision 5 is a) (reason above).
+  The next commits change `supportedKey` and prove the facts of slice 2 for repeated keys.
