@@ -2,6 +2,9 @@ import Belay.Sqlite.CounterexampleWitness
 
 set_option doc.verso true
 
+/-! A finite shrink loop at the certificate boundary. Every retained proposal must refute
+the original proposition, including proposals from user-supplied shrinkers. -/
+
 namespace Belay.Sqlite.Check
 
 open Lean Meta

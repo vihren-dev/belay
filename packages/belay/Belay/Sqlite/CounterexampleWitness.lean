@@ -70,7 +70,8 @@ def refuteWith (proposition : Expr) (choose : Name → Expr → MetaM Expr)
     mkLambdaFVars #[claimed] (← contradictAt choose excluded excludedLocals binderBudget claimed)
   certify (mkNot proposition) proof excluded excludedLocals
 
-/-- Check every supplied witness term, then refute the claim with those inputs.
+/-- Check every supplied witness term, including the required database and environment types,
+then refute the claim with those inputs.
 An invalid or admitted database is rejected even if the particular claim does not use it.
 The arbitrary selector primitive {name}`refuteWith` remains available for other inputs. -/
 def refuteWitness (proposition : Expr) (witness : Witness)
@@ -78,7 +79,9 @@ def refuteWitness (proposition : Expr) (witness : Witness)
     (binderBudget : Nat := 64) : MetaM Expr := do
   let inputs := #[witness.database, witness.environment] ++ witness.named.map (·.2)
   auditDependencies inputs excluded excludedLocals
-  inputs.forM checkWithKernel
+  checkWithKernel (mkApp2 (mkConst ``id [Level.one]) (mkConst ``Database) witness.database)
+  checkWithKernel (mkApp2 (mkConst ``id [Level.one]) (mkConst ``Env) witness.environment)
+  witness.named.forM (fun (_, input) => checkWithKernel input)
   refuteWith proposition witness.choose excluded excludedLocals binderBudget
 
 end Belay.Sqlite.Check

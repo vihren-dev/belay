@@ -3,6 +3,9 @@ import Belay.Sqlite.Database
 
 set_option doc.verso true
 
+/-! Valid database candidates over explicit schemas. This module keeps generation separate
+from proof certification, and supplies the shared bounded and targeted row distributions. -/
+
 namespace Belay.Sqlite.Sampling
 
 open Plausible

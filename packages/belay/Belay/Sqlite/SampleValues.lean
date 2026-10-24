@@ -4,6 +4,9 @@ import Belay.Sqlite.Values
 
 set_option doc.verso true
 
+/-! The value generator shared by Plausible and SQL counterexample search. Stable SQL
+boundaries make small samples useful; shrinking only proposes replacements for certification. -/
+
 namespace Belay.Sqlite.Sampling
 
 open Plausible

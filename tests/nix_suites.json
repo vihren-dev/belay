@@ -129,6 +129,7 @@
     "tests/surface_translation_checks_test.py",
     "tests/proof_cost_test.py",
     "tests/surface_counterexample_test.py",
-    "tests/surface_sampling_test.py"
+    "tests/surface_sampling_test.py",
+      "tests/surface_inference_test.py"
   ]
 }

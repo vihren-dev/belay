@@ -27,5 +27,6 @@ lean_lib Belay where
     .one `Belay.Sqlite.DbBang, .one `Belay.Sqlite.Queries, .one `Belay.Sqlite.QueryLaws, .one `Belay.Sqlite.QueryBridge, .one `Belay.Sqlite.QueryCases, .one `Belay.Sqlite.SelectOneFrom, .one `Belay.Sqlite.SqlSimp, .one `Belay.Sqlite.SqlSimpLaws, .one `Belay.Sqlite.ExistsQuery, .one `Belay.Sqlite.NotExistsQuery, .one `Belay.Sqlite.SelectOneMayFail, .one `Belay.Sqlite.ExistsMayFail, .one `Belay.Sqlite.ScalarNoFrom, .one `Belay.Sqlite.SelectNoFrom, .one `Belay.Sqlite.CountQuery, .one `Belay.Sqlite.ColumnQuery, .one `Belay.Sqlite.TableInfoQuery, .one `Belay.Sqlite.DuplicateKeyQuery, .one `Belay.Sqlite.AggregateQuery, .one `Belay.Sqlite.UniqueLookupQuery, .one `Belay.Sqlite.SqlCommand]
     ++ #[.one `Belay.Sqlite.CounterexampleCertificate, .one `Belay.Sqlite.CounterexampleWitness,
       .one `Belay.Sqlite.SqlRefute, .one `Belay.Sqlite.SampleValues, .one `Belay.Sqlite.SampleDatabases,
-      .one `Belay.Sqlite.SampleShrink, .one `Belay.Sqlite.CounterexampleShrink]
+      .one `Belay.Sqlite.SampleShrink, .one `Belay.Sqlite.CounterexampleShrink,
+      .one `Belay.Sqlite.SampleHints, .one `Belay.Sqlite.SampleQueryHints, .one `Belay.Sqlite.SampleScriptHints]
   precompileModules := true

@@ -70,6 +70,9 @@ run_meta do
   rejects <| Check.refuteWitness (mkConst ``False) { database := admitted }
   let invalid := databaseExpr { rows := [[]] }
   rejects <| Check.refuteWitness (mkConst ``False) { database := invalid }
+  rejects <| Check.refuteWitness (mkConst ``False) { database := mkNatLit 0 }
+  rejects <| Check.refuteWitness (mkConst ``False)
+    { database := mkConst ``Database.empty, environment := mkNatLit 0 }
   withLocalDeclD `assumed (mkConst ``True) fun assumed => do
     rejects <| Check.certify (mkConst ``True) assumed #[] #[assumed.fvarId!]
 

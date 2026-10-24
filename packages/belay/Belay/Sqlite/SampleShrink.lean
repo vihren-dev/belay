@@ -3,6 +3,9 @@ import Belay.Sqlite.SampleDatabases
 
 set_option doc.verso true
 
+/-! Plausible integration for databases. Row and cell proposals preserve validity, while
+the checker separately decides whether a smaller database remains a counterexample. -/
+
 namespace Belay.Sqlite.Sampling
 
 /-- Suggest deleting one row or shrinking one cell, preserving the catalog and the other
