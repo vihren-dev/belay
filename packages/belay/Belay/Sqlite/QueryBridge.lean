@@ -1,5 +1,5 @@
 import Belay.Sqlite.QueryLaws
-import Belay.Sqlite.Model.QueryStatementOutput
+import Belay.Sqlite.Model
 
 set_option doc.verso true
 

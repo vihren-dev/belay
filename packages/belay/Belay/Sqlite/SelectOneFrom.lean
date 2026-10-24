@@ -1,7 +1,5 @@
 import Belay.Sqlite.QueryBridge
-import Belay.Sqlite.Model.SelectOneResolution
-import Belay.Sqlite.Model.SimpleTableOutput
-import Belay.Sqlite.Model.PrepareErrorOutput
+import Belay.Sqlite.Model
 
 set_option doc.verso true
 
