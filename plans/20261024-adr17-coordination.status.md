@@ -58,11 +58,10 @@ ADR17 records the exact strong relation. The owner also accepted explicit
 observation views for quiet migration segments and full contextual commutation
 for every S8 call pair, including queries. Weak query-output translation stays
 available but cannot alone establish the whole-program theorem.
-Three later decisions are pending: an explicit fresh-run helper; extending FK
-action targets to the selected mapping; and adding interface-scoped simulation
-beside full-state simulation. Native expansion/write orders have equal rows but
-different total_changes (3 versus 4), so the full-state expansion claim fails.
-Only affected assertion, action-semantics and expansion work is paused.
+All three later recommendations are accepted: an explicit fresh-run helper,
+selected FK action targets, and explicit interface-scoped simulation beside the
+full-state relation. Expansion/write orders have equal rows but total_changes
+3 versus 4; retain that full-state refutation. No owner question is pending.
 
 ## Resolved findings
 

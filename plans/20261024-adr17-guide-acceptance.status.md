@@ -10,7 +10,8 @@ All required feature tasks and their Nix acceptance precede this final gate.
 S4, query sources and FK work are active. S5, S7 files, editor and doc-block
 tasks are specified. S6 production execution contracts are reviewed; remaining
 S6 assertions/patterns/automation and S8 await their tasks. The owner accepted
-observation views and contextual S8 pairing; the fresh-run helper is pending.
+observation views, contextual S8 pairing, the fresh-run helper and the separately
+named interface-scoped simulation.
 Proof-cost production needs the specified collector experiment.
 
 The product default workspace contains earlier unpublished S2/S3 guide edits.

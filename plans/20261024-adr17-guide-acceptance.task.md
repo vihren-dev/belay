@@ -34,8 +34,8 @@ benchmark service or extra SQL interpreter is part of this acceptance task.
   shapes, parameter rules, error continuation, unmodeled termination, full
   execution equivalence and other owner decisions. Incorporate the later
   accepted observation-view and contextual-pairing contracts from ADR17 D1.
-  The fresh-run helper decision is still pending. Claims about the same API
-  agree across prose, examples, tables,
+  Include the accepted explicit fresh-run helper and interface-scoped simulation.
+  Claims about the same API agree across prose, examples, tables,
   the complete example and resolved-question notes.
 - **Examples check their stated claims.** The complete example compiles against
   the installed surface with its actual SQL files and doc blocks. Smaller
