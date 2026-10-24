@@ -131,7 +131,7 @@ passed for #242's 532 modules and #243's 538 modules (`iz8kjnq67dn05smyh3liv85rf
 #242 CI and Verdict are green. Published #243 `2cb4c5e3` passed 853/70/47 locally;
 its CI `40120692159` and Verdict `40120692161` are also green.
 Both repair workspaces are removed; their logs/report XML are archived under S4 build/.
-S7 prototype `ae2a72de` is DONE: full 872/Nix 70/scheduled 47; accepted scope has clean reviews.
+S7 prototype PR #245 `0569149b` is DONE: full 872/Nix 70/scheduled 47; accepted scope reviewed.
 The owner accepted physical-table premises for BOTH unique-email and balance.
 Task corrections `2e761ca0` and source `c72ed523` have clean reviews and Nix checks.
 Combined S4 `24ca8b4c` carries repaired PRs, premises and two passing Nix native regressions.
@@ -163,12 +163,13 @@ profile-guide, the unused editor workspace, adr19s2/adr19s3/adr22s2/adr22s3/
 adr22s4/errev/envfns. Completed s4-schema and s4-observations were removed
 following remote reachability/process checks, as was s4-query-publication after
 [PR #242](https://github.com/vihren-dev/sqlite-verifier/pull/242). Derived subject and publication
-workspaces were removed after #243; gate logs are retained under S4 build/. Protected s4chk remains.
+workspaces were removed after #243; gate logs are retained under S4 build/.
+Completed s4-run and s4-table-premises were archived and removed after #244. Protected s4chk remains.
 
 ## Specified work and remaining scope
 
-- [S5](20261024-surface-s5.task.md) is reviewed and waits for final S4 run/success
-  interfaces. Plausible v4.34.0 needs a compatibility build under Lean 4.34.1.
+- [S5](20261024-surface-s5.task.md) is assigned to `s4_part1` in
+  `s5-counterexamples` on published S4/S7. Plausible compatibility is queued.
 - [Query sources](20261024-query-sources.task.md) is active as above; the
   [table rebuild task](20261024-table-rebuild.task.md) now has clean follow-up
   review `20261024T142117Z-79fd6a8b` and waits for its final view/CTE design.
@@ -184,9 +185,9 @@ workspaces were removed after #243; gate logs are retained under S4 build/. Prot
   `20261024T140400Z-04f1c91e`, unassigned; it accompanies S7.
 - [S7 files/freshness](20261024-surface-s7-files.task.md) has clean follow-up
   review `20261024T140930Z-09c30b41`, unassigned.
-- [S7 proof-cost prototype](20261024-s7-proof-cost-prototype.task.md) is assigned
-  to `s4_part1` in `s7-proof-cost`, reviewed carry/citation head `79ef4d07`.
-  Prototype DONE at `489b22f6`; production will use the accepted named-body contract.
+- [S7 proof-cost prototype](20261024-s7-proof-cost-prototype.task.md) is DONE
+  and published as PR #245 at `0569149b`, above completed S4 PR #244 `70705018`.
+  Production will use the accepted named-body contract, including native mutual declarations.
 - [Guide rebuild wording](20261024-guide-sql-rebuilds.task.md) is DONE, published
   with reviewed S4 explanatory prose in private product PR #8, head `1ae76380`.
 - [S8 simulation](20261024-surface-s8.task.md) is reviewed clean at `03ac78a0`:
