@@ -207,6 +207,9 @@ import Belay.Sqlite.Model.ScalarSubqueryOutput
 import Belay.Sqlite.Model.TableInfoResolution
 import Belay.Sqlite.Model.TableInfoOutput
 import Belay.Sqlite.Model.TableInfoLaws
+import Belay.Sqlite.Model.DuplicateKeyQuery
+import Belay.Sqlite.Model.DuplicateKeyOutput
+import Belay.Sqlite.Model.DuplicateKeyResolution
 
 /-! SQLite states, the facts of an admitted and of a valid database, the theorems of the statements
 that keep the unique keys, supported execution, the output of each statement and the results that

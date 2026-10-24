@@ -84,3 +84,13 @@ def test_a_table_has_a_column_according_to_pragma_table_info(runtime_root: Path,
     result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsTableInfo.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
+
+
+def test_no_two_rows_of_a_table_have_equal_keys(runtime_root: Path, tmp_path: Path) -> None:
+    """`SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM t GROUP BY k HAVING count(*) > 1)` over every database: `Holds`
+    means that no group of rows with equal keys has more than one row, proved with the lemmas and `sql_simp`, with
+    instances on three databases where `decide +kernel` checks the claim: different keys, keys that differ only
+    in case under `NOCASE`, and two NULL keys."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsDuplicateKeys.lean", tmp_path), cwd=tmp_path,
+                         timeout=60)
+    assert result.returncode == 0, result.diagnostic()
