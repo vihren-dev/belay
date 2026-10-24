@@ -371,3 +371,6 @@ proof relies on it (finding 15).
   `CatalogValidDrop.lean`: `Catalog.DropClosed` (every kept index and trigger keeps its table; it gives
   `Catalog.DropCondition`) and `Catalog.Valid.drop`. Examples in `AdmittedAtomsExamples.lean`,
   including a drop of a table alone, which breaks the closure. Tests: `tests/test_model_package.py`.
+- 2026-10-24: review round of the commit "the laws of Catalog.Valid": two musts (R2, the plain words of
+  `Catalog.DropClosed` and `Catalog.findTable_isSome_drop` said more than the formulas). Fixed in
+  a `refactor:` commit. Tests: `tests/test_model_package.py`.

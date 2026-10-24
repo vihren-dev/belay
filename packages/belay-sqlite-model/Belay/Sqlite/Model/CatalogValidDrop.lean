@@ -10,11 +10,13 @@ namespace Belay.Sqlite.Model
 
 /-- The condition of DROP for the given catalog and positions, for the validity of the catalog after
 the drop:
-* every index at a position that the drop keeps has a table at a position that the drop keeps;
-* every trigger at a position that the drop keeps finds its table by name
-  ({name}`Catalog.findTable`) at a position that the drop keeps, when it finds one.
+* for every index at a position that the drop keeps, the position of its table
+  ({name}`CatalogIndex.table`) is not in the list of positions;
+* for every trigger at a position that the drop keeps, if {name}`Catalog.findTable` finds the table of
+  the trigger by its name, the position that it finds is not in the list of positions.
 
-Objects that the drop removes require nothing. {name}`Catalog.DropCondition` is the first
+The condition does not require that the position of an index names a table, or that a table is
+found: a valid catalog gives both. Objects that the drop removes require nothing. {name}`Catalog.DropCondition` is the first
 condition for unique indexes only. -/
 def Catalog.DropClosed (catalog : Catalog) (positions : List Nat) : Prop :=
   (∀ place object index, catalog[place]? = some object → object.entry = .index index → place ∉ positions →
@@ -51,7 +53,7 @@ theorem Catalog.tableAt_drop {catalog : Catalog} {positions : List Nat} {positio
 
 /-- For every catalog, positions, name, table and position: if {name}`Catalog.findTable` finds the
 table at a position that the drop keeps, the catalog after {name}`Catalog.drop` finds a table with the
-name, at the new position. Proof sketch: the first-match rule ({name}`FirstMatch`) holds for the
+name ({name}`Catalog.findTable` gives a result). The formula does not say where. Proof sketch: the first-match rule ({name}`FirstMatch`) holds for the
 kept object at the new position: the kept objects before it come from earlier positions of the
 catalog, and none of them has the name. -/
 theorem Catalog.findTable_isSome_drop {catalog : Catalog} {positions : List Nat} {target : Identifier}
