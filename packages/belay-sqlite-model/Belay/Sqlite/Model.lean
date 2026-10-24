@@ -211,6 +211,9 @@ import Belay.Sqlite.Model.DuplicateKeyQuery
 import Belay.Sqlite.Model.DuplicateKeyOutput
 import Belay.Sqlite.Model.DuplicateKeyResolution
 import Belay.Sqlite.Model.GroupsPairwise
+import Belay.Sqlite.Model.AggregateQueryLaws
+import Belay.Sqlite.Model.AggregateQueryOutput
+import Belay.Sqlite.Model.AggregateSelectResolution
 
 /-! SQLite states, the facts of an admitted and of a valid database, the theorems of the statements
 that keep the unique keys, supported execution, the output of each statement and the results that

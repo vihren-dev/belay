@@ -94,3 +94,13 @@ def test_no_two_rows_of_a_table_have_equal_keys(runtime_root: Path, tmp_path: Pa
     result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsDuplicateKeys.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
+
+
+def test_a_sum_over_a_table_fails_when_it_overflows(runtime_root: Path, tmp_path: Path) -> None:
+    """`SELECT sum(c) FROM t` over every database: `Fails` means that the sum of the stored values leaves the
+    64-bit range, and `Holds` means that it does not, proved with the lemmas and `sql_simp`, with instances on
+    databases where `decide +kernel` checks the claim: two rows of 2 to the power 62, two small rows, no row, and
+    eleven texts that `sum` reads as integers."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsSum.lean", tmp_path), cwd=tmp_path,
+                         timeout=60)
+    assert result.returncode == 0, result.diagnostic()
