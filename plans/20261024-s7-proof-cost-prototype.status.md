@@ -185,3 +185,7 @@ growth allowance. Production implementation and the mutual probe remain pending.
   source for the ADR's overhead measurement. Added the completed prototype
   commit and findings path; scope and measurements are unchanged. Targeted
   check: `tests/docs_test.py`. No new Nix result is claimed for this citation.
+- Citation commit `f1ba8cb3fef2acf10803763716c95f664cfe0061` passed independent
+  review `20261024T192504Z-f1ba8cb3` with no findings. The reviewer read the current
+  findings; the coordinator's requested source is also verified in the tree of
+  `489b22f6`, which records 585,850 extra units and about 9.05% overhead.
