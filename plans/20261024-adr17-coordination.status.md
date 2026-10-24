@@ -82,8 +82,9 @@ remove the prior planning blocks; they are not implementation-completion claims.
   runtime with only standard logical axioms. Final review has no findings.
 - `s4_part1` implements S5 in isolated `s5-counterexamples` on published
   `0569149b`, with reviewed handoff `e50e1f9e`. Plausible compatibility passed
-  in Nix. Explicit certification `3681ede5` passed 11 Nix checks. Slot 2 runs
-  its named-policy follow-up (`63169`); sampler work is separate and untested.
+  in Nix. Explicit certification and policy follow-up `76504977` passed 11 Nix
+  checks and clean review. Slot 2 runs sampler diagnostics (`36560`); sampler
+  acceptance and background checking remain open.
 - `s6_prerequisite_audit` completed derived-source part 1, published in #243.
   Separate evidence head `5d69e3fa` retains draft v53's 38 agreements and
   four restrictions. Combined acceptance is recorded in its task status.
@@ -91,7 +92,7 @@ remove the prior planning blocks; they are not implementation-completion claims.
   final focused 36 and verdict 4,869/2,503 passed. All prior predictions are
   unchanged; two become agreeing and 69 retain unsupported with changed reasons.
   All changes are classified; publication reviews are resolved. Views remain
-  OPEN. Slot 1 runs the origin-metadata foundation (exact timeout PID 3742174).
+  OPEN. Slot 1 runs the origin-metadata foundation (retry `56667`).
 - The S6 foundation prototype is DONE in PR #246 at `334d9645`, above #245.
   Original full 813/Nix 67/scheduled 47 and verdict passed. The final focused
   integration checks all five modules and 28 audits against S4; review is clean.
@@ -111,15 +112,13 @@ and balance; all pass installed runtime `b6n8f8xys0ax45ldilp9rqw2030q8pwa` with 
 Final acceptance must selectively reconcile unpublished S2/S3 product-default changes.
 
 FK engine checkpoint `b1a163df` passed 11 Nix fixtures/203 axiom audits at
-`grsxi5rjsqz0w3311nf5xv3l2yiilv6m`; review is clean. Statement/run `ea40e905`
-passed 14 Nix fixtures/236 audits at `04dmvlj39cmypsa26ia21rhnskqxsjp1`;
-its independent review is running. DDL proof work continues separately.
+`grsxi5rjsqz0w3311nf5xv3l2yiilv6m`; review is clean. Statement/run checkpoint
+`a8bf73ae` passed 14 Nix fixtures/236 audits at `04dmvlj39cmypsa26ia21rhnskqxsjp1`
+and resolved review. DDL proof work continues separately.
 The prerequisite through `9350aa31` is published in PR #247 at `b1130903`,
 above #246. Final integration passed 19 focused Nix cases, the frozen verdict
 4,867/2,505, and all 53 predictions match published S4 output `ifmznfzp`.
 The combined full suite was not rerun for this prerequisite publication.
-FK coverage `9350aa31` passed nine Nix fixtures/164 axiom audits and review. FK insertion
-`45a65a92`/`754545ce` passed six Nix fixtures/95 axioms at `afgmspdjm1andpc3pd1wlfqdv9gl4bib`.
 Derived #243 passed local full 853/Nix 70/scheduled 47 and verdict 4,867/2,505,
 with all 53 predictions matching accepted evidence. Linux CI #242/#243 failed
 API reference generation above 500 roots. The repair is DONE and pushed to #242
@@ -131,10 +130,6 @@ its CI `40120692159` and Verdict `40120692161` are also green.
 #244 and #246 CI/Verdict are green. #245 Verdict is green; CI remains running.
 Both repair workspaces are removed; their logs/report XML are archived under S4 build/.
 S7 prototype PR #245 `0569149b` is DONE: full 872/Nix 70/scheduled 47; accepted scope reviewed.
-The owner accepted physical-table premises for BOTH unique-email and balance.
-Task corrections `2e761ca0` and source `c72ed523` have clean reviews and Nix checks.
-Combined S4 `24ca8b4c` carries repaired PRs, premises and two passing Nix native regressions.
-Named-body cost decision: ADR reviews have no musts; citation fixed, incorrect tree-access finding rejected.
 ## Published work and cleanup
 
 - Public [PR #240](https://github.com/vihren-dev/sqlite-verifier/pull/240),
@@ -168,6 +163,9 @@ were archived and removed after their pushes. Protected s4chk remains.
 Published fk-preservation/update-preservation/update-coverage were archived and
 removed after remapping diagnostic artifacts. The original fk-atoms workspace
 is retained until its five late copied documentation commits are reconciled.
+Completed CTE/CTE-implementation/integration workspaces were archived and removed
+after #248. Their six accepted Nix out-links have independent roots under
+`cte-publication/build/accepted-cte-artifacts`. Evidence and views remain active.
 
 ## Specified work and remaining scope
 
