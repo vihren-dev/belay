@@ -208,6 +208,7 @@ import Belay.Sqlite.Model.ScalarSubqueryOutput
 import Belay.Sqlite.Model.TableInfoResolution
 import Belay.Sqlite.Model.TableInfoOutput
 import Belay.Sqlite.Model.TableInfoLaws
+import Belay.Sqlite.Model.TableInfoColumnLaws
 import Belay.Sqlite.Model.DuplicateKeyQuery
 import Belay.Sqlite.Model.DuplicateKeyOutput
 import Belay.Sqlite.Model.DuplicateKeyResolution

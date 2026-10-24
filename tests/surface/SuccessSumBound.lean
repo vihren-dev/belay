@@ -58,3 +58,19 @@ example : Resolved.truthy ((Comparison.ge.apply (.blob []) (.integer (-100000000
     (Comparison.le.apply (.blob []) (.integer 1000000000000))).not = true := by decide +kernel
 
 #print axioms ledger_sum_from_sql_bounds
+
+/-- Exact INTEGER metadata gives the two affinities for which the SQL range test
+preserves integer bounds. No coherence premise about STRICT ANY is hidden. -/
+theorem ledger_type_affinity (column : CatalogColumn)
+    (reported : pragmaText (column.declaredType.getD "") = pragmaText "INTEGER") :
+    column.affinity = .integer ∨ column.affinity = .blob :=
+  column.affinity_of_integer_pragma reported
+
+-- Arbitrary catalog values can combine reported INTEGER with STRICT ANY. The
+-- bridge keeps the resulting BLOB case; the SUM range argument handles it directly.
+example : ({name := name! "cents", declaredType := some "INTEGER", strictType := some .any} : CatalogColumn).affinity = .blob := by decide +kernel
+example : ({name := name! "cents", declaredType := some "INTEGER"} : CatalogColumn).affinity = .integer := by
+  decide +kernel
+
+#print axioms ledger_type_affinity
+#print axioms column_lookup_of_member
