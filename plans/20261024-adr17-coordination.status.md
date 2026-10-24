@@ -81,14 +81,17 @@ remove the prior planning blocks; they are not implementation-completion claims.
   Both private email extracts and the full balance proof pass the installed
   runtime with only standard logical axioms. Final review has no findings.
 - `s4_part1` implements S5 in isolated `s5-counterexamples` on published
-  `0569149b`, with reviewed handoff `e50e1f9e`. Slot 2 now runs its bounded
-  Plausible compatibility check; source generation/certification remain open.
+  `0569149b`, with reviewed handoff `e50e1f9e`. Plausible compatibility passed
+  in Nix. Slot 1 checks explicit kernel-certified witnesses and the surface-only
+  dependency integration; schema generation and background checking remain open.
 - `s6_prerequisite_audit` completed derived-source part 1, published in #243.
   Separate evidence head `5d69e3fa` retains draft v53's 38 agreements and
   four restrictions. Combined acceptance is recorded in its task status.
   S4 carry `b52fdec6` passed focused Nix `9zkv499mbvg2cwcs5jnn351rv253zfsd`.
   CTE `80b4cb5e` passed Nix model 32/surface 17/restrictions 60 and two mutants.
-  Combined `f27a3fea` passed 19 focused fixtures/review; full/verdict owns slot 1.
+  Combined `f27a3fea` passed 19 focused fixtures/review. Its first full gate
+  timed out during the surface suite after 251 model tests passed; no test
+  failure was reported. Same-source cached retry `44795` owns slot 2.
 - The S6 foundation prototype is DONE in PR #246 at `334d9645`, above #245.
   Original full 813/Nix 67/scheduled 47 and verdict passed. The final focused
   integration checks all five modules and 28 audits against S4; review is clean.
@@ -113,7 +116,13 @@ Reviewed private head `5dbc6f15` adds physical-table premises to both email copi
 and balance; all pass installed runtime `b6n8f8xys0ax45ldilp9rqw2030q8pwa` with standard axioms.
 Final acceptance must selectively reconcile unpublished S2/S3 product-default changes.
 
-FK engine gate passed 11 Nix fixtures/203 axiom audits at `grsxi5rjsqz0w3311nf5xv3l2yiilv6m`; review follows.
+FK engine checkpoint `b1a163df` passed 11 Nix fixtures/203 axiom audits at
+`grsxi5rjsqz0w3311nf5xv3l2yiilv6m`; review is clean. The statement/run unit is
+queued for a heavy slot, and DDL proof work continues separately.
+The prerequisite through `9350aa31` is published in PR #247 at `b1130903`,
+above #246. Final integration passed 19 focused Nix cases, the frozen verdict
+4,867/2,505, and all 53 predictions match published S4 output `ifmznfzp`.
+The combined full suite was not rerun for this prerequisite publication.
 FK coverage `9350aa31` passed nine Nix fixtures/164 axiom audits and review. FK insertion
 `45a65a92`/`754545ce` passed six Nix fixtures/95 axioms at `afgmspdjm1andpc3pd1wlfqdv9gl4bib`.
 Derived #243 passed local full 853/Nix 70/scheduled 47 and verdict 4,867/2,505,
@@ -145,7 +154,7 @@ Named-body cost decision: ADR reviews have no musts; citation fixed, incorrect t
   published `c1471940` (PR #6): DONE. Nine pinned native checks passed; two
   Verso-header corrections preserve the SQL bodies. No unrelated unpublished
   ancestor was included in publication.
-- Private product PR #8, `docs/guide-success-and-inputs`, head `b9bd4838`, base
+- Private product PR #8, `docs/guide-success-and-inputs`, head `c09f415e`, base
   #7: reviewed email/balance table premises, proofs and planned named-cost contract.
   Native metadata and installed-consumer checks are recorded in its private status.
 
@@ -164,7 +173,8 @@ were archived and removed after their pushes. Protected s4chk remains.
 ## Specified work and remaining scope
 
 - [S5](20261024-surface-s5.task.md) is assigned to `s4_part1` in
-  `s5-counterexamples` on published S4/S7. Plausible compatibility is queued.
+  `s5-counterexamples` on published S4/S7. Plausible compatibility passed;
+  explicit certification and dependency integration are in progress.
 - [Query sources](20261024-query-sources.task.md) is active as above; the
   [table rebuild task](20261024-table-rebuild.task.md) now has clean follow-up
   review `20261024T142117Z-79fd6a8b` and waits for its final view/CTE design.
