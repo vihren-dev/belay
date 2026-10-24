@@ -1,6 +1,6 @@
 """The `lean` command of the surface suite's tests for a file that imports `Belay`.
 
-The runtime root of the `surface` suite holds the built surface, the text package and the model
+The runtime root of the `surface` suite holds the surface, its Plausible sampler, text and model
 (`build-support/tests.nix`). The command gives `lean` the module setup that Lake's
 `setup-file` gives the editor's server for such a file: the file of each module, because `lean`
 with a search path looks for the modules under `Belay` only in the first folder that has a
@@ -20,18 +20,19 @@ SUFFIX = ".dylib" if sys.platform == "darwin" else ".so"
 
 def module_setup(runtime_root: Path, directory: Path, library: Path | None = None) -> Path:
     """Write the module setup of `lake setup-file` for a file that imports `Belay` to `directory`, and
-    give its path: the `.olean` file of each module of the surface, the text package and the model,
+    give its path: the `.olean` file of each surface, Plausible, text and model module,
     and the shared libraries to load, in Lake's order: the model's, the model codec's, the shim's, the text package's
-    and the surface's, or `library` in place of the text package's."""
+    Plausible's and the surface's, or `library` in place of the text package's."""
     modules: dict[str, list[list[str]]] = {}
-    for package in ("belay-sqlite-model", "belay-sqlite-text", "belay"):
+    for package in ("belay-sqlite-model", "belay-sqlite-text", "belay/.lake/packages/plausible", "belay"):
         folder = runtime_root / f"packages/{package}/.lake/build/lib/lean"
         for olean in sorted(folder.rglob("*.olean")):
             modules[".".join(olean.relative_to(folder).with_suffix("").parts)] = [[str(olean)]]
     libraries = runtime_root / "packages/belay/.lake/build/lib"
     dynlibs = [libraries / f"libbelaySqliteModel_Belay_Sqlite_Model{SUFFIX}",
                libraries / f"libbelaySqliteModel_Belay_Sqlite_Model_Codec{SUFFIX}", libraries / f"libbelayParserShim{SUFFIX}",
-               library or libraries / f"libbelaySqliteText_BelaySqliteText{SUFFIX}", libraries / f"libbelay_Belay{SUFFIX}"]
+               library or libraries / f"libbelaySqliteText_BelaySqliteText{SUFFIX}",
+               libraries / f"libplausible_Plausible{SUFFIX}", libraries / f"libbelay_Belay{SUFFIX}"]
     path = directory / "setup.json"
     path.write_text(json.dumps({"name": "_unknown", "isModule": False, "importArts": modules,
                                 "dynlibs": [str(item) for item in dynlibs], "plugins": [], "options": {}}))

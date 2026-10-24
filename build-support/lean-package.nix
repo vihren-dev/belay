@@ -28,7 +28,7 @@ in pkgs.stdenv.mkDerivation ({
     mkdir -p "workspace/$(dirname ${directory})"
     cp -R "$src" "workspace/${directory}"
     ${lib.concatStrings (lib.mapAttrsToList (path: package: ''
-      mkdir -p "workspace/$(dirname ${path})"
+      ${lib.optionalString (lib.hasPrefix "${directory}/" path) "chmod -R u+w \"workspace/${directory}\"\n"}mkdir -p "workspace/$(dirname ${path})"
       cp -R ${package} "workspace/${path}"
     '') requires)}
     chmod -R u+w workspace

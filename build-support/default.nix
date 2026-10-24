@@ -82,10 +82,21 @@ in rec {
     executables = true;
     environment.BELAY_PARSER_LIBRARY = parserLibrary.library;
   };
+  # Sampling belongs to the surface; the model and conformance runner do not require it.
+  plausiblePackage = import ./plausible.nix { inherit pkgs leanToolchain; };
   # The surface that users import (ADR 0016, D1). It is not part of the conformance runtime;
   # tests.surface checks it and its layer rules.
-  plausiblePackage = import ./plausible.nix { inherit pkgs leanToolchain; };
-  surfacePackage = leanPackage {
+  surfacePackage = let
+    manifest = builtins.fromJSON (builtins.readFile (sources.surface + "/lake-manifest.json"));
+    sampler = pkgs.lib.findFirst (entry: entry.name == "plausible") null manifest.packages;
+    url = "https://github.com/leanprover-community/plausible";
+    localManifest = manifest // { packages = map (entry:
+      if entry.name != "plausible" then entry else {
+        inherit (entry) name scope inherited manifestFile configFile;
+        type = "path"; dir = ".lake/packages/plausible";
+      }) manifest.packages; };
+  in assert sampler.type == "git" && sampler.url == url && sampler.rev == plausiblePackage.revision;
+  (leanPackage {
     pname = "belay";
     directory = "packages/belay";
     source = sources.surface;
@@ -93,9 +104,19 @@ in rec {
     targets = [ "Belay" "Belay:shared" ];
     requires."packages/belay-sqlite-model" = modelPackage;
     requires."packages/belay-sqlite-text" = textPackage;
-    sharedRequires = [ "packages/belay-sqlite-model" "packages/belay-sqlite-text" ];
+    requires."packages/belay/.lake/packages/plausible" = plausiblePackage;
+    sharedRequires = [ "packages/belay-sqlite-model" "packages/belay-sqlite-text"
+      "packages/belay/.lake/packages/plausible" ];
     environment.BELAY_PARSER_LIBRARY = parserLibrary.library;
-  };
+  }).overrideAttrs (_: {
+    # Nix supplies this exact source; Lake must use the local output without cloning it.
+    postPatch = ''
+      substituteInPlace lakefile.lean --replace-fail \
+        'require plausible from git "${url}" @ "${plausiblePackage.revision}"' \
+        'require plausible from ".lake/packages/plausible"'
+      cp ${pkgs.writeText "surface-lake-manifest.json" (builtins.toJSON localManifest)} lake-manifest.json
+    '';
+  });
   # The in-process SQLite parser library of the harness and the surface; tests.parserLibrary checks it.
   parserLibrary = import ./parser-library.nix { inherit pkgs root; };
   verifierConformance = leanPackage {
