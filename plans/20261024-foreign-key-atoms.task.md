@@ -75,7 +75,11 @@ one planned execution change; add native regressions before relying on it.
    Conditions name input/schema/mapping/connection facts and allowed effects;
    they must not assume the desired final atom or restate the whole theorem.
    Data writes with enforcement on use the same resolved mapping that their
-   checks enforce. DDL that adds a declaration or changes parent-key selection
+   checks enforce. Parent-write laws also name the needed consistency between
+   child scans and parent lookups: their affinity rules can differ. Expose that
+   comparison premise and proved structural sufficient conditions; enforcement
+   and compatible schemas alone do not establish it. DDL that adds a declaration
+   or changes parent-key selection
    needs an explicit schema/mapping condition. Do not promise unconditional
    preservation for CREATE TABLE with a forward reference or DROP INDEX.
    Expose individual atom laws and convenience combined laws. The existing
@@ -118,6 +122,12 @@ The test suite must distinguish the atoms, not just exercise their definitions:
   `y` does not exempt it; NULL in selected `x` does. Check the shared helper's
   callers in write phases and pragma checks, including UPDATE and parent-row
   changes. Missing-target checks retain the declaration-column fallback.
+- Include the native scan/lookup necessity example: parent `p(k TEXT UNIQUE)`
+  stores `'1'`, child `c(x INTEGER REFERENCES p(k))` stores `1`, and an AFTER
+  DELETE trigger on the parent inserts `'01'` when deleting `'1'`. The DELETE
+  succeeds with enforcement on, but foreign_key_check then reports the child.
+  Preserve SQLite's behavior and state the missing comparison premise in the
+  conditional theorem; do not assume final row validity to conceal this case.
 - The statement/run matrix covers foreign keys on/off, immediate constraints,
   NO ACTION/RESTRICT/CASCADE/SET NULL/SET DEFAULT, triggers, conflict outcomes,
   explicit transactions and rollback. Unsupported deferred constraints retain

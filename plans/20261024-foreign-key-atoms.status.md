@@ -1,6 +1,7 @@
 # Status: foreign-key facts and preservation
 
-Created 2026-10-24. Status: OPEN. Split-API work is preserved; the accepted engine correction is queued.
+Created 2026-10-24. Status: OPEN. Split-API work and the accepted engine correction
+are in progress; their checks remain.
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
 Inspected base: PR #239, `98a07bfe`, in `vihren-dev/sqlite-verifier`.
@@ -105,8 +106,38 @@ and retain declaration-column fallback when no comparison is selected. Revise
 the atom defaults and proofs, and add native regression evidence. The revised
 task and ADR22 are carried from the reviewed coordinator decision; review
 20261024T135446Z-1c6eeb5e had no musts and its status-only should is resolved.
-The preserved implementation above has not yet been changed for this decision.
+The preserved implementation was subsequently adapted as recorded below.
 Its source edits remain uncommitted and must be checked before completion.
 Carry review `20261024T141310Z-8526ed1f` had no musts and two status-only
 shoulds. Marked the first audit as historical and the native regressions as
 uncommitted. No source code was included in either planning commit.
+
+## Resumed work and preservation prerequisite
+
+The shared hasNull helper now uses selected child values for a located parent
+and declaration columns for missing/mismatched targets. Mapping and atom docs
+follow that meaning. Native regressions now cover INSERT, UPDATE, parent changes,
+CASCADE, selected NULL and missing-target fallback. A pinned native-only replay
+of 22 cases passed; it is diagnostic, not Nix acceptance. Model builds await the
+S6 gate's shared build slot. The reviewed S4 query-output proof closure is carried
+from `372e6c8f`, with matching module entries, for the full pragma statement law.
+All implementation edits remain uncommitted until their checks pass.
+
+A separate pinned native diagnostic found a required part-2 condition. Start
+with `foreign_keys=ON`, parent `p(k TEXT UNIQUE)` containing `'1'`, and child
+`c(x INTEGER REFERENCES p(k))` containing `1`. An AFTER DELETE trigger on p inserts
+`'01'` when OLD.k is `'1'`. Deleting `'1'` succeeds, but foreign_key_check reports
+`[c,1,p,0]`. Parent scans and child lookups apply different affinity rules, as
+ForeignKeyMatch already documents. Enforcement, schema compatibility and selected
+mapping alone therefore do not imply row preservation. The coordinator has the
+exact setup and `build/agent-logs/fk-parent-affinity-diagnostic.log`; dependent
+part-2 claims waited for specification assessment. The coordinator confirmed that
+the task already permits this comparison-consistency premise and requires such
+native necessity examples. Part 2 continues with an explicit named premise and
+usable structural sufficient conditions; it must not assume final row truth.
+The native case and a kernel fixture now retain the counterexample in WIP.
+
+Carried the reviewed comparison-consistency clarification from coordinator
+commit `98e1e8f13ecd8406cfabc48f1d5fe2870e9ca928` into only this task and ADR22.
+Review `20261024T143702Z-98e1e8f1` had no findings. The source work above remains
+uncommitted and separate from this planning carry. No acceptance check is claimed.
