@@ -25,3 +25,5 @@ be demonstrated. No production measurement or baseline guarantee is claimed.
   profiler heartbeat mode and named async proof traces are candidate inputs.
   No compiling collector, attribution measurement or imported registry was
   tested. The task now names this evidence without choosing an implementation.
+- Review 20261024T153725Z-cca27596 found no musts or shoulds in the additional
+  source inputs. The experiment and production cost task remain open.
