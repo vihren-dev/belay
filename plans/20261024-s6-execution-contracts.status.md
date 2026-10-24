@@ -23,3 +23,8 @@ is claimed by this task file.
   primitives, conditional/total success bridges and compositional equivalence.
   Two acceptance parts retain the ordinary model interpreter and S4 contracts.
   The public assertion/pattern/automation task remains to be specified.
+- 2026-10-24: review `20261024T144607Z-9eeac73e` found no musts and two
+  shoulds about unavailable inputs in the planning tree. The task now names
+  the unmerged S4 and prototype workspaces and exact reviewed commits. Also
+  replaced a reference to transaction helpers with the existing explicit
+  BEGIN/COMMIT/ROLLBACK programs; ADR17 still defers withTransaction.

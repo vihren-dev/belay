@@ -94,9 +94,11 @@ resolver or evaluator, new model feature or general effect framework is needed.
   later migration-pattern task, not to the execution relation.
 - **Users can prove the same fact without a tactic dependency.** A small SQL
   write example compiles both with `mvcgen` using checked specification lemmas
-  and with explicit pure/bind/step rules. Use the existing `send`, `query`,
-  `single` and transaction helpers in compositional specifications, preserving
-  their actual error handling and context effects. The explicit route remains
+  and with explicit pure/bind/step rules. Use the existing `send`, `query` and
+  `single` helpers, plus programs sending BEGIN/COMMIT/ROLLBACK, in compositional
+  specifications with their actual error handling and context effects.
+  `withTransaction` remains deferred by ADR17; this task does not add it.
+  The explicit route remains
   usable if experimental automation changes. A convenience rule must leave the
   arbitrary `Sql.exec` continuation and postcondition primitives accessible.
 
@@ -136,8 +138,14 @@ evidence. Existing predictions and the judge lock must remain unchanged.
 
 Consume final S4 `Program`, `ProgramRun`, `ProgramBindLaws`, `ProgramSuccess`,
 `Env.Complete`, run/output/validity laws and the removal of `Run.checked`.
-The prototype's five `tests/surface/S6*.lean` modules and its design record are
-checked design inputs, not production imports. Keep context, branch laws,
+S4 is unmerged and absent from this planning tree. Its task is
+`plans/20261024-surface-s4.task.md` in workspace `sqlite-verifier-s4`;
+`Sql.SucceedsFrom` and its bridges are at reviewed commit
+`00c8707f5a4023fb97e5e8259f5560296efe12f3`. The final removal is still pending.
+The prototype's five `tests/surface/S6*.lean` modules and design record live in
+workspace `sqlite-verifier-s6-foundations`, commit
+`c838d5cca683e15c62f691363d1b523f721a754d`, not in this planning tree.
+They are checked design inputs, not production imports. Keep context, branch laws,
 transformer laws and equivalence laws in modules with separate contracts,
 below 200 lines each. Export them through the surface package only; model and
 conformance imports keep their current dependency boundaries.
