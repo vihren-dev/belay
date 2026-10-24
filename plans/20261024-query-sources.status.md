@@ -187,3 +187,7 @@ actual verdict results and inspect each changed prediction.
 - Report review `20261024T153132Z-753e0f3c` requested clearer pending-status
   wording. Its link now explicitly refers to the current part-1 acceptance state,
   without implying that the final gates have passed.
+- Review `20261024T153240Z-88781fdd` had no must issue and repeated the request
+  for a status line in the report. Rejected: the report gives verified Nix results
+  and explicitly links to this file for current task acceptance. Duplicating the
+  changing acceptance state there would become stale; it does not assert a pass.
