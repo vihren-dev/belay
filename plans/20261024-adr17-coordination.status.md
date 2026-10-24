@@ -290,3 +290,11 @@ at `d1b28daf`, with clean final review `20261024T215844Z-a890097f`.
 All five affected targeted Nix mutation checks pass. Stored-view expansion is
 being implemented in its separate descendant workspace. PR #249 Verdict CI
 passed; its main CI was still running at this record.
+
+The frozen S6 part-one and native-cache build evidence has been copied, with
+byte/symlink verification, into `s4/build/agent-logs/s6-execution-part1` and
+`s4/build/agent-logs/model-native-artifacts`. Seven existing Nix outputs are
+rooted under `s4/build/accepted-s6-native-artifacts`. Both implementation
+workspaces remain until combined acceptance and publication. The equivalence
+workspace dependency audit found only direct store symlinks and no references
+to either implementation workspace.
