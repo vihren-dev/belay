@@ -138,8 +138,8 @@ def runScriptStepWith {α : Type} (ended : String → α) (ran : Resolved.Statem
 /-- Run one statement with the values bound to its parameters at its zero-based index on the
 connection, with an optional clock: the steps of {name}`runScriptStepWith`, then
 {name}`ranScriptStep` for a statement that runs. A restriction, a statement that reads the
-clock in a run without a clock, a statement that fails the support check, and an output
-{name}`Output.unmodeled` end the run. -/
+clock in a run without a clock, a statement that reads an unknown counter, a statement that
+fails the support check, and an output {name}`Output.unmodeled` end the run. -/
 def runScriptStep (context : ResolveContext) (clock : Option Clock) (index : Nat) (connection : Connection)
     (statement : Syntax.Statement) (parameters : List Value) : RunStep :=
   runScriptStepWith .ended (ranScriptStep parameters connection) context clock index connection statement parameters
