@@ -1,7 +1,8 @@
 # Status: foreign-key facts and preservation
 
-Created 2026-10-24. Status: OPEN. Split-API work and the accepted mapped-NULL and
-mapped-action corrections are in progress; their checks remain.
+Created 2026-10-24. Status: OPEN. Part 1 (split API and accepted mapped-NULL/action
+corrections) is accepted. Part 2's new-row, update, action and trigger invariants,
+DDL/mapping conditions, combined laws and separate corpus-v54 evidence remain open.
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
 Inspected base: PR #239, `98a07bfe`, in `vihren-dev/sqlite-verifier`.
@@ -337,7 +338,7 @@ uniqueness, row alignment and lookup/scan consistency premises. This is local
 development progress, not acceptance or a completed action/trigger invariant.
 The heavy slot was returned to the coordinator after acceptance terminated.
 
-## Part-2 counter and schema proof unit in progress
+## Part-2 counter and schema proof unit: preparation record
 
 The separate `fk-preservation` workspace retains the reviewed part-1 correction
 files and records through `02a6498c`, without rebasing shared ancestors. Its
@@ -354,9 +355,10 @@ UPDATE, cover cascade and rollback schema behavior, apply the generic deletion
 law to a checked self-reference, and check the pending orphan count after a
 parent deletion. New proof modules and fixtures compile in direct Lean diagnostic
 probes, with only the three standard logical axioms. These local probes are not
-Nix acceptance. The mandatory dev-build and focused Nix fixture gate are queued
-for an explicit resource-slot release; no part-2 commit or acceptance is claimed.
-The new-row, update coverage, action and trigger induction remain in progress.
+Nix acceptance. At this preparation checkpoint, the mandatory dev-build and focused
+Nix fixture gate were queued for a resource-slot release. Their later completed
+acceptance is recorded below; the new-row, update coverage, action and trigger
+induction remains in progress.
 
 The three-line SimpleQuerySteps overview correction from reviewed S4 boundary
 `c11a1f83fed9e8eae8d6234201050bc6b741cc00` is carried exactly: the faultless
@@ -389,3 +391,10 @@ review follows this commit. New-row arithmetic and append lemmas remain ignored
 probes for the next unit; they are not included in this acceptance. The full
 action/trigger/update invariant, DDL/mapping conditions, combined run laws and
 atom-by-statement matrix remain open, so the task remains OPEN.
+
+Independent review `20261024T170420Z-54c9c112` read the full coherent unit and
+found zero musts and two status-only shoulds. The header now distinguishes
+accepted part 1 from open part 2, and the pre-gate paragraph is marked as a
+historical preparation checkpoint. Both findings are resolved. The source
+commit remains `54c9c112f4ffe1038e84e9d5846a18254c540759`; its Nix evidence above
+is unchanged. No heavy process is active here; slot 1 returned to the coordinator.
