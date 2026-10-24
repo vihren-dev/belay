@@ -1,7 +1,8 @@
 # Derived-source prediction and evidence record
 
 Date: 2026-10-24. Task: `plans/20261024-query-sources.task.md`, part 1.
-Status: pending final full/verdict acceptance. Ordinary CTEs and views remain.
+The [task status](../../plans/20261024-query-sources.status.md) records final
+full/verdict acceptance. Ordinary CTEs and views remain separate acceptance parts.
 
 ## Frozen comparison
 

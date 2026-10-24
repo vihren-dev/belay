@@ -179,3 +179,8 @@ actual verdict results and inspect each changed prediction.
   `/nix/store/hxi4kmq91n1vpl13nsjbi9cnkj6qw8yq-sqlite-verifier-test-query-source-corpus-1`.
   The evidence remains unpublished and mutable for CTE/view additions. Its
   independent review and final part-1 full/verdict gates follow this commit.
+- Evidence review `20261024T152537Z-873a1473` passed with no findings. The first
+  full gate reached all source checks and found two stale RIGHT JOIN mutant
+  targets after the enclosing-cell preservation change. A subject-only correction
+  is being checked with the two affected mutants; no evaluator change is needed.
+  The evidence report now links here for the current acceptance state.
