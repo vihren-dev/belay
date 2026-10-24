@@ -58,13 +58,17 @@ theorem missing_email (db : Database) (position : Nat) (table : CatalogTable)
     simp [tableScope, Scope.resolveName, Scope.depths, Scope.single, Scope.resolveAt, Scope.resolveStep, missing]
   have one : queryNumeric "1" false = .ok (.integer 1) := rfl
   have countName : normalizeIdentifier "count" = "count" := rfl
-  have sources := resolveSources_table db.raw.catalog { table := name! "customers", alias := none } position table rfl found
+  have sources := resolveSources_table db.raw.catalog { table := name! "customers", alias := none } position table rfl rfl found
   have application : reservedName (name! "customers") = false := by decide
+  have unique : ([0] : List Nat).eraseDups = [0] := rfl
+  have noMain : ∀ queries prefix_, resolveSources db.raw.catalog none [] 0 queries prefix_ = .ok ([], []) := by
+    intros
+    rfl
   have resolved : ∃ restriction, resolveStatement runContext db.raw.connection.resolveState
       noDuplicateEmails.statements[0].1 = .error restriction := by
     simp [noDuplicateEmails, resolveStatement, resolveSelect, Connection.resolveState, Database.Raw.connection,
       subqueryScopes, scopeOrder, compoundOf, subqueryScope, Scope.columns,
-      resolveSources_none, sources, Scope.enclose, resolveSubqueryBodies, compoundColumnsIssue,
+      noMain, sources, Scope.enclose, resolveSubqueryBodies, subqueryBodyOrder, unique, QueryScope.sourceIndexes, QueryScope.refresh, Scope.refreshSources, compoundColumnsIssue,
       prepareError, ResolveState.withCatalog, Bind.bind, Except.bind, Except.mapError,
       Except.map, Functor.map, Pure.pure, Except.pure, starIssue, SourceIssue.under,
       resolveQueryBody, resolveAll, resolveAllFrom, countName, Syntax.Expr.aggregateCalls, aggregateCall, Syntax.Expr.distinctList, resolveAggregateCall, resolveResultColumn, resolvePendingSources_table, resultAliases, resultCollations, resolveGroupTerm, Syntax.Expr.collatedColumn, absent, resolveOperand, Syntax.Expr.collationIn, issueResolution, restrict, one, definedName, ValueIssue.under]
@@ -94,7 +98,7 @@ theorem uniqueEmail_ok : Succeeds uniqueEmail (fun db => Holds noDuplicateEmails
     | none => exact False.elim (missing_email db position table found column holds.1)
     | some index =>
       have groups := (Holds.iff_selectOne_noDuplicateKeys (head := rfl) (count := rfl)
-        (arguments := rfl) (found := found) (groupResolves := group_nocase column db position)
+        (namedSource := rfl) (arguments := rfl) (found := found) (groupResolves := group_nocase column db position)
         (keyCalm := Resolved.Expr.calm_column index)).mp holds.1
       refine ⟨position, table, [{ term := .column index, collation := .nocase }], none,
         found, by decide, by decide, holds.2, ?_, rfl, ?_⟩
