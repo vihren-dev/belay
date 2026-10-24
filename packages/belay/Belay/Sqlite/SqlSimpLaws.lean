@@ -5,7 +5,8 @@ set_option doc.verso true
 
 /-! The laws of the simp set {lit}`sql_simp` (ADR 0017, S4): the evaluation of the resolved
 expressions of a condition ({lit}`Model/ExprEvalLaws.lean`), their resolution from the written
-condition ({lit}`Model/ExprResolutionLaws.lean`) and their calm ({lit}`Model/ExprCalmLaws.lean`).
+condition ({lit}`Model/ExprResolutionLaws.lean`) and their calm ({lit}`Model/ExprCalmLaws.lean`); the subquery expressions are in the set with the shapes of a
+statement with one subquery ({lit}`Model/SubqueryExprResolutionLaws.lean`).
 A proof of a claim over every database writes {lit}`simp [sql_simp]` with the facts about the
 catalog, and gets the claim in terms of the rows of the table. The unfolding of the monad of the
 resolver and of the value of a written number are in the set too. -/
@@ -48,6 +49,17 @@ attribute [sql_simp]
   Belay.Sqlite.Model.Resolved.Expr.calm_or
   Belay.Sqlite.Model.Resolved.Expr.calm_not
   Belay.Sqlite.Model.Resolved.Expr.calm_isNull
+  Belay.Sqlite.Model.Resolved.Expr.eval_exists
+  Belay.Sqlite.Model.Resolved.Expr.eval_subquery
+  Belay.Sqlite.Model.Resolved.Expr.eval_inQuery
+  Belay.Sqlite.Model.Resolved.Expr.calm_exists
+  Belay.Sqlite.Model.Resolved.Expr.calm_subquery
+  Belay.Sqlite.Model.Resolved.Expr.calm_inQuery
+  Belay.Sqlite.Model.resolveOperand_exists
+  Belay.Sqlite.Model.resolveOperand_subquery
+  Belay.Sqlite.Model.resolveOperand_inQuery
+  Belay.Sqlite.Model.SubqueryShapes.find_only
+  Belay.Sqlite.Model.SubqueryShapes.column_only
   Except.map Except.mapError Except.bind Bind.bind Belay.Sqlite.Model.condition
   Belay.Sqlite.Model.queryNumeric Belay.Sqlite.Model.numericValue Belay.Sqlite.Model.decimalNumericValue
   Belay.Sqlite.Model.digitsValue Belay.Sqlite.Model.hexDigit Belay.Sqlite.Model.fitsInt64

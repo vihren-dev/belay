@@ -178,6 +178,13 @@ import Belay.Sqlite.Model.SelectOneResolution
 import Belay.Sqlite.Model.ExprEvalLaws
 import Belay.Sqlite.Model.ExprResolutionLaws
 import Belay.Sqlite.Model.ExprCalmLaws
+import Belay.Sqlite.Model.SubqueryExprResolutionLaws
+import Belay.Sqlite.Model.SubquerySelectResolution
+import Belay.Sqlite.Model.NoFromQuerySteps
+import Belay.Sqlite.Model.SimpleSubqueryRun
+import Belay.Sqlite.Model.ExistsSubqueryOutput
+import Belay.Sqlite.Model.NotExistsSubqueryOutput
+import Belay.Sqlite.Model.ExistsStatementResolution
 
 /-! SQLite states, the facts of an admitted and of a valid database, the theorems of the statements
 that keep the unique keys, supported execution, the output of each statement and the results that

@@ -58,4 +58,20 @@ theorem Expr.calm_isNull (operand : Expr) (negated : Bool) : (Expr.isNull operan
   simp only [Expr.Calm, Expr.any, Expr.isFallibleCall, Expr.readsClockHere, Expr.readsCounterHere,
     Bool.false_or]
 
+/-- {lit}`EXISTS (q)` is calm. Proof sketch: it is no fallible call, no clock read and no counter call; the
+subquery is a statement of its own, whose expressions the calm statement checks. -/
+theorem Expr.calm_exists (index : Nat) : (Expr.exists index).Calm := by
+  simp [Expr.Calm, Expr.any, Expr.isFallibleCall, Expr.readsClockHere, Expr.readsCounterHere]
+
+/-- A scalar subquery is calm. Proof sketch: as {name}`Expr.calm_exists`. -/
+theorem Expr.calm_subquery (index : Nat) : (Expr.subquery index).Calm := by
+  simp [Expr.Calm, Expr.any, Expr.isFallibleCall, Expr.readsClockHere, Expr.readsCounterHere]
+
+/-- {lit}`x [NOT] IN (q)` is calm exactly when its operand is calm. Proof sketch: as
+{name}`Expr.calm_not`. -/
+theorem Expr.calm_inQuery (operand : Expr) (index : Nat) (affinity : Option Affinity) (collation : Collation)
+    (negated : Bool) : (Expr.inQuery operand index affinity collation negated).Calm ↔ operand.Calm := by
+  simp only [Expr.Calm, Expr.any, Expr.isFallibleCall, Expr.readsClockHere, Expr.readsCounterHere,
+    Bool.false_or]
+
 end Belay.Sqlite.Model.Resolved

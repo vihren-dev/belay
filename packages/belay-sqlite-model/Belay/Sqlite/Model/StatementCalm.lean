@@ -55,19 +55,27 @@ theorem Statement.Calm.query_plain {query : Query} {subqueries : List Query} (ca
   simp only [List.all_eq_true, Bool.not_eq_true']
   exact fun expression member => (calm expression (by simp [Statement.clockExpressions, member])).1
 
+/-- For every calm statement of a query with subqueries, the expressions of each subquery have no
+fallible call. Proof sketch: the expressions of a subquery are among those of the statement
+({name}`Statement.clockExpressions`). -/
+theorem Statement.Calm.subquery_plain {query : Query} {subqueries : List Query}
+    (calm : (Statement.query query subqueries).Calm) {inner : Query} (member : inner ∈ subqueries) :
+    inner.expressions.all (!·.any Expr.isFallibleCall) = true := by
+  simp only [List.all_eq_true, Bool.not_eq_true']
+  intro expression inside
+  have present : expression ∈ (Statement.query query subqueries).clockExpressions := by
+    simp only [Statement.clockExpressions, List.mem_append, List.mem_flatMap]
+    exact .inr ⟨inner, member, inside⟩
+  exact (calm expression present).1
+
 /-- For every calm statement of a query with subqueries, the model's check of the subqueries
 ({name}`subqueriesPlain`) passes for the subqueries that are no term of a compound. Proof sketch:
-the nested subqueries are among the subqueries of the statement, whose expressions are calm. -/
+the nested subqueries are among the subqueries of the statement, whose expressions are calm
+({name}`Statement.Calm.subquery_plain`). -/
 theorem Statement.Calm.subqueries_plain {query : Query} {subqueries : List Query}
     (calm : (Statement.query query subqueries).Calm) : subqueriesPlain (query.nestedSubqueries subqueries) = true := by
-  have each : ∀ inner ∈ subqueries, inner.expressions.all (!·.any Expr.isFallibleCall) = true := by
-    intro inner member
-    simp only [List.all_eq_true, Bool.not_eq_true']
-    intro expression inside
-    have present : expression ∈ (Statement.query query subqueries).clockExpressions := by
-      simp only [Statement.clockExpressions, List.mem_append, List.mem_flatMap]
-      exact .inr ⟨inner, member, inside⟩
-    exact (calm expression present).1
+  have each : ∀ inner ∈ subqueries, inner.expressions.all (!·.any Expr.isFallibleCall) = true :=
+    fun inner member => calm.subquery_plain member
   unfold Query.nestedSubqueries
   split
   · exact List.all_eq_true.mpr each

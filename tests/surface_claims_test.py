@@ -30,3 +30,11 @@ def test_some_row_of_a_table_satisfies_a_condition(runtime_root: Path, tmp_path:
     result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsSelectOne.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
+
+
+def test_no_row_or_some_row_satisfies_a_condition_in_a_subquery(runtime_root: Path, tmp_path: Path) -> None:
+    """`SELECT 1 WHERE [NOT] EXISTS (SELECT 1 FROM t WHERE p)` over every database: a claim proved with the
+    lemmas and `sql_simp`, with an instance on one database where `decide +kernel` checks both sides."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsExists.lean", tmp_path), cwd=tmp_path,
+                         timeout=60)
+    assert result.returncode == 0, result.diagnostic()

@@ -90,4 +90,49 @@ theorem truthy_apply_ordinary (operator : Comparison) (notIs : operator ≠ .is)
       (!left.isNull && !right.isNull && operator.holds (collation.compare left right)) := by
   cases hl : left.isNull <;> cases hr : right.isNull <;> cases operator <;> simp_all [Comparison.apply]
 
+/-- The value of {lit}`EXISTS (q)` on a row is 1 when the subquery gives a row for the row, else 0.
+Proof sketch: the definition computes. -/
+theorem Expr.eval_exists (context : EvalContext) (row : List Value) (index : Nat) :
+    (Expr.exists index).eval context row = truth !(context.subqueries index row).rows.isEmpty := rfl
+
+/-- The fault of {lit}`EXISTS (q)` on a row is the fault of the subquery for the row. Proof
+sketch: the definition computes. -/
+theorem Expr.fault_exists (context : EvalContext) (row : List Value) (index : Nat) :
+    ((Expr.exists index).evaluate context row).2 = (context.subqueries index row).fault := rfl
+
+/-- The value of a scalar subquery on a row is the first value of its first row for the row, or NULL when
+it has none. Proof sketch: the definition computes. -/
+theorem Expr.eval_subquery (context : EvalContext) (row : List Value) (index : Nat) :
+    (Expr.subquery index).eval context row =
+      ((context.subqueries index row).rows.head?.bind List.head?).getD .null := rfl
+
+/-- The fault of a scalar subquery on a row is the fault of the subquery for the row when the first
+value of its first row is certain, else {lean}`Fault.may`. Proof sketch: the definition computes. -/
+theorem Expr.fault_subquery (context : EvalContext) (row : List Value) (index : Nat) :
+    ((Expr.subquery index).evaluate context row).2 =
+      if (context.subqueries index row).firstCertain then (context.subqueries index row).fault else .may := rfl
+
+/-- The value of {lit}`x [NOT] IN (q)` on a row is the value of the membership test
+({name}`inValue`) of the operand among the first values of the rows of the subquery for the row. Proof sketch: the
+definition computes. -/
+theorem Expr.eval_inQuery (context : EvalContext) (row : List Value) (operand : Expr) (index : Nat)
+    (affinity : Option Affinity) (collation : Collation) (negated : Bool) :
+    (Expr.inQuery operand index affinity collation negated).eval context row =
+      inValue affinity collation negated (operand.eval context row)
+        ((context.subqueries index row).rows.filterMap List.head?) := rfl
+
+/-- The fault of {lit}`x [NOT] IN (q)` on a row is the fault of the operand joined with that of the
+subquery for the row when its rows are certain, else {lean}`Fault.may`. Proof sketch: the definition
+computes. -/
+theorem Expr.fault_inQuery (context : EvalContext) (row : List Value) (operand : Expr) (index : Nat)
+    (affinity : Option Affinity) (collation : Collation) (negated : Bool) :
+    ((Expr.inQuery operand index affinity collation negated).evaluate context row).2 =
+      (operand.evaluate context row).2.join
+        (if (context.subqueries index row).rowsCertain then (context.subqueries index row).fault else .may) := rfl
+
+/-- The fault of {lit}`NOT x` on a row is the fault of the operand. Proof sketch: the definition
+computes. -/
+theorem Expr.fault_not (context : EvalContext) (row : List Value) (operand : Expr) :
+    ((Expr.not operand).evaluate context row).2 = (operand.evaluate context row).2 := rfl
+
 end Belay.Sqlite.Model.Resolved
