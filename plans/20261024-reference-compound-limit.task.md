@@ -63,7 +63,6 @@ it with no roots changes selection to the complete database. Preserve current
 selection instead. Keep the workaround and regression small, with modules
 under 200 lines; no documentation framework or general batching API is needed.
 
-Owner-provided failure log:
-`/tmp/claude-1002/-home-codex-work/d1ea2d7a-f8fd-5711-bcbd-3df7ce79848d/scratchpad/ci242.log`.
-The failure is `read:transitive_imports: too many terms in compound SELECT`.
+The status records PR #242's failing CI run and exact exception.
+The owner-provided log establishes the observed failure, not a new scope promise.
 SQLite documents the limit at <https://www.sqlite.org/limits.html#max_compound_select>.
