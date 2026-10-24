@@ -27,3 +27,32 @@ native trigger counterexamples remain required negative fixtures.
   This task now explicitly supplies ifOk/andOk over those policies. No
   implementation or Nix acceptance is claimed.
 - Follow-up review 20261024T152713Z-33693f10 has no musts or shoulds.
+
+## Readiness audit against production execution contracts
+
+The 2026-10-24 audit of accepted `52cd08bf` found no new owner decision.
+Refresh the task immediately before assignment to reuse the completed
+`FreshTriple` bridges, `Sql.andOk`/`Sql.ifOk`, transformer laws and standard
+specification rules. Fresh composition conveniences and assertion syntax remain
+new work; do not duplicate the existing execution implementation.
+
+Fresh entry uses `ExecutionContext.initial db env`, including the supplied
+complete environment's counters. It does not force zero counters. The context
+stores a raw connection. Default query assertions can use the existing raw
+query observation and prove agreement with `Holds` under supplied validity;
+`Branch.valid` provides reached validity for fresh runs. No new runtime validity
+test or context field is needed. Context observations use the actual clock,
+next-statement index and connection, and discard the observed step's resulting
+connection. Equality bridges must account for pragma settings as well as clocks
+and counters.
+
+The task's reference to an existing explanation path is stale. The private
+guide already promises `#explain`; S4 explicitly deferred it to S6 and the
+editor task assigns it here. Providing that command is authorized work, with
+later patterns and simulation extending it. This does not require another owner
+choice. The before-context prerequisite remains unimplemented; full two-state
+assertion acceptance still depends on it. Assign reusable effect/frame laws
+once during the universal examples, then let the automation task consume them.
+
+No assertion implementation or acceptance is claimed. Task-source edits remain
+deferred until assignment, as requested by the owner.
