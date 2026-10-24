@@ -54,11 +54,15 @@ The owner accepted both S6 recommendations on 2026-10-24: `≈` compares full
 connection state and every branch outcome, with weaker visible comparisons
 named separately. Universal insert/lookup and purge-frame guide claims gain
 explicit schema/trigger/FK effect premises and retain the native counterexamples.
-ADR17 records the exact strong relation. One later decision is pending:
+ADR17 records the exact strong relation. Two later decisions are pending:
 `quiet` cannot erase ordinary execution traces while ordinary `≈` retains them.
 The recommended correction uses explicit observation views for migration
 patterns and corrects the guide's displays. Dependent pattern work is paused;
-the complete-execution primitives and other tasks continue.
+the complete-execution primitives and other tasks continue. S8's whole-program
+lifting also needs full contextual commutation for every paired call, including
+queries: moving a query across a clock-sensitive migration changes its index.
+Weak query-output translation remains useful but cannot alone prove that rule.
+The recommendation adds the contextual premise and retains the weaker relation.
 
 ## Resolved findings
 
@@ -162,7 +166,8 @@ completed schema/observation workspaces await publication before removal.
   review `20261024T142117Z-79fd6a8b` and waits for its final view/CTE design.
 - [S6 prototype](20261024-surface-s6-foundations.task.md) is implemented and
   validating. [Execution contracts](20261024-s6-execution-contracts.task.md)
-  specify the independent production primitives; review is pending. Public
+  specify the independent production primitives; follow-up review
+  `20261024T144839Z-5684010b` is clean. Public
   assertions, patterns and automation still need their production task.
   [Initial/current query context](20261024-s6-before-context.task.md) has clean
   review `20261024T143052Z-5feffb18` and waits for query-source/view integration.
@@ -176,6 +181,8 @@ completed schema/observation workspaces await publication before removal.
   need its measured collector contract. This facet is required, not deferred.
 - [Guide rebuild wording](20261024-guide-sql-rebuilds.task.md) has clean review
   `20261024T142048Z-e614f5b6` and is assigned to S4's guide owner.
+- [Integrated guide acceptance](20261024-adr17-guide-acceptance.task.md) is
+  specified and awaiting review; it consumes every required implementation.
 
 Read-only S7/editor audits remain in the research-notes directory of the Lean
 model modularity investigation. Shared surface helper ownership must be reserved
