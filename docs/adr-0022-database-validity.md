@@ -156,6 +156,19 @@ failed. Amended 2026-10-23: the pragma forms of ADR 0019, slice 2 are now in thi
 the statement theorem of `RowLocalStatement` has a case for each constructor of `Resolved.Statement`
 and covers them.
 
+Record of slice 4, part 1 (2026-10-24, `plans/20261023-admitted-atoms-theorems.task.md`):
+`Catalog.Valid` now states three more facts about a table. Each CHECK reads only columns of its
+table. A rowid alias is a column that is not generated and has INTEGER affinity, is the whole primary
+key, and is in a table that is not `WITHOUT ROWID`. A key may name a column twice, as SQLite allows
+(`PRIMARY KEY(a, a)`); the model does not restrict it, and the facts of slice 2 hold for such keys. So
+the CHECK condition of slice 3 is a fact of every admitted database, and it is no longer a gap.
+The resolver keeps `Catalog.Valid` for CREATE TABLE, CREATE INDEX, CREATE TRIGGER, ADD COLUMN and
+DROP (`resolveStatement_valid`, `resolve_valid`, with the catalog that BEGIN saves for ROLLBACK). The
+resolved DROP meets `Catalog.DropClosed`, from which `Catalog.DropCondition` follows. An admitted
+database meets `Database.AddColumnCondition`, `Database.RowsWideAt` and `Database.ChecksReadBelowAt`,
+and the resolved ADD COLUMN meets `strictDefaultFits`. A CREATE INDEX with no key terms is a prepare
+error that SQL text cannot reach. The statement theorems and the run theorems are parts 2 and 3.
+
 For the constraint atoms, INSERT, UPDATE and upsert are the easier case: each table that they
 store passed the checks, after the whole write or after each row, and a proof follows those
 steps, also for the rows that a FAIL failure keeps. DELETE removes rows, and each constraint
