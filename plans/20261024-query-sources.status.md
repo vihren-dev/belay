@@ -1,6 +1,6 @@
 # Status: queries as sources
 
-Created 2026-10-24. Status: OPEN. Part 1 implementation is in progress.
+Created 2026-10-24. Status: OPEN. Part 1 DONE; CTEs and views remain.
 Task: [task file](20261024-query-sources.task.md).
 Specs: ADR 0019 D5/slice 4 and D3 metadata exception; ADR 0017 S6.
 Inspected base: `vihren-dev/sqlite-verifier`, PR #239, commit `98a07bfe`.
@@ -11,17 +11,11 @@ On 2026-10-24 the owner selected: "Support nonrecursive CTEs only; reject actual
 recursion and retain the exclusion of the RECURSIVE keyword." The ADR and task
 record this scope. There is no outstanding CTE-scope decision.
 
-The prerequisite audit used pinned SQLite 3.51.0 from Nix and observed recursion
-without the keyword, ordinary forward CTE references, permitted enclosing-query
-references versus rejected sibling references, and CREATE VIEW before a referenced
-table exists. These informed the specification, not an implementation acceptance.
-Native source and implementation paths are recorded in the task.
+The prerequisite audit used pinned SQLite 3.51.0. Its observations informed the
+specification; acceptance uses the native and kernel checks below.
 
-The audit found derived-source spellings in 25 corpus-v4 and 180 corpus-v5
-records, including 0 and 49 current mustAgree records respectively. These are
-lexical counts over setup/schema/migration SQL, not evidence of execution or
-measured gains. Views also appear in existing corpora. Implementation must use
-actual verdict results and inspect each changed prediction.
+The audit's lexical counts do not establish conformance gains. Final acceptance
+uses the measured before/after predictions and verdicts recorded below.
 
 ## Progress
 
@@ -34,8 +28,7 @@ actual verdict results and inspect each changed prediction.
   syntax, resolution, evaluation, codecs, text translation and required query
   proof adjustments. S4 owns success/program law modules and its registration
   entries. Carry review and the frozen prediction baseline precede model edits.
-  The INSERT SELECT streaming question belongs to slice 5 and is not permission
-  to change execution semantics outside this slice-4 task.
+  INSERT SELECT staging belongs to slice 5.
 - 2026-10-24: carry commit `8a89208f` passed independent Claude review
   `20261024T130558Z-8a89208f`, with no findings. Before any model edit, the Nix
   prediction baseline was built at
@@ -43,8 +36,6 @@ actual verdict results and inspect each changed prediction.
   Its Nix verdict is
   `/nix/store/srv5lc3gnn1s9wzfjy1ilrzsb2ws0881-sqlite-verifier-verdict`:
   all existing claims pass; corpus v4 has 673 AGREE cases and corpus v5 has 2,946.
-  The workspace retains links `build/query-sources-baseline-predictions` and
-  `build/query-sources-baseline-verdict` for final prediction classification.
 - The first implementation unit gives resolved sources an indexed-query payload,
   reuses `EvalContext.subqueries`, and distinguishes complete-row certainty from
   the first-column certainty of IN. Source rows retain the enclosing cells so
@@ -118,7 +109,7 @@ actual verdict results and inspect each changed prediction.
   native replay of the three newly recorded nested-window forms, and passed at
   `/nix/store/z1vg76nq9n7by0lzb8gbmjm3rvl89c6j-sqlite-verifier-test-query-source-ordering-1`.
   This confirms the existing ranking/write guards and the new raw-observation
-  path. Part-1 full/verdict acceptance remains pending.
+  path.
 - Recording-fix review `20261024T150653Z-dda5b767` passed with no findings.
 - The authored source inputs now cover 42 cases through the native recorder,
   translator, resolver and evaluator. Nix `query-source-coverage` passed at
@@ -137,18 +128,13 @@ actual verdict results and inspect each changed prediction.
   Compared with the pre-edit baseline, 76 records change: 32 become predictions
   (29 fully supported, three still unmodeled at execution), and 44 retain a
   restriction with a changed reason. No previously predicted record changes.
-  Final Nix verdicts must establish any claimed gains. Corpus v53 stays private
+  Corpus v53 stays private
   and mutable until the CTE and view parts add their evidence; the implementation
   contains native input definitions and tests, with no frozen outcomes or claims.
 - Test-unit review `20261024T151304Z-4adc09c3` found no must issue and one should
   issue: the `ROOT` docstring named the requirement inventory instead of its
   repository directory. The docstring now states the path's actual meaning.
-  This correction changes no test or model behavior; the preceding Nix checks
-  remain its behavior evidence.
 - Doc correction review `20261024T151400Z-83f0c532` passed with no findings.
-  Subject boundary `83f0c532` contains the derived-source implementation, the
-  acquisition fix and its tests, without any corpus, claim or lock change.
-  Final part-1 full/verdict acceptance is still pending.
 - The separate draft evidence is based on subject/status boundary `8b1b26ef`.
   It contains corpus v53, its writer and registration, 38 new mustAgree cases,
   29 measured additions to the v4/v5 claims, and their lock. The report under
@@ -164,8 +150,7 @@ actual verdict results and inspect each changed prediction.
   `/nix/store/9dzarjyyg9iq1r1n029b04a7rbbw18ja-sqlite-verifier-test-query-source-writer-1`;
   complete validation of the actual v53 shard passed at
   `/nix/store/hxi4kmq91n1vpl13nsjbi9cnkj6qw8yq-sqlite-verifier-test-query-source-corpus-1`.
-  The evidence remains unpublished and mutable for CTE/view additions. Its
-  independent review and final part-1 full/verdict gates follow this commit.
+  The evidence remains unpublished and mutable for CTE/view additions.
 - Evidence review `20261024T152537Z-873a1473` passed with no findings. The first
   full gate reached all source checks and found two stale RIGHT JOIN mutant
   targets after the enclosing-cell preservation change; no evaluator change was needed.
@@ -183,8 +168,7 @@ actual verdict results and inspect each changed prediction.
   unmatched right row or padding with the right source's width.
 - The two affected mutants ran sequentially and were both detected in Nix at
   `/nix/store/k2a4zs0px4yywv760jyjlmzaxj29fs1s-sqlite-verifier-test-query-source-right-mutants-1`.
-  The new focused test is in the existing scheduled mutant suite. This correction
-  changes no evaluator or prediction; the final full/verdict gates will rerun.
+  The existing scheduled suite runs the new focused test; execution is unchanged.
 - Correction review `20261024T153312Z-5291750b` passed with no findings. The
   acceptance descendant combines evidence `dc77491d` with subject `5291750b`;
   only the status log conflicted, and both checked histories are retained.
@@ -197,7 +181,17 @@ actual verdict results and inspect each changed prediction.
   `/nix/store/9sv6jj19n33hr76wjry090k78ah88m17-sqlite-verifier-test-query-source-boundary-harness-1`,
   and both model-output/transport tests at
   `/nix/store/kj1l7gpva3ysjdlzlkvbw1bwnzcx5wgv-sqlite-verifier-test-query-source-boundary-model-1`.
-  This changes test inputs only; the reviewed combined full/verdict gates will rerun.
+  This changes test inputs only.
 - Refusal-fixture review `20261024T154723Z-42812ff3` passed with no findings.
 - Merge review `20261024T154823Z-0c0faa97` had one should finding about the
   status log. The wording now identifies the passing suites and failure in one gate.
+- Part 1 passed acceptance at combined boundary `c8db1a54` after review of
+  merge `0c0faa97`. Post-review `just test-full` passed all 854 Nix-selected tests:
+  `/nix/store/m64rgzasy2aqvp6d421pk5yh0v4654b9-sqlite-verifier-test-reports`.
+  Final `just verdict` passed at
+  `/nix/store/6nazink0rsrzhv7458rs3vgfs63c48dg-sqlite-verifier-verdict`.
+  Its predictions `/nix/store/q4qrigjpa82cg89ggzkvinbnvmgi7pq6-sqlite-verifier-predictions`
+  are byte-identical across all 54 files to the earlier `qjij3iya9bpd9mfl0mmln91wnyqcb80q` artifact.
+  Subject checkpoint `d87fbaa0` excludes frozen corpora, claims and the judge lock.
+  Ordinary CTEs and views remain OPEN; v53 retains its separate owner-merge gate.
+  Publication `test-nix` and `test-scheduled-checks` have not run for this checkpoint.
