@@ -17,7 +17,7 @@ namespace Belay.Sqlite.Model
 /-- For every clock value, counters, parameter list, resolved statement and database: if the database
 satisfies "rowids in range" ({name}`Database.RowidsInRange`), the statement has no rules
 ({name}`Resolved.Statement.WithoutRules`) and the run of the statement is ready
-({lit}`StatementRun.ready`), the effect of {name}`runStatement` satisfies "rowids in range"
+({name}`StatementRun.ready`), the effect of {name}`runStatement` satisfies "rowids in range"
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
 {name}`ExecutionError.constraintFail` have a valid rowid ({name}`validRowid`) in every row, and any other error requires nothing.
 It assumes no other atom. For a statement with rules the second hypothesis is false, so the theorem
@@ -41,7 +41,7 @@ theorem runStatement_rowidsInRange (clock : Int) (counters : Counters) (paramete
 /-- For every clock value, counters, parameter list, resolved statement and database: if the database
 satisfies "rows wide" ({name}`Database.RowsWide`), the statement has no rules
 ({name}`Resolved.Statement.WithoutRules`) and the run of the statement is ready
-({lit}`StatementRun.ready`), the effect of {name}`runStatement` satisfies "rows wide"
+({name}`StatementRun.ready`), the effect of {name}`runStatement` satisfies "rows wide"
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
 {name}`ExecutionError.constraintFail` have a cell for each column in every row, and any other error
 requires nothing. It assumes no other atom. For a statement with rules the second hypothesis is false,

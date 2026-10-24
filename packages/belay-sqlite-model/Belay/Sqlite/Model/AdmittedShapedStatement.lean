@@ -17,7 +17,7 @@ satisfies "rows shaped" ({name}`Database.RowsShaped`), the effect of {name}`runS
 ({name}`Effect.Satisfies`): the database of a success and that of an error with
 {name}`ExecutionError.constraintFail` have one row list for each catalog object and no rows at a
 position without a table, and any other error requires nothing. The theorem has no condition on the
-connection, on the support check ({lit}`StatementRun.ready`) or on other atoms, and it covers every
+connection, on the support check ({name}`StatementRun.ready`) or on other atoms, and it covers every
 form of {name}`Resolved.Statement`. Proof sketch: a case for each form; CREATE appends an object and an
 empty row list ({name}`Database.RowsShaped.append`), ADD COLUMN and DROP are
 {name}`Database.RowsShaped.addColumn` and {name}`Database.RowsShaped.drop`, a write without rules
