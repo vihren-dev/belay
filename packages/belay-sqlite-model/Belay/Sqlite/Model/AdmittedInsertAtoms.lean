@@ -10,8 +10,8 @@ the database, the effect of {lit}`runStatement` keeps it, on success and on an e
 {lit}`ExecutionError.constraintFail`. "Rowids distinct" needs nothing more, because the write checks the
 rowids. The other four atoms assume that the run is ready ({lit}`StatementRun.ready`): the data check
 of the INSERT ({lit}`LiteralData.insertReady`) then gives the width, the stored form and the range of
-the new rows. A statement that is not ready can break these atoms. "Rows aliased" also needs a valid catalog, which says that
-the column of a rowid alias is not generated. -/
+the new rows. A statement that is not ready can break "rowids in range", "rows wide" and "rows stored". "Rows aliased" also needs a valid catalog, which says that
+the column of a rowid alias is not generated. {lit}`AdmittedAtomsCounterExamples` has an INSERT that breaks each of these atoms. -/
 
 namespace Belay.Sqlite.Model
 

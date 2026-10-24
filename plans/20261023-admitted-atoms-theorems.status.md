@@ -313,7 +313,8 @@ proof relies on it (finding 15).
     task file still requires no new case.
 16. **Part 2: `keyReady` does not bound the table of a nested write that stops with FAIL**
     (found 2026-10-24 while the proof of "rows in range" through the row engine was planned; the
-    kernel example is a task of part 2). `keyReady` bounds the rowids of the target and of
+    kernel example is `AdmittedAtomsNestedExamples`: the run is ready, the effect is `constraintFail`,
+    and the database that it keeps has the rowid 2^70). `keyReady` bounds the rowids of the target and of
     `state.acted`. The engine adds a table to `acted` only after its nested write returns
     (`KeyState.afterStep` in `runStep`, and `acted <$>` in `runAction`). Take an AFTER INSERT program
     whose step is an UPDATE of a table `u` with an alias, and a program on the UPDATE of `u` whose step is
@@ -500,3 +501,12 @@ proof relies on it (finding 15).
   as a hypothesis: the statements with foreign key rules or trigger programs are not covered (finding
   16). Examples: `AdmittedAtomsTheoremExamples`. Tests: `tests/test_model_package.py`,
   `tests/valid_atoms_theorems_test.py`, `tests/admitted_atoms_resolver_facts_test.py`.
+- 2026-10-24: part 2, the review of "Statement theorems of the Admitted atoms" had one must (R2: the
+  docstrings of the statement theorems referred to `StatementRun.ready` with `{lit}`), fixed in a refactor
+  commit with no findings. Commit "Counterexamples of the statement theorems": `AdmittedAtomsCounterExamples`
+  (an INSERT that breaks "rowids in range" with the rowid 2^63 and a run that is not ready, "rows stored"
+  with a text cell for an INTEGER column and with a TEXT rowid alias, "rows wide" with a row of no
+  cell, and "rows aliased" with a generated rowid alias, whose catalog `Catalog.Valid` refuses) and
+  `AdmittedAtomsNestedExamples` (finding 16 as a kernel example). Tests:
+  `tests/test_model_package.py`, `tests/valid_atoms_theorems_test.py`,
+  `tests/admitted_atoms_resolver_facts_test.py`, and the new `tests/admitted_atoms_statement_theorems_test.py`.
