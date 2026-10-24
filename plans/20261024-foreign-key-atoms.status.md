@@ -1,8 +1,9 @@
 # Status: foreign-key facts and preservation
 
 Created 2026-10-24. Status: OPEN. Part 1 (split API and accepted mapped-NULL/action
-corrections) is accepted. Part 2's new-row, update, action and trigger invariants,
-DDL/mapping conditions, combined laws and separate corpus-v54 evidence remain open.
+corrections) is accepted. Part 2's row/action/trigger invariants and independent
+DML statement/run unit are checked. Enforced DROP, ADD COLUMN, complete DDL/run
+conditions, the final matrix/acceptance and separate corpus-v54 evidence remain open.
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
 Inspected base: PR #239, `98a07bfe`, in `vihren-dev/sqlite-verifier`.
@@ -625,3 +626,57 @@ statement/run and enforcement-off frame probes continue separately. The later
 statement matrix will distinguish successful enforced UPSERT DO NOTHING from the
 current undescribed DO UPDATE path; the wrapper theorem does not promise a
 successful result in that excluded branch.
+
+
+## CREATE and plain DROP preservation
+
+This proof-only unit adds ForeignKeyCreateFrame, ForeignKeyCreateSelection,
+ForeignKeyCreate, ForeignKeyDropSchema and ForeignKeyDdlDrop, each below 200 lines.
+CREATE keeps supplied old row comparisons when mappings agree; compatible input
+schemas prove that existing parent selections remain stable under append. New
+foreign-key declarations need their own located selected parent for the schema
+atom, even when the new table has no rows. The separate row-only law remains usable
+for a successful empty forward-reference table.
+
+Plain DROP has independent supplied-row and schema-selection transport laws plus
+a selected-mapping convenience theorem. Both parent and child positions may move.
+The existing row-drop frame now asks its mapping and parent-retention premises only
+for surviving child tables. Thus removing a child together with its parent has no
+surviving declaration obligation. CatalogValidDrop's existing first-match proof is
+strengthened to expose the exact transported lookup as Catalog.findTable_drop_kept;
+its sole old consumer now uses that result. The replaced weaker name is removed.
+The schema frame reuses this exact lookup and the existing parent-key selector;
+it does not implement a new selection algorithm.
+
+Two new surface fixtures apply the public laws to all three CREATE forms, a failing
+unique-index creation, forward references, a DROP that moves both table identities,
+a removed parent/child family, and successful supporting-index loss that preserves
+supplied row truth while breaking schema compatibility. The existing DROP fixture
+is adapted to the weaker premise. All new exported theorems, the strengthened
+lookup theorem and the changed row frame have axiom reports. The Nix suite enforces
+238 reports across 13 fixtures (the prior 203 plus 19 CREATE and 16 DROP reports),
+allowing only propext, Classical.choice and Quot.sound.
+
+The sequential gate completed on 2026-10-24 with exit 0 (owned process 19966).
+Command: `direnv exec . bash build/agent-logs/fk-ddl-create-drop-gates.sh`.
+It ran `timeout 1200 just dev-build`, then the sandboxed Nix surface expression
+with `PYTEST_ADDOPTS="-k independent_foreign_key_atoms"`, timeout 1800 and
+command-local max-jobs=1. The development build passed as a local diagnostic.
+Nix acceptance: 13 passed, 52 deselected, in 15.65 seconds:
+`/nix/store/gxxxsp08l7ncq2hmd1fs9r33ylingvb2-sqlite-verifier-test-surface-1`.
+Logs: `build/agent-logs/fk-ddl-create-drop-{dev-build,nix-surface}-1.log`.
+Slot 2 returned to the coordinator after terminal completion. Independent review
+follows this commit; no task-end acceptance is claimed.
+
+The separately accepted statement/run source remains at a8bf73ae in
+fk-statement-preservation. This workspace starts from the accepted engine unit;
+those branches will be merged at the next clean boundary. Source-only probes in
+fk-enforced-ddl continue the implicit DELETE of enforced DROP and ADD COLUMN.
+The current plain-DROP theorem does not claim to cover that implicit DELETE.
+An ADD COLUMN audit also found a separate native/model discrepancy for a nonempty
+table, enforcement on and a new REFERENCES column with non-NULL DEFAULT 99. Pinned
+SQLite 3.51.0 rejects it; the current model succeeds and reports the resulting
+orphan. The exact diagnostic is in fk-enforced-ddl/build/agent-logs/
+add-reference-native.json and add-reference-model.log. It is not acceptance evidence
+for this unit. The coordinator is handling the required execution-scope decision;
+no ADD execution definition changed here.
