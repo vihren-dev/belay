@@ -76,7 +76,7 @@ def test_create_index_success_checks_schema_resolution_and_rows(runtime_root: Pa
 def test_numeric_sum_bound_includes_real_and_null_cells(runtime_root: Path, tmp_path: Path) -> None:
     """SumBoundLaws supplies the free-input ledger bound for mixed numeric/NULL inputs,
     including REAL cells, SQL range checks and exact type metadata; source bridges permit sibling
-    subqueries. Kernel checks retain the first-prefix
+    subqueries with explicit callbacks and nondefault prefixes. Kernel checks retain the first-prefix
     overflow boundary and exclude TEXT/BLOB values from the numeric range."""
     result = run_command(surface_command(runtime_root, FIXTURES / "SuccessSumBound.lean", tmp_path),
                          cwd=tmp_path, timeout=60)

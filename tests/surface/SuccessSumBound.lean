@@ -78,3 +78,23 @@ example : ({name := name! "cents", declaredType := some "INTEGER"} : CatalogColu
 -- The named-source bridges also cover callbacks used by preceding sibling subqueries.
 #print axioms resolveSources_table
 #print axioms resolveSources_tableInfo
+
+-- Named sources below a sibling query accept its callback and diagnostic prefix.
+example (catalog : Catalog) (position : Nat) (table : CatalogTable)
+    (found : catalog.findTable (name! "ledger") = some (position, table))
+    (queries : Nat → Except SourceIssue ScopeSource) :
+    resolveSources catalog (some {table := name! "ledger", alias := none}) [] 0 queries [8, 0] =
+      .ok ([{item := .table position, kind := .inner, condition := .none}],
+        tableScope catalog {table := name! "ledger", alias := none} position table) :=
+  resolveSources_table catalog _ position table rfl rfl found queries [8, 0]
+
+-- A sibling's pragma source likewise preserves exact rows under a nondefault prefix.
+example (catalog : Catalog) (rows : List (List Value))
+    (notTable : catalog.findTable (name! "pragma_table_info") = none)
+    (info : catalog.tableInfoRows (name! "ledger") = some rows)
+    (queries : Nat → Except SourceIssue ScopeSource) :
+    let reference : Syntax.TableReference := {table := name! "pragma_table_info", alias := none, arguments := some [.string (bytes! "ledger")]}
+    resolveSources catalog (some reference) [] 0 queries [8, 2] =
+      .ok ([{item := .pragma (pragmaSource reference (bytes! "ledger") tableInfoNames rows).1, kind := .inner, condition := .none}],
+        tableInfoScope reference (bytes! "ledger") rows) := by
+  exact resolveSources_tableInfo catalog _ (bytes! "ledger") rows rfl rfl (by decide) notTable info queries [8, 2]
