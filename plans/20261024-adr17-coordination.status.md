@@ -96,11 +96,13 @@ remove the prior planning blocks; they are not implementation-completion claims.
   reviewer login refresh. Integration `3a632d10` combines unchanged search
   source with complete S6 contracts and native artifacts. Its 18 focused Nix
   checks pass at `wvqkfh98cjbga852p7jgm0axwr1rf0gw`.
-  `s4_part1` now owns the mechanical merge with stored-view source `694d0790`
-  in `s5-view-integration`. The incremental shared sampler and formatter must
-  retain the accepted empty-storage and replay-refusal cases for views.
-  Search, execution and view checks plus unchanged predictions are required;
-  this assignment adds no frontend feature scope before independent review.
+  The mechanical merge with stored-view source `694d0790` is frozen at
+  `6228f90a` in `s5-view-integration`. Its incremental shared sampler and
+  formatter retain empty storage and explicit replay refusal for views.
+  All 26 focused Nix checks pass at `lscw12hldqbsah8n7i9bl71c6f5ilywd`;
+  all 53 prediction files and 7,372 cases retain the exact accepted view output
+  `lnz7y254m8cvgkz2fv9zw4cqcq3898i5`. Independent review remains pending;
+  no frontend feature scope advanced in this integration.
   Commands, searched tactics, automatic defaults and editor actions remain open.
   The read-only frontend audit identified saved environments for anonymous
   examples and preservation of the native cancellation context as requirements
