@@ -76,7 +76,19 @@ whole database. Its database form says the fact for every table.
 | checks hold | no CHECK constraint is false for a row | Valid |
 | types fit | each cell of a `STRICT` table fits its column's type | Valid |
 | keys unique | no two rows conflict on a unique key of the catalog: PRIMARY KEY, UNIQUE, unique indexes with their filters, terms and collations | Valid |
-| foreign keys hold | each child row matches a parent row or has a NULL in its key | neither |
+| parent schema compatible | every declared foreign key has the supplied parent mapping selected and supported by the current catalog | neither |
+| row references hold | for a supplied mapping of every declared foreign key, each child row has a NULL key cell or a matching parent row | neither |
+
+Amended 2026-10-24 by owner decision: slice 5 replaces the single
+`ForeignKeysHold` API with these two atoms. This split is planned, not implemented
+by this amendment. The row atom takes an explicit mapping, including the original
+child columns tested for NULL and the resolved parent comparison. It does not
+require the supporting unique index to exist. A convenience operation selects
+the mappings as the current engine does; its row check agrees with the engine.
+The schema atom requires that the current catalog selects and supports exactly
+those mappings for every declaration, even for an empty child table.
+Mapping transport preserves table identity when catalog positions change.
+See [the slice-5 task](../plans/20261024-foreign-key-atoms.task.md).
 
 Each atom has two forms: a proposition that a proof reads easily, and a check that computes,
 with a lemma that the two are equivalent. The atom is decidable through its check, so `decide`
@@ -105,14 +117,21 @@ theorem can require a condition on the connection, for example that foreign keys
 statement that can break an atom, such as `PRAGMA ignore_check_constraints` if the model
 describes it, has no theorem for that atom; the theorems of the other atoms still apply to it.
 A frame lemma says that a statement keeps an atom of a table when it changes nothing that the atom
-reads: the table's rows and catalog entry, and also its indexes for "keys unique" and the parent
-tables for "foreign keys hold". A DELETE of a parent row with foreign keys off changes no row of
-the child table, but breaks the child's "foreign keys hold".
+reads: the table's rows and catalog entry, and also its indexes for "keys unique".
+The foreign-key schema atom reads parent definitions and eligible indexes. The row
+atom reads the child rows, parent rows, parent-column definitions and supplied
+mapping. A DELETE of a parent row with foreign keys off can break the row atom
+without changing the child rows or the schema atom.
 
 The theorems are about the model's statement step (`runStatement`) and its runs (`runSql`). A
 failed statement keeps the database that the model gives for it. The model refuses
-`DEFERRABLE INITIALLY DEFERRED` keys today, so the foreign key atom holds after each statement
-while foreign keys are on; deferred keys change the theorem when the model describes them.
+`DEFERRABLE INITIALLY DEFERRED` keys today. This does not imply unconditional
+foreign-key preservation: native SQLite permits DROP INDEX to remove a parent's
+supporting unique key while enforcement is on. Slice 5 gives separate, conditional
+statement and run theorems for the two atoms. The conditions identify the mapping,
+schema and connection facts that each statement needs; enforcement alone is not
+a condition sufficient for all statements. Deferred keys require further laws
+when the model describes them.
 
 A proof that fails is a finding: an error of the model, or a path through which SQLite breaks
 the fact. It is reported to the owner, and no proof assumes it away.
@@ -125,7 +144,7 @@ the fact. It is reported to the owner, and no proof assumes it away.
 | 2 | the theorem of "keys unique" | ADR 0017 S4: a lookup by key gives at most one row |
 | 3 | the theorems of the other Valid atoms | ADR 0017 S4: a run of the bundled database over every database (D5, amended) |
 | 4 | the theorems of the Admitted atoms | ADR 0017 S4, as slice 3 |
-| 5 | the theorem of "foreign keys hold" | ADR 0017 S6: the rebuild that cascades |
+| 5 | the two foreign-key atoms, their checks, correspondence and conditional preservation laws | ADR 0017 S6: the rebuild that cascades |
 
 Record of slice 2 (2026-10-23, `plans/20261023-keys-unique.task.md`): the statement theorem
 `runStatement_keysUnique` holds for every statement form, foreign keys and triggers included,
