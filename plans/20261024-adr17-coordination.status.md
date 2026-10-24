@@ -82,31 +82,25 @@ remove the prior planning blocks; they are not implementation-completion claims.
   runtime with only standard logical axioms. Final review has no findings.
 - `s4_part1` implements S5 in isolated `s5-counterexamples` on published
   `0569149b`, with reviewed handoff `e50e1f9e`. Plausible compatibility passed
-  in Nix. Slot 1 checks explicit kernel-certified witnesses and the surface-only
-  dependency integration; schema generation and background checking remain open.
+  in Nix. Explicit certification `3681ede5` passed 11 Nix checks. Slot 2 runs
+  its named-policy follow-up (`63169`); sampler work is separate and untested.
 - `s6_prerequisite_audit` completed derived-source part 1, published in #243.
   Separate evidence head `5d69e3fa` retains draft v53's 38 agreements and
   four restrictions. Combined acceptance is recorded in its task status.
-  S4 carry `b52fdec6` passed focused Nix `9zkv499mbvg2cwcs5jnn351rv253zfsd`.
-  CTE `80b4cb5e` passed Nix model 32/surface 17/restrictions 60 and two mutants.
-  Combined `f27a3fea` passed 19 focused fixtures/review. Its first full gate
-  timed out during the surface suite after 251 model tests passed; no test
-  failure was reported. Same-source cached retry `44795` owns slot 2.
+  CTE part 2 is DONE in PR #248, head `e3d6aa38`, above #247. Full 923,
+  final focused 36 and verdict 4,869/2,503 passed. All prior predictions are
+  unchanged; two become agreeing and 69 retain unsupported with changed reasons.
+  All changes are classified; publication reviews are resolved. Views remain
+  OPEN. Slot 1 runs the origin-metadata foundation (exact timeout PID 3742174).
 - The S6 foundation prototype is DONE in PR #246 at `334d9645`, above #245.
   Original full 813/Nix 67/scheduled 47 and verdict passed. The final focused
   integration checks all five modules and 28 audits against S4; review is clean.
   No production S6 API is implemented by this prototype.
-- The FK workspace is `sqlite-verifier-fk-atoms`. Revised selected action scope
-  is carried in `1a10a3c8`, follow-up `01a02bef` reviewed clean. Split-API and
-  action implementation `89267008` passed 35 Nix native cases and four mutants.
-  Complete review coverage found documentation corrections; the first full gate
-  found a duplicate catalog lemma. Reviewed `3df8e641` reuses the existing law;
-  acceptance `02a6498c` passed full 826/verdict with all 53 predictions unchanged.
+- `text_build_boundaries` owns FK preservation. Split-API/action part 1 passed
+  full 826, 35 native cases, four mutants and the unchanged frozen predictions.
   FK owns atom/check/frame exports, ForeignKeyPlan, TriggerClosure and ParentKeys.
-  S4 supplied exact pragma laws. Baseline predictions: `4k77z378vnagzwx5448yqz0686d58cld`.
-  Part 2 uses `sqlite-verifier-fk-preservation`: reviewed source `54c9c112`,
-  completion record `0ebfb4e5`, five Nix fixtures and 61 axiom audits pass at
-  `kd5kljc36w937bizkhpdvjqnky08bzsh`. New-row/action/trigger proofs continue.
+  S4 supplied exact pragma laws. Current workspaces are `fk-statement-preservation`
+  and `fk-ddl-preservation`; DDL follows the accepted engine induction.
   No shared ancestor may be rebased while descendants are active.
   Corpus v53 is reserved for query-sources, v54 for FK; each uses a separate
   judge/evidence workspace and protected PR after measured model comparisons.
@@ -117,8 +111,9 @@ and balance; all pass installed runtime `b6n8f8xys0ax45ldilp9rqw2030q8pwa` with 
 Final acceptance must selectively reconcile unpublished S2/S3 product-default changes.
 
 FK engine checkpoint `b1a163df` passed 11 Nix fixtures/203 axiom audits at
-`grsxi5rjsqz0w3311nf5xv3l2yiilv6m`; review is clean. The statement/run unit is
-queued for a heavy slot, and DDL proof work continues separately.
+`grsxi5rjsqz0w3311nf5xv3l2yiilv6m`; review is clean. Statement/run `ea40e905`
+passed 14 Nix fixtures/236 audits at `04dmvlj39cmypsa26ia21rhnskqxsjp1`;
+its independent review is running. DDL proof work continues separately.
 The prerequisite through `9350aa31` is published in PR #247 at `b1130903`,
 above #246. Final integration passed 19 focused Nix cases, the frozen verdict
 4,867/2,505, and all 53 predictions match published S4 output `ifmznfzp`.
@@ -133,6 +128,7 @@ The reader passed 12 Nix cases, including 532/640 roots. Complete references
 passed for #242's 532 modules and #243's 538 modules (`iz8kjnq67dn05smyh3liv85rf2wwdzn5`).
 #242 CI and Verdict are green. Published #243 `2cb4c5e3` passed 853/70/47 locally;
 its CI `40120692159` and Verdict `40120692161` are also green.
+#244 and #246 CI/Verdict are green. #245 Verdict is green; CI remains running.
 Both repair workspaces are removed; their logs/report XML are archived under S4 build/.
 S7 prototype PR #245 `0569149b` is DONE: full 872/Nix 70/scheduled 47; accepted scope reviewed.
 The owner accepted physical-table premises for BOTH unique-email and balance.
@@ -169,6 +165,9 @@ following remote reachability/process checks, as was s4-query-publication after
 workspaces were removed after #243; gate logs are retained under S4 build/.
 Completed s4-run/table-premises, s7-proof-cost and both S6 prototype workspaces
 were archived and removed after their pushes. Protected s4chk remains.
+Published fk-preservation/update-preservation/update-coverage were archived and
+removed after remapping diagnostic artifacts. The original fk-atoms workspace
+is retained until its five late copied documentation commits are reconciled.
 
 ## Specified work and remaining scope
 
