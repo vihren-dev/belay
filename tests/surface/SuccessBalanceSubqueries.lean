@@ -47,7 +47,8 @@ theorem one_run (context : Resolved.EvalContext) (database : Model.Database)
     simpa [query, Resolved.Query.simple, Resolved.filtered, Resolved.Expr.eval_literal] using results
 
 /-- For every context and table found at the given position, the range query has no fault
-and returns one row for each cell that fails the SQL range condition. -/
+and returns one row for each cell that fails the SQL range condition.
+Proof sketch: Instantiate the SELECT 1 execution law with the table source and range predicate. -/
 theorem range_run (context : Resolved.EvalContext) (database : Model.Database)
     (position index : Nat) (table : Table) (cell : CatalogColumn)
     (found : database.table position = some table) :
@@ -63,7 +64,8 @@ theorem range_run (context : Resolved.EvalContext) (database : Model.Database)
     simp [rangeResolved, Resolved.Expr.evaluate, Resolved.Fault.join, Resolved.Fault.soften]
 
 /-- For every context, database and metadata rows, a condition without fallible calls
-that has no fault on any row gives a fault-free query with one result per matching metadata row. -/
+that has no fault on any row gives a fault-free query with one result per matching metadata row.
+Proof sketch: Instantiate the SELECT 1 execution law with fixed pragma rows and the given condition. -/
 theorem metadata_run (context : Resolved.EvalContext) (database : Model.Database)
     (rows : List (List Value)) (condition : Resolved.Expr)
     (plain : condition.any Resolved.Expr.isFallibleCall = false)
@@ -80,7 +82,8 @@ theorem metadata_run (context : Resolved.EvalContext) (database : Model.Database
   · exact quiet
 
 /-- For every context and table found at the given position, COUNT returns its source-row
-length as a certain singleton result. Apply the COUNT law with the identity filter. -/
+length as a certain singleton result. Apply the COUNT law with the identity filter.
+Proof sketch: Apply the COUNT execution law and remove its always-true row filter. -/
 theorem count_run (context : Resolved.EvalContext) (database : Model.Database)
     (position : Nat) (table : Table) (found : database.table position = some table) :
     (Resolved.Query.countOf [Resolved.QuerySource.first position] none "count(*)").subqueryRun context database [] =

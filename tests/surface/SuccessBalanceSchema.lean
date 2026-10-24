@@ -11,7 +11,8 @@ open Belay.Sqlite.Model hiding Database
 namespace BalanceExample
 
 /-- For every context, row and byte list, the name predicate is true exactly when field 1
-is that text value. -/
+is that text value.
+Proof sketch: Reduce BINARY text equality on the metadata name cell. -/
 theorem name_eval (context : Resolved.EvalContext) (row : List Value) (bytes : List UInt8) :
     Resolved.truthy ((nameResolved bytes).eval context row) = true ↔ row[1]?.getD .null = .text bytes := by
   simp [sql_simp, nameResolved, Resolved.comparisonOperands, Value.isNull, Comparison.holds]
@@ -19,7 +20,8 @@ theorem name_eval (context : Resolved.EvalContext) (row : List Value) (bytes : L
   rw [named]
 
 /-- For every context and row, the typed predicate is true exactly when field 1 is cents
-and field 2 is the pragma text INTEGER. -/
+and field 2 is the pragma text INTEGER.
+Proof sketch: Reduce both text equalities and Boolean conjunction. -/
 theorem typed_eval (context : Resolved.EvalContext) (row : List Value) :
     Resolved.truthy (typedResolved.eval context row) = true ↔
       row[1]?.getD .null = .text (bytes! "cents") ∧ row[2]?.getD .null = pragmaText "INTEGER" := by

@@ -50,7 +50,8 @@ theorem guard_bodies (catalog : Catalog) (position index : Nat) (table : Catalog
     Resolved.Output.scalars, Resolved.Output.operands, Resolved.Expr.lowestRead,
     rangeResolved, nameResolved, typedResolved, minPosition]
 
-/-- For every cents position, the outer filter resolves to the four-subquery conjunction. -/
+/-- For every cents position, the outer filter resolves to the four-subquery conjunction.
+Proof sketch: Resolve the four indexed subquery references and their conjunction. -/
 theorem main_filter (index : Nat) :
     FilterResolves true [] [] (some guardSyntax) (some guardCondition) {later := guardShapes index} := by
   apply FilterResolves.of_term (result := (guardCondition, none))
@@ -59,7 +60,8 @@ theorem main_filter (index : Nat) :
       SubqueryShapes.find, SubqueryShapes.base, SubqueryShapes.column]
     rfl
 
-/-- For every cents position, the outer SELECT 1 body resolves to the guard condition. -/
+/-- For every cents position, the outer SELECT 1 body resolves to the guard condition.
+Proof sketch: Apply the simple-body law to the resolved outer filter and empty source list. -/
 theorem main_body (index : Nat) :
     resolveQueryBody true [] {later := guardShapes index} [] [] mainSyntax =
       .ok (Resolved.Query.selectOneWhere guardCondition, none) := by

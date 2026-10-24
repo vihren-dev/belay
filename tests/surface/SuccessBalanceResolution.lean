@@ -11,7 +11,8 @@ open Belay.Sqlite.Model hiding Database
 namespace BalanceExample
 
 /-- For every metadata row list, target name and subquery shape, the name predicate resolves
-to the exact byte comparison. -/
+to the exact byte comparison.
+Proof sketch: Resolve the metadata name field, then the literal comparison. -/
 theorem name_resolves (rows : List (List Value)) (name : List UInt8) (current : Option Nat) (later : List SubqueryShape) :
     FilterResolves true (tableInfoScope pragmaRef (bytes! "ledger") rows) []
       (some (nameSyntax name)) (some (nameResolved name)) {current, later} := by
@@ -21,7 +22,8 @@ theorem name_resolves (rows : List (List Value)) (name : List UInt8) (current : 
     rfl
 
 /-- For every metadata row list and subquery shape, the cents/type predicate resolves
-to the two field comparisons. -/
+to the two field comparisons.
+Proof sketch: Resolve both metadata fields and combine their comparisons with AND. -/
 theorem typed_resolves (rows : List (List Value)) (current : Option Nat) (later : List SubqueryShape) :
     FilterResolves true (tableInfoScope pragmaRef (bytes! "ledger") rows) []
       (some typedSyntax) (some typedResolved) {current, later} := by
@@ -32,7 +34,8 @@ theorem typed_resolves (rows : List (List Value)) (current : Option Nat) (later 
     rfl
 
 /-- For every scope and one-source SELECT 1 body whose filter and pending sources resolve,
-the body resolves to that simple query. The result follows from the shared simple-body law. -/
+the body resolves to that simple query. The result follows from the shared simple-body law.
+Proof sketch: Apply the shared simple-body equation to the given filter and sources. -/
 theorem one_body (scope : Scope) (current : Option Nat) (later : List SubqueryShape)
     (source : Syntax.TableReference) (filter : Option Syntax.Expr)
     (resolved : Option Resolved.Expr) (pending : List PendingSource) (sources : List Resolved.QuerySource)
@@ -66,7 +69,8 @@ theorem guard_scopes (catalog : Catalog) (position : Nat) (table : CatalogTable)
   rfl
 
 /-- For every existing cents column and subquery shape, the range body resolves with
-the column affinity and collation. Resolve the condition and use the simple-body law. -/
+the column affinity and collation. Resolve the condition and use the simple-body law.
+Proof sketch: Resolve the cents comparisons with column affinity, then apply the SELECT 1 body law. -/
 theorem range_body (catalog : Catalog) (position index : Nat) (table : CatalogTable) (cell : CatalogColumn)
     (current : Option Nat) (later : List SubqueryShape)
     (column : columnPosition table.columns (name! "cents") = some index)

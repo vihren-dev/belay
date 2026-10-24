@@ -27,7 +27,8 @@ theorem guard_scopes_missing (catalog : Catalog)
     Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
 
 /-- For every catalog without a ledger table, guard resolution gives its prepare error
-and preserves the catalog. -/
+and preserves the catalog.
+Proof sketch: Lift the first subquery source error through complete query resolution. -/
 theorem guard_select_missing (catalog : Catalog)
     (missing : catalog.findTable ledgerRef.table = none) :
     resolveSelect runContext catalog mainSyntax balanceQueries =
@@ -64,7 +65,8 @@ theorem guard_scopes_shadow (catalog : Catalog) (position shadow : Nat) (table o
     Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
 
 /-- For every catalog with the ledger and a table shadowing pragma_table_info, the
-complete guard reports the table-function restriction at the first metadata source. -/
+complete guard reports the table-function restriction at the first metadata source.
+Proof sketch: Lift the first metadata source restriction through complete query resolution. -/
 theorem guard_select_shadow (catalog : Catalog) (position shadow : Nat) (table other : CatalogTable)
     (found : catalog.findTable ledgerRef.table = some (position, table))
     (shadows : catalog.findTable pragmaRef.table = some (shadow, other)) :
@@ -77,7 +79,8 @@ theorem guard_select_shadow (catalog : Catalog) (position shadow : Nat) (table o
     Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
 
 /-- For every table without cents and every subquery shape, the range body reports a
-missing-column prepare error. The unquoted identifier is neither a rowid nor a Boolean keyword. -/
+missing-column prepare error. The unquoted identifier is neither a rowid nor a Boolean keyword.
+Proof sketch: Resolve the cents identifier as missing and propagate its preparation error. -/
 theorem range_body_missing (catalog : Catalog) (position : Nat) (table : CatalogTable)
     (current : Option Nat) (later : List SubqueryShape)
     (missing : columnPosition table.columns (name! "cents") = none) :
@@ -117,7 +120,8 @@ theorem guard_bodies_missing (catalog : Catalog) (position : Nat) (table : Catal
     Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
 
 /-- For every catalog with the ledger and unshadowed pragma but without cents, the
-guard resolves to the missing-column prepare error and preserves the catalog. -/
+guard resolves to the missing-column prepare error and preserves the catalog.
+Proof sketch: Resolve the existing sources, then propagate the first body error. -/
 theorem guard_select_missing_cents (catalog : Catalog) (position : Nat) (table : CatalogTable)
     (found : catalog.findTable ledgerRef.table = some (position, table))
     (notTable : catalog.findTable pragmaRef.table = none)

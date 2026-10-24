@@ -77,7 +77,8 @@ theorem guard_context (clock : Int) (counters : Counters) (parameters : List Val
     (by exact count_run inner database position table found) rfl rfl range.1 account.1 typed.1
   simpa only [range.2, account.2, typed.2, filteredOnes] using guard
 
-/-- For every table, positions and column, the resolved guard reads no clock or counter. -/
+/-- For every table, positions and column, the resolved guard reads no clock or counter.
+Proof sketch: Expand the four query expressions; none reads the environment. -/
 theorem guard_calm (position index : Nat) (table : CatalogTable) (cell : CatalogColumn) :
     (Resolved.Statement.query (Resolved.Query.selectOneWhere guardCondition) (guardQueries position index table cell)).Calm := by
   simp [Resolved.Statement.Calm, Resolved.Statement.clockExpressions, guardQueries,
@@ -88,7 +89,8 @@ theorem guard_calm (position index : Nat) (table : CatalogTable) (cell : Catalog
     Resolved.Expr.isFallibleCall, Resolved.Expr.readsClockHere, Resolved.Expr.readsCounterHere]
 
 /-- For every database with the ledger, cents column and unshadowed pragma, the guard
-statement resolves to its query and keeps the resolution state. -/
+statement resolves to its query and keeps the resolution state.
+Proof sketch: Lift complete query resolution through the statement wrapper. -/
 theorem guard_statement (db : Database) (position index : Nat) (table : CatalogTable) (cell : CatalogColumn)
     (found : db.raw.catalog.findTable ledgerRef.table = some (position, table))
     (notTable : db.raw.catalog.findTable pragmaRef.table = none)

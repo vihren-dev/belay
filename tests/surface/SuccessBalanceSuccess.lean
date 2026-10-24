@@ -55,7 +55,8 @@ theorem balance_of_bounds (db : Database) (a : Value) (position cents account : 
     omega
 
 /-- For every database without a ledger table, the guard does not hold because resolution
-gives a prepare error. -/
+gives a prepare error.
+Proof sketch: The missing-table preparation error contradicts the row-bearing query claim. -/
 theorem missing_ledger (db : Database)
     (missing : db.raw.catalog.findTable ledgerRef.table = none) : ¬ Holds balanceGuard db := by
   have resolved : resolveStatement runContext db.raw.connection.resolveState balanceGuard.statements[0].1 =
@@ -84,7 +85,8 @@ theorem shadowed_pragma (db : Database) (position shadow : Nat) (table other : C
   simp [Holds, output, Output.hasRows] at holds
 
 /-- For every database with the ledger and unshadowed pragma but without cents, the guard
-does not hold because resolution gives a prepare error. -/
+does not hold because resolution gives a prepare error.
+Proof sketch: The missing-column preparation error contradicts the row-bearing query claim. -/
 theorem missing_cents (db : Database) (position : Nat) (table : CatalogTable)
     (found : db.raw.catalog.findTable ledgerRef.table = some (position, table))
     (notTable : db.raw.catalog.findTable pragmaRef.table = none)
