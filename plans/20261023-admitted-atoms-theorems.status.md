@@ -357,3 +357,8 @@ proof relies on it (finding 15).
   other `Catalog.Valid` proof and example of the model, the conformance runner and the surface still
   builds, so no slice 2 or slice 3 proof used the refusal of a repeated key. Tests:
   `tests/test_model_package.py`.
+- 2026-10-24: review round of the commit "CatalogTable.supported": four musts (R9 `aliasSupported`
+  accepted an alias past the columns of an empty table; R11 no examples; R2 an unchecked reference;
+  R7 no statement that the new conditions are rules of the model's catalog). Fixed in the same
+  commit: `Option.any`, the new examples module `AdmittedAtomsExamples.lean` (part 1: tables that
+  meet and break each new condition, checked by the kernel), docstrings. Tests: `tests/test_model_package.py`.

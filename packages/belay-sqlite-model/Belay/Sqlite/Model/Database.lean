@@ -68,15 +68,20 @@ def supportedKey (width : Nat) (key : List Nat) : Bool :=
 /-- Whether the rowid alias of a table is as the resolver makes it: a table without an alias
 requires nothing. An alias is a position below the number of columns, whose column is not
 generated and has INTEGER affinity, and it is the whole primary key, in a table that is not
-{lit}`WITHOUT ROWID`. -/
+{lit}`WITHOUT ROWID`. This is a rule of the model's catalog, not of SQLite: SQLite makes such an
+alias only from an INTEGER PRIMARY KEY, and the resolver does too, but a table that a Lean user
+builds can break the rule, and then the model does not describe the table. -/
 def CatalogTable.aliasSupported (table : CatalogTable) : Bool :=
   match table.rowidAlias with
   | none => true
   | some position => table.primaryKey == [position] && !table.withoutRowid &&
-      (table.columns[position]?.all fun column => column.generated.isNone && column.affinity == .integer)
+      (table.columns[position]?.any fun column => column.generated.isNone && column.affinity == .integer)
 
 /-- Whether every CHECK constraint of the table, of a column or of the table, reads only
-columns below the number of columns of the table ({name}`Resolved.Expr.readsBelow`). -/
+columns below the number of columns of the table ({name}`Resolved.Expr.readsBelow`). This is a
+rule of the model's catalog, not of SQLite: the resolver resolves each CHECK over the columns of
+its table, but a table that a Lean user builds can have a CHECK that reads a missing column, which
+reads NULL, and then the model does not describe the table. -/
 def CatalogTable.checksReadBelow (table : CatalogTable) : Bool :=
   table.allChecks.all fun check => check.condition.readsBelow table.columns.length
 
