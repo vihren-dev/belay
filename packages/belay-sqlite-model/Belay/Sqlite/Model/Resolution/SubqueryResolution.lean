@@ -19,13 +19,14 @@ statement's syntax that holds its subqueries: 8 for {lit}`SELECT`. -/
 namespace Belay.Sqlite.Model
 
 /-- The shape of a resolved subquery ({name}`SubqueryShape`): the query around it, its number
-of result columns, the affinity, collations and declared-type origin of its first result
+of result columns, the affinity, FLEXNUM flag, collations and declared-type origin of its first result
 column, and the lowest cell that it or a subquery that it names reads. -/
 def subqueryShape (scope : Scope) (shapes : SubqueryShapes) (subquery : Syntax.Subquery) (query : Resolved.Query)
     (affinity : Option Affinity) : SubqueryShape :=
   let (explicitCollation, columnCollation) := firstCollations scope subquery.columns
   { parent := subquery.parent, columns := query.columns.length, affinity, explicitCollation, columnCollation,
     originType := (resultOriginTypes scope shapes subquery.columns).head?.join,
+    flexibleNumeric := (resultFlexibleNumerics scope shapes subquery.columns).head?.getD false,
     lowest := query.expressions.foldl (fun lowest expression => minPosition lowest (expression.lowestRead shapes))
       (query.sources.foldl (fun lowest source => match source.source with
         | .subquery index _ => minPosition lowest ((shapes.find index).bind (·.lowest))

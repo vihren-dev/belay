@@ -14,7 +14,7 @@ reads a coalesce and has no origin type. Unresolved names and trigger cells also
 have none, as SQLite's column-type lookup does not follow trigger expressions. -/
 def Scope.nameOriginType (scope : Scope) : NameResolution → Option String
   | .found _ [position] =>
-    if scope.triggerCell position then none else scope.columns[position]?.bind (·.declaredType)
+    if scope.triggerCell position then none else scope.originTypeAt position
   | .found _ _ | .missing | .ambiguous => none
 
 /-- The declared-type origin of an expression, as SQLite's {lit}`columnType`
@@ -30,12 +30,22 @@ def Syntax.Expr.originType (scope : Scope) (shapes : SubqueryShapes) : Syntax.Ex
   | .cast .. | .collate .. | .exists _ | .inQuery .. | .inList .. | .between .. | .caseOf ..
   | .concatenate .. | .raise .. => none
 
-/-- The origin of a star-expanded result. RIGHT JOIN can select the later
-column, while FULL JOIN can replace both origins with a coalesce. -/
-def Scope.starOriginType (scope : Scope) (position : Nat) (column : CatalogColumn) : Option String :=
+/-- The cell selected by a star-expanded result. RIGHT JOIN can select the later
+column; FULL JOIN can produce a coalesce, which has no single source cell. -/
+def Scope.starColumnIndex (scope : Scope) (position : Nat) (column : CatalogColumn) : Option Nat :=
   match scope.starOperand position column with
-  | .ok (.column index, _) => scope.columns[index]?.bind (·.declaredType)
-  | .ok _ | .error _ => none
+  | .ok (.column index, _) => some index
+  | .ok (.literal _, _) | .ok (.compare .., _) | .ok (.and .., _) | .ok (.or .., _)
+  | .ok (.not _, _) | .ok (.isNull .., _) | .ok (.arithmetic .., _) | .ok (.cast .., _)
+  | .ok (.coalesce .., _) | .ok (.json .., _) | .ok (.now _, _) | .ok (.parameter _, _)
+  | .ok (.counter _, _) | .ok (.date .., _) | .ok (.scalar .., _) | .ok (.exists _, _)
+  | .ok (.inQuery .., _) | .ok (.subquery _, _) | .ok (.inList .., _)
+  | .ok (.aggregateValue _, _) | .error _ => none
+
+/-- The origin of a star-expanded result. A merged FULL JOIN result has no
+origin; a selected column follows its query source's original declaration. -/
+def Scope.starOriginType (scope : Scope) (position : Nat) (column : CatalogColumn) : Option String :=
+  (scope.starColumnIndex position column).bind scope.originTypeAt
 
 /-- The origin type of each result column, including the columns expanded by
 stars. Use this list's first element for a scalar subquery's origin. -/

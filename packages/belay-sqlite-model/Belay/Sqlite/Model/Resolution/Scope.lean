@@ -28,12 +28,18 @@ join merged into a left column. -/
 structure ScopeSource where
   /-- The name of the source. -/
   name : Identifier
-  /-- The source columns. A query source stores each expression's declared-type
-  origin here and supplies its affinity separately through {lit}`affinities`. -/
+  /-- The source columns, including their normalized declarations for a query
+  source. Expression origins and affinities have separate fields. -/
   columns : List CatalogColumn
   /-- Expression affinities for a derived source, including no affinity; none uses each
   catalog column's declared type. For example, the column of {lit}`SELECT 1` has none. -/
   affinities : Option (List (Option Affinity)) := none
+  /-- Original declarations followed through a query source. None reads the
+  declarations in {lit}`columns`, as for physical tables. -/
+  originTypes : Option (List (Option String)) := none
+  /-- SQLite's FLEXNUM flags for query columns. Empty means ordinary affinities,
+  as for physical tables; this distinction controls normalized type names. -/
+  flexibleNumeric : List Bool := []
   /-- The indexed query that supplies this source; none for catalog tables and functions. -/
   queryIndex : Option Nat := none
   /-- Whether a qualifier can name the source; false for an anonymous derived table. -/
@@ -119,6 +125,21 @@ def Scope.affinityAt (scope : Scope) (position : Nat) : Option Affinity :=
       position < source.offset + source.columns.length with
   | some source => source.columnAffinity (position - source.offset)
   | none => scope.columns[position]?.map CatalogColumn.affinity
+
+/-- The original declaration behind a source cell. Query sources can retain a
+different origin from their normalized column declaration. -/
+def Scope.originTypeAt (scope : Scope) (position : Nat) : Option String :=
+  match scope.find? fun source => source.originTypes.isSome && source.offset ≤ position &&
+      position < source.offset + source.columns.length with
+  | some source => source.originTypes.bind fun types => types[position - source.offset]?.join
+  | none => scope.columns[position]?.bind (·.declaredType)
+
+/-- Whether a cell has SQLite's FLEXNUM metadata. Ordinary catalog columns and
+out-of-range positions return false. -/
+def Scope.flexibleNumericAt (scope : Scope) (position : Nat) : Bool :=
+  (scope.find? fun source => !source.flexibleNumeric.isEmpty && source.offset ≤ position &&
+    position < source.offset + source.columns.length).any fun source =>
+      (source.flexibleNumeric[position - source.offset]?).getD false
 
 /-- The number of cells before the source at {lit}`index` of the query's own sources
 ({name}`Scope.inner`): its offset, or the number of cells of the whole scope for an index past

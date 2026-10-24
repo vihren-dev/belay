@@ -77,6 +77,8 @@ def Scope.refreshSources (scope : Scope) (shapes : List SubqueryShape) : Scope :
   if shapes.all (·.source.isNone) then scope else scope.map fun source =>
     match (source.queryIndex.bind (fun index => shapes[index]?)).bind (·.source) with
     | none => source
-    | some resolved => { source with columns := resolved.columns, affinities := resolved.affinities }
+    | some resolved => { source with
+        columns := resolved.columns, affinities := resolved.affinities,
+        originTypes := resolved.originTypes, flexibleNumeric := resolved.flexibleNumeric }
 
 end Belay.Sqlite.Model

@@ -188,8 +188,8 @@ are recorded under "Combined part-2 acceptance" above; the
 every prediction change. This publication adds no view behavior.
 
 Acceptance-documentation review `20261024T201724Z-ed535519` found zero musts
-and two status-wording shoulds. The raw comparison is retained under the
-publication's build logs, and this section now points to the completed evidence.
+and two status-wording shoulds. The classification record names the retained
+S4 log archive and artifact roots after retirement of the publication workspace.
 
 ## Part 3 progress
 

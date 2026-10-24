@@ -12,7 +12,7 @@ query needs the affinity and the collation of the subquery's result column. -/
 namespace Belay.Sqlite.Model
 
 /-- A resolved subquery as the query around it sees it: the query around it, its number of
-result columns, the affinity, explicit collation, column collation and declared-type origin
+result columns, the affinity, FLEXNUM flag, collations and declared-type origin
 of its first result column, the lowest cell position that it or a subquery inside it reads, which is
 below its own cells when it reads a cell of a query around it, and whether {lit}`IN` and a scalar
 subquery would read the column of a derived table. For a compound {lit}`SELECT` the first
@@ -29,6 +29,9 @@ structure SubqueryShape where
   /-- The declared-type origin of the first result expression, or none when it
   has no column origin. A compound follows its right-most term. -/
   originType : Option String := none
+  /-- Whether the first expression has SQLite's FLEXNUM metadata. False for
+  ordinary physical columns; inherited query columns can retain it. -/
+  flexibleNumeric : Bool := false
   /-- The explicit collation of the first result column. -/
   explicitCollation : Option Collation
   /-- The column collation of the first result column. -/

@@ -16,9 +16,9 @@ column. This is metadata needed by view column descriptions, not view DDL.
 
 The existing source resolver and scalar shapes carry that metadata. No evaluator,
 CatalogEntry constructor, SQL form or FK definition changes in this unit.
-Normalized view column types remain separate work: native evidence distinguishes
+The normalization unit below handles native evidence that distinguishes
 SQLite's FLEXNUM metadata from ordinary NUMERIC, including through nested views.
-The foundation does not approximate those types with a copied declaration.
+Origins alone do not approximate those types with a copied declaration.
 
 Kernel examples cover all columns of a star, absent declarations, expression
 wrappers, INTEGER/REAL compounds, nested derived columns, LEFT/RIGHT/FULL merged
@@ -40,12 +40,46 @@ match the accepted CTE baseline
 byte-for-byte: all 53 files and 7,372 cases, with zero changed records.
 The exact comparison is retained in
 `build/agent-logs/view-column-origin-prediction-changes.json`.
-Independent review of this checked unit follows its commit.
+Independent review `20261024T203741Z-86e15af9` found zero musts and two shoulds:
+enumerate the remaining star-operand constructors and wrap the compound-shape
+docstring. Both are corrected in the normalization descendant below.
+
+## Foundation: normalized source declarations
+
+This unit computes normalized declarations separately from origins and
+expression affinities. It preserves a declared spelling when affinity agrees;
+otherwise it selects SQLite's INT, REAL, TEXT, BLOB or NUM spelling. Expressions
+without affinity have no declaration. A physical untyped column has BLOB
+affinity and therefore normalizes to BLOB.
+
+Compound declarations use the left-most origin and the effective source
+affinity. Expression origins still follow the right-most term. A metadata flag
+retains SQLite's FLEXNUM distinction through derived sources, scalar shapes,
+COLLATE and stars. A first-term CAST with a retained numeric compound affinity
+sets that flag; a text conflict that changes affinity to BLOB clears it.
+The numeric Value operations, comparison affinities and evaluator are unchanged.
+
+Kernel examples distinguish direct INTEGER/REAL compounds from enclosing
+queries, original declarations from canonical names, wrappers and untyped
+columns, and nested FLEXNUM from ordinary NUMERIC despite their equal NUM
+spelling. Existing scalar-query proof premises for physical tables remain the
+same: a small law proves their expressions cannot inherit a FLEXNUM flag when
+the scope has no resolved subqueries.
+
+The focused Nix check passed all 17 selected fixtures (55 deselected) in 44.53
+seconds, including the complete balance proof and physical-column IN claims:
+`/nix/store/yy0xf2n1yrg9assy7y31bfda0v6ign9q-sqlite-verifier-test-view-column-types-1`.
+Its model dependency checks the new normalization examples in the kernel.
+Nix predictions at
+`/nix/store/50ck3gadmqmjl6yp9s4mz03f3da1bim9-sqlite-verifier-predictions`
+match the accepted CTE baseline above byte-for-byte: all 53 files and 7,372
+cases, with zero changed records. The exact comparison and Nix logs are retained
+under `build/agent-logs/view-column-types/`. Independent review follows this commit.
 
 ## Remaining view scope
 
 CREATE/DROP VIEW, unresolved catalog definitions, late and closed source lookup,
-cycles, normalized column metadata, pragma metadata, write errors and catalog/
+cycles, view metadata before compound rewrites, pragma metadata, write errors and catalog/
 statement preservation remain OPEN under the existing task. FK proof leaves are
 coordinated with their owner before mechanical view-case extensions. Frozen v53
 remains unpublished and mutable in the separate evidence workspace. No corpus,

@@ -16,10 +16,12 @@ namespace Belay.Sqlite.Model
 /-- The shape of a subquery with one result column that no query surrounds and that is no compound: its
 affinity, the explicit collation and the column collation of its result column, and the lowest cell position
 {lit}`lowest` that it reads. Supply the declaration of its origin column through
-{lit}`originType`; omit it for an expression without a column origin. -/
+{lit}`originType`; omit it for an expression without a column origin. The
+optional FLEXNUM flag defaults to false for a physical table's expression. -/
 def scalarShape (affinity : Option Affinity) (explicitCollation columnCollation : Option Collation)
-    (lowest : Option Nat) (originType : Option String := none) : SubqueryShape :=
-  { parent := none, columns := 1, affinity, originType, explicitCollation, columnCollation, lowest, derived := false }
+    (lowest : Option Nat) (originType : Option String := none) (flexibleNumeric : Bool := false) : SubqueryShape :=
+  { parent := none, columns := 1, affinity, originType, flexibleNumeric,
+    explicitCollation, columnCollation, lowest, derived := false }
 
 /-- For every catalog, table reference, position, table, name and quote kind, if the table has a column of that name at
 a position, the column collation of the name in the scope of the table ({name}`Syntax.Expr.columnCollation`) is the collation of the
@@ -42,12 +44,12 @@ theorem Syntax.Expr.originType_identifier_table {catalog : Catalog} {reference :
     (Syntax.Expr.identifier name quote).originType (tableScope catalog reference position table) shapes =
       table.columns[index]?.bind (·.declaredType) := by
   simp only [Syntax.Expr.originType, tableScope, resolveName_one_source found]
-  simp [Scope.nameOriginType, Scope.columns, Scope.triggerCell, Scope.single]
+  simp [Scope.nameOriginType, Scope.originTypeAt, Scope.columns, Scope.triggerCell, Scope.single]
 
 /-- For every scope, shapes, subquery syntax with one expression column and no parent, and resolved query with one column,
 the shape that resolution records for the subquery is the shape of a one-column subquery ({name}`scalarShape`) with the
 affinity given, the collations of the expression ({name}`firstCollations`), its
-declared-type origin, and some lowest position. Proof sketch:
+declared-type origin, FLEXNUM flag, and some lowest position. Proof sketch:
 the subquery has no parent and one resolved column, and the lowest position is a fold that the lemma leaves open. -/
 theorem subqueryShape_scalar (scope : Scope) (shapes : SubqueryShapes) (value : Syntax.Expr) (alias : Option Identifier)
     (text : String) (source : Option Syntax.TableReference) (filter : Option Syntax.Expr) (query : Resolved.Query)
@@ -55,8 +57,8 @@ theorem subqueryShape_scalar (scope : Scope) (shapes : SubqueryShapes) (value : 
     ∃ lowest, subqueryShape scope shapes (Syntax.Subquery.mk [.expression value alias text] source [] filter [] [] none none
       none none false none none) query affinity =
         scalarShape affinity value.explicitCollation (value.columnCollation scope) lowest
-          (value.originType scope shapes) :=
-  by simp [subqueryShape, firstCollations, one, scalarShape, resultOriginTypes]
+          (value.originType scope shapes) (value.flexibleNumeric scope shapes) :=
+  by simp [subqueryShape, firstCollations, one, scalarShape, resultOriginTypes, resultFlexibleNumerics]
 
 /-- For every statement {lit}`SELECT 1 WHERE c` with one subquery {lit}`SELECT e FROM t WHERE p` of a table that the catalog of the
 state has at a position, without table-function arguments, where {lit}`e` is no function call, has no aggregate call and resolves in
@@ -113,6 +115,9 @@ theorem resolveStatement_selectOne_scalar (context : ResolveContext) (state : Re
     { current := some 0 } value none text (some reference) subFilter
     (Resolved.Query.simple [Resolved.QuerySource.first position] subCondition [.scalar expression]
       [(definedName (tableScope state.catalog reference position table) value).getD text]) affinity rfl
+  have ordinary : value.flexibleNumeric (tableScope state.catalog reference position table)
+      { current := some 0 } = false := by simp [tableScope, Syntax.Expr.flexibleNumeric_single]
+  rw [ordinary] at shapeIs
   have mainBody := resolveQueryBody_simple context.profile.dqsDml [] none
     [scalarShape affinity value.explicitCollation (value.columnCollation (tableScope state.catalog reference position table))
       lowest (value.originType (tableScope state.catalog reference position table) { current := some 0 })] [] []
