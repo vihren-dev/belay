@@ -84,8 +84,9 @@ remove the prior planning blocks; they are not implementation-completion claims.
   `0569149b`, with reviewed handoff `e50e1f9e`. Plausible compatibility passed
   in Nix. Explicit certification and policy follow-up `76504977` passed 11 Nix
   checks and clean review. Sampler `593caf88` passed 12 Nix checks, including
-  the row-bound regression. Slot 1 runs repaired inference checks (`59927`); replay and
-  background checking remain open.
+  the row-bound regression. Inference `69cd41be` passed 13 Nix checks and clean
+  review, including typed unused witness fields. Replay is next in slot 1;
+  shared commands and automatic checking remain open.
 - `s6_prerequisite_audit` completed derived-source part 1, published in #243.
   Separate evidence head `5d69e3fa` retains draft v53's 38 agreements and
   four restrictions. Combined acceptance is recorded in its task status.
@@ -95,7 +96,7 @@ remove the prior planning blocks; they are not implementation-completion claims.
   All changes are classified; publication reviews are resolved. Views remain
   OPEN. Origin-metadata source `86e15af9` passed 17 Nix fixtures and unchanged
   53-file predictions (`30578`, exit 0). Review has no musts; two small fixes
-  accompany the next normalization unit, for which slot 2 is reserved.
+  accompany the metadata-only normalization unit, whose slot 2 dev gate is live.
 - The S6 foundation prototype is DONE in PR #246 at `334d9645`, above #245.
   Original full 813/Nix 67/scheduled 47 and verdict passed. The final focused
   integration checks all five modules and 28 audits against S4; review is clean.
@@ -118,7 +119,8 @@ FK engine checkpoint `b1a163df` passed 11 Nix fixtures/203 axiom audits at
 `grsxi5rjsqz0w3311nf5xv3l2yiilv6m`; review is clean. Statement/run checkpoint
 `a8bf73ae` passed 14 Nix fixtures/236 audits at `04dmvlj39cmypsa26ia21rhnskqxsjp1`
 and resolved review. CREATE/plain-DROP `135b8338` passed 13 Nix fixtures/238
-axiom audits (`19966`, exit 0); independent review is running. Enforced DROP
+axiom audits (`19966`, exit 0). Review has zero musts and three small fixes
+that accompany the next enforced-DROP/ADD proof unit. Enforced DROP
 and NULL-default ADD proofs continue independently. A nonempty child table
 with enforcement on exposes an ADD REFERENCES/non-NULL-default discrepancy;
 the owner is asked to extend the explicitly limited execution-change scope.
@@ -135,14 +137,11 @@ S7 prototype PR #245 `0569149b` is DONE: full 872/Nix 70/scheduled 47; accepted 
 ## Published work and cleanup
 
 - Public [PR #240](https://github.com/vihren-dev/sqlite-verifier/pull/240),
-  `tasks/text-build-boundaries`, head `2f86e45a`, base #239, stack 231: DONE.
-  Full 792, Nix 67 and scheduled 47 passed; verdict 4,838/2,534, all 53
-  predictions/7,372 cases byte-identical. Full report is
-  `/nix/store/ykfdsmryx18cplw9zrf1dy3xakqlbydj-sqlite-verifier-test-reports`.
-- Public [PR #241](https://github.com/vihren-dev/sqlite-verifier/pull/241),
-  `tasks/prediction-source-filter`, head `529ff779`, base #240, stack 231: DONE.
-  Full 792, Nix 70 and scheduled 47 passed; same verdict/predictions, all 55
-  locked parts unchanged. Protected judge source change still needs owner merge.
+  text-build boundaries `2f86e45a`, and [PR #241](https://github.com/vihren-dev/sqlite-verifier/pull/241),
+  prediction-source filter `529ff779`, are DONE in stack 231. Both passed full
+  792/scheduled 47; Nix 67 and 70 respectively. Verdict 4,838/2,534 and all
+  53 predictions/7,372 cases stayed identical. Their task statuses retain results.
+  #241's protected judge source change still requires owner merge approval.
 - Private product PR #7, `docs/guide-profile-defaults`, head `17666ac9`, base
   published `c1471940` (PR #6): DONE. Nine pinned native checks passed; two
   Verso-header corrections preserve the SQL bodies. No unrelated unpublished
@@ -170,8 +169,10 @@ late patch and acceptance logs remain under S4's archived FK publication logs.
 The clean, remotely retained fk-publication workspace was also archived and
 removed after #247 CI passed; no active process depended on it.
 Completed CTE/CTE-implementation/integration workspaces were archived and removed
-after #248. Their six accepted Nix out-links have independent roots under
-`cte-publication/build/accepted-cte-artifacts`. Evidence and views remain active.
+after #248. The clean, remotely retained cte-publication workspace is now
+retired too, after host-process and owner dependency checks. Its six accepted
+outputs have independent roots under `s4/build/accepted-cte-artifacts`; its
+logs are in `s4/build/agent-logs/cte-publication`. Evidence and views remain active.
 
 ## Specified work and remaining scope
 
