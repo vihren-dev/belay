@@ -50,14 +50,12 @@ actual verdict results and inspect each changed prediction.
   the first-column certainty of IN. Source rows retain the enclosing cells so
   an unmatched right/full row cannot erase them. `DerivedSourceExamples.lean`
   contains kernel checks for joins, uncertain membership, outer cells, parameters,
-  counters and the clock. Source translation, metadata and name resolution remain
-  unfinished. The task and its first acceptance part are not complete.
+  counters and the clock.
 - Nix check for this execution unit: `nix-build build-support/default.nix -A
   modelPackage` passed at
   `/nix/store/d8gfbj5myc9v0lpsqm0c5lmmpj6534bl-belay-sqlite-model-0.1.0`.
   The build checks the new `DerivedSourceExamples` kernel examples and existing
-  query/S4 proof modules. Full-part acceptance and the final frozen-prediction
-  comparison remain pending.
+  query/S4 proof modules.
 
 - Execution-unit review `20261024T132633Z-93767a4d` had no must finding and one
   should finding: test a source with a non-success ending and no expression fault.
@@ -79,8 +77,6 @@ actual verdict results and inspect each changed prediction.
   are `restriction_registry_test.py` and `mutant_guards_test.py -k compound`.
 - Nix `modelPackage` for this metadata unit passed at
   `/nix/store/zs2dfp63la9ib1cx7qskny4l9pvdq4b0-belay-sqlite-model-0.1.0`.
-  SQL FROM translation, source scope resolution, the authored judge cases and
-  final part-1 Nix full/verdict acceptance remain pending.
 
 - Review `20261024T140053Z-649a3021` had no must finding and two should
   findings. Both metadata functions now list all expression constructors instead
@@ -106,8 +102,6 @@ actual verdict results and inspect each changed prediction.
 - Nix `modelPackage` for this pipeline unit passed at
   `/nix/store/wnxni6bvnfd3cisq5nndg95qspgbyh94-belay-sqlite-model-0.1.0`.
   It checks the new `DerivedResolutionExamples` and the existing model proof APIs.
-  The part-1 full/verdict gates and final frozen prediction classification remain
-  pending; this unit does not complete the first acceptance part.
 - Corpus v53 is reserved for query-source evidence (v54 belongs to the FK task).
   The separate `query-sources-evidence` workspace starts from carry `8a89208f`.
   Its authored native inputs are under preparation. No corpus, claim or judge lock
@@ -175,8 +169,7 @@ actual verdict results and inspect each changed prediction.
   independent review and final part-1 full/verdict gates follow this commit.
 - Evidence review `20261024T152537Z-873a1473` passed with no findings. The first
   full gate reached all source checks and found two stale RIGHT JOIN mutant
-  targets after the enclosing-cell preservation change. A subject-only correction
-  is being checked with the two affected mutants; no evaluator change is needed.
+  targets after the enclosing-cell preservation change; no evaluator change was needed.
   The evidence report now links here for the current acceptance state.
 - Report review `20261024T153132Z-753e0f3c` requested clearer pending-status
   wording. Its link now explicitly refers to the current part-1 acceptance state,
@@ -196,3 +189,7 @@ actual verdict results and inspect each changed prediction.
 - Correction review `20261024T153312Z-5291750b` passed with no findings. The
   acceptance descendant combines evidence `dc77491d` with subject `5291750b`;
   only the status log conflicted, and both checked histories are retained.
+- Combined-boundary review `20261024T153541Z-08c47c2b` passed with no findings.
+  Its full gate passed all 153 frozen tests and 55 corpus validations, then found
+  a stale older-pin profile test expecting derived SELECT to be unsupported.
+  The subject correction also updates two related transport refusal fixtures.
