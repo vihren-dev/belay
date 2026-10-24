@@ -1,6 +1,6 @@
 # Status: S6 execution and proof contracts
 
-Created 2026-10-24. Status: OPEN. Implementation has not started.
+Created 2026-10-24. Status: OPEN. Assigned; no production code yet.
 Task: [task file](20261024-s6-execution-contracts.task.md).
 Specs: ADR17's accepted strong equivalence and the checked S6 foundations.
 
@@ -53,3 +53,8 @@ is claimed by this task file.
   review `20261024T204324Z-7e855ae9` were copied from planning commit
   `881c975f`; no other planning ancestors were carried. The approved `.envrc`
   and `shell.nix` match the existing development workspace byte for byte.
+
+- Carry review `20261024T204857Z-ac33b102` had no musts and two shoulds.
+  The task now cites this dated owner-decision record instead of implying that
+  ADR17 already contains the later S6 clarification. The header now distinguishes
+  the completed handoff from production implementation. Both findings are fixed.
