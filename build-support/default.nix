@@ -87,7 +87,8 @@ in rec {
   # The surface that users import (ADR 0016, D1). It is not part of the conformance runtime;
   # tests.surface checks it and its layer rules.
   surfacePackage = let
-    manifest = builtins.fromJSON (builtins.readFile (sources.surface + "/lake-manifest.json"));
+    # Read-only evaluation can compute a filtered store path before that path exists.
+    manifest = builtins.fromJSON (builtins.readFile (root + /packages/belay/lake-manifest.json));
     sampler = pkgs.lib.findFirst (entry: entry.name == "plausible") null manifest.packages;
     url = "https://github.com/leanprover-community/plausible";
     localManifest = manifest // { packages = map (entry:
