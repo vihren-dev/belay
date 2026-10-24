@@ -30,6 +30,10 @@ import Belay.Sqlite.ExecutionEquivalence
 import Belay.Sqlite.ExecutionEquivalenceLaws
 import Belay.Sqlite.ExecutionEquivalenceBind
 import Belay.Sqlite.ExecutionObservations
+import Belay.Sqlite.ExecutionView
+import Belay.Sqlite.ExecutionViewProjection
+import Belay.Sqlite.ExecutionViewLaws
+import Belay.Sqlite.ExecutionViewBind
 import Belay.Sqlite.ExecutionSpecifications
 import Belay.Sqlite.Success
 import Belay.Sqlite.ProgramSuccess
