@@ -191,8 +191,8 @@ of the context equal to those of the profile; `Database.ConstraintAtoms` togethe
 one, with `Database.valid_empty` for a new connection. The surface form is `Sql.runFrom_valid`, by induction
 over the program, and `Sql.runFrom_database_valid`. The conditions stay in the theorems of `runSqlFrom` and
 `runSql`, and `AdmittedRunsConditionExamples` shows a run that breaks the atom for each: a rowid past the
-largest, and a DROP of a table that leaves its index. The check `Run.checked` is not removed yet; ADR 0017,
-S4 removes it with these theorems. No proof failed. The predictions, the claims and the judge lock do not
+largest, and a DROP of a table that leaves its index. ADR 0017 S4 removed the redundant run check
+on 2026-10-24: `Run.ofValid` takes the preservation proof and keeps the exact model result. No proof failed. The predictions, the claims and the judge lock do not
 change.
 
 For the constraint atoms, INSERT, UPDATE and upsert are the easier case: each table that they
@@ -233,6 +233,11 @@ is.
   constraint: a run that reaches it shows an error of the model, which D3 reports to the
   owner. When the model describes such a statement, the else branch is how a run treats it,
   which decides the question of the previous paragraph for runs of the bundled database.
+
+Completed 2026-10-24 in ADR 0017 S4: the run preservation theorem now supplies the final
+database's validity proof directly. The runtime decision and its invalid-result branch are
+removed. Public runs keep the model's value, outputs, database, transaction and settings.
+The raw API remains available for databases without validity proofs.
 
 ## Consequences
 

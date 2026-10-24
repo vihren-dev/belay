@@ -48,11 +48,14 @@ index. `send_append` and `Sql.runFrom_send_append` give this composition for two
 of a program. A script runs as the program `send s`. The result is a `Run α`:
 
 - `value : Option α`: the program's value, or `none` when a statement gives `Output.unmodeled`
-  (the rest of the program does not run) or when the database at the end is not valid;
+  (the rest of the program does not run);
 - `outputs`: one output for each statement that ran;
-- `db` and `start`: the databases at the end and at the start; `db` is `start` when the
-  database at the end is not valid;
+- `db` and `start`: the valid databases at the end and at the start;
 - `transaction`, `foreignKeys` and `recursiveTriggers`: the state of the connection at the end.
+
+The preservation theorem supplies the final database's validity proof. A run preserves the
+model's outputs and result fields directly; it does not decide validity at runtime.
+`Run.ofValid` also bundles any model result for which the caller supplies this proof.
 
 The last argument of a run is the environment, `env := e`, with `Env.default` when it is not
 given. `Env.default` has no clock: a statement that reads the clock, such as

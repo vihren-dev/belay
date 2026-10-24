@@ -26,7 +26,7 @@ def test_guide_program_examples_hold(runtime_root: Path, tmp_path: Path) -> None
 
 
 def test_program_examples_hold(runtime_root: Path, tmp_path: Path) -> None:
-    """The kernel examples of programs (`Sql.runFrom` and `Run.checked` of
+    """The kernel examples of programs (`Sql.runFrom` and `Run.ofValid` of
     `Belay/Sqlite/ProgramRun.lean`, `query` and `single` of `Belay/Sqlite/ProgramQueries.lean`, the
     laws of `Belay/Sqlite/ProgramLaws.lean` and `Belay/Sqlite/RunLaws.lean`, the clock of
     `Belay/Sqlite/Env.lean`): `query` and `single` on each output kind; a clock read that ends a

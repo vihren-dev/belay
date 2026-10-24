@@ -1,4 +1,5 @@
 import Belay.Sqlite.Success
+import Belay.Sqlite.ProgramLaws
 
 set_option doc.verso true
 
@@ -33,19 +34,10 @@ theorem Sql.SucceedsFrom.allOk {α : Type} (program : Sql α) :
       have tail := later output clock (index + 1) next success.2.1
       simpa [List.allOk, success.1, continues] using tail
 
-/-- For every program, database and environment, the public run's outputs equal the
-underlying run's outputs. The validity check cannot append an invalid-result output.
-Proof sketch: {name}`Sql.runFrom_database_valid` selects the valid branch of
-{name}`Run.checked`. -/
-theorem Sql.run_outputs {α : Type} (program : Sql α) (db : Database) (env : Env) :
-    (program.run db env).outputs =
-      (program.runFrom env.clock 0 (db.raw.connection env.counters)).outputs := by
-  simp only [Sql.run, Run.checked, dite_eq_left (Sql.runFrom_database_valid program db env)]
-
 /-- For every successful script or program, every database satisfying its predicate, and
 every complete environment, all outputs of the actual public run are successful.
 Proof sketch: {name}`Sql.SucceedsFrom.allOk` covers the actual continuation, and
-{name}`Sql.run_outputs` removes the redundant validity check. -/
+{name}`Sql.run_outputs` identifies the public output field. -/
 theorem Succeeds.allOk {σ α : Type} [Runnable σ α] {program : σ} {predicate : Database → Prop}
     (success : Succeeds program predicate) {db : Database} (holds : predicate db)
     {env : Env} (complete : env.Complete) : (db.run program env).outputs.allOk = true := by
