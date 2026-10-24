@@ -91,7 +91,7 @@ remove the prior planning blocks; they are not implementation-completion claims.
   `3583de8a` have clean reviews/Nix checks. Metadata law `e3f48d3b` is reviewed
   clean, with Nix model `81v66kv633za3q994jjiiml6lvsaz7q4`. Balance `2175f989`
   is reviewed; all 62 surface tests passed at `vjvlvym2mp4lqjighnsc7q1qijbq1c2w`.
-  Part-2 full/verdict remains. Main `aa63c50d` is under review; part-3 build `76765` runs.
+  Main `f3e03264` and part 3 `2e51a0ae` are reviewed; their broad gates remain.
   Named-source extension `656ab790`/`1dee994a` is reviewed and checked in Nix.
 - `s6_prerequisite_audit` completed derived-source part 1 at subject `16bd87a3`;
   separate evidence head is `5d69e3fa`. Combined `c8db1a54` passed full 854 at
@@ -131,13 +131,12 @@ Final acceptance must selectively reconcile unpublished S2/S3 product-default ch
 
 The reviewed one-line surface helper fileset fix `b9008683` was carried into
 S6. Its initial missing-helper Nix failure is resolved. At most two heavy checks
-run: S4 part-3 build `76765` owns slot 1; root derived gate `54968` owns slot 2.
+run: FK part-2 focused Nix `35480` owns slot 1; derived gate `54968` owns slot 2.
 Root S4 query publication `975f31eb` passed full 808, Nix 70, scheduled 47,
-verdict 4,838/2,534 and 53 unchanged predictions; its branch is pushed.
+verdict 4,838/2,534 and 53 unchanged predictions; PR #242 is in stack 231.
 Derived publication `17f929bd` has a clean review; its final gates are running.
-Automatic approval rejected S4 PR creation and direnv allow in
-`query-sources-cte-implementation`; explicit owner approval is requested for both.
-
+Automatic approval first rejected S4 PR creation and the new CTE shell trust.
+The owner explicitly approved both; PR #242 is open and the shell is authorized.
 ## Published work and cleanup
 
 - Public [PR #240](https://github.com/vihren-dev/sqlite-verifier/pull/240),
@@ -163,7 +162,8 @@ text-build-boundaries, prediction-source-filter and profile-publication were rem
 after confirming no active process and remote reachability. Earlier cleanup removed
 profile-guide, the unused editor workspace, adr19s2/adr19s3/adr22s2/adr22s3/
 adr22s4/errev/envfns. Completed s4-schema and s4-observations were removed
-following remote reachability/process checks. Protected s4chk remains.
+following remote reachability/process checks, as was s4-query-publication after
+[PR #242](https://github.com/vihren-dev/sqlite-verifier/pull/242). Protected s4chk remains.
 
 ## Specified work and remaining scope
 
