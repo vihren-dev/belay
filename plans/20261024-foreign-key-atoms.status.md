@@ -398,3 +398,46 @@ accepted part 1 from open part 2, and the pre-gate paragraph is marked as a
 historical preparation checkpoint. Both findings are resolved. The source
 commit remains `54c9c112f4ffe1038e84e9d5846a18254c540759`; its Nix evidence above
 is unchanged. No heavy process is active here; slot 1 returned to the coordinator.
+
+## Insertion proof unit: preparation
+
+The next unit adds an exact global count equation for physical append and the
+counter bound through actual newSteps with no stale UPDATE row. It includes
+self-references, either parent-scan flag, storedness, row alignment, uniqueness
+of the enlarged table and the selected-key/lookup-scan comparison conditions.
+A separate self-lookup premise compares the engine shortcut with ordinary lookup
+for every future stored row; rowid, BLOB and matching stored-affinity structural
+laws discharge it. No condition assumes the final row-reference atom.
+
+The maintained insertion fixture applies the generic law to a self-reference,
+repairs an orphan with its new parent, and gives a raw duplicate-parent example
+where the counter would otherwise erase an unrelated orphan. All seven proof
+files and the fixture have fewer than 200 lines. Direct Lean probes compiled
+these sources and their 34 axiom reports; those diagnostics are not acceptance.
+The mandatory dev-build and focused Nix gate are queued for a resource-slot
+release. Updates with stale rows, action/trigger induction and the remaining
+statement/run/DDL matrix are still open.
+
+The insertion unit's sequential gate completed on 2026-10-24 with exit 0
+(owned process 88073). The focused Nix surface suite passed six fixtures,
+33 deselected, in 8.50 seconds. Output:
+`/nix/store/afgmspdjm1andpc3pd1wlfqdv9gl4bib-sqlite-verifier-test-surface-1`.
+The six fixtures check 95 axiom reports, including all 28 new exported theorems
+and six insertion-fixture laws; only the three standard logical axioms occur.
+Command: `direnv exec . bash build/agent-logs/fk-insertion-gates.sh`, which ran
+`timeout 900 just dev-build` followed by the same sandboxed Nix surface expression
+as the previous unit, with command-local max-jobs=1 and timeout 1800. Logs:
+`build/agent-logs/fk-insertion-{dev-build,nix-surface}-1.log`. The dev-build is
+local diagnostic evidence; the Nix result above is the acceptance evidence.
+Slot 1 was released to the coordinator after terminal completion.
+
+A separate next-unit audit found two input/effect necessities. A raw Valid row
+can contain a stale generated cell, so UPDATE coverage needs an explicit
+consistent-generated-values input condition. More significantly, pinned native
+SQLite 3.51.0 and a direct kernel probe both allow an unrelated pending orphan
+counter to be cancelled by a level-1 self-parent UPDATE scan over a stale row.
+The general UPDATE/trigger proof branch is paused for coordinator review of its
+additional condition. This does not affect the checked insertion law, which has
+no stale row. Native scripts and records are diagnostic findings, not Nix
+acceptance for this unit; no execution or judge file changes are included here.
+The full preservation task remains OPEN.
