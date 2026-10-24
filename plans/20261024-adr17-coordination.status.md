@@ -173,7 +173,7 @@ completed schema/observation workspaces await publication before removal.
   have clean review `20261024T144839Z-5684010b`.
   [Assertions](20261024-s6-assertions.task.md) and
   [migration patterns](20261024-s6-migration-patterns.task.md) have clean reviews
-  at `33693f10`/`56b9f410`; [automation](20261024-s6-automation.task.md) is in review.
+  at `33693f10`/`56b9f410`; [automation](20261024-s6-automation.task.md) is clean at `8b118fbc`.
   [Initial/current query context](20261024-s6-before-context.task.md) has clean
   review `20261024T143052Z-5feffb18` and waits for query-source/view integration.
 - [Editor](20261024-surface-editor.task.md) is reviewed, unassigned.
