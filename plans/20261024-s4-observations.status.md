@@ -1,6 +1,6 @@
 # S4 claim observation fixtures
 
-Created 2026-10-24. Status: DONE for the observation fixtures and independent review; part 1 Nix evidence is pending.
+Created 2026-10-24. Status: DONE for the observation fixtures and independent review; part 1 Nix evidence passed on 2026-10-24.
 This record tracks the nonvacuity checks of [the S4 task](20261024-surface-s4.task.md), outcomes 3, 5 and 6.
 
 The work adds positive and negative observations to the existing claim fixtures
@@ -29,3 +29,8 @@ local runs. The parent task owns the combined Nix gates and verdict for part 1.
   combined parent checks; these local runs are not evidence.
 - 2026-10-24: independent review `20261024T122210Z-9791c4ab` has no findings.
   The observation fixtures and their review are complete.
+
+- 2026-10-24: integrated part 1 Nix acceptance passed. The surface suite includes all
+  48 tests, including these fixtures; the ten-suite aggregate reports zero failures,
+  errors or skips. Evidence: `/nix/store/japwh8n1f0chh7fz6ig44qn9dxhkm8y5-sqlite-verifier-test-reports`.
+  The part 1 verdict also passed and all 53 prediction files match the saved baseline.
