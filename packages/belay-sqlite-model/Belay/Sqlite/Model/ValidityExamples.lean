@@ -1,5 +1,5 @@
 import Belay.Sqlite.Model.DatabaseConstraintChecks
-import Belay.Sqlite.Model.ForeignKeysHold
+import Belay.Sqlite.Model.ForeignKeyFacts
 import Belay.Sqlite.Model.SqlExecution
 import Belay.Sqlite.Model.Resolution.Examples
 
@@ -125,7 +125,7 @@ def keys (child : String) : Database := built
 
 -- With foreign keys off, a child without a parent is stored: the database is valid, but its
 -- foreign keys do not hold. A child with its parent satisfies them.
-example : (keys "9").Valid defaults ∧ ¬(keys "9").ForeignKeysHold := by decide +kernel
-example : (keys "1").rows.getD 1 [] = [stored 1 [.integer 1]] ∧ (keys "1").ForeignKeysHold := by decide +kernel
+example : (keys "9").Valid defaults ∧ ¬(keys "9").RowReferencesHold (keys "9").catalog.foreignKeyMapping := by decide +kernel
+example : (keys "1").rows.getD 1 [] = [stored 1 [.integer 1]] ∧ (keys "1").RowReferencesHold (keys "1").catalog.foreignKeyMapping := by decide +kernel
 
 end Belay.Sqlite.Model.ValidityExamples

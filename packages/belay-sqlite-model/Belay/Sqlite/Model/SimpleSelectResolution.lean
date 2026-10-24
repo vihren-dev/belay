@@ -62,8 +62,9 @@ theorem resolveSelect_no_subqueries (context : ResolveContext) (catalog : Catalo
   have noSources : sourceExpansion catalog 8 [] none =
       (fun _ => .error (.value (.restriction [] .subqueryHere))) := by funext index; rfl
   unfold resolveSelect
+  simp only [prepareCommonTables, List.any_nil, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
   rw [noSources]
-  simp [noJoins, sourcesOk, subqueryScopes, scopeOrder, resolveSubqueryBodies, subqueryBodyOrder, QueryScope.refresh, Scope.refreshSources, noStar, noCompound, body, Bind.bind,
+  simp [CommonTableCopies.recursionIssue, noJoins, sourcesOk, subqueryScopes, scopeOrder, resolveSubqueryBodies, subqueryBodyOrder, QueryScope.refresh, Scope.refreshSources, noStar, noCompound, body, Bind.bind,
     Except.bind, Except.mapError, Pure.pure, Except.pure]
 
 /-- For every simple query ({name}`Syntax.Subquery.Simple`) whose pending sources, result columns and
@@ -174,8 +175,9 @@ theorem resolveSelect_no_subqueries_prepareError (context : ResolveContext) (cat
   have noSources : sourceExpansion catalog 8 [] none =
       (fun _ => .error (.value (.restriction [] .subqueryHere))) := by funext index; rfl
   unfold resolveSelect
+  simp only [prepareCommonTables, List.any_nil, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
   rw [noSources]
-  simp [noJoins, sourcesOk, subqueryScopes, scopeOrder, resolveSubqueryBodies, subqueryBodyOrder, QueryScope.refresh, Scope.refreshSources, noStar, noCompound, body,
-    issueResolution, prepareError, Bind.bind, Except.bind, Except.mapError, Pure.pure, Except.pure]
+  simp [CommonTableCopies.recursionIssue, noJoins, sourcesOk, subqueryScopes, scopeOrder, resolveSubqueryBodies, subqueryBodyOrder, QueryScope.refresh, Scope.refreshSources, noStar, noCompound, body,
+    issueResolution, prepareError, CommonTableCopies.originalIssue, Bind.bind, Except.bind, Except.mapError, Pure.pure, Except.pure]
 
 end Belay.Sqlite.Model

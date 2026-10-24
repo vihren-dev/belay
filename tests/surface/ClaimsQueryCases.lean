@@ -22,7 +22,7 @@ theorem prepare_error_has_no_rows {script : Script} {db : Database} {isQuery : s
 Proof sketch: its sources and star check are empty, and the column resolver reports a prepare error. -/
 theorem unknown_column_fails (db : Database) : Fails (sql r"SELECT missing") db := by
   let query : Syntax.Subquery := ⟨[.expression (.identifier (name! "missing") .none) none "missing"],
-    none, [], none, [], [], none, none, none, none, false, none⟩
+    none, [], none, [], [], none, none, none, none, false, none, none⟩
   exact Fails.select_body_prepareError query [] [] (.noSuchColumn (name! "missing")) rfl rfl rfl rfl
     (resolveSources_none _) rfl (by decide +kernel)
 

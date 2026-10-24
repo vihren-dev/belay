@@ -97,11 +97,11 @@ def test_delete_maps_filter_and_returning(parse_sql: Callable[..., Translation])
 
 
 @pytest.mark.parametrize(("sql", "refused"), [
-    ("WITH x AS (SELECT 1) DELETE FROM t;", "WITH x AS (SELECT 1)"),
+    ("WITH RECURSIVE x AS (SELECT 1) DELETE FROM t;", "WITH RECURSIVE x AS (SELECT 1)"),
     ("DELETE FROM t INDEXED BY i;", "INDEXED BY i"), ("DELETE FROM main.t;", "main.t"),
 ])
 def test_delete_forms_outside_the_slice_are_refused(parse_sql: Callable[..., Translation], sql: str, refused: str) -> None:
-    """`delete` refuses WITH, INDEXED BY and a schema-qualified table at their range."""
+    """`delete` refuses WITH RECURSIVE, INDEXED BY and a schema-qualified table at their range."""
     with pytest.raises(SqlError) as raised:
         parse_sql(sql).statements()
     assert raised.value.status == "UNSUPPORTED"

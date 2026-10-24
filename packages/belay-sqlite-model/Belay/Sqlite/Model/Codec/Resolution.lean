@@ -9,6 +9,7 @@ resolves the statements reads it. -/
 
 namespace Belay.Sqlite.Model
 
+deriving instance Lean.ToJson for CommonTableError
 deriving instance Lean.ToJson for ExprError
 
 /-- A prepare error as JSON, in one flat form: an error that names a catalog object as its
@@ -63,6 +64,7 @@ deriving instance Lean.ToExpr for Syntax.TableConstraint
 deriving instance Lean.ToExpr for Syntax.TableReference
 deriving instance Lean.ToExpr for Syntax.Join
 deriving instance Lean.ToExpr for Syntax.Compound
+deriving instance Lean.ToExpr for Syntax.CommonTable
 deriving instance Lean.ToExpr for Syntax.Subquery
 deriving instance Lean.ToExpr for Syntax.ConflictAction
 deriving instance Lean.ToExpr for Syntax.ConflictClause
@@ -98,6 +100,7 @@ deriving instance Lean.ToExpr for CatalogTrigger
 deriving instance Lean.ToExpr for CatalogEntry
 deriving instance Lean.ToExpr for CatalogObject
 deriving instance Lean.ToExpr for Database
+deriving instance Lean.ToExpr for CommonTableError
 deriving instance Lean.ToExpr for ExprError
 deriving instance Lean.ToExpr for PrepareError
 deriving instance Lean.ToExpr for Resolved.Aggregate

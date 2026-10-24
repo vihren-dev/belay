@@ -8,6 +8,17 @@ a subquery by its index in that list. -/
 
 namespace Belay.Sqlite.Model.Syntax
 
+/-- The name and optional column list of a WITH definition. Its query is a
+{lit}`Subquery` in the statement's list, and that query's parent identifies the scope
+that declares the name. Use {lean}`(none : Option (List Identifier))` to derive names
+from the query, as in {lit}`WITH c AS (SELECT 1 AS x)`. -/
+structure CommonTable where
+  /-- The CTE name, compared without ASCII letter case. -/
+  name : Identifier
+  /-- Explicit output names, or none to derive them from the result columns. -/
+  columns : Option (List Identifier) := none
+  deriving Repr, BEq, DecidableEq
+
 /-- The terms of a compound {lit}`SELECT` as written (ADR 0019, D3): the left-most term, then each
 operator with the term on its right, in written order. Each term is a {lit}`SELECT` of the
 statement's list of subqueries, named by its index; its parent is the query that holds the
@@ -54,6 +65,10 @@ structure Subquery where
   /-- The terms of a compound subquery ({name}`Compound`), or {lean}`(none : Option Compound)`
   for one {lit}`SELECT`. -/
   compound : Option Compound := none
+  /-- A WITH definition declared in the parent query's scope. Definitions are templates:
+  resolution copies the body separately at each use and ignores unused bodies.
+  Use {lean}`(none : Option CommonTable)` for an ordinary expression or FROM subquery. -/
+  commonTable : Option CommonTable := none
   deriving Repr, BEq
 
 end Belay.Sqlite.Model.Syntax

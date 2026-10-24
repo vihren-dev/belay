@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.Resolution.SelectResolution
 import Belay.Sqlite.Model.Resolution.WriteResolution
+import Belay.Sqlite.Model.Resolution.CommonTableWrites
 import Belay.Sqlite.Model.Resolution.StatementCatalog
 import Belay.Sqlite.Model.Resolution.Updates
 import Belay.Sqlite.Model.Resolution.Deletes
@@ -27,7 +28,8 @@ them, so they resolve and leave the error to the execution semantics: such a BEG
 keeps the first saved catalog, and such a ROLLBACK keeps the current catalog.
 A pragma resolves with {name}`resolvePragma`: {lit}`PRAGMA foreign_keys = value` changes the
 state's setting outside a transaction and nothing inside one, as SQLite does, and
-{lit}`PRAGMA recursive_triggers = value` changes it also inside one. -/
+{lit}`PRAGMA recursive_triggers = value` changes it also inside one. SELECT and supported
+writes expand ordinary WITH definitions before their expressions resolve. -/
 def resolveStatement (context : ResolveContext) (state : ResolveState) :
     Syntax.Statement → Except NodeRestriction (Resolved.Statement × ResolveState)
   | .begin => .ok (.begin, { state with saved := state.saved.getD state.catalog })
@@ -45,18 +47,21 @@ def resolveStatement (context : ResolveContext) (state : ResolveState) :
     state.withCatalog (resolveCreateTrigger state.catalog name ifNotExists { table, time, event, condition, body })
   | .dropTrigger name ifExists => state.withCatalog (resolveDropTrigger state.catalog name ifExists)
   | .insert table columns rows conflicts algorithm returning subqueries =>
-    state.withWrite context (resolveWriteSubqueries context state.catalog 6 table (fun _ => []) subqueries
-      (resolveInsert context state.catalog table columns rows conflicts algorithm returning))
+    state.withWrite context (resolveCommonTableWrite context state.catalog 6 table (fun _ => []) subqueries
+      (fun index => resolveInsert context state.catalog table columns
+        (rows.map (List.map (Syntax.Expr.reindex index))) conflicts algorithm returning))
   | .update table assignments filter returning subqueries =>
-    state.withWrite context (resolveWriteSubqueries context state.catalog 4 table (writtenScope table) subqueries
-      (resolveUpdate context state.catalog table assignments filter returning))
+    state.withWrite context (resolveCommonTableWrite context state.catalog 4 table (writtenScope table) subqueries
+      (fun index => resolveUpdate context state.catalog table
+        (assignments.map fun (name, value) => (name, value.reindex index))
+        (filter.map (Syntax.Expr.reindex index)) returning))
   | .select columns source joins filter groupBy orderBy limit offset subqueries having distinct compound =>
     state.withCatalog (resolveSelect context state.catalog
       { columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none, having, distinct, compound }
       subqueries)
   | .delete table filter returning subqueries =>
-    state.withWrite context (resolveWriteSubqueries context state.catalog 3 table (writtenScope table) subqueries
-      (resolveDelete context state.catalog table filter returning))
+    state.withWrite context (resolveCommonTableWrite context state.catalog 3 table (writtenScope table) subqueries
+      (fun index => resolveDelete context state.catalog table (filter.map (Syntax.Expr.reindex index)) returning))
 
 /-- Resolve the statements from a zero-based index and a state, in order. A restriction of a
 statement gets the statement's index ({name}`NodeRestriction.at`). -/

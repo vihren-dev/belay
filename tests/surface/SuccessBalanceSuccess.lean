@@ -83,7 +83,7 @@ theorem missing_cents (db : Database) (position : Nat) (table : CatalogTable)
   have resolved : resolveStatement runContext db.raw.connection.resolveState balanceGuard.statements[0].1 =
       .ok (.prepareError (.expression (.noSuchColumn (name! "cents"))), db.raw.connection.resolveState) :=
     resolveStatement_select_of_resolveSelect runContext db.raw.connection.resolveState mainSyntax balanceQueries
-      rfl _ (guard_select_missing_cents db.raw.catalog position table found notTable missing)
+      rfl rfl _ (guard_select_missing_cents db.raw.catalog position table found notTable missing)
   intro holds
   exact holds.not_fails (Fails.of_prepareError (script := balanceGuard) (isQuery := by rfl) rfl resolved)
 

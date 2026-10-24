@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from conformance import authored_query_sources, authored_right, query_source_mutants, right_mutants
+from conformance import authored_common_tables, authored_query_sources, authored_right, query_source_mutants, right_mutants
 from conformance.native_replay import prepare
 from conformance.resolve_mutants import AGREE, UNSUPPORTED, measure
 from conformance.sql_text import runtime_translator
@@ -18,16 +18,18 @@ ROOT = Path(__file__).resolve().parents[1]
 
 @pytest.mark.parametrize("name", list(query_source_mutants.MUTANTS))
 def test_derived_source_mutant_changes_a_verdict(runtime_root: Path, name: str) -> None:
-    """Source scope, each column's affinity/collation and whole-row certainty remain observable.
+    """Source scope, metadata and certainty, plus CommonTableScope/Expansion's name and recursion
+    checks, remain observable through native verdicts.
     Each invocation changes one rule, so the test runs one mutation build at a time."""
     wanted = query_source_mutants.TARGETS[name]
-    raw = authored_query_sources.records([case for case in authored_query_sources.definitions() if case.name in wanted])
+    source = authored_common_tables if name.startswith("cte_") else authored_query_sources
+    raw = source.records([case for case in source.definitions() if case.name in wanted])
     cases = []
     for record in raw:
         case, answer = prepare(record, runtime_translator(runtime_root))
         assert case is not None, answer
         cases.append(case)
-    expected = UNSUPPORTED if name == "source_uncertainty_ignored" else AGREE
+    expected = UNSUPPORTED if name in {"source_uncertainty_ignored", "cte_recursion_not_registered"} else AGREE
     result = measure(cases, ROOT, runtime_root, {name: query_source_mutants.MUTANTS[name]},
                      {name: wanted}, expected=expected)
     assert result[name]["killed"], result

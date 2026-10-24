@@ -4,8 +4,8 @@ set_option doc.verso true
 
 /-! The clauses of one SELECT. The port of {lit}`belay/sqlite/syntax_select.py`: result columns,
 the first table and the joins, or none without FROM, and WHERE, GROUP BY, ORDER BY, LIMIT,
-OFFSET, HAVING and DISTINCT. A compound SELECT is in {lit}`CompoundSelect.lean`. WITH, a window
-clause and NULLS FIRST or LAST are refused. -/
+OFFSET, HAVING and DISTINCT. Compound SELECT and WITH are in {lit}`CompoundSelect.lean`.
+A window clause and NULLS FIRST or LAST are refused. -/
 
 namespace Belay.Sqlite.Translation
 

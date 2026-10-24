@@ -80,8 +80,18 @@ The frontend maps these statements, and refuses every other statement as
   The library primitive `Resolved.Source.subquery index width` reads the complete
   result rows of an indexed query in the statement's context. It supports the existing joins,
   keeps enclosing-query cells through NULL extension, and refuses a source whose complete
-  row multiset depends on a window's tie order or whose evaluation fails. CTEs and views
-  remain outside the implemented part of ADR 0019 slice 4.
+  row multiset depends on a window's tie order or whose evaluation fails.
+- Ordinary nonrecursive `WITH` definitions use the same query sources. Explicit column
+  lists, forward references, repeated uses and nested name shadowing are supported.
+  Each use can read its permitted enclosing-query bindings. Unused definitions are not
+  prepared. WITH also prefixes the supported INSERT VALUES, UPDATE and DELETE forms;
+  nested definitions can occur in their scalar subqueries. Actual recursion, the
+  `RECURSIVE` keyword and both materialization hints remain model restrictions.
+  Invalid circular references and column counts retain SQLite's preparation errors.
+  Nested WITH also resolves in supported trigger expressions. Execution remains
+  unmodeled when a trigger body both writes and uses a subquery; successful
+  preparation does not remove that existing runtime restriction.
+  Views remain outside the implemented part of ADR 0019 slice 4.
 - Compound `SELECT` (ADR 0019, D3): `UNION ALL`, `UNION`, `INTERSECT` and `EXCEPT` of
   `SELECT` terms as above, from left to right, as a statement and as the `q` of `EXISTS`,
   `IN` and a scalar subquery. Two rows are equal when each column compares equal under the
@@ -192,7 +202,7 @@ row of `DO UPDATE` are always ABORT. In the schema, a `PRIMARY KEY`, `UNIQUE` or
 `OR` clause; keys with different algorithms other than REPLACE are the restriction
 `mixed-conflict-algorithms`, UPDATE of such a table is `constraint-algorithm-update`, and
 REPLACE of a NOT NULL column with a default is `replace-default`. `UPDATE OR`, a target with a direction, collation,
-`NULLS` order, qualified name or `WHERE`, `WITH`, `FROM` in writes, sort modifiers in keys,
+`NULLS` order, qualified name or `WHERE`, `FROM` in writes, sort modifiers in keys,
 partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
 options, `AS SELECT`, views, `TEMP` and `INSTEAD OF` triggers, virtual tables, `EXPLAIN`, the pragmas that the next paragraphs do not name,
 `DISTINCT` inside an aggregate call, unsupported table-valued functions in
@@ -280,7 +290,7 @@ that foreign keys reference count violations as SQLite's `sqlite3FkCheck` does, 
 rowid order (primary-key order for a `WITHOUT ROWID` table), and a statement that ends with a
 count other than zero is `FOREIGN KEY constraint failed` and changes nothing. A child key
 looks up its parent under the parent index's affinity and collation, a parent row finds its
-child rows as `parent = child` compares them, and a child key with a NULL column needs no
+child rows as `parent = child` compares them, and a child key with a selected NULL column needs no
 parent. The actions `CASCADE`, `SET NULL`, `SET DEFAULT`, `RESTRICT` and `NO ACTION` run after
 each deleted row and after each updated row whose parent key changes, also in chains and for a
 table that references itself, with every constraint of their rows ABORT. A write that
@@ -290,6 +300,13 @@ the implicit `DELETE` of `DROP TABLE`. A deferred foreign key is the restriction
 `deferred-foreign-key`, `ON CONFLICT DO UPDATE` on a table with a key to check is
 `foreign-key-upsert`, and a write whose actions nest deeper than the trigger depth limit, or
 whose `REPLACE` deletes more than one row with foreign keys, is not described.
+
+Action assignments use the selected child columns in parent-key order, including repeated
+targets. For a mapping that selects child `x` twice, CASCADE, SET NULL and SET DEFAULT leave
+unused child `y` unchanged. UPDATE OF triggers use these assigned columns; constraint checks
+also include generated columns that depend on them. A generated dependent column is not an
+assigned column for UPDATE OF matching. Parent scans and child lookups can use different
+affinities, so enforcement alone does not imply the row-reference atom described below.
 
 `PRAGMA table_info(t)` and `PRAGMA foreign_key_list(t)` (ADR 0019, D2), also with `= t`, give
 SQLite's rows for the catalog of their time. `table_info` has one row for each column that is
@@ -323,14 +340,27 @@ unique constraints of each checked table hold.
 child row and foreign key that the row does not satisfy, also when foreign keys are off: the
 table name, the rowid (NULL for a `WITHOUT ROWID` table), the parent table as the key writes it,
 and the `fkid` of the key, in scan order and then in `fkid` order. The child row finds its parent
-as a write does, a NULL in the key satisfies it, and a missing parent table finds no row. A
+as a write does. NULL in a selected child-key column satisfies it. The selected mapping can
+repeat a column, so NULL in an unused declaration column does not exempt the row. Without a
+selected comparison, the NULL test uses the declaration columns. A missing parent table finds no row. A
 foreign key whose parent table has no parent key fails at prepare with
 `foreign key mismatch - "c" referencing "p"`, before any row. A missing table fails with
 `no such table`, and a name of SQLite's own tables is the restriction `system-table`. Without a table name, two or more tables with a mismatch are the restriction
 `foreign-key-mismatch-order`, and two or more tables with rows give no result. When the
-statement does not fail, the form without a table name gives no rows exactly when the foreign
-keys of every table hold (`Database.ForeignKeysHold`), and the form with the name of table t
-exactly when the foreign keys of t hold (`Table.ForeignKeysHold`).
+statement prepares, the form without a table name gives no rows exactly when the database has
+`Database.RowReferencesHold` with `database.catalog.foreignKeyMapping`; the named-table form
+uses `Table.RowReferencesHold` with that same mapping. These facts describe row comparisons,
+not whether the parent schema supports them. `Database.ParentSchemasCompatible` separately
+requires a located, catalog-selected mapping for every declaration, including empty child
+tables. A missing parent and NULL child keys can give an empty pragma result while that
+schema fact fails. An existing nonunique parent instead causes a prepare error.
+
+A supplied `ForeignKeyMapping` is total over child positions and declarations; it cannot omit
+a key from either atom. It can retain a parent comparison after a supporting index is dropped.
+The row fact then reads child rows, parent rows and parent-column definitions. Its frame laws
+transport catalog positions explicitly through DROP. The schema fact also reads eligible
+indexes and their selection order, so the same index drop can preserve row truth and break
+schema compatibility. Neither foreign-key atom is part of `Database.Valid`.
 
 A generated column (ADR 0014, slice 5) is `VIRTUAL` or `STORED`, and `PRAGMA table_xinfo`
 reports it with `hidden` 2 or 3. Its expression resolves over the table's columns after the
@@ -540,6 +570,7 @@ should shrink.
 | `raise-form` | `RAISE` in a trigger outside the one result column of a `SELECT` without `FROM`, alone or as a result of its `CASE`, or with a message that can fail, is not modeled | ADR 0018, slice 5 |
 | `trigger-form` | A trigger with `ON CONFLICT DO UPDATE` in its body, with a function that can fail in a write of its body that no other restriction covers, with `changes()`, `total_changes()` or `last_insert_rowid()` in its body or `WHEN` condition, with a `WHEN` condition that has a function that can fail or a subquery, or with too many triggers that fire each other, and `ON CONFLICT DO UPDATE` on a table with a trigger, are not modeled | ADR 0018, slice 5 |
 | `source-column-name` | A derived source whose duplicate output names need SQLite's random suffix is not modeled; give the columns distinct aliases | ADR 0019, D5 |
+| `recursive-common-table` | A recursive CTE is not modeled, including when the WITH clause omits RECURSIVE; use nonrecursive definitions | ADR 0019, D5 |
 | `compound-order-by-term` | An `ORDER BY` term of a compound `SELECT` that the model cannot match with a result column as SQLite does, such as an aggregate, or a `COLLATE` term after which SQLite names a result column at random, is not modeled | ADR 0019, D3 |
 | `connection-counter-read` | `last_insert_rowid()` in an `INSERT` or an upsert, and `total_changes()` in a write that runs trigger programs or foreign-key actions, are not modeled, because the counter changes while the statement runs | ADR 0024, D2 |
 | `nondeterministic-error-order` | A call of `changes()`, `total_changes()`, `last_insert_rowid()`, `random()` or `randomblob(n)` in a generated column, an index expression or an index filter, in an expression with another error of its walk of names, is not modeled, because the error that SQLite reports depends on the order of the walk | ADR 0024, D5 |

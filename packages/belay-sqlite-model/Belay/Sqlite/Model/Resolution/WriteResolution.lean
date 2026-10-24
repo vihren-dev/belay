@@ -16,14 +16,16 @@ namespace Belay.Sqlite.Model
 
 /-- Resolve the subqueries of a write to the table {lit}`tableName`, whose syntax holds them at
 child {lit}`field`, around the scope that {lit}`scopeOf` gives for the table, then the write
-with them ({lit}`resolveWrite`). A subquery that reads the written table directly is
+with them ({lit}`resolveWrite`). The optional {lit}`columnNames` supplies explicit CTE
+output names; use the empty default for ordinary subqueries. A subquery that reads the written table directly is
 {name}`RestrictionKind.subqueryReadsTarget`. -/
 def resolveWriteSubqueries (context : ResolveContext) (catalog : Catalog) (field : Nat) (tableName : Identifier)
     (scopeOf : CatalogTable → Scope) (subqueries : List Syntax.Subquery)
-    (resolveWrite : List Resolved.Query → SubqueryShapes → StatementResolution) : StatementResolution :=
+    (resolveWrite : List Resolved.Query → SubqueryShapes → StatementResolution)
+    (columnNames : List (Nat × List Identifier) := []) : StatementResolution :=
   let target := catalog.findTable tableName
   let scope := (target.map fun (_, table) => scopeOf table).getD []
-  match resolveSubqueries context.profile.dqsDml catalog field (QueryScope.ofScope scope) subqueries with
+  match resolveSubqueries context.profile.dqsDml catalog field (QueryScope.ofScope scope) subqueries columnNames with
   | .error (.noSuchTable name) => prepareError catalog (.noSuchTable name)
   | .error (.value issue) => issueResolution catalog [] issue
   | .ok (resolved, shapes) =>

@@ -28,7 +28,7 @@ theorem Script.outputOn_selectOne_count
     {subCondition : Option Resolved.Expr} {mainCondition : Resolved.Expr} {name : String} {text : String}
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none
       [Syntax.Subquery.mk [.expression (.callStar name) none text] (some reference) [] subFilter [] [] none none none none
-        false none] none false none, parameters) :: rest)
+        false none none] none false none, parameters) :: rest)
     (count : normalizeIdentifier name = "count")
     (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
     (subResolves : FilterResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table) []
@@ -58,7 +58,7 @@ theorem Holds.iff_selectOne_count
     {subCondition : Option Resolved.Expr} {mainCondition : Resolved.Expr} {name : String} {text : String}
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none
       [Syntax.Subquery.mk [.expression (.callStar name) none text] (some reference) [] subFilter [] [] none none none none
-        false none] none false none, parameters) :: rest)
+        false none none] none false none, parameters) :: rest)
     (count : normalizeIdentifier name = "count")
     (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
     (subResolves : FilterResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table) []
@@ -87,7 +87,7 @@ theorem Empty.iff_selectOne_count
     {subCondition : Option Resolved.Expr} {mainCondition : Resolved.Expr} {name : String} {text : String}
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none
       [Syntax.Subquery.mk [.expression (.callStar name) none text] (some reference) [] subFilter [] [] none none none none
-        false none] none false none, parameters) :: rest)
+        false none none] none false none, parameters) :: rest)
     (count : normalizeIdentifier name = "count")
     (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
     (subResolves : FilterResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table) []
@@ -116,7 +116,7 @@ theorem Fails.not_selectOne_count
     {subCondition : Option Resolved.Expr} {mainCondition : Resolved.Expr} {name : String} {text : String}
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none
       [Syntax.Subquery.mk [.expression (.callStar name) none text] (some reference) [] subFilter [] [] none none none none
-        false none] none false none, parameters) :: rest)
+        false none none] none false none, parameters) :: rest)
     (count : normalizeIdentifier name = "count")
     (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : db.raw.catalog.findTable reference.table = some (position, table))
     (subResolves : FilterResolves runContext.profile.dqsDml (tableScope db.raw.catalog reference position table) []

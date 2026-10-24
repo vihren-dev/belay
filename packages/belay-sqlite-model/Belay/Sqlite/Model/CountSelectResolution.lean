@@ -33,7 +33,7 @@ theorem resolveQueryBody_count (dqs : Bool) (scope : Scope) (current : Option Na
       filter condition { current, later })
     (pendingOk : resolvePendingSources dqs scope pending = .ok sources) :
     resolveQueryBody dqs scope { current, later } outerAliases pending
-        (Syntax.Subquery.mk [.expression (.callStar name) alias text] source [] filter [] [] none none none none false none) =
+        (Syntax.Subquery.mk [.expression (.callStar name) alias text] source [] filter [] [] none none none none false none none) =
       .ok (Resolved.Query.countOf sources condition ((alias.map (·.text)).getD text), none) := by
   have called : aggregateCall (.callStar name) = true := by simp [aggregateCall, count]
   have columns := resolveColumns_countStar dqs scope { current, later } name alias text count

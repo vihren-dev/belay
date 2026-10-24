@@ -47,10 +47,10 @@ theorem resolveStatement_selectNoFrom_columns (context : ResolveContext) (state 
     (resolves : FilterResolves context.profile.dqsDml [] [] filter condition) :
     resolveStatement context state (.select [.expression value none text] none [] filter [] [] none none [] none false none) =
       .ok (.query (Resolved.Query.simple [] condition [.scalar expression] [name]) [], state) := by
-  have simple : (Syntax.Subquery.mk [.expression value none text] none [] filter [] [] none none none none false none).Simple :=
+  have simple : (Syntax.Subquery.mk [.expression value none text] none [] filter [] [] none none none none false none none).Simple :=
     ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, by simpa using noAggregate⟩
   have result := resolveStatement_select_simple context state
-    (Syntax.Subquery.mk [.expression value none text] none [] filter [] [] none none none none false none)
+    (Syntax.Subquery.mk [.expression value none text] none [] filter [] [] none none none none false none none)
     simple rfl [] [] _ condition [] (resolveSources_none state.catalog) (by simp [starIssue]) columns
     (by simpa [resultAliases] using resolves) (resolvePendingSources_nil _ _) (by
       simp only [List.flatten_cons, List.flatten_nil, List.append_nil, List.filterMap_cons, List.filterMap_nil,
