@@ -96,3 +96,7 @@ until the prototype has evidence.
   retain. The record now identifies the fixed-start read-only lookup and
   whole-program failure disjunction explicitly, and reserves changed meanings
   for owner judgment. This is documentation only; Nix fixture inputs are unchanged.
+- 2026-10-24: wording review `20261024T142000Z-a49073a6` found no musts
+  and one should: qualify the ifOk disjunction with modeled execution. The design
+  record now repeats the task's all-branch modeled-execution premise and states
+  that an unmodeled outcome never discharges ifOk.

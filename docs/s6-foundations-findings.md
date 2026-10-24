@@ -184,9 +184,11 @@ The remaining findings specify required work or routine implementation choices.
 The bounded read-only context preserves the guide's meaning of `before.t`: table
 `t` from the fixed starting database in a postcondition, as if attached under
 `before`. It does not narrow that read-only lookup or promise writable ATTACH.
-Fresh-run whole-trace `ifOk` preserves the guide's disjunction: the postcondition
-holds or some statement of the program failed. A suffix-scoped helper would be
-an additional API, not required here. Neither recommendation changes a guide
+Under the task's required modeled-execution premise on every branch, fresh-run
+whole-trace `ifOk` preserves the guide's disjunction: the postcondition holds or
+some statement failed with a modeled SQL error. An unmodeled outcome never
+discharges `ifOk`. A suffix-scoped helper would be an additional API, not required
+here. Neither recommendation changes a guide
 meaning on the evidence found. Direct semantic frame lemmas are an implementation
 choice; changes to any of these meanings still require the owner's decision.
 
