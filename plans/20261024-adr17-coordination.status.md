@@ -67,13 +67,7 @@ orders have equal rows but total_changes
 
 ## Resolved findings
 
-The FK regression uses `p(a,b,PRIMARY KEY(a,a))` and child `(x,y)` referencing
-`p(a,b)`. Native rejects `(99,NULL)` against parent `(1,2)` under enforcement;
-it reports a pragma violation if the row was stored with enforcement off.
-The old model exempts the row because it reads unused `y`. The revised FK task
-and ADR22 require selected `x` twice, as pinned native `fkLookupParent` does.
-The FK workspace retains its split-API work. The accepted correction is now
-assigned to `text_build_boundaries`; no FK acceptance result is claimed yet.
+The repeated-column FK correction is recorded in its task; preservation remains open.
 
 The INSERT SELECT streaming/materialization counterexample and accepted scope
 are now in ADR19 D4. The formatting counterexample is reflected in ADR17 D6:
