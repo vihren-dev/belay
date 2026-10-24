@@ -82,3 +82,12 @@ until the prototype has evidence.
   log `build/agent-logs/s6-surface-tests-3.log`. Nix's computed judge identity
   still matches all 55 locked components. The proof and program observations
   are unchanged. Independent review of this refactor follows.
+- 2026-10-24: refactor review `20261024T141327Z-6c26ac21` found no musts
+  or shoulds. Tightened the design record after coordinator review: the only
+  demonstrated semantic owner judgment concerns visible equivalence versus
+  composition. The proposed production relation retains actual runs and all
+  branch outcomes, including failed and unmodeled alternative traces. The
+  before context is required model work; whole-trace fresh-run ifOk and direct
+  frame lemmas are routine implementation choices. No prototype source changed;
+  the latest Nix surface acceptance still applies. Task-boundary gates remain
+  queued behind the other agents' builds.

@@ -48,8 +48,8 @@ The candidate `ifOk` permits SQL errors but still checks every later continuatio
 for modeled execution. Its final property is conditional on the entire trace
 being successful. Thus an error followed by `random()` cannot prove even a true
 postcondition. For fresh triples the trace starts empty. A production API must
-say whether a nested conditional claim refers to the entire trace or only the
-new suffix; that convenience is not part of this prototype.
+state this whole-trace scope. Fresh-run whole-trace claims fit the guide; the
+prototype found no requirement for a nested suffix-scoped convenience API.
 
 ## Equivalence and congruence
 
@@ -91,7 +91,26 @@ when a concrete alternative becomes unmodeled, its transformer is false and
 forgets that alternative's reason and partial trace. Actual-run equality still
 retains the actual failure trace. Full equality of alternative failed traces
 would need an explicit branch-outcome relation and soundness theorem. No second
-execution engine was added to settle that separate design choice.
+execution engine was added for this audit.
+
+For production composition, recommend equality of the actual full run and of
+the set of all complete branch outcomes, at every shared clock, index and full
+connection. Each outcome retains the optional return value, complete output
+trace and final connection. This includes error codes, unmodeled reasons and
+partial traces on every alternative. SQL errors continue; unmodeled outcomes
+stop with no return value. A branch always permits the actual raw output; a
+`oneOf` step additionally permits each concrete `rows` result on the same next
+connection. Set membership is sufficient: duplicate alternatives and their
+enumeration order are not separate observations, except where the actual raw
+`oneOf` output already exposes them.
+
+This proposal needs a small inductive branch-run relation whose statement rule
+calls `runScriptStep`, plus proofs of actual-run inclusion, bind composition and
+the connection to `SucceedsFrom`. Its bind law composes each completed prefix
+with its continuation at the retained value, connection and advanced index;
+stopped prefixes remain stopped. It needs no SQL resolver or evaluator changes.
+Unlike the prototype's transformer equality, it retains failed-alternative
+observations. These production definitions and proofs remain future work.
 
 ## The fixed start database in postconditions
 
@@ -150,23 +169,22 @@ matching output order; commuting only final rows is a separate weaker claim.
 Add a computed footprint only when a specific automation rule needs it and has
 a soundness theorem. This experiment does not justify a general effect framework.
 
-## Owner decisions before the full S6 specification
+## Owner judgment before the full S6 specification
 
-1. **Meaning of equivalence.** Keep visible database equivalence and restrict its
-   composition rules, or add a separate context-sensitive relation. Recommend
-   separate names: keep the useful visible observation, and require the stronger
-   relation for bind/append. `CheckedEq` is an audited starting contract; decide
-   whether alternative failed traces are also observable before finalizing it.
-2. **Nested conditional triples.** The task already requires modeled execution
-   on every branch. Choose whole-run or suffix error scope for nested claims.
-   Recommend fresh-run whole traces first and an explicit suffix helper only
-   when needed; neither choice permits a model restriction as success.
-3. **The start-database qualifier.** Implement general attached databases, or a
-   read-only two-database proof context using the model's query evaluator.
-   Recommend the bounded proof context with exact origin-aware resolution.
-4. **Commutation automation.** Start with direct checked lemmas and explicit
-   all-continuation premises, or build a general effect analysis first.
-   Recommend the direct lemmas; table-only footprints are already refuted.
+The guide's visible equivalence and unrestricted composition claim conflict.
+The owner can keep the visible meaning of `≈` and restrict its composition laws,
+or use the full branch-outcome contract above for `≈` and give visible database
+observations a separate name. Recommend the latter: composition uses a named
+context-sensitive relation with all failed and unmodeled alternative traces,
+while a named weaker relation serves final-database comparisons. The checked
+counterexamples require this semantic correction; the proposed branch relation
+is not yet implemented or proved by this prototype.
+
+The remaining findings specify required work or routine implementation choices.
+The guide already promises `before`; the bounded read-only context above is its
+minimal model prerequisite. Fresh-run whole-trace `ifOk` and direct semantic
+frame lemmas fit the stated contracts. Neither needs a new owner decision on the
+evidence found here.
 
 Using `mvcgen` is optional once checked specifications and pure/bind rules are
 available. No owner decision is needed to retain the explicit-lemma route.
