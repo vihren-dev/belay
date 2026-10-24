@@ -141,3 +141,13 @@ The integration workspace joins CTE review carry
   Claude review `20261024T192443Z-4e8d9b29` with no findings. Frozen prediction
   classification and post-review full/verdict gates remain pending. No view
   behavior is part of this boundary.
+- The first combined full-gate attempt ended with exit 124 at the configured
+  1,500-second aggregate Nix suite limit. Session `65827` reached 40% of the
+  72-test public surface suite without a reported test failure. The preceding
+  Nix model suite passed all 251 tests in 1,041.50 seconds at
+  `/nix/store/sbkyci4g6afx2lrry8sdvpv9ywzgmmkp-sqlite-verifier-test-model-1`.
+  The full report is incomplete; verdict and prediction comparison did not run.
+  This is not part-2 acceptance. The unchanged reviewed source is queued for a
+  cached full/verdict/prediction retry after the S5 build handoff. Individual test
+  timeouts remain unchanged. The attempt log is
+  `/tmp/query-source-cte-integration-full.log`.
