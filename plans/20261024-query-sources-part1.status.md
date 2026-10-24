@@ -1,6 +1,7 @@
-# Status: queries as sources
+# Historical record: queries as sources, part 1
 
-Created 2026-10-24. Status: OPEN. Part 1 DONE; CTEs and views remain.
+Created 2026-10-24. Part 1 status: DONE. This is its retained acceptance history.
+Current task state: [active status](20261024-query-sources.status.md).
 Task: [task file](20261024-query-sources.task.md).
 Specs: ADR 0019 D5/slice 4 and D3 metadata exception; ADR 0017 S6.
 Inspected base: `vihren-dev/sqlite-verifier`, PR #239, commit `98a07bfe`.

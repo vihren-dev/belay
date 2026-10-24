@@ -61,3 +61,6 @@ PR. Task-end Nix and scheduled checks remain required after all three parts.
   `/nix/store/9zkv499mbvg2cwcs5jnn351rv253zfsd-sqlite-verifier-test-query-source-callback-carry-1`.
   It compiles the consumer against this source's built model, text and surface
   packages. The carry changes proof statements and consumers only.
+- Carry review `20261024T164800Z-0559f47b` found no must issue and one should
+  issue: the retained part-1 history needed an explicit historical label. Its
+  header now states Part 1 DONE and links to this active task status.
