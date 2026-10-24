@@ -10,8 +10,8 @@ The owner reported that PR #241 passes and #242 fails the Linux API reference
 build at 532 selected public modules. The recorded exception is in doc-gen4's
 `read:transitive_imports`; its VALUES seed participates in a recursive UNION.
 The patch preserves the root set and closure at the query boundary. The
-compiled-reader Nix regression passes; the real reference build and final
-task acceptance remain in progress.
+compiled-reader regression and full 532-module Nix reference build pass.
+Final task acceptance and descendant stack integration remain in progress.
 
 ## Progress
 
@@ -55,11 +55,25 @@ checks. Both findings are fixed; implementation scope is unchanged.
   exclude missing, extra and duplicate returned modules.
 - The original pinned reader's greater-than-500 failure is recorded in the
   PR #242 and #243 CI runs above. The patch is restricted to that query seed.
-  Focused supporting checks are `tests/test_api_reference.py` and
-  `tests/test_docgen_dependencies.py`. Full reference, post-review task gates
-  and descendant stack integration are still pending.
+  The regression for this fix is the native `doCheck` fixture in
+  `build-support/doc-gen4.nix`. Existing `tests/test_api_reference.py` and
+  `tests/test_docgen_dependencies.py` guard the unchanged caller and dependency
+  configuration; they do not exercise the repaired reader query.
 - The coordinator confirmed the reviewed task's observed-failure contract for
   this urgent CI repair. The regression names that failure; the workaround
   keeps its durable CI URL, pinned source and removal condition. An upstream
   report is prepared but unpublished. This is a narrow interpretation of the
   workaround-report guidance, not a claim that an upstream issue exists.
+
+- Implementation `caf53b680617e97487fe28c415a8f8200c4e9eb2` passed review
+  `20261024T175710Z-caf53b68` with no musts and two should findings. The upstream
+  report request is rejected under the coordinator's explicit interpretation
+  above. The status now distinguishes the native regression from the existing
+  caller/configuration checks.
+- The sandboxed Linux `apiReferenceBase` build passed at
+  `/nix/store/sc78xqcdj6z7d0sqlman4rpgnhxznsy9-sqlite-verifier-api-reference-base-2`.
+  Its report contains 532 public modules and 41 recursor-link corrections.
+  Inspection of this immutable Nix output found all 532 selected HTML pages
+  and their expected source URIs. The existing cached-core split is intact.
+  Exact-commit source linking, post-review full/verdict, Nix/scheduled checks
+  and descendant stack reference acceptance remain pending.
