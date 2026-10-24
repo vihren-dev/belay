@@ -108,3 +108,34 @@ PR. Task-end Nix and scheduled checks remain required after all three parts.
   and FK boundary for these gates, before any view behavior is added. It also
   checks the maintained full S4 success fixtures with the resolver adjustments.
   S4's physical-table premise correction remains a separate reviewed change.
+
+## Combined part-2 acceptance preparation
+
+The integration workspace joins CTE review carry
+`80b4cb5e86725b7168a3894b4e804a030b34b473`, S4 source
+`24ca8b4c9635ee14f3235001dc86d7315ac514ac`, and FK review carry
+`9350aa3147e92cf27fe59c00750fd638440494ba`. It contains no view behavior.
+
+- The model manifest retains every new parent entry and the FK removal of
+  the replaced `ForeignKeysHold` module. The resulting manifest has 379 entries.
+- Five maintained S4 fixtures account for the no-WITH expansion branch and
+  the explicit ordinary-query premise. Their public success formulas retain
+  the separately accepted physical-table premises.
+- ADR 0019 D4 carries the exact streaming/materialization section of reviewed
+  owner-decision commit `1c6eeb5ee995118c4635d48f3f969ee64a2ed8b2`. This is
+  specification synchronization; this checkpoint adds no INSERT SELECT support.
+- Published part-1 acceptance history from the FK parent is retained in the
+  linked part-1 record, alongside the newer active CTE progress above.
+- The focused Nix integration check passed all 19 selected fixtures at
+  `/nix/store/11yz0c3ypy7q42fjfb0896ag2y7whzg9-sqlite-verifier-test-common-tables-integration-1`.
+  It includes the complete unique-email and balance success proofs, all selected
+  query-claim consumers and the translation checks. The S4 physical-table
+  premises and the existing axiom restrictions are unchanged.
+- The accepted derived-source predictions at
+  `/nix/store/2kpi159rivfybjqkv2cw7vxh31qpdlbq-sqlite-verifier-predictions` and the
+  S4 predictions at
+  `/nix/store/ifmznfzpqyd12dxjhr3yp404ljb0dgxy-sqlite-verifier-predictions` are
+  byte-identical: 53 files and 7,372 cases. The combined CTE gate will compare
+  every prediction against that accepted baseline.
+- Independent merge review, frozen prediction classification and post-review
+  full/verdict gates remain pending. No view behavior is part of this boundary.

@@ -22,17 +22,19 @@ rows {lit}`'1'` and {lit}`'01'` of {lit}`p` and {lit}`1` of {lit}`c`, the child 
 
 namespace Belay.Sqlite.Model
 
-/-- The values of the key columns of a row, in the order of the parent key's pairs, or the
-single column of a rowid key. -/
+/-- The values of the selected child columns of a row, in parent-key order. Missing cells
+read NULL. {name}`childPositions` retains duplicate selections. -/
 def childValues (link : ForeignKeyLink) (key : ParentKey) (values : List Value) : List Value :=
-  match key with
-  | .rowid => link.key.columns.take 1 |>.map (values.getD · .null)
-  | .columns pairs => pairs.map fun (child, _) => values.getD child .null
+  (childPositions link key).map (values.getD · .null)
 
-/-- Whether a key value is NULL in a row: a child row with one is satisfied without a parent
-({lit}`OP_IsNull`), also when its other columns are set. -/
+/-- Whether a selected child key value is NULL: use {name}`childValues` for a located parent,
+including repeated child columns, and the declaration's columns when no comparison is selected.
+A NULL in an unused declaration column does not exempt a located key. For example, a selected
+projection {lit}`[x,x]` ignores NULL in {lit}`y`, as SQLite's {lit}`OP_IsNull` checks do. -/
 def ForeignKeyLink.hasNull (link : ForeignKeyLink) (values : List Value) : Bool :=
-  link.key.columns.any fun position => values.getD position .null == .null
+  match link.parent with
+  | .located _ key => (childValues link key values).any (· == .null)
+  | .missing | .mismatch _ => link.key.columns.any fun position => values.getD position .null == .null
 
 /-- The affinity of a parent index column, as {lit}`sqlite3IndexAffinityStr` gives it: NUMERIC
 for INTEGER, REAL and NUMERIC columns, and the column's own affinity otherwise. -/
@@ -81,10 +83,7 @@ an action): for each pair, {lit}`parent = child` is true, with the comparison af
 parent column and the child column ({name}`comparisonAffinity`) and the parent's collation. -/
 def childMatches (child parent : CatalogTable) (link : ForeignKeyLink) (key : ParentKey) (parentRow childRow : Row) :
     Bool :=
-  let positions : List Nat := match key with
-    | .rowid => link.key.columns.take 1
-    | .columns pairs => pairs.map (·.1)
-  positions.zipIdx.all fun ((position : Nat), (index : Nat)) =>
+  (childPositions link key).zipIdx.all fun ((position : Nat), (index : Nat)) =>
     let (value, affinity, collation) := parentCell parent key parentRow index
     let childAffinity := ((child.columns[position]?).map CatalogColumn.affinity).getD Affinity.blob
     let (left, right) := Resolved.comparisonOperands (comparisonAffinity (some affinity) (some childAffinity)) value

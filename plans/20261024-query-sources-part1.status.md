@@ -196,3 +196,20 @@ uses the measured before/after predictions and verdicts recorded below.
   Subject checkpoint `d87fbaa0` excludes frozen corpora, claims and the judge lock.
   Ordinary CTEs and views remain OPEN; v53 retains its separate owner-merge gate.
   Publication `test-nix` and `test-scheduled-checks` have not run for this checkpoint.
+
+## Part-1 subject publication (2026-10-24)
+
+  The subject publication merge combines `16bd87a3` with accepted S4 query-law
+  checkpoint `975f31eb`, including PR 241's source filter and no v53 evidence.
+  Merge reviews `20261024T161528Z-63299f66`/`20261024T163932Z-359eb0c7` passed.
+  The ADR records part-1 completion; review `20261024T164409Z-17f929bd` is clean.
+- Subject publication source `17f929bd`: full 853 passed in ten suites, no
+  failures/errors/skips, at `/nix/store/nfqd2rh03b7avhd5ifzk08rwbf9p38ab-sqlite-verifier-test-reports`.
+  Verdict 4867 AGREE/2505 MODEL_UNSUPPORTED, no disagreements/harness errors:
+  `/nix/store/sjs0cw7jyy2k5adr3rgw2jh6d1iybnii-sqlite-verifier-verdict`.
+  All 53 files at `/nix/store/2kpi159rivfybjqkv2cw7vxh31qpdlbq-sqlite-verifier-predictions`
+  match accepted `q4qrigjpa82cg89ggzkvinbnvmgi7pq6`, excluding its draft v53.
+  The judge lock is unchanged. Nix integration passed 70 checks in 364.39s.
+  Scheduled checks passed all 47 cases, no failures/errors/skips, at
+  `/nix/store/s5vl7g5lx4ikp3ypmcjrig1jc5y26swz-sqlite-verifier-scheduled-check-reports`.
+  All publication gates are terminal and passing; CTEs and views remain OPEN.

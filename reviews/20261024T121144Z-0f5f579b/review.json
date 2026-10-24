@@ -1,0 +1,60 @@
+{
+  "caller": "codex",
+  "commit": "0f5f579b617b07d842634825fde551a9462b1de3",
+  "date": "2026-10-24T12:11:44+00:00",
+  "exit": 0,
+  "files": [
+    "plans/20261024-surface-s5.status.md",
+    "plans/20261024-surface-s5.task.md"
+  ],
+  "findings": [
+    {
+      "id": "20261024T121144Z-0f5f579b#1",
+      "line": 125,
+      "path": "plans/20261024-surface-s5.task.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The task cites an \"owner's handoff override\" of the cadence in `AGENTS.md`, which no document in the repository records. It also gives `just test-scheduled-checks` where the cadence table says `just test-scheduled`, and the plan files for pragmas and evidence-after-error already use `test-scheduled-checks`. Fix: name the owner decision with its date, or amend the cadence table, and drop the unsourced \"override\" wording."
+    },
+    {
+      "id": "20261024T121144Z-0f5f579b#2",
+      "line": 137,
+      "path": "plans/20261024-surface-s5.task.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The task relies on S4's \"final success predicate\" and \"universal-branch semantics\". No S4 task file exists in `plans/`, and the status file only says S4's task is in another workspace. Fix: cite the S4 task by path or PR, or mark these S4 semantics as unconfirmed assumptions that S5 must re-check when S4 lands."
+    },
+    {
+      "id": "20261024T121144Z-0f5f579b#3",
+      "line": 7,
+      "path": "plans/20261024-surface-s5.task.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The task and status files cite the \"product guide\" (sections and open questions 16 and 18) as a specification, but the repository contains no such file. Fix: give the guide's location or version, or copy the cited requirements into the task."
+    }
+  ],
+  "id": "20261024T121144Z-0f5f579b",
+  "kind": "review",
+  "reviewer": "claude",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

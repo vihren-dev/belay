@@ -1,0 +1,50 @@
+{
+  "caller": "codex",
+  "commit": "aa63c50d2d978fae882feded4ac534a2f78053e4",
+  "date": "2026-10-24T16:49:12+00:00",
+  "exit": 0,
+  "files": [
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/OutputResultsLaws.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/QueryStepOutput.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleQuerySteps.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/StatementCalm.lean",
+    "plans/20261024-surface-s4.status.md",
+    "reviews/20261024T160848Z-2175f989/review.json",
+    "tests/surface/SuccessBalanceMissing.lean",
+    "tests/surface/SuccessBalanceSuccess.lean"
+  ],
+  "findings": [
+    {
+      "id": "20261024T164912Z-aa63c50d#1",
+      "line": 12,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/SimpleQuerySteps.lean",
+      "rule": "R9",
+      "severity": "should",
+      "text": "The module docstring says faultless variants require a fault-free source. `resolvedStepOutput_simple_not_isError_of_faultless` has no `clean` hypothesis, and its own docstring says the source rows may have a fault. Fix: say that only the has-rows and has-no-rows faultless variants require a fault-free source, and that the no-error variant does not."
+    }
+  ],
+  "id": "20261024T164912Z-aa63c50d",
+  "kind": "review",
+  "reviewer": "claude",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

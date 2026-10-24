@@ -10,7 +10,8 @@ profile, so a proof about it gets the facts of a valid database without a hypoth
 namespace Belay.Sqlite
 
 export Belay.Sqlite.Model (Profile Profile.pinned Catalog Database.Valid Database.Admitted
-  Database.ForeignKeysHold Database.NotNull Database.ChecksHold Database.TypesFit Database.KeysUnique
+  ForeignKeyMapping Catalog.foreignKeyMapping Database.RowReferencesHold Database.ParentSchemasCompatible
+  Database.NotNull Database.ChecksHold Database.TypesFit Database.KeysUnique
   Database.RowidsDistinct)
 
 /-- The model database without the proof that it is valid. A claim that must also cover a

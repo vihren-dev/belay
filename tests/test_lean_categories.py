@@ -31,7 +31,7 @@ class Rules:
 
 REPOSITORY_RULES = Rules(
     package=("packages/",),
-    direct_fixture=("tests/public_doc_inventory/", "tests/surface/", "conformance/regressions/"),
+    direct_fixture=("tests/public_doc_inventory/", "tests/surface/", "tests/docgen/", "conformance/regressions/"),
     excluded=("experiments/",),
 )
 """The categories of this repository."""

@@ -21,6 +21,11 @@ even when a CTE is nonrecursive. SQLite's acceptance of recursion without the
 keyword is the reason for the semantic check. `MATERIALIZED` and
 `NOT MATERIALIZED` hints and `INSTEAD OF` triggers remain outside scope.
 
+The owner also accepted explicit physical-table premises for the S4 unique-email
+and balance examples on 2026-10-24. Views can satisfy their prior query/schema
+guards while indexing fails or a later view expression raises an error. Update
+those contracts and guide copies; preserve the native counterexamples.
+
 ## Required outcomes
 
 1. **Derived sources work through every layer.** A supported SELECT in FROM or
@@ -73,7 +78,9 @@ keyword is the reason for the semantic check. `MATERIALIZED` and
    existing query rules; it is not a new promise of a canonical order.
 7. **Existing proofs remain usable.** The admitted/valid database invariants
    and their statement/run theorems cover the new view catalog/statement forms.
-   Existing query laws and S4 surface proofs compile. Extend stable source-row
+   Existing query laws and the corrected S4 surface proofs compile. A missing
+   physical table does not imply a missing source when a matching view exists;
+   state the necessary view absence in affected missing-source laws. Extend stable source-row
    and query-output contracts as needed rather than cloning query interpreters
    for each spelling. Keep text imports at the public parsing/codec boundary;
    translator code must not acquire proof-only imports. This task adds no VM,
@@ -105,6 +112,8 @@ keyword is the reason for the semantic check. `MATERIALIZED` and
   later missing-table failure, changed catalog positions, nested views, cycles,
   name collisions, IF EXISTS/IF NOT EXISTS and optional column names. Check
   DROP/rollback and admitted/valid preservation for the actual resulting state.
+  Retain the unique-email and balance view counterexamples and nonvacuous
+  physical-table witnesses for their corrected universal success contracts.
 - Text tests check source spans, parameter numbering and error/restriction
   categories. Nix-selected surface fixtures use `sql`, `db!`, query predicates
   and proved validity after CREATE/DROP VIEW. Axiom audits retain existing rules.

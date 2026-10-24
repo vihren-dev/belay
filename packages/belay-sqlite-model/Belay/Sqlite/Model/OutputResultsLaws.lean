@@ -6,8 +6,7 @@ set_option doc.verso true
 /-! What the output of a query says about the results that SQLite may give for it
 ({name}`Belay.Sqlite.Model.Output.ofResults`): the output has rows exactly when there is at least one
 result and each result has a row, has no rows exactly when there is at least one result and each
-result is empty, and is never an error. The surface states {lit}`Holds`, {lit}`Empty` and {lit}`Fails` with
-these facts (ADR 0017, S4). -/
+result is empty, and is never an error (ADR 0017, S4). -/
 
 namespace Belay.Sqlite.Model
 
