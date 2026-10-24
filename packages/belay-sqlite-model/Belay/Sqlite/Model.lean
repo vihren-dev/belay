@@ -91,6 +91,10 @@ import Belay.Sqlite.Model.ForeignKeyCounterTriggers
 import Belay.Sqlite.Model.ForeignKeyCounterNested
 import Belay.Sqlite.Model.ForeignKeyCounterRows
 import Belay.Sqlite.Model.ForeignKeyCounterWrites
+import Belay.Sqlite.Model.ForeignKeyPlainFrame
+import Belay.Sqlite.Model.ForeignKeyWriteConditions
+import Belay.Sqlite.Model.ForeignKeyStatement
+import Belay.Sqlite.Model.ForeignKeyRuns
 import Belay.Sqlite.Model.ForeignKeyEngineFacts
 import Belay.Sqlite.Model.ForeignKeyRowFrame
 import Belay.Sqlite.Model.ForeignKeySchemaWrites

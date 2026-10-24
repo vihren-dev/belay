@@ -625,3 +625,43 @@ statement/run and enforcement-off frame probes continue separately. The later
 statement matrix will distinguish successful enforced UPSERT DO NOTHING from the
 current undescribed DO UPDATE path; the wrapper theorem does not promise a
 successful result in that excluded branch.
+
+## Conditional statements and transaction runs
+
+The `fk-statement-preservation` unit adds four proof modules, each below 200 lines:
+ForeignKeyPlainFrame, ForeignKeyWriteConditions, ForeignKeyStatement and
+ForeignKeyRuns. The public statement law follows the actual row engine under its
+input, comparison, generated-work and BEFORE-target conditions. Resolved UPDATE
+constructs its changed-cell coverage from the assignment list and generated-column
+closure; callers supply structural schema/scan conditions, not final row truth.
+Plain writes with enforcement off have a separate sufficient condition: the target
+is outside all selected FK child/parent reads. The raw execution API is unchanged.
+
+The individual row and combined-atom laws cover `runStatement`, `runSqlFrom`,
+`runSql` and `runScriptFrom`. The combined property uses one supplied mapping for
+both atoms; compatibility equates it with the catalog-selected comparison. The
+run entry condition includes the saved snapshot, and the conditions concern only
+reached statements. Success, retained FAIL rows, pending transactions and rollback
+therefore use the existing run invariant machinery. Catalog edits are explicitly
+excluded from this unit's statement condition and remain open work.
+
+Three new fixtures check 33 reports: all 15 exported proof declarations, nine
+statement laws and nine run laws. They apply the public theorem to successful
+cascading UPDATE, INSERT, DELETE and UPSERT DO NOTHING; enforced UPSERT DO UPDATE
+retains its current undescribed result. They also check actual outside-footprint
+partial FAIL, rollback restoration, the necessity of a valid saved snapshot and
+an enforcement-off parsed surface INSERT. No interpreter or execution definition
+changes. No prediction change is expected from these proof-only additions.
+
+The sequential gate completed with exit 0 on 2026-10-24 (owned process 44603):
+`direnv exec . bash build/agent-logs/fk-statement-gates.sh` ran
+`timeout 1200 just dev-build` and then the sandboxed focused Nix surface expression
+with timeout 1800 and command-local max-jobs=1. The Nix suite passed 14 fixtures,
+52 deselected, in 17.29 seconds:
+`/nix/store/04dmvlj39cmypsa26ia21rhnskqxsjp1-sqlite-verifier-test-surface-1`.
+All 236 axiom reports use only the three standard logical axioms. Logs:
+`build/agent-logs/fk-statement-{dev-build,nix-surface}-1.log`. The development build
+is diagnostic evidence; the Nix suite is acceptance evidence. Slot 1 returned to
+the coordinator after terminal completion. Independent review follows this commit.
+The separate `fk-ddl-preservation` workspace holds the next CREATE proofs; the
+DROP/ADD COLUMN families, full matrix and part-2 acceptance remain OPEN.
