@@ -200,6 +200,14 @@ logs are in `s4/build/agent-logs/cte-publication`. Evidence and views remain act
   [Execution contracts](20261024-s6-execution-contracts.task.md)
   were refreshed at `7e855ae9` with clean review and assigned to
   `text_build_boundaries` on published #248 in a separate S6 workspace.
+  First production unit `e5d737bd`, accepted head `7711598f`, provides exact
+  branches, branch validity/composition, the modeled-execution transformer and
+  standard-triple soundness. Independent review has no findings. Its two
+  Nix test groups passed at `9mh19n9lvn425dfn9s9hdbbjcwcdf732`, with 32 new
+  and 28 retained prototype axiom reports using only standard logical axioms.
+  Conditional/total policies, the fresh-run helper and exact S4 bridge are next;
+  full part acceptance and equivalence remain open. Slot 2 is free until the
+  next ready S6/FK or view unit requests its bounded gate.
   [Assertions](20261024-s6-assertions.task.md) and [migration patterns](20261024-s6-migration-patterns.task.md) have clean reviews
   at `33693f10`/`56b9f410`; [automation](20261024-s6-automation.task.md) is clean at `8b118fbc`.
   [Initial/current query context](20261024-s6-before-context.task.md) has clean
