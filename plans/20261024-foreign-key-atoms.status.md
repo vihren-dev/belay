@@ -564,3 +564,52 @@ one R19 status-wording should: two preparation paragraphs still described the
 now-completed gate as pending. Both now use past tense. The reviewer found no
 source issue, confirmed the 27 theorem plus six fixture audit inventory, and
 checked the conflict resolutions and retained derived-source registration.
+
+## Actual row-engine counter induction
+
+The `fk-engine-counter` unit adds 14 proof modules, each below 200 lines, and two
+focused fixtures. The shared invariant combines admission, unique keys and a bound
+on all catalog-selected FK violations by the immediate counter. The proofs follow
+the existing row engine through DELETE, UPDATE, INSERT, replacement deletion,
+credited nested calls, foreign-key actions, trigger steps/programs and the full fuel
+induction. No interpreter or execution definition is added or changed. The final
+`rowsKeys_rowReferences` theorem applies the counter-zero publication rule to
+successful writes and retained partial FAIL states. Rollback carriers retain the
+input database facts, but the later SQL bridge must establish row validity on the
+saved snapshot that it restores.
+
+The conditions remain explicit. Catalog comparison facts quantify future stored
+values, including intermediate action and trigger writes. UPDATE coverage applies
+to actual assignment constructors and their changed-column closure. A continuing
+BEFORE UPDATE sequence must retain the target rows; the row wrapper derives old-row
+retention from that named frame. Empty BEFORE programs are a sufficient helper.
+Generated UPDATE work has its own cell/rowid coverage and stale-self-scan conditions;
+none of these premises asserts the desired final row-reference atom. The existing
+mixed-affinity, stale-self-scan and raw stale-generated-cell witnesses still explain
+the substantive restrictions. Generic result/fold helpers use the existing monadic
+execution and admission/write laws.
+
+The engine fixture proves the closed theorem for a parent UPDATE with a real
+CASCADE child update, then checks both actual success and an AFTER child trigger's
+FAIL result that retains the changed parent and child. Structural BLOB comparison
+and assignment lemmas discharge its universal conditions; final row validity is not
+a premise. A separate fixture audits all 33 new exported theorems. The six concrete
+fixture laws also have axiom audits. Direct Lean and layer checks were diagnostics;
+they are not acceptance evidence.
+
+The sequential gate completed on 2026-10-24 with exit 0 (owned process 51552).
+Command: `direnv exec . bash build/agent-logs/fk-engine-gates.sh`. It ran
+`timeout 1200 just dev-build` and then the sandboxed focused Nix surface expression
+with `PYTEST_ADDOPTS="-k independent_foreign_key_atoms"`, timeout 1800 and command-local
+max-jobs=1. The Nix suite passed 11 fixtures, 52 deselected, in 13.62 seconds:
+`/nix/store/grsxi5rjsqz0w3311nf5xv3l2yiilv6m-sqlite-verifier-test-surface-1`.
+All 203 reports use only `propext`, `Classical.choice` and `Quot.sound`. Logs are
+`build/agent-logs/fk-engine-{dev-build,nix-surface}-1.log`. The development build
+passed as a local diagnostic; the Nix result establishes this unit's acceptance.
+Slot 2 returned to the coordinator at terminal completion. Independent review
+follows this commit.
+
+This is an intermediate part-2 boundary. The actual statement/run bridges,
+enforcement-off frames, DDL/mapping-transport conditions, combined atom laws and
+atom-by-statement matrix remain open. Ignored local probes continue in the separate
+`fk-statement-preservation` workspace; no task-end acceptance is claimed here.
