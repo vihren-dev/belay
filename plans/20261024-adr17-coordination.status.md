@@ -76,10 +76,7 @@ remove the prior planning blocks; they are not implementation-completion claims.
 
 ## Active implementation and ownership
 
-- Root owns final integration of `sqlite-verifier-s4`. Part 1 passed full/verdict (805 tests,
-  4,838 AGREE / 2,534 MODEL_UNSUPPORTED, all 53 predictions unchanged), then
-  rebased cleanly onto #240 at `372e6c8f`. Its pre-rebase full report is
-  `/nix/store/japwh8n1f0chh7fz6ig44qn9dxhkm8y5-sqlite-verifier-test-reports`.
+- Root owns final integration of `sqlite-verifier-s4`; part 1 is published in #242.
   Part 2's reviewed success contract is `00c8707f`; exact default-query bridge
   `fd0f0c1e` is also reviewed. GROUP/index follow-up `82f70442`, mixed-value SUM
   bound `3811b3f4`, uniqueEmail fixture `a003ddcf` and stored range bridge
@@ -90,12 +87,9 @@ remove the prior planning blocks; they are not implementation-completion claims.
   Merge `dbd774b1` is reviewed; `c0097b21` carries accepted derived publication
   `1f5eea9e`. Part 2 full/verdict gate `37743` is running in slot 2.
   Named-source extension `656ab790`/`1dee994a` is reviewed and checked in Nix.
-- `s6_prerequisite_audit` completed derived-source part 1 at subject `16bd87a3`;
-  separate evidence head is `5d69e3fa`. Combined `c8db1a54` passed full 854 at
-  `m64rgzasy2aqvp6d421pk5yh0v4654b9` and verdict `6nazink0rsrzhv7458rs3vgfs63c48dg`.
-  Predictions `q4qrigjpa82cg89ggzkvinbnvmgi7pq6` match the earlier measured
-  54 files. Existing corpora gain 29 agreements; draft v53 has 38 agreements
-  and 4 restrictions. No disagreement/harness error. Subject excludes judge changes.
+- `s6_prerequisite_audit` completed derived-source part 1, published in #243.
+  Separate evidence head `5d69e3fa` retains draft v53's 38 agreements and
+  four restrictions. Combined acceptance is recorded in its task status.
   S4 carry `b52fdec6` passed focused Nix `9zkv499mbvg2cwcs5jnn351rv253zfsd`.
   CTE development reached its checked source boundary; heavy slot 1 was released
   for FK. Source/native review continues. Integration must compile balance.
