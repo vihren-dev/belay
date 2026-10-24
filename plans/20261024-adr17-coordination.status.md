@@ -92,7 +92,7 @@ remove the prior planning blocks; they are not implementation-completion claims.
   four restrictions. Combined acceptance is recorded in its task status.
   S4 carry `b52fdec6` passed focused Nix `9zkv499mbvg2cwcs5jnn351rv253zfsd`.
   CTE `80b4cb5e` passed Nix model 32/surface 17/restrictions 60 and two mutants.
-  Combined CTE/S4/FK workspace waits for the next slot; integration checks balance.
+  Combined `f27a3fea` passed 19 focused fixtures/review; full/verdict owns slot 1.
 - `text_build_boundaries` completed the S6 foundation prototype at `eb0a16a9`,
   based on S4 `00c8707f`. Its 28 audited declarations use ordinary logical axioms;
   design `a3cffcb5` and decision record `c838d5cc` have clean reviews.
@@ -119,7 +119,7 @@ Reviewed private head `5dbc6f15` adds physical-table premises to both email copi
 and balance; all pass installed runtime `b6n8f8xys0ax45ldilp9rqw2030q8pwa` with standard axioms.
 Final acceptance must selectively reconcile unpublished S2/S3 product-default changes.
 
-Root final S4 gate `32730` owns slot 2; full 865/verdict/53 unchanged predictions pass.
+Root S4 passed 865/70/47/verdict and 543-module reference; slot 2 rebuilds the private-check runtime.
 FK coverage `9350aa31` passed nine Nix fixtures/164 axiom audits and review. FK insertion
 `45a65a92`/`754545ce` passed six Nix fixtures/95 axioms at `afgmspdjm1andpc3pd1wlfqdv9gl4bib`.
 Derived #243 passed local full 853/Nix 70/scheduled 47 and verdict 4,867/2,505,
@@ -131,11 +131,11 @@ passed for #242's 532 modules and #243's 538 modules (`iz8kjnq67dn05smyh3liv85rf
 #242 CI and Verdict are green. Published #243 `2cb4c5e3` passed 853/70/47 locally;
 its CI `40120692159` and Verdict `40120692161` are also green.
 Both repair workspaces are removed; their logs/report XML are archived under S4 build/.
-S7 prototype `489b22f6` is DONE: full 872/Nix 70/scheduled 47 and unchanged predictions pass.
+S7 prototype `ae2a72de` is DONE: full 872/Nix 70/scheduled 47; accepted scope has clean reviews.
 The owner accepted physical-table premises for BOTH unique-email and balance.
 Task corrections `2e761ca0` and source `c72ed523` have clean reviews and Nix checks.
 Combined S4 `24ca8b4c` carries repaired PRs, premises and two passing Nix native regressions.
-The named-body cost decision is accepted; ADR review `2048b9fb`'s source citation is corrected.
+Named-body cost decision: ADR reviews have no musts; citation fixed, incorrect tree-access finding rejected.
 ## Published work and cleanup
 
 - Public [PR #240](https://github.com/vihren-dev/sqlite-verifier/pull/240),
@@ -151,8 +151,8 @@ The named-body cost decision is accepted; ADR review `2048b9fb`'s source citatio
   published `c1471940` (PR #6): DONE. Nine pinned native checks passed; two
   Verso-header corrections preserve the SQL bodies. No unrelated unpublished
   ancestor was included in publication.
-- Private product PR #8, `docs/guide-success-and-inputs`, head `5dbc6f15`, base
-  #7: reviewed email/balance table premises and proofs, success and rebuild prose.
+- Private product PR #8, `docs/guide-success-and-inputs`, head `b9bd4838`, base
+  #7: reviewed email/balance table premises, proofs and planned named-cost contract.
   Native metadata and installed-consumer checks are recorded in its private status.
 
 Herdr waits `w1:t3T`/78895, `w1:t3V`/78368 and `w1:t3W`/56689 returned
