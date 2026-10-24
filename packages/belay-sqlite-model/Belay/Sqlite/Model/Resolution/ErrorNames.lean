@@ -18,6 +18,7 @@ statement. A function name is the name as written, and so is the text of a hexad
 literal. -/
 def ExprError.name? : ExprError → Option Identifier
   | .commonTable error => error.name
+  | .view error => some error.name
   | .reservedName name | .tooManyColumns name | .duplicateColumn name | .multiplePrimaryKeys name
   | .defaultNotConstant name | .tableHasNoColumn _ name | .valueCount name _ _
   | .tableMayNotBeAltered name | .tableMayNotBeIndexed name | .primaryKeyMissing name

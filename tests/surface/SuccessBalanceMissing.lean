@@ -11,18 +11,23 @@ open Belay.Sqlite.Model hiding Database
 namespace BalanceExample
 
 /-- For every catalog with both the ledger and a table or view named pragma_table_info, the
-metadata source is a restricted table-function call.
+metadata source is a table-function restriction for a table, or SQLite's
+not-a-function prepare error for a view.
 Proof sketch: the ledger sources resolve, then the first metadata source finds the shadowing object. -/
 theorem guard_scopes_shadow (catalog : Catalog) (position : Nat) (table : CatalogTable)
     (found : catalog.findTable ledgerRef.table = some (position, table))
     (shadows : ((catalog.findTable pragmaRef.table).isSome ||
       (catalog.findView pragmaRef.table).isSome) = true) :
     subqueryScopes catalog 8 (around [] []) none balanceQueries =
-      .error (.value (.restriction [8, 2, 1] .tableFunction)) := by
+      .error (.value (if (catalog.findView pragmaRef.table).isSome then
+        .prepare (.view (.functionCall pragmaRef.table)) else
+        .restriction [8, 2, 1] .tableFunction)) := by
   have sources := fun queries prefix_ => resolveSources_table catalog ledgerRef position table rfl rfl found queries prefix_
   have order : scopeOrder none balanceQueries 5 none = [0, 1, 2, 3] := rfl
   have refused : ∀ queries prefix_, resolveSources catalog (some pragmaRef) [] 0 queries prefix_ =
-      .error (.value (.restriction (prefix_ ++ [1]) .tableFunction)) := by
+      .error (.value (if (catalog.findView pragmaRef.table).isSome then
+        .prepare (.view (.functionCall pragmaRef.table)) else
+        .restriction (prefix_ ++ [1]) .tableFunction)) := by
     intro queries prefix_
     have prefixed : (bytes! "pragma_").isPrefixOf pragmaRef.table.folded = true := by decide
     cases present : catalog.findTable pragmaRef.table with
@@ -45,22 +50,27 @@ theorem guard_scopes_shadow (catalog : Catalog) (position : Nat) (table : Catalo
     Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
 
 /-- For every catalog with the ledger and a table or view shadowing pragma_table_info, the
-complete guard reports the table-function restriction at the first metadata source.
-Proof sketch: Lift the first metadata source restriction through complete query resolution. -/
+complete guard reports the table-function restriction for a table or SQLite's
+not-a-function prepare error for a view.
+Proof sketch: Lift the first metadata source issue through complete query resolution. -/
 theorem guard_select_shadow (catalog : Catalog) (position : Nat) (table : CatalogTable)
     (found : catalog.findTable ledgerRef.table = some (position, table))
     (shadows : ((catalog.findTable pragmaRef.table).isSome ||
       (catalog.findView pragmaRef.table).isSome) = true) :
-    resolveSelect runContext catalog mainSyntax balanceQueries = .error ⟨[8, 2, 1], .tableFunction⟩ := by
+    resolveSelect runContext catalog mainSyntax balanceQueries =
+      if (catalog.findView pragmaRef.table).isSome then
+        .ok (.prepareError (.expression (.view (.functionCall pragmaRef.table))), catalog)
+      else .error ⟨[8, 2, 1], .tableFunction⟩ := by
   have scopes := guard_scopes_shadow catalog position table found shadows
   dsimp only [around] at scopes
   have noMain : ∀ queries prefix_, resolveSources catalog none [] 0 queries prefix_ = .ok ([], []) := by intros; rfl
-  have ordinary : balanceQueries.any (·.commonTable.isSome) = false := rfl
+  have ordinary := guard_no_copies catalog position table found
   unfold resolveSelect
-  simp only [prepareCommonTables, ordinary, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
-  simp [CommonTableCopies.originalIssue, mainSyntax, noMain, starIssue, resultAliases, scopes, issueResolution, restrict,
-    Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
-  rfl
+  simp only [prepareQuerySources, ordinary, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
+  by_cases view : (catalog.findView pragmaRef.table).isSome = true <;>
+    simp [CommonTableCopies.originalIssue, CommonTableCopies.originalPath, mainSyntax, noMain, starIssue, resultAliases,
+      scopes, view, issueResolution, restrict, prepareError, Bind.bind, Except.bind,
+      Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure] <;> rfl
 
 /-- For every table without cents and every subquery shape, the range body reports a
 missing-column prepare error. The unquoted identifier is neither a rowid nor a Boolean keyword.
@@ -118,9 +128,9 @@ theorem guard_select_missing_cents (catalog : Catalog) (position : Nat) (table :
   dsimp only [around] at scopes bodies
   have dqs : runContext.profile.dqsDml = true := rfl
   have noMain : ∀ queries prefix_, resolveSources catalog none [] 0 queries prefix_ = .ok ([], []) := by intros; rfl
-  have ordinary : balanceQueries.any (·.commonTable.isSome) = false := rfl
+  have ordinary := guard_no_copies catalog position table found
   unfold resolveSelect
-  simp only [prepareCommonTables, ordinary, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
+  simp only [prepareQuerySources, ordinary, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
   simp [CommonTableCopies.originalIssue, mainSyntax, noMain, starIssue, resultAliases, scopes, bodies, dqs, issueResolution, prepareError,
     Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
 

@@ -9,6 +9,7 @@ resolves the statements reads it. -/
 
 namespace Belay.Sqlite.Model
 
+deriving instance Lean.ToJson for ViewError
 deriving instance Lean.ToJson for CommonTableError
 deriving instance Lean.ToJson for ExprError
 
@@ -102,6 +103,7 @@ deriving instance Lean.ToExpr for CatalogView
 deriving instance Lean.ToExpr for CatalogEntry
 deriving instance Lean.ToExpr for CatalogObject
 deriving instance Lean.ToExpr for Database
+deriving instance Lean.ToExpr for ViewError
 deriving instance Lean.ToExpr for CommonTableError
 deriving instance Lean.ToExpr for ExprError
 deriving instance Lean.ToExpr for PrepareError

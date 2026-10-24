@@ -68,10 +68,11 @@ def QueryScope.refresh (catalog : Catalog) (shapes : List SubqueryShape) (query 
 Returned queries and shapes retain their syntax indexes. A FROM source adds the metadata of
 all its output columns to its shape; expression subqueries keep first-column metadata only.
 Each body issue is located at its subquery's syntax path. Optional {lit}`columnNames`
-retain explicit CTE names without changing the expressions inside its body. -/
+retain explicit CTE/view names without changing the expressions inside the body.
+For {lit}`viewRoots`, resolve the expressions before checking the declared column count. -/
 def resolveSubqueryBodies (dqs : Bool) (catalog : Catalog) (field : Nat) (main : QueryScope)
     (compound : Option Syntax.Compound) (scopes : List QueryScope) (subqueries : List Syntax.Subquery)
-    (columnNames : List (Nat × List Identifier) := []) :
+    (columnNames : List (Nat × List Identifier) := []) (viewRoots : List (Nat × Identifier) := []) :
     Except ValueIssue (List Resolved.Query × List SubqueryShape) := do
   let missing : SubqueryShape :=
     { parent := some subqueries.length, columns := 0,
@@ -103,6 +104,10 @@ def resolveSubqueryBodies (dqs : Bool) (catalog : Catalog) (field : Nat) (main :
             let (query, affinity) ← resolveQueryBody dqs around.scope current around.outerAliases around.pending subquery
             pure (query, subqueryShape around.scope current subquery query affinity,
               resultSourceColumns around.scope current subquery.columns query.names)
+        if let some name := viewRoots.lookup index then
+          if let some names := columnNames.lookup index then
+            if shape.columns != names.length then
+              throw (.prepare (.view (.columns name names.length shape.columns)))
         let isSource := match subquery.parent with
           | none => main.sourceIndexes.contains index
           | some parent => (scopes[parent]?).any (·.sourceIndexes.contains index)
@@ -127,12 +132,13 @@ def resolveSubqueryBodies (dqs : Bool) (catalog : Catalog) (field : Nat) (main :
 /-- Resolve the subqueries of a statement around whose own expressions is {lit}`main`: their
 scopes ({name}`subqueryScopes`), then their bodies ({name}`resolveSubqueryBodies`), with the
 statement's syntax holding them at child {lit}`field`. Explicit CTE names use
-{lit}`columnNames`; its empty default keeps ordinary derived-source names. -/
+{lit}`columnNames`; its empty default keeps ordinary derived-source names.
+The optional {lit}`viewRoots` identify stored definitions for scope and count checks. -/
 def resolveSubqueries (dqs : Bool) (catalog : Catalog) (field : Nat) (main : QueryScope)
-    (subqueries : List Syntax.Subquery) (columnNames : List (Nat × List Identifier) := []) :
+    (subqueries : List Syntax.Subquery) (columnNames : List (Nat × List Identifier) := []) (viewRoots : List (Nat × Identifier) := []) :
     Except SourceIssue (List Resolved.Query × List SubqueryShape) := do
-  let scopes ← subqueryScopes catalog field main none subqueries columnNames
-  (resolveSubqueryBodies dqs catalog field main none scopes subqueries columnNames).mapError .value
+  let scopes ← subqueryScopes catalog field main none subqueries columnNames viewRoots
+  (resolveSubqueryBodies dqs catalog field main none scopes subqueries columnNames viewRoots).mapError .value
 
 /-- Whether a subquery reads the table at the catalog position directly. -/
 def Resolved.Query.readsTable (position : Nat) (query : Resolved.Query) : Bool :=

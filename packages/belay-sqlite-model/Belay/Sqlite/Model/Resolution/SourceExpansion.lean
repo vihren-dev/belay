@@ -18,7 +18,7 @@ def sourceOutputNames (scope : Scope) (results : List Syntax.ResultColumn) : Lis
 
 /-- Name-only columns for a derived source. Duplicate names follow {name}`derivedNames`;
 a random suffix is the restriction {name}`RestrictionKind.sourceColumnName`. The path locates
-the result columns of the source query. Explicit CTE columns replace only these output names;
+the result columns of the source query. Explicit CTE/view columns replace only these output names;
 they do not change aliases inside the body. Use the default absent list for ordinary derived
 sources. Affinity and collation are filled after resolution. -/
 def expandedSource (index : Nat) (path : List Nat) (scope : Scope) (results : List Syntax.ResultColumn)
@@ -36,7 +36,7 @@ def expandedSource (index : Nat) (path : List Nat) (scope : Scope) (results : Li
 The fuel bounds nesting by the statement's number of subqueries. A compound expands its
 terms right to left, but its column names come from the left-most term. A source may name
 only a later query with this query as parent, as the frontend records it. {lit}`columnNames`
-gives the explicit output names of expanded CTE uses; use its empty default otherwise. -/
+gives the explicit output names of expanded CTE/view uses; use its empty default otherwise. -/
 def expandQuerySources (catalog : Catalog) (field : Nat) (subqueries : List Syntax.Subquery)
     (columnNames : List (Nat × List Identifier) := []) :
     Nat → Nat → Except SourceIssue (Scope × List Syntax.ResultColumn × List String)
@@ -61,7 +61,7 @@ def expandQuerySources (catalog : Catalog) (field : Nat) (subqueries : List Synt
 
 /-- The source callback for the query at {lit}`parent`, or the statement's query when absent.
 It checks the indexed-parent relation before expanding names. The optional name overrides
-come from expanded CTE definitions; the empty default keeps derived-query names. -/
+come from expanded CTE/view definitions; the empty default keeps derived-query names. -/
 def sourceExpansion (catalog : Catalog) (field : Nat) (subqueries : List Syntax.Subquery)
     (parent : Option Nat) (index : Nat) (columnNames : List (Nat × List Identifier) := []) :
     Except SourceIssue ScopeSource := do

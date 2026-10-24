@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.Identifier
 import Belay.Sqlite.Model.Operators
 import Belay.Sqlite.Model.Resolution.CommonTableErrors
+import Belay.Sqlite.Model.Resolution.ViewErrors
 
 set_option doc.verso true
 
@@ -18,6 +19,8 @@ refuses. {lit}`PrepareError.expression` carries them; resolution of expressions
 inductive ExprError where
   /-- An invalid WITH definition, as described by {name}`CommonTableError`. -/
   | commonTable (error : CommonTableError)
+  /-- A failed use of a stored view, as described by {name}`ViewError`. -/
+  | view (error : ViewError)
   /-- {lit}`object name reserved for internal use: %s` ({lit}`sqlite3CheckObjectName`). -/
   | reservedName (name : Identifier)
   /-- {lit}`too many columns on %s` ({lit}`sqlite3AddColumn`). -/

@@ -89,9 +89,9 @@ theorem guard_select (catalog : Catalog) (position index : Nat) (table : Catalog
   have noMain : ∀ queries prefix_, resolveSources catalog none [] 0 queries prefix_ = .ok ([], []) := by intros; rfl
   dsimp only [around] at scopes bodies
   dsimp only [mainSyntax, guardShapes, rangeShape, balanceCountShape] at main
-  have ordinary : balanceQueries.any (·.commonTable.isSome) = false := rfl
+  have ordinary := guard_no_copies catalog position table found
   unfold resolveSelect
-  simp only [prepareCommonTables, ordinary, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
+  simp only [prepareQuerySources, ordinary, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
   simp only [mainSyntax, noMain]
   simp [CommonTableCopies.recursionIssue, dqs, scopes, bodies, main, around, mainSyntax, starIssue, resultAliases,
     QueryScope.refresh, Scope.refreshSources, guardShapes, rangeShape, balanceCountShape,

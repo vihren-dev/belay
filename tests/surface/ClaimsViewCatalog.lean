@@ -1,8 +1,8 @@
 import Belay
 
 /-! Manually supplied view definitions exercise the catalog boundary before SQL view
-expansion is enabled. Reads and writes that need expansion must remain unmodeled;
-they must not produce a fabricated missing-table error or an empty metadata result. -/
+DDL is enabled. Uses resolve the stored SELECT; remaining write and metadata
+boundaries stay unmodeled until their view semantics are implemented. -/
 
 set_option doc.verso true
 set_option maxRecDepth 4000
@@ -62,7 +62,6 @@ example : database.catalog.parentLink {
 
 /-- Every statement listed here requires view expansion at this interim catalog boundary. -/
 def deferred : List Syntax.Statement := [
-  .select [.star] (some {table := name! "v", alias := none}) [] none [] [] none none,
   .insert (name! "v") none [[.numeric "1"]] [],
   .insert (name! "v") none [[.numeric "1"]] [] (subqueries := [late.query]),
   .update (name! "v") [(name! "x", .numeric "1")] none,
@@ -99,9 +98,7 @@ example : Holds (sql r"PRAGMA integrity_check(v)") database ∧
 /-- A view whose name shadows the pragma function must not expose the function's rows. -/
 def shadows : Database := ⟨(Catalog.createView [] (name! "pragma_table_info") late).emptyDatabase, by decide +kernel⟩
 
-/-- View shadowing remains a model restriction, rather than a successful or empty query. -/
-example : ¬ Holds (sql r"SELECT 1 FROM pragma_table_info('v')") shadows ∧
-    ¬ Empty (sql r"SELECT 1 FROM pragma_table_info('v')") shadows ∧
-    ¬ Fails (sql r"SELECT 1 FROM pragma_table_info('v')") shadows := by decide +kernel
+/-- A view shadows the pragma function and reports SQLite's not-a-function error. -/
+example : Fails (sql r"SELECT 1 FROM pragma_table_info('v')") shadows := by decide +kernel
 
 end ViewCatalogExamples

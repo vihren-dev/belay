@@ -56,23 +56,27 @@ theorem balance_of_bounds (db : Database) (a : Value) (position cents account : 
     omega
 
 /-- For every database with the ledger and a table or view shadowing pragma_table_info, the guard
-does not hold. Proof sketch: its resolution restriction produces an output without rows. -/
+does not hold. Proof sketch: its resolution restriction or prepare error
+produces an output without rows. -/
 theorem shadowed_pragma (db : Database) (position : Nat) (table : CatalogTable)
     (found : db.raw.catalog.findTable ledgerRef.table = some (position, table))
     (shadows : ((db.raw.catalog.findTable pragmaRef.table).isSome ||
       (db.raw.catalog.findView pragmaRef.table).isSome) = true) : ¬ Holds balanceGuard db := by
   have resolved : resolveStatement runContext db.raw.connection.resolveState balanceGuard.statements[0].1 =
-      .error ⟨[8, 2, 1], .tableFunction⟩ := by
+      (if (db.raw.catalog.findView pragmaRef.table).isSome then
+        .ok (.prepareError (.expression (.view (.functionCall pragmaRef.table))), db.raw.connection.resolveState)
+       else .error ⟨[8, 2, 1], .tableFunction⟩) := by
     change db.raw.connection.resolveState.withCatalog (resolveSelect runContext db.raw.catalog mainSyntax balanceQueries) = _
     rw [guard_select_shadow db.raw.catalog position table found shadows]
-    rfl
+    split <;> rfl
   intro holds
   have output := Script.outputOn_eq_step balanceGuard db _ [] [] rfl
   change balanceGuard.outputOn db = some (match resolveStatement runContext db.raw.connection.resolveState balanceGuard.statements[0].1 with
     | .error restriction => .unmodeled restriction.reason
     | .ok (resolved, _) => resolvedStepOutput none 0 db.raw.connection [] resolved) at output
   rw [resolved] at output
-  simp [Holds, output, Output.hasRows] at holds
+  by_cases view : (db.raw.catalog.findView pragmaRef.table).isSome = true <;>
+    simp [Holds, output, view, resolvedStepOutput_prepareError, Output.hasRows] at holds
 
 /-- For every database with the ledger and unshadowed pragma but without cents, the guard
 does not hold because resolution gives a prepare error.

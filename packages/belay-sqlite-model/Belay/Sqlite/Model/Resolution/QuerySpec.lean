@@ -26,11 +26,11 @@ theorem namedResult_integer (names : List (Option Identifier)) (term : Syntax.Ex
 /-- For every context, catalog, list of subqueries and {lit}`SELECT` with at
 most {name}`maximumJoinTables` sources whose first source is a table (no table-valued
 function): when the catalog has no table or view with the folded name of the first table,
-the subquery list contains no WITH definitions, and that name is not reserved for SQLite's
+the query needs no WITH or stored-view copies, and that name is not reserved for SQLite's
 own tables and names no eponymous table-valued function
 ({name}`eponymousName`), resolution gives SQLite's
 {lit}`no such table: %s` and keeps the catalog. The source reference has no indexed query.
-Proof sketch: WITH preparation keeps the ordinary query list; the first source's catalog
+Proof sketch: source preparation keeps the ordinary query list; the first source's catalog
 lookup fails before any query body resolves. -/
 theorem resolveSelect_noSuchTable (context : ResolveContext) (catalog : Catalog)
     (query : Syntax.Subquery) (subqueries : List Syntax.Subquery) (source : Syntax.TableReference)
@@ -39,10 +39,10 @@ theorem resolveSelect_noSuchTable (context : ResolveContext) (catalog : Catalog)
     (missing : catalog.findTable source.table = none) (notView : catalog.findView source.table = none)
     (application : reservedName source.table = false)
     (table : eponymousName source.table = false)
-    (ordinary : subqueries.any (·.commonTable.isSome) = false) :
+    (ordinary : querySourceCopiesNeeded catalog query subqueries = false) :
     resolveSelect context catalog query subqueries = .ok (.prepareError (.noSuchTable source.table), catalog) := by
   have notMore : ¬ query.joins.length + 1 > maximumJoinTables := by omega
-  simp [resolveSelect, prepareCommonTables, ordinary, CommonTableCopies.originalIssue, resolveSources, first, resolveReference, namedSource, arguments, resolveTableReference, missing, notView, application, table,
-    notMore, Except.mapError, SourceIssue.under, issueResolution, prepareError, Functor.map, Except.map, bind, Except.bind]
+  simp [resolveSelect, prepareQuerySources, ordinary, CommonTableCopies.originalIssue, resolveSources, first, resolveReference, namedSource, arguments, resolveTableReference, missing, notView, application, table,
+    notMore, Except.mapError, SourceIssue.under, prepareError, Functor.map, Except.map, bind, Except.bind]
 
 end Belay.Sqlite.Model

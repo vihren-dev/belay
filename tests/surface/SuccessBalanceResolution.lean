@@ -47,7 +47,7 @@ theorem one_body (scope : Scope) (current : Option Nat) (later : List SubquerySh
     ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩ _ resolved sources
     (resolveColumns_one _ _ _) (by simpa [oneQuery, resultAliases] using filterOk) pendingOk rfl
 
-/-- For every catalog with a ledger table and no table shadowing the pragma, all four
+/-- For every catalog with a ledger table and no table or view shadowing the pragma, all four
 subquery scopes are the two ledger scopes and two metadata scopes.
 Proof sketch: apply the named-source laws at each sibling diagnostic prefix. -/
 theorem guard_scopes (catalog : Catalog) (position : Nat) (table : CatalogTable)
@@ -68,6 +68,17 @@ theorem guard_scopes (catalog : Catalog) (position : Nat) (table : CatalogTable)
     Scope.enclose, starIssue, resultAliases, ledgerScope, pragmaScope, tablePending, pragmaPending,
     Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
   rfl
+
+/-- For every catalog with a physical ledger table, this guard needs no query-source
+copies. Its metadata sources have arguments, so even a shadowing view is checked by
+ordinary function resolution. Proof sketch: table lookup excludes a ledger view;
+all other references are calls rather than expandable view sources. -/
+theorem guard_no_copies (catalog : Catalog) (position : Nat) (table : CatalogTable)
+    (found : catalog.findTable ledgerRef.table = some (position, table)) :
+    querySourceCopiesNeeded catalog mainSyntax balanceQueries = false := by
+  have notView : catalog.findView (name! "ledger") = none := Catalog.findView_none_of_table found
+  simp [querySourceCopiesNeeded, mainSyntax, balanceQueries, oneQuery, countSyntax,
+    ledgerRef, pragmaRef, notView]
 
 /-- For every existing cents column and subquery shape, the range body resolves with
 the column affinity and collation. Resolve the condition and use the simple-body law.

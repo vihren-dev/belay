@@ -19,6 +19,7 @@ def ordinal (number : Nat) : String :=
 {lit}`no such column: a`. -/
 def ExprError.message : ExprError → String
   | .commonTable error => error.message
+  | .view error => error.message
   | .reservedName name => s!"object name reserved for internal use: {name}"
   | .tooManyColumns table => s!"too many columns on {table}"
   | .duplicateColumn column => s!"duplicate column name: {column}"
