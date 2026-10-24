@@ -162,3 +162,11 @@ actual verdict results and inspect each changed prediction.
   acquisition fix and its tests, without any corpus, claim or lock change.
   The separate evidence descendant will validate the proposed claims before
   its review. Final part-1 full/verdict acceptance is still pending.
+- The first combined full gate found stale text in two existing RIGHT JOIN
+  mutants after `joinRows` began retaining enclosing cells. Their targets now
+  match the changed definition and preserve their original faults: dropping an
+  unmatched right row or padding with the right source's width.
+- The two affected mutants ran sequentially and were both detected in Nix at
+  `/nix/store/k2a4zs0px4yywv760jyjlmzaxj29fs1s-sqlite-verifier-test-query-source-right-mutants-1`.
+  The new focused test is in the existing scheduled mutant suite. This correction
+  changes no evaluator or prediction; the final full/verdict gates will rerun.
