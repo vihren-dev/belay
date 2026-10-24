@@ -30,10 +30,12 @@ theorem Row.Stored.storedForm_getD {columns : List CatalogColumn} {row : Row} (s
 
 namespace Resolved
 
-/-- For every two stored cells of one column and one value, with the same affinity and collation: if the comparison
-{lit}`cell = value` is true for both cells ({name}`comparisonOperands`), the two cells conflict as key cells
-({name}`LiteralData.keyCellsEqual`). Proof sketch: each cell is not NULL and equal to the probe of the value
-({name}`cell_eq_probe`); equality under a collation is symmetric and transitive. -/
+/-- For every affinity of the comparison, collation, two cells and a value: if, when the comparison
+has an affinity, each cell is in the stored form of that affinity ({name}`LiteralData.storedForm`; with no
+affinity nothing is required of the cells), and the comparison {lit}`cell = value` is true for both cells
+({name}`comparisonOperands`, {name}`truthy`), then the two cells conflict as key cells
+({name}`LiteralData.keyCellsEqual`) under the collation. Proof sketch: each cell is not NULL and equal to the probe of
+the value ({name}`cell_eq_probe`); equality under a collation is symmetric and transitive. -/
 theorem keyCellsEqual_of_accepted {affinity : Option Affinity} {collation : Collation} {first second value : Value}
     (firstStored : ∀ column, affinity = some column → LiteralData.storedForm column first = true)
     (secondStored : ∀ column, affinity = some column → LiteralData.storedForm column second = true)
@@ -47,6 +49,20 @@ theorem keyCellsEqual_of_accepted {affinity : Option Affinity} {collation : Coll
   simp only [LiteralData.keyCellsEqual, Bool.and_eq_true, bne_iff_ne, beq_iff_eq]
   exact ⟨⟨firstPresent, secondPresent⟩, Std.TransCmp.eq_trans firstEqual (Std.OrientedCmp.eq_symm secondEqual)⟩
 
+/-- For every parameters and number of rows: the condition {lit}`n <= 1`, with the subquery value {lit}`n`
+({name}`Resolved.SubqueryRun.count`) in the context of the parameters, is true ({name}`truthy`) exactly when the number
+is at most one. Proof sketch: the comparison of two integers under any collation is the order of the integers
+({name}`Collation.compare_integer`). -/
+theorem truthy_count_le_one (parameters : List Value) (n : Nat) :
+    truthy ((Expr.compare .le none (.subquery 0) (.literal (.integer 1)) .binary).eval
+      ((EvalContext.bound parameters).withRuns [SubqueryRun.count n]) []) = decide (n ≤ 1) := by
+  simp [Expr.eval_compare, Expr.eval_subquery, Expr.eval_literal, EvalContext.withRuns_subqueries, comparisonOperands,
+    SubqueryRun.count, Value.isNull, Comparison.holds, Collation.compare_integer, truth, truthy, Comparison.apply]
+  rcases Int.lt_trichotomy (n : Int) 1 with less | equal | greater
+  · simp [Int.compare_eq_lt.2 less, show n ≤ 1 by omega]
+  · simp [equal, show n ≤ 1 by omega]
+  · simp [Int.compare_eq_gt.2 greater, show ¬ n ≤ 1 by omega]
+
 end Resolved
 
 /-- The bound of a unique lookup, for every table, key and column: if the table satisfies {name}`Table.KeysUnique` for
@@ -54,12 +70,12 @@ the keys and {name}`Table.RowsStored`, the key is one of the keys with no filter
 position {lit}`index`, under a collation, and a comparison {lit}`cell = value` has
 * the affinity of the column ({lean}`some column.affinity`), so the value has no affinity of its own;
 * the collation of the key term;
-* a value that is the same for every row of the table ({name}`Resolved.Expr.eval` of the right operand);
+* a right operand that evaluates to the given cell in the given context for every list of cell values
+  ({name}`Resolved.Expr.eval`), so it depends on no row;
 
 then at most one stored row makes the comparison true ({name}`Resolved.truthy`), so
-{name}`Resolved.countMatching` of the comparison is at most one. When the comparison uses another collation, or the
-value has an affinity of its own, the statement does not hold: a column with {lit}`COLLATE NOCASE` and a unique index with
-{lit}`COLLATE BINARY` can store {lit}`'a'` and {lit}`'A'`, and both match {lit}`c = 'a'`. Proof sketch: two rows that make the comparison
+{name}`Resolved.countMatching` of the comparison is at most one. The lemma does not cover another collation, which the statement needs: a column with {lit}`COLLATE NOCASE` and a unique index with
+{lit}`COLLATE BINARY` can store {lit}`'a'` and {lit}`'A'`, and both match {lit}`c = 'a'`; nor does it cover a value with an affinity of its own. Proof sketch: two rows that make the comparison
 true conflict on the key ({name}`Resolved.keyCellsEqual_of_accepted`), which the table forbids for rows in the list
 ({name}`filter_length_le_one_of_pairwise`). -/
 theorem Table.KeysUnique.countMatching_le_one {keys : List UniqueKey} {table : Table}

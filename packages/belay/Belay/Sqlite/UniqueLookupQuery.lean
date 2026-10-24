@@ -12,20 +12,6 @@ bound reads the stored proof of validity of the database: its unique keys and th
 namespace Belay.Sqlite
 open Belay.Sqlite.Model
 
-/-- For every parameters and number of rows: the condition {lit}`n <= 1`, with the subquery value {lit}`n`
-({name}`Resolved.SubqueryRun.count`), is true ({name}`Resolved.truthy`) exactly when the number is at most one. Proof
-sketch: the comparison of two integers under any collation is the order of the integers
-({name}`Collation.compare_integer`). -/
-theorem truthy_count_le_one (parameters : List Value) (n : Nat) :
-    Resolved.truthy ((Resolved.Expr.compare .le none (.subquery 0) (.literal (.integer 1)) .binary).eval
-      ((Resolved.EvalContext.bound parameters).withRuns [Resolved.SubqueryRun.count n]) []) = decide (n ≤ 1) := by
-  simp [sql_simp, Resolved.comparisonOperands, Resolved.SubqueryRun.count, Value.isNull, Comparison.holds,
-    Collation.compare_integer]
-  rcases Int.lt_trichotomy (n : Int) 1 with less | equal | greater
-  · simp [Int.compare_eq_lt.2 less, show n ≤ 1 by omega]
-  · simp [equal, show n ≤ 1 by omega]
-  · simp [Int.compare_eq_gt.2 greater, show ¬ n ≤ 1 by omega]
-
 /-- For every script {lit}`SELECT 1 WHERE (SELECT count(*) FROM t WHERE c = $v) <= 1`, where the catalog of the database has
 the table {lit}`t` at a position, {lit}`c = $v` resolves in the scope of the table to the comparison of the cell at
 position {lit}`index` with a parameter, with the affinity of the column and a collation, and {lit}`<= 1` resolves to the
@@ -35,7 +21,7 @@ has a cell equal to the value after the affinity of the column, so the number of
 The statement needs the collation of the comparison to be the collation of the key: with a column {lit}`COLLATE NOCASE` and a
 unique index {lit}`COLLATE BINARY` a table can hold {lit}`'a'` and {lit}`'A'`, and {lit}`c = 'a'` then matches both rows.
 Proof sketch: {name}`Holds.iff_selectOne_count` turns the claim into the truth of the condition {lit}`n <= 1` for the number of
-rows ({name}`truthy_count_le_one`); the unique lookup bounds that number
+rows ({name}`Resolved.truthy_count_le_one`); the unique lookup bounds that number
 ({name}`Table.KeysUnique.countMatching_le_one`) with the unique keys and the stored cells of the valid database. -/
 theorem Holds.selectOne_count_unique_lookup
     {script : Script} {db : Database} {isQuery : script.isQuery = true} {reference : Syntax.TableReference}
@@ -61,7 +47,7 @@ theorem Holds.selectOne_count_unique_lookup
   have present := Database.table_of_findTable db.raw _ position table found
   refine (Holds.iff_selectOne_count head count arguments found subResolves mainResolves (by simp [sql_simp])
     (by simp [sql_simp])).2 ?_
-  rw [truthy_count_le_one]
+  rw [Resolved.truthy_count_le_one]
   simpa using Table.KeysUnique.countMatching_le_one (db.valid.unique position _ present)
     (db.valid.admitted.rowsStored position _ present) member columnAt noFilter oneTerm
     (Resolved.EvalContext.bound parameters) (.parameter slot) (parameterValue parameters slot) fun _ => rfl
