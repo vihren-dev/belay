@@ -4,6 +4,14 @@ Created 2026-10-24. Status: OPEN. Implementation has not started.
 Task: [task file](20261024-surface-editor.task.md).
 Specs: ADR 0017 editor features and ADR 0016 layer boundaries.
 
+## Owner request
+
+On 2026-10-24 the owner instructed: "continue working until adr17 is done.
+after specifying a task in a task file the task should be done by a subagent."
+The request also requires separate workspaces for parallel tasks, disjoint
+edits and sufficient resources. The scope interpretation and review disposition
+below explain why this task closes ADR17 work rather than adding a new goal.
+
 ## Evidence and constraints
 
 The read-only editor/doc-block audit found no SQL hover/provenance registry,

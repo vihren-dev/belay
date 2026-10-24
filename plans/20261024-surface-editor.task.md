@@ -11,7 +11,7 @@ Base inspected: PR #240 and the current surface at `26f8ce71`.
 ## Purpose and boundaries
 
 The owner's current request is to continue until ADR 0017 is done, recorded in
-[the coordination status](20261024-adr17-coordination.status.md). ADR 0017 leaves
+[this task's status](20261024-surface-editor.status.md). ADR 0017 leaves
 these editor requirements to the slices whose users need them, rather than
 deferring them beyond that completion. They serve the existing S2/S3 SQL forms:
 users can execute parameterized SQL now, but cannot inspect its resolved names
