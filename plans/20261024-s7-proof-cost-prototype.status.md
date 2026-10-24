@@ -1,6 +1,6 @@
 # Status: S7 proof-cost collector prototype
 
-Created 2026-10-24. Status: OPEN. Test-only implementation is in progress.
+Created 2026-10-24. Status: OPEN. Technical acceptance passes; final metadata is pending.
 Task: [task file](20261024-s7-proof-cost-prototype.task.md).
 Spec: ADR17 S7's checker and target stable-proof experience.
 
@@ -9,8 +9,8 @@ Spec: ADR17 S7's checker and target stable-proof experience.
 The S7 source audit found no surface collector or compiled proof-cost registry.
 Pinned Lean's withHeartbeats counts a computation in internal units, 1000 per
 user-facing unit. The experiment now retains native completed body traces and
-exports records through a persistent environment extension. The focused Nix
-measurement passes; final task acceptance is pending.
+exports records through a persistent environment extension. All required checks
+pass. S4 publication ancestry and the final completion record remain open.
 No production measurement or baseline guarantee is claimed.
 
 ## Progress
@@ -80,8 +80,9 @@ No production measurement or baseline guarantee is claimed.
 - Work paused for the urgent API reference repair and resumed with all prototype
   files and probes preserved. The reference repair is complete. Heavy checks
   were queued at that checkpoint. The focused Nix gate has since passed and
-  final S4 source is integrated below. Post-review full tests/verdict, task-end
-  checks and publication ancestry remain to be recorded.
+  final S4 source is integrated below. At that checkpoint, full tests/verdict,
+  task-end checks and publication ancestry were still pending. Later results
+  are recorded below.
 - Integrated the immutable final S4 source `24ca8b4c9635ee14f3235001dc86d7315ac514ac`
   as a second parent of the prototype working change. The task handoff ancestry
   and all prototype files are retained. No shared ancestor was rewritten.
@@ -131,4 +132,28 @@ No production measurement or baseline guarantee is claimed.
   musts in review `20261024T185109Z-00a133be`. Its one should aligns the
   status summary with the proposed named proof-body coverage, including separately
   labeled proof-valued definitions. That wording is fixed in this status record.
-  All review findings are resolved; post-review task acceptance is queued.
+  All findings from those reviews are resolved. At that checkpoint, post-review
+  task acceptance was queued; its results are recorded below.
+
+## Final technical acceptance
+
+- On reviewed boundary `3b9e418901a6a9293d4671e1f0a88cb3839ba555`, the
+  post-review full Nix report passes all 872 cases with no failures, errors or
+  skips: `/nix/store/3h5z5bhvdrk51za9870n62cnjmwzx2bk-sqlite-verifier-test-reports`.
+  This includes all 69 surface cases and all seven prototype cases.
+- Verdict `/nix/store/1w3s86b8201bc72c1r51rc66rnb1iknr-sqlite-verifier-verdict`
+  preserves all claims: 4,867 AGREE and 2,505 MODEL_UNSUPPORTED. Predictions
+  `/nix/store/ifmznfzpqyd12dxjhr3yp404ljb0dgxy-sqlite-verifier-predictions`
+  are byte-identical across all 53 files to the accepted derived-source baseline
+  `/nix/store/2kpi159rivfybjqkv2cw7vxh31qpdlbq-sqlite-verifier-predictions`.
+- `just test-nix` passes all 70 selected checks. `just test-scheduled-checks`
+  passes all 47 cases, without skips, in
+  `/nix/store/z35im4wnqj4kmqq7mzq25ihzkxzxy9sz-sqlite-verifier-scheduled-check-reports`.
+- The full surface report repeats the attribution and overhead heartbeat counts.
+  The unchanged coverage tactic measures 3,317 versus the focused run's 3,318
+  internal units. The findings retain both artifacts and this observed one-unit
+  variation. No exact cross-run invariance or general overhead bound is claimed.
+- The prototype has no package, conformance, judge or lock changes from final
+  S4 source `24ca8b4c`. Final S4 publication metadata will be merged before the
+  task's completion record. The separate production coverage choice remains
+  with the owner; this task implements no production cost API.

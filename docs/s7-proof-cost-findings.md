@@ -1,6 +1,6 @@
 # S7 proof-cost collector experiment
 
-Audience: designers and reviewers. Status: prototype; focused Nix checks pass.
+Audience: designers and reviewers. Status: prototype; focused and full Nix checks pass.
 Contract: [task](../plans/20261024-s7-proof-cost-prototype.task.md).
 The experiment adds test fixtures. It adds no production command or baseline.
 
@@ -111,6 +111,14 @@ The instrumented body records are 6,871,278 for `constant_success`, 3,687 for
 `supplied_success`, and 2,907 for `default_query`. Control wall times are 1.471s
 and 1.923s; instrumented times are 1.615s and 1.663s. These small concurrent-host
 samples do not establish a general wall-time or heartbeat overhead bound.
+
+The full surface rerun also passes all 69 cases, including the seven prototype
+cases, at `/nix/store/fvzkw5nkpb4psc7yp61izi4b533lnxxs-sqlite-verifier-test-surface-1`.
+Its JUnit properties reproduce the attribution and window-heartbeat counts.
+The unchanged coverage fixture's tactic body measures 3,317 units, versus 3,318
+in the focused run: exact cross-run count invariance is unsupported even with
+unchanged proof source. The second control wall samples are 1.451s and 1.457s;
+instrumented samples are 1.606s and 1.501s. These remain bounded observations.
 
 ## Proposed production contract and decisions
 
