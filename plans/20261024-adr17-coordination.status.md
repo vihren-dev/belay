@@ -87,13 +87,14 @@ remove the prior planning blocks; they are not implementation-completion claims.
   Part 2's reviewed success contract is `00c8707f`; exact default-query bridge
   `fd0f0c1e` is also reviewed. GROUP/index follow-up `82f70442`, mixed-value SUM
   bound `3811b3f4` and uniqueEmail fixture `a003ddcf` have clean reviews. SUM's
-  Nix model result is `4060h7wh955i0wrrh291i5l9b0fsncm2`. S4 still
+  Nix model result is `4060h7wh955i0wrrh291i5l9b0fsncm2`; stored range bridge
+  `3583de8a` also has a clean review and Nix model `kf4gq5hn2gws3cingvlm6h6c12avyvq1`. S4 still
   needs guide proofs/part-2 acceptance and part 3's removal of Run.checked.
 - `s6_prerequisite_audit` owns `sqlite-verifier-query-sources`, based on S4 part 1.
   Source execution `93767a4d`/`15a252a8` and metadata `649a3021`/`bc79e3e7`
-  have clean reviews and Nix model checks; latest model result is
-  `24qvzhb6dpmsh27pzgqyjwr921dkkqbp`. Derived-source translation/resolution
-  remains active. CTEs and views follow. Baseline predictions are
+  have clean reviews and Nix model checks. Translation/resolution `c64d8b50`
+  is reviewed clean; Nix model is `wnxni6bvnfd3cisq5nndg95qspgbyh94` and
+  predictions `xar2y93h71ffx1ccrjvy906936hk4ahj`. CTEs/views follow. Original baseline:
   `/nix/store/qwfgz46d1pyd10xiypmka4kixvx38k2b-sqlite-verifier-predictions`;
   baseline verdict `srv5lc3gnn1s9wzfjy1ilrzsb2ws0881` passes existing claims.
 - `text_build_boundaries` owns `sqlite-verifier-s6-foundations` and resumed FK
@@ -103,10 +104,10 @@ remove the prior planning blocks; they are not implementation-completion claims.
   `/nix/store/1rzb9hwr5s7yccpwjx2xiwbzja3bcd99-sqlite-verifier-test-surface-1`.
   Its 28 audited declarations use only ordinary logical axioms. Design
   refinement `a3cffcb5` and decision record `c838d5cc` have clean reviews.
-  Full suite passed at `vg3sz4iz4q58vrci7ddrxn9bmv6p7pbi`; final gates continue.
-  The prototype
-  does not implement production S6. Its exact equivalence recommendation and
-  the separate guide-effect correction are now accepted by the owner.
+  DONE at `eb0a16a9`, clean completion review: full 813 at
+  `vg3sz4iz4q58vrci7ddrxn9bmv6p7pbi`, Nix 67, scheduled 47, verdict and all 53
+  predictions unchanged. It awaits S4-based publication and does not implement
+  production S6. Root copied its reviewed task/status; source workspace stays.
 - The FK workspace is `sqlite-verifier-fk-atoms`. Root carried the revised task
   and ADR22 in reviewed `8526ed1f`, with status-only findings fixed in `0ca148ce`.
   The existing split-API source work remains uncommitted. FK owns atom/check/frame
@@ -127,7 +128,7 @@ account for them without publishing unrelated ancestors.
 
 The reviewed one-line surface helper fileset fix `b9008683` was carried into
 S6. Its initial missing-helper Nix failure is resolved. At most two heavy checks
-run: query-source slot 1 and S4/S6/FK sharing slot 2 by explicit handoff.
+run: query-source/S4 share slot 1 by explicit handoff; FK now owns slot 2.
 No agent opens a herdr tab before the owner's Monday deadline.
 
 ## Published work and cleanup
@@ -163,8 +164,8 @@ completed schema/observation workspaces await publication before removal.
 - [Query sources](20261024-query-sources.task.md) is active as above; the
   [table rebuild task](20261024-table-rebuild.task.md) now has clean follow-up
   review `20261024T142117Z-79fd6a8b` and waits for its final view/CTE design.
-- [S6 prototype](20261024-surface-s6-foundations.task.md) is implemented and
-  validating. [Execution contracts](20261024-s6-execution-contracts.task.md)
+- [S6 prototype](20261024-surface-s6-foundations.task.md) is DONE, awaiting push.
+  [Execution contracts](20261024-s6-execution-contracts.task.md)
   specify the independent production primitives; follow-up review
   `20261024T144839Z-5684010b` is clean. Public
   assertions, patterns and automation still need their production task.
@@ -178,13 +179,13 @@ completed schema/observation workspaces await publication before removal.
 - [S7 proof-cost prototype](20261024-s7-proof-cost-prototype.task.md) has clean
   follow-up review `20261024T141307Z-82085ddd`, unassigned. Production costs still
   need its measured collector contract. This facet is required, not deferred.
-- [Guide rebuild wording](20261024-guide-sql-rebuilds.task.md) has clean review
-  `20261024T142048Z-e614f5b6` and is assigned to S4's guide owner.
+- [Guide rebuild wording](20261024-guide-sql-rebuilds.task.md) is DONE, published
+  with reviewed S4 explanatory prose in private product PR #8, head `e1e42351`.
 - [Integrated guide acceptance](20261024-adr17-guide-acceptance.task.md) has
   clean review `20261024T145218Z-e244461b`; it awaits every required implementation.
 
 Read-only S7/editor audits remain in the research-notes directory of the Lean
 model modularity investigation. Shared surface helper ownership must be reserved
-before editor/doc/file tasks run concurrently. Full S6, production proof costs,
-S8 simulation and the full guide acceptance audit still need tasks. ADR17 is
+before editor/doc/file tasks run concurrently. Remaining public S6, production
+proof costs and S8 simulation still need tasks. ADR17 is
 not complete until their required behavior and acceptance pass.

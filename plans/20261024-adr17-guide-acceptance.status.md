@@ -24,3 +24,7 @@ including unrelated private history or copying private contents publicly.
   integration, proof checks and publication boundary. Review is pending.
   ADR17 remains OPEN; this task file claims no completed feature or test result.
 - 2026-10-24: review `20261024T145218Z-e244461b` has no findings.
+- 2026-10-24: review `20261024T145825Z-2e5e2ef5` found one should:
+  update the task's conditional wording after the view and S8 decisions were
+  accepted. The task now names those accepted contracts and the separate
+  still-pending fresh-run helper decision.

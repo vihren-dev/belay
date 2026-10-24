@@ -1,6 +1,6 @@
 # S6 foundations: checked prototype and design findings
 
-Created 2026-10-24. Status: OPEN. This task does not complete S6 or publish its API.
+Created 2026-10-24. Status: DONE. This bounded task does not complete S6 or publish its API.
 Status: [status file](20261024-surface-s6-foundations.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), D1 and Alternatives;
 the target `model-user-guide.md` in `vihren-dev/sqlite-verifier-product`, commit

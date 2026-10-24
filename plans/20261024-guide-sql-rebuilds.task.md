@@ -1,6 +1,6 @@
 # Guide correction: SQL source edits and importer rebuilds
 
-Created 2026-10-24. Status: OPEN. Implementation follows task review.
+Created 2026-10-24. Status: DONE. Published in private product PR #8.
 Status: [progress](20261024-guide-sql-rebuilds.status.md).
 Spec: [ADR 0017](../docs/adr-0017-user-surface.md), D6's accepted clarification
 of 2026-10-24 and the S7 SQL-files task. The edited guide stays in the private
