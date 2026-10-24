@@ -1,0 +1,57 @@
+{
+  "caller": "codex",
+  "commit": "05bf511e121da2c5aafe4d25a39ff6df66b84ce5",
+  "date": "2026-10-24T13:28:10+00:00",
+  "exit": 0,
+  "files": [
+    "packages/belay/Belay/Sqlite/ProgramSuccess.lean",
+    "packages/belay/Belay/Sqlite/ScriptSuccess.lean",
+    "packages/belay/Belay/Sqlite/Success.lean",
+    "packages/belay/Belay/Sqlite/SuccessSyntax.lean",
+    "packages/belay/Belay/Sqlite.lean",
+    "packages/belay/README.md",
+    "packages/belay/lakefile.lean",
+    "plans/20261024-surface-s4.status.md",
+    "reviews/20261024T131425Z-51a56f7e/review.json",
+    "tests/nix_suites.json",
+    "tests/shared_table_shape_test.py",
+    "tests/success_theorems_test.py",
+    "tests/surface/SuccessBranches.lean",
+    "tests/surface/SuccessSyntaxExamples.lean",
+    "tests/surface_success_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261024T132810Z-05bf511e#1",
+      "line": 37,
+      "path": "packages/belay/Belay/Sqlite/Success.lean",
+      "rule": "R5",
+      "severity": "should",
+      "text": "`Sql.SucceedsFrom` matches on `output` with a catch-all `_ => True` after `.oneOf`, so a new `Output` constructor would silently get no extra branch requirement. Fix: list every `Output` constructor, with `True` for each constructor other than `.oneOf`."
+    }
+  ],
+  "id": "20261024T132810Z-05bf511e",
+  "kind": "review",
+  "reviewer": "claude",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

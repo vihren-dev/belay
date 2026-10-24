@@ -35,7 +35,7 @@ def Sql.SucceedsFrom {α : Type} (clock : Option Clock) (index : Nat) (connectio
       output.isError = false ∧ (rest output).SucceedsFrom clock (index + 1) next ∧
         match output with
         | .oneOf results => ∀ rows ∈ results, (rest (.rows rows)).SucceedsFrom clock (index + 1) next
-        | _ => True
+        | .done _ | .rows _ | .error _ | .unmodeled _ => True
 
 /-- For every database satisfying the arbitrary predicate, and every complete environment,
 the script or program succeeds on every branch ({name}`Sql.SucceedsFrom`). A predicate that
