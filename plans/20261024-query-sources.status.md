@@ -189,9 +189,8 @@ actual verdict results and inspect each changed prediction.
   acceptance descendant combines evidence `dc77491d` with subject `5291750b`;
   only the status log conflicted, and both checked histories are retained.
 - Combined-boundary review `20261024T153541Z-08c47c2b` passed with no findings.
-  Its full gate passed all 153 frozen tests and 55 corpus validations.
-- The next combined full gate passed the frozen suites and found a stale profile
-  fixture that expected derived SELECT to be refused. The model-output and pipeline
+  Its full gate passed all 153 frozen tests and 55 corpus validations, then failed
+  on a stale profile fixture expecting derived SELECT to be refused. The model-output and pipeline
   transport fixtures had the same stale expectation. All three now use EXPLAIN,
   which retains the intended frontend-refusal check as derived sources gain support.
 - The focused Nix checks passed: the older-engine profile test at
@@ -200,3 +199,5 @@ actual verdict results and inspect each changed prediction.
   `/nix/store/kj1l7gpva3ysjdlzlkvbw1bwnzcx5wgv-sqlite-verifier-test-query-source-boundary-model-1`.
   This changes test inputs only; the reviewed combined full/verdict gates will rerun.
 - Refusal-fixture review `20261024T154723Z-42812ff3` passed with no findings.
+- Merge review `20261024T154823Z-0c0faa97` had one should finding about the
+  status log. The wording now identifies the passing suites and failure in one gate.
