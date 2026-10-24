@@ -1,8 +1,10 @@
 # Status: foreign-key facts and preservation
 
 Created 2026-10-24. Status: OPEN. Part 1 (split API and accepted mapped-NULL/action
-corrections) is accepted. Part 2's new-row, update, action and trigger invariants,
-DDL/mapping conditions, combined laws and separate corpus-v54 evidence remain open.
+corrections) is accepted. Part 2's row/action/trigger induction and conditional
+DML/run laws are checked. DDL/mapping conditions (CREATE, DROP, ADD COLUMN), the
+full atom-by-statement matrix, part-2 acceptance and separate corpus-v54 evidence
+remain open.
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
 Inspected base: PR #239, `98a07bfe`, in `vihren-dev/sqlite-verifier`.
@@ -665,3 +667,12 @@ is diagnostic evidence; the Nix suite is acceptance evidence. Slot 1 returned to
 the coordinator after terminal completion. Independent review follows this commit.
 The separate `fk-ddl-preservation` workspace holds the next CREATE proofs; the
 DROP/ADD COLUMN families, full matrix and part-2 acceptance remain OPEN.
+
+Independent review `20261024T201858Z-ea40e905` checked source commit
+`ea40e905be6e484b73cc3358bbcddb3093092e59`: all four proof modules, barrel and
+package registration, the three fixtures, test parametrization and status. It
+found zero musts and one R19 status should: the top summary still described
+completed row/action/trigger invariants as open. The summary now lists the actual
+remaining DDL/mapping, matrix, acceptance and corpus work. No source correction
+was needed. This accepted statement/run checkpoint is at rest; the DDL unit
+continues in its separate workspace.
