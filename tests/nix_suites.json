@@ -113,6 +113,7 @@
   "surface": [
     "tests/surface_guide_test.py",
     "tests/surface_claims_test.py",
+    "tests/surface_schema_claims_test.py",
     "tests/surface_parameters_test.py",
     "tests/surface_programs_test.py",
     "tests/surface_parser_test.py",

@@ -31,6 +31,7 @@ import Belay.Sqlite.ExistsQuery
 import Belay.Sqlite.NotExistsQuery
 import Belay.Sqlite.SelectOneMayFail
 import Belay.Sqlite.ExistsMayFail
+import Belay.Sqlite.ScalarNoFrom
 import Belay.Sqlite.SelectNoFrom
 import Belay.Sqlite.CountQuery
 import Belay.Sqlite.ColumnQuery

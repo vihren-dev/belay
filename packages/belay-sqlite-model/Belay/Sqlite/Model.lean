@@ -169,6 +169,7 @@ import Belay.Sqlite.Model.SimpleQueryLaws
 import Belay.Sqlite.Model.SimpleSelectResolution
 import Belay.Sqlite.Model.SimpleSourceResolution
 import Belay.Sqlite.Model.SimpleQuerySteps
+import Belay.Sqlite.Model.SimpleQueryFaults
 import Belay.Sqlite.Model.StatementCalm
 import Belay.Sqlite.Model.TableSourceLaws
 import Belay.Sqlite.Model.SimpleStatementResolution

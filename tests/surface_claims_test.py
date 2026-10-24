@@ -133,3 +133,14 @@ def test_query_cases_keep_errors_and_unmodeled_outputs(runtime_root: Path, tmp_p
     reports = [line for line in result.stdout.splitlines() if "depends on axioms" in line]
     assert len(reports) == 7, result.stdout
     assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout
+
+
+def test_no_from_scalar_calls_preserve_function_faults(runtime_root: Path, tmp_path: Path) -> None:
+    """A successful ABS, an overflowing ABS and a skipped overflowing ABS are proved for every
+    database, checked concretely, and audited for unchecked evaluation axioms."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsScalarNoFrom.lean", tmp_path), cwd=tmp_path,
+                         timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+    reports = [line for line in result.stdout.splitlines() if "depends on axioms" in line]
+    assert len(reports) == 3, result.stdout
+    assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout

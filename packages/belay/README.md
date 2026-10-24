@@ -104,3 +104,9 @@ any query. `Fails.of_prepareError` covers a missing table or column, and
 statement interpreter. `Script.not_claims_query_of_undescribed` covers a query that may fail
 or has an unsupported subquery. Keep those cases in proofs: a row satisfying a filter does
 not imply `Holds` if another row can make evaluation fail.
+
+For a scalar call without `FROM`, `resolveStatement_selectNoFrom_columns` admits a resolved
+scalar column, including a fallible function. `Holds.iff_noFrom_scalar`,
+`Empty.iff_noFrom_scalar` and `Fails.iff_noFrom_scalar` retain the run's fault and the filter.
+Thus `SELECT abs(1)` holds, `SELECT abs(-9223372036854775808)` fails, and adding `WHERE 0`
+skips that failing projection and makes the result empty, for every database.
