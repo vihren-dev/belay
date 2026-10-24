@@ -1,7 +1,9 @@
 # S7 proof costs: collector feasibility and measurement contract
 
-Created 2026-10-24. Status: OPEN. Implementation follows task review.
+Created 2026-10-24. Status: DONE. The bounded experiment and acceptance are complete.
 Status: [progress](20261024-s7-proof-cost-prototype.status.md).
+Results: [measurement findings](../docs/s7-proof-cost-findings.md). Production
+coverage, collection and CLI implementation remain separate from this prototype.
 Spec: [ADR 0017](../docs/adr-0017-user-surface.md), S7's check tool, and
 `model-user-guide.md`, Stable proofs (private product repository). The owner's ADR17 completion request
 includes per-proof heartbeat reports and a configurable CI growth bound.

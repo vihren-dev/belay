@@ -1,6 +1,6 @@
 # Status: S7 proof-cost collector prototype
 
-Created 2026-10-24. Status: OPEN. Technical acceptance passes; final metadata is pending.
+Created 2026-10-24. Status: DONE. The bounded prototype and all required checks pass.
 Task: [task file](20261024-s7-proof-cost-prototype.task.md).
 Spec: ADR17 S7's checker and target stable-proof experience.
 
@@ -10,7 +10,7 @@ The S7 source audit found no surface collector or compiled proof-cost registry.
 Pinned Lean's withHeartbeats counts a computation in internal units, 1000 per
 user-facing unit. The experiment now retains native completed body traces and
 exports records through a persistent environment extension. All required checks
-pass. S4 publication ancestry and the final completion record remain open.
+pass, and the final measurement findings have a clean independent review.
 No production measurement or baseline guarantee is claimed.
 
 ## Progress
@@ -30,14 +30,15 @@ No production measurement or baseline guarantee is claimed.
 - Review 20261024T153725Z-cca27596 found no musts or shoulds in the additional
   source inputs. The experiment and production cost task remain open.
 - Assigned to `s4_part1` in isolated `s7-proof-cost`, based on reviewed S4
-  source `2e51a0ae`. S4's broad acceptance remains open; integrate its final
-  published boundary before prototype acceptance. Root coordinates those gates.
+  source `2e51a0ae`. At assignment, S4's broad acceptance was open; its later
+  source integration and publication handling are recorded below.
   This carries the existing task without a new scope decision or task-file edit.
 - A read-only preflight identified native `Elab.definition.value` traces as a
   candidate for both sync and async body elaboration. An imported declaration
   wrapper could delegate to `elabDeclaration`, retain completed snapshot/trace
   tasks, and export plain records through a persistent environment extension.
-  Its export callback runs after async threads join. No collector has compiled.
+  Its export callback runs after async threads join. At that preflight, no
+  collector had compiled.
 - The experiment must enable the trace class to retain exact-zero nodes,
   preserve internal heartbeat units, and flag Float precision loss. Async
   diagnostics can hold consumed traces, so inspect structured messages and
@@ -154,6 +155,12 @@ No production measurement or baseline guarantee is claimed.
   internal units. The findings retain both artifacts and this observed one-unit
   variation. No exact cross-run invariance or general overhead bound is claimed.
 - The prototype has no package, conformance, judge or lock changes from final
-  S4 source `24ca8b4c`. Final S4 publication metadata will be merged before the
-  task's completion record. The separate production coverage choice remains
-  with the owner; this task implements no production cost API.
+  S4 source `24ca8b4c`. The coordinator will combine final S4 publication metadata
+  when publishing the completed prototype, without changing the accepted source
+  inputs. The separate production coverage choice remains with the owner;
+  this task implements no production cost API.
+- Final evidence commit `efca77ffe75378c5d018f9ea3dbcc844bda657ac` passed
+  independent review `20261024T191340Z-efca77ff` with no musts or shoulds.
+  The bounded experiment is DONE. All implementation checks are terminal;
+  remaining stack publication belongs to the coordinator. The next assigned
+  work is S5 after S4 publication, not implicit production cost implementation.
