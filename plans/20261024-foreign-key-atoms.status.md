@@ -1,7 +1,7 @@
 # Status: foreign-key facts and preservation
 
-Created 2026-10-24. Status: OPEN. Split-API work and the accepted engine correction
-are in progress; their checks remain.
+Created 2026-10-24. Status: OPEN. Split-API work and the accepted mapped-NULL and
+mapped-action corrections are in progress; their checks remain.
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
 Inspected base: PR #239, `98a07bfe`, in `vihren-dev/sqlite-verifier`.
@@ -180,7 +180,7 @@ only the task and ADR22 from coordinator boundary `6d267b1e1d2aa4001b9711d63b3ac
 Review `20261024T151438Z-4c59fcc3` had no musts; its two wording findings were
 fixed at that boundary. Follow-up `20261024T151547Z-6d267b1e` had no musts and
 one status-only naming finding, whose resolution is carried with the reviews.
-The action source has not changed yet; the earlier pause is now resolved.
+At this carry, the action source had not changed; the earlier pause was resolved.
 
 The new comparison premise quantifies over all stored parent/child row pairs,
 including future rows, and requires scan/lookup equality for non-NULL keys.
@@ -190,3 +190,9 @@ and reject the TEXT/INTEGER example. Local builds and both surface fixtures
 passed with 20 audited declarations; these are development diagnostics, not
 Nix acceptance. Row preservation still needs the global immediate-counter
 invariant through nested writes and FAIL. No part-2 completion is claimed.
+
+The carry review `20261024T152143Z-1a10a3c8` had no musts and two shoulds.
+The status header now names both execution corrections, and the unrelated task
+line-wrap change is reverted. Action implementation is now in the uncommitted
+working copy, using one selected projection for values, scans and action writes.
+Its local build is in progress; it has no Nix acceptance evidence yet.

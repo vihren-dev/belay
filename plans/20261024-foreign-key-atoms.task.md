@@ -84,7 +84,8 @@ corrections are the planned execution changes; add native regressions for both.
    checks enforce. Parent-write laws also name the needed consistency between
    child scans and parent lookups: their affinity rules can differ. Expose that
    comparison premise and proved structural sufficient conditions; enforcement
-   and compatible schemas alone do not establish it. DDL that adds a declaration or changes parent-key selection
+   and compatible schemas alone do not establish it. DDL that adds a declaration
+   or changes parent-key selection
    needs an explicit schema/mapping condition. Do not promise unconditional
    preservation for CREATE TABLE with a forward reference or DROP INDEX.
    Expose individual atom laws and convenience combined laws. The existing
