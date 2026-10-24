@@ -20,11 +20,15 @@ def tableScope (catalog : Catalog) (reference : Syntax.TableReference) (position
 when the catalog has the table: it gives one inner source on the catalog position of the table, and one
 scope of the table ({name}`tableScope`). The catalog may be any catalog.
 
-The source reference has no indexed query.
+The source reference has no indexed query. The result holds for every derived-source callback
+and diagnostic prefix; neither is read on this successful named-table path. Leave both at their defaults
+for a query without derived sources.
 Proof sketch: unfold {name}`resolveSources` and the table lookup, and rewrite with the hypotheses. -/
 theorem resolveSources_table (catalog : Catalog) (reference : Syntax.TableReference) (position : Nat) (table : CatalogTable)
-    (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : catalog.findTable reference.table = some (position, table)) :
-    resolveSources catalog (some reference) [] = .ok ([{ item := .table position, kind := .inner, condition := .none }],
+    (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : catalog.findTable reference.table = some (position, table))
+    (queries : Nat → Except SourceIssue ScopeSource := fun _ => .error (.value (.restriction [] .subqueryHere)))
+    (prefix_ : List Nat := []) :
+    resolveSources catalog (some reference) [] 0 queries prefix_ = .ok ([{ item := .table position, kind := .inner, condition := .none }],
       tableScope catalog reference position table) := by
   simp [resolveSources, resolveReference, namedSource, arguments, resolveTableReference, found, maximumJoinTables, Scope.place, mergeJoins, resolveAll, resolveAllFrom, Bind.bind, Except.bind, liftM, monadLift, MonadLift.monadLift, Except.mapError, joinOperator, Scope.single, tableScope, Functor.map, Except.map]
 
