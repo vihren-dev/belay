@@ -11,8 +11,9 @@ The prototype proves the relevant generic transformer laws, but its original
 instance rejects SQL errors and its equivalence omits failed alternative traces.
 Production must support conditional triples and retain those traces explicitly.
 
-Implementation waits for task review, final S4 interfaces and an available
-agent/build slot. Its modules can remain separate from query-context work.
+Final S4 interfaces and the prototype are published. The task is refreshed
+for assignment to `text_build_boundaries` in a separate workspace on PR #248.
+Its modules remain separate from FK and query-context implementation work.
 The accepted quiet observation view affects later migration patterns,
 not these complete-execution semantics. No production or acceptance result
 is claimed by this task file.
@@ -30,3 +31,11 @@ is claimed by this task file.
   BEGIN/COMMIT/ROLLBACK programs; ADR17 still defers withTransaction.
 - 2026-10-24: follow-up review `20261024T144839Z-5684010b` has no findings.
   Implementation remains unassigned and waits for final S4 interfaces.
+
+- 2026-10-24: refreshed the handoff to published #248 `e3d6aa38`, which contains
+  completed S4 #244 and S6 prototype #246. Removed stale workspace and pending
+  validity-check references. Made the accepted fresh-run helper/ordinary-triple
+  equivalence explicit. The owner accepted that contract earlier; this refresh
+  adds no scope decision. The FK owner confirmed that generic branch/WP/equality
+  work can proceed independently while remaining FK checks run. Assignment
+  follows review of this refresh; heavy checks require the coordinator's slot.

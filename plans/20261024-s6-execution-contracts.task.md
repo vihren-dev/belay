@@ -1,7 +1,7 @@
 # S6: execution branches, predicate transformers and equivalence
 
-Created 2026-10-24. Status: OPEN. Implementation follows task review and the
-final S4 execution interfaces.
+Created 2026-10-24. Status: OPEN. Refreshed for assignment on the completed
+S4 execution interfaces in published PR #248.
 Status: [progress](20261024-s6-execution-contracts.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), S6 clarification accepted
 2026-10-24; [foundations prototype](20261024-surface-s6-foundations.task.md).
@@ -67,7 +67,9 @@ resolver or evaluator, new model feature or general effect framework is needed.
   Both require modeled execution of every continuation. An error followed by
   an unmodeled step cannot discharge even a true conditional postcondition.
   State explicitly how an existing prefix trace affects the primitive; the
-  fresh-run helper starts with an empty trace. Do not install the prototype's
+  fresh-run helper starts with an empty trace. Prove its equivalence to ordinary
+  `Std.Do` triples with the matching entry assumptions; keep ordinary triples
+  available for composition. Do not install the prototype's
   error-rejecting transformer as the only route to conditional triples.
 - **S4 success has an exact bridge.** At an empty prefix, the total-success
   transformer with a true final property is equivalent to `Sql.SucceedsFrom`
@@ -136,15 +138,16 @@ evidence. Existing predictions and the judge lock must remain unchanged.
 
 ## Existing interfaces and ownership
 
-Consume final S4 `Program`, `ProgramRun`, `ProgramBindLaws`, `ProgramSuccess`,
-`Env.Complete`, run/output/validity laws and the removal of `Run.checked`.
-S4 is unmerged and absent from this planning tree. Its task is
-`plans/20261024-surface-s4.task.md` in workspace `sqlite-verifier-s4`;
-`Sql.SucceedsFrom` and its bridges are at reviewed commit
-`00c8707f5a4023fb97e5e8259f5560296efe12f3`. The final removal is still pending.
-The prototype's five `tests/surface/S6*.lean` modules and design record live in
-workspace `sqlite-verifier-s6-foundations`, commit
-`c838d5cca683e15c62f691363d1b523f721a754d`, not in this planning tree.
+Consume completed S4 `Program`, `ProgramRun`, `ProgramBindLaws`, `ProgramSuccess`,
+`Env.Complete` and the run/output/validity laws. S4 PR #244 removed `Run.checked`;
+its published head is `70705018e81bcd9f7159d107ec0f042e2ed8ef14`.
+The S6 prototype is complete in PR #246 at
+`334d964527cc60f0f2f512eda1495df8c2d3b599`. Its five `tests/surface/S6*.lean`
+modules and `docs/s6-foundations-findings.md` are available in the handoff base,
+published PR #248, commit `e3d6aa388eeb070b94cdcf34a474f79f692d3c12`.
+The earlier prototype workspace has been removed after publication.
+No FK preservation or view implementation is a prerequisite of these generic
+execution contracts. Those tasks remain prerequisites of later S6 examples.
 They are checked design inputs, not production imports. Keep context, branch laws,
 transformer laws and equivalence laws in modules with separate contracts,
 below 200 lines each. Export them through the surface package only; model and
