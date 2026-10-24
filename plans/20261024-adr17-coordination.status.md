@@ -271,7 +271,10 @@ logs are in `s4/build/agent-logs/cte-publication`. Evidence and views remain act
 - [SQL doc blocks](20261024-sql-doc-blocks.task.md) has clean follow-up review
   `20261024T140400Z-04f1c91e`, unassigned; it accompanies S7.
 - [S7 files/freshness](20261024-surface-s7-files.task.md) has clean follow-up
-  review `20261024T140930Z-09c30b41`, unassigned.
+  review `20261024T140930Z-09c30b41`, assigned to `text_build_boundaries` in
+  `s7-files` on `5bc323f0`. Shared parameter/source helpers are reserved;
+  S5 retains Check*, Sampling* and ReplayScript ownership. The first checked
+  source commit requires independent review after the login refresh.
 - [S7 proof-cost prototype](20261024-s7-proof-cost-prototype.task.md) is DONE
   and published as PR #245 at `0569149b`, above completed S4 PR #244 `70705018`.
   Production will use the accepted named-body contract, including native mutual declarations.
@@ -314,7 +317,11 @@ guard. Both guards serve existing APIs or error precedence. A diagnostic with
 one logical fault applied at both sites passes at
 `b1cb35nhbg9vdwh0dpdhy9bjzlvr0p4k`: the unchanged native baseline agrees and
 the same target kills the two-site mutant. No production resolver or harness
-change has been made. Query and JSON-group failures still need exact diagnosis.
+change has been made. Focused Nix runs of the unchanged query and JSON groups
+pass: all 16 query mutants are killed at `hvx19aq81d4n444lp9qgyngd1hg337gj`
+(160.60 seconds), and all 14 JSON mutants at `bw6qs4f727q8qi1hfhldgghxbfgyi7w2`
+(194.09 seconds). The hosted failures have no retained traceback; their exact
+cause remains unconfirmed. These local results do not establish hosted timing.
 The original CI logs are retained under `s4/build/agent-logs/ci24{8,9}-mutants-linux.log`.
 
 Enforced FK DROP source is frozen at `dd60f94c`, after the focused Nix output
