@@ -86,3 +86,9 @@ actual verdict results and inspect each changed prediction.
   `/nix/store/zs2dfp63la9ib1cx7qskny4l9pvdq4b0-belay-sqlite-model-0.1.0`.
   SQL FROM translation, source scope resolution, the authored judge cases and
   final part-1 Nix full/verdict acceptance remain pending.
+
+- Review `20261024T140053Z-649a3021` had no must finding and two should
+  findings. Both metadata functions now list all expression constructors instead
+  of using catch-all branches, so new syntax must explicitly choose its metadata.
+  Nix `modelPackage` passed at
+  `/nix/store/24qvzhb6dpmsh27pzgqyjwr921dkkqbp-belay-sqlite-model-0.1.0`.

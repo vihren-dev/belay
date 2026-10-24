@@ -34,7 +34,9 @@ def Syntax.Expr.sourceAffinity (scope : Scope) (shapes : SubqueryShapes) : Synta
   | .cast _ typeName => some (affinityOf (some typeName))
   | .collate operand _ => operand.sourceAffinity scope shapes
   | .subquery index => (shapes.find index).bind (·.affinity)
-  | _ => none
+  | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .negate _ | .positive _
+  | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .callStar _ | .call .. | .arithmetic ..
+  | .exists _ | .inQuery .. | .inList .. | .between .. | .caseOf .. | .concatenate .. | .raise .. => none
 
 mutual
 /-- SQLite's numeric and text possibility bits ({lit}`sqlite3ExprDataType`) after names
@@ -61,7 +63,8 @@ def Syntax.Expr.sourceTypes (scope : Scope) (shapes : SubqueryShapes) : Syntax.E
     arms.zipIdx.foldl (fun types (arm, index) =>
       if index % 2 == 1 || index + 1 == arms.length then
         ExpressionTypes.union types arm else types) (false, false)
-  | _ => (true, false)
+  | .numeric _ | .negate _ | .compare .. | .and .. | .or .. | .not _ | .isNull .. | .arithmetic ..
+  | .exists _ | .inQuery .. | .inList .. | .between .. | .raise .. => (true, false)
 
 /-- Type possibilities of each expression, used for the result arms of CASE. -/
 def Syntax.Expr.sourceTypesList (scope : Scope) (shapes : SubqueryShapes) : List Syntax.Expr → List ExpressionTypes
