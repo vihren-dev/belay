@@ -29,19 +29,6 @@ def UpsertOrigin (context : Resolved.EvalContext) (clauses : List Resolved.Confl
       row = movedRowid table.shape.rowidAlias (assignFrom context table.shape.columns assignments
         (existing.values ++ proposed.values) existing) ∧ aliasCellMismatch table.shape.rowidAlias row = false
 
-/-- For every keys, two tables, row and optional row: if {name}`checkedRow` succeeds, the stored
-table is the next table, and the next table passed {name}`constraints` and {name}`rowidsDistinct`.
-Proof sketch: {name}`checkedRow` stores its input after the check. -/
-theorem checkedRow_passed {keys : List UniqueKey} {next stored : Table} {written : Row} {row : Option Row}
-    (ok : checkedRow keys next written = .ok (stored, row)) :
-    stored = next ∧ (constraints keys next && rowidsDistinct next) = true := by
-  unfold checkedRow at ok
-  split at ok
-  · rename_i passed
-    simp only [Except.ok.injEq, Prod.mk.injEq] at ok
-    exact ⟨ok.1.symm, passed⟩
-  · simp at ok
-
 /-- For every keys, clauses, table, proposed row, clause and existing row: if
 {name}`handlingClause` gives the clause with the row, the clause is one of the clauses and the row
 is a row of the table. Proof sketch: the clause comes from {lit}`List.findSome?` of the clauses, and
