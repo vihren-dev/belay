@@ -51,7 +51,17 @@ import Belay.Sqlite.Model.RowEngineWrites
 import Belay.Sqlite.Model.RowEngineFacts
 import Belay.Sqlite.Model.ForeignKeyFacts
 import Belay.Sqlite.Model.ForeignKeyComparison
+import Belay.Sqlite.Model.ForeignKeyCounter
+import Belay.Sqlite.Model.ForeignKeyCounterOld
+import Belay.Sqlite.Model.ForeignKeyCounterRun
+import Belay.Sqlite.Model.ForeignKeyLookupRemoval
+import Belay.Sqlite.Model.ForeignKeyCountRows
+import Belay.Sqlite.Model.ForeignKeyCountRemoval
+import Belay.Sqlite.Model.ForeignKeyCounterScans
+import Belay.Sqlite.Model.ForeignKeyCountDelete
 import Belay.Sqlite.Model.ForeignKeyRowFrame
+import Belay.Sqlite.Model.ForeignKeySchemaWrites
+import Belay.Sqlite.Model.ForeignKeySchemaRuns
 import Belay.Sqlite.Model.ForeignKeySchemaFrame
 import Belay.Sqlite.Model.ForeignKeyDropFrame
 import Belay.Sqlite.Model.ForeignKeyPrepareLaws

@@ -254,3 +254,138 @@ must be derived through old/new row phases, actions and triggers. Its comparison
 premise covers all future stored rows; intermediate storedness, unique parent
 keys, update-key coverage and target stability must justify use at each phase.
 The script bridge must carry the atom on saved snapshots as well as current rows.
+
+Implementation commit `892670085cd1b944eae4da8f7b4af60197ab6f37` received review
+`20261024T155358Z-89267008`: no musts and one should. The ADR amendment's obsolete
+“planned, not implemented” wording now points to its part-1 implementation record.
+The reviewer explicitly skipped some files and docstrings, so a supplementary
+review of the same implementation is required before part-1 acceptance.
+The source stays at rest in this workspace; part-2 counter proofs start in the
+separate `fk-preservation` workspace based on that implementation commit.
+
+The ADR wording fix is `1183e81c45b7b0af6d6252190537d845e0239e9a`; review
+`20261024T155658Z-1183e81c` has no findings. Supplementary implementation review
+`20261024T160106Z-89267008` read all production changes, including the full
+Query*Output, SimpleQuery, StatementCalm, ForeignKey*Frame and ForeignKey*Laws
+files. It found four documentation shoulds in the carried S4 closure, now fixed:
+QueryStepOutput, OutputResultsLaws and StatementCalm describe the model without
+its surface consumer, and SimpleQuerySteps distinguishes faultless subquery
+variants from plain variants. The required local dev-build passed after these
+comment-only edits; this is diagnostic, not Nix acceptance. No formula changed.
+The remaining review scope is exactly ForeignKeyAtoms.lean,
+ForeignKeyComparison.lean and all 35 probes in foreign_key_atoms_native_test.py;
+a bounded supplementary review of those files is running.
+
+Test-only review `20261024T160318Z-89267008` fully read the three remaining files,
+including all 35 native probes, and found one docstring should: the nonunique
+parent fixture has a NULL child row, while the others have empty children. That
+wording is corrected. The documentation-fix review `20261024T160408Z-c0dc0674`
+found one should: all SimpleQuerySteps variants require Calm, including faultless
+variants. Its module overview now states that shared premise explicitly. Local
+dev-build and both surface fixtures passed after these comment changes; acceptance
+remains the Nix evidence above, with full/verdict still pending. The combined
+implementation reviews now cover every changed production and test file in full.
+
+The final comment review `20261024T160619Z-5cdfd600` was clean (zero musts and
+zero shoulds). Part-1 `just test-full` then stopped at the documentation inventory:
+ForeignKeyDropFrame had duplicated `Catalog.tableAt_drop_kept`, already defined
+in DatabaseShapedLaws. This was an implementation defect, not an environment
+failure. The duplicate is deleted; the DROP frame now imports and uses the
+existing shared theorem. The correction changes no formula or execution result.
+Its required local dev-build and both focused surface fixtures passed as diagnostic
+checks (`fk-dev-build-11.log`, `fk-local-atoms-11.log`). Independent review and the
+full/verdict acceptance rerun follow; the failed gate did not run verdict.
+
+## Part-1 acceptance complete
+
+The duplicate-law correction at `3df8e64142627707a4ac42d8e06b048d5629b73e`
+passed independent review `20261024T161455Z-3df8e641` with zero musts and
+zero shoulds. The complete review coverage is the union of implementation
+reviews `20261024T155358Z-89267008` and `20261024T160106Z-89267008`, test-only
+review `20261024T160318Z-89267008`, and the clean follow-ups recorded above.
+The test-only review covered exactly `tests/surface/ForeignKeyAtoms.lean`,
+`tests/surface/ForeignKeyComparison.lean` and all 35 cases in
+`tests/foreign_key_atoms_native_test.py`; the supplementary implementation
+review read every changed production file in full. All findings are resolved.
+
+The sequential Nix acceptance command used command-local max-jobs=1 and finite
+timeouts: `timeout 2400 just test-full`, then `timeout 1800 just verdict`.
+The owned process 36195 completed with exit 0 on 2026-10-24. Full passed 826
+tests with zero failures, errors or skips. Reports:
+`/nix/store/j8fbmdz188sgyksxqbcgzmiawh4x60mj-sqlite-verifier-test-reports`.
+The full model and surface suite outputs are
+`/nix/store/miay3482a3z44pkkmmka18bjkl78lkc3-sqlite-verifier-test-model-1` and
+`/nix/store/q8kb41mfdf4x8jmi3nl7y35rpnj7pwkg-sqlite-verifier-test-surface-1`.
+Verdict preserved all frozen claims; output:
+`/nix/store/1mnxx4jshvv7zp58jzds5vi7rasss88v-sqlite-verifier-verdict`.
+Logs are `build/agent-logs/fk-part1-{test-full,verdict}-2.log`.
+
+All 53 prediction files, containing 7,372 cases, byte-match the baseline
+`/nix/store/4k77z378vnagzwx5448yqz0686d58cld-sqlite-verifier-predictions`.
+The current prediction derivation is
+`/nix/store/8cax62kyxx2lv55za3dqyw4inzhaz0d4-sqlite-verifier-predictions.drv`;
+its output is `/nix/store/axvw8k3lgld2iliglw0yn8dxn526m9x4-sqlite-verifier-predictions`.
+There are no changed, added or removed frozen predictions to classify. The
+selected-column corrections are exercised by the 35 native differential cases
+and the focused FK mutation gate recorded above. No judge or lock file changed.
+The reserved corpus-v54 judge extension and part-2 preservation remain open.
+
+Part 2 continues only in the isolated `fk-preservation` workspace. A checked
+proof probe now connects actual oldSteps and physical deletion to the global
+counter bound, including self-references, under explicit storedness, rowid
+uniqueness, row alignment and lookup/scan consistency premises. This is local
+development progress, not acceptance or a completed action/trigger invariant.
+The heavy slot was returned to the coordinator after acceptance terminated.
+
+## Part-2 counter and schema proof unit in progress
+
+The separate `fk-preservation` workspace retains the reviewed part-1 correction
+files and records through `02a6498c`, without rebasing shared ancestors. Its
+new source is proof-only: a total violation count, zero-count equivalence,
+end-of-statement success/FAIL bridge, counter bookkeeping, exact old-row scan
+arithmetic, and the global bound through physical deletion. The deletion law
+includes self-references and uses explicit alignment, storedness, target-rowid
+uniqueness and lookup/scan consistency premises; it assumes no final row fact.
+Separate schema laws cover data writes and unchanged-catalog statement/run paths,
+including the saved-snapshot premise. They do not claim general DDL preservation.
+
+The maintained kernel fixtures distinguish an unchecked raw UPDATE from a resolved
+UPDATE, cover cascade and rollback schema behavior, apply the generic deletion
+law to a checked self-reference, and check the pending orphan count after a
+parent deletion. New proof modules and fixtures compile in direct Lean diagnostic
+probes, with only the three standard logical axioms. These local probes are not
+Nix acceptance. The mandatory dev-build and focused Nix fixture gate are queued
+for an explicit resource-slot release; no part-2 commit or acceptance is claimed.
+The new-row, update coverage, action and trigger induction remain in progress.
+
+The three-line SimpleQuerySteps overview correction from reviewed S4 boundary
+`c11a1f83fed9e8eae8d6234201050bc6b741cc00` is carried exactly: the faultless
+no-error law permits source faults, while the has-rows/no-rows equivalences need
+a fault-free source. This documentation-only correction changes no theorem.
+
+## Counter/schema/deletion unit acceptance
+
+The focused Nix surface gate passed on 2026-10-24: five fixtures passed, 33
+deselected, 8.53 seconds. The output is
+`/nix/store/kd5kljc36w937bizkhpdvjqnky08bzsh-sqlite-verifier-test-surface-1`.
+The gate compiled the model, text and surface package closure and checked 61
+axiom reports across the existing atom/comparison fixtures and the new counter,
+schema-run and deletion fixtures. Every report admits only propext,
+Classical.choice and Quot.sound. Command: `timeout 1800 nix-build --no-out-link
+--option sandbox true --option sandbox-fallback false --extra-experimental-features
+"nix-command flakes" --expr 'let project = import ./build-support/default.nix {};
+in project.tests.surface.overrideAttrs (_: { PYTEST_ADDOPTS =
+"-k independent_foreign_key_atoms"; })'`, with command-local max-jobs=1.
+Log: `build/agent-logs/fk-part2-nix-surface-1.log`; owned process 35480 exited 0.
+The mandatory dev-build also completed before this gate; its local result is
+not acceptance evidence.
+
+This coherent proof unit contains ForeignKeyCounter, CounterOld, CounterRun,
+CounterScans, LookupRemoval, CountRows, CountRemoval, CountDelete, SchemaWrites
+and SchemaRuns under the common ForeignKey prefix. Each file is below 200 lines.
+The maintained fixtures cover both the self-row exclusion and a retained child's
+pending violation, rather than only restating the generic theorem. Independent
+review follows this commit. New-row arithmetic and append lemmas remain ignored
+probes for the next unit; they are not included in this acceptance. The full
+action/trigger/update invariant, DDL/mapping conditions, combined run laws and
+atom-by-statement matrix remain open, so the task remains OPEN.

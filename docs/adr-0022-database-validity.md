@@ -80,8 +80,8 @@ whole database. Its database form says the fact for every table.
 | row references hold | for a supplied mapping of every declared foreign key, each child row has a NULL key cell or a matching parent row | neither |
 
 Amended 2026-10-24 by owner decision: slice 5 replaces the single
-`ForeignKeysHold` API with these two atoms. This split is planned, not implemented
-by this amendment. The row atom takes an explicit mapping that determines the
+`ForeignKeysHold` API with these two atoms. The slice-5 part-1 record below describes
+the implemented split. The row atom takes an explicit mapping that determines the
 child columns tested for NULL and the resolved parent comparison. It does not
 require the supporting unique index to exist. A convenience operation selects
 the mappings as SQLite does; its row check agrees with the corrected engine.

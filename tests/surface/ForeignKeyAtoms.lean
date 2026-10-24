@@ -119,7 +119,8 @@ def rowid : Database := db! r"
   INSERT INTO p VALUES(1); INSERT INTO c VALUES('01');"
 example : rowid.raw.RowReferencesHold rowid.raw.catalog.foreignKeyMapping := by decide +kernel
 
-/-- Each unsupported parent shape is checked even though its child has no rows. -/
+/-- Each unsupported parent shape is checked with no child rows or only a NULL key.
+The nonunique-parent case stores the NULL key. -/
 def unsupportedParents : List Database := [
   db! "CREATE TABLE p(k); CREATE UNIQUE INDEX pk ON p(k) WHERE k>0; CREATE TABLE c(x REFERENCES p(k));",
   db! "CREATE TABLE p(k); CREATE UNIQUE INDEX pk ON p(k+0); CREATE TABLE c(x REFERENCES p(k));",
