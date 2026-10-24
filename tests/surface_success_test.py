@@ -87,8 +87,9 @@ def test_numeric_sum_bound_includes_real_and_null_cells(runtime_root: Path, tmp_
 
 
 def test_guide_email_success_uses_exact_corrected_precondition(runtime_root: Path, tmp_path: Path) -> None:
-    """The guide's uniqueEmail claim derives its schema from Holds and adds only the free
-    index name; kernel cases retain the original name collision and ASCII-only NOCASE trap."""
+    """The guide's uniqueEmail claim requires a physical table and a free index name, then
+    derives its email column and uniqueness from Holds. Kernel cases include the complete
+    precondition and retain the original name collision and ASCII-only NOCASE trap."""
     result = run_command(surface_command(runtime_root, FIXTURES / "SuccessUniqueEmail.lean", tmp_path),
                          cwd=tmp_path, timeout=60)
     assert result.returncode == 0, result.diagnostic()
@@ -97,9 +98,10 @@ def test_guide_email_success_uses_exact_corrected_precondition(runtime_root: Pat
 
 
 def test_guide_balance_success_derives_schema_and_numeric_bounds(runtime_root: Path, tmp_path: Path) -> None:
-    """The exact corrected SQL guard implies universal balance success, with written proofs
-    for schema, metadata, storage affinity and SUM bounds. Kernel cases retain the missing
-    account and TEXT-overflow counterexamples and admit mixed REAL/NULL cells. Compile the
+    """The physical-table premise and corrected SQL guard imply universal balance success,
+    with written proofs for schema, metadata, storage affinity and SUM bounds. Kernel cases
+    retain the missing-account and TEXT-overflow counterexamples and satisfy the full
+    precondition on empty and mixed REAL/NULL tables. Compile the
     proof modules as a fresh consumer, then audit the final theorem's transitive axioms."""
     setup_path = module_setup(runtime_root, tmp_path)
     setup = json.loads(setup_path.read_text())
