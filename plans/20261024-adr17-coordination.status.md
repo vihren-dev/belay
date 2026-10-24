@@ -267,7 +267,10 @@ logs are in `s4/build/agent-logs/cte-publication`. Evidence and views remain act
   review `20261024T143052Z-5feffb18` and waits for query-source/view integration.
 - [Editor](20261024-surface-editor.task.md) is reviewed, unassigned.
 - [SQL doc blocks](20261024-sql-doc-blocks.task.md) has clean follow-up review
-  `20261024T140400Z-04f1c91e`, unassigned; it accompanies S7.
+  `20261024T140400Z-04f1c91e`, assigned to `text_build_boundaries` in isolated
+  `sql-doc-blocks` on `5bc323f0`. Its new modules can proceed independently
+  of the S7 package-root decision; shared helper ownership remains with the
+  same worker. The first checked commit will wait for independent review.
 - [S7 files/freshness](20261024-surface-s7-files.task.md) has clean follow-up
   review `20261024T140930Z-09c30b41`, assigned to `text_build_boundaries` in
   `s7-files` on `5bc323f0`. Shared parameter/source helpers are reserved;
