@@ -23,15 +23,6 @@ theorem Resolved.Statement.Quiet.selectNoFrom (condition : Option Resolved.Expr)
   · rw [member]
     exact quiet
 
-/-- For every connection, parameters and quiet query statement without subqueries, the query
-context is the bound-parameter context. Quiet means no clock or counter reads, while functions
-may fail. Proof sketch: the counter-read list is empty and there are no subquery runs. -/
-theorem Connection.queryContext_of_quiet (connection : Connection) (parameters : List Value) (query : Resolved.Query)
-    (quiet : (Resolved.Statement.query query []).Quiet) :
-    connection.queryContext parameters query [] = Resolved.EvalContext.bound parameters := by
-  simp only [Connection.queryContext, quiet.counterReads, Resolved.statementContext_nil]
-  rfl
-
 /-- Every simple query binds its window without a mismatch, for every context and source rows.
 Proof sketch: a simple query has no window parameters or compound. -/
 theorem Resolved.Query.Simple.run_mismatch {query : Resolved.Query} (simple : query.Simple)
