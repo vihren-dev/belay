@@ -108,7 +108,9 @@ The source-equality manifest `build/agent-logs/native-s6-source-equality.json`
 records 796 package/surface-fixture files and S6 test drivers byte-equal to
 `e804ddde`; the same scoped `jj diff` is empty.
 
-Follow-up review and full acceptance remain pending. Root approved one combined
+Follow-up review `20261024T215517Z-ebe1c3e9` is clean: zero must and zero should
+findings. Implementation source is frozen at `ebe1c3e9` for root's integration.
+Full acceptance remains pending. Root approved one combined
 S5/S6/native full/verdict gate for this task and S6 part 1, provided the S6
 sources and fixtures remain byte-identical to `e804ddde`. Task-end Nix and
 scheduled checks also remain due. This is an acceptance plan, not a passing
