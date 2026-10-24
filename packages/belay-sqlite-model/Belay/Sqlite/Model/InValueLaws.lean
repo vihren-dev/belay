@@ -37,8 +37,8 @@ theorem truthy_inValue_eq_true (affinity : Option Affinity) (collation : Collati
       · next found => simp_all [List.any_eq_true]
       · next found =>
         split
-        · next nulls => simp_all [truthy_truth, null, List.any_eq_true]
-        · next nulls => simp_all [truthy_truth, null, List.any_eq_true]
+        · next nulls => simp_all [List.any_eq_true]
+        · next nulls => simp_all [truthy_truth, List.any_eq_true]
 
 /-- For every affinity, collation, value and candidates, {lit}`x NOT IN (q)` is true exactly when there is no candidate (for
 every {lit}`x`, also NULL), or when {lit}`x` is not NULL, no candidate compares equal to {lit}`x` after the affinity is applied
@@ -75,7 +75,7 @@ theorem truthy_inValue_negated_eq_true (affinity : Option Affinity) (collation :
           exact absurd (agrees.symm.trans this) (by simp)
       · next found =>
         split
-        · next nulls => simp_all [null, List.any_eq_true]
+        · next nulls => simp_all [List.any_eq_true]
         · next nulls => simp_all [truthy_truth, List.any_eq_true]
 
 end Belay.Sqlite.Model.Resolved

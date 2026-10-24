@@ -204,6 +204,9 @@ import Belay.Sqlite.Model.InValueLaws
 import Belay.Sqlite.Model.ScalarSubqueryResolution
 import Belay.Sqlite.Model.SelectOneRowsOutput
 import Belay.Sqlite.Model.ScalarSubqueryOutput
+import Belay.Sqlite.Model.TableInfoResolution
+import Belay.Sqlite.Model.TableInfoOutput
+import Belay.Sqlite.Model.TableInfoLaws
 
 /-! SQLite states, the facts of an admitted and of a valid database, the theorems of the statements
 that keep the unique keys, supported execution, the output of each statement and the results that

@@ -65,6 +65,10 @@ attribute [sql_simp]
   Belay.Sqlite.Model.Resolved.EvalContext.bound_parameters
   Belay.Sqlite.Model.parameterValue
   Belay.Sqlite.Model.Collation.compare_integer
+  Belay.Sqlite.Model.Collation.binary_compare_text
+  Belay.Sqlite.Model.resolveOperand_tableInfo_name
+  Belay.Sqlite.Model.tableInfoScope_resolveName_name
+  Belay.Sqlite.Model.tableInfoScope_collation_name
   Belay.Sqlite.Model.Resolved.countMatching_none
   Except.map Except.mapError Except.bind Bind.bind Belay.Sqlite.Model.condition
   Belay.Sqlite.Model.queryNumeric Belay.Sqlite.Model.numericValue Belay.Sqlite.Model.decimalNumericValue

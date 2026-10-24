@@ -74,3 +74,13 @@ def test_a_parameter_is_in_a_column_of_a_table(runtime_root: Path, tmp_path: Pat
     result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsIn.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
+
+
+def test_a_table_has_a_column_according_to_pragma_table_info(runtime_root: Path, tmp_path: Path) -> None:
+    """`SELECT 1 FROM pragma_table_info('t') WHERE name = 'c'` over every database: `Holds` means that the table
+    has a column that is not generated with the name `c` as bytes, so the table lookup ignores ASCII case and the
+    name test does not, proved with the lemmas and `sql_simp`, with instances on one database where
+    `decide +kernel` checks the claim for a true and for a false name."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsTableInfo.lean", tmp_path), cwd=tmp_path,
+                         timeout=60)
+    assert result.returncode == 0, result.diagnostic()

@@ -33,6 +33,7 @@ import Belay.Sqlite.ExistsMayFail
 import Belay.Sqlite.SelectNoFrom
 import Belay.Sqlite.CountQuery
 import Belay.Sqlite.ColumnQuery
+import Belay.Sqlite.TableInfoQuery
 
 /-! The SQLite surface. It reads SQL text while a Lean file elaborates, with the SQLite parser
 library in the Lean process, and translates the parse tree to the model's statement syntax with
