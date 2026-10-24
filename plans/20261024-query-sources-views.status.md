@@ -74,7 +74,9 @@ Nix predictions at
 `/nix/store/50ck3gadmqmjl6yp9s4mz03f3da1bim9-sqlite-verifier-predictions`
 match the accepted CTE baseline above byte-for-byte: all 53 files and 7,372
 cases, with zero changed records. The exact comparison and Nix logs are retained
-under `build/agent-logs/view-column-types/`. Independent review follows this commit.
+under `build/agent-logs/view-column-types/`. Independent review
+`20261024T210304Z-858e0a2b` found zero musts and zero shoulds. The checked source
+is `858e0a2b14c0457c378edd7b2bd9e85af26ed5c0`.
 
 ## Remaining view scope
 
