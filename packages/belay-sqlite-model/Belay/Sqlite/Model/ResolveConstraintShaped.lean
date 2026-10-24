@@ -14,9 +14,7 @@ the columns and the strictness of the table {lit}`old`. -/
 def CatalogTable.BuildStep (definition : Syntax.ColumnDefinition) (old new : CatalogTable) : Prop :=
   new.Building definition ∧ new.columns.map (·.name) = old.columns.map (·.name) ∧ new.strict = old.strict
 
-/-- For every table that is building a column: the table has a last column, which is the last element
-of the list and the column at the position one below the number of columns, with the reported type of
-the definition. -/
+/-- For every table that is building a column, there is a column that is the last element of the list of columns and the element at the position one below the number of columns, whose declared type is the reported type of the definition ({name}`reportedType`), and the list is not empty. Proof sketch: the building says that the declared type of the last element is the reported type.  -/
 theorem CatalogTable.Building.last {definition : Syntax.ColumnDefinition} {table : CatalogTable}
     (building : table.Building definition) :
     ∃ column, table.columns.getLast? = some column ∧ table.columns[table.columns.length - 1]? = some column ∧
@@ -33,8 +31,7 @@ theorem CatalogTable.Building.last {definition : Syntax.ColumnDefinition} {table
     rw [found] at last
     simpa using last
 
-/-- For every table that is building a column and every change of the last column that keeps its
-layout, the table with the changed last column is a step of the building. -/
+/-- For every table that is building a column and every change of a column that keeps the layout of each column, the table with {name}`updateLast` of its columns with the change is a step of the building ({name}`CatalogTable.BuildStep`). Proof sketch: {name}`updateLast` keeps the list of layouts ({name}`map_updateLast`), so {name}`CatalogTable.Building.of_layout` applies.  -/
 theorem CatalogTable.BuildStep.of_updateLast {definition : Syntax.ColumnDefinition} {table : CatalogTable}
     (building : table.Building definition) (change : CatalogColumn → CatalogColumn)
     (keeps : ∀ column, (change column).layout = column.layout) :
@@ -59,9 +56,7 @@ theorem CatalogTable.BuildStep.of_updateLast_unaliased {definition : Syntax.Colu
     names, rfl⟩
   exact fun position found alias => alias.updateLast change (unaliased position found)
 
-/-- For every table that is building a column and every step that keeps the columns, the names and the
-rowid kind, and changes the keys as a PRIMARY KEY or UNIQUE step does ({name}`setPrimaryKey_cases`,
-{name}`addUniqueKey_cases`), the table is building the column. -/
+/-- For every table that is building a column and every second table with the same columns, the same strictness and the same rowid kind: if each position of the primary key of the second table is below the number of columns, each UNIQUE key of the second table is not empty and has only positions below the number of columns, and each rowid alias position of the second table has the primary key that is that position alone and is an alias column of the columns, then the second table is a step of the building: it is building the column, it has the names of the columns, and it has the strictness of the first table. Proof sketch: {name}`CatalogTable.Draft.of_keys`; the last column is unchanged.  -/
 theorem CatalogTable.BuildStep.of_keys {definition : Syntax.ColumnDefinition} {old new : CatalogTable}
     (building : old.Building definition) (columns : new.columns = old.columns) (strict : new.strict = old.strict)
     (ordinary : new.withoutRowid = old.withoutRowid)
@@ -73,7 +68,7 @@ theorem CatalogTable.BuildStep.of_keys {definition : Syntax.ColumnDefinition} {o
   ⟨⟨building.1.of_keys columns ordinary primaryKey uniqueKeys alias, by rw [columns]; exact building.2⟩,
     by rw [columns], strict⟩
 
-/-- {name}`applyConstraint` of a PRIMARY KEY constraint on the last column is a step of the building. -/
+/-- For every table that is building a column, direction and algorithm: if {name}`applyConstraint` of the PRIMARY KEY constraint of the column gives a table, the table is a step of the building ({name}`CatalogTable.BuildStep`). Proof sketch: the checks of the constraint leave a table without a primary key and a last column that is not generated; {name}`setPrimaryKey_cases` shows that the key is the last position, and that the alias, if any, is on a column that is not generated and whose declared type aliases the rowid ({name}`AliasColumn.of_aliasesRowid`).  -/
 theorem applyConstraint_primaryKey {tableName : Identifier} {definition : Syntax.ColumnDefinition}
     {table result : CatalogTable} (building : table.Building definition) (descending : Bool)
     (algorithm : Option ConflictAlgorithm)

@@ -26,8 +26,7 @@ theorem mapM_ok_map_eq {ε α β γ : Type} (f : α → Except ε β) (project :
     simp only [pure, Except.pure, Except.ok.injEq] at same; subst same
     simp only [List.map_cons, keeps _ _ hfirst, mapM_ok_map_eq f project expected keeps hlater]
 
-/-- For every columns and definitions that are equally many, the values of a function on the columns
-of the numbered pairs of columns and definitions are the values of the function on the columns. -/
+/-- For every columns and definitions that are equally many, and every function on the columns, the values of the function on the first columns of the numbered pairs of columns and definitions are the values of the function on the columns. Proof sketch: dropping the numbers and the definitions of the pairs leaves the columns ({name}`List.map_fst_zip`).  -/
 theorem map_zipped_columns {α : Type} (columns : List CatalogColumn) (definitions : List Syntax.ColumnDefinition)
     (equal : columns.length = definitions.length) (value : CatalogColumn → α) :
     ((columns.zip definitions).zipIdx.map fun item => value item.1.1) = columns.map value := by
@@ -40,8 +39,8 @@ theorem map_zipped_columns {α : Type} (columns : List CatalogColumn) (definitio
   rw [first, List.zipIdx_map_fst, second, List.map_fst_zip (by omega)]
 
 /-- For every table with as many columns as definitions: if {name}`resolveTableChecks` gives a table,
-the table has the layouts of the columns, the keys, the alias, the rowid kind and the strictness of the
-table. Proof sketch: the columns are the checked columns, which have the layouts of the columns
+the table has the layouts of the columns, the primary key, the UNIQUE keys, the rowid alias and the rowid
+kind of the table. Proof sketch: the columns are the checked columns, which have the layouts of the columns
 ({name}`mapM_ok_map_eq`); no column is left to append, because there are as many columns as
 definitions. -/
 theorem resolveTableChecks_keeps {dqs : Bool} {scope : Scope} {table result : CatalogTable}
