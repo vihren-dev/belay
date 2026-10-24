@@ -297,9 +297,9 @@ precedes expression resolution; derived bodies follow FROM order and preserve en
 versus sibling binding. Part 1 passed native, full-suite and verdict acceptance at
 `c8db1a54`; draft corpus v53 remains separate from the subject publication and needs
 owner approval before merge. The publication checkpoint has its own final gates.
-Ordinary CTEs and views remain for parts 2 and 3. This does not complete D5 or slice 4.
+Parts 2 and 3 cover ordinary CTEs and views. Part 1 alone does not complete D5 or slice 4.
 
-2026-10-24, slice 4 part 2 in progress: ordinary WITH definitions use the same
+2026-10-24, slice 4 part 2 complete: ordinary WITH definitions use the same
 indexed query-source machinery. Definition names use lexical WITH scope; each use
 receives its permitted enclosing column scope. Explicit column lists retain the
 resolved affinity and collation. Supported SELECT and VALUES INSERT, UPDATE and
@@ -309,9 +309,11 @@ Circular references, column-count errors, repeated recursive references and
 recursive aggregates retain their checked SQL errors.
 The RECURSIVE keyword and materialization hints remain excluded. Focused Nix
 model, public surface and restriction checks pass. Independent review of the CTE
-implementation found no issues. The combined S4 and foreign-key integration passes
-its focused public-consumer checks. Merge review and full/verdict acceptance remain
-pending. Views remain part 3.
+implementation found no issues. The combined S4 and foreign-key integration passed
+all 923 Nix-selected tests and the frozen verdict. Final publication checks passed
+36 selected cases, including both guide proofs and the S6/S7 prototypes; integration
+review found no issues. All previously predicted corpus records are unchanged.
+Views remain part 3, so D5 and slice 4 remain open.
 
 ## Owner decisions
 
