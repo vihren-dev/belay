@@ -52,6 +52,27 @@ the split API's default mapping; the alternative is to leave this work blocked
 and continue independent ADR 0017 work. The asynchronous question is pending.
 No engine fix has been applied. The overall goal remains active.
 
+Two further questions are pending from prerequisite audits:
+
+- ADR 0019 D4 says INSERT SELECT computes all source rows before writing.
+  Pinned SQLite 3.51.0 streams when neither a target read nor a row trigger
+  requires staging (`sqlite3Insert`, `parser/upstream/sqlite3.c:137839`). With
+  source values `2, 1, -9223372036854775808` and destination `x UNIQUE` already
+  containing `1`, `INSERT OR FAIL INTO dest SELECT abs(x) FROM src` reports a
+  unique conflict and leaves `1, 2`. Adding an AFTER INSERT trigger whose body
+  is `SELECT 1` makes SQLite stage the source: it reports integer overflow and
+  leaves only `1`. Both outcomes were checked with the pinned binary. The owner
+  is choosing exact streaming/staging semantics (recommended) or an explicit
+  restriction for the affected cases. The slice-5 specification waits for this
+  decision; no execution change has been made.
+- The S7 guide says whitespace/comment edits never rebuild importing modules
+  because positions are absent from terms. SQLite can include that text in
+  result-column names: `SELECT 1+2`, `SELECT 1 + 2`, and
+  `SELECT 1/*note*/+2` give different column names. The recommendation is to
+  retain SQLite metadata and ordinary Lake dependency tracking, and correct
+  the blanket guarantee. The alternative is to defer S7 for a narrower cache
+  design. The source/API audit continues; no implementation has started.
+
 ## Active implementation
 
 - `s4_part1`, workspace `sqlite-verifier-s4`: S4 part 1's implementation and
@@ -72,7 +93,8 @@ No engine fix has been applied. The overall goal remains active.
   `tasks/text-build-boundaries` is pushed at `2f86e45a`. PR
   [#240](https://github.com/vihren-dev/sqlite-verifier/pull/240) is open in stack
   231, based on #239. Its exact review range is `98a07bfe` to `2f86e45a`.
-  Keep this workspace at rest for the review handoff.
+  Review tab 6 (`w1:t3T`) is open, with live wait session `78895`. Keep this
+  workspace at rest while that review is open. Do not open a duplicate tab.
 - `foreign_key_atoms`, workspace `sqlite-verifier-fk-atoms`: part 1 of
   [the FK task](20261024-foreign-key-atoms.task.md), based on `cf7aa9a6`.
   The agent owns FK atom/check/frame modules, the surface database export and
@@ -87,6 +109,20 @@ No engine fix has been applied. The overall goal remains active.
   agent will review that commit before implementation. It owns the subject
   filter in `integrity/judge.nix` and focused identity tests. The old workspace
   remains at rest for the PR #240 review.
+  Implementation `accfbf78` has clean independent review. The production Nix
+  identity regression passes, all 55 locked parts are unchanged, and all 53
+  prediction files / 7,372 cases are byte-identical. Full validation is running.
+
+The S4 provisional full gate passed: report
+`/nix/store/japwh8n1f0chh7fz6ig44qn9dxhkm8y5-sqlite-verifier-test-reports`,
+805 cases with no failures, errors or skips. Its final post-review invocation,
+verdict and prediction comparison are required before the clean part-1 handoff.
+
+Completed workspaces `adr19s2`, `adr19s3`, `adr22s2`, `adr22s3`, `adr22s4`,
+`errev` and `envfns` were checked clean, with all nonempty commits reachable
+from origin bookmarks and no running process or open review in their paths.
+They were forgotten and removed under the owner's pushed-workspace cleanup
+instruction. The protected `s4chk` workspace and all unrelated workspaces remain.
 
 The schema and observation helper agents of S4 have completed their reviewed
 commits and returned them to S4. Their workspaces remain until pushed cleanup.
