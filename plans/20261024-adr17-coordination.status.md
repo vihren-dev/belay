@@ -96,10 +96,18 @@ remove the prior planning blocks; they are not implementation-completion claims.
   its shorter control import moved SQL provenance by two bytes. Test correction
   `1beefd00` pads that import and retains exact expression comparison; all seven
   Nix proof-cost checks passed at `h5vfmwanvqk60aablk7jj6pv8cc07ym3`, with clean
-  review. Post-review full/verdict/prediction acceptance is running in slot 1
-  (`21734`); the first failure log is retained. Shared commands and automatic
+  review. Post-review gate `21734` passed all 877 full tests at
+  `ksd784kihabyb20zc2zj9amlywivv56v`, verdict at `1w3s86b8201bc72c1r51rc66rnb1iknr`,
+  and all 53 predictions match `ifmznfzpqyd12dxjhr3yp404ljb0dgxy`. The first
+  failure log is retained. Shared commands and automatic
   checking remain open. Their draft now isolates speculative elaboration state;
   cancellation and failed-candidate cleanup still need installed acceptance.
+  Root staged `s5-publication` as a merge with #248; only the test-manifest union
+  required resolution. Model, text and conformance derivations match #248.
+  A read-only cold Nix evaluation exposed an unmaterialized filtered-source
+  manifest read; the S5 owner independently reproduced it and is correcting it.
+  Part 1 remains open for that integration correction. Root integration checks
+  are queued after S6's next unit; nothing from this staging workspace is pushed.
 - `s6_prerequisite_audit` completed derived-source part 1, published in #243.
   Separate evidence head `5d69e3fa` retains draft v53's 38 agreements and
   four restrictions. Combined acceptance is recorded in its task status.
@@ -218,8 +226,9 @@ logs are in `s4/build/agent-logs/cte-publication`. Evidence and views remain act
   Nix test groups passed at `9mh19n9lvn425dfn9s9hdbbjcwcdf732`, with 32 new
   and 28 retained prototype axiom reports using only standard logical axioms.
   Conditional/total policies, the fresh-run helper and exact S4 bridge are next;
-  full part acceptance and equivalence remain open. Further S6/FK source work
-  proceeds while the view unit uses slot 2.
+  full part acceptance and equivalence remain open. The conditional/total and
+  fresh-run unit is ready and has slot 1 after S5's terminal gate. FK proof work
+  proceeds independently while the view unit uses slot 2.
   [Assertions](20261024-s6-assertions.task.md) and [migration patterns](20261024-s6-migration-patterns.task.md) have clean reviews
   at `33693f10`/`56b9f410`; [automation](20261024-s6-automation.task.md) is clean at `8b118fbc`.
   [Initial/current query context](20261024-s6-before-context.task.md) has clean
