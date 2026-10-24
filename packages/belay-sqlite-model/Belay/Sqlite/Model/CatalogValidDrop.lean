@@ -130,4 +130,10 @@ theorem Catalog.Valid.drop {limits : Limits} {catalog : Catalog} (valid : catalo
       exact Catalog.findTable_isSome_drop hfind (by
         simpa using closed.2 place _ found atPlace rfl (by simpa using placeKept) location table hfind)
 
+/-- For every catalog, {name}`Catalog.DropClosed` holds for the empty list of positions: the drop of
+nothing keeps every table of every index and trigger. Proof sketch: no position is in the empty
+list. -/
+theorem Catalog.DropClosed.nil (catalog : Catalog) : catalog.DropClosed [] :=
+  ⟨fun _ _ _ _ _ _ => List.not_mem_nil, fun _ _ _ _ _ _ _ _ _ => List.not_mem_nil⟩
+
 end Belay.Sqlite.Model

@@ -393,3 +393,20 @@ proof relies on it (finding 15).
   commit. Tests: `tests/test_model_package.py`.
 - 2026-10-24: second review round of the CREATE TABLE commit: one must (R3 sketches of the example
   theorems) and one should (R9 a long sentence). Fixed in a `refactor:` commit.
+- 2026-10-24: the resolver facts of CREATE INDEX, CREATE TRIGGER, ADD COLUMN and DROP, and the
+  statement-level theorem. New modules: `ResolveCreateIndexCatalog` (`resolveCreateIndex_valid`; the keys
+  and the filter read below the width of the table, and a key list is not empty),
+  `ResolveCreateTriggerCatalog` (`resolveCreateTrigger_valid`; a schema table name is reserved, so the
+  trigger always has a table of the catalog), `ResolveDropCatalog` (`Catalog.DropClosed.table` and
+  `Catalog.DropClosed.single`), `ResolveDropValid` (`resolveDropTable_valid`, `resolveDropIndex_valid`,
+  `resolveDropTrigger_valid`, and the `_closed` forms, from which `Catalog.DropCondition` follows),
+  `ResolveAddColumnCatalog` (`resolveAddColumn_valid`, `resolveAddColumn_strictDefaultFits`),
+  `AddColumnFromValid` (`Database.addColumnCondition_of_admitted`, `Database.checksReadBelowAt_of_valid`,
+  `Database.rowsWideAt_of_admitted`, `Database.strictDefaultFitsAt_of_fits`) and `ResolveStatementValid`
+  (`ResolveState.Valid`, `resolveStatement_valid` with the saved catalog of ROLLBACK, `resolve_valid`).
+  The docstring of `KeysUniqueAddColumn` now names the proof of its condition. Examples: the new module
+  `AdmittedAtomsSchemaExamples` (a script that creates a table, an index, a trigger and a column and
+  drops them; prepare errors that leave the catalog as it was) and a repeated key in
+  `KeysUniqueExamples`. New test: `tests/admitted_atoms_resolver_facts_test.py`. Tests:
+  `tests/test_model_package.py`, `tests/valid_atoms_theorems_test.py`,
+  `tests/admitted_atoms_resolver_facts_test.py`.
