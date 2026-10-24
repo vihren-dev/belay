@@ -84,6 +84,7 @@ in rec {
   };
   # The surface that users import (ADR 0016, D1). It is not part of the conformance runtime;
   # tests.surface checks it and its layer rules.
+  plausiblePackage = import ./plausible.nix { inherit pkgs leanToolchain; };
   surfacePackage = leanPackage {
     pname = "belay";
     directory = "packages/belay";
