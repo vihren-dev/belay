@@ -31,4 +31,9 @@ lean_lib Belay where
       .one `Belay.Sqlite.SampleHints, .one `Belay.Sqlite.SampleQueryHints, .one `Belay.Sqlite.SampleScriptHints,
       .one `Belay.Sqlite.SqlSource, .one `Belay.Sqlite.ReplayValues, .one `Belay.Sqlite.ReplayDatabaseSql,
       .one `Belay.Sqlite.ReplayEvaluation, .one `Belay.Sqlite.ReplayConstruction, .one `Belay.Sqlite.ReplayScript]
+    ++ #[.one `Belay.Sqlite.CheckBudget, .one `Belay.Sqlite.CheckData,
+      .one `Belay.Sqlite.CheckReplayData, .one `Belay.Sqlite.CheckProof,
+      .one `Belay.Sqlite.CheckCandidates, .one `Belay.Sqlite.CheckClaim,
+      .one `Belay.Sqlite.CheckRandom, .one `Belay.Sqlite.CheckSamples,
+      .one `Belay.Sqlite.CheckReplay, .one `Belay.Sqlite.CheckOperation]
   precompileModules := true

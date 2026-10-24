@@ -58,20 +58,41 @@ is finite and explicit; users may prepend or replace it with their own candidate
 def targeted (base : Database) (constants : List Value := []) : List Database :=
   base :: (boundaryRows ++ constants.map (fun value => [value, value])).filterMap (uniform base)
 
+/-- Select row counts and cells in catalog, row and column order. Non-table objects get
+empty storage. Ordinary Plausible sampling and cooperative checking share this traversal;
+the optional resource action runs before each object and row, including zero-column rows.
+The incremental row loop does not allocate a range before the first check. No validity is assumed. -/
+def selectCells [Monad m] (catalog : Catalog) (rowCount : m Nat) (cell : m Value)
+    (check : m Unit := pure ()) : m (List (List (List Value))) :=
+  catalog.mapM fun object => do
+    check
+    match object.entry with
+    | .table table =>
+      let count ← rowCount
+      let mut rows := []
+      for _ in [:count] do
+        check
+        rows := (← table.columns.mapM fun _ => cell) :: rows
+      return rows.reverse
+    | .index _ | .trigger _ => pure []
+
+/-- Assemble selected cells with the existing affinity and rowid rules. Missing cells become
+NULL and non-table storage remains empty. The result is raw data: {name}`validated` or the
+kernel must still check its constraints before it can be used as a bundled database. -/
+def withCells (base : Database.Raw) (cells : List (List (List Value))) : Database.Raw :=
+  { base with rows := base.catalog.zipIdx.map fun (object, position) =>
+    match object.entry with
+    | .table table => (cells.getD position []).zipIdx.map fun (values, index) => row table index values
+    | .index _ | .trigger _ => [] }
+
 /-- Generate up to the supplied number of rows per table, using the shared value generator
 and preserving the catalog. Failed constraints produce a generator error, so a fallback
 cannot exceed the requested row bound.
 The default bound is two rows; pass another bound or generator for a larger search. -/
 def database (base : Database) (constants : List Value := []) (maxRows : Nat := 2) : Gen Database := do
-  let rows ← base.raw.catalog.mapM fun object => do
-    match object.entry with
-    | .table table =>
-      let count ← Gen.choose Nat 0 maxRows (Nat.zero_le _)
-      (List.range count.val).mapM fun index => do
-        let cells ← table.columns.mapM fun _ => value constants
-        return row table index cells
-    | .index _ | .trigger _ => pure []
-  match validated { base.raw with rows } with
+  let cells ← selectCells base.raw.catalog
+    ((·.val) <$> Gen.choose Nat 0 maxRows (Nat.zero_le _)) (value constants)
+  match validated (withCells base.raw cells) with
   | some candidate => return candidate
   | none => throw (.genError "generated rows violate the supplied database constraints")
 
