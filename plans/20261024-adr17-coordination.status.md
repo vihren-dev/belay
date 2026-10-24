@@ -10,7 +10,9 @@ implementation to a subagent. Parallel tasks need separate jj workspaces,
 disjoint edit surfaces and enough VM resources. Integrate useful modularity
 improvements. Push completed task PRs without another permission request.
 Clean completed workspaces after the code is pushed, retaining any workspace
-needed for an active review. `direnv allow` is authorized. Ask for owner judgment
+needed for an active review. Batch task-file edits into one commit per decision;
+write new task files only shortly before assignment (owner, 2026-10-24).
+`direnv allow` is authorized. Ask for owner judgment
 when a specification is wrong or incomplete, with options and a recommendation.
 Owner override on 2026-10-24: close all herdr review tabs and open no new ones
 before Monday, 2026-10-26 UTC. Automated independent reviews continue normally.
@@ -114,7 +116,7 @@ remove the prior planning blocks; they are not implementation-completion claims.
   production S6. Root copied its reviewed task/status; source workspace stays.
 - The FK workspace is `sqlite-verifier-fk-atoms`. Revised selected action scope
   is carried in `1a10a3c8`, follow-up `01a02bef` reviewed clean. Split-API and
-  action implementation remain uncommitted; 35 Nix native cases pass. FK owns
+  action implementation is committed at `89267008`; 35 Nix native cases pass. FK owns
   atom/check/frame modules, Database exports and reserved manifests, plus
   ForeignKeyPlan, TriggerClosure and ParentKeys (query-source confirmed).
   S4 supplied exact pragma query laws. Lookup/scan consistency clarification
@@ -131,7 +133,7 @@ unpublished S2/S3 guide changes; final acceptance must reconcile these selective
 
 The reviewed one-line surface helper fileset fix `b9008683` was carried into
 S6. Its initial missing-helper Nix failure is resolved. At most two heavy checks
-run: query-source/S4 share slot 1 by explicit handoff; FK now owns slot 2.
+run: query-source owns slot 1; S4 owns slot 2, then hands it back to FK.
 No agent opens a herdr tab before the owner's Monday deadline.
 
 ## Published work and cleanup
@@ -192,8 +194,6 @@ completed schema/observation workspaces await publication before removal.
 - [Integrated guide acceptance](20261024-adr17-guide-acceptance.task.md) has
   clean review `20261024T145218Z-e244461b`; it awaits every required implementation.
 
-Read-only S7/editor audits remain in the research-notes directory of the Lean
-model modularity investigation. Shared surface helper ownership must be reserved
-before editor/doc/file tasks run concurrently. Production proof costs still
-need the measured prototype contract. ADR17 is not complete until all required
-behavior and acceptance pass.
+Read-only S7/editor audits remain in the modularity research notes. Reserve shared
+surface helpers before editor/doc/file tasks run concurrently. Production proof
+costs need the prototype contract. ADR17 needs all required behavior and acceptance.
