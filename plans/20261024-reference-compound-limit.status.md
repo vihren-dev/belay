@@ -19,6 +19,10 @@ Spec: ADR 0009 and the owner's PR #242 CI failure report.
   its HTML page and exact source URI. Base reference:
   `/nix/store/4b0gdarzs5w23vvx7sj4wclhj5wgvd32-sqlite-verifier-api-reference-base-2`.
   The inventory registration follow-up and final combined checks remain pending.
+- Inventory follow-up `58fc6ba8` is merged in `d5e2d837`; its independent merge
+  review `20261024T180856Z-d5e2d837` has no findings. The targeted inventory
+  check covers the combined source tree. Final combined gates now run with the
+  corrected fixture registration; the reference output remains complete.
 
 ## Current state
 
