@@ -96,7 +96,19 @@ The private-source probe's initial path-coercion failure is retained in
 `build/agent-logs/initial-native-original-identities.log`. Correcting that probe
 required no production change.
 
-Source review and full acceptance remain pending. Root approved one combined
+Source commit `df404e7c` received independent review
+`20261024T215327Z-df404e7c`: zero must and one should finding. The selector in
+the replay test now uses the documented `MODEL_PACKAGE` constant, resolving
+that finding. Replaying the installed runtime after this test-only refactor
+is a local diagnostic; the Nix evidence above covers the preceding source
+commit. The final combined gate will check the updated test source in Nix.
+The producer and all Lean sources are unchanged by the refactor.
+
+The source-equality manifest `build/agent-logs/native-s6-source-equality.json`
+records 796 package/surface-fixture files and S6 test drivers byte-equal to
+`e804ddde`; the same scoped `jj diff` is empty.
+
+Follow-up review and full acceptance remain pending. Root approved one combined
 S5/S6/native full/verdict gate for this task and S6 part 1, provided the S6
 sources and fixtures remain byte-identical to `e804ddde`. Task-end Nix and
 scheduled checks also remain due. This is an acceptance plan, not a passing

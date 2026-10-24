@@ -24,6 +24,9 @@ BUILT_MODULE = re.compile(r"Built (\S+)")
 TIMEOUT_SECONDS = 120
 """Deadline for one replay; replaying a package takes less than a second."""
 
+MODEL_PACKAGE = "belaySqliteModel"
+"""The producer whose native facets text and surface builds consume; other packages supply binaries."""
+
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     """One check for each package folder of the runtime under test, so a new package needs no new test."""
@@ -41,7 +44,7 @@ def replay_targets(lakefile: dict[str, object]) -> list[str]:
     their root-module replay does not request another executable link.
     """
     libraries = [f"{lakefile['name']}/{library['name']}" for library in lakefile.get("lean_lib", [])]
-    native = [f"{library}:shared" for library in libraries] if lakefile["name"] == "belaySqliteModel" else []
+    native = [f"{library}:shared" for library in libraries] if lakefile["name"] == MODEL_PACKAGE else []
     executables = [f"+{executable.get('root', executable['name'])}" for executable in lakefile.get("lean_exe", [])]
     return [*libraries, *native, *executables]
 
