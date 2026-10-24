@@ -414,3 +414,6 @@ proof relies on it (finding 15).
   catalog": one must (R2 the docstring of `Database.strictDefaultFitsAt_of_fits` lacked the vacuous cases;
   the sibling docstrings got the same repair) and one should (R5 a catch-all in an example, replaced by
   a decided equation of the statement). Fixed in a `refactor:` commit. Tests: `tests/test_model_package.py`.
+- 2026-10-24: a record of part 1 in ADR 0022, D4: `Catalog.Valid` states the CHECK condition, the alias
+  schema and the repeated key; the resolver facts; the CHECK condition of slice 3 is no longer a gap.
+  Tests: `just documentation-inventory`.
