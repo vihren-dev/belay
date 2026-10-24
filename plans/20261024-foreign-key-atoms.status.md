@@ -1,7 +1,7 @@
 # Status: foreign-key facts and preservation
 
-Created 2026-10-24. Status: OPEN. Split-API and mapped-NULL work is active in
-the FK workspace. The action-target correction has not started; it awaits task review.
+Created 2026-10-24. Status: OPEN. Split-API, mapped-NULL and action-target work
+is active in the FK workspace; focused Nix acceptance is in progress.
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
 Inspected base: PR #239, `98a07bfe`, in `vihren-dev/sqlite-verifier`.
@@ -11,11 +11,11 @@ for CASCADE/SET NULL/SET DEFAULT and their assigned/changed-column effects.
 Native diagnostics show repeated-key actions leave an unused child column
 unchanged and do not fire its UPDATE OF trigger. The earlier model wrote that
 column too. The revised task requires regression evidence and ordinary-mapping
-coverage; no Nix acceptance of this new correction is claimed yet.
+coverage. The focused native Nix gate now passes; full part acceptance remains.
 
 Review `20261024T151438Z-4c59fcc3` found no musts and two wording shoulds:
 name both execution corrections in the acceptance boundary and state explicitly
-that the action-target correction has not started. Both are corrected.
+that the action-target correction had not started at that boundary. Both were corrected.
 
 ## Owner decision and evidence
 
@@ -46,7 +46,7 @@ implementer, with these observable requirements fixed.
 - 2026-10-24: review `20261024T122036Z-c64a44ba` found no musts and one should:
   the historical owner-decision list still named one atom. That entry now names
   the two atoms and the amendment date. Implementation remains pending.
-- Implementation must be assigned to a separate jj workspace after task review.
+- Implementation was assigned to a separate jj workspace after task review.
   Coordinate model barrels, statement laws and the surface database export with
   S4 and the query-source task. No concurrent edits to those surfaces are allowed.
   Later ALTER and view statements extend the preservation matrix; their absence
@@ -71,3 +71,11 @@ implementer, with these observable requirements fixed.
   the existing conditional preservation contract. This is within the accepted
   schema/mapping/effect conditions, not another engine change or an assumed
   final atom. The owner was informed; part 1 and independent work continue.
+- The accepted action scope is carried at `1a10a3c8`, with clean follow-up
+  review `20261024T152329Z-01a02bef`. Resolution and execution share the selected
+  child projection. Trigger preparation reads assigned columns; generated
+  dependencies feed FK constraint checks. The Nix native gate passed all 35
+  differential/kernel cases at
+  `/nix/store/mhvsqdz6wnx66s0rr80a12yp5xam6hif-sqlite-verifier-test-model-1`.
+  Surface/mutant Nix gates and part-1 full/verdict remain open. Part 2's global
+  counter invariant and statement/run preservation are still implementation work.

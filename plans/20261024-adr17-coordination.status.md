@@ -90,7 +90,8 @@ remove the prior planning blocks; they are not implementation-completion claims.
   bound `3811b3f4`, uniqueEmail fixture `a003ddcf` and stored range bridge
   `3583de8a` have clean reviews/Nix checks. Metadata law `e3f48d3b` is reviewed
   clean, with Nix model `81v66kv633za3q994jjiiml6lvsaz7q4`. Balance proof and
-  part-2 acceptance remain, then part 3's removal of Run.checked.
+  part-2 acceptance remain, then part 3's removal of Run.checked. Named-source
+  proof extension `656ab790`/`1dee994a` is reviewed and checked in Nix.
 - `s6_prerequisite_audit` owns `sqlite-verifier-query-sources`, based on S4 part 1.
   Source execution `93767a4d`/`15a252a8` and metadata `649a3021`/`bc79e3e7`
   have clean reviews and Nix model checks. Translation/resolution `c64d8b50`
@@ -98,7 +99,8 @@ remove the prior planning blocks; they are not implementation-completion claims.
   predictions `xar2y93h71ffx1ccrjvy906936hk4ahj`. Separate draft-v53 evidence
   `873a1473` is reviewed clean; verdict `6h8hi4b2c0z3fkxjamwix6508l30dz9i`
   passes, including 38 new agreements and 4 explicit unsupported cases. Full
-  acceptance is correcting stale right-join mutant targets. CTEs/views follow.
+  acceptance repaired stale mutant targets and refusal fixtures (`42812ff3`,
+  clean review/focused Nix); final full/verdict is next. CTEs/views follow.
 - `text_build_boundaries` owns `sqlite-verifier-s6-foundations` and resumed FK
   work. The S6 prototype consumes reviewed S4 `00c8707f` without rebasing.
   Implementation `e9a0354d` and refactor `6c26ac21` have resolved/clean reviews;
@@ -112,7 +114,7 @@ remove the prior planning blocks; they are not implementation-completion claims.
   production S6. Root copied its reviewed task/status; source workspace stays.
 - The FK workspace is `sqlite-verifier-fk-atoms`. Revised selected action scope
   is carried in `1a10a3c8`, follow-up `01a02bef` reviewed clean. Split-API and
-  action implementation remain uncommitted; focused checks are active. FK owns
+  action implementation remain uncommitted; 35 Nix native cases pass. FK owns
   atom/check/frame modules, Database exports and reserved manifests, plus
   ForeignKeyPlan, TriggerClosure and ParentKeys (query-source confirmed).
   S4 supplied exact pragma query laws. Lookup/scan consistency clarification
@@ -171,8 +173,7 @@ completed schema/observation workspaces await publication before removal.
 - [S6 prototype](20261024-surface-s6-foundations.task.md) is DONE, awaiting push.
   [Execution contracts](20261024-s6-execution-contracts.task.md)
   have clean review `20261024T144839Z-5684010b`.
-  [Assertions](20261024-s6-assertions.task.md) and
-  [migration patterns](20261024-s6-migration-patterns.task.md) have clean reviews
+  [Assertions](20261024-s6-assertions.task.md) and [migration patterns](20261024-s6-migration-patterns.task.md) have clean reviews
   at `33693f10`/`56b9f410`; [automation](20261024-s6-automation.task.md) is clean at `8b118fbc`.
   [Initial/current query context](20261024-s6-before-context.task.md) has clean
   review `20261024T143052Z-5feffb18` and waits for query-source/view integration.
@@ -182,8 +183,8 @@ completed schema/observation workspaces await publication before removal.
 - [S7 files/freshness](20261024-surface-s7-files.task.md) has clean follow-up
   review `20261024T140930Z-09c30b41`, unassigned.
 - [S7 proof-cost prototype](20261024-s7-proof-cost-prototype.task.md) has clean
-  follow-up review `20261024T141307Z-82085ddd`, unassigned. Production costs still
-  need its measured collector contract. This facet is required, not deferred.
+  reviews at `82085ddd`/`cca27596`, unassigned. Production costs still need its
+  measured collector contract. This facet is required, not deferred.
 - [Guide rebuild wording](20261024-guide-sql-rebuilds.task.md) is DONE, published
   with reviewed S4 explanatory prose in private product PR #8, head `1ae76380`.
 - [S8 simulation](20261024-surface-s8.task.md) is reviewed clean at `03ac78a0`:
