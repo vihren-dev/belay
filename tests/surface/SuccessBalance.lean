@@ -12,12 +12,14 @@ set_option maxHeartbeats 1600000
 /-- A nonempty ledger with integer, REAL and NULL cells retained by INTEGER affinity. -/
 def mixedLedger : Database := db! r"CREATE TABLE ledger (account TEXT, cents INTEGER);
   INSERT INTO ledger VALUES ('a', 10), ('a', 1.5), ('a', NULL), ('b', -4)"
-example : Holds balanceGuard mixedLedger := by decide +kernel
+example : (mixedLedger.catalog.findTable ledgerRef.table).isSome = true ∧
+    Holds balanceGuard mixedLedger := by decide +kernel
 example : (mixedLedger.run (balance (.text (bytes! "a")))).outputs.allOk = true := by decide +kernel
 
 /-- The corrected guard also admits an empty ledger. -/
 def noEntries : Database := db! r"CREATE TABLE ledger (account TEXT, cents INTEGER)"
-example : Holds balanceGuard noEntries := by decide +kernel
+example : (noEntries.catalog.findTable ledgerRef.table).isSome = true ∧
+    Holds balanceGuard noEntries := by decide +kernel
 example : Holds (balance .null) noEntries := by decide +kernel
 
 /-- The original guard checks only the range and total row count. -/

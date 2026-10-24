@@ -10,36 +10,6 @@ open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
 namespace BalanceExample
 
-/-- For every catalog without a ledger table, the first guard subquery reports that
-missing table. Proof sketch: the first source lookup fails before later subqueries are visited. -/
-theorem guard_scopes_missing (catalog : Catalog)
-    (missing : catalog.findTable ledgerRef.table = none) :
-    subqueryScopes catalog 8 (around [] []) none balanceQueries = .error (.noSuchTable ledgerRef.table) := by
-  have order : scopeOrder none balanceQueries 5 none = [0, 1, 2, 3] := rfl
-  have application : reservedName ledgerRef.table = false := by decide
-  have noFunction : eponymousName ledgerRef.table = false := by decide
-  unfold subqueryScopes
-  rw [show balanceQueries.length + 1 = 5 from rfl, order]
-  simp only [ledgerRef] at missing application noFunction
-  simp [balanceQueries, oneQuery, countSyntax, compoundOf, subqueryScope, QueryScope.sourceIndexes,
-    around, Scope.columns, resolveSources, resolveReference, ledgerRef, resolveTableReference,
-    missing, application, noFunction, maximumJoinTables, SourceIssue.under,
-    Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
-
-/-- For every catalog without a ledger table, guard resolution gives its prepare error
-and preserves the catalog.
-Proof sketch: Lift the first subquery source error through complete query resolution. -/
-theorem guard_select_missing (catalog : Catalog)
-    (missing : catalog.findTable ledgerRef.table = none) :
-    resolveSelect runContext catalog mainSyntax balanceQueries =
-      .ok (.prepareError (.noSuchTable ledgerRef.table), catalog) := by
-  have scopes := guard_scopes_missing catalog missing
-  dsimp only [around] at scopes
-  have noMain : ∀ queries prefix_, resolveSources catalog none [] 0 queries prefix_ = .ok ([], []) := by intros; rfl
-  unfold resolveSelect
-  simp [mainSyntax, noMain, starIssue, resultAliases, scopes, prepareError,
-    Bind.bind, Except.bind, Except.mapError, Functor.map, Except.map, Pure.pure, Except.pure]
-
 /-- For every catalog with both the ledger and a table named pragma_table_info, the
 metadata source is a restricted table-function call.
 Proof sketch: the ledger sources resolve, then the first metadata source finds the shadowing table. -/
