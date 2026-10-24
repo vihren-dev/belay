@@ -1,5 +1,4 @@
 # Status: queries as sources
-
 Created 2026-10-24. Status: OPEN. Part 1 DONE; CTEs and views remain.
 Task: [task file](20261024-query-sources.task.md).
 Specs: ADR 0019 D5/slice 4 and D3 metadata exception; ADR 0017 S6.
@@ -196,4 +195,5 @@ uses the measured before/after predictions and verdicts recorded below.
   Ordinary CTEs and views remain OPEN; v53 retains its separate owner-merge gate.
   The subject publication merge combines `16bd87a3` with accepted S4 query-law
   checkpoint `975f31eb`, including PR 241's source filter and no v53 evidence.
-  Initial review `20261024T161528Z-63299f66` passed; final review and gates are pending.
+  Merge reviews `20261024T161528Z-63299f66`/`20261024T163932Z-359eb0c7` passed.
+  The ADR now records part-1 completion; its review and publication gates are pending.
