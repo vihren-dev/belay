@@ -2,9 +2,10 @@
 
 Created 2026-10-24. Status: OPEN. Part 1 (split API and accepted mapped-NULL/action
 corrections) is accepted. Part 2's row/action/trigger induction and conditional
-DML/run laws are checked. DDL/mapping conditions (CREATE, DROP, ADD COLUMN), the
-full atom-by-statement matrix, part-2 acceptance and separate corpus-v54 evidence
-remain open.
+DML/run and CREATE/plain-DROP laws are integrated with the enforced-DROP proof unit.
+Their focused Nix gate passed; the new integration awaits independent review.
+ADD COLUMN, complete DDL/run conditions, the full matrix, part-2 acceptance and
+separate corpus-v54 evidence remain open.
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
 Inspected base: PR #239, `98a07bfe`, in `vihren-dev/sqlite-verifier`.
@@ -676,3 +677,100 @@ completed row/action/trigger invariants as open. The summary now lists the actua
 remaining DDL/mapping, matrix, acceptance and corpus work. No source correction
 was needed. This accepted statement/run checkpoint is at rest; the DDL unit
 continues in its separate workspace.
+
+
+## CREATE and plain DROP preservation
+
+This proof-only unit adds ForeignKeyCreateFrame, ForeignKeyCreateSelection,
+ForeignKeyCreate, ForeignKeyDropSchema and ForeignKeyDdlDrop, each below 200 lines.
+CREATE keeps supplied old row comparisons when mappings agree; compatible input
+schemas prove that existing parent selections remain stable under append. New
+foreign-key declarations need their own located selected parent for the schema
+atom, even when the new table has no rows. The separate row-only law remains usable
+for a successful empty forward-reference table.
+
+Plain DROP has independent supplied-row and schema-selection transport laws plus
+a selected-mapping convenience theorem. Both parent and child positions may move.
+The existing row-drop frame now asks its mapping and parent-retention premises only
+for surviving child tables. Thus removing a child together with its parent has no
+surviving declaration obligation. CatalogValidDrop's existing first-match proof is
+strengthened to expose the exact transported lookup as Catalog.findTable_drop_kept;
+its sole old consumer now uses that result. The replaced weaker name is removed.
+The schema frame reuses this exact lookup and the existing parent-key selector;
+it does not implement a new selection algorithm.
+
+Two new surface fixtures apply the public laws to all three CREATE forms, a failing
+unique-index creation, forward references, a DROP that moves both table identities,
+a removed parent/child family, and successful supporting-index loss that preserves
+supplied row truth while breaking schema compatibility. The existing DROP fixture
+is adapted to the weaker premise. All new exported theorems, the strengthened
+lookup theorem and the changed row frame have axiom reports. The Nix suite enforces
+238 reports across 13 fixtures (the prior 203 plus 19 CREATE and 16 DROP reports),
+allowing only propext, Classical.choice and Quot.sound.
+
+The sequential gate completed on 2026-10-24 with exit 0.
+Command: `direnv exec . bash build/agent-logs/fk-ddl-create-drop-gates.sh`.
+It ran `timeout 1200 just dev-build`, then the sandboxed Nix surface expression
+with `PYTEST_ADDOPTS="-k independent_foreign_key_atoms"`, timeout 1800 and
+command-local max-jobs=1. The development build passed as a local diagnostic.
+Nix acceptance: 13 passed, 52 deselected, in 15.65 seconds:
+`/nix/store/gxxxsp08l7ncq2hmd1fs9r33ylingvb2-sqlite-verifier-test-surface-1`.
+Independent review follows this commit; no task-end acceptance is claimed.
+
+The separately accepted statement/run source remains at a8bf73ae in
+fk-statement-preservation. This workspace starts from the accepted engine unit;
+those branches will be merged at the next clean boundary. Source-only probes in
+fk-enforced-ddl continue the implicit DELETE of enforced DROP and ADD COLUMN.
+The current plain-DROP theorem does not claim to cover that implicit DELETE.
+A separate ADD COLUMN execution audit is with the coordinator for an owner scope
+decision. No ADD execution definition changed in this unit.
+
+Independent review 20261024T204324Z-135b8338 found zero musts and three shoulds.
+The non-CREATE constructors are now listed explicitly in CreatesObject and its
+frame proof, so a future constructor requires classification. The top status
+clarifies that the accepted DML statement/run unit is on a separate branch.
+This acceptance record omits process coordination and external diagnostic claims;
+the named Nix result establishes acceptance. The constructor-only proof correction
+requires the focused gates again before its commit.
+
+## Integrated enforced-DROP proof unit
+
+The `fk-enforced-ddl` workspace merges accepted statement checkpoint `a8bf73ae`
+and checked CREATE/plain-DROP source `135b8338`. Four conflicts were resolved in
+the model barrel, Lake manifest, fixture inventory and this status record, retaining
+both branches' formulas and acceptance records. The exhaustive CREATE classification
+and all three review corrections from `20261024T204324Z-135b8338` are carried here
+with their resolution records. The focused Nix gate now covers the merge and
+these corrections together.
+
+
+Three new proof modules separate the implicit DELETE and catalog removal:
+`ForeignKeyDropRows` gives the supplied-mapping NULL-or-retained-parent frame;
+`ForeignKeyDropEngine` applies the actual row/action/trigger invariant before
+catalog removal and retains partial FAIL states; `ForeignKeyDropCatalog` proves
+independent schema transport and the conditional combined law. The combined law
+requires retained parents and selected-link transport. Dropping a referenced
+parent can preserve only row truth through NULL, while schema compatibility fails.
+No execution definition or prediction input changed in this proof unit.
+
+The new `ForeignKeyEnforcedDrop` and `ForeignKeyDropOutcomes` fixtures exercise
+populated SET NULL and CASCADE, an AFTER-trigger FAIL that retains child changes
+while keeping the parent catalog, NO ACTION rejection, rollback restoration and
+separate row/schema outcomes. Their public-law applications use the explicit
+comparison, action, BEFORE-trigger and catalog-frame premises. The existing
+fixtures retain CREATE, plain DROP, DML, run and mapping-transport coverage.
+
+Nix acceptance on 2026-10-24: the sandboxed surface suite with
+`PYTEST_ADDOPTS="-k independent_foreign_key_atoms"` passed 18 fixtures, with 52
+other tests deselected, in 20.10 seconds. Its output is
+`/nix/store/s5r4vk09sydz5wk93ypa0dzl8g9fwcr6-sqlite-verifier-test-surface-1`.
+The fixture driver checks 293 axiom reports and permits only `propext`,
+`Classical.choice` and `Quot.sound`. Each fixture has a 90-second subprocess
+bound; the Nix invocation has an 1800-second bound. The required development
+build was completed before the Nix check, but is not acceptance evidence.
+
+Independent review of this coherent source and its four merge resolutions is
+pending until reviewer access is restored. The source is frozen at this boundary.
+The three shoulds from review `20261024T204324Z-135b8338` are recorded as fixed.
+The task remains OPEN: ADD COLUMN and the complete DDL/run contract, final matrix,
+part-2 full/verdict acceptance and task-end checks still remain.

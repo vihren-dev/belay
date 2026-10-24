@@ -1,0 +1,72 @@
+{
+  "caller": "codex",
+  "commit": "135b8338948d9b3737c236f765e6fb2c841a6131",
+  "date": "2026-10-24T20:43:24+00:00",
+  "exit": 0,
+  "files": [
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/CatalogValidDrop.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeyCreate.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeyCreateFrame.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeyCreateSelection.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeyDdlDrop.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeyDropFrame.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeyDropSchema.lean",
+    "packages/belay-sqlite-model/Belay/Sqlite/Model.lean",
+    "packages/belay-sqlite-model/lakefile.toml",
+    "plans/20261024-foreign-key-atoms.status.md",
+    "tests/surface/ForeignKeyAtoms.lean",
+    "tests/surface/ForeignKeyCreate.lean",
+    "tests/surface/ForeignKeyDdlDrop.lean",
+    "tests/surface_foreign_key_atoms_test.py"
+  ],
+  "findings": [
+    {
+      "id": "20261024T204324Z-135b8338#1",
+      "line": 21,
+      "path": "packages/belay-sqlite-model/Belay/Sqlite/Model/ForeignKeyCreate.lean",
+      "rule": "R5",
+      "severity": "should",
+      "text": "`Resolved.Statement.CreatesObject` ends with a catch-all `| _ => False` over `Resolved.Statement`, and `runStatement_create_frame` ends with `| _ => exact False.elim creates`. A new statement constructor that creates an object would be silently classified as \"creates nothing\" with no compile error. Fix: list the non-CREATE constructors explicitly in both matches."
+    },
+    {
+      "id": "20261024T204324Z-135b8338#2",
+      "line": 6,
+      "path": "plans/20261024-foreign-key-atoms.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The top says the \"independent DML statement/run unit\" is checked, but the last paragraph says that source stays at a8bf73ae in the separate fk-statement-preservation branch and is not merged into this workspace. Fix: say in the top that the DML statement/run unit is accepted on another branch and not yet merged here."
+    },
+    {
+      "id": "20261024T204324Z-135b8338#3",
+      "line": 679,
+      "path": "plans/20261024-foreign-key-atoms.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "The status file cites logs and diagnostics under `fk-enforced-ddl/build/agent-logs/` and process chatter (\"Slot 2 returned to the coordinator\", \"owned process 19966\"). These are not in this repository, so the claims cannot be checked. Fix: drop the process chatter and cite only evidence that is committed or named by a Nix store path."
+    }
+  ],
+  "id": "20261024T204324Z-135b8338",
+  "kind": "review",
+  "reviewer": "claude",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}

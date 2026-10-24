@@ -149,9 +149,9 @@ that the result already has the row fact or that the supporting index still exis
 theorem dropPreservesRows : dropped.RowReferencesHold sameParent := by
   apply Belay.Sqlite.Model.Database.RowReferencesHold.drop
     (database := indexed.raw) (mapping := sameParent) (by decide +kernel) [1] sameParent
-  · intro child table present key declared
+  · intro child table present kept key declared
     rfl
-  · intro child table present key declared parent comparison selected
+  · intro child table present kept key declared parent comparison selected
     cases selected
     decide
 
