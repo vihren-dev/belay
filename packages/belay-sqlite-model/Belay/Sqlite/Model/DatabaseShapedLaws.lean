@@ -33,8 +33,8 @@ theorem Database.RowsShaped.setRows {database : Database} (shaped : database.Row
   simp only [Database.setRows, List.getD_eq_getElem?_getD, List.getElem?_set_ne (Ne.symm different)]
   simpa [List.getD_eq_getElem?_getD] using shaped.2 position absent
 
-/-- For every shaped database whose catalog is not changed, and every object, the database with
-the object and an empty row list appended is shaped. Proof sketch: both lists grow by one; the empty
+/-- For every shaped database and every catalog object, the database with the object appended to its
+catalog and an empty row list appended to its rows is shaped. Proof sketch: both lists grow by one; the empty
 row list does not change what {lit}`getD` reads ({name}`rows_getD_append_nil`), and the new position is
 past the old row lists or below them. -/
 theorem Database.RowsShaped.append {database : Database} (shaped : database.RowsShaped) (object : CatalogObject) :
