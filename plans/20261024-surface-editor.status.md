@@ -25,3 +25,9 @@ their own pending decisions; this task changes neither contract.
 - 2026-10-24: independent review `20261024T132607Z-11cc3da1` found no musts
   and one scope-attribution should. The task now connects its required behavior
   to the owner's ADR17 completion request and the existing S2/S3 SQL forms.
+- 2026-10-24: follow-up review `20261024T132710Z-9383cec2` found no musts and
+  repeated the scope should. Rejected with a recorded reason: ADR17 keeps the
+  guide as its target and assigns these editor behaviors to slice task design;
+  it does not defer them beyond completion. These are public SQL surface
+  behaviors for existing forms, not speculative support infrastructure. The
+  owner's completion request therefore remains the authority for this scope.
