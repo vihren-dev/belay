@@ -1,6 +1,6 @@
 # Status: queries as sources
 
-Created 2026-10-24. Status: OPEN. Part 1 DONE; CTEs and views remain.
+Created 2026-10-24. Status: OPEN. Parts 1 and 2 DONE; views remain.
 Task: [task file](20261024-query-sources.task.md).
 Specs: ADR 0019 D5/slice 4 and D3 metadata exception; ADR 0017 S6.
 The [part-1 record](20261024-query-sources-part1.status.md) retains its complete
@@ -103,13 +103,11 @@ PR. Task-end Nix and scheduled checks remain required after all three parts.
   write and trigger entrypoint docstrings; executable definitions are unchanged.
 - Implementation commit `1a1848b12f9af98a6db77dce8dd5e72acb68d868` passed
   independent Claude review `20261024T190005Z-1a1848b1` with no findings.
-- Frozen prediction classification and post-review full/verdict gates remain
-  pending for this part. The coordinator selected a combined CTE, reviewed S4
-  and FK boundary for these gates, before any view behavior is added. It also
-  checks the maintained full S4 success fixtures with the resolver adjustments.
+- Part 2 acceptance below uses a combined CTE, reviewed S4 and FK boundary,
+  including the maintained full S4 success fixtures and resolver adjustments.
   S4's physical-table premise correction remains a separate reviewed change.
 
-## Combined part-2 acceptance preparation
+## Combined part-2 acceptance
 
 The integration workspace joins CTE review carry
 `80b4cb5e86725b7168a3894b4e804a030b34b473`, S4 source
@@ -134,10 +132,65 @@ The integration workspace joins CTE review carry
 - The accepted derived-source predictions at
   `/nix/store/2kpi159rivfybjqkv2cw7vxh31qpdlbq-sqlite-verifier-predictions` and the
   S4 predictions at
-  `/nix/store/ifmznfzpqyd12dxjhr3yp404ljb0dgxy-sqlite-verifier-predictions` are
-  byte-identical: 53 files and 7,372 cases. The combined CTE gate will compare
-  every prediction against that accepted baseline.
+  `/nix/store/ifmznfzpqyd12dxjhr3yp404ljb0dgxy-sqlite-verifier-predictions`
+  were byte-identical: 53 files and 7,372 cases. The accepted S4 copy is the
+  comparison baseline below; the historical derived store path later disappeared.
 - Combined source `4e8d9b296d63c7acbe302ebd1c54385d203b2b3d` passed independent
-  Claude review `20261024T192443Z-4e8d9b29` with no findings. Frozen prediction
-  classification and post-review full/verdict gates remain pending. No view
-  behavior is part of this boundary.
+  Claude review `20261024T192443Z-4e8d9b29` with no findings. No view behavior
+  is part of this boundary.
+- The first combined full-gate attempt ended with exit 124 at the configured
+  1,500-second aggregate Nix suite limit. Session `65827` reached 40% of the
+  72-test public surface suite without a reported test failure. The preceding
+  Nix model suite passed all 251 tests in 1,041.50 seconds at
+  `/nix/store/sbkyci4g6afx2lrry8sdvpv9ywzgmmkp-sqlite-verifier-test-model-1`.
+  That attempt's full report was incomplete; verdict and comparison did not run.
+  It is not acceptance. The retry below retained the source and all timeouts.
+  The attempt log is
+  `/tmp/query-source-cte-integration-full.log`.
+- The cached retry, session `44795`, exited 0 on the unchanged reviewed source.
+  Its post-review Nix full report passed all 923 tests, with no failures, errors
+  or skips:
+  `/nix/store/6ccraalbxszhkp504g0q4d1fi49160bs-sqlite-verifier-test-reports`.
+- The final verdict passed: 4,869 AGREE and 2,503 MODEL_UNSUPPORTED, at
+  `/nix/store/afn513ampmbdfjr467cm90dydkyirkd1-sqlite-verifier-verdict`.
+  All prior claimed agreements survive. Corpus v4 has 676 agreements; v5 has
+  2,974. Each gains the same trigger-creation case under its execution profile.
+- Accepted predictions:
+  `/nix/store/wbpwn1x38fyn3l0g00wg5m011n6ajwq4-sqlite-verifier-predictions`.
+  Compared with the accepted S4 baseline above: 53 files, 7,372 cases, 50 files
+  byte-identical. All 4,895 previously predicted records are unchanged. Of 71
+  changed records, 69 remain unsupported with only their reason changed, and
+  two become agreeing predictions. The [complete classification](20261024-query-sources-cte-predictions.status.md)
+  records each changed case and the baseline-equivalence evidence.
+- Part 2 is DONE at this checkpoint. Views remain OPEN. Corpus v53 remains
+  unpublished and mutable; no frozen corpus, claim or judge-lock file changed.
+  Task-end Nix and scheduled checks remain required after the view part.
+
+## Publication above the FK prerequisite
+
+The publication workspace joins reviewed CTE boundary `58300b39` and published
+FK prerequisite `b1130903` (PR #247). It retains both prototypes from PRs #245
+and #246. All files under `packages/` are byte-identical to the CTE boundary,
+including its precise SimpleQuerySteps and StatementCalm documentation.
+The model manifest resolves to the same 379 entries. The test inputs retain
+the proof-cost helper and register both prototype suites. The earlier FK
+review record remains in the append-only review history.
+
+The static ownership, surface-layer and documentation checks passed 16 tests.
+The final publication integration passed all 36 selected Nix cases, with 44
+deselected, in 194.19 seconds:
+`/nix/store/2zlr1pgsarrvmq8b0apzx8pbh0mhvffj-sqlite-verifier-test-cte-publication-1`.
+This checks the CTE/query consumers, both S4 guide proofs, all nine FK fixtures,
+and the S6/proof-cost prototypes. Independent integration review
+`20261024T200939Z-57bf72e2` found no findings. The completed full gate and verdict
+are recorded under "Combined part-2 acceptance" above; the
+[classification record](20261024-query-sources-cte-predictions.status.md) lists
+every prediction change. This publication adds no view behavior.
+
+Acceptance-documentation review `20261024T201724Z-ed535519` found zero musts
+and two status-wording shoulds. The raw comparison is retained under the
+publication's build logs, and this section now points to the completed evidence.
+
+## Part 3 progress
+
+The [view record](20261024-query-sources-views.status.md) tracks the remaining part.

@@ -1,4 +1,4 @@
-import Belay.Sqlite.Model.Resolution.CompoundNames
+import Belay.Sqlite.Model.Resolution.ColumnOrigins
 
 set_option doc.verso true
 
@@ -72,8 +72,9 @@ def Syntax.Expr.sourceTypesList (scope : Scope) (shapes : SubqueryShapes) : List
   | first :: rest => first.sourceTypes scope shapes :: Syntax.Expr.sourceTypesList scope shapes rest
 end
 
-/-- One result column used as a query-source column: name, expression affinity, collation
-and SQLite's type possibilities. Use no affinity for a literal, and BINARY without COLLATE. -/
+/-- One result column used as a query-source column: name, expression affinity, collation,
+type possibilities, and declared-type metadata. Use no affinity for a literal,
+BINARY without COLLATE, and omit origin metadata for a result with no declared column. -/
 structure DerivedColumn where
   /-- The unique derived-table column name. -/
   name : String
@@ -83,6 +84,9 @@ structure DerivedColumn where
   collation : Collation
   /-- The numeric and text possibility bits used to combine compound terms. -/
   types : ExpressionTypes
+  /-- The declaration behind this output expression, used when another query
+  reads it. A compound follows its right-most term. Omit it for a literal. -/
+  originType : Option String := none
   deriving Repr, DecidableEq
 
 /-- The metadata of successfully resolved result columns, with their original output names.
@@ -94,15 +98,19 @@ def resultSourceColumns (scope : Scope) (shapes : SubqueryShapes) (results : Lis
       let affinity := match scope.starOperand position column with
         | .ok operand => operand.2
         | .error _ => none
-      (affinity, (scope.starCollation position column).getD .binary, affinityTypes affinity)
+      (affinity, (scope.starCollation position column).getD .binary, affinityTypes affinity,
+        scope.starOriginType position column)
     | .sourceStar source => ((scope.starColumns? source).getD []).map fun (position, column) =>
       let affinity := match scope.starOperand position column with
         | .ok operand => operand.2
         | .error _ => none
-      (affinity, (scope.starCollation position column).getD .binary, affinityTypes affinity)
+      (affinity, (scope.starCollation position column).getD .binary, affinityTypes affinity,
+        scope.starOriginType position column)
     | .expression value _ _ =>
-      [(value.sourceAffinity scope shapes, value.collationIn scope, value.sourceTypes scope shapes)]
-  (names.zip metadata).map fun (name, affinity, collation, types) => { name, affinity, collation, types }
+      [(value.sourceAffinity scope shapes, value.collationIn scope, value.sourceTypes scope shapes,
+        value.originType scope shapes)]
+  (names.zip metadata).map fun (name, affinity, collation, types, originType) =>
+    { name, affinity, collation, types, originType }
 
 /-- Unique names for the columns of a query source. None means SQLite would choose a random
 suffix for a duplicate, outside the deterministic name rules of {name}`derivedNames`. -/
@@ -123,17 +131,22 @@ def compoundSourceAffinity (columns : List DerivedColumn) : Option Affinity :=
     pure (if affinity == .text && others.1 || numericAffinity affinity && others.2 then .blob else affinity)
 
 /-- Combine all output columns of compound terms. Names, collations and type possibilities
-come from the left-most term; affinity follows {name}`compoundSourceAffinity` for each column. -/
+come from the left-most term; affinity follows {name}`compoundSourceAffinity` for each column.
+An enclosing expression follows the right-most declared-type origin. -/
 def compoundSourceColumns (terms : List (List DerivedColumn)) : List DerivedColumn :=
   ((terms.head?).getD []).mapIdx fun index first =>
-    { first with affinity := compoundSourceAffinity (terms.filterMap (·[index]?)) }
+    let columns := terms.filterMap (·[index]?)
+    { first with
+      affinity := compoundSourceAffinity columns
+      originType := columns.getLast?.bind (·.originType) }
 
 /-- The scope metadata of an indexed query source. An omitted alias gives unqualified
-columns only; a source never has an implicit rowid. -/
+columns only; a source never has an implicit rowid. The column declaration stores
+its expression origin, while the separate affinities supply its source affinity. -/
 def derivedScopeSource (index : Nat) (alias : Option Identifier) (columns : List DerivedColumn) : ScopeSource :=
   { name := alias.getD (name! ""), qualified := alias.isSome, queryIndex := some index, hasRowid := false,
     columns := columns.map fun column =>
-      { name := Identifier.ofString column.name, declaredType := none, collation := column.collation },
+      { name := Identifier.ofString column.name, declaredType := column.originType, collation := column.collation },
     affinities := some (columns.map (·.affinity)) }
 
 end Belay.Sqlite.Model

@@ -46,6 +46,7 @@ theorem guard_bodies (catalog : Catalog) (position index : Nat) (table : Catalog
   simp [guardQueries, guardShapes, rangeShape, balanceCountShape, rangeQuery, metadataQuery,
     Resolved.Query.simple, Resolved.Query.countOf, Resolved.QuerySource.first, Resolved.QuerySource.pragma,
     firstCollations, Syntax.Expr.explicitCollation, Syntax.Expr.columnCollation,
+    resultOriginTypes, Syntax.Expr.originType,
     Resolved.Query.expressions, Resolved.QuerySource.expressions, Resolved.Query.keptExpressions,
     Resolved.Output.scalars, Resolved.Output.operands, Resolved.Expr.lowestRead,
     rangeResolved, nameResolved, typedResolved, minPosition]

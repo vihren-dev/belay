@@ -28,7 +28,8 @@ join merged into a left column. -/
 structure ScopeSource where
   /-- The name of the source. -/
   name : Identifier
-  /-- The columns of the source's table. -/
+  /-- The source columns. A query source stores each expression's declared-type
+  origin here and supplies its affinity separately through {lit}`affinities`. -/
   columns : List CatalogColumn
   /-- Expression affinities for a derived source, including no affinity; none uses each
   catalog column's declared type. For example, the column of {lit}`SELECT 1` has none. -/

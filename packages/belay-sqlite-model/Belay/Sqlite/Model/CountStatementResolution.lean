@@ -30,7 +30,8 @@ theorem subqueryShape_count (scope : Scope) (shapes : SubqueryShapes) (source : 
     (columns : query.columns = [.aggregate .countRows]) :
     ∃ lowest, subqueryShape scope shapes (Syntax.Subquery.mk [.expression (.callStar name) alias text] source []
       filter [] [] none none none none false none none) query none = countShape lowest := by
-  simp [subqueryShape, firstCollations, Syntax.Expr.explicitCollation, Syntax.Expr.columnCollation, columns, countShape]
+  simp [subqueryShape, firstCollations, Syntax.Expr.explicitCollation, Syntax.Expr.columnCollation, columns, countShape,
+    resultOriginTypes, Syntax.Expr.originType]
 
 /-- For every statement {lit}`SELECT 1 WHERE c` with one subquery {lit}`SELECT count(*) FROM t WHERE p` of a table that
 the catalog of the state has at a position, without table-function arguments, where {lit}`p` resolves in the
