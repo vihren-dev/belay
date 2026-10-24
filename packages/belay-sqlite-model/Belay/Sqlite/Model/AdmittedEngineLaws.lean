@@ -57,4 +57,15 @@ theorem catalogSupportedLaws (limits : Limits) : WriteLaws fun database => datab
   sublist _ _ _ valid _ := valid
   write _ _ _ _ valid _ _ := valid
 
+/-- For every property of databases with the laws of {name}`WriteLaws`, rules, clock value, target, work,
+database, flag and algorithm: if the database has the property, the effect of {name}`rowsKeys` satisfies it
+({name}`Effect.Satisfies`): the database of a success and that of an error with
+{name}`ExecutionError.constraintFail` have the property, and any other error requires nothing. Proof
+sketch: {name}`rowsKeys_holds` for the database of the effect. -/
+theorem rowsKeys_satisfies {invariant : Database → Prop} (laws : WriteLaws invariant) (rules : Resolved.WriteRules)
+    (clock : Int) (target : Nat) (work : RowWork) {database : Database} (holds : invariant database) (plain : Bool)
+    (algorithm : Option ConflictAlgorithm) :
+    (rowsKeys rules clock target work database plain algorithm).effect.Satisfies invariant :=
+  Effect.satisfies_of_effectDatabase (rowsKeys_holds laws rules clock target work holds plain algorithm)
+
 end Belay.Sqlite.Model

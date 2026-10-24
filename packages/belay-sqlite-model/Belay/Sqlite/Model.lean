@@ -84,6 +84,13 @@ import Belay.Sqlite.Model.ResolveCallsBelow
 import Belay.Sqlite.Model.ResolveReadsBelow
 import Belay.Sqlite.Model.ResolveTermsBelow
 import Belay.Sqlite.Model.ResolveIndexBelow
+import Belay.Sqlite.Model.AdmittedStoredAliasedStatements
+import Belay.Sqlite.Model.AdmittedRangeWideStatements
+import Belay.Sqlite.Model.AdmittedTableAtomStatement
+import Belay.Sqlite.Model.AdmittedCatalogStatement
+import Belay.Sqlite.Model.AdmittedShapedStatement
+import Belay.Sqlite.Model.AdmittedRowsOnly
+import Belay.Sqlite.Model.AdmittedDistinctStatement
 import Belay.Sqlite.Model.AdmittedEngineLaws
 import Belay.Sqlite.Model.AdmittedUpsertAtoms
 import Belay.Sqlite.Model.AdmittedUpsertOrigins
