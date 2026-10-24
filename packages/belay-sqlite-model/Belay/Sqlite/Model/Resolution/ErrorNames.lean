@@ -17,6 +17,7 @@ name with two dots, which the text seldom writes, so a tool then shows the error
 statement. A function name is the name as written, and so is the text of a hexadecimal
 literal. -/
 def ExprError.name? : ExprError → Option Identifier
+  | .commonTable error => error.name
   | .reservedName name | .tooManyColumns name | .duplicateColumn name | .multiplePrimaryKeys name
   | .defaultNotConstant name | .tableHasNoColumn _ name | .valueCount name _ _
   | .tableMayNotBeAltered name | .tableMayNotBeIndexed name | .primaryKeyMissing name

@@ -73,6 +73,8 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "outer-aggregate": ("CREATE TABLE t(a);", "SELECT (SELECT count(t.a) FROM t AS b) FROM t;"),
     "subquery-fallible-call": ("CREATE TABLE t(a);", "SELECT json((SELECT a FROM t));"),
     "source-column-name": ("CREATE TABLE t(a);", "SELECT * FROM (SELECT 1 AS a, 2 AS a, 3 AS a, 4 AS a, 5 AS a, 6 AS a);"),
+    "recursive-common-table": ("CREATE TABLE t(a);",
+                               "WITH c(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < 3) SELECT * FROM c;"),
     "compound-order-by-term": ("CREATE TABLE t(a);", "SELECT a FROM t UNION SELECT 1 ORDER BY max(a);"),
     "subquery-reads-target": ("CREATE TABLE t(a);", "UPDATE t SET a = (SELECT max(a) FROM t);"),
     "distinct-order-by": ("CREATE TABLE t(a, b);", "SELECT DISTINCT a FROM t ORDER BY b;"),

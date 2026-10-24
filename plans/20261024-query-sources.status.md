@@ -64,3 +64,44 @@ PR. Task-end Nix and scheduled checks remain required after all three parts.
 - Carry review `20261024T164800Z-0559f47b` found no must issue and one should
   issue: the retained part-1 history needed an explicit historical label. Its
   header now states Part 1 DONE and links to this active task status.
+- Part 1 was published separately as PR #243, source
+  `1f5eea9e0c3ecd8a5fb62940b3976708909fdb29`, above PR #242. This implementation
+  workspace remains on the checked carry and does not rewrite that published
+  ancestry.
+- Ordinary WITH now has indexed syntax metadata, JSON/Lean codecs and text
+  translation. Each used definition becomes an ordinary derived query at its
+  use site. Lexical WITH lookup follows the written definition scope; column
+  lookup follows the use site's permitted enclosing scope. Explicit column
+  lists replace output names while retaining each resolved column's metadata.
+- Recursive UNION arms use preparation-only name placeholders, then ordinary
+  resolution checks their column counts and names. Prepared recursion ends in
+  `recursive-common-table` before evaluation. Circular references, repeated
+  recursive references and recursive aggregates retain SQL preparation errors.
+  Unused definitions do not enter the executable query list.
+- SELECT and supported VALUES INSERT, UPDATE and DELETE share the expansion.
+  Trigger expression queries also use it. The existing `keyReady` restriction
+  on nested writes with subqueries remains: the public fixture distinguishes
+  successful preparation from the runtime stop.
+- Existing query-resolution and catalog/schema-link proofs cover the new
+  syntax field and wrapper. The specific no-WITH resolution lemmas state that
+  premise explicitly. No alternate evaluator or catalog object was added.
+- Authored input definitions cover 43 CTE cases, with parser/span fixtures,
+  kernel context and public quotation examples, and two targeted scope and
+  recursion mutants. Frozen v53 evidence remains separate and unpublished.
+- Focused Nix acceptance passed: 32 model/parser/native differential tests at
+  `/nix/store/m35i7is1gmyiwy76c5lskzbpr810xhmr-sqlite-verifier-test-common-tables-model-1`,
+  17 public surface fixtures at
+  `/nix/store/fx2h7dkcm5z3q88q61sv37r9dwgvxrr5-sqlite-verifier-test-common-tables-surface-1`,
+  and all 60 restriction examples at
+  `/nix/store/nc6ks1rv3jyzvyjcyp9pw5527m0ismh6-sqlite-verifier-test-common-tables-restrictions-1`.
+  These use the existing registered suites with focused selections.
+- Both targeted mutants were killed in Nix: removing lexical parent lookup and
+  removing recursion registration each changed the selected native verdict.
+  Report:
+  `/nix/store/zdn3s51b8gyns4r7z3bdqq77v7gyfdnf-sqlite-verifier-test-common-tables-mutants-1`.
+  The following source edits only clarified the WITH behavior in the public
+  write and trigger entrypoint docstrings; executable definitions are unchanged.
+- Independent review, frozen prediction classification
+  and post-review full/verdict gates remain pending for this part. The full S4
+  success fixture closure is reserved for the combined integration boundary;
+  its physical-table premise correction is a separate reviewed change.

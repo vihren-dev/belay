@@ -3,6 +3,12 @@
 from conformance.resolve_mutants import SQLITE
 
 MUTANTS: dict[str, tuple[str, str, str]] = {
+    "cte_outer_scope_ignored": (SQLITE + "Resolution/CommonTableScope.lean",
+        "        | some query => findCommonTable queries name fuel query.parent\n",
+        "        | some query => none\n"),
+    "cte_recursion_not_registered": (SQLITE + "Resolution/CommonTableExpansion.lean",
+        "            recursive := state.recursive ++ [(index, copiedTerms.map Prod.snd)] }\n",
+        "            recursive := state.recursive }\n"),
     "source_sibling_binding": (SQLITE + "Resolution/SubqueryScopes.lean",
         "  let derived := around.sourceIndexes.contains index\n",
         "  let derived := false\n"),
@@ -19,6 +25,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
 """One exact change per mutant; each measurement builds only its changed classifier closure."""
 
 TARGETS: dict[str, tuple[str, ...]] = {
+    "cte_outer_scope_ignored": ("cte-forward",),
+    "cte_recursion_not_registered": ("cte-recursive",),
     "source_sibling_binding": ("source-sibling-refused",),
     "source_affinity_lost": ("source-all-metadata",),
     "source_collation_lost": ("source-all-metadata",),
@@ -27,6 +35,8 @@ TARGETS: dict[str, tuple[str, ...]] = {
 """Native source cases that distinguish each changed rule from the original model."""
 
 GUARDS: dict[str, str] = {
+    "cte_outer_scope_ignored": "rule:findCommonTable",
+    "cte_recursion_not_registered": "rule:copyCommonTableQuery",
     "source_sibling_binding": "rule:subqueryScope",
     "source_affinity_lost": "rule:derivedScopeSource",
     "source_collation_lost": "rule:derivedScopeSource",

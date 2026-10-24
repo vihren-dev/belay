@@ -275,15 +275,29 @@ mode, the page size, the cache). They stay out until a measurement shows a gain.
 
 ## Implementation record
 
-2026-10-24, slice 4 part 1 in progress: resolved sources can read an indexed query
+2026-10-24, slice 4 part 1 complete: resolved sources can read an indexed query
 through the statement's evaluation context. Complete-row certainty is separate from
 first-column certainty. Column metadata now distinguishes absent expression affinity
 from BLOB affinity and combines every column of compound terms. D3's ORDER BY COLLATE
 exception is implemented for IN and scalar subqueries. Derived SELECT sources now pass
 through SQL translation, indexed source resolution and the same evaluator. Source expansion
 precedes expression resolution; derived bodies follow FROM order and preserve enclosing
-versus sibling binding. Part-1 native corpus and full/verdict acceptance remain pending;
-ordinary CTEs and views remain for parts 2 and 3. This does not complete D5 or slice 4.
+versus sibling binding. Part 1 passed native, full-suite and verdict acceptance at
+`c8db1a54`; draft corpus v53 remains separate from the subject publication and needs
+owner approval before merge. The publication checkpoint has its own final gates.
+Ordinary CTEs and views remain for parts 2 and 3. This does not complete D5 or slice 4.
+
+2026-10-24, slice 4 part 2 in progress: ordinary WITH definitions use the same
+indexed query-source machinery. Definition names use lexical WITH scope; each use
+receives its permitted enclosing column scope. Explicit column lists retain the
+resolved affinity and collation. Supported SELECT and VALUES INSERT, UPDATE and
+DELETE forms share this expansion, including nested queries in trigger bodies.
+Unused definitions remain unprepared. Valid recursion ends in a model restriction.
+Circular references, column-count errors, repeated recursive references and
+recursive aggregates retain their checked SQL errors.
+The RECURSIVE keyword and materialization hints remain excluded. Focused Nix
+model, public surface and restriction checks pass; independent review and
+full/verdict acceptance remain pending. Views remain part 3.
 
 ## Owner decisions
 

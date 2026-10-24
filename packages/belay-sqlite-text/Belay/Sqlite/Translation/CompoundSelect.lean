@@ -1,4 +1,5 @@
 import Belay.Sqlite.Translation.Select
+import Belay.Sqlite.Translation.CommonTables
 
 set_option doc.verso true
 
@@ -81,9 +82,19 @@ def compoundClauses (node : ParseNode) (tail : Clauses) (indexes : Array Nat) (o
 /-- The clauses of a {lit}`select` production: those of one SELECT ({name}`oneSelectClauses`), or
 of a compound ({name}`compoundClauses`), whose terms go into the statement's list in text order
 ({name}`liftWith`), the last without its {lit}`ORDER BY` and {lit}`LIMIT`. A compound with an
-error of SQLite's parser ({name}`compoundParseError`) is refused before its terms. -/
+error of SQLite's parser ({name}`compoundParseError`) is refused before its terms.
+An ordinary WITH clause records its definitions before the containing query; RECURSIVE
+and materialization hints remain explicit restrictions. -/
 def queryClausesWith (mappers : Mappers) (tree : SqlTree) (selectNode : ParseNode) : TranslateM Clauses := do
-  let current := (← require tree selectNode ["selectnowith"])[0]!
+  let current ← match tree.symbols selectNode with
+    | ["selectnowith"] => pure (tree.children selectNode)[0]!
+    | ["WITH", "wqlist", "selectnowith"] => do
+      let parts := tree.children selectNode
+      commonTableList mappers tree parts[1]!
+      pure parts[2]!
+    | ["WITH", "RECURSIVE", "wqlist", "selectnowith"] =>
+      unsupported selectNode "WITH RECURSIVE is not modeled; use ordinary WITH with nonrecursive definitions"
+    | _ => unsupportedForm selectNode
   let (terms, operators) ← compoundParts tree current
   let some last := terms.back? | unsupportedForm current
   if terms.size == 1 then return ← oneSelectClauses mappers tree last

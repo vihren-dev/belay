@@ -153,3 +153,11 @@ def test_derived_sources_reach_public_query_predicates(runtime_root: Path, tmp_p
     result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsDerived.lean", tmp_path), cwd=tmp_path,
                          timeout=60)
     assert result.returncode == 0, result.diagnostic()
+
+
+def test_common_tables_reach_public_queries_and_writes(runtime_root: Path, tmp_path: Path) -> None:
+    """CommonTableExpansion preserves names, scope, errors and the values of CTE-backed writes
+    through sql/db! quotations and kernel-checked public query predicates."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsCommonTables.lean", tmp_path), cwd=tmp_path,
+                         timeout=60)
+    assert result.returncode == 0, result.diagnostic()

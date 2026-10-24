@@ -181,6 +181,9 @@ inductive RestrictionKind where
   /-- A derived source whose duplicate output names need SQLite's random suffix is not modeled.
   Give these columns distinct aliases (ADR 0019, D5). -/
   | sourceColumnName
+  /-- A valid recursive CTE, including recursion without the RECURSIVE keyword.
+  Ordinary nonrecursive definitions use the normal query-source evaluator. -/
+  | recursiveCommonTable
   /-- {lit}`PRAGMA foreign_key_check` without a table name when two or more tables have a mismatch: SQLite reports the
   first one in the order of its schema hash table (ADR 0019, D2). -/
   | foreignKeyMismatchOrder

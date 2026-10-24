@@ -133,16 +133,37 @@ theorem resolvePragma_schemaLink {state next : ResolveState} {pragma : Syntax.Pr
 ({lit}`each`), every successful resolution of its subqueries and then of the write
 ({name}`resolveWriteSubqueries`) meets it. Proof
 sketch: the other branches are a prepare error or a restriction. -/
-theorem resolveWriteSubqueries_schemaLink (context : ResolveContext) (catalog after : Catalog)
+theorem resolveWriteSubqueries_schemaLink {columnNames : List (Nat × List Identifier)} (context : ResolveContext) (catalog after : Catalog)
     (field : Nat) (tableName : Identifier) (scopeOf : CatalogTable → Scope) (subqueries : List Syntax.Subquery)
     (resolveWrite : List Resolved.Query → SubqueryShapes → StatementResolution) (statement : Resolved.Statement)
     (each : ∀ resolved shapes after statement, resolveWrite resolved shapes = .ok (statement, after) →
       statement.SchemaLink catalog)
-    (ok : resolveWriteSubqueries context catalog field tableName scopeOf subqueries resolveWrite =
+    (ok : resolveWriteSubqueries context catalog field tableName scopeOf subqueries resolveWrite columnNames =
       .ok (statement, after)) : statement.SchemaLink catalog := by
   unfold resolveWriteSubqueries at ok
   simp only [prepareError, restrict, issueResolution] at ok
   repeat' split at ok
   all_goals first | (cases ok; trivial) | (cases ok; exact Catalog.DropClosed.nil _) | (cases ok) | exact each _ _ _ _ ok
+
+/-- For every write resolution that meets the schema-link predicate for every copied
+query mapping, successful WITH expansion and write resolution also meet that predicate.
+Proof sketch: the wrapper's other successful branches are prepare errors; the write branch
+has the assumed schema link regardless of its copied queries and explicit column names. -/
+theorem resolveCommonTableWrite_schemaLink (context : ResolveContext) (catalog after : Catalog)
+    (field : Nat) (tableName : Identifier) (scopeOf : CatalogTable → Scope) (subqueries : List Syntax.Subquery)
+    (resolveWrite : (Nat → Nat) → List Resolved.Query → SubqueryShapes → StatementResolution)
+    (statement : Resolved.Statement)
+    (each : ∀ index resolved shapes after statement, resolveWrite index resolved shapes = .ok (statement, after) →
+      statement.SchemaLink catalog)
+    (ok : resolveCommonTableWrite context catalog field tableName scopeOf subqueries resolveWrite =
+      .ok (statement, after)) : statement.SchemaLink catalog := by
+  unfold resolveCommonTableWrite at ok
+  simp only [resolveWriteSubqueries, prepareError, restrict, issueResolution, Except.mapError] at ok
+  repeat' split at ok
+  all_goals first | (cases ok; trivial) | (cases ok; exact Catalog.DropClosed.nil _) | (cases ok) | exact each _ _ _ _ _ ok
+  all_goals
+    rename_i found
+    repeat' split at found
+    all_goals first | (cases found; trivial) | (cases found; exact Catalog.DropClosed.nil _) | (cases found) | exact each _ _ _ _ _ found
 
 end Belay.Sqlite.Model
