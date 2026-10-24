@@ -84,30 +84,21 @@ remove the prior planning blocks; they are not implementation-completion claims.
   passed. The checked API reference contains 543 modules and 5,037 source links.
   Both private email extracts and the full balance proof pass the installed
   runtime with only standard logical axioms. Final review has no findings.
-- `s4_part1` implements S5 in isolated `s5-counterexamples` on published
-  `0569149b`, with reviewed handoff `e50e1f9e`. Plausible compatibility passed
-  in Nix. Explicit certification and policy follow-up `76504977` passed 11 Nix
-  checks and clean review. Sampler `593caf88` passed 12 Nix checks, including
-  the row-bound regression. Inference `69cd41be` passed 13 Nix checks and clean
-  review, including typed unused witness fields. Replay passed 14 Nix checks
-  at `qh5lxq6ycrswh0bfzaym8cjc3yc16fk4` (`27180`, exit 0), including the
-  supported DROP/helper interference regression. Replay `e4942452` has clean
-  review. The first full surface run passed 73 checks and failed one S7 fixture:
-  its shorter control import moved SQL provenance by two bytes. Test correction
-  `1beefd00` pads that import and retains exact expression comparison; all seven
-  Nix proof-cost checks passed at `h5vfmwanvqk60aablk7jj6pv8cc07ym3`, with clean
-  review. Post-review gate `21734` passed all 877 full tests at
-  `ksd784kihabyb20zc2zj9amlywivv56v`, verdict at `1w3s86b8201bc72c1r51rc66rnb1iknr`,
-  and all 53 predictions match `ifmznfzpqyd12dxjhr3yp404ljb0dgxy`. The first
-  failure log is retained. Shared commands and automatic
-  checking remain open. Their draft now isolates speculative elaboration state;
-  cancellation and failed-candidate cleanup still need installed acceptance.
-  Root staged `s5-publication` as a merge with #248; only the test-manifest union
-  required resolution. Model, text and conformance derivations match #248.
-  A read-only cold Nix evaluation exposed an unmaterialized filtered-source
-  manifest read; the S5 owner independently reproduced it and is correcting it.
-  Part 1 remains open for that integration correction. Root integration checks
-  are queued after S6's next unit; nothing from this staging workspace is pushed.
+- S5 part 1 is accepted and published in PR #249 at `f808a41a`, including the
+  cold-manifest and proof-cost fixture corrections. Its integrated full report
+  passes 936 tests; verdict and all 53 prediction files are unchanged from #248.
+  Detailed evidence remains in `20261024-surface-s5-part1.evidence.md` and the
+  implementation status. The completed workspace has been retired.
+  `s4_part1` has frozen shared-search source `efa0d465` in `s5-search`.
+  Seventeen focused Nix checks pass at `dwk93ll3d8jxi6vhfd3gck1qxp892h3a`;
+  two changed budget/search fixtures pass at `vmfzzp6s6mz5z42rhv9rbzwsz5c9mk8j`.
+  Native SQLite replays all nine reported cases. Independent review awaits the
+  reviewer login refresh. Root stages the unchanged source with complete S6
+  contracts and native artifacts in `s5-search-integration`.
+  Commands, searched tactics, automatic defaults and editor actions remain open.
+  The read-only frontend audit identified saved environments for anonymous
+  examples and preservation of the native cancellation context as requirements
+  of the existing implementation scope.
 - `s6_prerequisite_audit` completed derived-source part 1, published in #243.
   Separate evidence head `5d69e3fa` retains draft v53's 38 agreements and
   four restrictions. Combined acceptance is recorded in its task status.
@@ -268,6 +259,10 @@ logs are in `s4/build/agent-logs/cte-publication`. Evidence and views remain act
   Migration-pattern public primitives are now assigned to `s6_prerequisite_audit`
   in isolated `s6-migration-patterns` on `5bc323f0`. The first unit reserves
   new execution-view/pattern modules; rebuild/FK examples remain later work.
+  Its descriptor/projection source is frozen at `504b819b`. Both focused Nix
+  groups pass at `3f2nwr14gs5wz0j4q1vhp3ix3xa50ayh`, with 128 axiom reports
+  using only standard logical axioms. Independent review remains pending;
+  comparisons, migration patterns, examples and full acceptance remain open.
   [Initial/current query context](20261024-s6-before-context.task.md) has clean
   review `20261024T143052Z-5feffb18` and waits for query-source/view integration.
 - [Editor](20261024-surface-editor.task.md) is reviewed, unassigned.
@@ -278,6 +273,12 @@ logs are in `s4/build/agent-logs/cte-publication`. Evidence and views remain act
   `s7-files` on `5bc323f0`. Shared parameter/source helpers are reserved;
   S5 retains Check*, Sampling* and ReplayScript ownership. The first checked
   source commit requires independent review after the login refresh.
+  Twenty focused checks pass, and the corrected real-consumer case passes at
+  `hs6b8p1fzvl2cm9hm758f16qrbc7pygk`. The source is at rest. Two valid nested
+  Lake projects can share a package ID and source file, while Lean omits the
+  package root. The owner has been asked to choose a relative root override,
+  Lake-supplied root metadata, or an unambiguous-layout restriction. No choice
+  has been implemented before the answer.
 - [S7 proof-cost prototype](20261024-s7-proof-cost-prototype.task.md) is DONE
   and published as PR #245 at `0569149b`, above completed S4 PR #244 `70705018`.
   Production will use the accepted named-body contract, including native mutual declarations.
@@ -305,7 +306,10 @@ Keep its cited S4 build logs available when eventually retiring that workspace.
 View catalog foundation `59dc5215` and anchor repair `a890097f` are accepted
 at `d1b28daf`, with clean final review `20261024T215844Z-a890097f`.
 All five affected targeted Nix mutation checks pass. Stored-view expansion is
-being implemented in its separate descendant workspace. PR #249 Verdict CI
+frozen at `694d0790` in `query-sources-view-integration`. Eight focused Nix
+checks pass at `cj5vhkv8xxk9iqz7q4yal2yi7hk1c0ry`; all 53 prediction files
+and 7,372 cases remain unchanged. Independent review, remaining view behavior
+and full acceptance remain open. PR #249 Verdict CI
 and Linux main check passed. CI run `40136011925` failed in Linux general
 mutants: query, fromless and JSON-function groups reported failure before the
 overall timeout. Function and table mutant jobs passed. PR #248's nominally
