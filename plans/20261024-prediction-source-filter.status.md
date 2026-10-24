@@ -1,6 +1,6 @@
 # Status: prediction source filter
 
-Created 2026-10-24. Status: OPEN. Implementation is under validation.
+Created 2026-10-24. Status: DONE. Required outcomes and checks passed.
 Task: [task file](20261024-prediction-source-filter.task.md).
 Relevant files: `integrity/judge.nix`, `tests/test_judge_lock.py`.
 
@@ -43,13 +43,42 @@ input. These are the motivating observations, not acceptance of a fix.
   The bytecode regression failed against the original filter and all nine
   targeted Nix evaluation checks passed with the correction. Existing lock
   tamper checks remain in the same suite. No package or lock file changed.
+- 2026-10-24: implementation commit `accfbf78` received independent review
+  `20261024T125027Z-accfbf78`, with no must or should findings. All task-end
+  checks passed. The final task-file review and protected-file PR handoff follow.
 
-## Current Nix evidence
+## Acceptance evidence
 
-The baseline prediction build produced
-`/nix/store/164jh4a3m2xdajyfqwbbd1b1iilhgldf-sqlite-verifier-predictions`.
+All commands ran through `direnv exec .` with finite timeouts. Logs are under
+`build/agent-logs/` in the `prediction-source-filter` workspace.
+
+- `timeout 1800 nix-build integrity/judge.nix -A predictions` before and after
+  the correction produced the same output:
+  `/nix/store/164jh4a3m2xdajyfqwbbd1b1iilhgldf-sqlite-verifier-predictions`.
+  All 53 prediction files, covering 7,372 cases, are byte-identical. Before the
+  second build, importing `belay.sqlite.profiles` and `belay.sqlite.quoted_text`
+  created their actual bytecode caches. The build reused the baseline output.
+  The final identity evaluation after all task-end checks still produced
+  `/nix/store/wi4cbnmcigh3slrldlpnvjcjr00in051-sqlite-verifier-predictions.drv`.
+- `timeout 2400 just test-full` passed. Its unchanged Nix inputs reused
+  `/nix/store/ykfdsmryx18cplw9zrf1dy3xakqlbydj-sqlite-verifier-test-reports`:
+  792 tests across 10 suites, with no failures, errors or skips.
+- `timeout 1900 just verdict` passed:
+  `/nix/store/3qs9smjm4f6gsh9szippbhk3w668lxqd-sqlite-verifier-verdict`.
+  The totals are 4,838 `AGREE` and 2,534 `MODEL_UNSUPPORTED`, with no disagreement
+  or harness error. The claimed verdict rules are unchanged.
+- `timeout 700 just test-nix` passed all 70 checks, including the new production
+  prediction-identity checks and the existing lock-tamper checks.
+- `timeout 2400 just test-scheduled-checks` passed. Its unchanged inputs reused
+  `/nix/store/wb3l2svhlw9hh0akzm6izc7rkwbqhx79-sqlite-verifier-scheduled-check-reports`:
+  47 writer tests, with no failures, errors or skips. The owner authorized this
+  scheduled check target instead of the broad mutant suites.
+
 `nix-instantiate --eval --strict --json integrity/judge.nix -A current` before
 and after the correction produced equal values for all 55 locked parts, and
 those values equal `integrity/judge.lock.json`. Outputs are recorded in
 `build/agent-logs/lock-{before,after}.json` and `lock-unchanged.log`.
-The full gates and frozen-prediction comparison are pending.
+The command logs are `predictions-{before,after}.log`, `test-full.log`,
+`verdict.log`, `test-nix.log` and `test-scheduled-checks.log`. The report summaries
+and byte comparison are `full-report-summary.log`, `verdict-summary.log`,
+`scheduled-report-summary.log` and `predictions-identical.log`.
