@@ -12,9 +12,14 @@ is free. -/
 
 namespace Belay.Sqlite.Model
 
-/-- The grouping term {lit}`k` resolves, for a query whose one result column is the literal one, in a scope and with
-shapes of subqueries, to the key {lit}`key` under the collation {lit}`collation`: {lit}`k` is a column name, also
-under one {lit}`COLLATE`, and a qualified name, with the collation of the column. -/
+/-- The grouping term {lit}`k` resolves ({name}`resolveGroupTerm`), for a query whose one result column is the literal
+one named {lit}`"1"`, in a scope and with shapes of subqueries, to the key {lit}`key` under the collation
+{lit}`collation`; the formula is that equation of the resolver. It accepts these terms. A column name, also under one
+{lit}`COLLATE`, and a qualified name resolve to the cell of the column, and the collation is the explicit collation
+if there is one, else the collation of the column, else {lit}`BINARY`. A parameter resolves to a constant value with
+{lit}`BINARY`. The result-column number {lit}`1` resolves to the literal one with {lit}`BINARY`. The query has no
+alias. A term that the resolver rejects, such as an aggregate call,
+a number other than {lit}`1` or an expression, makes the equation false. -/
 def GroupTermResolves (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (term : Syntax.Expr) (key : Resolved.Expr)
     (collation : Collation) : Prop :=
   resolveGroupTerm dqs scope shapes [none] [(.scalar (.literal (.integer 1)), "1", none)] [.binary] 0 term =
