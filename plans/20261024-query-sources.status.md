@@ -180,3 +180,4 @@ actual verdict results and inspect each changed prediction.
   and both model-output/transport tests at
   `/nix/store/kj1l7gpva3ysjdlzlkvbw1bwnzcx5wgv-sqlite-verifier-test-query-source-boundary-model-1`.
   This changes test inputs only; the reviewed combined full/verdict gates will rerun.
+- Refusal-fixture review `20261024T154723Z-42812ff3` passed with no findings.
