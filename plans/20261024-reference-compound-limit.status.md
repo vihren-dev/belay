@@ -1,6 +1,6 @@
 # Status: API reference compound SELECT limit
 
-Created 2026-10-24. Status: OPEN.
+Created 2026-10-24. Status: DONE on 2026-10-24.
 Task: [task file](20261024-reference-compound-limit.task.md).
 Spec: ADR 0009 and the owner's PR #242 CI failure report.
 
@@ -23,6 +23,19 @@ Spec: ADR 0009 and the owner's PR #242 CI failure report.
   review `20261024T180856Z-d5e2d837` has no findings. The targeted inventory
   check covers the combined source tree. Final combined gates now run with the
   corrected fixture registration; the reference output remains complete.
+- Final combined checks passed at `e87c904f`: 853 tests across ten Nix suites,
+  with zero failures, errors or skips, at
+  `/nix/store/paws3cy56siqnixbsg18qh43aiw220pk-sqlite-verifier-test-reports`.
+  Verdict `/nix/store/sjs0cw7jyy2k5adr3rgw2jh6d1iybnii-sqlite-verifier-verdict`
+  retains 4867 AGREE and 2505 MODEL_UNSUPPORTED, with no disagreement or harness
+  error. All 53 prediction files remain byte-identical at `2kpi159rivfybjqkv2cw7vxh31qpdlbq`.
+  All 70 Nix integration checks and 47 scheduled checks pass; the latter report
+  is `/nix/store/s5vl7g5lx4ikp3ypmcjrig1jc5y26swz-sqlite-verifier-scheduled-check-reports`.
+  Final source linking passed at
+  `/nix/store/g8bv3izw8djid4wz0bmm59gk9xnrmblx-sqlite-verifier-api-reference-e87c904f1454`:
+  538 modules, 41 corrections and 5013 source links to the checked source.
+  Gate 61952 is terminal. Published repair completion `b6864447` is merged;
+  it adds only task/status/review records to this tested source boundary.
 
 ## Current state
 
@@ -30,8 +43,9 @@ The owner reported that PR #241 passes and #242 fails the Linux API reference
 build at 532 selected public modules. The recorded exception is in doc-gen4's
 `read:transitive_imports`; its VALUES seed participates in a recursive UNION.
 The patch preserves the root set and closure at the query boundary. The
-compiled-reader regression and full 532-module Nix reference build pass.
-Final task acceptance and descendant stack integration remain in progress.
+compiled-reader regression, full 532-module reference, and 538-module descendant
+stack reference pass. Post-review full/verdict, Nix integration and scheduled
+checks pass. The coordinator handles publication of the accepted descendants.
 
 ## Progress
 
@@ -95,8 +109,8 @@ checks. Both findings are fixed; implementation scope is unchanged.
   Its report contains 532 public modules and 41 recursor-link corrections.
   Inspection of this immutable Nix output found all 532 selected HTML pages
   and their expected source URIs. The existing cached-core split is intact.
-  Exact-commit source linking, post-review full/verdict, Nix/scheduled checks
-  and descendant stack reference acceptance remain pending.
+  At this boundary, exact-commit source linking, final cadence and descendant
+  stack reference acceptance were still pending; the results follow below.
 
 - The exact-commit `apiReference` passed at
   `/nix/store/jqn6h8cij0xva91lb5sl3aqidndbjc3z-sqlite-verifier-api-reference-caf53b680617`.
@@ -105,5 +119,36 @@ checks. Both findings are fixed; implementation scope is unchanged.
 - The first final full invocation found the new `tests/docgen/` fixture absent
   from the repository's Lean file inventory. Registered it as a direct fixture;
   `tests/test_lean_categories.py` is the focused check. The compiled-reader and
-  reference derivation inputs are unchanged. Final cadence will rerun after
-  the registration correction's independent review.
+  reference derivation inputs are unchanged. Final cadence reran after
+  the registration correction's independent review, as recorded below.
+
+## Final acceptance
+
+- Registration correction `58fc6ba8056ae3ad61f98be613b0d880c79a9ad4` passed
+  independent review `20261024T175949Z-58fc6ba8` with no findings.
+- Post-review `just test-full` passed 808 Nix tests, report
+  `/nix/store/8sp4gpizg8a919y90kjd6d856zpkrblx-sqlite-verifier-test-reports`.
+  `just verdict` passed at
+  `/nix/store/srv5lc3gnn1s9wzfjy1ilrzsb2ws0881-sqlite-verifier-verdict`,
+  preserving all claims: 4,838 AGREE and 2,534 MODEL_UNSUPPORTED.
+- `just test-nix` passed 70 integration checks. `just test-scheduled-checks`
+  passed all 47 writer checks at
+  `/nix/store/y595z61g5jqwxx0339lzr1mhv3iv1wfs-sqlite-verifier-scheduled-check-reports`.
+  These ran sequentially in completed session 17338; no mutant suite ran.
+- The final reviewed source's `apiReference` passed at
+  `/nix/store/y8x4i9kf1k8jjrww2kqy1spr0aykixmg-sqlite-verifier-api-reference-58fc6ba8056a`: 532
+  public modules, 41 recursor-link corrections and 4,967 source links to
+  `58fc6ba8056ae3ad61f98be613b0d880c79a9ad4`. Its base is the checked output above.
+- The coordinator merged the fix into the PR #243 descendant without rewriting
+  shared ancestors. Its real sandboxed reference also passed at
+  `/nix/store/iz8kjnq67dn05smyh3liv85rf2wwdzn5-sqlite-verifier-api-reference-d2ffeadbd472`: 538
+  public modules, 41 corrections and 5,013 source links to
+  `d2ffeadbd4720527e12c1e3615bed559e32f7fb0`. The coordinator checked every selected
+  module's page and exact source URI. The report was also inspected here.
+- The source patch, native regression, inventory and documentation are complete.
+  Dependency pins, model semantics, corpora, claims and judge lock are unchanged.
+  The task and status are marked DONE together. Stack publication and the
+  larger ADR 0017 acceptance remain with the coordinator.
+- Completion commit `b07390a05e956c2378dd589b3d7b11b3845fdb56` passed independent
+  review `20261024T181000Z-b07390a0` with no findings. The workspace is handed
+  back at a clean commit boundary; no check or review process remains active.

@@ -1,6 +1,6 @@
 # API reference generation beyond 500 module roots
 
-Created 2026-10-24. Status: OPEN. Assigned to `s4_part1` after task review.
+Created 2026-10-24. Status: DONE on 2026-10-24. Implemented by `s4_part1`.
 Status: [progress](20261024-reference-compound-limit.status.md).
 Scope: the owner's PR #242 CI failure report; ADR 0009's cached API reference.
 
