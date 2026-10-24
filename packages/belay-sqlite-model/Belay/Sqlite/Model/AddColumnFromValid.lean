@@ -72,8 +72,9 @@ theorem Database.tableAt_of_table {database : Database} {target : Nat} {table : 
   | some shape => simp [found] at present; rw [← present]
 
 /-- For every database whose catalog is valid and target, the database meets
-{name}`Database.ChecksReadBelowAt`: the CHECK constraints of the table at the target read below its
-width. Proof sketch: a supported table has that fact ({name}`CatalogTable.SupportedFacts`). -/
+{name}`Database.ChecksReadBelowAt`: if the target holds a table, each CHECK constraint of the table reads
+below its width. A target without a table requires nothing. Proof sketch: a supported table has that
+fact ({name}`CatalogTable.SupportedFacts`). -/
 theorem Database.checksReadBelowAt_of_valid {limits : Limits} {database : Database}
     (valid : database.catalog.Valid limits) (target : Nat) : database.ChecksReadBelowAt target := by
   intro table present
@@ -81,24 +82,26 @@ theorem Database.checksReadBelowAt_of_valid {limits : Limits} {database : Databa
     (valid.tableSupported (Database.tableAt_of_table present))
   exact checks
 
-/-- For every admitted database and target, the database meets {name}`Database.RowsWideAt`: each row of
-the table at the target has a cell for each column. Proof sketch: {name}`Database.Admitted` has the
-fact for every table. -/
+/-- For every admitted database and target, the database meets {name}`Database.RowsWideAt`: if the target
+holds a table, each row of the table has a cell for each column. A target without a table requires
+nothing. Proof sketch: {name}`Database.Admitted` has the fact for every table. -/
 theorem Database.rowsWideAt_of_admitted {profile : Profile} {database : Database}
     (admitted : database.Admitted profile) (target : Nat) : database.RowsWideAt target :=
   fun table present => admitted.rowsWide target table present
 
-/-- For every database, target and column whose default fits its strict type, the database meets
-{name}`Database.StrictDefaultFitsAt` for the column. Proof sketch: the conclusion of the fact is the
-assumption, whatever the table and its rows are. -/
+/-- For every database, target and column: if the default of the column fits its strict type
+({name}`strictDefaultFits`), the database meets {name}`Database.StrictDefaultFitsAt` for the column.
+That condition says: if the target holds a table with rows, the default of the column fits its strict
+type. It requires nothing when the target holds no table or a table without rows. Proof sketch: the
+conclusion of the condition is the assumption, whatever the table and its rows are. -/
 theorem Database.strictDefaultFitsAt_of_fits {database : Database} {target : Nat} {column : CatalogColumn}
     (fits : strictDefaultFits column = true) : database.StrictDefaultFitsAt target column :=
   fun _ _ _ => fits
 
-/-- For every admitted database and target, the database meets {name}`Database.AddColumnCondition`: the
-rows of the table at the target are wide, and each unique key of the table reads only columns below its
-width. Proof sketch: {name}`Database.rowsWideAt_of_admitted` for the rows, and
-{name}`Catalog.Valid.uniqueKeys_readsBelow` for the keys of the valid catalog. -/
+/-- For every admitted database and target, the database meets {name}`Database.AddColumnCondition`: if the
+target holds a table, its rows are wide and each unique key of the table reads only columns below its
+width. A target without a table requires nothing. Proof sketch: {name}`Database.rowsWideAt_of_admitted`
+for the rows, and {name}`Catalog.Valid.uniqueKeys_readsBelow` for the keys of the valid catalog. -/
 theorem Database.addColumnCondition_of_admitted {profile : Profile} {database : Database}
     (admitted : database.Admitted profile) (target : Nat) : database.AddColumnCondition target :=
   fun table present => ⟨admitted.rowsWide target table present,

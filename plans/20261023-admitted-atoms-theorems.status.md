@@ -410,3 +410,7 @@ proof relies on it (finding 15).
   `KeysUniqueExamples`. New test: `tests/admitted_atoms_resolver_facts_test.py`. Tests:
   `tests/test_model_package.py`, `tests/valid_atoms_theorems_test.py`,
   `tests/admitted_atoms_resolver_facts_test.py`.
+- 2026-10-24: review round of the commit "CREATE INDEX, CREATE TRIGGER, ADD COLUMN and DROP give a valid
+  catalog": one must (R2 the docstring of `Database.strictDefaultFitsAt_of_fits` lacked the vacuous cases;
+  the sibling docstrings got the same repair) and one should (R5 a catch-all in an example, replaced by
+  a decided equation of the statement). Fixed in a `refactor:` commit. Tests: `tests/test_model_package.py`.
