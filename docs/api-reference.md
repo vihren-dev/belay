@@ -52,6 +52,14 @@ Markdown and Unicode. Lake uses local paths; the sandbox needs no Git checkout
 or network access. The build does not check the pages that doc-gen4 writes:
 that would test doc-gen4, not this repository (ADR 0009).
 
+The pinned generator has a patch for the import-query failure observed in
+PR #242 with 532 module roots. It preserves the selected roots and their
+complete import closure without raising SQLite's compound SELECT limit.
+A bounded test calls the compiled reader with large, duplicate, shared and
+cyclic inputs. Remove the patch and this regression when the pinned upstream
+query has the fix. The core cache split and single reference-generation call
+are unchanged.
+
 `just documentation-inventory` checks every authored public declaration,
 constructor and structure field in the compiled import closure. `just test`
 and `just test-full` include this gate. Missing documentation, ordinary

@@ -17,7 +17,8 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
 @pytest.mark.parametrize("fixture,axioms", [("ForeignKeyAtoms.lean", 14), ("ForeignKeyComparison.lean", 6),
                                          ("ForeignKeyCounter.lean", 13), ("ForeignKeySchemaRuns.lean", 8),
                                          ("ForeignKeyDelete.lean", 20), ("ForeignKeyInsert.lean", 34),
-                                         ("ForeignKeyUpdate.lean", 30), ("ForeignKeyUpdateNecessity.lean", 6)])
+                                         ("ForeignKeyUpdate.lean", 30), ("ForeignKeyUpdateNecessity.lean", 6),
+                                         ("ForeignKeyCoverage.lean", 33)])
 def test_independent_foreign_key_atoms(fixture: str, axioms: int, runtime_root: Path, tmp_path: Path) -> None:
     """ForeignKeyFacts, mapping transport and pragma laws compile through Belay's exported API.
 
@@ -31,6 +32,8 @@ def test_independent_foreign_key_atoms(fixture: str, axioms: int, runtime_root: 
     applies the new-row bound, repairs an orphan and shows why key uniqueness is required.
     The update fixture composes selected checks and frames unchanged keys. Its necessity
     fixture preserves stale-self-scan and stale-generated-cell counterexamples.
+    The coverage fixture connects actual assignments, selected parent mappings and mapped
+    action targets to the generic frame, including repeated columns and rowid aliases.
     Every displayed law excludes native-computation or admission axioms.
     """
     result = run_command(surface_command(runtime_root, FIXTURES / fixture, tmp_path),

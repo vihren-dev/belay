@@ -505,3 +505,55 @@ The coordinator selected published repaired PR #243 head
 `2cb4c5e3af6f59b8a6fae5a584ac4e536450c87d` for the next integration boundary;
 it includes repaired #242 and the derived-source publication without unfinished
 S4 work. No task-end or part-2-wide acceptance is claimed here.
+
+## Assignment and mapping coverage: preparation
+
+The next unit derives the UPDATE phase's omitted-check premises from the actual
+catalog-selected mappings and assignment constructors. The five proof modules
+ForeignKeyMappingCoverage, ParentCoverage, AssignmentCoverage, UpdateCoverage
+and ActionCoverage connect declared columns to selected child/parent cells,
+level-zero processing to the exact frame, literal action targets to their
+reported columns, and unassigned aliases to unchanged rowids. Each file is below
+200 lines. The generic cell premise remains available; the assignment bridge
+requires a nongenerated column only at the cell whose unchanged value it proves.
+Raw stale generated cells still need the explicit input/effect condition already
+recorded above. This unit changes no execution definition or validity atom.
+
+The focused coverage fixture applies the laws to an ordinary payload UPDATE,
+a repeated selected parent key, all three writing action forms and a rowid alias.
+It audits 27 exported theorems and six fixture laws. Together the nine FK fixtures
+will audit 164 reports. Direct Lean diagnostics checked the five modules, checked
+Verso references and fixture; all 33 new reports use only the standard logical
+axioms. The source import/glob boundary diagnostic also passed. These are local
+diagnostics against the prior runtime and do not establish integration acceptance.
+The merged source still requires dev-build and the focused Nix gate.
+
+This workspace merges reviewed FK checkpoint `62aebf43` and published repaired
+query-source head `2cb4c5e3af6f59b8a6fae5a584ac4e536450c87d`. Four documentation
+conflicts were resolved without formula changes: OutputResultsLaws and
+QueryStepOutput take the published descriptions; SimpleQuerySteps and StatementCalm
+retain the previously reviewed corrections to overbroad context claims. Lake
+module registration and the Nix fixture inventories retain both sides, excluding
+the replaced ForeignKeysHold entry. The query-source status uses the published
+record. These resolutions are included in the next independent review. There
+were no runtime-definition conflicts. No unfinished S4 ancestors are included.
+
+The prepared sequential gate is `build/agent-logs/fk-coverage-gates.sh`, with
+finite timeouts and command-local max-jobs=1. It remains queued for an explicit
+resource-slot grant. The actual row/action/trigger induction and the remaining
+statement/run/DDL matrix remain open; this is another intermediate proof boundary.
+
+The coverage gate completed on 2026-10-24 with exit 0 (owned process 19614).
+The focused Nix surface suite passed nine fixtures, 52 deselected, in 12.21 seconds:
+`/nix/store/3g9f88912zp62a3pks9gb5s47j4jhisx-sqlite-verifier-test-surface-1`.
+It checked 164 axiom reports, including all 27 new exported theorems and six
+coverage-fixture laws; only the three standard logical axioms occur. The command
+was `direnv exec . bash build/agent-logs/fk-coverage-gates.sh`, which ran
+`timeout 1200 just dev-build`, then the sandboxed focused Nix surface expression
+with timeout 1800 and command-local max-jobs=1. Logs are
+`build/agent-logs/fk-coverage-{dev-build,nix-surface}-1.log`. The local development
+build is diagnostic evidence; the Nix result establishes this merged unit's
+acceptance. Slot 1 returned to the queued CTE build on terminal completion.
+Independent review follows and includes the four documentation conflict
+resolutions, both inventories, all five coverage modules and the fixture. The
+row/action/trigger induction continues separately in `fk-engine-counter`.
