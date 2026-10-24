@@ -157,3 +157,8 @@ actual verdict results and inspect each changed prediction.
   repository directory. The docstring now states the path's actual meaning.
   This correction changes no test or model behavior; the preceding Nix checks
   remain its behavior evidence.
+- Doc correction review `20261024T151400Z-83f0c532` passed with no findings.
+  Subject boundary `83f0c532` contains the derived-source implementation, the
+  acquisition fix and its tests, without any corpus, claim or lock change.
+  The separate evidence descendant will validate the proposed claims before
+  its review. Final part-1 full/verdict acceptance is still pending.
