@@ -417,3 +417,9 @@ proof relies on it (finding 15).
 - 2026-10-24: a record of part 1 in ADR 0022, D4: `Catalog.Valid` states the CHECK condition, the alias
   schema and the repeated key; the resolver facts; the CHECK condition of slice 3 is no longer a gap.
   Tests: `just documentation-inventory`.
+- 2026-10-24: part 1 is complete. Local checks (not evidence): `just dev-verdict` on corpus-v4 (673
+  AGREE, 591 MODEL_UNSUPPORTED), corpus-v5 (2946 AGREE, 1430 MODEL_UNSUPPORTED), corpus-v50 (17 AGREE)
+  and corpus-v51 (21 AGREE); the predictions of the 53 claimed corpora are byte-identical to the baseline
+  after the rebase (`diff -r`). The review of the ADR record had no findings. Open for part 2: the
+  statement theorems of the seven atoms (they use `resolveStatement_valid`, the `_closed` forms of DROP,
+  `Database.addColumnCondition_of_admitted` and `resolveAddColumn_strictDefaultFits`).
