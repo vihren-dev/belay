@@ -1,6 +1,7 @@
 # Status: foreign-key facts and preservation
 
-Created 2026-10-24. Status: OPEN. Part 1 is in progress in the FK workspace.
+Created 2026-10-24. Status: OPEN. Split-API work is preserved in the FK workspace;
+the accepted engine correction is queued and has not started.
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
 Inspected base: PR #239, `98a07bfe`, in `vihren-dev/sqlite-verifier`.
