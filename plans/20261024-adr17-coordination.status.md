@@ -243,7 +243,9 @@ logs are in `s4/build/agent-logs/cte-publication`. Evidence and views remain act
   failures, errors or skips; source checks pass 521. Verdict
   `fdyxvw89hvk8i7sa232c6is81sczb24d` passes with 4,869 AGREE and 2,503
   UNSUPPORTED results. All 53 prediction files and 7,372 cases are byte-equal
-  to the published baseline. Task-end Nix checks pass 71; scheduled checks remain pending.
+  to the published baseline. Task-end Nix checks pass 71; scheduled report
+  `j37adzg25s32slqy03advda9hfd02dwx` passes 47 with no failures, errors or skips.
+  The complete sequential part-one/native acceptance gate exited successfully.
   Strong equivalence and composition source `51387d8e` is accepted at
   `52cd08bf`, with clean review `20261024T222747Z-51387d8e`. Its two focused
   Nix groups pass at `f0yg6digr0wiv60gjvihv6jb5x93a05s`; 101 production and
@@ -259,7 +261,7 @@ logs are in `s4/build/agent-logs/cte-publication`. Evidence and views remain act
   `2g962nijmc1fl3s99hl6d9j2yp7l1058`; installed surface checks pass 81 at
   `ypfqx5qns8bl8c16yjw36syqb5d80gwh`. A real surface-only source edit
   rebuilt zero model C objects, while the old output fails the new replay
-  check as expected. Combined task-end acceptance remains pending. S6 source
+  check as expected. Combined native-artifact acceptance is complete. S6 source
   work is frozen for final integration; FK proof work continues in isolated probes.
   [Assertions](20261024-s6-assertions.task.md) and [migration patterns](20261024-s6-migration-patterns.task.md) have clean reviews
   at `33693f10`/`56b9f410`; [automation](20261024-s6-automation.task.md) is clean at `8b118fbc`.
@@ -303,7 +305,9 @@ passed; its main CI was still running at this record.
 The frozen S6 part-one and native-cache build evidence has been copied, with
 byte/symlink verification, into `s4/build/agent-logs/s6-execution-part1` and
 `s4/build/agent-logs/model-native-artifacts`. Seven existing Nix outputs are
-rooted under `s4/build/accepted-s6-native-artifacts`. Both implementation
+rooted under `s4/build/accepted-s6-native-artifacts`. Five additional outputs
+preserve focused equivalence, combined full tests, verdict, predictions and API
+reference evidence. Both implementation
 workspaces remain until combined acceptance and publication. The equivalence
 workspace dependency audit found only direct store symlinks and no references
 to either implementation workspace.
