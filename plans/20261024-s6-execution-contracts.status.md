@@ -1,6 +1,6 @@
 # Status: S6 execution and proof contracts
 
-Created 2026-10-24. Status: OPEN. First production unit is checked; independent review follows.
+Created 2026-10-24. Status: OPEN. First production unit is checked and reviewed; later contracts remain open.
 Task: [task file](20261024-s6-execution-contracts.task.md).
 Specs: ADR17's S6 row, the owner decision of 2026-10-24 recorded below,
 and the checked S6 foundations.
@@ -103,3 +103,8 @@ add no concrete rows choices; their actual raw wrapper remains observable.
 This is a coherent-unit gate, not either acceptance part's full/verdict gate.
 Conditional/total policies, exact S4 bridges, fresh helpers, strong equivalence
 and the remaining compositional fixtures remain OPEN.
+
+Independent review `20261024T210916Z-e5d737bd` of source
+`e5d737bd4a9e50b8d58582bd3b1b2c016d99527b` found zero musts and zero shoulds.
+This coherent branch/WP unit is at rest. The task and both broader acceptance
+parts remain open until their remaining contracts and final gates are complete.
