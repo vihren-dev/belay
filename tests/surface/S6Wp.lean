@@ -44,7 +44,7 @@ def check (rejectErrors : Bool) {α : Type} : Sql α → (α → Context → Pro
         match output with
         | .oneOf results => ∀ rows ∈ results,
           check rejectErrors (rest (.rows rows)) post (state.next (.rows rows) connection)
-        | _ => True
+        | .done _ | .rows _ | .error _ | .unmodeled _ => True
 
 /-- A finite program and decidable postcondition give a decidable check. This instance
 allows kernel reduction of the concrete fixtures without an unchecked evaluation axiom. -/

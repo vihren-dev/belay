@@ -2,6 +2,8 @@ import S6Wp
 
 set_option doc.verso true
 
+/-! Connect the test-only transformer to S4 success and actual SQL execution. -/
+
 namespace S6
 open Belay.Sqlite Std.Do
 open Belay.Sqlite.Model (runScriptStep)

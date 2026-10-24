@@ -3,6 +3,8 @@ import S6WpSoundness
 set_option doc.verso true
 set_option maxRecDepth 4096
 
+/-! Check SQL triples, result-dependent branches and the full execution context. -/
+
 namespace S6.Examples
 open Belay.Sqlite Std.Do
 
@@ -81,7 +83,7 @@ def rawFails : Sql (List Output) :=
   let (statement, values) := (sql r"SELECT x FROM t LIMIT 1").statements[0]
   .exec statement values fun output => match output with
     | .oneOf _ => send (sql r"SELECT x FROM missing")
-    | _ => .pure []
+    | .done _ | .rows _ | .error _ | .unmodeled _ => .pure []
 
 /-- Checking only concrete row continuations would miss this actual failure. -/
 theorem raw_refutes : ¬ check true rawFails (fun _ _ => True) (initial sample daily) := by decide +kernel

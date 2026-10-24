@@ -3,6 +3,8 @@ import S6WpExamples
 set_option doc.verso true
 set_option maxRecDepth 4096
 
+/-! Test which observations suffice for composition of SQL programs. -/
+
 namespace S6.Equivalence
 open Belay.Sqlite
 open Examples

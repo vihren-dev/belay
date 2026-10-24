@@ -73,3 +73,12 @@ until the prototype has evidence.
   Log: `build/agent-logs/s6-surface-tests-2.log`. No package file changed, so
   the per-package dev-build gate does not apply. Local probes were diagnostic
   only; this Nix-selected fixture is the acceptance evidence.
+
+- 2026-10-24: review `20261024T140808Z-e9a0354d` found no musts and two
+  shoulds: enumerate Output constructors in the transformer and raw-wrapper
+  fixture. Both are fixed. Self-review also named the axiom allowlist and added
+  module descriptions. The same Nix surface command passed all 56 tests again
+  at `/nix/store/1rzb9hwr5s7yccpwjx2xiwbzja3bcd99-sqlite-verifier-test-surface-1`;
+  log `build/agent-logs/s6-surface-tests-3.log`. Nix's computed judge identity
+  still matches all 55 locked components. The proof and program observations
+  are unchanged. Independent review of this refactor follows.

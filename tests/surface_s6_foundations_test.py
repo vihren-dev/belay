@@ -9,6 +9,9 @@ import pytest
 from tests.runtime_support import run_command
 from tests.surface_support import FIXTURES, module_setup
 
+ALLOWED_PROOF_AXIOMS = frozenset({"propext", "Classical.choice", "Quot.sound"})
+"""Ordinary Lean logical axioms; execution assumptions and unchecked reduction are excluded."""
+
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
 
@@ -30,7 +33,5 @@ def test_s6_transformer_agrees_with_execution(runtime_root: Path, tmp_path: Path
         reports = re.findall(r"depends on axioms: \[([^]]*)\]", result.stdout)
         assert len(reports) == count, result.diagnostic()
         for report in reports:
-            assert set(filter(None, map(str.strip, report.split(",")))) <= {
-                "propext", "Classical.choice", "Quot.sound"
-            }, result.diagnostic()
+            assert set(filter(None, map(str.strip, report.split(",")))) <= ALLOWED_PROOF_AXIOMS, result.diagnostic()
         configuration["importArts"][module] = [[str(artifact)]]

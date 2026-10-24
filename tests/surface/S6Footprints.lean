@@ -3,6 +3,8 @@ import S6Equivalence
 set_option doc.verso true
 set_option maxRecDepth 4096
 
+/-! Refute statement-local frames for result-dependent SQL programs. -/
+
 namespace S6.Footprints
 open Belay.Sqlite
 
