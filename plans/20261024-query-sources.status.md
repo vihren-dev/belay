@@ -162,3 +162,20 @@ actual verdict results and inspect each changed prediction.
   acquisition fix and its tests, without any corpus, claim or lock change.
   The separate evidence descendant will validate the proposed claims before
   its review. Final part-1 full/verdict acceptance is still pending.
+- The separate draft evidence is based on subject/status boundary `8b1b26ef`.
+  It contains corpus v53, its writer and registration, 38 new mustAgree cases,
+  29 measured additions to the v4/v5 claims, and their lock. The report under
+  `reports/20261024-query-sources-part1/` classifies all 76 changed predictions.
+- The Nix evidence verdict passed at
+  `/nix/store/6h8hi4b2c0z3fkxjamwix6508l30dz9i-sqlite-verifier-verdict`:
+  v4 has 675 agreements, v5 has 2,973, and v53 has 38 agreements plus four model
+  restrictions. Every prior agreement and claim survives. There are no
+  disagreements or harness errors. The combined predictions at
+  `/nix/store/qjij3iya9bpd9mfl0mmln91wnyqcb80q-sqlite-verifier-predictions`
+  add v53 and preserve all 53 previous corpus files byte-for-byte.
+- The Nix writer round trip passed at
+  `/nix/store/9dzarjyyg9iq1r1n029b04a7rbbw18ja-sqlite-verifier-test-query-source-writer-1`;
+  complete validation of the actual v53 shard passed at
+  `/nix/store/hxi4kmq91n1vpl13nsjbi9cnkj6qw8yq-sqlite-verifier-test-query-source-corpus-1`.
+  The evidence remains unpublished and mutable for CTE/view additions. Its
+  independent review and final part-1 full/verdict gates follow this commit.
