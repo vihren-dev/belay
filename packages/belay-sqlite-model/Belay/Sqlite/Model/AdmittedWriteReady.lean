@@ -30,8 +30,8 @@ theorem runStatement_insert_ready {clock : Int} {counters : Counters} {parameter
 
 /-- For every clock value, counters, parameter list, plain UPDATE and database, and every table at the
 target: if the run of {name}`runStatement` is ready, the check {name}`LiteralData.updateReady` passes for
-the table, the assignments and the updated table, unless the update fails with a refused rowid alias
-({name}`LiteralData.updateMismatch`). Proof sketch: without rules the support check of the run is a
+the table, the assignments and the updated table. The statement does not depend on
+{name}`LiteralData.updateMismatch`. Proof sketch: without rules the support check of the run is a
 conjunction that starts with this check. -/
 theorem runStatement_update_ready {clock : Int} {counters : Counters} {parameters : List Value} {target : Nat}
     {assignments : List (Nat × Resolved.Expr)} {filter : Option Resolved.Expr}

@@ -112,9 +112,9 @@ theorem movedRowid_aliased {alias : Option Nat} {row : Row} {rowid : Int} {posit
   cases same
   simpa using cell
 
-/-- For every context, table, assignments, filter and row of the table that the filter selects: if
-the rows of the table are aliased, the column of the rowid alias is not generated, and
-{name}`updateMismatch` is false, then {name}`movedRowid` of {name}`assign` of the row is aliased.
+/-- For every context, table, assignments, filter and row {lit}`old` of the table that the filter selects:
+if {lit}`old` is aliased, the column of the rowid alias is not generated, and
+{name}`updateMismatch` is false, then {name}`movedRowid` of {name}`assign` of {lit}`old` is aliased.
 Proof sketch: if no assignment sets the alias, its cell stays the integer rowid
 ({name}`assignFrom_unassigned`); if one sets it, {name}`updateMismatch` is false only when the cell
 is an integer; then {name}`movedRowid_aliased`. -/
