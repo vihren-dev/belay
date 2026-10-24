@@ -4,18 +4,23 @@ set_option doc.verso true
 
 namespace Belay.Sqlite.Model
 
+/-- The scope of a query of one table that the catalog has at a position: one source with the alias
+of the reference, or else the name that the catalog gives the table, the columns of the table, and
+whether it has a rowid. -/
+def tableScope (catalog : Catalog) (reference : Syntax.TableReference) (position : Nat) (table : CatalogTable) : Scope :=
+  Scope.single (reference.alias.getD ((catalog[position]?.map (·.name)).getD reference.table)) table.columns
+    (!table.withoutRowid)
+
 /-- A {lit}`FROM` clause that names one table, with no table-function arguments and no joins, resolves
 when the catalog has the table: it gives one inner source on the catalog position of the table, and one
-scope entry with the alias (or the catalog name of the table), the columns of the table, and whether it
-has a rowid. The catalog may be any catalog.
+scope of the table ({name}`tableScope`). The catalog may be any catalog.
 
 Proof sketch: unfold {name}`resolveSources` and the table lookup, and rewrite with the two hypotheses. -/
 theorem resolveSources_table (catalog : Catalog) (reference : Syntax.TableReference) (position : Nat) (table : CatalogTable)
     (arguments : reference.arguments = none) (found : catalog.findTable reference.table = some (position, table)) :
     resolveSources catalog (some reference) [] = .ok ([{ item := .table position, kind := .inner, condition := .none }],
-      [{ name := reference.alias.getD ((catalog[position]?.map (·.name)).getD reference.table), columns := table.columns,
-         hasRowid := !table.withoutRowid }]) := by
-  simp [resolveSources, resolveReference, arguments, resolveTableReference, found, maximumJoinTables, Scope.place, mergeJoins, resolveAll, resolveAllFrom, Bind.bind, Except.bind, liftM, monadLift, MonadLift.monadLift, Except.mapError, joinOperator, Functor.map, Except.map]
+      tableScope catalog reference position table) := by
+  simp [resolveSources, resolveReference, arguments, resolveTableReference, found, maximumJoinTables, Scope.place, mergeJoins, resolveAll, resolveAllFrom, Bind.bind, Except.bind, liftM, monadLift, MonadLift.monadLift, Except.mapError, joinOperator, Scope.single, tableScope, Functor.map, Except.map]
 
 /-- The one inner source without a condition, which {name}`resolveSources_table` gives, resolves to the
 first source of the table, {name}`Resolved.QuerySource.first`, for any scope and quote setting.

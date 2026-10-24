@@ -23,6 +23,7 @@ import Belay.Sqlite.Queries
 import Belay.Sqlite.QueryLaws
 import Belay.Sqlite.QueryBridge
 import Belay.Sqlite.SqlCommand
+import Belay.Sqlite.SelectOneFrom
 
 /-! The SQLite surface. It reads SQL text while a Lean file elaborates, with the SQLite parser
 library in the Lean process, and translates the parse tree to the model's statement syntax with
