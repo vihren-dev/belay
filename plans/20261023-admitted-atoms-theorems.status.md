@@ -541,9 +541,9 @@ proof relies on it (finding 15).
   `rowsKeys_satisfies` and `dropKeys_holds`, so the four statement theorems cover every constructor.
   The example of finding 16 (`AdmittedAtomsNestedExamples`) is now a statement that is not ready and
   ends as `unmodeled` with the input database. The change touches `RowInsert.lean` and `ForeignKeyRows.lean`,
-  which mutants copy: the texts of all their mutants still match (`tests/mutant_guards_test.py`), and
-  the tests `test_every_counter_mutant_changes_a_verdict`, `test_every_foreign_key_mutant_changes_a_verdict`
-  and `test_every_pragma_mutant_changes_a_verdict` ran by name. The check that the change keeps every
+  which mutants copy: `tests/mutant_guards_test.py` and the tests `test_every_counter_mutant_changes_a_verdict`,
+  `test_every_foreign_key_mutant_changes_a_verdict` and `test_every_pragma_mutant_changes_a_verdict` are the
+  tests of the touched mutants. The check that the change keeps every
   prediction (`just dev-verdict` for all claimed corpora and `diff -r` of the predictions of the given
   files) is a local check of this change; the Nix results are recorded when they are available. Tests:
   `tests/test_model_package.py`,
