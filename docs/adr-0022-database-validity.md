@@ -183,7 +183,7 @@ theorems of "rowids in range", "rows wide", "rows stored" and "rows aliased" ass
 and "rows aliased" lists "catalog supported". The theorems of `runScriptFrom` have no hypothesis on the
 statements of the script. The resolver facts of part 1 give the conditions: `Resolved.Statement.SchemaLink`
 (ADD COLUMN: the default fits the strict type; DROP: `Catalog.DropClosed`) is a fact of every successful
-resolution (`resolveStatement_schemaLink`), stated positively because CREATE TRIGGER IF NOT EXISTS of an
+resolution against a valid catalog (`resolveStatement_schemaLink`, with `state.catalog.Valid limits`), stated positively because CREATE TRIGGER IF NOT EXISTS of an
 existing trigger resolves to a DROP of no object. The `runScriptFrom` theorems of the constraint atoms assume
 `Database.AdmittedWith profile atom` (admitted, with the atom), a context in execution mode, and the limits
 of the context equal to those of the profile; `Database.ConstraintAtoms` together give the corollary
