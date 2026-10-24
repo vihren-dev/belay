@@ -41,7 +41,6 @@ workspace filesystem. Reserve at most two heavy build/check processes here.
   for other types, following pinned Verso's grammar.
 - S4's exact query-success iff describes the default run. Keep sufficient
   bridges to universal `Succeeds`; no universal-to-default converse is claimed.
-
 - Correct the shared FK NULL helper to use the selected child projection,
   including repeated columns; keep declaration fallback when no mapping exists.
   Add native regressions and revise the default split API/proofs.
@@ -91,50 +90,53 @@ remove the prior planning blocks; they are not implementation-completion claims.
   `fd0f0c1e` is also reviewed. GROUP/index follow-up `82f70442`, mixed-value SUM
   bound `3811b3f4`, uniqueEmail fixture `a003ddcf` and stored range bridge
   `3583de8a` have clean reviews/Nix checks. Metadata law `e3f48d3b` is reviewed
-  clean, with Nix model `81v66kv633za3q994jjiiml6lvsaz7q4`. Balance proof and
-  part-2 acceptance remain, then part 3's removal of Run.checked. Named-source
-  proof extension `656ab790`/`1dee994a` is reviewed and checked in Nix.
-- `s6_prerequisite_audit` owns `sqlite-verifier-query-sources`, based on S4 part 1.
-  Source execution `93767a4d`/`15a252a8` and metadata `649a3021`/`bc79e3e7`
-  have clean reviews and Nix model checks. Translation/resolution `c64d8b50`
-  is reviewed clean; Nix model is `wnxni6bvnfd3cisq5nndg95qspgbyh94` and
-  predictions `xar2y93h71ffx1ccrjvy906936hk4ahj`. Separate draft-v53 evidence
-  `873a1473` is reviewed clean; verdict `6h8hi4b2c0z3fkxjamwix6508l30dz9i`
-  passes, including 38 new agreements and 4 explicit unsupported cases. Full
-  acceptance repaired stale mutant targets and refusal fixtures (`42812ff3`,
-  clean review/focused Nix); final full/verdict is next. CTEs/views follow.
+  clean, with Nix model `81v66kv633za3q994jjiiml6lvsaz7q4`. Balance `2175f989`
+  is reviewed; all 62 surface tests passed at `vjvlvym2mp4lqjighnsc7q1qijbq1c2w`.
+  Part-2 full/verdict remains. Part 3 starts in `sqlite-verifier-s4-run`.
+  Named-source extension `656ab790`/`1dee994a` is reviewed and checked in Nix.
+- `s6_prerequisite_audit` completed derived-source part 1 at subject `16bd87a3`;
+  separate evidence head is `5d69e3fa`. Combined `c8db1a54` passed full 854 at
+  `m64rgzasy2aqvp6d421pk5yh0v4654b9` and verdict `6nazink0rsrzhv7458rs3vgfs63c48dg`.
+  Predictions `q4qrigjpa82cg89ggzkvinbnvmgi7pq6` match the earlier measured
+  54 files. Existing corpora gain 29 agreements; draft v53 has 38 agreements
+  and 4 restrictions. No disagreement/harness error. Subject excludes judge changes.
+  CTE/view work resumes in `sqlite-verifier-query-sources-cte`, with use-site
+  outer bindings preserved. Its combined integration must compile the balance fixtures.
 - `text_build_boundaries` owns `sqlite-verifier-s6-foundations` and resumed FK
   work. The S6 prototype consumes reviewed S4 `00c8707f` without rebasing.
-  Implementation `e9a0354d` and refactor `6c26ac21` have resolved/clean reviews;
-  56 focused Nix surface tests pass at
+  Implementation `e9a0354d`/`6c26ac21` is reviewed; 56 focused Nix tests pass at
   `/nix/store/1rzb9hwr5s7yccpwjx2xiwbzja3bcd99-sqlite-verifier-test-surface-1`.
-  Its 28 audited declarations use only ordinary logical axioms. Design
-  refinement `a3cffcb5` and decision record `c838d5cc` have clean reviews.
+  Its 28 audited declarations use only ordinary logical axioms; design
+  `a3cffcb5` and decision record `c838d5cc` have clean reviews.
   DONE at `eb0a16a9`, clean completion review: full 813 at
   `vg3sz4iz4q58vrci7ddrxn9bmv6p7pbi`, Nix 67, scheduled 47, verdict and all 53
   predictions unchanged. It awaits S4-based publication and does not implement
   production S6. Root copied its reviewed task/status; source workspace stays.
 - The FK workspace is `sqlite-verifier-fk-atoms`. Revised selected action scope
   is carried in `1a10a3c8`, follow-up `01a02bef` reviewed clean. Split-API and
-  action implementation is committed at `89267008`; 35 Nix native cases pass. FK owns
-  atom/check/frame modules, Database exports and reserved manifests, plus
+  action implementation `89267008` passed 35 Nix native cases and four mutants.
+  Complete review coverage found documentation corrections; the first full gate
+  found a duplicate catalog lemma. Reviewed `3df8e641` reuses the existing law;
+  its full/verdict rerun remains pending. FK owns atom/check/frame modules and exports,
   ForeignKeyPlan, TriggerClosure and ParentKeys (query-source confirmed).
-  S4 supplied exact pragma query laws. Lookup/scan consistency clarification
-  `98e1e8f1` is reviewed; baseline predictions are `4k77z378vnagzwx5448yqz0686d58cld`.
+  S4 supplied exact pragma laws. Baseline predictions: `4k77z378vnagzwx5448yqz0686d58cld`.
+  Part-2 schema/run and global row-counter laws use `sqlite-verifier-fk-preservation`.
   No shared ancestor may be rebased while descendants are active.
   Corpus v53 is reserved for query-sources, v54 for FK; each uses a separate
   judge/evidence workspace and protected PR after measured model comparisons.
 
-S4 owns `sqlite-verifier-product-s4-guide`, originally based on `17666ac9`.
-Its reviewed explanatory prose and rebuild wording are published in PR #8;
-UniqueEmail proof `efb4e6ee` is reviewed, awaiting installed-consumer Nix evidence
-before PR8 update; balance remains open. The product default workspace contains
-unpublished S2/S3 guide changes; final acceptance must reconcile these selectively.
+S4 retains `sqlite-verifier-product-s4-guide` for its final installed-artifact check.
+Both email copies and the full balance proof compile against Nix surface
+`qz96vr9hh9vghmw4hihvvl2lwh4dmdxf`, with only ordinary logical axioms; PR #8 is updated.
+Final acceptance must selectively reconcile unpublished S2/S3 product-default changes.
 
 The reviewed one-line surface helper fileset fix `b9008683` was carried into
 S6. Its initial missing-helper Nix failure is resolved. At most two heavy checks
-run: query-source owns slot 1; S4 owns slot 2, then hands it back to FK.
-No agent opens a herdr tab before the owner's Monday deadline.
+run: root publication gate `43594` owns slot 1; FK rerun `36195` owns slot 2,
+then S4. No agent opens a herdr tab before the Monday deadline.
+Root publication workspaces are `sqlite-verifier-s4-query-publication` (reviewed
+`77621ead`, full/verdict/Nix/scheduled pending) and `sqlite-verifier-query-source-publication`
+(reviewed `63299f66`, gates pending). They preserve shared ancestors and exclude v53.
 
 ## Published work and cleanup
 
@@ -151,17 +153,15 @@ No agent opens a herdr tab before the owner's Monday deadline.
   published `c1471940` (PR #6): DONE. Nine pinned native checks passed; two
   Verso-header corrections preserve the SQL bodies. No unrelated unpublished
   ancestor was included in publication.
-- Private product PR #8, `docs/guide-success-and-inputs`, head `1ae76380`, base
-  #7: reviewed S4 explanatory prose and DONE rebuild wording. Native 3.51.0
-  confirms the metadata counterexample; all fenced SQL bodies are unchanged.
+- Private product PR #8, `docs/guide-success-and-inputs`, head `d3aeb407`, base
+  #7: reviewed email/balance proofs, success prose and DONE rebuild wording.
+  Native metadata and installed-consumer checks are recorded in its private status.
 
-All three herdr review tabs and waits are closed by owner request:
-`w1:t3T`/78895, `w1:t3V`/78368 and `w1:t3W`/56689. Each returned
-`closed_without_review`; no approval is inferred. Their clean, pushed workspaces
-text-build-boundaries, prediction-source-filter and profile-publication were
-forgotten/removed after confirming no active process and remote reachability.
-The earlier completed profile-guide and unused empty editor workspace were
-also removed. Prior pushed cleanup removed adr19s2/adr19s3/adr22s2/adr22s3/
+Herdr waits `w1:t3T`/78895, `w1:t3V`/78368 and `w1:t3W`/56689 returned
+`closed_without_review`; no approval is inferred. Clean, pushed workspaces
+text-build-boundaries, prediction-source-filter and profile-publication were removed
+after confirming no active process and remote reachability. Earlier cleanup removed
+profile-guide, the unused editor workspace, adr19s2/adr19s3/adr22s2/adr22s3/
 adr22s4/errev/envfns. Protected s4chk and unrelated workspaces remain. S4's
 completed schema/observation workspaces await publication before removal.
 
