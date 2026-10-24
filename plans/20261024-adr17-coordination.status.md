@@ -63,7 +63,7 @@ All three later recommendations are accepted: an explicit fresh-run helper,
 selected [FK action targets](20261024-foreign-key-atoms.task.md), and explicit
 interface-scoped simulation beside the full-state relation. Expansion/write
 orders have equal rows but total_changes
-3 versus 4; retain that full-state refutation. No specification question is pending.
+3 versus 4; retain that full-state refutation.
 
 ## Resolved findings
 
@@ -132,8 +132,17 @@ Derived #243 passed local full 853/Nix 70/scheduled 47 and verdict 4,867/2,505,
 with all 53 predictions matching accepted evidence. Linux CI #242/#243 failed
 API reference generation: 532 roots exceed doc-gen4's compound-query limit.
 `s4_part1` owns reviewed task `c58f8e31` in `reference-compound-limit` on #242;
-S7 work is safely frozen. Root will update both PRs by descendants and verify
-actual reference builds. No permission or specification question is pending.
+S7 work is safely frozen. The patched compiled reader passed 12 Nix cases,
+including 532/640 roots, at `x66x56cw6qxvd72k056gldkvy7r0qv9i`; the real
+532-module reference build is running. Root prepared `reference-stack-publication`
+on #243, with matching shell configuration and successful authorized direnv allow.
+Both PRs will receive descendants without rewriting shared ancestors.
+
+One owner decision is pending: native views invalidate the guide's unique-email
+and balance preconditions. Add explicit physical-table premises (recommended),
+or add SQL catalog-kind guards. Only affected view contracts are paused;
+CI repair and CTE work continue. Native cases are retained in the workspace
+research notes, `views_native_20261024.py` and `.out`.
 ## Published work and cleanup
 
 - Public [PR #240](https://github.com/vihren-dev/sqlite-verifier/pull/240),
