@@ -121,9 +121,9 @@ theorem Expr.eval_inQuery (context : EvalContext) (row : List Value) (operand : 
       inValue affinity collation negated (operand.eval context row)
         ((context.subqueries index row).rows.filterMap List.head?) := rfl
 
-/-- The fault of {lit}`x [NOT] IN (q)` on a row is the fault of the operand joined with that of the
-subquery for the row when its rows are certain, else {lean}`Fault.may`. Proof sketch: the definition
-computes. -/
+/-- The fault of {lit}`x [NOT] IN (q)` on a row is the fault of the operand, joined with the fault of
+the subquery for the row when the rows of the subquery are certain, and joined with {lean}`Fault.may` when
+they are not. A must-fault of the operand stays a must-fault. Proof sketch: the definition computes. -/
 theorem Expr.fault_inQuery (context : EvalContext) (row : List Value) (operand : Expr) (index : Nat)
     (affinity : Option Affinity) (collation : Collation) (negated : Bool) :
     ((Expr.inQuery operand index affinity collation negated).evaluate context row).2 =
