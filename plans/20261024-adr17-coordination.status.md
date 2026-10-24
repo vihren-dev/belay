@@ -48,6 +48,10 @@ workspace filesystem. Reserve at most two heavy build/check processes here.
   including its error ordering and partial writes.
 - S7 keeps exact SQLite metadata and native Lake input tracking. Correct the
   blanket promise that whitespace/comment edits never rebuild importers.
+- S7 optionally measures named theorem and proof-valued definition bodies,
+  including ordinary and native mutual declarations. Report other coverage
+  explicitly and compare compatible counts with a user-set CI growth bound.
+  The corrected guide is published; production coverage remains open.
 
 The owner accepted all three remaining recommendations on 2026-10-24 and
 resumed the goal. S4 recorded its default-run decision in reviewed `73b9f65b`.
@@ -85,8 +89,11 @@ remove the prior planning blocks; they are not implementation-completion claims.
   in Nix. Explicit certification and policy follow-up `76504977` passed 11 Nix
   checks and clean review. Sampler `593caf88` passed 12 Nix checks, including
   the row-bound regression. Inference `69cd41be` passed 13 Nix checks and clean
-  review, including typed unused witness fields. Replay is next in slot 1;
-  shared commands and automatic checking remain open.
+  review, including typed unused witness fields. Replay passed 14 Nix checks
+  at `qh5lxq6ycrswh0bfzaym8cjc3yc16fk4` (`27180`, exit 0), including the
+  supported DROP/helper interference regression. Source review precedes
+  part-1 full/verdict acceptance in slot 1; shared commands and automatic
+  checking remain open.
 - `s6_prerequisite_audit` completed derived-source part 1, published in #243.
   Separate evidence head `5d69e3fa` retains draft v53's 38 agreements and
   four restrictions. Combined acceptance is recorded in its task status.
@@ -95,8 +102,13 @@ remove the prior planning blocks; they are not implementation-completion claims.
   unchanged; two become agreeing and 69 retain unsupported with changed reasons.
   All changes are classified; publication reviews are resolved. Views remain
   OPEN. Origin-metadata source `86e15af9` passed 17 Nix fixtures and unchanged
-  53-file predictions (`30578`, exit 0). Review has no musts; two small fixes
-  accompany the metadata-only normalization unit, whose slot 2 dev gate is live.
+  53-file predictions (`30578`, exit 0). Normalization `858e0a2b`, with
+  review/status head `c0e288b5`, fixes both origin review findings and has clean
+  review. Its 17 Nix fixtures passed at `yy0xf2n1yrg9assy7y31bfda0v6ign9q`;
+  all 53 prediction files/7,372 cases remain identical. The next isolated
+  catalog/source workspace joins this head with published #248 and carries
+  only the checked exact `CatalogValidDrop` lookup law/caller from `135b8338`.
+  It has no heavy process; S6 has slot 2 for its first production unit.
 - The S6 foundation prototype is DONE in PR #246 at `334d9645`, above #245.
   Original full 813/Nix 67/scheduled 47 and verdict passed. The final focused
   integration checks all five modules and 28 audits against S4; review is clean.
@@ -131,7 +143,8 @@ The combined full suite was not rerun for this prerequisite publication.
 The API-reference repair is DONE in #242 `b6864447` and #243 `2cb4c5e3`:
 12 Nix reader cases cover 0 through 640 roots; complete 532/538-module builds
 passed. Their task statuses retain full/Nix/scheduled evidence. CI and Verdict
-are green for #242 through #247. #248 Verdict is green; CI is running.
+are green for #242 through #248. At #248 head `e3d6aa38`, CI `40129182805`
+and Verdict `40129182818` both completed successfully.
 Both repair workspaces are removed; their logs/report XML are archived under S4 build/.
 S7 prototype PR #245 `0569149b` is DONE: full 872/Nix 70/scheduled 47; accepted scope reviewed.
 ## Published work and cleanup
@@ -178,7 +191,8 @@ logs are in `s4/build/agent-logs/cte-publication`. Evidence and views remain act
 
 - [S5](20261024-surface-s5.task.md) is assigned to `s4_part1` in
   `s5-counterexamples` on published S4/S7. Plausible compatibility passed;
-  certification and sampling are checked; inference is in progress.
+  certification, sampling, inference and replay have focused Nix acceptance;
+  part-1 review/full/verdict and shared checking remain open.
 - [Query sources](20261024-query-sources.task.md) is active as above; the
   [table rebuild task](20261024-table-rebuild.task.md) now has clean follow-up
   review `20261024T142117Z-79fd6a8b` and waits for its final view/CTE design.
