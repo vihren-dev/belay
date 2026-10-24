@@ -362,3 +362,12 @@ proof relies on it (finding 15).
   R7 no statement that the new conditions are rules of the model's catalog). Fixed in the same
   commit: `Option.any`, the new examples module `AdmittedAtomsExamples.lean` (part 1: tables that
   meet and break each new condition, checked by the kernel), docstrings. Tests: `tests/test_model_package.py`.
+- 2026-10-24: part 1, commit "the laws of Catalog.Valid": five new modules, no resolver proof yet.
+  `CatalogValidLaws.lean`: `Catalog.supported_iff` (unique names and every object supported), the
+  objects of a valid catalog, and `Catalog.Valid.append` (CREATE TABLE, INDEX, TRIGGER).
+  `CatalogTableLaws.lean`: `CatalogTable.supported_iff`, the check as seven facts
+  (`CatalogTable.SupportedFacts`). `CatalogValidAddColumn.lean` and `CatalogValidSet.lean`:
+  `CatalogTable.supported_addColumn`, `CatalogIndex.supported_mono`, `Catalog.Valid.addColumn`.
+  `CatalogValidDrop.lean`: `Catalog.DropClosed` (every kept index and trigger keeps its table; it gives
+  `Catalog.DropCondition`) and `Catalog.Valid.drop`. Examples in `AdmittedAtomsExamples.lean`,
+  including a drop of a table alone, which breaks the closure. Tests: `tests/test_model_package.py`.
