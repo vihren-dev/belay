@@ -300,7 +300,20 @@ View catalog foundation `59dc5215` and anchor repair `a890097f` are accepted
 at `d1b28daf`, with clean final review `20261024T215844Z-a890097f`.
 All five affected targeted Nix mutation checks pass. Stored-view expansion is
 being implemented in its separate descendant workspace. PR #249 Verdict CI
-passed; its main CI was still running at this record.
+and Linux main check passed. CI run `40136011925` failed in Linux general
+mutants: query, fromless and JSON-function groups reported failure before the
+overall timeout. Function and table mutant jobs passed. PR #248's nominally
+successful general-mutant job skipped execution after selecting infrastructure
+scope, so it is not a passing mutant baseline.
+
+The original `fromless_star_accepted` mutant survives its unchanged native
+target in a focused Nix reproduction (derivation
+`6hlzam2x2342xbc0awm5m2x9x8z0w38r`, 82.17 seconds). Earlier `starIssue`
+validation prevents the target from reaching the mutated `resolveResultColumn`
+guard. Both guards serve existing APIs or error precedence. A diagnostic will
+check one logical fault applied at both sites; no production resolver or harness
+change has been made. Query and JSON-group failures still need exact diagnosis.
+The original CI logs are retained under `s4/build/agent-logs/ci24{8,9}-mutants-linux.log`.
 
 The frozen S6 part-one and native-cache build evidence has been copied, with
 byte/symlink verification, into `s4/build/agent-logs/s6-execution-part1` and
