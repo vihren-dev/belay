@@ -24,7 +24,8 @@
     "tests/column_default_read_test.py",
     "tests/column_extension_test.py",
     "tests/failed_catalog_observation_test.py",
-    "tests/add_column_defaults_test.py"
+    "tests/add_column_defaults_test.py",
+    "tests/conformance_query_sources_test.py"
   ],
   "frozen": [
     "tests/conformance_progress_views_test.py",
@@ -63,7 +64,8 @@
     "tests/conformance_continuing_case_test.py",
     "tests/conformance_counters_test.py",
     "tests/conformance_run_on_test.py",
-    "tests/conformance_counters_record_test.py"
+    "tests/conformance_counters_record_test.py",
+    "tests/guide_view_contract_test.py"
   ],
   "sample": [
     "tests/conformance_tiers_test.py",
@@ -102,7 +104,8 @@
   ],
   "mutants": [
     "tests/conformance_resolve_mutants_test.py",
-    "tests/conformance_query_mutants_test.py"
+    "tests/conformance_query_mutants_test.py",
+    "tests/conformance_query_source_mutants_test.py"
   ],
   "tableMutants": [
     "tests/conformance_table_mutants_test.py"
@@ -123,6 +126,7 @@
     "tests/surface_programs_test.py",
     "tests/surface_parser_test.py",
     "tests/surface_layers_test.py",
-    "tests/surface_translation_checks_test.py"
+    "tests/surface_translation_checks_test.py",
+    "tests/proof_cost_test.py"
   ]
 }

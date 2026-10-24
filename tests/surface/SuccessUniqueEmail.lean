@@ -1,31 +1,15 @@
 import Belay
 
-/-! The corrected Level 2 email example proves the exact SQL precondition plus a free
-index name. The SQL claim itself supplies table and column existence. -/
+set_option doc.verso true
+
+/-! The corrected Level 2 email example requires a physical customers table, the SQL
+uniqueness guard and a free index name. The guard supplies email-column existence. -/
 
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database
 
 /-- The guide precondition: each NOCASE email group has at most one row. -/
 def noDuplicateEmails : Script := sql r"SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM customers GROUP BY email COLLATE NOCASE HAVING count(*) > 1)"
-
-/-- A missing customers table makes the grouping claim false. Proof sketch: resolution
-gives a prepare error, which contradicts Holds. -/
-theorem missing_customers (db : Database)
-    (missing : db.raw.catalog.findTable (name! "customers") = none) :
-    ¬ Holds noDuplicateEmails db := by
-  have application : reservedName (name! "customers") = false := by decide
-  have noFunction : eponymousName (name! "customers") = false := by decide
-  have resolved : resolveStatement runContext db.raw.connection.resolveState
-      noDuplicateEmails.statements[0].1 =
-      .ok (.prepareError (.noSuchTable (name! "customers")), db.raw.connection.resolveState) := by
-    simp [noDuplicateEmails, resolveStatement, resolveSelect, Connection.resolveState, Database.Raw.connection,
-      subqueryScopes, scopeOrder, compoundOf, subqueryScope, Scope.columns,
-      resolveSources, resolveReference, resolveTableReference, missing, maximumJoinTables,
-      prepareError, ResolveState.withCatalog, Bind.bind, Except.bind, Except.mapError,
-      Except.map, Functor.map, application, noFunction, Pure.pure, Except.pure, starIssue, SourceIssue.under]
-  intro holds
-  exact holds.not_fails (Fails.of_prepareError (script := noDuplicateEmails) (isQuery := by rfl) rfl resolved)
 
 /-- For every existing email column, the explicit NOCASE grouping term resolves to
 that column under NOCASE. Proof sketch: resolve the column, then its explicit collation. -/
@@ -82,26 +66,28 @@ theorem missing_email (db : Database) (position : Nat) (table : CatalogTable)
 /-- The unique email index of the guide. -/
 def uniqueEmail : Script := sql r"CREATE UNIQUE INDEX customers_email ON customers (email COLLATE NOCASE)"
 
-/-- For every database where the guide grouping query holds and the index name is free,
-the email index succeeds in every complete environment. Proof sketch: the grouping claim
-excludes a missing table or column; the grouping law excludes key conflicts, which supplies
-the exact CREATE INDEX success conditions. -/
-theorem uniqueEmail_ok : Succeeds uniqueEmail (fun db => Holds noDuplicateEmails db ∧
+/-- For every database with a physical customers table, where the guide grouping query
+holds and the index name is free, the email index succeeds in every complete environment.
+Proof sketch: the table premise supplies the source, the grouping claim excludes a missing
+email column, and the grouping law excludes key conflicts. These facts supply the exact
+CREATE INDEX success conditions. -/
+theorem uniqueEmail_ok : Succeeds uniqueEmail (fun db =>
+    (db.catalog.findTable (name! "customers")).isSome = true ∧ Holds noDuplicateEmails db ∧
     db.catalog.find (name! "customers_email") = none) := by
   apply (Succeeds.iff_createIndex (script := uniqueEmail) (head := rfl) _).mpr
-  intro db holds
+  rintro db ⟨tablePresent, holds, freeName⟩
   cases found : db.raw.catalog.findTable (name! "customers") with
-  | none => exact False.elim (missing_customers db found holds.1)
+  | none => simp [Belay.Sqlite.Database.catalog, found] at tablePresent
   | some pair =>
     rcases pair with ⟨position, table⟩
     cases column : columnPosition table.columns (name! "email") with
-    | none => exact False.elim (missing_email db position table found column holds.1)
+    | none => exact False.elim (missing_email db position table found column holds)
     | some index =>
       have groups := (Holds.iff_selectOne_noDuplicateKeys (head := rfl) (count := rfl)
         (namedSource := rfl) (arguments := rfl) (found := found) (groupResolves := group_nocase column db position)
-        (keyCalm := Resolved.Expr.calm_column index)).mp holds.1
+        (keyCalm := Resolved.Expr.calm_column index)).mp holds
       refine ⟨position, table, [{ term := .column index, collation := .nocase }], none,
-        found, by decide, by decide, holds.2, ?_, rfl, ?_⟩
+        found, by decide, by decide, freeName, ?_, rfl, ?_⟩
       · have coll : Collation.named? (name! "NOCASE") = some .nocase := rfl
         simp [indexKeys, indexTerm, column, coll, Syntax.Expr.collationIn, Syntax.Expr.explicitCollation,
           Functor.map, Except.map, Except.mapError, Bind.bind, Except.bind, Pure.pure, Except.pure]
@@ -112,7 +98,8 @@ theorem uniqueEmail_ok : Succeeds uniqueEmail (fun db => Holds noDuplicateEmails
 
 /-- The corrected condition holds on a table whose two emails differ under NOCASE. -/
 def distinctEmails : Database := db! r"CREATE TABLE customers (email TEXT); INSERT INTO customers VALUES ('a@x'), ('b@x')"
-example : Holds noDuplicateEmails distinctEmails ∧ distinctEmails.catalog.find (name! "customers_email") = none := by
+example : (distinctEmails.catalog.findTable (name! "customers")).isSome = true ∧
+    Holds noDuplicateEmails distinctEmails ∧ distinctEmails.catalog.find (name! "customers_email") = none := by
   decide +kernel
 example : (distinctEmails.run uniqueEmail).outputs.allOk = true := by decide +kernel
 

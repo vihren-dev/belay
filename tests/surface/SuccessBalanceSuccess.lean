@@ -55,18 +55,6 @@ theorem balance_of_bounds (db : Database) (a : Value) (position cents account : 
     simp only [List.length_map]
     omega
 
-/-- For every database without a ledger table, the guard does not hold because resolution
-gives a prepare error.
-Proof sketch: The missing-table preparation error contradicts the row-bearing query claim. -/
-theorem missing_ledger (db : Database)
-    (missing : db.raw.catalog.findTable ledgerRef.table = none) : ¬ Holds balanceGuard db := by
-  have resolved : resolveStatement runContext db.raw.connection.resolveState balanceGuard.statements[0].1 =
-      .ok (.prepareError (.noSuchTable ledgerRef.table), db.raw.connection.resolveState) :=
-    resolveStatement_select_of_resolveSelect runContext db.raw.connection.resolveState mainSyntax balanceQueries
-      rfl _ (guard_select_missing db.raw.catalog missing)
-  intro holds
-  exact holds.not_fails (Fails.of_prepareError (script := balanceGuard) (isQuery := by rfl) rfl resolved)
-
 /-- For every database with the ledger and a table shadowing pragma_table_info, the guard
 does not hold. Proof sketch: its resolution restriction produces an output without rows. -/
 theorem shadowed_pragma (db : Database) (position shadow : Nat) (table other : CatalogTable)
@@ -100,14 +88,16 @@ theorem missing_cents (db : Database) (position : Nat) (table : CatalogTable)
   exact holds.not_fails (Fails.of_prepareError (script := balanceGuard) (isQuery := by rfl) rfl resolved)
 
 /-- For every account value, the balance query succeeds in every complete environment on
-every database where the corrected SQL guard holds.
-Proof sketch: exclude missing or shadowed schema cases, derive the account column and numeric
-row bounds from the guard, then apply the SUM bound and query-success bridge. -/
-theorem balance_ok (a : Value) : Succeeds (balance a) (Holds balanceGuard ·) := by
+every database with a physical ledger table where the corrected SQL guard holds.
+Proof sketch: the table premise supplies the source; exclude a shadowed pragma, derive the
+account column and numeric row bounds from the guard, then apply the SUM bound and
+query-success bridge. -/
+theorem balance_ok (a : Value) : Succeeds (balance a) (fun db =>
+    (db.catalog.findTable ledgerRef.table).isSome = true ∧ Holds balanceGuard db) := by
   apply Succeeds.of_holds (query := by rfl)
-  intro db holds
+  rintro db ⟨tablePresent, holds⟩
   cases found : db.raw.catalog.findTable ledgerRef.table with
-  | none => exact False.elim (missing_ledger db found holds)
+  | none => simp [Belay.Sqlite.Database.catalog, found] at tablePresent
   | some pair =>
     rcases pair with ⟨position, table⟩
     cases shadows : db.raw.catalog.findTable pragmaRef.table with

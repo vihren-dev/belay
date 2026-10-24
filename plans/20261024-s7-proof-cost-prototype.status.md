@@ -1,6 +1,6 @@
 # Status: S7 proof-cost collector prototype
 
-Created 2026-10-24. Status: OPEN. Assigned; implementation has not started.
+Created 2026-10-24. Status: OPEN. Test-only implementation is in progress.
 Task: [task file](20261024-s7-proof-cost-prototype.task.md).
 Spec: ADR17 S7's checker and target stable-proof experience.
 
@@ -8,8 +8,10 @@ Spec: ADR17 S7's checker and target stable-proof experience.
 
 The S7 source audit found no surface collector or compiled proof-cost registry.
 Pinned Lean's withHeartbeats counts a computation in internal units, 1000 per
-user-facing unit. Async completion and per-declaration attribution remain to
-be demonstrated. No production measurement or baseline guarantee is claimed.
+user-facing unit. The experiment now retains native completed body traces and
+exports records through a persistent environment extension. The focused Nix
+measurement passes; independent review and final acceptance are pending.
+No production measurement or baseline guarantee is claimed.
 
 ## Progress
 
@@ -57,3 +59,56 @@ be demonstrated. No production measurement or baseline guarantee is claimed.
   that guide and the owner request, so no further scope edit is needed.
   The reviewed prototype is handed to `s4_part1`; bounded implementation may
   proceed. Root must grant a heavy build slot before broad checks.
+
+## Prototype implementation
+
+- The imported test hook delegates to normal declaration elaboration and keeps
+  native body trace snapshots. A separate reader/record module lets the control
+  compile use the ordinary elaborator without that hook. The proposed boundary
+  excludes headers and later kernel checking; it is named body elaboration.
+- Coverage probes include tactic/term proofs, Prop-valued definitions, anonymous
+  and private declarations, generated helpers and proofs inside value-producing
+  declarations. Generated helpers and embedded proof subterms have no separate
+  body records; the design record must retain that limitation.
+- The bounded driver checks ordering and actual proof growth, imported records,
+  replacement, relocation, failed/missing/cancelled data, exact units, expression
+  preservation and the observed overhead of three surface proofs. Native pytest
+  suite properties retain the measurements in the Nix result's JUnit report.
+- The experiment's surface-suite registration includes its Python helper in
+  the Nix fileset. The focused collector check is `tests/proof_cost_test.py`;
+  no production package source, prediction or judge lock changes are planned.
+- Work paused for the urgent API reference repair and resumed with all prototype
+  files and probes preserved. The reference repair is complete. Heavy checks
+  for this prototype are queued with the coordinator; final acceptance also
+  requires the final published S4 boundary.
+- Integrated the immutable final S4 source `24ca8b4c9635ee14f3235001dc86d7315ac514ac`
+  as a second parent of the prototype working change. The task handoff ancestry
+  and all prototype files are retained. No shared ancestor was rewritten.
+  The coordinator owns S4 publication and final acceptance records.
+- The record scheme distinguishes native async and synchronous mode. Attribution
+  checks compare names and the unchanged theorem's checked expression; they
+  record raw repeated counts without requiring exact allocation-count equality.
+  The findings document states the coverage gaps and proposed production choices.
+
+## Focused Nix acceptance
+
+- The scoped surface invocation selected all seven `proof_cost` cases and passed
+  with no skips (62 other cases deselected), in 39.47s. Report:
+  `/nix/store/iq6prjzg44ascwbg6izjvgrg61ic1hww-sqlite-verifier-test-proof-cost-prototype-1`.
+  Its JUnit suite properties retain raw attribution, coverage and overhead data.
+- Native async and synchronous counts track the expensive theorem in both
+  declaration orders. Increasing its real proof work from range 30 to range 100
+  increases its measured cost from about 31,765 to about 91,586 internal units.
+  The unchanged cheap proof keeps its expression and identity; reordering changes
+  its count by 4 async or 6 sync units. Exact count invariance is not promised.
+- Nine body records cover the declared fixture categories. Generated helpers and
+  embedded proof subterms have no separate body records. Both native-control
+  comparisons preserve the exact stored types and proof values. Imported data,
+  replacement, relocation, error, cancellation and precision cases pass.
+- The three-proof synchronous sample adds 585,850 command-window heartbeats
+  (about 9.05%) with collection enabled. The report retains both wall-time samples
+  per mode and identifies what each measurement includes. This is an observation,
+  not a general overhead bound.
+- [Findings](../docs/s7-proof-cost-findings.md) recommend named theorem-body
+  coverage and record the production coverage, identity and budget choices.
+  The prototype does not implement those choices or a baseline comparator.
