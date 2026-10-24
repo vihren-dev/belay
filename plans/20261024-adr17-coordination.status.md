@@ -32,6 +32,10 @@ workspace filesystem. Reserve at most two heavy build/check processes here.
   regardless of spelling, and the RECURSIVE keyword remains excluded.
 - Keep current DQS-on and initial-FK-off defaults. Correct the guide and enable
   enforcement explicitly before transactions in the affected examples.
+- SQL doc-block headers use double-quoted strings and named closed Lean values
+  for other types, following pinned Verso's grammar.
+- S4's exact query-success iff describes the default run. Keep sufficient
+  bridges to universal `Succeeds`; no universal-to-default converse is claimed.
 
 These decisions are in the corresponding tasks. A later NULL-check finding is
 pending below; it does not revoke the accepted split.
@@ -74,11 +78,6 @@ Two further questions are pending from prerequisite audits:
   retain SQLite metadata and ordinary Lake dependency tracking, and correct
   the blanket guarantee. The alternative is to defer S7 for a narrower cache
   design. The source/API audit continues; no implementation has started.
-- Native Verso rejects the guide's single-quoted doc-block header argument
-  before a SQL handler runs. The recommended correction is a double-quoted
-  string, with named closed Lean values for other types. The alternative is to
-  defer checked SQL blocks for an appropriate parser extension. The question
-  is pending; no header-syntax implementation or guide correction was made.
 
 ## Active implementation
 
@@ -87,7 +86,9 @@ Two further questions are pending from prerequisite audits:
   Task clarification `9f6cba9b` and monad/bind laws `51a56f7e` each have clean
   independent review. Success must cover the actual raw `oneOf` continuation
   and every concrete `rows` continuation. Part-2 success laws/fixtures are in
-  progress; part 3 still removes `Run.checked`. Do not treat part 1 as S4 done.
+  progress; their reviewed generic contract is `00c8707f` (clean review
+  `20261024T133008Z-00c8707f`). Statement/index/guide laws remain; part 3 still
+  removes `Run.checked`. Do not treat the generic success API as S4 done.
 - `text_build_boundaries`, workspace `sqlite-verifier-text-build-boundaries`:
   implementation `7d9d7d06` has clean independent review. `just test-full`
   passed with report
@@ -135,14 +136,16 @@ integrated base; the earlier evidence remains part-1 evidence before rebase.
 Task carry `8a89208f` has clean review. Baseline predictions are
 `/nix/store/qwfgz46d1pyd10xiypmka4kixvx38k2b-sqlite-verifier-predictions`;
 baseline verdict `srv5lc3gnn1s9wzfjy1ilrzsb2ws0881` passes existing claims.
-The source-execution unit is being checked; metadata/translation remain.
+Source execution `93767a4d` and its refusal-fixture fix `15a252a8` passed
+Nix model checks; the fix's review is pending. Metadata/translation remain.
 CTEs and views follow as later parts. Do not rebase shared S4 ancestors.
 
-`text_build_boundaries` completed the private guide correction at `565f1974`
-in `sqlite-verifier-product-profile-guide`. Nine pinned native checks passed.
-The agent is isolating the task and correction onto product PR #6's published
-base, excluding unrelated unpublished ancestors, before root publication.
-S4's separate guide claims/proof paragraphs remain with the S4 agent.
+The private guide defaults and accepted doc-header corrections are pushed as
+product PR #7, `docs/guide-profile-defaults`, at `17666ac9`, based on published
+`c1471940` (PR #6). Nine pinned native checks passed; both header corrections
+preserve the SQL bodies. The isolated `profile-publication` workspace contains
+no unrelated unpublished ancestors. Root owns its review handoff. S4's separate
+guide claims/proof paragraphs remain with the S4 agent.
 
 The read-only S7 audit is complete at
 `/home/codex/work/research_notes/Lean model modularity investigation/adr17_s7_audit.md`.
@@ -151,8 +154,10 @@ guide correction is decided. A task must also cover the guide's `--costs`
 heartbeat reporting; the checked SQL docstring-block feature needs explicit
 ownership in the remaining guide audit.
 The editor/doc-block audit is also complete in the same research-notes directory.
-It informs [the editor task](20261024-surface-editor.task.md), now awaiting review.
-Checked doc blocks still need their task after the syntax decision.
+It informs [the editor task](20261024-surface-editor.task.md), reviewed with no
+musts and recorded scope disposition; final source-record review was clean.
+Implementation is unassigned. Its unused empty workspace was removed so the
+free slot can run the S6 prototype. Checked doc blocks still need their task.
 
 Completed workspaces `adr19s2`, `adr19s3`, `adr22s2`, `adr22s3`, `adr22s4`,
 `errev` and `envfns` were checked clean, with all nonempty commits reachable
@@ -176,7 +181,10 @@ No agent may rebase a shared ancestor while another agent is editing a descendan
 - [S6 foundations prototype](20261024-surface-s6-foundations.task.md): final
   review `1cd45bae` had no findings. Uses S4's completed monad/universal execution
   interfaces to investigate WP, congruence, the before schema and footprints.
-  Full S6 still needs a task after those findings and the model prerequisites.
+  Isolated `sqlite-verifier-s6-foundations` now consumes reviewed `00c8707f`.
+  Carry/scope findings are resolved; final review `29d73988` has no findings.
+  `text_build_boundaries` now owns the bounded prototype in that workspace.
+  Full S6 still needs a task after its findings and model prerequisites.
 
 ADR 0019 slice 5, full S6, S7 and S8 remain to be specified and implemented.
 S8's application simulation and the full guide acceptance audit are required
