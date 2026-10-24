@@ -15,6 +15,8 @@ import Belay.Sqlite.ValueDisplay
 import Belay.Sqlite.ProgramRun
 import Belay.Sqlite.ProgramQueries
 import Belay.Sqlite.ProgramLaws
+import Belay.Sqlite.ProgramMonadLaws
+import Belay.Sqlite.ProgramBindLaws
 import Belay.Sqlite.ProgramEnvLaws
 import Belay.Sqlite.DbDiagnostics
 import Belay.Sqlite.DbBang
