@@ -1,6 +1,6 @@
 # Stable prediction inputs after Python runs
 
-Created 2026-10-24. Status: OPEN. Implementation follows task review.
+Created 2026-10-24. Status: DONE. Required outcomes and checks passed.
 Status: [status file](20261024-prediction-source-filter.status.md).
 Specs: ADR 0011 judge/subject separation and ADR 0020 local build loop.
 Base: the completed text-build-boundary change, when its PR is ready.
