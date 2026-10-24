@@ -15,7 +15,7 @@ from conformance.sql_text import runtime_translator
 pytestmark = [pytest.mark.integration, pytest.mark.conformance, pytest.mark.kernel,
               pytest.mark.requires_lean, pytest.mark.requires_native("translation-program", "sqlite3")]
 ROOT = Path(__file__).resolve().parents[1]
-"""The requirement inventory used by the native case inputs."""
+"""The repository root, from which the test reads conformance/requirements-3.51.0.json."""
 UNMODELED = {"source-compound-representative-uncertain", "source-limit-uncertain",
              "source-limit-second-column-uncertain", "source-fallible"}
 """Source membership or evaluation failures for which D5 requires refusal."""

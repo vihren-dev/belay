@@ -152,3 +152,8 @@ actual verdict results and inspect each changed prediction.
   Final Nix verdicts must establish any claimed gains. Corpus v53 stays private
   and mutable until the CTE and view parts add their evidence; the implementation
   contains native input definitions and tests, with no frozen outcomes or claims.
+- Test-unit review `20261024T151304Z-4adc09c3` found no must issue and one should
+  issue: the `ROOT` docstring named the requirement inventory instead of its
+  repository directory. The docstring now states the path's actual meaning.
+  This correction changes no test or model behavior; the preceding Nix checks
+  remain its behavior evidence.
