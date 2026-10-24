@@ -87,8 +87,8 @@ remove the prior planning blocks; they are not implementation-completion claims.
   clean, with Nix model `81v66kv633za3q994jjiiml6lvsaz7q4`. Balance `2175f989`
   is reviewed; all 62 surface tests passed at `vjvlvym2mp4lqjighnsc7q1qijbq1c2w`.
   Main `f3e03264` and part 3 `2e51a0ae` are reviewed; their broad gates remain.
-  Merge `dbd774b1` adds derived publication `17f929bd`; its clean review
-  accepts the status-only conflict resolution. Part 2 acceptance is next.
+  Merge `dbd774b1` is reviewed; `c0097b21` carries accepted derived publication
+  `1f5eea9e`. Part 2 full/verdict gate `37743` is running in slot 2.
   Named-source extension `656ab790`/`1dee994a` is reviewed and checked in Nix.
 - `s6_prerequisite_audit` completed derived-source part 1 at subject `16bd87a3`;
   separate evidence head is `5d69e3fa`. Combined `c8db1a54` passed full 854 at
@@ -97,18 +97,14 @@ remove the prior planning blocks; they are not implementation-completion claims.
   54 files. Existing corpora gain 29 agreements; draft v53 has 38 agreements
   and 4 restrictions. No disagreement/harness error. Subject excludes judge changes.
   S4 carry `b52fdec6` passed focused Nix `9zkv499mbvg2cwcs5jnn351rv253zfsd`.
-  CTE implementation preserves use-site bindings; model/proof closure compiled,
-  and sequential dev-build `96447` occupies slot 1. Integration must compile balance.
-- `text_build_boundaries` owns `sqlite-verifier-s6-foundations` and resumed FK
-  work. The S6 prototype consumes reviewed S4 `00c8707f` without rebasing.
-  Implementation `e9a0354d`/`6c26ac21` is reviewed; 56 focused Nix tests pass at
-  `/nix/store/1rzb9hwr5s7yccpwjx2xiwbzja3bcd99-sqlite-verifier-test-surface-1`.
-  Its 28 audited declarations use only ordinary logical axioms; design
-  `a3cffcb5` and decision record `c838d5cc` have clean reviews.
-  DONE at `eb0a16a9`, clean completion review: full 813 at
-  `vg3sz4iz4q58vrci7ddrxn9bmv6p7pbi`, Nix 67, scheduled 47, verdict and all 53
-  predictions unchanged. It awaits S4-based publication and does not implement
-  production S6. Root copied its reviewed task/status; source workspace stays.
+  CTE development reached its checked source boundary; heavy slot 1 was released
+  for FK. Source/native review continues. Integration must compile balance.
+- `text_build_boundaries` completed the S6 foundation prototype at `eb0a16a9`,
+  based on S4 `00c8707f`. Its 28 audited declarations use ordinary logical axioms;
+  design `a3cffcb5` and decision record `c838d5cc` have clean reviews.
+  Full 813 at `vg3sz4iz4q58vrci7ddrxn9bmv6p7pbi`, Nix 67, scheduled 47,
+  verdict and all 53 predictions passed unchanged. It awaits S4 publication;
+  this prototype does not implement production S6. The agent now owns FK.
 - The FK workspace is `sqlite-verifier-fk-atoms`. Revised selected action scope
   is carried in `1a10a3c8`, follow-up `01a02bef` reviewed clean. Split-API and
   action implementation `89267008` passed 35 Nix native cases and four mutants.
@@ -129,14 +125,14 @@ Both email copies and the full balance proof compile against Nix surface
 `qz96vr9hh9vghmw4hihvvl2lwh4dmdxf`, with only ordinary logical axioms; PR #8 is updated.
 Final acceptance must selectively reconcile unpublished S2/S3 product-default changes.
 
-At most two heavy checks run: CTE development owns slot 1; root derived gate
-`54968` owns slot 2. Derived full 853 passed at `nfqd2rh03b7avhd5ifzk08rwbf9p38ab`,
-verdict 4,867/2,505 at `sjs0cw7jyy2k5adr3rgw2jh6d1iybnii`; all 53 predictions
-match accepted derived evidence. Nix integration and scheduled checks continue.
-S4 query publication `975f31eb` passed full 808, Nix 70, scheduled 47,
-verdict 4,838/2,534 and 53 unchanged predictions; PR #242 is in stack 231.
-Automatic approval rejections for PR #242 and CTE/S7 shell trust are resolved
-by explicit owner approval. No permission or specification question is pending.
+At most two heavy checks run: FK insertion gate `88073` owns slot 1;
+root S4 part-2 full/verdict `37743` owns slot 2. Query and S7 use light probes.
+Derived publication passed full 853, Nix 70 and scheduled 47; the verdict is
+4,867/2,505 and all 53 predictions match accepted derived evidence. PR #243
+is in stack 231, head `1f5eea9e`. Its complete artifacts are in the task status.
+S4 query PR #242 at `975f31eb` passed full 808, Nix 70 and scheduled 47,
+verdict 4,838/2,534 and 53 unchanged predictions. No permission or specification
+question is pending; explicit owner approvals resolved earlier automatic rejections.
 ## Published work and cleanup
 
 - Public [PR #240](https://github.com/vihren-dev/sqlite-verifier/pull/240),
@@ -163,7 +159,8 @@ after confirming no active process and remote reachability. Earlier cleanup remo
 profile-guide, the unused editor workspace, adr19s2/adr19s3/adr22s2/adr22s3/
 adr22s4/errev/envfns. Completed s4-schema and s4-observations were removed
 following remote reachability/process checks, as was s4-query-publication after
-[PR #242](https://github.com/vihren-dev/sqlite-verifier/pull/242). Protected s4chk remains.
+[PR #242](https://github.com/vihren-dev/sqlite-verifier/pull/242). Derived subject and publication
+workspaces were removed after #243; gate logs are retained under S4 build/. Protected s4chk remains.
 
 ## Specified work and remaining scope
 
@@ -186,7 +183,7 @@ following remote reachability/process checks, as was s4-query-publication after
   review `20261024T140930Z-09c30b41`, unassigned.
 - [S7 proof-cost prototype](20261024-s7-proof-cost-prototype.task.md) is assigned
   to `s4_part1` in `s7-proof-cost`, reviewed carry/citation head `79ef4d07`.
-  Shell approved; small probes allowed, no heavy slot. Production waits for its findings.
+  Prototype implementation is active; no heavy slot. Production waits for findings.
 - [Guide rebuild wording](20261024-guide-sql-rebuilds.task.md) is DONE, published
   with reviewed S4 explanatory prose in private product PR #8, head `1ae76380`.
 - [S8 simulation](20261024-surface-s8.task.md) is reviewed clean at `03ac78a0`:
