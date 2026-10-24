@@ -1,7 +1,7 @@
 # Status: translation dependencies and complete local law checks
 
-Created 2026-10-24. Status: OPEN. Specification prepared; implementation has not
-started. No owner decision is required for the outcomes currently specified.
+Created 2026-10-24. Status: OPEN. Implementation is under validation.
+No owner decision is required for the outcomes currently specified.
 
 Task: [task file](20261024-text-build-boundaries.task.md).
 Specifications: [ADR 0016](../docs/adr-0016-model-and-surface.md), D2, and
@@ -11,10 +11,18 @@ Specifications: [ADR 0016](../docs/adr-0016-model-and-surface.md), D2, and
 
 Base: PR #239, `srzmyvyu`, commit `98a07bfec142aacec28c0d3f9d4801dd593515f1`.
 The task's relevant-file list names the code and existing checks.
-`Translation/Located.lean` imports `Belay.Sqlite.Model`.
-The conformance lakefile defaults to `conformance-runner`; the Nix derivation
-explicitly builds `VerifierConformance` and `conformance-runner`.
-No new build timing or Nix validation result is claimed here.
+`Translation/Located.lean` now imports the existing public root
+`Belay.Sqlite.Model.Codec`. This root supplies syntax and restriction declarations
+without the model umbrella. The layer check follows transitive imports from
+`TranslationProgram`, with direct and indirect import regression cases.
+The conformance lakefile defaults to `conformance-runner`; the Nix derivation and
+the local `dev-build` recipe now explicitly build `VerifierConformance` and
+`conformance-runner`.
+
+Before the edit, `nix-build integrity/judge.nix -A predictions --out-link
+build/predictions-before` produced 53 corpus files with 7,372 predictions at
+`/nix/store/4k77z378vnagzwx5448yqz0686d58cld-sqlite-verifier-predictions`.
+The post-edit comparison and task-end Nix gates are pending.
 
 ## Progress
 
@@ -38,3 +46,26 @@ No new build timing or Nix validation result is claimed here.
   mutant tests, by name (`-k`). Never run `just test-scheduled` or
   `just test-mutants` locally; run `just test-scheduled-checks` at the end of a
   task." This is the owner instruction that overrides the older cadence table.
+- 2026-10-24: narrowed the translator to the existing public codec root, added
+  transitive-import checks to `tests/surface_layers_test.py`, and added the
+  complete conformance library to `dev-build`. ADR 0020 lists the corrected
+  targets and boundary. No model source, package root, semantic function, claim,
+  or judge lock changed. Commit diagnostics use `tests/surface_layers_test.py`,
+  `tests/dev_loop_test.py`, and `just dev-build`; Nix acceptance remains pending.
+
+## Local diagnostic procedure
+
+The existing `tests/dev_loop_test.py` runs `just dev-build` twice and requires the
+second run to compile no target. The initial build log includes
+`VerifierConformance.RunPassLaws`, which is outside the runner's import closure.
+
+The proof-boundary diagnostic temporarily appends
+`theorem Belay.Sqlite.Model.buildBoundaryProbe : True := True.intro` to
+`packages/belay-sqlite-model/Belay/Sqlite/Model/QueryLaws.lean` and runs
+`just dev-build`. Its assertions require recompilation of `QueryLaws` and the
+model umbrella and no recompilation of Lean translation modules in the text
+package's command. It records native targets separately. A `finally` block
+restores the original source; another `just dev-build` checks the restored tree.
+The timeout is 1,200 seconds per build. Logs are in
+`build/agent-logs/proof-boundary-{build,restored,summary}.log`.
+These local diagnostics do not supply semantic acceptance evidence.
