@@ -29,9 +29,12 @@ source differences are recorded in this task's status file.
 
 Use the actual `integrity/judge.nix` expression to compare prediction derivation
 identities before and after bytecode changes, and before and after a real source
-change. Extend the existing small Nix fixture in `tests/test_judge_lock.py` or an
-equally small focused test; do not copy the full checkout or build predictions
-for each identity assertion. Include finite timeouts and the existing
+change. The existing fixture in `tests/test_judge_lock.py` copies only the lock's
+inputs; it cannot evaluate predictions by itself. An identity fixture needs
+minimal `belay` and `conformance` Python sources and a fixed stub of
+`build-support/default.nix` that supplies the subject runtime. It evaluates the
+actual judge expression, not a copy of the filter. Do not copy the full checkout
+or build predictions for each identity assertion. Include finite timeouts and the existing
 `requires_nix` suite selection. Keep the lock's existing tamper checks passing.
 
 Compare one before/after frozen-prediction output over all corpora, and require
