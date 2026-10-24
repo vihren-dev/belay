@@ -17,6 +17,10 @@ import Belay.Sqlite.ProgramQueries
 import Belay.Sqlite.ProgramLaws
 import Belay.Sqlite.ProgramMonadLaws
 import Belay.Sqlite.ProgramBindLaws
+import Belay.Sqlite.Success
+import Belay.Sqlite.ProgramSuccess
+import Belay.Sqlite.ScriptSuccess
+import Belay.Sqlite.SuccessSyntax
 import Belay.Sqlite.ProgramEnvLaws
 import Belay.Sqlite.DbDiagnostics
 import Belay.Sqlite.DbBang

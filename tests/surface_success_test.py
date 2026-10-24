@@ -20,3 +20,22 @@ def test_program_laws_preserve_connection_and_next_index(runtime_root: Path, tmp
     reports = [line for line in result.stdout.splitlines() if "depends on axioms" in line]
     assert len(reports) == 3, result.stdout
     assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout
+
+
+def test_success_checks_actual_and_alternative_continuations(runtime_root: Path, tmp_path: Path) -> None:
+    """Succeeds rejects both a failing LIMIT alternative and a raw continuation that fails only
+    on the actual oneOf wrapper; the fixtures also cover clock inputs, random and generic laws."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "SuccessBranches.lean", tmp_path),
+                         cwd=tmp_path, timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+    reports = [line for line in result.stdout.splitlines() if "depends on axioms" in line]
+    assert len(reports) == 4, result.stdout
+    assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout
+
+
+def test_success_notation_checks_its_query_at_the_query(runtime_root: Path, tmp_path: Path) -> None:
+    """SuccessSyntax elaborates both forms and bound parameters, and rejects multi-statement
+    or writing preconditions at the query's source span."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "SuccessSyntaxExamples.lean", tmp_path),
+                         cwd=tmp_path, timeout=60)
+    assert result.returncode == 0, result.diagnostic()

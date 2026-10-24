@@ -40,6 +40,10 @@ def closeAndCount : Sql (Option Value) := do
 - A script on its own line in a `do` block is sent, and its value is dropped.
 - `outputs.allOk` tells whether no output is an error or `Output.unmodeled`.
 
+`Sql` has a `LawfulMonad` instance. `Sql.runFrom_bind` composes runs on the full connection
+left by the first program, including its transaction and counters, and at the next statement
+index. `send_append` and `Sql.runFrom_send_append` give this composition for two scripts.
+
 `db.run p` runs a program or a script on a database, and `p.run db` (`Sql.run`) is the same run
 of a program. A script runs as the program `send s`. The result is a `Run α`:
 
@@ -110,3 +114,18 @@ scalar column, including a fallible function. `Holds.iff_noFrom_scalar`,
 `Empty.iff_noFrom_scalar` and `Fails.iff_noFrom_scalar` retain the run's fault and the filter.
 Thus `SELECT abs(1)` holds, `SELECT abs(-9223372036854775808)` fails, and adding `WHERE 0`
 skips that failing projection and makes the result empty, for every database.
+
+`Succeeds program predicate` states that every database satisfying the Lean predicate runs
+the program without an error or an output that ends the run. It checks every complete
+environment: one that supplies a clock and knows all three counters, at any values. Use
+`program succeeds` for the always-true predicate, or `program succeeds where query` for
+`Holds query` as the predicate. The query must be one read-only statement.
+
+Success checks the actual continuation and every concrete result listed by `Output.oneOf`.
+This matters when a later statement depends on a `LIMIT` query without a fixed order:
+the first result can select a successful branch while another result selects a failure.
+Raw `Sql.exec` continuations can also distinguish `oneOf` from `rows`, so both are checked.
+`Succeeds.allOk` gives the guarantee for the actual public run. `Succeeds.script_iff` says
+that scripts need only this output check, because their later statements do not depend on
+earlier outputs. `Sql.SucceedsFrom` exposes the same branch predicate for a specific clock,
+statement index and connection, including incomplete environments.
