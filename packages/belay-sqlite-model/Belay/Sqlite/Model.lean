@@ -84,6 +84,8 @@ import Belay.Sqlite.Model.ResolveCallsBelow
 import Belay.Sqlite.Model.ResolveReadsBelow
 import Belay.Sqlite.Model.ResolveTermsBelow
 import Belay.Sqlite.Model.ResolveIndexBelow
+import Belay.Sqlite.Model.AdmittedCellLaws
+import Belay.Sqlite.Model.AdmittedAtomFrames
 import Belay.Sqlite.Model.ResolveStatementValid
 import Belay.Sqlite.Model.AddColumnFromValid
 import Belay.Sqlite.Model.ResolveAddColumnCatalog
