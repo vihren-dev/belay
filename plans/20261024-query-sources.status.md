@@ -63,3 +63,8 @@ actual verdict results and inspect each changed prediction.
   The build checks the new `DerivedSourceExamples` kernel examples and existing
   query/S4 proof modules. Full-part acceptance and the final frozen-prediction
   comparison remain pending.
+
+- Execution-unit review `20261024T132633Z-93767a4d` had no must finding and one
+  should finding: test a source with a non-success ending and no expression fault.
+  The added kernel example checks that this source is refused. Nix `modelPackage`
+  passed at `/nix/store/pp68ghibam1vkp4y5cw5nlsfjb171d86-belay-sqlite-model-0.1.0`.

@@ -98,4 +98,10 @@ example : let context : EvalContext :=
     ({ kind := .inner, source := .subquery 0 1, condition := none } : QuerySource).join context {}
       { rows := [[]], width := 0, fault := .none } = none := by decide +kernel
 
+/-- A non-success ending refuses a source even when its expression fault is clear. -/
+example : let context : EvalContext :=
+      { clock := 0, subqueries := fun _ _ => { rows := [], fault := .none, ending := .mismatch } }
+    ({ kind := .inner, source := .subquery 0 1, condition := none } : QuerySource).join context {}
+      { rows := [[]], width := 0, fault := .none } = none := by decide +kernel
+
 end Belay.Sqlite.Model.Resolved.DerivedSourceExamples
