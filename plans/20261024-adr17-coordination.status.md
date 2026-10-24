@@ -125,14 +125,15 @@ Both email copies and the full balance proof compile against Nix surface
 `qz96vr9hh9vghmw4hihvvl2lwh4dmdxf`, with only ordinary logical axioms; PR #8 is updated.
 Final acceptance must selectively reconcile unpublished S2/S3 product-default changes.
 
-At most two heavy checks run: FK insertion gate `88073` owns slot 1;
-root S4 part-2 full/verdict `37743` owns slot 2. Query and S7 use light probes.
-Derived publication passed full 853, Nix 70 and scheduled 47; the verdict is
-4,867/2,505 and all 53 predictions match accepted derived evidence. PR #243
-is in stack 231, head `1f5eea9e`. Its complete artifacts are in the task status.
-S4 query PR #242 at `975f31eb` passed full 808, Nix 70 and scheduled 47,
-verdict 4,838/2,534 and 53 unchanged predictions. No permission or specification
-question is pending; explicit owner approvals resolved earlier automatic rejections.
+Root S4 part-2 full/verdict `37743` owns heavy slot 2. CTE released slot 1;
+its next heavy phase waits for the urgent API reference fix. FK insertion unit
+`45a65a92`/`754545ce` passed six Nix fixtures/95 axioms at `afgmspdjm1andpc3pd1wlfqdv9gl4bib`.
+Derived #243 passed local full 853/Nix 70/scheduled 47 and verdict 4,867/2,505,
+with all 53 predictions matching accepted evidence. Linux CI #242/#243 failed
+API reference generation: 532 roots exceed doc-gen4's compound-query limit.
+`s4_part1` owns reviewed task `c58f8e31` in `reference-compound-limit` on #242;
+S7 work is safely frozen. Root will update both PRs by descendants and verify
+actual reference builds. No permission or specification question is pending.
 ## Published work and cleanup
 
 - Public [PR #240](https://github.com/vihren-dev/sqlite-verifier/pull/240),
@@ -183,7 +184,7 @@ workspaces were removed after #243; gate logs are retained under S4 build/. Prot
   review `20261024T140930Z-09c30b41`, unassigned.
 - [S7 proof-cost prototype](20261024-s7-proof-cost-prototype.task.md) is assigned
   to `s4_part1` in `s7-proof-cost`, reviewed carry/citation head `79ef4d07`.
-  Prototype implementation is active; no heavy slot. Production waits for findings.
+  Prototype work is preserved while its agent fixes CI; production awaits findings.
 - [Guide rebuild wording](20261024-guide-sql-rebuilds.task.md) is DONE, published
   with reviewed S4 explanatory prose in private product PR #8, head `1ae76380`.
 - [S8 simulation](20261024-surface-s8.task.md) is reviewed clean at `03ac78a0`:
