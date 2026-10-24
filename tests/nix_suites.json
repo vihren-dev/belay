@@ -136,6 +136,7 @@
     "tests/surface_sampling_test.py",
     "tests/surface_inference_test.py",
     "tests/surface_replay_test.py",
-    "tests/surface_foreign_key_atoms_test.py"
+    "tests/surface_foreign_key_atoms_test.py",
+    "tests/surface_search_test.py"
   ]
 }
