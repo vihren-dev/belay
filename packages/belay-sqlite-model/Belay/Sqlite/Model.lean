@@ -212,6 +212,8 @@ import Belay.Sqlite.Model.DuplicateKeyQuery
 import Belay.Sqlite.Model.DuplicateKeyOutput
 import Belay.Sqlite.Model.DuplicateKeyResolution
 import Belay.Sqlite.Model.GroupsPairwise
+import Belay.Sqlite.Model.GroupKeyConflictLaws
+import Belay.Sqlite.Model.CreateIndexSuccessLaws
 import Belay.Sqlite.Model.AggregateQueryLaws
 import Belay.Sqlite.Model.AggregateQueryOutput
 import Belay.Sqlite.Model.AggregateSelectResolution

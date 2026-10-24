@@ -50,3 +50,23 @@ def test_query_success_keeps_errors_and_ending_outputs(runtime_root: Path, tmp_p
     reports = [line for line in result.stdout.splitlines() if "depends on axioms" in line]
     assert len(reports) == 2, result.stdout
     assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout
+
+
+def test_column_groups_exclude_unique_key_conflicts(runtime_root: Path, tmp_path: Path) -> None:
+    """GroupKeyConflictLaws proves the arbitrary-table implication and keeps its NULL
+    asymmetry, ASCII-only NOCASE comparison and permutation of scan rows."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "SuccessGroupKeys.lean", tmp_path),
+                         cwd=tmp_path, timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+    assert result.stdout.count("depends on axioms") == 1, result.stdout
+    assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout
+
+
+def test_create_index_success_checks_schema_resolution_and_rows(runtime_root: Path, tmp_path: Path) -> None:
+    """CreateIndexSuccess keeps exact free-database conditions, rejects preparation and
+    restriction failures, checks unique rows, and admits partial indexes and repeated NULLs."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "SuccessCreateIndex.lean", tmp_path),
+                         cwd=tmp_path, timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+    assert result.stdout.count("depends on axioms") == 2, result.stdout
+    assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout

@@ -134,3 +134,10 @@ For a query, `Script.query_allOk_iff` characterizes the default run: `Fails` is 
 its output does not end the run. `Succeeds.of_query` and `Succeeds.of_holds` turn successful
 default observations into universal success. The converse is not required: supplying a
 clock can make `CURRENT_TIMESTAMP` succeed although its default observation ends the run.
+
+`Succeeds.iff_createIndex` gives the exact conditions for `CREATE INDEX` and `CREATE UNIQUE
+INDEX`: the table exists, both names pass the reserved-name checks, no table or index uses
+the new name, the terms and filter resolve, and a unique index has no conflicting rows.
+`LiteralData.uniqueRows_of_column_groups` connects a no-duplicate GROUP BY claim to the
+column key check. This direction is sufficient: repeated NULLs group together but do not
+conflict in a unique index. The grouping and index must use the same collation.
