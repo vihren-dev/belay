@@ -26,3 +26,15 @@ No new build timing or Nix validation result is claimed here.
   observed law-build failures from the handoff, and removes the proposed
   failure-injection harness. The existing local-loop test remains the check of
   the recipe. Implementation is pending.
+- 2026-10-24: review `20261024T120211Z-4d34419d` found no musts and requested
+  a durable record of the handoff evidence. The source is the owner-provided
+  `/home/codex/work/HANDOFF-adr17-20261024.md`, section "How the work is done":
+  "`just dev-build` builds only the conformance runner, not the law modules, and
+  `test-full` failed twice because of this." This is a reported observation;
+  that handoff supplies no run IDs, so this status does not claim independently
+  verified failure logs. The task's target correction is independently supported
+  by the current recipe and the Nix library targets recorded above.
+  The same source, "Owner rules for this work", says: "Run only the relevant
+  mutant tests, by name (`-k`). Never run `just test-scheduled` or
+  `just test-mutants` locally; run `just test-scheduled-checks` at the end of a
+  task." This is the owner instruction that overrides the older cadence table.
