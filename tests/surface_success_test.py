@@ -70,3 +70,13 @@ def test_create_index_success_checks_schema_resolution_and_rows(runtime_root: Pa
     assert result.returncode == 0, result.diagnostic()
     assert result.stdout.count("depends on axioms") == 2, result.stdout
     assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout
+
+
+def test_numeric_sum_bound_includes_real_and_null_cells(runtime_root: Path, tmp_path: Path) -> None:
+    """SumBoundLaws supplies the free-input ledger bound for mixed numeric/NULL inputs,
+    including REAL cells, and kernel checks retain the first-prefix overflow boundary."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "SuccessSumBound.lean", tmp_path),
+                         cwd=tmp_path, timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+    assert result.stdout.count("depends on axioms") == 2, result.stdout
+    assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout
