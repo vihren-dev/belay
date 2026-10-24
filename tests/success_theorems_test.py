@@ -10,7 +10,7 @@ from tests.surface_support import module_setup
 pytestmark = [pytest.mark.integration, pytest.mark.kernel, pytest.mark.requires_lean("compiler")]
 
 CHECKS = """
-import Belay.Sqlite.ScriptSuccess
+import Belay.Sqlite.QuerySuccess
 open Belay.Sqlite
 example {α : Type} (p : Sql α) (predicate : Database → Prop) :
     Succeeds p predicate ↔ ∀ db, predicate db → ∀ env : Env, env.Complete →
@@ -23,6 +23,12 @@ theorem scripts_need_no_extra_branches (script : Script) (predicate : Database �
     Succeeds script predicate ↔
       ∀ db, predicate db → ∀ env : Env, env.Complete → (db.run script env).outputs.allOk = true :=
   Succeeds.script_iff script predicate
+theorem default_query_success (script : Script) (query : script.isQuery = true) (db : Database) :
+    (db.run script).outputs.allOk = true ↔
+      ¬ Fails script db query ∧ (script.outputOn db).any Output.endsRun = false :=
+  Script.query_allOk_iff query db
+#print axioms default_query_success
+#print axioms Succeeds.of_holds
 #print axioms actual_run_succeeds
 #print axioms scripts_need_no_extra_branches
 #print axioms Succeeds.pure
@@ -31,10 +37,10 @@ theorem scripts_need_no_extra_branches (script : Script) (predicate : Database �
 
 
 def test_success_contracts_have_checked_proofs(runtime_root: Path, tmp_path: Path) -> None:
-    """The exact outcome7 quantifiers, actual-run guarantee and script equivalence compile
+    """The success quantifiers, actual-run guarantee and default-query equivalence compile
     against built surface modules, with no unchecked evaluation axiom."""
     libraries = (runtime_root / "packages/belay/.lake/build/lib/lean",
                  runtime_root / "packages/belay-sqlite-model/.lake/build/lib/lean")
     output = compile_checks(CHECKS, tmp_path, runtime_root / "lean", libraries,
                             setup=module_setup(runtime_root, tmp_path))
-    assert len([line for line in output.splitlines() if "depends on axioms" in line]) == 4, output
+    assert len([line for line in output.splitlines() if "depends on axioms" in line]) == 6, output

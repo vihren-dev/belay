@@ -129,3 +129,8 @@ Raw `Sql.exec` continuations can also distinguish `oneOf` from `rows`, so both a
 that scripts need only this output check, because their later statements do not depend on
 earlier outputs. `Sql.SucceedsFrom` exposes the same branch predicate for a specific clock,
 statement index and connection, including incomplete environments.
+
+For a query, `Script.query_allOk_iff` characterizes the default run: `Fails` is false and
+its output does not end the run. `Succeeds.of_query` and `Succeeds.of_holds` turn successful
+default observations into universal success. The converse is not required: supplying a
+clock can make `CURRENT_TIMESTAMP` succeed although its default observation ends the run.

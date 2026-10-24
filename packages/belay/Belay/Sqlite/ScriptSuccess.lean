@@ -1,11 +1,22 @@
 import Belay.Sqlite.ProgramSuccess
 import Belay.Sqlite.RunLaws
+import Belay.Sqlite.ProgramEnvLaws
 
 set_option doc.verso true
 
 namespace Belay.Sqlite
 
 open Belay.Sqlite Belay.Sqlite.Model
+
+/-- For every script, database and environment, its public output list equals the model's
+output list from the environment's clock and counters. Proof sketch: the program is
+{name}`send`, whose run is the model's script run; validity leaves its outputs unchanged. -/
+theorem Script.run_outputs (script : Script) (db : Database) (env : Env) :
+    (db.run script env).outputs =
+      (runScriptFrom runContext env.clock 0 (db.raw.connection env.counters) script.statements).outputs := by
+  change ((send script).run db env).outputs = _
+  rw [Sql.run_outputs, send, Sql.runFrom_send]
+  rfl
 
 /-- For every list of statements, clock, index and connection, sending the statements
 succeeds on every branch exactly when their model run has no error or ending output.
@@ -43,6 +54,35 @@ theorem Succeeds.script_iff (script : Script) (predicate : Database → Prop) :
     (∀ db, predicate db → ∀ env : Env, env.Complete →
       ((sendStatements script.statements).runFrom env.clock 0 (db.raw.connection env.counters)).outputs.allOk = true)
   simp only [Sql.succeedsFrom_sendStatements, Sql.runFrom_send, SqlRun.ofScript]
+
+/-- For every script, database and environment, if all default-run outputs succeed, the
+outputs also succeed in that environment. Proof sketch: no successful output ends at a
+missing clock or counter, so {name}`Script.run_env` identifies the two runs. -/
+theorem Script.allOk_env {script : Script} {db : Database}
+    (success : (db.run script).outputs.allOk = true) (env : Env) :
+    (db.run script env).outputs.allOk = true := by
+  have quiet := fun output member => ((List.allOk_iff _).mp success output member).2
+  have noClock : Output.unmodeled clockUnmodeled ∉ (db.run script).outputs := by
+    intro member
+    have := quiet _ member
+    simp [Output.endsRun] at this
+  have known : ∀ output ∈ (db.run script).outputs, output.endsAtUnknownCounter = false := by
+    intro output member
+    cases found : output.endsAtUnknownCounter
+    · rfl
+    · have ends := Output.endsRun_of_endsAtUnknownCounter found
+      rw [quiet output member] at ends
+      cases ends
+  rw [Script.run_env script db env noClock known]
+  exact success
+
+/-- For every script and predicate, if every database satisfying the predicate has a
+successful default run, the script succeeds. This sufficient condition need not hold for a
+script that reads the clock. Proof sketch: {name}`Script.allOk_env` gives every complete
+environment, and {name}`Succeeds.script_iff` gives success. -/
+theorem Succeeds.of_default {script : Script} {predicate : Database → Prop}
+    (success : ∀ db, predicate db → (db.run script).outputs.allOk = true) : Succeeds script predicate :=
+  (Succeeds.script_iff script predicate).mpr fun db holds env _ => Script.allOk_env (success db holds) env
 
 /-- For every database and two scripts, under the hypotheses of {name}`Script.run_append`,
 their concatenation's public run has no error or ending output exactly when both the first

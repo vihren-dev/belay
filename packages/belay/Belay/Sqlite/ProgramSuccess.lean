@@ -6,6 +6,12 @@ namespace Belay.Sqlite
 
 open Belay.Sqlite Belay.Sqlite.Model
 
+/-- For every output list, {name}`List.allOk` is true exactly when every member is neither
+an error nor an output that ends a run. Proof sketch: expand the Boolean list check. -/
+theorem List.allOk_iff (outputs : List Output) :
+    outputs.allOk = true ↔ ∀ output ∈ outputs, output.isError = false ∧ output.endsRun = false := by
+  simp [List.allOk]
+
 /-- For every program, clock, index and connection, success on every branch implies that
 the actual run's outputs have no error and none ends the run. Proof sketch: induction on
 the program. A successful step continues without error, and its actual-output continuation

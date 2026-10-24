@@ -21,6 +21,7 @@ import Belay.Sqlite.Success
 import Belay.Sqlite.ProgramSuccess
 import Belay.Sqlite.ScriptSuccess
 import Belay.Sqlite.SuccessSyntax
+import Belay.Sqlite.QuerySuccess
 import Belay.Sqlite.ProgramEnvLaws
 import Belay.Sqlite.DbDiagnostics
 import Belay.Sqlite.DbBang
