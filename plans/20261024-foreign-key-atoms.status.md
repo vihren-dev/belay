@@ -17,12 +17,12 @@ DROP INDEX succeeds with enforcement on for a referenced parent's unique index;
 the following `foreign_key_check` fails at prepare with a mismatch. The audit
 also observed the repeated-primary-key example in the task: child `(1,99)` is
 accepted against parent `(1,2)` because the selected `(a,a)` key uses child `x`
-twice. These observations informed the specification; no task acceptance check
-has run and no model implementation has changed.
+twice. At that first audit, no task acceptance check had run and no model
+implementation had changed. The later uncommitted split-API work is listed below.
 
 The task therefore supplies an explicit comparison mapping for row truth and
-a separate catalog compatibility fact. The convenience path keeps current
-engine selection. Supporting-index removal can preserve the first fact under
+a separate catalog compatibility fact. The convenience path follows engine
+selection with the accepted NULL-test correction. Supporting-index removal can preserve the first fact under
 mapping transport while breaking the second. The representation is left to the
 implementer, with these observable requirements fixed.
 
@@ -88,7 +88,8 @@ INSERT INTO c VALUES(99,NULL);   -- native SQLITE_CONSTRAINT at step
 The current model accepts the last row. With enforcement off, store `(99,NULL)`
 and run `PRAGMA foreign_key_check`: native reports a violation while the model
 reports none. The new `repeated-unused-null-write` and
-`repeated-unused-null-pragma` differential regressions retain the finding.
+`repeated-unused-null-pragma` differential regressions retain the finding in
+the FK workspace's uncommitted test file; they are not in a repository commit.
 This is an observed specification/dependency issue, not acceptance evidence.
 
 Pinned source `parser/upstream/sqlite3.c:135547` uses the selected `aiCol[i]` in
@@ -106,3 +107,6 @@ task and ADR22 are carried from the reviewed coordinator decision; review
 20261024T135446Z-1c6eeb5e had no musts and its status-only should is resolved.
 The preserved implementation above has not yet been changed for this decision.
 Its source edits remain uncommitted and must be checked before completion.
+Carry review `20261024T141310Z-8526ed1f` had no musts and two status-only
+shoulds. Marked the first audit as historical and the native regressions as
+uncommitted. No source code was included in either planning commit.
