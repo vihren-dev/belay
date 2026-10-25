@@ -1124,10 +1124,11 @@ show the native rule, and the model needs no change:
   `(+NULL)`, `(-NULL)`, `(+(NULL))` and `(CAST(NULL AS INT))`. It reports "Cannot add a column with
   non-constant default" for `(NULL COLLATE nocase)`, `(NULL+0)` and similar expressions. An empty
   table accepts every spelling. `DEFAULT CAST(NULL AS INT)` without parentheses is a syntax error.
-- The model never reports `nullColumnDefault` for the signed or cast spellings. The translation maps
-  only `NULL`, `+term`, `-term` and `?` after DEFAULT. `literalDefault` gives the value NULL only for
-  `.null`, and `.positive .null` and `.negate .null` are the model restriction `unmodeledDefault`. The
-  parenthesized spellings are not translated. The earlier note in this file's open problems, that the
+- The model never reports `nullColumnDefault` for the signed or cast spellings of NULL. The
+  translation maps a bare term, `+term`, `-term` and `?` after DEFAULT, and no other parenthesized
+  default (`Translation/Columns.lean`). `literalDefault` gives the value NULL only for `.null`, and
+  `.positive .null` and `.negate .null` are the model restriction `unmodeledDefault`. The
+  parenthesized spellings of NULL are not translated. The earlier note in this file's open problems, that the
   model gives `nullColumnDefault` for `-NULL`, was wrong: `-NULL` is outside the model, as the
   task file says.
 - Supporting the bare `+NULL` would give a correct answer for the translated SQL text, but the syntax
@@ -1137,4 +1138,5 @@ show the native rule, and the model needs no change:
 The new test `tests/add_column_not_null_default_test.py` records the seven spellings natively on an
 empty and a populated table and checks the refusal, the model verdict (AGREE with a kernel proof
 for `NULL`, MODEL_UNSUPPORTED for the others). It is in the `model` suite of
-`tests/nix_suites.json`. Its Nix result is in the final section.
+`tests/nix_suites.json`. Its Nix validation is pending: the Nix results above concern the tree
+before this follow-up, and the final Nix results of the follow-up are recorded in the last section.

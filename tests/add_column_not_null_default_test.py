@@ -57,9 +57,8 @@ def test_null_default_spelling_matches_native(default: str, refused: bool, decid
     if not decided:
         assert verdicts == ["MODEL_UNSUPPORTED"] * 2, (default, verdicts)
         return
-    for answer in answers:
-        if answer["verdict"] != "AGREE":
-            diagnostic = tmp_path / "disagreement.json"
-            diagnostic.write_text(json.dumps({"default": default, "answer": answer}, indent=2))
-            pytest.fail(f"NOT NULL default {default} disagrees; details: {diagnostic}")
+    if verdicts != ["AGREE"] * 2:
+        diagnostic = tmp_path / "disagreement.json"
+        diagnostic.write_text(json.dumps({"default": default, "refusals": refusals, "answers": answers}, indent=2))
+        pytest.fail(f"NOT NULL default {default} does not agree on both tables: {verdicts}; details: {diagnostic}")
     prove_all([answer["caseLean"] for answer in answers], runtime_root, tmp_path, cases=prepared, name="NotNullDefault")
