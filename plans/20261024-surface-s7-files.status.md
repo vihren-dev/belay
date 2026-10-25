@@ -272,8 +272,8 @@ their own reviewed task. Neither is silently excluded by this task boundary.
     optional `SqlEditorSource`; `scriptTerm` passes the literal, and `fileScriptTerm` passes none,
     because a file's text is not a Lean literal, so files get no parameter hover. Other
     behavior is unchanged.
-  Open integration point from the S7 entries above: closed by this change. Checks:
-  `just dev-build` and `lake build Belay belay-sql-check` passed; focused Nix surface run
+  Open integration point from the S7 entries above: closed by this change. Check: focused Nix
+  surface run
   (61 passed, 95 deselected, 382.17 s) at
   `/nix/store/kz3hp45026lmwa1ij0c8lxkhql7cm9r0-sqlite-verifier-test-surface-1`.
 - 2026-10-25: post-review gates of the S5 integration (merge `cdca869a`, record fixed in
@@ -299,6 +299,6 @@ their own reviewed task. Neither is silently excluded by this task boundary.
     with `CREATE VIEW` in the up section and `DROP VIEW` in the down section.
     `tests/surface/SqlFileForms.lean` checks each section against a database
     (`against :=`) that has the table or the view, and shows each equal to the inline script.
-  Checks: `just dev-build` and `lake build belay-sql-check` passed; focused Nix surface run
+  Check: focused Nix surface run
   (59 passed, 113 deselected, 329.08 s) at
   `/nix/store/hx2z9c1z1mdavhg2dk2wl23zmg1rrif6-sqlite-verifier-test-surface-1`.
