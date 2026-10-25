@@ -48,7 +48,7 @@ def rowsInContext (statement : Syntax.Statement) (clock : Int) (counters : Count
   | some (.query query subqueries) =>
     (query.runOn clock counters parameters CompoundResolutionExamples.tables.emptyDatabase subqueries).map (·.2.rows)
   | none => none
-  | some (.createTable _ _ _) | some (.createIndex _ _ _) | some (.createTrigger _ _ _)
+  | some (.createTable _ _ _) | some (.createView _ _ _) | some (.createIndex _ _ _) | some (.createTrigger _ _ _)
   | some (.addColumn _ _) | some (.drop _ _) | some .begin | some .commit | some .rollback
   | some (.insert _ _ _ _ _) | some (.update _ _ _ _ _ _)
   | some (.upsert _ _ _ _ _ _ _) | some (.delete _ _ _ _ _)

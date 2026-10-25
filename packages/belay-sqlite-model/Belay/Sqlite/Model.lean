@@ -165,6 +165,7 @@ import Belay.Sqlite.Model.ResolveAddColumnCatalog
 import Belay.Sqlite.Model.ResolveDropValid
 import Belay.Sqlite.Model.ResolveDropCatalog
 import Belay.Sqlite.Model.ResolveCreateTriggerCatalog
+import Belay.Sqlite.Model.ResolveCreateViewCatalog
 import Belay.Sqlite.Model.ResolveCreateIndexCatalog
 import Belay.Sqlite.Model.ResolveCreateTableCatalog
 import Belay.Sqlite.Model.ResolveCreateTableValid

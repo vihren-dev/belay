@@ -32,6 +32,8 @@ theorem resolveStatement_schemaLink {limits : Limits} (context : ResolveContext)
   | begin | commit | rollback => cases ok; trivial
   | createTable name columns constraints options =>
     exact plain _ ok fun _ _ found => resolveCreateTable_schemaLink _ _ _ _ _ _ _ _ found
+  | createView name ifNotExists columns query subqueries =>
+    exact plain _ ok fun _ _ found => resolveCreateView_schemaLink _ _ _ _ _ _ found
   | createIndex name unique table terms filter =>
     exact plain _ ok fun _ _ found => resolveCreateIndex_schemaLink _ _ _ _ _ _ _ _ _ found
   | addColumn table column =>

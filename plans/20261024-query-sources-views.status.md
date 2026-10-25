@@ -309,3 +309,53 @@ citations. Independent review `20261025T022201Z-7ebea057` checked source
 The reviewer reported reading the diff and changed files, with no coverage limitation.
 CREATE VIEW and the remaining view scope above still require their implementation and full
 part-3 acceptance; neither this unit nor its focused checks completes the task.
+
+## CREATE VIEW and view observation: checked
+
+CREATE VIEW stores the resolved view body, and the predicted catalog and native
+observation list views like tables. A view row is an observation, never a stored row.
+`observeView` resolves `SELECT * FROM view` with `resolveSelectDetails` and runs the
+result with `resolvedStepOutput`; there is no second query interpreter. An unreadable
+view keeps its prepare or step error. A clock-reading view without a known clock is
+unmodeled. `abs(INT64_MIN)` inside a view stays the existing fallible-source restriction.
+
+Two model gaps that native comparison exposed are fixed in this unit, because the
+view cases need them. They are not view features:
+
+- `x IN ()` now drops its operand as the SQLite parser does (translator,
+  `Translation/Forms.lean`), so an unresolved name or subquery there is no error.
+- A result column alias in an ON condition is now an `alias-in-expression`
+  restriction, as it is in WHERE. Native resolves it; the model did not.
+
+Nix evidence (all on this source tree):
+
+- Focused harness (observation, predict, pass, counter tests): **41 passed**, 216
+  deselected, `/nix/store/micf7fh3a5i8pb8gf31v8xav88hgwlnj-sqlite-verifier-test-view-observation-harness-1`.
+- CREATE/view/FK/schema/layer surface cases: **26 passed**, 66 deselected,
+  `/nix/store/mndkwxlxn5fb6plyalry5qmpbg64s5yk-sqlite-verifier-test-view-create-surface-1`.
+- Syntax cases: **6 passed**, 255 deselected,
+  `/nix/store/03cqhxl3xmifns5sfnln3b0zwyn1lskb-sqlite-verifier-test-view-create-model-1`.
+- Predictions `/nix/store/6ywc5znd40bmhqxa85vzxpazdn6r4w27-sqlite-verifier-predictions`
+  against the accepted baseline `xi0rgkd2nfxfilb63wygqxdxswjbd7kv`: 53 files, 7,372
+  cases, 48 files byte-identical, and every previously predicted record unchanged.
+  402 records differ: 97 change from unsupported to predicted, 267 change only the
+  unsupported-statement reason (CREATE VIEW is now a supported statement) and 38 change
+  the reason and the restriction. The record is `build/agent-logs/view-observation-prediction-comparison.json`.
+- Verdict `/nix/store/ji3bwji6ln6p3lwp9qbli54w12capajv-sqlite-verifier-verdict`: no
+  DISAGREE and no HARNESS_ERROR; AGREE 4,962, MODEL_UNSUPPORTED 2,410 (7,372 cases).
+  Of the 97 new predictions, **93 AGREE** and 4 are MODEL_UNSUPPORTED because the
+  prediction declares itself out of scope (`altertab2-8.1` and `altertab2-8.3`, in corpus
+  v4 and v5). Before the observer, 100 of 101 new predictions DISAGREED. Eight of
+  those 101 are now restrictions (seven `alias-in-expression`, one `rowid-name`), and
+  four predictions are new, so 97 remain. The agreement gain over the accepted
+  baseline (4,869) is 93.
+- `lake build` of `packages/verifier-conformance` and `packages/belay` both exit 0
+  (local diagnostics, as the rules require; not cited as acceptance).
+
+Judge-side gaps, not changed here (judge files are locked): the recorder throws on a
+CREATE VIEW whose body names a missing table or is cyclic, and `judge.records.subject_input`
+does not forward `setupClockUnixMilliseconds`.
+
+Logs: `build/agent-logs/view-observation-*`. The remaining view scope (PRAGMA
+table_info on views, broken-view errors, unsafe pragma use in view bodies, write errors,
+catalog closure) stays OPEN.

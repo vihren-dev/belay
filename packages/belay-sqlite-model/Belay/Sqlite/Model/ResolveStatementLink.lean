@@ -10,6 +10,19 @@ strict type of its column, and a DROP has positions that meet {lit}`Catalog.Drop
 
 namespace Belay.Sqlite.Model
 
+/-- Every successful CREATE VIEW resolution meets the statement's schema link.
+The fresh append and prepare-error cases require nothing; IF NOT EXISTS removes
+no positions. Proof sketch: split the resolver and use {name}`Catalog.DropClosed.nil`
+for an empty drop. -/
+theorem resolveCreateView_schemaLink (catalog after : Catalog) (name : Identifier)
+    (ifNotExists : Bool) (view : CatalogView) (statement : Resolved.Statement)
+    (ok : resolveCreateView catalog name ifNotExists view = .ok (statement, after)) :
+    statement.SchemaLink catalog := by
+  unfold resolveCreateView at ok
+  simp only [prepareError] at ok
+  repeat' split at ok
+  all_goals first | (cases ok; trivial) | (cases ok; exact Catalog.DropClosed.nil _) | cases ok
+
 /-- For every successful resolution of ALTER TABLE ADD COLUMN, the resolved statement meets
 {name}`Resolved.Statement.SchemaLink` on the catalog. Proof sketch: every branch of the resolver gives a
 prepare error, or the ADD COLUMN of a column whose strict default fits

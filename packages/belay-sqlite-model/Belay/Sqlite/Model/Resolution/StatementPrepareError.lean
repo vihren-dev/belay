@@ -3,7 +3,7 @@ import Belay.Sqlite.Model.Resolution.PrepareErrors
 set_option doc.verso true
 
 /-! The error that {lit}`sqlite3_prepare_v2` reports for a statement (ADR 0013, D8): one that
-names a catalog object, or an error of an expression ({lit}`ExprError`). -/
+checks a statement, names a catalog object, or reports an expression error ({lit}`ExprError`). -/
 
 namespace Belay.Sqlite.Model
 
@@ -12,6 +12,8 @@ scope. Each constructor names the SQLite message format it corresponds to. This
 is a SQLite rule, not a model restriction: SQLite runs the earlier statements and
 then stops at this one. -/
 inductive PrepareError where
+  /-- {lit}`parameters are not allowed in views`, before name checks at CREATE VIEW. -/
+  | viewVariables
   /-- {lit}`table %T already exists` ({lit}`sqlite3StartTable`). -/
   | tableExists (name : Identifier)
   /-- {lit}`view %T already exists` ({lit}`sqlite3StartTable`). -/

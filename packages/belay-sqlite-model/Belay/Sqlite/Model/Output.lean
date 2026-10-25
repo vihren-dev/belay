@@ -66,7 +66,7 @@ def Output.ofResults (results : List (List (List Value))) : Output :=
 def Resolved.Statement.returnsRows : Resolved.Statement → Bool
   | .insert _ _ returning .. | .upsert _ _ _ returning .. | .update _ _ _ returning .. | .delete _ _ returning .. =>
     !returning.isEmpty
-  | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit | .rollback
+  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit | .rollback
   | .prepareError _ | .query .. | .setting .. => false
 
 /-- The output of a statement from its transition, from its run ({name}`StatementRun`) and from
@@ -94,7 +94,7 @@ def Output.ofStep (clock : Int) (parameters : List Value) (statement : Resolved.
     | .query .. => match possibleOutput clock parameters statement before transition with
       | some results => .ofResults results
       | none => .unmodeled "the model gives no result for this query"
-    | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit
+    | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit
     | .rollback | .insert .. | .upsert .. | .update .. | .delete .. | .prepareError _ | .setting .. =>
       match statementOutput clock parameters statement before run transition with
       | some output =>

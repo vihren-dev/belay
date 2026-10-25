@@ -23,7 +23,7 @@ For example, {lean}`(Resolved.Statement.begin).SchemaLink []` holds. -/
 def Resolved.Statement.SchemaLink (catalog : Catalog) : Resolved.Statement → Prop
   | .addColumn _ column => strictDefaultFits column = true
   | .drop positions _ => catalog.DropClosed positions
-  | .createTable .. | .createIndex .. | .createTrigger .. | .begin | .commit | .rollback | .insert ..
+  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .begin | .commit | .rollback | .insert ..
   | .update .. | .upsert .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
 
 /-- For every successful resolution of CREATE TABLE, the resolved statement meets
@@ -114,7 +114,7 @@ theorem resolveSelect_schemaLink (context : ResolveContext) (catalog after : Cat
     (query : Syntax.Subquery) (subqueries : List Syntax.Subquery) (statement : Resolved.Statement)
     (ok : resolveSelect context catalog query subqueries = .ok (statement, after)) :
     statement.SchemaLink catalog := by
-  unfold resolveSelect at ok
+  unfold resolveSelect resolveSelectDetails at ok
   simp only [prepareError, issueResolution] at ok
   repeat' split at ok
   all_goals first | (cases ok; trivial) | (cases ok; exact Catalog.DropClosed.nil _) | (cases ok)

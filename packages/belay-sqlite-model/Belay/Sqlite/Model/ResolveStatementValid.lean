@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.ResolveAddColumnCatalog
+import Belay.Sqlite.Model.ResolveCreateViewCatalog
 import Belay.Sqlite.Model.Resolution.NamesSpec
 
 set_option doc.verso true
@@ -61,6 +62,10 @@ theorem resolveStatement_valid (context : ResolveContext) (state next : ResolveS
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveCreateTable_valid _ _ _ _ _ _ _ _ current execution (by assumption))
+  | createView name ifNotExists columns query subqueries =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    exact keep _ (resolveCreateView_valid _ _ _ _ _ _ _ current (by assumption))
   | createIndex name unique table terms filter =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok

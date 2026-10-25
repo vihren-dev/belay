@@ -13,13 +13,13 @@ deriving instance Lean.ToJson for ViewError
 deriving instance Lean.ToJson for CommonTableError
 deriving instance Lean.ToJson for ExprError
 
-/-- A prepare error as JSON, in one flat form: an error that names a catalog object as its
-own constructor, and an {name}`ExprError` as that error's constructor, so the wire form
+/-- A prepare error as JSON, in one flat form: a statement error as its own constructor, and an {name}`ExprError` as that error's constructor, so the wire form
 does not show the split of the two types. For example, {lit}`no such table: t` is
 {lit}`{"noSuchTable": {"name": "t"}}` and {lit}`no such column: a` is
 {lit}`{"noSuchColumn": {"name": "a"}}`, the derived form of each constructor. -/
 instance : Lean.ToJson PrepareError where
   toJson
+    | .viewVariables => Lean.Json.str "viewVariables"
     | .tableExists name => Lean.Json.mkObj [("tableExists", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .viewExists name => Lean.Json.mkObj [("viewExists", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .indexNameUsed name => Lean.Json.mkObj [("indexNameUsed", Lean.Json.mkObj [("name", Lean.toJson name)])]

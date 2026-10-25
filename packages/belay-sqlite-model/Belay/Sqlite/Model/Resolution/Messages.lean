@@ -91,6 +91,7 @@ def quotedName (name : Identifier) : String :=
 
 /-- SQLite's message for a prepare error, for example {lit}`no such table: t`. -/
 def PrepareError.message : PrepareError → String
+  | .viewVariables => "parameters are not allowed in views"
   | .tableExists name => s!"table {name} already exists"
   | .viewExists name => s!"view {name} already exists"
   | .indexNameUsed name => s!"there is already an index named {name}"

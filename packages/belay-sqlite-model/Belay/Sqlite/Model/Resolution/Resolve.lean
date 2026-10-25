@@ -5,6 +5,7 @@ import Belay.Sqlite.Model.Resolution.StatementCatalog
 import Belay.Sqlite.Model.Resolution.Updates
 import Belay.Sqlite.Model.Resolution.Deletes
 import Belay.Sqlite.Model.Resolution.Drops
+import Belay.Sqlite.Model.Resolution.ViewDefinitions
 import Belay.Sqlite.Model.Resolution.ResolveState
 import Belay.Sqlite.Model.Resolution.TriggerDefinitions
 import Belay.Sqlite.Model.Resolution.PragmaResolution
@@ -38,6 +39,8 @@ def resolveStatement (context : ResolveContext) (state : ResolveState) :
   | .pragma pragma => resolvePragma state pragma
   | .createTable name columns constraints options =>
     state.withCatalog (resolveCreateTable context state.catalog name columns constraints options)
+  | .createView name ifNotExists columns query subqueries =>
+    state.withCatalog (resolveCreateView state.catalog name ifNotExists { columns, query, subqueries })
   | .createIndex name unique table terms filter =>
     state.withCatalog (resolveCreateIndex context state.catalog name unique table terms filter)
   | .addColumn table column => state.withCatalog (resolveAddColumn context state.catalog table column)

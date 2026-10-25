@@ -48,7 +48,7 @@ theorem resolveSelect_noFrom_one_subquery (context : ResolveContext) (catalog : 
   have noCopies : querySourceCopiesNeeded catalog main [sub] = false := by
     simpa [querySourceCopiesNeeded, ordinary, mainNoFrom] using subNoView
   subst shapeIs
-  unfold resolveSelect
+  unfold resolveSelect resolveSelectDetails
   simp [prepareQuerySources, noCopies, ordinary, CommonTableCopies.recursionIssue, CommonTableCopies.originalIssue, compoundColumnsIssue, noMain, mainNoFrom, mainNoJoins, mainNoCompound, mainNoStar, subqueryScopes, order, subqueryScope,
     parentless, Scope.columns, Scope.enclose, subSources, subNoStar, resolveSubqueryBodies, subqueryBodyOrder, QueryScope.sourceIndexes, QueryScope.refresh, Scope.refreshSources,
     unique, noSource, subNoCompound, subBody,

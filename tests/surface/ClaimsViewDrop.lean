@@ -5,7 +5,7 @@ set_option maxRecDepth 8000
 set_option maxHeartbeats 800000
 
 /-! DROP VIEW uses the shared statement runner, preserves stored rows, and does
-not resolve the removed definition. CREATE VIEW syntax is a later task unit. -/
+not resolve the removed definition. Its input uses the explicit catalog primitive. -/
 
 open Belay.Sqlite
 open Belay.Sqlite.Model hiding Database

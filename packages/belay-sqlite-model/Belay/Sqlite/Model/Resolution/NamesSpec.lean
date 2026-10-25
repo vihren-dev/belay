@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.Resolution.DropSpec
+import Belay.Sqlite.Model.Resolution.ViewDefinitionSpec
 import Belay.Sqlite.Model.Resolution.WriteCatalogSpec
 import Belay.Sqlite.Model.Resolution.TriggerDefinitionSpec
 
@@ -115,6 +116,10 @@ theorem resolveStatement_namesUnique (context : ResolveContext) (state next : Re
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveCreateTable_step _ _ _ _ _ _ _ _ (by assumption))
+  | createView name ifNotExists columns query subqueries =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    exact keep _ (resolveCreateView_step _ _ _ _ _ _ (by assumption))
   | createIndex name unique table terms filter =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok

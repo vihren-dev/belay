@@ -83,6 +83,10 @@ inductive BodyStatement where
 /-- One statement as written. For example, {lit}`COMMIT` is
 {lean}`Statement.commit`. -/
 inductive Statement where
+  /-- Store an unresolved view body, with optional output names and indexed subqueries.
+  Use {lean}`(none : Option (List Identifier))` to derive names when the view is used. -/
+  | createView (name : Identifier) (ifNotExists : Bool) (columns : Option (List Identifier))
+      (query : Subquery) (subqueries : List Subquery := [])
   /-- {lit}`CREATE TABLE name (columns, constraints) options`. -/
   | createTable (name : Identifier) (columns : List ColumnDefinition)
       (constraints : List TableConstraint) (options : TableOptions := {})
