@@ -1,4 +1,5 @@
 import Belay.Sqlite.CheckOptions
+import Belay.Sqlite.CheckInputSyntax
 import Lean.Util.Heartbeats
 
 set_option doc.verso true
@@ -8,12 +9,6 @@ checker, which still certifies the original proposition and validates each repla
 
 namespace Belay.Sqlite.Check
 open Lean Meta Elab Term
-
-/-- One explicit search input. A schema guides generation; repeated databases give an ordered
-candidate sequence. Named inputs match quantified binders, including binders named env or schema. -/
-declare_syntax_cat sqlCheckInput
-syntax "(" ident ":=" term ")" : sqlCheckInput
-syntax "(" ident ident ":=" term ")" : sqlCheckInput
 
 /-- Elaborate a supplied term at its source location without error-to-sorry recovery. -/
 private def inputTerm (stx : Syntax) (expected : Option Expr := none) : TermElabM Expr :=
@@ -53,9 +48,11 @@ def elaborateInputs (inputs : Array (TSyntax `sqlCheckInput)) : TermElabM Sample
 /-- Run the common checker with frontend options and optional supplied terms. Input elaboration
 and checking share one heartbeat budget. Type errors retain their input locations; exhaustion
 is unknown and cancellation propagates. A displayed proof script is printed, parsed and
-checked again against the original proposition inside that budget. Custom generators can use {name}`check` and
+checked again against the original proposition inside that budget. Exclusions apply to both
+the returned certificate and the printed script. Custom generators can use {name}`check` and
 {name}`SampleConfig.witnesses` directly, without a notation-specific interface. -/
-def configuredCheck (proposition : Expr) (inputs : Array (TSyntax `sqlCheckInput) := #[]) :
+def configuredCheck (proposition : Expr) (inputs : Array (TSyntax `sqlCheckInput) := #[])
+    (excluded : Array Name := #[]) (excludedLocals : Array FVarId := #[]) :
     TermElabM Outcome := do
   let options ← getOptions
   let recursionLimit := sql.checkRecursionLimit.get options
@@ -65,16 +62,16 @@ def configuredCheck (proposition : Expr) (inputs : Array (TSyntax `sqlCheckInput
       let samples ← elaborateInputs inputs
       let remaining := (← getRemainingHeartbeats) / 1000
       let outcome ← check proposition remaining samples (sql.checkShrinkAttempts.get options)
+        (excluded := excluded) (excludedLocals := excludedLocals)
         (recursionLimit := recursionLimit)
       match outcome.result with
       | .proved proof =>
         let printed ← attempt do
-          let printable := proof.tactic.rewriteBottomUp fun node =>
-            if node.isIdent then mkIdentFrom node node.getId.eraseMacroScopes else node
+          let printable := printableScript proof.tactic
           let text ← PrettyPrinter.ppTactic ⟨printable⟩
           let .ok tactic := Parser.runParserCategory (← getEnv) `tactic text.pretty
             | throwError "SQL proof script could not be printed as Lean syntax"
-          proveWith proposition tactic
+          proveWith proposition tactic excluded excludedLocals
         return printed.map (fun proof => { outcome with result := .proved proof }) |>.getD {}
       | .refuted .. | .unknown => return outcome
   return result.getD {}

@@ -141,6 +141,9 @@
     "tests/surface_replay_test.py",
     "tests/surface_foreign_key_atoms_test.py",
     "tests/surface_search_test.py",
-    "tests/surface_check_command_test.py"
+    "tests/surface_check_command_test.py",
+    "tests/surface_automatic_test.py",
+    "tests/surface_automatic_editor_test.py",
+    "tests/surface_automatic_cancel_test.py"
   ]
 }

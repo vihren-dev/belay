@@ -168,6 +168,7 @@ witness independently of search bounds.
 
 | Lean option | Default | Meaning |
 | --- | ---: | --- |
+| `sql.check` | true | Check SQL theorem statements in the background |
 | `sql.checkBudget` | 100000 | Cooperative Lean heartbeat units; zero disables checking |
 | `sql.checkRecursionLimit` | 4000 | Finite reduction depth; zero disables checking |
 | `sql.checkCandidates` | 128 | Maximum proposals tried, including explicit witnesses |
@@ -186,4 +187,13 @@ For arbitrary generators, call `Check.check` with `Check.SampleConfig.witnesses`
 or `Check.checkCandidates` with an elaboration-monad callback. `Check.refuteWith`
 accepts a custom quantified-input selector. The certificate and replay APIs stay
 separate: a programmatic candidate or display record is not itself evidence.
-Automatic theorem checking and regression code actions remain planned.
+Theorem statements that mention SQL are checked by default, including anonymous
+examples and mutual declarations. Only a certified counterexample is an error.
+The native editor action appends an independently checked regression example or
+proof example. The original false theorem keeps its error until you change it.
+Section hypotheses remain premises; the theorem and proof-body assumptions cannot
+justify their own check. Set `sql.check false` to keep only explicit checks.
+The shared budget includes discovery, all statements in one command, and checking
+the offered text. Use a larger budget for a mutual block. Cancellation and resource
+exhaustion leave the claim unknown; background diagnostic latency is separate from
+ordinary proof elaboration.

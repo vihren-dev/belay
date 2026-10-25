@@ -2,10 +2,12 @@ import Belay.Sqlite.CheckOperation
 
 set_option doc.verso true
 
-/-! The explicit command and searched tactic share these finite controls. Heartbeats bound
+/-! Explicit commands, searched tactics and automatic checks share these finite controls. Heartbeats bound
 cooperative work, not elapsed time. The programmatic checker accepts custom policies directly. -/
 
-/-- A finite Lean heartbeat budget for SQL checks; zero returns unknown without searching. -/
+/-- A finite Lean heartbeat budget for SQL checks; zero returns unknown without searching.
+Automatic checking shares it across discovery, all declarations in one command and the
+suggested examples. The default permits small independently rechecked SQL refutations. -/
 register_option sql.checkBudget : Nat := {
   defValue := 100000
   descr := "SQL checking budget in Lean heartbeat units (zero disables checking)" }

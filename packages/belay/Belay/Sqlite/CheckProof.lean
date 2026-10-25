@@ -22,6 +22,12 @@ structure Proven where
   /-- The proposed script, independently checked before a successful editor suggestion. -/
   tactic : Syntax
 
+/-- Remove quotation scopes before printing a suggested script. The returned syntax is an
+untrusted text proposal: callers must parse it and certify its proof against the original goal. -/
+def printableScript (script : Syntax) : Syntax :=
+  script.rewriteBottomUp fun node =>
+    if node.isIdent then mkIdentFrom node node.getId.eraseMacroScopes else node
+
 /-- Run caller-selected proof automation on the exact proposition, without error-to-sorry
 recovery. An error diagnostic, unsolved goal or forbidden dependency rejects the attempt. Use this primitive
 to supply richer automation without changing the candidate search or certification rules. -/

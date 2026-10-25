@@ -174,3 +174,35 @@ was checked directly from its immutable report; the reviewer did not rerun it.
 The editor part-1 full/verdict gate remains queued. Automatic work is isolated
 in a separate workspace on this immutable merge, so it cannot change that gate's
 source.
+
+## Editor part-1 acceptance on the checked-command integration — 2026-10-25
+
+The post-review sequence on frozen
+`735d2b33110e84d4a613a3dc729f52325d66ef80` (session `5008`) completed with
+exit zero. Automatic-checking drafts live in a separate workspace and are absent
+from these inputs.
+
+- `just test-full`: 967 Nix tests passed, with zero failures, errors or skips,
+  at `/nix/store/60g332p4mqcsklyhkpdr9q27z666i648-sqlite-verifier-test-reports`.
+  The surface suite passed 104 checks at
+  `/nix/store/wwb4wrlbf17j4i6xfakkxnfxg9c35clx-sqlite-verifier-test-surface-1`.
+- `just verdict`: all frozen claims pass at
+  `/nix/store/gldj7zm5hv9zah0jjif51dqzsdzyrhy3-sqlite-verifier-verdict`.
+- All 53 prediction files and 7,372 cases remain byte-identical to the accepted
+  stored-view baseline. The output is
+  `/nix/store/1n22b69h6f0df7l9hzpydw7biwhx3pna-sqlite-verifier-predictions`.
+  Exact comparison and JUnit totals are retained in
+  `build/frontend-editor-comparison.json` and
+  `build/frontend-editor-full-summary.json`.
+
+Editor part 1 is accepted. Its schema metadata, origins, corrections and warnings
+remain open in part 2. S5 parts 1 and 2 remain accepted; automatic checking and
+regression actions remain open in S5 part 3. Neither whole task is complete.
+
+## Automatic editor actions — 2026-10-25
+
+The automatic editor tests (six action shapes, local option controls and two
+document-edit cancellation cases) passed in the focused Nix gate
+`/nix/store/11rz63050cnrdwl6wpkk2fdc6jib0q7x-sqlite-verifier-test-automatic-1`
+(54 passed, 70 deselected). See the S5 status file for the cancellation limit.
+Editor part 2 remains open.

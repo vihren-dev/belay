@@ -80,8 +80,8 @@ class LeanServer:
                 assert "error" not in message, message
                 return message.get("result")
 
-    def open(self, source: str) -> str:
-        """Initialize and elaborate one document; documentSymbol waits for its full elaboration."""
+    def open(self, source: str, *, wait: bool = True) -> str:
+        """Initialize one document; optionally await symbols. Background diagnostics need waitForDiagnostics."""
         response = self.request("initialize", {"processId": os.getpid(),
             "rootUri": self.directory.as_uri(), "capabilities": {}})
         assert isinstance(response, dict)
@@ -98,7 +98,8 @@ class LeanServer:
         uri = path.as_uri()
         self.send({"method": "textDocument/didOpen", "params": {"textDocument": {
             "uri": uri, "languageId": "lean4", "version": 1, "text": source}}})
-        self.request("textDocument/documentSymbol", {"textDocument": {"uri": uri}}, timeout=60)
+        if wait:
+            self.request("textDocument/documentSymbol", {"textDocument": {"uri": uri}}, timeout=60)
         return uri
 
     def close(self) -> None:

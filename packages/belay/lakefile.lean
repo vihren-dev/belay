@@ -37,6 +37,7 @@ lean_lib Belay where
       .one `Belay.Sqlite.CheckCandidates, .one `Belay.Sqlite.CheckClaim,
       .one `Belay.Sqlite.CheckRandom, .one `Belay.Sqlite.CheckSamples,
       .one `Belay.Sqlite.CheckReplay, .one `Belay.Sqlite.CheckOperation,
+      .one `Belay.Sqlite.CheckInputSyntax, .one `Belay.Sqlite.CheckDeclarations, .one `Belay.Sqlite.CheckExample, .one `Belay.Sqlite.SqlAutomatic,
       .one `Belay.Sqlite.CheckOptions, .one `Belay.Sqlite.CheckInputs, .one `Belay.Sqlite.CheckDisplay,
       .one `Belay.Sqlite.SqlCheckCommand, .one `Belay.Sqlite.SqlRefuteSearch]
   precompileModules := true
