@@ -28,3 +28,10 @@ Task: [task file](20261025-query-mutant-time-limit.task.md).
   and join padding 51 to 65 s each; the other tests of the `mutants` suite
   between 63 and 211 s, listed in the final report; `tableMutants` 50 to 181 s;
   `functionMutants` 75 to 130 s (both passed on hosted Linux).
+- 2026-10-25: review `20261025T044837Z-fd9c46c0` (R12, should): the test file
+  grew from 187 to 242 lines. The tests of subqueries, expression forms,
+  DISTINCT and HAVING, foreign keys, triggers, possible results, parameters,
+  compound SELECT and pragmas moved unchanged to
+  `tests/conformance_query_feature_mutants_test.py` (97 lines), listed in the
+  `mutants` suite of `tests/nix_suites.json`. The query mutant test file has
+  163 lines.

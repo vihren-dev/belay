@@ -108,6 +108,7 @@
   "mutants": [
     "tests/conformance_resolve_mutants_test.py",
     "tests/conformance_query_mutants_test.py",
+    "tests/conformance_query_feature_mutants_test.py",
     "tests/conformance_query_source_mutants_test.py"
   ],
   "tableMutants": [
