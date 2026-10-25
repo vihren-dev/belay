@@ -27,7 +27,8 @@
     "tests/add_column_defaults_test.py",
     "tests/conformance_query_sources_test.py",
     "tests/foreign_key_atoms_native_test.py",
-    "tests/add_column_references_test.py"
+    "tests/add_column_references_test.py",
+    "tests/add_column_not_null_default_test.py"
   ],
   "frozen": [
     "tests/conformance_progress_views_test.py",

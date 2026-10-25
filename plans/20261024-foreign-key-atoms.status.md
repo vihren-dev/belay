@@ -1109,3 +1109,32 @@ log `build/agent-logs/wt-test-nix.log`; `just test-scheduled-checks` exit 0, 47 
 suite listed in `build/agent-logs/wt-scheduled-checks.log`, reports
 `/nix/store/3477i9gzhsp4nqiihpmgj5llzh3hzsx9-sqlite-verifier-scheduled-check-reports`.
 The task stays OPEN only for the separate judge change with the corpus-v54 evidence.
+
+## Follow-up A: spellings of a NULL default for a NOT NULL ADD COLUMN (2026-10-25)
+
+The coordinator asked to make the model agree with native SQLite on `NOT NULL` columns with `-NULL`,
+`+NULL` and a cast of NULL. The probes of SQLite 3.51.0
+(`build/agent-logs/nulldefault-native.txt`, `nulldefault-native2.txt`, `nulldefault-native3.txt`)
+show the native rule, and the model needs no change:
+
+- Native refuses a populated table ("Cannot add a NOT NULL column with default value NULL") for the
+  literal spellings `NULL`, `(NULL)`, `((NULL))`, `NULL COLLATE nocase` (the COLLATE is a separate
+  column constraint) and the bare `+NULL`, `+ NULL` (the grammar drops a plus before a bare term).
+- Native adds the column and stores NULL in the existing rows for the expressions `-NULL`, `- NULL`,
+  `(+NULL)`, `(-NULL)`, `(+(NULL))` and `(CAST(NULL AS INT))`. It reports "Cannot add a column with
+  non-constant default" for `(NULL COLLATE nocase)`, `(NULL+0)` and similar expressions. An empty
+  table accepts every spelling. `DEFAULT CAST(NULL AS INT)` without parentheses is a syntax error.
+- The model never reports `nullColumnDefault` for the signed or cast spellings. The translation maps
+  only `NULL`, `+term`, `-term` and `?` after DEFAULT. `literalDefault` gives the value NULL only for
+  `.null`, and `.positive .null` and `.negate .null` are the model restriction `unmodeledDefault`. The
+  parenthesized spellings are not translated. The earlier note in this file's open problems, that the
+  model gives `nullColumnDefault` for `-NULL`, was wrong: `-NULL` is outside the model, as the
+  task file says.
+- Supporting the bare `+NULL` would give a correct answer for the translated SQL text, but the syntax
+  tree cannot tell it from `(+NULL)`, where native adds the column. The model keeps both outside its
+  scope, which is the state that the task file and ADR 0022 describe.
+
+The new test `tests/add_column_not_null_default_test.py` records the seven spellings natively on an
+empty and a populated table and checks the refusal, the model verdict (AGREE with a kernel proof
+for `NULL`, MODEL_UNSUPPORTED for the others). It is in the `model` suite of
+`tests/nix_suites.json`. Its Nix result is in the final section.
