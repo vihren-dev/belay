@@ -67,6 +67,22 @@ def test_view_table_info_matches_native(runtime_root: Path, setup: str, migratio
     assert case_verdict(record, answer).name == "AGREE", answer
 
 
+@pytest.mark.parametrize("statement", [
+    "INSERT INTO v VALUES(1)", "UPDATE v SET a=1 WHERE zz=1", "DELETE FROM v", "REPLACE INTO v VALUES(1)",
+    "INSERT INTO V VALUES(1, zz)", "CREATE INDEX i ON v(a)", "CREATE INDEX t ON v(zz)",
+    "ALTER TABLE v ADD COLUMN c", "CREATE TRIGGER tr AFTER INSERT ON v BEGIN SELECT 1; END",
+    "CREATE TRIGGER tr BEFORE UPDATE ON V BEGIN SELECT 1; END",
+])
+def test_view_write_errors_match_native(runtime_root: Path, statement: str) -> None:
+    """A write, an index, an added column or a trigger on a readable view fails as in native SQLite,
+    after the statements before it, and the view observation of the data stays the same."""
+    record = record_sql("CREATE TABLE t(a); INSERT INTO t VALUES(1); CREATE VIEW v AS SELECT a FROM t;",
+                        "INSERT INTO t VALUES(2); " + statement + "; INSERT INTO t VALUES(3);",
+                        name="view-write-error", outputs=True)
+    [answer] = predictions(runtime_root, [subject_input(record)])
+    assert case_verdict(record, answer).name == "AGREE", answer
+
+
 def test_view_observation_counter_context(runtime_root: Path) -> None:
     """The pass preserves writer counters; an open snapshot's independent reader has zeros."""
     record = record_sql("CREATE TABLE t(a); INSERT INTO t VALUES(1),(2);"

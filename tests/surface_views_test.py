@@ -15,7 +15,8 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
 @pytest.mark.parametrize("fixture", ["ClaimsViews", "ClaimsViewScope", "ClaimsViewTriggers",
     pytest.param("ClaimsViewDrop", marks=pytest.mark.requires_native("sqlite3")),
     pytest.param("ClaimsViewCreate", marks=pytest.mark.requires_native("sqlite3")),
-    pytest.param("ClaimsViewTableInfo", marks=pytest.mark.requires_native("sqlite3"))])
+    pytest.param("ClaimsViewTableInfo", marks=pytest.mark.requires_native("sqlite3")),
+    pytest.param("ClaimsViewWrites", marks=pytest.mark.requires_native("sqlite3"))])
 def test_stored_views_use_the_indexed_query_resolver(runtime_root: Path, tmp_path: Path, fixture: str) -> None:
     """QuerySourceExpansion preserves late lookup, metadata, closed names and trigger-cell
     offsets through kernel claims. Sampling checks view storage and kernel validity;
@@ -41,6 +42,9 @@ def test_stored_views_use_the_indexed_query_resolver(runtime_root: Path, tmp_pat
     if fixture == "ClaimsViewTableInfo":
         assert result.stdout.count("depends on axioms") == 4, result.stdout
         check_table_info_messages(result.stdout, tmp_path)
+    if fixture == "ClaimsViewWrites":
+        assert result.stdout.count("depends on axioms") == 1, result.stdout
+        check_write_messages(result.stdout, tmp_path)
 
 
 def check_drop_messages(output: str, directory: Path) -> None:
@@ -85,6 +89,27 @@ def check_table_info_messages(output: str, directory: Path) -> None:
                "CREATE VIEW badnarrow(a, b) AS SELECT * FROM missing;"
                "CREATE VIEW nested AS SELECT * FROM broken;")
     check_messages(output, "table-info-messages:", statements, prelude, directory)
+
+
+def check_write_messages(output: str, directory: Path) -> None:
+    """Compare writes and catalog statements on readable and unreadable views with pinned SQLite."""
+    statements = ["INSERT INTO v VALUES (1, 'x')", "INSERT INTO MIXED VALUES (1)", "INSERT INTO v VALUES (1), (1, 2)",
+                  "UPDATE v SET zz = 1 WHERE zz = 2", "DELETE FROM v WHERE zz = 1", "REPLACE INTO v VALUES (1, 2)",
+                  "INSERT INTO v VALUES (1, zz)",
+                  "INSERT INTO broken VALUES (1)", "UPDATE cycle SET a = 1", "DELETE FROM badcol",
+                  "INSERT INTO narrow VALUES (1)", "CREATE INDEX i ON v(a)", "CREATE INDEX i ON broken(a)",
+                  "CREATE INDEX t ON v(a)", "ALTER TABLE v ADD COLUMN c", "ALTER TABLE broken ADD COLUMN c",
+                  "CREATE TRIGGER tr AFTER INSERT ON v BEGIN SELECT 1; END",
+                  "CREATE TRIGGER tr BEFORE DELETE ON V BEGIN SELECT 1; END",
+                  "CREATE TRIGGER tr AFTER INSERT ON broken BEGIN SELECT 1; END",
+                  "CREATE TRIGGER ex AFTER INSERT ON v BEGIN SELECT 1; END",
+                  "CREATE TRIGGER IF NOT EXISTS ex AFTER INSERT ON v BEGIN SELECT 1; END"]
+    prelude = ("CREATE TABLE t(a INTEGER, b TEXT); CREATE VIEW v AS SELECT a, b FROM t;"
+               "CREATE VIEW Mixed AS SELECT a FROM t; CREATE VIEW broken AS SELECT * FROM missing;"
+               "CREATE VIEW cycle AS SELECT * FROM cycle; CREATE VIEW narrow(x, y) AS SELECT 1;"
+               "CREATE VIEW badcol AS SELECT zz FROM t; CREATE VIEW scalar AS SELECT (SELECT a, b FROM t) AS x;"
+               "CREATE TRIGGER ex AFTER INSERT ON t BEGIN SELECT 1; END;")
+    check_messages(output, "write-messages:", statements, prelude, directory)
 
 
 def check_messages(output: str, prefix: str, statements: list[str], prelude: str, directory: Path) -> None:

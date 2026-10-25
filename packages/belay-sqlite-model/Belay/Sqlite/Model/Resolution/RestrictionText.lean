@@ -42,6 +42,7 @@ def RestrictionKind.id : RestrictionKind → String
   | .unmodeledFunction => "unmodeled-function"
   | .aggregateInExpression => "aggregate-in-expression"
   | .aliasInExpression => "alias-in-expression"
+  | .viewBodyCheck => "view-body-check"
   | .groupByTerm => "group-by-term"
   | .bareColumn => "bare-column"
   | .aggregateOrderBy => "aggregate-order-by"
@@ -106,6 +107,7 @@ def RestrictionKind.message : RestrictionKind → String
   | .unmodeledFunction => "this function, or this form of it, is not modeled; rewrite the expression without it"
   | .aggregateInExpression => "an aggregate here is not modeled, such as the argument of a function that can fail; use the aggregate as a whole result column"
   | .aliasInExpression => "a result column alias inside WHERE, ON, HAVING or an ORDER BY expression is not modeled; write the column expression"
+  | .viewBodyCheck => "a view whose body has an error that SQLite finds only when a statement runs it is not modeled for a statement that reads only its columns; repair the view or select from it"
   | .groupByTerm => "only a column name or a result column number is modeled in GROUP BY"
   | .bareColumn => "a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it"
   | .aggregateOrderBy => "an ORDER BY term of an aggregate query that reads a column outside GROUP BY is not modeled; order by a grouping term, an aggregate or a result column"
@@ -137,7 +139,7 @@ def RestrictionKind.message : RestrictionKind → String
 
 /-- Every restriction, in the order of the registry. -/
 def RestrictionKind.all : List RestrictionKind :=
-  [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .parameterErrorOrder, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .dropConstraintIndex, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments, .jsonSubtype, .subqueryHere, .outerAggregate, .subqueryFallibleCall, .subqueryReadsTarget, .distinctOrderBy, .deferredForeignKey, .foreignKeyUpsert, .raiseForm, .triggerForm, .triggerWritesOwnTable, .schemaTriggerOrder,
+  [.schemaStatement, .engineTable, .rowidColumnName, .unmodeledDefault, .indexStringTerm, .indexDateFunction, .indexJsonFunction, .unknownCollation, .checkFunction, .addColumnCheckError, .generatedFunction, .generatedLoop, .parameterErrorOrder, .upsertGenerated, .addColumnGenerated, .addColumnStrictType, .dropConstraintIndex, .addColumnConstraint, .rowDependentKey, .conflictWithoutTarget, .mixedConflictAlgorithms, .constraintAlgorithmUpdate, .replaceDefault, .insertColumnTwice, .updateColumnTwice, .rowidName, .joinOperator, .laterTableInOn, .systemTable, .unmodeledFunction, .aggregateInExpression, .aliasInExpression, .viewBodyCheck, .groupByTerm, .bareColumn, .aggregateOrderBy, .windowValue, .negativeOffset, .windowedGroupSum, .constantFunctionError, .tableFunction, .functionJoin, .laterSourceInArguments, .jsonSubtype, .subqueryHere, .outerAggregate, .subqueryFallibleCall, .subqueryReadsTarget, .distinctOrderBy, .deferredForeignKey, .foreignKeyUpsert, .raiseForm, .triggerForm, .triggerWritesOwnTable, .schemaTriggerOrder,
     .sourceColumnName, .recursiveCommonTable, .compoundOrderByTerm, .foreignKeyMismatchOrder, .connectionCounterRead, .nondeterministicErrorOrder]
 
 /-- For every restriction, it is in {name}`RestrictionKind.all`. Proof sketch: case

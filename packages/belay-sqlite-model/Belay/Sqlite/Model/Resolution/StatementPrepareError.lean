@@ -55,6 +55,17 @@ inductive PrepareError where
   /-- {lit}`trigger %T already exists` ({lit}`sqlite3BeginTrigger`), for CREATE TRIGGER without
   {lit}`IF NOT EXISTS` (ADR 0018, D5). -/
   | triggerExists (name : Identifier)
+  /-- {lit}`cannot modify %s because it is a view` ({lit}`sqlite3IsReadOnly`): INSERT, UPDATE or
+  DELETE of a view that has no INSTEAD OF trigger. The name keeps the catalog's declared spelling. -/
+  | viewModify (name : Identifier)
+  /-- {lit}`views may not be indexed` ({lit}`sqlite3CreateIndex`). -/
+  | viewNotIndexed
+  /-- {lit}`Cannot add a column to a view` ({lit}`sqlite3AlterBeginAddColumn`). -/
+  | viewAddColumn
+  /-- {lit}`cannot create BEFORE trigger on view: %S` or {lit}`cannot create AFTER trigger on view: %S`
+  ({lit}`sqlite3BeginTrigger`): a view takes only INSTEAD OF triggers. The flag is true for BEFORE.
+  The name is the name as written. -/
+  | viewTrigger (before : Bool) (name : Identifier)
   /-- An error that names no catalog object ({name}`ExprError`). -/
   | expression (error : ExprError)
   deriving Repr, DecidableEq

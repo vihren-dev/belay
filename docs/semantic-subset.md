@@ -417,13 +417,28 @@ exists`, `use DROP VIEW to delete view` and `use DROP TABLE to delete table` app
 A view that names a missing table or reads itself fails when a statement uses it, with SQLite's
 preparation error. A view has no stored rows: the observation of the catalog reads them by
 running `SELECT * FROM view`. Not modeled, and refused as model restrictions: `TEMP` views,
-schema-qualified view names, `INSERT`, `UPDATE` and `DELETE` on a view, `INSTEAD OF` triggers, a view as the argument of a
+schema-qualified view names, `INSTEAD OF` triggers, a view as the argument of a
 table-valued pragma.
 
-`PRAGMA table_info(view)` lists the columns of `SELECT * FROM view` as the catalog defines the
-view now: the name, the normalized declared type or the empty text, `notnull` 0, `dflt_value`
-NULL and `pk` 0. A view that SQLite cannot read, such as one that names a missing table, gives
-the preparation error of that query. `PRAGMA foreign_key_list` of a view has no rows, as in SQLite.
+A view has no `INSTEAD OF` trigger in the model, so a write to it fails as in SQLite:
+`INSERT`, `REPLACE`, `UPDATE` and `DELETE` give `cannot modify v because it is a view`, with
+the name as the catalog spells it, and they do not look at the rest of the statement. `CREATE
+INDEX` on a view gives `views may not be indexed`, `ALTER TABLE ... ADD COLUMN` gives `Cannot
+add a column to a view`, and `CREATE TRIGGER` with `BEFORE` or `AFTER` gives `cannot create
+BEFORE trigger on view: v` or the same with `AFTER`, after the checks of the trigger name. The
+rows of an `INSERT` with different widths are the one error that comes first, as in SQLite.
+
+`PRAGMA table_info(view)` and a write to a view first read the columns of the view, as
+`SELECT * FROM view` gives them now. `table_info` lists the name, the normalized declared type
+or the empty text, `notnull` 0, `dflt_value` NULL and `pk` 0 for each. SQLite reads the columns
+only to describe them, so it does not check everything that a query on the view checks. A view
+that names a missing table or reads itself, a missing column or function, an ORDER BY or GROUP
+BY term out of range, or an ambiguous column gives the preparation error of the query, for
+the pragma and for a write. The width of the view's own list of column names is not checked:
+`table_info` lists the names of the list, in order and without types, and a write gives
+`cannot modify`. A subquery with the wrong number of columns, an aggregate in the wrong place
+and the other errors that SQLite finds only when a statement runs the view are the restriction
+`view-body-check`. `PRAGMA foreign_key_list` of a view has no rows, as in SQLite.
 
 `CREATE TRIGGER [IF NOT EXISTS] name [BEFORE|AFTER] INSERT|UPDATE [OF columns]|DELETE ON table
 [FOR EACH ROW] [WHEN condition] BEGIN statements END` (ADR 0018, D5) has a body of `INSERT ...
@@ -575,6 +590,7 @@ should shrink.
 | `unmodeled-function` | A function of the pinned library that the model does not describe, or a form of it that the model does not describe, such as a window function or `sqlite_version()` | ADR 0012 slices 1, 2, 6b and 6c; ADR 0015 |
 | `aggregate-in-expression` | An aggregate where the model does not describe it, such as the argument of a function that can fail, is not modeled | ADR 0012 slice 1; ADR 0018, slice 3 |
 | `alias-in-expression` | A result column alias inside WHERE, ON, HAVING or an ORDER BY expression is not modeled | ADR 0012 slice 1 |
+| `view-body-check` | A view whose query has an error that SQLite finds only when a statement runs the view, such as a subquery with two columns, is not modeled for `PRAGMA table_info` or a write to the view | ADR 0017 |
 | `group-by-term` | Only a column name, also under COLLATE, or a result column number is modeled in GROUP BY | ADR 0012 slice 1; ADR 0014, slice 3 |
 | `bare-column` | A result column outside GROUP BY in an aggregate query is not modeled | ADR 0012 slice 1 |
 | `aggregate-order-by` | An `ORDER BY` term of an aggregate query that reads a column outside `GROUP BY` is not modeled | ADR 0012 slice 1; ADR 0018, slice 3 |

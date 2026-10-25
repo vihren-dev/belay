@@ -398,5 +398,46 @@ Nix checks (all pass):
   DISAGREE, no HARNESS_ERROR; AGREE 4,962, MODEL_UNSUPPORTED 2,410.
 - `just dev-build` and `just dev-verdict` pass (local, not evidence); the law modules build.
 
-Still OPEN: write-error and catalog closure for views (INSERT/UPDATE/DELETE, CREATE INDEX,
-ALTER, triggers on a view).
+Review `20261025T053652Z-9624ae5e` (on the table_info commit): 3 musts, all fixed in the
+next section (R7 a codegen-time error of the view body reported by table_info, R5 catch-all
+matches, R19 documentation).
+
+## Writes and catalog statements on views; table_info reads columns as SQLite does
+
+SQLite reads the columns of a view (`sqlite3ViewGetColumnNames`) with name resolution only. It
+does not run the code generation checks, and it does not check the width of the view's own
+column list. `Resolution/ViewColumns.lean` is that read: `SELECT * FROM view` through
+`resolveSelectDetails`, with the errors classified by `ExprError.seenWhenViewRead`
+(`ViewReadErrors.lean`; each "seen" case was compared with SQLite 3.51.0). An error that SQLite
+finds only when a statement runs the view, such as a subquery of the wrong width or an
+aggregate in WHERE, is the new restriction `view-body-check`. `PRAGMA table_info(view)` and
+every write to a view use this read.
+
+New prepare errors (all compared with native SQLite in `tests/surface/ClaimsViewWrites.lean`
+and `test_view_write_errors_match_native`):
+- INSERT, REPLACE, UPDATE and DELETE on a view: `cannot modify v because it is a view`
+  (`viewModify`, catalog spelling). The view's own read error comes first
+  (`resolveViewTarget`), and the INSERT row-width error comes before both.
+- CREATE INDEX on a view: `views may not be indexed`.
+- ALTER TABLE ADD COLUMN on a view: `Cannot add a column to a view`.
+- CREATE TRIGGER BEFORE or AFTER on a view: `cannot create BEFORE|AFTER trigger on view: V`,
+  after the trigger name checks. The model holds no INSTEAD OF trigger, so no write is allowed.
+
+Proof sites changed: `resolveViewTarget_cases` is the one new lemma; the `_same`, `_schemaLink`
+and `_named` theorems of the write and definition resolvers got the view cases.
+
+Nix checks (all pass):
+- Focused harness (adds 10 write-error native cases and the restriction example and registry
+  tests): **118 passed**, 156 deselected,
+  `/nix/store/3vc7n4s42410fvl6a7yvbs9rmbqpp21s-sqlite-verifier-test-view-observation-harness-1`.
+- Surface cases (new `ClaimsViewWrites` fixture checked against the native CLI): **28 passed**,
+  66 deselected, `/nix/store/vps6k29siznjpkfv3ijm415v2arglj40-sqlite-verifier-test-view-create-surface-1`.
+- Syntax cases: **6 passed**, `/nix/store/4fvd97dfx44wwcfwwvc11pvi24j82qxi-sqlite-verifier-test-view-create-model-1`.
+- Predictions `/nix/store/gwcwwarb7bq99r75jp0bljvyp8w4mm28-sqlite-verifier-predictions` are
+  byte-identical to the previous commit's (`0a320ncd`) for all 53 files; no corpus case
+  writes to a view.
+- Verdict `/nix/store/f25xpl7hn2ydpj05bbb5h4d5gq5xc7r8-sqlite-verifier-verdict`: no DISAGREE,
+  no HARNESS_ERROR; AGREE 4,962, MODEL_UNSUPPORTED 2,410.
+
+Still OPEN: `pragma_table_info('view')` (table-valued) stays a restriction; the end-of-part
+`just test-full` and `just verdict`.

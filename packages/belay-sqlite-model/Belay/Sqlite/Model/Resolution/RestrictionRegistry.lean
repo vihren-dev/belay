@@ -38,7 +38,7 @@ def RestrictionKind.registry : RestrictionKind → RestrictionRegistry
   | .addColumnStrictType
   | .dropConstraintIndex | .addColumnConstraint | .constraintAlgorithmUpdate
   | .replaceDefault | .insertColumnTwice | .updateColumnTwice | .joinOperator | .systemTable
-  | .unmodeledFunction | .aggregateInExpression | .aliasInExpression | .groupByTerm | .bareColumn
+  | .unmodeledFunction | .aggregateInExpression | .aliasInExpression | .viewBodyCheck | .groupByTerm | .bareColumn
   | .aggregateOrderBy | .windowValue | .negativeOffset | .tableFunction | .laterTableInOn | .functionJoin
   | .laterSourceInArguments | .jsonSubtype | .subqueryHere | .outerAggregate | .deferredForeignKey
   | .recursiveCommonTable | .foreignKeyUpsert | .raiseForm | .triggerForm | .sourceColumnName | .compoundOrderByTerm | .connectionCounterRead | .nondeterministicErrorOrder => .unsupported

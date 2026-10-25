@@ -38,6 +38,11 @@ instance : Lean.ToJson PrepareError where
       Lean.Json.mkObj [("foreignKeyMismatch", Lean.Json.mkObj [("child", Lean.toJson child), ("parent", Lean.toJson parent)])]
     | .noSuchTrigger name => Lean.Json.mkObj [("noSuchTrigger", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .triggerExists name => Lean.Json.mkObj [("triggerExists", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .viewModify name => Lean.Json.mkObj [("viewModify", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .viewNotIndexed => Lean.Json.str "viewNotIndexed"
+    | .viewAddColumn => Lean.Json.str "viewAddColumn"
+    | .viewTrigger before name =>
+      Lean.Json.mkObj [("viewTrigger", Lean.Json.mkObj [("before", Lean.toJson before), ("name", Lean.toJson name)])]
     | .expression error => Lean.toJson error
 
 /-- A model restriction as JSON: the statement index, the path, the message that users

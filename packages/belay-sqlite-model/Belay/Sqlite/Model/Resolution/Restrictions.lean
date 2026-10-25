@@ -100,6 +100,10 @@ inductive RestrictionKind where
   | aggregateInExpression
   /-- A result column alias inside WHERE or an ORDER BY expression is not modeled (ADR 0012 slice 1). -/
   | aliasInExpression
+  /-- A view body has an error that SQLite finds only when a statement runs the view, or that the model
+  cannot place before that, so the model does not say whether a statement that only reads the view's columns,
+  such as {lit}`PRAGMA table_info` or an INSERT into the view, fails (ADR 0017). -/
+  | viewBodyCheck
   /-- Only a column name or a result column number is modeled in GROUP BY (ADR 0012 slice 1). -/
   | groupByTerm
   /-- A result column outside GROUP BY in an aggregate query is not modeled (ADR 0012 slice 1). -/

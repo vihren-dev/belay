@@ -108,6 +108,11 @@ def PrepareError.message : PrepareError → String
   | .triggerExists name => s!"trigger {name} already exists"
   | .foreignKeyMismatch child parent =>
     s!"foreign key mismatch - \"{quotedName child}\" referencing \"{quotedName parent}\""
+  | .viewModify name => s!"cannot modify {name} because it is a view"
+  | .viewNotIndexed => "views may not be indexed"
+  | .viewAddColumn => "Cannot add a column to a view"
+  | .viewTrigger before name =>
+    s!"cannot create {if before then "BEFORE" else "AFTER"} trigger on view: {name}"
   | .expression error => error.message
 
 end Belay.Sqlite.Model

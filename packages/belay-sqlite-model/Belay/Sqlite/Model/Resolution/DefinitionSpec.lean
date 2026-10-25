@@ -9,13 +9,14 @@ See {lit}`PrepareSpec.lean` for the prepare-error rule. -/
 namespace Belay.Sqlite.Model
 
 /-- For every ADD COLUMN whose resolution is a prepare error that names a catalog
-object: the error is {lit}`no such table` for the statement's table, no table has the
-folded name, and the catalog is unchanged. -/
+object: the error is {lit}`no such table` for the statement's table and no table has the
+folded name, or it is {lit}`Cannot add a column to a view`; the catalog is unchanged. -/
 theorem resolveAddColumn_named (context : ResolveContext) (catalog after : Catalog)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition) (error : PrepareError)
     (named : ∀ cause, error ≠ .expression cause)
     (ok : resolveAddColumn context catalog tableName definition = .ok (.prepareError error, after)) :
-    error = .noSuchTable tableName ∧ catalog.findTable tableName = none ∧ after = catalog := by
+    ((error = .noSuchTable tableName ∧ catalog.findTable tableName = none) ∨ error = .viewAddColumn) ∧
+      after = catalog := by
   unfold resolveAddColumn at ok
   simp only [prepareError, restrict] at ok
   repeat' split at ok
@@ -23,6 +24,7 @@ theorem resolveAddColumn_named (context : ResolveContext) (catalog after : Catal
   all_goals cases ok
   all_goals first
     | exact absurd rfl (named _)
+    | exact ⟨.inr rfl, rfl⟩
     | (simp_all; done)
 
 /-- For every ADD COLUMN: when no table or view has the folded name, the resolution is
@@ -89,7 +91,7 @@ theorem resolveCreateIndex_named (context : ResolveContext) (catalog after : Cat
     (error : PrepareError) (named : ∀ cause, error ≠ .expression cause)
     (ok : resolveCreateIndex context catalog name unique tableName terms filter = .ok (.prepareError error, after)) :
     ((catalog.findTable tableName = none ∧ error = .noSuchTable tableName) ∨
-      (catalog.find name).isSome = true) ∧ after = catalog := by
+      (catalog.find name).isSome = true ∨ error = .viewNotIndexed) ∧ after = catalog := by
   unfold resolveCreateIndex at ok
   simp only [issueResolution, prepareError, restrict] at ok
   repeat' split at ok
@@ -97,6 +99,7 @@ theorem resolveCreateIndex_named (context : ResolveContext) (catalog after : Cat
   all_goals cases ok
   all_goals first
     | exact absurd rfl (named _)
+    | exact ⟨.inr (.inr rfl), rfl⟩
     | (simp_all; done)
 
 /-- For every CREATE INDEX: when no table or view has the folded table name, the resolution is

@@ -139,22 +139,28 @@ theorem resolveStatementPragma_schemaLink {context : ResolveContext} {state next
     resolved.SchemaLink state.catalog := by
   unfold resolveStatementPragma at ok
   split at ok
-  · split at ok
+  · rename_i table
+    split at ok
     · unfold resolveViewTableInfo at ok
-      simp only [issueResolution, prepareError, restrict, viewInfoStatement, Except.map] at ok
-      repeat' split at ok
-      all_goals first
-        | (cases ok; trivial)
-        | (cases ok; exact Catalog.DropClosed.nil _)
-        | cases ok
-        | skip
-      all_goals
-        rename_i heq
-        first
-          | (split at heq <;> first | (cases heq; trivial) | cases heq)
-          | (cases heq; trivial)
+      cases read : viewColumns context state.catalog table with
+      | ok columns =>
+        rw [read] at ok
+        cases ok
+        trivial
+      | error issue =>
+        rw [read] at ok
+        cases issue with
+        | noSuchTable name =>
+          simp only [readIssueResolution, prepareError, Except.map] at ok
+          cases ok
+          trivial
+        | value inner =>
+          cases inner <;> simp only [readIssueResolution, issueResolution, prepareError, restrict, Except.map] at ok
+          · cases ok
+            trivial
+          · cases ok
     · exact resolvePragma_schemaLink ok
-  · exact resolvePragma_schemaLink ok
+  all_goals exact resolvePragma_schemaLink ok
 
 /-- For every write resolution that meets {name}`Resolved.Statement.SchemaLink` on the catalog
 ({lit}`each`), every successful resolution of its subqueries and then of the write
@@ -170,7 +176,12 @@ theorem resolveWriteSubqueries_schemaLink {columnNames : List (Nat × List Ident
   unfold resolveWriteSubqueries at ok
   simp only [prepareError, restrict, issueResolution] at ok
   repeat' split at ok
-  all_goals first | (cases ok; trivial) | (cases ok; exact Catalog.DropClosed.nil _) | (cases ok) | exact each _ _ _ _ ok
+  all_goals first
+    | (cases ok; trivial)
+    | (cases ok; exact Catalog.DropClosed.nil _)
+    | (cases ok)
+    | (obtain h | ⟨rfl, error, rfl⟩ := resolveViewTarget_cases ok; exact each _ _ _ _ h; trivial)
+    | exact each _ _ _ _ ok
 
 /-- For every write resolution that meets the schema-link predicate for every copied
 query mapping, successful WITH expansion and write resolution also meet that predicate.
@@ -187,10 +198,20 @@ theorem resolveCommonTableWrite_schemaLink (context : ResolveContext) (catalog a
   unfold resolveCommonTableWrite at ok
   simp only [resolveWriteSubqueries, prepareError, restrict, issueResolution, Except.mapError] at ok
   repeat' split at ok
-  all_goals first | (cases ok; trivial) | (cases ok; exact Catalog.DropClosed.nil _) | (cases ok) | exact each _ _ _ _ _ ok
+  all_goals first
+    | (cases ok; trivial)
+    | (cases ok; exact Catalog.DropClosed.nil _)
+    | (cases ok)
+    | (obtain h | ⟨rfl, error, rfl⟩ := resolveViewTarget_cases ok; exact each _ _ _ _ _ h; trivial)
+    | exact each _ _ _ _ _ ok
   all_goals
     rename_i found
     repeat' split at found
-    all_goals first | (cases found; trivial) | (cases found; exact Catalog.DropClosed.nil _) | (cases found) | exact each _ _ _ _ _ found
+    all_goals first
+      | (cases found; trivial)
+      | (cases found; exact Catalog.DropClosed.nil _)
+      | (cases found)
+      | (obtain h | ⟨rfl, error, rfl⟩ := resolveViewTarget_cases found; exact each _ _ _ _ _ h; trivial)
+      | exact each _ _ _ _ _ found
 
 end Belay.Sqlite.Model
