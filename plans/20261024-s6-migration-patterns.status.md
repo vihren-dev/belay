@@ -19,8 +19,9 @@ needed for the cascade example. Existing reviewed native diagnostics inform
 these contracts but are not implementation acceptance. The descriptors,
 comparison/pattern primitives, composition/frame laws, named commutation laws
 and pattern frontend have focused evidence and clean independent reviews below.
-Universal examples, private-guide corrections and the
-acceptance-part checks remain required.
+Their first acceptance part passed post-review full/verdict checks on 2026-10-25.
+Universal examples, private-guide corrections, the second acceptance part and
+task-end checks remain required.
 
 ## Progress
 
@@ -264,5 +265,37 @@ its small explanation function classifies only supported elaborated heads.
 Independent review `20261025T011343Z-162849ad` read the diff and tests and
 found zero musts and zero shoulds. No model, text-parser, sampler, editor hook
 or existing execution definition changed. Universal examples and private-guide
-corrections remain unfinished. Neither acceptance part is complete; post-review
-full/verdict and task-end Nix/scheduled checks remain required.
+corrections remain unfinished. At this review boundary, post-review full/verdict
+and task-end Nix/scheduled checks were still required. The next record completes
+the first acceptance part.
+
+## First acceptance part: complete
+
+2026-10-25. Frozen reviewed source
+`317cdb1a08623b870823c2a8e55b3207fed67f59` passed the sequential post-review
+`just test-full` and `just verdict` checks. The process ended with exit code 0.
+The full report is
+`/nix/store/307mdy1vcr8yml40rhz473h1b8hbdbbg-sqlite-verifier-test-reports`:
+946 tests passed, with no failures, errors or skips. The ten report groups are
+corpora 54, documentation 12, frozen 153, harness 234, model 251, packages 3,
+parser library 4, sample 23, surface 95 and upstream 117. The full command's
+source prerequisite also passed 472 tests and 49 subtests, with 71 tests
+deselected by its existing selector.
+
+The verdict is
+`/nix/store/fdyxvw89hvk8i7sa232c6is81sczb24d-sqlite-verifier-verdict`:
+4,869 AGREE and 2,503 MODEL_UNSUPPORTED across 7,372 cases in 53 groups. There
+are no disagreement or unexpected-result categories. This proof/surface part
+changes no model execution, frozen corpus, claim or judge lock.
+
+Logs are `build/agent-logs/migration-part1-full.log` and
+`build/agent-logs/migration-part1-verdict.log`. The run used one sequential
+heavy-process slot, `max-jobs = 1`, `cores = 2`, the existing individual test
+timeouts, an 8,400-second aggregate full-check limit and a 5,400-second suite
+build limit. Resource checks passed before the full check and verdict.
+No source changed while this acceptance ran.
+
+This completes the public views, comparisons, pattern meanings and laws part.
+The complete task remains OPEN: universal migration examples, their diagnostics,
+private-guide integration and the second acceptance part remain unfinished.
+Task-end Nix/scheduled checks have not been claimed or run for this task.
