@@ -5,6 +5,7 @@ import Belay.Sqlite.Script
 import Belay.Sqlite.SqlLiteral
 import Belay.Sqlite.SqlParameters
 import Belay.Sqlite.SqlSource
+import Belay.Sqlite.SqlParameterInfo
 
 set_option doc.verso true
 
@@ -53,12 +54,13 @@ def scriptExpr (items : Array Translation.ParameterizedStatement) : Expr :=
 /-- The type {lit}`Value` of the model, which every parameter's value has. -/
 def valueType : Expr := Lean.mkConst ``Belay.Sqlite.Model.Value
 
-/-- The value of a parameter {lit}`$x`: the Lean variable {lit}`x`, elaborated where the script is
-and outside the arguments of the script's function, and coerced to {lit}`Value`. An error is at
+/-- The original Lean expression and the coerced {lit}`Value` of a parameter {lit}`$x`.
+Elaboration happens where the script is and outside its generated arguments, so editor
+information retains the captured expression's original type. An error is at
 the parameter in the SQL text ({name}`textRange`): a name that does not resolve, and a type
 without a coercion to {lit}`Value`. -/
 def variableValue (literal : Syntax) (text : String) (name : String) (parameter : Translation.Parameter) :
-    TermElabM Expr := do
+    TermElabM (Expr × Expr) := do
   let ref := textRange literal text parameter.start parameter.stop
   let value ← try
       let value ← withoutErrToSorry <| elabTerm (mkIdentFrom ref (Name.mkSimple name)) none
@@ -70,7 +72,7 @@ def variableValue (literal : Syntax) (text : String) (name : String) (parameter 
   try withRef ref do
       let coerced ← ensureHasType valueType value
       synthesizeSyntheticMVarsNoPostponing
-      instantiateMVars coerced
+      return (value, ← instantiateMVars coerced)
   catch _ =>
     throwErrorAt ref m!"the parameter {parameter.text} is the Lean variable {name} of type {type}, which has no coercion to Value; give {name} the type Value, String or Int64, or convert it to a Value"
 
@@ -92,7 +94,10 @@ def scriptTerm (literal : Syntax) (text : String) (items : Array Translation.Par
   let variables ← plan.variables.mapM fun (name, parameter) => do
     return (ParameterSource.variable name, ← variableValue literal text name parameter)
   withLocalDeclsDND (plan.arguments.map fun name => (Name.mkSimple name, valueType)).toArray fun arguments => do
-    let sources := variables ++ (plan.arguments.map ParameterSource.argument).zip arguments.toList
+    let argumentSources := (plan.arguments.map ParameterSource.argument).zip arguments.toList
+    let sources := variables.map (fun (source, _, value) => (source, value)) ++ argumentSources
+    emitSqlParameterInfo (.literal literal text) items plan
+      (variables.map (fun (source, original, _) => (source, original)) ++ argumentSources)
     let null := Lean.mkConst ``Belay.Sqlite.Model.Value.null
     -- Each source of a slot is in `sources`: the plan adds a variable or an argument for each one.
     let slotValue : Slot → Expr

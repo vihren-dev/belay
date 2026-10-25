@@ -255,11 +255,14 @@ in {
   };
   surface = suite "surface" {
     inputs = [ (root + /tests/surface) (root + /tests/surface_support.py)
+               (root + /tests/lean_server_support.py)
                (root + /tests/proof_cost_support.py)
                (root + /tests/shared_table_shape_test.py)
                (fs.fileFilter (file: file.hasExt "nix") (root + /build-support)) ] ++ packageSources
              ++ frontend ++ [ claims ] ++ authoredCorpora ++ corpusModules;
     runtime = surfaceRoot;
+    # The real Lean server reads the UTC zone file when its watchdog starts.
+    environment.TZDIR = "${pkgs.tzdata}/share/zoneinfo";
     tools = [ native.sqlite ] ++ pkgs.lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.patchelf;
   };
   packages = suite "packages" {
