@@ -2,6 +2,7 @@ import Belay.Sqlite.SqlTerm
 import Belay.Sqlite.DbDiagnostics
 import Belay.Sqlite.SqlTableOrigins
 import Belay.Sqlite.SqlEditorInfo
+import Belay.Sqlite.SqlOrderWarnings
 
 set_option doc.verso true
 
@@ -62,7 +63,8 @@ is a {lit}`sorry` that Lean shows no second error for. Otherwise the term is
 replay metadata, which replay consumers validate against the actual database. It also records, for the
 declaration that holds the term, where each table of the final catalog is created
 ({name}`registerTableOrigins`), outside the value, and gives the table names editor information with the
-rows that the run reached ({name}`executedContexts`). -/
+rows that the run reached ({name}`executedContexts`) and warns about a statement with several permitted
+results ({name}`orderEvidenceWarnings`). -/
 @[term_elab dbBangTerm]
 def elabDbBang : TermElab := fun term _ => do
   let literal := term[1]
@@ -80,7 +82,9 @@ def elabDbBang : TermElab := fun term _ => do
   | .error message => throwErrorAt literal message
   | .ok database =>
     registerTableOrigins (.literal literal text) statements connection.state.database.catalog database
-    emitSqlEditorInfo (.literal literal text) statements {} (executedContexts 0 Database.empty.raw.connection statements).1
+    let (contexts, outputs) := executedContexts 0 Database.empty.raw.connection statements
+    emitSqlEditorInfo (.literal literal text) statements {} contexts
+    logOrderWarnings literal text (orderEvidenceWarnings statements outputs)
     return withSource databaseSourceKey literal text (← getFileName) database
 
 end Belay.Sqlite

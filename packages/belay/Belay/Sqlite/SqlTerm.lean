@@ -6,6 +6,7 @@ import Belay.Sqlite.SqlLiteral
 import Belay.Sqlite.SqlParameters
 import Belay.Sqlite.SqlSource
 import Belay.Sqlite.SqlParameterInfo
+import Belay.Sqlite.SqlOrderWarnings
 
 set_option doc.verso true
 
@@ -82,9 +83,12 @@ otherwise the function of the arguments ({name}`planParameters`) whose value is
 each number from 1 to the statement's largest one: an argument, the value of a variable
 ({name}`variableValue`), or NULL for a number without a parameter. An error of the plan is at its
 parameter in the SQL text. The resulting script carries source metadata for replay; consumers
-check that text against the actual statements and bindings before using it. -/
+check that text against the actual statements and bindings before using it. The term also logs the
+risk warnings of statements that take rows by {lit}`LIMIT` without {lit}`ORDER BY`
+({name}`orderRiskWarnings`), because it does not run them. -/
 def scriptTerm (literal : Syntax) (text : String) (items : Array Translation.ParameterizedStatement) :
     TermElabM Expr := do
+  logOrderWarnings literal text (orderRiskWarnings (items.toList.map (·.statement)))
   let plan ← match planParameters (items.toList.map (·.parameters)) with
     | .ok plan => pure plan
     | .error diagnostic => throwErrorAt (textRange literal text diagnostic.start diagnostic.stop) diagnostic.message

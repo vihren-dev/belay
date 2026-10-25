@@ -170,6 +170,15 @@ def table_hover(server: LeanServer, uri: str, source: str, spelling: str, occurr
     return contents["value"]
 
 
+def diagnostics(server: LeanServer, uri: str, version: int = 1) -> list[dict[str, object]]:
+    """The diagnostics that the server published last for the document, after it finished the version."""
+    server.request("textDocument/waitForDiagnostics", {"uri": uri, "version": version}, timeout=90)
+    published = [message["params"]["diagnostics"] for message in server.notifications
+                 if message.get("method") == "textDocument/publishDiagnostics" and message["params"]["uri"] == uri]
+    assert published, server.notifications
+    return published[-1]
+
+
 def semantic_tokens(server: LeanServer, uri: str) -> list[tuple[int, int, int, str]]:
     """Decode the real server's relative token positions and advertised legend."""
     result = server.request("textDocument/semanticTokens/full", {"textDocument": {"uri": uri}})

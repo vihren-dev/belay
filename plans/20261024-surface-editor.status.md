@@ -307,3 +307,33 @@ Must fixed: the `#sql` trial does not know the values that the displayed run bin
 to the parameters of a script. A script with a parameter now gets the contexts of a
 resolution, whose rows are known only before the first statement that can write, instead
 of the contexts of a run. The executed test adds a `#sql` with a captured `$target`.
+
+### Part 2a, commit 4: order warnings — 2026-10-25
+
+- `SqlOrderWarnings` (option `sql.orderWarnings`, default true). Contexts:
+  - `db!` and `#sql` run their statements, so they give the evidence warning: a
+    statement whose output is `Output.oneOf` (several permitted results) warns at
+    the statement with the number of results and, for `LIMIT`/`OFFSET`, that
+    dependence. A single or equal result gives none (`Output.ofResults` already
+    merges equal results).
+  - `sql` and `sql!` do not run, so they give only the risk warning: a query with
+    `LIMIT`/`OFFSET`, no `ORDER BY` and a source of rows or a compound. It says the
+    selection may depend on the order and that the results may be equal. Known
+    limit: a one-row aggregate with `LIMIT` also gets it; the option turns it off.
+  - A `#sql` script with parameters gives the risk warning, because its trial run
+    binds no values. The `#eval` that `#sql` expands to elaborates with the
+    option off, so a statement warns once.
+- Warnings never change the term, success or proof obligations; the test checks
+  that no diagnostic is an error.
+- Existing fixtures: three `#guard_msgs` commands in `tests/surface/` that show
+  the unordered `LIMIT` idiom on purpose now say `set_option sql.orderWarnings
+  false in`. The private guide's examples of this idiom need the same line, or
+  their expected messages need the warning (guide change for the coordinator).
+- Test: `tests/surface_editor_order_test.py` (real server): evidence in `db!` and
+  `#sql`, equal and single results and `ORDER BY` with none, risk in `sql!` after
+  a write and in plain `sql`, no source with none.
+
+The source-position test (`test_source_positions_and_failures`) adds an ordinary
+literal without escapes, a multi-line raw literal with repeated occurrences, a
+literal with an escape (no information), text that the parser rejects (only the
+existing error), and the check that a keyword gets no semantic token.

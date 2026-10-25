@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.lean_server_support import LeanServer, hover, position, semantic_tokens, table_hover
+from tests.lean_server_support import LeanServer, diagnostics, hover, position, semantic_tokens, table_hover
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
@@ -51,6 +51,9 @@ def test_sql_bang_table_hovers(runtime_root: Path, tmp_path: Path, newline: str)
         assert "`id`: INTEGER, PRIMARY KEY" in first, first
         assert "`label`: TEXT, NOT NULL, COLLATE NOCASE" in first, first
         assert "2 rows at this point of the script." in first, first
+        keyword = position(source, "SELECT '", 0)
+        assert not any(line == keyword["line"] and column == keyword["character"]
+                       for line, column, _, _ in tokens), tokens
         where = position(source, "orders;", 0)
         assert (where["line"], where["character"], 6, "property") in tokens, tokens
         for spelling, token in (('"orders"', '"orders"'), ("orders ON", "orders"), ("orders VALUES (3", "orders")):
@@ -71,5 +74,37 @@ def test_sql_bang_table_hovers(runtime_root: Path, tmp_path: Path, newline: str)
         for message in diagnostics:
             params = message["params"]
             assert isinstance(params, dict) and not params["diagnostics"], message
+    finally:
+        server.close()
+
+
+POSITIONS = '''import Belay
+open Belay.Sqlite
+def shop : Database := db! r"CREATE TABLE orders(id INTEGER PRIMARY KEY)"
+def ordinary := sql! shop "SELECT * FROM orders AS plainly"
+def tabbed := sql! shop "SELECT\\t*\\tFROM orders AS tabbed"
+def repeated := sql! shop r"SELECT *
+  FROM orders AS first_use JOIN orders AS second_use ON 1 JOIN orders AS third_use ON 1"
+def broken := sql! shop r"SELEC * FROM orders AS broken_use"
+def finished : Nat := 0
+'''
+
+
+def test_source_positions_and_failures(runtime_root: Path, tmp_path: Path) -> None:
+    """Our mapping of table names to the source (`SqlEditorSource.literal`): an ordinary literal
+    without escapes and a multi-line raw literal give exact ranges, each repeated occurrence gets its own
+    information, a literal with an escape gets none, and text that the parser rejects shows only its
+    existing error, without a second editor error."""
+    server = LeanServer(runtime_root, tmp_path)
+    try:
+        uri = server.open(POSITIONS)
+        for spelling in ("orders AS plainly", "orders AS first_use", "orders AS second_use", "orders AS third_use"):
+            assert "Table `orders` of `shop`." in table_hover(server, uri, POSITIONS, spelling, 0, "orders")
+        start = position(POSITIONS, "orders AS tabbed")
+        result = server.request("textDocument/hover", {"textDocument": {"uri": uri}, "position": start})
+        assert "Table `" not in str(result), result
+        errors = [item for item in diagnostics(server, uri) if item["severity"] == 1]
+        assert len(errors) == 1, errors
+        assert errors[0]["range"]["start"]["line"] == position(POSITIONS, "def broken")["line"], errors
     finally:
         server.close()

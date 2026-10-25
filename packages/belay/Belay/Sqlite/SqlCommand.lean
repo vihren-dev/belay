@@ -2,6 +2,7 @@ import Belay.Sqlite.Run
 import Belay.Sqlite.SqlTerm
 import Belay.Sqlite.EvalDatabase
 import Belay.Sqlite.SqlEditorInfo
+import Belay.Sqlite.SqlOrderWarnings
 
 set_option doc.verso true
 
@@ -38,7 +39,10 @@ syntax (name := sqlCommand) "#sql " term:max str : command
 the text editor information with the rows of that run ({name}`executedContexts`). A script with
 parameters gets the contexts of a resolution instead ({name}`resolvedContexts`), because the trial
 does not know the values of the parameters that the displayed run binds: the rows are then known
-only before the first statement that can write. The attempt is
+only before the first statement that can write. The command also logs the order warnings of the
+script: the evidence of the run ({name}`orderEvidenceWarnings`), or the risk of a script with
+parameters ({name}`orderRiskWarnings`), and the output elaborates with the warnings of {lit}`sql`
+turned off, so no statement warns twice. The attempt is
 a trial: Lean elaborates the database term and the text again for the output, so the trial drops
 its messages and information, and it keeps nothing when the database has no value yet or the text
 has an error. Lean then shows each error once, at the elaboration of the output. -/
@@ -54,10 +58,14 @@ def sqlCommandInformation (databaseTerm literal : Syntax) : Term.TermElabM Unit 
   if let some (evaluated, items) := attempt then
     let statements := items.toList.map (·.statement)
     let connection := evaluated.value.raw.connection
-    let contexts := if items.any (!·.parameters.isEmpty)
-      then resolvedContexts connection.resolveState (some connection.state.database.rows) statements
-      else (executedContexts 0 connection statements).1
+    let (contexts, warnings) := if items.any (!·.parameters.isEmpty)
+      then (resolvedContexts connection.resolveState (some connection.state.database.rows) statements,
+        orderRiskWarnings statements)
+      else
+        let (contexts, outputs) := executedContexts 0 connection statements
+        (contexts, orderEvidenceWarnings statements outputs)
     emitSqlEditorInfo (.literal literal text) statements (.ofTerm (← getEnv) evaluated.term) contexts
+    logOrderWarnings literal text warnings
 
 /-- Elaborate {lit}`#sql db r"..."`: give the editor information of the table names
 ({name}`sqlCommandInformation`), then show the tables of the output of the script on the database,
@@ -67,7 +75,8 @@ def elabSqlCommand : CommandElab := fun stx => do
   match stx with
   | `(#sql $database $text) =>
     liftTermElabM (sqlCommandInformation database text)
-    elabCommand (← `(#eval Belay.Sqlite.Database.tables $database (sql $text)))
+    elabCommand (← `(set_option sql.orderWarnings false in
+      #eval Belay.Sqlite.Database.tables $database (sql $text)))
   | _ => throwUnsupportedSyntax
 
 end Belay.Sqlite
