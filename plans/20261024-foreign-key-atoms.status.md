@@ -1138,8 +1138,7 @@ show the native rule, and the model needs no change:
 The new test `tests/add_column_not_null_default_test.py` records the seven spellings natively on an
 empty and a populated table and checks the refusal, the model verdict (AGREE with a kernel proof
 for `NULL`, MODEL_UNSUPPORTED for the others). It is in the `model` suite of
-`tests/nix_suites.json`. Its Nix validation is pending: the Nix results above concern the tree
-before this follow-up.
+`tests/nix_suites.json`. Its Nix validation is in the section "Nix results of the follow-ups" below.
 
 ## Follow-up B: corpus-v54, the judge change (2026-10-25)
 
@@ -1174,4 +1173,21 @@ or the lock.
   `1aaf22e3...`) through `authored_evidence`. `tests/conformance_query_coverage_test.py` runs the cases
   against the model with a kernel proof of each verdict, and `tests/conformance_corpus_writers_test.py`
   round-trips the corpus. `judge/claims.json` claims the corpus with all 50 names under `mustAgree`.
-  The lock is not in this commit. Nix validation of this change is pending.
+  The lock is in the next commit (`integrity/judge.lock.json`: the new entry `corpus corpus-v54` and the
+  new `judge` source). Nix validation is in the section "Nix results of the follow-ups" below.
+
+## Nix results of the follow-ups (2026-10-25)
+
+Tree: the judge stack of follow-up B and its review records (working-copy parent `f3927623`).
+
+- `just test-full`: exit 0, `/nix/store/y6khc8q3q2spcdzdhjg3w9ay0dg1hip0-sqlite-verifier-test-reports`.
+- `just verdict`: exit 0, `/nix/store/0fpcjngpia2pyf2hgd6b0l870z7vkakp-sqlite-verifier-verdict`.
+  `corpus-v54` reports `{"AGREE": 50}`.
+- Predictions: `/nix/store/nywilcisvsmpsggvmxgbwk9iy836vfqp-sqlite-verifier-predictions`. Against the
+  frozen baseline (`/nix/store/a54s3ncjxq74zzj0hb3qrc3k9mahlx5b-sqlite-verifier-predictions`, 53 files) the
+  53 earlier files are byte-identical. The only difference is the new file `corpus-v54.jsonl`.
+- `just test-nix`: 70 passed.
+- `just test-scheduled-checks`: exit 0,
+  `/nix/store/dd12fa0dz6n06kky38xqpxxp9p23dc60-sqlite-verifier-scheduled-check-reports`.
+
+The task stays OPEN until the owner approves the judge change (the lock commit) and it is merged.
