@@ -383,6 +383,15 @@ guide expectations and checked replay intact. The editor worker continues
 independent Nix checks; its part cannot pass compatibility until the correction
 is integrated. Slots 1 and 2 are reserved for these two checks respectively.
 
+The editor's real Lean-server fixtures now pass in Nix at
+`8d538sd8bf49gx9qqnrd8rimpcaxbs27`: both LF and CRLF cases, with zero failures,
+errors or skips. The tested source is `44b4286c`; its production files are
+unchanged from `a075cb27`. The retry adds the pinned timezone-data path to the
+surface test derivation after the server watchdog failed to find UTC. The
+editor source is at rest and slot 1 is released. Compatibility, independent
+review and part acceptance remain open. The editor worker will integrate the
+checked S5 correction through a new merge, then run the combined focused checks.
+
 The read-only table-rebuild readiness audit is complete in the workspace's
 modularity research notes, with 28 bounded pinned-native probes. Index choice
 can change partial writes and error precedence even with total `ORDER BY`;
