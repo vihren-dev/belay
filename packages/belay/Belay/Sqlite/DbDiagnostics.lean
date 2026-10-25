@@ -38,29 +38,40 @@ def failureAction (statement : Resolved.Statement) : ExecutionError → String
       | none => "; correct the row, or the statement that writes it"
   | .functionError => ""
 
-/-- The error of a statement of a text, which binds no values, whose output is
-{name}`Output.error` with the code: a prepare
-error at its name ({name}`prepareDiagnostic`), and every other error with its message
-({name}`ExecutionError.message` at the clock value 0, which a statement that runs without a
-clock has, with the counters that the statement reads, on the database of the connection, then {name}`failureAction`) at the statement. The
-error comes from {name}`runScriptStepFailure` without a clock, which runs the statement on the
-same clock value and database
-and gives an error of that code for each such output ({name}`runScriptStep_error_failure`); when
-it gives none, the message is {name}`missingFailureMessage`. -/
-def failureDiagnostic (bytes : ByteArray) (index : Nat) (connection : Connection)
-    (item : Located Syntax.Statement) (code : Nat) : Diagnostic :=
+/-- The error of a statement whose output is {name}`Output.error` with the code, in two parts.
+The diagnostic holds SQLite's message: a prepare error at its name ({name}`prepareDiagnostic`),
+and every other error at the statement, with {name}`ExecutionError.message` for the clock value of
+the statement ({name}`statementClock`; 0 when the statement does not read the clock), the
+counters that the statement reads, the values bound to its parameters, and the database of the
+connection. The text is what the user can do next ({name}`failureAction`), which is empty for a
+prepare error. The error comes from {name}`runScriptStepFailure` with the same clock, index,
+connection and values, which runs the statement as the run does and gives an error of that code
+for each such output ({name}`runScriptStep_error_failure`); when it gives none, the message is
+{name}`missingFailureMessage`. A caller that compares SQLite's message uses the diagnostic. -/
+def failureParts (clock : Option Clock) (bytes : ByteArray) (index : Nat) (connection : Connection)
+    (item : Located Syntax.Statement) (values : List Value) (code : Nat) : Diagnostic × String :=
   let (start, stop) := statementRange item
   let database := connection.state.database
-  match runScriptStepFailure runContext none index connection item.value [] with
-  | some (_, .prepare error) => prepareDiagnostic bytes item error
+  match runScriptStepFailure runContext clock index connection item.value values with
+  | some (_, .prepare error) => (prepareDiagnostic bytes item error, "")
   | some (statement, failure@.unmodeled) | some (statement, failure@.transactionAlreadyActive)
   | some (statement, failure@.noActiveTransaction) | some (statement, failure@.constraintViolation)
   | some (statement, failure@.constraintFail) | some (statement, failure@.constraintRollback)
   | some (statement, failure@.integerOverflow) | some (statement, failure@.datatypeMismatch)
   | some (statement, failure@.functionError) | some (statement, failure@.nullColumnDefault)
   | some (statement, failure@.nonConstantColumnDefault) | some (statement, failure@.checkColumnDefault) =>
-    { start, stop, message := failure.message 0 (connection.state.counters.view statement.counterReads) [] statement database ++ failureAction statement failure }
-  | none => { start, stop, message := missingFailureMessage code }
+    ({ start, stop, message := failure.message ((statementClock clock index statement).getD 0)
+        (connection.state.counters.view statement.counterReads) values statement database },
+      failureAction statement failure)
+  | none => ({ start, stop, message := missingFailureMessage code }, "")
+
+/-- The error of a statement of a text, which binds no values, whose output is
+{name}`Output.error` with the code: {name}`failureParts` without a clock and without values,
+with the action appended to the message. -/
+def failureDiagnostic (bytes : ByteArray) (index : Nat) (connection : Connection)
+    (item : Located Syntax.Statement) (code : Nat) : Diagnostic :=
+  let (diagnostic, action) := failureParts none bytes index connection item [] code
+  { diagnostic with message := diagnostic.message ++ action }
 
 /-- The errors of a statement with its output: {name}`failureDiagnostic` for
 {name}`Output.error`, and none for every other output. -/

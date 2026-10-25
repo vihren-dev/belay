@@ -1,6 +1,6 @@
 # Checked SQL documentation blocks
 
-Created 2026-10-24. Status: OPEN. Implementation follows task review.
+Created 2026-10-24. Status: DONE (2026-10-25).
 Status: [progress](20261024-sql-doc-blocks.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), checked SQL docstrings,
 allocated alongside S7 on 2026-10-24; ADR 0016's surface boundary. The owner's

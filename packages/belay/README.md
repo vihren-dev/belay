@@ -135,6 +135,17 @@ path, declarations and the `lake build` command. `--library App` checks one libr
 is 0 when all sources are fresh, 1 when a source changed or is missing, and 2 when a library could
 not be read, for example because it is not built. Line-ending changes are not edits.
 
+## Check SQL examples in documentation
+
+With `set_option doc.verso true`, a `sql` code block in a docstring runs its SQL while Lean
+elaborates the file. `(db := start)` names the closed database that the block starts from. The
+lines that start with `--` at the end of the block state the expected text: the cells of each
+row joined by ` | `, and the rows joined by newlines. A block that does not return this text is
+an error at the block. A named header argument binds the parameter of the same name, for example
+`(v := 5)` for `:v`. `(values := lists)` binds every parameter by number, `(env := environment)`
+gives the clock, `(expected := outputs)` states the exact `List Output`, and `+error` expects the
+first SQL failure. `Belay.Sqlite.SqlDocGuide` explains each option with checked examples.
+
 ## Claims about every database
 
 `Holds q db` says that every possible result of the query has a row. `Empty q db` says that

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T10:13:05+00:00",
+  "finding": "20261025T101256Z-ccd77ae1#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The owner's rule for this work replaces just test-scheduled with just test-scheduled-checks, and forbids local mutant suites (CI runs them daily); the status file now says so."
+}

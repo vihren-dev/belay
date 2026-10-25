@@ -41,6 +41,11 @@ lean_lib Belay where
       .one `Belay.Sqlite.CheckInputSyntax, .one `Belay.Sqlite.CheckDeclarations, .one `Belay.Sqlite.CheckExample, .one `Belay.Sqlite.SqlAutomatic,
       .one `Belay.Sqlite.CheckOptions, .one `Belay.Sqlite.CheckInputs, .one `Belay.Sqlite.CheckDisplay,
       .one `Belay.Sqlite.SqlCheckCommand, .one `Belay.Sqlite.SqlRefuteSearch]
+    ++ #[.one `Belay.Sqlite.SqlDocObservation, .one `Belay.Sqlite.SqlDocCheck,
+      .one `Belay.Sqlite.SqlDocComments, .one `Belay.Sqlite.SqlDocSource, .one `Belay.Sqlite.SqlDocBindings,
+      .one `Belay.Sqlite.SqlDocClosed, .one `Belay.Sqlite.SqlDocHeader, .one `Belay.Sqlite.SqlDocReport,
+      .one `Belay.Sqlite.SqlDocInputs, .one `Belay.Sqlite.SqlDocFailure, .one `Belay.Sqlite.SqlDocBlock,
+      .one `Belay.Sqlite.SqlDocGuide]
   precompileModules := true
 
 /-- The SQL-file checker (ADR 0017, S7), run as {lit}`lake exe belay-sql-check`. It is the only

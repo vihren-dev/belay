@@ -1,0 +1,53 @@
+{
+  "caller": "claude",
+  "commit": "ccd77ae1c3959e3401db6c6671fe08e8fe6a710e",
+  "date": "2026-10-25T10:12:56+00:00",
+  "exit": 1,
+  "files": [
+    "plans/20261024-sql-doc-blocks.status.md",
+    "plans/20261024-sql-doc-blocks.task.md",
+    "reviews/20261025T093900Z-5d6de3ca/review.json"
+  ],
+  "findings": [
+    {
+      "id": "20261025T101256Z-ccd77ae1#1",
+      "line": 162,
+      "path": "plans/20261024-sql-doc-blocks.status.md",
+      "rule": "R19",
+      "severity": "must",
+      "text": "The task is marked DONE, but acceptance ran `just test-scheduled-checks`, which excludes the three mutant suites required by AGENTS.md’s `just test-scheduled` gate. Fix: keep acceptance open in both task and status files until the full scheduled gate passes."
+    },
+    {
+      "id": "20261025T101256Z-ccd77ae1#2",
+      "line": 162,
+      "path": "plans/20261024-sql-doc-blocks.status.md",
+      "rule": "R19",
+      "severity": "should",
+      "text": "“None known in the private guide” contradicts the immediately following required correction to its `+error` description. Fix: list that guide correction as outstanding outside this task."
+    }
+  ],
+  "id": "20261025T101256Z-ccd77ae1",
+  "kind": "review",
+  "reviewer": "codex",
+  "revision": "@-",
+  "rules": {
+    "R1": "62d446279093",
+    "R10": "638d8cbd1df8",
+    "R11": "5de19cdbbbc1",
+    "R12": "99f66579f467",
+    "R13": "da0926dafb88",
+    "R15": "518eab58f8b5",
+    "R16": "892e77bd2a12",
+    "R17": "62b65b662f79",
+    "R18": "5159f20b166b",
+    "R19": "6a24b671568c",
+    "R2": "e5e78fb2a52a",
+    "R3": "4f9188eadd60",
+    "R4": "ea7ca17539eb",
+    "R5": "b8613a2d693b",
+    "R6": "8d1d4631e888",
+    "R7": "59a21b0bec7f",
+    "R9": "5a69196344d0"
+  },
+  "well_formed": true
+}
