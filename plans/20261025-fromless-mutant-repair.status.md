@@ -15,7 +15,7 @@ These are diagnostic probes, not acceptance of a repository repair.
 Detailed evidence is retained outside the repository under
 `/home/codex/work/research_notes/Lean model modularity investigation/ci249-mutants/`.
 The published failure log is retained in
-`s4/build/agent-logs/ci249-mutants-linux.log`. Query and JSON local groups pass
+`/home/codex/work/sqlite-verifier-s4/build/agent-logs/ci249-mutants-linux.log`. Query and JSON local groups pass
 at `hvx19aq81d4n444lp9qgyngd1hg337gj` and `bw6qs4f727q8qi1hfhldgghxbfgyi7w2`;
 no hosted timeout cause or timing repair is claimed.
 
