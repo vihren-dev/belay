@@ -65,3 +65,11 @@ primitive's meaning.
   not tag a function call as `before`; examples for initial views, subqueries and
   `Scope.resolveSchemaQualified_below`. The review rule for four rounds applies: the
   owner decides how to continue before the second commit is reviewed.
+- 2026-10-25, fix of review round 5 (`20261025T160157Z-51cd4134`): the function-name collision
+  in initial views is refused with `initial-database` (the later resolution reads function
+  calls in the current catalog; proper resolution there needs a per-query mark and is
+  deferred); `InitialSourceGuardExamples` adds the regression, a three-part column fixture
+  with `before.t.a` and the same-name `t`, and `CREATE VIEW` refusals for a direct source,
+  a joined source and a subquery source. Native finding: a view over `pragma_table_info`
+  in an attached database is refused by SQLite ("unsafe use of virtual table"); the model
+  does not model that and the case stays open.

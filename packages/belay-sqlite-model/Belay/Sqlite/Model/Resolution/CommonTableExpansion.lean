@@ -22,9 +22,11 @@ their special preparation order is outside the supported nonrecursive forms.
 
 The optional {lit}`initial` is the catalog of the initial database of a two-state query. A source with the schema
 name {lit}`before` finds its view there, and {lit}`inInitial` says that the query is the body of such a view:
-its table names that no WITH definition of the body hides read the initial catalog too (a function call such as
-{lit}`json_each('[1]')` is no table name), so that the copy carries the
-schema name {lit}`before` and never captures a current table. An active view is its position with the
+its table names that no WITH definition of the body hides read the initial catalog too, so that the copy carries the
+schema name {lit}`before` and never captures a current table. A function call such as {lit}`json_each('[1]')`
+is no table name: it keeps no mark, and a view with its name is looked up in the initial catalog only. The
+later resolution of the copy reads a function call in the current catalog, so a call whose name is a view
+of the current catalog only is the restriction {name}`RestrictionKind.initialDatabase`. An active view is its position with the
 database that it is in, so equal positions of the two catalogs are not one view. -/
 def copyCommonTableQuery (catalog : Catalog) (field : Nat) (initial : Option Catalog := none) (inInitial : Bool := false) :
     List Syntax.Subquery → Nat → Option Nat → Option Nat → List (Nat × CommonTableError) →
@@ -67,9 +69,12 @@ def copyCommonTableQuery (catalog : Catalog) (field : Nat) (initial : Option Cat
         let usePath := (if let some index := owner then [field, index] else []) ++ path
         let reads := source.readsInitial || (inInitial && source.schema.isNone && source.arguments.isNone)
         let tagged := if reads then { mappedSource with schema := some Syntax.initialSchemaName } else mappedSource
-        let lookup : Option Catalog := if reads then initial else if source.schema.isSome then none else some catalog
+        let ownCatalog : Option Catalog := if inInitial then initial else some catalog
+        let lookup : Option Catalog := if reads then initial else if source.schema.isSome then none else ownCatalog
         match lookup.bind fun found => (found.findView source.table).map (found, ·) with
         | none =>
+          if inInitial && source.arguments.isSome && source.schema.isNone && (catalog.findView source.table).isSome then
+            throw (SourceIssue.value (.restriction usePath .initialDatabase))
           let _ ← liftM (resolveReference catalog usePath tagged (initial := initial))
           return tagged
         | some (viewCatalog, position, view) =>

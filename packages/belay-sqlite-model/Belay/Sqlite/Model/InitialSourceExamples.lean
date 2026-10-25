@@ -41,9 +41,9 @@ def sourcesOf : StatementResolution → Option (List Source)
 
 /-- The sources of a query that reads a column of the one given source, resolved against the current catalog and the
 catalog of the given initial database. -/
-def resolvedSources (source : Syntax.TableReference) (initial : Database) (column : String := "a") :
-    Option (List Source) :=
-  sourcesOf (resolveSelect context currentT.catalog (subqueryOf [cell column] source) [] (some initial.catalog))
+def resolvedSources (source : Syntax.TableReference) (initial : Database) (column : String := "a")
+    (current : Database := currentT) : Option (List Source) :=
+  sourcesOf (resolveSelect context current.catalog (subqueryOf [cell column] source) [] (some initial.catalog))
 
 /-- The source {lit}`before.t` is at position 1 of the initial catalog, and {lit}`t` at position 0 of the
 current one. A table that the initial database lacks is no source. -/
@@ -70,12 +70,12 @@ example : (resolvedSources (before "v") viewsInitial).isSome = true := by decide
 #guard (resolvedSources (before "w") viewsInitial "key").isSome
 example : resolvedSources (before "x") viewsInitial = none := by decide +kernel
 
-/-- The output of a query over the current database {lit}`currentT` and the initial database {lit}`initial`, as
+/-- The output of a query over the current database the current database (by default {lit}`currentT`) and the initial database {lit}`initial`, as
 {name}`resolvedStepOutput` gives it for the resolved query, or none when resolution fails. -/
-def stepOutputOf (query : Syntax.Subquery) (subqueries : List Syntax.Subquery) (initial : Database) :
-    Option Output :=
-  match resolveSelect context currentT.catalog query subqueries (some initial.catalog) with
-  | .ok (resolved, _) => some (resolvedStepOutput none 0 (connectionOf currentT) [] resolved (some initial))
+def stepOutputOf (query : Syntax.Subquery) (subqueries : List Syntax.Subquery) (initial : Database)
+    (current : Database := currentT) : Option Output :=
+  match resolveSelect context current.catalog query subqueries (some initial.catalog) with
+  | .ok (resolved, _) => some (resolvedStepOutput none 0 (connectionOf current) [] resolved (some initial))
   | .error _ => none
 
 /-- A scalar subquery reads the initial database too: {lit}`SELECT (SELECT count(*) FROM before.t) FROM t`
