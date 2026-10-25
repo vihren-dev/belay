@@ -15,8 +15,8 @@ from tests.surface_support import module_setup
 class LeanServer:
     """Run the real pinned server; a setup-file shim supplies our installed fixture artifacts."""
 
-    def __init__(self, runtime_root: Path, directory: Path) -> None:
-        setup = module_setup(runtime_root, directory)
+    def __init__(self, runtime_root: Path, directory: Path, automatic_check: bool = False) -> None:
+        setup = module_setup(runtime_root, directory, automatic_check=automatic_check)
         shim = directory / "lake-setup"
         shim.write_text(f"#!{sys.executable}\nimport pathlib, sys\n"
                         "assert sys.argv[1] == 'setup-file', sys.argv\n"

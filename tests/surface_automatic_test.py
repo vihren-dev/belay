@@ -45,7 +45,7 @@ def test_automatic_statement_boundaries(runtime_root: Path, tmp_path: Path, case
     source = tmp_path / "Automatic.lean"
     source.write_text(PRELUDE + body)
     start = time.monotonic()
-    result = run_command(surface_command(runtime_root, source, tmp_path), cwd=tmp_path, timeout=120)
+    result = run_command(surface_command(runtime_root, source, tmp_path, automatic_check=True), cwd=tmp_path, timeout=120)
     record_testsuite_property(f"sql_automatic.{case}.elapsed_seconds", time.monotonic() - start)
     assert (result.returncode != 0) == (errors > 0), result.diagnostic()
     assert result.stdout.count("error: SQL check: false.") == errors, result.diagnostic()

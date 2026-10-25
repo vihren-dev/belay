@@ -67,7 +67,7 @@ def test_automatic_editor_actions(runtime_root: Path, tmp_path: Path, case: str,
     has safe axioms, preserves the original error, and replays the original SQL under SQLite."""
     body, name, refuted = CASES[case]
     source = (PRELUDE + body + "\n").replace("\n", newline)
-    server = LeanServer(runtime_root, tmp_path)
+    server = LeanServer(runtime_root, tmp_path, automatic_check=True)
     try:
         start = time.monotonic()
         uri = server.open(source, wait=False)
@@ -133,7 +133,7 @@ set_option sql.checkRecursionLimit 1 in
 theorem shallow (db : Database) : Empty one db := by sorry
 theorem ordinary : 0 = 1 := by rfl
 '''
-    server = LeanServer(runtime_root, tmp_path)
+    server = LeanServer(runtime_root, tmp_path, automatic_check=True)
     try:
         uri = server.open(source, wait=False)
         reports = diagnostics(server, uri, 1)

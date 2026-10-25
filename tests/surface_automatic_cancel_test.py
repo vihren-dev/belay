@@ -59,7 +59,7 @@ set_option sql.checkBudget 1000000
     original = source + "theorem longCheck (db : Database) : Empty one db := by sorry\n"
     replacement = (source.replace("1000000", "1000001") if edit == "earlier command" else source
                    ) + "theorem replacement : True := by trivial\n"
-    server = LeanServer(runtime_root, tmp_path)
+    server = LeanServer(runtime_root, tmp_path, automatic_check=True)
     try:
         uri = server.open(original, wait=False)
         deadline = time.monotonic() + 30
