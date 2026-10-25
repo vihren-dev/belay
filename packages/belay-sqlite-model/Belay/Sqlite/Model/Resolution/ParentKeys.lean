@@ -10,11 +10,11 @@ the referenced columns. A foreign key without such a key is SQLite's
 namespace Belay.Sqlite.Model
 
 /-- The table at a catalog position, or {lean}`(none : Option CatalogTable)` for a
-position that holds an index or is past the end. -/
+non-table object or a position past the end. -/
 def Catalog.tableAt (catalog : Catalog) (position : Nat) : Option CatalogTable :=
   match catalog[position]? with
   | some { entry := .table table, .. } => some table
-  | some { entry := .index _, .. } | some { entry := .trigger _, .. } => none
+  | some { entry := .index _, .. } | some { entry := .view _, .. } | some { entry := .trigger _, .. } => none
   | none => none
 
 /-- Set whether the last foreign key of a table so far is deferred, as
@@ -58,7 +58,7 @@ def Catalog.parentIndexes (catalog : Catalog) (position : Nat) (table : CatalogT
         else (index.keys.mapM fun (key : IndexKey) => match key.term with
           | .column column => some (column, key.collation)
           | .expression _ => none).map (false, ·)
-      | .table _ | .trigger _ => none
+      | .table _ | .view _ | .trigger _ => none
 
 /-- The pairs of an index that the foreign key's referenced columns name, as
 {lit}`sqlite3FkLocateIndex` matches them: the index has one column for each column of the key,
@@ -97,15 +97,15 @@ def Catalog.parentKey (catalog : Catalog) (position : Nat) (parent : CatalogTabl
         if index.length == key.columns.length then some (.columns (key.columns.zip (index.map (·.1)))) else none
     else (indexes.findSome? fun (_, index) => matchIndex parent key index).map .columns
 
-/-- What a foreign key of the catalog refers to: the parent table at a position with its parent
-key, a parent table without one, or no table of its name. -/
+/-- What a foreign key refers to: a table with its parent key, an incompatible table
+or view, or no table or view with the referenced name. -/
 inductive ParentLink where
   /-- The parent table and its parent key. -/
   | located (position : Nat) (key : ParentKey)
-  /-- The parent table exists, but has no parent key for the foreign key
-  ({lit}`foreign key mismatch`). -/
+  /-- A table without a suitable parent key, or a view, occupies the position
+  ({lit}`foreign key mismatch`). A view cannot supply an FK parent key. -/
   | mismatch (position : Nat)
-  /-- No table has the name that the foreign key references. -/
+  /-- No table or view has the referenced name. -/
   | missing
   deriving Repr, DecidableEq
 
@@ -129,10 +129,13 @@ def childPositions (link : ForeignKeyLink) (key : ParentKey) : List Nat :=
   | .rowid => link.key.columns.take 1
   | .columns pairs => pairs.map (·.1)
 
-/-- The parent link of a foreign key in the catalog. -/
+/-- The parent link of a foreign key. A view gives a mismatch without expanding its
+body, including when its SELECT refers to a missing table. -/
 def Catalog.parentLink (catalog : Catalog) (key : ForeignKey) : ParentLink :=
   match catalog.findTable key.table with
-  | none => .missing
+  | none => match catalog.findView key.table with
+    | some (position, _) => .mismatch position
+    | none => .missing
   | some (position, parent) => match catalog.parentKey position parent key with
     | some found => .located position found
     | none => .mismatch position
@@ -142,7 +145,7 @@ catalog order and the keys of each in {name}`CatalogTable.allForeignKeys` order.
 def Catalog.foreignKeyLinks (catalog : Catalog) : List ForeignKeyLink :=
   catalog.zipIdx.flatMap fun (object, position) => match object.entry with
     | .table table => table.allForeignKeys.map fun key => { child := position, key, parent := catalog.parentLink key }
-    | .index _ | .trigger _ => []
+    | .index _ | .view _ | .trigger _ => []
 
 /-- The foreign keys of the table at the position, newest first, as SQLite keeps them in the
 table's list. -/

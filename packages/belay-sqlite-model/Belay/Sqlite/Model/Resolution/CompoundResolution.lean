@@ -66,9 +66,11 @@ column collations of {name}`compoundCollations`, the {lit}`ORDER BY` of
 {name}`resolveCompoundOrderBy` and the window of a single {lit}`SELECT`; and its shape as a
 subquery. The shape has the number of columns, the affinity and the collations of the first
 column of the right-most term, or of the derived table when {name}`sortsAsDerived` holds.
+The FLEXNUM flag follows the same selection as affinity.
 The derived column has its column collation and no explicit collation; a scalar subquery
-still supplies no collation to its containing expression. The shape also has the lowest cell
-that a term reads. A compound with another clause of its own, or without terms, is
+still supplies no collation to its containing expression. The declared-type origin always
+follows the right-most term. The shape also has the lowest cell that a term reads.
+A compound with another clause of its own, or without terms, is
 {name}`RestrictionKind.subqueryHere`, which the frontend never gives. -/
 def resolveCompoundBody (dqs : Bool) (outer : Nat) (query : Syntax.Subquery) (compound : Syntax.Compound)
     (terms : List CompoundTerm) : Except ValueIssue (Resolved.Query × SubqueryShape) := do
@@ -96,6 +98,8 @@ def resolveCompoundBody (dqs : Bool) (outer : Nat) (query : Syntax.Subquery) (co
     resultSourceColumns term.scope term.shapes term.written.columns term.query.names)
   let shape : SubqueryShape :=
     { parent := query.parent, columns := width,
+      originType := last.shape.originType,
+      flexibleNumeric := if derived then sourceColumns.head?.any (·.flexibleNumeric) else last.shape.flexibleNumeric,
       affinity := if derived then sourceColumns.head?.bind (·.affinity) else last.shape.affinity,
       explicitCollation := if derived then none else last.shape.explicitCollation,
       columnCollation := if derived then sourceColumns.head?.map (·.collation) else last.shape.columnCollation,

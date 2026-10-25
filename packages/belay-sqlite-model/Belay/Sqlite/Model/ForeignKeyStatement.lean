@@ -11,8 +11,9 @@ namespace Belay.Sqlite.Model
 * UPDATE with rules also requires structural assignment conditions.
 * Those four plain forms without rules require a target outside every FK child/parent read.
 * Queries, settings, preparation errors and transaction controls require nothing here.
-* CREATE requires that every old declaration keeps its selected parent
-  ({name}`Catalog.CreateKeepsSelection`). New declarations have no rows to check.
+* CREATE, also CREATE VIEW, requires that every old declaration keeps its selected parent
+  ({name}`Catalog.CreateKeepsSelection`). New declarations have no rows to check. A view has no
+  rows and no declarations.
 * ADD COLUMN requires {name}`Database.AddColumnRowsCondition`.
 * DROP without rules requires that every kept declaration keeps its selected parent, moved, and its
   located parents ({name}`Catalog.DropKeepsSelection`, {name}`Catalog.DropKeepsParents`).
@@ -34,6 +35,7 @@ def Resolved.Statement.ForeignKeyRowsCondition (profile : Profile) (database : D
   | .createTable _ name shape => database.catalog.CreateKeepsSelection {name, entry := .table shape}
   | .createIndex _ name index => database.catalog.CreateKeepsSelection {name, entry := .index index}
   | .createTrigger _ name trigger => database.catalog.CreateKeepsSelection {name, entry := .trigger trigger}
+  | .createView _ name view => database.catalog.CreateKeepsSelection {name, entry := .view view}
   | .addColumn target column refuses => database.AddColumnRowsCondition target column refuses
   | .drop positions none => database.catalog.DropKeepsSelection positions ∧ database.catalog.DropKeepsParents positions
   | .drop positions (some rules) => database.ForeignKeyReady profile ∧
@@ -58,6 +60,8 @@ theorem runStatement_rowReferences {profile : Profile} (clock : Int) (counters :
     exact runStatement_create_rowReferencesSelected clock counters parameters _ {name, entry := .index index} rfl holds condition
   | createTrigger _ name trigger =>
     exact runStatement_create_rowReferencesSelected clock counters parameters _ {name, entry := .trigger trigger} rfl holds condition
+  | createView _ name view =>
+    exact runStatement_create_rowReferencesSelected clock counters parameters _ {name, entry := .view view} rfl holds condition
   | addColumn target column refuses =>
     exact runStatement_addColumn_rowReferencesSelected clock counters parameters target column refuses holds condition
   | drop positions rules =>

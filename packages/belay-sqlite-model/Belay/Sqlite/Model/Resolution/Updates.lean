@@ -18,14 +18,15 @@ the filter as a condition; then a column assigned twice is a model restriction. 
 algorithm other than ABORT is {name}`RestrictionKind.constraintAlgorithmUpdate`, after
 every other check. The values and the filter may name the statement's resolved subqueries,
 whose shapes are {lit}`shapes`. In a trigger's body, the values and the filter also see the
-trigger's rows {lit}`trigger`, after the table's cells (ADR 0018, D5). -/
+trigger's rows {lit}`trigger`, after the table's cells (ADR 0018, D5). A view target is {name}`resolveViewModify`. -/
 def resolveUpdate (context : ResolveContext) (catalog : Catalog) (tableName : Identifier)
     (assignments : List (Identifier × Syntax.Expr)) (filter : Option Syntax.Expr)
     (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query) (shapes : SubqueryShapes)
     (trigger : Option TriggerRow := none) : StatementResolution :=
   let dqs := context.profile.dqsDml
   match catalog.findTable tableName with
-  | none => prepareError catalog (.noSuchTable tableName)
+  | none => if (catalog.findView tableName).isSome then resolveViewModify catalog tableName
+      else prepareError catalog (.noSuchTable tableName)
   | some (position, table) =>
     let keys := catalog.uniqueKeys position table
     let scope := Scope.single tableName table.columns !table.withoutRowid

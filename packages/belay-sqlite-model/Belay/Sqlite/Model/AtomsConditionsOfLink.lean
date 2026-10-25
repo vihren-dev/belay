@@ -27,7 +27,7 @@ theorem Resolved.Statement.runCondition_of_link {profile : Profile} {database : 
   | createIndex target name index => exact Catalog.createIndex_supported applied
   | addColumn target column _ => exact database.addColumnCondition_of_admitted admitted target
   | drop positions rules => exact Catalog.DropClosed.dropCondition link
-  | createTable | createTrigger | begin | commit | rollback | insert | update | upsert
+  | createTable | createView | createTrigger | begin | commit | rollback | insert | update | upsert
   | delete | prepareError | query | setting => trivial
 
 /-- For every profile, admitted database and statement: the statement meets its condition for "not null"
@@ -38,7 +38,7 @@ theorem Resolved.Statement.notNullCondition_of_admitted {profile : Profile} {dat
     statement.NotNullCondition database := by
   cases statement with
   | addColumn target column _ => exact database.rowsWideAt_of_admitted admitted target
-  | createTable | createIndex | createTrigger | drop | begin | commit | rollback | insert
+  | createTable | createView | createIndex | createTrigger | drop | begin | commit | rollback | insert
   | update | upsert | delete | prepareError | query | setting => trivial
 
 /-- For every profile, admitted database and statement that meets {name}`Resolved.Statement.SchemaLink` on the
@@ -52,7 +52,7 @@ theorem Resolved.Statement.typesFitCondition_of_link {profile : Profile} {databa
   cases statement with
   | addColumn target column _ =>
     exact ⟨database.rowsWideAt_of_admitted admitted target, Database.strictDefaultFitsAt_of_fits link⟩
-  | createTable | createIndex | createTrigger | drop | begin | commit | rollback | insert
+  | createTable | createView | createIndex | createTrigger | drop | begin | commit | rollback | insert
   | update | upsert | delete | prepareError | query | setting => trivial
 
 /-- For every profile, admitted database and statement: the statement meets its condition for "checks hold"
@@ -66,7 +66,7 @@ theorem Resolved.Statement.checksHoldCondition_of_admitted {profile : Profile} {
   | addColumn target column _ =>
     exact ⟨database.rowsWideAt_of_admitted admitted target,
       Database.checksReadBelowAt_of_valid admitted.catalogSupported target⟩
-  | createTable | createIndex | createTrigger | drop | begin | commit | rollback | insert
+  | createTable | createView | createIndex | createTrigger | drop | begin | commit | rollback | insert
   | update | upsert | delete | prepareError | query | setting => trivial
 
 /-- For every profile, admitted database and statement that meets the hypotheses of

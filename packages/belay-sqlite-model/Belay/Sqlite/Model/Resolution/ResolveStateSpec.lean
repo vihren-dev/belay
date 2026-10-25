@@ -1,6 +1,7 @@
 import Belay.Sqlite.Model.Resolution.WriteCatalogSpec
 import Belay.Sqlite.Model.Resolution.DropSpec
 import Belay.Sqlite.Model.Resolution.TriggerDefinitionSpec
+import Belay.Sqlite.Model.Resolution.ViewDefinitionSpec
 
 set_option doc.verso true
 
@@ -23,7 +24,7 @@ def ResolveState.after (state : ResolveState) : Resolved.Statement → ResolveSt
   | .commit => { state with saved := none }
   | .rollback => { state with catalog := state.saved.getD state.catalog, saved := none }
   | .setting setting on => state.set on setting
-  | statement@(.createTable ..) | statement@(.createIndex ..) | statement@(.createTrigger ..)
+  | statement@(.createTable ..) | statement@(.createView ..) | statement@(.createIndex ..) | statement@(.createTrigger ..)
   | statement@(.addColumn ..) | statement@(.drop ..)
   | statement@(.insert ..) | statement@(.update ..) | statement@(.upsert ..) | statement@(.delete ..)
   | statement@(.prepareError _) | statement@(.query ..) =>
@@ -39,7 +40,7 @@ theorem ResolveState.after_of_isControl (state : ResolveState) {statement : Reso
     state.after statement = { state with catalog := statement.applyCatalog state.catalog } := by
   cases statement with
   | begin | commit | rollback | setting => cases ordinary
-  | createTable | createIndex | createTrigger | addColumn | drop | insert | update | upsert | delete | prepareError
+  | createTable | createView | createIndex | createTrigger | addColumn | drop | insert | update | upsert | delete | prepareError
   | query => rfl
 
 /-- For every successful resolution of CREATE TABLE, the catalog after it is
@@ -121,6 +122,11 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
     split at ok <;> cases ok
     obtain ⟨equal, control⟩ := resolveCreateTable_applyCatalog _ _ _ _ _ _ _ _ (by assumption)
     exact ordinary _ control equal
+  | createView name ifNotExists columns query subqueries =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    obtain ⟨equal, control⟩ := resolveCreateView_applyCatalog _ _ _ _ _ _ (by assumption)
+    exact ordinary _ control equal
   | createIndex name unique table terms filter =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
@@ -134,6 +140,11 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
   | dropTable name ifExists =>
     simp only [resolveStatement] at ok
     exact written _ ok fun _ _ found => resolveDropTable_applyCatalog _ _ _ _ _ found
+  | dropView name ifExists =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    obtain ⟨equal, control⟩ := resolveDropView_applyCatalog _ _ _ _ _ (by assumption)
+    exact ordinary _ control equal
   | dropIndex name ifExists =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
@@ -152,23 +163,23 @@ theorem resolveStatement_after (context : ResolveContext) (state next : ResolveS
   | insert table columns rows conflicts algorithm returning subqueries =>
     simp only [resolveStatement] at ok
     exact written _ ok fun _ _ found =>
-      let ⟨same, unchanged, control⟩ := resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _
-        (fun _ _ _ _ h => resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ _ h) found
+      let ⟨same, unchanged, control⟩ := resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
+        (fun _ _ _ _ _ h => resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ _ h) found
       ⟨same.trans unchanged.symm, control⟩
   | update table assignments filter returning subqueries =>
     simp only [resolveStatement] at ok
     exact written _ ok fun _ _ found =>
-      let ⟨same, unchanged, control⟩ := resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _
-        (fun _ _ _ _ h => resolveUpdate_same _ _ _ _ _ _ _ _ _ _ h) found
+      let ⟨same, unchanged, control⟩ := resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
+        (fun _ _ _ _ _ h => resolveUpdate_same _ _ _ _ _ _ _ _ _ _ h) found
       ⟨same.trans unchanged.symm, control⟩
   | delete table filter returning subqueries =>
     simp only [resolveStatement] at ok
     exact written _ ok fun _ _ found =>
-      let ⟨same, unchanged, control⟩ := resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _
-        (fun _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ h) found
+      let ⟨same, unchanged, control⟩ := resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
+        (fun _ _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ h) found
       ⟨same.trans unchanged.symm, control⟩
   | pragma pragma =>
-    rcases resolvePragma_cases ok with ⟨_, _, rfl, rfl⟩ | ⟨rfl, unchanged, control⟩
+    rcases resolveStatementPragma_cases ok with ⟨_, _, rfl, rfl⟩ | ⟨rfl, unchanged, control⟩
     · rfl
     · exact ordinary _ control unchanged.symm
   | select results source joins filter groupBy orderBy limit offset subqueries having distinct =>

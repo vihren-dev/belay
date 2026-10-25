@@ -37,9 +37,12 @@ theorem runStatement_rowidsDistinct (clock : Int) (counters : Counters) (paramet
   | createIndex target name index =>
     exact runStatement_create_tableAtom Table.rowidsDistinctAtom clock counters parameters _ distinct
       (.inr (.inl ⟨target, name, index, rfl⟩))
+  | createView target name view =>
+    exact runStatement_create_tableAtom Table.rowidsDistinctAtom clock counters parameters _ distinct
+      (.inr (.inr (.inr ⟨target, name, view, rfl⟩)))
   | createTrigger target name trigger =>
     exact runStatement_create_tableAtom Table.rowidsDistinctAtom clock counters parameters _ distinct
-      (.inr (.inr ⟨target, name, trigger, rfl⟩))
+      (.inr (.inr (.inl ⟨target, name, trigger, rfl⟩)))
   | addColumn target column refuses =>
     exact runStatement_addColumn_rowLocal (atom := Table.RowidsDistinct) clock counters parameters target column refuses
       distinct fun table _ found _ => Table.RowidsDistinct.appendColumns (distinct target table found) _

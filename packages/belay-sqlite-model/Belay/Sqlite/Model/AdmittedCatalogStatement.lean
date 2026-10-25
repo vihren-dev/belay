@@ -45,6 +45,11 @@ theorem runStatement_catalogSupported (limits : Limits) (clock : Int) (counters 
         · exact Effect.satisfies_of_database valid rfl
         · exact Effect.satisfies_of_effectDatabase next
     · exact Effect.satisfies_of_database valid rfl
+  | createView target name view =>
+    simp only [runStatement, step]
+    split
+    · exact Effect.satisfies_of_effectDatabase next
+    · exact Effect.satisfies_of_database valid rfl
   | createTrigger target name trigger =>
     simp only [runStatement, step]
     split

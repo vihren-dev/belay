@@ -50,7 +50,7 @@ theorem resolveQueryBody_aggregate (dqs : Bool) (scope : Scope) (current : Optio
     (pendingOk : resolvePendingSources dqs scope pending = .ok sources) :
     resolveQueryBody dqs scope { current, later } outerAliases pending
         (Syntax.Subquery.mk [.expression (.call name [operand]) alias text] source [] filter [] [] none none none none
-          false none) =
+          false none none) =
       .ok (Resolved.Query.aggregateOf sources condition
         ((build resolved).withCollation (operand.collationIn scope)) ((alias.map (·.text)).getD text), none) := by
   have called : aggregateCall (.call name [operand]) = true := by simp [aggregateCall, named]
@@ -100,7 +100,7 @@ theorem resolveStatement_select_aggregate (context : ResolveContext) (state : Re
         ((alias.map (·.text)).getD text)) [], state) := by
   refine resolveStatement_select_of_resolveSelect context state
     (Syntax.Subquery.mk [.expression (.call name [operand]) alias text] (some reference) [] filter [] [] none none none
-      none false none) [] rfl _ ?_
+      none false none none) [] rfl rfl _ ?_
   refine resolveSelect_no_subqueries context state.catalog _ _ none _ _ rfl rfl
     (resolveSources_table state.catalog reference position table namedSource arguments found) (by simp [starIssue]) ?_
   have body := resolveQueryBody_aggregate context.profile.dqsDml (tableScope state.catalog reference position table)

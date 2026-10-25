@@ -14,7 +14,7 @@ namespace Belay.Sqlite.Model
 * every other statement: nothing. -/
 def Resolved.Statement.NotNullCondition (database : Database) : Resolved.Statement → Prop
   | .addColumn target _ _ => database.RowsWideAt target
-  | .createTable .. | .createIndex .. | .createTrigger .. | .drop .. | .begin | .commit | .rollback | .insert ..
+  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .drop .. | .begin | .commit | .rollback | .insert ..
   | .update .. | .upsert .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
 
 /-- The condition of a statement on the database for the atom "types fit":
@@ -24,7 +24,7 @@ def Resolved.Statement.NotNullCondition (database : Database) : Resolved.Stateme
 * every other statement: nothing. -/
 def Resolved.Statement.TypesFitCondition (database : Database) : Resolved.Statement → Prop
   | .addColumn target column _ => database.RowsWideAt target ∧ database.StrictDefaultFitsAt target column
-  | .createTable .. | .createIndex .. | .createTrigger .. | .drop .. | .begin | .commit | .rollback | .insert ..
+  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .drop .. | .begin | .commit | .rollback | .insert ..
   | .update .. | .upsert .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
 
 /-- The condition of a statement on the database for the atom "checks hold":
@@ -34,7 +34,7 @@ def Resolved.Statement.TypesFitCondition (database : Database) : Resolved.Statem
 * every other statement: nothing. -/
 def Resolved.Statement.ChecksHoldCondition (database : Database) : Resolved.Statement → Prop
   | .addColumn target _ _ => database.RowsWideAt target ∧ database.ChecksReadBelowAt target
-  | .createTable .. | .createIndex .. | .createTrigger .. | .drop .. | .begin | .commit | .rollback | .insert ..
+  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .drop .. | .begin | .commit | .rollback | .insert ..
   | .update .. | .upsert .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
 
 /-- The statement theorem of "not null". For every clock value, counters, parameter list, resolved statement

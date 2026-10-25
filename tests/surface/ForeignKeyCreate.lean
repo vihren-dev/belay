@@ -34,6 +34,7 @@ def create (object : CatalogObject) : Resolved.Statement :=
   | .table shape => .createTable input.raw.catalog.length object.name shape
   | .index index => .createIndex input.raw.catalog.length object.name index
   | .trigger trigger => .createTrigger input.raw.catalog.length object.name trigger
+  | .view view => .createView input.raw.catalog.length object.name view
 
 /-- The test constructor exposes the real object that the statement creates. -/
 theorem creates (object : CatalogObject) : (create object).CreatesObject object := by

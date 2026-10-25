@@ -72,7 +72,7 @@ example : (two.run (send failsSecond)).outputs = (two.raw.run failsSecond).outpu
     (two.run (send failsSecond)).db.raw = (two.raw.run failsSecond).connection.state.database ∧
     (two.run (send failsSecond)).transaction = (two.raw.run failsSecond).connection.state.snapshot ∧
     (two.run (send failsSecond)).value = some (two.raw.run failsSecond).outputs := by decide +kernel
-example (s : Script) : two.run s = Run.checked two (SqlRun.ofScript (two.raw.run s)) := Database.run_script_default two s
+example (s : Script) : two.run s = Run.ofValid two (SqlRun.ofScript (two.raw.run s)) (Script.run_database_valid s two Env.default) := Database.run_script_default two s
 example (p : Sql Bool) : p.run two = two.run p := rfl
 example (s : Script) (env : Env) : two.run s env = (send s).run two env := rfl
 

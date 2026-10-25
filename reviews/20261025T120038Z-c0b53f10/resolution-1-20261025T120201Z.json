@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T12:02:01+00:00",
+  "finding": "20261025T120038Z-c0b53f10#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Merged adr-0017-user-surface.md three-way: restored the S6 trigger and foreign-key premise bullet, the S7 metadata clarification and the task allocation, kept the views-side completion text."
+}

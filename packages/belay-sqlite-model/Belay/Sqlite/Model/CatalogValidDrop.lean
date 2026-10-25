@@ -67,7 +67,7 @@ theorem Catalog.findTable_drop_kept {catalog : Catalog} {positions : List Nat} {
     obtain ⟨place, thing⟩ := pair
     obtain ⟨name, entry⟩ := thing
     cases entry with
-    | index _ | trigger _ => simp [hf] at hfind
+    | index _ | view _ | trigger _ => simp [hf] at hfind
     | table shape =>
       simp only [hf, Option.some.injEq, Prod.mk.injEq] at hfind
       obtain ⟨rfl, rfl⟩ := hfind
@@ -114,6 +114,7 @@ theorem Catalog.Valid.drop {limits : Limits} {catalog : Catalog} (valid : catalo
   obtain ⟨name, entry⟩ := original
   cases entry with
   | table _ => simpa [CatalogEntry.afterDrop] using old
+  | view _ => simpa [CatalogEntry.afterDrop] using old
   | index found =>
     simp only [CatalogEntry.afterDrop, Bool.and_eq_true] at old ⊢
     refine ⟨old.1, ?_⟩

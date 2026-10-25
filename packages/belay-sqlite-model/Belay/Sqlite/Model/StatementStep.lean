@@ -104,7 +104,7 @@ def runStatement (clock : Int) (counters : Counters) (parameters : List Value) (
   | .drop positions rules =>
     StatementRun.withKeys (step clock counters parameters statement database) true {}
       (rules.map fun rules => dropKeys rules clock positions database)
-  | .createIndex .. | .createTrigger .. => { effect := step clock counters parameters statement database, ready := true }
+  | .createView .. | .createIndex .. | .createTrigger .. => { effect := step clock counters parameters statement database, ready := true }
   | .begin | .commit | .rollback | .prepareError _ | .setting .. =>
     { effect := step clock counters parameters statement database, ready := true }
 

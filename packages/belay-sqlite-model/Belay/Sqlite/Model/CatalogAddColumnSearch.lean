@@ -66,9 +66,35 @@ theorem Catalog.findTable_addColumn (catalog : Catalog) (target : Nat) (column :
           simp
         · obtain ⟨_, entry⟩ := object
           cases entry <;> simp [here]
-    | index _ | trigger _ =>
+    | view _ | index _ | trigger _ =>
       have none : catalog.tableAt target = none := by simp [Catalog.tableAt, atTarget]
       simp [none]
+
+/-- For every catalog, target, column and name: the view found by name after {name}`Catalog.addColumn`
+is the view found before. The replaced object is a table that keeps its name, so a name that finds a
+view finds the same view, and a name that finds a table or nothing finds no view. Proof sketch: the
+first-match search finds the same position ({name}`findPosition_set_same`), and the object there is a
+view only if it was not the replaced table. -/
+theorem Catalog.findView_addColumn (catalog : Catalog) (target : Nat) (column : CatalogColumn) (name : Identifier) :
+    (catalog.addColumn target column).findView name = catalog.findView name := by
+  unfold Catalog.addColumn
+  split
+  · rename_i objectName table atTarget
+    unfold Catalog.findView Catalog.find
+    rw [findPosition_set_same _ _ catalog target _ atTarget (by simp [CatalogEntry.isTrigger, CatalogObject.isTrigger])]
+    cases located : findPosition (fun object => object.name.sameName name && !object.isTrigger) catalog with
+    | none => rfl
+    | some pair =>
+      obtain ⟨index, object⟩ := pair
+      by_cases here : index = target
+      · subst here
+        obtain ⟨atIndex, _, _⟩ := (findPosition_eq_some_iff _ _ _ _).mp located
+        rw [atTarget, Option.some.injEq] at atIndex
+        subst atIndex
+        simp
+      · obtain ⟨_, entry⟩ := object
+        cases entry <;> simp [here]
+  all_goals rfl
 
 /-- For every function that gives none for each table entry, catalog, target and column: the
 objects that the function keeps are the same after {name}`Catalog.addColumn`. Proof sketch: ADD

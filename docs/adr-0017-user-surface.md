@@ -90,7 +90,7 @@ They retain exact internal heartbeat units, with 1000 internal units per Lean
 budget unit. CI compares compatible measurements and fails when growth exceeds
 an additive allowance chosen by the user; missing data never means zero. The guide must disclose
 measurement overhead and count variation. The prototype measured about 9%
-heartbeat overhead in its sample (commit `489b22f6`,
+heartbeat overhead in its sample (prototype commit `489b22f6`,
 `docs/s7-proof-cost-findings.md`); this is not a general bound. Production
 collection and native mutual coverage remain implementation work.
 
@@ -156,11 +156,12 @@ foundations prototype:
 
 The [initial/current query task](../plans/20261024-s6-before-context.task.md)
 specifies the fixed `before` observation through the existing model. The
-[execution task](../plans/20261024-s6-execution-contracts.task.md) supplies the
-production branch/WP/equivalence contracts, and the
-[assertion task](../plans/20261024-s6-assertions.task.md) supplies fresh-run
-notation and proof rules. The foundations task is a completed prototype;
-these production tasks remain open.
+[execution task](../plans/20261024-s6-execution-contracts.task.md) supplied the
+production branch/WP/equivalence contracts and is done (2026-10-25); its work does
+not complete the later public assertion, migration-pattern or automation
+interfaces. The [assertion task](../plans/20261024-s6-assertions.task.md) supplies
+fresh-run notation and proof rules. The foundations task is a completed
+prototype; the query and assertion tasks remain open.
 
 ### D2. S1: SQL text in Lean, measured before it is built
 
@@ -241,11 +242,12 @@ sentences on the surface's `Database`:
 
 - **The `Database` carries its validity in S2.** It holds a model database and its proof of
   `Database.Valid`, and `Database.Raw` is the model database without the proof. `db!` and each
-  run decide `Database.Valid` for the database that they give, and the decision is the proof
-  ([ADR 0022](adr-0022-database-validity.md), D5, amended). So `db.notNull`, `db.check`,
-  `db.unique` and `db.rowid_unique` need no hypothesis, as the guide says. A run whose result
-  is not valid ends with `Output.unmodeled`, and its database is the one at its start. For a
-  claim over every database, the check must be proved, which ADR 0022's theorems do before S4.
+  run in S2 decided `Database.Valid` for the database that they gave, and the decision was
+  the proof ([ADR 0022](adr-0022-database-validity.md), D5, amended). Thus `db.notNull`,
+  `db.check`, `db.unique` and `db.rowid_unique` need no hypothesis. Completed in S4 on
+  2026-10-24: `db!` still decides validity at elaboration, while a run uses
+  `Sql.runFrom_database_valid` and `Run.ofValid` to bundle exactly the model result.
+  The redundant runtime decision, invalid-result output and fallback database are removed.
 - **`Holds`, `Empty` and `Fails` for one database.** Their definitions come in S2, so the
   examples of the guide's "Queries as propositions" over one database are proved by `decide`.
   Their lemmas, and the claims over every database, stay in S4.
@@ -347,7 +349,6 @@ A slice that finishes one removes it from this table, or moves it to the slice t
 | `withTransaction`, which the guide writes with a savepoint inside an open transaction | The model has no `SAVEPOINT`: a statement is `BEGIN`, `COMMIT` or `ROLLBACK` (owner decision, 2026-10-23) | When the model has `SAVEPOINT` |
 | The choice of profile in the guide's `Env` | The runs of S3 use the pinned profile, and no slice gives the choice | When a second profile is in the model |
 | `random()` and `randomblob()`, which the guide's `Env` lists | The model resolves them as unmodeled functions; they need model work (`changes()`, `last_insert_rowid()` and `total_changes()` have a meaning since ADR 0024, slice 1, amended 2026-10-23) | [ADR 0024](adr-0024-connection-state-and-random-values.md) (ACCEPTED): slice 2 (random values), when an example needs them |
-| The theorems that replace the check of a run of the bundled database, so that a claim over every database gets the facts of the run's result | S2's run checks `Database.Valid` for each concrete run (D3, amended 2026-10-22) | ADR 0022, slices 2 to 4, before S4 |
 | The name of the failed constraint in a `db!` error for a write that runs a trigger or checks foreign keys; such a write gives `constraint failed` and says that the model does not name it | The model's write with triggers or foreign-key checks does not keep why a row failed, and resolution drops the text of `RAISE`; the work is about 150 to 250 lines (owner decision, 2026-10-22) | When a user needs these messages |
 | `pragma_table_info` and `pragma_foreign_key_list`, the table-valued pragma functions with which the guide states facts of a schema (narrowed 2026-10-23: the other table-valued pragma functions stay out of scope, ADR 0019 D2) | The model resolves them as a restriction | [ADR 0019](adr-0019-guide-sql.md), slice 2 (D2), before S4, whose claims over every database need schema facts |
 
@@ -382,6 +383,7 @@ Decided on 2026-10-22, for the S2 task file:
 5. **The clock.** S2 has no clock: a statement that reads it gives `Output.unmodeled`, and
    `Env` with a clock comes with S3.
 6. **The bundled database in S2** (D3, amended 2026-10-22; ADR 0022, owner decision 5): the
-   surface's `Database` carries its proof of `Database.Valid`, and a run checks it.
+   surface's `Database` carries its proof of `Database.Valid`; a run obtains it from the
+   preservation theorem (S4, completed 2026-10-24).
 7. **`Holds`, `Empty` and `Fails` for one database in S2**; their lemmas and the claims over
    every database stay in S4.

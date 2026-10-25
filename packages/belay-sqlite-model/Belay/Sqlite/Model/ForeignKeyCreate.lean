@@ -4,26 +4,28 @@ import Belay.Sqlite.Model.RowLocalFrame
 
 set_option doc.verso true
 
-/-! Foreign-key atoms through the three CREATE forms, with separate row-mapping and
-parent-selection premises. The common frame follows actual statement execution. -/
+/-! Foreign-key atoms through the four CREATE forms (table, view, index and trigger), with
+separate row-mapping and parent-selection premises. The common frame follows actual statement
+execution. -/
 
 namespace Belay.Sqlite.Model
 
-/-- The statement is CREATE TABLE, CREATE INDEX or CREATE TRIGGER for exactly this object.
-Its target position is unrestricted here; execution checks that it is the catalog end.
+/-- The statement is CREATE TABLE, CREATE VIEW, CREATE INDEX or CREATE TRIGGER for exactly this
+object. Its target position is unrestricted here; execution checks that it is the catalog end.
 Every other statement fails this condition. Use this relation to share the append frame. -/
 def Resolved.Statement.CreatesObject (statement : Resolved.Statement) (object : CatalogObject) : Prop :=
   match statement with
   | .createTable _ name shape => object = {name, entry := .table shape}
   | .createIndex _ name index => object = {name, entry := .index index}
   | .createTrigger _ name trigger => object = {name, entry := .trigger trigger}
+  | .createView _ name view => object = {name, entry := .view view}
   | .addColumn .. | .drop .. | .insert .. | .upsert .. | .update .. | .delete ..
   | .query .. | .begin | .commit | .rollback | .prepareError .. | .setting .. => False
 
 /-- For every CREATE statement with the specified object, clock, counters, parameters and
 input, every success has aligned input storage and appends exactly the object and empty rows.
 CREATE has no partial FAIL carrier; other errors require nothing. Proof sketch: inspect the
-three CREATE branches and their existing end-position, storage and unique-index checks. -/
+four CREATE branches and their existing end-position, storage and unique-index checks. -/
 theorem runStatement_create_frame (clock : Int) (counters : Counters) (parameters : List Value)
     (statement : Resolved.Statement) (database : Database) (object : CatalogObject)
     (creates : statement.CreatesObject object) :
@@ -31,7 +33,7 @@ theorem runStatement_create_frame (clock : Int) (counters : Counters) (parameter
       (fun after => database.rows.length = database.catalog.length ∧
         after = {catalog := database.catalog ++ [object], rows := database.rows ++ [[]]}) := by
   cases statement with
-  | createTable target name shape | createTrigger target name shape =>
+  | createTable target name shape | createView target name shape | createTrigger target name shape =>
     change object = _ at creates
     subst object
     simp only [runStatement, step]

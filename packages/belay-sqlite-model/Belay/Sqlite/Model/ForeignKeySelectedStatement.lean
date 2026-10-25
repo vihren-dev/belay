@@ -10,7 +10,7 @@ namespace Belay.Sqlite.Model
 
 /-- Sufficient conditions for a resolved statement to keep the parent schemas of a database
 compatible with the selected mapping:
-* CREATE requires that every old declaration keeps its selected parent
+* CREATE, also CREATE VIEW, requires that every old declaration keeps its selected parent
   ({name}`Catalog.CreateKeepsSelection`). CREATE TABLE also requires a located parent for every
   new declaration ({name}`Catalog.CreateLocatesNewKeys`).
 * ADD COLUMN requires the same for the column ({name}`Catalog.AddColumnKeepsSelection`,
@@ -23,6 +23,7 @@ def Resolved.Statement.ForeignKeySchemaCondition (database : Database) : Resolve
       database.catalog.CreateLocatesNewKeys {name, entry := .table shape}
   | .createIndex _ name index => database.catalog.CreateKeepsSelection {name, entry := .index index}
   | .createTrigger _ name trigger => database.catalog.CreateKeepsSelection {name, entry := .trigger trigger}
+  | .createView _ name view => database.catalog.CreateKeepsSelection {name, entry := .view view}
   | .addColumn target column _ => database.catalog.AddColumnKeepsSelection target column ∧
       database.catalog.AddColumnLocatesNewKeys target column
   | .drop positions _ => database.catalog.DropKeepsSelection positions
@@ -56,6 +57,9 @@ theorem runStatement_parentSchemasCompatibleSelected (clock : Int) (counters : C
   | createTrigger _ name trigger =>
     exact runStatement_create_parentSchemasCompatibleSelected clock counters parameters _
       {name, entry := .trigger trigger} rfl holds condition (fun _ entry => nomatch entry)
+  | createView _ name view =>
+    exact runStatement_create_parentSchemasCompatibleSelected clock counters parameters _
+      {name, entry := .view view} rfl holds condition (fun _ entry => nomatch entry)
   | addColumn target column refuses =>
     exact runStatement_addColumn_parentSchemasCompatibleSelected clock counters parameters target column refuses
       holds condition.1 condition.2
@@ -65,7 +69,7 @@ theorem runStatement_parentSchemasCompatibleSelected (clock : Int) (counters : C
 
 /-- Sufficient conditions for a resolved statement to keep both atoms under the selected mapping:
 * CREATE TABLE requires a located parent for every new declaration
-  ({name}`Catalog.CreateLocatesNewKeys`); CREATE INDEX and CREATE TRIGGER require nothing.
+  ({name}`Catalog.CreateLocatesNewKeys`); CREATE VIEW, CREATE INDEX and CREATE TRIGGER require nothing.
   The input atoms give the selection of every old declaration.
 * ADD COLUMN requires {name}`Database.AddColumnRowsCondition` and a located parent for every
   declaration of the column ({name}`Catalog.AddColumnLocatesNewKeys`).
@@ -77,7 +81,7 @@ For a removed referenced parent, which only the row atom survives, use the indiv
 def Resolved.Statement.ForeignKeyAtomsCondition (profile : Profile) (database : Database) :
     Resolved.Statement → Prop
   | .createTable _ name shape => database.catalog.CreateLocatesNewKeys {name, entry := .table shape}
-  | .createIndex .. | .createTrigger .. => True
+  | .createIndex .. | .createTrigger .. | .createView .. => True
   | .addColumn target column refuses => database.AddColumnRowsCondition target column refuses ∧
       database.catalog.AddColumnLocatesNewKeys target column
   | .drop positions none => database.catalog.DropKeepsSelection positions ∧ database.catalog.DropKeepsParents positions
@@ -116,6 +120,9 @@ theorem runStatement_foreignKeyAtomsSelected (profile : Profile) (clock : Int) (
       (fun _ entry => nomatch entry)
   | createTrigger _ name trigger =>
     exact runStatement_create_foreignKeyAtoms clock counters parameters _ {name, entry := .trigger trigger} rfl holds
+      (fun _ entry => nomatch entry)
+  | createView _ name view =>
+    exact runStatement_create_foreignKeyAtoms clock counters parameters _ {name, entry := .view view} rfl holds
       (fun _ entry => nomatch entry)
   | addColumn target column refuses =>
     exact runStatement_addColumn_foreignKeyAtoms clock counters parameters target column refuses holds

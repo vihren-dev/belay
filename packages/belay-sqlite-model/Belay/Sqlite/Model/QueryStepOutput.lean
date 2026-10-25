@@ -6,8 +6,7 @@ set_option doc.verso true
 /-! The output of one statement of a run, in terms of the steps of its run (ADR 0017, S4): the
 output that {name}`Belay.Sqlite.Model.runScriptStep` gives is the reason of a restriction, the
 reason of a clock read or of an unknown counter, the reason of a statement that fails the support
-check, or {name}`Belay.Sqlite.Model.Output.ofStep` of the statement's run and transition. The
-surface reads the first output of a script with these facts. -/
+check, or {name}`Belay.Sqlite.Model.Output.ofStep` of the statement's run and transition. -/
 
 namespace Belay.Sqlite.Model
 

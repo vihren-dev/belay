@@ -42,6 +42,11 @@ theorem runStatement_rowsShaped (clock : Int) (counters : Counters) (parameters 
         · exact Effect.satisfies_of_database shaped rfl
         · exact Effect.satisfies_of_effectDatabase (shaped.append _)
     · exact Effect.satisfies_of_database shaped rfl
+  | createView target name view =>
+    simp only [runStatement, step]
+    split
+    · exact Effect.satisfies_of_effectDatabase (shaped.append _)
+    · exact Effect.satisfies_of_database shaped rfl
   | createTrigger target name trigger =>
     simp only [runStatement, step]
     split

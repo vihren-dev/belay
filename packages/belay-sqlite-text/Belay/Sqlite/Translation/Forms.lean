@@ -1,3 +1,4 @@
+import Belay.Sqlite.Translation.Parameters
 import Belay.Sqlite.Translation.Subqueries
 
 set_option doc.verso true
@@ -44,7 +45,10 @@ def expressionList (tree : SqlTree) (node : ParseNode) : TranslateM (Array Parse
   return items.map last
 
 /-- {lit}`x [NOT] IN (values)`; a list of one parenthesized subquery is {lit}`x IN (SELECT ...)`,
-as SQLite's parser reads it. -/
+as SQLite's parser reads it. SQLite's parser replaces {lit}`x IN ()` by a constant and discards
+{lit}`x` before it resolves any name or subquery in it, so the empty list keeps the operand as
+{lit}`NULL`. An operand with a parameter token stays as written, because the model numbers the
+parameter tokens of the statement and refuses them where SQLite removes the expression first. -/
 def inList (mappers : Mappers) (tree : SqlTree) (node : ParseNode) (parts : Array ParseNode) :
     TranslateM (Located Syntax.Expr) := do
   let negated := negatedOperator tree parts[1]! "IN"
@@ -55,7 +59,9 @@ def inList (mappers : Mappers) (tree : SqlTree) (node : ParseNode) (parts : Arra
     return composite (.inQuery operand.value index negated) node.start node.stop
       #[operand.span, indexAt node, spanOf parts[1]!]
   let mapped := sequence (← values.mapM (mappers.expression tree)) parts[3]!.start parts[3]!.stop
-  let operand ← mappers.expression tree parts[0]!
+  let operand ← if values.isEmpty && (variableTokens tree parts[0]!).isEmpty
+    then pure (leaf Syntax.Expr.null parts[0]!.start parts[0]!.stop)
+    else mappers.expression tree parts[0]!
   return composite (.inList operand.value mapped.value negated) node.start node.stop
     #[operand.span, mapped.span, spanOf parts[1]!]
 

@@ -127,6 +127,11 @@ theorem step_extends (clock : Int) (counters : Counters) (parameters : List Valu
         · exact DatabaseExtends.refl database
         · exact DatabaseExtends.append database _
     · exact DatabaseExtends.refl database
+  | createView target name view =>
+    simp only [step]
+    split
+    · exact DatabaseExtends.append database _
+    · exact DatabaseExtends.refl database
   | createTrigger target name trigger =>
     simp only [step]
     split

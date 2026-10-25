@@ -62,6 +62,9 @@ def Catalog.keyMismatch (catalog : Catalog) (position : Nat) : Option PrepareErr
   so the mismatches of two or more tables are the restriction
   {name}`RestrictionKind.foreignKeyMismatchOrder`.
 
+A named view has no stored table rows for check pragmas or foreign-key listing.
+Its {lit}`table_info` metadata needs query expansion, so this function restricts it; the statement resolver
+{lit}`resolveStatementPragma` expands the view first.
 Every form except a setting with a value keeps the state. -/
 def resolvePragma (state : ResolveState) : Syntax.Pragma → Except NodeRestriction (Resolved.Statement × ResolveState)
   | .setting .foreignKeys (some on) =>
@@ -71,15 +74,17 @@ def resolvePragma (state : ResolveState) : Syntax.Pragma → Except NodeRestrict
   | .setting setting none => .ok (settingQuery setting (state.setting setting), state)
   | .tableInfo table => match state.catalog.tableInfoRows table with
     | some rows => .ok (.query (pragmaQuery (.fixed tableInfoNames.length rows) tableInfoNames) [], state)
-    | none => .error { path := [], kind := .systemTable }
+    | none => .error { path := [], kind := if (state.catalog.findView table).isSome then .subqueryHere else .systemTable }
   | .foreignKeyList table =>
     .ok (.query (pragmaQuery (.fixed foreignKeyListNames.length (state.catalog.foreignKeyListRows table))
       foreignKeyListNames) [], state)
   | .check quick limit none => .ok (checkQuery quick limit none, state)
   | .check quick limit (some table) => match state.catalog.findTable table with
     | some (position, _) => .ok (checkQuery quick limit (some position), state)
-    | none => if reservedName table then .error { path := [], kind := .systemTable }
-      else .ok (.prepareError (.noSuchTable table), state)
+    | none => match state.catalog.findView table with
+      | some (position, _) => .ok (checkQuery quick limit (some position), state)
+      | none => if reservedName table then .error { path := [], kind := .systemTable }
+        else .ok (.prepareError (.noSuchTable table), state)
   | .foreignKeyCheck none => match (List.range state.catalog.length).filterMap state.catalog.keyMismatch with
     | [] => .ok (keyCheckQuery none, state)
     | [error] => .ok (.prepareError error, state)
@@ -88,8 +93,10 @@ def resolvePragma (state : ResolveState) : Syntax.Pragma → Except NodeRestrict
     | some (position, _) => match state.catalog.keyMismatch position with
       | some error => .ok (.prepareError error, state)
       | none => .ok (keyCheckQuery (some position), state)
-    | none => if reservedName table then .error { path := [], kind := .systemTable }
-      else .ok (.prepareError (.noSuchTable table), state)
+    | none => match state.catalog.findView table with
+      | some (position, _) => .ok (keyCheckQuery (some position), state)
+      | none => if reservedName table then .error { path := [], kind := .systemTable }
+        else .ok (.prepareError (.noSuchTable table), state)
 
 /-- For every state and pragma that resolves, one of these holds:
 

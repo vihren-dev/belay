@@ -20,7 +20,7 @@ namespace Belay.Sqlite.Model
 def Resolved.Statement.KeysCondition (database : Database) : Resolved.Statement → Prop
   | .addColumn target _ _ => database.AddColumnCondition target
   | .drop positions _ => database.catalog.DropCondition positions
-  | .createTable .. | .createIndex .. | .createTrigger .. | .begin | .commit | .rollback | .insert .. | .update ..
+  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .begin | .commit | .rollback | .insert .. | .update ..
   | .upsert .. | .delete .. | .prepareError _ | .query .. | .setting _ _ => True
 
 /-- For every rules, clock value, target, work, database, flag and algorithm: if the database
@@ -47,6 +47,8 @@ theorem runStatement_keysUnique (clock : Int) (counters : Counters) (parameters 
   cases statement with
   | createTable target name shape => exact runStatement_createTable_keysUnique clock counters parameters target name shape unique
   | createIndex target name index => exact runStatement_createIndex_keysUnique clock counters parameters target name index unique
+  | createView target name view =>
+    exact runStatement_createView_keysUnique clock counters parameters target name view unique
   | createTrigger target name trigger =>
     exact runStatement_createTrigger_keysUnique clock counters parameters target name trigger unique
   | addColumn target column refuses => exact runStatement_addColumn_keysUnique clock counters parameters target column refuses unique condition

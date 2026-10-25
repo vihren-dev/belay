@@ -50,6 +50,8 @@ theorem runStatement_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom a
   cases statement with
   | createTable target name shape => exact runStatement_createTable_rowLocal rowLocal clock counters parameters target name shape every
   | createIndex target name index => exact runStatement_createIndex_rowLocal rowLocal clock counters parameters target name index every
+  | createView target name view =>
+    exact runStatement_createView_rowLocal rowLocal clock counters parameters target name view every
   | createTrigger target name trigger =>
     exact runStatement_createTrigger_rowLocal rowLocal clock counters parameters target name trigger every
   | addColumn target column refuses =>

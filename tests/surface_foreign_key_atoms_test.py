@@ -24,7 +24,8 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
                                          ("ForeignKeyCreate.lean", 19), ("ForeignKeyDdlDrop.lean", 16),
                                          ("ForeignKeyEnforcedDrop.lean", 18), ("ForeignKeyDropOutcomes.lean", 4),
                                          ("ForeignKeyAddColumn.lean", 41), ("ForeignKeyDdlRuns.lean", 19), ("ForeignKeyDdlDropRuns.lean", 27),
-                                         ("ForeignKeyDdlNecessity.lean", 6), ("ForeignKeyActionRuns.lean", 8)])
+                                         ("ForeignKeyDdlNecessity.lean", 6), ("ForeignKeyActionRuns.lean", 8),
+                                         ("ForeignKeyDdlViews.lean", 8)])
 def test_independent_foreign_key_atoms(fixture: str, axioms: int, runtime_root: Path, tmp_path: Path) -> None:
     """ForeignKeyFacts, mapping transport and pragma laws compile through Belay's exported API.
 
@@ -59,7 +60,10 @@ def test_independent_foreign_key_atoms(fixture: str, axioms: int, runtime_root: 
     SQLite does, and that a column that references an absent table breaks only the schema
     atom. The action fixture runs RESTRICT against NO ACTION with a repairing trigger, SET
     DEFAULT with and without a parent for the default, and a deferred key with enforcement
-    on and off. Every displayed law excludes native-computation or admission axioms.
+    on and off. The view fixture shows that CREATE VIEW changes a selected parent link only for a
+    declaration that names the view, which turns a missing parent into a mismatch, that a view with
+    another name keeps both atoms, and that DROP VIEW of a named view fails the transport
+    condition. Every displayed law excludes native-computation or admission axioms.
     """
     result = run_command(surface_command(runtime_root, FIXTURES / fixture, tmp_path),
                          cwd=tmp_path, timeout=90)

@@ -74,7 +74,11 @@ theorem Database.ParentSchemasCompatible.selection_drop {database : Database} {m
   cases found : database.catalog.findTable key.table with
   | none =>
     rw [previous.2] at previous
-    simp [Catalog.parentLink, found, ParentLink.isLocated] at previous
+    cases view : database.catalog.findView key.table with
+    | none => simp [Catalog.parentLink, found, view, ParentLink.isLocated] at previous
+    | some pair =>
+      obtain ⟨position, _⟩ := pair
+      simp [Catalog.parentLink, found, view, ParentLink.isLocated] at previous
   | some pair =>
     obtain ⟨parent, shape⟩ := pair
     have facts := parents child table present kept key declared parent shape found

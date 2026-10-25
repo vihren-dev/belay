@@ -1,10 +1,10 @@
 # S6: execution branches, predicate transformers and equivalence
 
-Created 2026-10-24. Status: OPEN. Refreshed for assignment on the completed
+Created 2026-10-24. Status: DONE on 2026-10-25. Refreshed for assignment on the completed
 S4 execution interfaces in published PR #248.
 Status: [progress](20261024-s6-execution-contracts.status.md).
-Specs: [ADR 0017](../docs/adr-0017-user-surface.md), S6 clarification accepted
-2026-10-24; [foundations prototype](20261024-surface-s6-foundations.task.md).
+Specs: [ADR 0017](../docs/adr-0017-user-surface.md), the owner decisions
+accepted 2026-10-24 in [the status record](20261024-s6-execution-contracts.status.md); [foundations prototype](20261024-surface-s6-foundations.task.md).
 
 ## Purpose and boundary
 

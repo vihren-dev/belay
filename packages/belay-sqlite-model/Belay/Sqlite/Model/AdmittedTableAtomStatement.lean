@@ -55,9 +55,12 @@ theorem runStatement_tableAtom {atom : Table → Prop} (tableAtom : TableAtom at
   | createIndex target name index =>
     exact runStatement_create_tableAtom tableAtom clock counters parameters _ every
       (.inr (.inl ⟨target, name, index, rfl⟩))
+  | createView target name view =>
+    exact runStatement_create_tableAtom tableAtom clock counters parameters _ every
+      (.inr (.inr (.inr ⟨target, name, view, rfl⟩)))
   | createTrigger target name trigger =>
     exact runStatement_create_tableAtom tableAtom clock counters parameters _ every
-      (.inr (.inr ⟨target, name, trigger, rfl⟩))
+      (.inr (.inr (.inl ⟨target, name, trigger, rfl⟩)))
   | addColumn target column refuses =>
     exact runStatement_addColumn_rowLocal clock counters parameters target column refuses every
       fun table value found added => addColumn target column refuses table value rfl found added

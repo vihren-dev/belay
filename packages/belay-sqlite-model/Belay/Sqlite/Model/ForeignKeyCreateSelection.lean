@@ -58,7 +58,9 @@ theorem Catalog.parentLink_append_of_located {catalog : Catalog} (extension : Ca
     (catalog ++ extension).parentLink key = .located position comparison := by
   unfold Catalog.parentLink at located ⊢
   cases found : catalog.findTable key.table with
-  | none => simp [found] at located
+  | none =>
+    simp only [found] at located
+    split at located <;> cases located
   | some pair =>
     rcases pair with ⟨parent, shape⟩
     rw [Catalog.findTable_append_of_some extension found]

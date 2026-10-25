@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.ResolveAddColumnCatalog
+import Belay.Sqlite.Model.ResolveCreateViewCatalog
 import Belay.Sqlite.Model.Resolution.NamesSpec
 
 set_option doc.verso true
@@ -61,6 +62,10 @@ theorem resolveStatement_valid (context : ResolveContext) (state next : ResolveS
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
     exact keep _ (resolveCreateTable_valid _ _ _ _ _ _ _ _ current execution (by assumption))
+  | createView name ifNotExists columns query subqueries =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    exact keep _ (resolveCreateView_valid _ _ _ _ _ _ _ current (by assumption))
   | createIndex name unique table terms filter =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
@@ -72,6 +77,10 @@ theorem resolveStatement_valid (context : ResolveContext) (state next : ResolveS
   | dropTable name ifExists =>
     simp only [resolveStatement] at ok
     exact written _ ok fun _ _ found => resolveDropTable_valid _ _ _ _ _ _ current found
+  | dropView name ifExists =>
+    simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
+    split at ok <;> cases ok
+    exact keep _ (resolveDropView_valid _ _ _ _ _ _ current (by assumption))
   | dropIndex name ifExists =>
     simp only [resolveStatement, ResolveState.withCatalog, Except.map] at ok
     split at ok <;> cases ok
@@ -86,18 +95,18 @@ theorem resolveStatement_valid (context : ResolveContext) (state next : ResolveS
     exact keep _ (resolveDropTrigger_valid _ _ _ _ _ _ current (by assumption))
   | insert table columns rows conflicts algorithm returning subqueries =>
     simp only [resolveStatement] at ok
-    exact written _ ok fun _ _ found => (resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _
-      (fun _ _ _ _ h => resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ _ h) found).1 ▸ current
+    exact written _ ok fun _ _ found => (resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
+      (fun _ _ _ _ _ h => resolveInsert_same _ _ _ _ _ _ _ _ _ _ _ _ h) found).1 ▸ current
   | update table assignments filter returning subqueries =>
     simp only [resolveStatement] at ok
-    exact written _ ok fun _ _ found => (resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _
-      (fun _ _ _ _ h => resolveUpdate_same _ _ _ _ _ _ _ _ _ _ h) found).1 ▸ current
+    exact written _ ok fun _ _ found => (resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
+      (fun _ _ _ _ _ h => resolveUpdate_same _ _ _ _ _ _ _ _ _ _ h) found).1 ▸ current
   | delete table filter returning subqueries =>
     simp only [resolveStatement] at ok
-    exact written _ ok fun _ _ found => (resolveWriteSubqueries_same _ _ _ _ _ _ _ _ _
-      (fun _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ h) found).1 ▸ current
+    exact written _ ok fun _ _ found => (resolveCommonTableWrite_same _ _ _ _ _ _ _ _ _
+      (fun _ _ _ _ _ h => resolveDelete_same _ _ _ _ _ _ _ _ _ h) found).1 ▸ current
   | pragma pragma =>
-    rcases resolvePragma_cases ok with ⟨setting, _, _, rfl⟩ | ⟨rfl, _, _⟩
+    rcases resolveStatementPragma_cases ok with ⟨setting, _, _, rfl⟩ | ⟨rfl, _, _⟩
     · cases setting <;> exact ⟨current, saved⟩
     · exact ⟨current, saved⟩
   | select results source joins filter groupBy orderBy limit offset subqueries having distinct =>

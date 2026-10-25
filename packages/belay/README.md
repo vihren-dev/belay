@@ -40,15 +40,22 @@ def closeAndCount : Sql (Option Value) := do
 - A script on its own line in a `do` block is sent, and its value is dropped.
 - `outputs.allOk` tells whether no output is an error or `Output.unmodeled`.
 
+`Sql` has a `LawfulMonad` instance. `Sql.runFrom_bind` composes runs on the full connection
+left by the first program, including its transaction and counters, and at the next statement
+index. `send_append` and `Sql.runFrom_send_append` give this composition for two scripts.
+
 `db.run p` runs a program or a script on a database, and `p.run db` (`Sql.run`) is the same run
 of a program. A script runs as the program `send s`. The result is a `Run α`:
 
 - `value : Option α`: the program's value, or `none` when a statement gives `Output.unmodeled`
-  (the rest of the program does not run) or when the database at the end is not valid;
+  (the rest of the program does not run);
 - `outputs`: one output for each statement that ran;
-- `db` and `start`: the databases at the end and at the start; `db` is `start` when the
-  database at the end is not valid;
+- `db` and `start`: the valid databases at the end and at the start;
 - `transaction`, `foreignKeys` and `recursiveTriggers`: the state of the connection at the end.
+
+The preservation theorem supplies the final database's validity proof. A run preserves the
+model's outputs and result fields directly; it does not decide validity at runtime.
+`Run.ofValid` also bundles any model result for which the caller supplies this proof.
 
 The last argument of a run is the environment, `env := e`, with `Env.default` when it is not
 given. `Env.default` has no clock: a statement that reads the clock, such as
@@ -110,3 +117,30 @@ scalar column, including a fallible function. `Holds.iff_noFrom_scalar`,
 `Empty.iff_noFrom_scalar` and `Fails.iff_noFrom_scalar` retain the run's fault and the filter.
 Thus `SELECT abs(1)` holds, `SELECT abs(-9223372036854775808)` fails, and adding `WHERE 0`
 skips that failing projection and makes the result empty, for every database.
+
+`Succeeds program predicate` states that every database satisfying the Lean predicate runs
+the program without an error or an output that ends the run. It checks every complete
+environment: one that supplies a clock and knows all three counters, at any values. Use
+`program succeeds` for the always-true predicate, or `program succeeds where query` for
+`Holds query` as the predicate. The query must be one read-only statement.
+
+Success checks the actual continuation and every concrete result listed by `Output.oneOf`.
+This matters when a later statement depends on a `LIMIT` query without a fixed order:
+the first result can select a successful branch while another result selects a failure.
+Raw `Sql.exec` continuations can also distinguish `oneOf` from `rows`, so both are checked.
+`Succeeds.allOk` gives the guarantee for the actual public run. `Succeeds.script_iff` says
+that scripts need only this output check, because their later statements do not depend on
+earlier outputs. `Sql.SucceedsFrom` exposes the same branch predicate for a specific clock,
+statement index and connection, including incomplete environments.
+
+For a query, `Script.query_allOk_iff` characterizes the default run: `Fails` is false and
+its output does not end the run. `Succeeds.of_query` and `Succeeds.of_holds` turn successful
+default observations into universal success. The converse is not required: supplying a
+clock can make `CURRENT_TIMESTAMP` succeed although its default observation ends the run.
+
+`Succeeds.iff_createIndex` gives the exact conditions for `CREATE INDEX` and `CREATE UNIQUE
+INDEX`: the table exists, both names pass the reserved-name checks, no table or index uses
+the new name, the terms and filter resolve, and a unique index has no conflicting rows.
+`LiteralData.uniqueRows_of_column_groups` connects a no-duplicate GROUP BY claim to the
+column key check. This direction is sufficient: repeated NULLs group together but do not
+conflict in a unique index. The grouping and index must use the same collation.

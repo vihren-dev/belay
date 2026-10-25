@@ -213,9 +213,15 @@ and so derives some of the conditions. A fixture name has the form `Fixture.theo
 | BEGIN, COMMIT, ROLLBACK, queries, settings, prepare errors | None. ROLLBACK needs both atoms in the saved snapshot. | The same. | A snapshot with an orphan: `ForeignKeyRuns.snapshotRequired`. |
 | CREATE TABLE | Every old declaration keeps its selected parent (`Catalog.CreateKeepsSelection`). | Every new declaration has a located parent (`Catalog.CreateLocatesNewKeys`); the first condition follows from the schema atom. | A forward reference: `ForeignKeyCreate.forwardNeedsSchemaPremise`, `ForeignKeyDdlRuns.forwardBreaksSchema`. |
 | CREATE INDEX, CREATE TRIGGER | `Catalog.CreateKeepsSelection`. | None: the schema atom gives it. | A repeated-column index selects another child projection: `ForeignKeyDdlNecessity.repeatedIndexBreaksRows` and `repeatedIndexNotKept`. |
+| CREATE VIEW | `Catalog.CreateKeepsSelection`. A view appends one catalog object and no rows. The condition holds when no declaration of a table names the view (`Catalog.createKeepsSelection_view`). | None: the schema atom gives it, because it makes every selected parent a table. | A view with the name of a parent that does not exist changes the link of a declaration from missing to mismatch: `ForeignKeyDdlViews.namedViewChangesLink` and `namedViewNotKept`. A view with another name keeps both atoms: `ForeignKeyDdlViews.otherViewKeepsAtoms`. |
 | ADD COLUMN | Wide rows, declarations and selection below the old width, and each new declaration satisfied by the old rows with the new cell (`Database.AddColumnRowsCondition`). A refusing statement on a table with rows keeps the database. | The same, and a located parent for each new declaration (`Catalog.AddColumnLocatesNewKeys`). Wide rows and selection below the width follow from an admitted database; the declarations below the width are a fact of the catalog. | Default 99 without the refusal: `ForeignKeyAddColumn.numberNeedsRefusal`. Absent parent table: `ForeignKeyDdlNecessity.absentParentBreaksSchema`. |
-| DROP without rules (DROP INDEX, DROP TRIGGER, and DROP TABLE without implicit DELETE) | Every kept declaration keeps its selected parent, moved, and its located parents are kept (`Catalog.DropKeepsSelection`, `Catalog.DropKeepsParents`). | The same. | A supporting index: `ForeignKeyDdlDrop.indexDropNeedsSelection`. A parent with a child: `ForeignKeyDdlDropRuns.dropParentBreaksRows`. |
+| DROP without rules (DROP INDEX, DROP TRIGGER, DROP VIEW, and DROP TABLE without implicit DELETE) | Every kept declaration keeps its selected parent, moved, and its located parents are kept (`Catalog.DropKeepsSelection`, `Catalog.DropKeepsParents`). | The same. | A supporting index: `ForeignKeyDdlDrop.indexDropNeedsSelection`. A parent with a child: `ForeignKeyDdlDropRuns.dropParentBreaksRows`. A view has no rows, so DROP VIEW is a DROP without rules; if a kept declaration names the view, its link changes from mismatch to missing and the transport condition refuses it: `ForeignKeyDdlViews.droppedViewMissesLink` and `droppedViewNotKept`. |
 | DROP with rules (the implicit DELETE of DROP TABLE) | Admitted with unique keys, the rule conditions, and the frames of the implicit DELETE at every clock (`Database.EnforcedDropFrames`). | Admitted with unique keys, the rule conditions, and the two DROP conditions above. | The row atom survives the removal of a parent whose rows were deleted, the schema atom does not: `ForeignKeyEnforcedDrop.dropSeparatesAtoms`. NO ACTION refuses: `ForeignKeyDropOutcomes.rejected`. |
+
+INSERT, UPSERT, UPDATE and DELETE on a view, and ADD COLUMN to a view, are prepare errors of the
+resolver, because the model holds no INSTEAD OF trigger. They keep the database and meet the row of the
+prepare errors. CREATE VIEW and DROP VIEW are the only view statements that change the catalog, and the
+two rows above give their conditions. A query over a view reads rows and keeps the database.
 
 A write that carries trigger programs with foreign keys off has rules with `keys = false`. The rule
 conditions require `keys = true`, so no law covers that write today. Actions need no condition of
@@ -299,8 +305,8 @@ of the context equal to those of the profile; `Database.ConstraintAtoms` togethe
 one, with `Database.valid_empty` for a new connection. The surface form is `Sql.runFrom_valid`, by induction
 over the program, and `Sql.runFrom_database_valid`. The conditions stay in the theorems of `runSqlFrom` and
 `runSql`, and `AdmittedRunsConditionExamples` shows a run that breaks the atom for each: a rowid past the
-largest, and a DROP of a table that leaves its index. The check `Run.checked` is not removed yet; ADR 0017,
-S4 removes it with these theorems. No proof failed. The predictions, the claims and the judge lock do not
+largest, and a DROP of a table that leaves its index. ADR 0017 S4 removed the redundant run check
+on 2026-10-24: `Run.ofValid` takes the preservation proof and keeps the exact model result. No proof failed. The predictions, the claims and the judge lock do not
 change.
 
 For the constraint atoms, INSERT, UPDATE and upsert are the easier case: each table that they
@@ -312,6 +318,8 @@ changes what a statement does, so the predictions, the claims and the judge lock
 
 ### D5. The bundled database stays open
 
+#### Initial design, superseded on 2026-10-22
+
 The guide's `Database` carries its validity, so that a proof gets the facts "without extra
 hypotheses". That needs `db.run` to keep `Database.Valid`, which slices 2 to 4 prove. Until then,
 the surface's `Database` is the model's, and `db!` gives a proof of `Database.Valid` beside it.
@@ -320,7 +328,9 @@ A decision for later, with the bundled type: a script with a statement that has 
 an atom cannot give a bundled result. Either elaboration refuses such a statement in a bundled
 run, or the run gives a database with the weaker bundle.
 
-Amended 2026-10-22 (owner decision 5): the bundled database comes in S2, with a run that checks
+#### Amendment of 2026-10-22, superseded on 2026-10-24
+
+Owner decision 5: the bundled database comes in S2, with a run that checks
 instead of proves. The surface's `Database` holds a model database and its proof of
 `Database.Valid`; a plain model database without the proof has its own name, `Database.Raw`,
 for the claims that must cover databases with broken constraints (`Database.Admitted`). A run
@@ -341,6 +351,13 @@ is.
   constraint: a run that reaches it shows an error of the model, which D3 reports to the
   owner. When the model describes such a statement, the else branch is how a run treats it,
   which decides the question of the previous paragraph for runs of the bundled database.
+
+#### Current implementation, completed on 2026-10-24
+
+ADR 0017 S4: the run preservation theorem now supplies the final
+database's validity proof directly. The runtime decision and its invalid-result branch are
+removed. Public runs keep the model's value, outputs, database, transaction and settings.
+The raw API remains available for databases without validity proofs.
 
 ## Consequences
 

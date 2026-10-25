@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.ResolveStatementLink
+import Belay.Sqlite.Model.ResolveStatementPragmaLink
 
 set_option doc.verso true
 
@@ -32,12 +33,16 @@ theorem resolveStatement_schemaLink {limits : Limits} (context : ResolveContext)
   | begin | commit | rollback => cases ok; trivial
   | createTable name columns constraints options =>
     exact plain _ ok fun _ _ found => resolveCreateTable_schemaLink _ _ _ _ _ _ _ _ found
+  | createView name ifNotExists columns query subqueries =>
+    exact plain _ ok fun _ _ found => resolveCreateView_schemaLink _ _ _ _ _ _ found
   | createIndex name unique table terms filter =>
     exact plain _ ok fun _ _ found => resolveCreateIndex_schemaLink _ _ _ _ _ _ _ _ _ found
   | addColumn table column =>
     exact plain _ ok fun _ _ found => resolveAddColumn_schemaLink _ _ _ _ _ _ _ found
   | dropTable name ifExists =>
     exact ResolveState.withWrite_schemaLink ok fun _ _ found => resolveDropTable_schemaLink _ _ _ valid found
+  | dropView name ifExists =>
+    exact plain _ ok fun _ _ found => resolveDropView_schemaLink _ _ _ valid found
   | dropIndex name ifExists =>
     exact plain _ ok fun _ _ found => resolveDropIndex_schemaLink _ _ _ valid found
   | createTrigger name ifNotExists time event table condition body =>
@@ -45,15 +50,15 @@ theorem resolveStatement_schemaLink {limits : Limits} (context : ResolveContext)
   | dropTrigger name ifExists =>
     exact plain _ ok fun _ _ found => resolveDropTrigger_schemaLink _ _ _ valid found
   | insert table columns rows conflicts algorithm returning subqueries =>
-    exact ResolveState.withWrite_schemaLink ok fun _ _ found => resolveWriteSubqueries_schemaLink _ _ _ _ _ _ _ _ _
-      (fun _ _ _ _ h => resolveInsert_schemaLink _ _ _ _ _ _ _ _ _ _ _ _ h) found
+    exact ResolveState.withWrite_schemaLink ok fun _ _ found => resolveCommonTableWrite_schemaLink _ _ _ _ _ _ _ _ _
+      (fun _ _ _ _ _ h => resolveInsert_schemaLink _ _ _ _ _ _ _ _ _ _ _ _ h) found
   | update table assignments filter returning subqueries =>
-    exact ResolveState.withWrite_schemaLink ok fun _ _ found => resolveWriteSubqueries_schemaLink _ _ _ _ _ _ _ _ _
-      (fun _ _ _ _ h => resolveUpdate_schemaLink _ _ _ _ _ _ _ _ _ _ h) found
+    exact ResolveState.withWrite_schemaLink ok fun _ _ found => resolveCommonTableWrite_schemaLink _ _ _ _ _ _ _ _ _
+      (fun _ _ _ _ _ h => resolveUpdate_schemaLink _ _ _ _ _ _ _ _ _ _ h) found
   | delete table filter returning subqueries =>
-    exact ResolveState.withWrite_schemaLink ok fun _ _ found => resolveWriteSubqueries_schemaLink _ _ _ _ _ _ _ _ _
-      (fun _ _ _ _ h => resolveDelete_schemaLink _ _ _ _ _ _ _ _ _ h) found
-  | pragma pragma => exact resolvePragma_schemaLink ok
+    exact ResolveState.withWrite_schemaLink ok fun _ _ found => resolveCommonTableWrite_schemaLink _ _ _ _ _ _ _ _ _
+      (fun _ _ _ _ _ h => resolveDelete_schemaLink _ _ _ _ _ _ _ _ _ h) found
+  | pragma pragma => exact resolveStatementPragma_schemaLink ok
   | select results source joins filter groupBy orderBy limit offset subqueries having distinct compound =>
     exact plain _ ok fun _ _ found => resolveSelect_schemaLink _ _ _ _ _ _ found
 

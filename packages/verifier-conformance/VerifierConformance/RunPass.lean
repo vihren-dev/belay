@@ -21,6 +21,8 @@ structure RunPass where
   /-- One observation after each statement that ran, with the error of a statement that
   stopped with one. -/
   observations : List Observation
+  /-- Writer counters after each statement, aligned with its observation. -/
+  counters : List Counters
   /-- The output of each statement that ran ({name}`statementOutput`). -/
   outputs : List (Option StatementOutput)
   /-- The results that SQLite may give for each statement that ran ({name}`possibleOutput`). -/
@@ -34,7 +36,7 @@ structure RunPass where
 /-- The pass of a run that ends at a statement, with the reason: no more observations or
 outputs, the result {name}`Output.unmodeled` of the reason, and not supported. -/
 def RunPass.ended (reason : String) : RunPass :=
-  { observations := [], outputs := [], possible := [], results := [.unmodeled reason], supported := false }
+  { observations := [], counters := [], outputs := [], possible := [], results := [.unmodeled reason], supported := false }
 
 /-- The observation after a statement at a zero-based index: the visible and committed
 databases and the transaction status of the connection after it, and the error with which its
@@ -50,7 +52,7 @@ index on the connection, with an optional clock. Each statement takes the model'
 output, and the pass goes on from the next connection, also after an error. -/
 def runPassFrom (context : ResolveContext) (clock : Option Clock) (index : Nat) (connection : Connection) :
     List (Syntax.Statement × List Value) → RunPass
-  | [] => { observations := [], outputs := [], possible := [], results := [], supported := true }
+  | [] => { observations := [], counters := [], outputs := [], possible := [], results := [], supported := true }
   | (statement, parameters) :: rest =>
     runScriptStepWith RunPass.ended (fun resolved foreignKeys value run transition =>
       match ranScriptStep parameters connection resolved foreignKeys value run transition with
@@ -58,6 +60,7 @@ def runPassFrom (context : ResolveContext) (clock : Option Clock) (index : Nat) 
       | .continued output next =>
         let later := runPassFrom context clock (index + 1) next rest
         { observations := observeStep index next transition :: later.observations,
+          counters := next.state.counters :: later.counters,
           outputs := statementOutput value parameters resolved connection.state run transition :: later.outputs,
           possible := possibleOutput value parameters resolved connection.state transition :: later.possible,
           results := output :: later.results, supported := later.supported })

@@ -1,11 +1,11 @@
-"""Native and kernel evidence for derived sources and D3 compound metadata (ADR 0019)."""
+"""Native and kernel evidence for derived sources, ordinary CTEs and D3 metadata (ADR 0019)."""
 
 import json
 from pathlib import Path
 
 import pytest
 
-from conformance import authored_query_sources
+from conformance import authored_common_tables, authored_query_sources
 from conformance.model_assertions import FOOTER, HEADER, case_assertions
 from conformance.model_check import compiled_many, kernel_check, prove_all
 from conformance.native_replay import prepare
@@ -21,12 +21,19 @@ UNMODELED = {"source-compound-representative-uncertain", "source-limit-uncertain
 """Source membership or evaluation failures for which D5 requires refusal."""
 
 
-def test_derived_sources_native_and_kernel_verdicts(runtime_root: Path, tmp_path: Path) -> None:
+@pytest.mark.parametrize("common_tables", [False, True], ids=["derived", "common-tables"])
+def test_query_sources_native_and_kernel_verdicts(runtime_root: Path, tmp_path: Path, common_tables: bool) -> None:
     """The query-source pipeline agrees with native SQLite on supported sources and errors.
-    Whole-row uncertainty and fallible evaluation stay unmodeled; the kernel checks
+    Whole-row uncertainty, fallible evaluation, recursion and the existing trigger-write
+    subquery restriction stay unmodeled; the kernel checks
     both verdict classes over the runner's decoded cases and their original JSON."""
-    records = authored_query_sources.records()
-    assert [record["name"] for record in records] == [case.name for case in authored_query_sources.definitions()]
+    source = authored_common_tables if common_tables else authored_query_sources
+    records = source.records()
+    unsupported = ({"cte-recursive", "cte-recursive-union", "cte-recursive-inner-name",
+                    "cte-recursive-empty-arguments", "cte-recursive-arguments",
+                    "cte-write-target", "cte-uncertain-membership", "cte-trigger-nested-write"}
+                   if common_tables else UNMODELED)
+    assert [record["name"] for record in records] == [case.name for case in source.definitions()]
     resolved_ids(records, json.loads((ROOT / "conformance/requirements-3.51.0.json").read_text()))
     translator = runtime_translator(runtime_root)
     prepared = []
@@ -37,7 +44,7 @@ def test_derived_sources_native_and_kernel_verdicts(runtime_root: Path, tmp_path
     answers = compiled_many(prepared, runtime_root, emit_lean=True)
     agreeing_cases, agreeing_terms, boundaries = [], [], []
     for index, (record, case, answer) in enumerate(zip(records, prepared, answers, strict=True)):
-        unmodeled = record["name"] in UNMODELED
+        unmodeled = record["name"] in unsupported
         assert answer["verdict"] == ("MODEL_UNSUPPORTED" if unmodeled else "AGREE"), (record["name"], answer)
         if unmodeled:
             boundaries.append(f"namespace Boundary{index}\n" +
@@ -47,9 +54,9 @@ def test_derived_sources_native_and_kernel_verdicts(runtime_root: Path, tmp_path
         else:
             agreeing_cases.append(case)
             agreeing_terms.append(answer["caseLean"])
-    assert len(boundaries) == len(UNMODELED)
+    assert len(boundaries) == len(unsupported)
     prove_all(agreeing_terms, runtime_root, tmp_path, cases=agreeing_cases, name="DerivedSources")
     destination = tmp_path / "DerivedSourceBoundaries.lean"
     destination.write_text(HEADER + "".join(boundaries) + FOOTER)
     output = kernel_check(runtime_root, destination)
-    assert output.count("sourceUnsupported' depends on axioms") == len(UNMODELED)
+    assert output.count("sourceUnsupported' depends on axioms") == len(unsupported)

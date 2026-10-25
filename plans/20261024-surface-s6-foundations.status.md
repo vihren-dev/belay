@@ -152,3 +152,24 @@ of those accepted meanings. No review tab or push was made by this agent.
 Completion-record review `20261024T145740Z-ce3c8a5c` had no musts or shoulds.
 The workspace remains at rest for the coordinator's later publication on S4's
 published branch. This final update changes only status and review records.
+
+## Publication integration
+
+- 2026-10-24: integrated completed prototype `eb0a16a9` above published
+  S7 prototype `0569149b` and S4 completion `70705018` in `s6-publication`.
+  Resolved the test-support merge by retaining both registered support files.
+  No prototype declaration or production execution changed. The findings now
+  describe S4's proof-based run wrapper.
+- The final focused Nix integration passed all five prototype modules and
+  28 standard-axiom audits: one test passed, 69 deselected, in 8.11 seconds.
+  Artifact: `/nix/store/w1max9djmm5g74pigbkkdy0x2sipgdms-sqlite-verifier-test-s6-on-s4-1`.
+  Log: `build/agent-logs/s6-on-s4-focused.log`. Subsequent S7/S4 publication
+  carries changed completion metadata only. The original full 813/Nix 67/
+  scheduled 47 acceptance above remains the prototype's broad-check evidence;
+  a new combined full-suite run is not claimed.
+- The owner has since accepted the explicit fresh-run triple helper for the
+  production assertion API. Ordinary `Std.Do` triples retain arbitrary-context
+  composition. This is a later task; the prototype adds no production S6 API.
+- Publication integration review `20261024T194012Z-3d78de16` had no musts
+  or shoulds. The checked prototype is ready above PR #245; this final carry
+  contains the review and status only.

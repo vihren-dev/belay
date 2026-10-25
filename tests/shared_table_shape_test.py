@@ -88,11 +88,13 @@ GOLDEN: list[Json] = [
                             {"blob": {"bytes": [0, 255]}}]}]
 
 
-def compile_checks(source: str, directory: Path, sysroot: Path, libraries: tuple[Path, Path]) -> str:
-    """Compile and execute fresh codec checks through the selected current library."""
+def compile_checks(source: str, directory: Path, sysroot: Path, libraries: tuple[Path, Path],
+                   setup: Path | None = None) -> str:
+    """Compile fresh theorem or codec checks, with module setup for split surface packages."""
     path = directory / "ShapeChecks.lean"
     path.write_text(source)
-    result = run_command([str(sysroot / "bin/lean"), str(path)], cwd=directory,
+    options = [f"--setup={setup}"] if setup is not None else []
+    result = run_command([str(sysroot / "bin/lean"), *options, str(path)], cwd=directory,
         timeout=15, environment={**os.environ, "LEAN_PATH": os.pathsep.join(map(str, libraries))})
     assert result.returncode == 0, result.diagnostic()
     assert all(name not in result.stdout for name in ("sorryAx", "ofReduceBool", "_native")), result.stdout

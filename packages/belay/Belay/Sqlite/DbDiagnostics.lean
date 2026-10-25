@@ -31,7 +31,7 @@ def failureAction (statement : Resolved.Statement) : ExecutionError → String
     "; correct the statement, or the statements before it that give the data that it reads"
   | .constraintViolation | .constraintFail | .constraintRollback => match statement with
     | .createIndex .. => "; remove the rows whose values of the index are equal, or change the index"
-    | .insert .. | .upsert .. | .update .. | .delete .. | .drop .. | .createTable .. | .createTrigger ..
+    | .insert .. | .upsert .. | .update .. | .delete .. | .drop .. | .createTable .. | .createView .. | .createTrigger ..
     | .addColumn .. | .begin | .commit | .rollback | .prepareError _ | .query .. | .setting .. =>
       match statement.writeRules with
       | some _ => ""

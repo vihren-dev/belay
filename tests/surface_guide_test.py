@@ -95,8 +95,7 @@ def test_run_examples_hold(runtime_root: Path, tmp_path: Path) -> None:
     that do not stop the run,
     transactions, `PRAGMA foreign_keys`, a table that an earlier statement drops, statements that
     the model does not describe, row order, the facts of a valid database without a hypothesis,
-    and the check that keeps the start database and gives no value when the database at the end is
-    not valid."""
+    and the raw API's inspection and repair of an invalid database before bundling its valid result."""
     result = run_command(surface_command(runtime_root, FIXTURES / "RunExamples.lean", tmp_path), cwd=tmp_path,
                          timeout=120)
     assert result.returncode == 0, result.diagnostic()

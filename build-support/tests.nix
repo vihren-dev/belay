@@ -22,6 +22,8 @@ let
   # A mutant suite (tests/nix_mutant_suites.json) runs alone on its own CI runner, and its tests
   # take about 4 minutes each there, so it gets a larger limit; each test keeps its own limit.
   mutantSuiteTimeoutSeconds = 2700;
+  # Print the first reported mutation failure before later groups exhaust the suite budget.
+  mutantSuites = builtins.fromJSON (builtins.readFile (root + /tests/nix_mutant_suites.json));
   # The SQL frontend modules that the conformance suites import.
   # tests/test_conformance_frontend.py checks this list against the actual imports.
   frontend = map (name: root + "/${builtins.replaceStrings [ "." ] [ "/" ] name}.py")
@@ -70,7 +72,7 @@ let
         export HOME="$TMPDIR"
         export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
         timeout ${toString timeout} python3 -m pytest ${file} ${pkgs.lib.concatStringsSep " " extraFiles} --runtime-root ${runtime} \
-          -p no:cacheprovider -p pytest_timeout --timeout=${toString testTimeoutSeconds} \
+          -p no:cacheprovider -p pytest_timeout --timeout=${toString testTimeoutSeconds}${pkgs.lib.optionalString (builtins.elem name mutantSuites) " --exitfirst"} \
           --junitxml "$out/junit.xml" -v --durations=10
       '';
     } // environment);
@@ -80,7 +82,8 @@ let
     (builtins.attrValues (builtins.fromJSON (builtins.readFile claims)).corpora);
   # Mutants rebuild changed copies of the two Lean packages, so their suites read the
   # complete sources, without local build outputs in `.lake`.
-  mutantInputs = modelInputs ++ [ (root + /tests/mutant_sets.py) ] ++ map (package: fs.difference (root + "/packages/${package}")
+  mutantInputs = modelInputs ++ [ (root + /tests/mutant_sets.py)
+    (root + /tests/mutant_guards_test.py) (root + /tests/restriction_registry_test.py) ] ++ map (package: fs.difference (root + "/packages/${package}")
     (fs.maybeMissing (root + "/packages/${package}/.lake"))) [ "belay-sqlite-model" "verifier-conformance" ];
   # Inputs shared by the three suites that the old single model suite contained.
   modelInputs = frontend ++ [
@@ -113,13 +116,13 @@ let
     (root + /nix/flake.lock)
     (root + /build-support/conformance-native.nix)
   ] ++ map (name: root + "/conformance/${name}.py") [
-    "model_assertions" "model_cases" "model_check" "resolve_mutants" "replay_tiers" "native_workers"
+    "model_assertions" "model_cases" "model_check" "resolve_mutants" "mutation_edits" "mutant_guards" "replay_tiers" "native_workers"
     "execution_profile" "native_limits" "native_acquisition"
     "native_storage"
     "refresh_corpus" "requirement_cases" "requirement_coverage"
     "authored_cases" "authored_cases_queries" "authored_boundaries" "authored_review" "authored_report"
     "authored_transactions" "transaction_evidence" "authored_resolution" "resolution_evidence"
-    "authored_queries" "query_evidence" "query_mutants" "authored_query_sources" "query_source_mutants" "authored_evidence" "authored_numbers" "number_evidence"
+    "authored_queries" "query_evidence" "query_mutants" "authored_query_sources" "authored_common_tables" "query_source_mutants" "authored_evidence" "authored_numbers" "number_evidence"
     "authored_writes" "write_evidence" "write_mutants"
     "number_mutants" "restriction_examples" "authored_obligations" "obligation_mutants" "obligation_evidence" "authored_row_writes" "row_write_evidence" "row_write_mutants" "authored_deletes" "delete_evidence" "delete_mutants" "authored_joins" "join_evidence" "join_mutants" "authored_using" "using_evidence" "using_mutants" "authored_right" "right_evidence" "right_mutants" "authored_merged" "merged_evidence" "merged_mutants" "authored_keys" "key_evidence" "key_mutants" "authored_aliases" "alias_evidence" "alias_mutants" "authored_upserts" "upsert_evidence" "upsert_mutants" "authored_algorithms" "algorithm_evidence" "algorithm_mutants" "authored_fromless" "fromless_evidence" "fromless_mutants" "authored_json" "json_evidence" "json_mutants" "authored_json_functions" "json_function_evidence" "json_function_mutants" "authored_json_each" "json_each_evidence" "json_each_mutants" "authored_default_writes" "default_write_evidence" "authored_clock" "clock_evidence" "clock_mutants" "authored_date_functions" "date_function_evidence" "date_function_mutants" "authored_date_modifiers" "date_modifier_evidence" "date_modifier_mutants" "authored_indexes" "index_evidence" "index_mutants" "authored_without_rowid" "without_rowid_evidence" "without_rowid_mutants" "authored_collations" "collation_evidence" "collation_mutants" "authored_checks" "check_evidence" "check_mutants" "authored_generated" "generated_evidence" "generated_mutants" "authored_strict" "strict_evidence" "strict_mutants" "authored_drops" "drop_evidence" "drop_mutants" "authored_text_functions" "text_function_evidence" "function_mutants" "authored_numeric_functions" "numeric_function_evidence" "numeric_function_mutants" "authored_json_edits" "json_edit_evidence" "json_edit_mutants" "authored_jsonb" "jsonb_evidence" "jsonb_mutants" "authored_aggregates" "aggregate_evidence" "aggregate_mutants" "authored_printf" "printf_evidence" "printf_mutants" "authored_subqueries" "subquery_evidence" "subquery_mutants" "authored_expression_forms" "expression_form_evidence" "expression_form_mutants" "authored_distinct_having" "distinct_having_evidence" "distinct_having_mutants" "authored_add_references" "add_reference_mutants" "authored_foreign_keys" "foreign_key_requirements" "foreign_key_evidence" "foreign_key_mutants" "authored_triggers" "trigger_requirements" "trigger_evidence" "trigger_mutants" "authored_possible_results" "possible_result_evidence" "possible_result_mutants" "authored_parameters" "authored_parameter_values" "authored_parameter_windows" "parameter_evidence" "parameter_mutants" "authored_compound" "authored_compound_subqueries" "compound_evidence" "compound_mutants" "authored_pragmas" "authored_pragma_checks" "authored_pragma_schema" "pragma_requirements" "pragma_evidence" "pragma_mutants" "authored_after_error" "after_error_evidence" "after_error_mutants" "counter_sql" "authored_counter_writes" "authored_counter_reads" "authored_counter_failures" "authored_counters" "counter_evidence" "counter_mutants"
     "upstream_selection" "upstream_catalog" "upstream_sampling" "upstream_profiles" "upstream_functions" "upstream_result_values"
@@ -130,7 +133,7 @@ let
     "upstream_bindings" "upstream_binding_policy" "upstream_display" "upstream_evidence"
     "upstream_helpers"
     "native_fixture" "import_fixture" "schema" "predict" "predict_render" "replay_support"
-    "case_format" "native_connection" "native_library" "native_clock" "native_probe" "native_ordering" "query_window" "native_metadata" "native_record" "native_statements" "native_statement_end" "native_counters" "native_replay" "profile_scope" "record_versions" "record_counters" "record_parser" "sql_text" "upstream_pilot" "upstream_fidelity" "corpus" "generated_program" "mutation_check" "state_machine" "regressions" "progress" "measure_coverage" "native_trace" "pipeline"
+    "case_format" "native_connection" "native_library" "native_clock" "native_probe" "native_ordering" "query_window" "native_metadata" "native_record" "native_statements" "native_statement_end" "native_counters" "native_replay" "replay_scope" "profile_scope" "record_versions" "record_counters" "record_parser" "sql_text" "upstream_pilot" "upstream_fidelity" "corpus" "generated_program" "mutation_check" "state_machine" "regressions" "progress" "measure_coverage" "native_trace" "pipeline"
   ];
   # Frozen corpora and retained reports: large, rarely changed, read only by the frozen suite.
   frozenData = [
@@ -172,7 +175,7 @@ let
     "execution_profile" "native_limits" "freeze_profiles" "freeze_validation" "model_assertions" "model_check"
     "native_acquisition" "native_binding_types" "native_binding_validation" "native_bindings"
     "native_call_recording" "native_clock" "native_connection" "native_library" "native_metadata"
-    "native_observation" "native_record" "native_replay" "profile_scope" "record_versions" "record_counters" "native_statements" "native_statement_end" "native_counters"
+    "native_observation" "native_record" "native_replay" "replay_scope" "profile_scope" "record_versions" "record_counters" "native_statements" "native_statement_end" "native_counters"
     "native_storage"
     "native_trace" "native_workers" "locked_corpora" "query_window" "record_parser" "sql_text"
     "upstream_binding_policy" "upstream_bindings" "upstream_catalog" "upstream_helpers"
@@ -192,7 +195,7 @@ in {
     ] ++ map (name: root + "/conformance/${name}.py") [
       "replay_tiers" "native_workers" "corpus" "corpus_shards" "corpus_workers" "corpus_evidence" "corpus_acquisition" "locked_corpora" "case_format"
       "replay_support"
-      "workload" "workload_inputs" "execution_profile" "native_limits" "native_replay" "profile_scope" "record_versions" "record_counters" "record_parser" "sql_text" "model_check"
+      "workload" "workload_inputs" "execution_profile" "native_limits" "native_replay" "replay_scope" "profile_scope" "record_versions" "record_counters" "record_parser" "sql_text" "model_check"
       "native_record" "native_observation" "native_acquisition" "native_connection" "native_library" "native_clock" "native_storage"
       "native_probe" "native_ordering" "query_window" "native_metadata" "native_statements" "native_statement_end" "native_counters"
       "native_bindings" "native_call_recording" "upstream_bindings" "upstream_binding_policy"
@@ -254,10 +257,12 @@ in {
   };
   surface = suite "surface" {
     inputs = [ (root + /tests/surface) (root + /tests/surface_support.py)
+               (root + /tests/proof_cost_support.py)
+               (root + /tests/shared_table_shape_test.py)
                (fs.fileFilter (file: file.hasExt "nix") (root + /build-support)) ] ++ packageSources
              ++ frontend ++ [ claims ] ++ authoredCorpora ++ corpusModules;
     runtime = surfaceRoot;
-    tools = pkgs.lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.patchelf;
+    tools = [ native.sqlite ] ++ pkgs.lib.optional pkgs.stdenv.hostPlatform.isLinux pkgs.patchelf;
   };
   packages = suite "packages" {
     inputs = [ ];

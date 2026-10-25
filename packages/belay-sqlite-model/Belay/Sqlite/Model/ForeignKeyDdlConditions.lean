@@ -15,7 +15,9 @@ namespace Belay.Sqlite.Model
 
 /-- For every catalog and object: every declaration of every table of the catalog selects the same
 parent link in the catalog with the object appended. The statement CREATE appends the object. An
-index or a table can change the selected parent of an old declaration; a trigger cannot. -/
+index or a table can change the selected parent of an old declaration. A view can too: it takes the
+name of a parent that did not exist, and the link changes from missing to mismatch
+({name}`Catalog.parentLink`). A trigger cannot. -/
 def Catalog.CreateKeepsSelection (catalog : Catalog) (object : CatalogObject) : Prop :=
   ∀ position shape, catalog.tableAt position = some shape → ∀ key ∈ shape.allForeignKeys,
     (catalog ++ [object]).parentLink key = catalog.parentLink key

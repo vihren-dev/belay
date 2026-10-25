@@ -108,6 +108,7 @@ theorem Catalog.Valid.addColumn {limits : Limits} {catalog : Catalog} (valid : c
       unfold CatalogObject.supported at old ⊢
       cases entry : object.entry with
       | table _ => simpa only [entry] using old
+      | view _ => simpa only [entry] using old
       | index found =>
         simp only [entry, Bool.and_eq_true] at old ⊢
         refine ⟨old.1, ?_⟩

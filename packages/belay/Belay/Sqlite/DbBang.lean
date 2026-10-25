@@ -56,7 +56,8 @@ def parameterDiagnostic (parameter : Translation.Parameter) : Diagnostic :=
 ({name}`parameterDiagnostic`), or else run the text on the empty database and log each error
 of {name}`runDiagnostics` at its range of the text ({name}`textRange`). After an error, the term
 is a {lit}`sorry` that Lean shows no second error for. Otherwise the term is
-{name}`databaseTerm` of the database, and its error is an error at the literal. -/
+{name}`databaseTerm` of the database, and its error is an error at the literal. A successful value retains its source text as
+replay metadata, which replay consumers validate against the actual database. -/
 @[term_elab dbBangTerm]
 def elabDbBang : TermElab := fun term _ => do
   let literal := term[1]
@@ -71,6 +72,6 @@ def elabDbBang : TermElab := fun term _ => do
     return ← mkLabeledSorry (mkConst ``Database) (synthetic := true) (unique := false)
   match databaseTerm connection.state.database with
   | .error message => throwErrorAt literal message
-  | .ok database => return database
+  | .ok database => return withSource databaseSourceKey literal text (← getFileName) database
 
 end Belay.Sqlite

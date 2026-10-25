@@ -116,7 +116,7 @@ def run (failing : Bool) : KeyRun := rowsKeys (rules failing) 0 0
   (.update 0 change [0] (parent.changedColumns [0]) [1] true) input.raw true none
 
 /-- The closed engine theorem proves row references for both success and retained FAIL rows. -/
-theorem preserves (failing : Bool) : (run failing).effect.Satisfies
+theorem rowReferencesPreserved (failing : Bool) : (run failing).effect.Satisfies
     (fun result => result.RowReferencesHold result.catalog.foreignKeyMapping) := by
   apply rowsKeys_rowReferences (ready := ⟨input.valid.admitted, input.valid.unique⟩)
     (references := by decide +kernel) (enforced := rfl) (facts := comparisons)
@@ -145,6 +145,6 @@ end ForeignKeyEngineFixture
 #print axioms ForeignKeyEngineFixture.comparisons
 #print axioms ForeignKeyEngineFixture.actions
 #print axioms ForeignKeyEngineFixture.updateSafe
-#print axioms ForeignKeyEngineFixture.preserves
+#print axioms ForeignKeyEngineFixture.rowReferencesPreserved
 #print axioms ForeignKeyEngineFixture.successfulCascade
 #print axioms ForeignKeyEngineFixture.retainedFail

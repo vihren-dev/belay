@@ -144,7 +144,7 @@ theorem Catalog.parentKey_appendColumn (catalog next : Catalog) (position : Nat)
 {name}`Catalog.addColumn`: the same table, or none, and the same parent key, or none. The new
 column is the last column of its table and the name search is unchanged, so only a position
 at or above the old width could change the selection. Proof sketch: the found table is the old one
-with the column appended at the target ({name}`Catalog.findTable_addColumn`); the parent key is the
+with the column appended at the target ({name}`Catalog.findTable_addColumn`), and the view lookup is unchanged ({name}`Catalog.findView_addColumn`); the parent key is the
 same by {name}`Catalog.parentKey_appendColumn`, or by {name}`Catalog.parentIndexes_addColumn` for
 another position. -/
 theorem Catalog.parentLink_addColumn (catalog : Catalog) (target : Nat) (column : CatalogColumn) (key : ForeignKey)
@@ -153,7 +153,7 @@ theorem Catalog.parentLink_addColumn (catalog : Catalog) (target : Nat) (column 
   unfold Catalog.parentLink
   rw [Catalog.findTable_addColumn]
   cases found : catalog.findTable key.table with
-  | none => rfl
+  | none => simp [Catalog.findView_addColumn]
   | some pair =>
     obtain ⟨position, shape⟩ := pair
     obtain ⟨object, atPosition, entry, _⟩ := Catalog.findTable_some catalog _ _ _ found

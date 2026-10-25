@@ -35,6 +35,7 @@ theorem Catalog.Valid.selectionBelow {limits : Limits} {catalog : Catalog} (vali
       have supported := valid.object inObject
       cases entry' : object.entry with
       | table _ => simp [entry'] at kept
+      | view _ => simp [entry'] at kept
       | trigger _ => simp [entry'] at kept
       | index found =>
         simp only [entry'] at kept

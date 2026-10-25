@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T12:02:02+00:00",
+  "finding": "20261025T120038Z-c0b53f10#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Module and CreatesObject docstrings now name all four CREATE forms."
+}

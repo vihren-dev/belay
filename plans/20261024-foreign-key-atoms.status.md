@@ -595,6 +595,43 @@ now-completed gate as pending. Both now use past tense. The reviewer found no
 source issue, confirmed the 27 theorem plus six fixture audit inventory, and
 checked the conflict resolutions and retained derived-source registration.
 
+## Prerequisite publication on S4
+
+The coordinator integrated immutable reviewed checkpoint `9350aa31` above
+published S6 prototype `334d9645`, S7 prototype `0569149b` and S4 `70705018`.
+The CTE checkpoint consumes this FK boundary. This publication leaves the
+complete statement/run preservation task open and does not include the later
+engine induction checkpoint. No production definition changed in the merge.
+
+The model manifest retains both parents' entries and removes the replaced
+`ForeignKeysHold` entry; the test inventory retains both sets of suites.
+Obsolete early S5 task/status files from FK ancestry are excluded from this
+publication; current reviewed S5 implementation has its own workspace.
+The bounded final integration gate checks nine FK fixtures, both S4 guide
+proofs and the S6/proof-cost prototypes, then the frozen verdict/predictions.
+The focused Nix gate passed all 19 selected cases (60 deselected), with no
+failures, errors or skips, in 101.90 seconds. Output:
+`/nix/store/zrrq0cmp7nl21kc898417ikqhkg0r28l-sqlite-verifier-test-fk-publication-1`.
+It retains all 164 FK axiom reports and 28 S6 audits; the S4 examples and all
+seven cost-prototype cases also pass. Log:
+`build/agent-logs/fk-publication-focused.log`.
+
+The frozen verdict passed: 4,867 AGREE and 2,505 MODEL_UNSUPPORTED, output
+`/nix/store/9xsjgvnfn1jgriqr0khchgynkb96qy4b-sqlite-verifier-verdict`.
+All 53 prediction files at
+`/nix/store/kp0cyv528r5sigsp5yp4pkz10qmq0a8g-sqlite-verifier-predictions`
+are byte-identical to published S4 output
+`/nix/store/ifmznfzpqyd12dxjhr3yp404ljb0dgxy-sqlite-verifier-predictions`.
+The comparison record is
+`build/agent-logs/fk-publication-prediction-comparison.json`.
+The sequential gate completed with exit 0. The combined full suite was not
+rerun for this publication; earlier unit acceptance remains scoped above.
+
+Independent review `20261024T195955Z-a390edf3` found zero musts and one R19
+status-wording should. This record replaces the pending-results wording with
+the completed results. The reviewer checked both inventories and found no
+production-source issue. The complete FK preservation task remains OPEN.
+
 ## Actual row-engine counter induction
 
 The `fk-engine-counter` unit adds 14 proof modules, each below 200 lines, and two
@@ -1140,3 +1177,31 @@ empty and a populated table and checks the refusal, the model verdict (AGREE wit
 for `NULL`, MODEL_UNSUPPORTED for the others). It is in the `model` suite of
 `tests/nix_suites.json`. Its Nix validation is pending: the Nix results above concern the tree
 before this follow-up, and the final Nix results of the follow-up are recorded in the last section.
+
+## Integration above the views PR (2026-10-25)
+
+The merge `integrate: foreign-key DDL part 2 above views` joins the foreign-key line (`7259329c`) with the head of PR #255, `tasks/query-sources-views` (`6a0bc6be`). Neither line was rebased.
+
+Conflicts and how they were resolved:
+
+- Plans of other tasks (14 files): the foreign-key side held older copies of files that their task lines keep editing. The views side was taken whole.
+- `docs/adr-0017-user-surface.md`: three-way merge against `9350aa31`. It keeps the foreign-key side's S6 trigger and foreign-key premise bullet, the S7 metadata clarification and the task allocation. It also keeps the views side's completion updates (S4, the execution task). The paragraph on S6 tasks is combined and now says the execution task is done.
+- `packages/belay-sqlite-model/lakefile.toml`: the `globs` line was merged three-way. The new module `ForeignKeyCreateView` was added.
+- `tests/conformance_query_mutants_test.py`: the views line split the file. Take its version. `test_every_add_reference_mutant_changes_a_verdict` and its imports now live in `tests/conformance_query_feature_mutants_test.py`.
+- Lean sources: both sides edited the statement sums. Each sum now has the trigger position of the foreign-key line and the `addColumn target column refuses` arm of the foreign-key line, plus the `createView` arm of the views line (`AdmittedDistinctStatement`, `AdmittedTableAtomStatement`, `AtomsConditionsOfLink`, `StatementOutput`, `ValidAtomsStatement`, `Resolution/AddColumn`, `Resolution/DefinitionSpec`, `Execution`).
+- `tests/nix_suites.json`, `build-support/tests.nix`: no textual conflict. Both suites are present.
+
+What the views line changes for the foreign-key proofs:
+
+- `Catalog.parentLink` returns `.mismatch position` for a foreign key that names a view. Before, it returned `.missing`.
+- `CREATE VIEW` therefore keeps the generic `Catalog.CreateKeepsSelection` condition for the row laws. A view that takes the name of a missing parent changes the link from missing to mismatch. New lemma file `ForeignKeyCreateView.lean` proves that a view keeps the selection when no table declaration names it (`Catalog.createKeepsSelection_view`).
+- The both-atoms law needs no condition for `CREATE VIEW`: the schema atom already makes every selected parent a located table.
+- `DROP VIEW` resolves to `.drop positions` without rules. The existing `DropKeepsSelection` and `DropKeepsParents` conditions apply. A kept declaration naming a dropped view goes from mismatch to missing, so it is refused (fixture `droppedViewNotKept`).
+- Writes and ADD COLUMN on a view are prepare errors. `CREATE VIEW` and `DROP VIEW` are the only view statements that change the catalog.
+- `findView_addColumn` (new, `CatalogAddColumnSearch`) shows that ADD COLUMN keeps view lookups. `parentLink_addColumn` uses it.
+- The new matrix row CREATE VIEW and the extended DROP row are in `docs/adr-0022-database-validity.md`.
+- Fixture `tests/surface/ForeignKeyDdlViews.lean` (8 axiom reports) shows the view cases. `tests/surface_foreign_key_atoms_test.py` lists it.
+
+Two older fixtures needed a change after the merge. `ForeignKeyCreate.lean` lacked the `createView` case in its `create` match. `ForeignKeyEngine.lean` named a theorem `preserves`, which the views line made a keyword (`MigrationPatternSyntax`). The theorem is now `rowReferencesPreserved`.
+
+Local evidence only so far (not evidence for the record): `just dev-build` and the `belay` and `verifier-conformance` builds pass; all 24 foreign-key fixtures run with no errors. Nix results follow in later sections.

@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T12:04:28+00:00",
+  "finding": "20261025T120418Z-234b73a6#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Status now describes ADR 0017 as a three-way merge."
+}

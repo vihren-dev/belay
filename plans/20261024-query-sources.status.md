@@ -1,197 +1,196 @@
 # Status: queries as sources
-Created 2026-10-24. Status: OPEN. Part 1 DONE; CTEs and views remain.
+
+Created 2026-10-24. Status: OPEN. Parts 1 and 2 DONE; views remain.
 Task: [task file](20261024-query-sources.task.md).
 Specs: ADR 0019 D5/slice 4 and D3 metadata exception; ADR 0017 S6.
-Inspected base: `vihren-dev/sqlite-verifier`, PR #239, commit `98a07bfe`.
+The [part-1 record](20261024-query-sources-part1.status.md) retains its complete
+implementation, review, prediction and acceptance history.
 
-## Owner decision and observations
+## Accepted scope and dependencies
 
-On 2026-10-24 the owner selected: "Support nonrecursive CTEs only; reject actual
-recursion and retain the exclusion of the RECURSIVE keyword." The ADR and task
-record this scope. There is no outstanding CTE-scope decision.
+On 2026-10-24 the owner selected ordinary nonrecursive CTEs only. Actual recursion
+remains excluded without the RECURSIVE keyword, and that keyword remains excluded
+for nonrecursive definitions too. Materialization hints remain excluded.
 
-The audit used pinned SQLite 3.51.0; acceptance uses the native/kernel checks
-and measured predictions below, not lexical SQL counts.
+Part 2 continues the reviewed task in an isolated workspace on subject
+`16bd87a396510fdf8e42cc0d1cf83b274d857b75`. Part-1 publication is coordinated
+separately. No CTE or view implementation is part of that checkpoint.
 
-## Progress
-- 2026-10-24: specified D5 in three acceptance parts. Task review
-  `20261024T122324Z-cf7aa9a6` passed with no findings. ALTER/rebuild work waits
-  for views; FK laws must cover their catalog statements at integration.
-- Carried the reviewed task and ADR amendment onto S4 part 1 `372e6c8f`/PR #240.
-  Query-source syntax/resolution/evaluation/codecs belong to this task; S4 owns
-  success/program laws. INSERT SELECT staging belongs to slice 5.
-- 2026-10-24: carry commit `8a89208f` passed independent Claude review
-  `20261024T130558Z-8a89208f`, with no findings. Before any model edit, the Nix
-  prediction baseline was built at
-  `/nix/store/qwfgz46d1pyd10xiypmka4kixvx38k2b-sqlite-verifier-predictions`.
-  Its Nix verdict is
-  `/nix/store/srv5lc3gnn1s9wzfjy1ilrzsb2ws0881-sqlite-verifier-verdict`:
-  all existing claims pass; corpus v4 has 673 AGREE cases and corpus v5 has 2,946.
-- The first implementation unit gives resolved sources an indexed-query payload,
-  reuses `EvalContext.subqueries`, and distinguishes complete-row certainty from
-  the first-column certainty of IN. Source rows retain the enclosing cells so
-  an unmatched right/full row cannot erase them. `DerivedSourceExamples.lean`
-  contains kernel checks for joins, uncertain membership, outer cells, parameters,
-  counters and the clock.
-- Nix check for this execution unit: `nix-build build-support/default.nix -A
-  modelPackage` passed at
-  `/nix/store/d8gfbj5myc9v0lpsqm0c5lmmpj6534bl-belay-sqlite-model-0.1.0`.
-  The build checks the new `DerivedSourceExamples` kernel examples and existing
-  query/S4 proof modules.
-- Execution-unit review `20261024T132633Z-93767a4d` had no must finding and one
-  should finding: test a source with a non-success ending and no expression fault.
-  The added kernel example checks that this source is refused. Nix `modelPackage`
-  passed at `/nix/store/pp68ghibam1vkp4y5cw5nlsfjb171d86-belay-sqlite-model-0.1.0`.
-- Review `20261024T133405Z-15a252a8` passed with no findings.
-- The metadata unit adds expression affinities for every source column and SQLite's
-  compound affinity combination. D3's ORDER BY COLLATE rewrite now supplies IN with
-  derived-column affinity/collation; scalar subqueries still supply no collation.
-  The removed restriction is also removed from its registry, documentation and
-  example, and the existing compound-collation mutant follows the new branch.
-- Source metadata exposed an existing output-collation bug: a FULL JOIN USING
-  output is a coalesce without collation, and a RIGHT JOIN output reads the right
-  column's collation. The shared expression/star metadata now follows those
-  operands. Generated USING equalities retain their existing left-column rule.
-  `DerivedColumnExamples.lean` checks both joins, three-column metadata, absent
-  affinity, compound type conflicts and D3 comparisons. The targeted Python checks
-  are `restriction_registry_test.py` and `mutant_guards_test.py -k compound`.
-- Nix `modelPackage` for this metadata unit passed at
-  `/nix/store/zs2dfp63la9ib1cx7qskny4l9pvdq4b0-belay-sqlite-model-0.1.0`.
-- Review `20261024T140053Z-649a3021` had no must finding and two should
-  findings. Both metadata functions now list all expression constructors instead
-  of using catch-all branches, so new syntax must explicitly choose its metadata.
-  Nix `modelPackage` passed at
-  `/nix/store/24qvzhb6dpmsh27pzgqyjwr921dkkqbp-belay-sqlite-model-0.1.0`.
-- Review `20261024T140753Z-bc79e3e7` passed with no findings.
-- The derived-source pipeline now connects SQL translation, the indexed syntax,
-  name expansion, source/outer scopes and all-column metadata to the existing
-  evaluator. Source bodies resolve in FROM order; scalar siblings retain written
-  order. A derived source can read its enclosing query but not its sibling sources.
-  Nested USING/NATURAL conditions refresh after derived-column metadata resolves.
-  The kernel examples cover these rules, duplicate names, the lack of implicit
-  rowid, aggregate sources and certain/uncertain LIMIT membership.
-- Existing named-table proof APIs now require `reference.query = none` as well as
-  their existing function-argument premise. Public callers and fixtures supply
-  this premise. The new public `ClaimsDerived.lean` fixture and the changed syntax
-  and source-span tests are selected by the existing Nix model/surface suites.
-  Relevant checks: `syntax_queries_test.py`, `syntax_subqueries_test.py`,
-  `syntax_compound_test.py`, `surface_claims_test.py`,
-  `surface_translation_checks_test.py` and `restriction_registry_test.py`.
-- Nix `modelPackage` for this pipeline unit passed at
-  `/nix/store/wnxni6bvnfd3cisq5nndg95qspgbyh94-belay-sqlite-model-0.1.0`.
-  It checks the new `DerivedResolutionExamples` and the existing model proof APIs.
-- Corpus v53 is reserved for query-source evidence (v54 belongs to the FK task).
-  The separate `query-sources-evidence` workspace starts from carry `8a89208f`.
-  Corpus, claim and judge-lock changes remain separate from implementation.
-- Pipeline review `20261024T144622Z-c64d8b50` passed with no findings.
-- The native recorder now accepts a derived LIMIT when the outer query has no
-  ordering or window. It records the returned rows without inferred tie groups;
-  the model separately decides whether source membership is certain. Existing
-  restrictions on nested windows in ranking probes and write sources remain.
-  This changes acquisition scope, not SQLite's returned outcomes or the pinned
-  oracle. The oracle lock covers `nix/sqlite.nix` and `nix/flake.lock`; this helper
-  and its regression belong to the implementation. Corpus/claim/lock changes
-  remain in the separate evidence workspace.
-- The focused Nix harness check selected all seven ordering tests, including
-  native replay of the three newly recorded nested-window forms, and passed at
-  `/nix/store/z1vg76nq9n7by0lzb8gbmjm3rvl89c6j-sqlite-verifier-test-query-source-ordering-1`.
-  This confirms the existing ranking/write guards and the new raw-observation
-  path.
-- Recording-fix review `20261024T150653Z-dda5b767` passed with no findings.
-- The authored source inputs now cover 42 cases through the native recorder,
-  translator, resolver and evaluator. Nix `query-source-coverage` passed at
-  `/nix/store/804jb5hkkrpn3ahxd21x556aajwz13m2-sqlite-verifier-test-query-source-coverage-1`.
-  It kernel-checks 38 agreements and four explicit `classifyCase = modelUnsupported`
-  boundaries: uncertain compound representatives, uncertain LIMIT membership,
-  uncertainty visible only in the second column, and fallible evaluation.
-- The four focused mutants all changed their target verdicts in Nix at
-  `/nix/store/qrcwvlzhklhii66vmw9g3yi6pigv8d8m-sqlite-verifier-test-query-source-mutants-1`.
-  They check forbidden sibling binding, all-column affinity, collation and whole-row
-  certainty. Each parameterized test builds one mutant at a time. The new coverage
-  and mutant tests are registered in the model and scheduled mutant Nix suites;
-  `mutant_guards_test.py` also checks their rule locations.
-- Frozen Nix predictions after the pipeline unit are at
-  `/nix/store/xar2y93h71ffx1ccrjvy906936hk4ahj-sqlite-verifier-predictions`.
-  Compared with the pre-edit baseline, 76 records change: 32 become predictions
-  (29 fully supported, three still unmodeled at execution), and 44 retain a
-  restriction with a changed reason. No previously predicted record changes.
-  Corpus v53 stays private
-  and mutable until the CTE and view parts add their evidence; the implementation
-  contains native input definitions and tests, with no frozen outcomes or claims.
-- Test-unit review `20261024T151304Z-4adc09c3` found no must issue and one should
-  issue: the `ROOT` docstring named the requirement inventory instead of its
-  repository directory. The docstring now states the path's actual meaning.
-- Doc correction review `20261024T151400Z-83f0c532` passed with no findings.
-- The separate draft evidence is based on subject/status boundary `8b1b26ef`.
-  It contains corpus v53, its writer and registration, 38 new mustAgree cases,
-  29 measured additions to the v4/v5 claims, and their lock. The report under
-  `reports/20261024-query-sources-part1/` classifies all 76 changed predictions.
-- The Nix evidence verdict passed at
-  `/nix/store/6h8hi4b2c0z3fkxjamwix6508l30dz9i-sqlite-verifier-verdict`:
-  v4 has 675 agreements, v5 has 2,973, and v53 has 38 agreements plus four model
-  restrictions. Every prior agreement and claim survives. There are no
-  disagreements or harness errors. The combined predictions at
-  `/nix/store/qjij3iya9bpd9mfl0mmln91wnyqcb80q-sqlite-verifier-predictions`
-  add v53 and preserve all 53 previous corpus files byte-for-byte.
-- The Nix writer round trip passed at
-  `/nix/store/9dzarjyyg9iq1r1n029b04a7rbbw18ja-sqlite-verifier-test-query-source-writer-1`;
-  complete validation of the actual v53 shard passed at
-  `/nix/store/hxi4kmq91n1vpl13nsjbi9cnkj6qw8yq-sqlite-verifier-test-query-source-corpus-1`.
-  The evidence remains unpublished and mutable for CTE/view additions.
-- Evidence review `20261024T152537Z-873a1473` passed with no findings. The first
-  full gate reached all source checks and found two stale RIGHT JOIN mutant
-  targets after the enclosing-cell preservation change; no evaluator change was needed.
-  The evidence report now links here for the current acceptance state.
-- Report review `20261024T153132Z-753e0f3c` requested clearer pending-status
-  wording. Its link now explicitly refers to the current part-1 acceptance state,
-  without implying that the final gates have passed.
-- Review `20261024T153240Z-88781fdd` had no must issue and repeated the request
-  for a status line in the report. Rejected: the report gives verified Nix results
-  and explicitly links to this file for current task acceptance. Duplicating the
-  changing acceptance state there would become stale; it does not assert a pass.
-- The first combined full gate found stale text in two existing RIGHT JOIN
-  mutants after `joinRows` began retaining enclosing cells. Their targets now
-  match the changed definition and preserve their original faults: dropping an
-  unmatched right row or padding with the right source's width.
-- The two affected mutants ran sequentially and were both detected in Nix at
-  `/nix/store/k2a4zs0px4yywv760jyjlmzaxj29fs1s-sqlite-verifier-test-query-source-right-mutants-1`.
-  The existing scheduled suite runs the new focused test; execution is unchanged.
-- Correction review `20261024T153312Z-5291750b` passed with no findings. The
-  acceptance descendant combines evidence `dc77491d` with subject `5291750b`;
-  only the status log conflicted, and both checked histories are retained.
-- Combined-boundary review `20261024T153541Z-08c47c2b` passed with no findings.
-  Its full gate passed all 153 frozen tests and 55 corpus validations, then failed
-  on a stale profile fixture expecting derived SELECT to be refused. The model-output and pipeline
-  transport fixtures had the same stale expectation. All three now use EXPLAIN,
-  which retains the intended frontend-refusal check as derived sources gain support.
-- The focused Nix checks passed: the older-engine profile test at
-  `/nix/store/9sv6jj19n33hr76wjry090k78ah88m17-sqlite-verifier-test-query-source-boundary-harness-1`,
-  and both model-output/transport tests at
-  `/nix/store/kj1l7gpva3ysjdlzlkvbw1bwnzcx5wgv-sqlite-verifier-test-query-source-boundary-model-1`.
-  This changes test inputs only.
-- Refusal-fixture review `20261024T154723Z-42812ff3` passed with no findings.
-- Merge review `20261024T154823Z-0c0faa97` had one should finding about the
-  status log. The wording now identifies the passing suites and failure in one gate.
-- Part 1 passed acceptance at combined boundary `c8db1a54` after review of
-  merge `0c0faa97`. Post-review `just test-full` passed all 854 Nix-selected tests:
+The source agent owns query syntax, source resolution, codecs, translation and
+required existing query-proof adjustments. FK owns ParentKeys, ForeignKeyPlan,
+TriggerClosure and ForeignKey proof/API files. View catalog cases and their FK
+preservation closure require coordination before integration. S4 owns its new
+success/program modules. Full maintained SuccessBalance fixtures will be checked
+at a combined integration boundary after resolver changes.
+
+## Checked part-1 boundary
+
+Final combined acceptance boundary: `c8db1a54ff74c7c7f033aee61c041e9bc5668ac8`.
+Subject-only final status head: `16bd87a396510fdf8e42cc0d1cf83b274d857b75`.
+Separate evidence/status head: `5d69e3fa8025ef51b7be11a7d41f6464bb942b51`.
+
+- Post-review full gate: 854 Nix-selected tests passed, at
   `/nix/store/m64rgzasy2aqvp6d421pk5yh0v4654b9-sqlite-verifier-test-reports`.
-  Final `just verdict` passed at
+- Final verdict passed at
   `/nix/store/6nazink0rsrzhv7458rs3vgfs63c48dg-sqlite-verifier-verdict`.
-  Its predictions `/nix/store/q4qrigjpa82cg89ggzkvinbnvmgi7pq6-sqlite-verifier-predictions`
-  are byte-identical across all 54 files to the earlier `qjij3iya9bpd9mfl0mmln91wnyqcb80q` artifact.
-  Subject checkpoint `d87fbaa0` excludes frozen corpora, claims and the judge lock.
-  Ordinary CTEs and views remain OPEN; v53 retains its separate owner-merge gate.
-  The subject publication merge combines `16bd87a3` with accepted S4 query-law
-  checkpoint `975f31eb`, including PR 241's source filter and no v53 evidence.
-  Merge reviews `20261024T161528Z-63299f66`/`20261024T163932Z-359eb0c7` passed.
-  The ADR records part-1 completion; review `20261024T164409Z-17f929bd` is clean.
-- Subject publication source `17f929bd`: full 853 passed in ten suites, no
-  failures/errors/skips, at `/nix/store/nfqd2rh03b7avhd5ifzk08rwbf9p38ab-sqlite-verifier-test-reports`.
-  Verdict 4867 AGREE/2505 MODEL_UNSUPPORTED, no disagreements/harness errors:
-  `/nix/store/sjs0cw7jyy2k5adr3rgw2jh6d1iybnii-sqlite-verifier-verdict`.
-  All 53 files at `/nix/store/2kpi159rivfybjqkv2cw7vxh31qpdlbq-sqlite-verifier-predictions`
-  match accepted `q4qrigjpa82cg89ggzkvinbnvmgi7pq6`, excluding its draft v53.
-  The judge lock is unchanged. Nix integration passed 70 checks in 364.39s.
-  Scheduled checks passed all 47 cases, no failures/errors/skips, at
-  `/nix/store/s5vl7g5lx4ikp3ypmcjrig1jc5y26swz-sqlite-verifier-scheduled-check-reports`.
-  All publication gates are terminal and passing; CTEs and views remain OPEN.
+- Combined predictions:
+  `/nix/store/q4qrigjpa82cg89ggzkvinbnvmgi7pq6-sqlite-verifier-predictions`.
+  All 54 files match the earlier checked combined predictions byte-for-byte.
+- The subject prediction baseline before CTE changes is
+  `/nix/store/xar2y93h71ffx1ccrjvy906936hk4ahj-sqlite-verifier-predictions`:
+  53 corpus files, without the unpublished v53 evidence.
+- Measured gains: v4 has 675 agreements; v5 has 2,973. Draft v53 has 38 agreements
+  and four model restrictions. Every prior agreement and claim survives.
+  The separate evidence report classifies all 76 changed historical records.
+
+Corpus v53 remains unpublished and mutable until CTE/view evidence is complete.
+Frozen corpus, claims and lock changes stay in their separate owner-approved judge
+PR. Task-end Nix and scheduled checks remain required after all three parts.
+
+## Part 2 progress
+
+- 2026-10-24: carried S4's reviewed generalizations of `resolveSources_table` and
+  `resolveSources_tableInfo` from `656ab790ecaf3a00a36f710f728d5913b2c7fd64`.
+  Their defaulted callback and prefix parameters follow the existing hypotheses.
+  Existing callers remain valid; copied source queries can supply their own
+  expansion callback and diagnostic prefix.
+- Two maintained consumer examples from S4 review boundary `1dee994a` now live
+  in `tests/surface/ClaimsDerived.lean`, without its unrelated SUM fixture.
+  The focused Nix surface check selects `derived_sources` from the normal suite
+  and passed at
+  `/nix/store/9zkv499mbvg2cwcs5jnn351rv253zfsd-sqlite-verifier-test-query-source-callback-carry-1`.
+  It compiles the consumer against this source's built model, text and surface
+  packages. The carry changes proof statements and consumers only.
+- Carry review `20261024T164800Z-0559f47b` found no must issue and one should
+  issue: the retained part-1 history needed an explicit historical label. Its
+  header now states Part 1 DONE and links to this active task status.
+- Part 1 was published separately as PR #243, source
+  `1f5eea9e0c3ecd8a5fb62940b3976708909fdb29`, above PR #242. This implementation
+  workspace remains on the checked carry and does not rewrite that published
+  ancestry.
+- Ordinary WITH now has indexed syntax metadata, JSON/Lean codecs and text
+  translation. Each used definition becomes an ordinary derived query at its
+  use site. Lexical WITH lookup follows the written definition scope; column
+  lookup follows the use site's permitted enclosing scope. Explicit column
+  lists replace output names while retaining each resolved column's metadata.
+- Recursive UNION arms use preparation-only name placeholders, then ordinary
+  resolution checks their column counts and names. Prepared recursion ends in
+  `recursive-common-table` before evaluation. Circular references, repeated
+  recursive references and recursive aggregates retain SQL preparation errors.
+  Unused definitions do not enter the executable query list.
+- SELECT and supported VALUES INSERT, UPDATE and DELETE share the expansion.
+  Trigger expression queries also use it. The existing `keyReady` restriction
+  on nested writes with subqueries remains: the public fixture distinguishes
+  successful preparation from the runtime stop.
+- Existing query-resolution and catalog/schema-link proofs cover the new
+  syntax field and wrapper. The specific no-WITH resolution lemmas state that
+  premise explicitly. No alternate evaluator or catalog object was added.
+- Authored input definitions cover 43 CTE cases, with parser/span fixtures,
+  kernel context and public quotation examples, and two targeted scope and
+  recursion mutants. Frozen v53 evidence remains separate and unpublished.
+- Focused Nix acceptance passed: 32 model/parser/native differential tests at
+  `/nix/store/m35i7is1gmyiwy76c5lskzbpr810xhmr-sqlite-verifier-test-common-tables-model-1`,
+  17 public surface fixtures at
+  `/nix/store/fx2h7dkcm5z3q88q61sv37r9dwgvxrr5-sqlite-verifier-test-common-tables-surface-1`,
+  and all 60 restriction examples at
+  `/nix/store/nc6ks1rv3jyzvyjcyp9pw5527m0ismh6-sqlite-verifier-test-common-tables-restrictions-1`.
+  These use the existing registered suites with focused selections.
+- Both targeted mutants were killed in Nix: removing lexical parent lookup and
+  removing recursion registration each changed the selected native verdict.
+  Report:
+  `/nix/store/zdn3s51b8gyns4r7z3bdqq77v7gyfdnf-sqlite-verifier-test-common-tables-mutants-1`.
+  The following source edits only clarified the WITH behavior in the public
+  write and trigger entrypoint docstrings; executable definitions are unchanged.
+- Implementation commit `1a1848b12f9af98a6db77dce8dd5e72acb68d868` passed
+  independent Claude review `20261024T190005Z-1a1848b1` with no findings.
+- Part 2 acceptance below uses a combined CTE, reviewed S4 and FK boundary,
+  including the maintained full S4 success fixtures and resolver adjustments.
+  S4's physical-table premise correction remains a separate reviewed change.
+
+## Combined part-2 acceptance
+
+The integration workspace joins CTE review carry
+`80b4cb5e86725b7168a3894b4e804a030b34b473`, S4 source
+`24ca8b4c9635ee14f3235001dc86d7315ac514ac`, and FK review carry
+`9350aa3147e92cf27fe59c00750fd638440494ba`. It contains no view behavior.
+
+- The model manifest retains every new parent entry and the FK removal of
+  the replaced `ForeignKeysHold` module. The resulting manifest has 379 entries.
+- Five maintained S4 fixtures account for the no-WITH expansion branch and
+  the explicit ordinary-query premise. Their public success formulas retain
+  the separately accepted physical-table premises.
+- ADR 0019 D4 carries the exact streaming/materialization section of reviewed
+  owner-decision commit `1c6eeb5ee995118c4635d48f3f969ee64a2ed8b2`. This is
+  specification synchronization; this checkpoint adds no INSERT SELECT support.
+- Published part-1 acceptance history from the FK parent is retained in the
+  linked part-1 record, alongside the newer active CTE progress above.
+- The focused Nix integration check passed all 19 selected fixtures at
+  `/nix/store/11yz0c3ypy7q42fjfb0896ag2y7whzg9-sqlite-verifier-test-common-tables-integration-1`.
+  It includes the complete unique-email and balance success proofs, all selected
+  query-claim consumers and the translation checks. The S4 physical-table
+  premises and the existing axiom restrictions are unchanged.
+- The accepted derived-source predictions at
+  `/nix/store/2kpi159rivfybjqkv2cw7vxh31qpdlbq-sqlite-verifier-predictions` and the
+  S4 predictions at
+  `/nix/store/ifmznfzpqyd12dxjhr3yp404ljb0dgxy-sqlite-verifier-predictions`
+  were byte-identical: 53 files and 7,372 cases. The accepted S4 copy is the
+  comparison baseline below; the historical derived store path later disappeared.
+- Combined source `4e8d9b296d63c7acbe302ebd1c54385d203b2b3d` passed independent
+  Claude review `20261024T192443Z-4e8d9b29` with no findings. No view behavior
+  is part of this boundary.
+- The first combined full-gate attempt ended with exit 124 at the configured
+  1,500-second aggregate Nix suite limit. Session `65827` reached 40% of the
+  72-test public surface suite without a reported test failure. The preceding
+  Nix model suite passed all 251 tests in 1,041.50 seconds at
+  `/nix/store/sbkyci4g6afx2lrry8sdvpv9ywzgmmkp-sqlite-verifier-test-model-1`.
+  That attempt's full report was incomplete; verdict and comparison did not run.
+  It is not acceptance. The retry below retained the source and all timeouts.
+  The attempt log is
+  `/tmp/query-source-cte-integration-full.log`.
+- The cached retry, session `44795`, exited 0 on the unchanged reviewed source.
+  Its post-review Nix full report passed all 923 tests, with no failures, errors
+  or skips:
+  `/nix/store/6ccraalbxszhkp504g0q4d1fi49160bs-sqlite-verifier-test-reports`.
+- The final verdict passed: 4,869 AGREE and 2,503 MODEL_UNSUPPORTED, at
+  `/nix/store/afn513ampmbdfjr467cm90dydkyirkd1-sqlite-verifier-verdict`.
+  All prior claimed agreements survive. Corpus v4 has 676 agreements; v5 has
+  2,974. Each gains the same trigger-creation case under its execution profile.
+- Accepted predictions:
+  `/nix/store/wbpwn1x38fyn3l0g00wg5m011n6ajwq4-sqlite-verifier-predictions`.
+  Compared with the accepted S4 baseline above: 53 files, 7,372 cases, 50 files
+  byte-identical. All 4,895 previously predicted records are unchanged. Of 71
+  changed records, 69 remain unsupported with only their reason changed, and
+  two become agreeing predictions. The [complete classification](20261024-query-sources-cte-predictions.status.md)
+  records each changed case and the baseline-equivalence evidence.
+- Part 2 is DONE at this checkpoint. Views remain OPEN. Corpus v53 remains
+  unpublished and mutable; no frozen corpus, claim or judge-lock file changed.
+  Task-end Nix and scheduled checks remain required after the view part.
+
+## Publication above the FK prerequisite
+
+The publication workspace joins reviewed CTE boundary `58300b39` and published
+FK prerequisite `b1130903` (PR #247). It retains both prototypes from PRs #245
+and #246. All files under `packages/` are byte-identical to the CTE boundary,
+including its precise SimpleQuerySteps and StatementCalm documentation.
+The model manifest resolves to the same 379 entries. The test inputs retain
+the proof-cost helper and register both prototype suites. The earlier FK
+review record remains in the append-only review history.
+
+The static ownership, surface-layer and documentation checks passed 16 tests.
+The final publication integration passed all 36 selected Nix cases, with 44
+deselected, in 194.19 seconds:
+`/nix/store/2zlr1pgsarrvmq8b0apzx8pbh0mhvffj-sqlite-verifier-test-cte-publication-1`.
+This checks the CTE/query consumers, both S4 guide proofs, all nine FK fixtures,
+and the S6/proof-cost prototypes. Independent integration review
+`20261024T200939Z-57bf72e2` found no findings. The completed full gate and verdict
+are recorded under "Combined part-2 acceptance" above; the
+[classification record](20261024-query-sources-cte-predictions.status.md) lists
+every prediction change. This publication adds no view behavior.
+
+Acceptance-documentation review `20261024T201724Z-ed535519` found zero musts
+and two status-wording shoulds. The classification record names the retained
+S4 log archive and artifact roots after retirement of the publication workspace.
+
+## Part 3 progress
+
+The [view record](20261024-query-sources-views.status.md) tracks the remaining part.

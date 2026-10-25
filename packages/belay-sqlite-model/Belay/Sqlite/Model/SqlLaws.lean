@@ -46,7 +46,7 @@ def ModeledDefinitions (script : List Resolved.Statement) : Prop :=
     | .createTable .. => True
     | .addColumn _ column _ => (column.clockDefault || (readDefaultValue column).toOption.isSome) = true
     | .createIndex .. => False
-    | .createTrigger .. | .drop .. => True
+    | .createView .. | .createTrigger .. | .drop .. => True
     | .insert .. | .upsert .. | .update .. | .delete .. | .begin | .commit | .rollback | .prepareError _
     | .query .. | .setting .. => True
 
@@ -97,7 +97,7 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites (script.map (·.1)))
         have none := first.2.1 positions keys rfl
         subst none
         simp [SqlState.statementRun, Resolved.Statement.counterReads, Resolved.Statement.clockExpressions, Resolved.WriteRules.expressions, runStatement, StatementRun.withKeys]
-      | createTable | createIndex | createTrigger | addColumn | begin | commit | rollback | insert | upsert | update | delete
+      | createTable | createView | createIndex | createTrigger | addColumn | begin | commit | rollback | insert | upsert | update | delete
       | prepareError | setting =>
         simp_all [SqlState.statementRun, Resolved.Statement.counterReads, Resolved.Statement.clockExpressions, runStatement]
     have run : (state.statementRun (state.clock position) parameters statement).ready = true := ready

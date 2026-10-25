@@ -1,6 +1,6 @@
 # Restore the SELECT-star mutation check
 
-Created 2026-10-25. Status: OPEN.
+Created 2026-10-25. Status: DONE (2026-10-25).
 Audience: implementers and reviewers.
 Progress: [status](20261025-fromless-mutant-repair.status.md).
 Specifications: [queries without FROM](20261016-select-without-from.task.md),
