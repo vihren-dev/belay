@@ -50,3 +50,9 @@ integrity and oracle inputs match `fe169099`. The judge lock SHA-256 is
 Post-review full/verdict and task-end Nix/scheduled checks are assigned heavy
 slot 1. The task remains OPEN until the required hosted manual run is inspected
 after publication; a skipped PR mutant job is not execution evidence.
+
+Source `e148e0e495624c17972997f2348e9a88956cc323` has clean independent review
+`20261025T014300Z-e148e0e4` (0 must, 0 should). The sequential bounded gate is
+`build/agent-logs/mutant-diagnostics-acceptance.sh`; it compares predictions
+against the accepted #251 output
+`/nix/store/nvd3jnygzz7i4w29wyfx34zfpwbfvjdm-sqlite-verifier-predictions`.
