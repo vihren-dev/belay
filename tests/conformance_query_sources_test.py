@@ -19,6 +19,12 @@ ROOT = Path(__file__).resolve().parents[1]
 UNMODELED = {"source-compound-representative-uncertain", "source-limit-uncertain",
              "source-limit-second-column-uncertain", "source-fallible"}
 """Source membership or evaluation failures for which D5 requires refusal."""
+UNMODELED_COMMON_TABLES = {
+    "cte-recursive", "cte-recursive-union", "cte-recursive-inner-name", "cte-recursive-empty-arguments",
+    "cte-recursive-arguments", "cte-write-target", "cte-uncertain-membership", "cte-trigger-nested-write",
+    "cte-materialized", "cte-not-materialized", "cte-with-recursive-nonrecursive", "cte-with-recursive-circular"}
+"""CTE cases that stay outside the model: recursion and the RECURSIVE keyword (owner decision of
+2026-10-24), materialization hints, a subquery that reads a written table, and uncertain membership."""
 
 
 @pytest.mark.parametrize("common_tables", [False, True], ids=["derived", "common-tables"])
@@ -29,12 +35,7 @@ def test_query_sources_native_and_kernel_verdicts(runtime_root: Path, tmp_path: 
     both verdict classes over the runner's decoded cases and their original JSON."""
     source = authored_common_tables if common_tables else authored_query_sources
     records = source.records()
-    unsupported = ({"cte-recursive", "cte-recursive-union", "cte-recursive-inner-name",
-                    "cte-recursive-empty-arguments", "cte-recursive-arguments",
-                    "cte-write-target", "cte-uncertain-membership", "cte-trigger-nested-write",
-                    "cte-materialized", "cte-not-materialized", "cte-with-recursive-nonrecursive",
-                    "cte-with-recursive-circular"}
-                   if common_tables else UNMODELED)
+    unsupported = UNMODELED_COMMON_TABLES if common_tables else UNMODELED
     assert [record["name"] for record in records] == [case.name for case in source.definitions()]
     resolved_ids(records, json.loads((ROOT / "conformance/requirements-3.51.0.json").read_text()))
     translator = runtime_translator(runtime_root)
