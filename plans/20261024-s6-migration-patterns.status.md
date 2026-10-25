@@ -299,3 +299,54 @@ This completes the public views, comparisons, pattern meanings and laws part.
 The complete task remains OPEN: universal migration examples, their diagnostics,
 private-guide integration and the second acceptance part remain unfinished.
 Task-end Nix/scheduled checks have not been claimed or run for this task.
+
+## Part 2: independent normalization examples
+
+2026-10-25. The `s6-migration-examples` workspace starts at reviewed
+`317cdb1a08623b870823c2a8e55b3207fed67f59`; the original pattern workspace
+retains the completed part-1 acceptance above. The examples now descend from
+that evidence-only head, `467cdde5`. Their four shell/resource files
+are byte-identical to the approved parent, and the standing-authorized
+`direnv allow` completed. No task scope changed.
+
+The counter example is implemented in
+`tests/surface/MigrationExpansionCounter.lean`, with its installed/native check
+in `tests/surface_migration_examples_test.py`. It uses the complete two-trigger
+expansion and public `Sql.runFrom`, states original migration success, compares
+the final database and application observations, and refutes full commutation
+from totals 3 and 4. The native check reuses validated original SQL annotations.
+The focused Nix check passed at
+`/nix/store/i2w0ml50phaipdzksffjd79sy4csszh2-sqlite-verifier-test-expansion-counter-1`:
+one test passed, 95 deselected, in 4.93 seconds. The existing surface suite's
+disposable selector chooses only `expansion_counter`, preserving the installed
+artifacts, pinned SQLite tools and existing timeouts. Seven theorem dependency
+reports use only ordinary permitted logical axioms. The native replay runs both
+orders of the complete four-statement expansion and compares their exact rows,
+changes, total_changes and last_insert_rowid with the public model executions.
+
+The mandatory development build completed before this Nix check. Its first
+focused attempt failed on a mixed integer/string expected-row literal, which
+Lean inferred as strings. Explicit `Value` constructors corrected the fixture;
+no model or package definition changed. The failed result is retained in
+`build/agent-logs/expansion-counter-focused.log`; the accepted retry is in
+`build/agent-logs/expansion-counter-focused-retry.log`. Only the Nix retry above
+is acceptance evidence. R3/R19 self-review checked the concrete domain witness,
+public support checks, full-context refutation, original-SQL replay validation
+and theorem proof sketches. Independent review remains pending for this unit.
+
+The universal normalization proofs can proceed independently of table rebuilds.
+All required SQL execution features already exist. Their remaining work is
+proof closure over arbitrary admitted rows and parameter values under explicit
+physical-table, schema and effect conditions. Existing generated columns and
+UPDATE triggers must be covered by those conditions or by derived effect laws;
+the desired query equality is not a domain premise. The proofs retain complete
+fresh-environment quantification and an inhabited migration-success domain.
+
+Root reserved these proof-only surfaces, with their own narrow registrations:
+`packages/belay-sqlite-model/Belay/Sqlite/Model/NormalizedFieldRows.lean`,
+`packages/belay-sqlite-model/Belay/Sqlite/Model/NormalizedFieldQueries.lean`, and
+`packages/belay/Belay/Sqlite/NormalizedFieldExpansion.lean`. They have not been
+written yet. Execution definitions remain unchanged. Complete rebuild cascade,
+safe-rebuild preservation and affinity examples still require the separately
+owned INSERT SELECT, rename and final FK contracts; their earlier prerequisite
+status does not block normalization or the counter example.
