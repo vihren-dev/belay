@@ -59,7 +59,8 @@ theorem advance_effect (position : Nat) (statement : Resolved.Statement) (parame
   simp [advance, advanceRun, advanceWith, SqlState.statementRun, runStatement]
 
 /-- For every position, list of values, state and ADD COLUMN, {name}`advance` publishes its effect
-({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition. -/
+({name}`advance_effect` for this form, which {lit}`simp` can use without a side goal). Proof sketch: the definition.
+It holds for either value of the flag {lit}`refuses`: a refused addition keeps the database. -/
 @[simp] theorem advance_addColumn (step : Nat) (parameters : List Value) (state : SqlState) (target : Nat) (column : CatalogColumn) (refuses : Bool) :
     advance step (.addColumn target column refuses) parameters state = state.publish step ((state.statementRun (state.clock step) parameters (.addColumn target column refuses)).effect) := by
   simp [advance, advanceRun, advanceWith, SqlState.statementRun, runStatement]

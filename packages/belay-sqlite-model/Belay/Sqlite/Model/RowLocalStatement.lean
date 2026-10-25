@@ -38,7 +38,8 @@ error requires nothing. It has no condition on the connection, the support check
 Proof sketch: a case for each statement form; a write without rules is the theorem of its form
 from part 1, a write with rules is a write of the row engine ({name}`rowsKeys_rowLocal`,
 {name}`dropKeys_holds`), ADD COLUMN is {name}`runStatement_addColumn_rowLocal`, and a missing
-table keeps the database. -/
+table keeps the database.
+The ADD COLUMN premise covers either value of the refusal flag. -/
 theorem runStatement_rowLocal {atom : Table → Prop} (rowLocal : RowLocalAtom atom) (clock : Int)
     (counters : Counters) (parameters : List Value) (statement : Resolved.Statement) {database : Database}
     (every : database.EachTable atom)

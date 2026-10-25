@@ -73,7 +73,8 @@ theorem resolveCreateIndex_applyCatalog (context : ResolveContext) (catalog afte
 
 /-- For every successful resolution of ADD COLUMN, the catalog after it is
 {name}`Resolved.Statement.applyCatalog` of the resolved statement, which is not
-transaction control. Proof sketch: as for CREATE TABLE, with {name}`Catalog.addColumn`. -/
+transaction control. Proof sketch: as for CREATE TABLE, with {name}`Catalog.addColumn`.
+It holds for either value of {lit}`enforced`, which sets only the refusal field of an ADD COLUMN statement. -/
 theorem resolveAddColumn_applyCatalog (context : ResolveContext) (enforced : Bool) (catalog after : Catalog)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition) (statement : Resolved.Statement)
     (ok : resolveAddColumn context catalog enforced tableName definition = .ok (statement, after)) :

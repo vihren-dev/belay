@@ -176,7 +176,8 @@ theorem Database.KeysUnique.addColumn {database : Database} (unique : database.K
 {name}`Database.KeysUnique` and meets the condition of ADD COLUMN at the target
 ({name}`Database.AddColumnCondition`), the effect of {name}`runStatement` satisfies
 {name}`Effect.KeysUnique`. It assumes nothing about the support check. Proof sketch: every error
-keeps the database, and a success is {name}`Database.KeysUnique.addColumn`. -/
+keeps the database, and a success is {name}`Database.KeysUnique.addColumn`.
+It holds for either value of the flag {lit}`refuses`: a refused addition keeps the database. -/
 theorem runStatement_addColumn_keysUnique (clock : Int) (counters : Counters) (parameters : List Value) (target : Nat)
     (column : CatalogColumn) (refuses : Bool) {database : Database} (unique : database.KeysUnique)
     (condition : database.AddColumnCondition target) :

@@ -94,7 +94,8 @@ every added cell appended, the effect of {name}`runStatement` satisfies "every t
 {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. Proof
 sketch: every error keeps the database, and a success is
 {lit}`Database.addColumn` of an added cell ({name}`step_addColumn_cases`), which
-{name}`Database.EachTable.addColumn` handles. -/
+{name}`Database.EachTable.addColumn` handles.
+It holds for either value of the flag {lit}`refuses`: a refused addition keeps the database. -/
 theorem runStatement_addColumn_rowLocal {atom : Table → Prop} (clock : Int) (counters : Counters) (parameters : List Value)
     (target : Nat) (column : CatalogColumn) (refuses : Bool) {database : Database} (every : database.EachTable atom)
     (appended : ∀ table value, database.table target = some table → AddedCell table column value →
@@ -118,7 +119,8 @@ at the target are wide ({name}`Database.RowsWideAt`), the effect of {name}`runSt
 {name}`Database.NotNull` ({name}`Effect.Satisfies`): the database of a success and that of an error
 with {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. It assumes
 nothing about the other atoms or the support check. Proof sketch:
-{name}`runStatement_addColumn_rowLocal` with {name}`Table.NotNull.appendColumn`. -/
+{name}`runStatement_addColumn_rowLocal` with {name}`Table.NotNull.appendColumn`.
+It holds for either value of the flag {lit}`refuses`: a refused addition keeps the database. -/
 theorem runStatement_addColumn_notNull (clock : Int) (counters : Counters) (parameters : List Value) (target : Nat)
     (column : CatalogColumn) (refuses : Bool) {database : Database} (notNull : database.NotNull)
     (wide : database.RowsWideAt target) :
@@ -134,7 +136,8 @@ the target are wide ({name}`Database.RowsWideAt`), and the stored default fits t
 with {name}`ExecutionError.constraintFail` have it, and any other error requires nothing. It assumes
 nothing about the other
 atoms or the support check. Proof sketch: {name}`runStatement_addColumn_rowLocal` with
-{name}`Table.TypesFit.appendColumn`. -/
+{name}`Table.TypesFit.appendColumn`.
+It holds for either value of the flag {lit}`refuses`: a refused addition keeps the database. -/
 theorem runStatement_addColumn_typesFit (clock : Int) (counters : Counters) (parameters : List Value) (target : Nat)
     (column : CatalogColumn) (refuses : Bool) {database : Database} (fits : database.TypesFit)
     (wide : database.RowsWideAt target) (strict : database.StrictDefaultFitsAt target column) :
@@ -150,7 +153,8 @@ satisfies {name}`Database.ChecksHold` ({name}`Effect.Satisfies`): the database o
 of an error with {name}`ExecutionError.constraintFail` have it, and any other error requires
 nothing. It assumes nothing about
 the other atoms or the support check. Proof sketch: {name}`runStatement_addColumn_rowLocal` with
-{name}`Table.ChecksHold.appendColumn`. -/
+{name}`Table.ChecksHold.appendColumn`.
+It holds for either value of the flag {lit}`refuses`: a refused addition keeps the database. -/
 theorem runStatement_addColumn_checksHold (clock : Int) (counters : Counters) (parameters : List Value) (target : Nat)
     (column : CatalogColumn) (refuses : Bool) {database : Database} (holds : database.ChecksHold)
     (wide : database.RowsWideAt target) (reads : database.ChecksReadBelowAt target) :

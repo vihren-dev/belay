@@ -10,7 +10,8 @@ namespace Belay.Sqlite.Model
 
 /-- For every ADD COLUMN whose resolution is a prepare error that names a catalog
 object: the error is {lit}`no such table` for the statement's table, no table has the
-folded name, and the catalog is unchanged. -/
+folded name, and the catalog is unchanged.
+It holds for either value of {lit}`enforced`, which sets only the refusal field of an ADD COLUMN statement. -/
 theorem resolveAddColumn_named (context : ResolveContext) (enforced : Bool) (catalog after : Catalog)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition) (error : PrepareError)
     (named : ∀ cause, error ≠ .expression cause)
@@ -26,7 +27,8 @@ theorem resolveAddColumn_named (context : ResolveContext) (enforced : Bool) (cat
     | (simp_all; done)
 
 /-- For every ADD COLUMN: when no table has the folded name, the resolution is
-{lit}`no such table`, and the catalog is unchanged. -/
+{lit}`no such table`, and the catalog is unchanged.
+It holds for either value of {lit}`enforced`, which sets only the refusal field of an ADD COLUMN statement. -/
 theorem resolveAddColumn_missing (context : ResolveContext) (enforced : Bool) (catalog : Catalog)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition)
     (missing : catalog.findTable tableName = none) :
@@ -59,7 +61,8 @@ theorem findSome_parseError_ne_duplicate (column name : Identifier) (constraints
 /-- The duplicate-column rule of ADD COLUMN ({lit}`sqlite3AddColumn`): for every
 table that the folded name finds, whose name SQLite does not reserve and with fewer
 columns than the profile limit, the resolution is {lit}`duplicate column name` exactly
-when a column of the table has the folded name of the new column. -/
+when a column of the table has the folded name of the new column.
+It holds for either value of {lit}`enforced`, which sets only the refusal field of an ADD COLUMN statement. -/
 theorem resolveAddColumn_duplicate (context : ResolveContext) (enforced : Bool) (catalog : Catalog)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition) (position : Nat) (table : CatalogTable)
     (found : catalog.findTable tableName = some (position, table))

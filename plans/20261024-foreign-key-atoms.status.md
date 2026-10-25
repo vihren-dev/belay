@@ -3,8 +3,9 @@
 Created 2026-10-24. Status: OPEN. Part 1 (split API and accepted mapped-NULL/action
 corrections) is accepted. Part 2's row/action/trigger induction and conditional
 DML/run and CREATE/plain-DROP laws are integrated with the enforced-DROP proof unit.
-Their focused Nix gate passed; the new integration awaits independent review.
-ADD COLUMN, complete DDL/run conditions, the full matrix, part-2 acceptance and
+Their focused Nix gate passed; integration review `20261025T001914Z-dd60f94c` found no musts.
+The ADD COLUMN execution correction is implemented and Nix-checked. ADD COLUMN
+preservation laws, complete DDL/run conditions, the full matrix, part-2 acceptance and
 separate corpus-v54 evidence remain open.
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
@@ -15,12 +16,13 @@ REFERENCES defaults, including empty/nonempty tables, enforcement on/off and
 literal-NULL versus NULL-valued expression distinctions. ADR22 and the task are
 amended together. Native evidence is retained in the FK workspace's
 `build/agent-logs/add-reference-{native.json,model.log,default-spelling-native.json}`.
-The enforced-DROP unit is already checked/reviewed at `ffe4d749`; this new
-execution correction has no implementation or acceptance claim yet. The task
-amendment review `20261025T015343Z-fc22761c` found no musts and one R19 should:
-name the new correction in the acceptance-part list. The list now places it
-with the remaining DDL/run part. The amended task awaits final review before
-implementation resumes in an available slot.
+The enforced-DROP unit is checked and reviewed at `ffe4d749`. The execution
+correction is implemented in the commit "Refuse ADD COLUMN of a REFERENCES column with
+a non-NULL default on a populated table" (details in the section "ADD COLUMN execution
+correction (part 2, unit 1)" below); its focused Nix gates passed. The ADD COLUMN
+preservation laws, the unified DDL/run contract and the matrix remain open. The
+task-amendment review `20261025T015343Z-fc22761c` found no musts and one R19 should
+(name the correction in the acceptance-part list); that is done and is historical.
 
 Prior scope decision, 2026-10-24: the owner accepted selected action targets
 for CASCADE/SET NULL/SET DEFAULT and their assigned/changed-column effects.
@@ -879,5 +881,16 @@ refusal; the preservation laws for ADD COLUMN are the next unit.
     `/nix/store/j9qrv7kfy0xamakgqqxk5jal4cia2mdj-sqlite-verifier-test-surface-1`.
   - mutants `add_reference or foreign_key`: 2 passed,
     `/nix/store/0gp4p5q78rgz7h05w7mziqwqzxvbzfn8-sqlite-verifier-test-mutants-1`.
+- Review `20261025T063516Z-43e19791` found four musts (R5 catch-all patterns, R2 plain-words
+  statements without the refusal flag, R12 file length, R19 stale status summary). The refactor
+  commit fixes all four: `literalNullDefault` lists every constraint constructor, the ADD COLUMN
+  laws say that they hold for either value of the flag, `Execution.lean` is 199 lines, and the
+  summary above is corrected. The first Nix run of the refactor failed: replacing the final
+  `match` of `literalNullDefault` with `==` on `Syntax.Expr` stopped `decide` in the authored
+  cases from reducing (a `sorryAx` axiom report). The refactor keeps the pattern match there.
+  Nix results of the refactor (same focused groups): model 43 passed,
+  `/nix/store/5daqjw19jahx1l6h5qgvgfwlal1qnm3a-sqlite-verifier-test-model-1`; surface 19 passed,
+  `/nix/store/jdb7jnqy243n75d6m9q3gk76ywwnwh2v-sqlite-verifier-test-surface-1`; mutants 2 passed,
+  `/nix/store/fcbqflf4kaivva1wwj36visiy6m9j92z-sqlite-verifier-test-mutants-1`.
 - Remaining in part 2: ADD COLUMN preservation laws and fixtures, the unified DDL run contract,
   RESTRICT / SET DEFAULT / deferred coverage with the final matrix, then part-2 full and verdict.

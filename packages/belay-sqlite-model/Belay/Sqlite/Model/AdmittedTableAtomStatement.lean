@@ -34,7 +34,8 @@ covers every form of {name}`Resolved.Statement`. Proof sketch: a case for each f
 DELETE without rules, use the frame facts of the atom ({name}`runStatement_create_tableAtom`,
 {name}`runStatement_drop_rowLocal`, {name}`runStatement_delete_tableAtom`), a statement without writes keeps the
 database, ADD COLUMN is {name}`runStatement_addColumn_rowLocal`, and a write with rules is a write of the
-row engine ({name}`rowsKeys_satisfies`, {name}`dropKeys_holds`). -/
+row engine ({name}`rowsKeys_satisfies`, {name}`dropKeys_holds`).
+The ADD COLUMN premise covers either value of the refusal flag. -/
 theorem runStatement_tableAtom {atom : Table → Prop} (tableAtom : TableAtom atom)
     (laws : WriteLaws fun database => database.EachTable atom) (clock : Int)
     (counters : Counters) (parameters : List Value) (statement : Resolved.Statement) {database : Database}

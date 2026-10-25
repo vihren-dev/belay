@@ -46,22 +46,20 @@ inductive ExecutionError where
   /-- A JSON function of a query fails: SQLite's {lit}`malformed JSON` or
   {lit}`bad JSON path`, reported while the statement runs. -/
   | functionError
-  /-- ADD COLUMN would give existing rows NULL in a NOT NULL column. SQLite reports
-  this during execution with primary code 1; an empty table permits the addition. -/
+  /-- ADD COLUMN would give existing rows NULL in a NOT NULL column: primary code 1, while the
+  statement runs; an empty table permits the addition. -/
   | nullColumnDefault
   /-- ADD COLUMN with a time default ({lit}`CatalogColumn.clockDefault`) on a table with
   rows: SQLite's {lit}`Cannot add a column with non-constant default`, reported while the
   statement runs with primary code 1; an empty table permits the addition. -/
   | nonConstantColumnDefault
-  /-- ADD COLUMN whose CHECK constraint an existing row with the new column's default
-  fails: SQLite's {lit}`CHECK constraint failed`, reported while the statement runs with
-  primary code 1, not as a constraint error; an empty table permits the addition (ADR 0014,
-  slice 4). -/
+  /-- ADD COLUMN whose CHECK constraint an existing row with the new column's default fails:
+  SQLite's {lit}`CHECK constraint failed`, with primary code 1 while the statement runs, not as a
+  constraint error; an empty table permits the addition (ADR 0014, slice 4). -/
   | checkColumnDefault
-  /-- ADD COLUMN of a {lit}`REFERENCES` column whose written default is not a literal NULL, with
-  foreign keys on, on a table with rows: SQLite's {lit}`Cannot add a REFERENCES column with
-  non-NULL default value`, reported while the statement runs with primary code 1, even when a
-  parent row would match the default. An empty table permits the addition. -/
+  /-- ADD COLUMN of a {lit}`REFERENCES` column with a default other than a literal NULL, foreign
+  keys on, on a table with rows: SQLite's {lit}`Cannot add a REFERENCES column with non-NULL
+  default value`, with primary code 1, even when a parent row matches. An empty table permits it. -/
   | referenceColumnDefault
   deriving Repr, DecidableEq
 
@@ -126,22 +124,20 @@ def queryEffect (database : Database) : Option (Resolved.SourceRows × Resolved.
 
 /-- The effect of CREATE TABLE, ADD COLUMN, DROP, a query or a prepare error, without a position
 (ADR 0006): the database after it, or the error with the database that it keeps, the
-input database for every error here. SQLite refuses a statement with its prepare
-error. CREATE TABLE adds the table to the catalog ({name}`Catalog.createTable`) with no
-rows. ADD COLUMN reads the literal default and appends
-its affinity-applied value to each existing row. A statement that resolution marked
-{lit}`refusesPopulated` (foreign keys on, a {lit}`REFERENCES` column, a default that is not a literal
-NULL) fails first, on a table with rows, with {lean}`ExecutionError.referenceColumnDefault`;
-SQLite compiles that check before the others. A NOT NULL column with a NULL
-default fails with {lean}`ExecutionError.nullColumnDefault` when rows exist, one with
-a time default with {lean}`ExecutionError.nonConstantColumnDefault`, and one whose CHECK
-constraint an existing row with the default fails with
-{lean}`ExecutionError.checkColumnDefault`; an empty table succeeds. Unsupported default readback returns
-{lean}`ExecutionError.unmodeled` and is excluded by the support check.
+input database for every error here. SQLite refuses a statement with its prepare error. CREATE
+TABLE adds the table to the catalog ({name}`Catalog.createTable`) with no rows. ADD COLUMN reads
+the literal default and appends its affinity-applied value to each existing row. A statement that
+resolution marked {lit}`refusesPopulated` fails first on a table with
+rows, with {lean}`ExecutionError.referenceColumnDefault`, as SQLite compiles that check before the
+others. A NOT NULL column with a NULL default fails with {lean}`ExecutionError.nullColumnDefault`
+when rows exist, one with a time default with {lean}`ExecutionError.nonConstantColumnDefault`, and
+one whose CHECK constraint an existing row with the default fails with
+{lean}`ExecutionError.checkColumnDefault`; an empty table succeeds. Unsupported default readback
+returns {lean}`ExecutionError.unmodeled`, which the support check excludes.
 CREATE INDEX builds the index over the table's rows (ADR 0014, D1): a unique index whose
 key has two conflicting rows ({lit}`LiteralData.uniqueRows`) fails with
 {lean}`ExecutionError.constraintViolation` and keeps the catalog. CREATE TRIGGER adds the trigger
-to the catalog ({name}`Catalog.createTrigger`) with no rows.
+({name}`Catalog.createTrigger`) with no rows.
 DROP removes the objects at its positions with their rows ({name}`Database.drop`) and does
 not fail; the DELETE that DROP TABLE runs first when foreign keys reference the table is part of
 the statement's run ({lit}`runStatement`). A setting pragma ({lit}`PRAGMA setting = value`) changes nothing.

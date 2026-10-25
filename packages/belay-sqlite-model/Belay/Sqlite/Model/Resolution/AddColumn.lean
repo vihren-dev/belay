@@ -65,7 +65,7 @@ def literalNullDefault (definition : Syntax.ColumnDefinition) : Bool :=
   let written : Option Syntax.Expr := definition.constraints.reverse.findSome? fun constraint =>
     match constraint with
     | .default expression _ => some expression
-    | _ => none
+    | .notNull _ | .primaryKey .. | .unique _ | .collate _ | .check .. | .references .. | .generated .. | .deferral _ => none
   match written with
   | none | some .null | some (.positive .null) => true
   | some _ => false
