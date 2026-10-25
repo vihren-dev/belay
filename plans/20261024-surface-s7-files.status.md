@@ -184,3 +184,12 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   a deleted file, a deleted compiled module as an error, records reached through a
   dependency import, and a relocated tree that checks its own dependency file. The native
   `input_dir`/`needs` fixtures are next.
+- 2026-10-25: review `20261025T064316Z-54721ff5` of the checker found one must (a missing or
+  unreadable compiled module gave no corrective action) and one should (test docstrings did
+  not name the checked definitions); both fixed. These errors now name the library and the
+  command: `lake build L` for a missing module, and deleting the damaged build files and
+  `lake build L` for an unreadable one. Unknown package records also say what to change.
+  `just dev-build` does not build the `belay-sql-check` executable, so the Nix surface
+  derivation found a parse error that dev-build did not; run `lake build belay-sql-check`
+  after edits of `BelaySqlCheck.lean`. Focused Nix surface run (16 passed, 98 deselected,
+  38.29 s) at `/nix/store/0r8zvgcv5mfh5q3y1dy893xh04cy4m8m-sqlite-verifier-test-surface-1`.

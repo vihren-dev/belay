@@ -31,6 +31,8 @@ private def inToolchain (module : Name) : Bool :=
 
 /-- What the walk over a library's compiled modules found. -/
 private structure Walk where
+  /-- The library whose modules are read, for the messages. -/
+  library : String
   /-- The names of the modules read so far. -/
   seen : NameSet := {}
   /-- Every record of those modules, in read order. -/
@@ -50,14 +52,16 @@ private partial def walkModule (workspace : Workspace) (module : Name) (walk : W
       | some found => pure found.oleanFile
       | none => findOLean module
     unless ← file.pathExists do
-      return { walk with problems := walk.problems.push s!"module {module} has no compiled file {file}" }
+      let problem := s!"library {walk.library}: module {module} has no compiled file {file}; run lake build {walk.library} to compile it"
+      return { walk with problems := walk.problems.push problem }
     let (data, _) ← readModuleData file
     let mut walk := { walk with uses := walk.uses ++ storedUses data }
     for import_ in data.imports do
       walk ← walkModule workspace import_.module walk
     return walk
   catch error =>
-    return { walk with problems := walk.problems.push s!"cannot read the compiled module {module}: {error}" }
+    let problem := s!"library {walk.library}: cannot read the compiled module {module}: {error}; delete its files in the build folder and run lake build {walk.library}"
+    return { walk with problems := walk.problems.push problem }
 
 /-- The packages of the workspace that have this original name, which is the package identity stored
 in the records. -/
@@ -65,21 +69,22 @@ private def packagesNamed (workspace : Workspace) (name : String) : Array Packag
   workspace.packages.filter (·.origName.toString (escape := false) == name)
 
 /-- Compare the records of one distinct source with its file in the owning package. -/
-private def checkSource (workspace : Workspace) (uses : Array SqlSourceUse) (use : SqlSourceUse) :
-    IO (Except String CheckedSource) := do
+private def checkSource (workspace : Workspace) (library : String) (uses : Array SqlSourceUse)
+    (use : SqlSourceUse) : IO (Except String CheckedSource) := do
   let declarations := uses.filterMap fun other => if other.sameSource use then other.declaration else none
   match packagesNamed workspace use.package with
   | #[package] =>
     let file := package.dir / use.path
     let current ← if ← file.pathExists then some <$> sqlTextHash <$> IO.FS.readFile file else pure none
     return .ok { package := use.package, path := use.path, state := sourceState use.hash current, declarations }
-  | #[] => return .error s!"a record names package {use.package}, which is not in this workspace"
-  | _ => return .error s!"a record names package {use.package}, which several packages of this workspace have"
+  | #[] => return .error s!"library {library}: a record names package {use.package}, which is not in this workspace; require that package in the lakefile again, or run lake build {library} after removing the form that read {use.path}"
+  | _ => return .error s!"library {library}: a record names package {use.package}, which several packages of this workspace have; give the packages different names"
 
 /-- Check one library: read its compiled modules, then compare each distinct source with its file. -/
 private def checkLibrary (workspace : Workspace) (library : LeanLib) : IO (LibraryCheck × Array String) := do
   let modules ← library.getModuleArray
-  let mut walk : Walk := {}
+  let name := library.name.toString (escape := false)
+  let mut walk : Walk := { library := name }
   for module in modules do
     walk ← walkModule workspace module.name walk
   let mut sources := #[]
@@ -88,10 +93,10 @@ private def checkLibrary (workspace : Workspace) (library : LeanLib) : IO (Libra
   for use in walk.uses do
     unless distinct.any use.sameSource do distinct := distinct.push use
   for use in distinct do
-    match ← checkSource workspace walk.uses use with
+    match ← checkSource workspace name walk.uses use with
     | .ok source => sources := sources.push source
     | .error problem => problems := problems.push problem
-  return ({ library := library.name.toString (escape := false), modules := modules.size, sources }, problems)
+  return ({ library := name, modules := modules.size, sources }, problems)
 
 /-- The Lake environment of the running toolchain. -/
 private def lakeEnvironment : IO Lake.Env := do

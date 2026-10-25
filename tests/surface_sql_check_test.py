@@ -50,8 +50,9 @@ def lines(result: CommandResult) -> list[str]:
 
 
 def test_totals_by_library_and_the_selector(runtime_root: Path, tmp_path: Path) -> None:
-    """`BelaySqlCheck` reports each library's distinct sources: two uses of one file count once, a library without
-    SQL reports zero, and `--library` selects one library or refuses an unknown name."""
+    """`checkLibrary` and `selectLibraries` (`BelaySqlCheck.lean`) report each library's distinct sources: two uses of
+    one file count once, a library without SQL reports zero, and `--library` selects one library or refuses an
+    unknown name."""
     installed, package = make_consumer(runtime_root, tmp_path)
     build_all(installed, package)
     result = run_checker(installed, package)
@@ -66,8 +67,9 @@ def test_totals_by_library_and_the_selector(runtime_root: Path, tmp_path: Path) 
 
 
 def test_a_stale_source_is_reported_before_any_rebuild(runtime_root: Path, tmp_path: Path) -> None:
-    """An SQL edit without a Lean edit gives a nonzero result that names the package, path, declarations and the
-    rebuild command; the check changes no artifact; a line-ending-only edit stays fresh; a rebuild restores success."""
+    """`checkSource` (`BelaySqlCheck.lean`) and `LibraryCheck.render` (`SqlCheckReport.lean`): an SQL edit without a
+    Lean edit gives a nonzero result that names the package, path, declarations and the rebuild command; the check
+    changes no artifact; a line-ending-only edit stays fresh; a rebuild restores success."""
     installed, package = make_consumer(runtime_root, tmp_path)
     build_all(installed, package)
     before = modification_times(package)
@@ -86,8 +88,9 @@ def test_a_stale_source_is_reported_before_any_rebuild(runtime_root: Path, tmp_p
 
 
 def test_missing_files_and_missing_compiled_modules(runtime_root: Path, tmp_path: Path) -> None:
-    """A deleted SQL file is a stale source; a library whose compiled module is gone is an explicit error and not
-    a report of zero sources."""
+    """`sourceState` and `walkModule` (`SqlCheckReport.lean`, `BelaySqlCheck.lean`): a deleted SQL file is a stale
+    source; a library whose compiled module is gone is an explicit error with the build command, and not a report
+    of zero sources."""
     installed, package = make_consumer(runtime_root, tmp_path)
     build_all(installed, package)
     (package / "sql/b.sql").unlink()
@@ -96,12 +99,13 @@ def test_missing_files_and_missing_compiled_modules(runtime_root: Path, tmp_path
     for artifact in (package / ".lake/build/lib/lean").glob("Alpha.*"):
         artifact.unlink()
     result = run_checker(installed, package, "--library", "Alpha")
-    assert result.returncode == 2 and "module Alpha has no compiled file" in result.stderr, result.diagnostic()
+    assert result.returncode == 2 and "library Alpha: module Alpha has no compiled file" in result.stderr and "run lake build Alpha to compile it" in result.stderr, result.diagnostic()
 
 
 def test_dependency_records_are_checked_against_the_dependency_files(runtime_root: Path, tmp_path: Path) -> None:
-    """Records reached through an import map to the dependency package's own files, also after the whole tree
-    moved, and an edit there is stale in the library that imports it."""
+    """`walkModule` and `packagesNamed` (`BelaySqlCheck.lean`): records reached through an import map to the
+    dependency package's own files, also after the whole tree moved, and an edit there is stale in the library that
+    imports it."""
     installed = installed_layout(runtime_root, tmp_path)
     dependency = tmp_path / "dependency"
     write_package(dependency, "SqlDependency", installed)
