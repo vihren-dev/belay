@@ -197,3 +197,6 @@ The shared budget includes discovery, all statements in one command, and checkin
 the offered text. Use a larger budget for a mutual block. Cancellation and resource
 exhaustion leave the claim unknown; background diagnostic latency is separate from
 ordinary proof elaboration.
+An edit to an earlier command cancels a running check. An edit to the checked
+command itself discards the result of the old check, which ends within
+`sql.checkBudget`.
