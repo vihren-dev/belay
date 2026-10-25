@@ -39,8 +39,9 @@ never invokes the production parser or translator.
 
 This is a single-main-database profile. Attached and temporary schemas are
 explicit excluded connection contexts, not silently missing observations.
-Absent application callbacks are acquisition failures, except a view that calls a function that
-is not defined: SQLite reports an SQL error when the view is read, and the entry below records it.
+Absent application callbacks are acquisition failures, except a view that names a callback that
+is not defined, such as a function or a collation: SQLite reports an SQL error when the view is read, and
+the entry below records it.
 
 A view that SQLite cannot read is evidence, not a failure. `CREATE VIEW` over a missing table
 or a cycle succeeds, and reading the view fails at preparation. The snapshot then holds the

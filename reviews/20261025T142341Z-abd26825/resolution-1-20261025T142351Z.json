@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T14:23:51+00:00",
+  "finding": "20261025T142341Z-abd26825#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "The text now covers any missing callback of a view body, such as a function or a collation"
+}
