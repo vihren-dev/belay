@@ -12,8 +12,7 @@ and ADR17 now retain automatic discovery with source-relative
 does not change persistent package/path identity or bypass the freshness
 checker. The existing same-name nested-package probe supplies the observed
 ambiguity; the amendment adds end-to-end override and relocation acceptance.
-Review is pending. The S7 workspace's first unit remains at rest; no override
-implementation or acceptance is claimed by this decision record.
+The first source unit below implements the override.
 
 The 2026-10-24 owner decision keeps exact SQLite result-column metadata and
 native Lake tracking, and corrects the guide's blanket importer-rebuild claim.
@@ -69,3 +68,24 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   evidence. The owner accepted the proposed source-relative root option and
   explicit-root reader on 2026-10-25 (decision above). First-unit source
   commit/review was pending that decision and the reviewer OAuth login failure.
+- 2026-10-25: first source unit (reader, external-source diagnostics, file parameter
+  mode, package-root override) merged the accepted decision `320ae77f` into this line
+  by a new merge commit. Planning-line text won where the task/ADR was newer there;
+  this line's text won where its recorded progress was newer (add/add status files).
+  `SqlFileSource` now has `readSqlFileSourceAtRoot` (explicit root; rejects absolute
+  and `..` paths and non-directory roots) beneath `readSqlFileSource`. The new
+  `SqlFileLoad` registers `belay.sql.packageRoot` (empty = discovery; relative root is
+  anchored at the Lean source's directory; absolute, missing and non-directory roots are
+  errors naming the option) and `loadSqlFileSource`. Ambiguous or missing discovery now
+  names the option. Records keep only package and relative path. Shared fixture helpers
+  moved to `tests/sql_file_support.py`.
+  Focused Nix surface run 3 (28 passed, 72 deselected, 32.18 seconds) at
+  `/nix/store/cqjd5fgjf5njplqnvmalndv962q5zkf1-sqlite-verifier-test-surface-1`
+  covers the 20 earlier parameter, replay, diagnostic and layer cases, the owning-package
+  consumer, the explicit-root primitive, option anchoring from another working
+  directory, three invalid roots, and two valid nested projects of one package name:
+  discovery reports the ambiguity, `..` and `.` select either SQL file, an editor-style
+  compile from another directory works, and a relocated copy builds. Earlier runs failed
+  only on a fixture import (`build/agent-logs/s7-unit1-nix-surface-1.log`). The local
+  dev-build passed (diagnostic). Public syntax, sections, registry and checker, and the
+  full/verdict gates, have not run.
