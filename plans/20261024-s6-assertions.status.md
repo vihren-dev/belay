@@ -436,3 +436,34 @@ Guide change to make (not edited): the paragraph about `before` says the library
 in the precondition"; for a fresh run the claim `program ensuresFrom start => post` captures the
 start, and an ordinary triple cannot name it. A `holds` that names `before` is a compile error, and
 the two-state assertion is `holdsSince start`.
+
+### Part 1b unit 3: model laws for the purge frame
+
+Model package (all new files, imported from `Model.lean` and listed in the lakefile globs; the before-context
+files and the S4 files are not edited):
+
+- `PlainDeleteEffect.lean`: `plainDelete_database` (a resolved plain delete that continues without an error
+  stores `setRows target (LiteralData.deleted ...).rows`), and the choice-free laws
+  `Output.ofStep_delete_ne_oneOf`, `runScriptStep_delete_ne_oneOf`.
+- `RowwiseExpr.lean`: `Expr.Rowwise` (columns, literals, parameters, comparisons, AND/OR/NOT, IS NULL), with
+  `evaluate_congr` (the subqueries, clock and counters of a context do not matter), `fault_none`, `calm`, and the
+  NULL-aware complement law `Expr.truthy_isNot_one_and`: a row with `(l AND r) IS NOT 1` true is not selected by
+  `l AND r`, for NULL and text values too.
+- `ExceptSubqueryRun.lean`: source rows of the two kinds of term (current table, `before` table), the run of
+  a simple subquery over the optional initial database (`Query.subqueryRun_simple_from`/`_fields`), and
+  `Query.PlainExcept`, the shape of `q1 EXCEPT q2` with its rows and no fault.
+- `ExceptCombineLaws.lean`: `except_combine_eq_nil` (left rows all in right rows give no row).
+- `TwoStateQuerySteps.lean`: the output of a calm query statement observed with an initial database has rows when
+  the run is clean and the result is not empty (copies of the S4 laws that take `some initial`).
+- `TwoStateNotExistsExcept.lean` and `TwoStateNotExistsExceptOutput.lean`: the statement
+  `Resolved.notExistsExcept` (`SELECT 1 WHERE NOT EXISTS (compound)`, terms 1 and 2) and
+  `resolvedStepOutput_notExistsExcept_hasRows`: observed with the initial database it has rows when every row of
+  the first term (initial table, condition) is a row of the second term (current table) and the rows of the first
+  term are identical where they compare equal.
+- `TwoStateKeptRows.lean`: the membership laws of the two terms, `notExistsExcept_subset` (a row with a
+  condition that excludes it from the delete filter survives the delete) and `notExistsExcept_identical` (the
+  first column is the rowid alias, so equal keys are one row).
+
+Belay package: `Sql.ifOk_send_plainDelete` (`PlainDeleteEffect.lean`, the mirror of `Sql.ifOk_send_plainInsert`)
+and `FreshEnsuresFrom.ifOk_iff` (in `TwoStateAssertions.lean`). Nix verification: pending until the Part 1b end
+gates.

@@ -68,6 +68,7 @@ import Belay.Sqlite.FreshNotation
 import Belay.Sqlite.FreshFromNotation
 import Belay.Sqlite.ClaimExplanation
 import Belay.Sqlite.PlainInsertEffect
+import Belay.Sqlite.PlainDeleteEffect
 import Belay.Sqlite.SingleStatementChecks
 import Belay.Sqlite.SendSuccessIfOk
 import Belay.Sqlite.MigrationExplainCommand

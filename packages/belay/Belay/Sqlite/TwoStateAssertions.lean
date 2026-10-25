@@ -133,4 +133,16 @@ theorem FreshEnsuresFrom.iff_ensures {α : Type} (program : Sql α) (pre : Datab
     (post : PostCond α (.arg ExecutionContext .pure)) :
     FreshEnsuresFrom program pre (fun _ => post) ↔ FreshEnsures program pre post := Iff.rfl
 
+/-- For every program, precondition and assertion on the start, the fresh-run claim with {name}`ifOk` of that
+assertion holds exactly when {name}`Sql.ifOk` holds at the initial context of every admitted database that satisfies
+the precondition and every complete environment, for the assertion with that database as the start. In plain words:
+the claim requires the assertion, with the captured start, whenever no modeled SQL error occurs. Proof sketch: both
+sides unfold to the same check. -/
+theorem FreshEnsuresFrom.ifOk_iff {α : Type} (program : Sql α) (pre : Database → Prop)
+    (post : Database → ContextAssertion) :
+    FreshEnsuresFrom program pre (fun start => ifOk (post start)) ↔
+      ∀ db, pre db → ∀ env : Env, env.Complete →
+        program.ifOk (fun _ final => (post db final).down) (ExecutionContext.initial db env) :=
+  Iff.rfl
+
 end Belay.Sqlite

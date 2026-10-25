@@ -293,6 +293,14 @@ import Belay.Sqlite.Model.ForeignKeyPragmaQuery
 import Belay.Sqlite.Model.ForeignKeyStatementCheck
 import Belay.Sqlite.Model.PartialUniqueCount
 import Belay.Sqlite.Model.PlainInsertEffect
+import Belay.Sqlite.Model.PlainDeleteEffect
+import Belay.Sqlite.Model.RowwiseExpr
+import Belay.Sqlite.Model.ExceptSubqueryRun
+import Belay.Sqlite.Model.TwoStateQuerySteps
+import Belay.Sqlite.Model.ExceptCombineLaws
+import Belay.Sqlite.Model.TwoStateNotExistsExcept
+import Belay.Sqlite.Model.TwoStateNotExistsExceptOutput
+import Belay.Sqlite.Model.TwoStateKeptRows
 import Belay.Sqlite.Model.PlainInsertRows
 import Belay.Sqlite.Model.SelectStepKeeps
 
