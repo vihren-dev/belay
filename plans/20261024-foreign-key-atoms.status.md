@@ -1318,3 +1318,27 @@ Nix gates on the tree of `74cd2378`:
 - `just test-full`: pass, `/nix/store/kqlz0s21a43rn4qd67bqdd7808b70v43-sqlite-verifier-test-reports`. The first run hit the 1500 s `suite_build_limit` (exit 124, no failed test; log `build/agent-logs/a-test-full-timeout1.log`). The one allowed rerun passed. The limit was not changed.
 - `just verdict`: pass, `/nix/store/y90zwjkgq92q8hvwryxpcsr7brh350ma-sqlite-verifier-verdict`. No corpus has a result other than AGREE or MODEL_UNSUPPORTED; corpus-v53 is 158 AGREE and 20 MODEL_UNSUPPORTED.
 - Predictions: `/nix/store/j2dg6jq8z4bxvkxcxb0fffydzqxldw36-sqlite-verifier-predictions` (54 files). Compared with the v53 predictions `/nix/store/cdglbidddydm09iw1i5hc7bdl2m51b0f-sqlite-verifier-predictions`: byte-identical (`diff -r`). The foreign-key work changes no prediction record.
+
+## Integration of the corpus-v54 judge change above the integrated work (2026-10-25)
+
+Merge `rvlxmspt` / `b1952587`, "integrate: corpus-v54 judge change above the integrated foreign-key work": parents `2afd5b88` (the foreign-key work above the v53 judge PR #260, with its Nix status) and `588d9bc7` (the corpus-v54 judge stack). No rebase.
+
+Conflicts and resolutions:
+
+- `judge/claims.json`: the v54 entry `corpus-v54` (50 names under `mustAgree`) was inserted unchanged into the v53 file. Per-key three-way check: no other entry differs from the v53 side.
+- `tests/conformance_query_coverage_test.py`: the v53 line split the coverage tests into two files. The v53 file was kept. The v54 additions (docstring clause, import, case-set entry, version 6 records for `authored_foreign_key_atoms`) now live in `tests/conformance_feature_coverage_test.py` and `tests/coverage_case_support.py`.
+- `plans/20261024-foreign-key-atoms.status.md`: both appended sections were kept (the v54 follow-up sections first, then the integration sections).
+- `integrity/judge.lock.json`: regenerated with `just judge-lock` on top of the v53 lock. Against the v53 lock the only changes are the new entry `corpus corpus-v54` (`/nix/store/jgb631s8nhzn26cy04m8mkfi89vxgnl0-source`, the same as in the judge stack) and the new `judge` source (`/nix/store/lssknwdnvy2acv4v1svfmjdsbvc6i2mw-source`).
+- Apart from the lock, the v54 corpus, its writer and the claim are as in `588d9bc7`.
+
+Review: `reviews/20261025T153952Z-28957fc9` had one should (the status named the old coverage test file). It is fixed.
+
+Nix gates on the tree of `b1952587` (the status-only follow-up changes no source). The first `just test-full` run hit the 1500 s `suite_build_limit` with no failed test (exit 124). One rerun passed. The timed-out log was kept (`build/agent-logs/b-test-full-timeout1.log`). The limit was not changed. The other gates passed on the first run.
+
+- `just test-full`: pass, `/nix/store/x1li1vlx0sklcyjb9kgq26ifibpbaih6-sqlite-verifier-test-reports`.
+- `just verdict`: pass, `/nix/store/a6nvwbx7sb8lx6fwjpr28g512dx1awxz-sqlite-verifier-verdict`. `corpus-v54` is `{"AGREE": 50}`; `corpus-v53` is 158 AGREE and 20 MODEL_UNSUPPORTED.
+- Predictions: `/nix/store/2c56akphxc884accaa9piqwgyhg3bpbq-sqlite-verifier-predictions` (55 files). Against the v53 predictions `/nix/store/cdglbidddydm09iw1i5hc7bdl2m51b0f-sqlite-verifier-predictions` the 54 earlier files are byte-identical; the only new file is `corpus-v54.jsonl`, which equals the file of the judge stack (`/nix/store/nywilcisvsmpsggvmxgbwk9iy836vfqp-sqlite-verifier-predictions`).
+- `just test-nix`: 71 passed.
+- `just test-scheduled-checks`: exit 0, `/nix/store/3i7hzkw8i92k129kab7kjr8rhabbzlfb-sqlite-verifier-scheduled-check-reports`.
+
+The task stays OPEN until the owner approves the judge change (the lock) and it is merged.
