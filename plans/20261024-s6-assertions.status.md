@@ -363,3 +363,13 @@ the start of the SQL. Nix verification of these cases: pending until the Part 2 
 - `0b0b11fa`: surface imports only the model root; review 20261025T121135Z-0b0b11fa has no
   findings. The 1500 s limit of the Nix test build in `just test-full` is the one that stopped the
   second attempt (exit 124); the gate script itself has a 5400 s limit.
+
+### Part 2 end gates (Nix), 2026-10-25
+
+- `just test-full` after the last code commit `0b0b11fa`: exit 0, output
+  `/nix/store/kizql489kqgq96z8jqcwvlxzhqwjn0m3-sqlite-verifier-test-reports`. Source checks: 472
+  passed, 71 deselected. Surface suite: 119 passed in 375 s; `test_added_customer_claim_over_every_database`
+  took 45 s inside the 300 s limit. Log: `build/agent-logs/s6p2-test-full.log`. Failed first and second
+  attempts are kept as `s6p2-test-full-attempt2.log` (and the root-import failure text is quoted above).
+- `just verdict`: exit 0, output `/nix/store/qnmdrk5m8lf4zlxf9776bl5r3d2h35n5-sqlite-verifier-verdict`.
+- Not run (task end): `just test-nix`, `just test-scheduled-checks`.
