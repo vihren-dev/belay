@@ -104,10 +104,18 @@ def foreign_key_rows(keys: list[Json]) -> list[list[Json]]:
     return rows
 
 
+def unreadable_record(unreadable: dict[str, Json]) -> dict[str, Json]:
+    """A view that SQLite cannot read, as a recording keeps it. The model knows the code of the
+    failure but not the text of SQLite's message, which only explains the code."""
+    return {"name": unreadable["name"], "kind": "view", "unreadable": {"primaryCode": unreadable["primaryCode"]}}
+
+
 def table_record(predicted: dict[str, Json]) -> dict[str, Json]:
     """One model table in the recorded table form. A row's identity is its rowid, or its
     primary-key cells in a `WITHOUT ROWID` table. A view uses every result cell
     as its identity, including duplicates, as the recorder writes it."""
+    if "unreadable" in predicted:
+        return unreadable_record(predicted["unreadable"])
     table = predicted["table"]
     kind = str(predicted.get("kind", "table"))
     primary = [int(key) for key in table["primaryKey"]]

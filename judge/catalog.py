@@ -55,11 +55,23 @@ def index_form(index: dict[str, Json]) -> list[Json]:
             integer(unique), integer(partial), keys]
 
 
+def unreadable_form(table: dict[str, Json]) -> dict[str, Json]:
+    """A view that SQLite cannot read, such as one over a missing table, in a cycle or with a
+    failing body. Only its primary result code is compared; the recorded message explains the
+    code to a reader and is no part of the form."""
+    unreadable = table["unreadable"]
+    if table["kind"] != "view" or not isinstance(unreadable, dict) or type(unreadable.get("primaryCode")) is not int:
+        raise ValueError("an unreadable object must be a view with an integer primaryCode")
+    return {"kind": "view", "unreadable": unreadable["primaryCode"]}
+
+
 def table_form(table: dict[str, Json]) -> dict[str, Json]:
     """One table in the comparison form, with rows sorted by their identity.
 
     A row's identity is its row id, or its primary-key cells in a WITHOUT ROWID table.
     """
+    if "unreadable" in table:
+        return unreadable_form(table)
     rows = [[[checked_cell(cell) for cell in row["identity"]], [checked_cell(cell) for cell in row["values"]]]
             for row in table["rows"]]
     return {"kind": table["kind"], "withoutRowid": table["withoutRowid"],

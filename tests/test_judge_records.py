@@ -73,6 +73,21 @@ def test_subject_input_holds_the_clock_of_each_statement(tmp_path: Path) -> None
 
 
 @pytest.mark.unit
+def test_subject_input_holds_the_clock_of_the_setup(tmp_path: Path) -> None:
+    """`subject_input`: a record of a controlled clock also gives the subject the clock that the setup
+    saw, because a view created by the schema reads it when the first snapshot is taken. This is
+    an input, not an observation, and a record without the clock gives none."""
+    record = stored("setup-clock")
+    record["trace"][0]["clockUnixMilliseconds"] = 1735689600000
+    record["setupClockUnixMilliseconds"] = 1700000000000
+    shard(tmp_path / "shards/a.jsonl.gz", [record, stored("plain")])
+    (tmp_path / "manifest.json").write_text(json.dumps({"shards": [{"path": "shards/a.jsonl.gz"}]}))
+    clocked, plain = (subject_input(item) for item in corpus_records(tmp_path))
+    assert clocked["setupClockUnixMilliseconds"] == 1700000000000
+    assert "setupClockUnixMilliseconds" not in plain
+
+
+@pytest.mark.unit
 def test_a_line_that_is_not_a_record_names_its_place(tmp_path: Path) -> None:
     """`corpus_records`: a malformed line is refused with its file and line number."""
     shard(tmp_path / "cases.jsonl.gz", [])

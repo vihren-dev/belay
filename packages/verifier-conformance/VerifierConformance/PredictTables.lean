@@ -51,18 +51,29 @@ def predictedTable (catalog : Catalog) (position : Nat) (table : Table) : Option
     (if collations.isEmpty then [] else [("collations", toJson collations)]) ++
     (if foreignKeys.isEmpty then [] else [("foreignKeys", toJson foreignKeys)]))
 
+/-- A view that SQLite cannot read, with the primary result code of its failure
+({name}`ViewObservationIssue.failureCode`). A recording keeps such a view with that code and
+its message, and the judge compares the code. -/
+def unreadableViewJson (name : Identifier) (code : Nat) : Json :=
+  Json.mkObj [("kind", toJson "view"),
+    ("unreadable", Json.mkObj [("name", toJson name), ("primaryCode", toJson code)])]
+
 /-- All observable catalog tables and views, in catalog order. A view has no stored rows;
-its native rows and metadata come from {name}`observeView`. An unreadable or unmodeled
-view stops this observation explicitly instead of supplying an empty table. -/
+its native rows and metadata come from {name}`observeView`. A view that fails as SQLite
+reports it is an unreadable view ({name}`unreadableViewJson`); an unmodeled view stops this
+observation explicitly instead of supplying an empty table. -/
 def predictedTables (profile : Profile) (clock : Option Int) (counters : Counters)
     (database : Database) : Except ViewObservationIssue Json := do
   let tables ← database.catalog.zipIdx.filterMapM fun (object, position) =>
     match object.entry with
     | .table _ => pure ((database.table position).bind (predictedTable database.catalog position))
-    | .view _ => do
-      let view ← (observeView profile clock counters database object.name).mapError (.named object.name)
-      pure (some (Json.mkObj [("table", toJson view), ("kind", toJson "view"),
-        ("rowidPrimaryKey", toJson false), ("primaryKeyDescending", toJson false)]))
+    | .view _ =>
+      match observeView profile clock counters database object.name with
+      | .ok view => pure (some (Json.mkObj [("table", toJson view), ("kind", toJson "view"),
+          ("rowidPrimaryKey", toJson false), ("primaryKeyDescending", toJson false)]))
+      | .error issue => match issue.failureCode with
+        | some code => pure (some (unreadableViewJson object.name code))
+        | none => throw (.named object.name issue)
     | .index _ | .trigger _ => pure none
   pure (toJson tables)
 
@@ -80,13 +91,14 @@ def stepJson (profile : Profile) (clock : Option Int) (counters : Counters)
     ("phase", toJson (errorPhase observation.error)),
     ("primaryCode", toJson (primaryCode observation.error))])
 
-/-- Observe a pass with its aligned writer counters. The initial clock is unavailable
-in the subject-input format; each later snapshot uses the clock of its statement.
-Missing clock and counter inputs stay unknown. -/
-def predictionSteps (profile : Profile) (clocks : List Int) (counters : List Counters)
-    (observations : List Observation) : Except ViewObservationIssue (List Json) :=
+/-- Observe a pass with its aligned writer counters. The initial snapshot uses the clock of the
+setup and each later snapshot the clock of its statement. Missing clock and counter inputs
+stay unknown. -/
+def predictionSteps (profile : Profile) (setupClock : Option Int) (clocks : List Int)
+    (counters : List Counters) (observations : List Observation) :
+    Except ViewObservationIssue (List Json) :=
   observations.zipIdx.mapM fun (observation, index) =>
-    stepJson profile (if index == 0 then none else clocks[index - 1]?)
+    stepJson profile (if index == 0 then setupClock else clocks[index - 1]?)
       (counters.getD index {}) observation
 
 /-- The text " in view NAME" for an error message, or nothing without a view. -/
@@ -98,9 +110,10 @@ def viewSuffix : Option Identifier → String
 def repairAdvice : String := "Change the view or drop it, so that the statement can read it."
 
 /-- Report an unavailable observation of the view {lit}`view`, if known. A model restriction or
-unmodeled output is out of scope; an SQL preparation/execution error is a failed observation,
-never an empty snapshot or a model restriction. Such a failure also prevents the native recorder
-from recording a snapshot. Each error text names the view and says how to repair it. -/
+unmodeled output is out of scope. An SQL preparation or execution error normally becomes an
+unreadable view ({name}`unreadableViewJson`) before it reaches this report; the error text
+remains for an issue that arrives without that conversion, and is never an empty snapshot or a
+model restriction. Each error text names the view and says how to repair it. -/
 def observationIssueAt (view : Option Identifier) : ViewObservationIssue → Json
   | .named name issue => observationIssueAt (some name) issue
   | .resolution (.value (.restriction _ kind)) =>

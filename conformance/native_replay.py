@@ -66,9 +66,9 @@ def native_tables(observation: dict[str, Json]) -> list[Json]:
     their cells in key order."""
     result: list[Json] = []
     for item in observation["tables"]:
-        without_rowid = bool(item["withoutRowid"])
         if item["kind"] == "view":
             raise ObservedView(f"view {item['name']} is not a table")
+        without_rowid = bool(item["withoutRowid"])
         if item["kind"] != "table":
             raise ValueError("Unexpected row identity in an observed table")
         if not without_rowid and item["rowKey"] not in [["rowid"], ["_rowid_"], ["oid"]]:

@@ -30,6 +30,9 @@ structure PredictInput where
   /-- The clock value of each statement, in SQLite's Julian-day milliseconds, as the judge
   supplies it; empty when the judge supplies none. -/
   clocks : List Int
+  /-- The clock of the setup in Julian-day milliseconds, which the first snapshot uses; none when
+  the judge supplies none, so that a view that reads the clock stays unmodeled there. -/
+  setupClock : Option Int
   /-- The values bound to the parameters of each executed statement, as the judge supplies
   them; empty when the judge supplies none, so that each statement binds no values. -/
   parameters : List (List Value)
@@ -81,7 +84,7 @@ def predictHalting (p : PredictInput) : Json :=
     let start : SqlState := { database := databaseOf resolution.startCatalog (p.initial.map NamedRows.native),
                               clock := scriptClock clock resolution.resolved, counters := p.counters.getD {} }
     let pass := passFrom 0 (bindValues resolution.resolved p.parameters) start
-    let steps := predictionSteps p.profile p.clocks pass.counters pass.observations
+    let steps := predictionSteps p.profile p.setupClock p.clocks pass.counters pass.observations
     let supported := !(p.clocks.isEmpty && scriptReadsClock resolution.resolved) &&
       pass.supported && !pass.observations.any invalidObservation
     match steps with
@@ -103,7 +106,7 @@ def predictRun (p : PredictInput) : Json :=
       (bindValues p.script p.parameters)
     let observations := observeState connection.state :: pass.observations
     let supported := pass.supported && !observations.any invalidObservation
-    match predictionSteps p.profile p.clocks (connection.state.counters :: pass.counters) observations with
+    match predictionSteps p.profile p.setupClock p.clocks (connection.state.counters :: pass.counters) observations with
     | .error issue => observationIssueJson issue
     | .ok steps =>
       Json.mkObj [("supported", toJson supported), ("steps", toJson steps), ("outputs", toJson pass.outputs)]
