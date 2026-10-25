@@ -42,6 +42,18 @@ class AuthoredCorpus:
     native_version: int = NATIVE_VERSION
     """The record version of each record: 6 for records of the recorder that runs on after an
     error (`record_sql` with `run_on`)."""
+    more_definitions: tuple[Path, ...] = ()
+    """Further modules that define cases of a corpus joined from several modules; their bytes
+    follow those of `definitions` in the hash of the manifest."""
+
+
+def definitions_digest(corpus: AuthoredCorpus) -> str:
+    """The SHA-256 of the definition module and of any further modules, in order; a corpus of one
+    module keeps the digest of that module's bytes."""
+    digest = hashlib.sha256()
+    for path in (corpus.definitions, *corpus.more_definitions):
+        digest.update(path.read_bytes())
+    return digest.hexdigest()
 
 
 def publish(corpus: AuthoredCorpus, directory: Path) -> dict[str, Json]:
@@ -52,7 +64,7 @@ def publish(corpus: AuthoredCorpus, directory: Path) -> dict[str, Json]:
     native_replay(acquired)
     manifest = write(directory, [(corpus.source_name, corpus.part, acquired)], corpus_version=corpus.corpus_version,
                      native_version=corpus.native_version, metadata={"evidenceKind": corpus.evidence_kind,
-                     "definitionsSha256": hashlib.sha256(corpus.definitions.read_bytes()).hexdigest()})
+                     "definitionsSha256": definitions_digest(corpus)})
     loaded_manifest, loaded = load(directory)
     if loaded_manifest != manifest or loaded != acquired:
         raise ValueError(f"Evidence differs after storage: {directory}; inspect the corpus bindings")

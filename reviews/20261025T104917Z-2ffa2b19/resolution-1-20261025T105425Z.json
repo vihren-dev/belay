@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T10:54:25+00:00",
+  "finding": "20261025T104917Z-2ffa2b19#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Only SQL errors of a view are recorded as evidence"
+}

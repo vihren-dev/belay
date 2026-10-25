@@ -1,7 +1,7 @@
 """Record native schema and readable row observations independently of SQL admission."""
 
 from conformance.case_format import Json
-from conformance.native_connection import Connection, Cell
+from conformance.native_connection import Cell, Connection, NativeError, Row
 from conformance.native_limits import measured_limits
 from conformance.native_metadata import integer, quoted, text
 from conformance.native_statements import wire_rows
@@ -20,35 +20,51 @@ def observe(connection: Connection) -> dict[str, Json]:
         if text(kind) not in ("table", "view"):
             continue
         name = text(name_cell)
-        columns = connection.query(f"PRAGMA table_xinfo({quoted(name)});")
-        visible = [row for row in columns if integer(row[6]) != 1]
-        names = [text(row[1]) for row in visible]
-        without_rowid = bool(integer(inventory[name][4]))
-        key = [text(row[1]) for row in sorted(visible, key=lambda row: integer(row[5])) if integer(row[5])]
-        rowid = next((alias for alias in ("rowid", "_rowid_", "oid")
-                      if alias not in {n.lower() for n in names}), None)
-        if not without_rowid and text(kind) == "table" and rowid:
-            key = [rowid]
-        elif text(kind) == "view" or not without_rowid:
-            key = names  # No exposed physical identity: retain the complete ordered multiset.
-        ordering = ",".join(quoted(n) for n in key)
-        identities = connection.query(f"SELECT {ordering} FROM {quoted(name)} ORDER BY {ordering};")
-        values: list[list[Cell]] = [[] for _ in identities]
-        for offset in range(0, len(names), chunk_size):
-            selected = ",".join(quoted(n) for n in names[offset:offset + chunk_size])
-            chunk = connection.query(f"SELECT {selected} FROM {quoted(name)} ORDER BY {ordering};")
-            if len(chunk) != len(identities):
-                raise ValueError("Native rows changed during observation")
-            for destination, row in zip(values, chunk, strict=True):
-                destination.extend(row)
-        indexes = connection.query(f"PRAGMA index_list({quoted(name)});")
-        tables.append({"name": name, "kind": text(kind), "withoutRowid": without_rowid,
-            "columns": wire_rows(columns), "indexes": [
-                {"entry": wire_rows([entry])[0], "columns": wire_rows(connection.query(
-                    f"PRAGMA index_xinfo({quoted(text(entry[1]))});"))} for entry in indexes],
-            "foreignKeys": wire_rows(connection.query(f"PRAGMA foreign_key_list({quoted(name)});")),
-            "rowKey": key, "rows": [{"identity": wire_rows([identity])[0], "values": wire_rows([tuple(row)])[0]}
-                                     for identity, row in zip(identities, values, strict=True)]})
+        try:
+            tables.append(observe_object(connection, text(kind), name, inventory, chunk_size))
+        except NativeError as error:
+            if text(kind) != "view" or not connection.is_sql_error(error.code):
+                raise  # Only SQL errors of a view are evidence; timeouts and I/O failures are not.
+            tables.append(unreadable_view(name, error))
     return {"schema": wire_rows(schema), "tables": tables}
 
 
+def unreadable_view(name: str, error: NativeError) -> dict[str, Json]:
+    """The evidence of a view that SQLite cannot read: a missing table or column, a cycle or a
+    runtime error in its body. The record keeps the primary result code, which the judge
+    compares, and the message, which only explains the code to a reader."""
+    return {"name": name, "kind": "view", "unreadable": {"primaryCode": error.code & 255, "message": str(error)}}
+
+
+def observe_object(connection: Connection, kind: str, name: str, inventory: dict[str, Row],
+                   chunk_size: int) -> dict[str, Json]:
+    """Record one table or view with its columns, indexes, foreign keys and ordered rows."""
+    columns = connection.query(f"PRAGMA table_xinfo({quoted(name)});")
+    visible = [row for row in columns if integer(row[6]) != 1]
+    names = [text(row[1]) for row in visible]
+    without_rowid = bool(integer(inventory[name][4]))
+    key = [text(row[1]) for row in sorted(visible, key=lambda row: integer(row[5])) if integer(row[5])]
+    rowid = next((alias for alias in ("rowid", "_rowid_", "oid")
+                  if alias not in {n.lower() for n in names}), None)
+    if not without_rowid and kind == "table" and rowid:
+        key = [rowid]
+    elif kind == "view" or not without_rowid:
+        key = names  # No exposed physical identity: retain the complete ordered multiset.
+    ordering = ",".join(quoted(n) for n in key)
+    identities = connection.query(f"SELECT {ordering} FROM {quoted(name)} ORDER BY {ordering};")
+    values: list[list[Cell]] = [[] for _ in identities]
+    for offset in range(0, len(names), chunk_size):
+        selected = ",".join(quoted(n) for n in names[offset:offset + chunk_size])
+        chunk = connection.query(f"SELECT {selected} FROM {quoted(name)} ORDER BY {ordering};")
+        if len(chunk) != len(identities):
+            raise ValueError("Native rows changed during observation")
+        for destination, row in zip(values, chunk, strict=True):
+            destination.extend(row)
+    indexes = connection.query(f"PRAGMA index_list({quoted(name)});")
+    return {"name": name, "kind": kind, "withoutRowid": without_rowid,
+        "columns": wire_rows(columns), "indexes": [
+            {"entry": wire_rows([entry])[0], "columns": wire_rows(connection.query(
+                f"PRAGMA index_xinfo({quoted(text(entry[1]))});"))} for entry in indexes],
+        "foreignKeys": wire_rows(connection.query(f"PRAGMA foreign_key_list({quoted(name)});")),
+        "rowKey": key, "rows": [{"identity": wire_rows([identity])[0], "values": wire_rows([tuple(row)])[0]}
+                                 for identity, row in zip(identities, values, strict=True)]}

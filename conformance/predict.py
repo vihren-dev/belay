@@ -55,6 +55,17 @@ def julian_clocks(given: dict[str, Json]) -> list[int]:
     return [clock + UNIX_EPOCH_JULIAN_MILLISECONDS for clock in clocks]
 
 
+def julian_setup_clock(given: dict[str, Json]) -> int | None:
+    """The clock of the setup in Julian-day milliseconds, from the Unix milliseconds that the
+    judge supplies; `None` when it supplies none, so that the first snapshot has no clock."""
+    clock = given.get("setupClockUnixMilliseconds")
+    if clock is None:
+        return None
+    if type(clock) is not int:
+        raise ValueError("setupClockUnixMilliseconds must be an integer")
+    return clock + UNIX_EPOCH_JULIAN_MILLISECONDS
+
+
 def bound_values(given: dict[str, Json]) -> list[Json]:
     """The values bound to the parameters of each executed statement, as typed cells; empty when
     the judge supplies none. Statement i of the script gets list i."""
@@ -76,6 +87,7 @@ def mapped(given: dict[str, Json], translator: Translator) -> tuple[dict[str, Js
     foreign_key_scope(given, [*schema, *script])
     return {"profile": profile, "schema": [item.value for item in schema], "script": [item.value for item in script],
             "initial": initial_rows(given["initialRows"]), "clocks": julian_clocks(given),
+            "setupClock": julian_setup_clock(given),
             "parameters": bound_values(given), "continues": given.get("nativeVersion") in CONTINUING,
             **counters_input(given)}, script
 

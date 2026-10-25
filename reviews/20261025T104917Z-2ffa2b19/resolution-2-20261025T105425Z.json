@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T10:54:25+00:00",
+  "finding": "20261025T104917Z-2ffa2b19#2",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "Test moved to tests/conformance_unreadable_view_test.py"
+}

@@ -1,0 +1,77 @@
+corpus	name	before	after	classification	remainingRestriction	beforeVerdict	afterVerdict
+corpus-v4	altertab3:altertab3-9.1:29	unsupported	unsupported	source form still excluded	This FROM source is not modeled; use a table, table-valued function or SELECT	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v4	altertab3:altertab3-9.2:30	unsupported	unsupported	source form still excluded	This FROM source is not modeled; use a table, table-valued function or SELECT	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v4	altertab3:altertab3-29.4:88	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v4	altertab3:altertab3-29.5:89	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v4	altertab3:altertab3-29.6:90	unsupported	unsupported	existing deeper restriction now reached	Unsupported SQL form: cmd; rewrite it with the modeled forms: CREATE TABLE, CREATE [UNIQUE] INDEX, ALTER TABLE ADD COLUMN, BEGIN, COMMIT, ROLLBACK, INSERT ... VALUES, UPDATE ... SET ... [WHERE column = value] and SELECT ... FROM table [WHERE] [GROUP BY] [ORDER BY] [LIMIT]	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v4	altertab3:altertab3-29.7:91	unsupported	unsupported	existing deeper restriction now reached	queries of SQLite's own tables, such as sqlite_schema, are not modeled; query an application table	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v4	json101:json101-15.120:205	unsupported	unsupported	source form still excluded	This FROM source is not modeled; use a table, table-valued function or SELECT	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v4	json101:json101-15.130:206	unsupported	unsupported	source form still excluded	This FROM source is not modeled; use a table, table-valued function or SELECT	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	aggnested:aggnested-6.1.1:27	unsupported	unsupported	existing deeper restriction now reached	only a column name or a result column number is modeled in GROUP BY	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	aggnested:aggnested-6.1.2:28	unsupported	unsupported	existing deeper restriction now reached	a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	aggnested:aggnested-6.2.1:30	unsupported	unsupported	existing deeper restriction now reached	only a column name or a result column number is modeled in GROUP BY	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	aggnested:aggnested-6.2.2:31	unsupported	unsupported	existing deeper restriction now reached	a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	aggnested:aggnested-9.2:39	unsupported	unsupported	existing deeper restriction now reached	an aggregate in a subquery whose argument reads a column of an outer query is not modeled, because SQLite computes it in the outer query; aggregate only columns of the subquery's own tables	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	aggnested:aggnested-9.3:40	unsupported	unsupported	existing deeper restriction now reached	an aggregate in a subquery whose argument reads a column of an outer query is not modeled, because SQLite computes it in the outer query; aggregate only columns of the subquery's own tables	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	aggnested:aggnested-9.4:41	unsupported	unsupported	existing deeper restriction now reached	an aggregate in a subquery whose argument reads a column of an outer query is not modeled, because SQLite computes it in the outer query; aggregate only columns of the subquery's own tables	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	aggnested:aggnested-9.5:42	unsupported	unsupported	existing deeper restriction now reached	an aggregate in a subquery whose argument reads a column of an outer query is not modeled, because SQLite computes it in the outer query; aggregate only columns of the subquery's own tables	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	aggnested:aggnested-10.1:43	unsupported	unsupported	existing deeper restriction now reached	DISTINCT in a function call is not modeled; remove it	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	altertab3:altertab3-9.1:29	unsupported	unsupported	source form still excluded	This FROM source is not modeled; use a table, table-valued function or SELECT	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	altertab3:altertab3-9.2:30	unsupported	unsupported	source form still excluded	This FROM source is not modeled; use a table, table-valued function or SELECT	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	altertab3:altertab3-29.4:88	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	altertab3:altertab3-29.5:89	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	altertab3:altertab3-29.6:90	unsupported	unsupported	existing deeper restriction now reached	Unsupported SQL form: cmd; rewrite it with the modeled forms: CREATE TABLE, CREATE [UNIQUE] INDEX, ALTER TABLE ADD COLUMN, BEGIN, COMMIT, ROLLBACK, INSERT ... VALUES, UPDATE ... SET ... [WHERE column = value] and SELECT ... FROM table [WHERE] [GROUP BY] [ORDER BY] [LIMIT]	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	altertab3:altertab3-29.7:91	unsupported	unsupported	existing deeper restriction now reached	queries of SQLite's own tables, such as sqlite_schema, are not modeled; query an application table	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	countofview:countofview-1.3:3	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	e_select:e_select-1.4.3:194	unsupported	predicted	newly supported prepare error		MODEL_UNSUPPORTED	AGREE
+corpus-v5	e_select:e_select-1.6.3.1:204	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	e_select:e_select-1.6.3.2:205	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	e_select:e_select-1.6.3.3:206	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	e_select:e_select-1.7.4a.1:231	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	e_select:e_select-1.7.4a.2:232	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	e_select:e_select-1.7.4a.3:233	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	e_select:e_select-1.7.4b.1:234	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	e_select:e_select-1.7.4b.2:235	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	e_select:e_select-1.7.4b.3:236	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	indexA:indexA-7.0:145	unsupported	unsupported	source form still excluded	This FROM source is not modeled; use a table, table-valued function or SELECT	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	indexexpr1:indexexpr1-2200:92	unsupported	unsupported	existing deeper restriction now reached	only a column name or a result column number is modeled in GROUP BY	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	json101:json101-15.120:205	unsupported	unsupported	source form still excluded	This FROM source is not modeled; use a table, table-valued function or SELECT	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	json101:json101-15.130:206	unsupported	unsupported	source form still excluded	This FROM source is not modeled; use a table, table-valued function or SELECT	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	json101:json101-23.1:251	unsupported	predicted	resolved; execution remains unmodeled		MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	json101:json101-23.2:252	unsupported	predicted	resolved; execution remains unmodeled		MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	minmax:minmax-4.1:23	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	minmax:minmax-4.2:24	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	minmax:minmax-4.3:25	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	minmax:minmax-7.2:39	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	minmax:minmax-7.4:41	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	minmax:minmax-9.1:45	unsupported	unsupported	existing deeper restriction now reached	the rowid names rowid, _rowid_ and oid are not modeled in expressions over a table, or as the SET column of a table without an INTEGER PRIMARY KEY; name the table's columns	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	minmax:minmax-9.2:46	unsupported	unsupported	existing deeper restriction now reached	the rowid names rowid, _rowid_ and oid are not modeled in expressions over a table, or as the SET column of a table without an INTEGER PRIMARY KEY; name the table's columns	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	minmax:minmax-15.1:108	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	minmax4:minmax4-1.6:5	unsupported	unsupported	existing deeper restriction now reached	a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	minmax4:minmax4-1.7:6	unsupported	unsupported	existing deeper restriction now reached	a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	minmax4:minmax4-1.9:8	unsupported	unsupported	existing deeper restriction now reached	a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	select3:select3.10.100:68	unsupported	unsupported	existing deeper restriction now reached	a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	select3:select3.11.1.2:70	unsupported	unsupported	existing deeper restriction now reached	a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	select3:select3.11.1.3:71	unsupported	unsupported	existing deeper restriction now reached	a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	select3:select3.11.1.4:72	unsupported	unsupported	existing deeper restriction now reached	a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	select3:select3.11.2.2:74	unsupported	unsupported	existing deeper restriction now reached	a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	select3:select3.11.2.3:75	unsupported	unsupported	existing deeper restriction now reached	a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	select3:select3.11.2.4:76	unsupported	unsupported	existing deeper restriction now reached	a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	select3:12.1:82	unsupported	unsupported	existing deeper restriction now reached	a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	select3:12.2:83	unsupported	unsupported	existing deeper restriction now reached	a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	select3:12.3:84	unsupported	unsupported	existing deeper restriction now reached	a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	select3:12.4:85	unsupported	unsupported	existing deeper restriction now reached	a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	select3:12.5:86	unsupported	unsupported	existing deeper restriction now reached	a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	select3:12.7:88	unsupported	unsupported	existing deeper restriction now reached	a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	select3:12.8:89	unsupported	unsupported	existing deeper restriction now reached	a result column outside GROUP BY in an aggregate query is not modeled; group by it or aggregate it	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	select4:select4-6.4:47	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	select4:select4-6.5:48	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	select4:select4-6.6:49	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	select6:select6-13.110:85	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	select6:select6-13.120:86	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	selectA:selectA-3.97:199	unsupported	predicted	resolved; execution remains unmodeled		MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	selectA:selectA-9.2:229	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	selectH:selectH-5.2:16	unsupported	predicted	newly supported execution		MODEL_UNSUPPORTED	AGREE
+corpus-v5	triggerE:triggerE-1.1.3:5	unsupported	predicted	newly supported prepare error		MODEL_UNSUPPORTED	AGREE
+corpus-v5	upsert5:upsert5-3.1:231	unsupported	unsupported	source form still excluded	This FROM source is not modeled; use a table, table-valued function or SELECT	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED
+corpus-v5	upsert5:upsert5-3.2:232	unsupported	unsupported	source form still excluded	This FROM source is not modeled; use a table, table-valued function or SELECT	MODEL_UNSUPPORTED	MODEL_UNSUPPORTED

@@ -3,7 +3,7 @@
 The subject input holds only what exists before the migration runs: the profile and the
 SQLite source id that select the SQL dialect, the initial schema SQL and rows, the migration SQL,
 the statement parameters, the counters of the writer connection (version 7) and, under a controlled
-clock, the clock value of each statement. Every later
+clock, the clock of the setup and the clock value of each statement. Every later
 observation stays with the judge, so the subject cannot copy the answer.
 """
 
@@ -74,12 +74,13 @@ def schema_sql(observation: dict[str, Json]) -> str:
 
 
 def initial_rows(observation: dict[str, Json]) -> dict[str, Json]:
-    """The recorded rows of each initial table, by table name, as the subject's starting data."""
+    """The recorded rows of each initial table, by table name, as the subject's starting data. A view
+    that SQLite cannot read has no rows."""
     tables = observation["tables"]
     if not isinstance(tables, list):
         raise ValueError("recorded tables are not a list")
     return {table["name"]: [{"identity": row["identity"], "values": row["values"]} for row in table["rows"]]
-            for table in tables}
+            for table in tables if "unreadable" not in table}
 
 
 def subject_input(record: dict[str, Json]) -> dict[str, Json]:
@@ -102,6 +103,10 @@ def subject_input(record: dict[str, Json]) -> dict[str, Json]:
         # and last insert rowid) are state from before the migration, so they are a statement input
         # too. Records of versions before 7 have none, and their run starts with unknown counters.
         given["counters"] = record["counters"]
+    if "setupClockUnixMilliseconds" in record:
+        # The clock that the setup saw is a starting condition too: a view created in the schema
+        # may read it when the first snapshot is taken. Records without a controlled clock have none.
+        given["setupClockUnixMilliseconds"] = record["setupClockUnixMilliseconds"]
     if trace and all("clockUnixMilliseconds" in event for event in trace):
         # The recorder's controlled clock is a statement input too: the Unix milliseconds that
         # each executed statement saw. Records without a controlled clock have none.

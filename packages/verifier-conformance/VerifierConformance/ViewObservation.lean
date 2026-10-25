@@ -23,6 +23,22 @@ inductive ViewObservationIssue where
   | named (view : Identifier) (issue : ViewObservationIssue)
   deriving DecidableEq
 
+/-- SQLite's primary result code for an SQL error: it also reports a view that cannot be
+prepared. -/
+def sqlErrorCode : Nat := 1
+
+/-- The primary result code that SQLite gives when it reads a view that fails, or none when
+the observation is unavailable for another reason. A preparation failure of the view or of its
+body, such as a missing table or a cycle, and an error of its execution are failures that
+SQLite reports and that a recording keeps; a model restriction and an unmodeled output are not,
+so they stay out of scope. -/
+def ViewObservationIssue.failureCode : ViewObservationIssue → Option Nat
+  | .named _ issue => issue.failureCode
+  | .resolution (.value (.prepare _)) | .resolution (.noSuchTable _) => some sqlErrorCode
+  | .resolution (.value (.restriction ..)) => none
+  | .output (.error code) => some code
+  | .output (.rows _) | .output (.oneOf _) | .output (.done _) | .output (.unmodeled _) | .shape => none
+
 /-- Rows of a readable view. All alternatives must have the same complete multiset;
 ordering differences are removed with {name}`Resolved.normalForm`. Distinct multisets,
 an empty alternative list and a non-query output cannot supply one native snapshot. -/
