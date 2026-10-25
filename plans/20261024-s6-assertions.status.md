@@ -16,8 +16,10 @@ complete environment, initial connection, index zero and empty trace. Existing
 Holds retains its default observation; context-aware assertions have a separate
 name. Before always refers to the captured start, including after bind.
 
-Execution contracts are DONE (2026-10-25). The initial/current query task has
-no implementation; it waits for the query-source and view work. The checked S6
+Execution contracts are DONE (2026-10-25). The initial/current query task
+(`plans/20261024-s6-before-context`) is DONE and merged in part 1b: the query
+semantics exist (`observeTwoState`, `Script.observeTwoState`); the assertion
+layer over them is the remaining work of part 1b. The checked S6
 prototype established the candidate transformer and soundness route, but
 supplied no production assertions and no before-query semantics. The universal
 guide examples need the accepted schema and trigger/FK conditions; native
