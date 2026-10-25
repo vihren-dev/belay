@@ -484,3 +484,12 @@ Nix checks (all pass; final tree):
 - `just verdict`: pass. `/nix/store/i29j12w9h1azigjp8ib15vk7l4ij16al-sqlite-verifier-verdict`.
 - Replay now reports a recorded view as MODEL_UNSUPPORTED (`conformance/replay_scope.py`).
 - The review of `ddfae58d` was clean.
+
+## Integration above S6 migration patterns part 1
+
+- Merge change `zmxvytzy` (commit `b89a335d`): parents `3a575778` (views) and `tasks/s6-migration-patterns-part1` (`e3baff02`). No rebase on either side.
+- Text conflict: only the `globs` line of `packages/belay-sqlite-model/lakefile.toml`. The resolution keeps all modules of both sides (397 modules).
+- Semantic conflict: the backfill resolution proof in `NormalizedFieldUpdateResolution.lean` failed, because UPDATE resolution now first tests for a view target. The proof now uses `Catalog.findView_none_of_table` and a no-copies fact for the placeholder query.
+- All 239 mutant edits still apply once to the merged sources. No mutant file changed.
+- Review `20261025T084309Z-b89a335d`: 0 musts, 0 shoulds.
+- Nix surface group on the merge: `/nix/store/n0m04vmvm0d0pg2x409hwzc04b1y8k6m-sqlite-verifier-test-surface-1`.
