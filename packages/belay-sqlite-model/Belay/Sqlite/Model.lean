@@ -130,6 +130,7 @@ import Belay.Sqlite.Model.ResolveStatementApplied
 import Belay.Sqlite.Model.ResolveStatementFacts
 import Belay.Sqlite.Model.ResolveStatementLink
 import Belay.Sqlite.Model.ResolveStatementForms
+import Belay.Sqlite.Model.ResolveStatementPragmaLink
 import Belay.Sqlite.Model.ScriptRunDerived
 import Belay.Sqlite.Model.RunHoldsReady
 import Belay.Sqlite.Model.AdmittedRowLaws

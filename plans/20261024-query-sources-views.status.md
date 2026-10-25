@@ -441,3 +441,35 @@ Nix checks (all pass):
 
 Still OPEN: `pragma_table_info('view')` (table-valued) stays a restriction; the end-of-part
 `just test-full` and `just verdict`.
+
+## Review round 2 fixes (`20261025T061047Z-d2b28206`)
+
+- A view over a view with a wrong-width name list is now the `view-body-check` restriction for
+  a write and for `table_info`. SQLite skips that width check, and the model has no columns for
+  the inner view (`ExprError.viewReadClass`, `ViewReadClass.width`). Native pin: `INSERT INTO nest`
+  gives `cannot modify nest because it is a view`.
+- A write to a view in a trigger body (`viewBodyWrite` in `TriggerBodies.lean`) keeps
+  `cannot modify`, and a column that the model cannot find, such as `new.a`, is the
+  `view-body-check` restriction. SQLite resolves `new.a` in the program of an INSERT trigger.
+  In a DELETE trigger it reports `no such column: new.a`, so the restriction covers both.
+- Catch-all matches in `resolveViewTarget` and `viewPrepareFailure` are enumerated
+  (`PrepareError.viewModified?`, `Resolved.Statement.isViewModify`). The `ClaimsViewCatalog`
+  assertion is enumerated too.
+- `resolveStatementPragma_schemaLink` moved to `ResolveStatementPragmaLink.lean`
+  (`ResolveStatementForms.lean` is under 200 lines again), and `Restrictions.lean` is 199 lines.
+  The `resolveCreateIndex_named` docstring names the `viewNotIndexed` case.
+
+Nix checks (all pass):
+- Focused harness: **118 passed**, 156 deselected,
+  `/nix/store/6iybn553yl6ggq49dhp8lgm918vn8yih-sqlite-verifier-test-view-observation-harness-1`.
+- Surface cases (`ClaimsViewWrites` now has the nested and trigger-body claims and native pins):
+  **28 passed**, 66 deselected,
+  `/nix/store/g3xiy7sykdhwcjnwjs1h75qj7p4qm7pz-sqlite-verifier-test-view-create-surface-1`.
+  The first run (`build/agent-logs/view-write-r2-surface-1.log`) failed on a claim that used
+  a trigger-creation statement; the claim now uses the write that fires the trigger.
+- Syntax cases: **6 passed**,
+  `/nix/store/91bmrsqx2kvviz57662a0qjqzxqdwdn9-sqlite-verifier-test-view-create-model-1`.
+- Predictions `/nix/store/0zmcmfi1ra21l982x2w71nkx1b4wpi1l-sqlite-verifier-predictions` are
+  byte-identical to `gwcwwarb7` (all 53 files).
+- Verdict `/nix/store/670sxdapjv5vvk1fvlhllv2mv15azkkd-sqlite-verifier-verdict`: AGREE 4,962,
+  MODEL_UNSUPPORTED 2,410; no DISAGREE, no HARNESS_ERROR.

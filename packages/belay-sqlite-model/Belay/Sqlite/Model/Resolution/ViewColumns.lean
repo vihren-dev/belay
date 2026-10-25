@@ -5,7 +5,7 @@ set_option doc.verso true
 
 /-! The columns of a view, as SQLite reads them when a statement needs them (ADR 0017): the
 resolver of {lit}`SELECT * FROM view` gives them, and the errors of the view's query that
-SQLite finds at that point ({lit}`ExprError.seenWhenViewRead`) are the errors of the
+SQLite finds at that point ({lit}`ExprError.viewReadClass`) are the errors of the
 statement. A statement that reads the view's columns is {lit}`PRAGMA table_info` of the view
 and a write to it. -/
 
@@ -34,25 +34,25 @@ def widthMismatchColumns (context : ResolveContext) (view : Identifier) (names :
 def viewBodyCheck : SourceIssue := .value (.restriction [] .viewBodyCheck)
 
 /-- The result of reading the columns of a view when the view's query fails with a prepare
-error. The width check of the view's own explicit name list is not part of the read: the columns
-are those of {name}`widthMismatchColumns`. An error that SQLite finds only when a statement runs
-the view, or that the model cannot place, is {name}`RestrictionKind.viewBodyCheck`
-({name}`ExprError.seenWhenViewRead`). Any other error stays the error. The second case lists
-no further constructor of {name}`ExprError`: it decides by {name}`ExprError.seenWhenViewRead`, which
-names every one. -/
+error ({name}`ExprError.viewReadClass`). The width check of the view's own explicit name list
+is not part of the read: the columns are those of {name}`widthMismatchColumns`. The same
+check of another view, which SQLite also skips, is the restriction
+{name}`RestrictionKind.viewBodyCheck`, because the model has no columns for it. So is an error that
+SQLite finds only when a statement runs the view. Any other error stays the error. -/
 def viewPrepareFailure (context : ResolveContext) (catalog : Catalog) (view : Identifier) (error : ExprError) :
     Except SourceIssue (List CatalogColumn) :=
-  match error with
-  | .view (.columns name expected actual) =>
+  match error.viewReadClass with
+  | .found => .error (.value (.prepare error))
+  | .later => .error viewBodyCheck
+  | .width name =>
     match (catalog.findView view).bind (·.2.columns) with
     | some names =>
       if name.sameName view then
         match widthMismatchColumns context view names with
         | some columns => .ok columns
         | none => .error viewBodyCheck
-      else .error (.value (.prepare (.view (.columns name expected actual))))
-    | none => .error (.value (.prepare (.view (.columns name expected actual))))
-  | other => .error (if other.seenWhenViewRead then .value (.prepare other) else viewBodyCheck)
+      else .error viewBodyCheck
+    | none => .error viewBodyCheck
 
 /-- The columns of a view as SQLite reads them: the columns of {lit}`SELECT * FROM view`
 ({name}`viewColumnsQuery`) resolved by the select resolver, or the issue that the read fails
@@ -72,6 +72,24 @@ def readIssueResolution (catalog : Catalog) : SourceIssue → StatementResolutio
   | .noSuchTable name => prepareError catalog (.noSuchTable name)
   | .value issue => issueResolution catalog [] issue
 
+/-- The name of the view in a write that SQLite refuses with {name}`PrepareError.viewModify`, and
+none for every other prepare error. -/
+def PrepareError.viewModified? : PrepareError → Option Identifier
+  | .viewModify name => some name
+  | .viewVariables | .tableExists _ | .viewExists _ | .indexNameUsed _ | .tableNameUsed _
+  | .indexExists _ | .noSuchTable _ | .noSuchView _ | .useDropTable _ | .useDropView _
+  | .noSuchIndex _ | .tableMayNotBeDropped _ | .noSuchReferencedTable _ | .foreignKeyMismatch ..
+  | .noSuchTrigger _ | .triggerExists _ | .viewNotIndexed | .viewAddColumn | .viewTrigger ..
+  | .expression _ => none
+
+/-- Whether a resolved statement is the refusal of a write to a view
+({name}`PrepareError.viewModified?`). -/
+def Resolved.Statement.isViewModify : Resolved.Statement → Bool
+  | .prepareError error => error.viewModified?.isSome
+  | .createView .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn ..
+  | .drop .. | .begin | .commit | .rollback | .setting .. | .query .. | .insert .. | .update ..
+  | .upsert .. | .delete .. => false
+
 /-- Complete the resolution of a write to a view ({name}`resolveViewModify`): SQLite reads the
 columns of the view first, so a view that it cannot read gives that error instead; any other
 error of the write, such as the rows of an INSERT with different widths, which the parser finds
@@ -79,11 +97,13 @@ first, stays. -/
 def resolveViewTarget (context : ResolveContext) (catalog : Catalog) (view : Identifier)
     (written : StatementResolution) : StatementResolution :=
   match written with
-  | .ok (.prepareError (.viewModify name), after) =>
-    match viewColumns context catalog view with
-    | .ok _ => .ok (.prepareError (.viewModify name), after)
-    | .error issue => readIssueResolution catalog issue
-  | other => other
+  | .error restriction => .error restriction
+  | .ok (statement, after) =>
+    if statement.isViewModify then
+      match viewColumns context catalog view with
+      | .ok _ => .ok (statement, after)
+      | .error issue => readIssueResolution catalog issue
+    else .ok (statement, after)
 
 /-- For every completed write to a view that resolves, either the write itself resolved to that
 result, or the result is a prepare error that leaves the catalog as it was (the read of the
@@ -95,27 +115,30 @@ theorem resolveViewTarget_cases {context : ResolveContext} {catalog after : Cata
     written = .ok (statement, after) ∨ (after = catalog ∧ ∃ error, statement = .prepareError error) := by
   unfold resolveViewTarget at ok
   split at ok
-  · rename_i name modified
-    cases read : viewColumns context catalog view with
-    | ok columns =>
-      left
-      rw [read] at ok
-      cases ok
-      rfl
-    | error issue =>
-      right
-      rw [read] at ok
-      cases issue with
-      | noSuchTable name =>
-        simp only [readIssueResolution, prepareError] at ok
+  · cases ok
+  · rename_i written' after'
+    split at ok
+    · cases read : viewColumns context catalog view with
+      | ok columns =>
+        rw [read] at ok
         cases ok
-        exact ⟨rfl, _, rfl⟩
-      | value inner =>
-        cases inner <;> simp only [readIssueResolution, issueResolution, prepareError, restrict] at ok
-        · cases ok
+        left
+        rfl
+      | error issue =>
+        rw [read] at ok
+        right
+        cases issue with
+        | noSuchTable name =>
+          simp only [readIssueResolution, prepareError] at ok
+          cases ok
           exact ⟨rfl, _, rfl⟩
-        · cases ok
-  · left
-    assumption
+        | value inner =>
+          cases inner <;> simp only [readIssueResolution, issueResolution, prepareError, restrict] at ok
+          · cases ok
+            exact ⟨rfl, _, rfl⟩
+          · cases ok
+    · cases ok
+      left
+      rfl
 
 end Belay.Sqlite.Model

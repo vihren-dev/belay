@@ -11,13 +11,16 @@ column gets the written value and every other column its default. -/
 
 namespace Belay.Sqlite.Model
 
+/-- The name of a view as the catalog spells it, or the name as written when there is none. -/
+def viewCatalogName (catalog : Catalog) (view : Identifier) : Identifier :=
+  (((catalog.findView view).bind fun (position, _) => catalog[position]?.map (·.name))).getD view
+
 /-- The resolution of a write (INSERT, UPDATE or DELETE) whose target is a view: SQLite refuses it
 with {lit}`cannot modify %s because it is a view`, because the model holds no INSTEAD OF trigger.
 The name keeps the catalog's spelling. Before that, SQLite reads the columns of the view
 ({lit}`resolveViewTarget`). -/
 def resolveViewModify (catalog : Catalog) (view : Identifier) : StatementResolution :=
-  prepareError catalog (.viewModify (((catalog.findView view).bind fun (position, _) =>
-    catalog[position]?.map (·.name)).getD view))
+  prepareError catalog (.viewModify (viewCatalogName catalog view))
 
 /-- The table column positions of an INSERT column list, or
 {lit}`table %S has no column named %s` for the first unknown name, or

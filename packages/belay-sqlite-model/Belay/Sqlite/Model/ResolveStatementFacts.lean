@@ -1,4 +1,5 @@
 import Belay.Sqlite.Model.ResolveStatementLink
+import Belay.Sqlite.Model.ResolveStatementPragmaLink
 
 set_option doc.verso true
 

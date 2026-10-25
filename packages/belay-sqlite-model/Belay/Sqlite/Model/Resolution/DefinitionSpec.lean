@@ -83,7 +83,8 @@ theorem resolveAddColumn_duplicate (context : ResolveContext) (catalog : Catalog
 
 /-- For every CREATE INDEX whose resolution is a prepare error
 that names a catalog object: either no table has the folded table name and the error
-is {lit}`no such table`, or an object has the folded index name; and the catalog is
+is {lit}`no such table`, or an object has the folded index name, or the error is
+{lit}`views may not be indexed` ({name}`PrepareError.viewNotIndexed`); and the catalog is
 unchanged. -/
 theorem resolveCreateIndex_named (context : ResolveContext) (catalog after : Catalog)
     (name : Identifier) (unique : Bool) (tableName : Identifier) (terms : List Syntax.OrderTerm)

@@ -103,13 +103,30 @@ def check_write_messages(output: str, directory: Path) -> None:
                   "CREATE TRIGGER tr BEFORE DELETE ON V BEGIN SELECT 1; END",
                   "CREATE TRIGGER tr AFTER INSERT ON broken BEGIN SELECT 1; END",
                   "CREATE TRIGGER ex AFTER INSERT ON v BEGIN SELECT 1; END",
-                  "CREATE TRIGGER IF NOT EXISTS ex AFTER INSERT ON v BEGIN SELECT 1; END"]
-    prelude = ("CREATE TABLE t(a INTEGER, b TEXT); CREATE VIEW v AS SELECT a, b FROM t;"
-               "CREATE VIEW Mixed AS SELECT a FROM t; CREATE VIEW broken AS SELECT * FROM missing;"
-               "CREATE VIEW cycle AS SELECT * FROM cycle; CREATE VIEW narrow(x, y) AS SELECT 1;"
-               "CREATE VIEW badcol AS SELECT zz FROM t; CREATE VIEW scalar AS SELECT (SELECT a, b FROM t) AS x;"
-               "CREATE TRIGGER ex AFTER INSERT ON t BEGIN SELECT 1; END;")
-    check_messages(output, "write-messages:", statements, prelude, directory)
+                  "CREATE TRIGGER IF NOT EXISTS ex AFTER INSERT ON v BEGIN SELECT 1; END",
+                  "INSERT INTO newv VALUES (1)"]
+    check_messages(output, "write-messages:", statements, WRITE_PRELUDE, directory)
+    sqlite = shutil.which("sqlite3")
+    assert sqlite is not None
+    # The model refuses these two statements as view-body-check; native SQLite refuses the write.
+    # A DELETE trigger has no NEW row, so there SQLite also reports the missing column; the model's
+    # restriction covers both.
+    for script, message in [
+            ("INSERT INTO nest VALUES (1)", "Error: in prepare, cannot modify nest because it is a view"),
+            ("INSERT INTO t VALUES (1, 'x')", "cannot modify newv because it is a view")]:
+        result = run_command([sqlite, "-batch", ":memory:", WRITE_PRELUDE + script], cwd=directory, timeout=5)
+        assert result.returncode != 0 and message in result.stderr, result.diagnostic()
+
+
+WRITE_PRELUDE = (
+    "CREATE TABLE t(a INTEGER, b TEXT); CREATE VIEW v AS SELECT a, b FROM t;"
+    "CREATE VIEW Mixed AS SELECT a FROM t; CREATE VIEW broken AS SELECT * FROM missing;"
+    "CREATE VIEW cycle AS SELECT * FROM cycle; CREATE VIEW narrow(x, y) AS SELECT 1;"
+    "CREATE VIEW badcol AS SELECT zz FROM t; CREATE VIEW scalar AS SELECT (SELECT a, b FROM t) AS x;"
+    "CREATE VIEW w(x, y) AS SELECT 1; CREATE VIEW nest AS SELECT * FROM w;"
+    "CREATE VIEW newv AS SELECT new.a FROM t;"
+    "CREATE TRIGGER ex AFTER INSERT ON t BEGIN SELECT 1; END;"
+    "CREATE TRIGGER body BEFORE INSERT ON t BEGIN INSERT INTO newv VALUES (1); END;")
 
 
 def check_messages(output: str, prefix: str, statements: list[str], prelude: str, directory: Path) -> None:

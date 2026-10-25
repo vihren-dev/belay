@@ -25,7 +25,11 @@ def database : Database := db! r"
   CREATE VIEW narrow(x, y) AS SELECT 1;
   CREATE VIEW badcol AS SELECT zz FROM t;
   CREATE VIEW scalar AS SELECT (SELECT a, b FROM t) AS x;
-  CREATE TRIGGER ex AFTER INSERT ON t BEGIN SELECT 1; END;"
+  CREATE VIEW w(x, y) AS SELECT 1;
+  CREATE VIEW nest AS SELECT * FROM w;
+  CREATE VIEW newv AS SELECT new.a FROM t;
+  CREATE TRIGGER ex AFTER INSERT ON t BEGIN SELECT 1; END;
+  CREATE TRIGGER body BEFORE INSERT ON t BEGIN INSERT INTO newv VALUES (1); END;"
 
 /-- A write to a view stops at the first statement error, and the next statement runs. -/
 theorem write_to_view_fails : (database.run (sql r"INSERT INTO v VALUES (1, 'x'); SELECT 1;")).outputs =
@@ -53,7 +57,22 @@ def messages : List (Option String) := [
   prepareMessage (sql r"CREATE TRIGGER tr BEFORE DELETE ON V BEGIN SELECT 1; END") database,
   prepareMessage (sql r"CREATE TRIGGER tr AFTER INSERT ON broken BEGIN SELECT 1; END") database,
   prepareMessage (sql r"CREATE TRIGGER ex AFTER INSERT ON v BEGIN SELECT 1; END") database,
-  prepareMessage (sql r"CREATE TRIGGER IF NOT EXISTS ex AFTER INSERT ON v BEGIN SELECT 1; END") database]
+  prepareMessage (sql r"CREATE TRIGGER IF NOT EXISTS ex AFTER INSERT ON v BEGIN SELECT 1; END") database,
+  prepareMessage (sql r"INSERT INTO newv VALUES (1)") database]
+
+/-- The width check of another view's name list is not part of the read of a view's columns, so
+the model has no columns for a view over a view with a wrong-width name list: the write stays a
+restriction, where SQLite reports {lit}`cannot modify nest because it is a view` (pinned in the
+Python fixture). -/
+example : restriction (sql r"INSERT INTO nest VALUES (1)") database = some ⟨[], .viewBodyCheck⟩ := by
+  decide +kernel
+
+/-- A write to a view inside a trigger body reads the view with the rows of the trigger in sight,
+which the model's read does not: a column {lit}`new.a` that it cannot find makes the write that fires
+the trigger a restriction, where SQLite reports {lit}`cannot modify newv because it is a view`
+(pinned in the Python fixture). -/
+example : (restriction (sql r"INSERT INTO t VALUES (1, 'x')") database).map (·.kind) = some .viewBodyCheck := by
+  decide +kernel
 
 /-- An error of the view's query that SQLite finds only when a statement runs the view stays a
 restriction for a write to the view and for the pragma. -/

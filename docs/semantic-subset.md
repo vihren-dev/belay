@@ -438,7 +438,9 @@ the pragma and for a write. The width of the view's own list of column names is 
 `table_info` lists the names of the list, in order and without types, and a write gives
 `cannot modify`. A subquery with the wrong number of columns, an aggregate in the wrong place
 and the other errors that SQLite finds only when a statement runs the view are the restriction
-`view-body-check`. `PRAGMA foreign_key_list` of a view has no rows, as in SQLite.
+`view-body-check`. So is the same list-width mismatch in another view that the view reads, and
+a missing column in a view that a trigger body writes to, because SQLite resolves `new.a` and
+`old.a` there. `PRAGMA foreign_key_list` of a view has no rows, as in SQLite.
 
 `CREATE TRIGGER [IF NOT EXISTS] name [BEFORE|AFTER] INSERT|UPDATE [OF columns]|DELETE ON table
 [FOR EACH ROW] [WHEN condition] BEGIN statements END` (ADR 0018, D5) has a body of `INSERT ...

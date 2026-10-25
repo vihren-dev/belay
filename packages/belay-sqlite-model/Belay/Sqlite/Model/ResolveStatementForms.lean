@@ -129,39 +129,6 @@ theorem resolvePragma_schemaLink {state next : ResolveState} {pragma : Syntax.Pr
   repeat' split at ok
   all_goals first | (cases ok; trivial) | (cases ok; exact Catalog.DropClosed.nil _) | (cases ok)
 
-/-- For every context, state and pragma statement that resolves ({name}`resolveStatementPragma`), the
-resolved statement meets {name}`Resolved.Statement.SchemaLink` on the catalog of the state. Proof
-sketch: a view branch is a query or a prepare error; every other pragma is
-{name}`resolvePragma_schemaLink`. -/
-theorem resolveStatementPragma_schemaLink {context : ResolveContext} {state next : ResolveState}
-    {pragma : Syntax.Pragma} {resolved : Resolved.Statement}
-    (ok : resolveStatementPragma context state pragma = .ok (resolved, next)) :
-    resolved.SchemaLink state.catalog := by
-  unfold resolveStatementPragma at ok
-  split at ok
-  · rename_i table
-    split at ok
-    · unfold resolveViewTableInfo at ok
-      cases read : viewColumns context state.catalog table with
-      | ok columns =>
-        rw [read] at ok
-        cases ok
-        trivial
-      | error issue =>
-        rw [read] at ok
-        cases issue with
-        | noSuchTable name =>
-          simp only [readIssueResolution, prepareError, Except.map] at ok
-          cases ok
-          trivial
-        | value inner =>
-          cases inner <;> simp only [readIssueResolution, issueResolution, prepareError, restrict, Except.map] at ok
-          · cases ok
-            trivial
-          · cases ok
-    · exact resolvePragma_schemaLink ok
-  all_goals exact resolvePragma_schemaLink ok
-
 /-- For every write resolution that meets {name}`Resolved.Statement.SchemaLink` on the catalog
 ({lit}`each`), every successful resolution of its subqueries and then of the write
 ({name}`resolveWriteSubqueries`) meets it. Proof

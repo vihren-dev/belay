@@ -71,8 +71,7 @@ inductive RestrictionKind where
   /-- UPDATE of a table with a constraint algorithm other than ABORT: {lit}`UPDATE OR` and the algorithms of UPDATE are
   not modeled (ADR 0012, amendment 4). -/
   | constraintAlgorithmUpdate
-  /-- REPLACE of a NOT NULL column with a default: REPLACE stores the default for a NULL, and the model does not
-  evaluate defaults in writes. -/
+  /-- REPLACE of a NOT NULL column with a default: REPLACE stores the default for a NULL, which the model does not evaluate. -/
   | replaceDefault
   /-- A column named twice in INSERT is not modeled (ADR 0008). -/
   | insertColumnTwice
@@ -100,9 +99,7 @@ inductive RestrictionKind where
   | aggregateInExpression
   /-- A result column alias inside WHERE or an ORDER BY expression is not modeled (ADR 0012 slice 1). -/
   | aliasInExpression
-  /-- A view body has an error that SQLite finds only when a statement runs the view, or that the model
-  cannot place before that, so the model does not say whether a statement that only reads the view's columns,
-  such as {lit}`PRAGMA table_info` or an INSERT into the view, fails (ADR 0017). -/
+  /-- A view body error that SQLite finds only when a statement runs the view, or that the model cannot place before (ADR 0017). -/
   | viewBodyCheck
   /-- Only a column name or a result column number is modeled in GROUP BY (ADR 0012 slice 1). -/
   | groupByTerm
@@ -182,8 +179,7 @@ inductive RestrictionKind where
   does is not modeled: an aggregate, an expression that is a result expression of a term after resolution but not as
   written, or a {lit}`COLLATE` term after which SQLite gives a result column a random name (ADR 0019, D3). -/
   | compoundOrderByTerm
-  /-- A derived source whose duplicate output names need SQLite's random suffix is not modeled.
-  Give these columns distinct aliases (ADR 0019, D5). -/
+  /-- A derived source whose duplicate output names need SQLite's random suffix is not modeled; give distinct aliases (ADR 0019, D5). -/
   | sourceColumnName
   /-- A valid recursive CTE, including recursion without the RECURSIVE keyword.
   Ordinary nonrecursive definitions use the normal query-source evaluator. -/

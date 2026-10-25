@@ -73,7 +73,13 @@ def deferred : List Syntax.Statement := [
 /-- Each of them is a prepare error: a write reads the view's query first, which names the missing
 table, and the others refuse the view without reading it. -/
 example : deferred.all (fun statement => match resolveStatement runContext
-    {catalog := database.catalog} statement with | .ok (.prepareError _, _) => true | _ => false) = true := by
+    {catalog := database.catalog} statement with
+      | .ok (.prepareError _, _) => true
+      | .error _ | .ok (.createTable .., _) | .ok (.createView .., _) | .ok (.createIndex .., _)
+      | .ok (.createTrigger .., _) | .ok (.addColumn .., _) | .ok (.drop .., _) | .ok (.begin, _)
+      | .ok (.commit, _) | .ok (.rollback, _) | .ok (.insert .., _) | .ok (.update .., _)
+      | .ok (.upsert .., _) | .ok (.delete .., _) | .ok (.query .., _) | .ok (.setting .., _) => false)
+      = true := by
   decide +kernel
 
 /-- {lit}`PRAGMA table_info` of a view expands its query, so it is no longer a restriction. -/
