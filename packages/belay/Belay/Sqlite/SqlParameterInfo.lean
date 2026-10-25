@@ -4,6 +4,9 @@ import Lean.Elab.Term
 
 set_option doc.verso true
 
+/-! Emit SQL parameter hovers and native semantic tokens from the existing {name (full := Belay.Sqlite.ParameterPlan)}`ParameterPlan`.
+Keep captured Lean expressions before coercion so users can inspect their original types. -/
+
 namespace Belay.Sqlite
 open Lean Elab Term
 

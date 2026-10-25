@@ -3,6 +3,9 @@ import Lean.Data.Position
 
 set_option doc.verso true
 
+/-! Map SQL byte ranges to original Lean source so editor requests identify the SQL occurrence.
+File and documentation callers can supply the same explicit mapping boundary. -/
+
 namespace Belay.Sqlite
 open Lean
 

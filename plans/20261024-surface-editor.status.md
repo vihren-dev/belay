@@ -129,9 +129,18 @@ a local diagnostic, not acceptance evidence. The sequential gate is terminal;
 logs and its exact command are in `build/agent-logs/editor-combined-*`.
 
 Root's source read found no semantic issue, but it is not independent review.
-Reviewer access is restored. Explicit review of frozen source `31f35d22` will
-cover its complete editor diff; a separate merge review covers integration and
-this acceptance record without amending either parent. These reviews are next.
+Explicit independent review `20261025T003033Z-31f35d22` covered the full
+nine-file editor change: no musts and two R9 shoulds, both missing module
+overviews. The two checked overview comments are added without changing any
+declaration or test. Their Nix retry passed on source `748607f9`: two real-server
+cases passed, 93 deselected, in 2.43 seconds; report
+`/nix/store/bzy1b1fwjxlk3m36r0kbirncv3j7jrq6-sqlite-verifier-test-surface-1`.
+The mandatory incremental development build passed after qualifying one module
+documentation reference. Its initial short-name error and final log remain local
+diagnostics. Both R9 findings are recorded fixed; their refactor review follows.
+The 23-case result above remains the compatibility evidence for unchanged code.
+Integration review `20261025T003132Z-495d7693` completed with no findings.
+Neither prior editor parent was amended.
 First-part full/verdict acceptance follows its independent review. Schema facts,
 table origins, corrections and warnings remain in the second part, together
 with completed query-source integration. The overall task remains OPEN.
