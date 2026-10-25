@@ -27,12 +27,34 @@ def Catalog.uniqueKeys (catalog : Catalog) (position : Nat) (table : CatalogTabl
       (UniqueKey.ofColumns table.columns) ++
     catalog.filterMap fun object => match object.entry with
       | .index index => if index.table == position && index.unique then some index.uniqueKey else none
-      | .table _ | .trigger _ => none
+      | .table _ | .view _ | .trigger _ => none
 
 /-- Add the table with the name at the end of the catalog, at position {lean}`catalog.length`, as
 CREATE TABLE does. The resolver and the execution of CREATE TABLE both use it, so they agree. -/
 def Catalog.createTable (catalog : Catalog) (name : Identifier) (table : CatalogTable) : Catalog :=
   catalog ++ [{ name, entry := .table table }]
+
+/-- Append an unresolved view. This primitive stores names, so dropping an earlier
+catalog object cannot leave stale positions in the view's definition. -/
+def Catalog.createView (catalog : Catalog) (name : Identifier) (view : CatalogView) : Catalog :=
+  catalog ++ [{ name, entry := .view view }]
+
+/-- Find a named view and its catalog position. A table or index of that name gives
+{lean}`(none : Option (Nat × CatalogView))`; trigger names are separate. -/
+def Catalog.findView (catalog : Catalog) (name : Identifier) : Option (Nat × CatalogView) :=
+  match catalog.find name with
+  | some (position, { entry := .view view, .. }) => some (position, view)
+  | some (_, { entry := .table _, .. }) | some (_, { entry := .index _, .. })
+  | some (_, { entry := .trigger _, .. }) | none => none
+
+/-- A name that finds a physical table cannot also find a view. Proof sketch:
+both lookups read the same first object in their shared namespace. -/
+theorem Catalog.findView_none_of_table {catalog : Catalog} {name : Identifier}
+    {position : Nat} {table : CatalogTable} (found : catalog.findTable name = some (position, table)) :
+    catalog.findView name = none := by
+  unfold Catalog.findTable at found
+  unfold Catalog.findView
+  split at found <;> simp_all
 
 /-- Add the index with the name at the end of the catalog, as CREATE INDEX does. -/
 def Catalog.createIndex (catalog : Catalog) (name : Identifier) (index : CatalogIndex) : Catalog :=
@@ -48,24 +70,23 @@ position. -/
 def Catalog.findTrigger (catalog : Catalog) (name : Identifier) : Option (Nat × CatalogTrigger) :=
   catalog.zipIdx.findSome? fun (object, position) => match object.entry with
     | .trigger trigger => if object.name.sameName name then some (position, trigger) else none
-    | .table _ | .index _ => none
+    | .table _ | .view _ | .index _ => none
 
 /-- Append the column to the table at the position, keeping the table's name and every
-other object, as ALTER TABLE ADD COLUMN does. A position that holds an index or no
-object is unchanged. The resolver and the execution of ADD COLUMN both use it. -/
+other object, as ALTER TABLE ADD COLUMN does. A non-table or absent position is unchanged. The resolver and the execution of ADD COLUMN both use it. -/
 def Catalog.addColumn (catalog : Catalog) (position : Nat) (column : CatalogColumn) : Catalog :=
   match catalog[position]? with
   | some { name, entry := .table table } =>
     catalog.set position { name, entry := .table { table with columns := table.columns ++ [column] } }
-  | some { entry := .index _, .. } | some { entry := .trigger _, .. } => catalog
+  | some { entry := .index _, .. } | some { entry := .view _, .. } | some { entry := .trigger _, .. } => catalog
   | none => catalog
 
-/-- The folded names of the tables and indexes of the catalog, in catalog order; triggers have a
+/-- The folded names of the tables, views and indexes of the catalog, in catalog order; triggers have a
 namespace of their own. -/
 def Catalog.foldedNames (catalog : Catalog) : List (List UInt8) :=
   (catalog.filter (!·.isTrigger)).map fun object => object.name.folded
 
-/-- The unique-names rule: no two tables or indexes of the catalog have the same folded name
+/-- The unique-names rule: no two tables, views or indexes of the catalog have the same folded name
 ({name}`Catalog.foldedNames` has no duplicate). Triggers are not in the list, so a trigger may
 have the name of a table, and two triggers the same name. -/
 def Catalog.NamesUnique (catalog : Catalog) : Prop := catalog.foldedNames.Nodup

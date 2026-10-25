@@ -46,6 +46,7 @@ theorem guard_bodies (catalog : Catalog) (position index : Nat) (table : Catalog
   simp [guardQueries, guardShapes, rangeShape, balanceCountShape, rangeQuery, metadataQuery,
     Resolved.Query.simple, Resolved.Query.countOf, Resolved.QuerySource.first, Resolved.QuerySource.pragma,
     firstCollations, Syntax.Expr.explicitCollation, Syntax.Expr.columnCollation,
+    resultOriginTypes, Syntax.Expr.originType, resultFlexibleNumerics, Syntax.Expr.flexibleNumeric,
     Resolved.Query.expressions, Resolved.QuerySource.expressions, Resolved.Query.keptExpressions,
     Resolved.Output.scalars, Resolved.Output.operands, Resolved.Expr.lowestRead,
     rangeResolved, nameResolved, typedResolved, minPosition]
@@ -76,20 +77,21 @@ Proof sketch: compose source scopes, subquery bodies and the outer body. -/
 theorem guard_select (catalog : Catalog) (position index : Nat) (table : CatalogTable) (cell : CatalogColumn)
     (found : catalog.findTable ledgerRef.table = some (position, table))
     (notTable : catalog.findTable pragmaRef.table = none)
+    (notView : catalog.findView pragmaRef.table = none)
     (column : columnPosition table.columns (name! "cents") = some index)
     (atIndex : table.columns[index]? = some cell) :
     resolveSelect runContext catalog mainSyntax balanceQueries =
       .ok (.query (Resolved.Query.selectOneWhere guardCondition) (guardQueries position index table cell), catalog) := by
-  have scopes := guard_scopes catalog position table found notTable
+  have scopes := guard_scopes catalog position table found notTable notView
   have bodies := guard_bodies catalog position index table cell column atIndex
   have main := main_body index
   have dqs : runContext.profile.dqsDml = true := rfl
   have noMain : ∀ queries prefix_, resolveSources catalog none [] 0 queries prefix_ = .ok ([], []) := by intros; rfl
   dsimp only [around] at scopes bodies
   dsimp only [mainSyntax, guardShapes, rangeShape, balanceCountShape] at main
-  have ordinary : balanceQueries.any (·.commonTable.isSome) = false := rfl
-  unfold resolveSelect
-  simp only [prepareCommonTables, ordinary, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
+  have ordinary := guard_no_copies catalog position table found
+  unfold resolveSelect resolveSelectDetails
+  simp only [prepareQuerySources, ordinary, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
   simp only [mainSyntax, noMain]
   simp [CommonTableCopies.recursionIssue, dqs, scopes, bodies, main, around, mainSyntax, starIssue, resultAliases,
     QueryScope.refresh, Scope.refreshSources, guardShapes, rangeShape, balanceCountShape,

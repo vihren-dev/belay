@@ -91,7 +91,7 @@ The frontend maps these statements, and refuses every other statement as
   Nested WITH also resolves in supported trigger expressions. Execution remains
   unmodeled when a trigger body both writes and uses a subquery; successful
   preparation does not remove that existing runtime restriction.
-  Views remain outside the implemented part of ADR 0019 slice 4.
+  Views are query sources too; see the paragraph on `CREATE VIEW` below.
 - Compound `SELECT` (ADR 0019, D3): `UNION ALL`, `UNION`, `INTERSECT` and `EXCEPT` of
   `SELECT` terms as above, from left to right, as a statement and as the `q` of `EXISTS`,
   `IN` and a scalar subquery. Two rows are equal when each column compares equal under the
@@ -204,9 +204,9 @@ row of `DO UPDATE` are always ABORT. In the schema, a `PRIMARY KEY`, `UNIQUE` or
 REPLACE of a NOT NULL column with a default is `replace-default`. `UPDATE OR`, a target with a direction, collation,
 `NULLS` order, qualified name or `WHERE`, `FROM` in writes, sort modifiers in keys,
 partial and expression indexes, `IF NOT EXISTS`, `TEMP`, schema names, table
-options, `AS SELECT`, views, `TEMP` and `INSTEAD OF` triggers, virtual tables, `EXPLAIN`, the pragmas that the next paragraphs do not name,
+options, `AS SELECT` in `CREATE TABLE`, `TEMP` views, `INSTEAD OF` triggers, `TEMP` triggers, virtual tables, `EXPLAIN`, the pragmas that the next paragraphs do not name,
 `DISTINCT` inside an aggregate call, unsupported table-valued functions in
-`FROM`, schema-qualified tables and columns, `NULLS FIRST` and `NULLS LAST`, and
+`FROM`, schema-qualified tables and columns other than the schema `before` of a two-state query (restriction `initial-database`), `NULLS FIRST` and `NULLS LAST`, and
 other functions are refused. Names keep
 their case as written; quotes are removed as SQLite removes them. Numeric literals
 keep their text, and declared types keep their text as SQLite's `sqlite3AddColumn` leaves
@@ -218,7 +218,7 @@ and trigger bodies cannot split commands. An empty starting schema is allowed.
 ## Schema description
 
 `schema.sql` describes the starting catalog. It may contain only `CREATE TABLE`,
-`CREATE INDEX` and `CREATE TRIGGER`, in an order that SQLite can run: an index or a trigger
+`CREATE VIEW`, `CREATE INDEX` and `CREATE TRIGGER`, in an order that SQLite can run: an index or a trigger
 follows its table.
 A schema statement that SQLite refuses to prepare, for example a second table
 with the same name, is `INPUT_ERROR` with SQLite's message. The description may
@@ -319,6 +319,11 @@ their cells have no affinity. A name of their hidden columns `arg` and `schema` 
 restriction `table-function`, because SQLite gives a condition on such a column to the pragma
 as an argument.
 
+A view body may call `pragma_table_info` and `pragma_foreign_key_list`. The model treats the
+schema as trusted, the default of the profile, so these calls work in a view. Native SQLite
+refuses them as an unsafe use of a virtual table only after `PRAGMA trusted_schema=OFF`, which
+the model does not support.
+
 `PRAGMA integrity_check` and `PRAGMA quick_check` (ADR 0019, D2), alone or with a value in
 parentheses or after `=`, check the rows of every table, or of the named table. A decimal
 integer is a row limit, without its sign, and 0 is the default limit 100; a name or a string
@@ -400,8 +405,42 @@ may not be dropped` for SQLite's schema tables under any of their names, also wi
 EXISTS`. The catalog does not name the indexes of UNIQUE and PRIMARY KEY constraints, so a
 DROP INDEX of another name that begins with `sqlite_autoindex_` is a model restriction
 (`drop-constraint-index`). With foreign keys on, `DROP TABLE` first deletes the rows of a table
-that foreign keys reference, with their actions, and fails when a violation remains. The model
-has no views.
+that foreign keys reference, with their actions, and fails when a violation remains.
+
+`CREATE VIEW [IF NOT EXISTS] name [(columns)] AS select` and `DROP VIEW [IF EXISTS] name`
+(ADR 0019, D5) keep the view in the catalog as the `SELECT` syntax, not as resolved rows. SQLite
+reads the view when a statement uses it, so the view can name a table that does not exist yet,
+and a later `DROP TABLE` or `CREATE TABLE` changes what the view reads. A use of the view in
+`FROM` expands the stored query like a derived table, with the column names of the optional
+list or of the query. Names of tables, views and indexes share one namespace, so `already
+exists`, `use DROP VIEW to delete view` and `use DROP TABLE to delete table` apply as in SQLite.
+A view that names a missing table or reads itself fails when a statement uses it, with SQLite's
+preparation error. A view has no stored rows: the observation of the catalog reads them by
+running `SELECT * FROM view`. Not modeled, and refused as model restrictions: `TEMP` views,
+schema-qualified view names, `INSTEAD OF` triggers, a view as the argument of a
+table-valued pragma.
+
+A view has no `INSTEAD OF` trigger in the model, so a write to it fails as in SQLite:
+`INSERT`, `REPLACE`, `UPDATE` and `DELETE` give `cannot modify v because it is a view`, with
+the name as the catalog spells it, and they do not look at the rest of the statement. `CREATE
+INDEX` on a view gives `views may not be indexed`, `ALTER TABLE ... ADD COLUMN` gives `Cannot
+add a column to a view`, and `CREATE TRIGGER` with `BEFORE` or `AFTER` gives `cannot create
+BEFORE trigger on view: v` or the same with `AFTER`, after the checks of the trigger name. The
+rows of an `INSERT` with different widths are the one error that comes first, as in SQLite.
+
+`PRAGMA table_info(view)` and a write to a view first read the columns of the view, as
+`SELECT * FROM view` gives them now. `table_info` lists the name, the normalized declared type
+or the empty text, `notnull` 0, `dflt_value` NULL and `pk` 0 for each. SQLite reads the columns
+only to describe them, so it does not check everything that a query on the view checks. A view
+that names a missing table or reads itself, a missing column or function, an ORDER BY or GROUP
+BY term out of range, or an ambiguous column gives the preparation error of the query, for
+the pragma and for a write. The width of the view's own list of column names is not checked:
+`table_info` lists the names of the list, in order and without types, and a write gives
+`cannot modify`. A subquery with the wrong number of columns, an aggregate in the wrong place
+and the other errors that SQLite finds only when a statement runs the view are the restriction
+`view-body-check`. So is the same list-width mismatch in another view that the view reads, and
+a missing column in a view that a trigger body writes to, because SQLite resolves `new.a` and
+`old.a` there. `PRAGMA foreign_key_list` of a view has no rows, as in SQLite.
 
 `CREATE TRIGGER [IF NOT EXISTS] name [BEFORE|AFTER] INSERT|UPDATE [OF columns]|DELETE ON table
 [FOR EACH ROW] [WHEN condition] BEGIN statements END` (ADR 0018, D5) has a body of `INSERT ...
@@ -528,7 +567,7 @@ should shrink.
 
 | Id | Restriction | Introduced by |
 | --- | --- | --- |
-| `schema-statement` | A schema contains only CREATE TABLE, CREATE INDEX and CREATE TRIGGER statements | ADR 0008, ADR 0018 |
+| `schema-statement` | A schema contains only CREATE TABLE, CREATE VIEW, CREATE INDEX and CREATE TRIGGER statements | ADR 0008, ADR 0018 |
 | `engine-table` | Engine-managed tables other than sqlite_stat1 and sqlite_stat4 are not modeled | ADR 0008 |
 | `rowid-column-name` | Column names `rowid`, `_rowid_` and `oid` are not modeled | ADR 0008 |
 | `unmodeled-default` | Only literal defaults and the time keywords are modeled | ADR 0008 |
@@ -552,7 +591,8 @@ should shrink.
 | `system-table` | Queries of SQLite's own tables, such as `sqlite_schema`, are not modeled | ADR 0012 slice 1 |
 | `unmodeled-function` | A function of the pinned library that the model does not describe, or a form of it that the model does not describe, such as a window function or `sqlite_version()` | ADR 0012 slices 1, 2, 6b and 6c; ADR 0015 |
 | `aggregate-in-expression` | An aggregate where the model does not describe it, such as the argument of a function that can fail, is not modeled | ADR 0012 slice 1; ADR 0018, slice 3 |
-| `alias-in-expression` | A result column alias inside WHERE or an ORDER BY expression is not modeled | ADR 0012 slice 1 |
+| `alias-in-expression` | A result column alias inside WHERE, ON, HAVING or an ORDER BY expression is not modeled | ADR 0012 slice 1 |
+| `view-body-check` | A view whose query has an error that SQLite finds only when a statement runs the view, such as a subquery with two columns, is not modeled for `PRAGMA table_info` or a write to the view | ADR 0017 |
 | `group-by-term` | Only a column name, also under COLLATE, or a result column number is modeled in GROUP BY | ADR 0012 slice 1; ADR 0014, slice 3 |
 | `bare-column` | A result column outside GROUP BY in an aggregate query is not modeled | ADR 0012 slice 1 |
 | `aggregate-order-by` | An `ORDER BY` term of an aggregate query that reads a column outside `GROUP BY` is not modeled | ADR 0012 slice 1; ADR 0018, slice 3 |
@@ -574,6 +614,7 @@ should shrink.
 | `compound-order-by-term` | An `ORDER BY` term of a compound `SELECT` that the model cannot match with a result column as SQLite does, such as an aggregate, or a `COLLATE` term after which SQLite names a result column at random, is not modeled | ADR 0019, D3 |
 | `connection-counter-read` | `last_insert_rowid()` in an `INSERT` or an upsert, and `total_changes()` in a write that runs trigger programs or foreign-key actions, are not modeled, because the counter changes while the statement runs | ADR 0024, D2 |
 | `nondeterministic-error-order` | A call of `changes()`, `total_changes()`, `last_insert_rowid()`, `random()` or `randomblob(n)` in a generated column, an index expression or an index filter, in an expression with another error of its walk of names, is not modeled, because the error that SQLite reports depends on the order of the walk | ADR 0024, D5 |
+| `initial-database` | A table qualified with `before` outside a two-state query that is given the initial database, such as a table in the body of a trigger, and a function or pragma source with that schema name, are not modeled; the model never reads the current table instead. `CREATE VIEW` with such a table in its body is refused with the same restriction, because SQLite refuses it. A function call such as `json_each('[1]')` in the body of a view of the initial database is also refused when the current catalog has a view of the same name, because the model would read the wrong catalog. A three-part column name needs such a source, so without one it is the ordinary missing-column error, except that a rowid name in it is the restriction `rowid-name` | ADR 0017, S6 |
 
 #### Undecided
 

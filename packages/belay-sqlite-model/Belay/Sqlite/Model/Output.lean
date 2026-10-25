@@ -66,7 +66,7 @@ def Output.ofResults (results : List (List (List Value))) : Output :=
 def Resolved.Statement.returnsRows : Resolved.Statement → Bool
   | .insert _ _ returning .. | .upsert _ _ _ returning .. | .update _ _ _ returning .. | .delete _ _ returning .. =>
     !returning.isEmpty
-  | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit | .rollback
+  | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit | .rollback
   | .prepareError _ | .query .. | .setting .. => false
 
 /-- The output of a statement from its transition, from its run ({name}`StatementRun`) and from
@@ -80,9 +80,12 @@ what the model computes for it with the values bound to its parameters
   promises no order for them;
 * every other statement that succeeds gives {name}`Output.done` of its number of changes, 0
   when it has none;
-* a statement for which the model gives no output gives {name}`Output.unmodeled`. -/
+* a statement for which the model gives no output gives {name}`Output.unmodeled`.
+
+The optional {lit}`initial` database is the one that the sources of the initial origin of a query read in a
+two-state observation; use none otherwise. -/
 def Output.ofStep (clock : Int) (parameters : List Value) (statement : Resolved.Statement) (before : SqlState)
-    (run : StatementRun) (transition : SqlTransition) : Output :=
+    (run : StatementRun) (transition : SqlTransition) (initial : Option Database := none) : Output :=
   match haltError transition with
   | some .unmodeled => .unmodeled unmodeledHere
   | some failure@(.prepare _) | some failure@.transactionAlreadyActive | some failure@.noActiveTransaction
@@ -91,10 +94,10 @@ def Output.ofStep (clock : Int) (parameters : List Value) (statement : Resolved.
   | some failure@.nullColumnDefault | some failure@.nonConstantColumnDefault | some failure@.checkColumnDefault =>
     .error failure.primaryCode
   | none => match statement with
-    | .query .. => match possibleOutput clock parameters statement before transition with
+    | .query .. => match possibleOutput clock parameters statement before transition initial with
       | some results => .ofResults results
       | none => .unmodeled "the model gives no result for this query"
-    | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit
+    | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop .. | .begin | .commit
     | .rollback | .insert .. | .upsert .. | .update .. | .delete .. | .prepareError _ | .setting .. =>
       match statementOutput clock parameters statement before run transition with
       | some output =>

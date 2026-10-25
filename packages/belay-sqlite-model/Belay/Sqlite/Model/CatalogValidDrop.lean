@@ -52,13 +52,14 @@ theorem Catalog.tableAt_drop {catalog : Catalog} {positions : List Nat} {positio
     cases entry <;> rfl
 
 /-- For every catalog, positions, name, table and position: if {name}`Catalog.findTable` finds the
-table at a position that the drop keeps, the catalog after {name}`Catalog.drop` finds a table with the
-name ({name}`Catalog.findTable` gives a result). The formula does not say where. Proof sketch: the first-match rule ({name}`FirstMatch`) holds for the
+table at a position that the drop keeps, the catalog after {name}`Catalog.drop` finds that same table
+at the transported position ({name}`keptBelow`). Proof sketch: the first-match rule ({name}`FirstMatch`) holds for the
 kept object at the new position: the kept objects before it come from earlier positions of the
 catalog, and none of them has the name. -/
-theorem Catalog.findTable_isSome_drop {catalog : Catalog} {positions : List Nat} {target : Identifier}
+theorem Catalog.findTable_drop_kept {catalog : Catalog} {positions : List Nat} {target : Identifier}
     {found : Nat} {table : CatalogTable} (hfind : catalog.findTable target = some (found, table))
-    (kept : !positions.contains found) : ((catalog.drop positions).findTable target).isSome = true := by
+    (kept : !positions.contains found) :
+    (catalog.drop positions).findTable target = some (keptBelow positions found, table) := by
   unfold Catalog.findTable at hfind ⊢
   cases hf : catalog.find target with
   | none => simp [hf] at hfind
@@ -66,10 +67,10 @@ theorem Catalog.findTable_isSome_drop {catalog : Catalog} {positions : List Nat}
     obtain ⟨place, thing⟩ := pair
     obtain ⟨name, entry⟩ := thing
     cases entry with
-    | index _ | trigger _ => simp [hf] at hfind
+    | index _ | view _ | trigger _ => simp [hf] at hfind
     | table shape =>
       simp only [hf, Option.some.injEq, Prod.mk.injEq] at hfind
-      obtain ⟨rfl, -⟩ := hfind
+      obtain ⟨rfl, rfl⟩ := hfind
       unfold Catalog.find at hf
       obtain ⟨atPlace, passes, before⟩ := (findPosition_eq_some_iff _ _ _ _).mp hf
       have location : (catalog.drop positions).find target =
@@ -100,7 +101,7 @@ theorem Catalog.findTable_isSome_drop {catalog : Catalog} {positions : List Nat}
 {name}`Catalog.drop` is valid. Proof sketch: the folded names stay unique
 ({name}`Catalog.NamesUnique.drop`); a kept table does not change; a kept index is supported for the
 same table, which has a new position ({name}`Catalog.tableAt_drop`); and a kept trigger still finds
-its table ({name}`Catalog.findTable_isSome_drop`). -/
+its table ({name}`Catalog.findTable_drop_kept`). -/
 theorem Catalog.Valid.drop {limits : Limits} {catalog : Catalog} (valid : catalog.Valid limits)
     {positions : List Nat} (closed : catalog.DropClosed positions) : (catalog.drop positions).Valid limits := by
   refine (Catalog.supported_iff limits _).mpr ⟨valid.namesUnique.drop positions, ?_⟩
@@ -113,6 +114,7 @@ theorem Catalog.Valid.drop {limits : Limits} {catalog : Catalog} (valid : catalo
   obtain ⟨name, entry⟩ := original
   cases entry with
   | table _ => simpa [CatalogEntry.afterDrop] using old
+  | view _ => simpa [CatalogEntry.afterDrop] using old
   | index found =>
     simp only [CatalogEntry.afterDrop, Bool.and_eq_true] at old ⊢
     refine ⟨old.1, ?_⟩
@@ -127,8 +129,9 @@ theorem Catalog.Valid.drop {limits : Limits} {catalog : Catalog} (valid : catalo
     | none => simp [hfind] at old
     | some pair =>
       obtain ⟨location, table⟩ := pair
-      exact Catalog.findTable_isSome_drop hfind (by
-        simpa using closed.2 place _ found atPlace rfl (by simpa using placeKept) location table hfind)
+      rw [Catalog.findTable_drop_kept hfind (by
+        simpa using closed.2 place _ found atPlace rfl (by simpa using placeKept) location table hfind)]
+      rfl
 
 /-- For every catalog, {name}`Catalog.DropClosed` holds for the empty list of positions: the drop of
 nothing keeps every table of every index and trigger. Proof sketch: no position is in the empty

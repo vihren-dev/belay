@@ -25,9 +25,11 @@ Reviewed source: `4e8d9b296d63c7acbe302ebd1c54385d203b2b3d`.
   the same `altertab3-16.1` setup, which creates a trigger with nested and unused
   ordinary WITH clauses. It does not fire the trigger. These gains establish
   preparation support; the authored focused tests cover CTE execution.
-- No frozen corpus, claim or judge-lock file changed. The raw comparison is
-  retained in the publication workspace at
-  `build/agent-logs/cte-integration-acceptance/query-source-cte-integration-prediction-changes.json`.
+- No frozen corpus, claim or judge-lock file changed. After retirement of the
+  publication workspace, the raw comparison is retained at
+  `/home/codex/work/sqlite-verifier-s4/build/agent-logs/cte-publication/cte-integration-acceptance/query-source-cte-integration-prediction-changes.json`.
+  All six accepted outputs have independent roots under
+  `/home/codex/work/sqlite-verifier-s4/build/accepted-cte-artifacts`.
 
 ## Remaining boundaries
 

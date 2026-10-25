@@ -16,6 +16,8 @@ structure Pass where
   /-- The initial snapshot and one observation after each executed statement; a halt ends
   them. -/
   observations : List Observation
+  /-- Writer counters at each observation, including the counts of a halting statement. -/
+  counters : List Counters
   /-- The output of each executed statement, up to and including a halting one. -/
   outputs : List (Option StatementOutput)
   /-- The results that SQLite may give for each executed statement ({name}`possibleOutput`). -/
@@ -29,7 +31,7 @@ its run ({lit}`advanceRun`, which also applies the counts of the run to the coun
 its outcome. -/
 def passFrom (position : Nat) (script : List (Resolved.Statement × List Value)) (state : SqlState) : Pass :=
   match script with
-  | [] => { observations := [observeState state], outputs := [], possible := [], supported := true }
+  | [] => { observations := [observeState state], counters := [state.counters], outputs := [], possible := [], supported := true }
   | (statement, parameters) :: rest =>
     let clock := state.clock position
     let run := SqlState.statementRun state clock parameters statement
@@ -40,10 +42,12 @@ def passFrom (position : Nat) (script : List (Resolved.Statement × List Value))
     match transition with
     | .next next =>
       let later := passFrom (position + 1) rest next
-      { observations := observeState state :: later.observations, outputs := output :: later.outputs,
+      { observations := observeState state :: later.observations,
+        counters := state.counters :: later.counters, outputs := output :: later.outputs,
         possible := possible :: later.possible, supported := ready && later.supported }
     | .halt outcome =>
-      { observations := [observeState state, observeOutcome outcome], outputs := [output], possible := [possible],
+      { observations := [observeState state, observeOutcome outcome],
+        counters := [state.counters, state.counters.apply run.counts], outputs := [output], possible := [possible],
         supported := ready }
 
 /-- The observations of a complete case, which begins outside a transaction as

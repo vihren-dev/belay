@@ -15,12 +15,17 @@ positions, and each comparison keeps the affinity and collation that evaluation 
 
 namespace Belay.Sqlite.Model
 
+/-- The name that an error message gives for the column {lit}`schema.source.column`, or
+{lit}`source.column` without a schema, as SQLite writes it. -/
+def qualifiedName (schema : Option Identifier) (source column : Identifier) : Identifier :=
+  ⟨(schema.map (·.bytes ++ [46])).getD [] ++ source.bytes ++ [46] ++ column.bytes⟩
+
 mutual
 /-- Resolve an expression over the sources in scope. An unqualified identifier is the
 operand of its name ({name}`Scope.resolveName`, {name}`Scope.nameOperand`): one column,
 or the coalesce of the columns that full joins merged; two columns that no join merged
 are SQLite's {lit}`ambiguous column name: %s`. With none: a rowid name
-({name}`rowidName`) is a model restriction when a source with a rowid is in scope
+({name}`rowidName`) is a model restriction when a source with visible names and a rowid is in scope
 ({name}`ScopeSource.hasRowid`), because SQLite reads the rowid; a name written in double quotes is a string literal when {lit}`dqs` is on;
 an unquoted {lit}`TRUE` or {lit}`FALSE` is the integer 1 or 0; else it is SQLite's
 {lit}`no such column: %s`, also for {lit}`[true]`, which only quotes. A qualified name {lit}`x.c` is column
@@ -53,18 +58,18 @@ def resolveOperand (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misus
   | .identifier name quote => match scope.resolveName name with
     | .found _ reads => scope.nameRead reads
     | .missing =>
-      if rowidName name && scope.any (·.hasRowid) then .error (.restriction [] .rowidName)
+      if rowidName name && scope.any (fun source => source.namesVisible && source.hasRowid) then .error (.restriction [] .rowidName)
       else if quote == .double && dqs then .ok (.literal (.text name.bytes), none)
       else if quote == .none && booleanKeywordName name then
         .ok (.literal (.integer (if name.isKeyword (bytes! "true") then 1 else 0)), none)
       else .error (.prepare (.noSuchColumn name))
     | .ambiguous => .error (.prepare (.ambiguousColumn name))
-  | .qualified source column => match scope.resolveQualified source column with
+  | .qualified source column schema => match scope.resolveSchemaQualified source column schema with
     | .found _ reads => scope.nameRead reads
     | .missing =>
       if rowidName column && scope.rowidSource source then .error (.restriction [] .rowidName)
-      else .error (.prepare (.noSuchColumn ⟨source.bytes ++ [46] ++ column.bytes⟩))
-    | .ambiguous => .error (.prepare (.ambiguousColumn ⟨source.bytes ++ [46] ++ column.bytes⟩))
+      else .error (.prepare (.noSuchColumn (qualifiedName schema source column)))
+    | .ambiguous => .error (.prepare (.ambiguousColumn (qualifiedName schema source column)))
   | .compare operator left right => do
     let a ← (resolveOperand dqs scope shapes misuse left).mapError (·.under [1])
     let b ← (resolveOperand dqs scope shapes misuse right).mapError (·.under [2])

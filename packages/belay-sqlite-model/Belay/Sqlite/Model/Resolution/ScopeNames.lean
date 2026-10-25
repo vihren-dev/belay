@@ -40,10 +40,10 @@ def Scope.resolveStep (name : Identifier) (result : NameResolution) (source : Sc
     else .ambiguous
 
 /-- Resolve an unqualified name over the sources of one depth from left to right
-({name}`Scope.resolveStep`); a trigger's rows are not among them. -/
+({name}`Scope.resolveStep`); sources with hidden names and a trigger's rows are not among them. -/
 def Scope.resolveAt (scope : Scope) (name : Identifier) (depth : Nat) : NameResolution :=
   scope.foldl (fun result source =>
-    if source.depth == depth && !source.trigger then Scope.resolveStep name result source else result) .missing
+    if source.namesVisible && source.depth == depth && !source.trigger then Scope.resolveStep name result source else result) .missing
 
 /-- One more than the largest depth of the scope's sources; 1 for an empty scope. -/
 def Scope.depths (scope : Scope) : Nat :=
@@ -58,9 +58,9 @@ that did not merge it makes the name ambiguous. -/
 def Scope.resolveName (scope : Scope) (name : Identifier) : NameResolution :=
   (((List.range scope.depths).map (scope.resolveAt name)).find? (· != .missing)).getD .missing
 
-/-- Whether the source has the folded name. -/
+/-- Whether a visible, qualified source has the folded name. -/
 def ScopeSource.named (source : ScopeSource) (name : Identifier) : Bool :=
-  source.qualified && source.name.sameName name
+  source.namesVisible && source.qualified && source.name.sameName name
 
 /-- Whether a source of the query's own sources ({name}`Scope.inner`) that is no trigger's row
 has the folded name. -/
@@ -70,6 +70,14 @@ def Scope.hasSource (scope : Scope) (name : Identifier) : Bool :=
 /-- Whether a source with the folded name has a rowid ({name}`ScopeSource.hasRowid`). -/
 def Scope.rowidSource (scope : Scope) (name : Identifier) : Bool :=
   scope.any fun source => source.named name && source.hasRowid
+
+/-- The sources that a schema qualifier names: all of them without a qualifier, and with
+{lit}`before.` ({name}`Syntax.initialSchemaName`) only the tables and views of the initial
+database ({name}`ScopeSource.initial`). Any other schema name names no source, as in SQLite,
+where a derived table, a CTE and a trigger's row belong to no schema. -/
+def Scope.inSchema (scope : Scope) : Option Identifier → Scope
+  | none => scope
+  | some schema => scope.filter fun source => schema.isInitialSchema && source.initial
 
 /-- Resolve the qualified name {lit}`source.column` as SQLite does (checked on native 3.51.0):
 as an unqualified name ({name}`Scope.resolveName`) over only the sources with the folded
@@ -92,6 +100,12 @@ def Scope.resolveQualified (scope : Scope) (source column : Identifier) : NameRe
       | .found first reads => .found first reads
     | .ambiguous => .ambiguous
     | .found first reads => .found first reads
+
+/-- Resolve the name {lit}`schema.source.column`, or {lit}`source.column` without a schema, over
+the sources that the qualifier names ({name}`Scope.inSchema`), as {name}`Scope.resolveQualified`. -/
+def Scope.resolveSchemaQualified (scope : Scope) (source column : Identifier) (schema : Option Identifier) :
+    NameResolution :=
+  (scope.inSchema schema).resolveQualified source column
 
 /-- The columns of {lit}`source.*` with their positions in the concatenated row: every
 column that is not hidden ({name}`ScopeSource.hidden`) of every source of the query's own

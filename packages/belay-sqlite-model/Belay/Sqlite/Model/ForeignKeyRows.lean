@@ -150,7 +150,8 @@ def updateRow (catalog : Catalog) (links : List ForeignKeyLink) (nested : Nested
     let state ← parents.foldlM (fun state link =>
       runAction catalog (nested frame.action) link link.key.onUpdate position old (some new) state) state
     return (← runPrograms catalog nested frame position .after event (new.values ++ old.values) state).1
-  | none, _ | some _, some { entry := .index _, .. } | some _, some { entry := .trigger _, .. } | some _, none =>
+  | none, _ | some _, some { entry := .index _, .. } | some _, some { entry := .view _, .. }
+  | some _, some { entry := .trigger _, .. } | some _, none =>
     pure state
 
 end Belay.Sqlite.Model

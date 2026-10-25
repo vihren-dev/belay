@@ -27,7 +27,7 @@ theorem customer_count_is_iff (db : Database) (n : Int64) (position : Nat) (tabl
     fun lowest => FilterResolves.of_term (term := .compare .eq (.subquery 0) (.parameter 1))
       (result := (.compare .eq none (.subquery 0) (.parameter 1) .binary, none)) (by simp [namesAlias]) (by
       simp [sql_simp, countShape]; rfl)
-  refine Iff.trans (Holds.iff_selectOne_count (namedSource := rfl) (head := rfl) (count := by decide)
+  refine Iff.trans (Holds.iff_selectOne_count (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide)
     (arguments := rfl) found (FilterResolves.of_none _ _ _ _) mainResolves (by simp [sql_simp]) (by simp)) ?_
   simp [sql_simp, Resolved.comparisonOperands, Resolved.SubqueryRun.count, Resolved.countMatching_none,
     Value.isNull, Comparison.holds, boundValue]

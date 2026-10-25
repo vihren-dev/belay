@@ -130,6 +130,7 @@ import Belay.Sqlite.Model.ResolveStatementApplied
 import Belay.Sqlite.Model.ResolveStatementFacts
 import Belay.Sqlite.Model.ResolveStatementLink
 import Belay.Sqlite.Model.ResolveStatementForms
+import Belay.Sqlite.Model.ResolveStatementPragmaLink
 import Belay.Sqlite.Model.ScriptRunDerived
 import Belay.Sqlite.Model.RunHoldsReady
 import Belay.Sqlite.Model.AdmittedRowLaws
@@ -165,6 +166,7 @@ import Belay.Sqlite.Model.ResolveAddColumnCatalog
 import Belay.Sqlite.Model.ResolveDropValid
 import Belay.Sqlite.Model.ResolveDropCatalog
 import Belay.Sqlite.Model.ResolveCreateTriggerCatalog
+import Belay.Sqlite.Model.ResolveCreateViewCatalog
 import Belay.Sqlite.Model.ResolveCreateIndexCatalog
 import Belay.Sqlite.Model.ResolveCreateTableCatalog
 import Belay.Sqlite.Model.ResolveCreateTableValid
@@ -200,6 +202,7 @@ import Belay.Sqlite.Model.QueryOutputRows
 import Belay.Sqlite.Model.QueryStatementOutput
 import Belay.Sqlite.Model.QueryOutputCases
 import Belay.Sqlite.Model.SimpleQueryLaws
+import Belay.Sqlite.Model.QuerySourceCopyLaws
 import Belay.Sqlite.Model.SimpleSelectResolution
 import Belay.Sqlite.Model.SimpleSourceResolution
 import Belay.Sqlite.Model.SimpleQuerySteps
@@ -276,6 +279,7 @@ import Belay.Sqlite.Model.SumRangeLaws
 import Belay.Sqlite.Model.SumValueLaws
 
 import Belay.Sqlite.Model.QueryStepOutput
+import Belay.Sqlite.Model.TwoStateQuery
 import Belay.Sqlite.Model.QueryOutputOn
 import Belay.Sqlite.Model.QueryOutputCases
 import Belay.Sqlite.Model.OutputResultsLaws

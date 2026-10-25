@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T19:07:46+00:00",
+  "finding": "20261025T160157Z-51cd4134#4",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "sourcesOf is a test helper that asks whether a resolution is a query. A new statement constructor is no query unless the helper changes, and a new query-like constructor gives none where the examples expect some, so the examples fail instead of passing silently. Resolved.Statement.readsInitial uses the same form on purpose."
+}

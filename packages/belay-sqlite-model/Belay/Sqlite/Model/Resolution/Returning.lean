@@ -29,7 +29,7 @@ def definedName (scope : Scope) : Syntax.Expr → Option String
   | .identifier name _ => match scope.resolveName name with
     | .found _ [position] => scope.columns[position]?.map (·.name.text)
     | .found .. | .missing | .ambiguous => none
-  | .qualified source column => match scope.resolveQualified source column with
+  | .qualified source column schema => match scope.resolveSchemaQualified source column schema with
     | .found _ [position] => scope.columns[position]?.map (·.name.text)
     | .found .. | .missing | .ambiguous => none
   | .null | .numeric _ | .string _ | .blob _ | .parameter _ | .currentTime _ | .negate _ | .positive _

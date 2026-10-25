@@ -24,10 +24,10 @@ MUTANTS: dict[str, Mutation] = {
         "  return ({ sources, filter := condition,",
         "  return ({ sources, filter := if sources.isEmpty then none else condition,"),
     "fromless_star_accepted": MutationGroup((
-        (QUERIES, "  | .star => if scope.inner.isEmpty then .error (.prepare .noTablesSpecified) else",
+        (QUERIES, "  | .star => if !(scope.inner.any (·.namesVisible)) then .error (.prepare .noTablesSpecified) else",
          "  | .star => if false then .error (.prepare .noTablesSpecified) else"),
         (SQLITE + "Resolution/CompoundTerms.lean",
-         "    | .star => if scope.inner.isEmpty then some (.prepare .noTablesSpecified) else none",
+         "    | .star => if !(scope.inner.any (·.namesVisible)) then some (.prepare .noTablesSpecified) else none",
          "    | .star => if false then some (.prepare .noTablesSpecified) else none"),
     )),
 }

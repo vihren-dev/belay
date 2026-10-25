@@ -66,6 +66,19 @@ theorem Catalog.findTable_some (catalog : Catalog) (name : Identifier) (position
   simp only [Identifier.sameName, Bool.and_eq_true, beq_iff_eq] at test
   exact ⟨_, atPosition, rfl, test.1⟩
 
+/-- For every successful view lookup, its catalog position contains that view
+definition. Proof sketch: unpack the shared named-object search and recover its
+position with {name}`findPosition_eq_some_iff`. -/
+theorem Catalog.findView_some {catalog : Catalog} {name : Identifier} {position : Nat}
+    {view : CatalogView} (found : catalog.findView name = some (position, view)) :
+    ∃ object, catalog[position]? = some object ∧ object.entry = .view view := by
+  unfold Catalog.findView at found
+  split at found <;> try contradiction
+  rename_i place declared hfind
+  cases found
+  obtain ⟨atPosition, _, _⟩ := (findPosition_eq_some_iff _ _ _ _).mp hfind
+  exact ⟨_, atPosition, rfl⟩
+
 /-- How one statement may change the catalog. The catalog is the same; or one object
 is appended whose name {name}`Catalog.find` does not find; or a trigger is appended, whose
 name is in a namespace of its own; or the object at a position is replaced by one with the

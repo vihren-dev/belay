@@ -73,7 +73,7 @@ theorem at_most_one_live_account_iff (db : Database) (f : Value) (position email
       rw [resolveOperand_and, resolveOperand_column_is_null _ _ _ _ _ _ _ deletedColumn deletedAt]
       simp [sql_simp, emailColumn, emailAt, equalsParameter, Except.mapError]
       rfl)
-  refine Iff.trans (Holds.iff_selectOne_count (namedSource := rfl) (head := rfl) (count := by decide)
+  refine Iff.trans (Holds.iff_selectOne_count (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide)
     (arguments := rfl) found subResolves mainResolves (by simp [sql_simp]) (by simp [equalsParameter, liveCondition, sql_simp])) ?_
   rw [Resolved.truthy_count_le_one]
   simp

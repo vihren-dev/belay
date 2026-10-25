@@ -15,10 +15,13 @@ namespace Belay.Sqlite.Model
 
 /-- The shape of a subquery with one result column that no query surrounds and that is no compound: its
 affinity, the explicit collation and the column collation of its result column, and the lowest cell position
-{lit}`lowest` that it reads. -/
+{lit}`lowest` that it reads. Supply the declaration of its origin column through
+{lit}`originType`; omit it for an expression without a column origin. The
+optional FLEXNUM flag defaults to false for a physical table's expression. -/
 def scalarShape (affinity : Option Affinity) (explicitCollation columnCollation : Option Collation)
-    (lowest : Option Nat) : SubqueryShape :=
-  { parent := none, columns := 1, affinity, explicitCollation, columnCollation, lowest, derived := false }
+    (lowest : Option Nat) (originType : Option String := none) (flexibleNumeric : Bool := false) : SubqueryShape :=
+  { parent := none, columns := 1, affinity, originType, flexibleNumeric,
+    explicitCollation, columnCollation, lowest, derived := false }
 
 /-- For every catalog, table reference, position, table, name and quote kind, if the table has a column of that name at
 a position, the column collation of the name in the scope of the table ({name}`Syntax.Expr.columnCollation`) is the collation of the
@@ -32,26 +35,40 @@ theorem Syntax.Expr.columnCollation_identifier_table {catalog : Catalog} {refere
       table.columns[index]?.map (·.collation) := by
   simp [Syntax.Expr.columnCollation, tableScope, resolveName_one_source found, Scope.columns_single]
 
+/-- For a name that selects a column of a physical table, its origin type is
+that column's declaration. Proof sketch: name resolution selects one cell of
+the ordinary table scope, whose columns are the table's columns. -/
+theorem Syntax.Expr.originType_identifier_table {catalog : Catalog} {reference : Syntax.TableReference}
+    {position : Nat} {table : CatalogTable} {name : Identifier} {quote : Syntax.QuoteKind} {index : Nat}
+    (found : columnPosition table.columns name = some index) (shapes : SubqueryShapes) :
+    (Syntax.Expr.identifier name quote).originType (tableScope catalog reference position table) shapes =
+      table.columns[index]?.bind (·.declaredType) := by
+  simp only [Syntax.Expr.originType, tableScope, resolveName_one_source found]
+  simp [Scope.nameOriginType, Scope.originTypeAt, Scope.columns, Scope.triggerCell, Scope.single]
+
 /-- For every scope, shapes, subquery syntax with one expression column and no parent, and resolved query with one column,
 the shape that resolution records for the subquery is the shape of a one-column subquery ({name}`scalarShape`) with the
-affinity given, the collations of the expression ({name}`firstCollations`) and some lowest position. Proof sketch:
+affinity given, the collations of the expression ({name}`firstCollations`), its
+declared-type origin, FLEXNUM flag, and some lowest position. Proof sketch:
 the subquery has no parent and one resolved column, and the lowest position is a fold that the lemma leaves open. -/
 theorem subqueryShape_scalar (scope : Scope) (shapes : SubqueryShapes) (value : Syntax.Expr) (alias : Option Identifier)
     (text : String) (source : Option Syntax.TableReference) (filter : Option Syntax.Expr) (query : Resolved.Query)
     (affinity : Option Affinity) (one : query.columns.length = 1) :
     ∃ lowest, subqueryShape scope shapes (Syntax.Subquery.mk [.expression value alias text] source [] filter [] [] none none
       none none false none none) query affinity =
-        scalarShape affinity value.explicitCollation (value.columnCollation scope) lowest :=
-  by simp [subqueryShape, firstCollations, one, scalarShape]
+        scalarShape affinity value.explicitCollation (value.columnCollation scope) lowest
+          (value.originType scope shapes) (value.flexibleNumeric scope shapes) :=
+  by simp [subqueryShape, firstCollations, one, scalarShape, resultOriginTypes, resultFlexibleNumerics]
 
 /-- For every statement {lit}`SELECT 1 WHERE c` with one subquery {lit}`SELECT e FROM t WHERE p` of a table that the catalog of the
 state has at a position, without table-function arguments, where {lit}`e` is no function call, has no aggregate call and resolves in
 the scope of the table to an expression without a fallible call, {lit}`p` resolves in the scope of the table, and {lit}`c`
 resolves to a condition without a fallible call for every lowest position of a one-column subquery with the collations of
-{lit}`e` ({name}`scalarShape`), resolution gives the simple query without source and with that condition and the literal one,
+{lit}`e` and its declared-type origin ({name}`scalarShape`), resolution gives the simple query without source,
+with that condition and the literal one,
 and the simple query of the first source of the table with the condition of {lit}`p` and the column of {lit}`e` as its one subquery,
 and leaves the state as it is. The source reference has no indexed query.
-Proof sketch: {name}`resolveStatement_select_of_resolveSelect` and
+The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`resolveStatement_select_of_resolveSelect` and
 {name}`resolveSelect_noFrom_one_subquery`; the subquery resolves by {name}`resolveQueryBody_simple` in the scope of its table
 with the column of {name}`resolveColumns_scalar`, its shape is a one-column shape ({name}`subqueryShape_scalar`), and the
 statement's query resolves by {name}`resolveQueryBody_simple` in the empty scope with that shape. -/
@@ -60,7 +77,7 @@ theorem resolveStatement_selectOne_scalar (context : ResolveContext) (state : Re
     (mainFilter : Syntax.Expr) (position : Nat) (table : CatalogTable) (subCondition : Option Resolved.Expr)
     (mainCondition : Resolved.Expr) (expression : Resolved.Expr) (affinity : Option Affinity)
     (notCall : value.isCall = false) (noAggregate : value.aggregateCalls.isEmpty = true)
-    (namedSource : reference.query = none) (arguments : reference.arguments = none) (found : state.catalog.findTable reference.table = some (position, table))
+    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none) (found : state.catalog.findTable reference.table = some (position, table))
     (operand : resolveOperand context.profile.dqsDml (tableScope state.catalog reference position table)
       { current := some 0 } false value = .ok (expression, affinity))
     (valuePlain : expression.any Resolved.Expr.isFallibleCall = false)
@@ -69,7 +86,8 @@ theorem resolveStatement_selectOne_scalar (context : ResolveContext) (state : Re
     (mainResolves : ∀ lowest : Option Nat,
       FilterResolves context.profile.dqsDml [] [] (some mainFilter) (some mainCondition)
         { later := [scalarShape affinity value.explicitCollation (value.columnCollation
-          (tableScope state.catalog reference position table)) lowest] })
+          (tableScope state.catalog reference position table)) lowest
+          (value.originType (tableScope state.catalog reference position table) { current := some 0 })] })
     (plain : mainCondition.any Resolved.Expr.isFallibleCall = false) :
     resolveStatement context state (.select [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none
         [Syntax.Subquery.mk [.expression value none text] (some reference) [] subFilter [] [] none none none none
@@ -97,9 +115,12 @@ theorem resolveStatement_selectOne_scalar (context : ResolveContext) (state : Re
     { current := some 0 } value none text (some reference) subFilter
     (Resolved.Query.simple [Resolved.QuerySource.first position] subCondition [.scalar expression]
       [(definedName (tableScope state.catalog reference position table) value).getD text]) affinity rfl
+  have ordinary : value.flexibleNumeric (tableScope state.catalog reference position table)
+      { current := some 0 } = false := by simp [tableScope, Syntax.Expr.flexibleNumeric_single]
+  rw [ordinary] at shapeIs
   have mainBody := resolveQueryBody_simple context.profile.dqsDml [] none
     [scalarShape affinity value.explicitCollation (value.columnCollation (tableScope state.catalog reference position table))
-      lowest] [] []
+      lowest (value.originType (tableScope state.catalog reference position table) { current := some 0 })] [] []
     (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none none none false none none)
     (simple _ _) _ (some mainCondition) _ (resolveColumns_one _ _ _)
     (by simpa [resultAliases] using mainResolves lowest) (resolvePendingSources_nil _ _) noFeed
@@ -107,7 +128,7 @@ theorem resolveStatement_selectOne_scalar (context : ResolveContext) (state : Re
     (Syntax.Subquery.mk [.expression (.numeric "1") none "1"] none [] (some mainFilter) [] [] none none none none false none none)
     _ rfl rfl _ ?_
   refine resolveSelect_noFrom_one_subquery context state.catalog _ _ rfl rfl rfl (by simp [starIssue]) rfl rfl rfl _ _
-    (resolveSources_table state.catalog reference position table namedSource arguments found) (by simp [starIssue]) _ _
+    (resolveSources_table state.catalog reference position table namedSource current arguments found) (by simp [starIssue]) _ _
     (by simpa [resultAliases] using subBody) _ shapeIs.symm _ _ (by simpa using mainBody) ?_
   simp [Resolved.Query.expressions, Resolved.Query.keptExpressions, Resolved.Query.simple, Resolved.Output.scalars,
     Resolved.Output.operands, plain, Resolved.Expr.any, Resolved.Expr.isFallibleCall]

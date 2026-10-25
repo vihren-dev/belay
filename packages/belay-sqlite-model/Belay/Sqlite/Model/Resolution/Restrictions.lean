@@ -1,16 +1,16 @@
 set_option doc.verso true
 
-/-! The registry of model restrictions. A model restriction is SQL that SQLite accepts but the model does
-not describe; resolution refuses it, and the user reads its message. Each restriction is one constructor
-of {lit}`RestrictionKind`, which names the decision that introduced it. Its stable id and its message
-are in {lit}`Belay.Sqlite.Model.RestrictionText`, and {lit}`docs/semantic-subset.md` lists every id. -/
+/-! The registry of model restrictions: SQL that SQLite accepts but the model does not describe. Resolution
+refuses it, and the user reads its message. Each restriction is one constructor of {lit}`RestrictionKind`,
+which names the decision that introduced it. Its id and message are in {lit}`Belay.Sqlite.Model.RestrictionText`;
+{lit}`docs/semantic-subset.md` lists every id. -/
 
 namespace Belay.Sqlite.Model
 
 /-- A model restriction of name resolution. The comment of each constructor says what
 the model does not describe and which decision introduced the restriction. -/
 inductive RestrictionKind where
-  /-- A schema contains only CREATE TABLE, CREATE INDEX and CREATE TRIGGER statements (ADR 0008; ADR 0018, D5). -/
+  /-- A schema contains only CREATE TABLE, CREATE VIEW, CREATE INDEX and CREATE TRIGGER statements (ADR 0008; ADR 0018, D5). -/
   | schemaStatement
   /-- Engine-managed tables other than sqlite_stat1 and sqlite_stat4 are not modeled (ADR 0008). -/
   | engineTable
@@ -18,8 +18,7 @@ inductive RestrictionKind where
   | rowidColumnName
   /-- Only literal defaults and {lit}`CURRENT_TIMESTAMP` are modeled (ADR 0008, T14). -/
   | unmodeledDefault
-  /-- A string literal as a key term of CREATE INDEX, also a double-quoted name that is no column: SQLite reads a
-  string that names a column as that column (ADR 0014, slice 1). -/
+  /-- A string literal or a double-quoted non-column name as a key term of CREATE INDEX: SQLite reads a string that names a column as that column (ADR 0014, slice 1). -/
   | indexStringTerm
   /-- A date and time function in a key term or the filter of CREATE INDEX: SQLite refuses one that reads the clock
   only when it writes a row (ADR 0014, slice 1). -/
@@ -59,8 +58,7 @@ inductive RestrictionKind where
   | dropConstraintIndex
   /-- The added column requires unmodeled default evaluation. -/
   | addColumnConstraint
-  /-- A {lit}`SET` value that reads the row is not modeled for a column of a unique key (ADR 0012, amendment 1, owner
-  decision on question 1). -/
+  /-- A {lit}`SET` value that reads the row is not modeled for a column of a unique key (ADR 0012, amendment 1, owner decision 1). -/
   | rowDependentKey
   /-- {lit}`ON CONFLICT DO UPDATE` without a target on a table with more than one key: SQLite then chooses the key of
   the conflict by its internal order of indexes. -/
@@ -71,8 +69,7 @@ inductive RestrictionKind where
   /-- UPDATE of a table with a constraint algorithm other than ABORT: {lit}`UPDATE OR` and the algorithms of UPDATE are
   not modeled (ADR 0012, amendment 4). -/
   | constraintAlgorithmUpdate
-  /-- REPLACE of a NOT NULL column with a default: REPLACE stores the default for a NULL, and the model does not
-  evaluate defaults in writes. -/
+  /-- REPLACE of a NOT NULL column with a default: REPLACE stores the default for a NULL, which the model does not evaluate. -/
   | replaceDefault
   /-- A column named twice in INSERT is not modeled (ADR 0008). -/
   | insertColumnTwice
@@ -100,6 +97,8 @@ inductive RestrictionKind where
   | aggregateInExpression
   /-- A result column alias inside WHERE or an ORDER BY expression is not modeled (ADR 0012 slice 1). -/
   | aliasInExpression
+  /-- A view body error that SQLite finds only when a statement runs the view, or that the model cannot place before (ADR 0017). -/
+  | viewBodyCheck
   /-- Only a column name or a result column number is modeled in GROUP BY (ADR 0012 slice 1). -/
   | groupByTerm
   /-- A result column outside GROUP BY in an aggregate query is not modeled (ADR 0012 slice 1). -/
@@ -132,7 +131,7 @@ inductive RestrictionKind where
   {lit}`nullif`, {lit}`min` or {lit}`max`: SQLite keeps the JSON subtype through such expressions, which the model does
   not describe (ADR 0015, slice 3). -/
   | jsonSubtype
-  /-- A subquery outside the expressions of a {lit}`SELECT` that the model resolves, such as in an {lit}`ON` condition,
+  /-- A subquery outside the expressions of a {lit}`SELECT` that the model resolves, such as in an {lit}`ON` condition or an unexpanded catalog view,
   a {lit}`json_each` argument or another statement, is not modeled (ADR 0018, slice 1). -/
   | subqueryHere
   /-- An aggregate in a subquery whose argument reads a cell of a query around it is not modeled: SQLite computes an
@@ -178,8 +177,7 @@ inductive RestrictionKind where
   does is not modeled: an aggregate, an expression that is a result expression of a term after resolution but not as
   written, or a {lit}`COLLATE` term after which SQLite gives a result column a random name (ADR 0019, D3). -/
   | compoundOrderByTerm
-  /-- A derived source whose duplicate output names need SQLite's random suffix is not modeled.
-  Give these columns distinct aliases (ADR 0019, D5). -/
+  /-- A derived source whose duplicate output names need SQLite's random suffix is not modeled; give distinct aliases (ADR 0019, D5). -/
   | sourceColumnName
   /-- A valid recursive CTE, including recursion without the RECURSIVE keyword.
   Ordinary nonrecursive definitions use the normal query-source evaluator. -/
@@ -194,6 +192,8 @@ inductive RestrictionKind where
   {lit}`randomblob(n)` in a generated column, an index expression or the filter of a partial index, in an expression
   with another error: the error that SQLite reports depends on the order of its walk (ADR 0024, D5). -/
   | nondeterministicErrorOrder
+  /-- The schema {lit}`before` outside a two-state query or on a function source (ADR 0017, S6). -/
+  | initialDatabase
   deriving Repr, DecidableEq
 
 end Belay.Sqlite.Model

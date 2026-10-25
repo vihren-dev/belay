@@ -35,7 +35,7 @@ def test_select_keeps_columns_text_and_clauses(parse_sql: Callable[..., Translat
                     {"expression": {"value": {"compare": {"operator": "ne", "left": column("b"),
                                                           "right": {"numeric": {"text": "1"}}}},
                                     "alias": None, "text": "b  <>  1"}}],
-        "source": {"table": "t", "alias": None, "arguments": None, "query": None}, "joins": [],
+        "source": {"table": "t", "alias": None, "arguments": None, "query": None, "schema": None}, "joins": [],
         "filter": {"and": {"left": {"compare": {"operator": "isNot", "left": column("a"), "right": "null"}},
                            "right": {"not": {"operand": {"compare": {"operator": "lt", "left": column("b"),
                                                                      "right": {"numeric": {"text": "2"}}}}}}}},
@@ -115,16 +115,16 @@ def test_joins_map_sources_kinds_and_conditions(parse_sql: Callable[..., Transla
     [query] = [item.value for item in parse_sql(
         "SELECT x.a, u.* FROM t AS x Left JOIN u ON x.a = u.a, v NATURAL join w CROSS JOIN y USING (b);").statements()]
     select = query["select"]
-    assert select["source"] == {"table": "t", "alias": "x", "arguments": None, "query": None}
-    assert select["columns"][0]["expression"]["value"] == {"qualified": {"source": "x", "column": "a"}}
+    assert select["source"] == {"table": "t", "alias": "x", "arguments": None, "query": None, "schema": None}
+    assert select["columns"][0]["expression"]["value"] == {"qualified": {"source": "x", "column": "a", "schema": None}}
     assert select["columns"][1] == {"sourceStar": {"source": "u"}}
-    on = {"compare": {"operator": "eq", "left": {"qualified": {"source": "x", "column": "a"}},
-                     "right": {"qualified": {"source": "u", "column": "a"}}}}
+    on = {"compare": {"operator": "eq", "left": {"qualified": {"source": "x", "column": "a", "schema": None}},
+                     "right": {"qualified": {"source": "u", "column": "a", "schema": None}}}}
     assert select["joins"] == [
-        {"operator": ["Left"], "source": {"table": "u", "alias": None, "arguments": None, "query": None}, "condition": on, "usingColumns": None},
-        {"operator": [], "source": {"table": "v", "alias": None, "arguments": None, "query": None}, "condition": None, "usingColumns": None},
-        {"operator": ["NATURAL"], "source": {"table": "w", "alias": None, "arguments": None, "query": None}, "condition": None, "usingColumns": None},
-        {"operator": ["CROSS"], "source": {"table": "y", "alias": None, "arguments": None, "query": None}, "condition": None, "usingColumns": ["b"]}]
+        {"operator": ["Left"], "source": {"table": "u", "alias": None, "arguments": None, "query": None, "schema": None}, "condition": on, "usingColumns": None},
+        {"operator": [], "source": {"table": "v", "alias": None, "arguments": None, "query": None, "schema": None}, "condition": None, "usingColumns": None},
+        {"operator": ["NATURAL"], "source": {"table": "w", "alias": None, "arguments": None, "query": None, "schema": None}, "condition": None, "usingColumns": None},
+        {"operator": ["CROSS"], "source": {"table": "y", "alias": None, "arguments": None, "query": None, "schema": None}, "condition": None, "usingColumns": ["b"]}]
 
 
 def test_table_valued_functions_map_with_their_arguments(parse_sql: Callable[..., Translation]) -> None:
@@ -134,12 +134,12 @@ def test_table_valued_functions_map_with_their_arguments(parse_sql: Callable[...
     [query] = [item.value for item in parse_sql(
         "SELECT * FROM t, Json_Each(t.j, '$.a') AS e JOIN json_each('[1]') ON 1 = 1, json_each();").statements()]
     select = query["select"]
-    assert select["source"] == {"table": "t", "alias": None, "arguments": None, "query": None}
+    assert select["source"] == {"table": "t", "alias": None, "arguments": None, "query": None, "schema": None}
     assert [join["source"] for join in select["joins"]] == [
-        {"table": "Json_Each", "alias": "e", "query": None,
-         "arguments": [{"qualified": {"source": "t", "column": "j"}}, {"string": {"bytes": list(b"$.a")}}]},
-        {"table": "json_each", "alias": None, "query": None, "arguments": [{"string": {"bytes": list(b"[1]")}}]},
-        {"table": "json_each", "alias": None, "query": None, "arguments": []}]
+        {"table": "Json_Each", "alias": "e", "query": None, "schema": None,
+         "arguments": [{"qualified": {"source": "t", "column": "j", "schema": None}}, {"string": {"bytes": list(b"$.a")}}]},
+        {"table": "json_each", "alias": None, "query": None, "schema": None, "arguments": [{"string": {"bytes": list(b"[1]")}}]},
+        {"table": "json_each", "alias": None, "query": None, "schema": None, "arguments": []}]
     assert select["joins"][1]["condition"] == {"compare": {"operator": "eq", "left": {"numeric": {"text": "1"}},
                                                           "right": {"numeric": {"text": "1"}}}}
 

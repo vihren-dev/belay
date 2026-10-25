@@ -1,5 +1,5 @@
 """A case whose table hides its rowid behind columns named rowid, _rowid_ and oid
-(`conformance.native_replay.HiddenRowid`).
+(`conformance.replay_scope.HiddenRowid`).
 
 Since triggers reach the model (ADR 0018, slice 5), the upstream case `triggerD-1.2` gets past
 the frontend; the replay must report it as out of scope, as the model refuses such column names,
@@ -11,7 +11,8 @@ from pathlib import Path
 import pytest
 
 from conformance.native_record import record_sql
-from conformance.native_replay import HIDDEN_ROWID_REASON, prepare
+from conformance.native_replay import prepare
+from conformance.replay_scope import HIDDEN_ROWID_REASON
 from conformance.sql_text import runtime_translator
 
 pytestmark = [pytest.mark.integration, pytest.mark.conformance,

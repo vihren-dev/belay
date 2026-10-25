@@ -57,6 +57,8 @@ catalog position 0 with one full row is {lean}`Statement.insert 0 [[Cell.value V
 A write names its table by catalog position; execution reads the table's columns, keys
 and conflict algorithms from the catalog of the database it runs on. -/
 inductive Statement where
+  /-- Append the unresolved named view at the given catalog position, with empty storage. -/
+  | createView (position : Nat) (name : Identifier) (view : CatalogView)
   /-- Create the named table at the catalog position, which is the end of the catalog. -/
   | createTable (position : Nat) (name : Identifier) (table : CatalogTable)
   /-- Create the named index at the catalog position, which is the end of the catalog. -/

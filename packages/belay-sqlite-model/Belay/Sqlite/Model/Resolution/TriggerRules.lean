@@ -19,14 +19,14 @@ def Resolved.Statement.fireRequest (keys : Bool) : Resolved.Statement → Option
   | .update table assignments _ _ _ _ => some { table, event := .update (some (assignments.map (·.1))) }
   | .delete table _ _ _ _ => some { table, event := .delete }
   | .drop (table :: _) _ => if keys then some { table, event := .delete, fire := false } else none
-  | .drop [] _ | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .begin | .commit | .rollback
+  | .drop [] _ | .createTable .. | .createView .. | .createIndex .. | .createTrigger .. | .addColumn .. | .begin | .commit | .rollback
   | .prepareError _ | .query .. | .setting .. => none
 
 /-- Whether the catalog has a trigger on the table at the position. -/
 def Catalog.triggersOn (catalog : Catalog) (table : Nat) : Bool :=
   catalog.any fun object => match object.entry with
     | .trigger trigger => (catalog.findTable trigger.table).any (·.1 == table)
-    | .table _ | .index _ => false
+    | .table _ | .view _ | .index _ => false
 
 /-- The tables that the requests write, with the writes that they cause through the programs
 that they fire and their {name}`FireRequest.followUps`, each request once; none when requests

@@ -97,7 +97,7 @@ theorem literalStep_success_catalog {clock : Int} {counters : Counters} {paramet
       simp only [ran, queryEffect] at success
       repeat' split at success
       all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
-  | createIndex target name index | createTrigger target name index =>
+  | createIndex target name index | createView target name index | createTrigger target name index =>
     simp only [literalStep, runStatement, step] at success
     repeat' split at success
     all_goals first | (cases success; exact ⟨rfl, rfl⟩) | cases success
@@ -157,7 +157,7 @@ theorem advance_agrees {position : Nat} {statement : Resolved.Statement} {parame
     simp only [SqlState.statementRun, runStatement, step] at stepped
     cases stepped
     cases setting <;> exact ⟨catalog, saved⟩
-  | createTable | createIndex | createTrigger | addColumn | drop | insert | update | upsert | delete | prepareError
+  | createTable | createView | createIndex | createTrigger | addColumn | drop | insert | update | upsert | delete | prepareError
   | query =>
     simp only [advanceWith] at reached
     obtain ⟨result, stepped, rfl⟩ := Conformance.SqlState.publish_next reached
@@ -189,7 +189,7 @@ theorem advance_halt_error {position : Nat} {statement : Resolved.Statement} {pa
     split at halted
     · cases halted; simp [Outcome.error?]
     · cases halted
-  | createTable | createIndex | createTrigger | addColumn | drop | insert | update | upsert | delete | prepareError
+  | createTable | createView | createIndex | createTrigger | addColumn | drop | insert | update | upsert | delete | prepareError
   | query | setting =>
     simp only [advance, advanceRun, SqlTransition.counted_eq_halt, advanceWith] at halted
     obtain ⟨_, _, _, rfl⟩ := Conformance.SqlState.publish_halt halted

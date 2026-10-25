@@ -24,7 +24,7 @@ theorem runScriptStep_keyCheck_empty (context : ResolveContext) (clock : Option 
       connection.state.database.RowReferencesHold connection.state.database.catalog.foreignKeyMapping := by
   have prepared := (resolvePragma_keyCheck_iff connection.resolveState).mpr prepares
   rw [runScriptStep_output]
-  simp only [resolveStatement, prepared]
+  simp only [resolveStatement, resolveStatementPragma_foreignKeyCheck, prepared]
   rw [resolvedStepOutput_keyCheck_clock, resolvedStepOutput_keyCheck_empty]
   exact connection.state.database.keyCheck_nil_iff
 
@@ -45,7 +45,7 @@ theorem runScriptStep_tableKeyCheck_empty (context : ResolveContext) (clock : Op
       table.RowReferencesHold connection.state.database.catalog.foreignKeyMapping connection.state.database position := by
   have prepared := (resolvePragma_tableKeyCheck_iff connection.resolveState name position table.shape found).mpr prepares
   rw [runScriptStep_output]
-  simp only [resolveStatement, prepared]
+  simp only [resolveStatement, resolveStatementPragma_foreignKeyCheck, prepared]
   rw [resolvedStepOutput_keyCheck_clock, resolvedStepOutput_keyCheck_empty]
   exact connection.state.database.tableKeyCheck_nil_iff present
 

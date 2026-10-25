@@ -15,6 +15,15 @@ from tests.surface_support import FIXTURES, surface_command
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
 
+def test_view_catalog_keeps_unresolved_definitions_and_refuses_unexpanded_uses(runtime_root: Path, tmp_path: Path) -> None:
+    """The view catalog stores written queries, owns no rows, distinguishes FK mismatch,
+    a write or schema change of a view is a prepare error, and a table-valued metadata function of
+    a view is refused instead of fabricating an empty result."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "ClaimsViewCatalog.lean", tmp_path), cwd=tmp_path,
+                         timeout=60)
+    assert result.returncode == 0, result.diagnostic()
+
+
 def test_expression_laws_turn_a_condition_into_logic(runtime_root: Path, tmp_path: Path) -> None:
     """The simp set `sql_simp` resolves a written condition (`BETWEEN`, `AND`, `NOT`, `OR`, `IS NULL`,
     a parameter) to the resolved expression with the affinity and collation of its columns, shows

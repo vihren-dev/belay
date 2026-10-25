@@ -44,7 +44,7 @@ private def rowSql (name : Identifier) (table : CatalogTable) (row : Row) : Opti
   return "INSERT INTO " ++ quoted ++ " (" ++ String.intercalate ", " columns ++ ") VALUES (" ++
     String.intercalate ", " values ++ ");\n"
 
-/-- Propose SQL that builds a database with ordinary tables and no indexes or triggers.
+/-- Propose SQL that builds a database with ordinary tables and no indexes, triggers or views.
 The empty database gives empty text. Unsupported catalog forms or unrepresentable values
 return none. This function alone does not certify that reconstruction matches the witness. -/
 def databaseSql (database : Database) : Option String := do
@@ -54,7 +54,7 @@ def databaseSql (database : Database) : Option String := do
       let create ← tableSql object.name table
       let rows ← (database.raw.rows.getD position []).mapM (rowSql object.name table)
       return create ++ String.join rows
-    | .index _ | .trigger _ => none
+    | .index _ | .trigger _ | .view _ => none
   return String.join statements
 
 end Belay.Sqlite.Replay

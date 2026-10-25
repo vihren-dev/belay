@@ -28,7 +28,7 @@ theorem no_customer_has_the_id_iff (db : Database) (id : Int64) (position col : 
     (term := .compare .eq (.identifier (name! "id") .none) (.parameter 1)) (by simp [namesAlias])
     (result := (equalsParameter cell col 1, none))
     (by simp [sql_simp, column, columnAt, equalsParameter]; rfl)
-  refine Iff.trans (Holds.iff_selectOne_notExists (namedSource := rfl) (head := rfl) (arguments := rfl) found resolves
+  refine Iff.trans (Holds.iff_selectOne_notExists (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves
     ?_) ?_
   · simp [sql_simp, equalsParameter]
   · simp
@@ -55,7 +55,7 @@ theorem one_customer_has_the_id_iff (db : Database) (id : Int64) (position col :
     (term := .compare .eq (.identifier (name! "id") .none) (.parameter 1)) (by simp [namesAlias])
     (result := (equalsParameter cell col 1, none))
     (by simp [sql_simp, column, columnAt, equalsParameter]; rfl)
-  refine Iff.trans (Holds.iff_selectOne_count (namedSource := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
+  refine Iff.trans (Holds.iff_selectOne_count (namedSource := rfl) (current := rfl) (head := rfl) (count := by decide) (arguments := rfl) found subResolves
     mainResolves (by simp [sql_simp]) (by simp [equalsParameter, sql_simp])) ?_
   simp [sql_simp, Resolved.comparisonOperands, Resolved.SubqueryRun.count, Value.isNull, Comparison.holds]
   exact ⟨fun h => by exact_mod_cast h, fun h => by exact_mod_cast h⟩
@@ -78,7 +78,7 @@ theorem a_customer_has_the_id_and_name_iff (db : Database) (id : Int64) (name : 
     (term := .and (.compare .eq (.identifier (name! "id") .none) (.parameter 1)) (.compare .eq (.identifier (name! "name") .none) (.parameter 2))) (by simp [namesAlias])
     (result := (.and (equalsParameter idCell 0 1) (equalsParameter nameCell 1 2), none))
     (by simp [sql_simp, idAt, nameAt, idCellAt, nameCellAt, equalsParameter]; constructor <;> rfl)
-  refine Iff.trans (Holds.iff_selectOne (namedSource := rfl) (head := rfl) (arguments := rfl) found resolves ?_) ?_
+  refine Iff.trans (Holds.iff_selectOne (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves ?_) ?_
   · simp [sql_simp, equalsParameter]
   · simp [sql_simp]
 

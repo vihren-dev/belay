@@ -38,7 +38,7 @@ def expressionHints : Syntax.Expr → Hints
     if quote == .none && (name.isKeyword (bytes! "true") || name.isKeyword (bytes! "false")) then
       literalHint (.identifier name quote)
     else { columns := [(none, name)] }
-  | .qualified source column => { columns := [(some source, column)] }
+  | .qualified source column _ => { columns := [(some source, column)] }
   | expression@(.negate operand) | expression@(.positive operand) =>
     (literalHint expression).append (expressionHints operand)
   | .compare _ left right | .and left right | .or left right | .arithmetic _ left right

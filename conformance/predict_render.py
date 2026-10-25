@@ -106,18 +106,22 @@ def foreign_key_rows(keys: list[Json]) -> list[list[Json]]:
 
 def table_record(predicted: dict[str, Json]) -> dict[str, Json]:
     """One model table in the recorded table form. A row's identity is its rowid, or its
-    primary-key cells in a `WITHOUT ROWID` table, as the recorder writes it."""
+    primary-key cells in a `WITHOUT ROWID` table. A view uses every result cell
+    as its identity, including duplicates, as the recorder writes it."""
     table = predicted["table"]
+    kind = str(predicted.get("kind", "table"))
     primary = [int(key) for key in table["primaryKey"]]
     without_rowid = bool(table.get("withoutRowid", False))
 
     def identity(row: dict[str, Json]) -> list[Json]:
         """The row's identity as the recorder writes it: its primary-key cells in a `WITHOUT
-        ROWID` table, else its rowid."""
+        ROWID` table, all result cells for a view, else its rowid."""
         values = row["values"]
+        if kind == "view":
+            return [value_cell(value) for value in values]
         return ([value_cell(values[key]) for key in primary] if without_rowid
                 else [integer_cell(int(row["rowid"]))])
-    return {"name": table["name"], "kind": "table", "withoutRowid": without_rowid,
+    return {"name": table["name"], "kind": kind, "withoutRowid": without_rowid,
             "foreignKeys": foreign_key_rows(list(predicted.get("foreignKeys") or [])),
             "columns": [column_row(position, column, primary) for position, column in enumerate(table["columns"])],
             "indexes": indexes(table, bool(predicted["rowidPrimaryKey"]), bool(predicted["primaryKeyDescending"]),

@@ -42,15 +42,16 @@ theorem missing_email (db : Database) (position : Nat) (table : CatalogTable)
     simp [tableScope, Scope.resolveName, Scope.depths, Scope.single, Scope.resolveAt, Scope.resolveStep, missing]
   have one : queryNumeric "1" false = .ok (.integer 1) := rfl
   have countName : normalizeIdentifier "count" = "count" := rfl
-  have sources := resolveSources_table db.raw.catalog { table := name! "customers", alias := none } position table rfl rfl found
+  have sources := resolveSources_table db.raw.catalog { table := name! "customers", alias := none } position table rfl rfl rfl found
   have application : reservedName (name! "customers") = false := by decide
   have unique : ([0] : List Nat).eraseDups = [0] := rfl
   have noMain : ∀ queries prefix_, resolveSources db.raw.catalog none [] 0 queries prefix_ = .ok ([], []) := by
     intros
     rfl
+  have notView := Catalog.findView_none_of_table found
   have resolved : ∃ restriction, resolveStatement runContext db.raw.connection.resolveState
       noDuplicateEmails.statements[0].1 = .error restriction := by
-    simp [noDuplicateEmails, resolveStatement, resolveSelect, prepareCommonTables,
+    simp [noDuplicateEmails, resolveStatement, resolveSelect, resolveSelectDetails, prepareQuerySources, querySourceCopiesNeeded, Syntax.TableReference.namesStoredView, notView,
       CommonTableCopies.recursionIssue, CommonTableCopies.originalIssue, CommonTableCopies.originalPath, Connection.resolveState, Database.Raw.connection,
       subqueryScopes, scopeOrder, compoundOf, subqueryScope, Scope.columns,
       noMain, sources, Scope.enclose, resolveSubqueryBodies, subqueryBodyOrder, unique, QueryScope.sourceIndexes, QueryScope.refresh, Scope.refreshSources, compoundColumnsIssue,
@@ -85,7 +86,7 @@ theorem uniqueEmail_ok : Succeeds uniqueEmail (fun db =>
     | none => exact False.elim (missing_email db position table found column holds)
     | some index =>
       have groups := (Holds.iff_selectOne_noDuplicateKeys (head := rfl) (count := rfl)
-        (namedSource := rfl) (arguments := rfl) (found := found) (groupResolves := group_nocase column db position)
+        (namedSource := rfl) (current := rfl) (arguments := rfl) (found := found) (groupResolves := group_nocase column db position)
         (keyCalm := Resolved.Expr.calm_column index)).mp holds
       refine ⟨position, table, [{ term := .column index, collation := .nocase }], none,
         found, by decide, by decide, freeName, ?_, rfl, ?_⟩

@@ -1,5 +1,6 @@
 import Belay.Sqlite.Model.SimpleQueryLaws
 import Belay.Sqlite.Model.Resolution.Resolve
+import Belay.Sqlite.Model.QuerySourceCopyLaws
 
 set_option doc.verso true
 
@@ -61,8 +62,9 @@ theorem resolveSelect_no_subqueries (context : ResolveContext) (catalog : Catalo
     resolveSelect context catalog query [] = .ok (.query q [], catalog) := by
   have noSources : sourceExpansion catalog 8 [] none =
       (fun _ => .error (.value (.restriction [] .subqueryHere))) := by funext index; rfl
-  unfold resolveSelect
-  simp only [prepareCommonTables, List.any_nil, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
+  have noCopies := querySourceCopiesNeeded_nil catalog query pending scope (by simpa [noJoins] using sourcesOk)
+  unfold resolveSelect resolveSelectDetails
+  simp only [prepareQuerySources, noCopies, List.any_nil, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
   rw [noSources]
   simp [CommonTableCopies.recursionIssue, noJoins, sourcesOk, subqueryScopes, scopeOrder, resolveSubqueryBodies, subqueryBodyOrder, QueryScope.refresh, Scope.refreshSources, noStar, noCompound, body, Bind.bind,
     Except.bind, Except.mapError, Pure.pure, Except.pure]
@@ -88,7 +90,7 @@ theorem resolveQueryBody_simple (dqs : Bool) (scope : Scope) (current : Option N
       .ok (Resolved.Query.simple sources condition (resolved.flatten.map (·.1)) (resolved.flatten.map (·.2.1)),
            resolved.flatten.head?.bind (·.2.2)) := by
   unfold Resolved.Query.simple
-  obtain ⟨-, noGroup, noOrder, noLimit, noOffset, noHaving, notDistinct, -, noAggregate⟩ := simple
+  obtain ⟨noJoins, noGroup, noOrder, noLimit, noOffset, noHaving, notDistinct, -, noAggregate⟩ := simple
   have columnFree : ∀ value alias text, Syntax.ResultColumn.expression value alias text ∈ query.columns →
       value.aggregateCalls = [] := fun value alias text member => by
     simp only [List.all_eq_true] at noAggregate
@@ -113,7 +115,7 @@ theorem resolveQueryBody_simple (dqs : Bool) (scope : Scope) (current : Option N
       | expression value alias text => simp [expression value alias text member]
   have distinctNil : Syntax.Expr.distinctList [] = [] := rfl
   unfold resolveQueryBody
-  simp only [noGroup, noOrder, noLimit, noOffset, noHaving, notDistinct]
+  simp only [noJoins, List.zipIdx_nil, List.find?_nil, Option.map_none, noGroup, noOrder, noLimit, noOffset, noHaving, notDistinct]
   rw [notAggregate _ ?flagColumn rfl (fun _ => rfl)]
   simp only [List.isEmpty_nil, Bool.not_true, Bool.or_false, Bool.false_and, Option.toList_none, List.flatMap_nil,
     List.append_nil, ite_false, Bool.false_eq_true]
@@ -174,8 +176,9 @@ theorem resolveSelect_no_subqueries_prepareError (context : ResolveContext) (cat
     resolveSelect context catalog query [] = .ok (.prepareError (.expression error), catalog) := by
   have noSources : sourceExpansion catalog 8 [] none =
       (fun _ => .error (.value (.restriction [] .subqueryHere))) := by funext index; rfl
-  unfold resolveSelect
-  simp only [prepareCommonTables, List.any_nil, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
+  have noCopies := querySourceCopiesNeeded_nil catalog query pending scope (by simpa [noJoins] using sourcesOk)
+  unfold resolveSelect resolveSelectDetails
+  simp only [prepareQuerySources, noCopies, List.any_nil, Bool.false_eq_true, ↓reduceIte, Bind.bind, Except.bind, Pure.pure, Except.pure]
   rw [noSources]
   simp [CommonTableCopies.recursionIssue, noJoins, sourcesOk, subqueryScopes, scopeOrder, resolveSubqueryBodies, subqueryBodyOrder, QueryScope.refresh, Scope.refreshSources, noStar, noCompound, body,
     issueResolution, prepareError, CommonTableCopies.originalIssue, Bind.bind, Except.bind, Except.mapError, Pure.pure, Except.pure]

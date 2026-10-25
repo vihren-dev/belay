@@ -55,14 +55,17 @@ theorem x_is_an_invoice_id (db : Database) (x : Int64) (position col : Nat) (tab
       (some (.inQuery (.parameter 1) 0 (comparisonAffinity none (table.columns[col]?.map CatalogColumn.affinity))
         ((table.columns[col]?.map (·.collation)).getD .binary) false))
       { later := [scalarShape (table.columns[col]?.map CatalogColumn.affinity) none
-        (table.columns[col]?.map (·.collation)) lowest] } :=
+        (table.columns[col]?.map (·.collation)) lowest (table.columns[col]?.bind (·.declaredType))] } :=
     fun lowest => FilterResolves.of_term (term := .inQuery (.parameter 1) 0 false)
       (result := (.inQuery (.parameter 1) 0 (comparisonAffinity none (table.columns[col]?.map CatalogColumn.affinity))
         ((table.columns[col]?.map (·.collation)).getD .binary) false, none))
       (by simp [namesAlias]) (by simp [sql_simp, scalarShape, inCollation])
   rw [← Syntax.Expr.columnCollation_identifier_table (catalog := db.raw.catalog) (reference := { table := name! "invoices", alias := none })
-    (position := position) column] at mainResolves
-  refine Iff.trans (Holds.iff_selectOne_column (namedSource := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
+    (position := position) column,
+    ← Syntax.Expr.originType_identifier_table (catalog := db.raw.catalog)
+      (reference := { table := name! "invoices", alias := none }) (position := position) column
+      ({ current := some 0 } : SubqueryShapes)] at mainResolves
+  refine Iff.trans (Holds.iff_selectOne_column (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
     (by decide) (by decide) rfl found operand (by simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]) subResolves
     mainResolves (by simp [Resolved.Expr.any]) (by simp [sql_simp]) (by simp)
     (by simp [sql_simp])) ?_
@@ -121,20 +124,23 @@ theorem invoice_membership_empty_and_safe (db : Database) (x : Int64) (position 
       (some (.inQuery (.parameter 1) 0 (comparisonAffinity none (table.columns[col]?.map CatalogColumn.affinity))
         ((table.columns[col]?.map (·.collation)).getD .binary) false))
       { later := [scalarShape (table.columns[col]?.map CatalogColumn.affinity) none
-        (table.columns[col]?.map (·.collation)) lowest] } :=
+        (table.columns[col]?.map (·.collation)) lowest (table.columns[col]?.bind (·.declaredType))] } :=
     fun lowest => FilterResolves.of_term (term := .inQuery (.parameter 1) 0 false)
       (result := (.inQuery (.parameter 1) 0 (comparisonAffinity none (table.columns[col]?.map CatalogColumn.affinity))
         ((table.columns[col]?.map (·.collation)).getD .binary) false, none))
       (by simp [namesAlias]) (by simp [sql_simp, scalarShape, inCollation])
   rw [← Syntax.Expr.columnCollation_identifier_table (catalog := db.raw.catalog) (reference := { table := name! "invoices", alias := none })
-    (position := position) column] at mainResolves
+    (position := position) column,
+    ← Syntax.Expr.originType_identifier_table (catalog := db.raw.catalog)
+      (reference := { table := name! "invoices", alias := none }) (position := position) column
+      ({ current := some 0 } : SubqueryShapes)] at mainResolves
   constructor
-  · refine Iff.trans (Empty.iff_selectOne_column (namedSource := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
+  · refine Iff.trans (Empty.iff_selectOne_column (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
       (by decide) (by decide) rfl found operand (by simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]) subResolves
       mainResolves (by simp [Resolved.Expr.any]) (by simp [sql_simp]) (by simp) (by simp [sql_simp])) ?_
     rw [Syntax.Expr.columnCollation_identifier_table column]
     rfl
-  · exact Fails.not_selectOne_column (namedSource := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
+  · exact Fails.not_selectOne_column (namedSource := rfl) (current := rfl) (head := rfl) (reference := { table := name! "invoices", alias := none })
       (by decide) (by decide) rfl found operand (by simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall]) subResolves
       mainResolves (by simp [Resolved.Expr.any]) (by simp [sql_simp]) (by simp) (by simp [sql_simp])
 

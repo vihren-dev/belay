@@ -36,9 +36,11 @@ constraint (ADR 0014, slice 4), and so do CREATE INDEX and the other statement f
 that checks foreign keys (ADR 0018, D4) has the effect of its keys ({name}`insertKeys`,
 {name}`updateKeys`, {name}`deleteKeys`, {name}`dropKeys`) and passes the support check when the
 plain write and the keys both pass it ({name}`StatementRun.withKeys`). A write with trigger
-programs (ADR 0018, D5) runs row by row in the same way, with foreign keys on or off. -/
-def runStatement (clock : Int) (counters : Counters) (parameters : List Value) (statement : Resolved.Statement) (database : Database) :
-    StatementRun :=
+programs (ADR 0018, D5) runs row by row in the same way, with foreign keys on or off. A query reads the
+sources of the initial origin from the optional {lit}`initial` database of a two-state observation
+({name}`Resolved.Query.source`); a write ignores it. -/
+def runStatement (clock : Int) (counters : Counters) (parameters : List Value) (statement : Resolved.Statement) (database : Database)
+    (initial : Option Database := none) : StatementRun :=
   match statement with
   | .insert target rows returning subqueries rules => match database.table target with
     | none => { effect := .error (.unmodeled, database), ready := true }
@@ -94,7 +96,7 @@ def runStatement (clock : Int) (counters : Counters) (parameters : List Value) (
         (LiteralData.changedCounts (.ok database) (table.scanRows.filter (LiteralData.selected context filter)).length)
         (rules.map fun rules => deleteKeys context rules target table filter database subqueries.isEmpty)
   | .query query subqueries =>
-    let ran := query.runOn clock counters parameters database subqueries
+    let ran := query.runOn clock counters parameters database subqueries initial
     { effect := queryEffect database ran,
       ready := Resolved.subqueriesPlain (query.nestedSubqueries subqueries) && ran.all fun (source, run) => source.fault != .may && run.fault != .may }
   | .createTable .. => { effect := step clock counters parameters statement database, ready := true }
@@ -104,7 +106,7 @@ def runStatement (clock : Int) (counters : Counters) (parameters : List Value) (
   | .drop positions rules =>
     StatementRun.withKeys (step clock counters parameters statement database) true {}
       (rules.map fun rules => dropKeys rules clock positions database)
-  | .createIndex .. | .createTrigger .. => { effect := step clock counters parameters statement database, ready := true }
+  | .createView .. | .createIndex .. | .createTrigger .. => { effect := step clock counters parameters statement database, ready := true }
   | .begin | .commit | .rollback | .prepareError _ | .setting .. =>
     { effect := step clock counters parameters statement database, ready := true }
 
@@ -129,9 +131,9 @@ is, and the state knows every counter that the statement reads ({name}`Counters.
 because a statement with an unknown read is not described (ADR 0024, D2). Write the call as
 {lit}`SqlState.statementRun state …`, not with dot notation, so that the copy of this file in the model
 mutation test ({lit}`tests/conformance_mutation_test.py`) is the code that runs. -/
-def SqlState.statementRun (state : SqlState) (clock : Int) (parameters : List Value) (statement : Resolved.Statement) :
-    StatementRun :=
-  let run := runStatement clock (state.counters.view statement.counterReads) parameters statement state.database
+def SqlState.statementRun (state : SqlState) (clock : Int) (parameters : List Value) (statement : Resolved.Statement)
+    (initial : Option Database := none) : StatementRun :=
+  let run := runStatement clock (state.counters.view statement.counterReads) parameters statement state.database initial
   { run with ready := run.ready && (state.counters.firstUnknown statement.counterReads).isNone }
 
 end Belay.Sqlite.Model

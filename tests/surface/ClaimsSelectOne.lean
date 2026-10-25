@@ -44,7 +44,7 @@ theorem some_invoice_has_amount_zero (db : Database) (position index : Nat) (tab
     (shapes := { later := [] })
     (term := .compare .eq (.identifier (name! "amount") .none) (.numeric "0")) (by simp [namesAlias])
     (by simp [sql_simp, column]; rfl)
-  refine Iff.trans (Holds.iff_selectOne (namedSource := rfl) (head := rfl) (arguments := rfl) found resolves ?_) ?_
+  refine Iff.trans (Holds.iff_selectOne (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves ?_) ?_
   · simp [sql_simp]
   · simp [sql_simp]; exact Iff.rfl
 
@@ -74,8 +74,8 @@ theorem zero_amount_empty_and_safe (db : Database) (position index : Nat) (table
     (term := .compare .eq (.identifier (name! "amount") .none) (.numeric "0")) (by simp [namesAlias])
     (by simp [sql_simp, column]; rfl)
   constructor
-  · simpa using Empty.iff_selectOne (namedSource := rfl) (head := rfl) (arguments := rfl) found resolves (by simp [sql_simp])
-  · exact Fails.not_selectOne (namedSource := rfl) (head := rfl) (arguments := rfl) found resolves (by simp [sql_simp])
+  · simpa using Empty.iff_selectOne (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp [sql_simp])
+  · exact Fails.not_selectOne (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves (by simp [sql_simp])
 
 /-- A table with an amount column and no zero amount, for the negative side of the row-existence claim. -/
 def positiveOnly : Database := db! r"CREATE TABLE invoices (amount INTEGER); INSERT INTO invoices VALUES (1);"

@@ -58,6 +58,8 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "unmodeled-function": ("CREATE TABLE t(a INTEGER);", "SELECT ln(a) FROM t;"),
     "aggregate-in-expression": ("CREATE TABLE t(a INTEGER);", "SELECT json(count(*)) FROM t;"),
     "alias-in-expression": ("CREATE TABLE t(a INTEGER);", "SELECT a AS b FROM t WHERE b = 1;"),
+    "view-body-check": ("CREATE TABLE t(a);\nCREATE VIEW v AS SELECT (SELECT a, a FROM t) AS x;",
+                        "PRAGMA table_info(v);"),
     "group-by-term": ("CREATE TABLE t(a INTEGER);", "SELECT count(*) FROM t GROUP BY a + 1;"),
     "bare-column": ("CREATE TABLE t(a INTEGER, b INTEGER);", "SELECT a, count(*) FROM t GROUP BY b;"),
     "aggregate-order-by": ("CREATE TABLE t(a INTEGER, b INTEGER);", "SELECT count(*) FROM t GROUP BY a ORDER BY b;"),
@@ -99,6 +101,7 @@ EXAMPLES: dict[str, tuple[str, str]] = {
     "connection-counter-read": ("CREATE TABLE t(a INTEGER);", "INSERT INTO t VALUES (last_insert_rowid());"),
     "nondeterministic-error-order": ("CREATE TABLE t(a INTEGER);",
                                      "CREATE TABLE u(a INTEGER, b AS (changes() + count(a)));"),
+    "initial-database": ("CREATE TABLE t(a INTEGER);", "SELECT a FROM before.t;"),
 }
 """For each restriction id: a schema and a migration that the resolver refuses with it."""
 

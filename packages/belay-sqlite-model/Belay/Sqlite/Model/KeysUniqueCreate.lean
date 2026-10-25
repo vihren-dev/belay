@@ -5,7 +5,7 @@ import Belay.Sqlite.Model.StatementStep
 set_option doc.verso true
 
 /-! The theorems of the atom "keys unique" (ADR 0022, D3, slice 2) for CREATE TABLE, CREATE
-INDEX and CREATE TRIGGER. Each appends one object to the catalog and an empty row list, so a
+INDEX, CREATE VIEW and CREATE TRIGGER. Each appends one object to the catalog and an empty row list, so a
 kept table keeps its rows, and the only new unique key of a kept table is the key of a new unique
 index on it, which CREATE INDEX checks against the rows. -/
 
@@ -28,7 +28,7 @@ theorem Catalog.mem_uniqueKeys_append {catalog : Catalog} {object : CatalogObjec
   · refine .inr ?_
     simp only [List.filterMap_cons, List.filterMap_nil] at new
     cases entry : object.entry with
-    | table _ | trigger _ => simp [entry] at new
+    | table _ | view _ | trigger _ => simp [entry] at new
     | index index =>
       simp only [entry] at new
       by_cases on : index.table = position ∧ index.unique = true
@@ -94,6 +94,22 @@ theorem Database.KeysUnique.append {database : Database} (unique : database.Keys
 theorem runStatement_createTable_keysUnique (clock : Int) (counters : Counters) (parameters : List Value) (target : Nat) (name : Identifier)
     (shape : CatalogTable) {database : Database} (unique : database.KeysUnique) :
     (runStatement clock counters parameters (.createTable target name shape) database).effect.KeysUnique := by
+  simp only [runStatement, step]
+  split
+  · rename_i fits
+    simp only [Bool.and_eq_true, beq_iff_eq] at fits
+    exact Effect.keysUnique_of_effectDatabase (unique.append fits.2 _ fun _ _ entry => by cases entry)
+  · exact Effect.keysUnique_of_database unique rfl
+
+/-- For every clock value, counters, parameter list, CREATE VIEW and database: if the database
+satisfies {name}`Database.KeysUnique`, the effect of {name}`runStatement` satisfies
+{name}`Effect.KeysUnique`. That is: if the effect succeeds, or fails with
+{name}`ExecutionError.constraintFail`, its database has unique keys; an error with another reason
+requires nothing. A view has no stored keys. Proof sketch:
+{name}`Database.KeysUnique.append` of a view entry, which is no index. -/
+theorem runStatement_createView_keysUnique (clock : Int) (counters : Counters) (parameters : List Value) (target : Nat) (name : Identifier)
+    (view : CatalogView) {database : Database} (unique : database.KeysUnique) :
+    (runStatement clock counters parameters (.createView target name view) database).effect.KeysUnique := by
   simp only [runStatement, step]
   split
   · rename_i fits

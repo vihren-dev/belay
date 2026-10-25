@@ -136,8 +136,12 @@ theorem backfill_resolution {context : ResolveContext} {state after : ResolveSta
       (.update tableName [(name, .call "lower" [.identifier sourceName .none])] none [] []) =
       state.withWrite context (resolveUpdate context state.catalog tableName
         [(name, .call "lower" [.identifier sourceName .none])] none [] [] {}) := by
+    have notView := Catalog.findView_none_of_table found
+    have noCopies : querySourceCopiesNeeded state.catalog commonTablePlaceholder [] = false := by
+      simp [querySourceCopiesNeeded, Syntax.TableReference.namesStoredView, commonTablePlaceholder]
     simp only [resolveStatement, resolveCommonTableWrite, List.any_nil, Bool.not_false, ↓reduceIte,
-      resolveWriteSubqueries, found, Option.map_some, Option.getD_some]
+      resolveWriteSubqueries, found, Option.map_some, Option.getD_some, notView, Option.isSome_none,
+      Bool.false_eq_true, noCopies]
     rfl
   rw [bare] at ok
   cases body : resolveUpdate context state.catalog tableName

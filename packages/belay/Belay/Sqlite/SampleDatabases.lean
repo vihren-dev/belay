@@ -35,13 +35,14 @@ private def row (table : CatalogTable) (index : Nat) (cells : List Value) : Row 
 
 /-- Replace each table's rows with copies of the supplied values, one value across all its
 columns per row. This targets duplicate keys, case pairs and aggregate boundaries while
-keeping the supplied catalog. It returns none when constraints reject those rows. -/
+keeping the supplied catalog. Views and other non-table objects keep empty storage.
+It returns none when constraints reject those rows. -/
 def uniform (base : Database) (values : List Value) : Option Database :=
   validated { base.raw with rows := base.raw.catalog.map fun object =>
     match object.entry with
     | .table table => values.zipIdx.map fun (value, index) =>
         row table index (List.replicate table.columns.length value)
-    | .index _ | .trigger _ => [] }
+    | .index _ | .trigger _ | .view _ => [] }
 
 /-- Ordered row-value patterns for duplicate, text-case and integer SUM boundary checks.
 Each value is repeated across a table's columns by the uniform candidate constructor. -/
@@ -59,7 +60,8 @@ def targeted (base : Database) (constants : List Value := []) : List Database :=
   base :: (boundaryRows ++ constants.map (fun value => [value, value])).filterMap (uniform base)
 
 /-- Generate up to the supplied number of rows per table, using the shared value generator
-and preserving the catalog. Failed constraints produce a generator error, so a fallback
+and preserving the catalog. Views and other non-table objects keep empty storage.
+Failed constraints produce a generator error, so a fallback
 cannot exceed the requested row bound.
 The default bound is two rows; pass another bound or generator for a larger search. -/
 def database (base : Database) (constants : List Value := []) (maxRows : Nat := 2) : Gen Database := do
@@ -70,7 +72,7 @@ def database (base : Database) (constants : List Value := []) (maxRows : Nat := 
       (List.range count.val).mapM fun index => do
         let cells ← table.columns.mapM fun _ => value constants
         return row table index cells
-    | .index _ | .trigger _ => pure []
+    | .index _ | .trigger _ | .view _ => pure []
   match validated { base.raw with rows } with
   | some candidate => return candidate
   | none => throw (.genError "generated rows violate the supplied database constraints")

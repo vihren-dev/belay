@@ -9,21 +9,26 @@ resolves the statements reads it. -/
 
 namespace Belay.Sqlite.Model
 
+deriving instance Lean.ToJson for ViewError
 deriving instance Lean.ToJson for CommonTableError
 deriving instance Lean.ToJson for ExprError
 
-/-- A prepare error as JSON, in one flat form: an error that names a catalog object as its
-own constructor, and an {name}`ExprError` as that error's constructor, so the wire form
+/-- A prepare error as JSON, in one flat form: a statement error as its own constructor, and an {name}`ExprError` as that error's constructor, so the wire form
 does not show the split of the two types. For example, {lit}`no such table: t` is
 {lit}`{"noSuchTable": {"name": "t"}}` and {lit}`no such column: a` is
 {lit}`{"noSuchColumn": {"name": "a"}}`, the derived form of each constructor. -/
 instance : Lean.ToJson PrepareError where
   toJson
+    | .viewVariables => Lean.Json.str "viewVariables"
     | .tableExists name => Lean.Json.mkObj [("tableExists", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .viewExists name => Lean.Json.mkObj [("viewExists", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .indexNameUsed name => Lean.Json.mkObj [("indexNameUsed", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .tableNameUsed name => Lean.Json.mkObj [("tableNameUsed", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .indexExists name => Lean.Json.mkObj [("indexExists", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .noSuchTable name => Lean.Json.mkObj [("noSuchTable", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .noSuchView name => Lean.Json.mkObj [("noSuchView", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .useDropTable name => Lean.Json.mkObj [("useDropTable", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .useDropView name => Lean.Json.mkObj [("useDropView", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .noSuchIndex name => Lean.Json.mkObj [("noSuchIndex", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .tableMayNotBeDropped name =>
       Lean.Json.mkObj [("tableMayNotBeDropped", Lean.Json.mkObj [("name", Lean.toJson name)])]
@@ -33,6 +38,11 @@ instance : Lean.ToJson PrepareError where
       Lean.Json.mkObj [("foreignKeyMismatch", Lean.Json.mkObj [("child", Lean.toJson child), ("parent", Lean.toJson parent)])]
     | .noSuchTrigger name => Lean.Json.mkObj [("noSuchTrigger", Lean.Json.mkObj [("name", Lean.toJson name)])]
     | .triggerExists name => Lean.Json.mkObj [("triggerExists", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .viewModify name => Lean.Json.mkObj [("viewModify", Lean.Json.mkObj [("name", Lean.toJson name)])]
+    | .viewNotIndexed => Lean.Json.str "viewNotIndexed"
+    | .viewAddColumn => Lean.Json.str "viewAddColumn"
+    | .viewTrigger before name =>
+      Lean.Json.mkObj [("viewTrigger", Lean.Json.mkObj [("before", Lean.toJson before), ("name", Lean.toJson name)])]
     | .expression error => Lean.toJson error
 
 /-- A model restriction as JSON: the statement index, the path, the message that users
@@ -97,9 +107,11 @@ deriving instance Lean.ToExpr for KeyTerm
 deriving instance Lean.ToExpr for IndexKey
 deriving instance Lean.ToExpr for CatalogIndex
 deriving instance Lean.ToExpr for CatalogTrigger
+deriving instance Lean.ToExpr for CatalogView
 deriving instance Lean.ToExpr for CatalogEntry
 deriving instance Lean.ToExpr for CatalogObject
 deriving instance Lean.ToExpr for Database
+deriving instance Lean.ToExpr for ViewError
 deriving instance Lean.ToExpr for CommonTableError
 deriving instance Lean.ToExpr for ExprError
 deriving instance Lean.ToExpr for PrepareError

@@ -35,10 +35,10 @@ theorem resolveOperand_below {width : Nat} {scope : Scope} (bounded : scope.Boun
       repeat' split at ok
       all_goals first | (cases ok; done) | (cases ok; simp_all [Expr.any, Expr.isColumnFrom]; done)
     | ambiguous => simp only [found] at ok; cases ok
-  | .qualified source column, operand, ok => by
+  | .qualified source column schema, operand, ok => by
     simp only [resolveOperand] at ok
-    have named := Scope.resolveQualified_below bounded source column
-    cases found : scope.resolveQualified source column with
+    have named := Scope.resolveSchemaQualified_below bounded source column schema
+    cases found : scope.resolveSchemaQualified source column schema with
     | found source reads => rw [found] at ok named; exact nameRead_below named ok
     | missing =>
       simp only [found] at ok

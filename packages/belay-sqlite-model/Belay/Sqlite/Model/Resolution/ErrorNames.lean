@@ -18,6 +18,7 @@ statement. A function name is the name as written, and so is the text of a hexad
 literal. -/
 def ExprError.name? : ExprError → Option Identifier
   | .commonTable error => error.name
+  | .view error => some error.name
   | .reservedName name | .tooManyColumns name | .duplicateColumn name | .multiplePrimaryKeys name
   | .defaultNotConstant name | .tableHasNoColumn _ name | .valueCount name _ _
   | .tableMayNotBeAltered name | .tableMayNotBeIndexed name | .primaryKeyMissing name
@@ -44,10 +45,12 @@ names. The name can be absent from the statement's text, for example the parent 
 foreign key; a tool then shows the error at the statement. For example
 {assert}`(PrepareError.noSuchTable (name! "u")).name? = some (name! "u")`. -/
 def PrepareError.name? : PrepareError → Option Identifier
-  | .tableExists name | .indexNameUsed name | .tableNameUsed name | .indexExists name
-  | .noSuchTable name | .noSuchIndex name | .tableMayNotBeDropped name
+  | .viewVariables | .viewNotIndexed | .viewAddColumn => none
+  | .tableExists name | .viewExists name | .indexNameUsed name | .tableNameUsed name | .indexExists name
+  | .noSuchTable name | .noSuchView name | .useDropTable name | .useDropView name
+  | .noSuchIndex name | .tableMayNotBeDropped name
   | .noSuchReferencedTable name | .foreignKeyMismatch name _ | .noSuchTrigger name
-  | .triggerExists name => some name
+  | .triggerExists name | .viewModify name | .viewTrigger _ name => some name
   | .expression error => error.name?
 
 end Belay.Sqlite.Model

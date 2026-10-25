@@ -31,11 +31,11 @@ def storedLookup (reference : Syntax.TableReference) (idName storedName : Identi
 resolves to the simple query of the table at its catalog position, returning that column, with
 no subquery and an unchanged state. The output name is whatever the resolver names it. Proof
 sketch: {name}`resolveStatement_select_simple` with the table source, the one resolved column of
-{name}`resolveColumns_identifier` and the filter. -/
+{name}`resolveColumns_identifier` and the filter. The table reference names no schema: it is not a {lit}`before.t` source. -/
 theorem resolveStatement_select_column (context : ResolveContext) (state : ResolveState)
     (reference : Syntax.TableReference) (filter : Option Syntax.Expr) (position : Nat) (table : CatalogTable)
     (condition : Option Resolved.Expr) (idName : Identifier) (text : String) {idPosition : Nat}
-    (namedSource : reference.query = none) (arguments : reference.arguments = none)
+    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none)
     (found : state.catalog.findTable reference.table = some (position, table))
     (idFound : columnPosition table.columns idName = some idPosition)
     (resolves : FilterResolves context.profile.dqsDml (tableScope state.catalog reference position table) []
@@ -53,7 +53,7 @@ theorem resolveStatement_select_column (context : ResolveContext) (state : Resol
   have result := resolveStatement_select_simple context state
     (Syntax.Subquery.mk [.expression (.identifier idName .none) none text] (some reference) [] filter [] [] none none
       none none false none none)
-    simple rfl _ _ _ condition _ (resolveSources_table state.catalog reference position table namedSource arguments found)
+    simple rfl _ _ _ condition _ (resolveSources_table state.catalog reference position table namedSource current arguments found)
     (by simp [starIssue]) columns (by simpa [resultAliases] using resolves)
     (resolvePendingSources_table context.profile.dqsDml _ position)
     (by simp [Resolved.Expr.any, Resolved.Expr.isFallibleCall])
@@ -61,29 +61,29 @@ theorem resolveStatement_select_column (context : ResolveContext) (state : Resol
 
 /-- For a table with the stored lowercase source column's name and an id column, the original
 lookup resolves to the simple query of the table with {name}`originalFilter` and the id column.
-Proof sketch: {name}`resolveStatement_select_column` with {name}`resolve_original_filter`; no
+The table reference names no schema: it is not a {lit}`before.t` source. Proof sketch: {name}`resolveStatement_select_column` with {name}`resolve_original_filter`; no
 result alias exists to be named by the filter. -/
 theorem resolve_original_lookup (context : ResolveContext) (state : ResolveState)
     (reference : Syntax.TableReference) (position : Nat) (table : CatalogTable)
     (idName sourceName : Identifier) (text : String) (number : Nat) {idPosition sourcePosition : Nat}
-    (namedSource : reference.query = none) (arguments : reference.arguments = none)
+    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none)
     (found : state.catalog.findTable reference.table = some (position, table))
     (idFound : columnPosition table.columns idName = some idPosition)
     (sourceFound : columnPosition table.columns sourceName = some sourcePosition) :
     ∃ names, resolveStatement context state (originalLookup reference idName sourceName text number) =
       .ok (.query (Resolved.Query.simple [Resolved.QuerySource.first position]
         (some (originalFilter sourcePosition number)) [.scalar (.column idPosition)] names) [], state) :=
-  resolveStatement_select_column context state reference _ position table _ idName text namedSource arguments found
+  resolveStatement_select_column context state reference _ position table _ idName text namedSource current arguments found
     idFound (FilterResolves.of_term (result := (originalFilter sourcePosition number, none))
       (by simp [namesAlias, namesAliasIn]) (resolve_original_filter sourceFound number))
 
 /-- For a table whose stored column has TEXT affinity and BINARY collation, the stored lookup
 resolves to the simple query of the table with {name}`storedFilter` and the id column. Proof
-sketch: as {name}`resolve_original_lookup`, with {name}`resolve_stored_filter`. -/
+sketch: as {name}`resolve_original_lookup`, with {name}`resolve_stored_filter`. The table reference names no schema: it is not a {lit}`before.t` source. -/
 theorem resolve_stored_lookup (context : ResolveContext) (state : ResolveState)
     (reference : Syntax.TableReference) (position : Nat) (table : CatalogTable)
     (idName storedName : Identifier) (text : String) (number : Nat) {idPosition storedPosition : Nat}
-    (namedSource : reference.query = none) (arguments : reference.arguments = none)
+    (namedSource : reference.query = none) (current : reference.schema = none) (arguments : reference.arguments = none)
     (found : state.catalog.findTable reference.table = some (position, table))
     (idFound : columnPosition table.columns idName = some idPosition)
     (storedFound : columnPosition table.columns storedName = some storedPosition)
@@ -92,7 +92,7 @@ theorem resolve_stored_lookup (context : ResolveContext) (state : ResolveState)
     ∃ names, resolveStatement context state (storedLookup reference idName storedName text number) =
       .ok (.query (Resolved.Query.simple [Resolved.QuerySource.first position]
         (some (storedFilter storedPosition number)) [.scalar (.column idPosition)] names) [], state) :=
-  resolveStatement_select_column context state reference _ position table _ idName text namedSource arguments found
+  resolveStatement_select_column context state reference _ position table _ idName text namedSource current arguments found
     idFound (FilterResolves.of_term (result := (storedFilter storedPosition number, none))
       (by simp [namesAlias, namesAliasIn]) (resolve_stored_filter storedFound stored binary number))
 

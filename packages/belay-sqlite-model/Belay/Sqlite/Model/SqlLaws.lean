@@ -46,7 +46,7 @@ def ModeledDefinitions (script : List Resolved.Statement) : Prop :=
     | .createTable .. => True
     | .addColumn _ column => (column.clockDefault || (readDefaultValue column).toOption.isSome) = true
     | .createIndex .. => False
-    | .createTrigger .. | .drop .. => True
+    | .createView .. | .createTrigger .. | .drop .. => True
     | .insert .. | .upsert .. | .update .. | .delete .. | .begin | .commit | .rollback | .prepareError _
     | .query .. | .setting .. => True
 
@@ -80,7 +80,7 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites (script.map (·.1)))
             state.database with
         | none => rfl
         | some source =>
-          have clean := Resolved.source_fault_of_plain _ state.database query.sources _ source noEach rfl found
+          have clean := Resolved.source_fault_of_plain _ state.database none query.sources _ source noEach rfl found
           cases window : query.bindWindow parameters with
           | none => simp [Resolved.Query.run, single_select, window, clean]
           | some bound =>
@@ -97,7 +97,7 @@ theorem supportedSqlFrom_noWrites (guard : NoWrites (script.map (·.1)))
         have none := first.2.1 positions keys rfl
         subst none
         simp [SqlState.statementRun, Resolved.Statement.counterReads, Resolved.Statement.clockExpressions, Resolved.WriteRules.expressions, runStatement, StatementRun.withKeys]
-      | createTable | createIndex | createTrigger | addColumn | begin | commit | rollback | insert | upsert | update | delete
+      | createTable | createView | createIndex | createTrigger | addColumn | begin | commit | rollback | insert | upsert | update | delete
       | prepareError | setting =>
         simp_all [SqlState.statementRun, Resolved.Statement.counterReads, Resolved.Statement.clockExpressions, runStatement]
     have run : (state.statementRun (state.clock position) parameters statement).ready = true := ready

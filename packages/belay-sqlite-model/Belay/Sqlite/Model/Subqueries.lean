@@ -14,11 +14,12 @@ namespace Belay.Sqlite.Model.Resolved
 ({name}`QuerySource.join`) from the outer row, so each row starts with the outer cells; none
 when a table is missing. An outer row with fewer cells than {name}`Query.outer`, such as the
 row without cells over which the model evaluates a constant term, is filled with NULL, so the
-subquery's own cells keep their positions. With no outer cells this is {name}`Query.source`. -/
-def Query.sourceAfter (context : EvalContext) (outer : List Value) (query : Query) (database : Database) :
-    Option SourceRows :=
-  let cells := outer ++ List.replicate (query.outer - outer.length) .null
-  query.sources.foldlM (QuerySource.join context database)
+subquery's own cells keep their positions. Excess cells are discarded at {name}`Query.outer`,
+so the supplied row cannot shift the query's own cells. With no outer cells this is {name}`Query.source`. -/
+def Query.sourceAfter (context : EvalContext) (outer : List Value) (query : Query) (database : Database)
+    (initial : Option Database := none) : Option SourceRows :=
+  let cells := outer.take query.outer ++ List.replicate (query.outer - outer.length) .null
+  query.sources.foldlM (QuerySource.join context database initial)
     { rows := [cells], width := cells.length, fault := .none, outer := cells }
 
 /-- Whether SQLite gives the same first values on both sides of a cut before {lit}`position` of
@@ -63,9 +64,9 @@ runs. Its first row is certain when the window of one row is ({name}`Query.windo
 and its first-column multiset when its own window is. Its complete rows are certain when that
 window compares every output cell. Its end ({name}`RunEnd`) keeps the failure of the run
 without the softening, for a compound that reads it for its terms. -/
-def Query.subqueryRun (context : EvalContext) (database : Database) (outer : List Value) (query : Query) :
-    SubqueryRun :=
-  match query.sourceAfter context outer database with
+def Query.subqueryRun (context : EvalContext) (database : Database) (outer : List Value) (query : Query)
+    (initial : Option Database := none) : SubqueryRun :=
+  match query.sourceAfter context outer database initial with
   | none => { rows := [], fault := .may, ending := .may }
   | some source => match query.bindWindow context.parameters with
     | none => { rows := [], fault := .may, ending := .mismatch }
@@ -84,29 +85,36 @@ def Query.subqueryRun (context : EvalContext) (database : Database) (outer : Lis
 /-- The context of a statement's subqueries at a nesting depth, with the statement's clock value,
 the counters of its connection and the values bound to its parameters at every depth: with no depth left, the plain context
 with the values; else subquery {lit}`index` runs ({name}`Query.subqueryRun`) in the context one
-depth below, which serves the subqueries that its own expressions name, all later in the list. -/
-def subqueryContext (clock : Int) (counters : Counters) (parameters : List Value) (database : Database) (subqueries : List Query) :
-    Nat → EvalContext
+depth below, which serves the subqueries that its own expressions name, all later in the list. Every depth
+reads the sources of the initial origin from the same optional {lit}`initial` database of a two-state
+observation; use none outside one. -/
+def subqueryContext (clock : Int) (counters : Counters) (parameters : List Value) (database : Database) (subqueries : List Query)
+    (initial : Option Database := none) : Nat → EvalContext
   | 0 => { EvalContext.plain clock with parameters, counters }
   | depth + 1 =>
     { clock, parameters, counters, subqueries := fun index outer => match subqueries[index]? with
-        | some query => query.subqueryRun (subqueryContext clock counters parameters database subqueries depth) database outer
+        | some query => query.subqueryRun (subqueryContext clock counters parameters database subqueries initial depth) database outer
+            initial
         | none => { rows := [], fault := .none } }
 
 /-- The evaluation context of a statement at a clock value, with the counters of its connection
-and the values bound to its parameters, over a database: its subqueries at the depth of their number
+and the values bound to its parameters, over a database and the optional initial database of a two-state observation:
+its subqueries at the depth of their number
 ({name}`subqueryContext`), which bounds their nesting because each subquery's expressions name
 only later ones. Without subqueries it is the plain context with the counters and the values. Use {lean}`([] : List Value)` for
 the values of a statement that binds none, such as a trigger body. -/
-def statementContext (clock : Int) (counters : Counters) (parameters : List Value) (database : Database) (subqueries : List Query) :
-    EvalContext :=
-  subqueryContext clock counters parameters database subqueries subqueries.length
+def statementContext (clock : Int) (counters : Counters) (parameters : List Value) (database : Database) (subqueries : List Query)
+    (initial : Option Database := none) : EvalContext :=
+  subqueryContext clock counters parameters database subqueries initial subqueries.length
 
-/-- For every clock value, counters, list of values and database, the context of a statement without
-subqueries is the plain context of the clock value with the counters and the values as its parameters. Proof
+/-- For every clock value, counters, list of values, database and optional initial database, the context of a
+statement without subqueries is the plain context of the clock value with the counters and the values as its
+parameters, whatever the initial database. Proof
 sketch: an empty list gives depth 0, and {name}`subqueryContext` at depth 0 is that context by
 definition. -/
-@[simp] theorem statementContext_nil (clock : Int) (counters : Counters) (parameters : List Value) (database : Database) :
-    statementContext clock counters parameters database [] = { EvalContext.plain clock with parameters, counters } := rfl
+@[simp] theorem statementContext_nil (clock : Int) (counters : Counters) (parameters : List Value) (database : Database)
+    (initial : Option Database) :
+    statementContext clock counters parameters database [] initial =
+      { EvalContext.plain clock with parameters, counters } := rfl
 
 end Belay.Sqlite.Model.Resolved

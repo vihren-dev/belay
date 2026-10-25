@@ -40,7 +40,7 @@ def test_clauses_keep_targets_actions_and_order(parse_sql: Callable[..., Transla
     written order before RETURNING."""
     sql = ("INSERT INTO t(a, b) VALUES (1, 2) ON CONFLICT(b, A) DO UPDATE SET a = excluded.a WHERE b > 0 "
            "ON CONFLICT DO NOTHING RETURNING a;")
-    excluded = {"qualified": {"source": "excluded", "column": "a"}}
+    excluded = {"qualified": {"source": "excluded", "column": "a", "schema": None}}
     assert insert_of(parse_sql, sql)["conflicts"] == [
         {"target": ["b", "A"], "action": {"update": {"assignments": [["a", excluded]], "filter": {
             "compare": {"operator": "gt", "left": NAME, "right": {"numeric": {"text": "0"}}}}}}},

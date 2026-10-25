@@ -113,7 +113,7 @@ theorem a_customer_named_iff (db : Database) (name : String) (position : Nat) (t
     (term := .compare .eq (.identifier (name! "name") .none) (.parameter 1)) (by simp [namesAlias])
     (result := (equalsParameter nameCell 1 1, none))
     (by simp [sql_simp, nameAt, nameCellAt, equalsParameter]; rfl)
-  refine Iff.trans (Holds.iff_selectOne (namedSource := rfl) (head := rfl) (arguments := rfl) found resolves ?_) ?_
+  refine Iff.trans (Holds.iff_selectOne (namedSource := rfl) (current := rfl) (head := rfl) (arguments := rfl) found resolves ?_) ?_
   · simp [sql_simp, equalsParameter]
   · simp [sql_simp]
 

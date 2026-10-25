@@ -12,13 +12,15 @@ source. -/
 
 namespace Belay.Sqlite.Model
 
-/-- A source of {lit}`FROM` whose reference is resolved: a table at its catalog position,
-{lit}`json_each` with the path of its reference and its arguments as written, which
+/-- A source of {lit}`FROM` whose reference is resolved: a table at its catalog position, or at its position
+in the catalog of the initial database, {lit}`json_each` with the path of its reference and its arguments as written, which
 resolve after the scope is complete ({name}`resolveEachArguments`), or the rows of a
 table-valued pragma ({name}`pragmaReference`), or an indexed SELECT with its output width. -/
 inductive SourceItem where
   /-- A table at its position in the catalog. -/
   | table (position : Nat)
+  /-- A table at its position in the catalog of the initial database ({lit}`before.t`). -/
+  | initialTable (position : Nat)
   /-- A {lit}`json_each` source: the path of its reference and its arguments. -/
   | each (path : List Nat) (arguments : List Syntax.Expr)
   /-- A table-valued pragma with its rows. -/
@@ -40,10 +42,19 @@ structure PendingSource where
 ({name}`resolveTableReference`), a table-valued pragma, whose name starts with
 {lit}`pragma_` ({name}`pragmaReference`), {lit}`json_each` ({name}`eachReference`), or an indexed
 query from {lit}`queries`. Use the default callback when no indexed queries are available.
-The {lit}`prefix_` locates local restrictions; query callback failures already have their paths. -/
+The {lit}`prefix_` locates local restrictions; query callback failures already have their paths.
+A view used with function arguments reports SQLite's not-a-function error
+before its body is expanded.
+
+A reference with the schema name {lit}`before` ({name}`Syntax.TableReference.readsInitial`) resolves
+in the optional catalog {lit}`initial` of the initial database, as an {name}`SourceItem.initialTable` whose
+source is marked {name}`ScopeSource.initial`, and a missing table is SQLite's {lit}`no such table: before.t`.
+Without that catalog, with a function call, or with another schema name, it is
+{name}`RestrictionKind.initialDatabase`; it never reads the current catalog. An indexed query expanded from a
+view of the initial database keeps the mark. -/
 def resolveReference (catalog : Catalog) (path : List Nat) (reference : Syntax.TableReference)
     (queries : Nat → Except SourceIssue ScopeSource := fun _ => .error (.value (.restriction [] .subqueryHere)))
-    (prefix_ : List Nat := []) : Except SourceIssue (SourceItem × ScopeSource) :=
+    (prefix_ : List Nat := []) (initial : Option Catalog := none) : Except SourceIssue (SourceItem × ScopeSource) :=
   match reference.query with
   | some index => do
     if reference.arguments.isSome then throw (.value (.restriction (prefix_ ++ path) .subqueryHere))
@@ -53,12 +64,21 @@ def resolveReference (catalog : Catalog) (path : List Nat) (reference : Syntax.T
         name := reference.alias.getD (name! "")
         qualified := reference.alias.isSome
         queryIndex := some index
+        initial := reference.readsInitial
         hasRowid := false })
   | none =>
-    let resolved : Except SourceIssue (SourceItem × ScopeSource) := match reference.arguments with
-    | none => (fun (position, source) => (SourceItem.table position, source)) <$> resolveTableReference catalog path reference
-    | some arguments =>
-      if (bytes! "pragma_").isPrefixOf reference.table.folded then
+    let resolved : Except SourceIssue (SourceItem × ScopeSource) := match reference.schema, reference.arguments with
+    | some _, some _ => .error (.value (.restriction path .initialDatabase))
+    | some _, none => match initial with
+      | some initialCatalog => if reference.readsInitial then
+          (fun (position, source) => (SourceItem.initialTable position, { source with initial := true })) <$>
+            (resolveTableReference initialCatalog path reference).mapError (initialIssue reference)
+        else .error (.value (.restriction path .initialDatabase))
+      | none => .error (.value (.restriction path .initialDatabase))
+    | none, none => (fun (position, source) => (SourceItem.table position, source)) <$> resolveTableReference catalog path reference
+    | none, some arguments =>
+      if (catalog.findView reference.table).isSome then .error (.value (.prepare (.view (.functionCall reference.table))))
+      else if (bytes! "pragma_").isPrefixOf reference.table.folded then
         (fun (rows, source) => (SourceItem.pragma rows, source)) <$> (pragmaReference catalog path reference arguments).mapError .value
       else (fun source => (SourceItem.each path arguments, source)) <$> (eachReference path reference arguments).mapError .value
     resolved.mapError (SourceIssue.under prefix_)
@@ -83,17 +103,18 @@ of all of them. More than {name}`maximumJoinTables` sources is SQLite's
 generated conditions coalesce the left columns when any join is a right or full join. No
 {lit}`FROM` gives no source and the empty scope. The first cell is at {lit}`start`: 0 for a
 statement's query, after the outer cells for a subquery. Indexed queries obtain their columns
-from {lit}`queries`; {lit}`prefix_` locates this query's source restrictions in the statement. -/
+from {lit}`queries`; {lit}`prefix_` locates this query's source restrictions in the statement;
+{lit}`initial` is the catalog of the initial database of a two-state query, or none. -/
 def resolveSources (catalog : Catalog) (source : Option Syntax.TableReference) (joins : List Syntax.Join)
     (start : Nat := 0)
     (queries : Nat → Except SourceIssue ScopeSource := fun _ => .error (.value (.restriction [] .subqueryHere)))
-    (prefix_ : List Nat := []) : Except SourceIssue (List PendingSource × Scope) := do
+    (prefix_ : List Nat := []) (initial : Option Catalog := none) : Except SourceIssue (List PendingSource × Scope) := do
   let some source := source | .ok ([], [])
   if joins.length + 1 > maximumJoinTables then throw (.value (.prepare .tooManyTables))
-  let (firstItem, firstSource) ← resolveReference catalog [1] source queries prefix_
+  let (firstItem, firstSource) ← resolveReference catalog [1] source queries prefix_ initial
   let operators := joins.map (joinOperator ·.operator)
   let joined ← resolveAll (fun item ((join : Syntax.Join), operator) => do
-    let resolved ← resolveReference catalog [2, item, 1] join.source queries prefix_
+    let resolved ← resolveReference catalog [2, item, 1] join.source queries prefix_ initial
     let earlier := source :: (joins.take item).map (·.source)
     (functionJoinChecked (earlier.any (·.arguments.isSome)) item join operator).mapError (SourceIssue.value ∘ ValueIssue.under prefix_)
     .ok resolved) (joins.zip operators)
@@ -115,6 +136,7 @@ def resolvePendingSources (dqs : Bool) (scope : Scope) (sources : List PendingSo
   resolveAll (fun index ((source : PendingSource), condition) => do
     let resolved ← match source.item with
       | .table position => pure (Resolved.Source.table position)
+      | .initialTable position => pure (Resolved.Source.initialTable position)
       | .each path arguments => resolveEachArguments dqs scope index path arguments
       | .pragma rows => pure (Resolved.Source.pragma rows)
       | .subquery index width => pure (Resolved.Source.subquery index width)

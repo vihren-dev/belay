@@ -385,3 +385,15 @@ the start of the SQL. Nix verification of these cases: pending until the Part 2 
 - The 300 s limit of the addCustomer instance chain is accepted; its docstring gives the
   measured cost of about 40 s.
 - Publication: Part 2 waits for Part 1b, and the task gets one pull request.
+
+## Part 1b (assertions over the initial/current query context), started 2026-10-25
+
+Integration: `jj new d90d7b8e 86546fb9` (Part 2 head and the S6 before-context head; merge base
+`e3baff02`; no rebase). Conflicts: only the two lakefile glob lists (`packages/belay/lakefile.lean`,
+`packages/belay-sqlite-model/lakefile.toml`); both sides only add modules, so the resolution is the
+union. Adaptations for the before-context changes: my fixtures call the S4 query laws with the new
+`current : reference.schema = none` argument (`AddCustomerQueries`, `CustomerInsertQueries`,
+`AccountSignupQueries`, `ExpansionCountQueries`). `tests/surface/S6Footprints.lean`: the refusal of
+`before` (a `guard_msgs` example) is now a plain example from the before-context line; its docstring
+says that the observation reads `before` and the ordinary run refuses it. Local checks for this merge
+(development only): `just dev-build` exit 0 and all earlier fixture chains elaborate.
