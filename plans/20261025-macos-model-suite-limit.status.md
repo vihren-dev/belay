@@ -50,5 +50,11 @@ Relevant files: `conformance/model_check.py`,
   53 prediction files of `integrity/judge.nix -A predictions` are byte-identical: baseline
   (commit `108d6f62`)
   `/nix/store/hkvlvawsx4fk1zvcknmh5gn4m0kkynps-sqlite-verifier-predictions`, with the fix
-  `/nix/store/zfqa4kksx8v4ss4x3545gsdzh7kmlnh4-sqlite-verifier-predictions` (`diff -r`
+  `/nix/store/9z2qckqphdmnjfqhjbzpxc3m82shp51g-sqlite-verifier-predictions` (`diff -r`
   empty). No mutant targets `Json/Bytes.lean` or `Json/ReadScalar.lean`.
+- 2026-10-25: reviews of the step 3 commits. Review `20261025T103113Z-e97aeb14`: one must
+  (`ReadScalar.lean` had 202 lines) and one should (the status cited local runs); both
+  fixed in `ad592d69`. Review `20261025T103446Z-ad592d69`: no findings. The prediction
+  comparison above was run again on the final sources (`ad592d69`): the output is
+  `/nix/store/9z2qckqphdmnjfqhjbzpxc3m82shp51g-sqlite-verifier-predictions`, identical to
+  the baseline.
