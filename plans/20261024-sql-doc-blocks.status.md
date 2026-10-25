@@ -80,12 +80,15 @@ Finding `#1` (R10) requests actionable next steps in three failure messages.
 The coordinator approved the narrow R10 correction. The three messages now
 name a recovery action for the existing checker API, without advertising the
 unfinished public failure mode. The message/docstring-only correction passed
-its focused Nix check on source `04b44c5a`: 2 passed, 86 deselected, in 5.01
-seconds; report
+its focused Nix check on pre-commit snapshot `04b44c5a` of change `zrqsoqno`
+(the same production files committed as `10216365`): 2 passed, 86 deselected,
+in 5.01 seconds; report
 `/nix/store/8arqjd5l5jlnvg5v148gimnk0gbijzrp-sqlite-verifier-test-surface-1`.
 The mandatory development build also passed; it is diagnostic evidence only.
 No execution or expectation logic changed. Finding `#1` is recorded fixed, and
-the correction's independent review follows. Logs and exact command are under
+independent review `20261025T003533Z-10216365` found no musts and one R19
+status-only should. The status now identifies the pre-commit snapshot explicitly;
+that finding is recorded fixed. Logs and exact command are under
 `build/agent-logs/sql-docs-r10-*`. The full task remains OPEN. Public handler registration,
 complete convenience/explicit bindings and environment inputs, typed headers,
 expected SQL failures, lexical expected-comment extraction, original source
