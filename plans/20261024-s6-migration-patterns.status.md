@@ -129,7 +129,9 @@ distinctions, raw/concrete branch sets with unequal actual results, moved failur
 original-failure vacuity, returned application values and counter effects. The
 production interpreter and model definitions are unchanged.
 
-Frozen source `bce35aae4294161738924cb73031d49871cd7bce` passed the installed Nix
+Commit `838aa29e3057c196187b5c5964cab6b890e0b633` carries this checked unit.
+Its production, fixture and test-registration files are unchanged from
+frozen source `bce35aae4294161738924cb73031d49871cd7bce`, which passed the installed Nix
 check at `/nix/store/4ngn8pikwbsql2fqflbvmgc7gz6crxm9-sqlite-verifier-test-migration-patterns-1`:
 three groups, 85 deselected, 17.97 seconds. The installed surface is
 `/nix/store/g9p5fxs570xbh8qijbwvc54ilafzmra3-belay-0.1.0`. The new fixtures audit
@@ -148,6 +150,9 @@ the normal installed Nix runtime required no repair. Diagnostic logs remain in
 
 R3/R19 self-review checked the actual/branch separation, exact identity bridges,
 original-context domain, application return values, fresh quantification and
-read-only admission. Independent review of this source commit follows. Later
-composition/frame bridges, notation, universal guide examples and whole-task
-checks remain required; this is not completion of either acceptance part.
+read-only admission. Independent review `20261025T002522Z-838aa29e` found zero
+musts and one status-only should: identify the commit carrying the checked
+source. That provenance is recorded above, and the finding is resolved without
+changing production or test files. Later composition/frame bridges, notation,
+universal guide examples and whole-task checks remain required; this is not
+completion of either acceptance part.
