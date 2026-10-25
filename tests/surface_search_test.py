@@ -15,7 +15,8 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
 
 
 def test_shared_search_certifies_and_restores_failed_attempts(runtime_root: Path, tmp_path: Path) -> None:
-    """CheckCandidates rejects false proof claims, and CheckBudget restores failed/exhausted state."""
+    """CheckCandidates rejects false proofs, CheckBudget restores state, and CheckReplayData's
+    internal reifiers preserve ordinary imported Except display."""
     result = run_command(surface_command(runtime_root, FIXTURES / "CounterexampleSearchCore.lean", tmp_path),
                          cwd=tmp_path, timeout=90)
     assert result.returncode == 0, result.diagnostic()

@@ -12,10 +12,6 @@ namespace Belay.Sqlite.Check
 
 open Lean Meta Elab Term
 
--- These instances reify only data returned by the existing model observation function.
-deriving instance Lean.ToExpr for Belay.Sqlite.Model.Output
-deriving instance Lean.ToExpr for Except
-
 /-- Whether construction succeeds without a model restriction or open transaction and yields
 exactly the requested raw database. Every step comes from the ordinary model runner. -/
 def constructionMatches (statements : List Model.Syntax.Statement) (database : Database.Raw) : Bool :=
@@ -68,6 +64,22 @@ def checkedScriptReport (database script : Expr) (excluded : Array Name := #[])
   checkTextSize original.text
   let source ← Replay.scriptTextOf script value (some original.text)
   checkSystem "SQL replay translation"
+  -- Reify observation data only here: exported ToExpr instances override users' #eval display.
+  let _ : ToExpr Output := {
+    toTypeExpr := mkConst ``Model.Output
+    toExpr := fun
+      | .rows rows => mkApp (mkConst ``Model.Output.rows) (toExpr rows)
+      | .done changes => mkApp (mkConst ``Model.Output.done) (toExpr changes)
+      | .error code => mkApp (mkConst ``Model.Output.error) (toExpr code)
+      | .oneOf results => mkApp (mkConst ``Model.Output.oneOf) (toExpr results)
+      | .unmodeled reason => mkApp (mkConst ``Model.Output.unmodeled) (toExpr reason) }
+  let errorType := toTypeExpr String
+  let resultType := toTypeExpr (List Output)
+  let _ : ToExpr (Except String (List Output)) := {
+    toTypeExpr := mkApp2 (mkConst ``Except [.zero, .zero]) errorType resultType
+    toExpr := fun
+      | .ok outputs => mkApp3 (mkConst ``Except.ok [.zero, .zero]) errorType resultType (toExpr outputs)
+      | .error reason => mkApp3 (mkConst ``Except.error [.zero, .zero]) errorType resultType (toExpr reason) }
   let observed ← dataValue (Except String (List Output))
     (mkApp2 (mkConst ``Replay.observations) database script) excluded excludedLocals
   let .ok outputs := observed | throwError "SQL replay has an unavailable observation"
