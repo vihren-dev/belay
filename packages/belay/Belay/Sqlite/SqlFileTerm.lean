@@ -17,6 +17,6 @@ def fileScriptTerm (reference : Syntax) (source : SqlFileSource) (replayText : S
     | .ok plan => pure plan
     | .error diagnostic => throwErrorAt reference (source.diagnostic diagnostic entry)
   let fileName ← getFileName
-  scriptTermFromPlan items plan [] (withSource scriptSourceKey reference replayText fileName)
+  scriptTermFromPlan items plan [] none (withSource scriptSourceKey reference replayText fileName)
 
 end Belay.Sqlite

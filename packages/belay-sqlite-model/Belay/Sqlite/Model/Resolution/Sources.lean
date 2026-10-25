@@ -46,7 +46,8 @@ source with its name (the alias, else the table name as declared, as SQLite name
 messages). A missing table is SQLite's
 {lit}`no such table: %s`; one of SQLite's own tables is a model restriction, as in a
 query of one table, and so is a name of an eponymous table-valued function
-({name}`eponymousName`), which SQLite reads without arguments. -/
+({name}`eponymousName`), which SQLite reads without arguments. A view requires indexed
+query expansion and is {name}`RestrictionKind.subqueryHere` at this physical-table boundary. -/
 def resolveTableReference (catalog : Catalog) (path : List Nat) (reference : Syntax.TableReference) :
     Except SourceIssue (Nat × ScopeSource) :=
   match catalog.findTable reference.table with
@@ -54,7 +55,8 @@ def resolveTableReference (catalog : Catalog) (path : List Nat) (reference : Syn
     let declared := (catalog[position]?.map (·.name)).getD reference.table
     .ok (position, { name := reference.alias.getD declared, columns := table.columns, hasRowid := !table.withoutRowid })
   | none =>
-    if reservedName reference.table then .error (.value (.restriction path .systemTable))
+    if (catalog.findView reference.table).isSome then .error (.value (.restriction path .subqueryHere))
+    else if reservedName reference.table then .error (.value (.restriction path .systemTable))
     else if eponymousName reference.table then .error (.value (.restriction path .tableFunction))
     else .error (.noSuchTable reference.table)
 

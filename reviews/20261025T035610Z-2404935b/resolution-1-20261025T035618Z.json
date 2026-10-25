@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T03:56:18+00:00",
+  "finding": "20261025T035610Z-2404935b#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "removed local pass claims from the status text"
+}

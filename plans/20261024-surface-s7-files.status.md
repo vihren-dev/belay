@@ -252,3 +252,25 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   the frozen predictions and judge lock are unchanged); `just test-nix` passed (71 passed,
   1529 deselected); `just test-scheduled-checks` passed at
   `/nix/store/j37adzg25s32slqy03advda9hfd02dwx-sqlite-verifier-scheduled-check-reports`.
+- 2026-10-25: integration with S5 (`411dd63a`, the S5 head of workspace s5-automatic): a merge
+  of `860ad752` and `411dd63a` with no rebase; the common ancestor is the S6 integration
+  `5bc323f0`. Conflicts and resolutions:
+  - `build-support/tests.nix`: the `surface` suite inputs keep `lean_server_support.py` (S5) and
+    `sql_file_support.py` (S7); the suite environment keeps `BELAY_PARSER_LIBRARY` (S7) and
+    `TZDIR` (S5).
+  - `tests/nix_suites.json`: the `surface` suite lists the seven S7 SQL-file tests and
+    `surface_editor_test.py`.
+  - `plans/20261024-surface-editor.status.md`, `plans/20261025-fromless-mutant-repair.{status,task}.md`
+    and `plans/20261025-mutant-failure-diagnostics.status.md`: both lines held a version of
+    each file, and the S7 version was an earlier state of the same file (status OPEN, before
+    the S5 line recorded completion), so the S5 version is kept whole.
+  - Merged without a conflict but checked: the `lakefile.lean` globs (both module lists),
+    `Belay/Sqlite.lean`, `packages/belay/README.md`, the layer test.
+  - The `SqlTerm.variableValue` adaptation: `variableValue` returns the original and the coerced
+    expression; `scriptTermFromPlan` takes the variables as `(source, original, coerced)` and an
+    optional `SqlEditorSource`; `scriptTerm` passes the literal, and `fileScriptTerm` passes none,
+    because a file's text is not a Lean literal, so files get no parameter hover. Other
+    behavior is unchanged.
+  Checks: `just dev-build` and `lake build Belay belay-sql-check` passed; focused Nix surface run
+  (61 passed, 95 deselected, 382.17 s) at
+  `/nix/store/kz3hp45026lmwa1ij0c8lxkhql7cm9r0-sqlite-verifier-test-surface-1`.

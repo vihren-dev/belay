@@ -27,7 +27,7 @@ def Catalog.keyAlgorithms (catalog : Catalog) (position : Nat) (table : CatalogT
     (table.keyedUniqueAlgorithms.map (·.getD .abort)) ++
     catalog.filterMap fun object => match object.entry with
       | .index index => if index.table == position && index.unique then some .abort else none
-      | .table _ | .trigger _ => none
+      | .table _ | .view _ | .trigger _ => none
 
 /-- The algorithm of each constraint of an INSERT into the table: the statement's
 {lit}`OR` algorithm when it has one (R-33948-22286), else the algorithm of the

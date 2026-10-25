@@ -24,10 +24,10 @@ structure Table where
   deriving Repr, DecidableEq
 
 /-- The schema and the stored rows. {lit}`rows` has one entry for each catalog object,
-at the object's position; an index object has no rows. {lean}`({} : Database)` is the
+at the object's position; indexes, views and triggers have no rows. {lean}`({} : Database)` is the
 empty database. -/
 structure Database where
-  /-- The schema: every table and index, in creation order. -/
+  /-- The schema: every catalog object, in creation order. -/
   catalog : Catalog := []
   /-- The stored rows of the object at each catalog position, in observation order,
   including physical rowids. -/
@@ -35,7 +35,7 @@ structure Database where
   deriving Repr, DecidableEq
 
 /-- The table at a catalog position: its catalog entry with its stored rows, or
-{lean}`(none : Option Table)` for a position that holds an index or is past the end. -/
+{lean}`(none : Option Table)` for a non-table or past-end position. -/
 def Database.table (database : Database) (position : Nat) : Option Table :=
   (database.catalog.tableAt position).map fun shape => { shape, rows := database.rows.getD position [] }
 
@@ -101,7 +101,8 @@ def CatalogTable.supported (limits : Limits) (table : CatalogTable) : Bool :=
 a reserved name is allowed only for a statistics table with exactly its typeless
 columns and no keys. An index names a table position of the catalog, a supported
 key of that table and a name that is not reserved. A trigger has a name that is not reserved
-and names a table of the catalog. -/
+and names a table of the catalog. A view has a name that is not reserved. Its body
+may refer to missing objects or other views; validity imposes no resolved-body condition. -/
 def CatalogObject.supported (limits : Limits) (catalog : Catalog) (object : CatalogObject) : Bool :=
   match object.entry with
   | .table table => table.supported limits && (!reservedName object.name ||
@@ -110,8 +111,9 @@ def CatalogObject.supported (limits : Limits) (catalog : Catalog) (object : Cata
   | .index index => !reservedName object.name &&
       (catalog.tableAt index.table).any fun table => index.supported table.columns.length
   | .trigger trigger => !reservedName object.name && (catalog.findTable trigger.table).isSome
+  | .view _ => !reservedName object.name
 
-/-- Admit a catalog: unique folded names of its tables and indexes, and every object
+/-- Admit a catalog: unique folded names of its tables, views and indexes, and every object
 supported. -/
 def Catalog.supported (limits : Limits) (catalog : Catalog) : Bool :=
   catalog.foldedNames.eraseDups.length == (catalog.filter (!·.isTrigger)).length &&

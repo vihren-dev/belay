@@ -19,6 +19,7 @@ def ordinal (number : Nat) : String :=
 {lit}`no such column: a`. -/
 def ExprError.message : ExprError → String
   | .commonTable error => error.message
+  | .view error => error.message
   | .reservedName name => s!"object name reserved for internal use: {name}"
   | .tooManyColumns table => s!"too many columns on {table}"
   | .duplicateColumn column => s!"duplicate column name: {column}"
@@ -91,6 +92,7 @@ def quotedName (name : Identifier) : String :=
 /-- SQLite's message for a prepare error, for example {lit}`no such table: t`. -/
 def PrepareError.message : PrepareError → String
   | .tableExists name => s!"table {name} already exists"
+  | .viewExists name => s!"view {name} already exists"
   | .indexNameUsed name => s!"there is already an index named {name}"
   | .tableNameUsed name => s!"there is already a table named {name}"
   | .indexExists name => s!"index {name} already exists"

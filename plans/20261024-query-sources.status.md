@@ -183,10 +183,14 @@ deselected, in 194.19 seconds:
 This checks the CTE/query consumers, both S4 guide proofs, all nine FK fixtures,
 and the S6/proof-cost prototypes. Independent integration review
 `20261024T200939Z-57bf72e2` found no findings. The completed full gate and verdict
-are recorded under "Combined part-2 acceptance preparation" above; the
+are recorded under "Combined part-2 acceptance" above; the
 [classification record](20261024-query-sources-cte-predictions.status.md) lists
 every prediction change. This publication adds no view behavior.
 
 Acceptance-documentation review `20261024T201724Z-ed535519` found zero musts
-and two status-wording shoulds. The raw comparison is retained under the
-publication's build logs, and this section now points to the completed evidence.
+and two status-wording shoulds. The classification record names the retained
+S4 log archive and artifact roots after retirement of the publication workspace.
+
+## Part 3 progress
+
+The [view record](20261024-query-sources-views.status.md) tracks the remaining part.

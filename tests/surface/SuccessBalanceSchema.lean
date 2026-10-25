@@ -68,11 +68,12 @@ the valid-catalog STRICT ANY override admitted by the model. -/
 theorem guard_schema (db : Database) (position index : Nat) (table : CatalogTable) (cell : CatalogColumn)
     (found : db.raw.catalog.findTable ledgerRef.table = some (position, table))
     (notTable : db.raw.catalog.findTable pragmaRef.table = none)
+    (notView : db.raw.catalog.findView pragmaRef.table = none)
     (column : columnPosition table.columns (name! "cents") = some index)
     (atIndex : table.columns[index]? = some cell) (holds : Holds balanceGuard db) :
     (∃ account, columnPosition table.columns (name! "account") = some account) ∧
       (cell.affinity = .integer ∨ cell.affinity = .blob) := by
-  obtain ⟨context, observed⟩ := guard_holds db position index table cell found notTable column atIndex
+  obtain ⟨context, observed⟩ := guard_holds db position index table cell found notTable notView column atIndex
   have facts := observed.mp holds
   have metadata := metadata_columns context table facts.2.2.1 facts.2.2.2
   have supported := db.valid.admitted.catalogSupported.tableSupported (Catalog.tableAt_of_findTable found)
@@ -99,15 +100,16 @@ removes numeric affinity conversion; the BLOB affinity branch already compares c
 theorem guard_bounds (db : Database) (position index : Nat) (table : CatalogTable) (cell : CatalogColumn)
     (found : db.raw.catalog.findTable ledgerRef.table = some (position, table))
     (notTable : db.raw.catalog.findTable pragmaRef.table = none)
+    (notView : db.raw.catalog.findView pragmaRef.table = none)
     (column : columnPosition table.columns (name! "cents") = some index)
     (atIndex : table.columns[index]? = some cell) (holds : Holds balanceGuard db) :
     (∀ row ∈ Resolved.sourceRows {shape := table, rows := db.raw.rows.getD position []},
       Resolved.truthy ((Comparison.ge.apply (row[index]?.getD .null) (.integer (-1000000000000)) cell.collation).and
         (Comparison.le.apply (row[index]?.getD .null) (.integer 1000000000000) cell.collation)).not = false) ∧
     (db.raw.rows.getD position []).length < 1000000 := by
-  obtain ⟨context, observed⟩ := guard_holds db position index table cell found notTable column atIndex
+  obtain ⟨context, observed⟩ := guard_holds db position index table cell found notTable notView column atIndex
   have facts := observed.mp holds
-  have affinity := (guard_schema db position index table cell found notTable column atIndex holds).2
+  have affinity := (guard_schema db position index table cell found notTable notView column atIndex holds).2
   constructor
   · intro row member
     have empty : ((Resolved.sourceRows {shape := table, rows := db.raw.rows.getD position []}).filter

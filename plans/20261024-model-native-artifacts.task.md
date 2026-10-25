@@ -1,6 +1,6 @@
 # Reuse the model's compiled native artifacts
 
-Created 2026-10-24. Status: OPEN.
+Created 2026-10-24. Status: DONE on 2026-10-25.
 Audience: implementers and reviewers.
 Status file: [status](20261024-model-native-artifacts.status.md).
 Specifications: ADR 0010 package builds; ADR 0016 package boundaries;

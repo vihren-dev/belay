@@ -194,3 +194,59 @@ the new name, the terms and filter resolve, and a unique index has no conflictin
 `LiteralData.uniqueRows_of_column_groups` connects a no-duplicate GROUP BY claim to the
 column key check. This direction is sufficient: repeated NULLs group together but do not
 conflict in a unique index. The grouping and index must use the same collation.
+
+## Check a claim before proving it
+
+`#sql_check P` tries checked proof automation, then searches for a valid database
+that refutes `P`. It reports **proved**, **false**, or **unknown**. A false SQL
+claim includes the database construction, bindings, environment, model outputs
+and a script for pinned SQLite. Unknown gives no evidence about the claim.
+The command adds no theorem. For example:
+
+```lean
+#sql_check ∀ db : Database, Empty (sql "SELECT 1") db
+example : ¬ (∀ db : Database, Empty (sql "SELECT 1") db) := by sql_refute
+```
+
+Use `with (schema := db! "CREATE TABLE custom(x);")` to guide inference, or
+repeat `(db := candidate)` after `with` for an ordered candidate sequence.
+`(env := environment)` supplies the environment; `(input name := value)` supplies
+a quantified input, even when its binder is named `schema` or `env`. These inputs
+work with both frontends. They are proposals: claim preconditions are checked,
+not assumed. The explicit tactic `sql_refute (db := candidate)` checks a supplied
+witness independently of search bounds.
+
+| Lean option | Default | Meaning |
+| --- | ---: | --- |
+| `sql.check` | true | Check SQL theorem statements in the background |
+| `sql.checkBudget` | 100000 | Cooperative Lean heartbeat units; zero disables checking |
+| `sql.checkRecursionLimit` | 4000 | Finite reduction depth; zero disables checking |
+| `sql.checkCandidates` | 128 | Maximum proposals tried, including explicit witnesses |
+| `sql.checkMaxRows` | 2 | Maximum generated rows per table |
+| `sql.checkRandomSamples` | 4 | Seeded proposals per parameter value |
+| `sql.checkSeed` | 0 | Reproducible sampler seed |
+| `sql.checkSize` | 2 | Plausible size parameter; fixed-bound SQL draws are size-independent |
+| `sql.checkShrinkAttempts` | 16 | Checked shrink attempts; zero keeps the first witness |
+
+Use `set_option sql.checkBudget 500000 in` before a command or tactic for a
+larger search. A heartbeat budget is not a wall-clock deadline. Explicit
+witnesses come first, then empty/targeted inferred databases and seeded samples
+for each parameter value. Expensive data conditions can need a larger budget.
+
+For arbitrary generators, call `Check.check` with `Check.SampleConfig.witnesses`,
+or `Check.checkCandidates` with an elaboration-monad callback. `Check.refuteWith`
+accepts a custom quantified-input selector. The certificate and replay APIs stay
+separate: a programmatic candidate or display record is not itself evidence.
+Theorem statements that mention SQL are checked by default, including anonymous
+examples and mutual declarations. Only a certified counterexample is an error.
+The native editor action appends an independently checked regression example or
+proof example. The original false theorem keeps its error until you change it.
+Section hypotheses remain premises; the theorem and proof-body assumptions cannot
+justify their own check. Set `sql.check false` to keep only explicit checks.
+The shared budget includes discovery, all statements in one command, and checking
+the offered text. Use a larger budget for a mutual block. Cancellation and resource
+exhaustion leave the claim unknown; background diagnostic latency is separate from
+ordinary proof elaboration.
+An edit to an earlier command cancels a running check. An edit to the checked
+command itself discards the result of the old check, which ends within
+`sql.checkBudget`.

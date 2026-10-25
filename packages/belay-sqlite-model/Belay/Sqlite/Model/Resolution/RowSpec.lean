@@ -11,7 +11,7 @@ namespace Belay.Sqlite.Model
 for each index with an item, the value at that index is the result of resolving the
 item at the start position plus the index. Proof sketch: induction on the items;
 the head's value comes first and every later index moves by one. -/
-theorem resolveAllFrom_ok (resolveOne : Nat → α → Except ValueIssue β) (start : Nat)
+theorem resolveAllFrom_ok (resolveOne : Nat → α → Except ε β) (start : Nat)
     (items : List α) (values : List β) (ok : resolveAllFrom resolveOne start items = .ok values) :
     values.length = items.length ∧ ∀ index item, items[index]? = some item →
       ∃ value, values[index]? = some value ∧ resolveOne (start + index) item = .ok value := by
@@ -126,7 +126,7 @@ theorem resolveInsert_rowWidth (context : ResolveContext) (catalog after : Catal
   split at ok
   · cases ok
   split at ok
-  · cases ok
+  · split at ok <;> cases ok
   rename_i found_position table found
   split at ok
   · cases ok

@@ -51,7 +51,7 @@ theorem Catalog.Valid.uniqueKeys_readsBelow {limits : Limits} {catalog : Catalog
   · obtain ⟨object, inside, kept⟩ := List.mem_filterMap.mp indexKey
     have supported := valid.object inside
     cases entry : object.entry with
-    | table _ => simp [entry] at kept
+    | table _ | view _ => simp [entry] at kept
     | trigger _ => simp [entry] at kept
     | index found =>
       simp only [entry, Bool.and_eq_true, beq_iff_eq] at kept

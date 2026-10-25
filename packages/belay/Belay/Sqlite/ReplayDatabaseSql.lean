@@ -44,17 +44,32 @@ private def rowSql (name : Identifier) (table : CatalogTable) (row : Row) : Opti
   return "INSERT INTO " ++ quoted ++ " (" ++ String.intercalate ", " columns ++ ") VALUES (" ++
     String.intercalate ", " values ++ ");\n"
 
-/-- Propose SQL that builds a database with ordinary tables and no indexes or triggers.
+/-- Propose ordinary-table SQL while calling the supplied resource action before and after
+each table or row fragment. Inputs are database data, not expressions to evaluate. The action
+can bound accumulated text or check cancellation. Every result still needs exact reconstruction
+validation. Catalogs with views, indexes or triggers return none; use {lit}`databaseSql`
+below for ordinary pure formatting. -/
+def databaseSqlWith [Monad m] (check : String → m Unit) (database : Database) : m (Option String) := do
+  let mut fragments := []
+  for (object, position) in database.raw.catalog.zipIdx do
+    check ""
+    match object.entry with
+    | .table table =>
+      let some create := tableSql object.name table | return none
+      check create
+      fragments := create :: fragments
+      for row in database.raw.rows.getD position [] do
+        check ""
+        let some insert := rowSql object.name table row | return none
+        check insert
+        fragments := insert :: fragments
+    | .index _ | .trigger _ | .view _ => return none
+  return some (String.join fragments.reverse)
+
+/-- Propose SQL that builds a database with ordinary tables and no indexes, triggers or views.
 The empty database gives empty text. Unsupported catalog forms or unrepresentable values
 return none. This function alone does not certify that reconstruction matches the witness. -/
-def databaseSql (database : Database) : Option String := do
-  let statements ← database.raw.catalog.zipIdx.mapM fun (object, position) =>
-    match object.entry with
-    | .table table => do
-      let create ← tableSql object.name table
-      let rows ← (database.raw.rows.getD position []).mapM (rowSql object.name table)
-      return create ++ String.join rows
-    | .index _ | .trigger _ => none
-  return String.join statements
+def databaseSql (database : Database) : Option String :=
+  Id.run (databaseSqlWith (fun _ => pure ()) database)
 
 end Belay.Sqlite.Replay

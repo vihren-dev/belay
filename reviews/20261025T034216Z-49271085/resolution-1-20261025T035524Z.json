@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T03:55:24+00:00",
+  "finding": "20261025T034216Z-49271085#1",
+  "kind": "resolution",
+  "outcome": "fixed",
+  "reason": "reportStatement matches proved, refuted and unknown explicitly"
+}

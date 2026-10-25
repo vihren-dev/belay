@@ -7,7 +7,7 @@ set_option doc.verso true
 {lit}`t` satisfies {lit}`p`". When the catalog of the database has the table and {lit}`p` resolves in
 the scope of the table, the claims {lit}`Holds` and {lit}`Empty` of the query are statements about the
 rows of the table and the resolved condition, and {lit}`Fails` does not hold. When the catalog has no
-table of that name, {lit}`Fails` holds, and the other two do not. -/
+table or view of that name, {lit}`Fails` holds for an ordinary non-function name, and the other two do not. -/
 
 namespace Belay.Sqlite
 
@@ -106,7 +106,7 @@ theorem Fails.not_selectOne
   simp
 
 /-- For every query script whose first statement is {lit}`SELECT 1 FROM t WHERE p` (with any
-{lit}`WHERE`), where the catalog of the database has no table {lit}`t`, and {lit}`t` is neither a
+{lit}`WHERE`), where the catalog of the database has no table or view {lit}`t`, and {lit}`t` is neither a
 table of SQLite itself ({name}`reservedName`) nor a table-valued function ({name}`eponymousName`):
 {lit}`Fails` of the script holds, because SQLite refuses to prepare the statement ({lit}`no such
 table`). Then neither {lit}`Holds` nor {lit}`Empty` holds ({name}`Holds.not_fails`,
@@ -119,6 +119,7 @@ theorem Fails.selectOne_missing {script : Script} {db : Database} {isQuery : scr
     (head : script.statements = (.select [.expression (.numeric "1") none "1"] (some reference) [] filter [] [] none none []
       none false none, parameters) :: rest)
     (namedSource : reference.query = none) (arguments : reference.arguments = none) (missing : db.raw.catalog.findTable reference.table = none)
+    (notView : db.raw.catalog.findView reference.table = none)
     (notReserved : reservedName reference.table = false) (notFunction : eponymousName reference.table = false) :
     Fails script db isQuery := by
   unfold Fails
@@ -126,7 +127,7 @@ theorem Fails.selectOne_missing {script : Script} {db : Database} {isQuery : scr
     resolveStatement_select_missing_table runContext db.raw.connection.resolveState
       { columns := [.expression (.numeric "1") none "1"], source := some reference, joins := [], filter,
         groupBy := [], orderBy := [], limit := none, offset := none, parent := none, having := none, distinct := false,
-        compound := none } reference rfl rfl namedSource arguments missing notReserved notFunction,
+        compound := none } reference rfl rfl namedSource arguments missing notView notReserved notFunction,
     Option.any_some]
   simp only []
   rw [resolvedStepOutput_prepareError]

@@ -47,7 +47,7 @@ def resolvedOf (script : List Syntax.Statement) : List Resolved.Statement := sta
 -- The catalog keeps each kind; the generated values follow the dependencies.
 #guard (match tables.head? with
   | some { entry := .table table, .. } => table.columns.map (·.generated.map (·.stored)) == [none, some false, some true, some false]
-  | some { entry := .index _, .. } | some { entry := .trigger _, .. } | none => false)
+  | some { entry := .index _, .. } | some { entry := .view _, .. } | some { entry := .trigger _, .. } | none => false)
 #guard rowsOf [.insert (name! "g") (some [name! "a"]) [[.numeric "3"]] [] none []] ==
   some [[.integer 3, .integer 7, .integer 6, .integer 3]]
 -- An INSERT without a column list fills only the columns that are not generated.
@@ -95,7 +95,7 @@ def errorOf (statement : Syntax.Statement) : Option PrepareError :=
 #guard (match (catalogOf (schema [.createTable (name! "r")
     [{ name := name! "a", declaredType := some "integer", constraints := [.primaryKey false] }] []])).head? with
   | some { entry := .table table, .. } => table.rowidAlias == some 0
-  | some { entry := .index _, .. } | some { entry := .trigger _, .. } | none => false)
+  | some { entry := .index _, .. } | some { entry := .view _, .. } | some { entry := .trigger _, .. } | none => false)
 -- A quoted kind and a kind other than VIRTUAL and STORED are SQLite's error in generated column.
 #guard errorOf (.createTable (name! "n") [column (name! "a"),
   { name := name! "b", declaredType := none, constraints := [.generated (ref (name! "a")) (some (name! "\"stored\""))] }] []) ==

@@ -83,8 +83,10 @@ theorem runScriptStep_createIndex_ok_iff (context : ResolveContext) (clock : Opt
   rw [runScriptStep_output]
   unfold CreateIndexConditions
   cases found : connection.state.database.catalog.findTable tableName with
-  | none => simp [resolveStatement, resolveCreateIndex, Connection.resolveState, found,
-      prepareError, ResolveState.withCatalog, Except.map, prepareOutput_clock, Output.isError]
+  | none =>
+    cases view : (connection.state.database.catalog.findView tableName).isSome <;>
+      simp [resolveStatement, resolveCreateIndex, Connection.resolveState, found, view, restrict,
+        prepareError, ResolveState.withCatalog, Except.map, prepareOutput_clock, Output.isError, Output.endsRun]
   | some pair =>
     rcases pair with ⟨position, table⟩
     simp only [Option.some.injEq, Prod.mk.injEq, and_assoc, exists_and_left]
@@ -103,7 +105,7 @@ theorem runScriptStep_createIndex_ok_iff (context : ResolveContext) (clock : Opt
       | trigger trigger =>
         have := Catalog.find_not_trigger _ _ _ _ named
         simp [CatalogObject.isTrigger, CatalogEntry.isTrigger] at this
-      | table shape | index key =>
+      | table shape | view view | index key =>
         simp [resolveStatement, resolveCreateIndex, Connection.resolveState, found, tableFree, nameFree,
           named, prepareError, ResolveState.withCatalog, Except.map, prepareOutput_clock, Output.isError]
     | none =>

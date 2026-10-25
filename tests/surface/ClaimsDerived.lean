@@ -51,6 +51,7 @@ example (catalog : Catalog) (position : Nat) (table : CatalogTable)
 /-- The pragma source law preserves its rows for every callback and a nested-query prefix. -/
 example (catalog : Catalog) (rows : List (List Value))
     (notTable : catalog.findTable (name! "pragma_table_info") = none)
+    (notView : catalog.findView (name! "pragma_table_info") = none)
     (info : catalog.tableInfoRows (name! "ledger") = some rows)
     (queries : Nat → Except SourceIssue ScopeSource) :
     let reference : Syntax.TableReference := {
@@ -58,4 +59,4 @@ example (catalog : Catalog) (rows : List (List Value))
     resolveSources catalog (some reference) [] 0 queries [8, 2] =
       .ok ([{ item := .pragma (pragmaSource reference (bytes! "ledger") tableInfoNames rows).1,
               kind := .inner, condition := .none }], tableInfoScope reference (bytes! "ledger") rows) := by
-  exact resolveSources_tableInfo catalog _ (bytes! "ledger") rows rfl rfl (by decide) notTable info queries [8, 2]
+  exact resolveSources_tableInfo catalog _ (bytes! "ledger") rows rfl rfl (by decide) notTable notView info queries [8, 2]

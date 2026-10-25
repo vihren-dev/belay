@@ -15,9 +15,10 @@ def keptBelow (positions : List Nat) (position : Nat) : Nat :=
   ((List.range position).filter fun below => !positions.contains below).length
 
 /-- The entry with its catalog positions after the drop: an index names the new position
-of its table ({name}`keptBelow`), and a table and a trigger have no catalog positions. -/
+of its table ({name}`keptBelow`). Tables, views and triggers have no catalog positions. -/
 def CatalogEntry.afterDrop (positions : List Nat) : CatalogEntry → CatalogEntry
   | .table shape => .table shape
+  | .view definition => .view definition
   | .index found => .index { found with table := keptBelow positions found.table }
   | .trigger found => .trigger found
 
@@ -35,7 +36,7 @@ def Catalog.tableObjects (catalog : Catalog) (position : Nat) : List Nat :=
   position :: catalog.zipIdx.filterMap fun (object, place) => match object.entry with
     | .index found => if found.table == position then some place else none
     | .trigger found => if name.any found.table.sameName then some place else none
-    | .table _ => none
+    | .table _ | .view _ => none
 
 /-- For every catalog and list of positions, the folded names of {name}`Catalog.drop` are a
 sublist of the folded names of the catalog: a drop removes names and adds none. Proof

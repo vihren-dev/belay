@@ -26,7 +26,7 @@ theorem Catalog.parentIndexes_primary_column {catalog : Catalog} {position : Nat
     cases equal
   · obtain ⟨object, _, selected⟩ := List.mem_filterMap.mp created
     cases kind : object.entry with
-    | table table => simp [kind] at selected
+    | table table | view table => simp [kind] at selected
     | trigger trigger => simp [kind] at selected
     | index created =>
       simp only [kind] at selected
