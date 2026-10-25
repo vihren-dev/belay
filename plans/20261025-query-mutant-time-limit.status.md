@@ -35,3 +35,16 @@ Task: [task file](20261025-query-mutant-time-limit.task.md).
   `tests/conformance_query_feature_mutants_test.py` (97 lines), listed in the
   `mutants` suite of `tests/nix_suites.json`. The query mutant test file has
   163 lines.
+- 2026-10-25: review `20261025T045934Z-ff196a1c` of the refactor commit:
+  no findings. Nix results at `ff196a1c`: `just test-full` exit 0 (472 source
+  tests passed; Nix reports `/nix/store/nxmw2w3ywpjhzar69ww9f42yffvi5vhl-sqlite-verifier-test-reports`,
+  10 suites, 0 failures); `just verdict` exit 0
+  (`/nix/store/93lqb1sa4smkvfbcsq95hyyijj90b94f-sqlite-verifier-verdict`);
+  `just test-nix` exit 0 (71 passed); `just test-scheduled-checks` exit 0
+  (`/nix/store/fr5hdf7cri54bqc2ha8f6g5k7h0sd953-sqlite-verifier-scheduled-check-reports`).
+  A first `just test-full` failed once in the source tests:
+  `tests/test_model_ownership.py::test_neutral_consumer_uses_structural_facts`
+  timed out at its 30 s command limit while the VM load average was 14; the
+  log is `build/agent-logs/qm-test-full-attempt1-failed.log`, and the repeat
+  passed. The hosted run of the `mutants`, `tableMutants` and `functionMutants`
+  jobs is still to do (owner).
