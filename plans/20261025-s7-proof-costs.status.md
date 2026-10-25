@@ -121,3 +121,19 @@ Specs: ADR 0017 D1 (S7 row, "S7 cost clarification"); the
   tests (not a gate):
   `/nix/store/vraggxhp3znizyrxy0yig0l237jjci27-sqlite-verifier-test-surface-1`,
   7 passed.
+- 2026-10-25: Part 2, checker and documentation. New `ProofCostModuleData.lean`
+  (reads the stored records and the written theorems of a compiled module; a
+  theorem is written by the author when its declaration range is not inside
+  another range) and `ProofCostRun.lean` (report, `--json` baseline, comparison,
+  exit codes). `BelaySqlCheck.lean` calls them for `--costs`; the file stays
+  the only module that imports Lake. Decision from the Lake test: when a
+  recompile fails, Lake deletes the compiled file, so the stale case after a
+  failed build is a missing compiled file, with the same advice, and old counts
+  are never shown. `tests/surface_proof_cost_report_test.py` runs the tool on a
+  real Lake package (report, baseline, growth boundary, allowance errors,
+  baseline sections, stale and failed recompile). The "Proof costs" section of
+  `packages/belay/README.md`, the production section of
+  `docs/s7-proof-cost-findings.md` and the sentence in
+  `docs/adr-0017-user-surface.md` are written. Focused Nix run (not a gate):
+  `/nix/store/vraggxhp3znizyrxy0yig0l237jjci27-sqlite-verifier-test-surface-1`,
+  7 passed (report and comparison tests).

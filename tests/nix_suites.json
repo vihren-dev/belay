@@ -156,6 +156,7 @@
     "tests/surface_translation_checks_test.py",
     "tests/surface_proof_cost_collect_test.py",
     "tests/surface_proof_cost_compare_test.py",
+    "tests/surface_proof_cost_report_test.py",
     "tests/surface_proof_cost_compat_test.py",
     "tests/surface_proof_cost_automatic_test.py",
     "tests/surface_proof_cost_layers_test.py",

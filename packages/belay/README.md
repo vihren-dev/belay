@@ -133,7 +133,8 @@ package read with the files on disk. It builds nothing. It prints, for each libr
 of modules and SQL sources and the number of stale sources, and for each stale source its package,
 path, declarations and the `lake build` command. `--library App` checks one library. The exit code
 is 0 when all sources are fresh, 1 when a source changed or is missing, and 2 when a library could
-not be read, for example because it is not built. Line-ending changes are not edits.
+not be read, for example because it is not built. Line-ending changes are not edits. With `--costs`
+the tool reports proof costs instead; see "Proof costs".
 
 ## Check SQL examples in documentation
 
@@ -145,6 +146,112 @@ an error at the block. A named header argument binds the parameter of the same n
 `(v := 5)` for `:v`. `(values := lists)` binds every parameter by number, `(env := environment)`
 gives the clock, `(expected := outputs)` states the exact `List Output`, and `+error` expects the
 first SQL failure. `Belay.Sqlite.SqlDocGuide` explains each option with checked examples.
+
+
+## Proof costs
+
+Lean can tell how much work the body of each proof took. The proof-cost collector records that
+number for named theorems and for definitions whose value is a proof, and `lake exe
+belay-sql-check --costs` reports it. A baseline file and an allowance that you set turn the
+report into a CI check that fails when a proof gets more expensive.
+
+### Turn collection on
+
+The collector is a separate module. `import Belay` does not install it. Import it, and set the
+option `belay.proofCosts`, which is false by default:
+
+```lean
+import Belay.Sqlite.ProofCost
+
+set_option belay.proofCosts true
+
+theorem costly : (List.range 30).length = 30 := by decide
+```
+
+To measure every module of a library, set the option in the lakefile. The `weak.` prefix lets
+Lean accept the option in modules that do not import the collector:
+
+```lean
+lean_lib App where
+  leanOptions := #[⟨`weak.belay.proofCosts, true⟩]
+```
+
+With the option off, the collector hands each command to Lean's own handler and stores nothing.
+A module that does not import it is not affected at all. The collector does not change
+`Elab.async`, the output or the declarations of a compile.
+
+### What a count measures
+
+A count is the number of internal heartbeats that Lean spent to elaborate the body of one
+declaration, for example the tactic block of a theorem. One budget unit of `maxHeartbeats` is
+1000 internal heartbeats, and the report shows budget units with three decimal places, so each
+shown number is exact.
+
+- A count does not include the statement, the check of the finished proof by the kernel, or the
+  time of the automatic SQL check.
+- A proof inside another declaration, a `where` or `let rec` helper, and a declaration that Lean
+  generates belong to the record of the declaration that contains them or have none.
+- A definition whose type is a proposition is a proof and gets a record. A definition of a
+  proposition, such as `def p : Prop := True`, does not.
+- An `example` gets a record, named by its source position.
+- Private names and examples change with edits, so a baseline does not compare them. The report
+  lists them in their own section.
+- Counts of one proof differ by a few units between runs, and by async mode (`Elab.async`) and by
+  the order of the proofs in the file. A count is a measurement, not a limit.
+- The collector adds work to every measured compile. In a sample of three proof commands of this
+  package, the work of the commands was about 9 percent higher with collection on (7.26 million internal
+  heartbeats, against 6.68 million without). It can push a proof that is close to
+  `maxHeartbeats` over that limit; raise the limit for the compile that collects.
+- A Lean upgrade changes counts. The record stores the compiler version and the measurement
+  scheme, and the tool never compares records of different versions or schemes. After an upgrade,
+  create a new baseline.
+
+### Report
+
+Run the tool after a successful `lake build`. It reads the compiled files and builds nothing.
+
+```text
+lake exe belay-sql-check --costs [--library NAME]
+```
+
+The report lists, for each library, its proofs by module and declaration, then the private and
+anonymous ones, then the theorems without a completed count. A theorem is without a count when
+its module was compiled without the collector, or when the collector could not give an exact
+count. A module whose Lean file changed after it was compiled is an error, because its counts
+may not describe the file: the tool tells you to run `lake build` again. When a recompile fails,
+Lake deletes the compiled file, so the tool reports a missing file with the same advice and shows
+no old counts. The check sees edits of the Lean file only. After a change of an import, of the
+lakefile or of a compiler option, run `lake build` before the tool. The option `--costs` runs
+alone; the check of SQL files is a separate invocation of the tool.
+
+### Fail CI when a proof gets more expensive
+
+Save the report as the baseline, and keep the file in version control:
+
+```text
+lake exe belay-sql-check --costs --json > proof-costs.json
+```
+
+Then compare the next build with it. The allowance is the growth in budget units that you
+accept for each proof. It has no default, so write the number that fits your project:
+
+```text
+lake exe belay-sql-check --costs --baseline proof-costs.json --allowance 2.5
+```
+
+A proof has grown when its count is more than the baseline count plus the allowance. The
+allowance is a decimal number with at most three decimal places. The tool never writes the
+baseline file; to accept the new costs, save a new report. The exit code is:
+
+| Code | Meaning |
+| ---: | --- |
+| 0 | No proof grew, and every baseline proof has a completed count. Proofs that are new are listed. |
+| 1 | A proof grew, a proof of the baseline has no completed count now, or a proof failed. |
+| 2 | Records were made by another compiler or scheme, the baseline or a library cannot be read, a module is stale, or the arguments are wrong. |
+
+A proof that you rename or remove is a baseline proof with no completed count, and a new proof
+under the new name. Save a new baseline after such a change. Use `--library NAME` the same way
+for the baseline and the comparison.
 
 ## Claims about every database
 
