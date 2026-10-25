@@ -97,3 +97,29 @@ def test_sql_check_reports_input_errors_at_terms(runtime_root: Path, tmp_path: P
     assert result.returncode != 0, result.diagnostic()
     assert "BadInputs.lean:3:" in result.stdout and diagnostic in result.stdout, result.diagnostic()
     assert "SQL check: proved" not in result.stdout and "SQL check: false" not in result.stdout
+
+
+@pytest.mark.requires_native("sqlite3")
+def test_sql_check_sampling_options(runtime_root: Path, tmp_path: Path) -> None:
+    """CheckOptions changes seeded search, row/sample limits and checked shrinking;
+    configured size reaches a real size-sensitive custom generator."""
+    result = run_command(surface_command(runtime_root, FIXTURES / "CounterexampleCheckOptions.lean", tmp_path),
+                         cwd=tmp_path, timeout=240)
+    assert result.returncode == 0, result.diagnostic()
+    blocks = dict(re.findall(r"OPTION-BEGIN ([\w-]+)\n(.*?)\nOPTION-END \1", result.stdout, re.DOTALL))
+    expected_rows = {"seed-13": [[-1]], "two-random": [[-1]],
+                     "no-shrink": [[7]], "two-shrinks": [[None]]}
+    unknown = {"seed-0", "no-random", "one-random", "no-rows"}
+    assert set(blocks) == expected_rows.keys() | unknown, result.stdout
+    sqlite = shutil.which("sqlite3")
+    assert sqlite is not None
+    for name, rows in expected_rows.items():
+        assert blocks[name].startswith("SQL check: false."), (name, blocks[name])
+        sql = blocks[name].split("SQLite replay:\n", 1)[1] + "\nSELECT a FROM t;\n"
+        replay = native_replay(sqlite, sql, tmp_path, name)
+        assert replay.returncode == 0 and not replay.stderr, replay.diagnostic()
+        assert native_rows(replay.stdout) == rows, (name, replay.diagnostic())
+    for name in unknown:
+        assert blocks[name].startswith("SQL check: unknown;"), (name, blocks[name])
+    for size in (7, 9):
+        assert f"sized candidate certified with row {size}" in result.stdout, result.stdout

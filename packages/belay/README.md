@@ -174,7 +174,7 @@ witness independently of search bounds.
 | `sql.checkMaxRows` | 2 | Maximum generated rows per table |
 | `sql.checkRandomSamples` | 4 | Seeded proposals per parameter value |
 | `sql.checkSeed` | 0 | Reproducible sampler seed |
-| `sql.checkSize` | 2 | Plausible size parameter |
+| `sql.checkSize` | 2 | Plausible size parameter; fixed-bound SQL draws are size-independent |
 | `sql.checkShrinkAttempts` | 16 | Checked shrink attempts; zero keeps the first witness |
 
 Use `set_option sql.checkBudget 500000 in` before a command or tactic for a
