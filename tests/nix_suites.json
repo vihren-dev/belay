@@ -66,6 +66,7 @@
     "tests/conformance_requirement_coverage_test.py",
     "tests/conformance_authored_transactions_test.py",
     "tests/conformance_predict_test.py",
+    "tests/conformance_unreadable_view_test.py",
     "tests/conformance_view_observation_test.py",
     "tests/conformance_continuing_case_test.py",
     "tests/conformance_counters_test.py",

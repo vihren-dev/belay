@@ -23,8 +23,8 @@ def observe(connection: Connection) -> dict[str, Json]:
         try:
             tables.append(observe_object(connection, text(kind), name, inventory, chunk_size))
         except NativeError as error:
-            if text(kind) != "view":
-                raise
+            if text(kind) != "view" or not connection.is_sql_error(error.code):
+                raise  # Only SQL errors of a view are evidence; timeouts and I/O failures are not.
             tables.append(unreadable_view(name, error))
     return {"schema": wire_rows(schema), "tables": tables}
 

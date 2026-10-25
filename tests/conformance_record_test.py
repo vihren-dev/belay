@@ -36,16 +36,6 @@ def test_outside_subset_survives(runtime_root: Path, monkeypatch: pytest.MonkeyP
     assert record["migrationSql"] and record["trace"]
 
 
-def test_unreadable_view_record_is_outside_the_table_replay(runtime_root: Path) -> None:
-    """The recorder keeps a view over a missing table with its error code and no table metadata;
-    the table replay reports it as a view, in the same way as for a readable view."""
-    record = record_sql("CREATE TABLE t(a);", "CREATE VIEW v AS SELECT * FROM missing;", name="unreadable-view")
-    [unreadable] = [table for table in record["trace"][0]["visible"]["tables"] if table["kind"] == "view"]
-    assert unreadable["unreadable"]["primaryCode"] == 1 and "withoutRowid" not in unreadable
-    case, result = prepare(record, runtime_translator(runtime_root))
-    assert case is None and result["verdict"] == "MODEL_UNSUPPORTED" and result["reason"] == OBSERVED_VIEW_REASON
-
-
 def test_native_record_replay(runtime_root: Path) -> None:
     """Frozen typed rows and traces become cases without rerunning native SQL; Lean compares the
     recorded metadata with the catalog, and malformed metadata is a harness error."""
