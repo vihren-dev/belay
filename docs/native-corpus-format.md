@@ -39,7 +39,14 @@ never invokes the production parser or translator.
 
 This is a single-main-database profile. Attached and temporary schemas are
 explicit excluded connection contexts, not silently missing observations.
-Unobservable views or absent application callbacks are acquisition failures.
+Absent application callbacks are acquisition failures.
+
+A view that SQLite cannot read is evidence, not a failure. `CREATE VIEW` over a missing table
+or a cycle succeeds, and reading the view fails at preparation. The snapshot then holds the
+entry `{"name", "kind": "view", "unreadable": {"primaryCode", "message"}}` instead of columns
+and rows. Only an SQL error of the view counts (its result code is one of the SQL error codes);
+a timeout or an I/O failure still stops acquisition. The judge compares the primary code only,
+and the model predicts the same code. Table replay reports a recorded view as unsupported.
 
 `native_replay.prepare` derives schema and statements using today's frontend on
 every replay. Unsupported cases retain their original native record. Admitted

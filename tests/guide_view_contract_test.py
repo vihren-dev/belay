@@ -1,8 +1,9 @@
 """Native counterexamples behind the guide's explicit physical-table premises.
 
 These replay the known gaps in the earlier uniqueEmail_ok and balance_ok guards.
-They test the guide contracts against the pinned oracle; they make no claim that
-views are supported by the current model.
+They test the guide contracts against the pinned oracle. The model now supports
+views, and the guide contracts keep the physical-table premises because these native
+outcomes (a view cannot be indexed; a view body can fail at run time) still occur.
 """
 
 from pathlib import Path
