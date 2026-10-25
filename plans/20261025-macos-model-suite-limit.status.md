@@ -1,6 +1,6 @@
 # Status: keep the model suite within its time limits on hosted macOS
 
-Created 2026-10-25. Status: OPEN.
+Created 2026-10-25. Status: DONE (the hosted macOS run is for the owner to check).
 Task: [task file](20261025-macos-model-suite-limit.task.md).
 Relevant files: `conformance/model_check.py`,
 `tests/conformance_query_coverage_test.py`, `tests/nix_suites.json`,
@@ -68,4 +68,8 @@ Relevant files: `conformance/model_check.py`,
   their times, 435.6 s, 435.9 s and 410.0 s, are not comparable with the focused runs):
   `/nix/store/7bzsbwqqzrclmqxcl3cgj88mlsshdhgm-sqlite-verifier-test-reports`. `just verdict`
   passed: `/nix/store/942a63aj46vik43gk06lrqgxjjsf6663-sqlite-verifier-verdict`.
+- 2026-10-25: task end, on the same tree. `just test-nix` passed (71 passed, 363.7 s). `just
+  test-scheduled-checks` passed:
+  `/nix/store/4awcmzn3qs6l9245gqpfj9c19sq5grdw-sqlite-verifier-scheduled-check-reports`.
+  DONE. The hosted macOS `Check` job of a pull request is the last check; the owner runs it.
 

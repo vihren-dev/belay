@@ -1,6 +1,6 @@
 # Keep the model suite within its time limits on hosted macOS
 
-Created 2026-10-25. Amended 2026-10-25 with measurements, the target of 25 s and the model ownership. Status: OPEN.
+Created 2026-10-25. Amended 2026-10-25 with measurements, the target of 25 s and the model ownership. Status: DONE (the hosted macOS run is for the owner to check).
 Audience: implementers and reviewers.
 Progress: [status](20261025-macos-model-suite-limit.status.md).
 Inspected base: PR #254, `e3baff02`.
