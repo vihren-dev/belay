@@ -89,6 +89,12 @@ def test_explain_describes_fresh_ordinary_and_success_claims(runtime_root: Path,
      "one read-only statement"),
     ('#check holds (sql r"DELETE FROM t")', "holds (sql", "one read-only statement"),
     ('#check holdsInContext (sql r"SELECT 1; SELECT 2")', "holdsInContext (sql", "one read-only statement"),
+    ('#check holds (sql r"")', "holds (sql", "one read-only statement"),
+    ('#check holds (sql r"-- only a comment")', "holds (sql", "one read-only statement"),
+    ('#check holds (sql r"PRAGMA foreign_keys = 1")', "holds (sql", "one read-only statement"),
+    ('#check holds (sql r"SELECT 1 WHERE $missing = 1")', "$missing", "the Lean variable missing"),
+    ('#check holdsInContext (sql r"SELECT 1 FROM")', '")', "grammar rejects the SQL"),
+    ('#check holds (sql r"EXPLAIN SELECT 1")', "EXPLAIN", "Unsupported command wrapper"),
     ('#explain (1 = 1)', "(1 = 1)", "Cannot explain this proposition"),
     ('#explain (⦃⌜True⌝⦄ (pure 1 : Id Nat) ⦃⇓ value => ⌜value = 1⌝⦄)', "(⦃", "Cannot explain this proposition"),
     ('#explain (@Std.Do.Triple Sql (.arg ExecutionContext .pure) { sqlWPMonad with }.toWP Nat (Sql.pure 1) '
@@ -98,7 +104,9 @@ def test_assertion_diagnostics_reject_unadmitted_input(
     runtime_root: Path, tmp_path: Path, claim: str, at: str, message: str,
 ) -> None:
     """Fresh notation and both assertion terms report a query that is not one read-only statement at
-    its source, and #explain reports an unsupported proposition instead of inventing a meaning,
+    its source (an empty script, a comment, a set PRAGMA, a DELETE, several statements), an unbound
+    Lean variable of a parameter, a grammar error and an EXPLAIN wrapper at the offending source
+    position, and #explain reports an unsupported proposition instead of inventing a meaning,
     including a triple over another monad and a triple with a copy of the SQL transformer."""
     source = tmp_path / "AssertionFailure.lean"
     source.write_text(f"import Belay\nopen Belay.Sqlite Std.Do\n{claim}\n")

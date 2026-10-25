@@ -308,3 +308,13 @@ Sections: "Level 2/3 Triples", "Two states", "Invariants" and the complete examp
   counterexample.
 - A successful trigger may remove the inserted row; a delete trigger may remove an unrelated row
   (two kernel counterexamples). Explain default versus context-aware assertions and `#explain`.
+
+### Unit 4: remaining frontend diagnostics (no `before`)
+
+`tests/surface_assertions_test.py::test_assertion_diagnostics_reject_unadmitted_input` has six
+more cases, each checked at its source position with the real compiler output: an empty script, a
+comment-only script, `PRAGMA foreign_keys = 1` (a set PRAGMA) all report that the script must be one
+read-only statement at the assertion term; `$missing` reports the Lean variable at the `$`; a grammar
+error is reported at the offset of the string; `EXPLAIN` reports the unsupported command wrapper at
+the start of the SQL. Positions were checked with `lake lean` on a scratch file (the pytest needs the
+Nix runtime root). Not done: diagnostics for `before` (Part 1b).
