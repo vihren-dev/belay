@@ -4,9 +4,11 @@ Created 2026-10-24. Status: OPEN. Part 1 (split API and accepted mapped-NULL/act
 corrections) is accepted. Part 2's row/action/trigger induction and conditional
 DML/run and CREATE/plain-DROP laws are integrated with the enforced-DROP proof unit.
 Their focused Nix gate passed; integration review `20261025T001914Z-dd60f94c` found no musts.
-The ADD COLUMN execution correction and the ADD COLUMN preservation laws are implemented
-and Nix-checked. Complete DDL/run conditions, the full matrix, part-2 acceptance and
-separate corpus-v54 evidence remain open.
+The ADD COLUMN execution correction, the ADD COLUMN preservation laws and the run
+contracts of the schema statements are implemented and Nix-checked. The matrix is recorded in
+ADR 0022 with the fixtures for RESTRICT, SET DEFAULT, deferred keys and the DDL necessity
+examples (unit 4). Part-2 acceptance (`just test-full`, `just verdict`) and separate
+corpus-v54 evidence remain open.
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
 Inspected base: PR #239, `98a07bfe`, in `vihren-dev/sqlite-verifier`.
@@ -20,8 +22,8 @@ The enforced-DROP unit is checked and reviewed at `ffe4d749`. The execution
 correction is implemented in the commit "Refuse ADD COLUMN of a REFERENCES column with
 a non-NULL default on a populated table" (details in the section "ADD COLUMN execution
 correction (part 2, unit 1)" below); its focused Nix gates passed. The ADD COLUMN
-preservation laws are implemented (unit 2). The unified DDL/run contract and the matrix
-remain open. The
+preservation laws (unit 2) and the unified DDL/run contract (unit 3) are implemented. The matrix
+is recorded in unit 4. The
 task-amendment review `20261025T015343Z-fc22761c` found no musts and one R19 should
 (name the correction in the acceptance-part list); that is done and is historical.
 
@@ -986,11 +988,13 @@ atoms laws take `statement.KeepsParentSchema ∧ statement.ForeignKeyRowsConditi
 point to the selected-mapping laws). The primitive laws for the catalog-changing statements are
 unchanged; the new laws are sugar over them.
 
-Fixtures: `tests/surface/ForeignKeyDdlRuns.lean` (44 axiom reports, none non-standard) runs a
-CREATE TABLE, an ADD COLUMN without constraints, a refused ADD COLUMN and a DROP of the child
-through `runSql_foreignKeyAtomsSelected`, and for each condition shows a statement outside it
-that breaks an atom: a forward reference breaks schema compatibility, the default 99 without the
-refusal breaks row truth, and the DROP of the parent leaves the child rows without a parent.
+Fixtures: `tests/surface/ForeignKeyDdlRuns.lean` (19 axiom reports) runs a CREATE TABLE, an ADD
+COLUMN without constraints and a refused ADD COLUMN through `runSql_foreignKeyAtomsSelected`, and
+shows for the conditions a statement outside it: a forward reference breaks schema compatibility
+and the default 99 without the refusal breaks row truth. `tests/surface/ForeignKeyDdlDropRuns.lean`
+(27 reports, none non-standard) runs a DROP of the child through the same law, shows that the DROP
+of the parent leaves the child rows without a parent, and lists every theorem of the new
+contracts.
 `ForeignKeyStatement`, `ForeignKeyRuns` and `ForeignKeyStatementAxioms` (now 14 reports) use the
 new condition shape.
 

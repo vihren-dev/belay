@@ -6,9 +6,8 @@ set_option maxRecDepth 4096
 set_option maxHeartbeats 2000000
 set_option exponentiation.threshold 1074
 
-/-! The run contracts for the selected mapping cover the schema statements. Each form of CREATE,
-ADD COLUMN and DROP runs through {lit}`runSql` with its own condition, and each condition is
-needed: a statement that does not meet it breaks an atom. -/
+/-! CREATE TABLE and ADD COLUMN run through {lit}`runSql` with the conditions of the selected mapping, and
+each condition is needed: a statement outside it breaks an atom. DROP is in `ForeignKeyDdlDropRuns.lean`. -/
 
 open Belay.Sqlite
 open Belay.Sqlite.Model
@@ -26,7 +25,8 @@ theorem inputAtoms : input.raw.ParentSchemasCompatible input.raw.catalog.foreign
 /-- A property of the database of a run that succeeds. A failed or open run does not have it. -/
 def Succeeds (property : Model.Database → Prop) : Model.Outcome → Prop
   | .success database => property database
-  | _ => False
+  | .failure .. => False
+  | .pending .. => False
 
 /-- Decide {name}`Succeeds` by the decision of the property, so that the kernel can check it. -/
 instance (property : Model.Database → Prop) [DecidablePred property] :
@@ -41,7 +41,7 @@ theorem single {condition : Resolved.Statement → Model.Database → Prop} {sta
   refine ⟨met, ?_⟩
   split <;> trivial
 
-/-- The child shape that the input declares, reused for a new child table. -/
+/-- The child shape that the input declares, reused for a new table. -/
 def child : CatalogTable := (input.raw.catalog.tableAt 1).getD {columns := []}
 
 /-- CREATE TABLE of a second child of the parent, at the end of the catalog. -/
@@ -62,7 +62,7 @@ theorem createRun : (runSql [(created, [])] input.raw).Holds
       result.RowReferencesHold result.catalog.foreignKeyMapping) :=
   runSql_foreignKeyAtomsSelected Profile.pinned _ inputAtoms (single createCondition)
 
-/-- The run succeeds, adds the table and keeps both original child rows. -/
+/-- The run adds the table and keeps both original child rows. -/
 theorem createRuns : Succeeds (fun result => result.catalog.length = 3 ∧ (result.rowsAt 1).length = 2)
     (runSql [(created, [])] input.raw) := by decide +kernel
 
@@ -146,8 +146,7 @@ theorem addRun : (runSql [(.addColumn 1 plainColumn false, [])] input.raw).Holds
 theorem addRuns : Succeeds (fun result => (result.rowsAt 1).map (·.values.length) = [2, 2])
     (runSql [(.addColumn 1 plainColumn false, [])] input.raw) := by decide +kernel
 
-/-- The statement refuses a column that references the parent with the default 99 on a populated
-table. The rows of the child are not empty, so the statement needs no condition on its added cell. -/
+/-- The refusing statement needs no condition on its added cell, because the child has rows. -/
 theorem refusedCondition : (Resolved.Statement.addColumn 1 numberColumn true).ForeignKeyAtomsCondition
     Profile.pinned input.raw := by
   refine ⟨⟨wideDeclaredBelow.1, wideDeclaredBelow.2.1, wideDeclaredBelow.2.2, ?_⟩, ?_⟩
@@ -161,7 +160,7 @@ theorem refusedCondition : (Resolved.Statement.addColumn 1 numberColumn true).Fo
     subst key
     decide +kernel
 
-/-- Both atoms hold after a fresh run of the refused ADD COLUMN, which fails and keeps the input. -/
+/-- Both atoms hold after a fresh run of the refused ADD COLUMN, which keeps the input. -/
 theorem refusedRun : (runSql [(.addColumn 1 numberColumn true, [])] input.raw).Holds
     (fun result => result.ParentSchemasCompatible result.catalog.foreignKeyMapping ∧
       result.RowReferencesHold result.catalog.foreignKeyMapping) :=
@@ -171,48 +170,11 @@ theorem refusedRun : (runSql [(.addColumn 1 numberColumn true, [])] input.raw).H
 theorem refusedFails : (runStatement 0 {} [] (.addColumn 1 numberColumn true) input.raw).effect =
     .error (.referenceColumnDefault, input.raw) := by decide +kernel
 
-/-- Without the refusal, the same column succeeds and breaks the row atom, so the condition on the
-added cells is needed. -/
+/-- Without the refusal, the same column succeeds and breaks the row atom: the cell condition is needed. -/
 theorem unrefusedBreaksRows : (runStatement 0 {} [] (.addColumn 1 numberColumn false) input.raw).effect.isOk = true ∧
     ¬(effectDatabase (runStatement 0 {} [] (.addColumn 1 numberColumn false) input.raw).effect).RowReferencesHold
       (effectDatabase (runStatement 0 {} [] (.addColumn 1 numberColumn false) input.raw).effect).catalog.foreignKeyMapping := by
   decide +kernel
-
-/-- Only the parent has no declaration, so every kept table has none when the child is dropped. -/
-theorem keptHaveNone (position : Nat) (shape : CatalogTable) (found : input.raw.catalog.tableAt position = some shape)
-    (kept : (!([1].contains position)) = true) : shape.allForeignKeys = [] := by
-  have size : input.raw.catalog.length = 2 := by decide +kernel
-  have bound : position < 2 := by
-    unfold Catalog.tableAt at found
-    cases present : input.raw.catalog[position]? with
-    | none => simp [present] at found
-    | some _ => exact size ▸ (List.getElem?_eq_some_iff.mp present).1
-  have choice : position = 0 ∨ position = 1 := by omega
-  rcases choice with rfl | rfl
-  · have none : (input.raw.catalog.tableAt 0).map (·.allForeignKeys) = some [] := by decide +kernel
-    rw [found] at none
-    exact Option.some.inj none
-  · simp at kept
-
-/-- DROP of the child table keeps every declaration of the kept tables, of which there are none. -/
-theorem dropChildCondition : (Resolved.Statement.drop [1] none).ForeignKeyAtomsCondition Profile.pinned input.raw :=
-  ⟨fun position shape found kept key declared => absurd declared (by rw [keptHaveNone position shape found kept]; simp),
-    fun position shape found kept key declared => absurd declared (by rw [keptHaveNone position shape found kept]; simp)⟩
-
-/-- Both atoms hold after a fresh run of the DROP of the child. -/
-theorem dropRun : (runSql [(.drop [1] none, [])] input.raw).Holds
-    (fun result => result.ParentSchemasCompatible result.catalog.foreignKeyMapping ∧
-      result.RowReferencesHold result.catalog.foreignKeyMapping) :=
-  runSql_foreignKeyAtomsSelected Profile.pinned _ inputAtoms (single dropChildCondition)
-
-/-- The run succeeds and leaves only the parent. -/
-theorem dropRuns : Succeeds (fun result => result.catalog.length = 1) (runSql [(.drop [1] none, [])] input.raw) := by
-  decide +kernel
-
-/-- The DROP of the parent succeeds with enforcement off and leaves the child rows without a
-parent, so the condition on kept parents is needed. -/
-theorem dropParentBreaksRows : Succeeds (fun result => ¬ result.RowReferencesHold result.catalog.foreignKeyMapping)
-    (runSql [(.drop [0] none, [])] input.raw) := by decide +kernel
 
 end ForeignKeyDdlRunsFixture
 
@@ -235,28 +197,3 @@ end ForeignKeyDdlRunsFixture
 #print axioms ForeignKeyDdlRunsFixture.refusedRun
 #print axioms ForeignKeyDdlRunsFixture.refusedFails
 #print axioms ForeignKeyDdlRunsFixture.unrefusedBreaksRows
-#print axioms ForeignKeyDdlRunsFixture.keptHaveNone
-#print axioms ForeignKeyDdlRunsFixture.dropChildCondition
-#print axioms ForeignKeyDdlRunsFixture.dropRun
-#print axioms ForeignKeyDdlRunsFixture.dropRuns
-#print axioms ForeignKeyDdlRunsFixture.dropParentBreaksRows
-#print axioms Belay.Sqlite.Model.Database.ParentSchemasCompatible.selected
-#print axioms Belay.Sqlite.Model.Database.ParentSchemasCompatible.createKeepsSelection
-#print axioms Belay.Sqlite.Model.Database.AddColumnRowsCondition.keepsSelection
-#print axioms Belay.Sqlite.Model.runStatement_create_rowReferencesSelected
-#print axioms Belay.Sqlite.Model.runStatement_create_parentSchemasCompatibleSelected
-#print axioms Belay.Sqlite.Model.runStatement_addColumn_rowReferencesSelected
-#print axioms Belay.Sqlite.Model.runStatement_addColumn_parentSchemasCompatibleSelected
-#print axioms Belay.Sqlite.Model.runStatement_drop_rowReferencesSelected
-#print axioms Belay.Sqlite.Model.runStatement_drop_parentSchemasCompatibleSelected
-#print axioms Belay.Sqlite.Model.runStatement_parentSchemasCompatibleSelected
-#print axioms Belay.Sqlite.Model.runStatement_foreignKeyAtomsSelected
-#print axioms Belay.Sqlite.Model.runStatement_rowReferences
-#print axioms Belay.Sqlite.Model.parentSchemasCompatibleSelectedKeeps
-#print axioms Belay.Sqlite.Model.runSqlFrom_parentSchemasCompatibleSelected
-#print axioms Belay.Sqlite.Model.runSql_parentSchemasCompatibleSelected
-#print axioms Belay.Sqlite.Model.runScriptFrom_parentSchemasCompatibleSelected
-#print axioms Belay.Sqlite.Model.foreignKeyAtomsSelected_statementKeeps
-#print axioms Belay.Sqlite.Model.runSqlFrom_foreignKeyAtomsSelected
-#print axioms Belay.Sqlite.Model.runSql_foreignKeyAtomsSelected
-#print axioms Belay.Sqlite.Model.runScriptFrom_foreignKeyAtomsSelected

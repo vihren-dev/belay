@@ -58,9 +58,10 @@ to a target, where the flag tells that the statement refuses a populated table:
 * the rows of the target are wide ({name}`Database.RowsWideAt`);
 * the declarations of the target name only its columns ({name}`Database.DeclarationsBelowAt`);
 * the target selects its parents below its width ({name}`Database.SelectionBelowAt`);
-* for each added cell ({name}`AddedCell`) of a statement that does not refuse a populated table,
-  each declaration of the column is satisfied by each old row with the cell appended. A column
-  without {lit}`REFERENCES`, an empty table and a NULL cell meet the last item. -/
+* each declaration of the column is satisfied by each old row with the added cell appended, for
+  each table at the target and each added cell ({name}`AddedCell`) of it, except that a statement
+  that refuses a populated table requires this only for a table without rows. A column without
+  {lit}`REFERENCES`, a table without rows and a NULL cell meet the last item. -/
 structure Database.AddColumnRowsCondition (database : Database) (target : Nat) (column : CatalogColumn)
     (refuses : Bool) : Prop where
   /-- Each row of the target has one cell for each column. -/
@@ -69,7 +70,13 @@ structure Database.AddColumnRowsCondition (database : Database) (target : Nat) (
   declared : database.DeclarationsBelowAt target
   /-- The target selects its parents below its width. -/
   below : database.SelectionBelowAt target
-  /-- Each declaration of the column is satisfied by each old row with the added cell appended. -/
+  /-- For every table at the target, every value for which {name}`AddedCell` holds for the table and
+  the column, if the statement refuses a populated table then the table has no rows, every declaration
+  of the column and every row of the table: the comparison of the declaration, in the selected mapping
+  of the catalog with the column, is satisfied by the row with the added cell appended, in the database
+  after ADD COLUMN. It requires nothing without a table at the target, for a cell that ADD COLUMN does
+  not add, for a refusing statement on a table with rows, for a column without declarations and for a
+  table without rows. -/
   newKeys : ∀ table value, database.table target = some table → AddedCell table column value →
     (refuses = true → table.rows = []) → ∀ key ∈ column.foreignKeys, ∀ row ∈ table.rows,
       ((database.catalog.addColumn target column).foreignKeyMapping.link target key).satisfied

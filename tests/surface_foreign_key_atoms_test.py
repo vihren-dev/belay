@@ -23,7 +23,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_
                                          ("ForeignKeyRuns.lean", 9), ("ForeignKeyStatementAxioms.lean", 14),
                                          ("ForeignKeyCreate.lean", 19), ("ForeignKeyDdlDrop.lean", 16),
                                          ("ForeignKeyEnforcedDrop.lean", 18), ("ForeignKeyDropOutcomes.lean", 4),
-                                         ("ForeignKeyAddColumn.lean", 41), ("ForeignKeyDdlRuns.lean", 44)])
+                                         ("ForeignKeyAddColumn.lean", 41), ("ForeignKeyDdlRuns.lean", 19), ("ForeignKeyDdlDropRuns.lean", 27)])
 def test_independent_foreign_key_atoms(fixture: str, axioms: int, runtime_root: Path, tmp_path: Path) -> None:
     """ForeignKeyFacts, mapping transport and pragma laws compile through Belay's exported API.
 
@@ -51,10 +51,9 @@ def test_independent_foreign_key_atoms(fixture: str, axioms: int, runtime_root: 
     separate catalog transport can fail even when the row atom holds. The ADD COLUMN fixture
     keeps both atoms for a column without constraints and for a reference without default,
     shows that a default of 99 breaks the row atom unless the statement refuses it, and
-    accepts that default on a table without rows. The DDL run fixture runs CREATE TABLE, ADD
-    COLUMN and DROP through the run contracts of the selected mapping and shows, for each
-    condition, a statement outside it that breaks an atom. Every displayed law
-    excludes native-computation or admission axioms.
+    accepts that default on a table without rows. The DDL run fixtures run CREATE TABLE, ADD
+    COLUMN and DROP through the run contracts of the selected mapping and show, for each
+    condition, a statement outside it that breaks an atom. Every displayed law excludes native-computation or admission axioms.
     """
     result = run_command(surface_command(runtime_root, FIXTURES / fixture, tmp_path),
                          cwd=tmp_path, timeout=90)
