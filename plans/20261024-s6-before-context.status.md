@@ -101,3 +101,23 @@ primitive's meaning.
   only; JSON codecs now include `"schema": null`; the oracle finds unqualified names in the
   attached database when the main database lacks them. Part 1b of S6 needs corpus cases
   for `SELECT ... FROM before.t` against an attached read-only copy.
+- 2026-10-25, integration above editor part 2a (`91f640e4`, head of #264) as the merge
+  "integrate: S6 before-context above editor part 2a". Four files conflicted textually
+  (`build-support/tests.nix`, the model `lakefile.toml`, and the two plan files: both sides had added
+  these plan files, the later version of this task is kept); the glob list and the surface suite inputs
+  carry both sides. Every file that only one side changed equals that side. The review of the merge
+  (`20261025T204905Z-a785218e`) had two musts and two shoulds, all fixed in two refactor commits:
+  an initial view that calls `pragma_table_info` or `pragma_foreign_key_list` is refused with
+  `initial-database` (named by `isPragmaTableFunction`), the current-independence laws state that
+  pragma sources are excluded, `sourcesOf` lists the statement constructors, and the restriction
+  text names the collision. The next review of the fix (`20261025T205905Z-2b1c403c`) has no findings.
+- Gates of the integration (store outputs; the first `just test-full` stopped at the 1500 s build
+  limit with no failed test, log `build/agent-logs/gate-ifull-timeout.log`, and passed on the
+  one allowed rerun):
+  - `just test-full`: `/nix/store/g4xaff8wqx5ia1p17y2ln3gix9sxwdv4-sqlite-verifier-test-reports`
+  - `just verdict`: `/nix/store/q00llah7d6mmsdp58wjmg74yc91q0zqc-sqlite-verifier-verdict`
+  - `just test-nix`: passed, 71 tests (no store output).
+  - `just test-scheduled-checks`: `/nix/store/msv3w32r416z64rcm7vf5x4j1kr8lp4n-sqlite-verifier-scheduled-check-reports`
+  - Predictions `/nix/store/r1aksjg6av55bcs82fnlard7gsqi5ndk-sqlite-verifier-predictions`: 55 files,
+    identical to `/nix/store/2c56akphxc884accaa9piqwgyhg3bpbq-sqlite-verifier-predictions` of #264
+    (`diff -r` finds nothing).
