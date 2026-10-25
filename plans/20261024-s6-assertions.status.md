@@ -354,3 +354,9 @@ the start of the SQL. Nix verification of these cases: pending until the Part 2 
   `test_root_imports_the_core_and_only_the_prelude` (the four new model modules were not reached from
   `Belay.Sqlite.Model`); fixed by importing them from the root and by giving them targeted imports
   instead of the root. Review 20261025T111214Z-c6cdcd6b has no findings.
+- Second Nix `test-full` of Part 2: the first attempt after the root-import fix failed in
+  `tests/surface_layers_test.py::test_imports_are_own_modules_model_roots_and_lean[surface]` (the
+  surface package may import only the model's root, not single model modules) and was then stopped by
+  the 3000 s limit of the gate script at 97% because the machine was loaded by other gates. The surface
+  modules `PlainInsertEffect` and `SingleStatementChecks` now import no single model module; the gate
+  script limit for the next run is 5400 s.

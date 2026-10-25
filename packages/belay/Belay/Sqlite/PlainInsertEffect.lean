@@ -1,8 +1,5 @@
 import Belay.Sqlite.ExecutionStep
 import Belay.Sqlite.ExecutionSuccess
-import Belay.Sqlite.Model.PartialUniqueCount
-import Belay.Sqlite.Model.PlainInsertEffect
-import Belay.Sqlite.Model.PlainInsertRows
 import Belay.Sqlite.ProgramQueries
 
 set_option doc.verso true
