@@ -373,3 +373,15 @@ the start of the SQL. Nix verification of these cases: pending until the Part 2 
   attempts are kept as `s6p2-test-full-attempt2.log` (and the root-import failure text is quoted above).
 - `just verdict`: exit 0, output `/nix/store/qnmdrk5m8lf4zlxf9776bl5r3d2h35n5-sqlite-verifier-verdict`.
 - Not run (task end): `just test-nix`, `just test-scheduled-checks`.
+
+## Coordinator decisions on Part 2, 2026-10-25
+
+- Invariant form: keep the per-value `signup_keeps` now. When the query context of S6
+  before-context is available, add a filtered duplicate-keys law and restate the invariant
+  globally (Part 1b or later).
+- `addCustomer_adds`: modeledness of the query and the insert stays a field of
+  `AddCustomerSite`, discharged by the kernel on concrete databases. A proof from aggregate-max
+  and rowid-bound laws is not part of this task.
+- The 300 s limit of the addCustomer instance chain is accepted; its docstring gives the
+  measured cost of about 40 s.
+- Publication: Part 2 waits for Part 1b, and the task gets one pull request.
