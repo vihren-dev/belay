@@ -374,3 +374,19 @@ in `c19670b0`. The owner has been asked to refresh the VM login. Retry the
 explicit source revision `5bc323f0` after that refresh; publication waits for
 the required independent review. Existing checks and independent diagnostics
 can continue.
+
+On 2026-10-25 the editor compatibility check exposed an S5 import regression:
+the global `ToExpr Output` instance in `CheckReplayData` changes the existing
+guide's `#eval` rendering. The `s4_part1` worker owns the narrow correction in
+a new workspace based on `6228f90a`, under the existing S5 task. Keep the
+guide expectations and checked replay intact. The editor worker continues
+independent Nix checks; its part cannot pass compatibility until the correction
+is integrated. Slots 1 and 2 are reserved for these two checks respectively.
+
+The read-only table-rebuild readiness audit is complete in the workspace's
+modularity research notes, with 28 bounded pinned-native probes. Index choice
+can change partial writes and error precedence even with total `ORDER BY`;
+the transfer optimization can also preserve source rowids. The owner has been
+asked to choose possible executions (coordinator recommendation), a proved
+plan-independent restriction, or exact pinned planning. No production or task
+contract has changed before that answer. The audit worker has no live process.
