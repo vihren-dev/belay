@@ -137,3 +137,19 @@ the part is recorded in the closing entry.
 - 2026-10-25, review of unit 2 (8be7d23e): the consequence rule's docstring states
   its unrestricted premise, the fixture `alternateStops` names every `Value`
   constructor instead of a catch-all, and the new fixtures have module docstrings.
+- 2026-10-25, unit 3 (notation and `#explain`): `program ensures post` and
+  `program ensures post where query` elaborate to `FreshEnsures (Runnable.toSql
+  program)` with the always-true or the `Holds` predicate; the guard query check
+  uses the query's source position (`FreshNotation`). The existing `#explain`
+  command (`MigrationExplainCommand`) now also explains `FreshTriple`,
+  `FreshEnsures`, ordinary `Std.Do.Triple` and `Succeeds` claims
+  (`ClaimExplanation`): entry assumptions, the captured start, the error policy
+  recognized from `ifOk`/`andOk` or "neither", and the observation of `Holds`,
+  `holds` and `holdsInContext`; migration messages are unchanged. The
+  `ensures` notation must be parenthesized in a declaration signature, like the
+  other claim notations. Fixtures `FreshNotationExamples` (expansions by `rfl`,
+  `succeeds where` equals `ensures andOk ⌜True⌝ where`, negative diagnostic at the
+  query) and `ClaimExplanationExamples`; `tests/surface_assertions_test.py`
+  checks the messages and five negative diagnostics (query not one read-only
+  statement in `ensures where`, `holds` and `holdsInContext`; unsupported
+  proposition in `#explain`).

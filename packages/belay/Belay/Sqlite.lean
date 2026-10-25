@@ -62,6 +62,8 @@ import Belay.Sqlite.ContextObservationLaws
 import Belay.Sqlite.ContextObservationBridge
 import Belay.Sqlite.FreshRules
 import Belay.Sqlite.AssertionTerms
+import Belay.Sqlite.FreshNotation
+import Belay.Sqlite.ClaimExplanation
 import Belay.Sqlite.MigrationExplainCommand
 import Belay.Sqlite.ExecutionSpecifications
 import Belay.Sqlite.Success
