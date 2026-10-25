@@ -31,12 +31,16 @@ inductive Failure where
   | outputsMismatch (expected actual : List Output)
   deriving Repr
 
-/-- A diagnostic that retains the mismatching text or full typed output. Text is quoted to
-make leading/trailing spaces, blank lines and embedded newlines visible. -/
+/-- A diagnostic that names a recovery action for failed inputs and retains mismatching text or
+full typed output. Text is quoted to make leading/trailing spaces, blank lines and embedded
+newlines visible. -/
 def Failure.message : Failure → String
-  | .sqlError index code => s!"SQL statement {index + 1} failed with result code {code}"
-  | .unmodeled index reason => s!"SQL statement {index + 1} is unmodeled: {reason}"
-  | .noAlternatives index => s!"SQL statement {index + 1} has no permitted result"
+  | .sqlError index code =>
+    s!"SQL statement {index + 1} failed with result code {code}. Correct the statement before checking this expectation."
+  | .unmodeled index reason =>
+    s!"SQL statement {index + 1} is unmodeled: {reason}. Use SQL and environment inputs that the model describes."
+  | .noAlternatives index =>
+    s!"SQL statement {index + 1} has no permitted result. Supply at least one permitted result."
   | .textMismatch expected actual =>
     s!"SQL result mismatch\nexpected text: {repr expected}\nactual text: {repr actual}"
   | .outputsMismatch expected actual =>

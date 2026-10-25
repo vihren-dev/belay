@@ -77,9 +77,16 @@ Root's source read found no semantic issue. After reviewer access was restored,
 independent review `20261025T001749Z-3bb4171e` of source commit
 `3bb4171e6e43fcf8e2af159e805c83bac3901ed1` completed with no musts and one should.
 Finding `#1` (R10) requests actionable next steps in three failure messages.
-The source finding is reported to the coordinator before any source edit; its
-small correction and focused checks are pending a build slot. The source remains
-frozen, and the full task remains OPEN. Public handler registration,
+The coordinator approved the narrow R10 correction. The three messages now
+name a recovery action for the existing checker API, without advertising the
+unfinished public failure mode. The message/docstring-only correction passed
+its focused Nix check on source `04b44c5a`: 2 passed, 86 deselected, in 5.01
+seconds; report
+`/nix/store/8arqjd5l5jlnvg5v148gimnk0gbijzrp-sqlite-verifier-test-surface-1`.
+The mandatory development build also passed; it is diagnostic evidence only.
+No execution or expectation logic changed. Finding `#1` is recorded fixed, and
+the correction's independent review follows. Logs and exact command are under
+`build/agent-logs/sql-docs-r10-*`. The full task remains OPEN. Public handler registration,
 complete convenience/explicit bindings and environment inputs, typed headers,
 expected SQL failures, lexical expected-comment extraction, original source
 positions and final full/verdict/Nix/scheduled acceptance remain outstanding.
