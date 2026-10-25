@@ -16,9 +16,9 @@ simulation because its write order changes total_changes.
 The production execution prerequisite is present at immutable `5bc323f0`, the
 base of this implementation workspace. Final table-rebuild and FK work is still
 needed for the cascade example. Existing reviewed native diagnostics inform
-these contracts but are not implementation acceptance. The first descriptor
-unit has the focused evidence below; comparisons, patterns and later examples
-remain required.
+these contracts but are not implementation acceptance. The descriptors, comparison/pattern primitives and composition/frame laws have
+the focused evidence below. Public notation, named commutation-law closure,
+later examples and acceptance-part checks remain required.
 
 ## Progress
 
@@ -107,8 +107,9 @@ refresh, independent review `20261025T001307Z-504b819b` found zero musts and two
 status-only shoulds. Both are fixed here: historical assignment wording and the
 link from the checked source to its carrying commit. The review found no source,
 task, ADR or fixture issues. The descriptor implementation remains unchanged.
-The acceptance part is still OPEN: projected comparison relations, migration
-domains/patterns, their laws and later examples are unfinished. No full/verdict
+At that boundary, projected comparisons, migration domains/patterns, their laws
+and later examples were unfinished. The subsequent units below advance those
+requirements; the acceptance part remains OPEN. No full/verdict
 or task-end acceptance is claimed by this focused check.
 
 ## Second unit: projected comparisons and pattern primitives
@@ -153,16 +154,16 @@ original-context domain, application return values, fresh quantification and
 read-only admission. Independent review `20261025T002522Z-838aa29e` found zero
 musts and one status-only should: identify the commit carrying the checked
 source. That provenance is recorded above, and the finding is resolved without
-changing production or test files. Later composition/frame bridges, notation,
-universal guide examples and whole-task checks remain required; this is not
-completion of either acceptance part.
+changing production or test files. Composition/frame bridges were still pending
+at that boundary and are supplied by the next unit. Notation, universal guide
+examples and whole-task checks remain required; neither acceptance part is complete.
 
 ## Third unit: composition and sufficient full-context frames
 
-Jujutsu change `sryuxykuqtvllozsqtwoprummxowquun` carries this unit; its
-production, fixture and registration files are unchanged from frozen checked
-source `b3125854f4278c7b9fd633c64ebd3934f6f99190`. The independent review record
-will identify the exact carrying commit. This unit adds nine proof leaves,
+Commit `c398676a6446820c96901e54cb69c80837e5b9ca` (Jujutsu change
+`sryuxykuqtvllozsqtwoprummxowquun`) carries this unit. Its production, fixture and
+registration files are unchanged from frozen checked source
+`b3125854f4278c7b9fd633c64ebd3934f6f99190`. This unit adds nine proof leaves,
 without changing any existing execution, comparison or domain definition.
 
 Full projected bind composition uses existing raw `Sql.ReturnsIn` premises.
@@ -198,6 +199,12 @@ contract was weakened. Only the Nix result above is acceptance evidence. Logs
 remain in `build/agent-logs/migration-composition-*.log`. The focused selector
 uses the existing suite and unchanged timeouts. R3/R19 self-review checked raw
 reachability, actual/all-branch correspondence and noncircular frame premises.
-Independent review follows. Public notation/explanation, any remaining named
-pattern laws, universal examples and the two acceptance-part gates remain open;
-no full/verdict or task-end completion is claimed here.
+Independent review `20261025T004439Z-c398676a` read the complete diff and found
+zero musts and zero shoulds. This checked boundary remains separate from whole
+acceptance-part completion. Remaining work includes named commutation identity
+and application-composition conveniences over the proved full bind law, pattern
+notation/guards/explanations and source diagnostics, and universal migration
+examples with their private guide integration. Rebuild/trigger/INSERT SELECT
+examples still depend on their separately owned model work and pending order
+decision. Both acceptance parts still require their post-review full/verdict
+gates; task end requires Nix and scheduled checks. No such completion is claimed.
