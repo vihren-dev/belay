@@ -1,7 +1,6 @@
 # Status: SQL editor information and corrections
 
-Created 2026-10-24. Status: OPEN. Part 1 is accepted; part 2a is implemented and
-checked, and waits for acceptance; part 2b waits for the model name trace.
+Created 2026-10-24. Status: OPEN. Part 1 and part 2a are accepted; part 2b waits for the model name trace.
 Task: [task file](20261024-surface-editor.task.md).
 Specs: ADR 0017 editor features and ADR 0016 layer boundaries.
 
@@ -370,3 +369,13 @@ Part 2a is accepted. The coordinator decided:
 
 Part 2b waits for the model name-trace task. The coordinator integrates part 2a
 into the stack after the FK pull requests and runs the gates on that merge.
+
+### Integration gates — 2026-10-25
+
+The merge `99713acb` joins part 2a with the stack head (S7, doc blocks, FK part 2).
+Resolutions: the order-risk warning is in the inline `scriptTerm` of `SqlTerm.lean`
+(`sql_file` and `sql_module` give no risk warning, which the task does not ask for);
+`EvaluatedDatabase.value` is used by `sql_file` and `sql_module`. These two paths
+record no table origins or hovers; the task scopes part 2a to `sql!`, `db!` and `#sql`.
+The review of the merge found two items, both documentation: the parameterized-script
+exception of `#sql` in the task file, and the acceptance line in the opening status.

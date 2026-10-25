@@ -1,6 +1,6 @@
 # SQL editor information and corrections
 
-Created 2026-10-24. Status: OPEN. Part 1 is accepted; part 2a is implemented and checked, and waits for acceptance; part 2b waits for the model name trace.
+Created 2026-10-24. Status: OPEN. Part 1 and part 2a are accepted; part 2b waits for the model name trace.
 Status: [progress](20261024-surface-editor.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), editor features under
 "Not decided here"; [ADR 0016](../docs/adr-0016-model-and-surface.md), D2/D3.
@@ -183,15 +183,17 @@ Part 2a gives:
   A context that only resolves statements (`sql!`) knows the rows of its
   database only before the first statement of the script that can write; after
   one, the hover shows no count. A context that runs each statement (`db!`,
-  `#sql`) knows the rows that its run reached before the statement;
+  `#sql`) knows the rows that its run reached before the statement. A `#sql`
+  script with parameters is the exception: the trial run does not know the
+  parameter values, so it gets the resolution rows of `sql!`;
 - navigation from a table name to its `CREATE TABLE`, with the environment
   extension, distinct origins for same-named tables of different databases,
   imported origins, no origin for computed databases, and no origin for a
   table that an earlier statement of the script drops or creates;
 - order warnings. A context that evaluates its statements (`db!`, `#sql`) gives
   the evidence-based warning, from a statement output with several permitted
-  results. A context that does not evaluate (`sql`, `sql!`) gives only the
-  syntactic warning;
+  results. A context that does not evaluate (`sql`, `sql!`, and a `#sql` script
+  with parameters) gives only the syntactic warning;
 - the shared entry point, semantic tokens for resolved tables and the
   source-position fixtures.
 
