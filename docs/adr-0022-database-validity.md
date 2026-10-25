@@ -239,7 +239,8 @@ FAIL keeps both atoms (`ForeignKeyRuns.partialPreserves`) and ROLLBACK restores 
 the statements that the run reaches. The model results of the DDL and action fixtures agree with
 the pinned SQLite 3.51.0, except the deferred key with foreign keys on: the model stops at a resolver
 restriction and keeps its current result, and SQLite fails at the commit. The probes are listed in
-the status file of the task. Authored corpus cases belong to the separate judge change.
+the status file of the task. The native cases of the part are in `conformance/corpus-v54`, which
+`judge/claims.json` claims in the separate judge change (the lock of that change is the owner's to approve).
 
 Record of slice 2 (2026-10-23, `plans/20261023-keys-unique.task.md`): the statement theorem
 `runStatement_keysUnique` holds for every statement form, foreign keys and triggers included,

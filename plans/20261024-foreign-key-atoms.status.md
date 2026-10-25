@@ -1203,8 +1203,60 @@ show the native rule, and the model needs no change:
 The new test `tests/add_column_not_null_default_test.py` records the seven spellings natively on an
 empty and a populated table and checks the refusal, the model verdict (AGREE with a kernel proof
 for `NULL`, MODEL_UNSUPPORTED for the others). It is in the `model` suite of
-`tests/nix_suites.json`. Its Nix validation is pending: the Nix results above concern the tree
-before this follow-up, and the final Nix results of the follow-up are recorded in the last section.
+`tests/nix_suites.json`. Its Nix validation is in the section "Nix results of the follow-ups" below.
+
+## Follow-up B: corpus-v54, the judge change (2026-10-25)
+
+This is the separate judge change that the task file asks for. It adds native regression evidence and
+its claim; the lock follows in its own commit. The work commits above do not change a corpus, a claim
+or the lock.
+
+- `conformance/authored_foreign_key_atoms.py` collects 50 cases from
+  `authored_add_references.py`, `authored_foreign_key_defaults.py` and `authored_foreign_key_mapping.py`.
+  Each case is a version 6 record (it runs on after an error) in the part `foreign-key-atoms`, under the
+  profile with foreign keys on, or off for the cases with the feature `unenforced`. The five cases of
+  `authored_add_references.py` now name the two requirements of the pinned documentation
+  (`R-47952-62498`, `R-13876-13274`), which the coverage test needs.
+- ADD COLUMN with REFERENCES: omitted default, `NULL`, the last of two defaults, a text, a number and a
+  keyword default, a time keyword (populated, empty, foreign keys off), NOT NULL with a number and with
+  NULL, CHECK, a deferral clause, a missing parent with and without a default, and a STRICT table.
+  NOT NULL columns without REFERENCES: `NULL` on a populated and an empty table, a number, and no
+  default.
+- Mapped NULL and actions (parent key `PRIMARY KEY(a,a)` with `FOREIGN KEY(x,y) REFERENCES p(a,b)`):
+  the unused column in an insert, an update, a parent delete, a parent update and `foreign_key_check`;
+  the selected column; CASCADE, SET NULL and SET DEFAULT on the unused column; UPDATE OF triggers; a
+  composite key in a different order; a rowid parent.
+- Unit-4 probes: NO ACTION and RESTRICT with a repairing trigger, RESTRICT with foreign keys off, SET
+  DEFAULT on delete and update, SET DEFAULT without a parent for the default, CREATE UNIQUE INDEX over
+  `p(a,a)` against `p(a,b)`, and ADD COLUMN to an absent parent followed by an INSERT.
+- Not in the corpus: the spellings `+NULL`, `-NULL` and the parenthesized or cast NULL. The model leaves
+  them outside its scope (follow-up A), so a case would be MODEL_UNSUPPORTED and could not be a claim.
+  `tests/add_column_references_test.py` and `tests/add_column_not_null_default_test.py` record their
+  native outcomes. The deferred key with foreign keys on is also not in the corpus: the model stops
+  there, and native fails at the commit.
+- `conformance/foreign_key_atom_evidence.py` writes `conformance/corpus-v54` (50 cases, `casesSha256`
+  `1aaf22e3...`) through `authored_evidence`. `tests/conformance_feature_coverage_test.py` (after the
+  integration above #260; `tests/conformance_query_coverage_test.py` before it) runs the cases
+  against the model with a kernel proof of each verdict, and `tests/conformance_corpus_writers_test.py`
+  round-trips the corpus. `judge/claims.json` claims the corpus with all 50 names under `mustAgree`.
+  The lock is in the next commit (`integrity/judge.lock.json`: the new entry `corpus corpus-v54` and the
+  new `judge` source). Nix validation is in the section "Nix results of the follow-ups" below.
+
+## Nix results of the follow-ups (2026-10-25)
+
+Tree: the judge stack of follow-up B and its review records (working-copy parent `f3927623`).
+
+- `just test-full`: exit 0, `/nix/store/y6khc8q3q2spcdzdhjg3w9ay0dg1hip0-sqlite-verifier-test-reports`.
+- `just verdict`: exit 0, `/nix/store/0fpcjngpia2pyf2hgd6b0l870z7vkakp-sqlite-verifier-verdict`.
+  `corpus-v54` reports `{"AGREE": 50}`.
+- Predictions: `/nix/store/nywilcisvsmpsggvmxgbwk9iy836vfqp-sqlite-verifier-predictions`. Against the
+  frozen baseline (`/nix/store/a54s3ncjxq74zzj0hb3qrc3k9mahlx5b-sqlite-verifier-predictions`, 53 files) the
+  53 earlier files are byte-identical. The only difference is the new file `corpus-v54.jsonl`.
+- `just test-nix`: 70 passed.
+- `just test-scheduled-checks`: exit 0,
+  `/nix/store/dd12fa0dz6n06kky38xqpxxp9p23dc60-sqlite-verifier-scheduled-check-reports`.
+
+The task stays OPEN until the owner approves the judge change (the lock commit) and it is merged.
 
 ## Integration above the views PR (2026-10-25)
 
