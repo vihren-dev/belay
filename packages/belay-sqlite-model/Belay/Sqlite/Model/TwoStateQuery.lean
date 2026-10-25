@@ -12,7 +12,7 @@ with the optional initial database and catalog that they take; it has no copy of
 * {lit}`Syntax.Statement.asQuery?` reads the query out of a {lit}`SELECT`.
 * {lit}`resolveTwoState` resolves it against both catalogs.
 * {lit}`observeTwoState` gives its output.
-* {lit}`observeTwoState_ordinary` shows that a query without a schema name
+* {lit}`observeTwoState_ordinary` shows that a query with no source that has a schema name
   has the output of {lit}`runScriptStep`.
 * {lit}`observeTwoState_initial_irrelevant` shows that a query that does not
   read the initial origin does not depend on the initial database. -/
@@ -25,18 +25,21 @@ def Syntax.Statement.asQuery? : Syntax.Statement → Option (Syntax.Subquery × 
   | .select columns source joins filter groupBy orderBy limit offset subqueries having distinct compound =>
     some ({ columns, source, joins, filter, groupBy, orderBy, limit, offset, parent := none, having, distinct, compound },
       subqueries)
-  | _ => none
+  | .createView .. | .createTable .. | .createIndex .. | .addColumn .. | .dropTable .. | .dropView ..
+  | .dropIndex .. | .begin | .commit | .rollback | .insert .. | .update .. | .delete .. | .pragma ..
+  | .createTrigger .. | .dropTrigger .. => none
 
-/-- Whether a query and its subqueries, which hold every derived table, expression subquery, common
-table and compound term of the statement, name a schema anywhere. Only such a query needs the initial
-database. -/
+/-- Whether the query or one of its subqueries, which hold every derived table, expression subquery, common
+table and compound term of the statement, has a source with a schema name. Only such a query needs the
+initial database. A schema name in a column, as in {lit}`before.t.a`, needs a source with that schema name,
+so it does not change the result. -/
 def usesSchema (query : Syntax.Subquery) (subqueries : List Syntax.Subquery) : Bool :=
   (query :: subqueries).any Syntax.Subquery.hasSchemaSource
 
 /-- Resolve a query against the catalog of the initial database and the catalog of the current database.
-A query with no schema name resolves as {name}`resolveSelect` does without an initial catalog, so that
-the initial catalog cannot change it ({lit}`resolveTwoState_ordinary`); a query with a schema name
-resolves its sources of {lit}`before` in the initial catalog and all others in the current catalog.
+A query with no source that has a schema name resolves as {name}`resolveSelect` does without an initial
+catalog, so that the initial catalog cannot change it ({lit}`resolveTwoState_ordinary`); a query with such a
+source resolves its sources of {lit}`before` in the initial catalog and all others in the current catalog.
 A schema name other than {lit}`before` is the restriction {name}`RestrictionKind.initialDatabase`. -/
 def resolveTwoState (context : ResolveContext) (initial current : Catalog) (query : Syntax.Subquery)
     (subqueries : List Syntax.Subquery) : StatementResolution :=
@@ -45,10 +48,10 @@ def resolveTwoState (context : ResolveContext) (initial current : Catalog) (quer
 
 /-- The output of a read-only query over the fixed initial database and the database of a connection,
 with the values bound to its parameters, at the clock value of an index and with the counters of the
-connection. A restriction of the resolver is {name}`Output.unmodeled`. A table that the initial database
-lacks, or a query that the model does not describe, is {name}`Output.unmodeled` too, never an empty
-result. The query reads the initial database only through sources with a schema name, so a
-query without a schema name does not read it. -/
+connection. A restriction of the resolver, and a query that the model does not describe, is
+{name}`Output.unmodeled`. A table that the initial database lacks is SQLite's error {lit}`no such table: before.t`,
+which is an {name}`Output.error`, as it is for a missing current table; it is never an empty result. The query
+reads the initial database only through sources with a schema name, so a query with none does not read it. -/
 def observeTwoState (context : ResolveContext) (clock : Option Clock) (index : Nat) (initial : Database)
     (connection : Connection) (parameters : List Value) (query : Syntax.Subquery)
     (subqueries : List Syntax.Subquery) : Output :=
@@ -57,17 +60,19 @@ def observeTwoState (context : ResolveContext) (clock : Option Clock) (index : N
   | .ok (resolved, _) =>
     resolvedStepOutput clock index connection parameters resolved (if usesSchema query subqueries then some initial else none)
 
-/-- For every context, catalogs and query without a schema name, {name}`resolveTwoState` is
-{name}`resolveSelect` without an initial catalog, whatever the initial catalog is. -/
+/-- For every context, catalogs, query and subqueries such that neither the query nor a subquery has a source
+with a schema name, {name}`resolveTwoState` is {name}`resolveSelect` without an initial catalog, whatever the
+initial catalog is. In plain words: if no source names a schema, the initial catalog is not used. Proof sketch:
+the premise selects the ordinary branch of {name}`resolveTwoState`, and the branch is the right side. -/
 theorem resolveTwoState_ordinary (context : ResolveContext) (initial current : Catalog) (query : Syntax.Subquery)
     (subqueries : List Syntax.Subquery) (plain : usesSchema query subqueries = false) :
     resolveTwoState context initial current query subqueries = resolveSelect context current query subqueries := by
   simp [resolveTwoState, plain]
 
 /-- For every context, clock, index, initial database, connection, values and {lit}`SELECT` statement
-whose query has no schema name, the observation is the output of the ordinary step of the statement
+such that neither its query nor a subquery has a source with a schema name, the observation is the output of the ordinary step of the statement
 ({name}`runScriptStep`). In plain words: the two-state observation extends the ordinary run
-conservatively; without a schema name it gives the same output, including every restriction and every
+conservatively; without a source that has a schema name it gives the same output, including every restriction and every
 failure, and it does not read the initial database. Proof sketch: {name}`runScriptStep_output` gives the output of the step
 as the output of the resolved statement; the select case of {name}`resolveStatement` is
 {name}`resolveSelect`, which is {name}`resolveTwoState` by {name}`resolveTwoState_ordinary`, and
@@ -86,8 +91,9 @@ theorem observeTwoState_ordinary (context : ResolveContext) (clock : Option Cloc
       Connection.resolveState, plain]
     cases resolveSelect context connection.state.database.catalog _ _ <;> rfl
 
-/-- For every context, clock, index, two initial databases, connection, values and query without a schema name,
-the observation is the same for both initial databases. In plain words: a query that names no schema is
+/-- For every context, clock, index, two initial databases, connection, values, query and subqueries such that
+neither the query nor a subquery has a source with a schema name, the observation is the same for both
+initial databases. In plain words: a query with no source that names a schema is
 independent of the initial database that is supplied, also of its catalog. Proof sketch: the resolution is
 {name}`resolveSelect` for both ({name}`resolveTwoState_ordinary`) and the observation passes none. -/
 theorem observeTwoState_unqualified_irrelevant (context : ResolveContext) (clock : Option Clock) (index : Nat)

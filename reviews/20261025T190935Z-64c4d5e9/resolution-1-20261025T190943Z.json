@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-25T19:09:43+00:00",
+  "finding": "20261025T190935Z-64c4d5e9#1",
+  "kind": "resolution",
+  "outcome": "rejected",
+  "reason": "The collision is a corner of an unmodeled case: an initial view that calls a table-valued function whose name is also a view of the current catalog. A separate restriction kind would need a registry entry, a message, a docs row and an example for it. The docs row of initial-database names the case, and the message names the schema and the missing initial database."
+}

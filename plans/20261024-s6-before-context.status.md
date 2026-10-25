@@ -73,3 +73,8 @@ primitive's meaning.
   a joined source and a subquery source. Native finding: a view over `pragma_table_info`
   in an attached database is refused by SQLite ("unsafe use of virtual table"); the model
   does not model that and the case stays open.
+- 2026-10-25, fix of the first review of the observation commit (`20261025T191255Z-83a4451f`):
+  plain-words statements say "no source with a schema name"; `asQuery?` and
+  `Resolved.Statement.readsInitial` list their constructors; proof sketches for the
+  independence laws; docstrings for the fixtures; the native test is split into
+  `tests/surface_two_state_test.py` and `tests/two_state_support.py`.

@@ -15,10 +15,13 @@ source in it ({name}`Resolved.Query.readsInitial`). A statement that is not a qu
 initial database, because the resolver gives sources of the initial origin only to queries. -/
 def Resolved.Statement.readsInitial : Resolved.Statement → Bool
   | .query main inner => main.readsInitial || inner.any Resolved.Query.readsInitial
-  | _ => false
+  | .createView .. | .createTable .. | .createIndex .. | .createTrigger .. | .addColumn .. | .drop ..
+  | .begin | .commit | .rollback | .insert .. | .update .. | .upsert .. | .delete .. | .prepareError _
+  | .setting .. => false
 
 /-- For every query and subqueries, if the statement {lit}`query subqueries` reads no initial database, then
-neither does the query and neither does any subquery. -/
+neither does the query and neither does any subquery. Proof sketch: unfold {name}`Resolved.Statement.readsInitial`;
+a disjunction that is false has two false sides, and a failed {lit}`any` has a false test for each member. -/
 theorem Resolved.Statement.readsInitial_query {query : Resolved.Query} {subqueries : List Resolved.Query}
     (plain : (Resolved.Statement.query query subqueries).readsInitial = false) :
     query.readsInitial = false ∧ ∀ other ∈ subqueries, other.readsInitial = false := by
@@ -40,7 +43,8 @@ theorem Resolved.Query.runOn_initial_irrelevant (query : Resolved.Query) (clock 
       (second := second) (own := own)]
 
 /-- As {name}`Resolved.Query.runOn_initial_irrelevant`, for the results that SQLite may give
-({name}`Resolved.Query.possibleOn`). -/
+({name}`Resolved.Query.possibleOn`). Proof sketch: the context of the statement and the source rows are the same
+by the laws of {lit}`TwoStateReads.lean`, and the rest of the result does not mention the initial database. -/
 theorem Resolved.Query.possibleOn_initial_irrelevant (query : Resolved.Query) (clock : Int) (counters : Counters)
     (parameters : List Value) (database : Database) (subqueries : List Resolved.Query) (first second : Option Database)
     (own : query.readsInitial = false) (nested : ∀ other ∈ subqueries, other.readsInitial = false) :
@@ -83,7 +87,8 @@ theorem runStatement_initial_irrelevant (clock : Int) (counters : Counters) (par
 
 /-- For every state, clock value, values, statement and two optional initial databases, a statement with no
 source in the initial database has the same run on the state whichever initial database is given
-({name}`SqlState.statementRun`). -/
+({name}`SqlState.statementRun`). Proof sketch: the run is {name}`runStatement` on the database of the state, which is
+the same by {name}`runStatement_initial_irrelevant`. -/
 theorem SqlState.statementRun_initial_irrelevant (state : SqlState) (clock : Int) (parameters : List Value)
     (statement : Resolved.Statement) (first second : Option Database) (plain : statement.readsInitial = false) :
     SqlState.statementRun state clock parameters statement first = SqlState.statementRun state clock parameters statement second := by
@@ -92,7 +97,9 @@ theorem SqlState.statementRun_initial_irrelevant (state : SqlState) (clock : Int
 
 /-- For every clock value, values, statement, state, transition and two optional initial databases, a
 statement with no source in the initial database has the same results that SQLite may give whichever
-initial database is given ({name}`possibleOutput`). -/
+initial database is given ({name}`possibleOutput`). Proof sketch: for a query with a transition that runs, the result
+is {name}`Resolved.Query.possibleOn_initial_irrelevant`; the other cases of the statement and transition do not
+mention the initial database. -/
 theorem possibleOutput_initial_irrelevant (clock : Int) (parameters : List Value) (statement : Resolved.Statement)
     (before : SqlState) (transition : SqlTransition) (first second : Option Database)
     (plain : statement.readsInitial = false) :
@@ -110,7 +117,8 @@ theorem possibleOutput_initial_irrelevant (clock : Int) (parameters : List Value
 
 /-- For every clock value, values, statement, state, run, transition and two optional initial databases, a
 statement with no source in the initial database has the same output whichever initial database is given
-({name}`Output.ofStep`). -/
+({name}`Output.ofStep`). Proof sketch: the output is built from {name}`possibleOutput`, which is the same by
+{name}`possibleOutput_initial_irrelevant`. -/
 theorem Output.ofStep_initial_irrelevant (clock : Int) (parameters : List Value) (statement : Resolved.Statement)
     (before : SqlState) (run : StatementRun) (transition : SqlTransition) (first second : Option Database)
     (plain : statement.readsInitial = false) :

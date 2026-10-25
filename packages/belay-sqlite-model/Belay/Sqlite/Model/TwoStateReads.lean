@@ -49,14 +49,15 @@ theorem foldlM_join_initial_irrelevant (context : EvalContext) (database : Datab
     | some next => exact foldlM_join_initial_irrelevant context database first second rest next plain.2
 
 /-- For every context, query, database and two optional initial databases, a query that reads no
-initial table has the same source rows ({name}`Query.source`) whichever initial database is given. -/
+initial table has the same source rows ({name}`Query.source`) whichever initial database is given. Proof sketch:
+{name}`foldlM_join_initial_irrelevant` on the sources of the query. -/
 theorem Query.source_initial_irrelevant (context : EvalContext) (query : Query) (database : Database)
     (first second : Option Database) (own : query.readsInitial = false) :
     query.source context database first = query.source context database second :=
   foldlM_join_initial_irrelevant context database first second query.sources _ own
 
 /-- As {name}`Query.source_initial_irrelevant`, for the source rows of a subquery after an outer row
-({name}`Query.sourceAfter`). -/
+({name}`Query.sourceAfter`). Proof sketch: the same fold of the joins, started from the outer row. -/
 theorem Query.sourceAfter_initial_irrelevant (context : EvalContext) (outer : List Value) (query : Query)
     (database : Database) (first second : Option Database) (own : query.readsInitial = false) :
     query.sourceAfter context outer database first = query.sourceAfter context outer database second :=
@@ -64,7 +65,8 @@ theorem Query.sourceAfter_initial_irrelevant (context : EvalContext) (outer : Li
 
 /-- For every context, outer row, query, database and two optional initial databases, the run of a
 subquery that reads no initial table is the same whichever initial database is given
-({name}`Query.subqueryRun`). -/
+({name}`Query.subqueryRun`). Proof sketch: unfold the run and rewrite its source rows with
+{name}`Query.sourceAfter_initial_irrelevant`. -/
 theorem Query.subqueryRun_initial_irrelevant (context : EvalContext) (database : Database) (outer : List Value)
     (query : Query) (first second : Option Database) (own : query.readsInitial = false) :
     query.subqueryRun context database outer first = query.subqueryRun context database outer second := by
@@ -96,7 +98,8 @@ theorem subqueryContext_initial_irrelevant (clock : Int) (counters : Counters) (
 
 /-- For every clock value, counters, values, database, subqueries without a source in the initial
 database and two optional initial databases, the context of a statement is the same whichever
-initial database is given ({name}`statementContext`). -/
+initial database is given ({name}`statementContext`). Proof sketch: it is the context at the depth that
+{name}`subqueryContext_initial_irrelevant` covers. -/
 theorem statementContext_initial_irrelevant (clock : Int) (counters : Counters) (parameters : List Value)
     (database : Database) (subqueries : List Query) (first second : Option Database)
     (plain : ∀ query ∈ subqueries, query.readsInitial = false) :

@@ -32,9 +32,9 @@ def Script.observeTwoState (script : Script) (initial : Database.Raw) (connectio
     | none => .unmodeled "A two-state observation reads one SELECT statement; remove the other kind of statement"
   | _ => .unmodeled "A two-state observation reads one SELECT statement; give exactly one statement"
 
-/-- For every initial database, connection, clock and script of one statement that is a query without a
-schema name, the observation is the output of the ordinary step of that statement. In plain words: a
-script that names no schema is observed as it runs, whatever initial database is given, so the
+/-- For every initial database, connection, clock and script of one statement that is a query such that neither
+the query nor a subquery has a source with a schema name, the observation is the output of the ordinary step of
+that statement. In plain words: a script with no source that names a schema is observed as it runs, whatever initial database is given, so the
 two-state observation extends the ordinary run and a surface program does not gain a connection to
 an initial database. Proof sketch: {name}`Belay.Sqlite.Model.observeTwoState_ordinary`. -/
 theorem Script.observeTwoState_ordinary (initial : Database.Raw) (connection : Connection)

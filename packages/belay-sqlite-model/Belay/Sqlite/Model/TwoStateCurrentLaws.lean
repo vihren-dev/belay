@@ -36,14 +36,14 @@ theorem foldlM_join_current_irrelevant (context : EvalContext) (first second : D
     | some next => exact foldlM_join_current_irrelevant context first second initial rest next plain.2
 
 /-- For every context, query, two databases and optional initial database, a query that reads no
-current table has the same source rows whichever current database is given ({name}`Query.source`). -/
+current table has the same source rows whichever current database is given ({name}`Query.source`). Proof sketch: {name}`foldlM_join_current_irrelevant` on the sources of the query. -/
 theorem Query.source_current_irrelevant (context : EvalContext) (query : Query) (first second : Database)
     (initial : Option Database) (own : query.readsCurrent = false) :
     query.source context first initial = query.source context second initial :=
   foldlM_join_current_irrelevant context first second initial query.sources _ own
 
 /-- As {name}`Query.source_current_irrelevant`, for the source rows of a subquery after an outer
-row ({name}`Query.sourceAfter`). -/
+row ({name}`Query.sourceAfter`). Proof sketch: the same fold of the joins, started from the outer row. -/
 theorem Query.sourceAfter_current_irrelevant (context : EvalContext) (outer : List Value) (query : Query)
     (first second : Database) (initial : Option Database) (own : query.readsCurrent = false) :
     query.sourceAfter context outer first initial = query.sourceAfter context outer second initial :=
@@ -51,7 +51,8 @@ theorem Query.sourceAfter_current_irrelevant (context : EvalContext) (outer : Li
 
 /-- For every context, outer row, query, two databases and optional initial database, the run of a
 subquery that reads no current table is the same whichever current database is given
-({name}`Query.subqueryRun`). -/
+({name}`Query.subqueryRun`). Proof sketch: unfold the run and rewrite its source rows with
+{name}`Query.sourceAfter_current_irrelevant`. -/
 theorem Query.subqueryRun_current_irrelevant (context : EvalContext) (outer : List Value) (query : Query)
     (first second : Database) (initial : Option Database) (own : query.readsCurrent = false) :
     query.subqueryRun context first outer initial = query.subqueryRun context second outer initial := by
@@ -82,7 +83,8 @@ theorem subqueryContext_current_irrelevant (clock : Int) (counters : Counters) (
 
 /-- For every clock value, counters, values, two databases, subqueries that read no current table and
 optional initial database, the context of a statement is the same whichever current database is
-given ({name}`statementContext`). -/
+given ({name}`statementContext`). Proof sketch: it is the context at the depth that
+{name}`subqueryContext_current_irrelevant` covers. -/
 theorem statementContext_current_irrelevant (clock : Int) (counters : Counters) (parameters : List Value)
     (first second : Database) (subqueries : List Query) (initial : Option Database)
     (plain : ∀ query ∈ subqueries, query.readsCurrent = false) :
