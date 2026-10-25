@@ -110,3 +110,44 @@ task, ADR or fixture issues. The descriptor implementation remains unchanged.
 The acceptance part is still OPEN: projected comparison relations, migration
 domains/patterns, their laws and later examples are unfinished. No full/verdict
 or task-end acceptance is claimed by this focused check.
+
+## Second unit: projected comparisons and pattern primitives
+
+This checked source unit adds six leaves: weak/full view comparisons, their
+elementary equivalence laws and identity bridges, original-context migration
+domains and comparison meanings, fresh query/application helpers, and pure
+migration/domain-restriction/vacuity laws. Both comparison relations retain
+actual-run equality separately from all raw/concrete branch observations. Full
+comparison retains the complete connection, clock and raw next index. Pattern
+domains use original-context SucceedsFrom without requiring an OK prior trace
+or success after the application moves. Both commutation orders return the
+application's value; fresh helpers quantify every admitted bundled database and
+complete environment, and query helpers require single read-only scripts.
+
+Three new installed fixtures cover identity bridges, weak/full/strong
+distinctions, raw/concrete branch sets with unequal actual results, moved failure,
+original-failure vacuity, returned application values and counter effects. The
+production interpreter and model definitions are unchanged.
+
+Frozen source `bce35aae4294161738924cb73031d49871cd7bce` passed the installed Nix
+check at `/nix/store/4ngn8pikwbsql2fqflbvmgc7gz6crxm9-sqlite-verifier-test-migration-patterns-1`:
+three groups, 85 deselected, 17.97 seconds. The installed surface is
+`/nix/store/g9p5fxs570xbh8qijbwvc54ilafzmra3-belay-0.1.0`. The new fixtures audit
+32 proof-dependency reports; the existing view and execution fixtures audit
+27 and 101 respectively. All 160 use only permitted ordinary logical axioms.
+The disposable selector retains the existing surface suite and timeouts.
+Log: `build/agent-logs/migration-patterns-focused.log`.
+
+The mandatory development build and targeted fixture diagnostics completed
+before that Nix check. Fixture-only corrections supplied direct finite-choice
+proofs, introduced a let-bound program before its comparison assumption, and
+escaped a checked-doc identifier; no production formula changed after the first
+build. A preliminary disposable local runtime lacked dependency-library links;
+the normal installed Nix runtime required no repair. Diagnostic logs remain in
+`build/agent-logs/`; only the Nix result above is acceptance evidence.
+
+R3/R19 self-review checked the actual/branch separation, exact identity bridges,
+original-context domain, application return values, fresh quantification and
+read-only admission. Independent review of this source commit follows. Later
+composition/frame bridges, notation, universal guide examples and whole-task
+checks remain required; this is not completion of either acceptance part.

@@ -34,6 +34,12 @@ import Belay.Sqlite.ExecutionView
 import Belay.Sqlite.ExecutionViewProjection
 import Belay.Sqlite.ExecutionViewLaws
 import Belay.Sqlite.ExecutionViewBind
+import Belay.Sqlite.ExecutionViewEquivalence
+import Belay.Sqlite.ExecutionViewEquivalenceLaws
+import Belay.Sqlite.ExecutionViewIdentity
+import Belay.Sqlite.MigrationPattern
+import Belay.Sqlite.MigrationPatternFresh
+import Belay.Sqlite.MigrationPatternLaws
 import Belay.Sqlite.ExecutionSpecifications
 import Belay.Sqlite.Success
 import Belay.Sqlite.ProgramSuccess
