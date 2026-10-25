@@ -53,13 +53,21 @@ that the user writes is not such a {lit}`sorry`. -/
 def failedDefinition (environment : Environment) (name : Name) : Bool :=
   ((environment.find? name).bind (·.value?)).any (·.hasSyntheticSorry)
 
-/-- Elaborate the term as a {name}`Database` and give its value. It gives
-{lean}`(none : Option Database)`, without a new error, when the term has an error or uses a
+/-- A database term that Lean evaluated while the file elaborates: the closed term and its value.
+The editor reads the origin of the tables from the term ({lit}`originsOf`). -/
+structure EvaluatedDatabase where
+  /-- The closed term of the database after the elaboration. -/
+  term : Expr
+  /-- The value of the term. -/
+  value : Database
+
+/-- Elaborate the term as a {name}`Database` and give its term and value. It gives
+{lean}`(none : Option EvaluatedDatabase)`, without a new error, when the term has an error or uses a
 definition with an error, also through a local definition or other definitions of the file ({name}`reachedConstants`,
 {name}`failedDefinition`), because Lean already shows that error. It is an error at the term
 when the term depends on a variable, when it is not fully known, when it uses a noncomputable
 definition, or when Lean cannot evaluate it. -/
-def evaluateDatabase (term : Syntax) : TermElabM (Option Database) := do
+def evaluateDatabase (term : Syntax) : TermElabM (Option EvaluatedDatabase) := do
   let value ← elabTermEnsuringType term (mkConst ``Database)
   synthesizeSyntheticMVarsNoPostponing
   let value ← zetaReduce (← instantiateMVars value)
@@ -76,7 +84,7 @@ def evaluateDatabase (term : Syntax) : TermElabM (Option Database) := do
   if let some name := reached.find? (isNoncomputable environment) then
     throwErrorAt term m!"sql! cannot compute the database, because it uses the noncomputable \
       definition {name}; use sql, which resolves when it runs, or a database that Lean can compute"
-  try some <$> evaluateDatabaseExpr value
+  try return some { term := value, value := ← evaluateDatabaseExpr value }
   catch error =>
     throwErrorAt term m!"sql! could not evaluate the database term: {error.toMessageData}; \
       use sql, which resolves when it runs, or a database that Lean can compute"

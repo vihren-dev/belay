@@ -2,6 +2,7 @@ import Belay.Sqlite.SqlTableInfo
 import Belay.Sqlite.SqlTableSlots
 import Belay.Sqlite.SqlStatementContexts
 import Belay.Sqlite.SqlTableDescription
+import Belay.Sqlite.SqlTableOrigins
 
 set_option doc.verso true
 
@@ -25,6 +26,17 @@ structure KnownDatabase where
   /-- Where the {lit}`CREATE TABLE` of a table of the database at the start is written, when the
   caller knows it. A caller that knows no origin keeps the default. -/
   origin? : Identifier → Option DeclarationLocation := fun _ => none
+
+/-- What the editor knows about the database that a term names: the origins recorded for the
+declaration that holds a {lit}`db!` term ({name}`originsOf`), and the declaration as the owner.
+A term with no recorded origin, such as a computed database, keeps its constant as the owner and
+gets no jump. -/
+def KnownDatabase.ofTerm (environment : Lean.Environment) (term : Lean.Expr) : KnownDatabase :=
+  match originsOf environment 64 term with
+  | some entry =>
+    { owner := some entry.declaration,
+      origin? := fun name => (entry.origins.find? (·.table == name.folded)).map (·.location) }
+  | none => { owner := term.consumeMData.constName? }
 
 /-- The hover text and the origin of the table at a place of a statement: nothing when the
 context's catalog has no table of that name. The origin is dropped when an earlier statement of

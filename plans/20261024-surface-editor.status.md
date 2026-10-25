@@ -250,3 +250,31 @@ statement form, so a new form fails to compile instead of getting no information
 `mayChangeRows` now counts every statement that creates, drops or alters a catalog
 object, because a dropped view or index moves the catalog positions that index the
 stored rows; the test adds a view dropped before a populated table.
+
+### Part 2a, commit 2: table origins and navigation — 2026-10-25
+
+- `SqlTableOrigins` holds the surface environment extension `tableOriginsExtension`:
+  one entry for each declaration whose value is a `db!` term, with the folded
+  table name and the source range of the table name in its last `CREATE TABLE`.
+  The entry is outside the database value and the script value. `db!` records it
+  (`registerTableOrigins`) for the declaration it elaborates in (`getDeclName?`),
+  only for tables of the final catalog, and none for a script with `ROLLBACK`.
+- `sql!` reads it through `KnownDatabase.ofTerm`: the elaborated database term
+  must be a constant, or constants that stand for each other, whose value holds
+  the recorded literal. A computed database (`id db`) has no origin and no jump.
+  `emitSqlEditorInfo` drops the origin for a name that an earlier statement of the
+  script created or dropped. `evaluateDatabase` now returns the term with the
+  value (`EvaluatedDatabase`).
+- Finding: the recorded proof argument of the `db!` term does not survive
+  `def` elaboration (Lean abstracts nested proofs), so the match compares the
+  database literal only.
+- Alternative kept for the report: `db!` already marks its term with `withSource`
+  metadata; the task asks for an extension, so navigation does not use it.
+- Test: `tests/surface_editor_origins_test.py` (real server, definition requests):
+  two databases with an `items` table keep distinct origins, a constant that
+  names another database, a helper module compiled to an `.olean` and imported,
+  the last `CREATE` after a `DROP` inside a `db!` text, no jump for a computed
+  database, no jump after `DROP`/`CREATE` inside a `sql!` script, owner in the hover.
+  `tests/surface_support.py` and `tests/lean_server_support.py` got the module
+  name, the helper-module compile and `LEAN_SRC_PATH` for it. Nix results follow
+  at the end of part 2a.

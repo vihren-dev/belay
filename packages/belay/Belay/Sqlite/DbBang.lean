@@ -1,5 +1,6 @@
 import Belay.Sqlite.SqlTerm
 import Belay.Sqlite.DbDiagnostics
+import Belay.Sqlite.SqlTableOrigins
 
 set_option doc.verso true
 
@@ -57,7 +58,9 @@ def parameterDiagnostic (parameter : Translation.Parameter) : Diagnostic :=
 of {name}`runDiagnostics` at its range of the text ({name}`textRange`). After an error, the term
 is a {lit}`sorry` that Lean shows no second error for. Otherwise the term is
 {name}`databaseTerm` of the database, and its error is an error at the literal. A successful value retains its source text as
-replay metadata, which replay consumers validate against the actual database. -/
+replay metadata, which replay consumers validate against the actual database. It also records, for the
+declaration that holds the term, where each table of the final catalog is created
+({name}`registerTableOrigins`), outside the value. -/
 @[term_elab dbBangTerm]
 def elabDbBang : TermElab := fun term _ => do
   let literal := term[1]
@@ -72,6 +75,8 @@ def elabDbBang : TermElab := fun term _ => do
     return ← mkLabeledSorry (mkConst ``Database) (synthetic := true) (unique := false)
   match databaseTerm connection.state.database with
   | .error message => throwErrorAt literal message
-  | .ok database => return withSource databaseSourceKey literal text (← getFileName) database
+  | .ok database =>
+    registerTableOrigins (.literal literal text) (items.toList.map (·.statement)) connection.state.database.catalog database
+    return withSource databaseSourceKey literal text (← getFileName) database
 
 end Belay.Sqlite
