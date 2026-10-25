@@ -137,6 +137,7 @@
     "tests/success_theorems_test.py",
     "tests/surface_parameters_test.py",
     "tests/surface_editor_test.py",
+    "tests/surface_editor_tables_test.py",
     "tests/surface_programs_test.py",
     "tests/surface_parser_test.py",
     "tests/surface_layers_test.py",

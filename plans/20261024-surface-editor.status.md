@@ -219,3 +219,26 @@ model-side name trace becomes its own model task. The task file now states the
 trace and splits part 2 into part 2a (table-level behavior, no trace) and part
 2b (column, affinity, correction and DQS behavior, which consumes the trace).
 Part 2a progress is recorded below, one entry per commit.
+
+### Part 2a, commit 1: table hovers in `sql!` — 2026-10-25
+
+- New modules (all in `packages/belay/Belay/Sqlite/`, each under 200 lines):
+  `SqlTableSlots` (table-name places by fixed syntax path, checked against the
+  name that the syntax holds, `WITH`-defined names excluded), `SqlStatementContexts`
+  (catalog and row knowledge per statement: rows known until the first statement
+  that can write), `SqlTableDescription` (hover text), `SqlTableInfo` (the Lean
+  info tree node: hover, optional definition target, `property` token) and
+  `SqlEditorInfo` (the shared entry point `emitSqlEditorInfo`).
+- `SqlBang` calls the entry point after it logs the resolution errors. Plain `sql`
+  has no database and so no table information.
+- Finding on semantic tokens: Lean derives tokens from term information only for
+  local variables (`variable`) and for the field of a projection (`property`,
+  syntax kind `identProjKind`). A table name uses the `property` token through
+  that node kind. There is no token type for tables.
+- Tests: `tests/surface_editor_tables_test.py` (real server, LF and CRLF:
+  hover text and range, row counts before and after a write, `CREATE`/`DROP`
+  sequence, quoted names, CTE shadowing with no information, plain `sql` and an
+  escaped literal with no information, `property` token, UTF-16 ranges after a
+  non-BMP character). The helpers `position`, `hover` and `semantic_tokens` moved
+  to `tests/lean_server_support.py`. The test is in the `surface` suite of
+  `tests/nix_suites.json`. Nix results follow at the end of part 2a.

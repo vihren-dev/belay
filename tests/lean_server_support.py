@@ -119,3 +119,36 @@ class LeanServer:
                 self.process.stdin.close()
             if self.process.stdout is not None:
                 self.process.stdout.close()
+
+
+def position(source: str, spelling: str, occurrence: int = 0) -> dict[str, int]:
+    """Locate an exact fixture occurrence in LSP UTF-16 units, including non-BMP and CRLF."""
+    offset = -1
+    for _ in range(occurrence + 1):
+        offset = source.index(spelling, offset + 1)
+    before = source[:offset]
+    return {"line": before.count("\n"),
+            "character": len(before.rsplit("\n", 1)[-1].encode("utf-16-le")) // 2}
+
+
+def hover(server: LeanServer, uri: str, start: dict[str, int]) -> dict[str, object]:
+    """Request the SQL occurrence itself rather than its surrounding Lean term."""
+    result = server.request("textDocument/hover", {"textDocument": {"uri": uri}, "position": start})
+    assert isinstance(result, dict), result
+    return result
+
+
+def semantic_tokens(server: LeanServer, uri: str) -> list[tuple[int, int, int, str]]:
+    """Decode the real server's relative token positions and advertised legend."""
+    result = server.request("textDocument/semanticTokens/full", {"textDocument": {"uri": uri}})
+    assert isinstance(result, dict) and isinstance(result["data"], list), result
+    data = result["data"]
+    assert all(isinstance(item, int) for item in data) and len(data) % 5 == 0, data
+    line, column = 0, 0
+    tokens: list[tuple[int, int, int, str]] = []
+    for i in range(0, len(data), 5):
+        line_delta, column_delta, length, kind, _ = data[i:i + 5]
+        line += line_delta
+        column = column_delta if line_delta else column + column_delta
+        tokens.append((line, column, length, server.legend[kind]))
+    return tokens

@@ -11,7 +11,7 @@ import pytest
 from tests.lean_server_support import LeanServer
 from tests.runtime_support import run_command
 from tests.surface_execution_test import ALLOWED_PROOF_AXIOMS
-from tests.surface_editor_test import position
+from tests.lean_server_support import position
 from tests.surface_replay_test import native_replay, native_rows
 from tests.surface_support import surface_command
 
