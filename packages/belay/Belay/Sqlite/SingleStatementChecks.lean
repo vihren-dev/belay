@@ -66,7 +66,8 @@ theorem not_error_of_single {output selected : Output} {next : Value} (choice : 
   · cases output <;> simp at choice <;> simp [Output.isError]
 
 /-- For every database and every two counters: the resolution state of the idle connection does not
-depend on the counters. -/
+depend on the counters. Proof sketch: the resolution state reads only the database of the connection
+and the settings that the idle connection fixes, so both sides unfold to the same value. -/
 theorem connection_resolveState (raw : Database.Raw) (first second : Counters) :
     (raw.connection first).resolveState = (raw.connection second).resolveState := rfl
 

@@ -322,8 +322,7 @@ more cases, each checked at its source position with the real compiler output: a
 comment-only script, `PRAGMA foreign_keys = 1` (a set PRAGMA) all report that the script must be one
 read-only statement at the assertion term; `$missing` reports the Lean variable at the `$`; a grammar
 error is reported at the offset of the string; `EXPLAIN` reports the unsupported command wrapper at
-the start of the SQL. Positions were checked with `lake lean` on a scratch file (the pytest needs the
-Nix runtime root). Not done: diagnostics for `before` (Part 1b).
+the start of the SQL. Nix verification of these cases: pending until the Part 2 end gates. Not done: diagnostics for `before` (Part 1b).
 
 ### Unit 5: a program that uses a result (`addCustomer_adds`)
 
