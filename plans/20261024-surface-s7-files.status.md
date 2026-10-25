@@ -193,3 +193,9 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   derivation found a parse error that dev-build did not; run `lake build belay-sql-check`
   after edits of `BelaySqlCheck.lean`. Focused Nix surface run (16 passed, 98 deselected,
   38.29 s) at `/nix/store/0r8zvgcv5mfh5q3y1dy893xh04cy4m8m-sqlite-verifier-test-surface-1`.
+- 2026-10-25: review `20261025T065939Z-426fecad` (should, R11): added the unreadable
+  compiled-module case to `test_missing_files_and_missing_compiled_modules`; Nix surface run
+  (1 passed, 113 deselected, 9.10 s) at
+  `/nix/store/nzqzyma78kp58bf5nhgn4ayc5znffy72-sqlite-verifier-test-surface-1`. The unknown
+  and ambiguous package branches stay untested (deferred): no real build reaches them
+  before the module walk fails.

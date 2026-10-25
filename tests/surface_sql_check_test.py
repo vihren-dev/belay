@@ -89,8 +89,8 @@ def test_a_stale_source_is_reported_before_any_rebuild(runtime_root: Path, tmp_p
 
 def test_missing_files_and_missing_compiled_modules(runtime_root: Path, tmp_path: Path) -> None:
     """`sourceState` and `walkModule` (`SqlCheckReport.lean`, `BelaySqlCheck.lean`): a deleted SQL file is a stale
-    source; a library whose compiled module is gone is an explicit error with the build command, and not a report
-    of zero sources."""
+    source; a library whose compiled module is gone or damaged is an explicit error with the build command, and not a
+    report of zero sources."""
     installed, package = make_consumer(runtime_root, tmp_path)
     build_all(installed, package)
     (package / "sql/b.sql").unlink()
@@ -100,6 +100,9 @@ def test_missing_files_and_missing_compiled_modules(runtime_root: Path, tmp_path
         artifact.unlink()
     result = run_checker(installed, package, "--library", "Alpha")
     assert result.returncode == 2 and "library Alpha: module Alpha has no compiled file" in result.stderr and "run lake build Alpha to compile it" in result.stderr, result.diagnostic()
+    (package / ".lake/build/lib/lean/Beta.olean").write_bytes(b"not a compiled module")
+    result = run_checker(installed, package, "--library", "Beta")
+    assert result.returncode == 2 and "library Beta: cannot read the compiled module Beta" in result.stderr and "run lake build Beta" in result.stderr, result.diagnostic()
 
 
 def test_dependency_records_are_checked_against_the_dependency_files(runtime_root: Path, tmp_path: Path) -> None:
