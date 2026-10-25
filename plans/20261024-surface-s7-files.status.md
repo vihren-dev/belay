@@ -276,3 +276,10 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   `just dev-build` and `lake build Belay belay-sql-check` passed; focused Nix surface run
   (61 passed, 95 deselected, 382.17 s) at
   `/nix/store/kz3hp45026lmwa1ij0c8lxkhql7cm9r0-sqlite-verifier-test-surface-1`.
+- 2026-10-25: post-review gates of the S5 integration (merge `cdca869a`, record fixed in
+  `55849656`), all through Nix: `just test-full` passed (main suite 472 passed, 71 deselected,
+  49 subtests; surface suite 156 passed) with reports at
+  `/nix/store/rmkrlijn1iarvfgn49pv5apfh43p23m9-sqlite-verifier-test-reports`; `just verdict`
+  passed at `/nix/store/gldj7zm5hv9zah0jjif51dqzsdzyrhy3-sqlite-verifier-verdict`;
+  `just test-nix` passed (71 passed, 1579 deselected); `just test-scheduled-checks` passed at
+  `/nix/store/yxscwaji03qy583y9cm5l6y2dvc251rq-sqlite-verifier-scheduled-check-reports`.
