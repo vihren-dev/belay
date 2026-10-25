@@ -53,6 +53,8 @@ task file. Relevant sources: `Resolution/Resolve.lean`, `Resolution/ScopeNames.l
   are held back, uncommitted, until the owner decides between the two designs.
 - 2026-10-25: review 5 (`4ddbbd41`, data types) gave one must: the file had 207
   lines. It now has 199; recorded as fixed.
+- 2026-10-25: review 6 (`c483d59e`, refactor) found nothing. Work stops here until the
+  owner decides; the held walker modules are in `build/held-walkers/` (not tracked).
 
 ## Implementation plan (informal)
 
