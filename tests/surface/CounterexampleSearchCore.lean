@@ -5,7 +5,18 @@ import Belay.Sqlite.CheckCandidates
 open Belay.Sqlite Lean Elab Term Meta
 
 /-! The shared checker must certify either sign of the original claim and roll back
-speculative elaboration work. No finite candidate sequence proves a universal fact. -/
+speculative elaboration work. Its internal reifiers must preserve ordinary imported display.
+No finite candidate sequence proves a universal fact. -/
+
+/-- info: [Except.ok (Belay.Sqlite.Model.Value.integer 7)] -/
+#guard_msgs in
+#eval ([Except.ok (.integer 7)] : List (Except String Value))
+
+-- Except reification must also remain unavailable for types unrelated to SQL output.
+run_meta do
+  let type := mkApp2 (mkConst ``Except [.zero, .zero]) (mkConst ``String) (mkConst ``Nat)
+  if (← synthInstance? (mkApp (mkConst ``ToExpr [.zero]) type)).isSome then
+    throwError "the SQL checker exported a general Except reifier"
 
 namespace SearchCoreFixture
 

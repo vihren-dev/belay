@@ -72,19 +72,20 @@ theorem resolveInsert_named (context : ResolveContext) (catalog after : Catalog)
 
 /-- For every INSERT, with any subqueries and shapes, whose VALUES rows all have the width of
 the first row: when no
-table has the folded name, the resolution is {lit}`no such table`, and the catalog
+table or view has the folded name, the resolution is {lit}`no such table`, and the catalog
 is unchanged. -/
 theorem resolveInsert_missing (context : ResolveContext) (catalog : Catalog)
     (tableName : Identifier) (names : Option (List Identifier)) (rows : List (List Syntax.Expr))
     (conflicts : List Syntax.ConflictClause) (algorithm : Option ConflictAlgorithm)
     (returning : List Syntax.ResultColumn) (subqueries : List Resolved.Query) (shapes : SubqueryShapes)
     (same : ∀ row ∈ rows, row.length = (rows.head?.map List.length).getD 0)
-    (missing : catalog.findTable tableName = none) :
+    (missing : catalog.findTable tableName = none)
+    (notView : catalog.findView tableName = none) :
     resolveInsert context catalog tableName names rows conflicts algorithm returning subqueries shapes =
       .ok (.prepareError (.noSuchTable tableName), catalog) := by
   have consistent : (rows.any fun row => row.length != (rows.head?.map List.length).getD 0) = false := by
     simpa using same
   unfold resolveInsert
-  simp [consistent, missing, prepareError]
+  simp [consistent, missing, notView, prepareError]
 
 end Belay.Sqlite.Model

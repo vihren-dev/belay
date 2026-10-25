@@ -66,11 +66,12 @@ resolve is {name}`RestrictionKind.addColumnCheckError`, as SQLite reports it whi
 statement runs. A default that does not fit the column's strict type
 ({name}`strictDefaultFits`) is {name}`RestrictionKind.addColumnStrictType`. Its
 {lit}`REFERENCES` constraints are its foreign keys, and a deferral clause sets whether the last
-of them so far is deferred. -/
+of them so far is deferred. An unexpanded view target is a model restriction. -/
 def resolveAddColumn (context : ResolveContext) (catalog : Catalog)
     (tableName : Identifier) (definition : Syntax.ColumnDefinition) : StatementResolution :=
   match catalog.findTable tableName with
-  | none => prepareError catalog (.noSuchTable tableName)
+  | none => if (catalog.findView tableName).isSome then restrict [0] .subqueryHere
+      else prepareError catalog (.noSuchTable tableName)
   | some (position, table) =>
     if reservedName tableName then prepareError catalog (.expression (.tableMayNotBeAltered tableName))
     else if table.columns.length + 1 > context.profile.limits.columns then

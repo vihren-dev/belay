@@ -20,7 +20,7 @@ mutual
 operand of its name ({name}`Scope.resolveName`, {name}`Scope.nameOperand`): one column,
 or the coalesce of the columns that full joins merged; two columns that no join merged
 are SQLite's {lit}`ambiguous column name: %s`. With none: a rowid name
-({name}`rowidName`) is a model restriction when a source with a rowid is in scope
+({name}`rowidName`) is a model restriction when a source with visible names and a rowid is in scope
 ({name}`ScopeSource.hasRowid`), because SQLite reads the rowid; a name written in double quotes is a string literal when {lit}`dqs` is on;
 an unquoted {lit}`TRUE` or {lit}`FALSE` is the integer 1 or 0; else it is SQLite's
 {lit}`no such column: %s`, also for {lit}`[true]`, which only quotes. A qualified name {lit}`x.c` is column
@@ -53,7 +53,7 @@ def resolveOperand (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (misus
   | .identifier name quote => match scope.resolveName name with
     | .found _ reads => scope.nameRead reads
     | .missing =>
-      if rowidName name && scope.any (·.hasRowid) then .error (.restriction [] .rowidName)
+      if rowidName name && scope.any (fun source => source.namesVisible && source.hasRowid) then .error (.restriction [] .rowidName)
       else if quote == .double && dqs then .ok (.literal (.text name.bytes), none)
       else if quote == .none && booleanKeywordName name then
         .ok (.literal (.integer (if name.isKeyword (bytes! "true") then 1 else 0)), none)

@@ -19,8 +19,8 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "  | .index found => .index { found with table := keptBelow positions found.table }",
         "  | .index found => .index found"),
     "if_exists_reports_missing": (DROPS,
-        "    | none => if ifExists then .ok (.drop [], catalog.drop []) else prepareError catalog (.noSuchTable name)",
-        "    | none => prepareError catalog (.noSuchTable name)"),
+        "      else if ifExists then .ok (.drop [], catalog.drop []) else prepareError catalog (.noSuchTable name)",
+        "      else prepareError catalog (.noSuchTable name)"),
 }
 """Each mutant: the file under `packages/`, the exact text it changes, and the replacement.
 The names follow the list in the task of slice 7: a DROP TABLE that keeps the table's

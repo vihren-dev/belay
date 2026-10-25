@@ -27,7 +27,7 @@ operand. A name is the {lit}`AS` alias, else the defined name of a referenced co
 ({name}`definedName`), else the source text as written. -/
 def resolveResultColumn (dqs : Bool) (scope : Scope) (shapes : SubqueryShapes) (column : Nat) :
     Syntax.ResultColumn → Except ValueIssue (List (Resolved.Output × String × Option Affinity))
-  | .star => if scope.inner.isEmpty then .error (.prepare .noTablesSpecified) else
+  | .star => if !(scope.inner.any (·.namesVisible)) then .error (.prepare .noTablesSpecified) else
       scope.visible.mapM fun (position, defined) =>
         (fun (operand : Operand) => (.scalar operand.1, defined.name.text, operand.2)) <$> scope.starOperand position defined
   | .sourceStar source => (sourceStarColumns scope source).map fun columns =>

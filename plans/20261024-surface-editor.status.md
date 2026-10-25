@@ -18,7 +18,8 @@ The read-only editor/doc-block audit found no SQL hover/provenance registry,
 name-fix emitter, trap linter or actual LSP fixture in the inspected surface.
 Existing translator spans, parameter plans, resolver scope/affinity and native
 Lean info/code-action APIs are the reusable inputs. No server feasibility
-probe has run; compiler-source inspection alone is not acceptance evidence.
+probe had run at specification time. The first-unit real-server Nix results
+are recorded below; compiler-source inspection alone is not acceptance evidence.
 
 The owner kept the current DQS-on/FK-off defaults. The separate private guide
 correction implements that decision. Doc-block syntax and S7 formatting have
@@ -98,12 +99,22 @@ The test runtime correction is in snapshot
   Existing `GuideParameters` expectations are unchanged. Logs and the control
   are under `build/agent-logs/`.
 
-The first coherent source commit awaits integration of that S5 repair and a
-combined focused Nix check of the editor, guide parameters and replay/search
-compatibility. Root has authorized a new merge of the frozen snapshots, without
-rebasing shared ancestors. No process is live; the heavy slot is released.
-Root's source read found no semantic issue, but it is not independent review.
-Claude review remains blocked by the reported expired login; no retry was made.
+The S5 repair is checked at source `b5f15c67` and reviewed without findings in
+`20261025T001733Z-b5f15c67`; its immutable evidence head is
+`025c878abedbf58927d8abe37256f15b65ac14f9`. The new merge `7a0f08fd` joins that
+head with editor snapshot `31f35d225c1f332f8c1a526b9eff9cafa36a76e4`, preserving
+both histories with no conflicts. The repair parent also carries the reviewed
+stored-view/search integration. Five editor source/fixture files are byte-identical
+to the frozen editor parent; the only changes from the repair parent are the
+known editor implementation, task and review records. Both fixture registrations
+are retained. The comparison record is
+`build/agent-logs/editor-repair-merge-equality.json`.
+
+The combined development build and focused Nix check of the editor, guide
+parameters, replay/search and layers are queued. No combined acceptance is claimed
+yet. No process is live and no heavy slot is reserved. Root's source read found
+no semantic issue, but it is not independent review. Reviewer access is restored;
+the coherent source commit and its independent review follow the combined checks.
 First-part full/verdict acceptance follows its independent review. Schema facts,
 table origins, corrections and warnings remain in the second part, together
 with completed query-source integration. The overall task remains OPEN.

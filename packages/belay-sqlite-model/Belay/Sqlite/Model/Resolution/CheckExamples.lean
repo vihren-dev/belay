@@ -132,7 +132,7 @@ def errorOf (statement : Syntax.Statement) : Option PrepareError :=
   | some { entry := .table table, .. } => table.allForeignKeys ==
     [{ table := name! "p", columns := [0], referenced := [], onDelete := .cascade, onUpdate := .setNull },
      { table := name! "q", columns := [1, 0], referenced := [name! "m", name! "n"], onDelete := .noAction, onUpdate := .restrict }]
-  | some { entry := .index _, .. } | some { entry := .trigger _, .. } | none => false)
+  | some { entry := .index _, .. } | some { entry := .view _, .. } | some { entry := .trigger _, .. } | none => false)
 #guard (PrepareError.expression (.unknownForeignKeyColumn (name! "zz"))).message ==
   "unknown column \"zz\" in foreign key definition"
 -- The CHECK resolves after the other checks of the definition.

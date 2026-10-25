@@ -26,7 +26,7 @@ def Resolved.Statement.fireRequest (keys : Bool) : Resolved.Statement → Option
 def Catalog.triggersOn (catalog : Catalog) (table : Nat) : Bool :=
   catalog.any fun object => match object.entry with
     | .trigger trigger => (catalog.findTable trigger.table).any (·.1 == table)
-    | .table _ | .index _ => false
+    | .table _ | .view _ | .index _ => false
 
 /-- The tables that the requests write, with the writes that they cause through the programs
 that they fire and their {name}`FireRequest.followUps`, each request once; none when requests

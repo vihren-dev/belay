@@ -14,10 +14,10 @@ after the first with the name to merge it by its own join, else
 
 namespace Belay.Sqlite.Model
 
-/-- Every column of the folded name in the scope, in order: the source's name, the
+/-- Every column of the folded name in a source with visible names, in order: the source's name, the
 column's name as declared, and whether the source's join merged it. -/
 def Scope.namedColumns (scope : Scope) (name : Identifier) : List (Identifier × Identifier × Bool) :=
-  scope.filterMap fun source => (columnPosition source.columns name).bind fun index =>
+  (scope.filter (·.namesVisible)).filterMap fun source => (columnPosition source.columns name).bind fun index =>
     source.columns[index]?.map fun column => (source.name, column.name, source.merged.contains index)
 
 /-- A merged name, as written, when every left column of the name after the first is
@@ -28,12 +28,12 @@ def usingReferenceChecked (left : Scope) (name : Identifier) : Except ValueIssue
   if ((left.namedColumns name).drop 1).all (·.2.2) then .ok name
   else .error (.prepare (.ambiguousUsingReference name))
 
-/-- The positions in the joined row of the scope of every column of the folded name, in
+/-- The positions in the joined row of the scope of every column of the folded name in a visible source, in
 order. -/
 def Scope.namedPositions (scope : Scope) (name : Identifier) : List Nat :=
-  scope.flatMap fun source => ((columnPosition source.columns name).map (source.offset + ·)).toList
+  (scope.filter (·.namesVisible)).flatMap fun source => ((columnPosition source.columns name).map (source.offset + ·)).toList
 
-/-- Whether a source of the scope has a column of the folded name. -/
+/-- Whether a source with visible names has a column of the folded name. -/
 def Scope.hasColumn (scope : Scope) (name : Identifier) : Bool :=
   !(scope.namedPositions name).isEmpty
 
@@ -51,7 +51,7 @@ the name, BINARY when the left input has none. SQLite gives a coalesce of the le
 columns the collation of its first argument, and a column always has a collation, so the
 column of the joined source never decides it (checked on native 3.51.0). -/
 def Scope.namedCollation (scope : Scope) (name : Identifier) : Collation :=
-  ((scope.find? fun source => (columnPosition source.columns name).isSome).bind fun source =>
+  ((scope.find? fun source => source.namesVisible && (columnPosition source.columns name).isSome).bind fun source =>
     (columnPosition source.columns name).bind fun index => source.columns[index]?.map (·.collation)).getD .binary
 
 end Belay.Sqlite.Model

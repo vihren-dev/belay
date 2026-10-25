@@ -71,7 +71,7 @@ def rowS (i r t b a : Expr) : Syntax.Statement := insertInto (name! "s") [i, r, 
 #guard (match tables.head? with
   | some { entry := .table table, .. } =>
     table.strict && table.columns.map (·.strictType) == [some .integer, some .real, some .text, some .blob, some .any]
-  | some { entry := .index _, .. } | some { entry := .trigger _, .. } | none => false)
+  | some { entry := .index _, .. } | some { entry := .view _, .. } | some { entry := .trigger _, .. } | none => false)
 -- Values that fit after affinity: text that reads as an integer, an integer as REAL, a number as TEXT.
 #guard rowsAt 0 [rowS (.string [32, 55, 32]) (.numeric "4") (.numeric "5") (.blob [0]) (.string [54])] ==
   some [[.integer 7, .real (4.0 : Float).toBits, .text [53], .blob [0], .text [54]]]
@@ -112,10 +112,10 @@ def keyColumn (declaredType : String) : ColumnDefinition :=
   some (1, .constraintViolation, some 0)
 #guard (match (catalogOf (schema [.createTable (name! "k") [keyColumn "TEXT"] [] strict])).head? with
   | some { entry := .table table, .. } => table.columns.map (·.notNull) == [true]
-  | some { entry := .index _, .. } | some { entry := .trigger _, .. } | none => false)
+  | some { entry := .index _, .. } | some { entry := .view _, .. } | some { entry := .trigger _, .. } | none => false)
 #guard (match (catalogOf (schema [.createTable (name! "k") [keyColumn "INTEGER"] [] strict])).head? with
   | some { entry := .table table, .. } => table.columns.map (·.notNull) == [false] && table.rowidAlias == some 0
-  | some { entry := .index _, .. } | some { entry := .trigger _, .. } | none => false)
+  | some { entry := .index _, .. } | some { entry := .view _, .. } | some { entry := .trigger _, .. } | none => false)
 
 /-- The prepare error of one statement from {name}`tables`, or none. -/
 def errorOf (statement : Syntax.Statement) : Option PrepareError :=
