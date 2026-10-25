@@ -1,7 +1,7 @@
 # Status: S7 SQL files and build freshness
 
-Created 2026-10-24. Status: DONE on 2026-10-25 (both acceptance parts; integration with S5
-is open, see the `SqlTerm.variableValue` entry).
+Created 2026-10-24. Status: DONE on 2026-10-25 (both acceptance parts). Integrated with S5
+on 2026-10-25, see the last entries.
 Task: [task file](20261024-surface-s7-files.task.md).
 Specs: ADR17 S7/D6; ADR16 surface/tool boundary.
 
@@ -262,8 +262,9 @@ their own reviewed task. Neither is silently excluded by this task boundary.
     `surface_editor_test.py`.
   - `plans/20261024-surface-editor.status.md`, `plans/20261025-fromless-mutant-repair.{status,task}.md`
     and `plans/20261025-mutant-failure-diagnostics.status.md`: both lines held a version of
-    each file, and the S7 version was an earlier state of the same file (status OPEN, before
-    the S5 line recorded completion), so the S5 version is kept whole.
+    each file, and the S7 version was an earlier state of the same file (it lacks the later progress
+    that the S5 line recorded; the fromless-mutant repair is complete there, and the editor and
+    mutation-diagnostics records stay as the S5 line has them), so the S5 version is kept whole.
   - Merged without a conflict but checked: the `lakefile.lean` globs (both module lists),
     `Belay/Sqlite.lean`, `packages/belay/README.md`, the layer test.
   - The `SqlTerm.variableValue` adaptation: `variableValue` returns the original and the coerced
@@ -271,6 +272,7 @@ their own reviewed task. Neither is silently excluded by this task boundary.
     optional `SqlEditorSource`; `scriptTerm` passes the literal, and `fileScriptTerm` passes none,
     because a file's text is not a Lean literal, so files get no parameter hover. Other
     behavior is unchanged.
-  Checks: `just dev-build` and `lake build Belay belay-sql-check` passed; focused Nix surface run
+  Open integration point from the S7 entries above: closed by this change. Checks:
+  `just dev-build` and `lake build Belay belay-sql-check` passed; focused Nix surface run
   (61 passed, 95 deselected, 382.17 s) at
   `/nix/store/kz3hp45026lmwa1ij0c8lxkhql7cm9r0-sqlite-verifier-test-surface-1`.
