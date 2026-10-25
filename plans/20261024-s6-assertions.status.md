@@ -398,7 +398,7 @@ union. Adaptations for the before-context changes: my fixtures call the S4 query
 `AccountSignupQueries`, `ExpansionCountQueries`). `tests/surface/S6Footprints.lean`: the refusal of
 `before` (a `guard_msgs` example) is now a plain example from the before-context line; its docstring
 says that the observation reads `before` and the ordinary run refuses it. Nix verification of the
-merge: pending until the Part 1b end gates.
+merge: verified by the Part 1b end gates (see "Part 1b end gates" below).
 
 ### Part 1b unit 1: the two-state assertion layer
 
@@ -430,7 +430,7 @@ databases). Both share `check_query_shape`. The new cases are in
 `tests/surface_assertions_test.py` (seven rows, at the source position of the assertion); the
 kernel fixture is `tests/surface/TwoStateAssertionExamples.lean` (ten reports) with the test
 `test_two_state_assertions_follow_the_start_and_the_reached_database`. `#explain` knowledge of the
-two-state claims is optional and not done. Nix verification: pending until the Part 1b end gates.
+two-state claims is optional and not done. Nix verification: see "Part 1b end gates" below.
 
 Guide change to make (not edited): the paragraph about `before` says the library "fixes the start
 in the precondition"; for a fresh run the claim `program ensuresFrom start => post` (the primitive
@@ -465,7 +465,7 @@ files and the S4 files are not edited):
   first column is the rowid alias, so equal keys are one row).
 
 Belay package: `Sql.ifOk_send_plainDelete` (`PlainDeleteEffect.lean`, the mirror of `Sql.ifOk_send_plainInsert`)
-and `FreshEnsuresFrom.ifOk_iff` (in `TwoStateAssertions.lean`). Nix verification: pending until the Part 1b end
+and `FreshEnsuresFrom.ifOk_iff` (in `TwoStateAssertions.lean`). Nix verification: see "Part 1b end gates" below.
 gates.
 
 ### Part 1b unit 4: the purge frame claim and its fixtures
@@ -531,3 +531,11 @@ theorem purge_frame (c now : Value) :
 Review 20261025T214355Z-8134b9e2 (fixtures commit): exit 0, one should finding resolved. The OR counterexample
 `or_variant_breaks_the_frame_claim` now checks `allOk` and the failed frame assertion on the same final context of
 the OR purge (`purgeOrFinal`).
+
+### Part 1b end gates (2026-10-25), tree of commit 35529cfd (review records only after it)
+
+- `just test-full` (Nix): the first run stopped with exit 124 at the fixed 1500 s limit of the Nix test build, without
+  a test failure; the rerun passed (exit 0). Output: `/nix/store/4ajvm45f719w23973f043ngzpr9mvhx8-sqlite-verifier-test-reports`.
+  It includes `test_purge_frame_claim_over_every_database` and the other surface assertion examples.
+- `just verdict` (Nix): exit 0. Output: `/nix/store/j6n12zbqaaigp2ilmmis9f506q2r03qc-sqlite-verifier-verdict`.
+- Final review of the last code commit 35529cfd: no findings (20261025T214627Z-35529cfd).
