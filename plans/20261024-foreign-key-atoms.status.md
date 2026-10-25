@@ -5,10 +5,10 @@ corrections) is accepted. Part 2's row/action/trigger induction and conditional
 DML/run and CREATE/plain-DROP laws are integrated with the enforced-DROP proof unit.
 Their focused Nix gate passed; integration review `20261025T001914Z-dd60f94c` found no musts.
 The ADD COLUMN execution correction, the ADD COLUMN preservation laws and the run
-contracts of the schema statements are implemented and Nix-checked. The matrix is recorded in
-ADR 0022 with the fixtures for RESTRICT, SET DEFAULT, deferred keys and the DDL necessity
-examples (unit 4). Part-2 acceptance (`just test-full`, `just verdict`) and separate
-corpus-v54 evidence remain open.
+contracts of the schema statements are implemented and Nix-checked. The matrix record in
+ADR 0022 and the fixtures for RESTRICT, SET DEFAULT, deferred keys and the DDL necessity
+examples (unit 4) are pending, as are part-2 acceptance (`just test-full`, `just verdict`)
+and separate corpus-v54 evidence.
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
 Inspected base: PR #239, `98a07bfe`, in `vihren-dev/sqlite-verifier`.
@@ -23,7 +23,7 @@ correction is implemented in the commit "Refuse ADD COLUMN of a REFERENCES colum
 a non-NULL default on a populated table" (details in the section "ADD COLUMN execution
 correction (part 2, unit 1)" below); its focused Nix gates passed. The ADD COLUMN
 preservation laws (unit 2) and the unified DDL/run contract (unit 3) are implemented. The matrix
-is recorded in unit 4. The
+and the action fixtures (unit 4) are pending. The
 task-amendment review `20261025T015343Z-fc22761c` found no musts and one R19 should
 (name the correction in the acceptance-part list); that is done and is historical.
 
@@ -1008,3 +1008,9 @@ change a prediction.
 Review `20261025T072815Z-442c93d8` of the refactor answering review `20261025T072539Z-d6a6feb4`:
 no findings. That review had one must (R3, proof sketch of `getD_append_below`) and one should
 (R19, the opening summaries); both are fixed in `442c93d8`.
+
+Fixture split and review of unit 3 (`2eb055ee`): review `20261025T074024Z-2eb055ee` had one must
+(R2, the plain-words statement of the `newKeys` field of `Database.AddColumnRowsCondition`) and three
+shoulds (R5 explicit `Outcome` cases in the fixture, R12 the fixture was 262 lines, R19 the opening
+summaries). All four are fixed in `46b7db1e`; the fixture is now `ForeignKeyDdlRuns.lean` (199 lines) and
+`ForeignKeyDdlDropRuns.lean` (109 lines).
