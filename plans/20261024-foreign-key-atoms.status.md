@@ -4,8 +4,8 @@ Created 2026-10-24. Status: OPEN. Part 1 (split API and accepted mapped-NULL/act
 corrections) is accepted. Part 2's row/action/trigger induction and conditional
 DML/run and CREATE/plain-DROP laws are integrated with the enforced-DROP proof unit.
 Their focused Nix gate passed; integration review `20261025T001914Z-dd60f94c` found no musts.
-The ADD COLUMN execution correction is implemented and Nix-checked. ADD COLUMN
-preservation laws, complete DDL/run conditions, the full matrix, part-2 acceptance and
+The ADD COLUMN execution correction and the ADD COLUMN preservation laws are implemented
+and Nix-checked. Complete DDL/run conditions, the full matrix, part-2 acceptance and
 separate corpus-v54 evidence remain open.
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
@@ -20,7 +20,8 @@ The enforced-DROP unit is checked and reviewed at `ffe4d749`. The execution
 correction is implemented in the commit "Refuse ADD COLUMN of a REFERENCES column with
 a non-NULL default on a populated table" (details in the section "ADD COLUMN execution
 correction (part 2, unit 1)" below); its focused Nix gates passed. The ADD COLUMN
-preservation laws, the unified DDL/run contract and the matrix remain open. The
+preservation laws are implemented (unit 2). The unified DDL/run contract and the matrix
+remain open. The
 task-amendment review `20261025T015343Z-fc22761c` found no musts and one R19 should
 (name the correction in the acceptance-part list); that is done and is historical.
 

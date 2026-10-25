@@ -23,7 +23,8 @@ def ParentKey.ReadsBelow (width : Nat) : ParentKey → Prop
   | .columns pairs => ∀ pair ∈ pairs, pair.2 < width
 
 /-- For every row cells, appended cells and position below the number of cells: reading the
-position of the longer list gives the same cell. -/
+position of the longer list gives the same cell. Proof sketch: an indexed lookup below the length
+of the left list stays in the left list after appending. -/
 theorem getD_append_below (values extra : List Value) {position : Nat} (below : position < values.length) :
     (values ++ extra).getD position .null = values.getD position .null := by
   simp [List.getD_eq_getElem?_getD, List.getElem?_append_left below]
