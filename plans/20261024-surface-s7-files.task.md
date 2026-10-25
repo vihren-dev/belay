@@ -90,8 +90,13 @@ roots or impose a restriction on nested projects.
   resolution errors appear at the Lean form and identify the SQL path, original
   line/column and named statement when present. Selection never renumbers the
   file. Unicode and CRLF positions are correct. Recognized sqlite3 dot commands
-  and tool syntax such as `sqlc.arg(id)` or `:v*:ids` explain that conversion is
-  required; ordinary quoted/comment text containing them remains legal SQL.
+  and tool syntax that SQLite's grammar refuses, such as `sqlc.arg(id)`, explain
+  that conversion is required at the refused position; ordinary quoted/comment
+  text containing them remains legal SQL. Tool syntax that SQLite parses as
+  valid SQL gets no hint: `:v*:ids` is the named parameter `:v` multiplied by
+  the named parameter `:ids`. Native evidence (pinned sqlite3 3.51.0, one
+  statement per line): `SELECT :v*:ids;` runs and `SELECT sqlc.arg(id);` fails
+  with `near "(": syntax error`.
 - **Generated declarations are useful in the editor.** Hover includes the
   statement's documentation and SQL source location. Reuse the editor task's
   shared metadata boundary when available. Document that an external SQL edit

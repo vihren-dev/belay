@@ -139,3 +139,9 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   `/nix/store/fdyxvw89hvk8i7sa232c6is81sczb24d-sqlite-verifier-verdict`. Logs are
   `build/agent-logs/s7-part1-test-full.log` and `s7-part1-verdict.log`. Part 2 (record
   registry, checker, native Lake integration) starts next.
+- 2026-10-25: decision (coordinator, owner's rule that native SQLite is the authority):
+  tool syntax that SQLite parses as valid SQL gets no hint. The task text no longer
+  lists `:v*:ids`, and records the pinned sqlite3 3.51.0 probe. Open integration point:
+  S5 will change `SqlTerm.variableValue` to original/coerced pairs; `scriptTermFromPlan`
+  here takes `variables : List (ParameterSource × Expr)` and `fileScriptTerm` needs
+  a one-line adaptation when S5 and S7 are integrated (the coordinator handles it).
