@@ -218,7 +218,7 @@ and trigger bodies cannot split commands. An empty starting schema is allowed.
 ## Schema description
 
 `schema.sql` describes the starting catalog. It may contain only `CREATE TABLE`,
-`CREATE INDEX` and `CREATE TRIGGER`, not `CREATE VIEW`, in an order that SQLite can run: an index or a trigger
+`CREATE VIEW`, `CREATE INDEX` and `CREATE TRIGGER`, in an order that SQLite can run: an index or a trigger
 follows its table.
 A schema statement that SQLite refuses to prepare, for example a second table
 with the same name, is `INPUT_ERROR` with SQLite's message. The description may
@@ -540,7 +540,7 @@ should shrink.
 
 | Id | Restriction | Introduced by |
 | --- | --- | --- |
-| `schema-statement` | A schema contains only CREATE TABLE, CREATE INDEX and CREATE TRIGGER statements | ADR 0008, ADR 0018 |
+| `schema-statement` | A schema contains only CREATE TABLE, CREATE VIEW, CREATE INDEX and CREATE TRIGGER statements | ADR 0008, ADR 0018 |
 | `engine-table` | Engine-managed tables other than sqlite_stat1 and sqlite_stat4 are not modeled | ADR 0008 |
 | `rowid-column-name` | Column names `rowid`, `_rowid_` and `oid` are not modeled | ADR 0008 |
 | `unmodeled-default` | Only literal defaults and the time keywords are modeled | ADR 0008 |

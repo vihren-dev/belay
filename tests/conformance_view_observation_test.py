@@ -88,6 +88,9 @@ def test_unreadable_view_is_failed_observation(runtime_root: Path, body: str, st
     given["initialSchemaSql"] = f"CREATE VIEW v AS {body};"
     [answer] = predictions(runtime_root, [given])
     assert answer["status"] == status and "view observation" in answer["reason"], answer
+    assert "in view v" in answer["reason"], answer
+    if status == "error":
+        assert "Change the view or drop it" in answer["reason"], answer
 
 
 def test_view_observation_output_boundaries(runtime_root: Path, tmp_path: Path) -> None:

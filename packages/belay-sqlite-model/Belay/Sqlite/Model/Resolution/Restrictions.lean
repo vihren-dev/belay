@@ -10,7 +10,7 @@ namespace Belay.Sqlite.Model
 /-- A model restriction of name resolution. The comment of each constructor says what
 the model does not describe and which decision introduced the restriction. -/
 inductive RestrictionKind where
-  /-- A schema contains only CREATE TABLE, CREATE INDEX and CREATE TRIGGER statements (ADR 0008; ADR 0018, D5). -/
+  /-- A schema contains only CREATE TABLE, CREATE VIEW, CREATE INDEX and CREATE TRIGGER statements (ADR 0008; ADR 0018, D5). -/
   | schemaStatement
   /-- Engine-managed tables other than sqlite_stat1 and sqlite_stat4 are not modeled (ADR 0008). -/
   | engineTable
