@@ -19,5 +19,10 @@ The published failure log is retained in
 at `hvx19aq81d4n444lp9qgyngd1hg337gj` and `bw6qs4f727q8qi1hfhldgghxbfgyi7w2`;
 no hosted timeout cause or timing repair is claimed.
 
-Task review is pending. No implementation has started. Heavy-slot assignment
-follows completion of the worker's current SQL-doc gate.
+Task review `20261025T003541Z-2997f487` has no must findings. Its two
+wording/path shoulds are fixed in `e3779fc9`; review
+`20261025T003614Z-e3779fc9` is clean. The isolated workspace
+`sqlite-verifier-fromless-mutant-repair` is based on published `9ac05c46`.
+Its four dev-shell inputs match the approved configuration and direnv is
+authorized. Implementation is assigned now. The migration law worker owns
+slot 1; this repair queues its heavy gate after that focused sequence.

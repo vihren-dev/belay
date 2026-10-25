@@ -457,3 +457,20 @@ checks at `bzy1b1fwjxlk3m36r0kbirncv3j7jrq6`; final review is pending. Slot 1
 remains reserved for that worker and the queued SQL-doc message correction.
 The S5 command/tactic frontend worker now owns slot 2 for its first build and
 measured command checks. Neither enclosing task is complete.
+
+
+The four published S6/native workspaces have been retired: `s6-execution`,
+`s6-equivalence`, `model-native-artifacts` and `s6-native-publication`. Each had
+an empty working copy and a parent contained in published `9ac05c46`. All
+three active workers confirmed no process or dependency on those paths; the
+filesystem audit found no external symlinks. The editor worker also checked
+298 surface ELF libraries. An additional 132 logs/probes are hash-verified in
+`s4/build/agent-logs/retired-s6-workspaces`, with a cleanup record.
+
+Editor source and reviews are frozen at `8ca6d7ae`; full part acceptance is
+still queued. SQL-doc diagnostic correction is checked and reviewed at
+`8a83a65b`, with two passing focused Nix tests at `8arqjd5l5jlnvg5v148gimnk0gbijzrp`.
+Both tasks remain OPEN. The worker is assigned the reviewed fromless mutant
+repair at `plans/20261025-fromless-mutant-repair.task.md`, independently on
+published #250. Slot 1 is now available to the migration law worker's focused
+gate; mutant repair follows. S5 frontends retain slot 2.
