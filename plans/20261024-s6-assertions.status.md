@@ -397,8 +397,8 @@ union. Adaptations for the before-context changes: my fixtures call the S4 query
 `current : reference.schema = none` argument (`AddCustomerQueries`, `CustomerInsertQueries`,
 `AccountSignupQueries`, `ExpansionCountQueries`). `tests/surface/S6Footprints.lean`: the refusal of
 `before` (a `guard_msgs` example) is now a plain example from the before-context line; its docstring
-says that the observation reads `before` and the ordinary run refuses it. Local checks for this merge
-(development only): `just dev-build` exit 0 and all earlier fixture chains elaborate.
+says that the observation reads `before` and the ordinary run refuses it. Nix verification of the
+merge: pending until the Part 1b end gates.
 
 ### Part 1b unit 1: the two-state assertion layer
 
@@ -428,11 +428,9 @@ schema. The message says that a one-state assertion has no initial database and 
 two-state assertions; it requires a SELECT (a PRAGMA read is a query but is not observed over two
 databases). Both share `check_query_shape`. The new cases are in
 `tests/surface_assertions_test.py` (seven rows, at the source position of the assertion); the
-kernel fixture is `tests/surface/TwoStateAssertionExamples.lean` (nine reports) with the test
+kernel fixture is `tests/surface/TwoStateAssertionExamples.lean` (ten reports) with the test
 `test_two_state_assertions_follow_the_start_and_the_reached_database`. `#explain` knowledge of the
-two-state claims is optional and not done. Local development checks: `just dev-build` exit 0; the
-fixture chain and the seven diagnostic cases were run with the local compiler. Nix: pending until
-the Part 1b end gates.
+two-state claims is optional and not done. Nix verification: pending until the Part 1b end gates.
 
 Guide change to make (not edited): the paragraph about `before` says the library "fixes the start
 in the precondition"; for a fresh run the claim `program ensuresFrom start => post` captures the

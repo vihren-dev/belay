@@ -79,7 +79,7 @@ def test_two_state_assertions_follow_the_start_and_the_reached_database(runtime_
     reads the reached database, and a query with no `before` source is the one-state assertion whatever the
     start is. The default and the real-context observation differ on a clock, a compound EXCEPT compares the
     start with the reached rows, and the `ensuresFrom` notation is the primitive claim."""
-    check_module_chain(runtime_root, tmp_path, (("TwoStateAssertionExamples", 9),))
+    check_module_chain(runtime_root, tmp_path, (("TwoStateAssertionExamples", 10),))
 
 
 def test_delete_trigger_removes_an_unrelated_row(runtime_root: Path, tmp_path: Path) -> None:

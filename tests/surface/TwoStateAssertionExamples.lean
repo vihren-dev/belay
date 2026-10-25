@@ -6,7 +6,7 @@ set_option doc.verso true
 query that names the schema {lit}`before` reads the initial database that the assertion is given, and every other
 source reads the database that the context sees. The kernel checks that the default and the real-context
 observations differ on a clock, that the assertion follows the reached database and not the start for a plain
-source, that a query with no `before` source ignores the start, and that the fresh-run notation is the
+source, that a query with no {lit}`before` source ignores the start, and that the fresh-run notation is the
 primitive claim. -/
 set_option maxRecDepth 4096
 
@@ -85,6 +85,14 @@ theorem notation_is_the_primitive_claim :
     FreshEnsuresFrom (Runnable.toSql (send (sql r"DELETE FROM t WHERE id = 1"))) (fun _ => True)
       (fun start => ifOk (holdsSince start (sql r"SELECT 1 FROM before.t WHERE id = 1"))) := rfl
 
+/-- The guard of the notation is the one-state {name}`Holds` of its query on the start. -/
+theorem guarded_notation_is_the_primitive_claim :
+    ((send (sql r"DELETE FROM t WHERE id = 1")) ensuresFrom start =>
+      ifOk (holdsSince start (sql r"SELECT 1 FROM before.t WHERE id = 1")) where sql r"SELECT 1 FROM t") =
+    FreshEnsuresFrom (Runnable.toSql (send (sql r"DELETE FROM t WHERE id = 1")))
+      (fun db => Holds (sql r"SELECT 1 FROM t") db)
+      (fun start => ifOk (holdsSince start (sql r"SELECT 1 FROM before.t WHERE id = 1"))) := rfl
+
 /-- A claim that ignores the start is the claim of {lit}`ensures`. -/
 theorem a_claim_without_the_start_is_ensures :
     ((send (sql r"DELETE FROM t WHERE id = 1")) ensuresFrom _start => andOk ⌜True⌝) =
@@ -98,6 +106,7 @@ theorem a_claim_without_the_start_is_ensures :
 #print axioms a_plain_query_ignores_the_start
 #print axioms terms_are_the_assertions
 #print axioms notation_is_the_primitive_claim
+#print axioms guarded_notation_is_the_primitive_claim
 #print axioms a_claim_without_the_start_is_ensures
 
 end AssertionExamples

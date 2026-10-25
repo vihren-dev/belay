@@ -109,8 +109,9 @@ theorem Holds.inContextSince_iff_inContext (script : Script) (initial : Database
     cases step : runScriptStep runContext context.clock context.index context.connection statement values <;>
       simp [runScriptFrom, step, RunStep.output]
 
-/-- For every query that names no schema, every initial database and every context, the default
-two-state assertion is the one-state assertion {name}`Holds.reached`. Proof sketch:
+/-- For every query that is a {lit}`SELECT` and names no schema, every initial database and every
+context, the default two-state assertion is the one-state assertion {name}`Holds.reached`. A read of a
+{lit}`PRAGMA` is not covered: the two-state observation does not model it. Proof sketch:
 {name}`Holds.inContextSince_iff_inContext` at the default observation. -/
 theorem Holds.reachedSince_iff_reached (script : Script) (initial : Database) (context : ExecutionContext)
     (query : script.isQuery = true) (select : script.isSelect = true) (plain : script.namesSchema = false) :
