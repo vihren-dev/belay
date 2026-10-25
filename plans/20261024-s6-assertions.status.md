@@ -350,3 +350,7 @@ the start of the SQL. Nix verification of these cases: pending until the Part 2 
 - `9678b4af` (unit 5): review 20261025T102600Z-9678b4af, one `must` (R3: proof sketch of
   `connection_resolveState`), fixed in `e3304c3b`; re-review 20261025T103132Z-e3304c3b has no
   findings.
+- `c6cdcd6b`: the first Nix test-full of Part 2 failed only in
+  `test_root_imports_the_core_and_only_the_prelude` (the four new model modules were not reached from
+  `Belay.Sqlite.Model`); fixed by importing them from the root and by giving them targeted imports
+  instead of the root. Review 20261025T111214Z-c6cdcd6b has no findings.
