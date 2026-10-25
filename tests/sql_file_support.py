@@ -9,7 +9,12 @@ import os
 from pathlib import Path
 
 from tests.runtime_support import CommandResult, run_command
-from tests.surface_support import surface_command
+from tests.surface_support import FIXTURES, surface_command
+
+PROBE = (FIXTURES / "SqlFileProbe.lean").read_text()
+"""The probe module that exposes `file_probe`, a form that reads an SQL file through `loadSqlFileSource`."""
+OUTER_SQL, NESTED_SQL = "SELECT $x, 7", "SELECT $x, 99"
+"""The texts of `sql/query.sql` in the outer package and in its nested project of the same name."""
 
 
 def installed_layout(runtime_root: Path, tmp_path: Path) -> Path:
@@ -78,3 +83,27 @@ def run_checker(installed: Path, package: Path, *arguments: str) -> CommandResul
     """Run the installed `belay-sql-check` through `lake exe` in `package`, with a finite timeout."""
     return run_command([str(installed / "lean/bin/lake"), "exe", "--no-ansi", "belay-sql-check", *arguments],
                        cwd=package, timeout=120, environment=toolchain_environment(installed))
+
+
+def write_same_name_projects(world: Path, installed: Path, with_option: bool) -> None:
+    """A dependency whose nested Lake project has the same package name, so discovery sees two roots."""
+    dependency = world / "dependency"
+    write_package(dependency, "Twin", installed)
+    (dependency / "sql/query.sql").write_text(OUTER_SQL)
+    nested = dependency / "lean"
+    (nested / "sql").mkdir()
+    (nested / "sql/query.sql").write_text(NESTED_SQL)
+    (nested / "lakefile.toml").write_text('name = "Twin"\n')
+    (nested / "lake-manifest.json").write_text(json.dumps({"name": "Twin", "packages": []}))
+    body = PROBE + "\n"
+    if with_option:
+        body += ('set_option belay.sql.packageRoot ".." in\ndef outer := file_probe "sql/query.sql"\n'
+                 'set_option belay.sql.packageRoot "." in\ndef inner := file_probe "sql/query.sql"\n'
+                 'example (x : Value) : outer x = sql "SELECT $x, 7" := rfl\n'
+                 'example (x : Value) : inner x = sql "SELECT $x, 99" := rfl\n')
+    else:
+        body += 'def outer := file_probe "sql/query.sql"\n'
+    (nested / "Twin.lean").write_text(body)
+    consumer = world / "consumer"
+    write_package(consumer, "Consumer", installed, '\n[[require]]\nname = "Twin"\npath = "../dependency"\n')
+    (consumer / "lean/Consumer.lean").write_text("import Twin\n")

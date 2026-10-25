@@ -20,6 +20,8 @@ def used (declaration : Option Name) : SqlSourceUse :=
 #guard !(used none).sameSource { used none with path := "sql/b.sql" }
 #guard !(used none).sameSource { used none with hash := 0 }
 #guard !(used none).sameSource { used none with package := "other" }
+#guard !(used none).sameSource { used none with rootOverride := some ⟨`M, ".."⟩ }
+#guard !({ used none with rootOverride := some ⟨`M, ".."⟩ }).sameSource { used none with rootOverride := some ⟨`N, ".."⟩ }
 #guard (dedupeSqlSourceUses [used none, used (some `a), used none, used (some `a)]).size == 2
 
 -- A file is fresh only with the recorded hash; a file that is gone is missing.

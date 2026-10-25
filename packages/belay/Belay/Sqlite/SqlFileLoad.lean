@@ -9,7 +9,8 @@ open Lean System
 /-- The {lit}`belay.sql.packageRoot` option. The empty default keeps automatic discovery. A
 nonempty value is a path relative to the directory of the Lean source file, for nested Lake
 projects whose package ownership discovery cannot decide. It selects where SQL files are read
-now; compiled records still keep only the package and relative path. -/
+now. A compiled record keeps the package, the relative path and, for an explicit root, the option
+value with its module, never an absolute path. -/
 initialize sqlPackageRootOption : Lean.Option String ←
   Lean.Option.register `belay.sql.packageRoot
     { defValue := "", descr := "package directory for sql_file, relative to the Lean file's directory; empty discovers it" }
@@ -27,6 +28,15 @@ def sqlOverrideRoot (leanFile : FilePath) (override : String) : IO FilePath := d
     throw <| IO.userError s!"belay.sql.packageRoot {override} selects {root}, which is not a directory; set it to an existing directory, written relative to the Lean file's directory"
   return root
 
+/-- The record of a use of a loaded file by the module that is being elaborated: its package, path
+and text hash, the explicit root if the option is set, and the declaration that uses it. -/
+def currentSqlSourceUse (source : SqlFileSource) (declaration : Option Name) : CoreM SqlSourceUse := do
+  let override := sqlPackageRootOption.get (← getOptions)
+  let module := (← getEnv).mainModule
+  let rootOverride := if override.isEmpty then none else some ⟨module, override⟩
+  return { package := source.package, path := source.path.toString, hash := sqlTextHash source.text,
+           declaration, rootOverride }
+
 /-- Load a SQL file at a Lean elaboration form. Lake supplies the owning package identity.
 Without the option, existing Lake manifests associate the Lean filename with its package
 directory; with it, the explicit root is read through {name}`readSqlFileSourceAtRoot`. Errors
@@ -42,7 +52,8 @@ def loadSqlFileSource (reference : Syntax) (path : FilePath) : Elab.Term.TermEla
     if override.isEmpty then readSqlFileSource leanFile package path
     else readSqlFileSourceAtRoot (← sqlOverrideRoot leanFile override) package path
   catch error => throwErrorAt reference error.toMessageData
-  modifyEnv (recordSqlSourceUse · ⟨source.package, source.path.toString, sqlTextHash source.text, ← Elab.Term.getDeclName?⟩)
+  let use ← currentSqlSourceUse source (← Elab.Term.getDeclName?)
+  modifyEnv (recordSqlSourceUse · use)
   return source
 
 end Belay.Sqlite

@@ -68,15 +68,37 @@ in the records. -/
 private def packagesNamed (workspace : Workspace) (name : String) : Array Package :=
   workspace.packages.filter (·.origName.toString (escape := false) == name)
 
+/-- The path of a file below a directory, when it is below it. -/
+private def pathBelow (directory file : FilePath) : Option FilePath :=
+  let (base, target) := (directory.components, file.components)
+  if base.length < target.length && target.take base.length == base then
+    some ⟨"/".intercalate (target.drop base.length)⟩
+  else none
+
+/-- The file that a record names. Without an explicit root it is below the owning package. With
+one it is below the Lean file of the module that set the option, and the report path is made
+relative to the package when the file is inside it. -/
+private def sourceFile (workspace : Workspace) (package : Package) (use : SqlSourceUse) :
+    IO (Except String (FilePath × String)) := do
+  let some anchor := use.rootOverride | return .ok (package.dir / use.path, use.path)
+  let some module := workspace.findModule? anchor.module
+    | return .error s!"a record of {use.package} was made with belay.sql.packageRoot in module {anchor.module}, which is not in this workspace; rebuild the library that contains it"
+  let file := (module.leanFile.parent.getD ".") / anchor.root / use.path
+  let resolved ← if ← file.pathExists then IO.FS.realPath file else pure file
+  let shown := ((pathBelow (← IO.FS.realPath package.dir) resolved).map (·.toString)).getD use.path
+  return .ok (file, shown)
+
 /-- Compare the records of one distinct source with its file in the owning package. -/
 private def checkSource (workspace : Workspace) (library : String) (uses : Array SqlSourceUse)
     (use : SqlSourceUse) : IO (Except String CheckedSource) := do
   let declarations := uses.filterMap fun other => if other.sameSource use then other.declaration else none
   match packagesNamed workspace use.package with
   | #[package] =>
-    let file := package.dir / use.path
-    let current ← if ← file.pathExists then some <$> sqlTextHash <$> IO.FS.readFile file else pure none
-    return .ok { package := use.package, path := use.path, state := sourceState use.hash current, declarations }
+    match ← sourceFile workspace package use with
+    | .error problem => return .error s!"library {library}: {problem}"
+    | .ok (file, shown) =>
+      let current ← if ← file.pathExists then some <$> sqlTextHash <$> IO.FS.readFile file else pure none
+      return .ok { package := use.package, path := shown, state := sourceState use.hash current, declarations }
   | #[] => return .error s!"library {library}: a record names package {use.package}, which is not in this workspace; require that package in the lakefile again, or run lake build {library} after removing the form that read {use.path}"
   | _ => return .error s!"library {library}: a record names package {use.package}, which several packages of this workspace have; give the packages different names"
 

@@ -206,7 +206,20 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   SQL text edit (the checker reports it stale first, fresh after the rebuild) and for an
   added `.sql` file. With `input_file oneFile` the same holds for one file, and the library
   that does not list it does not rebuild. `CoeOut` to a build key accepts the input
-  declarations in `needs`. Same-name dependency projects are covered by the dependency test
-  of the checker. Nix surface run (2 passed, 114 deselected, 25.08 s) at
+  declarations in `needs`. Nix surface run (2 passed, 114 deselected, 25.08 s) at
   `/nix/store/5ppdhz8p4wbf6zdbyxb9dnh7fwcwss7r-sqlite-verifier-test-surface-1`. Layer rule 4
   already shows that the conformance runtime holds neither the surface nor the checker.
+- 2026-10-25: the checker and the package-root override. Review `20261025T071945Z-0ac03732`
+  (must, R19) said that the status claimed same-name project coverage that did not exist.
+  The new fixture (`tests/surface_sql_check_roots_test.py`) showed a real defect: two
+  nested projects of one package name, each with its own `sql/query.sql`, gave a false stale
+  report, because the checker looked for every record below the package directory. A record
+  now also keeps the option value and the module that set it (`SqlRootOverride`, only when the
+  option is set), and the checker finds the file below the Lean file of that module. It shows
+  the path relative to the package (`lean/sql/query.sql` for the nested project). Records
+  without the option are unchanged. This adds data to the record that the package-root
+  contract did not list (it still holds no absolute path and survives relocation); it is
+  open for the coordinator to confirm. The same-name fixture is fresh after a build and
+  each of the two files is stale after an edit with no rebuild. The same-name fixtures
+  moved to `tests/sql_file_support.py`. Nix surface run (26 passed, 91 deselected, 69.88 s) at
+  `/nix/store/47g2zk4b2fv7dy6ircmhzcnja74zgilw-sqlite-verifier-test-surface-1`.

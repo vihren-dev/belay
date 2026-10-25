@@ -132,6 +132,7 @@
     "tests/surface_sql_file_forms_test.py",
     "tests/surface_sql_records_test.py",
     "tests/surface_sql_check_test.py",
+    "tests/surface_sql_check_roots_test.py",
     "tests/surface_sql_lake_inputs_test.py",
     "tests/surface_programs_test.py",
     "tests/surface_parser_test.py",

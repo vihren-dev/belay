@@ -36,7 +36,8 @@ def defineEntry (stx : Syntax) (file : LoadedSqlFile) (database : Option Databas
   let value ← instantiateMVars (← fileScriptTerm stx file.source (file.replayText selection) chosen (some entry.name))
   let type ← Meta.inferType value
   let hints := ReducibilityHints.regular (getMaxHeight (← getEnv) value + 1)
-  modifyEnv (recordSqlSourceUse · ⟨file.source.package, file.source.path.toString, sqlTextHash file.source.text, some declName⟩)
+  let use ← currentSqlSourceUse file.source (some declName)
+  modifyEnv (recordSqlSourceUse · use)
   addAndCompile <| .defnDecl { name := declName, levelParams := [], type := type, value := value,
                                hints := hints, safety := .safe }
   addDocStringCore declName (entryDocumentation file entry)

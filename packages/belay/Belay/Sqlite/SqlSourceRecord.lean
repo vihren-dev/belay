@@ -12,6 +12,16 @@ namespace Belay.Sqlite
 
 open Lean
 
+/-- The root that the {lit}`belay.sql.packageRoot` option chose for a use. The option value is
+relative to the directory of the Lean file of the module that set it, so the checker needs both
+to find the file again, also after the package moved. -/
+structure SqlRootOverride where
+  /-- The module whose Lean file the option value is relative to. -/
+  module : Name
+  /-- The option value, as written. -/
+  root : String
+  deriving BEq, Repr, Inhabited
+
 /-- One use of an SQL file by a module: the file's identity and content hash when it was read, and
 the declaration that used it when there is one. Several uses of one file are several records with
 one source. -/
@@ -24,6 +34,8 @@ structure SqlSourceUse where
   hash : UInt64
   /-- The declaration that was built from the file, when the form is part of one. -/
   declaration : Option Name := none
+  /-- The explicit root, when the option chose one. Without it the package directory is the root. -/
+  rootOverride : Option SqlRootOverride := none
   deriving BEq, Repr, Inhabited
 
 /-- The hash of an SQL text for freshness: the same line-ending normalization as Lake's
@@ -33,7 +45,8 @@ def sqlTextHash (text : String) : UInt64 := hash text.crlfToLf
 /-- Whether two records name the same source, so that a source used by several declarations counts
 once. -/
 def SqlSourceUse.sameSource (left right : SqlSourceUse) : Bool :=
-  left.package == right.package && left.path == right.path && left.hash == right.hash
+  left.package == right.package && left.path == right.path && left.hash == right.hash &&
+    left.rootOverride == right.rootOverride
 
 /-- The records without exact repeats, in first-seen order. -/
 def dedupeSqlSourceUses (uses : List SqlSourceUse) : Array SqlSourceUse :=

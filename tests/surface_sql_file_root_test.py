@@ -8,13 +8,12 @@ import shutil
 import pytest
 
 from tests.runtime_support import run_command
-from tests.sql_file_support import configured_command, installed_layout, lake_build, write_package
+from tests.sql_file_support import (OUTER_SQL, PROBE, configured_command, installed_layout, lake_build,
+                                    write_same_name_projects)
 from tests.surface_support import FIXTURES, surface_command
 
 pytestmark = [pytest.mark.integration, pytest.mark.parser, pytest.mark.requires_lean("compiler")]
 
-PROBE = (FIXTURES / "SqlFileProbe.lean").read_text()
-OUTER_SQL, NESTED_SQL = "SELECT $x, 7", "SELECT $x, 99"
 
 
 def test_explicit_root_primitive(runtime_root: Path, tmp_path: Path) -> None:
@@ -54,30 +53,6 @@ def test_invalid_option_roots_report_one_error(runtime_root: Path, tmp_path: Pat
     assert result.returncode == 1, result.diagnostic()
     assert "belay.sql.packageRoot" in result.stdout and message in result.stdout, result.diagnostic()
     assert result.stdout.count(": error:") == 1, result.diagnostic()
-
-
-def write_same_name_projects(world: Path, installed: Path, with_option: bool) -> None:
-    """A dependency whose nested Lake project has the same package name, so discovery sees two roots."""
-    dependency = world / "dependency"
-    write_package(dependency, "Twin", installed)
-    (dependency / "sql/query.sql").write_text(OUTER_SQL)
-    nested = dependency / "lean"
-    (nested / "sql").mkdir()
-    (nested / "sql/query.sql").write_text(NESTED_SQL)
-    (nested / "lakefile.toml").write_text('name = "Twin"\n')
-    (nested / "lake-manifest.json").write_text(json.dumps({"name": "Twin", "packages": []}))
-    body = PROBE + "\n"
-    if with_option:
-        body += ('set_option belay.sql.packageRoot ".." in\ndef outer := file_probe "sql/query.sql"\n'
-                 'set_option belay.sql.packageRoot "." in\ndef inner := file_probe "sql/query.sql"\n'
-                 'example (x : Value) : outer x = sql "SELECT $x, 7" := rfl\n'
-                 'example (x : Value) : inner x = sql "SELECT $x, 99" := rfl\n')
-    else:
-        body += 'def outer := file_probe "sql/query.sql"\n'
-    (nested / "Twin.lean").write_text(body)
-    consumer = world / "consumer"
-    write_package(consumer, "Consumer", installed, '\n[[require]]\nname = "Twin"\npath = "../dependency"\n')
-    (consumer / "lean/Consumer.lean").write_text("import Twin\n")
 
 
 def test_same_name_projects_need_and_accept_the_override(runtime_root: Path, tmp_path: Path) -> None:
