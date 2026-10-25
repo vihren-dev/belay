@@ -26,3 +26,53 @@ wording/path shoulds are fixed in `e3779fc9`; review
 Its four dev-shell inputs match the approved configuration and direnv is
 authorized. Implementation is assigned now. The migration law worker owns
 slot 1; this repair queues its heavy gate after that focused sequence.
+
+## Implementation boundary
+
+The source adds an explicit group of edits to the existing mutation runner;
+single-edit tables keep their current triples. The star fault keeps its name,
+`fromless-star` target and baseline/kill assertions, and changes both the result
+column and early expansion rejection. Each grouped edit has its own guard link.
+The audit checks a unique complete fragment within the linked declaration and
+retains restriction/obligation coverage.
+
+Bounded tests exercise single/grouped application in one isolated copy, missing
+and duplicate anchors in each position, unchanged shared bases, no classification
+after validation failure, wrong/missing second guard links and grouped obligation
+coverage. The new tests run in the existing Nix harness suite. Its mutation suites
+also receive the existing guard inventory and registry helper as explicit inputs
+so a focused gate can replay that audit alongside the real mutants.
+
+No package, native case, judge claim or lock source has changed. Development
+Python checks are diagnostics only. The relevant checks are
+`tests/mutation_edits_test.py`, `tests/mutant_guards_test.py`, test ownership,
+and the existing fromless and parameter mutation tests.
+
+## Focused Nix acceptance
+
+Source snapshot `3a48035ffbe5849fcd332e85deb83d1a836391a1` passed the sequential
+gate `build/agent-logs/fromless-focused-gates.sh` (session 67443, exit 0).
+The source commit that follows contains the same implementation and these
+acceptance records. Commands preserve the existing per-test 300-second limit,
+use Nix max-jobs 1 / cores 2 and check the 10 GiB disk floor.
+
+- The harness override selects `-k mutation_edits` with a 600-second outer
+  limit: **12 passed**, 234 deselected, at
+  `/nix/store/zv6n9rjksjqnzpqwiays4igjxzrcimmx-sqlite-verifier-test-harness-1`.
+- The mutant override selects `-k 'fromless or parameter_mutant or mutant_guards'`
+  and explicitly includes `tests/mutant_guards_test.py`, with a 900-second outer
+  limit: **52 passed**, 25 deselected, at
+  `/nix/store/n02c574s3rvy5vzz0bkja5avrigcha4a-sqlite-verifier-test-mutants-1`.
+  This checks all 50 guard-inventory cases and kills the four fromless and
+  three existing single-edit parameter faults. Baseline agreement and kill
+  assertions are unchanged. The two mutation tests took 57.64s and 76.17s.
+
+Logs: `build/agent-logs/fromless-nix-{harness,mutants}.log`. The protected-tree
+comparison in `fromless-source-comparison.json` finds no package, native authored
+case, judge, corpus, integrity or oracle-source changes from published
+`9ac05c469187bde7302e387073381c004739e870`. The judge lock SHA-256 remains
+`3ed3054ac313591582e038ecad92b04c81fea33d2559a97ba5a847198196831c`.
+The original survivor was measured separately on published PR #249 source
+`f808a41a69b9cb2e0f5541e0a5a51362e4a713d1`; its failure is not a result of the
+new grouped implementation. Independent source review and full/verdict/Nix/
+scheduled task acceptance remain pending. Slot 1 was released after the gate.
