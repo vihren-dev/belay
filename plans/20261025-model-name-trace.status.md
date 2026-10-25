@@ -39,6 +39,7 @@ task file. Relevant sources: `Resolution/Resolve.lean`, `Resolution/ScopeNames.l
 - Tests: kernel `#guard` examples; a Lean surface fixture and pytest check that
   each exact path selects the name token; a check over the frozen conformance
   inputs that dropping the trace equals `resolveStatement`.
+- Agreement checks: see the task file, "The trace uses the resolver's own decisions".
 - Prediction files: baseline built before the first model change
   (`build/predictions-baseline`), compared after each model commit.
 

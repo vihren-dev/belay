@@ -175,9 +175,11 @@ text of a name.
 Decision of 2026-10-25 (model name-trace task): the resolver is not threaded
 with a trace, because that would change the definitions that about 90 existing
 proofs unfold. The trace is computed beside the resolver, from the resolver's
-own scope, lookup, affinity and collation functions, and agreement theorems and
-a test over the frozen conformance inputs check that it does not disagree with
-the resolver. Part 2b consumes the trace as specified above.
+own scope, lookup, affinity and collation functions. The guarantee that it
+cannot disagree with execution is therefore weaker than "by construction":
+theorems cover single decisions, and a test over the frozen conformance inputs
+covers whole statements; the model name-trace task lists the checks and the
+remaining gap. Part 2b consumes the trace as specified above.
 
 Part 2a covers the outcomes that a fixed syntax slot decides. A table
 reference slot (statement target, `FROM` source or join source, in a statement

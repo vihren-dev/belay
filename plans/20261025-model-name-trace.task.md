@@ -39,15 +39,23 @@ except where the translator's spans must locate a traced name (see below).
   decides every name with the resolver's own lookup, affinity and collation
   functions, and takes the operand affinity from the resolver's own
   `resolveOperand`. The model gets no second lookup rule and no second scope
-  rule. The editor's need, that the trace cannot disagree with execution, is
-  met by checks instead of by construction: agreement theorems for the decision
-  points that can be stated alone (an identifier is found, missing or ambiguous;
-  a comparison's affinity and collation), and a test over every statement of the
-  frozen conformance inputs. The test checks that a statement which resolves has
-  no missing or ambiguous name in its trace (except a DQS text literal, a
-  boolean keyword and a rowid restriction, which the trace marks), and that a
-  prepare error for a column has a trace record of the same name and kind. The
-  editor never rebuilds scopes or searches for the text of a name.
+  rule. This is a weaker guarantee than the editor task asked for, and the
+  weakness is stated here: the trace is not equal to the resolver's run by
+  construction, and no theorem links every traced binding to the resolver's
+  scope for that occurrence. Agreement is checked in three ways. (1) Theorems
+  for the decision points that can be stated alone: given a scope, the traced
+  result of an identifier (found, missing, ambiguous) is the resolver's result
+  for that scope, and a comparison site's affinity and collation are the ones
+  that `resolveOperand` puts in the resolved comparison. (2) A test over every
+  statement of the frozen conformance inputs: for a statement that resolves, the
+  trace has no missing or ambiguous name except those it marks (DQS text
+  literal, boolean keyword, rowid restriction); for a prepare error about a
+  column, the trace has a record of the same name and kind; and the cell
+  positions that found names bind are among the column reads of the resolved
+  statement. (3) The kernel examples. A trace that binds a name in a wrong
+  scope and passes all three checks is possible in principle; the editor
+  consumes the trace knowing this. The editor never rebuilds scopes or searches
+  for the text of a name.
 - **Every name occurrence gets one record.** A `NameOccurrence` holds:
   - `path`, the occurrence's node path in the statement as written, in the
     layout of `Restriction.path`, which `Translation.Span.select` maps to a
