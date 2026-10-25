@@ -212,3 +212,23 @@ the focused checks and independent review above. FK proof leaves are
 coordinated with their owner before mechanical view-case extensions. Frozen v53
 remains unpublished and mutable in the separate evidence workspace. No corpus,
 claim or judge-lock file changes in the foundation.
+
+## Resumed view completion
+
+The implementation workspace merges the reviewed view boundary `7e458081` with
+published mutant repair `fe169099` (PR #251), without rewriting either history.
+The merge has no conflicts and preserves every production package from the view
+parent. It carries the published grouped-edit harness and changes exactly three
+BEFORE anchors to the existing view source: both star guards use `namesVisible`,
+and the correlated source uses `outer.take query.outer`. The two changed tables
+are byte-identical to checked integration `d280c408`; native targets, baseline
+agreement and kill assertions are unchanged. No S5 frontend descendant is carried.
+
+The source and approved shell comparisons are recorded in
+`build/agent-logs/view-repair-integration.json`. The harness, full guard inventory
+and test-ownership checks are local diagnostics for this merge, not new Nix
+acceptance. Its focused Nix gate is queued while both heavy slots are occupied.
+Model-edit prediction comparisons will use the accepted `lnz7y254` output above.
+The remaining CREATE/DROP VIEW, pragma metadata, write errors and preservation
+scope stays OPEN under the existing task. `text_build_boundaries` owns this work;
+the migration worker retains its separate normalized-field proof leaves.

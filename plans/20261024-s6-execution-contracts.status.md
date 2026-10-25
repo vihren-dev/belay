@@ -1,6 +1,6 @@
 # Status: S6 execution and proof contracts
 
-Created 2026-10-24. Status: OPEN. First production unit is checked and reviewed; later contracts remain open.
+Created 2026-10-24. Status: DONE on 2026-10-25. Both execution-contract parts passed final acceptance.
 Task: [task file](20261024-s6-execution-contracts.task.md).
 Specs: ADR17's S6 row, the owner decision of 2026-10-24 recorded below,
 and the checked S6 foundations.
@@ -189,13 +189,48 @@ All reports use only propext, Classical.choice and Quot.sound. Logs are
 `build/agent-logs/s6-equivalence-{dev-build,nix-surface}-1.log`.
 The development build and nine static layer checks are local diagnostics only.
 
-Independent review follows this coherent commit. The first part's combined
-publication acceptance remains coordinated separately with the native-artifact
-and S5 sources. The second part's full/verdict and task-end Nix/scheduled checks
-remain due. This task and S6 as a whole remain OPEN.
+At this checkpoint, review and combined publication acceptance were still due.
+The final integrated acceptance below completes those execution-contract gates.
+S6's assertions, migration patterns, automation and guide work remain separate.
 
 Independent review `20261024T222747Z-51387d8e` checked source
 `51387d8eb53bcda04b8911a378f77453dabec01e`, covering all twelve changed files.
-It found zero musts and zero shoulds. The checked source is at rest for integration
-and the required part-2 full/verdict and task-end checks; no overall completion
-or publication is claimed here.
+It found zero musts and zero shoulds. The checked source entered the integration
+and final gates below without production changes.
+
+## Final integrated acceptance, 2026-10-25
+
+Source `5bc323f056a99c6c0a9ff4ff2752baafb3d559ad` combines both reviewed
+execution-contract parts with the reviewed native-artifact producer. The source
+audit retains all 20 execution modules and fixtures byte-identical to reviewed
+part two. Model, text, conformance, parser, corpus, judge and integrity sources
+are unchanged from published base `f808a41a`. Independent integration review
+`20261025T001053Z-5bc323f0` has no findings. The two earlier authentication
+failures are retained; reviewer access was restored before final acceptance.
+
+The bounded `s6-complete-integration-gates.sh` finished with exit 0. It ran the
+required post-review full/verdict gates, all frozen prediction comparisons, and
+task-end Nix and scheduled checks. Final evidence:
+
+- Full Nix report `l53fgdvx2y87xwj1j6q0kvhx1qcqbhj4`: 937 tests, zero failures,
+  errors or skips; its surface report `5cq4b8b4y3rpy8bw8kwm2x175vzrd151` passes 86.
+- Verdict `fdyxvw89hvk8i7sa232c6is81sczb24d`: 4,869 AGREE and 2,503
+  MODEL_UNSUPPORTED, with no other verdict category.
+- Predictions `v8f8kr8g9i0labdhf6021rpwnp47z939`: all 53 files and 7,372 cases
+  are byte-identical to the accepted baseline.
+- Task-end `just test-nix`: 71 passed. Scheduled Nix report
+  `j37adzg25s32slqy03advda9hfd02dwx`: 47 passed, zero failures, errors or skips.
+- API reference `q7vqbcydz0vxx3awnycak1r3h3fr98ci` built successfully.
+  The full command's source-check report contains 521 passing checks; this
+  local report supplements the Nix evidence rather than replacing it.
+
+Exact paths, counts and source identity are retained in
+`build/agent-logs/s6-complete-acceptance.json`; gate logs use the
+`s6-complete-integration-` prefix. Six installed production fixtures audit 101
+theorem dependencies, allowing only standard logical axioms. They cover the
+task's branches, stopped traces, validity, transformer and triple bridges,
+conditional/fresh success, strong/weak equivalence and compositional helpers.
+Both explicit and `mvcgen` transaction proofs compile.
+
+This task is DONE. It does not complete S6 or ADR17. Publication is prepared on
+top of PR #249; the remaining S6 tasks keep their full stated scope.

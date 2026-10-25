@@ -80,7 +80,8 @@ let
     (builtins.attrValues (builtins.fromJSON (builtins.readFile claims)).corpora);
   # Mutants rebuild changed copies of the two Lean packages, so their suites read the
   # complete sources, without local build outputs in `.lake`.
-  mutantInputs = modelInputs ++ [ (root + /tests/mutant_sets.py) ] ++ map (package: fs.difference (root + "/packages/${package}")
+  mutantInputs = modelInputs ++ [ (root + /tests/mutant_sets.py)
+    (root + /tests/mutant_guards_test.py) (root + /tests/restriction_registry_test.py) ] ++ map (package: fs.difference (root + "/packages/${package}")
     (fs.maybeMissing (root + "/packages/${package}/.lake"))) [ "belay-sqlite-model" "verifier-conformance" ];
   # Inputs shared by the three suites that the old single model suite contained.
   modelInputs = frontend ++ [
@@ -113,7 +114,7 @@ let
     (root + /nix/flake.lock)
     (root + /build-support/conformance-native.nix)
   ] ++ map (name: root + "/conformance/${name}.py") [
-    "model_assertions" "model_cases" "model_check" "resolve_mutants" "replay_tiers" "native_workers"
+    "model_assertions" "model_cases" "model_check" "resolve_mutants" "mutation_edits" "mutant_guards" "replay_tiers" "native_workers"
     "execution_profile" "native_limits" "native_acquisition"
     "native_storage"
     "refresh_corpus" "requirement_cases" "requirement_coverage"
