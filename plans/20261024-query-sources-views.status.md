@@ -477,3 +477,10 @@ Nix checks (all pass; final tree):
   byte-identical to `gwcwwarb7` (all 53 files).
 - Verdict `/nix/store/hw3mi62val62xbxbjqsaksnf7ki4siim-sqlite-verifier-verdict`: AGREE 4,962,
   MODEL_UNSUPPORTED 2,410; no DISAGREE, no HARNESS_ERROR.
+
+## End-of-part evidence
+
+- `just test-full`: pass. Reports: `/nix/store/4dd60r0fikxix5gw3flvff4ah7s4pmhr-sqlite-verifier-test-reports`.
+- `just verdict`: pass. `/nix/store/i29j12w9h1azigjp8ib15vk7l4ij16al-sqlite-verifier-verdict`.
+- Replay now reports a recorded view as MODEL_UNSUPPORTED (`conformance/replay_scope.py`).
+- The review of `ddfae58d` was clean.
