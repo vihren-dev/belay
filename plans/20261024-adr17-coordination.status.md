@@ -558,3 +558,53 @@ After S5 part 2 acceptance, the worker can merge reviewed editor `8ca6d7ae`
 (common ancestor `bf3fa71f`) and reuse its real-server harness for automatic
 checking. The editor's own required part 1 full/verdict gate remains queued;
 focused harness reuse does not discharge that separate acceptance obligation.
+
+
+PR #251 is published on #250 as `tasks/fromless-mutant-repair`, head
+`fe169099`, and is in stack 231. The repair task is DONE. Reviewed source
+`e4265048` passed 949 full Nix tests, 71 Nix checks and 47 scheduled checks.
+Verdict is unchanged at 4,869 AGREE / 2,503 MODEL_UNSUPPORTED; all 53 files and
+7,372 predictions are identical. Completion review `20261025T012631Z-52e98fd1`
+has no findings. Hosted CI for the new PR is separate acceptance still pending.
+
+Hosted #250 general-mutant job 121029975402 (run 40146867734) is now failed.
+Its log reports query, fromless and JSON-function group failures, followed by
+outer timeout exit 124 before the final pytest failure details. No general-mutant
+report artifact was produced. The raw log is retained under
+`research_notes/Lean model modularity investigation/ci249-mutants/ci250-mutants.log`.
+The new repair addresses only the confirmed fromless fault; query/JSON causes
+remain unconfirmed. Linux main/API, table/function mutant and Verdict jobs pass.
+
+Completed publication workspaces `s5-publication` and `s6-complete-publication`
+are retired after empty-source/published-parent and dependency checks. Their
+28 evidence files and 14 store roots are retained under the S4 workspace's
+`build/agent-logs/retired-publication-workspaces` and
+`build/accepted-publication-evidence`. All active agents confirmed independence;
+2,400 shared libraries had no dependency on the removed paths. The published
+fromless workspace is also retired: 29 evidence files and eight store roots
+are under `build/agent-logs/fromless-mutant-repair-acceptance` and
+`build/accepted-fromless-mutant-repair`; 2,287 libraries were checked. Cleanup
+records and hash manifests are retained. No store garbage collection ran.
+
+S5's three mechanical view-anchor corrections passed 12 Nix harness checks and
+52 named mutation/inventory checks, including all four fromless and four
+subquery faults. Integration `d280c408` review is clean; recorded head `1fb9c741`
+is frozen in post-review full/verdict/prediction retry `96340`, slot 2. Its
+source prerequisites now pass, including both formerly stale guards. Editor
+integration still waits for part 2 acceptance.
+
+Migration public meanings/laws/notation source `162849ad`, recorded head
+`317cdb1a`, has clean review and 10 focused Nix checks with 225 permitted-axiom
+reports. Part 1 full/verdict `18258` now owns slot 1 in the frozen original
+workspace. Separate `s6-migration-examples`, based on `317cdb1a`, prepares the
+complete counter refutation and universal normalized-field proofs under the
+existing task. Those examples need proof closure, not missing SQL execution
+features. Complete rebuild/cascade/affinity examples still need the pending
+query-copy/rename/FK work. The example source is not yet compiled or accepted.
+
+The former repair worker resumes the existing query-sources task in
+`query-sources-view-integration`, starting with published #251 and the same
+three checked anchor spellings. It owns remaining view DDL, pragma metadata,
+write errors and statement/catalog preservation. It has no heavy slot while
+S5 and migration full acceptance run. The migration worker's separately reserved
+normalization proof leaves and registration entries remain disjoint.
