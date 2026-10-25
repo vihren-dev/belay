@@ -128,3 +128,6 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   every constructor is matched, each message names what to change, and the fixture
   expects the new text. Focused Nix surface run (18 passed, 90 deselected, 6.43 seconds)
   at `/nix/store/wbzz07xysl7gxm6bc8nkd2fjj6bi6q5m-sqlite-verifier-test-surface-1`.
+- 2026-10-25: review `20261025T054500Z-f420fa5b` of the corrective-action refactor had
+  no musts and one should (no test for the duplicate-section message); the errors fixture
+  now checks it with `#guard_msgs`. Checked by the part-end gate below.

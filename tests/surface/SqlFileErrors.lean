@@ -109,6 +109,13 @@ error: the database is given twice; remove one (against := ...) option
 #guard_msgs in
 def c14 := sql_file "sql_files/schema.sql" (against := shop) (against := shop)
 
+-- a section given twice
+/--
+error: the section is given twice; remove one (section := ...) option
+-/
+#guard_msgs in
+def c14b := sql_file "sql_files/goose.sql" (section := "up") (section := "down")
+
 -- a syntax error of the file
 /--
 error: sql_files/syntax_error.sql:3:6: SQLite's grammar rejects the SQL at this offset; correct the SQL there and run the command again
