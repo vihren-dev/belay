@@ -22,6 +22,8 @@ let
   # A mutant suite (tests/nix_mutant_suites.json) runs alone on its own CI runner, and its tests
   # take about 4 minutes each there, so it gets a larger limit; each test keeps its own limit.
   mutantSuiteTimeoutSeconds = 2700;
+  # Print the first reported mutation failure before later groups exhaust the suite budget.
+  mutantSuites = builtins.fromJSON (builtins.readFile (root + /tests/nix_mutant_suites.json));
   # The SQL frontend modules that the conformance suites import.
   # tests/test_conformance_frontend.py checks this list against the actual imports.
   frontend = map (name: root + "/${builtins.replaceStrings [ "." ] [ "/" ] name}.py")
@@ -70,7 +72,7 @@ let
         export HOME="$TMPDIR"
         export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
         timeout ${toString timeout} python3 -m pytest ${file} ${pkgs.lib.concatStringsSep " " extraFiles} --runtime-root ${runtime} \
-          -p no:cacheprovider -p pytest_timeout --timeout=${toString testTimeoutSeconds} \
+          -p no:cacheprovider -p pytest_timeout --timeout=${toString testTimeoutSeconds}${pkgs.lib.optionalString (builtins.elem name mutantSuites) " --exitfirst"} \
           --junitxml "$out/junit.xml" -v --durations=10
       '';
     } // environment);
