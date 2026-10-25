@@ -19,7 +19,7 @@ MUTANTS: dict[str, tuple[str, str, str]] = {
         "  else if candidates.any (·.isNull) then .null\n",
         "  else if false then .null\n"),
     "outer_row_dropped": (SUBQUERIES,
-        "  let cells := outer ++ List.replicate (query.outer - outer.length) .null\n",
+        "  let cells := outer.take query.outer ++ List.replicate (query.outer - outer.length) .null\n",
         "  let cells := List.replicate query.outer .null\n"),
     "scalar_last_row": (EVALUATION,
         "    ((run.rows.head?.bind List.head?).getD .null, if run.firstCertain then run.fault else .may)\n",

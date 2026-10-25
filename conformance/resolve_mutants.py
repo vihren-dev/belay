@@ -5,7 +5,7 @@ ADR 0008 ("How `resolve` is tested", Mutants) requires that each listed change o
 suite is known to test each rule. Resolution functions are called through dot
 notation (`catalog.find`), so a copy of single definitions in a private namespace
 would still call the originals. Each mutant is therefore a real copy of the
-`belay-sqlite-model` and `verifier-conformance` packages with one text change, which Lake
+`belay-sqlite-model` and `verifier-conformance` packages with one logical fault, which Lake
 rebuilds from one shared base build. The build covers only the import closure of
 `VerifierConformance.Classify`, which does not import the law modules, so a mutant that
 breaks a law still builds. The Lean interpreter then classifies the cases, given as the
@@ -16,6 +16,7 @@ gets another verdict: `DISAGREE`, or `MODEL_UNSUPPORTED` where the mutant moves
 an agreeing case out of the model's scope.
 """
 
+from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 import os
 from pathlib import Path
@@ -25,6 +26,7 @@ from tempfile import TemporaryDirectory
 
 from conformance.case_format import Json
 from conformance.model_check import compiled_many
+from conformance.mutation_edits import Mutation, source_edits
 
 SQLITE = "belay-sqlite-model/Belay/Sqlite/Model/"
 """The model sources, relative to `packages/`."""
@@ -136,21 +138,21 @@ def verdicts(packages: Path, lean: Path, program: str) -> list[str]:
     return run(["lake", "env", "lean", "--run", "Classify.lean"], conformance, lean, RUN_TIMEOUT_SECONDS).splitlines()
 
 
-def mutate(base: Path, root: Path, name: str, change: tuple[str, str, str], lean: Path, program: str) -> list[str]:
-    """Copy the built base, apply one mutant's change, and classify the cases with it."""
-    target, before, after = change
+def mutate(base: Path, root: Path, name: str, change: Mutation, lean: Path, program: str) -> list[str]:
+    """Copy the built base, apply every edit of one fault, then classify the cases with it."""
     copy = root / name
     shutil.copytree(base, copy, symlinks=True)
-    source = copy / target
-    text = source.read_text()
-    if text.count(before) != 1:
-        raise ValueError(f"Mutant {name} does not match exactly one place in {target}; update its text")
-    source.write_text(text.replace(before, after))
+    for target, before, after in source_edits(change):
+        source = copy / target
+        text = source.read_text()
+        if text.count(before) != 1:
+            raise ValueError(f"Mutant {name} does not match exactly one place in {target}; update its text")
+        source.write_text(text.replace(before, after))
     return verdicts(copy, lean, program)
 
 
 def measure(cases: list[dict[str, Json]], repository: Path, runtime: Path,
-            mutants: dict[str, tuple[str, str, str]] = MUTANTS,
+            mutants: Mapping[str, Mutation] = MUTANTS,
             targets: dict[str, tuple[str, ...]] | None = None, expected: str = AGREE) -> dict[str, Json]:
     """Classify the cases with the unchanged model and with each of `mutants`, in parallel.
     `runtime` is the conformance runtime: its runner emits the case terms, and its

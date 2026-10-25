@@ -1,6 +1,6 @@
 # S6: execution branches, predicate transformers and equivalence
 
-Created 2026-10-24. Status: OPEN. Refreshed for assignment on the completed
+Created 2026-10-24. Status: DONE on 2026-10-25. Refreshed for assignment on the completed
 S4 execution interfaces in published PR #248.
 Status: [progress](20261024-s6-execution-contracts.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), the owner decisions

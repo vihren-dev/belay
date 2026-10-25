@@ -44,6 +44,7 @@
     "tests/conformance_transaction_evidence_test.py"
   ],
   "harness": [
+    "tests/mutation_edits_test.py",
     "tests/conformance_acquisition_test.py",
     "tests/conformance_restriction_examples_test.py",
     "tests/conformance_authored_boundaries_test.py",
