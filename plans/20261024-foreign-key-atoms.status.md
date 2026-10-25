@@ -4,11 +4,10 @@ Created 2026-10-24. Status: OPEN. Part 1 (split API and accepted mapped-NULL/act
 corrections) is accepted. Part 2's row/action/trigger induction and conditional
 DML/run and CREATE/plain-DROP laws are integrated with the enforced-DROP proof unit.
 Their focused Nix gate passed; integration review `20261025T001914Z-dd60f94c` found no musts.
-The ADD COLUMN execution correction, the ADD COLUMN preservation laws and the run
-contracts of the schema statements are implemented and Nix-checked. The matrix is recorded in
-ADR 0022 with the fixtures for RESTRICT, SET DEFAULT, deferred keys and the DDL necessity
-examples (unit 4). Part-2 acceptance (`just test-full`, `just verdict`) and separate
-corpus-v54 evidence remain open.
+Part 2 is implemented and passed `just test-full` and `just verdict` (section "Part-2 acceptance"
+at the end): the ADD COLUMN execution correction, the ADD COLUMN preservation laws, the run
+contracts of the schema statements, the matrix in ADR 0022 and the action and DDL necessity
+fixtures. Separate corpus-v54 evidence (the judge change) and the whole-task checks remain open.
 Task: [task file](20261024-foreign-key-atoms.task.md).
 Specs: ADR 0022 slice 5; ADR 0017 S6; ADR 0018 foreign-key execution rules.
 Inspected base: PR #239, `98a07bfe`, in `vihren-dev/sqlite-verifier`.
@@ -22,8 +21,8 @@ The enforced-DROP unit is checked and reviewed at `ffe4d749`. The execution
 correction is implemented in the commit "Refuse ADD COLUMN of a REFERENCES column with
 a non-NULL default on a populated table" (details in the section "ADD COLUMN execution
 correction (part 2, unit 1)" below); its focused Nix gates passed. The ADD COLUMN
-preservation laws (unit 2) and the unified DDL/run contract (unit 3) are implemented. The matrix
-is recorded in unit 4. The
+preservation laws (unit 2), the unified DDL/run contract (unit 3) and the matrix with the action
+fixtures (unit 4) are implemented and part 2 is accepted. The
 task-amendment review `20261025T015343Z-fc22761c` found no musts and one R19 should
 (name the correction in the acceptance-part list); that is done and is historical.
 
@@ -1074,3 +1073,33 @@ on the matrix: the plain-write row must exclude writes with trigger programs and
 presence of rules and not by the foreign-key setting (DROP INDEX has no rules), and the native
 agreement claim excludes the deferred key. All three are fixed in the refactor that follows the
 unit.
+
+## Part-2 acceptance
+
+2026-10-25. After the review of unit 4 and its refactor (`b6aced3e`, no findings), `just test-full`
+failed twice on checks that Unit 1 had left stale, because the unit-1 gate selected tests by name:
+`tests/admitted_atoms_resolver_facts_test.py` and `tests/column_default_resolution_test.py` still
+called `resolveAddColumn` and its laws with the old signatures (the enforcement flag, and the
+refusal flag in the result). Commits `587bb8f0` and `17664660` update both (reviews
+`20261025T082325Z-587bb8f0` and `20261025T084338Z-17664660`: no findings). The first failed run kept
+`build/agent-logs/p2-first/p2-test-full.log` and the second `build/agent-logs/p2-second/`.
+
+Final Nix results on the tree after `17664660`:
+
+- `just test-full` exit 0: source 473 passed (70 deselected, 49 subtests), model 245 passed,
+  and the groups of 23, 3, 75 and 117 passed; reports
+  `/nix/store/gqgn1gwcc93y6cfpishbbp9zcjvy3xxq-sqlite-verifier-test-reports`. The log is
+  `build/agent-logs/p2-test-full.log`.
+- `just verdict` exit 0: `/nix/store/m7kkwp8cbbnyl2vcpqvxk2iwcldh8i3a-sqlite-verifier-verdict`.
+- Frozen predictions `/nix/store/aksmzw42waxr53g21m6h8nz16hnp3r26-sqlite-verifier-predictions`
+  against the baseline `build/predictions-baseline`
+  (`/nix/store/a54s3ncjxq74zzj0hb3qrc3k9mahlx5b-sqlite-verifier-predictions`, taken before the part-2
+  model edits): 53 files, 0 differences (`diff -r`). The only execution change of
+  part 2, the refusal of a REFERENCES column with a non-NULL default on a populated table, changes
+  no frozen prediction, because no frozen case has that statement.
+
+Open for the judge change (corpus v54, not edited here): native regression cases for ADD COLUMN
+REFERENCES defaults (omitted, `NULL`, `+NULL`, `(NULL)`, `(+NULL)`, `-NULL`, a cast NULL, numbers,
+CURRENT_TIMESTAMP, empty and populated tables, enforcement on and off), mapped-NULL and mapped
+actions, and the probes of unit 4 (RESTRICT against NO ACTION, SET DEFAULT, the repeated-column
+index, ADD COLUMN to an absent table), with their claims and the new lock.
