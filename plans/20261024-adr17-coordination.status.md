@@ -487,3 +487,31 @@ mutation checks. S5 frontends retain slot 2 for their 14 selected Nix checks.
 The copied proof script has also been checked with a user binder named kernel;
 this local diagnostic is not Nix acceptance. PR #250 hosted Verdict is green,
 and its Linux API-reference build passed. Other CI jobs remain running.
+
+
+At 2026-10-25 00:58 UTC, PR #250 hosted Linux main, table-mutant,
+function-mutant and Verdict jobs have passed. The general-mutant job remains
+running; the confirmed fromless fault is addressed separately below.
+
+The fromless repair source `e4265048` is independently reviewed with no
+unresolved findings; review/status head is `0ee899e6`. Its 12 focused Nix
+harness cases pass at `zv6n9rjksjqnzpqwiays4igjxzrcimmx`, and 52 focused
+mutation/inventory checks pass at `n02c574s3rvy5vzz0bkja5avrigcha4a`. Every
+existing fromless and representative parameter fault is killed. Full task
+acceptance is running as agent session `83904` in slot 1; publication waits
+for that sequence. Protected production and evidence trees remain unchanged.
+
+S5 frontends passed 14 focused Nix checks at
+`l8igz2np850nzkkgp0apq1bv19fawwhw`; the environment-only follow-up passes at
+`mhiwy40jrnpdscjl2b8y9hs0mvzlnar4`. Source `aca8d84d` review found only missing
+observable coverage for nondefault search options. That follow-up is running
+as `9352` in slot 2. Default command budget is 100,000 Lean units; expensive
+targeted cases use explicit 500,000 units. Automatic checking remains later
+work and has no responsiveness claim from these command measurements.
+
+The next migration unit has public pattern syntax, quiet descriptors,
+explanations and application-composition conveniences. Its source is frozen
+at `4c68ae69` after two failed bounded dev-build attempts. The remaining
+corrections are untested; it has no reserved slot or live process. Both slots
+currently serve the acceptance work above. No semantic specification error was
+found. Stored-view completion and universal model-dependent examples remain open.
