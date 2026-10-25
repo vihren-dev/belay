@@ -35,7 +35,10 @@ are at their positions in the text. -/
 syntax (name := sqlCommand) "#sql " term:max str : command
 
 /-- Run the script of the literal on the value of the database term and give the table names of
-the text editor information with the rows of that run ({name}`executedContexts`). The attempt is
+the text editor information with the rows of that run ({name}`executedContexts`). A script with
+parameters gets the contexts of a resolution instead ({name}`resolvedContexts`), because the trial
+does not know the values of the parameters that the displayed run binds: the rows are then known
+only before the first statement that can write. The attempt is
 a trial: Lean elaborates the database term and the text again for the output, so the trial drops
 its messages and information, and it keeps nothing when the database has no value yet or the text
 has an error. Lean then shows each error once, at the elaboration of the output. -/
@@ -50,7 +53,10 @@ def sqlCommandInformation (databaseTerm literal : Syntax) : Term.TermElabM Unit 
   saved.restore (restoreInfo := true)
   if let some (evaluated, items) := attempt then
     let statements := items.toList.map (·.statement)
-    let (contexts, _) := executedContexts 0 evaluated.value.raw.connection statements
+    let connection := evaluated.value.raw.connection
+    let contexts := if items.any (!·.parameters.isEmpty)
+      then resolvedContexts connection.resolveState (some connection.state.database.rows) statements
+      else (executedContexts 0 connection statements).1
     emitSqlEditorInfo (.literal literal text) statements (.ofTerm (← getEnv) evaluated.term) contexts
 
 /-- Elaborate {lit}`#sql db r"..."`: give the editor information of the table names

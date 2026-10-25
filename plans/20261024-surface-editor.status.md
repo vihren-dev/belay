@@ -300,3 +300,10 @@ The table-hover test expects the owner now shown in the hover (commit 2 added it
 - Test: `tests/surface_editor_executed_test.py` (real server): counts before and
   after an insert and a delete in `db!` and `#sql`, an unrun `sql!` after a write with no count, and
   only information messages. `table_hover` moved to `tests/lean_server_support.py`.
+
+### Part 2a, refactor after review 3 — 2026-10-25
+
+Must fixed: the `#sql` trial does not know the values that the displayed run binds
+to the parameters of a script. A script with a parameter now gets the contexts of a
+resolution, whose rows are known only before the first statement that can write, instead
+of the contexts of a run. The executed test adds a `#sql` with a captured `$target`.
