@@ -63,6 +63,7 @@ customer
 zeta
 -/
 #guard_msgs in
+set_option sql.orderWarnings false in
 #sql shop r"SELECT customer FROM invoices LIMIT 1"
 
 -- A statement that reads the clock ends the run.

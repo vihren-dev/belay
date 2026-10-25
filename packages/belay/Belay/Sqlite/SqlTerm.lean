@@ -6,6 +6,7 @@ import Belay.Sqlite.SqlLiteral
 import Belay.Sqlite.SqlParameters
 import Belay.Sqlite.SqlSource
 import Belay.Sqlite.SqlParameterInfo
+import Belay.Sqlite.SqlOrderWarnings
 
 set_option doc.verso true
 
@@ -105,9 +106,12 @@ def scriptTermFromPlan (items : Array Translation.ParameterizedStatement) (plan 
 /-- The inline script term, with dollar variables captured from Lean and all other parameters
 as arguments in first-appearance order. Numbered gaps bind NULL. Plan and variable errors point
 into the SQL literal. The term retains source metadata; replay checks it against the actual
-statements and bindings. File elaboration uses the same {name}`scriptTermFromPlan` constructor. -/
+statements and bindings. File elaboration uses the same {name}`scriptTermFromPlan` constructor.
+The term also logs the risk warnings of statements that take rows by {lit}`LIMIT` without
+{lit}`ORDER BY` ({name}`orderRiskWarnings`), because it does not run them. -/
 def scriptTerm (literal : Syntax) (text : String) (items : Array Translation.ParameterizedStatement) :
     TermElabM Expr := do
+  logOrderWarnings literal text (orderRiskWarnings (items.toList.map (·.statement)))
   let plan ← match planParameters (items.toList.map (·.parameters)) with
     | .ok plan => pure plan
     | .error diagnostic => throwErrorAt (textRange literal text diagnostic.start diagnostic.stop) diagnostic.message

@@ -1,6 +1,6 @@
 # SQL editor information and corrections
 
-Created 2026-10-24. Status: OPEN. Implementation follows task review.
+Created 2026-10-24. Status: OPEN. Part 1 is accepted; part 2a is implemented and checked, and waits for acceptance; part 2b waits for the model name trace.
 Status: [progress](20261024-surface-editor.status.md).
 Specs: [ADR 0017](../docs/adr-0017-user-surface.md), editor features under
 "Not decided here"; [ADR 0016](../docs/adr-0016-model-and-surface.md), D2/D3.
@@ -127,15 +127,73 @@ checks must keep Lean editor imports out of the model and conformance runtime.
 No prediction, judge-claim or lock changes are planned. Frozen predictions stay
 byte-identical; investigate any difference before changing the acceptance bar.
 
-Two acceptance parts: source/parameter information with actual server coverage;
-schema information, navigation, corrections and warnings. The second part
-includes integration with the completed query-source interfaces. Each coherent
-commit has focused checks and independent review. After final review of each
-part, run `just test-full` and `just verdict`; task end also runs `just test-nix`
-and `just test-scheduled-checks`. Relevant mutants only by name. The owner's
-check override is recorded in
+Three acceptance parts. Part 1 is accepted: source and parameter information
+with actual server coverage. The remaining schema, navigation, correction and
+warning behavior splits at the model name trace (next section):
+
+- **Part 2a** needs no per-occurrence fact from the model. It covers table
+  hovers and navigation, origins, row-count knowledge, order warnings, the
+  shared entry point and the source-position fixtures. The next section lists
+  exactly which required outcomes belong to it.
+- **Part 2b** consumes the name trace: column hovers, comparison-affinity
+  hovers, derived-column facts, typo corrections, DQS warnings and every
+  scope-correct claim about a name below the table level.
+
+Each coherent commit has focused checks and independent review. After final
+review of each part, run `just test-full` and `just verdict`; task end also runs
+`just test-nix` and `just test-scheduled-checks`. Relevant mutants only by name.
+The owner's check override is recorded in
 [the build-boundary status](20261024-text-build-boundaries.status.md).
 Only Nix results are acceptance evidence in status files and PRs.
+
+## Part 2a and the model name trace
+
+The resolver records no fact about a name token: a resolved statement holds
+catalog positions and rewritten queries, a prepare error holds only a name, and
+`Span.leaves` is not a role trace. Part 2b therefore needs a model-side name
+trace, planned as a separate model task, not an editor edit. For each name
+occurrence of a statement, the trace gives:
+
+- the syntax path of the occurrence in the statement as written, for a name
+  in a query of the statement or in a `WITH` definition of the statement. A
+  name in a stored view body has no path in the SQL text.
+  `CommonTableCopies.originalPath` collapses such a path to the use site of the
+  view, so the trace gives that occurrence the use-site provenance and a flag
+  that it is not an exact path. An editor edit, such as a correction, targets
+  only exact paths;
+- the resolution result: found, ambiguous or missing, with the candidates;
+- the scope source and column that a found name binds, with the declared
+  type, affinity, collation and base-table origin separately from inferred
+  properties;
+- for a comparison, the affinity that the resolver used, or none.
+
+The trace comes from the resolver run that decides the statement, so it cannot
+disagree with execution. Producing it leaves every resolved statement and
+prediction byte-identical. The editor never rebuilds scopes or searches for the
+text of a name.
+
+Part 2a covers the outcomes that a fixed syntax slot decides. A table
+reference slot (statement target, `FROM` source or join source, in a statement
+or in an indexed subquery) is located by its syntax path, checked against the
+name that the syntax holds, and resolved by the model's own catalog lookup. A
+name that a `WITH` definition of the statement also names gets no information.
+Part 2a gives:
+
+- table hovers with catalog metadata and, when the rows are known, a row count.
+  A context that only resolves statements (`sql!`) knows the rows of its
+  database only before the first statement of the script that can write; after
+  one, the hover shows no count. A context that runs each statement (`db!`,
+  `#sql`) knows the rows that its run reached before the statement;
+- navigation from a table name to its `CREATE TABLE`, with the environment
+  extension, distinct origins for same-named tables of different databases,
+  imported origins, no origin for computed databases, and no origin for a
+  table that an earlier statement of the script drops or creates;
+- order warnings. A context that evaluates its statements (`db!`, `#sql`) gives
+  the evidence-based warning, from a statement output with several permitted
+  results. A context that does not evaluate (`sql`, `sql!`) gives only the
+  syntactic warning;
+- the shared entry point, semantic tokens for resolved tables and the
+  source-position fixtures.
 
 ## Current APIs and ownership constraints
 
@@ -154,8 +212,9 @@ specific integration points early through the actual server.
 
 The editor owner owns its new modules, server fixtures and narrow hooks in the
 surface files above. Reserve shared parameter/source helpers and manifest
-entries before S5/S7/doc-block agents edit them. Do not concurrently edit the
-query-source agent's model/text resolver files. Request a narrow shared helper
-or consume its reviewed interface. No model evaluation or statement dispatch
-is copied into the editor. New files follow the repository's small-file and
-checked-public-docstring rules.
+entries before S5/S7/doc-block agents edit them. The query-source and stored
+view work is complete (PR 255), so its interfaces are consumable. The editor
+does not edit the model package; the S6 before-context task owns the query
+resolver and evaluator files until it is published, and the name trace waits
+for it. No model evaluation or statement dispatch is copied into the editor.
+New files follow the repository's small-file and checked-public-docstring rules.

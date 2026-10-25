@@ -62,6 +62,6 @@ its own error shows that error and gives no extra diagnostics here. -/
 def LoadedSqlFile.checkAgainst (file : LoadedSqlFile) (reference databaseTerm : Syntax)
     (chosen : Array Translation.ParameterizedStatement) : TermElabM Unit := do
   if let some database ← evaluateDatabase databaseTerm then
-    file.logResolution reference database chosen
+    file.logResolution reference database.value chosen
 
 end Belay.Sqlite

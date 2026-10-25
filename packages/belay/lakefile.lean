@@ -32,7 +32,10 @@ lean_lib Belay where
       .one `Belay.Sqlite.SampleHints, .one `Belay.Sqlite.SampleQueryHints, .one `Belay.Sqlite.SampleScriptHints,
       .one `Belay.Sqlite.SqlSource, .one `Belay.Sqlite.ReplayValues, .one `Belay.Sqlite.ReplayDatabaseSql,
       .one `Belay.Sqlite.ReplayEvaluation, .one `Belay.Sqlite.ReplayConstruction, .one `Belay.Sqlite.ReplayScript,
-      .one `Belay.Sqlite.SqlEditorSource, .one `Belay.Sqlite.SqlParameterInfo]
+      .one `Belay.Sqlite.SqlEditorSource, .one `Belay.Sqlite.SqlParameterInfo,
+      .one `Belay.Sqlite.SqlTableSlots, .one `Belay.Sqlite.SqlStatementContexts, .one `Belay.Sqlite.SqlTableDescription,
+      .one `Belay.Sqlite.SqlTableInfo, .one `Belay.Sqlite.SqlTableOrigins, .one `Belay.Sqlite.SqlEditorInfo,
+      .one `Belay.Sqlite.SqlOrderWarnings]
     ++ #[.one `Belay.Sqlite.CheckBudget, .one `Belay.Sqlite.CheckData,
       .one `Belay.Sqlite.CheckReplayData, .one `Belay.Sqlite.CheckProof,
       .one `Belay.Sqlite.CheckCandidates, .one `Belay.Sqlite.CheckClaim,
