@@ -515,3 +515,19 @@ at `4c68ae69` after two failed bounded dev-build attempts. The remaining
 corrections are untested; it has no reserved slot or live process. Both slots
 currently serve the acceptance work above. No semantic specification error was
 found. Stored-view completion and universal model-dependent examples remain open.
+
+
+S5's nondefault-option follow-up is checked at `7e6f194c`: the Nix check at
+`q5flkif5f52xdjilcg2a6wf932jhp3ww` passes its selected case. It covers seed,
+random sample count, maximum rows, shrink attempts and a size-sensitive custom
+Plausible generator. The default SQL sampler is size-independent. Independent
+review `20261025T010407Z-7e6f194c` has no findings. Recorded source boundary
+`c13c9e20` is frozen while part 2 full/verdict/prediction acceptance runs as
+agent-owned session `41484`, in slot 2. Automatic checking has not started.
+
+The fromless repair retains slot 1 for full acceptance session `83904`.
+Migration source `4c68ae69` remains frozen and queued for the next available
+bounded build slot. Editor part 2 readiness identifies reuse of the existing
+real-server harness and a narrow shared resolution-observation boundary;
+no editor observer implementation is assigned yet. PR #250's general-mutant
+job remains running; its other Linux and Verdict successes are unchanged.
