@@ -154,8 +154,13 @@ catalog positions and rewritten queries, a prepare error holds only a name, and
 trace, planned as a separate model task, not an editor edit. For each name
 occurrence of a statement, the trace gives:
 
-- the syntax path of the occurrence in the statement as written, mapped back
-  from the per-use CTE and view copies by `CommonTableCopies.originalPath`;
+- the syntax path of the occurrence in the statement as written, for a name
+  in a query of the statement or in a `WITH` definition of the statement. A
+  name in a stored view body has no path in the SQL text.
+  `CommonTableCopies.originalPath` collapses such a path to the use site of the
+  view, so the trace gives that occurrence the use-site provenance and a flag
+  that it is not an exact path. An editor edit, such as a correction, targets
+  only exact paths;
 - the resolution result: found, ambiguous or missing, with the candidates;
 - the scope source and column that a found name binds, with the declared
   type, affinity, collation and base-table origin separately from inferred
@@ -174,15 +179,19 @@ name that the syntax holds, and resolved by the model's own catalog lookup. A
 name that a `WITH` definition of the statement also names gets no information.
 Part 2a gives:
 
-- table hovers with catalog metadata and, when the rows are known, a row count;
-  the rows are known only before the first statement of the script that can
-  write; after one, the hover shows no count;
+- table hovers with catalog metadata and, when the rows are known, a row count.
+  A context that only resolves statements (`sql!`) knows the rows of its
+  database only before the first statement of the script that can write; after
+  one, the hover shows no count. A context that runs each statement (`db!`,
+  `#sql`) knows the rows that its run reached before the statement;
 - navigation from a table name to its `CREATE TABLE`, with the environment
   extension, distinct origins for same-named tables of different databases,
   imported origins, no origin for computed databases, and no origin for a
   table that an earlier statement of the script drops or creates;
-- order warnings, with the evidence-based warning in `#sql`, whose run is the
-  evaluation, and the syntactic warning elsewhere;
+- order warnings. A context that evaluates its statements (`db!`, `#sql`) gives
+  the evidence-based warning, from a statement output with several permitted
+  results. A context that does not evaluate (`sql`, `sql!`) gives only the
+  syntactic warning;
 - the shared entry point, semantic tokens for resolved tables and the
   source-position fixtures.
 
