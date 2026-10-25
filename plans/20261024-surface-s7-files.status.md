@@ -199,3 +199,14 @@ their own reviewed task. Neither is silently excluded by this task boundary.
   `/nix/store/nzqzyma78kp58bf5nhgn4ayc5znffy72-sqlite-verifier-test-surface-1`. The unknown
   and ambiguous package branches stay untested (deferred): no real build reaches them
   before the module walk fails.
+- 2026-10-25: native Lake input fixtures (`tests/surface_sql_lake_inputs_test.py`, in the
+  `surface` suite). With `input_dir sqlFiles` (`text := true`, `.extension "sql"`) and
+  `needs := #[sqlFiles]`, a library does not rebuild for an unchanged tree, an added
+  non-SQL file or a line-ending-only edit (the checker stays fresh); it does rebuild for an
+  SQL text edit (the checker reports it stale first, fresh after the rebuild) and for an
+  added `.sql` file. With `input_file oneFile` the same holds for one file, and the library
+  that does not list it does not rebuild. `CoeOut` to a build key accepts the input
+  declarations in `needs`. Same-name dependency projects are covered by the dependency test
+  of the checker. Nix surface run (2 passed, 114 deselected, 25.08 s) at
+  `/nix/store/5ppdhz8p4wbf6zdbyxb9dnh7fwcwss7r-sqlite-verifier-test-surface-1`. Layer rule 4
+  already shows that the conformance runtime holds neither the surface nor the checker.
